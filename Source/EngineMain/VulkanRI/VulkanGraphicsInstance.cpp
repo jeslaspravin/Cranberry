@@ -13,6 +13,7 @@
 #include <algorithm>
 #include "vulkan_core.h"
 #include <sstream>
+#include <set>
 
 
 void VulkanGraphicsInstance::load()
@@ -96,10 +97,8 @@ void VulkanGraphicsInstance::createVulkanInstance()
 	instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
 #endif
 
-	if (!collectInstanceExtensions(registeredInstanceExtensions))
-	{
-		assert(false);
-	}
+	assert(collectInstanceExtensions(registeredInstanceExtensions));
+
 	instanceCreateInfo.ppEnabledExtensionNames = &registeredInstanceExtensions[0];
 	instanceCreateInfo.enabledExtensionCount = (uint32_t)registeredInstanceExtensions.size();
 	instanceCreateInfo.pApplicationInfo = &appInfo;
@@ -123,9 +122,12 @@ bool VulkanGraphicsInstance::collectInstanceExtensions(std::vector<const char*>&
 {
 	extensions.clear();
 
-	const static std::vector<const char*> mandatoryExtensions{
-		VK_KHR_SURFACE_EXTENSION_NAME
-	};
+	std::set<const char*> mandatoryExtensions;
+
+#define INSTANCE_VK_EXT_FUNCTIONS(function,extension) mandatoryExtensions.insert(extension);
+#define INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(function,extension) mandatoryExtensions.insert(extension);
+
+#include "VulkanInternals/VulkanFunctionLists.inl"
 
 	std::stringstream extensionsStream;
 	for (const VkExtensionProperties& extProperty:availableInstanceExtensions) {
@@ -162,10 +164,10 @@ void VulkanGraphicsInstance::loadInstanceFunctions()
 		if (std::strcmp(ext, extension) == 0)\
 		{\
 			Vk::##function = (PFN_##function)Vk::vkGetInstanceProcAddr(vulkanInstance, #function); \
-			if(Vk::##function == nullptr) Logger::error("Vulkan","%s() : Failed loading function : "#function,__func__);\
 			break;\
 		}\
-	}
+	} \
+	if (Vk::##function == nullptr) Logger::error("Vulkan", "%s() : Failed loading function : "#function, __func__);
 
 #define INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(function,extension)\
 	for(const char* ext:registeredInstanceExtensions) \

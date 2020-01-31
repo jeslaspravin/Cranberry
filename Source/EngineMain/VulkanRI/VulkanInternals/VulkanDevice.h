@@ -40,7 +40,7 @@ private:
 	void collectDeviceLayers(std::vector<const char*>& layers) const;
 #endif
 
-
+	void loadDeviceFunctions();
 
 public:
 	VulkanDevice();
@@ -55,10 +55,18 @@ public:
 
 	void createLogicDevice();
 	void freeLogicDevice();
+
 	String getDeviceName();
 
 	[[nodiscard]] int32 compare(const VulkanDevice& otherDevice) const;
 	[[nodiscard]] bool isValidDevice() const;
+
+public:
+
+#define DEVICE_VK_FUNCTIONS(function) PFN_##function function;
+#define DEVICE_VK_EXT_FUNCTIONS(function,extension) PFN_##function function;
+
+#include "VulkanFunctionLists.inl"
 };
 
 struct VulkanDeviceCompare {

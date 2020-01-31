@@ -2,11 +2,12 @@
 #include "../../Core/Logger/Logger.h"
 #include "VulkanFunctions.h"
 #include "../../Core/String/String.h"
+#include "VulkanMacros.h"
+#include "Resources/VulkanQueueResource.h"
 
 #include <sstream>
-#include "Resources/VulkanQueueResource.h"
 #include <assert.h>
-#include "VulkanMacros.h"
+#include <set>
 
 void VulkanDevice::featuresToEnable(VkPhysicalDeviceFeatures& enableFeatures)
 {
@@ -70,9 +71,11 @@ bool VulkanDevice::collectDeviceExtensions(std::vector<const char*>& extensions)
 {
 	extensions.clear();
 
-	const static std::vector<const char*> mandatoryExtensions{
-		
-	};
+	std::set<const char*> mandatoryExtensions;
+
+#define DEVICE_VK_EXT_FUNCTIONS(function,extension) mandatoryExtensions.insert(extension);
+
+#include "VulkanFunctionLists.inl"
 
 	std::stringstream extensionsStream;
 	for (const VkExtensionProperties& extProperty : availableExtensions) {
@@ -101,6 +104,27 @@ void VulkanDevice::collectDeviceLayers(std::vector<const char*>& layers) const
 {
 
 }
+
+void VulkanDevice::loadDeviceFunctions()
+{
+#define DEVICE_VK_FUNCTIONS(function) \
+	function = (PFN_##function)Vk::vkGetDeviceProcAddr(logicalDevice,#function); \
+	if(function == nullptr) Logger::error("VulkanDevice","%s() : Failed loading function : "#function,__func__);
+
+#define DEVICE_VK_EXT_FUNCTIONS(function,extension) \
+	for(const char* ext:registeredExtensions) \
+	{\
+		if (std::strcmp(ext, extension) == 0)\
+		{\
+			function = (PFN_##function)Vk::vkGetDeviceProcAddr(logicalDevice,#function); \
+			break;\
+		}\
+	} \
+	if (function == nullptr) Logger::error("VulkanDevice", "%s() : Failed loading function : "#function, __func__);
+
+#include "VulkanFunctionLists.inl"
+}
+
 #endif
 
 VulkanDevice::VulkanDevice()
@@ -158,6 +182,8 @@ transferQueue = std::move(rVulkanDevice.transferQueue); \
 computeQueue = std::move(rVulkanDevice.computeQueue); \
 genericQueue = std::move(rVulkanDevice.genericQueue); \
 allQueues = std::move(rVulkanDevice.allQueues); \
+enabledFeatures = std::move(rVulkanDevice.enabledFeatures); \
+logicalDevice = std::move(rVulkanDevice.logicalDevice); \
 
 VulkanDevice::VulkanDevice(VulkanDevice&& rVulkanDevice)
 {
@@ -182,6 +208,8 @@ transferQueue = otherDevice.transferQueue; \
 computeQueue = otherDevice.computeQueue; \
 genericQueue = otherDevice.genericQueue; \
 allQueues = otherDevice.allQueues; \
+enabledFeatures = std::move(otherDevice.enabledFeatures); \
+logicalDevice = std::move(otherDevice.logicalDevice); \
 
 VulkanDevice::VulkanDevice(const VulkanDevice& otherDevice)
 {
@@ -197,7 +225,7 @@ void VulkanDevice::operator=(const VulkanDevice& otherDevice)
 
 VulkanDevice::~VulkanDevice()
 {
-	if (allQueues.size() > 0)
+	if (allQueues.size() > 0 || logicalDevice)
 	{
 		Logger::warn("VulkanDevice", "%s() : Queues & logic devices not cleared");
 		freeLogicDevice();
@@ -209,30 +237,40 @@ void VulkanDevice::createLogicDevice()
 	Logger::debug("VulkanDevice", "%s() : Creating logical device", __func__);
 	assert(createQueueResources());
 
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(allQueues.size());
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	queueCreateInfos.reserve(allQueues.size());
+
+	std::set<int32> selectedQueueIndices;// Cannot request create for same queue family twice
 
 	for (int32 queueFamIndex=0;queueFamIndex < allQueues.size();++queueFamIndex)
 	{
+		CREATE_QUEUE_INFO(queueCreateInfo);
 		const QueueResourceBasePtr& queueRes = allQueues[queueFamIndex];
+
 		if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Compute>>())
 		{
 			static_cast<const VulkanQueueResource<EQueueFunction::Compute>*>(queueRes)
-				->getQueueCreateInfo(queueCreateInfos[queueFamIndex]);
+				->getQueueCreateInfo(queueCreateInfo);
 		}
 		else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Graphics>>())
 		{
 			static_cast<const VulkanQueueResource<EQueueFunction::Graphics>*>(queueRes)
-				->getQueueCreateInfo(queueCreateInfos[queueFamIndex]);
+				->getQueueCreateInfo(queueCreateInfo);
 		}
 		else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Transfer>>())
 		{
 			static_cast<const VulkanQueueResource<EQueueFunction::Transfer>*>(queueRes)
-				->getQueueCreateInfo(queueCreateInfos[queueFamIndex]);
+				->getQueueCreateInfo(queueCreateInfo);
 		}
 		else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Generic>>())
 		{
 			static_cast<const VulkanQueueResource<EQueueFunction::Generic>*>(queueRes)
-				->getQueueCreateInfo(queueCreateInfos[queueFamIndex]);
+				->getQueueCreateInfo(queueCreateInfo);
+		}
+
+		if (selectedQueueIndices.insert(queueCreateInfo.queueFamilyIndex).second)
+		{
+			queueCreateInfos.push_back(queueCreateInfo);
 		}
 	}
 
@@ -256,12 +294,14 @@ void VulkanDevice::createLogicDevice()
 		Logger::error("VulkanDevice", "%s() : Failed creating logical device", __func__);
 		assert(false);
 	}
+
+	loadDeviceFunctions();
 }
 
 void VulkanDevice::freeLogicDevice()
 {
 	Logger::debug("VulkanDevice", "%s() : Freeing logical device", __func__);
-	Vk::vkDestroyDevice(logicalDevice, nullptr);
+	vkDestroyDevice(logicalDevice, nullptr);
 	logicalDevice = nullptr;
 
 	for (QueueResourceBasePtr& queueResPtr : allQueues)

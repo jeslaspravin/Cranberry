@@ -24,3 +24,12 @@ VariableName.pNext = nullptr;									\
 VariableName.flags = 0
 
 #endif
+
+#ifndef CREATE_QUEUE_INFO
+#define CREATE_QUEUE_INFO(VariableName)							\
+VkDeviceQueueCreateInfo VariableName;							\
+VariableName.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;\
+VariableName.pNext = nullptr;									\
+VariableName.flags = 0
+
+#endif
