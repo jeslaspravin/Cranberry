@@ -3,7 +3,7 @@
 #include "PlatformTypes.h"
 #include "../String/String.h"
 
-template <class PlatformClass>
+template <typename PlatformClass>
 class GenericPlatformFunctions
 {
 

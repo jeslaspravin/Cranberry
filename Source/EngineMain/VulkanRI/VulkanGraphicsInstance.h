@@ -8,6 +8,7 @@
 class VulkanGraphicsInstance final:
 	public IGraphicsInstance
 {
+	friend class VulkanGraphicsHelper;
 
 private:
 	
@@ -31,6 +32,8 @@ public:
 
 	void load() override;
 	void unload() override;
+
+	void loadSurfaceDependents() override;
 
 };
 

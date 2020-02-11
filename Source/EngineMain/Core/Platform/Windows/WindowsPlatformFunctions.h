@@ -10,6 +10,6 @@ public:
 	static void* getProcAddress(const LibPointer* libraryHandle, String symName);
 };
 
-namespace GPlatformFunctions{
+namespace GPlatformFunctions {
 	typedef GenericPlatformFunctions<WindowsPlatformFunctions> PlatformFunctions;
 }

@@ -25,9 +25,6 @@
     <Filter Include="Source Files\Core">
       <UniqueIdentifier>{f26db967-47d8-45f8-8036-59914680e445}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Core\Memory">
-      <UniqueIdentifier>{9e3962eb-685d-4445-82d5-bf29baf71e8d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Core\Engine">
       <UniqueIdentifier>{72305220-4276-4f39-947c-c2d6bf449d81}</UniqueIdentifier>
     </Filter>
@@ -61,9 +58,6 @@
     <Filter Include="Source Files\RenderInterface\Resources">
       <UniqueIdentifier>{6c0c1c3a-d2cc-47dc-996e-6f5a6bd1b017}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Core\Types">
-      <UniqueIdentifier>{8fed21e1-ca99-4fc9-b1a7-775c64ae5d11}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\VulkanRI\VulkanInternals\Platform">
       <UniqueIdentifier>{649608c4-5441-41a5-9a1f-b1a37e1ca2b0}</UniqueIdentifier>
     </Filter>
@@ -72,6 +66,42 @@
     </Filter>
     <Filter Include="Source Files\VulkanRI\VulkanInternals\Resources">
       <UniqueIdentifier>{198ba463-e32b-426b-9152-c8af9b2c3534}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\VulkanRI\Resources">
+      <UniqueIdentifier>{4f72822d-0d7f-4037-83d1-325f1ce276a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{a51bb511-2059-4e2a-96c0-206bbc826738}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Engine">
+      <UniqueIdentifier>{344b46ef-0a98-4678-b710-fb88e0838528}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Logger">
+      <UniqueIdentifier>{228f1027-a6ba-4f0d-86f0-7cea8d2abf2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Memory">
+      <UniqueIdentifier>{9e3962eb-685d-4445-82d5-bf29baf71e8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Platform">
+      <UniqueIdentifier>{af338b59-9dec-40b8-ac20-5312378f1113}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Platform\LFS">
+      <UniqueIdentifier>{8409fa63-81cc-4dfb-8b1f-5bfabf9fb72c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\String">
+      <UniqueIdentifier>{6ef06f09-eb7c-4a4f-857a-9a435f31c491}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Types">
+      <UniqueIdentifier>{8fed21e1-ca99-4fc9-b1a7-775c64ae5d11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderInterface">
+      <UniqueIdentifier>{f7a92aa2-fd3b-4f17-91d6-3c0d9db1e370}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderInterface\Resources">
+      <UniqueIdentifier>{5ea359ba-5485-4c1a-bd69-8acb282a0543}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Math">
+      <UniqueIdentifier>{116e92c4-dc5e-4cd7-8ec2-4a91af7a079f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -138,6 +168,30 @@
     <ClCompile Include="RenderInterface\Resources\QueueResource.cpp">
       <Filter>Source Files\RenderInterface\Resources</Filter>
     </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\Debugging.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Engine\WindowManager.cpp">
+      <Filter>Source Files\Core\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Resources\GenericWindowCanvas.cpp">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanWindowCanvas.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanGraphicsHelper.cpp">
+      <Filter>Source Files\VulkanRI</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Resources\GraphicsTimelineSemaphore.cpp">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Resources\GraphicsSyncResource.cpp">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -150,25 +204,10 @@
       <Filter>Source Files\RenderApi</Filter>
     </ClInclude>
     <ClInclude Include="Core\Memory\SmartPointers.h">
-      <Filter>Source Files\Core\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Engine\GameEngine.h">
-      <Filter>Source Files\Core\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Platform\PlatformTypes.h">
-      <Filter>Source Files\Core\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Platform\GenericPlatformTypes.h">
-      <Filter>Source Files\Core\Platform</Filter>
+      <Filter>Header Files\Core\Memory</Filter>
     </ClInclude>
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformTypes.h">
       <Filter>Source Files\Core\Platform\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\String\String.h">
-      <Filter>Source Files\Core\String</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Platform\GenericPlatformFunctions.h">
-      <Filter>Source Files\Core\Platform</Filter>
     </ClInclude>
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformFunctions.h">
       <Filter>Source Files\Core\Platform\Windows</Filter>
@@ -176,28 +215,10 @@
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanFunctions.h">
       <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Platform\PlatformFunctions.h">
-      <Filter>Source Files\Core\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Platform\ModuleManager.h">
-      <Filter>Source Files\Core\Platform</Filter>
-    </ClInclude>
     <ClInclude Include="VulkanRI\VulkanGraphicsTypes.h">
       <Filter>Source Files\VulkanRI</Filter>
     </ClInclude>
-    <ClInclude Include="RenderInterface\PlatformIndependentHeaders.h">
-      <Filter>Source Files\RenderInterface</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderApi\PlatformIndependenGraphicsTypes.h">
-      <Filter>Source Files\RenderInterface</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Platform\LFS\PlatformLFS.h">
-      <Filter>Source Files\Core\Platform\LFS</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Platform\LFS\File\GenericFileHandle.h">
-      <Filter>Source Files\Core\Platform\LFS\File</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Platform\LFS\File\GenericFile.h">
       <Filter>Source Files\Core\Platform\LFS\File</Filter>
     </ClInclude>
     <ClInclude Include="Core\Platform\Windows\LFS\File\WindowsFileHandle.h">
@@ -212,17 +233,8 @@
     <ClInclude Include="Core\Platform\Windows\LFS\WindowsFileSystemFunctions.h">
       <Filter>Source Files\Core\Platform\Windows\LFS</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Logger\Logger.h">
-      <Filter>Source Files\Core\Logger</Filter>
-    </ClInclude>
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanMacros.h">
       <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderInterface\Resources\GraphicsResources.h">
-      <Filter>Source Files\RenderInterface\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Platform\GenericAppInstance.h">
-      <Filter>Source Files\Core\Platform</Filter>
     </ClInclude>
     <ClInclude Include="Core\Platform\Windows\WindowsAppInstance.h">
       <Filter>Source Files\Core\Platform\Windows</Filter>
@@ -233,11 +245,8 @@
     <ClInclude Include="Core\Platform\Windows\WindowsAppWindow.h">
       <Filter>Source Files\Core\Platform\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Platform\PlatformInstances.h">
-      <Filter>Source Files\Core\Platform</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Types\Functions.h">
-      <Filter>Source Files\Core\Types</Filter>
+      <Filter>Header Files\Core\Types</Filter>
     </ClInclude>
     <ClInclude Include="VulkanRI\VulkanInternals\Platform\GenericVulkanFunctions.h">
       <Filter>Source Files\VulkanRI\VulkanInternals\Platform</Filter>
@@ -255,6 +264,81 @@
       <Filter>Source Files\RenderInterface\Resources</Filter>
     </ClInclude>
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanQueueResource.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\Resources\IVulkanResources.h">
+      <Filter>Source Files\VulkanRI\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\Debugging.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Engine\GameEngine.h">
+      <Filter>Header Files\Core\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Logger\Logger.h">
+      <Filter>Header Files\Core\Logger</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\ModuleManager.h">
+      <Filter>Header Files\Core\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\PlatformTypes.h">
+      <Filter>Header Files\Core\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\PlatformFunctions.h">
+      <Filter>Header Files\Core\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\PlatformInstances.h">
+      <Filter>Header Files\Core\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\GenericPlatformTypes.h">
+      <Filter>Header Files\Core\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\GenericPlatformFunctions.h">
+      <Filter>Header Files\Core\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\GenericAppInstance.h">
+      <Filter>Header Files\Core\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\LFS\File\GenericFile.h">
+      <Filter>Header Files\Core\Platform\LFS</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\LFS\PlatformLFS.h">
+      <Filter>Header Files\Core\Platform\LFS</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\String\String.h">
+      <Filter>Header Files\Core\String</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\GraphicsResources.h">
+      <Filter>Header Files\RenderInterface\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\PlatformIndependentHeaders.h">
+      <Filter>Header Files\RenderInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Engine\WindowManager.h">
+      <Filter>Header Files\Core\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\GenericWindowCanvas.h">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderApi\PlatformIndependentGraphicsTypes.h">
+      <Filter>Header Files\RenderInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanWindowCanvas.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\PlatformIndependentHelper.h">
+      <Filter>Header Files\RenderInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\GraphicsHelper.h">
+      <Filter>Header Files\RenderInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanGraphicsHelper.h">
+      <Filter>Source Files\VulkanRI</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\GraphicsSyncResource.h">
+      <Filter>Header Files\RenderInterface\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.h">
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
     </ClInclude>
   </ItemGroup>

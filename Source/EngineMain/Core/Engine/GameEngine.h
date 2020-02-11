@@ -23,6 +23,9 @@ public:
 	const String& getAppName() const;
 	void getVersion(int32& head, int32& major, int32& sub) const;
 	const GenericAppInstance* getApplicationInstance() const;
+	GenericAppInstance& appInstance() const;
+	const RenderApi* getRenderApi() const { return renderingApi.get(); }
+
 };
 
 extern GameEngine* gEngine;

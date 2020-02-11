@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include "GenericPlatformFunctions.h"
 
 #if _WIN32
 

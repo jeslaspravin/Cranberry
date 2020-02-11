@@ -4,20 +4,23 @@
 #include "../../Core/String/String.h"
 #include "VulkanMacros.h"
 #include "Resources/VulkanQueueResource.h"
+#include "../../Core/Engine/GameEngine.h"
+#include "Resources/VulkanWindowCanvas.h"
 
 #include <sstream>
 #include <assert.h>
 #include <set>
+#include <common.hpp>
 
-void VulkanDevice::featuresToEnable(VkPhysicalDeviceFeatures& enableFeatures)
+void VulkanDevice::markEnabledFeatures()
 {
-	// TODO(Jeslas) : Check and enable necessary features.
+	// TODO(Jeslas) : Check and enable necessary features on enabledFeatures
 }
 
 bool VulkanDevice::createQueueResources()
 {
 	graphicsQueue = new VulkanQueueResource<EQueueFunction::Graphics>(queueFamiliesSupported);
-	if (((VulkanQueueResource<EQueueFunction::Graphics>*)graphicsQueue)->isValidQueue())
+	if (graphicsQueue->isValidQueue())
 	{
 		allQueues.push_back(graphicsQueue);
 	}
@@ -28,7 +31,7 @@ bool VulkanDevice::createQueueResources()
 	}
 
 	computeQueue = new VulkanQueueResource<EQueueFunction::Compute>(queueFamiliesSupported);
-	if (((VulkanQueueResource<EQueueFunction::Compute>*)computeQueue)->isValidQueue())
+	if (computeQueue->isValidQueue())
 	{
 		allQueues.push_back(computeQueue);
 	}
@@ -39,7 +42,7 @@ bool VulkanDevice::createQueueResources()
 	}
 
 	transferQueue = new VulkanQueueResource<EQueueFunction::Transfer>(queueFamiliesSupported);
-	if (((VulkanQueueResource<EQueueFunction::Transfer>*)transferQueue)->isValidQueue())
+	if (transferQueue->isValidQueue())
 	{
 		allQueues.push_back(transferQueue);
 	}
@@ -52,7 +55,7 @@ bool VulkanDevice::createQueueResources()
 	if (allQueues.size() != 3)
 	{
 		genericQueue = new VulkanQueueResource<EQueueFunction::Generic>(queueFamiliesSupported);
-		if (((VulkanQueueResource<EQueueFunction::Generic>*)genericQueue)->isValidQueue())
+		if (genericQueue->isValidQueue())
 		{
 			allQueues.push_back(genericQueue);
 		}
@@ -64,6 +67,37 @@ bool VulkanDevice::createQueueResources()
 			return false;
 		}
 	}
+
+	if (GenericWindowCanvas* canvas = gEngine->getApplicationInstance()->appWindowManager
+		.getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow()))
+	{
+		std::map<uint32, VkQueueFamilyProperties*> supportedQueues;
+		for (uint32 index = 0; index < queueFamiliesSupported.size(); ++index)
+		{
+			VkBool32 isSupported;
+			Vk::vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, index,
+				static_cast<VulkanWindowCanvas*>(canvas)->surface(), &isSupported);
+			if (isSupported > 0)
+			{
+				supportedQueues.insert({ index, &queueFamiliesSupported[index] });
+			}
+		}
+
+		QueueResourceBase* q = new VulkanQueueResource<EQueueFunction::Present>(supportedQueues);
+		if (q->isValidQueue())
+		{
+			allQueues.push_back(q);
+		}
+		else
+		{
+			delete q;
+		}
+	}
+	else
+	{
+		Logger::warn("VulkanDevice", "%s() : No valid surface found, Skipping creating presentation queue", __func__);
+	}
+
 	return true;
 }
 
@@ -104,6 +138,7 @@ void VulkanDevice::collectDeviceLayers(std::vector<const char*>& layers) const
 {
 
 }
+#endif
 
 void VulkanDevice::loadDeviceFunctions()
 {
@@ -125,7 +160,133 @@ void VulkanDevice::loadDeviceFunctions()
 #include "VulkanFunctionLists.inl"
 }
 
-#endif
+template <EQueueFunction QueueFunction>
+VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues,const VulkanDevice* device)
+{
+	for (QueueResourceBase* queue : allQueues)
+	{
+		if (queue->getType()->isChildOf<VulkanQueueResource<QueueFunction>>())
+		{
+			return static_cast<VulkanQueueResource<QueueFunction>*>(queue);
+		}
+	}
+	return nullptr;
+}
+
+template <>
+VulkanQueueResource<EQueueFunction::Compute>* getQueue<EQueueFunction::Compute>(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device)
+{
+	return device->getComputeQueue() != nullptr 
+		? static_cast<VulkanQueueResource<EQueueFunction::Compute>*>(device->getComputeQueue()) : nullptr;
+}
+template <>
+VulkanQueueResource<EQueueFunction::Generic>* getQueue<EQueueFunction::Generic>(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device)
+{
+	return device->getComputeQueue() != nullptr
+		? static_cast<VulkanQueueResource<EQueueFunction::Generic>*>(device->getGenericQueue()) : nullptr;
+}
+template <>
+VulkanQueueResource<EQueueFunction::Graphics>* getQueue<EQueueFunction::Graphics>(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device)
+{
+	return device->getComputeQueue() != nullptr
+		? static_cast<VulkanQueueResource<EQueueFunction::Graphics>*>(device->getGraphicsQueue()) : nullptr;
+}
+template <>
+VulkanQueueResource<EQueueFunction::Transfer>* getQueue<EQueueFunction::Transfer>(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device)
+{
+	return device->getComputeQueue() != nullptr
+		? static_cast<VulkanQueueResource<EQueueFunction::Transfer>*>(device->getTransferQueue()) : nullptr;
+}
+
+void VulkanDevice::cacheGlobalSurfaceProperties()
+{
+	// if not presenting?
+	if (!getQueue<EQueueFunction::Present>(allQueues, nullptr))
+	{
+		return;
+	}
+	const VulkanWindowCanvas* canvas = static_cast<const VulkanWindowCanvas*>(gEngine->getApplicationInstance()
+		->appWindowManager.getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow()));
+
+	Vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, canvas->surface(), &swapchainCapabilities);
+
+	choosenImageCount = swapchainCapabilities.minImageCount + 1;
+
+	// Presentation mode
+	{
+		uint32 presentModesCount;
+		Vk::vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, canvas->surface(), (uint32_t*)&presentModesCount,
+			nullptr);
+
+		std::vector<VkPresentModeKHR> presentModes(presentModesCount);
+		Vk::vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, canvas->surface(), (uint32_t*)&presentModesCount,
+			presentModes.data());
+
+		if (std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR)
+			!= presentModes.cend())
+		{
+			globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR;
+			Logger::debug("VulkanDevice", "%s() : Choosen mailbox present mode", __func__);
+			choosenImageCount = glm::max<uint32>(choosenImageCount, 3);
+		}
+		else if (std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+			!= presentModes.cend())
+		{
+			globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+			Logger::debug("VulkanDevice", "%s() : Choosen fifo relaxed present mode", __func__);
+			choosenImageCount = glm::max<uint32>(choosenImageCount, 3);
+		}
+		else
+		{
+			assert(std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR)
+				!= presentModes.cend());
+			globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
+			Logger::debug("VulkanDevice", "%s() : Choosen fifo present mode", __func__);
+			choosenImageCount = glm::max<uint32>(choosenImageCount, 2);
+		}
+	}	
+
+	if (swapchainCapabilities.maxImageCount > 0)
+	{
+		choosenImageCount = glm::min<uint32>(choosenImageCount, swapchainCapabilities.maxImageCount);
+	}
+	swapchainImgUsage = swapchainCapabilities.supportedUsageFlags
+		& (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+	// Surface formats
+	{
+		uint32 formatCount;
+		Vk::vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, canvas->surface(), (uint32_t*)&formatCount,nullptr);
+		std::vector<VkSurfaceFormatKHR> formatsSupported(formatCount);
+		Vk::vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, canvas->surface(), (uint32_t*)&formatCount, formatsSupported.data());
+
+		assert(formatCount > 0);
+		swapchainFormat = formatsSupported[0];
+	}	
+}
+
+int32 VulkanDevice::compareSurfaceCompatibility(const class GenericWindowCanvas* surfaceCanvas,
+	const VulkanDevice& otherDevice) const
+{
+	const VulkanWindowCanvas* vkCanvas = static_cast<const VulkanWindowCanvas*>(surfaceCanvas);
+	
+	VkBool32 presentationSupported;
+	for (int32 index =0 ;index < queueFamiliesSupported.size();++index)
+	{
+		VkBool32 queueSupported;
+		Vk::vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, index, vkCanvas->surface(), &queueSupported);
+		presentationSupported |= queueSupported;
+	}
+
+	VkBool32 otherPresentationSupported;
+	for (int32 index = 0; index < otherDevice.queueFamiliesSupported.size(); ++index)
+	{
+		VkBool32 queueSupported;
+		Vk::vkGetPhysicalDeviceSurfaceSupportKHR(otherDevice.physicalDevice, index, vkCanvas->surface(), &queueSupported);
+		otherPresentationSupported |= queueSupported;
+	}
+	return presentationSupported - otherPresentationSupported;
+}
 
 VulkanDevice::VulkanDevice()
 {
@@ -155,13 +316,31 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice&& device)
 		Vk::vkEnumerateDeviceLayerProperties(physicalDevice, (uint32_t*)&layerCount, availableLayers.data());
 	}
 
-	Vk::vkGetPhysicalDeviceFeatures(physicalDevice, &features);
-	Vk::vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+	{ // Features
+		PHYSICAL_DEVICE_FEATURES_2(advancedFeatures);
+		advancedFeatures.features = features;
+		PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES(tSemaphoreFeatures);
+		advancedFeatures.pNext = &tSemaphoreFeatures;
+		Vk::vkGetPhysicalDeviceFeatures2KHR(physicalDevice, &advancedFeatures);
+		features = advancedFeatures.features;
+		timelineSemaphoreFeatures = tSemaphoreFeatures;
+		markEnabledFeatures();
+	}
+
+	{ // Properties
+		PHYSICAL_DEVICE_PROPERTIES_2(advancedProperties);
+		PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES(tSemaphoreProperties);
+		advancedProperties.pNext = &tSemaphoreProperties;
+		Vk::vkGetPhysicalDeviceProperties2KHR(physicalDevice, &advancedProperties);
+		properties = advancedProperties.properties;
+		timelineSemaphoreProps = tSemaphoreProperties;
+	}
 
 	Logger::debug("VulkanDevice", "%s() : Found %d extensions and %d layers in device %s", __func__,
 		extCount, layerCount,properties.deviceName);
-	Logger::debug("VulkanDevice", "%s() : Device API version %d Driver version %d", __func__, 
-		properties.apiVersion, properties.driverVersion);
+	Logger::debug("VulkanDevice", "%s() : Device API version %d.%d.%d Driver version %d.%d.%d", __func__
+		, VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion)
+		, VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion));
 
 	uint32 queueCount;
 	Vk::vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, (uint32_t*)&queueCount, nullptr);
@@ -184,10 +363,12 @@ genericQueue = std::move(rVulkanDevice.genericQueue); \
 allQueues = std::move(rVulkanDevice.allQueues); \
 enabledFeatures = std::move(rVulkanDevice.enabledFeatures); \
 logicalDevice = std::move(rVulkanDevice.logicalDevice); \
+timelineSemaphoreProps = std::move(rVulkanDevice.timelineSemaphoreProps); \
+timelineSemaphoreFeatures = std::move(rVulkanDevice.timelineSemaphoreFeatures); \
 
 VulkanDevice::VulkanDevice(VulkanDevice&& rVulkanDevice)
 {
-	MOVE_IMPL();
+	MOVE_IMPL();	
 }
 
 void VulkanDevice::operator=(VulkanDevice&& rVulkanDevice)
@@ -208,8 +389,10 @@ transferQueue = otherDevice.transferQueue; \
 computeQueue = otherDevice.computeQueue; \
 genericQueue = otherDevice.genericQueue; \
 allQueues = otherDevice.allQueues; \
-enabledFeatures = std::move(otherDevice.enabledFeatures); \
-logicalDevice = std::move(otherDevice.logicalDevice); \
+enabledFeatures = otherDevice.enabledFeatures; \
+logicalDevice = otherDevice.logicalDevice; \
+timelineSemaphoreProps = otherDevice.timelineSemaphoreProps; \
+timelineSemaphoreFeatures = otherDevice.timelineSemaphoreFeatures; \
 
 VulkanDevice::VulkanDevice(const VulkanDevice& otherDevice)
 {
@@ -232,10 +415,31 @@ VulkanDevice::~VulkanDevice()
 	}
 }
 
+template <typename QueueResType>
+struct GetQueueCreateInfo {
+	VkDeviceQueueCreateInfo operator()(const QueueResType queueRes)
+	{
+		CREATE_QUEUE_INFO(queueCreateInfo);
+		queueRes->getQueueCreateInfo(queueCreateInfo);
+		return queueCreateInfo;
+	}
+};
+
+template <typename QueueResType>
+struct CacheQueues {
+	void operator()(const QueueResType queueRes, VkDevice logicalDevice, PFN_vkGetDeviceQueue funcPtr)
+	{
+		queueRes->cacheQueues(logicalDevice, funcPtr);
+	}
+};
+
 void VulkanDevice::createLogicDevice()
 {
 	Logger::debug("VulkanDevice", "%s() : Creating logical device", __func__);
-	assert(createQueueResources());
+	if (!createQueueResources())
+	{
+		assert(false);
+	}	
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	queueCreateInfos.reserve(allQueues.size());
@@ -244,29 +448,8 @@ void VulkanDevice::createLogicDevice()
 
 	for (int32 queueFamIndex=0;queueFamIndex < allQueues.size();++queueFamIndex)
 	{
-		CREATE_QUEUE_INFO(queueCreateInfo);
-		const QueueResourceBasePtr& queueRes = allQueues[queueFamIndex];
-
-		if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Compute>>())
-		{
-			static_cast<const VulkanQueueResource<EQueueFunction::Compute>*>(queueRes)
-				->getQueueCreateInfo(queueCreateInfo);
-		}
-		else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Graphics>>())
-		{
-			static_cast<const VulkanQueueResource<EQueueFunction::Graphics>*>(queueRes)
-				->getQueueCreateInfo(queueCreateInfo);
-		}
-		else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Transfer>>())
-		{
-			static_cast<const VulkanQueueResource<EQueueFunction::Transfer>*>(queueRes)
-				->getQueueCreateInfo(queueCreateInfo);
-		}
-		else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Generic>>())
-		{
-			static_cast<const VulkanQueueResource<EQueueFunction::Generic>*>(queueRes)
-				->getQueueCreateInfo(queueCreateInfo);
-		}
+		VkDeviceQueueCreateInfo queueCreateInfo = VulkanQueueResourceInvoker::invoke
+			<VkDeviceQueueCreateInfo, GetQueueCreateInfo>(allQueues[queueFamIndex]);
 
 		if (selectedQueueIndices.insert(queueCreateInfo.queueFamilyIndex).second)
 		{
@@ -274,20 +457,26 @@ void VulkanDevice::createLogicDevice()
 		}
 	}
 
+	CREATE_DEVICE_INFO(deviceCreateInfo);
 #if _DEBUG
 	collectDeviceLayers(registeredLayers);
-#endif
-	assert(collectDeviceExtensions(registeredExtensions));
-	featuresToEnable(enabledFeatures);
-	
-	CREATE_DEVICE_INFO(deviceCreateInfo);
-	deviceCreateInfo.enabledExtensionCount = (uint32_t)registeredExtensions.size();
-	deviceCreateInfo.ppEnabledExtensionNames = registeredExtensions.data();
 	deviceCreateInfo.enabledLayerCount = (uint32_t)registeredLayers.size();
 	deviceCreateInfo.ppEnabledLayerNames = registeredLayers.data();
+#endif
+	if (!collectDeviceExtensions(registeredExtensions))
+	{
+		Logger::error("VulkanDevice", "%s() : Failed collecting extensions", __func__);
+		assert(!"Necessary extensions are not collected!");
+	}
+
+	deviceCreateInfo.enabledExtensionCount = (uint32_t)registeredExtensions.size();
+	deviceCreateInfo.ppEnabledExtensionNames = registeredExtensions.data();
 	deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
 	deviceCreateInfo.queueCreateInfoCount = (uint32_t)queueCreateInfos.size();
 	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+
+	if(timelineSemaphoreFeatures.timelineSemaphore == VK_TRUE) // Include time line semaphore if supported
+		deviceCreateInfo.pNext = &timelineSemaphoreFeatures;
 
 	if (Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice) != VK_SUCCESS)
 	{
@@ -296,13 +485,18 @@ void VulkanDevice::createLogicDevice()
 	}
 
 	loadDeviceFunctions();
+
+	for (QueueResourceBasePtr& queue : allQueues)
+	{
+		VulkanQueueResourceInvoker::invoke<void, CacheQueues>(queue,logicalDevice,vkGetDeviceQueue);
+	}
+
+	cacheGlobalSurfaceProperties();
 }
 
 void VulkanDevice::freeLogicDevice()
 {
 	Logger::debug("VulkanDevice", "%s() : Freeing logical device", __func__);
-	vkDestroyDevice(logicalDevice, nullptr);
-	logicalDevice = nullptr;
 
 	for (QueueResourceBasePtr& queueResPtr : allQueues)
 	{
@@ -317,19 +511,54 @@ void VulkanDevice::freeLogicDevice()
 	computeQueue = nullptr;
 	transferQueue = nullptr;
 	genericQueue = nullptr;
+
+	vkDestroyDevice(logicalDevice, nullptr);
+	logicalDevice = nullptr;
 }
 
-String VulkanDevice::getDeviceName()
+String VulkanDevice::getDeviceName() const
 {
 	return properties.deviceName;
 }
 
+VkPresentModeKHR VulkanDevice::getPresentMode() const
+{
+	return globalPresentMode;
+}
+
+VulkanDevice::QueueResourceBasePtr VulkanDevice::getGraphicsQueue() const
+{
+	return graphicsQueue;
+}
+
+VulkanDevice::QueueResourceBasePtr VulkanDevice::getComputeQueue() const
+{
+	return computeQueue;
+}
+
+VulkanDevice::QueueResourceBasePtr VulkanDevice::getTransferQueue() const
+{
+	return transferQueue;
+}
+
+VulkanDevice::QueueResourceBasePtr VulkanDevice::getGenericQueue() const
+{
+	return genericQueue;
+}
+
 int32 VulkanDevice::compare(const VulkanDevice& otherDevice) const
 {
+	if (GenericWindowCanvas* canvas = gEngine->getApplicationInstance()->appWindowManager
+		.getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow()))
+	{
+		int32 canvasChoice = compareSurfaceCompatibility(canvas, otherDevice);
+		if (canvasChoice != 0)
+			return canvasChoice;
+	}
+
 	if(properties.deviceType != otherDevice.properties.deviceType)
 	{
 		int32 deviceTypeChoice = 0;
-
 		switch (properties.deviceType)
 		{
 		case VK_PHYSICAL_DEVICE_TYPE_OTHER:
@@ -342,27 +571,27 @@ int32 VulkanDevice::compare(const VulkanDevice& otherDevice) const
 			break;
 		}
 
+		if (deviceTypeChoice == 0)
+		{
+			switch (otherDevice.properties.deviceType)
+			{
+			case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+				deviceTypeChoice = 1;
+				break;
+			case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+				deviceTypeChoice = -1;
+				break;
+			default:
+				deviceTypeChoice = otherDevice.properties.deviceType - properties.deviceType;
+				break;
+			}
+		}
+
 		if (deviceTypeChoice != 0)
 		{
-			return deviceTypeChoice;
+			return deviceTypeChoice > 0 ? 1 : -1;
 		}
-
-		switch (otherDevice.properties.deviceType)
-		{
-		case VK_PHYSICAL_DEVICE_TYPE_OTHER:
-			deviceTypeChoice = 1;
-			break;
-		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-			deviceTypeChoice = -1;
-			break;
-		default:
-			deviceTypeChoice = otherDevice.properties.deviceType - properties.deviceType;
-			break;
-		}
-		return deviceTypeChoice>0?1:-1;
-	}
-
-	
+	}	
 
 	// Todo(Jeslas) : decide between multiple same type  of cards here
 	return 0;
@@ -371,4 +600,9 @@ int32 VulkanDevice::compare(const VulkanDevice& otherDevice) const
 bool VulkanDevice::isValidDevice() const
 {
 	return physicalDevice != nullptr && queueFamiliesSupported.size() > 0;
+}
+
+uint64 VulkanDevice::maxAllowedTimelineOffset() const
+{
+	return timelineSemaphoreProps.maxTimelineSemaphoreValueDifference;
 }

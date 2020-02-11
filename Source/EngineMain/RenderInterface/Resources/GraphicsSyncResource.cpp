@@ -1,0 +1,6 @@
+#include "GraphicsSyncResource.h"
+
+DEFINE_GRAPHICS_RESOURCE(GraphicsSyncResource)
+DEFINE_GRAPHICS_RESOURCE(GraphicsFence)
+DEFINE_GRAPHICS_RESOURCE(GraphicsSemaphore)
+DEFINE_GRAPHICS_RESOURCE(GraphicsTimelineSemaphore)

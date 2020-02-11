@@ -1,10 +1,12 @@
 #include "ModuleManager.h"
 #include "PlatformFunctions.h"
+#include "../Logger/Logger.h"
 
 ModuleManager::~ModuleManager()
 {
 	for (auto itr = loadedModules.begin(); itr != loadedModules.end(); ++itr) {
 		delete itr->second;
+		Logger::debug("ModuleManager", "%s() : Unloaded module %s", __func__, itr->first.getChar());
 	}
 	loadedModules.clear();
 }
@@ -35,7 +37,8 @@ LibPointer* ModuleManager::getOrLoadModule(String moduleName)
 	{		
 		LibPointer* library = PlatformFunctions::openLibrary(moduleName);
 		if (library)
-		{		
+		{	
+			Logger::debug("ModuleManager", "%s() : Loaded module %s", __func__, moduleName.getChar());
 			loadedModules[moduleName] = library;
 			return library;
 		}

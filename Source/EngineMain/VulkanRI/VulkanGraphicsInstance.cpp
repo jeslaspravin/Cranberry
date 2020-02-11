@@ -7,6 +7,7 @@
 #include "VulkanInternals/VulkanMacros.h"
 #include "../Core/Engine/GameEngine.h"
 #include "../RenderInterface/Resources/GraphicsResources.h"
+#include "VulkanInternals/Debugging.h"
 
 #include <iostream>
 #include <assert.h>
@@ -20,11 +21,14 @@ void VulkanGraphicsInstance::load()
 {
 	Logger::debug("Vulkan", "%s() : Loading vulkan instance", __func__);
 	loadGlobalFunctions();
+	
+	uint32 apiVersion;
+	Vk::vkEnumerateInstanceVersion(&apiVersion);
+	Logger::debug("Vulkan", "%s() : Vulkan version %d.%d.%d", __func__, VK_VERSION_MAJOR(apiVersion), VK_VERSION_MINOR(apiVersion)
+		, VK_VERSION_PATCH(apiVersion));
 
 	uint32 extensionCounts;
-
 	VkResult result = Vk::vkEnumerateInstanceExtensionProperties(nullptr, (uint32_t*)&extensionCounts, nullptr);
-
 	if (result != VkResult::VK_SUCCESS) {
 		Logger::error("Vulkan", "%s() : Failed to fetch extension properties",__func__);
 	}
@@ -36,21 +40,19 @@ void VulkanGraphicsInstance::load()
 	createVulkanInstance();
 	loadInstanceFunctions();
 
-	createVulkanDevice();
-
-	if (selectedDevice.isValidDevice())
-	{
-		selectedDevice.createLogicDevice();
-	}
+	VulkanDebugLogger::registerDebugLogger(vulkanInstance);
 }
 
 void VulkanGraphicsInstance::unload()
 {
-	Logger::debug("Vulkan", "%s() : Unloading vulkan instance", __func__);
 	if (selectedDevice.isValidDevice())
 	{
 		selectedDevice.freeLogicDevice();
 	}
+
+	Logger::debug("Vulkan", "%s() : Unloading vulkan instance", __func__);
+
+	VulkanDebugLogger::unregisterDebugLogger();
 	Vk::vkDestroyInstance(vulkanInstance, nullptr);
 	vulkanInstance = nullptr;
 }
@@ -97,7 +99,11 @@ void VulkanGraphicsInstance::createVulkanInstance()
 	instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
 #endif
 
-	assert(collectInstanceExtensions(registeredInstanceExtensions));
+	if (!collectInstanceExtensions(registeredInstanceExtensions))
+	{
+		Logger::error("Vulkan", "%s() : Failed collecting extensions", __func__);
+		assert(!"Necessary extensions are not collected!");
+	}
 
 	instanceCreateInfo.ppEnabledExtensionNames = &registeredInstanceExtensions[0];
 	instanceCreateInfo.enabledExtensionCount = (uint32_t)registeredInstanceExtensions.size();
@@ -125,7 +131,7 @@ bool VulkanGraphicsInstance::collectInstanceExtensions(std::vector<const char*>&
 	std::set<const char*> mandatoryExtensions;
 
 #define INSTANCE_VK_EXT_FUNCTIONS(function,extension) mandatoryExtensions.insert(extension);
-#define INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(function,extension) mandatoryExtensions.insert(extension);
+#define INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(function) mandatoryExtensions.insert( PFN_##function::EXT_NAME );
 
 #include "VulkanInternals/VulkanFunctionLists.inl"
 
@@ -169,12 +175,12 @@ void VulkanGraphicsInstance::loadInstanceFunctions()
 	} \
 	if (Vk::##function == nullptr) Logger::error("Vulkan", "%s() : Failed loading function : "#function, __func__);
 
-#define INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(function,extension)\
+#define INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(function)\
 	for(const char* ext:registeredInstanceExtensions) \
 	{\
-		if (std::strcmp(ext, extension) == 0)\
+		if (std::strcmp(ext, PFN_##function::EXT_NAME ) == 0)\
 		{\
-			Vk::##function = PFN_##function(gEngine->getApplicationInstance()); \
+			Vk::##function = PFN_##function(); \
 			break;\
 		}\
 	}	
@@ -210,3 +216,14 @@ void VulkanGraphicsInstance::createVulkanDevice()
 
 	Logger::debug("Vulkan", "%s() : Selected device %s", __func__, selectedDevice.getDeviceName().getChar());
 }
+
+void VulkanGraphicsInstance::loadSurfaceDependents()
+{	
+	createVulkanDevice();
+
+	if (selectedDevice.isValidDevice())
+	{
+		selectedDevice.createLogicDevice();
+	}
+}
+

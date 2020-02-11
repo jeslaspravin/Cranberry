@@ -8,4 +8,5 @@ static_assert(false, "Not supported render API");
 static_assert(false, "No available render API");
 #endif
 
-using namespace GrpahicsTypes;
+typedef GraphicsTypes::GraphicInstance GraphicInstance;
+typedef GraphicsTypes::WindowCanvas WindowCanvas;

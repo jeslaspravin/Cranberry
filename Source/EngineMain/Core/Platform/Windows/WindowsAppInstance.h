@@ -5,7 +5,6 @@
 struct WindowsAppInstance : public GenericAppInstance {
 	HINSTANCE windowsInstance;
 	
-	HWND getWindowHandle() const;
 };
 
 

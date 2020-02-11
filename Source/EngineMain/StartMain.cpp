@@ -10,16 +10,13 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 
 	PlatformAppInstance appInstance;
 	FileSystemFunctions::applicationDirectory(appInstance.applicationName);
+	String extension;
+	appInstance.applicationName = FileSystemFunctions::stripExtension(appInstance.applicationName, extension);
+
 	appInstance.headVersion = 0;
 	appInstance.majorVersion = ENGINE_VERSION;
 	appInstance.subVersion = ENGINE_SUBVERSION;
 	appInstance.windowsInstance = hInstance;
-
-	PlatformAppWindow appWindow;
-	appWindow.setWindowSize(1280, 720);
-	appWindow.createWindow(&appInstance);
-
-	appInstance.appWindow = &appWindow;
 
 	Logger::log("Engine", "%s() : Engine start", __func__);
 	gEngine->startup(&appInstance);

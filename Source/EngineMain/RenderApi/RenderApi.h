@@ -10,4 +10,5 @@ public:
 
 	void initialize();
 	void destroy();
+	IGraphicsInstance* getGraphicsInstance() const { return graphicsInstance; }
 };

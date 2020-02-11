@@ -2,6 +2,7 @@
 
 #include "../Platform/PlatformTypes.h"
 #include "../String/String.h"
+#include "../Engine/WindowManager.h"
 
 class GenericAppWindow;
 
@@ -14,5 +15,5 @@ struct GenericAppInstance {
 	int32 subVersion;
 	String cmdLine;
 
-	GenericAppWindow* appWindow;
+	WindowManager appWindowManager;
 };

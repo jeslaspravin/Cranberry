@@ -1,15 +1,20 @@
 #include "WindowsVulkanFunctions.h"
-#include "../../../../Core/Platform/PlatformInstances.h"
+#include "../../../../Core/Platform/Windows/WindowsAppInstance.h"
+#include "../../../../Core/Platform/Windows/WindowsAppWindow.h"
 #include "vulkan_win32.h"
 #include "../../VulkanFunctions.h"
 #include "../../../../Core/Logger/Logger.h"
 
 
-PFN_Win32SurfaceKHR::PFN_Win32SurfaceKHR(const GenericAppInstance* appInstance)
+const char* PFN_Win32SurfaceKHR::EXT_NAME = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
+
+void PFN_Win32SurfaceKHR::setInstanceWindow(const GenericAppInstance* instance, const GenericAppWindow* window)
 {
-	const WindowsAppInstance* pAppInstance = static_cast<const WindowsAppInstance*>(appInstance);
+	const WindowsAppInstance* pAppInstance = static_cast<const WindowsAppInstance*>(instance);
 	hInstance = pAppInstance->windowsInstance;
-	hWindow = pAppInstance->getWindowHandle();
+
+	const WindowsAppWindow* pAppWindow = static_cast<const WindowsAppWindow*>(window);
+	hWindow = pAppWindow->getWindowHandle();
 }
 
 void PFN_Win32SurfaceKHR::operator()(VkInstance instance, const void* pNext, const VkAllocationCallbacks* allocatorCallback,

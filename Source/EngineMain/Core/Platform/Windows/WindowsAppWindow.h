@@ -1,12 +1,9 @@
 #pragma once
 #include "../GenericAppWindow.h"
 #include <windows.h>
-#include "WindowsAppInstance.h"
 
 class WindowsAppWindow:public GenericAppWindow {
 	
-	friend WindowsAppInstance;
-
 private:
 	HWND windowsHandle;
 
@@ -14,7 +11,11 @@ protected:
 	void resizeWindow() override;
 
 public:
-	void createWindow(GenericAppInstance* appInstance) override;
+	void createWindow(const GenericAppInstance* appInstance) override;
+	void destroyWindow() override;
+
+	HWND getWindowHandle() const { return windowsHandle; }
+	bool isValidWindow() const override;
 
 };
 

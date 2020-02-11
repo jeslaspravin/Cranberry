@@ -55,7 +55,7 @@ public:
 	}
 
 	template<typename CheckType>
-	bool isChildOf() const
+	constexpr bool isChildOf() const
 	{
 		return this == CheckType::staticType() || verifyParent(CheckType::staticType());
 	}
@@ -74,7 +74,7 @@ protected:
 	typedef typename Parent ParentType;
 
 
-	virtual bool verifyParent(const GraphicsResourceType* otherType) const
+	constexpr bool verifyParent(const GraphicsResourceType* otherType) const
 	{
 		return ThisType::staticType() != ParentType::staticType() && ParentType::staticType()->isChildOf(otherType);
 	}
@@ -130,7 +130,7 @@ public:\
 	static bool isTypeOf<GraphicsResource>() {\
 		return true;\
 	}
-#endif
+#endif // DECLARE_GRAPHICS_RESOURCE
 
 
 #ifndef DEFINE_GRAPHICS_RESOURCE
@@ -162,7 +162,7 @@ public:\
 	const GraphicsResourceType* NewTypeName##TemplatesDefine##::getType() const { return STATIC_TYPE.get();}\
 	template ##NewTypeTemplates## \
 	const GraphicsResourceType* NewTypeName##TemplatesDefine##::staticType() { return STATIC_TYPE.get();}
-#endif
+#endif // DEFINE_GRAPHICS_RESOURCE
 
 class GraphicsResource
 {
@@ -171,5 +171,6 @@ class GraphicsResource
 public:
 
 	virtual void init() {};
+	virtual void reinitResources() {};
 	virtual void release() {};
 };

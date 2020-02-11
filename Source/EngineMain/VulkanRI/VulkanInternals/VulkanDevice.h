@@ -11,37 +11,59 @@ class QueueResourceBase;
 
 class VulkanDevice {
 
+	friend class VulkanGraphicsHelper;
+
 private:
 	VkDevice logicalDevice = nullptr;
 
+	// Physical Device
 	VkPhysicalDevice physicalDevice = nullptr;
 	VkPhysicalDeviceProperties properties;
+	VkPhysicalDeviceTimelineSemaphorePropertiesKHR timelineSemaphoreProps;
 
 	VkPhysicalDeviceFeatures features;
 	VkPhysicalDeviceFeatures enabledFeatures;
-	void featuresToEnable(VkPhysicalDeviceFeatures& enableFeatures);
+	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeatures;
+	void markEnabledFeatures();
+	// Physical Device
 
+	// Queues
 	std::vector<VkQueueFamilyProperties> queueFamiliesSupported;
 	typedef QueueResourceBase* QueueResourceBasePtr;
 	std::vector<QueueResourceBasePtr> allQueues;
 	QueueResourceBasePtr graphicsQueue = nullptr;
 	QueueResourceBasePtr computeQueue = nullptr;
 	QueueResourceBasePtr transferQueue = nullptr;
-	QueueResourceBasePtr genericQueue = nullptr;// Only if none of above queues are populated this will be valid
+	// Only if none of above queues are populated this will be valid
+	QueueResourceBasePtr genericQueue = nullptr;
 	bool createQueueResources();
+	// Queues
 
+	// Extensions and Layers
 	std::vector<VkExtensionProperties> availableExtensions;
 	std::vector<const char*> registeredExtensions;
 	bool collectDeviceExtensions(std::vector<const char*>& extensions) const;
-
-#if _DEBUG
+	
 	std::vector<VkLayerProperties> availableLayers;
 	std::vector<const char*> registeredLayers;
+#if _DEBUG
 	void collectDeviceLayers(std::vector<const char*>& layers) const;
 #endif
+	// Extensions and Layers
+
 
 	void loadDeviceFunctions();
 
+	// Swap chain and surface	
+	VkPresentModeKHR globalPresentMode;
+	VkSurfaceCapabilitiesKHR swapchainCapabilities;
+	VkSurfaceFormatKHR swapchainFormat;
+	uint32 choosenImageCount = 1;
+	VkImageUsageFlags swapchainImgUsage;
+
+	void cacheGlobalSurfaceProperties();
+	int32 compareSurfaceCompatibility(const class GenericWindowCanvas* surfaceCanvas,const VulkanDevice& otherDevice) const;
+	// Swap chain and surface
 public:
 	VulkanDevice();
 	VulkanDevice(VkPhysicalDevice&& device);
@@ -56,10 +78,18 @@ public:
 	void createLogicDevice();
 	void freeLogicDevice();
 
-	String getDeviceName();
+	String getDeviceName() const;
+	VkPresentModeKHR getPresentMode() const;
+	QueueResourceBasePtr getGraphicsQueue() const;
+	QueueResourceBasePtr getComputeQueue() const;
+	QueueResourceBasePtr getTransferQueue() const;
+	QueueResourceBasePtr getGenericQueue() const;
 
 	[[nodiscard]] int32 compare(const VulkanDevice& otherDevice) const;
 	[[nodiscard]] bool isValidDevice() const;
+
+	// For time line semaphore.
+	uint64 maxAllowedTimelineOffset() const;
 
 public:
 

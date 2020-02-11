@@ -45,6 +45,12 @@ const GenericAppInstance* GameEngine::getApplicationInstance() const
 	return applicationInstance;
 }
 
+GenericAppInstance& GameEngine::appInstance() const
+{
+	assert(GameEngine::applicationInstance);
+	return *applicationInstance;
+}
+
 void GameEngine::onQuit()
 {
 	
