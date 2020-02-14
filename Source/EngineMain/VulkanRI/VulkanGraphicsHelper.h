@@ -10,7 +10,7 @@ public:
 
 	static VkInstance getInstance(class IGraphicsInstance* graphicsInstance);
 	static VkDevice getDevice(const class VulkanDevice* vulkanDevice);
-	static const class VulkanDebugGraphics* graphicsDebugger(class IGraphicsInstance* graphicsInstance);
+	static const class VulkanDebugGraphics* debugGraphics(class IGraphicsInstance* graphicsInstance);
 
 
 	static VkSwapchainKHR createSwapchain(class IGraphicsInstance* graphicsInstance, GenericAppWindow* appWindow);
@@ -22,11 +22,11 @@ public:
 		std::vector<uint32>* imageIndex, std::vector<SharedPtr<class GraphicsSemaphore>>* waitOnSemaphores);
 
 
-	static SharedPtr<class GraphicsSemaphore> createSemaphore(class IGraphicsInstance* graphicsInstance);
-	static SharedPtr<class GraphicsTimelineSemaphore> createTimelineSemaphore(class IGraphicsInstance* graphicsInstance);
+	static SharedPtr<class GraphicsSemaphore> createSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName);
+	static SharedPtr<class GraphicsTimelineSemaphore> createTimelineSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName);
 	static void waitTimelineSemaphores(class IGraphicsInstance* graphicsInstance,
 		std::vector<SharedPtr<class GraphicsTimelineSemaphore>>* semaphores,std::vector<uint64>* waitForValues);
-	static SharedPtr<class GraphicsFence> createFence(class IGraphicsInstance* graphicsInstance);
+	static SharedPtr<class GraphicsFence> createFence(class IGraphicsInstance* graphicsInstance, const char* fenceName);
 	static void waitFences(class IGraphicsInstance* graphicsInstance,std::vector<SharedPtr<class GraphicsFence>>* fences,
 		bool waitAll);
 };

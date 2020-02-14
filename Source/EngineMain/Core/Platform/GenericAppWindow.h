@@ -22,7 +22,7 @@ public:
 	void setWindowSize(const uint32& width, const uint32& height, bool updateResources);
 
 	void setWindowName(const String& wndName);
-	String getWindowName() const { return windowName; }
+	const String& getWindowName() const { return windowName; }
 
 	virtual void createWindow(const GenericAppInstance* appInstance) {};
 	virtual void updateWindow() = 0;

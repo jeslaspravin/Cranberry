@@ -1,7 +1,7 @@
 #pragma once
-#include <vulkan_core.h>
 #include "../../Core/Platform/PlatformTypes.h"
-#include <vec4.hpp>
+#include <vulkan_core.h>
+#include <glm/vec4.hpp>
 
 struct DebugMessengerData;
 class IVulkanResources;
@@ -44,13 +44,19 @@ private:
 public:
 	VulkanDebugGraphics() : ownerDevice(nullptr){}
 	VulkanDebugGraphics(VulkanDevice* device);
+
+	VulkanDebugGraphics(const VulkanDebugGraphics& other);
+	VulkanDebugGraphics(VulkanDebugGraphics&& rValue);
+	void operator=(const VulkanDebugGraphics& other);
+	void operator=(VulkanDebugGraphics&& rValue);
+
     void markObject(const IVulkanResources* resource) const;
     void markObject(const uint64& objectHandle, const String& objectName,VkObjectType objectType) const;
-    void beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color) const;
-    void insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color) const;
+    void beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4* color = nullptr) const;
+    void insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4* color = nullptr) const;
     void endCmdBufferMarker(VkCommandBuffer commandBuffer) const;
-    void beginQueueMarker(VkQueue queue, const String& name, const glm::vec4& color) const;
-    void insertQueueMarker(VkQueue queue, const String& name, const glm::vec4& color) const;
+    void beginQueueMarker(VkQueue queue, const String& name, const glm::vec4* color = nullptr) const;
+    void insertQueueMarker(VkQueue queue, const String& name, const glm::vec4* color = nullptr) const;
     void endQueueMarker(VkQueue queue) const;
 };
 

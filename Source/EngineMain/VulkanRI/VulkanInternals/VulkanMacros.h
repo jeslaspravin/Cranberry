@@ -61,6 +61,13 @@ VariableName.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;	\
 VariableName.pNext = nullptr
 #endif
 
+#ifndef DEBUG_UTILS_LABEL
+#define DEBUG_UTILS_LABEL(VariableName)							\
+VkDebugUtilsLabelEXT VariableName;								\
+VariableName.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;	\
+VariableName.pNext = nullptr
+#endif
+
 #ifndef PHYSICAL_DEVICE_FEATURES_2
 #define PHYSICAL_DEVICE_FEATURES_2(VariableName)							\
 VkPhysicalDeviceFeatures2KHR VariableName;									\

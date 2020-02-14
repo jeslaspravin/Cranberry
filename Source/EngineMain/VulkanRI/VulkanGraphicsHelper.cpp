@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <common.hpp>
+#include <glm/common.hpp>
 #include <vector>
 
 #include "VulkanGraphicsHelper.h"
@@ -25,11 +25,11 @@ VkDevice VulkanGraphicsHelper::getDevice(const class VulkanDevice* vulkanDevice)
 	return vulkanDevice->logicalDevice;
 }
 
-const VulkanDebugGraphics* VulkanGraphicsHelper::graphicsDebugger(class IGraphicsInstance* graphicsInstance)
+const VulkanDebugGraphics* VulkanGraphicsHelper::debugGraphics(class IGraphicsInstance* graphicsInstance)
 {
     const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
-	return &device->graphicsDebug;
+	return device->debugGraphics();
 }
 
 template <EQueueFunction QueueFunction>
@@ -193,22 +193,24 @@ void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstanc
 	}
 }
 
-SharedPtr<class GraphicsSemaphore> VulkanGraphicsHelper::createSemaphore(class IGraphicsInstance* graphicsInstance)
+SharedPtr<class GraphicsSemaphore> VulkanGraphicsHelper::createSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName)
 {
 	const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
 	const VulkanDevice* device = &gInstance->selectedDevice;
 
-	GraphicsSemaphore* semaphore = new VulkanSemaphore(device);
+	VulkanSemaphore* semaphore = new VulkanSemaphore(device);
+	semaphore->setObjectName(semaphoreName);
 	semaphore->init();
 	return SharedPtr<GraphicsSemaphore>(semaphore);
 }
 
-SharedPtr<class GraphicsTimelineSemaphore> VulkanGraphicsHelper::createTimelineSemaphore(class IGraphicsInstance* graphicsInstance)
+SharedPtr<class GraphicsTimelineSemaphore> VulkanGraphicsHelper::createTimelineSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName)
 {
 	const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
 	const VulkanDevice* device = &gInstance->selectedDevice;
 
-	GraphicsTimelineSemaphore* tSemaphore = new VulkanTimelineSemaphore(device);
+	VulkanTimelineSemaphore* tSemaphore = new VulkanTimelineSemaphore(device);
+	tSemaphore->setObjectName(semaphoreName);
 	tSemaphore->init();
 	return SharedPtr<GraphicsTimelineSemaphore>(tSemaphore);
 }
@@ -236,12 +238,13 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(class IGraphicsInstance* graph
 	device->vkWaitSemaphoresKHR(device->logicalDevice, &waitInfo, 2000000000/*2 Seconds*/);
 }
 
-SharedPtr<class GraphicsFence> VulkanGraphicsHelper::createFence(class IGraphicsInstance* graphicsInstance)
+SharedPtr<class GraphicsFence> VulkanGraphicsHelper::createFence(class IGraphicsInstance* graphicsInstance, const char* fenceName)
 {
 	const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
 	const VulkanDevice* device = &gInstance->selectedDevice;
 
-	GraphicsFence* fence = new VulkanFence(device);
+	VulkanFence* fence = new VulkanFence(device);
+	fence->setObjectName(fenceName);
 	fence->init();
 	return SharedPtr<GraphicsFence>(fence);
 }

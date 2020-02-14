@@ -20,14 +20,15 @@ private:
 
 public:
 	
-	static SharedPtr<class GraphicsSemaphore> createSemaphore(class IGraphicsInstance* graphicsInstance)
+	static SharedPtr<class GraphicsSemaphore> createSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName)
 	{
-		return HelperType::createSemaphore(graphicsInstance);
+		return HelperType::createSemaphore(graphicsInstance,semaphoreName);
 	}
 
-	static SharedPtr<class GraphicsTimelineSemaphore> createTimelineSemaphore(class IGraphicsInstance* graphicsInstance)
+	static SharedPtr<class GraphicsTimelineSemaphore> createTimelineSemaphore(class IGraphicsInstance* graphicsInstance,
+		const char* semaphoreName)
 	{
-		return HelperType::createTimelineSemaphore(graphicsInstance);
+		return HelperType::createTimelineSemaphore(graphicsInstance,semaphoreName);
 	}
 
 	static void waitTimelineSemaphores(class IGraphicsInstance* graphicsInstance,
@@ -36,9 +37,9 @@ public:
 		HelperType::waitTimelineSemaphores(graphicsInstance, semaphores,waitForValues);
 	}
 
-	static SharedPtr<class GraphicsFence> createFence(class IGraphicsInstance* graphicsInstance)
+	static SharedPtr<class GraphicsFence> createFence(class IGraphicsInstance* graphicsInstance,const char* fenceName)
 	{
-		return HelperType::createFence(graphicsInstance);
+		return HelperType::createFence(graphicsInstance,fenceName);
 	}
 
 	static void waitFences(class IGraphicsInstance* graphicsInstance,

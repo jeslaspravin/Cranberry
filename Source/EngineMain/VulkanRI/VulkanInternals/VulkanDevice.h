@@ -86,6 +86,7 @@ public:
 	QueueResourceBasePtr getComputeQueue() const;
 	QueueResourceBasePtr getTransferQueue() const;
 	QueueResourceBasePtr getGenericQueue() const;
+	const VulkanDebugGraphics* debugGraphics() const { return &graphicsDebug; }
 
 	[[nodiscard]] int32 compare(const VulkanDevice& otherDevice) const;
 	[[nodiscard]] bool isValidDevice() const;

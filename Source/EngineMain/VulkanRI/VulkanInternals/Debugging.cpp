@@ -60,7 +60,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(VkDebugUtilsMessa
 	if (pCallbackData->objectCount > 0 && pCallbackData->pObjects[0].pObjectName != nullptr)
 	{
 		Logger::debug("VulkanDebugUtils", "Objects -->");
-		for (uint32 i = 0; i < pCallbackData->queueLabelCount; i++)
+		for (uint32 i = 0; i < pCallbackData->objectCount; i++)
 		{
 			Logger::debug("VulkanDebugUtils", "		%d : %s", i,
 				pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName);
@@ -105,7 +105,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(VkDebugUtilsMessag
 	if (pCallbackData->objectCount > 0 && pCallbackData->pObjects[0].pObjectName != nullptr)
 	{
 		Logger::log("VulkanDebugUtils", "Objects -->");
-		for (uint32 i = 0; i < pCallbackData->queueLabelCount; i++)
+		for (uint32 i = 0; i < pCallbackData->objectCount; i++)
 		{
 			Logger::log("VulkanDebugUtils", "		%d : %s", i,
 				pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName);
@@ -149,7 +149,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(VkDebugUtilsMessag
 	if (pCallbackData->objectCount > 0 && pCallbackData->pObjects[0].pObjectName != nullptr)
 	{
 		Logger::warn("VulkanDebugUtils", "Objects -->");
-		for (uint32 i = 0; i < pCallbackData->queueLabelCount; i++)
+		for (uint32 i = 0; i < pCallbackData->objectCount; i++)
 		{
 			Logger::warn("VulkanDebugUtils", "		%d : %s", i,
 				pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName);
@@ -193,7 +193,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(VkDebugUtilsMessa
 	if (pCallbackData->objectCount > 0 && pCallbackData->pObjects[0].pObjectName != nullptr)
 	{
 		Logger::error("VulkanDebugUtils", "Objects -->");
-		for (uint32 i = 0; i < pCallbackData->queueLabelCount; i++)
+		for (uint32 i = 0; i < pCallbackData->objectCount; i++)
 		{
 			Logger::error("VulkanDebugUtils", "		%d : %s", i,
 				pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName);
@@ -272,16 +272,34 @@ void VulkanDebugLogger::unregisterDebugLogger()
 }
 
 VulkanDebugGraphics::VulkanDebugGraphics(VulkanDevice* device): ownerDevice(device)
-{
+{}
 
+VulkanDebugGraphics::VulkanDebugGraphics(const VulkanDebugGraphics& other) : ownerDevice(other.ownerDevice)
+{}
+
+VulkanDebugGraphics::VulkanDebugGraphics(VulkanDebugGraphics&& rValue) : ownerDevice(std::move(rValue.ownerDevice))
+{}
+
+void VulkanDebugGraphics::operator=(const VulkanDebugGraphics& other)
+{
+	ownerDevice = other.ownerDevice;
+}
+
+void VulkanDebugGraphics::operator=(VulkanDebugGraphics&& rValue)
+{
+	ownerDevice = std::move(rValue.ownerDevice);
 }
 
 void VulkanDebugGraphics::markObject(const IVulkanResources* resource) const
 {
+	if (!resource || resource->getDispatchableHandle() == 0)
+		return;
+
 	DEBUG_UTILS_OBJECT_NAME_INFO(objectNameInfo);
 	objectNameInfo.objectHandle = resource->getDispatchableHandle();
 	objectNameInfo.objectType = resource->getObjectType();
-	objectNameInfo.pObjectName = resource->getObjectName().getChar();
+	String name = resource->getObjectName();
+	objectNameInfo.pObjectName = name.getChar();
 	
 	ownerDevice->vkSetDebugUtilsObjectNameEXT(VulkanGraphicsHelper::getDevice(ownerDevice), &objectNameInfo);
 }
@@ -289,61 +307,113 @@ void VulkanDebugGraphics::markObject(const IVulkanResources* resource) const
 
 void VulkanDebugGraphics::markObject(const uint64& objectHandle, const String& objectName, VkObjectType objectType) const
 {
+	if (objectHandle == 0)
+		return;
 
+	DEBUG_UTILS_OBJECT_NAME_INFO(objectNameInfo);
+	objectNameInfo.objectHandle = objectHandle;
+	objectNameInfo.objectType = objectType;
+	objectNameInfo.pObjectName = objectName.getChar();
+
+	ownerDevice->vkSetDebugUtilsObjectNameEXT(VulkanGraphicsHelper::getDevice(ownerDevice), &objectNameInfo);
 }
 
-void VulkanDebugGraphics::beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color) const
+void VulkanDebugGraphics::beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4* color/*= nullptr*/) const
 {
+	DEBUG_UTILS_LABEL(label);
+	if (color)
+	{
+		memcpy(&label.color, color, sizeof(glm::vec4));
+	}
+	else
+	{
+		label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
+	}
+	label.pLabelName = name.getChar();
 
+	ownerDevice->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, &label);
 }
 
-void VulkanDebugGraphics::insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color) const
+void VulkanDebugGraphics::insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4* color /*= nullptr*/) const
 {
+	DEBUG_UTILS_LABEL(label);
+	if (color)
+	{
+		memcpy(&label.color, color, sizeof(glm::vec4));
+	}
+	else
+	{
+		label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
+	}
+	label.pLabelName = name.getChar();
 
+	ownerDevice->vkCmdInsertDebugUtilsLabelEXT(commandBuffer, &label);
 }
 
 void VulkanDebugGraphics::endCmdBufferMarker(VkCommandBuffer commandBuffer) const
 {
-
+	ownerDevice->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 }
 
-void VulkanDebugGraphics::beginQueueMarker(VkQueue queue, const String& name, const glm::vec4& color) const
+void VulkanDebugGraphics::beginQueueMarker(VkQueue queue, const String& name, const glm::vec4* color /*= nullptr*/) const
 {
+	DEBUG_UTILS_LABEL(label);
+	if (color)
+	{
+		memcpy(&label.color, color, sizeof(glm::vec4));
+	}
+	else
+	{
+		label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
+	}
+	label.pLabelName = name.getChar();
 
+	ownerDevice->vkQueueBeginDebugUtilsLabelEXT(queue, &label);
 }
 
-void VulkanDebugGraphics::insertQueueMarker(VkQueue queue, const String& name, const glm::vec4& color) const
+void VulkanDebugGraphics::insertQueueMarker(VkQueue queue, const String& name, const glm::vec4* color /*= nullptr*/) const
 {
+	DEBUG_UTILS_LABEL(label);
+	if (color)
+	{
+		memcpy(&label.color, color, sizeof(glm::vec4));
+	}
+	else
+	{
+		label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
+	}
+	label.pLabelName = name.getChar();
 
+	ownerDevice->vkQueueInsertDebugUtilsLabelEXT(queue, &label);
 }
 
 void VulkanDebugGraphics::endQueueMarker(VkQueue queue) const
 {
-
+	ownerDevice->vkQueueEndDebugUtilsLabelEXT(queue);
 }
 
 ScopedCommandMarker::ScopedCommandMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color)
 {
     cmdBuffer = commandBuffer;
-    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::graphicsDebugger(gEngine->getRenderApi()->getGraphicsInstance());
-	graphicsDebugger->beginCmdBufferMarker(cmdBuffer, name, color);
+    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
+	graphicsDebugger->beginCmdBufferMarker(cmdBuffer, name, &color);
 }
 
 ScopedCommandMarker::~ScopedCommandMarker()
 {
-    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::graphicsDebugger(gEngine->getRenderApi()->getGraphicsInstance());
+    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
 	graphicsDebugger->endCmdBufferMarker(cmdBuffer);
 }
 
 ScopedQueueMarker::ScopedQueueMarker(VkQueue q, const String& name, const glm::vec4& color)
 {
     queue = q;
-    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::graphicsDebugger(gEngine->getRenderApi()->getGraphicsInstance());
-    graphicsDebugger->beginQueueMarker(queue, name, color);
+    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
+    graphicsDebugger->beginQueueMarker(queue, name, &color);
 }
 
 ScopedQueueMarker::~ScopedQueueMarker()
 {
-    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::graphicsDebugger(gEngine->getRenderApi()->getGraphicsInstance());
+    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
     graphicsDebugger->endQueueMarker(queue);
 }
