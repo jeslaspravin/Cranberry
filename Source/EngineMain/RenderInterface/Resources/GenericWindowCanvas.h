@@ -17,11 +17,13 @@ protected:
 public:
 	virtual void init() override;
 	virtual void reinitResources() override {}
-	virtual void release() override;
+    virtual void release() override;
+    String getResourceName() const override;
 
 	// Setup function must be use before calling init
 	virtual void setWindow(GenericAppWindow* forWindow);
 
 	virtual uint32 requestNextImage(SharedPtr<GraphicsSemaphore>* waitOnSemaphore, SharedPtr<GraphicsFence>* waitOnFence = nullptr);
+
 };
 

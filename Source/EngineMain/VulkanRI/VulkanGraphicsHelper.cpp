@@ -20,6 +20,18 @@ VkInstance VulkanGraphicsHelper::getInstance(class IGraphicsInstance* graphicsIn
 }
 
 
+VkDevice VulkanGraphicsHelper::getDevice(const class VulkanDevice* vulkanDevice)
+{
+	return vulkanDevice->logicalDevice;
+}
+
+const VulkanDebugGraphics* VulkanGraphicsHelper::graphicsDebugger(class IGraphicsInstance* graphicsInstance)
+{
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+	return &device->graphicsDebug;
+}
+
 template <EQueueFunction QueueFunction>
 VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
 
@@ -186,7 +198,7 @@ SharedPtr<class GraphicsSemaphore> VulkanGraphicsHelper::createSemaphore(class I
 	const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
 	const VulkanDevice* device = &gInstance->selectedDevice;
 
-	GraphicsSemaphore* semaphore = new VulkanSemaphore(device->logicalDevice, device);
+	GraphicsSemaphore* semaphore = new VulkanSemaphore(device);
 	semaphore->init();
 	return SharedPtr<GraphicsSemaphore>(semaphore);
 }
@@ -196,7 +208,7 @@ SharedPtr<class GraphicsTimelineSemaphore> VulkanGraphicsHelper::createTimelineS
 	const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
 	const VulkanDevice* device = &gInstance->selectedDevice;
 
-	GraphicsTimelineSemaphore* tSemaphore = new VulkanTimelineSemaphore(device->logicalDevice, device);
+	GraphicsTimelineSemaphore* tSemaphore = new VulkanTimelineSemaphore(device);
 	tSemaphore->init();
 	return SharedPtr<GraphicsTimelineSemaphore>(tSemaphore);
 }
@@ -229,7 +241,7 @@ SharedPtr<class GraphicsFence> VulkanGraphicsHelper::createFence(class IGraphics
 	const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
 	const VulkanDevice* device = &gInstance->selectedDevice;
 
-	GraphicsFence* fence = new VulkanFence(device->logicalDevice, device);
+	GraphicsFence* fence = new VulkanFence(device);
 	fence->init();
 	return SharedPtr<GraphicsFence>(fence);
 }

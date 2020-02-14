@@ -2,11 +2,14 @@
 #include "../../Core/String/String.h"
 #include "../../Core/Logger/Logger.h"
 #include "../../Core/Platform/PlatformTypes.h"
-
-
-#include <assert.h>
 #include "VulkanFunctions.h"
 #include "VulkanMacros.h"
+#include "../Resources/IVulkanResources.h"
+#include "../VulkanGraphicsHelper.h"
+#include "../../Core/Engine/GameEngine.h"
+#include "VulkanDevice.h"
+
+#include <assert.h>
 
 struct DebugMessengerData
 {
@@ -266,4 +269,81 @@ void VulkanDebugLogger::unregisterDebugLogger()
 		Vk::vkDestroyDebugUtilsMessengerEXT(getData().vulkanInstance, getData().errorMsgrPtr,nullptr);
 	}
 #endif
+}
+
+VulkanDebugGraphics::VulkanDebugGraphics(VulkanDevice* device): ownerDevice(device)
+{
+
+}
+
+void VulkanDebugGraphics::markObject(const IVulkanResources* resource) const
+{
+	DEBUG_UTILS_OBJECT_NAME_INFO(objectNameInfo);
+	objectNameInfo.objectHandle = resource->getDispatchableHandle();
+	objectNameInfo.objectType = resource->getObjectType();
+	objectNameInfo.pObjectName = resource->getObjectName().getChar();
+	
+	ownerDevice->vkSetDebugUtilsObjectNameEXT(VulkanGraphicsHelper::getDevice(ownerDevice), &objectNameInfo);
+}
+
+
+void VulkanDebugGraphics::markObject(const uint64& objectHandle, const String& objectName, VkObjectType objectType) const
+{
+
+}
+
+void VulkanDebugGraphics::beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color) const
+{
+
+}
+
+void VulkanDebugGraphics::insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color) const
+{
+
+}
+
+void VulkanDebugGraphics::endCmdBufferMarker(VkCommandBuffer commandBuffer) const
+{
+
+}
+
+void VulkanDebugGraphics::beginQueueMarker(VkQueue queue, const String& name, const glm::vec4& color) const
+{
+
+}
+
+void VulkanDebugGraphics::insertQueueMarker(VkQueue queue, const String& name, const glm::vec4& color) const
+{
+
+}
+
+void VulkanDebugGraphics::endQueueMarker(VkQueue queue) const
+{
+
+}
+
+ScopedCommandMarker::ScopedCommandMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color)
+{
+    cmdBuffer = commandBuffer;
+    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::graphicsDebugger(gEngine->getRenderApi()->getGraphicsInstance());
+	graphicsDebugger->beginCmdBufferMarker(cmdBuffer, name, color);
+}
+
+ScopedCommandMarker::~ScopedCommandMarker()
+{
+    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::graphicsDebugger(gEngine->getRenderApi()->getGraphicsInstance());
+	graphicsDebugger->endCmdBufferMarker(cmdBuffer);
+}
+
+ScopedQueueMarker::ScopedQueueMarker(VkQueue q, const String& name, const glm::vec4& color)
+{
+    queue = q;
+    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::graphicsDebugger(gEngine->getRenderApi()->getGraphicsInstance());
+    graphicsDebugger->beginQueueMarker(queue, name, color);
+}
+
+ScopedQueueMarker::~ScopedQueueMarker()
+{
+    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::graphicsDebugger(gEngine->getRenderApi()->getGraphicsInstance());
+    graphicsDebugger->endQueueMarker(queue);
 }

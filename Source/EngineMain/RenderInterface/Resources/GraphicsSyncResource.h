@@ -1,17 +1,21 @@
 #pragma once
 #include "GraphicsResources.h"
 #include "../../Core/Platform/PlatformTypes.h"
+#include "../../Core/String/String.h"
 
 
 class GraphicsSyncResource : public GraphicsResource
 {
 	DECLARE_GRAPHICS_RESOURCE(GraphicsSyncResource,,GraphicsResource,)
-
+protected:
+	String resourceName;
 public:
 
 	virtual void waitForSignal() const {}
 	virtual bool isSignaled() const { return false; }
 	virtual void resetSignal() {}
+	String getResourceName() const override;
+
 };
 
 class GraphicsSemaphore : public GraphicsSyncResource

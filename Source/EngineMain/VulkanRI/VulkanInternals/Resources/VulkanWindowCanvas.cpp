@@ -81,6 +81,11 @@ VkImage VulkanWindowCanvas::swapchainImage(uint32 index) const
 	return swapchainImages[index];
 }
 
+String VulkanWindowCanvas::getObjectName() const
+{
+	return getResourceName();
+}
+
 void VulkanWindowCanvas::reinitResources()
 {
 	VkSwapchainKHR nextSwapchain = VulkanGraphicsHelper::createSwapchain(gEngine->getRenderApi()->getGraphicsInstance(),
