@@ -10,7 +10,7 @@
 #include <sstream>
 #include <assert.h>
 #include <set>
-#include <common.hpp>
+#include <glm/common.hpp>
 
 void VulkanDevice::markEnabledFeatures()
 {
@@ -365,10 +365,11 @@ enabledFeatures = std::move(rVulkanDevice.enabledFeatures); \
 logicalDevice = std::move(rVulkanDevice.logicalDevice); \
 timelineSemaphoreProps = std::move(rVulkanDevice.timelineSemaphoreProps); \
 timelineSemaphoreFeatures = std::move(rVulkanDevice.timelineSemaphoreFeatures); \
+graphicsDebug = { this }; \
 
-VulkanDevice::VulkanDevice(VulkanDevice&& rVulkanDevice) : graphicsDebug(this)
+VulkanDevice::VulkanDevice(VulkanDevice&& rVulkanDevice)
 {
-	MOVE_IMPL();	
+	MOVE_IMPL();
 }
 
 void VulkanDevice::operator=(VulkanDevice&& rVulkanDevice)
@@ -393,8 +394,9 @@ enabledFeatures = otherDevice.enabledFeatures; \
 logicalDevice = otherDevice.logicalDevice; \
 timelineSemaphoreProps = otherDevice.timelineSemaphoreProps; \
 timelineSemaphoreFeatures = otherDevice.timelineSemaphoreFeatures; \
+graphicsDebug = { this }; \
 
-VulkanDevice::VulkanDevice(const VulkanDevice& otherDevice) : graphicsDebug(this)
+VulkanDevice::VulkanDevice(const VulkanDevice& otherDevice)
 {
 	COPY_IMPL();
 }

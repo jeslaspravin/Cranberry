@@ -42,6 +42,7 @@ void VulkanSemaphore::reinitResources()
 	{
 		release();
 		semaphore = nextSemaphore;
+		vulkanDevice->debugGraphics()->markObject(this);
 	}
 	else
 	{
@@ -154,6 +155,7 @@ void VulkanTimelineSemaphore::reinitResources()
 	{
 		release();
 		semaphore = nextSemaphore;
+		vulkanDevice->debugGraphics()->markObject(this);
 	}
 	else
 	{
@@ -209,6 +211,7 @@ void VulkanFence::reinitResources()
 	{
 		release();
 		fence = nextFence;
+		vulkanDevice->debugGraphics()->markObject(this);
 	}
 	else
 	{

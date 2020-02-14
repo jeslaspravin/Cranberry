@@ -6,6 +6,8 @@
 #include "../../../Core/Logger/Logger.h"
 
 #include <bitset>
+#include "../../../Core/Engine/GameEngine.h"
+#include "../../VulkanGraphicsHelper.h"
 
 struct QueueBasePointer
 {
@@ -262,6 +264,9 @@ public:
 				Logger::error("VulkanQueueResource", "%s() : [%s] Get queue failed for queue family %d at queue index %d"
 					, __func__, getSupportedQueueName().getChar(), queueFamilyPropIndex, index);
 			}
+			VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance())->markObject(
+				(uint64)queues[index], getObjectName().append("Queue_").append(std::to_string(priorities[index])),
+				getObjectType());
 		}
 
 		int32 qIdx = 0;
