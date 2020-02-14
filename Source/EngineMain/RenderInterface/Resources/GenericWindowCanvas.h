@@ -1,7 +1,11 @@
 #pragma once
 #include "GraphicsResources.h"
+#include "../../Core/Memory/SmartPointers.h"
+#include "../../Core/Platform/PlatformTypes.h"
 
 class GenericAppWindow;
+class GraphicsSemaphore;
+class GraphicsFence;
 
 // Wrapper for VkSurface and related kind of objects
 class GenericWindowCanvas : public GraphicsResource
@@ -17,5 +21,7 @@ public:
 
 	// Setup function must be use before calling init
 	virtual void setWindow(GenericAppWindow* forWindow);
+
+	virtual uint32 requestNextImage(SharedPtr<GraphicsSemaphore>* waitOnSemaphore, SharedPtr<GraphicsFence>* waitOnFence = nullptr);
 };
 

@@ -2,8 +2,7 @@
 #include "../../RenderApi/RenderApi.h"
 #include "../Logger/Logger.h"
 #include <assert.h>
-
-GameEngine* gEngine = nullptr;
+#include "../Platform/GenericAppWindow.h"
 
 void GameEngine::startup(GenericAppInstance* appInstance)
 {	
@@ -11,6 +10,21 @@ void GameEngine::startup(GenericAppInstance* appInstance)
 	renderingApi=UniquePtr<RenderApi>(new RenderApi());
 	renderingApi->initialize();
 	onStartUp();
+}
+
+#include "../../RenderInterface/Resources/GenericWindowCanvas.h"
+#include "../../RenderInterface/PlatformIndependentHelper.h"
+void GameEngine::engineLoop()
+{
+	while (!isExiting())
+	{
+		// TODO(Jeslas) : Change this
+		uint32 index = applicationInstance->appWindowManager.getWindowCanvas(applicationInstance->appWindowManager.getMainWindow())->requestNextImage(nullptr, nullptr);
+		std::vector<GenericWindowCanvas*> canvases = { applicationInstance->appWindowManager.getWindowCanvas(applicationInstance->appWindowManager.getMainWindow()) };
+		std::vector<uint32> indices = { index };
+		GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, nullptr);
+		applicationInstance->appWindowManager.getMainWindow()->updateWindow();
+	}
 }
 
 void GameEngine::onStartUp()
@@ -24,6 +38,11 @@ void GameEngine::quit()
 	renderingApi->destroy();
 	renderingApi.release();
 	applicationInstance = nullptr;
+}
+
+void GameEngine::requestExit()
+{
+	bExitNextFrame = true;
 }
 
 const String& GameEngine::getAppName() const

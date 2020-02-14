@@ -25,6 +25,7 @@ public:
 	String getWindowName() const { return windowName; }
 
 	virtual void createWindow(const GenericAppInstance* appInstance) {};
+	virtual void updateWindow() = 0;
 	virtual void destroyWindow();
 	virtual bool isValidWindow() const= 0;
 };

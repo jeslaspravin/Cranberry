@@ -124,6 +124,13 @@ VariableName.flags = 0;										\
 VariableName.pNext = nullptr
 #endif
 
+#ifndef PRESENT_INFO
+#define PRESENT_INFO(VariableName)							\
+VkPresentInfoKHR VariableName;								\
+VariableName.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;	\
+VariableName.pNext = nullptr;
+#endif
+
 #ifndef DECLARE_VK_GRAPHICS_RESOURCE
 #define DECLARE_VK_GRAPHICS_RESOURCE(NewTypeName,NewTypeTemplates,BaseTypeName,BaseTypeTemplates)\
 	DECLARE_GRAPHICS_RESOURCE(NewTypeName,NewTypeTemplates,BaseTypeName,BaseTypeTemplates) \

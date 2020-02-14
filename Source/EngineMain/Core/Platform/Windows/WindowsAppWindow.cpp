@@ -46,6 +46,16 @@ void WindowsAppWindow::createWindow(const GenericAppInstance* appInstance)
 	ShowWindow(windowsHandle,SW_SHOW);
 }
 
+void WindowsAppWindow::updateWindow()
+{
+	MSG msg;
+	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) > 0)
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+}
+
 bool WindowsAppWindow::isValidWindow() const
 {
 	return windowsHandle != nullptr && windowsHandle != NULL; 
@@ -64,19 +74,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg)
 	{
 	case WM_CREATE:
-		{
-			const WindowsAppWindow* const windowPtr = reinterpret_cast<const WindowsAppWindow*>(
-				reinterpret_cast<LPCREATESTRUCTA>(lParam)->lpCreateParams);
-			SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(windowPtr));
-			Logger::log("WindowsAppWindow", "%s() : Created window %s", __func__, windowPtr->getWindowName().getChar());
-			break;
-		}		
+	{
+		const WindowsAppWindow* const windowPtr = reinterpret_cast<const WindowsAppWindow*>(
+			reinterpret_cast<LPCREATESTRUCTA>(lParam)->lpCreateParams);
+		SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(windowPtr));
+		Logger::log("WindowsAppWindow", "%s() : Created window %s", __func__, windowPtr->getWindowName().getChar());
+		break;
+	}		
 	case WM_DESTROY:
-		{		
-			const WindowsAppWindow* const windowPtr = reinterpret_cast<const WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-			Logger::log("WindowsAppWindow", "%s() : Destroying window %s", __func__, windowPtr->getWindowName().getChar()); 
-			break;
+	{		
+		const WindowsAppWindow* const windowPtr = reinterpret_cast<const WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
+		Logger::log("WindowsAppWindow", "%s() : Destroying window %s", __func__, windowPtr->getWindowName().getChar()); 
+		break;
+	}
+
+	case WM_CLOSE:
+	{
+		const WindowsAppWindow* const windowPtr = reinterpret_cast<const WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
+		Logger::log("WindowsAppWindow", "%s() : Quiting window %s", __func__, windowPtr->getWindowName().getChar());
+
+		if (gEngine && gEngine->getApplicationInstance()->appWindowManager.getMainWindow() == windowPtr)
+		{
+			gEngine->requestExit();
 		}
+		break;
+	}
 	default:
 		return DefWindowProcA(hwnd, uMsg, wParam, lParam);
 	}

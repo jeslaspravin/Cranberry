@@ -12,6 +12,7 @@ protected:
 
 public:
 	void createWindow(const GenericAppInstance* appInstance) override;
+	void updateWindow() override;
 	void destroyWindow() override;
 
 	HWND getWindowHandle() const { return windowsHandle; }

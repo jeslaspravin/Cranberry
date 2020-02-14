@@ -74,7 +74,7 @@ void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
 		waitInfo.pSemaphores = &semaphore;
 		waitInfo.semaphoreCount = 1;
 		waitInfo.pValues = &value;
-		vulkanDevice->vkWaitSemaphoresKHR(ownerDevice, &waitInfo, 2000000/*2 Seconds*/);
+		vulkanDevice->vkWaitSemaphoresKHR(ownerDevice, &waitInfo, 2000000000/*2 Seconds*/);
 	}
 }
 
@@ -150,7 +150,7 @@ VulkanFence::VulkanFence(VkDevice device, const VulkanDevice* deviceInstance)
 
 void VulkanFence::waitForSignal() const
 {
-	vulkanDevice->vkWaitForFences(ownerDevice, 1, &fence,VK_TRUE, 2000000/*2 Seconds*/);
+	vulkanDevice->vkWaitForFences(ownerDevice, 1, &fence,VK_TRUE, 2000000000/*2 Seconds*/);
 }
 
 bool VulkanFence::isSignaled() const

@@ -21,6 +21,8 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 	Logger::log("Engine", "%s() : Engine start", __func__);
 	gEngine->startup(&appInstance);
 
+	gEngine->engineLoop();
+
 	gEngine->quit();
 	Logger::log("Engine", "%s() : Engine quit", __func__);
 

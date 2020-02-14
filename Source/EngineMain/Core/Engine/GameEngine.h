@@ -7,6 +7,7 @@ class GameEngine
 {
 private:
 	GenericAppInstance* applicationInstance;
+	bool bExitNextFrame = false;
 protected:
 	UniquePtr<RenderApi> renderingApi;
 
@@ -17,8 +18,11 @@ protected:
 public:
 
 	void startup(GenericAppInstance* appInstance);
-
+	void engineLoop();
 	void quit();
+
+	void requestExit();
+	bool isExiting() { return bExitNextFrame; }
 
 	const String& getAppName() const;
 	void getVersion(int32& head, int32& major, int32& sub) const;
@@ -28,4 +32,4 @@ public:
 
 };
 
-extern GameEngine* gEngine;
+inline GameEngine* gEngine = nullptr;

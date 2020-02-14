@@ -16,3 +16,8 @@ void GenericWindowCanvas::setWindow(GenericAppWindow* forWindow)
 {
 	ownerWindow = forWindow;
 }
+
+uint32 GenericWindowCanvas::requestNextImage(SharedPtr<GraphicsSemaphore>* waitOnSemaphore, SharedPtr<GraphicsFence>* waitOnFence /*= nullptr*/)
+{
+	return 0;
+}

@@ -273,6 +273,13 @@ public:
 	}
 
 	uint32 queueFamilyIndex() { return queueFamilyPropIndex; }
+
+	template <EQueuePriority::Enum Priority>
+	constexpr VkQueue getQueueOfPriority()
+	{
+		queuePointer.lastQueueIndex[Priority] = ++queuePointer.lastQueueIndex[Priority] % queuePointer.countPerPriority;
+		return queuePointer.queueBasePointer[Priority][queuePointer.lastQueueIndex[Priority]];
+	}
 };
 
 

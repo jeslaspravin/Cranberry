@@ -119,6 +119,68 @@ void VulkanGraphicsHelper::destroySwapchain(class IGraphicsInstance* graphicsIns
 	device->vkDestroySwapchainKHR(device->logicalDevice, swapchain,nullptr);
 }
 
+uint32 VulkanGraphicsHelper::getNextSwapchainImage(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain, 
+	SharedPtr<GraphicsSemaphore>* waitOnSemaphore, SharedPtr<GraphicsFence>* waitOnFence /*= nullptr*/)
+{
+	const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+	const VulkanDevice* device = &gInstance->selectedDevice;
+	uint32 imageIndex;
+	VkSemaphore semaphore = (waitOnSemaphore && *waitOnSemaphore) ?
+		static_cast<VulkanSemaphore*>(waitOnSemaphore->get())->semaphore : VK_NULL_HANDLE;
+	VkFence fence = (waitOnFence && *waitOnFence)?
+		static_cast<VulkanFence*>(waitOnFence->get())->fence : VK_NULL_HANDLE;
+	VkResult result = device->vkAcquireNextImageKHR(device->logicalDevice, swapchain, 2000000000, semaphore, fence, &imageIndex);
+
+	if (result == VK_TIMEOUT)
+	{
+		Logger::error("VulkanSwapchain", "%s() : Timed out waiting to acquire next swapchain image", __func__);
+		return -1;
+	}
+	else if (result == VK_NOT_READY)
+	{
+		Logger::error("VulkanSwapchain", "%s() : swapchain is not suitable for use", __func__);
+		return -1;
+	}
+	return imageIndex;
+}
+
+void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstance, std::vector<GenericWindowCanvas*>* canvases
+	, std::vector<uint32>* imageIndex, std::vector<SharedPtr<class GraphicsSemaphore>>* waitOnSemaphores)
+{
+	if (!canvases || !imageIndex || canvases->size() != imageIndex->size())
+		return;
+
+	const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+	const VulkanDevice* device = &gInstance->selectedDevice;
+
+	std::vector<VkSwapchainKHR> swapchains(canvases->size());
+	std::vector<VkSemaphore> semaphores(waitOnSemaphores ? waitOnSemaphores->size() : 0);
+
+	for (int32 i = 0; i < swapchains.size(); ++i)
+	{
+		swapchains[i] = static_cast<VulkanWindowCanvas*>((*canvases)[i])->swapchain();
+	}
+
+	for (int32 i = 0; i < semaphores.size(); ++i)
+	{
+		semaphores[i] = static_cast<VulkanSemaphore*>((*waitOnSemaphores)[i].get())->semaphore;
+	}
+	PRESENT_INFO(presentInfo);
+	presentInfo.pImageIndices = imageIndex->data();
+	presentInfo.pSwapchains = swapchains.data();
+	presentInfo.swapchainCount = (uint32)swapchains.size();
+	presentInfo.pWaitSemaphores = semaphores.data();
+	presentInfo.waitSemaphoreCount = (uint32)semaphores.size();
+
+	VkResult result = device->vkQueuePresentKHR(getQueue<EQueueFunction::Present>(device->allQueues, device)
+		->getQueueOfPriority<EQueuePriority::SuperHigh>(), &presentInfo);
+
+	if (result != VK_SUCCESS || result != VK_SUBOPTIMAL_KHR)
+	{
+		Logger::error("VulkanPresenting", "%s() : Failed to present images", __func__);
+	}
+}
+
 SharedPtr<class GraphicsSemaphore> VulkanGraphicsHelper::createSemaphore(class IGraphicsInstance* graphicsInstance)
 {
 	const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
@@ -159,7 +221,7 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(class IGraphicsInstance* graph
 	waitInfo.semaphoreCount = (uint32)deviceSemaphores.size();
 	waitInfo.pValues = waitForValues->data();
 
-	device->vkWaitSemaphoresKHR(device->logicalDevice, &waitInfo, 2000000/*2 Seconds*/);
+	device->vkWaitSemaphoresKHR(device->logicalDevice, &waitInfo, 2000000000/*2 Seconds*/);
 }
 
 SharedPtr<class GraphicsFence> VulkanGraphicsHelper::createFence(class IGraphicsInstance* graphicsInstance)
@@ -186,5 +248,5 @@ void VulkanGraphicsHelper::waitFences(class IGraphicsInstance* graphicsInstance,
 	}
 
 	device->vkWaitForFences(device->logicalDevice, (uint32)deviceFences.size(), deviceFences.data(),waitAll? VK_TRUE:VK_FALSE
-		, 2000000/*2 Seconds*/);
+		, 2000000000/*2 Seconds*/);
 }
