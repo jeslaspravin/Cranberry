@@ -27,4 +27,7 @@ public:
 	VkSurfaceKHR surface() const { return surfacePtr; }
 	VkSwapchainKHR swapchain() const { return swapchainPtr; }
 	VkImage swapchainImage(uint32 index) const;
+
+	String getObjectName() const override;
+
 };

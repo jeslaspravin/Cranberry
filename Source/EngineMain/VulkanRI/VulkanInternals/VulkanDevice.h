@@ -2,7 +2,8 @@
 #include "../../Core/Platform/PlatformTypes.h"
 
 #include <vector>
-#include "vulkan_core.h"
+#include <vulkan_core.h>
+#include "Debugging.h"
 
 class String;
 class QueueResourceBase;
@@ -14,6 +15,7 @@ class VulkanDevice {
 	friend class VulkanGraphicsHelper;
 
 private:
+	VulkanDebugGraphics graphicsDebug;
 	VkDevice logicalDevice = nullptr;
 
 	// Physical Device

@@ -3,11 +3,12 @@
 
 #include <assert.h>
 #include "../../../Core/Logger/Logger.h"
+#include "../../VulkanGraphicsHelper.h"
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanSemaphore,VK_OBJECT_TYPE_SEMAPHORE)
 
-VulkanSemaphore::VulkanSemaphore(VkDevice device,const VulkanDevice* deviceInstance)
-	:BaseType(),ownerDevice(device),vulkanDevice(deviceInstance)
+VulkanSemaphore::VulkanSemaphore(const VulkanDevice* deviceInstance)
+	:BaseType(),ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance)),vulkanDevice(deviceInstance)
 {}
 
 void VulkanSemaphore::waitForSignal() const
@@ -57,13 +58,28 @@ void VulkanSemaphore::release()
 	}
 }
 
+String VulkanSemaphore::getObjectName() const
+{
+	return resourceName;
+}
+
+void VulkanSemaphore::setObjectName(const String& name)
+{
+    resourceName = name;
+}
+
+uint64 VulkanSemaphore::getDispatchableHandle() const
+{
+	return (uint64)semaphore;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // VulkanTimelineSemaphore 
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanTimelineSemaphore, VK_OBJECT_TYPE_SEMAPHORE)
 
-VulkanTimelineSemaphore::VulkanTimelineSemaphore(VkDevice device, const VulkanDevice* deviceInstance)
-	:BaseType(), ownerDevice(device), vulkanDevice(deviceInstance)
+VulkanTimelineSemaphore::VulkanTimelineSemaphore(const VulkanDevice* deviceInstance)
+	:BaseType(), ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance)), vulkanDevice(deviceInstance)
 {}
 
 void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
@@ -105,6 +121,21 @@ uint64 VulkanTimelineSemaphore::currentValue() const
 	return counter;
 }
 
+String VulkanTimelineSemaphore::getObjectName() const
+{
+    return resourceName;
+}
+
+void VulkanTimelineSemaphore::setObjectName(const String& name)
+{
+    resourceName = name;
+}
+
+uint64 VulkanTimelineSemaphore::getDispatchableHandle() const
+{
+	return (uint64)semaphore;
+}
+
 void VulkanTimelineSemaphore::init()
 {
 	reinitResources();
@@ -144,8 +175,8 @@ void VulkanTimelineSemaphore::release()
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanFence, VK_OBJECT_TYPE_FENCE)
 
-VulkanFence::VulkanFence(VkDevice device, const VulkanDevice* deviceInstance)
-	:BaseType(), ownerDevice(device), vulkanDevice(deviceInstance)
+VulkanFence::VulkanFence(const VulkanDevice* deviceInstance)
+	:BaseType(), ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance)), vulkanDevice(deviceInstance)
 {}
 
 void VulkanFence::waitForSignal() const
@@ -192,4 +223,19 @@ void VulkanFence::release()
 		vulkanDevice->vkDestroyFence(ownerDevice, fence, nullptr);
 		fence = nullptr;
 	}
+}
+
+String VulkanFence::getObjectName() const
+{
+    return resourceName;
+}
+
+void VulkanFence::setObjectName(const String& name)
+{
+	resourceName = name;
+}
+
+uint64 VulkanFence::getDispatchableHandle() const
+{
+	return (uint64)fence;
 }

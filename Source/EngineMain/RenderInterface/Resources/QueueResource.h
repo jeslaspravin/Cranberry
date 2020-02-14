@@ -30,5 +30,4 @@ class QueueResourceBase : public GraphicsResource
 public:
 
 	virtual bool isValidQueue() const { return false; }
-
 };

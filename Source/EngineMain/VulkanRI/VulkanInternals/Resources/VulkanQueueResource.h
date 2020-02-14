@@ -280,6 +280,18 @@ public:
 		queuePointer.lastQueueIndex[Priority] = ++queuePointer.lastQueueIndex[Priority] % queuePointer.countPerPriority;
 		return queuePointer.queueBasePointer[Priority][queuePointer.lastQueueIndex[Priority]];
 	}
+
+	String getResourceName() const override
+	{
+		return getSupportedQueueName();
+	}
+
+
+	String getObjectName() const override
+	{
+		return getResourceName();
+	}
+
 };
 
 

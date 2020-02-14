@@ -2,6 +2,7 @@
 #include "../../Core/Memory/SmartPointers.h"
 
 class GraphicsResource;
+class String;
 
 class GraphicsResourceType {
 public:
@@ -173,4 +174,5 @@ public:
 	virtual void init() {};
 	virtual void reinitResources() {};
 	virtual void release() {};
+	virtual String getResourceName() const;
 };

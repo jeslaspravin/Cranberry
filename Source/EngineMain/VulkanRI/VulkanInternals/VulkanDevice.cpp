@@ -293,7 +293,7 @@ VulkanDevice::VulkanDevice()
 
 }
 
-VulkanDevice::VulkanDevice(VkPhysicalDevice&& device)
+VulkanDevice::VulkanDevice(VkPhysicalDevice&& device) : graphicsDebug(this)
 {
 	physicalDevice = device;
 	uint32 extCount = 0;
@@ -366,7 +366,7 @@ logicalDevice = std::move(rVulkanDevice.logicalDevice); \
 timelineSemaphoreProps = std::move(rVulkanDevice.timelineSemaphoreProps); \
 timelineSemaphoreFeatures = std::move(rVulkanDevice.timelineSemaphoreFeatures); \
 
-VulkanDevice::VulkanDevice(VulkanDevice&& rVulkanDevice)
+VulkanDevice::VulkanDevice(VulkanDevice&& rVulkanDevice) : graphicsDebug(this)
 {
 	MOVE_IMPL();	
 }
@@ -394,7 +394,7 @@ logicalDevice = otherDevice.logicalDevice; \
 timelineSemaphoreProps = otherDevice.timelineSemaphoreProps; \
 timelineSemaphoreFeatures = otherDevice.timelineSemaphoreFeatures; \
 
-VulkanDevice::VulkanDevice(const VulkanDevice& otherDevice)
+VulkanDevice::VulkanDevice(const VulkanDevice& otherDevice) : graphicsDebug(this)
 {
 	COPY_IMPL();
 }

@@ -54,6 +54,12 @@ VariableName.flags = 0;															\
 VariableName.pUserData = nullptr
 #endif
 
+#ifndef DEBUG_UTILS_OBJECT_NAME_INFO
+#define DEBUG_UTILS_OBJECT_NAME_INFO(VariableName)							\
+VkDebugUtilsObjectNameInfoEXT VariableName;									\
+VariableName.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;	\
+VariableName.pNext = nullptr
+#endif
 
 #ifndef PHYSICAL_DEVICE_FEATURES_2
 #define PHYSICAL_DEVICE_FEATURES_2(VariableName)							\

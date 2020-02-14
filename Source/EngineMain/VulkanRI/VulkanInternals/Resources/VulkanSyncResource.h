@@ -23,14 +23,21 @@ private:
 public:
 	VkSemaphore semaphore;
 
-	VulkanSemaphore(VkDevice device,const VulkanDevice* deviceInstance);
+	VulkanSemaphore(const VulkanDevice* deviceInstance);
 
 	void waitForSignal() const override;
 	bool isSignaled() const override;
 	void resetSignal() override;
+	/* GraphicsResource implementations */
 	void init() override;
 	void reinitResources() override;
 	void release() override;
+	/* End - GraphicsResource implementations */
+	/* IVulkanResources implementations */
+	String getObjectName() const override;
+    void setObjectName(const String& name) override;
+    uint64 getDispatchableHandle() const override;
+	/* End - IVulkanResources implementations */
 };
 
 class VulkanTimelineSemaphore : public GraphicsTimelineSemaphore, public IVulkanResources
@@ -46,16 +53,23 @@ private:
 public:
 	VkSemaphore semaphore;
 
-	VulkanTimelineSemaphore(VkDevice device,const VulkanDevice* deviceInstance);
+	VulkanTimelineSemaphore(const VulkanDevice* deviceInstance);
 
-	void init() override;
-	void reinitResources() override;
-	void release() override;
+    /* GraphicsResource implementations */
+    void init() override;
+    void reinitResources() override;
+    void release() override;
+    /* End - GraphicsResource implementations */
 	void waitForSignal(uint64 value) const override;
 	bool isSignaled(uint64 value) const override;
 	void resetSignal(uint64 value) override;
 	uint64 currentValue() const override;
 
+    /* IVulkanResources implementations */
+    String getObjectName() const override;
+    void setObjectName(const String& name) override;
+    uint64 getDispatchableHandle() const override;
+    /* End - IVulkanResources implementations */
 };
 
 class VulkanFence : public GraphicsFence, public IVulkanResources
@@ -72,12 +86,20 @@ private:
 public:
 	VkFence fence;
 
-	VulkanFence(VkDevice device,const VulkanDevice* deviceInstance);
+	VulkanFence(const VulkanDevice* deviceInstance);
 
 	void waitForSignal() const override;
 	bool isSignaled() const override;
-	void resetSignal() override;
-	void init() override;
-	void reinitResources() override;
-	void release() override;
+    void resetSignal() override;
+    /* GraphicsResource implementations */
+    void init() override;
+    void reinitResources() override;
+    void release() override;
+    /* End - GraphicsResource implementations */
+
+    /* IVulkanResources implementations */
+    String getObjectName() const override;
+    void setObjectName(const String& name) override;
+    uint64 getDispatchableHandle() const override;
+    /* End - IVulkanResources implementations */
 };
