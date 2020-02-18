@@ -12,18 +12,11 @@ void GameEngine::startup(GenericAppInstance* appInstance)
 	onStartUp();
 }
 
-#include "../../RenderInterface/Resources/GenericWindowCanvas.h"
-#include "../../RenderInterface/PlatformIndependentHelper.h"
 void GameEngine::engineLoop()
 {
 	while (!isExiting())
 	{
-		// TODO(Jeslas) : Change this
-		uint32 index = applicationInstance->appWindowManager.getWindowCanvas(applicationInstance->appWindowManager.getMainWindow())->requestNextImage(nullptr, nullptr);
-		std::vector<GenericWindowCanvas*> canvases = { applicationInstance->appWindowManager.getWindowCanvas(applicationInstance->appWindowManager.getMainWindow()) };
-		std::vector<uint32> indices = { index };
-		GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, nullptr);
-		applicationInstance->appWindowManager.getMainWindow()->updateWindow();
+		tickEngine();
 	}
 }
 
@@ -71,6 +64,11 @@ GenericAppInstance& GameEngine::appInstance() const
 }
 
 void GameEngine::onQuit()
+{
+	
+}
+
+void GameEngine::tickEngine()
 {
 	
 }

@@ -36,6 +36,16 @@ VariableName.pNext = nullptr;									\
 VariableName.flags = 0
 #endif
 
+#ifndef SUBMIT_INFO
+#define SUBMIT_INFO(VariableName)					\
+VkSubmitInfo VariableName;							\
+VariableName.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;	\
+VariableName.pNext = nullptr;						\
+VariableName.pSignalSemaphores = nullptr;			\
+VariableName.pWaitSemaphores = nullptr;				\
+VariableName.signalSemaphoreCount = 0;				\
+VariableName.waitSemaphoreCount = 0
+#endif
 
 #ifndef CREATE_SWAPCHAIN_INFO
 #define CREATE_SWAPCHAIN_INFO(VariableName)							\
@@ -43,6 +53,14 @@ VkSwapchainCreateInfoKHR VariableName;								\
 VariableName.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;	\
 VariableName.pNext = nullptr;										\
 VariableName.flags = 0
+#endif
+
+#ifndef IMAGE_MEMORY_BARRIER
+#define IMAGE_MEMORY_BARRIER(VariableName)						\
+VkImageMemoryBarrier VariableName;								\
+VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;	\
+VariableName.pNext = nullptr;									\
+VariableName.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED
 #endif
 
 #ifndef CREATE_DEBUG_UTILS_MESSENGER_INFO
@@ -137,11 +155,34 @@ VariableName.flags = 0;										\
 VariableName.pNext = nullptr
 #endif
 
+#ifndef CREATE_COMMAND_POOL_INFO
+#define CREATE_COMMAND_POOL_INFO(VariableName)						\
+VkCommandPoolCreateInfo VariableName;								\
+VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;	\
+VariableName.pNext = nullptr
+#endif
+
+#ifndef CMD_BUFFER_ALLOC_INFO
+#define CMD_BUFFER_ALLOC_INFO(VariableName)								\
+VkCommandBufferAllocateInfo VariableName;								\
+VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;	\
+VariableName.pNext = nullptr;											\
+VariableName.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY
+#endif
+
+#ifndef CMD_BUFFER_BEGIN_INFO
+#define CMD_BUFFER_BEGIN_INFO(VariableName)							\
+VkCommandBufferBeginInfo VariableName;								\
+VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;	\
+VariableName.pNext = nullptr;										\
+VariableName.pInheritanceInfo = nullptr
+#endif
+
 #ifndef PRESENT_INFO
 #define PRESENT_INFO(VariableName)							\
 VkPresentInfoKHR VariableName;								\
 VariableName.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;	\
-VariableName.pNext = nullptr;
+VariableName.pNext = nullptr
 #endif
 
 #ifndef DECLARE_VK_GRAPHICS_RESOURCE

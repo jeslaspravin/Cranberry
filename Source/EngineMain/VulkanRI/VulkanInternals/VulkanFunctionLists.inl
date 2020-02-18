@@ -57,11 +57,13 @@ INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(vkCreatePlatformSurfaceKHR)
 #endif
 DEVICE_VK_FUNCTIONS(vkDestroyDevice)
 DEVICE_VK_FUNCTIONS(vkGetDeviceQueue)
+DEVICE_VK_FUNCTIONS(vkQueueSubmit)
 DEVICE_VK_FUNCTIONS(vkDeviceWaitIdle)
 
 DEVICE_VK_FUNCTIONS(vkCreateBuffer)
 DEVICE_VK_FUNCTIONS(vkGetBufferMemoryRequirements)
 
+/* Synchronizing Functions */
 DEVICE_VK_FUNCTIONS(vkCreateSemaphore)
 DEVICE_VK_FUNCTIONS(vkDestroySemaphore)
 DEVICE_VK_FUNCTIONS(vkCreateFence)
@@ -69,6 +71,22 @@ DEVICE_VK_FUNCTIONS(vkGetFenceStatus)
 DEVICE_VK_FUNCTIONS(vkResetFences)
 DEVICE_VK_FUNCTIONS(vkWaitForFences)
 DEVICE_VK_FUNCTIONS(vkDestroyFence)
+
+/* CommandPool Functions */
+DEVICE_VK_FUNCTIONS(vkCreateCommandPool)
+DEVICE_VK_FUNCTIONS(vkDestroyCommandPool)
+DEVICE_VK_FUNCTIONS(vkResetCommandPool)
+
+/* Command buffer Functions */
+DEVICE_VK_FUNCTIONS(vkAllocateCommandBuffers)
+DEVICE_VK_FUNCTIONS(vkResetCommandBuffer)
+DEVICE_VK_FUNCTIONS(vkFreeCommandBuffers)
+DEVICE_VK_FUNCTIONS(vkBeginCommandBuffer)
+DEVICE_VK_FUNCTIONS(vkEndCommandBuffer);
+
+/* Commands */
+DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier)
+
 /* Debug Functions */
 DEVICE_VK_FUNCTIONS(vkQueueBeginDebugUtilsLabelEXT)
 DEVICE_VK_FUNCTIONS(vkQueueEndDebugUtilsLabelEXT)
@@ -83,12 +101,14 @@ DEVICE_VK_FUNCTIONS(vkSetDebugUtilsObjectNameEXT)
 #ifndef DEVICE_VK_EXT_FUNCTIONS
 #define DEVICE_VK_EXT_FUNCTIONS(function,extension)
 #endif
+/* Swapchain & Present Functions */
 DEVICE_VK_EXT_FUNCTIONS(vkCreateSwapchainKHR,VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 DEVICE_VK_EXT_FUNCTIONS(vkDestroySwapchainKHR,VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 DEVICE_VK_EXT_FUNCTIONS(vkGetSwapchainImagesKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 DEVICE_VK_EXT_FUNCTIONS(vkAcquireNextImageKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 DEVICE_VK_EXT_FUNCTIONS(vkQueuePresentKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 
+/* Synchronizing Functions */
 DEVICE_VK_EXT_FUNCTIONS(vkGetSemaphoreCounterValueKHR, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)
 DEVICE_VK_EXT_FUNCTIONS(vkWaitSemaphoresKHR, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)
 DEVICE_VK_EXT_FUNCTIONS(vkSignalSemaphoreKHR, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)
