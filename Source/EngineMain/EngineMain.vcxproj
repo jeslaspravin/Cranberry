@@ -177,6 +177,7 @@
     <ClCompile Include="Core\Platform\Windows\WindowsAppWindow.cpp" />
     <ClCompile Include="Core\Platform\Windows\WindowsPlatformFunctions.cpp" />
     <ClCompile Include="Core\String\String.cpp" />
+    <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
     <ClCompile Include="RenderApi\RenderApi.cpp" />
     <ClCompile Include="RenderInterface\GraphicsInstance.cpp" />
     <ClCompile Include="RenderInterface\Resources\GraphicsResources.cpp" />
@@ -220,6 +221,7 @@
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformTypes.h" />
     <ClInclude Include="Core\String\String.h" />
     <ClInclude Include="Core\Types\Functions.h" />
+    <ClInclude Include="Experimental\ExperimentalEngine.h" />
     <ClInclude Include="RenderApi\PlatformIndependentGraphicsTypes.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
     <ClInclude Include="RenderInterface\GraphicsHelper.h" />

@@ -12,6 +12,9 @@ public:
 	static VkDevice getDevice(const class VulkanDevice* vulkanDevice);
 	static const class VulkanDebugGraphics* debugGraphics(class IGraphicsInstance* graphicsInstance);
 
+	// Only in experimental branch
+	static class VulkanDevice* getVulkanDevice(class IGraphicsInstance* graphicsInstance);
+	static std::vector<class QueueResourceBase*>* getVDAllQueues(VulkanDevice* device);
 
 	static VkSwapchainKHR createSwapchain(class IGraphicsInstance* graphicsInstance, GenericAppWindow* appWindow);
 	static void fillSwapchainImages(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain,std::vector<VkImage>* images);

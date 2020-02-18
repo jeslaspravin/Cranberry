@@ -103,6 +103,9 @@
     <Filter Include="Header Files\Core\Math">
       <UniqueIdentifier>{116e92c4-dc5e-4cd7-8ec2-4a91af7a079f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Experimental">
+      <UniqueIdentifier>{dcb5905c-33fa-45cc-b38d-52e2c5a44e02}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -191,6 +194,9 @@
     </ClCompile>
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.cpp">
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ExperimentalEngine.cpp">
+      <Filter>Source Files\Experimental</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -340,6 +346,9 @@
     </ClInclude>
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.h">
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ExperimentalEngine.h">
+      <Filter>Source Files\Experimental</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

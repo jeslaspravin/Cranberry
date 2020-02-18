@@ -1,12 +1,12 @@
 #include <wtypes.h>
-#include "Core/Engine/GameEngine.h"
 #include "Core/Logger/Logger.h"
 #include "Core/Platform/PlatformInstances.h"
 #include "Core/Platform/LFS/PlatformLFS.h"
+#include "Experimental/ExperimentalEngine.h"
 
 int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-	::gEngine = new GameEngine();
+	::gEngine = new ExperimentalEngine();
 
 	PlatformAppInstance appInstance;
 	FileSystemFunctions::applicationDirectory(appInstance.applicationName);

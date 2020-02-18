@@ -32,6 +32,17 @@ const VulkanDebugGraphics* VulkanGraphicsHelper::debugGraphics(class IGraphicsIn
 	return device->debugGraphics();
 }
 
+class VulkanDevice* VulkanGraphicsHelper::getVulkanDevice(class IGraphicsInstance* graphicsInstance)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    return &gInstance->selectedDevice;
+}
+
+std::vector<class QueueResourceBase*>* VulkanGraphicsHelper::getVDAllQueues(VulkanDevice* device)
+{
+	return &device->allQueues;
+}
+
 template <EQueueFunction QueueFunction>
 VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
 
