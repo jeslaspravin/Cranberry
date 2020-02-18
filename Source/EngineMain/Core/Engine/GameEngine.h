@@ -14,6 +14,7 @@ protected:
 
 	virtual void onStartUp();
 	virtual void onQuit();
+	virtual void tickEngine();
 
 public:
 
