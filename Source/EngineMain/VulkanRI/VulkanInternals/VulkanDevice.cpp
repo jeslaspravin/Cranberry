@@ -270,20 +270,20 @@ int32 VulkanDevice::compareSurfaceCompatibility(const class GenericWindowCanvas*
 {
 	const VulkanWindowCanvas* vkCanvas = static_cast<const VulkanWindowCanvas*>(surfaceCanvas);
 	
-	VkBool32 presentationSupported;
+	int32 presentationSupported;
 	for (int32 index =0 ;index < queueFamiliesSupported.size();++index)
 	{
 		VkBool32 queueSupported;
 		Vk::vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, index, vkCanvas->surface(), &queueSupported);
-		presentationSupported |= queueSupported;
+		presentationSupported = queueSupported == 0 ? 0 : 1;
 	}
 
-	VkBool32 otherPresentationSupported;
+	int32 otherPresentationSupported;
 	for (int32 index = 0; index < otherDevice.queueFamiliesSupported.size(); ++index)
 	{
 		VkBool32 queueSupported;
 		Vk::vkGetPhysicalDeviceSurfaceSupportKHR(otherDevice.physicalDevice, index, vkCanvas->surface(), &queueSupported);
-		otherPresentationSupported |= queueSupported;
+		otherPresentationSupported = queueSupported == 0 ? 0 : 1;
 	}
 	return presentationSupported - otherPresentationSupported;
 }
@@ -555,7 +555,9 @@ int32 VulkanDevice::compare(const VulkanDevice& otherDevice) const
 	{
 		int32 canvasChoice = compareSurfaceCompatibility(canvas, otherDevice);
 		if (canvasChoice != 0)
+		{
 			return canvasChoice;
+		}
 	}
 
 	if(properties.deviceType != otherDevice.properties.deviceType)
