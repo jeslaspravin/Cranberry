@@ -145,8 +145,9 @@ void ExperimentalEngine::tickEngine()
 {
     GameEngine::tickEngine();
 
-    // TODO(Jeslas) : Change this
-    uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->requestNextImage(nullptr, nullptr);
+    SharedPtr<GraphicsSemaphore> waitSemaphore;
+    uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
+        ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
     std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
     std::vector<uint32> indices = { index };
 
@@ -178,11 +179,13 @@ void ExperimentalEngine::tickEngine()
     qSubmitInfo.commandBufferCount = 1;
     qSubmitInfo.pCommandBuffers = &swapchainCmdBuffer;
     qSubmitInfo.pWaitDstStageMask = &flag;
+    qSubmitInfo.pWaitSemaphores = &static_cast<VulkanSemaphore*>(waitSemaphore.get())->semaphore;
+    qSubmitInfo.waitSemaphoreCount = 1;
 
     vDevice->vkQueueSubmit(getQueue<EQueueFunction::Present>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>()
         , 1, &qSubmitInfo, static_cast<VulkanFence*>(vFence.get())->fence);
     vFence->waitForSignal();
-
+    vFence->resetSignal();
     GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, nullptr);
-    appInstance().appWindowManager.getMainWindow()->updateWindow();
+	appInstance().appWindowManager.getMainWindow()->updateWindow();
 }
