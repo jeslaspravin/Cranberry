@@ -282,8 +282,10 @@ public:
 	template <EQueuePriority::Enum Priority>
 	constexpr VkQueue getQueueOfPriority()
 	{
-		queuePointer.lastQueueIndex[Priority] = ++queuePointer.lastQueueIndex[Priority] % queuePointer.countPerPriority;
-		return queuePointer.queueBasePointer[Priority][queuePointer.lastQueueIndex[Priority]];
+		uint32 currentQueueIndex = queuePointer.lastQueueIndex[Priority]++;
+		queuePointer.lastQueueIndex[Priority] %= queuePointer.countPerPriority;
+
+		return queuePointer.queueBasePointer[Priority][currentQueueIndex];
 	}
 
 	String getResourceName() const override

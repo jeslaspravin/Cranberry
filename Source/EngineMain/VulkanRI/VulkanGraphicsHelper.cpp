@@ -166,6 +166,7 @@ void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstanc
 	const VulkanDevice* device = &gInstance->selectedDevice;
 
 	std::vector<VkSwapchainKHR> swapchains(canvases->size());
+	std::vector<VkResult> results(canvases->size());
 	std::vector<VkSemaphore> semaphores(waitOnSemaphores ? waitOnSemaphores->size() : 0);
 
 	for (int32 i = 0; i < swapchains.size(); ++i)
@@ -181,15 +182,27 @@ void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstanc
 	presentInfo.pImageIndices = imageIndex->data();
 	presentInfo.pSwapchains = swapchains.data();
 	presentInfo.swapchainCount = (uint32)swapchains.size();
-	presentInfo.pWaitSemaphores = semaphores.data();
+	presentInfo.pResults = results.data();
+	presentInfo.pWaitSemaphores = semaphores.size() > 0?semaphores.data():nullptr;
 	presentInfo.waitSemaphoreCount = (uint32)semaphores.size();
 
 	VkResult result = device->vkQueuePresentKHR(getQueue<EQueueFunction::Present>(device->allQueues, device)
 		->getQueueOfPriority<EQueuePriority::SuperHigh>(), &presentInfo);
 
-	if (result != VK_SUCCESS || result != VK_SUBOPTIMAL_KHR)
+	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 	{
 		Logger::error("VulkanPresenting", "%s() : Failed to present images", __func__);
+	}
+	else
+	{
+		for (int32 i = 0; i < results.size(); ++i)
+		{
+			if (results[i] != VK_SUCCESS && results[i] != VK_SUBOPTIMAL_KHR)
+			{
+				Logger::error("VulkanPresenting", "%s() : Failed presenting for window %s", __func__,
+					(*canvases)[i]->getResourceName().getChar());
+			}
+		}
 	}
 }
 
