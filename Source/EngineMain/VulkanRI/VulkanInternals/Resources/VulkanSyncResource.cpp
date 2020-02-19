@@ -223,6 +223,7 @@ void VulkanFence::release()
 {
 	if (fence && fence != VK_NULL_HANDLE)
 	{
+		waitForSignal();
 		vulkanDevice->vkDestroyFence(ownerDevice, fence, nullptr);
 		fence = nullptr;
 	}

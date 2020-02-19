@@ -59,8 +59,11 @@ uint32 VulkanWindowCanvas::requestNextImage(SharedPtr<GraphicsSemaphore>* waitOn
 	{
 		fences[currentSyncIdx]->resetSignal();
 	}
+
+	SharedPtr<GraphicsSemaphore>* semaphorePtr = waitOnSemaphore ? &semaphores[currentSyncIdx] : nullptr;
 	currentSwapchainIdx = VulkanGraphicsHelper::getNextSwapchainImage(gEngine->getRenderApi()->getGraphicsInstance(),
-		swapchainPtr, &semaphores[currentSyncIdx], &fences[currentSyncIdx]);
+		swapchainPtr, semaphorePtr, &fences[currentSyncIdx]);
+
 	if (waitOnSemaphore || waitOnFence)
 	{
 		if (waitOnFence)
