@@ -133,10 +133,10 @@ void ExperimentalEngine::onStartUp()
 
 void ExperimentalEngine::onQuit()
 {
-    vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Present].resetableCommandPool, 1, &swapchainCmdBuffer);
     vFence->release();
     vFence.reset();
 
+    vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Present].resetableCommandPool, 1, &swapchainCmdBuffer);
     destroyPools();
     GameEngine::onQuit();
 }
@@ -182,10 +182,10 @@ void ExperimentalEngine::tickEngine()
     qSubmitInfo.pWaitSemaphores = &static_cast<VulkanSemaphore*>(waitSemaphore.get())->semaphore;
     qSubmitInfo.waitSemaphoreCount = 1;
 
+    vFence->resetSignal();
     vDevice->vkQueueSubmit(getQueue<EQueueFunction::Present>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>()
         , 1, &qSubmitInfo, static_cast<VulkanFence*>(vFence.get())->fence);
     vFence->waitForSignal();
-    vFence->resetSignal();
     GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, nullptr);
 	appInstance().appWindowManager.getMainWindow()->updateWindow();
 }
