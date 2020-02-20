@@ -44,3 +44,8 @@ struct LibPointer {
 	virtual ~LibPointer() {}
 
 };
+
+typedef LibPointer* LibPointerPtr;
+
+struct PlatformInstance{};
+
