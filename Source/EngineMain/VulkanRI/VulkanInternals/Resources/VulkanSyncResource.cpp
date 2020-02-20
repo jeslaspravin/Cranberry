@@ -183,7 +183,12 @@ VulkanFence::VulkanFence(const VulkanDevice* deviceInstance)
 
 void VulkanFence::waitForSignal() const
 {
-	vulkanDevice->vkWaitForFences(ownerDevice, 1, &fence,VK_TRUE, 2000000000/*2 Seconds*/);
+    VkResult result = vulkanDevice->vkWaitForFences(ownerDevice, 1, &fence, VK_TRUE, 20000000/*50ms*/);
+
+	if (result == VK_TIMEOUT)
+    {
+        Logger::warn("VulkanFence", "%s() : waiting for fence timedout", __func__);
+    }
 }
 
 bool VulkanFence::isSignaled() const
