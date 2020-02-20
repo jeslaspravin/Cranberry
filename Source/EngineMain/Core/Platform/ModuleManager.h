@@ -7,9 +7,10 @@ class ModuleManager {
 
 private:
 
-	std::unordered_map<String, LibPointer*> loadedModules;
+	std::unordered_map<String, std::pair<LibPointerPtr,struct ModuleData>> loadedModules;
 
 public:
+	ModuleManager();
 	~ModuleManager();
 
 	static ModuleManager* get();
@@ -20,4 +21,5 @@ public:
 
 	LibPointer* getOrLoadModule(String moduleName);
 
+	std::vector<std::pair<LibPointerPtr,struct ModuleData>> getAllModuleData();
 };
