@@ -1,7 +1,6 @@
 #pragma once
 #include "PlatformTypes.h"
 #include "../String/String.h"
-#include "../Memory/SmartPointers.h"
 
 struct ModuleData
 {
