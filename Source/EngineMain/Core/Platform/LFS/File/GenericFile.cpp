@@ -26,7 +26,7 @@ void GenericFile::setPaths(const String& fPath)
 	}
 	else
 	{
-		Logger::error("File", "%s() : File path %s is invalid", __func__, fPath);
+		Logger::error("File", "%s() : File path \"%s\" is invalid", __func__, fPath.getChar());
 	}
 }
 
@@ -39,7 +39,8 @@ GenericFile::GenericFile():
 
 }
 
-GenericFile::GenericFile(const String& path)
+GenericFile::GenericFile(const String& path) :
+	fileHandle(nullptr)
 {
 	setPaths(path);
 }
