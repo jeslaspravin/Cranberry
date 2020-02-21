@@ -1,15 +1,11 @@
 #pragma once
 
+class UnexpectedErrorHandler
+{
+public:
+    static UnexpectedErrorHandler* getHandler();
 
-#if _WIN32
-
-
-
-#elif __unix__
-
-static_assert(false, "Platform not supported!");
-#elif __linux__
-static_assert(false, "Platform not supported!");
-#elif __APPLE__
-static_assert(false, "Platform not supported!");
-#endif
+    virtual void registerFilter() = 0;
+    virtual void unregisterFilter() = 0;
+    virtual void dumpCallStack() = 0;
+};
