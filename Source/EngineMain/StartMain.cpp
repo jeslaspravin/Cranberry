@@ -57,7 +57,9 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     }
     Logger::debug("CommandLine", "%s() : Command [%s]",__func__, appInstance.cmdLine.getChar());
     
-    return appMain(&appInstance);
+    int32 exitCode = appMain(&appInstance);
+
+    return exitCode;
 }
 
 #elif __unix__
