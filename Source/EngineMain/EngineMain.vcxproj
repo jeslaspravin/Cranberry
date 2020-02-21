@@ -170,6 +170,7 @@
     <ClCompile Include="Core\Platform\GenericAppWindow.cpp" />
     <ClCompile Include="Core\Platform\LFS\File\GenericFile.cpp" />
     <ClCompile Include="Core\Platform\ModuleManager.cpp" />
+    <ClCompile Include="Core\Platform\PlatformAssertionErrors.cpp" />
     <ClCompile Include="Core\Platform\Windows\ErrorsAsserts\WindowsErrorHandler.cpp" />
     <ClCompile Include="Core\Platform\Windows\LFS\File\WindowsFile.cpp" />
     <ClCompile Include="Core\Platform\Windows\LFS\File\WindowsFileHandle.cpp" />
