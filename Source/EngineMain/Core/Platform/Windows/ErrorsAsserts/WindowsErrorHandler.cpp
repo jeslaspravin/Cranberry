@@ -9,6 +9,7 @@
 #include <DbgHelp.h>
 #include <sstream>
 #include "../../../Engine/GameEngine.h"
+#include "../../LFS/PlatformLFS.h"
 
 class SymbolInfo {
 
@@ -23,7 +24,8 @@ class SymbolInfo {
     IMAGEHLP_LINE64 line;
 
 public:
-    SymbolInfo(HANDLE process, uint64 address,dword offset) : symBuff() {
+	SymbolInfo(HANDLE process, uint64 address, dword offset) : symBuff(), line() {
+		line.SizeOfStruct = sizeof(line);
         symBuff.symbol.SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
         symBuff.symbol.MaxNameLength = MAX_BUFFER_LEN;
         uint64 displacement = offset;
@@ -39,13 +41,15 @@ public:
     String name() { return symBuff.symbol.Name; }
     String undecoratedName() {
         String udName;
+        udName.resize(MAX_BUFFER_LEN);
         if (*symBuff.symbol.Name == '\0')
         {
             udName = "no mapping from PC to function name";
         }
         else
         {
-            UnDecorateSymbolName(symBuff.symbol.Name, udName.data(), MAX_BUFFER_LEN, UNDNAME_COMPLETE);
+            dword nameLen = UnDecorateSymbolName(symBuff.symbol.Name, udName.data(), MAX_BUFFER_LEN, UNDNAME_COMPLETE);
+            udName.resize(nameLen);
         }        
         return udName;
     }
@@ -100,9 +104,6 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context)
     IMAGE_NT_HEADERS* imageHeader = ImageNtHeader(modulesDataPairs[0].second.basePtr);
     dword imageType = imageHeader->FileHeader.Machine;
 
-    IMAGEHLP_LINE64 line = { 0 };
-    line.SizeOfStruct = sizeof(line);
-
 #ifdef _M_X64
     STACKFRAME64 frame;
     frame.AddrPC.Offset = context->Rip;
@@ -134,11 +135,13 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context)
                 if (moduleBase == (uint64)modulePair.second.basePtr)
                 {
                     moduleName = modulePair.second.name;
+                    break;
                 }
             }
-
-            stackTrace << moduleName.getChar() << " [" << std::hex << frame.AddrPC.Offset << "] : " << symInfo.undecoratedName()
-                << "(" << symInfo.name() << ") : (" << symInfo.fileName() << ":" << symInfo.lineNumber() <<"\r\n";
+            String fileName = PlatformFile(symInfo.fileName()).getFileName();
+            stackTrace << moduleName.getChar() << " [0x" << std::hex << frame.AddrPC.Offset << std::dec <<"] : " 
+                << symInfo.undecoratedName() << "(" << symInfo.name() << ") : ("
+                << fileName.getChar() << "):" << symInfo.lineNumber();
         }
         else
         {
@@ -146,14 +149,15 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context)
         }
 
         if (!StackWalk64(imageType, processHandle, threadHandle, &frame, context, NULL, SymFunctionTableAccess64,
-            SymGetModuleBase64, NULL))
+            SymGetModuleBase64, NULL) || frame.AddrReturn.Offset == 0)
         {
             break;
         }
-    } while (frame.AddrReturn.Offset != 0);
+        stackTrace << "\r\n";
+    } while (true);
     SymCleanup(processHandle);
-
-    Logger::error("WindowsUnexpectedErrorHandler", "Error call trace : %s", stackTrace.str().c_str());
+    
+    Logger::error("WindowsUnexpectedErrorHandler", "Error call trace : \r\n%s", stackTrace.str().c_str());
 
     if (gEngine)
     {
@@ -240,6 +244,7 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS* ex
     {
         errorStream << exceptionCodeMessage(pExceptionRecord->ExceptionCode) << " [" << std::hex <<
             pExceptionRecord->ExceptionAddress << "]";
+        pExceptionRecord = pExceptionRecord->ExceptionRecord;
     }
     AChar* errorMsg;
     DWORD dw = GetLastError();
