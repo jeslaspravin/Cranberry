@@ -7,7 +7,7 @@
 
 int appMain(GenericAppInstance* appInstance)
 {
-    ::gEngine = new GameEngine();
+	::gEngine = new ExperimentalEngine();
     UnexpectedErrorHandler::getHandler()->registerFilter();
 
     Logger::log("Engine", "%s() : Engine start", __func__);
@@ -31,7 +31,6 @@ int appMain(GenericAppInstance* appInstance)
 
 int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-	::gEngine = new ExperimentalEngine();
     PlatformAppInstance appInstance;
     FileSystemFunctions::applicationDirectory(appInstance.applicationName);
     String extension;
