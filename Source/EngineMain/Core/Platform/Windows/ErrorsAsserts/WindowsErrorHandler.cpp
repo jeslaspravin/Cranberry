@@ -161,8 +161,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context)
 
     if (gEngine)
     {
-        // TODO(JESLAS): Check if it is waiting for exiting? and change if required 
-        gEngine->requestExit();
+        gEngine->quit();
     }
 }
 
@@ -253,7 +252,8 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS* ex
     
     Logger::error("WindowsUnexpectedErrorHandler", "Application encountered an error! Error : %s%s",errorMsg,errorStream.str().c_str());
     LocalFree(errorMsg);
-
+    
+    getHandler()->unregisterFilter();
     getHandler()->dumpStack(exp->ContextRecord);
     return EXCEPTION_CONTINUE_SEARCH;
 }
