@@ -2,7 +2,25 @@
 #include "PlatformFunctions.h"
 #include "../Logger/Logger.h"
 
-ModuleManager::ModuleManager():loadedModules(){}
+ModuleManager::ModuleManager():loadedModules()
+{
+    void* procHandle = PlatformFunctions::getCurrentProcessHandle();
+    uint32 modulesSize;
+    PlatformFunctions::getAllModules(procHandle, nullptr, modulesSize);
+    std::vector<LibPointerPtr> libptrs(modulesSize);
+    PlatformFunctions::getAllModules(procHandle, libptrs.data(), modulesSize);
+    libptrs.resize(modulesSize);
+
+    for (LibPointerPtr libPtr : libptrs)
+    {
+        ModuleData data;
+        PlatformFunctions::getModuleInfo(procHandle, libPtr, data);
+        Logger::debug("ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d", __func__,
+            data.name.getChar(), data.imgName.getChar(), data.moduleSize);
+        loadedModules[data.name].first = libPtr;
+        loadedModules[data.name].second = data;
+    }
+}
 
 ModuleManager::~ModuleManager()
 {
