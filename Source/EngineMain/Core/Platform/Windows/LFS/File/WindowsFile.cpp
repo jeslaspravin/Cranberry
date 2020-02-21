@@ -4,7 +4,7 @@
 #include "../../../PlatformFunctions.h"
 #include "../../../LFS/PlatformLFS.h"
 
-WindowsFile::WindowsFile(WindowsFile&& otherFile)
+WindowsFile::WindowsFile(WindowsFile&& otherFile) : GenericFile()
 {
 	fileHandle = otherFile.fileHandle;
 	otherFile.fileHandle = nullptr;
@@ -17,7 +17,7 @@ WindowsFile::WindowsFile(WindowsFile&& otherFile)
 	directoryPath = std::move(otherFile.directoryPath);
 }
 
-WindowsFile::WindowsFile(const WindowsFile& otherFile)
+WindowsFile::WindowsFile(const WindowsFile& otherFile) : GenericFile()
 {
 	fileFlags = otherFile.fileFlags;
 	sharingMode = otherFile.sharingMode;
