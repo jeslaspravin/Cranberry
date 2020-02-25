@@ -2,14 +2,14 @@
 #include "../../../Logger/Logger.h"
 #include "../../ModuleManager.h"
 #include "../../GenericPlatformFunctions.h"
+#include "../../../Engine/GameEngine.h"
+#include "../../LFS/PlatformLFS.h"
 
 #pragma comment(lib, "dbghelp.lib")
 
 #include <Windows.h>
 #include <DbgHelp.h>
 #include <sstream>
-#include "../../../Engine/GameEngine.h"
-#include "../../LFS/PlatformLFS.h"
 
 class SymbolInfo {
 

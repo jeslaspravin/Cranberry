@@ -8,6 +8,7 @@
 #include "../Core/Engine/GameEngine.h"
 #include "../RenderInterface/Resources/GraphicsResources.h"
 #include "VulkanInternals/Debugging.h"
+#include "VulkanInternals/VulkanMemoryAllocator.h"
 
 #include <iostream>
 #include <assert.h>
@@ -46,7 +47,8 @@ void VulkanGraphicsInstance::load()
 void VulkanGraphicsInstance::unload()
 {
 	if (selectedDevice.isValidDevice())
-	{
+	{	
+		memoryAllocator.reset();
 		selectedDevice.freeLogicDevice();
 	}
 
@@ -222,8 +224,9 @@ void VulkanGraphicsInstance::loadSurfaceDependents()
 	createVulkanDevice();
 
 	if (selectedDevice.isValidDevice())
-	{
+	{		
 		selectedDevice.createLogicDevice();
+		memoryAllocator = IVulkanMemoryAllocator::createAllocator(&selectedDevice);
 	}
 }
 

@@ -195,6 +195,7 @@
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanWindowCanvas.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanDevice.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanFunctions.cpp" />
+    <ClCompile Include="VulkanRI\VulkanInternals\VulkanMemoryAllocator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Engine\GameEngine.h" />
@@ -248,6 +249,7 @@
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanDevice.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanFunctions.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanMacros.h" />
+    <ClInclude Include="VulkanRI\VulkanInternals\VulkanMemoryAllocator.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="VulkanRI\VulkanInternals\VulkanFunctionLists.inl" />
