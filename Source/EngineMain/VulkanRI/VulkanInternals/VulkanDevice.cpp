@@ -288,6 +288,79 @@ int32 VulkanDevice::compareSurfaceCompatibility(const class GenericWindowCanvas*
 	return presentationSupported - otherPresentationSupported;
 }
 
+int32 VulkanDevice::compareMemoryCompatibility(const VulkanDevice& otherDevice) const
+{
+	int32 heapCountDiff = ((int32)memoryProperties.memoryHeapCount) - ((int32)otherDevice.memoryProperties.memoryHeapCount);
+	if (heapCountDiff != 0)
+	{
+		return heapCountDiff > 0 ? 1 : -1;
+	}
+
+	int64 maxSupportedDeviceHeapSize = 0;
+	int32 deviceHeapIndex = -1;
+	int32 sharedHeapIndex = -1;
+	for (uint32 i = 0; i < memoryProperties.memoryTypeCount; ++i)
+	{
+		if (memoryProperties.memoryTypes[i].propertyFlags != 0
+			&& (memoryProperties.memoryTypes[i].propertyFlags & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+		{
+			if (maxSupportedDeviceHeapSize < (int64)memoryProperties.memoryHeaps[memoryProperties.memoryTypes[i].heapIndex].size)
+            {
+                deviceHeapIndex = memoryProperties.memoryTypes[i].heapIndex;
+				maxSupportedDeviceHeapSize = memoryProperties.memoryHeaps[deviceHeapIndex].size;
+			}
+		}
+
+		if ((memoryProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0)
+		{
+			sharedHeapIndex = memoryProperties.memoryTypes[i].heapIndex;
+		}
+
+	}
+
+    int64 otherMaxSupportedDeviceHeapSize = 0;
+    int32 otherDeviceHeapIndex = -1;
+    int32 otherSharedHeapIndex = -1;
+    for (uint32 i = 0; i < otherDevice.memoryProperties.memoryTypeCount; ++i)
+    {
+        if (otherDevice.memoryProperties.memoryTypes[i].propertyFlags != 0 
+			&& (otherDevice.memoryProperties.memoryTypes[i].propertyFlags & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+        {
+            if (otherMaxSupportedDeviceHeapSize < (int64)otherDevice.memoryProperties.memoryHeaps[otherDevice.memoryProperties.memoryTypes[i].heapIndex].size)
+            {
+                otherDeviceHeapIndex = otherDevice.memoryProperties.memoryTypes[i].heapIndex;
+				otherMaxSupportedDeviceHeapSize = otherDevice.memoryProperties.memoryHeaps[otherDeviceHeapIndex].size;
+            }
+        }
+
+        if ((otherDevice.memoryProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0)
+        {
+            otherSharedHeapIndex = otherDevice.memoryProperties.memoryTypes[i].heapIndex;
+        }
+    }
+
+	// If both has shared memory only or both are dedicated
+	if ((deviceHeapIndex == sharedHeapIndex && otherDeviceHeapIndex == otherSharedHeapIndex) 
+		|| (deviceHeapIndex != sharedHeapIndex && otherDeviceHeapIndex != otherSharedHeapIndex))
+	{
+		int64 heapSizeDiff = maxSupportedDeviceHeapSize - otherMaxSupportedDeviceHeapSize;
+		if (heapSizeDiff != 0)
+		{
+			return heapSizeDiff > 0 ? 1 : -1;
+		}
+	}
+
+	if (deviceHeapIndex != sharedHeapIndex)
+	{
+		return 1;
+	}
+    if (otherDeviceHeapIndex != otherSharedHeapIndex)
+    {
+        return -1;
+    }
+	return 0;
+}
+
 VulkanDevice::VulkanDevice()
 {
 
@@ -334,6 +407,10 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice&& device) : graphicsDebug(this)
 		Vk::vkGetPhysicalDeviceProperties2KHR(physicalDevice, &advancedProperties);
 		properties = advancedProperties.properties;
 		timelineSemaphoreProps = tSemaphoreProperties;
+
+		Vk::vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+        Logger::debug("VulkanDevice", "%s() : Found %d memory types and %d heaps in device %s", __func__,
+            memoryProperties.memoryTypeCount, memoryProperties.memoryHeapCount, properties.deviceName);
 	}
 
 	Logger::debug("VulkanDevice", "%s() : Found %d extensions and %d layers in device %s", __func__,
@@ -365,6 +442,7 @@ enabledFeatures = std::move(rVulkanDevice.enabledFeatures); \
 logicalDevice = std::move(rVulkanDevice.logicalDevice); \
 timelineSemaphoreProps = std::move(rVulkanDevice.timelineSemaphoreProps); \
 timelineSemaphoreFeatures = std::move(rVulkanDevice.timelineSemaphoreFeatures); \
+memoryProperties = std::move(rVulkanDevice.memoryProperties); \
 graphicsDebug = { this }; \
 
 VulkanDevice::VulkanDevice(VulkanDevice&& rVulkanDevice)
@@ -394,6 +472,7 @@ enabledFeatures = otherDevice.enabledFeatures; \
 logicalDevice = otherDevice.logicalDevice; \
 timelineSemaphoreProps = otherDevice.timelineSemaphoreProps; \
 timelineSemaphoreFeatures = otherDevice.timelineSemaphoreFeatures; \
+memoryProperties = otherDevice.memoryProperties; \
 graphicsDebug = { this }; \
 
 VulkanDevice::VulkanDevice(const VulkanDevice& otherDevice)
@@ -557,6 +636,14 @@ int32 VulkanDevice::compare(const VulkanDevice& otherDevice) const
 		if (canvasChoice != 0)
 		{
 			return canvasChoice;
+		}
+	}
+
+	{
+		int32 memoryChoice = compareMemoryCompatibility(otherDevice);
+		if (memoryChoice != 0)
+		{
+			return memoryChoice;
 		}
 	}
 

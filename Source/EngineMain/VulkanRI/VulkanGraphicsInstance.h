@@ -2,6 +2,8 @@
 #include "../RenderInterface/GraphicsIntance.h"
 #include "../Core/Platform/GenericPlatformTypes.h"
 #include "VulkanInternals/VulkanDevice.h"
+#include "../Core/Memory/SmartPointers.h"
+
 #include <vector>
 #include "vulkan_core.h"
 
@@ -17,6 +19,7 @@ private:
 
 	VkInstance vulkanInstance;
 	VulkanDevice selectedDevice;
+	SharedPtr<class IVulkanMemoryAllocator> memoryAllocator;
 
 	void loadGlobalFunctions();
 	void loadInstanceFunctions();

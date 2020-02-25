@@ -1,18 +1,17 @@
 #pragma once
 #include "../../Core/Platform/PlatformTypes.h"
+#include "Debugging.h"
 
 #include <vector>
 #include <vulkan_core.h>
-#include "Debugging.h"
 
 class String;
 class QueueResourceBase;
 
-
-
 class VulkanDevice {
 
 	friend class VulkanGraphicsHelper;
+	friend class VulkanMemoryAllocator;
 
 private:
 	VulkanDebugGraphics graphicsDebug;
@@ -22,6 +21,7 @@ private:
 	VkPhysicalDevice physicalDevice = nullptr;
 	VkPhysicalDeviceProperties properties;
 	VkPhysicalDeviceTimelineSemaphorePropertiesKHR timelineSemaphoreProps;
+	VkPhysicalDeviceMemoryProperties memoryProperties;
 
 	VkPhysicalDeviceFeatures features;
 	VkPhysicalDeviceFeatures enabledFeatures;
@@ -65,6 +65,7 @@ private:
 
 	void cacheGlobalSurfaceProperties();
 	int32 compareSurfaceCompatibility(const class GenericWindowCanvas* surfaceCanvas,const VulkanDevice& otherDevice) const;
+	int32 compareMemoryCompatibility(const VulkanDevice& otherDevice) const;
 	// Swap chain and surface
 public:
 	VulkanDevice();
