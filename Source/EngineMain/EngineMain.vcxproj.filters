@@ -204,6 +204,9 @@
     <ClCompile Include="Core\Platform\PlatformAssertionErrors.cpp">
       <Filter>Source Files\Core\Platform</Filter>
     </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\VulkanMemoryAllocator.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
+    </ClCompile>
     <ClCompile Include="Experimental\ExperimentalEngine.cpp">
       <Filter>Source Files\Experimental</Filter>
     </ClCompile>
@@ -361,6 +364,9 @@
     </ClInclude>
     <ClInclude Include="Core\Platform\Windows\ErrorsAsserts\WindowsErrorHandler.h">
       <Filter>Source Files\Core\Platform\Windows\ErrorsAsserts</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\VulkanMemoryAllocator.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
     </ClInclude>
     <ClInclude Include="Experimental\ExperimentalEngine.h">
       <Filter>Source Files\Experimental</Filter>
