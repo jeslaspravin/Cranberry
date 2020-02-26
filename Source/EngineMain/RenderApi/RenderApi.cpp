@@ -4,17 +4,17 @@
 
 void RenderApi::initialize()
 {
-	graphicsInstance = new GraphicInstance();
-	graphicsInstance->load();
-	gEngine->appInstance().appWindowManager.initMain();
-	graphicsInstance->loadSurfaceDependents();
-	gEngine->appInstance().appWindowManager.postInitGraphicCore();
+    graphicsInstance = new GraphicInstance();
+    graphicsInstance->load();
+    gEngine->appInstance().appWindowManager.initMain();
+    graphicsInstance->loadSurfaceDependents();
+    gEngine->appInstance().appWindowManager.postInitGraphicCore();
 }
 
 void RenderApi::destroy()
 {
-	gEngine->appInstance().appWindowManager.destroyMain();
-	graphicsInstance->unload();
-	delete graphicsInstance;
-	graphicsInstance = nullptr;
+    gEngine->appInstance().appWindowManager.destroyMain();
+    graphicsInstance->unload();
+    delete graphicsInstance;
+    graphicsInstance = nullptr;
 }

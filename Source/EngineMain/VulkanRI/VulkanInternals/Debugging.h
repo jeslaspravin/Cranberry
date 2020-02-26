@@ -11,44 +11,44 @@ class VulkanDevice;
 class VulkanDebugLogger
 {
 private:
-	VulkanDebugLogger(){}
+    VulkanDebugLogger(){}
 
-	static DebugMessengerData& getData();
+    static DebugMessengerData& getData();
 
-	static VkBool32 vkDebugUtilsMessengerCallbackDebug(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT	messageTypes,const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData);
+    static VkBool32 vkDebugUtilsMessengerCallbackDebug(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT    messageTypes,const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData);
 
-	static VkBool32 vkDebugUtilsMessengerCallbackInfo(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT	messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData);
+    static VkBool32 vkDebugUtilsMessengerCallbackInfo(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT    messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData);
 
-	static VkBool32 vkDebugUtilsMessengerCallbackWarn(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT	messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData);
+    static VkBool32 vkDebugUtilsMessengerCallbackWarn(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT    messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData);
 
-	static VkBool32 vkDebugUtilsMessengerCallbackError(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT	messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData);
+    static VkBool32 vkDebugUtilsMessengerCallbackError(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT    messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData);
 
 public:
-	static bool registerDebugLogger(const VkInstance vulkanInstance);
-	static void unregisterDebugLogger();
+    static bool registerDebugLogger(const VkInstance vulkanInstance);
+    static void unregisterDebugLogger();
 };
 
 class VulkanDebugGraphics
 {
 private:
-	const VulkanDevice* ownerDevice;
+    const VulkanDevice* ownerDevice;
 
 public:
-	VulkanDebugGraphics() : ownerDevice(nullptr){}
-	VulkanDebugGraphics(VulkanDevice* device);
+    VulkanDebugGraphics() : ownerDevice(nullptr){}
+    VulkanDebugGraphics(VulkanDevice* device);
 
-	VulkanDebugGraphics(const VulkanDebugGraphics& other);
-	VulkanDebugGraphics(VulkanDebugGraphics&& rValue);
-	void operator=(const VulkanDebugGraphics& other);
-	void operator=(VulkanDebugGraphics&& rValue);
+    VulkanDebugGraphics(const VulkanDebugGraphics& other);
+    VulkanDebugGraphics(VulkanDebugGraphics&& rValue);
+    void operator=(const VulkanDebugGraphics& other);
+    void operator=(VulkanDebugGraphics&& rValue);
 
     void markObject(const IVulkanResources* resource) const;
     void markObject(const uint64& objectHandle, const String& objectName,VkObjectType objectType) const;
@@ -62,9 +62,9 @@ public:
 
 struct ScopedCommandMarker
 {
-	VkCommandBuffer cmdBuffer;
-	ScopedCommandMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color);
-	~ScopedCommandMarker();
+    VkCommandBuffer cmdBuffer;
+    ScopedCommandMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color);
+    ~ScopedCommandMarker();
 };
 
 struct ScopedQueueMarker

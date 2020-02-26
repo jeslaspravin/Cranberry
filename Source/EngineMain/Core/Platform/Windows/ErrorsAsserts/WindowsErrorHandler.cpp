@@ -24,8 +24,8 @@ class SymbolInfo {
     IMAGEHLP_LINE64 line;
 
 public:
-	SymbolInfo(HANDLE process, uint64 address, dword offset) : symBuff(), line() {
-		line.SizeOfStruct = sizeof(line);
+    SymbolInfo(HANDLE process, uint64 address, dword offset) : symBuff(), line() {
+        line.SizeOfStruct = sizeof(line);
         symBuff.symbol.SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
         symBuff.symbol.MaxNameLength = MAX_BUFFER_LEN;
         uint64 displacement = offset;
@@ -241,7 +241,7 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS* ex
     std::stringstream errorStream;
     while (pExceptionRecord != NULL)
     {
-        errorStream << exceptionCodeMessage(pExceptionRecord->ExceptionCode) << " [" << std::hex <<
+        errorStream << exceptionCodeMessage(pExceptionRecord->ExceptionCode) << " [0x" << std::hex <<
             pExceptionRecord->ExceptionAddress << "]";
         pExceptionRecord = pExceptionRecord->ExceptionRecord;
     }

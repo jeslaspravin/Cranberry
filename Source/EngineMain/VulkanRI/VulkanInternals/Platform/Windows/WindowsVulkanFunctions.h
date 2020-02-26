@@ -6,19 +6,19 @@
 
 struct PFN_Win32SurfaceKHR : PFN_SurfaceKHR<VkInstance, const void*, const VkAllocationCallbacks*, VkSurfaceKHR*>
 {
-	HINSTANCE hInstance;
-	HWND hWindow;
+    HINSTANCE hInstance;
+    HWND hWindow;
 
-	static const char* EXT_NAME;
+    static const char* EXT_NAME;
 
-	PFN_Win32SurfaceKHR():hInstance(nullptr),hWindow(nullptr) {}
+    PFN_Win32SurfaceKHR():hInstance(nullptr),hWindow(nullptr) {}
 
-	void setInstanceWindow(const struct GenericAppInstance* instance, const class GenericAppWindow* window) override;
-	void operator()(VkInstance instance, const void* pNext, const VkAllocationCallbacks* allocatorCallback,
-		VkSurfaceKHR* surface) const override;
+    void setInstanceWindow(const struct GenericAppInstance* instance, const class GenericAppWindow* window) override;
+    void operator()(VkInstance instance, const void* pNext, const VkAllocationCallbacks* allocatorCallback,
+        VkSurfaceKHR* surface) const override;
 };
 
 namespace GVulkanPlatform
 {
-	typedef PFN_Win32SurfaceKHR PFN_vkCreatePlatformSurfaceKHR;
+    typedef PFN_Win32SurfaceKHR PFN_vkCreatePlatformSurfaceKHR;
 }

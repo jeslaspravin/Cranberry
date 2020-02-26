@@ -3,23 +3,23 @@
 #include <windows.h>
 
 class WindowsAppWindow:public GenericAppWindow {
-	
+    
 private:
-	HWND windowsHandle;
+    HWND windowsHandle;
 
 protected:
-	void resizeWindow() override;
+    void resizeWindow() override;
 
 public:
-	void createWindow(const GenericAppInstance* appInstance) override;
-	void updateWindow() override;
-	void destroyWindow() override;
+    void createWindow(const GenericAppInstance* appInstance) override;
+    void updateWindow() override;
+    void destroyWindow() override;
 
-	HWND getWindowHandle() const { return windowsHandle; }
-	bool isValidWindow() const override;
+    HWND getWindowHandle() const { return windowsHandle; }
+    bool isValidWindow() const override;
 
 };
 
 namespace GPlatformInstances {
-	typedef WindowsAppWindow PlatformAppWindow;
+    typedef WindowsAppWindow PlatformAppWindow;
 }
