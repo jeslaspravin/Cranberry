@@ -7,23 +7,23 @@ class GenericWindowCanvas;
 class WindowManager final
 {
 private:
-	GenericAppWindow* appMainWindow = nullptr;
+    GenericAppWindow* appMainWindow = nullptr;
 
-	struct ManagerData
-	{
-		GenericWindowCanvas* windowCanvas = nullptr;
-	};
+    struct ManagerData
+    {
+        GenericWindowCanvas* windowCanvas = nullptr;
+    };
 
-	std::map<GenericAppWindow*, ManagerData> windowsOpened;
+    std::map<GenericAppWindow*, ManagerData> windowsOpened;
 
 public:
 
-	GenericAppWindow* getMainWindow() const;
-	GenericWindowCanvas* getWindowCanvas(GenericAppWindow* window) const;
+    GenericAppWindow* getMainWindow() const;
+    GenericWindowCanvas* getWindowCanvas(GenericAppWindow* window) const;
 
-	void initMain();
-	// One time only function
-	void postInitGraphicCore();
-	void destroyMain();
+    void initMain();
+    // One time only function
+    void postInitGraphicCore();
+    void destroyMain();
 };
 

@@ -6,17 +6,17 @@
 class WindowsFileHandle final : public GenericFileHandle
 {
 private:
-	HANDLE fileHandle=nullptr;
+    HANDLE fileHandle=nullptr;
 
 protected:
-	void* getFileHandle() override;
+    void* getFileHandle() override;
 
 public:
-	WindowsFileHandle(uint8 flags, uint8 sharing = (uint8)EFileSharing::ReadOnly,
-		uint32 extraFlags = 0, uint64 advancedFlags = 0);
+    WindowsFileHandle(uint8 flags, uint8 sharing = (uint8)EFileSharing::ReadOnly,
+        uint32 extraFlags = 0, uint64 advancedFlags = 0);
 
-	~WindowsFileHandle();
+    ~WindowsFileHandle();
 
-	bool openFile(const String& filePath);
-	bool closeFile();
+    bool openFile(const String& filePath);
+    bool closeFile();
 };

@@ -4,28 +4,28 @@
 
 void GenericAppWindow::windowSize(uint32& width, uint32& height) const
 {
-	width = windowWidth;
-	height = windowHeight;
+    width = windowWidth;
+    height = windowHeight;
 }
 
 void GenericAppWindow::setWindowSize(const uint32& width, const uint32& height, bool updateResources)
 {
-	windowWidth = width;
-	windowHeight = height;
-	if(updateResources)
-		resizeWindow();
+    windowWidth = width;
+    windowHeight = height;
+    if(updateResources)
+        resizeWindow();
 }
 
 void GenericAppWindow::setWindowName(const String& wndName)
 {
-	windowName = wndName;
+    windowName = wndName;
 }
 
 void GenericAppWindow::destroyWindow()
 {
-	for (GenericAppWindow* child : childWindows)
-	{
-		child->destroyWindow();
-	}
-	childWindows.clear();
+    for (GenericAppWindow* child : childWindows)
+    {
+        child->destroyWindow();
+    }
+    childWindows.clear();
 }

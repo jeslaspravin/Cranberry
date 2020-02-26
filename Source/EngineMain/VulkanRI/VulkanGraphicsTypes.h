@@ -3,8 +3,8 @@
 #define VULKANGRAPHICSTYPES_H
 
 namespace GraphicsTypes {
-	typedef class VulkanGraphicsInstance GraphicInstance;
-	typedef class VulkanWindowCanvas WindowCanvas;
+    typedef class VulkanGraphicsInstance GraphicInstance;
+    typedef class VulkanWindowCanvas WindowCanvas;
 }
 
 #endif

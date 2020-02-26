@@ -7,54 +7,54 @@ template <typename ReturnType, typename ...Parameters>
 struct Function {
 
 protected:
-	typedef ReturnType(*StaticDelegate)(Parameters...);
+    typedef ReturnType(*StaticDelegate)(Parameters...);
 
-	StaticDelegate delegate;
+    StaticDelegate delegate;
 
 public:
 
-	virtual void operator=(void* functionPointer)
-	{
-		delegate = static_cast<StaticDelegate>(functionPointer);
-	}
+    virtual void operator=(void* functionPointer)
+    {
+        delegate = static_cast<StaticDelegate>(functionPointer);
+    }
 
-	virtual ReturnType operator()(Parameters ...params)
-	{
-		return (*delegate)(std::forward<Parameters>(params)...);
-	}
+    virtual ReturnType operator()(Parameters ...params)
+    {
+        return (*delegate)(std::forward<Parameters>(params)...);
+    }
 };
 
 template <typename ClassType,typename ReturnType, typename ...Parameters>
 struct ClassFunction {
-	typedef ReturnType(ClassType::* ClassDelegate)(Parameters...);
+    typedef ReturnType(ClassType::* ClassDelegate)(Parameters...);
 
-	ClassDelegate delegate;
+    ClassDelegate delegate;
 
-	void operator=(void* functionPointer)
-	{
-		delegate = static_cast<ClassDelegate>(functionPointer);
-	}
+    void operator=(void* functionPointer)
+    {
+        delegate = static_cast<ClassDelegate>(functionPointer);
+    }
 
-	ReturnType operator()(void* object,Parameters ...params)
-	{
-		return static_cast<ClassType*>(object)->(*delegate)(std::forward<Parameters>(params)...);
-	}
+    ReturnType operator()(void* object,Parameters ...params)
+    {
+        return static_cast<ClassType*>(object)->(*delegate)(std::forward<Parameters>(params)...);
+    }
 };
 
 template <typename ReturnType, typename ...Parameters>
 struct LambdaFunction {
 
-	typedef std::function<ReturnType(Parameters...)> LambdaDelegate;
+    typedef std::function<ReturnType(Parameters...)> LambdaDelegate;
 
-	LambdaDelegate delegate;
+    LambdaDelegate delegate;
 
-	void operator=(void* functionPointer)
-	{
-		delegate = static_cast<LambdaDelegate>(functionPointer);
-	}
+    void operator=(void* functionPointer)
+    {
+        delegate = static_cast<LambdaDelegate>(functionPointer);
+    }
 
-	ReturnType operator()(Parameters ...params)
-	{
-		return (*delegate)(std::forward<Parameters>(params)...);
-	}
+    ReturnType operator()(Parameters ...params)
+    {
+        return (*delegate)(std::forward<Parameters>(params)...);
+    }
 };
