@@ -187,5 +187,5 @@ void ExperimentalEngine::tickEngine()
         , 1, &qSubmitInfo, static_cast<VulkanFence*>(vFence.get())->fence);
     vFence->waitForSignal();
     GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, nullptr);
-	appInstance().appWindowManager.getMainWindow()->updateWindow();
+    appInstance().appWindowManager.getMainWindow()->updateWindow();
 }

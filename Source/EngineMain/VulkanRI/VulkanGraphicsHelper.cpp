@@ -40,7 +40,7 @@ class VulkanDevice* VulkanGraphicsHelper::getVulkanDevice(class IGraphicsInstanc
 
 std::vector<class QueueResourceBase*>* VulkanGraphicsHelper::getVDAllQueues(VulkanDevice* device)
 {
-	return &device->allQueues;
+    return &device->allQueues;
 }
 
 template <EQueueFunction QueueFunction>

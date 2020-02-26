@@ -7,7 +7,7 @@
 
 int appMain(GenericAppInstance* appInstance)
 {
-	::gEngine = new ExperimentalEngine();
+    ::gEngine = new ExperimentalEngine();
     UnexpectedErrorHandler::getHandler()->registerFilter();
 
     Logger::log("Engine", "%s() : Engine start", __func__);
