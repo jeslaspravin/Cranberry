@@ -6,30 +6,30 @@
 class GameEngine
 {
 private:
-	GenericAppInstance* applicationInstance;
-	bool bExitNextFrame = false;
+    GenericAppInstance* applicationInstance;
+    bool bExitNextFrame = false;
 protected:
-	UniquePtr<RenderApi> renderingApi;
+    UniquePtr<RenderApi> renderingApi;
 
 
-	virtual void onStartUp();
-	virtual void onQuit();
-	virtual void tickEngine();
+    virtual void onStartUp();
+    virtual void onQuit();
+    virtual void tickEngine();
 
 public:
 
-	void startup(GenericAppInstance* appInstance);
-	void engineLoop();
-	void quit();
+    void startup(GenericAppInstance* appInstance);
+    void engineLoop();
+    void quit();
 
-	void requestExit();
-	bool isExiting() { return bExitNextFrame; }
+    void requestExit();
+    bool isExiting() { return bExitNextFrame; }
 
-	const String& getAppName() const;
-	void getVersion(int32& head, int32& major, int32& sub) const;
-	const GenericAppInstance* getApplicationInstance() const;
-	GenericAppInstance& appInstance() const;
-	const RenderApi* getRenderApi() const { return renderingApi.get(); }
+    const String& getAppName() const;
+    void getVersion(int32& head, int32& major, int32& sub) const;
+    const GenericAppInstance* getApplicationInstance() const;
+    GenericAppInstance& appInstance() const;
+    const RenderApi* getRenderApi() const { return renderingApi.get(); }
 
 };
 

@@ -6,26 +6,26 @@ struct GenericAppInstance;
 
 class GenericAppWindow {
 protected:
-	uint32 windowWidth;
-	uint32 windowHeight;
+    uint32 windowWidth;
+    uint32 windowHeight;
 
-	String windowName;
-	GenericAppWindow* parentWindow = nullptr;
-	std::vector<GenericAppWindow*> childWindows;
+    String windowName;
+    GenericAppWindow* parentWindow = nullptr;
+    std::vector<GenericAppWindow*> childWindows;
 
-	bool isWindowed = false;
+    bool isWindowed = false;
 protected:
-	virtual void resizeWindow() = 0;
+    virtual void resizeWindow() = 0;
 public:
 
-	void windowSize(uint32& width, uint32& height) const;
-	void setWindowSize(const uint32& width, const uint32& height, bool updateResources);
+    void windowSize(uint32& width, uint32& height) const;
+    void setWindowSize(const uint32& width, const uint32& height, bool updateResources);
 
-	void setWindowName(const String& wndName);
-	const String& getWindowName() const { return windowName; }
+    void setWindowName(const String& wndName);
+    const String& getWindowName() const { return windowName; }
 
-	virtual void createWindow(const GenericAppInstance* appInstance) {};
-	virtual void updateWindow() = 0;
-	virtual void destroyWindow();
-	virtual bool isValidWindow() const= 0;
+    virtual void createWindow(const GenericAppInstance* appInstance) {};
+    virtual void updateWindow() = 0;
+    virtual void destroyWindow();
+    virtual bool isValidWindow() const= 0;
 };

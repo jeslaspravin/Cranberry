@@ -37,31 +37,31 @@ String::String(std::string&& otherString): std::string(otherString)
 
 const AChar* String::getChar() const
 {
-	return c_str();
+    return c_str();
 }
 
 bool String::findAny(size_t& outIndex, String& outFoundString, const std::vector<String>& findStrgs,
-	size_t offset /*= 0*/, bool fromEnd /*= false*/) const
+    size_t offset /*= 0*/, bool fromEnd /*= false*/) const
 {
-	size_t foundAt = npos;
-	for (const String& strg : findStrgs) {
-		 size_t foundAtNew = fromEnd ? rfind(strg, length() - offset) : find(strg, offset);
-		if (foundAtNew != npos) {
-			outIndex = (foundAt == npos || (fromEnd ? foundAt<foundAtNew : foundAt>foundAtNew)) ? foundAtNew : foundAt;
-			outFoundString = (foundAt == npos || (fromEnd ? foundAt<foundAtNew : foundAt>foundAtNew))?strg:outFoundString;
-			foundAt = outIndex;
-		}
-	}
-	if (foundAt != npos)
-	{
-		return true;
-	}
-	outIndex = npos;
-	outFoundString = "";
-	return false;
+    size_t foundAt = npos;
+    for (const String& strg : findStrgs) {
+         size_t foundAtNew = fromEnd ? rfind(strg, length() - offset) : find(strg, offset);
+        if (foundAtNew != npos) {
+            outIndex = (foundAt == npos || (fromEnd ? foundAt<foundAtNew : foundAt>foundAtNew)) ? foundAtNew : foundAt;
+            outFoundString = (foundAt == npos || (fromEnd ? foundAt<foundAtNew : foundAt>foundAtNew))?strg:outFoundString;
+            foundAt = outIndex;
+        }
+    }
+    if (foundAt != npos)
+    {
+        return true;
+    }
+    outIndex = npos;
+    outFoundString = "";
+    return false;
 }
 
 bool String::operator==(const String& rhs) const
 {
-	return compare(rhs) == 0;
+    return compare(rhs) == 0;
 }

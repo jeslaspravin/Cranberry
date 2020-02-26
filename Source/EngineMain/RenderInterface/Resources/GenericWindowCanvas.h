@@ -10,20 +10,20 @@ class GraphicsFence;
 // Wrapper for VkSurface and related kind of objects
 class GenericWindowCanvas : public GraphicsResource
 {
-	DECLARE_GRAPHICS_RESOURCE(GenericWindowCanvas,,GraphicsResource,)
+    DECLARE_GRAPHICS_RESOURCE(GenericWindowCanvas,,GraphicsResource,)
 
 protected:
-	GenericAppWindow* ownerWindow = nullptr;
+    GenericAppWindow* ownerWindow = nullptr;
 public:
-	virtual void init() override;
-	virtual void reinitResources() override {}
+    virtual void init() override;
+    virtual void reinitResources() override {}
     virtual void release() override;
     String getResourceName() const override;
 
-	// Setup function must be use before calling init
-	virtual void setWindow(GenericAppWindow* forWindow);
+    // Setup function must be use before calling init
+    virtual void setWindow(GenericAppWindow* forWindow);
 
-	virtual uint32 requestNextImage(SharedPtr<GraphicsSemaphore>* waitOnSemaphore, SharedPtr<GraphicsFence>* waitOnFence = nullptr);
+    virtual uint32 requestNextImage(SharedPtr<GraphicsSemaphore>* waitOnSemaphore, SharedPtr<GraphicsFence>* waitOnFence = nullptr);
 
 };
 

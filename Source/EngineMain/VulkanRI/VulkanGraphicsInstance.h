@@ -8,35 +8,35 @@
 #include "vulkan_core.h"
 
 class VulkanGraphicsInstance final:
-	public IGraphicsInstance
+    public IGraphicsInstance
 {
-	friend class VulkanGraphicsHelper;
+    friend class VulkanGraphicsHelper;
 
 private:
-	
-	std::vector<VkExtensionProperties> availableInstanceExtensions;
-	std::vector<const char*> registeredInstanceExtensions;
+    
+    std::vector<VkExtensionProperties> availableInstanceExtensions;
+    std::vector<const char*> registeredInstanceExtensions;
 
-	VkInstance vulkanInstance;
-	VulkanDevice selectedDevice;
-	SharedPtr<class IVulkanMemoryAllocator> memoryAllocator;
+    VkInstance vulkanInstance;
+    VulkanDevice selectedDevice;
+    SharedPtr<class IVulkanMemoryAllocator> memoryAllocator;
 
-	void loadGlobalFunctions();
-	void loadInstanceFunctions();
+    void loadGlobalFunctions();
+    void loadInstanceFunctions();
 
-	void createVulkanInstance();
-	void createVulkanDevice();
+    void createVulkanInstance();
+    void createVulkanDevice();
 
 #if _DEBUG
-	void collectInstanceLayers(std::vector<const char*>& layers) const;
+    void collectInstanceLayers(std::vector<const char*>& layers) const;
 #endif
-	[[nodiscard]] bool collectInstanceExtensions(std::vector<const char*>& extensions) const;
+    [[nodiscard]] bool collectInstanceExtensions(std::vector<const char*>& extensions) const;
 public:
 
-	void load() override;
-	void unload() override;
+    void load() override;
+    void unload() override;
 
-	void loadSurfaceDependents() override;
+    void loadSurfaceDependents() override;
 
 };
 

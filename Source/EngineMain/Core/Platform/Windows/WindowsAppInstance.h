@@ -3,12 +3,12 @@
 #include <windows.h>
 
 struct WindowsAppInstance : public GenericAppInstance {
-	HINSTANCE windowsInstance;
-	
+    HINSTANCE windowsInstance;
+    
 };
 
 
 
 namespace GPlatformInstances {
-	typedef WindowsAppInstance PlatformAppInstance;
+    typedef WindowsAppInstance PlatformAppInstance;
 }
