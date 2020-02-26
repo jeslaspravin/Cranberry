@@ -553,7 +553,7 @@ IVulkanMemoryAllocator::IVulkanMemoryAllocator(VulkanDevice* vDevice) : device(v
 
 SharedPtr<IVulkanMemoryAllocator> IVulkanMemoryAllocator::createAllocator(VulkanDevice* vDevice)
 {
-    VulkanMemoryAllocator* allocator = new VulkanMemoryAllocator(vDevice);
+    IVulkanMemoryAllocator* allocator = new VulkanMemoryAllocator(vDevice);
     allocator->initAllocator();
-    return SharedPtr<IVulkanMemoryAllocator>(allocator);
+    return SharedPtr<IVulkanMemoryAllocator>(allocator, std::default_delete<IVulkanMemoryAllocator>{});
 }
