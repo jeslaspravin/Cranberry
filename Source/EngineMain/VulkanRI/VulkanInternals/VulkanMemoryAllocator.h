@@ -9,6 +9,8 @@ protected:
     VulkanDevice* device;
     IVulkanMemoryAllocator(VulkanDevice* vDevice);
 public:
+    virtual ~IVulkanMemoryAllocator(){}
+
     static SharedPtr<IVulkanMemoryAllocator> createAllocator(VulkanDevice* vDevice);
 
     virtual void initAllocator() = 0;
