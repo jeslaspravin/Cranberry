@@ -10,90 +10,91 @@ class QueueResourceBase;
 
 class VulkanDevice {
 
-	friend class VulkanGraphicsHelper;
-	friend class VulkanMemoryAllocator;
+    friend class VulkanGraphicsHelper;
+    friend class VulkanMemoryAllocator;
 
 private:
-	VulkanDebugGraphics graphicsDebug;
-	VkDevice logicalDevice = nullptr;
+    VulkanDebugGraphics graphicsDebug;
+    VkDevice logicalDevice = nullptr;
 
-	// Physical Device
-	VkPhysicalDevice physicalDevice = nullptr;
-	VkPhysicalDeviceProperties properties;
-	VkPhysicalDeviceTimelineSemaphorePropertiesKHR timelineSemaphoreProps;
-	VkPhysicalDeviceMemoryProperties memoryProperties;
+    // Physical Device
+    VkPhysicalDevice physicalDevice = nullptr;
+    VkPhysicalDeviceProperties properties;
+    VkPhysicalDeviceTimelineSemaphorePropertiesKHR timelineSemaphoreProps;
+    VkPhysicalDeviceMemoryProperties memoryProperties;
 
-	VkPhysicalDeviceFeatures features;
-	VkPhysicalDeviceFeatures enabledFeatures;
-	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeatures;
-	void markEnabledFeatures();
-	// Physical Device
+    VkPhysicalDeviceFeatures features;
+    VkPhysicalDeviceFeatures enabledFeatures;
+    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeatures;
+    void markEnabledFeatures();
+    // Physical Device
 
-	// Queues
-	std::vector<VkQueueFamilyProperties> queueFamiliesSupported;
-	typedef QueueResourceBase* QueueResourceBasePtr;
-	std::vector<QueueResourceBasePtr> allQueues;
-	QueueResourceBasePtr graphicsQueue = nullptr;
-	QueueResourceBasePtr computeQueue = nullptr;
-	QueueResourceBasePtr transferQueue = nullptr;
-	// Only if none of above queues are populated this will be valid
-	QueueResourceBasePtr genericQueue = nullptr;
-	bool createQueueResources();
-	// Queues
+    // Queues
+    std::vector<VkQueueFamilyProperties> queueFamiliesSupported;
+    typedef QueueResourceBase* QueueResourceBasePtr;
+    std::vector<QueueResourceBasePtr> allQueues;
+    QueueResourceBasePtr graphicsQueue = nullptr;
+    QueueResourceBasePtr computeQueue = nullptr;
+    QueueResourceBasePtr transferQueue = nullptr;
+    // Only if none of above queues are populated this will be valid
+    QueueResourceBasePtr genericQueue = nullptr;
+    bool createQueueResources();
+    // Queues
 
-	// Extensions and Layers
-	std::vector<VkExtensionProperties> availableExtensions;
-	std::vector<const char*> registeredExtensions;
-	bool collectDeviceExtensions(std::vector<const char*>& extensions) const;
-	
-	std::vector<VkLayerProperties> availableLayers;
-	std::vector<const char*> registeredLayers;
+    // Extensions and Layers
+    std::vector<VkExtensionProperties> availableExtensions;
+    std::vector<const char*> registeredExtensions;
+    bool collectDeviceExtensions(std::vector<const char*>& extensions) const;
+    
+    std::vector<VkLayerProperties> availableLayers;
+    std::vector<const char*> registeredLayers;
 #if _DEBUG
-	void collectDeviceLayers(std::vector<const char*>& layers) const;
+    void collectDeviceLayers(std::vector<const char*>& layers) const;
 #endif
-	// Extensions and Layers
+    // Extensions and Layers
 
 
-	void loadDeviceFunctions();
+    void loadDeviceFunctions();
 
-	// Swap chain and surface	
-	VkPresentModeKHR globalPresentMode;
-	VkSurfaceCapabilitiesKHR swapchainCapabilities;
-	VkSurfaceFormatKHR swapchainFormat;
-	uint32 choosenImageCount = 1;
-	VkImageUsageFlags swapchainImgUsage;
+    // Swap chain and surface    
+    VkPresentModeKHR globalPresentMode;
+    VkSurfaceCapabilitiesKHR swapchainCapabilities;
+    VkSurfaceFormatKHR swapchainFormat;
+    uint32 choosenImageCount = 1;
+    VkImageUsageFlags swapchainImgUsage;
 
-	void cacheGlobalSurfaceProperties();
-	int32 compareSurfaceCompatibility(const class GenericWindowCanvas* surfaceCanvas,const VulkanDevice& otherDevice) const;
-	int32 compareMemoryCompatibility(const VulkanDevice& otherDevice) const;
-	// Swap chain and surface
+    void cacheGlobalSurfaceProperties();
+    int32 compareSurfaceCompatibility(const class GenericWindowCanvas* surfaceCanvas,const VulkanDevice& otherDevice) const;
+    int32 compareMemoryCompatibility(const VulkanDevice& otherDevice) const;
+    // Swap chain and surface
 public:
-	VulkanDevice();
-	VulkanDevice(VkPhysicalDevice&& device);
-	VulkanDevice(const VulkanDevice& otherDevice);
-	VulkanDevice(VulkanDevice&& rVulkanDevice);
-	void operator=(const VulkanDevice& otherDevice);
-	void operator=(VulkanDevice&& rVulkanDevice);
+    VulkanDevice();
+    VulkanDevice(VkPhysicalDevice&& device);
+    VulkanDevice(const VulkanDevice& otherDevice);
+    VulkanDevice(VulkanDevice&& rVulkanDevice);
+    void operator=(const VulkanDevice& otherDevice);
+    void operator=(VulkanDevice&& rVulkanDevice);
 
-	~VulkanDevice();
+    ~VulkanDevice();
 
 
-	void createLogicDevice();
-	void freeLogicDevice();
+    void createLogicDevice();
+    void freeLogicDevice();
 
-	String getDeviceName() const;
-	VkPresentModeKHR getPresentMode() const;
-	QueueResourceBasePtr getGraphicsQueue() const;
-	QueueResourceBasePtr getComputeQueue() const;
-	QueueResourceBasePtr getTransferQueue() const;
-	QueueResourceBasePtr getGenericQueue() const;
-	const VulkanDebugGraphics* debugGraphics() const { return &graphicsDebug; }
+    String getDeviceName() const;
+    VkPresentModeKHR getPresentMode() const;
+    QueueResourceBasePtr getGraphicsQueue() const;
+    QueueResourceBasePtr getComputeQueue() const;
+    QueueResourceBasePtr getTransferQueue() const;
+    QueueResourceBasePtr getGenericQueue() const;
+    const VulkanDebugGraphics* debugGraphics() const { return &graphicsDebug; }
 
-	[[nodiscard]] int32 compare(const VulkanDevice& otherDevice) const;
-	[[nodiscard]] bool isValidDevice() const;
+    [[nodiscard]] int32 compare(const VulkanDevice& otherDevice) const;
+    [[nodiscard]] bool isValidDevice() const;
 
-	// For time line semaphore.
-	uint64 maxAllowedTimelineOffset() const;
+    // For time line semaphore.
+    uint64 maxAllowedTimelineOffset() const;
+    void getMemoryStat(uint64& totalBudget, uint64& usage,uint32 heapIndex);
 
 public:
 
@@ -104,7 +105,7 @@ public:
 };
 
 struct VulkanDeviceCompare {
-	bool operator()(const VulkanDevice& lhs, const VulkanDevice& rhs) {
-		return lhs.compare(rhs)>=0? true:false;
-	}
+    bool operator()(const VulkanDevice& lhs, const VulkanDevice& rhs) {
+        return lhs.compare(rhs)>=0? true:false;
+    }
 };
