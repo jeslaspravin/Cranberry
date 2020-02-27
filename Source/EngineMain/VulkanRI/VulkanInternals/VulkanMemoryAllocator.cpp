@@ -6,6 +6,7 @@
 
 #include <glm/common.hpp>
 #include <set>
+#include <algorithm>
 
 struct VulkanMemoryBlock
 {
@@ -210,7 +211,7 @@ public:
         }
     }
 
-    uint64 availableHeapSize()
+    uint64 availableHeapSize() const
     {
         uint64 heapSizeLeft = 0;
         if (!freeBlockHead)
@@ -226,7 +227,7 @@ public:
         return heapSizeLeft;
     }
 
-    uint64 chunkSize()
+    uint64 chunkSize() const
     {
         return cSize;
     }
@@ -264,6 +265,8 @@ class VulkanChunkAllocator
             Logger::error("VulkanMemory", "%s() : Out of Memory", __func__);
             return -1;
         }
+        Logger::debug("VulkanChunkAllocator", "%s() : Allocating a chunk of size %d", __func__, allocatingSize);
+
         MEMORY_ALLOCATE_INFO(allocateInfo);
         allocateInfo.allocationSize = allocatingSize;
         allocateInfo.memoryTypeIndex = tIndex;
@@ -316,18 +319,92 @@ public:
         chunks128.clear();
     }
 
-    uint64 allocatorSize()
+    uint64 allocatorSize() const
     {
         uint64 totalSize = 0;
-        for (VulkanMemoryChunk& chunk : chunks64)
+        for (const VulkanMemoryChunk& chunk : chunks64)
         {
             totalSize += chunk.chunkSize();
         }
-        for (VulkanMemoryChunk& chunk : chunks128)
+        for (const VulkanMemoryChunk& chunk : chunks128)
         {
             totalSize += chunk.chunkSize();
         }
         return totalSize;
+    }
+
+    VulkanMemoryBlock* allocate(const uint64& size)
+    {
+        VulkanMemoryBlock* allocatedBlock = nullptr;
+        std::vector<std::pair<std::vector<VulkanMemoryChunk>*, uint64>> sortedChunks;
+        {
+            uint64 alignedTo64;
+            uint64 alignedTo128;
+            chunks64[0].alignSize(size, alignedTo64);
+            chunks128[0].alignSize(size, alignedTo128);
+
+            sortedChunks.push_back({ &chunks64,alignedTo64 - size });
+            sortedChunks.push_back({ &chunks128,alignedTo128 - size });
+            std::sort(sortedChunks.begin(), sortedChunks.end(), [](std::pair<std::vector<VulkanMemoryChunk>*, uint64>& lhs,
+                std::pair<std::vector<VulkanMemoryChunk>*, uint64>& rhs)
+            {
+                return lhs.second <= rhs.second;
+            });
+        }
+
+        for (auto& chunks : sortedChunks)
+        {
+            uint64 alignedSize = size + chunks.second;
+            
+            for (uint32 index = chunks.first->size() - 1; index >= 0; --index)
+            {
+                allocatedBlock = chunks.first->at(index).allocateBlock(alignedSize);
+                if (allocatedBlock)
+                {
+                    return allocatedBlock;
+                }
+            }
+        }
+
+        for (auto& chunks : sortedChunks)
+        {
+            uint64 alignedSize = size + chunks.second;
+            uint64 alignment;
+            chunks.first->at(0).alignSize(1, alignment);
+            int32 index = allocateNewChunk(*chunks.first, alignment);
+
+            if (index < 0)
+            {
+                continue;
+            }
+            allocatedBlock = chunks.first->at(index).allocateBlock(alignedSize);
+            if (allocatedBlock)
+            {
+                break;
+            }
+        }
+
+        return allocatedBlock;
+    }
+
+    void free(VulkanMemoryBlock* block)
+    {
+        for (VulkanMemoryChunk& chunk : chunks64)
+        {
+            if (chunk.isInChunk(block))
+            {
+                chunk.freeBlock(block);
+                return;
+            }
+        }
+        for (VulkanMemoryChunk& chunk : chunks128)
+        {
+            if (chunk.isInChunk(block))
+            {
+                chunk.freeBlock(block);
+                return;
+            }
+        }
     }
 };
 
