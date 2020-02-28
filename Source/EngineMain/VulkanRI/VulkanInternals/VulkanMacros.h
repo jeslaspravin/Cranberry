@@ -177,31 +177,31 @@ VariableName.pNext = nullptr
 #endif
 
 #ifndef CREATE_COMMAND_POOL_INFO
-#define CREATE_COMMAND_POOL_INFO(VariableName)                        \
-VkCommandPoolCreateInfo VariableName;                                \
+#define CREATE_COMMAND_POOL_INFO(VariableName)                      \
+VkCommandPoolCreateInfo VariableName;                               \
 VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;    \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef CMD_BUFFER_ALLOC_INFO
-#define CMD_BUFFER_ALLOC_INFO(VariableName)                                \
-VkCommandBufferAllocateInfo VariableName;                                \
-VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;    \
-VariableName.pNext = nullptr;                                            \
+#define CMD_BUFFER_ALLOC_INFO(VariableName)                         \
+VkCommandBufferAllocateInfo VariableName;                           \
+VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;\
+VariableName.pNext = nullptr;                                       \
 VariableName.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY
 #endif
 
 #ifndef CMD_BUFFER_BEGIN_INFO
-#define CMD_BUFFER_BEGIN_INFO(VariableName)                            \
-VkCommandBufferBeginInfo VariableName;                                \
-VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;    \
-VariableName.pNext = nullptr;                                        \
+#define CMD_BUFFER_BEGIN_INFO(VariableName)                         \
+VkCommandBufferBeginInfo VariableName;                              \
+VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;   \
+VariableName.pNext = nullptr;                                       \
 VariableName.pInheritanceInfo = nullptr
 #endif
 
 #ifndef PRESENT_INFO
-#define PRESENT_INFO(VariableName)                            \
-VkPresentInfoKHR VariableName;                                \
+#define PRESENT_INFO(VariableName)                          \
+VkPresentInfoKHR VariableName;                              \
 VariableName.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;    \
 VariableName.pNext = nullptr
 #endif
