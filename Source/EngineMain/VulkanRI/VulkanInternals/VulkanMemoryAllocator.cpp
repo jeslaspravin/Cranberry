@@ -241,8 +241,8 @@ class VulkanChunkAllocator
     uint32 tIndex;
     uint32 hIndex;
 
-    std::vector<VulkanMemoryChunk> chunks64;
-    std::vector<VulkanMemoryChunk> chunks128;
+    std::vector<VulkanMemoryChunk> chunks;
+    std::vector<VulkanMemoryChunk> chunks2xAligned;
 
     int32 allocateNewChunk(std::vector<VulkanMemoryChunk>& chunks, uint64 alignment)
     {
@@ -291,7 +291,7 @@ class VulkanChunkAllocator
     }
 
 public:
-    VulkanChunkAllocator(uint64 chunkSize,VulkanDevice* vDevice,uint32 typeIndex,uint32 heapIndex) 
+    VulkanChunkAllocator(uint64 chunkSize,uint64 alignment, VulkanDevice* vDevice,uint32 typeIndex,uint32 heapIndex) 
         : cSize(chunkSize)
         , device(vDevice)
         , tIndex(typeIndex)
@@ -301,32 +301,32 @@ public:
         uint64 totalHeapSize;
         device->getMemoryStat(totalHeapSize, currentUsageSize, hIndex);
         cSize = (uint64)(glm::min<uint64>(2*cSize, totalHeapSize) * 0.5f);
-        allocateNewChunk(chunks64, 64);
-        allocateNewChunk(chunks128, 128);
+        allocateNewChunk(chunks, alignment);
+        allocateNewChunk(chunks2xAligned, alignment * 2);
     }
 
     ~VulkanChunkAllocator()
     {
-        for (VulkanMemoryChunk& chunk : chunks64)
+        for (VulkanMemoryChunk& chunk : chunks)
         {
             device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk.deviceMemory, nullptr);
         }
-        for (VulkanMemoryChunk& chunk : chunks128)
+        for (VulkanMemoryChunk& chunk : chunks2xAligned)
         {
             device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk.deviceMemory, nullptr);
         }
-        chunks64.clear();
-        chunks128.clear();
+        chunks.clear();
+        chunks2xAligned.clear();
     }
 
     uint64 allocatorSize() const
     {
         uint64 totalSize = 0;
-        for (const VulkanMemoryChunk& chunk : chunks64)
+        for (const VulkanMemoryChunk& chunk : chunks)
         {
             totalSize += chunk.chunkSize();
         }
-        for (const VulkanMemoryChunk& chunk : chunks128)
+        for (const VulkanMemoryChunk& chunk : chunks2xAligned)
         {
             totalSize += chunk.chunkSize();
         }
@@ -338,13 +338,13 @@ public:
         VulkanMemoryBlock* allocatedBlock = nullptr;
         std::vector<std::pair<std::vector<VulkanMemoryChunk>*, uint64>> sortedChunks;
         {
-            uint64 alignedTo64;
-            uint64 alignedTo128;
-            chunks64[0].alignSize(size, alignedTo64);
-            chunks128[0].alignSize(size, alignedTo128);
+            uint64 aligned;
+            uint64 aligned2x;
+            chunks[0].alignSize(size, aligned);
+            chunks2xAligned[0].alignSize(size, aligned2x);
 
-            sortedChunks.push_back({ &chunks64,alignedTo64 - size });
-            sortedChunks.push_back({ &chunks128,alignedTo128 - size });
+            sortedChunks.push_back({ &chunks,aligned - size });
+            sortedChunks.push_back({ &chunks2xAligned,aligned2x - size });
             std::sort(sortedChunks.begin(), sortedChunks.end(), [](std::pair<std::vector<VulkanMemoryChunk>*, uint64>& lhs,
                 std::pair<std::vector<VulkanMemoryChunk>*, uint64>& rhs)
             {
@@ -356,7 +356,7 @@ public:
         {
             uint64 alignedSize = size + chunks.second;
             
-            for (uint32 index = chunks.first->size() - 1; index >= 0; --index)
+            for (uint32 index = (uint32)chunks.first->size() - 1; index >= 0; --index)
             {
                 allocatedBlock = chunks.first->at(index).allocateBlock(alignedSize);
                 if (allocatedBlock)
@@ -389,7 +389,7 @@ public:
 
     void free(VulkanMemoryBlock* block)
     {
-        for (VulkanMemoryChunk& chunk : chunks64)
+        for (VulkanMemoryChunk& chunk : chunks)
         {
             if (chunk.isInChunk(block))
             {
@@ -397,7 +397,7 @@ public:
                 return;
             }
         }
-        for (VulkanMemoryChunk& chunk : chunks128)
+        for (VulkanMemoryChunk& chunk : chunks2xAligned)
         {
             if (chunk.isInChunk(block))
             {
@@ -586,6 +586,10 @@ public:
 #if _DEBUG
         TestChunk::testChunk();
 #endif
+        // to handle offset alignment
+        uint64 alignment = glm::max<uint64>(glm::max<uint64>(device->properties.limits.minStorageBufferOffsetAlignment, 
+            device->properties.limits.minUniformBufferOffsetAlignment), device->properties.limits.minTexelBufferOffsetAlignment);
+
         uint64 totalInitAlloc = 0;
         {
             std::set<uint32> uniqAllocatorCheck;
@@ -595,7 +599,7 @@ public:
                 
                 if (insertResult.second && device->memoryProperties.memoryTypes[i].propertyFlags != 0)
                 {
-                    chunkAllocators[i] = new VulkanChunkAllocator(150 * 1024 * 1024, device, i,
+                    chunkAllocators[i] = new VulkanChunkAllocator(128 * 1024 * 1024, alignment, device, i,
                         device->memoryProperties.memoryTypes[i].heapIndex);
                     totalInitAlloc += chunkAllocators[i]->allocatorSize();
                 }
