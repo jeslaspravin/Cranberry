@@ -204,6 +204,12 @@
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanMemoryAllocator.cpp">
       <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
     </ClCompile>
+    <ClCompile Include="RenderInterface\Resources\MemoryResources.cpp">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -361,6 +367,12 @@
     </ClInclude>
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanMemoryAllocator.h">
       <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\MemoryResources.h">
+      <Filter>Header Files\RenderInterface\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
