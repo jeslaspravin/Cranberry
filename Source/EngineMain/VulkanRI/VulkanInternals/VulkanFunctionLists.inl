@@ -62,9 +62,6 @@ DEVICE_VK_FUNCTIONS(vkGetDeviceQueue)
 DEVICE_VK_FUNCTIONS(vkQueueSubmit)
 DEVICE_VK_FUNCTIONS(vkDeviceWaitIdle)
 
-DEVICE_VK_FUNCTIONS(vkCreateBuffer)
-DEVICE_VK_FUNCTIONS(vkGetBufferMemoryRequirements)
-
 /* Synchronizing Functions */
 DEVICE_VK_FUNCTIONS(vkCreateSemaphore)
 DEVICE_VK_FUNCTIONS(vkDestroySemaphore)
@@ -77,6 +74,14 @@ DEVICE_VK_FUNCTIONS(vkDestroyFence)
 /* Memory and Buffers */
 DEVICE_VK_FUNCTIONS(vkAllocateMemory)
 DEVICE_VK_FUNCTIONS(vkFreeMemory)
+
+DEVICE_VK_FUNCTIONS(vkCreateBuffer)
+DEVICE_VK_FUNCTIONS(vkGetBufferMemoryRequirements)
+DEVICE_VK_FUNCTIONS(vkDestroyBuffer)
+
+DEVICE_VK_FUNCTIONS(vkCreateImage)
+DEVICE_VK_FUNCTIONS(vkGetImageMemoryRequirements)
+DEVICE_VK_FUNCTIONS(vkDestroyImage)
 
 /* CommandPool Functions */
 DEVICE_VK_FUNCTIONS(vkCreateCommandPool)
