@@ -3,6 +3,7 @@
 #include "../../Core/Logger/Logger.h"
 #include "../VulkanGraphicsHelper.h"
 #include "VulkanMacros.h"
+#include "../Resources/IVulkanResources.h"
 
 #include <glm/common.hpp>
 #include <set>
@@ -398,14 +399,15 @@ public:
         return allocatedBlock;
     }
 
-    void free(VulkanMemoryBlock* block)
+    // return true if removed from this allocator
+    bool free(VulkanMemoryBlock* block)
     {
         for (VulkanMemoryChunk& chunk : chunks)
         {
             if (chunk.isInChunk(block))
             {
                 chunk.freeBlock(block);
-                return;
+                return true;
             }
         }
         for (VulkanMemoryChunk& chunk : chunks2xAligned)
@@ -413,9 +415,10 @@ public:
             if (chunk.isInChunk(block))
             {
                 chunk.freeBlock(block);
-                return;
+                return true;
             }
         }
+        return false;
     }
 };
 
@@ -587,7 +590,9 @@ private:
 
     VulkanChunkAllocator* linearChunkAllocators[VK_MAX_MEMORY_TYPES];
     VulkanChunkAllocator* optimalChunkAllocators[VK_MAX_MEMORY_TYPES];
+    std::vector<std::pair<uint32, VkMemoryPropertyFlags>> availableMemoryProps;
 
+    void sortAvailableByPriority(bool cpuAccessible);
 public:
     VulkanMemoryAllocator(VulkanDevice* vDevice) : IVulkanMemoryAllocator(vDevice)
     {}
@@ -620,6 +625,8 @@ public:
                     optimalChunkAllocators[i] = new VulkanChunkAllocator(64 * 1024 * 1024, alignment, device, i,
                         device->memoryProperties.memoryTypes[i].heapIndex);
                     totalOptimalStorage += optimalChunkAllocators[i]->allocatorSize();
+
+                    availableMemoryProps.push_back({ i,device->memoryProperties.memoryTypes[i].propertyFlags });
                 }
                 else
                 {
@@ -637,23 +644,154 @@ public:
     {
         Logger::debug("VulkanMemoryAllocator", "%s()", __func__);
 
-        for (uint32 i = 0; i < device->memoryProperties.memoryTypeCount; ++i)
+        for (const std::pair<uint32,VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
-            if (linearChunkAllocators[i])
-            {
-                Logger::debug("VulkanMemoryAllocator", "%s() : Freeing %dBytes of linear memory", __func__, 
-                    linearChunkAllocators[i]->allocatorSize());
-                delete linearChunkAllocators[i];
-                linearChunkAllocators[i] = nullptr;
+            Logger::debug("VulkanMemoryAllocator", "%s() : Freeing %dBytes of linear memory", __func__, 
+                linearChunkAllocators[indexPropPair.first]->allocatorSize());
+            delete linearChunkAllocators[indexPropPair.first];
+            linearChunkAllocators[indexPropPair.first] = nullptr;
 
-                Logger::debug("VulkanMemoryAllocator", "%s() : Freeing %dBytes of optimal memory", __func__,
-                    optimalChunkAllocators[i]->allocatorSize());
-                delete optimalChunkAllocators[i];
-                optimalChunkAllocators[i] = nullptr;
+            Logger::debug("VulkanMemoryAllocator", "%s() : Freeing %dBytes of optimal memory", __func__,
+                optimalChunkAllocators[indexPropPair.first]->allocatorSize());
+            delete optimalChunkAllocators[indexPropPair.first];
+            optimalChunkAllocators[indexPropPair.first] = nullptr;
+        }
+        availableMemoryProps.clear();
+    }
+
+    VulkanMemoryBlock* allocateBuffer(VkBuffer buffer, bool cpuAccessible) override
+    {
+        VulkanMemoryBlock* block = nullptr;
+        VkMemoryRequirements memRequirement;
+        device->vkGetBufferMemoryRequirements(device->logicalDevice, buffer, &memRequirement);
+
+        if (!cpuAccessible && (memRequirement.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+        {
+            return block;
+        }
+        sortAvailableByPriority(cpuAccessible);
+        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        {
+            if (cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) // Cannot use pure device local as CPU accessible
+            {
+                continue;
+            }
+            block = linearChunkAllocators[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
+
+            if (block)
+                break;
+        }
+
+        return block;
+    }
+
+
+    VulkanMemoryBlock* allocateImage(VkImage image, bool cpuAccessible) override
+    {
+        VulkanMemoryBlock* block = nullptr;
+        VkMemoryRequirements memRequirement;
+        device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
+        bool isOptimalImage = (memRequirement.memoryTypeBits 
+            & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == 0;
+        VulkanChunkAllocator** chunkAllocator = isOptimalImage ? optimalChunkAllocators : linearChunkAllocators;
+
+        // if being device local and not available or is optimal and being host accessible
+        if ((!cpuAccessible && (memRequirement.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) 
+            || (cpuAccessible && isOptimalImage))
+        {
+            return block;
+        }
+        sortAvailableByPriority(cpuAccessible);
+        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        {
+            if (cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) // Cannot use pure device local as CPU accessible
+            {
+                continue;
+            }
+            block = chunkAllocator[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
+
+            if (block)
+                break;
+        }
+
+        return block;
+    }
+
+
+    void deallocateBuffer(VkBuffer buffer, VulkanMemoryBlock* block) override
+    {
+        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        {
+            if (linearChunkAllocators[indexPropPair.first]->free(block))
+            {
+                break;
             }
         }
     }
+
+
+    void deallocateImage(VkImage image, VulkanMemoryBlock* block) override
+    {
+        VkMemoryRequirements memRequirement;
+        device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
+        bool isOptimalImage = (memRequirement.memoryTypeBits 
+            & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == 0;
+        VulkanChunkAllocator** chunkAllocator = isOptimalImage ? optimalChunkAllocators : linearChunkAllocators;
+
+        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        {
+            if (chunkAllocator[indexPropPair.first]->free(block))
+            {
+                break;
+            }
+        }
+    }
+
 };
+
+void VulkanMemoryAllocator::sortAvailableByPriority(bool cpuAccessible)
+{
+    if (cpuAccessible)
+    {
+        std::sort(availableMemoryProps.begin(), availableMemoryProps.end(),
+            [](const std::pair<uint32, VkMemoryPropertyFlags>& lhs, const std::pair<uint32, VkMemoryPropertyFlags>& rhs)
+            {
+                uint8 lhsScore = (lhs.second & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) > 0 ? 1 : 0;
+                uint8 rhsScore = (rhs.second & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) > 0 ? 1 : 0;;
+
+                if (lhsScore != rhsScore)
+                {
+                    return lhsScore > rhsScore ? true : false;
+                }
+
+                lhsScore = (lhs.second & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) > 0 ? 1 : 0;
+                rhsScore = (rhs.second & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) > 0 ? 1 : 0;
+
+                if (lhsScore != rhsScore)
+                {
+                    return lhsScore > rhsScore ? true : false;
+                }
+                return true;
+            });
+    }
+    else
+    {
+        std::sort(availableMemoryProps.begin(), availableMemoryProps.end(),
+            [](const std::pair<uint32, VkMemoryPropertyFlags>& lhs, const std::pair<uint32, VkMemoryPropertyFlags>& rhs)
+            {
+                uint8 lhsScore = (lhs.second & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0 ? 1 : 0;
+                uint8 rhsScore = (rhs.second & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0 ? 1 : 0;;
+
+                if (lhsScore != rhsScore)
+                {
+                    return lhsScore > rhsScore ? true : false;
+                }
+
+                return (lhs.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) < (rhs.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            });
+    }
+}
+
 
 IVulkanMemoryAllocator::IVulkanMemoryAllocator(VulkanDevice* vDevice) : device(vDevice){}
 
@@ -663,3 +801,32 @@ SharedPtr<IVulkanMemoryAllocator> IVulkanMemoryAllocator::createAllocator(Vulkan
     allocator->initAllocator();
     return SharedPtr<IVulkanMemoryAllocator>(allocator, std::default_delete<IVulkanMemoryAllocator>{});
 }
+
+
+/* Resource Implementation */
+
+void IVulkanMemoryResources::setMemoryData(VulkanMemoryBlock* block)
+{
+    blockData = block;
+}
+
+uint64 IVulkanMemoryResources::allocatedSize()
+{
+    return blockData->size;
+}
+
+uint64 IVulkanMemoryResources::allocationOffset()
+{
+    return blockData->offset;
+}
+
+VulkanMemoryBlock* IVulkanMemoryResources::getMemoryData()
+{
+    return blockData;
+}
+
+VkDeviceMemory IVulkanMemoryResources::getDeviceMemory()
+{
+    return blockData->deviceMemory;
+}
+
