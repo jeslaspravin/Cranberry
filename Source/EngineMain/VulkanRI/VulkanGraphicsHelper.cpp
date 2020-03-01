@@ -11,6 +11,8 @@
 #include "VulkanInternals/Resources/VulkanWindowCanvas.h"
 #include "VulkanInternals/Resources/VulkanQueueResource.h"
 #include "VulkanInternals/Resources/VulkanSyncResource.h"
+#include "VulkanInternals/Resources/VulkanMemoryResources.h"
+#include "VulkanInternals/VulkanMemoryAllocator.h"
 
 
 VkInstance VulkanGraphicsHelper::getInstance(class IGraphicsInstance* graphicsInstance)
@@ -288,4 +290,56 @@ void VulkanGraphicsHelper::waitFences(class IGraphicsInstance* graphicsInstance,
 
     device->vkWaitForFences(device->logicalDevice, (uint32)deviceFences.size(), deviceFences.data(),waitAll? VK_TRUE:VK_FALSE
         , 2000000000/*2 Seconds*/);
+}
+
+VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsInstance, const uint64& size,
+    const VkBufferUsageFlags& usageFlags)
+{
+    VkBuffer buffer;
+
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    BUFFER_CREATE_INFO(createInfo);
+    createInfo.size = size;
+    createInfo.usage = usageFlags;
+
+    if (device->vkCreateBuffer(device->logicalDevice, &createInfo, nullptr, &buffer) != VK_SUCCESS)
+    {
+        buffer = nullptr;
+    }
+
+    return buffer;
+}
+
+void VulkanGraphicsHelper::destroyBuffer(class IGraphicsInstance* graphicsInstance, VkBuffer buffer)
+{
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    device->vkDestroyBuffer(device->logicalDevice, buffer, nullptr);
+}
+
+bool VulkanGraphicsHelper::allocateBufferResource(class IGraphicsInstance* graphicsInstance, 
+    class IVulkanMemoryResources* memoryResource, bool cpuAccessible)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    VulkanBufferResource* resource = static_cast<VulkanBufferResource*>(memoryResource);
+    VulkanMemoryBlock* block = gInstance->memoryAllocator->allocateBuffer(resource->buffer,cpuAccessible);
+    if (block)
+    {
+        memoryResource->setMemoryData(block);
+        return true;
+    }
+    return false;
+}
+
+void VulkanGraphicsHelper::deallocateBufferResource(class IGraphicsInstance* graphicsInstance,
+    class IVulkanMemoryResources* memoryResource)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    VulkanBufferResource* resource = static_cast<VulkanBufferResource*>(memoryResource);
+    if (memoryResource->getMemoryData())
+    {
+        gInstance->memoryAllocator->deallocateBuffer(resource->buffer, memoryResource->getMemoryData());
+    }
 }

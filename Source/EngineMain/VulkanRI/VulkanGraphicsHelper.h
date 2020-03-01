@@ -32,6 +32,14 @@ public:
     static SharedPtr<class GraphicsFence> createFence(class IGraphicsInstance* graphicsInstance, const char* fenceName);
     static void waitFences(class IGraphicsInstance* graphicsInstance,std::vector<SharedPtr<class GraphicsFence>>* fences,
         bool waitAll);
+
+    static VkBuffer createBuffer(class IGraphicsInstance* graphicsInstance, const uint64& size,
+        const VkBufferUsageFlags& usageFlags);
+    static void destroyBuffer(class IGraphicsInstance* graphicsInstance, VkBuffer buffer);
+    static bool allocateBufferResource(class IGraphicsInstance* graphicsInstance,
+        class IVulkanMemoryResources* memoryResource, bool cpuAccessible);
+    static void deallocateBufferResource(class IGraphicsInstance* graphicsInstance,
+        class IVulkanMemoryResources* memoryResource);
 };
 
 

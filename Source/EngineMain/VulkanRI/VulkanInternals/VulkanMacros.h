@@ -128,6 +128,17 @@ VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_
 VariableName.pNext = nullptr
 #endif
 
+#ifndef BUFFER_CREATE_INFO
+#define BUFFER_CREATE_INFO(VariableName)                    \
+VkBufferCreateInfo VariableName;                            \
+VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;  \
+VariableName.flags = 0;                                     \
+VariableName.pNext = nullptr;                               \
+VariableName.sharingMode = VK_SHARING_MODE_EXCLUSIVE;       \
+VariableName.queueFamilyIndexCount = 0;                     \
+VariableName.pQueueFamilyIndices = nullptr
+#endif
+
 #ifndef CREATE_SEMAPHORE_INFO
 #define CREATE_SEMAPHORE_INFO(VariableName)                     \
 VkSemaphoreCreateInfo  VariableName;                            \

@@ -210,6 +210,12 @@
     <ClCompile Include="Experimental\ExperimentalEngine.cpp">
       <Filter>Source Files\Experimental</Filter>
     </ClCompile>
+    <ClCompile Include="RenderInterface\Resources\MemoryResources.cpp">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -370,6 +376,12 @@
     </ClInclude>
     <ClInclude Include="Experimental\ExperimentalEngine.h">
       <Filter>Source Files\Experimental</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\MemoryResources.h">
+      <Filter>Header Files\RenderInterface\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
