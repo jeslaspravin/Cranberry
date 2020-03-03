@@ -20,12 +20,14 @@ void VulkanBufferResource::reinitResources()
     }
 
     IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(graphicsInstance);
     VkBuffer nextBuffer = VulkanGraphicsHelper::createBuffer(graphicsInstance,requiredSize(), bufferUsage);
 
     if (nextBuffer)
     {
         release();
         buffer = nextBuffer;
+        graphicsDebugger->markObject(this);
         VulkanGraphicsHelper::allocateBufferResource(graphicsInstance, this, false);
     }
     else
