@@ -158,9 +158,9 @@ void ExperimentalEngine::tickEngine()
     IMAGE_MEMORY_BARRIER(memBarrier);
     memBarrier.dstQueueFamilyIndex = getQueue<EQueueFunction::Present>(*deviceQueues,vDevice)->queueFamilyIndex();
     memBarrier.srcQueueFamilyIndex = getQueue<EQueueFunction::Present>(*deviceQueues, vDevice)->queueFamilyIndex();
-    memBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    memBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     memBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    memBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    memBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     
     VkImageSubresourceRange range;
     range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -170,6 +170,21 @@ void ExperimentalEngine::tickEngine()
 
     memBarrier.image = static_cast<VulkanWindowCanvas*>(canvases[0])->swapchainImage(index);
 
+    vDevice->vkCmdPipelineBarrier(swapchainCmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr,
+        0, nullptr, 1, &memBarrier);
+
+    VkClearColorValue clearColor[1];
+    clearColor[0].float32[0] = 1.0f;
+    clearColor[0].float32[1] = 1.0f;
+    clearColor[0].float32[2] = 0.0f;
+    clearColor[0].float32[3] = 1.0f;
+    vDevice->vkCmdClearColorImage(swapchainCmdBuffer, static_cast<VulkanWindowCanvas*>(canvases[0])->swapchainImage(index), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+        clearColor, 1, &range);
+
+    memBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    memBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    memBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
     vDevice->vkCmdPipelineBarrier(swapchainCmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr,
         0, nullptr, 1, &memBarrier);
 
