@@ -317,6 +317,8 @@ bool VulkanGraphicsHelper::allocateBufferResource(class IGraphicsInstance* graph
     if (block)
     {
         memoryResource->setMemoryData(block);
+        gInstance->selectedDevice.vkBindBufferMemory(gInstance->selectedDevice.logicalDevice, resource->buffer, 
+            memoryResource->getDeviceMemory(), memoryResource->allocationOffset());
         return true;
     }
     return false;

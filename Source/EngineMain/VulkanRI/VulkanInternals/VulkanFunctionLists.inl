@@ -77,10 +77,12 @@ DEVICE_VK_FUNCTIONS(vkFreeMemory)
 
 DEVICE_VK_FUNCTIONS(vkCreateBuffer)
 DEVICE_VK_FUNCTIONS(vkGetBufferMemoryRequirements)
+DEVICE_VK_FUNCTIONS(vkBindBufferMemory)
 DEVICE_VK_FUNCTIONS(vkDestroyBuffer)
 
 DEVICE_VK_FUNCTIONS(vkCreateImage)
 DEVICE_VK_FUNCTIONS(vkGetImageMemoryRequirements)
+DEVICE_VK_FUNCTIONS(vkBindImageMemory)
 DEVICE_VK_FUNCTIONS(vkDestroyImage)
 
 /* CommandPool Functions */
@@ -97,6 +99,7 @@ DEVICE_VK_FUNCTIONS(vkEndCommandBuffer);
 
 /* Commands */
 DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier)
+DEVICE_VK_FUNCTIONS(vkCmdClearColorImage)
 
 /* Debug Functions */
 DEVICE_VK_FUNCTIONS(vkQueueBeginDebugUtilsLabelEXT)

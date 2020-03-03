@@ -22,13 +22,13 @@ class IVulkanMemoryResources : public IVulkanResources
 {
 private:
     VulkanMemoryBlock* blockData;
-protected:
-    VkDeviceMemory getDeviceMemory();
 public:
     virtual uint64 requiredSize() = 0;
     virtual bool canAllocateMemory() = 0;
     uint64 allocatedSize();
     uint64 allocationOffset();
+    VkDeviceMemory getDeviceMemory();
+
     // Internal use only
     void setMemoryData(VulkanMemoryBlock* block);
     VulkanMemoryBlock* getMemoryData();
