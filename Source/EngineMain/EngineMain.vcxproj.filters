@@ -216,6 +216,9 @@
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.cpp">
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
     </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\VulkanGraphicsTypes.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -382,6 +385,9 @@
     </ClInclude>
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.h">
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\CoreMathTypedefs.h">
+      <Filter>Header Files\Core\Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

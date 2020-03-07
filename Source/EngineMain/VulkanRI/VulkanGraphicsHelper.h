@@ -1,6 +1,7 @@
 #pragma once
 #include "../RenderInterface/GraphicsHelper.h"
 #include <vulkan_core.h>
+#include "../RenderInterface/Resources/MemoryResources.h"
 
 class GenericAppWindow;
 
@@ -33,12 +34,20 @@ public:
     static void waitFences(class IGraphicsInstance* graphicsInstance,std::vector<SharedPtr<class GraphicsFence>>* fences,
         bool waitAll);
 
-    static VkBuffer createBuffer(class IGraphicsInstance* graphicsInstance, const uint64& size,
-        const VkBufferUsageFlags& usageFlags);
+    static VkBuffer createBuffer(class IGraphicsInstance* graphicsInstance, const VkBufferCreateInfo* bufferCreateInfo
+        , EPixelDataFormat::Type bufferDataFormat);
     static void destroyBuffer(class IGraphicsInstance* graphicsInstance, VkBuffer buffer);
     static bool allocateBufferResource(class IGraphicsInstance* graphicsInstance,
         class IVulkanMemoryResources* memoryResource, bool cpuAccessible);
     static void deallocateBufferResource(class IGraphicsInstance* graphicsInstance,
+        class IVulkanMemoryResources* memoryResource);
+
+    static VkImage createImage(class IGraphicsInstance* graphicsInstance, const VkImageCreateInfo* imageCreateInfo
+        , VkFormatFeatureFlags requiredFeatures);
+    static void destroyImage(class IGraphicsInstance* graphicsInstance, VkImage image);
+    static bool allocateImageResource(class IGraphicsInstance* graphicsInstance,
+        class IVulkanMemoryResources* memoryResource, bool cpuAccessible);
+    static void deallocateImageResource(class IGraphicsInstance* graphicsInstance,
         class IVulkanMemoryResources* memoryResource);
 };
 
