@@ -13,7 +13,15 @@
 #include "VulkanInternals/Resources/VulkanSyncResource.h"
 #include "VulkanInternals/Resources/VulkanMemoryResources.h"
 #include "VulkanInternals/VulkanMemoryAllocator.h"
+#include "VulkanInternals/VulkanFunctions.h"
 
+template <EQueueFunction QueueFunction>
+VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
+
+namespace EPixelDataFormat
+{
+    const EPixelDataFormat::ImageFormatInfo* getFormatInfo(EPixelDataFormat::Type dataFormat);
+}
 
 VkInstance VulkanGraphicsHelper::getInstance(class IGraphicsInstance* graphicsInstance)
 {
@@ -33,9 +41,6 @@ const VulkanDebugGraphics* VulkanGraphicsHelper::debugGraphics(class IGraphicsIn
     const VulkanDevice* device = &gInstance->selectedDevice;
     return device->debugGraphics();
 }
-
-template <EQueueFunction QueueFunction>
-VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
 
 VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* graphicsInstance, 
     GenericAppWindow* appWindow)
@@ -281,19 +286,40 @@ void VulkanGraphicsHelper::waitFences(class IGraphicsInstance* graphicsInstance,
         , 2000000000/*2 Seconds*/);
 }
 
-VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsInstance, const uint64& size,
-    const VkBufferUsageFlags& usageFlags)
+VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsInstance, const VkBufferCreateInfo* bufferCreateInfo
+    , EPixelDataFormat::Type bufferDataFormat)
 {
-    VkBuffer buffer;
+    VkBuffer buffer = nullptr;
 
     const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
 
-    BUFFER_CREATE_INFO(createInfo);
-    createInfo.size = size;
-    createInfo.usage = usageFlags;
 
-    if (device->vkCreateBuffer(device->logicalDevice, &createInfo, nullptr, &buffer) != VK_SUCCESS)
+    VkFormatFeatureFlags requiredFeatures = (bufferCreateInfo->usage & VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT) > 0 ?
+        VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT : 0;
+    requiredFeatures |= (bufferCreateInfo->usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) > 0 ?
+        VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT : 0;
+    if (requiredFeatures > 0)
+    {
+        const EPixelDataFormat::ImageFormatInfo* imageFormatInfo = EPixelDataFormat::getFormatInfo(bufferDataFormat);
+        if (bufferDataFormat == EPixelDataFormat::Undefined || !imageFormatInfo)
+        {
+            Logger::error("NewBufferCreation", "%s() : Invalid expected pixel format for buffer", __func__);
+            return buffer;
+        }
+
+        VkFormatProperties formatProps;
+        Vk::vkGetPhysicalDeviceFormatProperties(device->physicalDevice, (VkFormat)imageFormatInfo->format, &formatProps);
+
+        if ((formatProps.bufferFeatures & requiredFeatures) != requiredFeatures)
+        {
+            Logger::error("NewBufferCreation", "%s() : Required format %s for buffer is not supported by device"
+                , __func__, imageFormatInfo->formatName.getChar());
+            return buffer;
+        }
+    }
+
+    if (device->vkCreateBuffer(device->logicalDevice, bufferCreateInfo, nullptr, &buffer) != VK_SUCCESS)
     {
         buffer = nullptr;
     }
@@ -332,5 +358,95 @@ void VulkanGraphicsHelper::deallocateBufferResource(class IGraphicsInstance* gra
     if (memoryResource->getMemoryData())
     {
         gInstance->memoryAllocator->deallocateBuffer(resource->buffer, memoryResource->getMemoryData());
+    }
+}
+
+VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInstance, const VkImageCreateInfo* imageCreateInfo
+    , VkFormatFeatureFlags requiredFeatures)
+{
+    VkImage image = nullptr;
+
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    VkImageCreateInfo createInfo = *imageCreateInfo;
+
+    if(requiredFeatures > 0)
+    {
+        VkFormatProperties pixelFormatProperties;
+        Vk::vkGetPhysicalDeviceFormatProperties(device->physicalDevice, createInfo.format, &pixelFormatProperties);
+        VkFormatFeatureFlags availableFeatures = createInfo.tiling == VK_IMAGE_TILING_LINEAR ?
+            pixelFormatProperties.linearTilingFeatures : pixelFormatProperties.optimalTilingFeatures;
+        if ((availableFeatures & requiredFeatures) != requiredFeatures)
+        {
+            Logger::error("NewImageCreation", "%s() : Required format for image is not supported by device", __func__);
+            return image;
+        }
+    }
+
+    VkImageFormatProperties imageFormatProperties;
+    Vk::vkGetPhysicalDeviceImageFormatProperties(device->physicalDevice, createInfo.format, createInfo.imageType
+        , createInfo.tiling, createInfo.usage, createInfo.flags, &imageFormatProperties);
+    if (imageFormatProperties.maxExtent.width < createInfo.extent.width || imageFormatProperties.maxExtent.height < createInfo.extent.height
+        || imageFormatProperties.maxExtent.depth < createInfo.extent.depth)
+    {
+        Logger::error("NewImageCreation", "%s() : Image size (%d, %d, %d) is exceeding the maximum size (%d, %d, %d) supported by device"
+            , __func__, createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth, imageFormatProperties.maxExtent.width
+            , imageFormatProperties.maxExtent.height, imageFormatProperties.maxExtent.depth);
+        return image;
+    }
+
+    if (createInfo.arrayLayers > imageFormatProperties.maxArrayLayers)
+    {
+        Logger::warn("NewImageCreation", "%s() : Image layer count %d is exceeding the maximum layer count %d supported by device, using max limit"
+            , __func__,createInfo.arrayLayers,imageFormatProperties.maxArrayLayers );
+        createInfo.arrayLayers = imageFormatProperties.maxArrayLayers;
+    }
+
+    if (createInfo.mipLevels > imageFormatProperties.maxMipLevels)
+    {
+        Logger::warn("NewImageCreation", "%s() : Image mip levels %d is exceeding the maximum mip levels %d supported by device, using max limit"
+            , __func__, createInfo.mipLevels, imageFormatProperties.maxMipLevels);
+        createInfo.mipLevels = imageFormatProperties.maxMipLevels;
+    }
+
+    if (device->vkCreateImage(device->logicalDevice, &createInfo, nullptr, &image) != VK_SUCCESS)
+    {
+        image = nullptr;
+    }
+    return image;
+}
+
+void VulkanGraphicsHelper::destroyImage(class IGraphicsInstance* graphicsInstance, VkImage image)
+{
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    device->vkDestroyImage(device->logicalDevice, image, nullptr);
+}
+
+bool VulkanGraphicsHelper::allocateImageResource(class IGraphicsInstance* graphicsInstance
+    , class IVulkanMemoryResources* memoryResource, bool cpuAccessible)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    VulkanImageResource* resource = static_cast<VulkanImageResource*>(memoryResource);
+    VulkanMemoryBlock* block = gInstance->memoryAllocator->allocateImage(resource->image, cpuAccessible);
+    if (block)
+    {
+        memoryResource->setMemoryData(block);
+        gInstance->selectedDevice.vkBindImageMemory(gInstance->selectedDevice.logicalDevice, resource->image,
+            memoryResource->getDeviceMemory(), memoryResource->allocationOffset());
+        return true;
+    }
+    return false;
+}
+
+void VulkanGraphicsHelper::deallocateImageResource(class IGraphicsInstance* graphicsInstance
+    , class IVulkanMemoryResources* memoryResource)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    VulkanImageResource* resource = static_cast<VulkanImageResource*>(memoryResource);
+    if (memoryResource->getMemoryData())
+    {
+        gInstance->memoryAllocator->deallocateImage(resource->image, memoryResource->getMemoryData());
     }
 }
