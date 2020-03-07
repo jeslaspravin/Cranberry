@@ -810,22 +810,22 @@ void IVulkanMemoryResources::setMemoryData(VulkanMemoryBlock* block)
     blockData = block;
 }
 
-uint64 IVulkanMemoryResources::allocatedSize()
+uint64 IVulkanMemoryResources::allocatedSize() const
 {
     return blockData->size;
 }
 
-uint64 IVulkanMemoryResources::allocationOffset()
+uint64 IVulkanMemoryResources::allocationOffset() const
 {
     return blockData->offset;
 }
 
-VulkanMemoryBlock* IVulkanMemoryResources::getMemoryData()
+VulkanMemoryBlock* IVulkanMemoryResources::getMemoryData() const
 {
     return blockData;
 }
 
-VkDeviceMemory IVulkanMemoryResources::getDeviceMemory()
+VkDeviceMemory IVulkanMemoryResources::getDeviceMemory() const
 {
     return blockData->deviceMemory;
 }

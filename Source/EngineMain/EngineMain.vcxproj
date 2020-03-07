@@ -198,11 +198,13 @@
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanDevice.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanFunctions.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanMemoryAllocator.cpp" />
+    <ClCompile Include="VulkanRI\VulkanInternals\VulkanGraphicsTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Engine\GameEngine.h" />
     <ClInclude Include="Core\Engine\WindowManager.h" />
     <ClInclude Include="Core\Logger\Logger.h" />
+    <ClInclude Include="Core\Math\CoreMathTypedefs.h" />
     <ClInclude Include="Core\Memory\SmartPointers.h" />
     <ClInclude Include="Core\Platform\GenericAppInstance.h" />
     <ClInclude Include="Core\Platform\GenericAppWindow.h" />
