@@ -56,17 +56,25 @@ class MemoryResource : public GraphicsResource
 protected:
     // For image this is always used for buffer this is used only in special cases
     EPixelDataFormat::Type dataFormat;
+    bool bIsStagingResource;
 
-    MemoryResource(EPixelDataFormat::Type resourceFormat = EPixelDataFormat::Undefined) : dataFormat(resourceFormat)
+    MemoryResource(EPixelDataFormat::Type resourceFormat = EPixelDataFormat::Undefined) 
+        : dataFormat(resourceFormat)
+        , bIsStagingResource(false)
     {}
 
 public:
     virtual uint64 getResourceSize() const { return 0; }
+    bool isStagingResource() const { return bIsStagingResource; }
 };
 
 class BufferResource : public MemoryResource
 {
     DECLARE_GRAPHICS_RESOURCE(BufferResource, , MemoryResource, )
+
+public:
+    // TODO(Jeslas) : Check if this is needed later point of development
+    void setAsStagingResource(bool isStaging) { bIsStagingResource = isStaging; }
 };
 
 class ImageResource : public MemoryResource

@@ -36,7 +36,7 @@ void VulkanBufferResource::reinitResources()
         release();
         buffer = nextBuffer;
         graphicsDebugger->markObject(this);
-        VulkanGraphicsHelper::allocateBufferResource(graphicsInstance, this, false);
+        VulkanGraphicsHelper::allocateBufferResource(graphicsInstance, this, isStagingResource());
     }
     else
     {
@@ -103,6 +103,7 @@ VulkanImageResource::VulkanImageResource(EPixelDataFormat::Type imageFormat, boo
     if (cpuAccessible)
     {
         tiling = VK_IMAGE_TILING_LINEAR;
+        bIsStagingResource = true;
     }
 }
 
@@ -113,6 +114,8 @@ void VulkanImageResource::init()
 
 void VulkanImageResource::reinitResources()
 {
+    imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    featureRequired = VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
     if (isRenderTarget)
     {
         imageUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -149,6 +152,12 @@ void VulkanImageResource::reinitResources()
         if(type != VK_IMAGE_TYPE_2D)
         {
             numOfMips = 1;
+        }
+
+        if ((createFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) > 0 && layerCount < 6)
+        {
+            Logger::warn("VulkanImageResource", "%s() : Cube map image should have at least 6 layers, current layer count %d", __func__, layerCount);
+            layerCount = 6;
         }
 
         imageUsage |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
@@ -197,7 +206,7 @@ void VulkanImageResource::reinitResources()
         release();
         image = nextImage;
         graphicsDebugger->markObject(this);
-        VulkanGraphicsHelper::allocateImageResource(graphicsInstance, this, false);
+        VulkanGraphicsHelper::allocateImageResource(graphicsInstance, this, isStagingResource());
     }
     else
     {
