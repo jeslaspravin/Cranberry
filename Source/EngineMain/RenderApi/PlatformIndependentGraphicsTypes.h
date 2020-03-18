@@ -10,3 +10,10 @@ static_assert(false, "No available render API");
 
 typedef GraphicsTypes::GraphicInstance GraphicInstance;
 typedef GraphicsTypes::WindowCanvas WindowCanvas;
+
+typedef GraphicsTypes::GraphicsRBuffer GraphicsRBuffer;
+typedef GraphicsTypes::GraphicsWBuffer GraphicsWBuffer;
+typedef GraphicsTypes::GraphicsRWBuffer GraphicsRWBuffer;
+typedef GraphicsTypes::GraphicsRTexelBuffer GraphicsRTexelBuffer;
+typedef GraphicsTypes::GraphicsWTexelBuffer GraphicsWTexelBuffer;
+typedef GraphicsTypes::GraphicsRWTexelBuffer GraphicsRWTexelBuffer;
