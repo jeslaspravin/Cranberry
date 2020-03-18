@@ -188,6 +188,8 @@
     <ClCompile Include="RenderInterface\Resources\QueueResource.cpp" />
     <ClCompile Include="RenderInterface\Resources\GenericWindowCanvas.cpp" />
     <ClCompile Include="StartMain.cpp" />
+    <ClCompile Include="VulkanRI\Resources\VulkanBufferResources.cpp" />
+    <ClCompile Include="VulkanRI\Resources\VulkanImageResources.cpp" />
     <ClCompile Include="VulkanRI\VulkanGraphicsHelper.cpp" />
     <ClCompile Include="VulkanRI\VulkanGraphicsInstance.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Debugging.cpp" />
@@ -241,6 +243,8 @@
     <ClInclude Include="RenderInterface\Resources\QueueResource.h" />
     <ClInclude Include="RenderInterface\Resources\GenericWindowCanvas.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />
+    <ClInclude Include="VulkanRI\Resources\VulkanBufferResources.h" />
+    <ClInclude Include="VulkanRI\Resources\VulkanImageResources.h" />
     <ClInclude Include="VulkanRI\VulkanGraphicsHelper.h" />
     <ClInclude Include="VulkanRI\VulkanGraphicsInstance.h" />
     <ClInclude Include="VulkanRI\VulkanGraphicsTypes.h" />
