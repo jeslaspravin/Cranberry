@@ -73,3 +73,7 @@ void GameEngine::tickEngine()
     
 }
 
+GameEngine* GameEngineWrapper::createEngineInstance()
+{
+    return new GameEngine();
+}
