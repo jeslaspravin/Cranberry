@@ -5,6 +5,8 @@
 #include <type_traits>
 #include <vector>
 
+#define STRINGIFY(...) #__VA_ARGS__
+
 class String :public std::string
 {
 

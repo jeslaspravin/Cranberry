@@ -24,6 +24,8 @@ namespace EPixelDataFormat
         uint32 pixelDataSize;
         String formatName;
     };
+
+    const ImageFormatInfo* getFormatInfo(EPixelDataFormat::Type dataFormat);
 }
 
 namespace EPixelSampleCount
@@ -65,6 +67,7 @@ protected:
 
 public:
     virtual uint64 getResourceSize() const { return 0; }
+    virtual bool isValid() { return false; }
     bool isStagingResource() const { return bIsStagingResource; }
 };
 
@@ -89,7 +92,7 @@ protected:
     uint32 shaderUsage = EImageShaderUsage::Sampling;
     bool isRenderTarget = false;
 
-    ImageResource(){}
+    ImageResource() = default;
 public:
     ImageResource(EPixelDataFormat::Type imageFormat);
 

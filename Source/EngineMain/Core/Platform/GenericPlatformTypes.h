@@ -41,7 +41,7 @@ public:
 
 struct LibPointer {
 
-    virtual ~LibPointer() {}
+    virtual ~LibPointer() = default;
 
 };
 

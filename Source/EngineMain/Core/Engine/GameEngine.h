@@ -17,6 +17,7 @@ protected:
     virtual void tickEngine();
 
 public:
+    virtual ~GameEngine() = default;
 
     void startup(GenericAppInstance* appInstance);
     void engineLoop();
@@ -33,4 +34,43 @@ public:
 
 };
 
-inline GameEngine* gEngine = nullptr;
+class GameEngineWrapper final
+{
+private:
+    GameEngine* gEngine = nullptr;
+
+    GameEngine* createEngineInstance();
+
+public:
+
+    GameEngineWrapper()
+    {
+        gEngine = createEngineInstance();
+    }
+
+    ~GameEngineWrapper()
+    {
+        delete gEngine;
+        gEngine = nullptr;
+    }
+
+    GameEngine* operator->() const
+    {
+        return gEngine;
+    }
+
+    GameEngine* operator*() const
+    {
+        return gEngine;
+    }
+
+    operator bool() const
+    {
+        return gEngine != nullptr;
+    }
+
+    void operator = (const GameEngineWrapper&) = delete;
+    void operator = (GameEngineWrapper&&) = delete;
+};
+
+inline GameEngineWrapper gEngine;

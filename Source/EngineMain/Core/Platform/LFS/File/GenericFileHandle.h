@@ -81,6 +81,6 @@ public:
         rawFileFlags(advancedFlags)
     {}
 
-    virtual ~GenericFileHandle() {}
+    virtual ~GenericFileHandle() = default;
 
 };
