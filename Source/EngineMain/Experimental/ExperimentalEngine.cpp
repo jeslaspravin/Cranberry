@@ -204,3 +204,9 @@ void ExperimentalEngine::tickEngine()
     GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, nullptr);
     appInstance().appWindowManager.getMainWindow()->updateWindow();
 }
+
+GameEngine* GameEngineWrapper::createEngineInstance()
+{
+    return new ExperimentalEngine();
+}
+
