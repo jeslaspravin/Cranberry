@@ -87,6 +87,10 @@ DEVICE_VK_FUNCTIONS(vkGetImageMemoryRequirements)
 DEVICE_VK_FUNCTIONS(vkBindImageMemory)
 DEVICE_VK_FUNCTIONS(vkDestroyImage)
 
+/* Image samplers */
+DEVICE_VK_FUNCTIONS(vkCreateSampler)
+DEVICE_VK_FUNCTIONS(vkDestroySampler)
+
 /* CommandPool Functions */
 DEVICE_VK_FUNCTIONS(vkCreateCommandPool)
 DEVICE_VK_FUNCTIONS(vkDestroyCommandPool)
