@@ -99,6 +99,11 @@ DEFINE_VK_GRAPHICS_RESOURCE(VulkanImageResource, VK_OBJECT_TYPE_IMAGE)
 
 VulkanImageResource::VulkanImageResource(EPixelDataFormat::Type imageFormat, bool cpuAccessible /*= false*/)
     : ImageResource(imageFormat)
+    , defaultImageUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+    , defaultFeaturesRequired(VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)
+    , createFlags(0)
+    , tiling(VK_IMAGE_TILING_OPTIMAL)
+    , type(VK_IMAGE_TYPE_2D)
 {
     if (cpuAccessible)
     {
@@ -107,6 +112,15 @@ VulkanImageResource::VulkanImageResource(EPixelDataFormat::Type imageFormat, boo
     }
 }
 
+VulkanImageResource::VulkanImageResource()
+    : ImageResource(EPixelDataFormat::RGBA_U8_Packed)
+    , defaultImageUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+    , defaultFeaturesRequired(VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)
+    , createFlags(0)
+    , tiling(VK_IMAGE_TILING_OPTIMAL)
+    , type(VK_IMAGE_TYPE_2D)
+{}
+
 void VulkanImageResource::init()
 {
     reinitResources();
@@ -114,12 +128,12 @@ void VulkanImageResource::init()
 
 void VulkanImageResource::reinitResources()
 {
-    imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    featureRequired = VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
+    VkImageUsageFlags imageUsage = defaultImageUsage;
+    VkFormatFeatureFlags featuresRequired = defaultFeaturesRequired;
     if (isRenderTarget)
     {
-        imageUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        featureRequired = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
+        imageUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+        featuresRequired = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
         const EPixelDataFormat::ImageFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
 
         if (!formatInfo)
@@ -132,12 +146,12 @@ void VulkanImageResource::reinitResources()
             || formatInfo->format == VK_FORMAT_D32_SFLOAT || formatInfo->format == VK_FORMAT_D32_SFLOAT_S8_UINT)
         {
             imageUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            featureRequired |= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            featuresRequired |= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
         }
         else
         {
             imageUsage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-            featureRequired |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+            featuresRequired |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
         }
         tiling = VK_IMAGE_TILING_OPTIMAL;
         numOfMips = 1;
@@ -161,9 +175,9 @@ void VulkanImageResource::reinitResources()
         }
 
         imageUsage |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
-        featureRequired |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT : 0;
+        featuresRequired |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT : 0;
         imageUsage |= ((shaderUsage & EImageShaderUsage::Writing) > 0) ? VK_IMAGE_USAGE_STORAGE_BIT : 0;
-        featureRequired |= ((shaderUsage & EImageShaderUsage::Writing) > 0) ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+        featuresRequired |= ((shaderUsage & EImageShaderUsage::Writing) > 0) ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
             | VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT : 0;
 
         // TODO(Jeslas) : Revisit for cpu accessible image
@@ -172,7 +186,7 @@ void VulkanImageResource::reinitResources()
             numOfMips = 1;
             layerCount = 1;
             imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-            featureRequired = VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
+            featuresRequired = VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
             sampleCounts = EPixelSampleCount::SampleCount1;
         }
     }
@@ -199,7 +213,7 @@ void VulkanImageResource::reinitResources()
     imgCreateInfo.extent = { dimensions.x, dimensions.y, dimensions.z };
     imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    VkImage nextImage = VulkanGraphicsHelper::createImage(graphicsInstance, imgCreateInfo, featureRequired);
+    VkImage nextImage = VulkanGraphicsHelper::createImage(graphicsInstance, imgCreateInfo, featuresRequired);
     setLayerCount(imgCreateInfo.arrayLayers);
     setNumOfMips(imgCreateInfo.mipLevels);
 
