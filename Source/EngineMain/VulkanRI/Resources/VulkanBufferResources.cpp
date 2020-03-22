@@ -72,11 +72,6 @@ uint64 VulkanRWBuffer::getResourceSize() const
     return count * stride;
 }
 
-namespace EPixelDataFormat
-{
-    const EPixelDataFormat::ImageFormatInfo* getFormatInfo(EPixelDataFormat::Type dataFormat);
-}
-
 //////////////////////////////////////////////////////////////////////////
 //// Shader read texel buffer
 //////////////////////////////////////////////////////////////////////////
