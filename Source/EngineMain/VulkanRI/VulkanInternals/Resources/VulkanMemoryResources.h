@@ -50,13 +50,13 @@ private:
 
 protected:
 
-    VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    VkFormatFeatureFlags featureRequired = VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
-    VkImageCreateFlags createFlags = 0;
-    VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
-    VkImageType type = VK_IMAGE_TYPE_2D;
+    VkImageUsageFlags defaultImageUsage;
+    VkFormatFeatureFlags defaultFeaturesRequired;
+    VkImageCreateFlags createFlags;
+    VkImageTiling tiling;
+    VkImageType type;
 
-    VulkanImageResource() : ImageResource(EPixelDataFormat::RGBA_U8_Packed) {}
+    VulkanImageResource();
 public:
     VkImage image;
 
