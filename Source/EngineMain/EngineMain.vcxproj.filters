@@ -109,6 +109,15 @@
     <Filter Include="Source Files\Experimental">
       <UniqueIdentifier>{dcb5905c-33fa-45cc-b38d-52e2c5a44e02}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\RenderInterface\Resources\Samplers">
+      <UniqueIdentifier>{a6234363-4168-4734-bb43-84f19793f383}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderInterface\Resources\Samplers">
+      <UniqueIdentifier>{164c502a-daa0-4587-b7c8-9270afd35fec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Types">
+      <UniqueIdentifier>{298adeaf-cc90-4ca7-9419-0a0fe1f86f0b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -224,6 +233,15 @@
     </ClCompile>
     <ClCompile Include="VulkanRI\Resources\VulkanImageResources.cpp">
       <Filter>Source Files\VulkanRI\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Resources\Samplers\SamplerInterface.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Samplers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Colors.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -400,6 +418,18 @@
     </ClInclude>
     <ClInclude Include="VulkanRI\Resources\VulkanImageResources.h">
       <Filter>Source Files\VulkanRI\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\Samplers\SamplerInterface.h">
+      <Filter>Header Files\RenderInterface\Resources\Samplers</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Colors.h">
+      <Filter>Header Files\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\CoreTypes.h">
+      <Filter>Source Files\RenderInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

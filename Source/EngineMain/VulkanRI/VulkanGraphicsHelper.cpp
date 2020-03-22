@@ -14,6 +14,7 @@
 #include "VulkanInternals/Resources/VulkanMemoryResources.h"
 #include "VulkanInternals/VulkanMemoryAllocator.h"
 #include "VulkanInternals/VulkanFunctions.h"
+#include "VulkanInternals/Resources/VulkanSampler.h"
 
 template <EQueueFunction QueueFunction>
 VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
@@ -375,16 +376,14 @@ void VulkanGraphicsHelper::deallocateBufferResource(class IGraphicsInstance* gra
     }
 }
 
-VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInstance, const VkImageCreateInfo* imageCreateInfo
-    , VkFormatFeatureFlags requiredFeatures)
+VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInstance, VkImageCreateInfo& createInfo
+    , VkFormatFeatureFlags& requiredFeatures)
 {
     VkImage image = nullptr;
 
     const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
-
-    VkImageCreateInfo createInfo = *imageCreateInfo;
-
+    
     if(requiredFeatures > 0)
     {
         VkFormatProperties pixelFormatProperties;
@@ -463,4 +462,15 @@ void VulkanGraphicsHelper::deallocateImageResource(class IGraphicsInstance* grap
     {
         gInstance->memoryAllocator->deallocateImage(resource->image, memoryResource->getMemoryData());
     }
+}
+
+SharedPtr<class SamplerInterface> VulkanGraphicsHelper::createSampler(class IGraphicsInstance* graphicsInstance,
+    const char* name, ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    VulkanSampler* sampler = new VulkanSampler(&gInstance->selectedDevice, samplerTiling, samplerFiltering, poorMipLod);
+    sampler->setObjectName(name);
+    sampler->init();
+
+    return SharedPtr<SamplerInterface>(sampler);
 }

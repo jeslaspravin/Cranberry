@@ -179,6 +179,7 @@
     <ClCompile Include="Core\Platform\Windows\WindowsAppWindow.cpp" />
     <ClCompile Include="Core\Platform\Windows\WindowsPlatformFunctions.cpp" />
     <ClCompile Include="Core\String\String.cpp" />
+    <ClCompile Include="Core\Types\Colors.cpp" />
     <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
     <ClCompile Include="RenderApi\RenderApi.cpp" />
     <ClCompile Include="RenderInterface\GraphicsInstance.cpp" />
@@ -188,6 +189,7 @@
     <ClCompile Include="RenderInterface\Resources\MemoryResources.cpp" />
     <ClCompile Include="RenderInterface\Resources\QueueResource.cpp" />
     <ClCompile Include="RenderInterface\Resources\GenericWindowCanvas.cpp" />
+    <ClCompile Include="RenderInterface\Resources\Samplers\SamplerInterface.cpp" />
     <ClCompile Include="StartMain.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanBufferResources.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanImageResources.cpp" />
@@ -196,6 +198,7 @@
     <ClCompile Include="VulkanRI\VulkanInternals\Debugging.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Platform\Windows\WindowsVulkanFunctions.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.cpp" />
+    <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanWindowCanvas.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanDevice.cpp" />
@@ -232,9 +235,11 @@
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformTypes.h" />
     <ClInclude Include="Core\String\String.h" />
     <ClInclude Include="Core\Types\Functions.h" />
+    <ClInclude Include="Core\Types\Colors.h" />
     <ClInclude Include="Experimental\ExperimentalEngine.h" />
     <ClInclude Include="RenderApi\PlatformIndependentGraphicsTypes.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
+    <ClInclude Include="RenderInterface\CoreTypes.h" />
     <ClInclude Include="RenderInterface\GraphicsHelper.h" />
     <ClInclude Include="RenderInterface\GraphicsIntance.h" />
     <ClInclude Include="RenderInterface\PlatformIndependentHeaders.h" />
@@ -244,6 +249,7 @@
     <ClInclude Include="RenderInterface\Resources\MemoryResources.h" />
     <ClInclude Include="RenderInterface\Resources\QueueResource.h" />
     <ClInclude Include="RenderInterface\Resources\GenericWindowCanvas.h" />
+    <ClInclude Include="RenderInterface\Resources\Samplers\SamplerInterface.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanBufferResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanImageResources.h" />
@@ -256,6 +262,7 @@
     <ClInclude Include="VulkanRI\VulkanInternals\Platform\Windows\WindowsVulkanFunctions.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanQueueResource.h" />
+    <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanWindowCanvas.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanDevice.h" />

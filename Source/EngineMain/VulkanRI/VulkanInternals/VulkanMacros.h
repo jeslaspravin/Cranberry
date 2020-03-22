@@ -149,6 +149,15 @@ VariableName.queueFamilyIndexCount = 0;                     \
 VariableName.pQueueFamilyIndices = nullptr
 #endif
 
+#ifndef SAMPLER_CREATE_INFO
+#define SAMPLER_CREATE_INFO(VariableName)                   \
+VkSamplerCreateInfo VariableName;                           \
+VariableName.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO; \
+VariableName.pNext = nullptr;                               \
+VariableName.flags = 0;                                     \
+VariableName.unnormalizedCoordinates = VK_FALSE
+#endif
+
 #ifndef CREATE_SEMAPHORE_INFO
 #define CREATE_SEMAPHORE_INFO(VariableName)                     \
 VkSemaphoreCreateInfo  VariableName;                            \

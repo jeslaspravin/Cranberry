@@ -42,13 +42,16 @@ public:
     static void deallocateBufferResource(class IGraphicsInstance* graphicsInstance,
         class IVulkanMemoryResources* memoryResource);
 
-    static VkImage createImage(class IGraphicsInstance* graphicsInstance, const VkImageCreateInfo* imageCreateInfo
-        , VkFormatFeatureFlags requiredFeatures);
+    static VkImage createImage(class IGraphicsInstance* graphicsInstance, VkImageCreateInfo& createInfo
+        , VkFormatFeatureFlags& requiredFeatures);
     static void destroyImage(class IGraphicsInstance* graphicsInstance, VkImage image);
     static bool allocateImageResource(class IGraphicsInstance* graphicsInstance,
         class IVulkanMemoryResources* memoryResource, bool cpuAccessible);
     static void deallocateImageResource(class IGraphicsInstance* graphicsInstance,
         class IVulkanMemoryResources* memoryResource);
+
+    static SharedPtr<class SamplerInterface> createSampler(class IGraphicsInstance* graphicsInstance, const char* name,
+        ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod);
 };
 
 
