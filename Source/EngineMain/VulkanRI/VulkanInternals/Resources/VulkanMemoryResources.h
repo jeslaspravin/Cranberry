@@ -26,6 +26,11 @@ public:
     void release() override;
     String getResourceName() const override;
     /* End - GraphicsResource implementations */
+
+    /* MemoryResource implementations */
+    bool isValid();
+    /* End - MemoryResource implementations */
+
     /* IVulkanResources implementations */
     String getObjectName() const override;
     void setObjectName(const String& name) override;
@@ -64,6 +69,11 @@ public:
     String getResourceName() const override;
     uint64 getResourceSize() const override;
     /* End - GraphicsResource implementations */
+
+    /* MemoryResource implementations */
+    bool isValid();
+    /* End - MemoryResource implementations */
+
     /* IVulkanResources implementations */
     String getObjectName() const override;
     void setObjectName(const String& name) override;

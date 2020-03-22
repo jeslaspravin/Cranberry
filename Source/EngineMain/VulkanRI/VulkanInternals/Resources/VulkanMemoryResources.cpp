@@ -85,17 +85,17 @@ String VulkanBufferResource::getResourceName() const
     return bufferName;
 }
 
+bool VulkanBufferResource::isValid()
+{
+    return buffer != nullptr;
+}
+
 //////////////////////////////////////////////////////////////////////////
 //// Image Resources 
 //////////////////////////////////////////////////////////////////////////
 
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanImageResource, VK_OBJECT_TYPE_IMAGE)
-
-namespace EPixelDataFormat
-{
-    const EPixelDataFormat::ImageFormatInfo* getFormatInfo(EPixelDataFormat::Type dataFormat);
-}
 
 VulkanImageResource::VulkanImageResource(EPixelDataFormat::Type imageFormat, bool cpuAccessible /*= false*/)
     : ImageResource(imageFormat)
@@ -199,7 +199,9 @@ void VulkanImageResource::reinitResources()
     imgCreateInfo.extent = { dimensions.x, dimensions.y, dimensions.z };
     imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    VkImage nextImage = VulkanGraphicsHelper::createImage(graphicsInstance, &imgCreateInfo, featureRequired);
+    VkImage nextImage = VulkanGraphicsHelper::createImage(graphicsInstance, imgCreateInfo, featureRequired);
+    setLayerCount(imgCreateInfo.arrayLayers);
+    setNumOfMips(imgCreateInfo.mipLevels);
 
     if (nextImage)
     {
@@ -240,6 +242,11 @@ uint64 VulkanImageResource::getResourceSize() const
         return dimensions.x * dimensions.y * dimensions.z * layerCount * formatInfo->pixelDataSize;
     }
     return 0;
+}
+
+bool VulkanImageResource::isValid()
+{
+    return image != nullptr;
 }
 
 String VulkanImageResource::getObjectName() const

@@ -2,7 +2,7 @@
 #include "../Core/Memory/SmartPointers.h"
 #include "../Core/Platform/PlatformTypes.h"
 
-
+/* Fwd declarations */
 namespace std
 {
     template <class _Ty>
@@ -11,6 +11,15 @@ namespace std
     template <class _Ty, class _Alloc = allocator<_Ty>>
     class vector;
 }
+namespace ESamplerTilingMode
+{
+    enum Type;
+}
+namespace ESamplerFiltering
+{
+    enum Type;
+}
+/* Fwd declarations end */
 
 template<typename HelperType>
 class GraphicsHelperAPI
@@ -52,5 +61,11 @@ public:
         std::vector<uint32>* imageIndex, std::vector<SharedPtr<class GraphicsSemaphore>>* waitOnSemaphores)
     {
         HelperType::presentImage(graphicsInstance, canvases,imageIndex,waitOnSemaphores);
+    }
+
+    static SharedPtr<class SamplerInterface> createSampler(class IGraphicsInstance* graphicsInstance, const char* name,
+        ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod = 0)
+    {
+        return HelperType::createSampler(graphicsInstance, name, samplerTiling, samplerFiltering, poorMipLod);
     }
 };

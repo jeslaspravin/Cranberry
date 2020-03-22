@@ -170,6 +170,10 @@ class GraphicsResource
     DECLARE_GRAPHICS_RESOURCE(GraphicsResource,,GraphicsResource,)
     
 public:
+    GraphicsResource() = default;
+    GraphicsResource(const GraphicsResource& otherResource) = delete;
+    GraphicsResource(GraphicsResource&& otherResource) = delete;
+    virtual ~GraphicsResource() = default;
 
     virtual void init() {};
     virtual void reinitResources() {};

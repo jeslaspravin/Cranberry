@@ -7,7 +7,6 @@
 
 int appMain(GenericAppInstance* appInstance)
 {
-    ::gEngine = new ExperimentalEngine();
     UnexpectedErrorHandler::getHandler()->registerFilter();
 
     Logger::log("Engine", "%s() : Engine start", __func__);
@@ -18,10 +17,7 @@ int appMain(GenericAppInstance* appInstance)
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
     gEngine->quit();
     Logger::log("Engine", "%s() : Engine quit", __func__);
-
-    delete (::gEngine);
-    ::gEngine = nullptr;
-
+    
     return 0;
 }
 
