@@ -2,7 +2,7 @@
 #include "Core/Platform/PlatformInstances.h"
 #include "Core/Platform/LFS/PlatformLFS.h"
 #include "Core/Platform/PlatformAssertionErrors.h"
-#include "Experimental/ExperimentalEngine.h"
+#include "Core/Engine/GameEngine.h"
 
 
 int appMain(GenericAppInstance* appInstance)
