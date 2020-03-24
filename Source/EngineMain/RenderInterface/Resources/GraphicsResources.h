@@ -179,4 +179,6 @@ public:
     virtual void reinitResources() {};
     virtual void release() {};
     virtual String getResourceName() const;
+    // This needs to be set before initializing or needs be reinit for the GPU resource be relabeled.
+    virtual void setResourceName(const String& name) {};
 };

@@ -15,7 +15,7 @@ public:
     virtual bool isSignaled() const { return false; }
     virtual void resetSignal() {}
     String getResourceName() const override;
-
+    void setResourceName(const String& name) override;
 };
 
 class GraphicsSemaphore : public GraphicsSyncResource

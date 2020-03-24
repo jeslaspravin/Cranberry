@@ -14,7 +14,7 @@ String VulkanSampler::getObjectName() const
 
 void VulkanSampler::setObjectName(const String& name)
 {
-    resourceName = name;
+    setResourceName(name);
 }
 
 uint64 VulkanSampler::getDispatchableHandle() const
