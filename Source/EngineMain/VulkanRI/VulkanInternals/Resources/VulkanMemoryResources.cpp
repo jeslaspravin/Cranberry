@@ -18,7 +18,7 @@ void VulkanBufferResource::reinitResources()
 {
     if (getResourceSize() == 0)
     {
-        Logger::error("VulkanBufferResource", "%s() : Invalid resource %s", __func__, bufferName.getChar());
+        Logger::error("VulkanBufferResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
         return;
     }
 
@@ -40,7 +40,7 @@ void VulkanBufferResource::reinitResources()
     }
     else
     {
-        Logger::error("VulkanBufferResource", "%s() : Failed creating buffer %s", __func__, bufferName.getChar());
+        Logger::error("VulkanBufferResource", "%s() : Failed creating buffer %s", __func__, getObjectName().getChar());
     }
 }
 
@@ -62,7 +62,7 @@ String VulkanBufferResource::getObjectName() const
 
 void VulkanBufferResource::setObjectName(const String& name)
 {
-    bufferName = name;
+    setResourceName(name);
 }
 
 uint64 VulkanBufferResource::getDispatchableHandle() const
@@ -78,11 +78,6 @@ uint64 VulkanBufferResource::requiredSize() const
 bool VulkanBufferResource::canAllocateMemory() const
 {
     return buffer && requiredSize() > 0;
-}
-
-String VulkanBufferResource::getResourceName() const
-{
-    return bufferName;
 }
 
 bool VulkanBufferResource::isValid()
@@ -194,7 +189,7 @@ void VulkanImageResource::reinitResources()
 
     if (getResourceSize() == 0)
     {
-        Logger::error("VulkanImageResource", "%s() : Invalid resource %s", __func__, imageName.getChar());
+        Logger::error("VulkanImageResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
         return;
     }
 
@@ -226,7 +221,7 @@ void VulkanImageResource::reinitResources()
     }
     else
     {
-        Logger::error("VulkanImageResource", "%s() : Failed creating image %s", __func__, imageName.getChar());
+        Logger::error("VulkanImageResource", "%s() : Failed creating image %s", __func__, getObjectName().getChar());
     }
 }
 
@@ -239,11 +234,6 @@ void VulkanImageResource::release()
         VulkanGraphicsHelper::destroyImage(graphicsInstance, image);
         image = nullptr;
     }
-}
-
-String VulkanImageResource::getResourceName() const
-{
-    return imageName;
 }
 
 uint64 VulkanImageResource::getResourceSize() const
@@ -270,7 +260,7 @@ String VulkanImageResource::getObjectName() const
 
 void VulkanImageResource::setObjectName(const String& name)
 {
-    imageName = name;
+    setResourceName(name);
 }
 
 uint64 VulkanImageResource::getDispatchableHandle() const

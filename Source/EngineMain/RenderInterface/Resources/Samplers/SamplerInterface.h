@@ -83,5 +83,6 @@ public:
 
     /* Graphics Resource overrides */
     String getResourceName() const override;
+    void setResourceName(const String& name) override;
     /* End overrides */
 };
