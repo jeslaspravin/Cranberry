@@ -103,3 +103,8 @@ String SamplerInterface::getResourceName() const
 {
     return resourceName;
 }
+
+void SamplerInterface::setResourceName(const String& name)
+{
+    resourceName = name;
+}

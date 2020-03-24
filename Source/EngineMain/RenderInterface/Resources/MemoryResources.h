@@ -65,10 +65,17 @@ protected:
         , bIsStagingResource(false)
     {}
 
+    String memoryResName;
+
 public:
     virtual uint64 getResourceSize() const { return 0; }
     virtual bool isValid() { return false; }
     bool isStagingResource() const { return bIsStagingResource; }
+
+    /* GraphicsResource overrides */
+    String getResourceName() const override;
+    void setResourceName(const String& name) override;
+    /* overrides ends */
 };
 
 class BufferResource : public MemoryResource

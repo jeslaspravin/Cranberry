@@ -9,10 +9,7 @@ class VulkanDevice;
 class VulkanBufferResource : public BufferResource, public IVulkanMemoryResources
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanBufferResource,,BufferResource,)
-
-private:
-    String bufferName;
-
+    
 protected:
     // Always buffer can be copied from and copied to
     VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -24,7 +21,6 @@ public:
     void init() override;
     void reinitResources() override;
     void release() override;
-    String getResourceName() const override;
     /* End - GraphicsResource implementations */
 
     /* MemoryResource implementations */
@@ -45,9 +41,6 @@ class VulkanImageResource : public ImageResource, public IVulkanMemoryResources
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanImageResource, , BufferResource, )
 
-private:
-    String imageName;
-
 protected:
 
     VkImageUsageFlags defaultImageUsage;
@@ -66,7 +59,6 @@ public:
     void init() override;
     void reinitResources() override;
     void release() override;
-    String getResourceName() const override;
     uint64 getResourceSize() const override;
     /* End - GraphicsResource implementations */
 
