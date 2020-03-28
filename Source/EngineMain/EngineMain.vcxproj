@@ -234,8 +234,8 @@
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformFunctions.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformTypes.h" />
     <ClInclude Include="Core\String\String.h" />
-    <ClInclude Include="Core\Types\Functions.h" />
     <ClInclude Include="Core\Types\Colors.h" />
+    <ClInclude Include="Core\Types\Functions.h" />
     <ClInclude Include="Experimental\ExperimentalEngine.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
     <ClInclude Include="RenderInterface\CoreTypes.h" />

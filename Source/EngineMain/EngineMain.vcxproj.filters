@@ -237,11 +237,11 @@
     <ClCompile Include="RenderInterface\Resources\Samplers\SamplerInterface.cpp">
       <Filter>Source Files\RenderInterface\Resources\Samplers</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Types\Colors.cpp">
-      <Filter>Source Files\Types</Filter>
-    </ClCompile>
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.cpp">
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Colors.cpp">
+      <Filter>Source Files\Types</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -419,9 +419,6 @@
     <ClInclude Include="RenderInterface\Resources\Samplers\SamplerInterface.h">
       <Filter>Header Files\RenderInterface\Resources\Samplers</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Types\Colors.h">
-      <Filter>Header Files\Core\Types</Filter>
-    </ClInclude>
     <ClInclude Include="RenderInterface\CoreTypes.h">
       <Filter>Source Files\RenderInterface</Filter>
     </ClInclude>
@@ -430,6 +427,9 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\PlatformIndependentGraphicsTypes.h">
       <Filter>Header Files\RenderInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Colors.h">
+      <Filter>Header Files\Core\Types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
