@@ -108,7 +108,7 @@ VulkanImageResource::VulkanImageResource(EPixelDataFormat::Type imageFormat, boo
 }
 
 VulkanImageResource::VulkanImageResource()
-    : ImageResource(EPixelDataFormat::RGBA_U8_Packed)
+    : ImageResource(EPixelDataFormat::RGBA_UI8_Packed)
     , defaultImageUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
     , defaultFeaturesRequired(VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)
     , createFlags(0)
@@ -158,7 +158,7 @@ void VulkanImageResource::reinitResources()
             // TODO (Jeslas) : Check if 1D or 3D can have more mips
             numOfMips = (uint32)(1 + glm::floor(glm::log2((float)glm::max(dimensions.x, dimensions.y))));
         }
-        if(type != VK_IMAGE_TYPE_2D)
+        if(type != VK_IMAGE_TYPE_2D || sampleCounts != EPixelSampleCount::SampleCount1)
         {
             numOfMips = 1;
         }
@@ -206,7 +206,7 @@ void VulkanImageResource::reinitResources()
     imgCreateInfo.format = (VkFormat)getFormatInfo(dataFormat)->format;
     imgCreateInfo.arrayLayers = layerCount;
     imgCreateInfo.extent = { dimensions.x, dimensions.y, dimensions.z };
-    imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imgCreateInfo.initialLayout = tiling == VK_IMAGE_TILING_LINEAR? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED;
 
     VkImage nextImage = VulkanGraphicsHelper::createImage(graphicsInstance, imgCreateInfo, featuresRequired);
     setLayerCount(imgCreateInfo.arrayLayers);
