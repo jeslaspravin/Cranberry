@@ -686,22 +686,24 @@ public:
     }
 
 
-    VulkanMemoryBlock* allocateImage(VkImage image, bool cpuAccessible) override
+    VulkanMemoryBlock* allocateImage(VkImage image, bool cpuAccessible, bool bIsOptimalTiled) override
     {
         VulkanMemoryBlock* block = nullptr;
         VkMemoryRequirements memRequirement;
         device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
-        /* Commented below because this is not working as per it is documented in vulkan API */
-        bool isOptimalImage = (memRequirement.memoryTypeBits 
-            & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == 0;
-        VulkanChunkAllocator** chunkAllocator = isOptimalImage ? optimalChunkAllocators : linearChunkAllocators;
-        
-        // if being device local and not available or is optimal and being host accessible
-        if ((!cpuAccessible && (memRequirement.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) 
-            || (cpuAccessible && isOptimalImage))
-        {
-            return block;
-        }
+        /* Cannot rely on spec at https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/chap11.html#vkGetImageMemoryRequirements
+        As it is behaving differently on hardware with on board graphics either dedicated or internal */
+        //bool isOptimalImage = (memRequirement.memoryTypeBits 
+        //    & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == 0;
+        //
+        //// if being device local and not available or is optimal and being host accessible
+        //if ((!cpuAccessible && (memRequirement.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) 
+        //    || (cpuAccessible && isOptimalImage))
+        //{
+        //    return block;
+        //}
+
+        VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
         sortAvailableByPriority(cpuAccessible);
         for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
@@ -731,13 +733,17 @@ public:
     }
 
 
-    void deallocateImage(VkImage image, VulkanMemoryBlock* block) override
+    void deallocateImage(VkImage image, VulkanMemoryBlock* block, bool bIsOptimalTiled) override
     {
-        VkMemoryRequirements memRequirement;
-        device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
-        bool isOptimalImage = (memRequirement.memoryTypeBits 
-            & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == 0;
-        VulkanChunkAllocator** chunkAllocator = isOptimalImage ? optimalChunkAllocators : linearChunkAllocators;
+        /* Cannot rely on spec at https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/chap11.html#vkGetImageMemoryRequirements
+        As it is behaving differently on hardware with on board graphics either dedicated or internal */
+        //VkMemoryRequirements memRequirement;
+        //device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
+        //
+        //bool isOptimalImage = (memRequirement.memoryTypeBits 
+        //    & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == 0;
+
+        VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
 
         for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {

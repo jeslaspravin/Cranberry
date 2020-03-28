@@ -19,10 +19,10 @@ public:
     virtual void destroyAllocator() = 0;
 
     virtual VulkanMemoryBlock* allocateBuffer(VkBuffer buffer, bool cpuAccessible) = 0;
-    virtual VulkanMemoryBlock* allocateImage(VkImage image, bool cpuAccessible) = 0;
+    virtual VulkanMemoryBlock* allocateImage(VkImage image, bool cpuAccessible, bool bIsOptimalTiled) = 0;
 
     virtual void deallocateBuffer(VkBuffer buffer, VulkanMemoryBlock* block) = 0;
-    virtual void deallocateImage(VkImage image, VulkanMemoryBlock* block) = 0;
+    virtual void deallocateImage(VkImage image, VulkanMemoryBlock* block, bool bIsOptimalTiled) = 0;
 };
 
 namespace std {

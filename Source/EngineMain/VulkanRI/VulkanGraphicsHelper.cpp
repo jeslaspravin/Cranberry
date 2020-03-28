@@ -442,7 +442,9 @@ bool VulkanGraphicsHelper::allocateImageResource(class IGraphicsInstance* graphi
 {
     VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
     VulkanImageResource* resource = static_cast<VulkanImageResource*>(memoryResource);
-    VulkanMemoryBlock* block = gInstance->memoryAllocator->allocateImage(resource->image, cpuAccessible);
+    VulkanMemoryBlock* block = gInstance->memoryAllocator->allocateImage(resource->image, cpuAccessible, 
+        !resource->isStagingResource());// Every image apart from staging image are optimal
+
     if (block)
     {
         memoryResource->setMemoryData(block);
@@ -460,7 +462,8 @@ void VulkanGraphicsHelper::deallocateImageResource(class IGraphicsInstance* grap
     VulkanImageResource* resource = static_cast<VulkanImageResource*>(memoryResource);
     if (memoryResource->getMemoryData())
     {
-        gInstance->memoryAllocator->deallocateImage(resource->image, memoryResource->getMemoryData());
+        gInstance->memoryAllocator->deallocateImage(resource->image, memoryResource->getMemoryData(),
+            !resource->isStagingResource());// Every image apart from staging image are optimal
     }
 }
 

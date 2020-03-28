@@ -27,6 +27,7 @@ void GameEngine::onStartUp()
 
 void GameEngine::quit()
 {
+    bExitNextFrame = true;
     onQuit();
     renderingApi->destroy();
     renderingApi.release();
