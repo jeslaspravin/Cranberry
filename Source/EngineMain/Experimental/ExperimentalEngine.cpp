@@ -7,6 +7,9 @@
 #include "../VulkanRI/VulkanInternals/VulkanDevice.h"
 #include "../VulkanRI/VulkanInternals/Debugging.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanWindowCanvas.h"
+#include "../RenderInterface/PlatformIndependentHeaders.h"
+
+#include <glm/ext/vector_float2.hpp>
 
 template <EQueueFunction QueueFunction>
 VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
@@ -113,6 +116,133 @@ void ExperimentalEngine::destroyPools()
     }
 }
 
+void ExperimentalEngine::createBuffers()
+{
+    normalBuffer.buffer = new GraphicsRBuffer(sizeof(glm::vec2), 1);
+    normalBuffer.buffer->setResourceName("Test_Buffer");
+    normalBuffer.buffer->init();
+    texelBuffer.buffer = new GraphicsRTexelBuffer(EPixelDataFormat::R_SF32, 100);
+    texelBuffer.buffer->setResourceName("Test_TexelBuffer");
+    texelBuffer.buffer->init();
+    BUFFER_VIEW_CREATE_INFO(bufferViewCreateInfo);
+    bufferViewCreateInfo.buffer = static_cast<VulkanRTexelBuffer*>(texelBuffer.buffer)->buffer;
+    bufferViewCreateInfo.format = (VkFormat)EPixelDataFormat::getFormatInfo(EPixelDataFormat::R_SF32)->format;
+    if (vDevice->vkCreateBufferView(device, &bufferViewCreateInfo, nullptr, &texelBuffer.bufferView) != VK_SUCCESS)
+    {
+        texelBuffer.bufferView = nullptr;
+        Logger::error("ExperimentalEngine", "%s() : Failed creating buffer view for texel buffer %s",
+            __func__, texelBuffer.buffer->getResourceName().getChar());
+    }
+    else
+    {
+        graphicsDbg->markObject((uint64)texelBuffer.bufferView, "Test_TexelBufferView", VK_OBJECT_TYPE_BUFFER_VIEW);
+    }
+}
+
+void ExperimentalEngine::destroyBuffers()
+{
+    normalBuffer.buffer->release();
+    delete normalBuffer.buffer;
+    normalBuffer.buffer = nullptr;
+
+    if (texelBuffer.bufferView)
+    {
+        vDevice->vkDestroyBufferView(device, texelBuffer.bufferView, nullptr);
+        texelBuffer.bufferView = nullptr;
+    }
+    texelBuffer.buffer->release();
+    delete texelBuffer.buffer;
+    texelBuffer.buffer = nullptr;
+}
+
+void ExperimentalEngine::createImages()
+{
+    // Render target texture
+    {
+        rtTexture.image = new GraphicsRenderTargetResource(EPixelDataFormat::RGBA_U8_NormPacked);
+        rtTexture.image->setResourceName("Test_RT_Texture");
+        rtTexture.image->setImageSize(Size3D(512, 512, 1));
+        rtTexture.image->setSampleCounts(EPixelSampleCount::SampleCount1);
+        rtTexture.image->init();
+
+        IMAGE_VIEW_CREATE_INFO(rtViewCreateInfo);
+        rtViewCreateInfo.image = static_cast<VulkanImageResource*>(rtTexture.image)->image;
+        rtViewCreateInfo.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
+        rtViewCreateInfo.format = (VkFormat)EPixelDataFormat::getFormatInfo(EPixelDataFormat::RGBA_U8_NormPacked)->format;
+        rtViewCreateInfo.subresourceRange = {
+            VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT
+            , 0
+            , VK_REMAINING_MIP_LEVELS
+            , 0
+            , VK_REMAINING_ARRAY_LAYERS
+        };
+
+        if (vDevice->vkCreateImageView(device, &rtViewCreateInfo, nullptr, &rtTexture.imageView) != VK_SUCCESS)
+        {
+            rtTexture.imageView = nullptr;
+            Logger::error("ExperimentalEngine", "%s() : Failed creating image view for RT texture %s",
+                __func__, rtTexture.image->getResourceName().getChar());
+        }
+        else
+        {
+            graphicsDbg->markObject((uint64)rtTexture.imageView, "Test_RT_TextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
+        }
+    }
+    // common shader sampling texture
+    {
+        texture.image = new GraphicsImageResource(EPixelDataFormat::RGBA_U8_NormPacked);
+        texture.image->setResourceName("Test_Texture");
+        texture.image->setShaderUsage(EImageShaderUsage::Sampling);
+        texture.image->setImageSize(Size3D(1024, 1024, 1));
+        texture.image->setSampleCounts(EPixelSampleCount::SampleCount8);
+        texture.image->init();
+
+        IMAGE_VIEW_CREATE_INFO(textureViewCreateInfo);
+        textureViewCreateInfo.image = static_cast<VulkanImageResource*>(texture.image)->image;
+        textureViewCreateInfo.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
+        textureViewCreateInfo.format = (VkFormat)EPixelDataFormat::getFormatInfo(EPixelDataFormat::RGBA_U8_NormPacked)->format;
+        textureViewCreateInfo.subresourceRange = {
+            VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT
+            , 0
+            , VK_REMAINING_MIP_LEVELS
+            , 0
+            , VK_REMAINING_ARRAY_LAYERS
+        };
+
+        if (vDevice->vkCreateImageView(device, &textureViewCreateInfo, nullptr, &texture.imageView) != VK_SUCCESS)
+        {
+            texture.imageView = nullptr;
+            Logger::error("ExperimentalEngine", "%s() : Failed creating image view for texture %s",
+                __func__, texture.image->getResourceName().getChar());
+        }
+        else
+        {
+            graphicsDbg->markObject((uint64)texture.imageView, "Test_TextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
+        }
+    }
+}
+
+void ExperimentalEngine::destroyImages()
+{
+    if (texture.imageView)
+    {
+        vDevice->vkDestroyImageView(device, texture.imageView, nullptr);
+        texture.imageView = nullptr;
+    }
+    texture.image->release();
+    delete texture.image;
+    texture.image = nullptr;
+
+    if (rtTexture.imageView)
+    {
+        vDevice->vkDestroyImageView(device, rtTexture.imageView, nullptr);
+        rtTexture.imageView = nullptr;
+    }
+    rtTexture.image->release();
+    delete rtTexture.image;
+    rtTexture.image = nullptr;
+}
+
 void ExperimentalEngine::onStartUp()
 {
     GameEngine::onStartUp();
@@ -129,12 +259,18 @@ void ExperimentalEngine::onStartUp()
     cmdAllocInfo.commandBufferCount = 1;
     cmdAllocInfo.commandPool = pools[EQueueFunction::Present].resetableCommandPool;
     vDevice->vkAllocateCommandBuffers(device, &cmdAllocInfo, &swapchainCmdBuffer);
+
+    createBuffers();
+    createImages();
 }
 
 void ExperimentalEngine::onQuit()
 {
     vFence->release();
     vFence.reset();
+
+    destroyBuffers();
+    destroyImages();
 
     vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Present].resetableCommandPool, 1, &swapchainCmdBuffer);
     destroyPools();
