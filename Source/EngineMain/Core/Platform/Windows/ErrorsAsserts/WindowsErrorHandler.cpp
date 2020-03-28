@@ -138,7 +138,9 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context)
                     break;
                 }
             }
-            String fileName = PlatformFile(symInfo.fileName()).getFileName();
+            String fileName = symInfo.fileName();
+            fileName = fileName.length() > 0 ? PlatformFile(fileName).getFileName() : fileName;
+
             stackTrace << moduleName.getChar() << " [0x" << std::hex << frame.AddrPC.Offset << std::dec <<"] : " 
                 << symInfo.undecoratedName() << "(" << symInfo.name() << ") : ("
                 << fileName.getChar() << "):" << symInfo.lineNumber();
@@ -159,7 +161,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context)
     
     Logger::error("WindowsUnexpectedErrorHandler", "Error call trace : \r\n%s", stackTrace.str().c_str());
 
-    if (gEngine)
+    if (gEngine && !gEngine->isExiting())
     {
         gEngine->quit();
     }

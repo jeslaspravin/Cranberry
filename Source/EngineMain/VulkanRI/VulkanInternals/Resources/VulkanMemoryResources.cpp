@@ -3,6 +3,7 @@
 #include "../VulkanDevice.h"
 #include "../../../Core/Logger/Logger.h"
 #include "../../../Core/Engine/GameEngine.h"
+#include "../../../Core/Platform/PlatformAssertionErrors.h"
 
 #include <glm/exponential.hpp>
 #include "glm/common.hpp"
@@ -36,7 +37,8 @@ void VulkanBufferResource::reinitResources()
         release();
         buffer = nextBuffer;
         graphicsDebugger->markObject(this);
-        VulkanGraphicsHelper::allocateBufferResource(graphicsInstance, this, isStagingResource());
+        fatalAssert(VulkanGraphicsHelper::allocateBufferResource(graphicsInstance, this, isStagingResource()),
+            "Memory allocation failed for resource");
     }
     else
     {
@@ -217,7 +219,8 @@ void VulkanImageResource::reinitResources()
         release();
         image = nextImage;
         graphicsDebugger->markObject(this);
-        VulkanGraphicsHelper::allocateImageResource(graphicsInstance, this, isStagingResource());
+        fatalAssert(VulkanGraphicsHelper::allocateImageResource(graphicsInstance, this, isStagingResource()),
+            "Memory allocation failed for resource");
     }
     else
     {
