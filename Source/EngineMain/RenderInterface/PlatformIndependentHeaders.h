@@ -6,6 +6,10 @@
 #if RENDERAPI_VULKAN
 #include "../VulkanRI/VulkanGraphicsInstance.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanWindowCanvas.h"
+
+#include "../VulkanRI/Resources/VulkanBufferResources.h"
+#include "../VulkanRI/Resources/VulkanImageResources.h"
+
 #include "../VulkanRI/VulkanGraphicsTypes.h"
 #elif RENDERAPI_OPENGL
 static_assert(false, "Not supported render API");

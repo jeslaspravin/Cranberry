@@ -360,7 +360,7 @@ public:
             std::sort(sortedChunks.begin(), sortedChunks.end(), [](std::pair<std::vector<VulkanMemoryChunk>*, uint64>& lhs,
                 std::pair<std::vector<VulkanMemoryChunk>*, uint64>& rhs)
             {
-                return lhs.second <= rhs.second;
+                return lhs.second < rhs.second;
             });
         }
 
@@ -368,7 +368,7 @@ public:
         {
             uint64 alignedSize = size + chunks.second;
             
-            for (uint32 index = (uint32)chunks.first->size() - 1; index >= 0; --index)
+            for (int32 index = (int32)chunks.first->size() - 1; index >= 0; --index)
             {
                 allocatedBlock = chunks.first->at(index).allocateBlock(alignedSize, offsetAlignment);
                 if (allocatedBlock)
@@ -691,10 +691,11 @@ public:
         VulkanMemoryBlock* block = nullptr;
         VkMemoryRequirements memRequirement;
         device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
+        /* Commented below because this is not working as per it is documented in vulkan API */
         bool isOptimalImage = (memRequirement.memoryTypeBits 
             & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == 0;
         VulkanChunkAllocator** chunkAllocator = isOptimalImage ? optimalChunkAllocators : linearChunkAllocators;
-
+        
         // if being device local and not available or is optimal and being host accessible
         if ((!cpuAccessible && (memRequirement.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) 
             || (cpuAccessible && isOptimalImage))
@@ -771,7 +772,7 @@ void VulkanMemoryAllocator::sortAvailableByPriority(bool cpuAccessible)
                 {
                     return lhsScore > rhsScore ? true : false;
                 }
-                return true;
+                return (lhs.second & ~VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) < (rhs.second & ~VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
             });
     }
     else
