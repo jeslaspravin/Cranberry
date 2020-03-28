@@ -9,13 +9,16 @@ namespace EPixelDataFormat
     enum Type
     {
         Undefined,
-        RGBA_U8_Packed,
-        RGBA_S8_Packed,
-        RGBA_U8_SrgbPacked,
-        RGBA_U8_NormPacked,
-        RGBA_S8_NormPacked,
-        RGBA_U8_ScaledPacked,
-        RGBA_S8_ScaledPacked
+        RGBA_UI8_Packed,
+        RGBA_SI8_Packed,
+        RGBA_UI8_SrgbPacked,
+        RGBA_U8_NormPacked,     /* 0 to 255 gives 0.0f - 1.0f per comp */
+        RGBA_S8_NormPacked,     /* -127 to 127 gives -1.0f - 1.0f per comp( -128 gets clamped to -127 ) */
+        RGBA_U8_ScaledPacked,   /* Just converts the value directly as float 0.0f - 255.0f per comp */
+        RGBA_S8_ScaledPacked,   /* Just converts the value directly as float -128.0f - 127.0f per comp */
+        R_UI32,
+        R_SI32,
+        R_SF32
     };
 
     struct ImageFormatInfo

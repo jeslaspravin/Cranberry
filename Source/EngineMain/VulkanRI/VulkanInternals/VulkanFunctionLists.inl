@@ -81,11 +81,15 @@ DEVICE_VK_FUNCTIONS(vkCreateBuffer)
 DEVICE_VK_FUNCTIONS(vkGetBufferMemoryRequirements)
 DEVICE_VK_FUNCTIONS(vkBindBufferMemory)
 DEVICE_VK_FUNCTIONS(vkDestroyBuffer)
+DEVICE_VK_FUNCTIONS(vkCreateBufferView)
+DEVICE_VK_FUNCTIONS(vkDestroyBufferView)
 
 DEVICE_VK_FUNCTIONS(vkCreateImage)
 DEVICE_VK_FUNCTIONS(vkGetImageMemoryRequirements)
 DEVICE_VK_FUNCTIONS(vkBindImageMemory)
 DEVICE_VK_FUNCTIONS(vkDestroyImage)
+DEVICE_VK_FUNCTIONS(vkCreateImageView)
+DEVICE_VK_FUNCTIONS(vkDestroyImageView)
 
 /* Image samplers */
 DEVICE_VK_FUNCTIONS(vkCreateSampler)
