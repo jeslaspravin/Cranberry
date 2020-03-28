@@ -139,6 +139,16 @@ VariableName.queueFamilyIndexCount = 0;                     \
 VariableName.pQueueFamilyIndices = nullptr
 #endif
 
+#ifndef BUFFER_VIEW_CREATE_INFO
+#define BUFFER_VIEW_CREATE_INFO(VariableName)                  \
+VkBufferViewCreateInfo VariableName;                            \
+VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO; \
+VariableName.pNext = nullptr;                                   \
+VariableName.flags = 0;                                         \
+VariableName.offset = 0;                                        \
+VariableName.range = VK_WHOLE_SIZE                              
+#endif
+
 #ifndef IMAGE_CREATE_INFO
 #define IMAGE_CREATE_INFO(VariableName)                     \
 VkImageCreateInfo VariableName;                             \
@@ -147,6 +157,20 @@ VariableName.pNext = 0;                                     \
 VariableName.sharingMode = VK_SHARING_MODE_EXCLUSIVE;       \
 VariableName.queueFamilyIndexCount = 0;                     \
 VariableName.pQueueFamilyIndices = nullptr
+#endif
+
+#ifndef IMAGE_VIEW_CREATE_INFO
+#define IMAGE_VIEW_CREATE_INFO(VariableName)                    \
+VkImageViewCreateInfo VariableName;                             \
+VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;  \
+VariableName.pNext = nullptr;                                   \
+VariableName.flags = 0;                                         \
+VariableName.components = {                                     \
+    VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY           \
+    ,VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY          \
+    ,VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY          \
+    ,VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY          \
+};
 #endif
 
 #ifndef SAMPLER_CREATE_INFO
