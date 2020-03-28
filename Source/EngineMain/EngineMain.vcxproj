@@ -237,11 +237,11 @@
     <ClInclude Include="Core\Types\Functions.h" />
     <ClInclude Include="Core\Types\Colors.h" />
     <ClInclude Include="Experimental\ExperimentalEngine.h" />
-    <ClInclude Include="RenderApi\PlatformIndependentGraphicsTypes.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
     <ClInclude Include="RenderInterface\CoreTypes.h" />
     <ClInclude Include="RenderInterface\GraphicsHelper.h" />
     <ClInclude Include="RenderInterface\GraphicsIntance.h" />
+    <ClInclude Include="RenderInterface\PlatformIndependentGraphicsTypes.h" />
     <ClInclude Include="RenderInterface\PlatformIndependentHeaders.h" />
     <ClInclude Include="RenderInterface\PlatformIndependentHelper.h" />
     <ClInclude Include="RenderInterface\Resources\GraphicsResources.h" />
