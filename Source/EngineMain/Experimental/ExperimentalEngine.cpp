@@ -7,9 +7,13 @@
 #include "../VulkanRI/VulkanInternals/VulkanDevice.h"
 #include "../VulkanRI/VulkanInternals/Debugging.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanWindowCanvas.h"
+#include "../VulkanRI/VulkanInternals/Resources/VulkanMemoryResources.h"
+#include "../VulkanRI/VulkanInternals/Resources/VulkanSampler.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
+#include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
 
-#include <glm/ext/vector_float2.hpp>
+#include <glm/ext/vector_float3.hpp>
+#include <array>
 
 template <EQueueFunction QueueFunction>
 VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
@@ -118,10 +122,10 @@ void ExperimentalEngine::destroyPools()
 
 void ExperimentalEngine::createBuffers()
 {
-    normalBuffer.buffer = new GraphicsRBuffer(sizeof(glm::vec2), 1);
+    normalBuffer.buffer = new GraphicsRBuffer(sizeof(glm::vec3), 1);
     normalBuffer.buffer->setResourceName("Test_Buffer");
     normalBuffer.buffer->init();
-    texelBuffer.buffer = new GraphicsRTexelBuffer(EPixelDataFormat::R_SF32, 100);
+    texelBuffer.buffer = new GraphicsRTexelBuffer(EPixelDataFormat::R_SF32, 3);
     texelBuffer.buffer->setResourceName("Test_TexelBuffer");
     texelBuffer.buffer->init();
     BUFFER_VIEW_CREATE_INFO(bufferViewCreateInfo);
@@ -157,6 +161,8 @@ void ExperimentalEngine::destroyBuffers()
 
 void ExperimentalEngine::createImages()
 {
+    commonSampler = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "CommonSampler",
+        ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
     // Render target texture
     {
         rtTexture.image = new GraphicsRenderTargetResource(EPixelDataFormat::RGBA_U8_NormPacked);
@@ -224,6 +230,7 @@ void ExperimentalEngine::createImages()
 
 void ExperimentalEngine::destroyImages()
 {
+    commonSampler->release();
     if (texture.imageView)
     {
         vDevice->vkDestroyImageView(device, texture.imageView, nullptr);
@@ -241,6 +248,175 @@ void ExperimentalEngine::destroyImages()
     rtTexture.image->release();
     delete rtTexture.image;
     rtTexture.image = nullptr;
+}
+
+void ExperimentalEngine::createPipelineResources()
+{
+    // Descriptors for shaders
+    {
+        std::array<VkDescriptorSetLayoutBinding, 4> bindings;
+        {
+            VkDescriptorSetLayoutBinding texelBufferBinding;
+            texelBufferBinding.binding = 0;
+            texelBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            texelBufferBinding.descriptorCount = 1;
+            texelBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            texelBufferBinding.pImmutableSamplers = nullptr;
+            bindings[0] = texelBufferBinding;
+        }
+        {
+            VkDescriptorSetLayoutBinding lightBufferBinding;
+            lightBufferBinding.binding = 1;
+            lightBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            lightBufferBinding.descriptorCount = 1;
+            lightBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            lightBufferBinding.pImmutableSamplers = nullptr;
+            bindings[1] = lightBufferBinding;
+        }
+        {
+            VkDescriptorSetLayoutBinding samplerBinding;
+            samplerBinding.binding = 2;
+            samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            samplerBinding.descriptorCount = 1;
+            samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            samplerBinding.pImmutableSamplers = nullptr;
+            bindings[2] = samplerBinding;
+        }
+        {
+            VkDescriptorSetLayoutBinding sampledImageBinding;
+            sampledImageBinding.binding = 3;
+            sampledImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            sampledImageBinding.descriptorCount = 1;
+            sampledImageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            sampledImageBinding.pImmutableSamplers = nullptr;
+            bindings[3] = sampledImageBinding;
+        }
+
+        DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descSetLayoutCreateInfo);
+        descSetLayoutCreateInfo.bindingCount = (uint32)bindings.size();
+        descSetLayoutCreateInfo.pBindings = bindings.data();
+
+        if (vDevice->vkCreateDescriptorSetLayout(device, &descSetLayoutCreateInfo, nullptr, &descriptorsSetLayout) != VK_SUCCESS)
+        {
+            Logger::error("ExperimentalEngine", "%s() : Failure in creating descriptor set layout", __func__);
+            descriptorsSetLayout = nullptr;
+            requestExit();
+            return;
+        }
+    }
+    // Descriptors set allocation and descriptors pool creation
+    {
+        // Since our shader pipeline descriptor set has only 4 types of descriptor
+        std::array<VkDescriptorPoolSize, 4> descriptorsAndCounts;
+        // Index ordering doesnt matter between layout's binding and pool allocatable descriptors 
+        // For vertex shader, vertex float texel buffer.
+        descriptorsAndCounts[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+        descriptorsAndCounts[3].descriptorCount = 1;
+        // For frag shader, Light locations
+        descriptorsAndCounts[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorsAndCounts[2].descriptorCount = 1;
+        // For frag shader, texture sampler
+        descriptorsAndCounts[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+        descriptorsAndCounts[1].descriptorCount = 1;
+        // For frag shader, texture
+        descriptorsAndCounts[0].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        descriptorsAndCounts[0].descriptorCount = 1;
+
+        DESCRIPTOR_POOL_CREATE_INFO(descPoolCreateInfo);
+        descPoolCreateInfo.maxSets = 3;
+        descPoolCreateInfo.poolSizeCount = (uint32)descriptorsAndCounts.size();
+        descPoolCreateInfo.pPoolSizes = descriptorsAndCounts.data();
+
+        if (vDevice->vkCreateDescriptorPool(device, &descPoolCreateInfo, nullptr, &descriptorsPool) != VK_SUCCESS)
+        {
+            Logger::error("ExperimentalEngine", "%s() : Failed creating descriptors pool", __func__);
+            descriptorsPool = nullptr;
+            requestExit();
+            return;
+        }
+
+        DESCRIPTOR_SET_ALLOCATE_INFO(descSetsAllocInfo);
+        descSetsAllocInfo.descriptorSetCount = 1;
+        descSetsAllocInfo.pSetLayouts = &descriptorsSetLayout;
+        descSetsAllocInfo.descriptorPool = descriptorsPool;
+        if (vDevice->vkAllocateDescriptorSets(device, &descSetsAllocInfo, &descriptorsSet) != VK_SUCCESS)
+        {
+            Logger::error("ExperimentalEngine", "%s() : Descriptors set allocation failed", __func__);
+            descriptorsSet = nullptr;
+            requestExit();
+            return;
+        }
+    }
+    // Updating the descriptors set with resource
+    {
+        // Since our shader pipeline descriptor set has only 4 types of descriptor
+        std::array<VkWriteDescriptorSet, 4> descriptorsToWrite;        
+
+        // Index ordering doesnt matter between layout's binding and write descriptors 
+        // For vertex shader, vertex float texel buffer.
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(vertexColorOffsetWriteToSet);
+        vertexColorOffsetWriteToSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+        vertexColorOffsetWriteToSet.dstBinding = 0;
+        vertexColorOffsetWriteToSet.dstSet = descriptorsSet;
+        vertexColorOffsetWriteToSet.pTexelBufferView = &texelBuffer.bufferView;
+        descriptorsToWrite[0] = vertexColorOffsetWriteToSet;
+        
+        // For frag shader, Light locations
+        VkDescriptorBufferInfo lightPosBufferInfo;
+        lightPosBufferInfo.buffer = static_cast<VulkanBufferResource*>(normalBuffer.buffer)->buffer;
+        lightPosBufferInfo.offset = 0;
+        lightPosBufferInfo.range = VK_WHOLE_SIZE;
+
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(lightPositionWriteToSet);
+        lightPositionWriteToSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        lightPositionWriteToSet.dstBinding = 1;
+        lightPositionWriteToSet.dstSet = descriptorsSet;
+        lightPositionWriteToSet.pBufferInfo = &lightPosBufferInfo;
+        descriptorsToWrite[1] = lightPositionWriteToSet;
+
+        // For frag shader, texture sampler
+        VkDescriptorImageInfo samplerInfo;
+        samplerInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        samplerInfo.imageView = nullptr;
+        samplerInfo.sampler = static_cast<VulkanSampler*>(&(*commonSampler))->sampler;
+
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(textureSamplerWriteToSet);
+        textureSamplerWriteToSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        textureSamplerWriteToSet.dstBinding = 2;
+        textureSamplerWriteToSet.dstSet = descriptorsSet;
+        textureSamplerWriteToSet.pImageInfo = &samplerInfo;
+        descriptorsToWrite[2] = textureSamplerWriteToSet;
+
+        // For frag shader, texture
+        VkDescriptorImageInfo textureInfo;
+        textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        textureInfo.imageView = texture.imageView;
+        textureInfo.sampler = nullptr;
+
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(textureWriteToSet);
+        textureWriteToSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        textureWriteToSet.dstBinding = 3;
+        textureWriteToSet.dstSet = descriptorsSet;
+        textureWriteToSet.pImageInfo = &textureInfo;
+        descriptorsToWrite[3] = textureWriteToSet;
+
+        vDevice->vkUpdateDescriptorSets(device, (uint32)descriptorsToWrite.size(), descriptorsToWrite.data(), 0, nullptr);
+    }
+}
+
+void ExperimentalEngine::destroyPipelineResources()
+{
+    if (descriptorsSetLayout)
+    {
+        vDevice->vkDestroyDescriptorSetLayout(device, descriptorsSetLayout, nullptr);
+
+        if (descriptorsPool)
+        {
+            vDevice->vkResetDescriptorPool(device, descriptorsPool, 0);
+            vDevice->vkDestroyDescriptorPool(device, descriptorsPool, nullptr);
+            descriptorsSet = nullptr;
+        }
+    }
 }
 
 void ExperimentalEngine::onStartUp()
@@ -262,12 +438,15 @@ void ExperimentalEngine::onStartUp()
 
     createBuffers();
     createImages();
+    createPipelineResources();
 }
 
 void ExperimentalEngine::onQuit()
 {
     vFence->release();
     vFence.reset();
+
+    destroyPipelineResources();
 
     destroyBuffers();
     destroyImages();

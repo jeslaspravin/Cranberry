@@ -1,6 +1,7 @@
 #pragma once
 #include "../Core/Engine/GameEngine.h"
 #include "../RenderInterface/Resources/QueueResource.h"
+#include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanSyncResource.h"
 
 #include <map>
@@ -46,9 +47,17 @@ class ExperimentalEngine : public GameEngine
 
     ImageData texture;
     ImageData rtTexture;
+    SharedPtr<class SamplerInterface> commonSampler = nullptr;
     void createImages();
     void destroyImages();
 
+    // Test shader pipeline resources
+    VkDescriptorSetLayout descriptorsSetLayout;
+    VkDescriptorSet descriptorsSet;
+
+    VkDescriptorPool descriptorsPool;
+    void createPipelineResources();
+    void destroyPipelineResources();
 protected:
     void onStartUp() override;
     void onQuit() override;
