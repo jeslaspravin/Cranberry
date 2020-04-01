@@ -182,6 +182,51 @@ VariableName.flags = 0;                                     \
 VariableName.unnormalizedCoordinates = VK_FALSE
 #endif
 
+#ifndef DESCRIPTOR_SET_LAYOUT_CREATE_INFO
+#define DESCRIPTOR_SET_LAYOUT_CREATE_INFO(VariableName)                     \
+VkDescriptorSetLayoutCreateInfo VariableName;                               \
+VariableName.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;   \
+VariableName.pNext = nullptr;                                               \
+VariableName.flags = 0
+#endif
+
+#ifndef DESCRIPTOR_POOL_CREATE_INFO
+#define DESCRIPTOR_POOL_CREATE_INFO(VariableName)                   \
+VkDescriptorPoolCreateInfo VariableName;                            \
+VariableName.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO; \
+VariableName.pNext = nullptr;                                       \
+VariableName.flags = 0
+#endif
+
+#ifndef DESCRIPTOR_SET_ALLOCATE_INFO
+#define DESCRIPTOR_SET_ALLOCATE_INFO(VariableName)                  \
+VkDescriptorSetAllocateInfo VariableName;                           \
+VariableName.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;\
+VariableName.pNext = nullptr
+#endif
+
+#ifndef WRITE_RESOURCE_TO_DESCRIPTORS_SET
+#define WRITE_RESOURCE_TO_DESCRIPTORS_SET(VariableName)                  \
+VkWriteDescriptorSet VariableName;                              \
+VariableName.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;    \
+VariableName.pNext = nullptr;                                   \
+VariableName.dstArrayElement = 0;                               \
+VariableName.descriptorCount = 1;                               \
+VariableName.pBufferInfo = nullptr;                             \
+VariableName.pTexelBufferView = nullptr;                        \
+VariableName.pImageInfo = nullptr
+#endif
+
+#ifndef COPY_DESCRIPTORS_SET_TO_SET
+#define COPY_DESCRIPTORS_SET_TO_SET(VariableName)           \
+VkCopyDescriptorSet VariableName;                           \
+VariableName.sType = VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET; \
+VariableName.pNext = nullptr;                               \
+VariableName.descriptorCount = 1;                           \
+VariableName.srcArrayElement = 0;                           \
+VariableName.dstArrayElement = 0
+#endif
+
 #ifndef CREATE_SEMAPHORE_INFO
 #define CREATE_SEMAPHORE_INFO(VariableName)                     \
 VkSemaphoreCreateInfo  VariableName;                            \

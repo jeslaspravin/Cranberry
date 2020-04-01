@@ -10,19 +10,17 @@ public:
     virtual void dumpCallStack() = 0;
 };
 
+#ifndef debugAssert
 #if _DEBUG
-#ifndef dbgAssert
-#define dbgAssert(Expr)\
+#define debugAssert(Expr)\
 if(!(Expr)){\
     Logger::error("DebugAssertion", "%s() : Assert expression failed "#Expr,__func__);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack();}
-#endif
 #else
-#ifndef dbgAssert
-#define dbgAssert(Expr)\
+#define debugAssert(Expr)\
 if((Expr)){}
-#endif
-#endif
+#endif// #define debugAssert(Expr)
+#endif// #ifndef debugAssert
 
 #ifndef fatalAssert
 #define fatalAssert(Expr,Message)\

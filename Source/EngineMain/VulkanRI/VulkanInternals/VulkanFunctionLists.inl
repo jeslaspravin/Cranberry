@@ -95,6 +95,16 @@ DEVICE_VK_FUNCTIONS(vkDestroyImageView)
 DEVICE_VK_FUNCTIONS(vkCreateSampler)
 DEVICE_VK_FUNCTIONS(vkDestroySampler)
 
+/* Pipeline and shader resources */
+DEVICE_VK_FUNCTIONS(vkCreateDescriptorSetLayout)
+DEVICE_VK_FUNCTIONS(vkDestroyDescriptorSetLayout)
+DEVICE_VK_FUNCTIONS(vkCreateDescriptorPool)
+DEVICE_VK_FUNCTIONS(vkResetDescriptorPool)
+DEVICE_VK_FUNCTIONS(vkDestroyDescriptorPool)
+DEVICE_VK_FUNCTIONS(vkAllocateDescriptorSets)
+DEVICE_VK_FUNCTIONS(vkFreeDescriptorSets)
+DEVICE_VK_FUNCTIONS(vkUpdateDescriptorSets)
+
 /* CommandPool Functions */
 DEVICE_VK_FUNCTIONS(vkCreateCommandPool)
 DEVICE_VK_FUNCTIONS(vkDestroyCommandPool)
