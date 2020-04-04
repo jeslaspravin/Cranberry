@@ -61,8 +61,9 @@ uint32 VulkanWindowCanvas::requestNextImage(SharedPtr<GraphicsSemaphore>* waitOn
     }
 
     SharedPtr<GraphicsSemaphore>* semaphorePtr = waitOnSemaphore ? &semaphores[currentSyncIdx] : nullptr;
+    SharedPtr<GraphicsFence>* fencePtr = waitOnFence || !waitOnSemaphore ? &fences[currentSyncIdx] : nullptr;
     currentSwapchainIdx = VulkanGraphicsHelper::getNextSwapchainImage(gEngine->getRenderApi()->getGraphicsInstance(),
-        swapchainPtr, semaphorePtr, nullptr/* Passing no fence as it causes crash or heap corruption */);
+        swapchainPtr, semaphorePtr, fencePtr);
 
     if (waitOnSemaphore || waitOnFence)
     {
@@ -73,7 +74,7 @@ uint32 VulkanWindowCanvas::requestNextImage(SharedPtr<GraphicsSemaphore>* waitOn
     }
     else
     {
-        Logger::warn("VulkanWindowCanvas", "%s() : both waiting semaphore and fence being null causes performance lose", __func__);
+        Logger::warn("VulkanWindowCanvas", "%s() : both waiting semaphore and fence being null is source of performance lose/bug", __func__);
         // if both are null then wait here
         fences[currentSyncIdx]->waitForSignal();
     }

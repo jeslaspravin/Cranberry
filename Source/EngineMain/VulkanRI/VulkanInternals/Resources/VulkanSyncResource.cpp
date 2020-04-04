@@ -79,6 +79,14 @@ uint64 VulkanSemaphore::getDispatchableHandle() const
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanTimelineSemaphore, VK_OBJECT_TYPE_SEMAPHORE)
 
+// TODO(Jeslas)(API Update) : Change and remove this macro once driver providers update to Vulkan 1.2
+#if 0 
+#define TIMIELINE_SEMAPHORE_FUNCTIONS(VDevice,FunctionName) VDevice->FunctionName
+#else
+#define TIMIELINE_SEMAPHORE_FUNCTIONS(VDevice,FunctionName) VDevice->FunctionName##KHR
+#endif                      
+
+
 VulkanTimelineSemaphore::VulkanTimelineSemaphore(const VulkanDevice* deviceInstance)
     :BaseType(), ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance)), vulkanDevice(deviceInstance)
 {}
@@ -91,7 +99,7 @@ void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
         waitInfo.pSemaphores = &semaphore;
         waitInfo.semaphoreCount = 1;
         waitInfo.pValues = &value;
-        vulkanDevice->vkWaitSemaphoresKHR(ownerDevice, &waitInfo, 2000000000/*2 Seconds*/);
+        TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkWaitSemaphores)(ownerDevice, &waitInfo, 2000000000/*2 Seconds*/);
     }
 }
 
@@ -108,7 +116,8 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
         SEMAPHORE_SIGNAL_INFO(signalInfo);
         signalInfo.semaphore = semaphore;
         signalInfo.value = value;
-        if (vulkanDevice->vkSignalSemaphoreKHR(ownerDevice, &signalInfo) != VK_SUCCESS)
+
+        if (TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkSignalSemaphore)(ownerDevice, &signalInfo) != VK_SUCCESS)
         {
             Logger::error("VulkanTimelineSemaphore", "%s() : Signaling to value %d failed", __func__, value);
         }
@@ -118,7 +127,7 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
 uint64 VulkanTimelineSemaphore::currentValue() const
 {
     uint64 counter;
-    vulkanDevice->vkGetSemaphoreCounterValueKHR(ownerDevice, semaphore, &counter);
+    TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkGetSemaphoreCounterValue)(ownerDevice, semaphore, &counter);
     return counter;
 }
 
@@ -171,6 +180,8 @@ void VulkanTimelineSemaphore::release()
         vulkanDevice->vkDestroySemaphore(ownerDevice, semaphore, nullptr);
     }
 }
+
+#undef TIMIELINE_SEMAPHORE_FUNCTIONS
 
 //////////////////////////////////////////////////////////////////////////
 // VulkanFence
