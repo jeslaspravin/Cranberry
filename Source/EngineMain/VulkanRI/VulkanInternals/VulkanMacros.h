@@ -235,29 +235,39 @@ VariableName.pNext = nullptr;                                   \
 VariableName.flags = 0
 #endif
 
+// TODO(Jeslas)(API Update) : Change and remove this macro once driver providers update to Vulkan 1.2
+#if 0
+#ifndef TIMIELINE_SEMAPHORE_VARS
+#define TIMIELINE_SEMAPHORE_VARS(VarType,VariableName) VarType VariableName
+#endif
+#else
+#ifndef TIMIELINE_SEMAPHORE_VARS
+#define TIMIELINE_SEMAPHORE_VARS(VarType,VariableName) VarType##KHR VariableName
+#endif
+#endif                      
+
 #ifndef CREATE_TYPED_SEMAPHORE_INFO
-#define CREATE_TYPED_SEMAPHORE_INFO(VariableName)                       \
-VkSemaphoreTypeCreateInfoKHR VariableName;                              \
-VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR;  \
-VariableName.pNext = nullptr;                                           \
-VariableName.initialValue = 0;                                          \
-VariableName.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE_KHR
+#define CREATE_TYPED_SEMAPHORE_INFO(VariableName)                   \
+TIMIELINE_SEMAPHORE_VARS(VkSemaphoreTypeCreateInfo,VariableName);   \
+VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;  \
+VariableName.pNext = nullptr;                                       \
+VariableName.initialValue = 0;                                      \
+VariableName.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE
 #endif
 
 #ifndef SEMAPHORE_SIGNAL_INFO
-#define SEMAPHORE_SIGNAL_INFO(VariableName)                         \
-VkSemaphoreSignalInfoKHR VariableName;                              \
-VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR;   \
+#define SEMAPHORE_SIGNAL_INFO(VariableName)                     \
+TIMIELINE_SEMAPHORE_VARS(VkSemaphoreSignalInfo,VariableName);   \
+VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;   \
 VariableName.pNext = nullptr
 #endif
 
-
 #ifndef SEMAPHORE_WAIT_INFO
-#define SEMAPHORE_WAIT_INFO(VariableName)                       \
-VkSemaphoreWaitInfoKHR VariableName;                            \
-VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR; \
-VariableName.pNext = nullptr;                                   \
-VariableName.flags = VK_SEMAPHORE_WAIT_ANY_BIT_KHR
+#define SEMAPHORE_WAIT_INFO(VariableName)                   \
+TIMIELINE_SEMAPHORE_VARS(VkSemaphoreWaitInfo,VariableName); \
+VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO; \
+VariableName.pNext = nullptr;                               \
+VariableName.flags = VK_SEMAPHORE_WAIT_ANY_BIT
 #endif
 
 #ifndef CREATE_FENCE_INFO

@@ -68,7 +68,7 @@ public:
 };
 
 template<typename Parent,typename Child>
-class GraphicsResourceTypeSpecialized : public GraphicsResourceType
+class GraphicsResourceTypeSpecialized final : public GraphicsResourceType
 {
 protected:
     typedef typename Child ThisType;
