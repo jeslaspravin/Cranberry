@@ -30,22 +30,24 @@ void VulkanWindowCanvas::init()
 
 void VulkanWindowCanvas::release()
 {
-    if (swapchainPtr || swapchainPtr != VK_NULL_HANDLE)
-    {
-        VulkanGraphicsHelper::destroySwapchain(gEngine->getRenderApi()->getGraphicsInstance(), swapchainPtr);
-    }
-    swapchainPtr = nullptr;
+    IGraphicsInstance* graphicsInst = gEngine->getRenderApi()->getGraphicsInstance();
     for (int32 i = 0; i < swapchainImages.size(); ++i)
     {
         semaphores[i]->release();
         fences[i]->release();
+        VulkanGraphicsHelper::destroyImageView(graphicsInst, swapchainImageViews[i]);
     }
     semaphores.clear();
     fences.clear();
     swapchainImages.clear();
 
-    Vk::vkDestroySurfaceKHR(VulkanGraphicsHelper::getInstance(gEngine->getRenderApi()->getGraphicsInstance()),
-        surfacePtr, nullptr);
+    if (swapchainPtr || swapchainPtr != VK_NULL_HANDLE)
+    {
+        VulkanGraphicsHelper::destroySwapchain(graphicsInst, swapchainPtr);
+    }
+    swapchainPtr = nullptr;
+
+    Vk::vkDestroySurfaceKHR(VulkanGraphicsHelper::getInstance(graphicsInst),surfacePtr, nullptr);
     surfacePtr = nullptr;
 }
 
