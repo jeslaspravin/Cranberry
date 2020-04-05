@@ -8,8 +8,7 @@
 #include "../VulkanGraphicsHelper.h"
 #include "../../Core/Engine/GameEngine.h"
 #include "VulkanDevice.h"
-
-#include <assert.h>
+#include "../../Core/Platform/PlatformAssertionErrors.h"
 
 struct DebugMessengerData
 {
@@ -201,7 +200,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(VkDebugUtilsMessa
     }
 
 
-    assert(!"Vulkan Error!");
+    debugAssert(!"Vulkan Error!");
     return VK_FALSE;
 }
 

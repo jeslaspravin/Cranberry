@@ -1,8 +1,8 @@
 #include "GameEngine.h"
 #include "../../RenderApi/RenderApi.h"
 #include "../Logger/Logger.h"
-#include <assert.h>
 #include "../Platform/GenericAppWindow.h"
+#include "../Platform/PlatformAssertionErrors.h"
 
 void GameEngine::startup(GenericAppInstance* appInstance)
 {    
@@ -41,13 +41,13 @@ void GameEngine::requestExit()
 
 const String& GameEngine::getAppName() const
 {
-    assert(applicationInstance);
+    debugAssert(applicationInstance);
     return applicationInstance->applicationName;
 }
 
 void GameEngine::getVersion(int32& head, int32& major, int32& sub) const
 {
-    assert(applicationInstance);
+    debugAssert(applicationInstance);
     head = applicationInstance->headVersion;
     major = applicationInstance->majorVersion;
     sub = applicationInstance->subVersion;
@@ -60,7 +60,7 @@ const GenericAppInstance* GameEngine::getApplicationInstance() const
 
 GenericAppInstance& GameEngine::appInstance() const
 {
-    assert(GameEngine::applicationInstance);
+    debugAssert(GameEngine::applicationInstance);
     return *applicationInstance;
 }
 

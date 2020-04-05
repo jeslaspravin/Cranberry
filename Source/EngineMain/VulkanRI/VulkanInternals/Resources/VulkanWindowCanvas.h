@@ -14,6 +14,7 @@ private:
     VkSurfaceKHR surfacePtr;
     VkSwapchainKHR swapchainPtr;
     std::vector<VkImage> swapchainImages;
+    std::vector<VkImageView> swapchainImageViews;
     std::vector<SharedPtr<GraphicsSemaphore>> semaphores;
     std::vector<SharedPtr<GraphicsFence>> fences;
     
@@ -27,6 +28,7 @@ public:
     VkSurfaceKHR surface() const { return surfacePtr; }
     VkSwapchainKHR swapchain() const { return swapchainPtr; }
     VkImage swapchainImage(uint32 index) const;
+    VkImageView swapchainImageView(uint32 index) const;
 
     String getObjectName() const override;
 

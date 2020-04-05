@@ -6,9 +6,9 @@
 #include "Resources/VulkanQueueResource.h"
 #include "../../Core/Engine/GameEngine.h"
 #include "Resources/VulkanWindowCanvas.h"
+#include "../../Core/Platform/PlatformAssertionErrors.h"
 
 #include <sstream>
-#include <assert.h>
 #include <set>
 #include <glm/common.hpp>
 
@@ -238,8 +238,8 @@ void VulkanDevice::cacheGlobalSurfaceProperties()
         }
         else
         {
-            assert(std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR)
-                != presentModes.cend());
+            fatalAssert(std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR)
+                != presentModes.cend(),"No accepted present mode is found, not even default case");
             globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
             Logger::debug("VulkanDevice", "%s() : Choosen fifo present mode", __func__);
             choosenImageCount = glm::max<uint32>(choosenImageCount, 2);
@@ -260,7 +260,7 @@ void VulkanDevice::cacheGlobalSurfaceProperties()
         std::vector<VkSurfaceFormatKHR> formatsSupported(formatCount);
         Vk::vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, canvas->surface(), (uint32_t*)&formatCount, formatsSupported.data());
 
-        assert(formatCount > 0);
+        debugAssert(formatCount > 0);
         swapchainFormat = formatsSupported[0];
     }    
 }
@@ -517,10 +517,7 @@ struct CacheQueues {
 void VulkanDevice::createLogicDevice()
 {
     Logger::debug("VulkanDevice", "%s() : Creating logical device", __func__);
-    if (!createQueueResources())
-    {
-        assert(false);
-    }    
+    fatalAssert(createQueueResources(), "Without vulkan queues application cannot proceed running");
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     queueCreateInfos.reserve(allQueues.size());
@@ -544,11 +541,7 @@ void VulkanDevice::createLogicDevice()
     deviceCreateInfo.enabledLayerCount = (uint32_t)registeredLayers.size();
     deviceCreateInfo.ppEnabledLayerNames = registeredLayers.data();
 #endif
-    if (!collectDeviceExtensions(registeredExtensions))
-    {
-        Logger::error("VulkanDevice", "%s() : Failed collecting extensions", __func__);
-        assert(!"Necessary extensions are not collected!");
-    }
+    fatalAssert(collectDeviceExtensions(registeredExtensions),"Failed collecting extensions");
 
     deviceCreateInfo.enabledExtensionCount = (uint32_t)registeredExtensions.size();
     deviceCreateInfo.ppEnabledExtensionNames = registeredExtensions.data();
@@ -559,11 +552,8 @@ void VulkanDevice::createLogicDevice()
     if(timelineSemaphoreFeatures.timelineSemaphore == VK_TRUE) // Include time line semaphore if supported
         deviceCreateInfo.pNext = &timelineSemaphoreFeatures;
 
-    if (Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice) != VK_SUCCESS)
-    {
-        Logger::error("VulkanDevice", "%s() : Failed creating logical device", __func__);
-        assert(false);
-    }
+    VkResult vulkanDeviceCreationResult = Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
+    fatalAssert(vulkanDeviceCreationResult == VK_SUCCESS,"Failed creating logical device");
 
     loadDeviceFunctions();
 

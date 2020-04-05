@@ -30,7 +30,7 @@ void VulkanBufferResource::reinitResources()
     bufferCreateInfo.size = requiredSize();
     bufferCreateInfo.usage = bufferUsage;
 
-    VkBuffer nextBuffer = VulkanGraphicsHelper::createBuffer(graphicsInstance, &bufferCreateInfo, dataFormat);
+    VkBuffer nextBuffer = VulkanGraphicsHelper::createBuffer(graphicsInstance, bufferCreateInfo, dataFormat);
 
     if (nextBuffer)
     {
@@ -54,6 +54,12 @@ void VulkanBufferResource::release()
         VulkanGraphicsHelper::deallocateBufferResource(graphicsInstance, this);
         VulkanGraphicsHelper::destroyBuffer(graphicsInstance, buffer);
         buffer = nullptr;
+
+        for (const auto& bufferView : createdBufferViews)
+        {
+            VulkanGraphicsHelper::destroyBufferView(graphicsInstance, bufferView.second);
+        }
+        createdBufferViews.clear();
     }
 }
 
@@ -87,6 +93,41 @@ bool VulkanBufferResource::isValid()
     return buffer != nullptr;
 }
 
+VkBufferView VulkanBufferResource::createBufferView(const BufferViewInfo& viewInfo)
+{
+    BUFFER_VIEW_CREATE_INFO(bufferViewCreateInfo);
+    bufferViewCreateInfo.buffer = buffer;
+    bufferViewCreateInfo.format = (VkFormat)EPixelDataFormat::getFormatInfo(dataFormat)->format;
+    bufferViewCreateInfo.offset = viewInfo.startOffset;
+    bufferViewCreateInfo.range = viewInfo.size;
+
+    return VulkanGraphicsHelper::createBufferView(gEngine->getRenderApi()->getGraphicsInstance(), bufferViewCreateInfo);
+}
+
+VkBufferView VulkanBufferResource::getBufferView(const BufferViewInfo& viewInfo)
+{
+    if (!isValid() || EPixelDataFormat::Undefined == dataFormat)
+    {
+        return nullptr;
+    }
+
+    VkBufferView bufferView = nullptr;
+    const auto& foundItr = createdBufferViews.find(viewInfo);
+    if (foundItr == createdBufferViews.cend())
+    {
+        bufferView = createBufferView(viewInfo);
+        if (bufferView != nullptr)
+        {
+            createdBufferViews[viewInfo] = bufferView;
+        }
+    }
+    else
+    {
+        bufferView = foundItr->second;
+    }
+    return bufferView;
+}
+
 //////////////////////////////////////////////////////////////////////////
 //// Image Resources 
 //////////////////////////////////////////////////////////////////////////
@@ -101,6 +142,7 @@ VulkanImageResource::VulkanImageResource(EPixelDataFormat::Type imageFormat, boo
     , createFlags(0)
     , tiling(VK_IMAGE_TILING_OPTIMAL)
     , type(VK_IMAGE_TYPE_2D)
+    , viewType(VkImageViewType::VK_IMAGE_VIEW_TYPE_2D)
 {
     if (cpuAccessible)
     {
@@ -116,6 +158,7 @@ VulkanImageResource::VulkanImageResource()
     , createFlags(0)
     , tiling(VK_IMAGE_TILING_OPTIMAL)
     , type(VK_IMAGE_TYPE_2D)
+    , viewType(VkImageViewType::VK_IMAGE_VIEW_TYPE_2D)
 {}
 
 void VulkanImageResource::init()
@@ -127,6 +170,7 @@ void VulkanImageResource::reinitResources()
 {
     VkImageUsageFlags imageUsage = defaultImageUsage;
     VkFormatFeatureFlags featuresRequired = defaultFeaturesRequired;
+    
     if (isRenderTarget)
     {
         imageUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
@@ -138,9 +182,7 @@ void VulkanImageResource::reinitResources()
             Logger::error("VulkanImageResource", "%s() : Not supported image format", __func__);
             return;
         }
-        if (formatInfo->format == VK_FORMAT_D16_UNORM || formatInfo->format == VK_FORMAT_X8_D24_UNORM_PACK32
-            || formatInfo->format == VK_FORMAT_D16_UNORM_S8_UINT || formatInfo->format == VK_FORMAT_D24_UNORM_S8_UINT
-            || formatInfo->format == VK_FORMAT_D32_SFLOAT || formatInfo->format == VK_FORMAT_D32_SFLOAT_S8_UINT)
+        if (EPixelDataFormat::isDepthFormat(dataFormat))
         {
             imageUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             featuresRequired |= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -236,6 +278,12 @@ void VulkanImageResource::release()
         VulkanGraphicsHelper::deallocateImageResource(graphicsInstance, this);
         VulkanGraphicsHelper::destroyImage(graphicsInstance, image);
         image = nullptr;
+
+        for (const auto& imageView : createdImageViews)
+        {
+            VulkanGraphicsHelper::destroyImageView(graphicsInstance, imageView.second);
+        }
+        createdImageViews.clear();
     }
 }
 
@@ -279,4 +327,62 @@ uint64 VulkanImageResource::requiredSize() const
 bool VulkanImageResource::canAllocateMemory() const
 {
     return image && requiredSize() > 0;
+}
+
+VkImageView VulkanImageResource::createImageView(const ImageViewInfo& viewInfo)
+{
+    VkImageAspectFlags viewAspects = 0;
+    if (EPixelDataFormat::isDepthFormat(dataFormat))
+    {
+        viewAspects = VK_IMAGE_ASPECT_DEPTH_BIT;
+        viewAspects |= viewInfo.bUseStencil && EPixelDataFormat::isStencilFormat(dataFormat) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0;
+    }
+    else
+    {
+        viewAspects = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+    IMAGE_VIEW_CREATE_INFO(imageViewCreateInfo);
+    imageViewCreateInfo.image = image;
+    imageViewCreateInfo.format = (VkFormat)EPixelDataFormat::getFormatInfo(dataFormat)->format;
+    imageViewCreateInfo.viewType = viewType;
+    imageViewCreateInfo.subresourceRange = {
+        viewAspects,
+        viewInfo.viewSubresource.baseMip,
+        viewInfo.viewSubresource.mipCount,
+        viewInfo.viewSubresource.baseLayer,
+        viewInfo.viewSubresource.layersCount
+    };
+    imageViewCreateInfo.components = {
+        (VkComponentSwizzle)EImageComponentMapping::getComponentMapping(viewInfo.componentMapping.r)->mapping,
+        (VkComponentSwizzle)EImageComponentMapping::getComponentMapping(viewInfo.componentMapping.g)->mapping,
+        (VkComponentSwizzle)EImageComponentMapping::getComponentMapping(viewInfo.componentMapping.b)->mapping,
+        (VkComponentSwizzle)EImageComponentMapping::getComponentMapping(viewInfo.componentMapping.a)->mapping,
+    };
+
+    return VulkanGraphicsHelper::createImageView(gEngine->getRenderApi()->getGraphicsInstance(), imageViewCreateInfo);
+}
+
+VkImageView VulkanImageResource::getImageView(const ImageViewInfo& viewInfo)
+{
+    if (!isValid())
+    {
+        return nullptr;
+    }
+
+    VkImageView imageView = nullptr;
+    const auto& foundItr = createdImageViews.find(viewInfo);
+    if (foundItr == createdImageViews.cend())
+    {
+        imageView = createImageView(viewInfo);
+        if (imageView != nullptr)
+        {
+            createdImageViews[viewInfo] = imageView;
+        }
+    }
+    else
+    {
+        imageView = foundItr->second;
+    }
+    return imageView;
 }

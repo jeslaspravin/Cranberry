@@ -19,7 +19,6 @@ static_assert(false, "No available render API");
 
 typedef GraphicsTypes::GraphicInstance GraphicInstance;
 typedef GraphicsTypes::WindowCanvas WindowCanvas;
-typedef GraphicsTypes::GraphicInstance GraphicInstance;
 
 typedef GraphicsTypes::GraphicsRBuffer GraphicsRBuffer;
 typedef GraphicsTypes::GraphicsWBuffer GraphicsWBuffer;

@@ -17,3 +17,7 @@ typedef GraphicsTypes::GraphicsRWBuffer GraphicsRWBuffer;
 typedef GraphicsTypes::GraphicsRTexelBuffer GraphicsRTexelBuffer;
 typedef GraphicsTypes::GraphicsWTexelBuffer GraphicsWTexelBuffer;
 typedef GraphicsTypes::GraphicsRWTexelBuffer GraphicsRWTexelBuffer;
+
+typedef GraphicsTypes::GraphicsRenderTargetResource GraphicsRenderTargetResource;
+typedef GraphicsTypes::GraphicsCubeImageResource GraphicsCubeImageResource;
+typedef GraphicsTypes::GraphicsImageResource GraphicsImageResource;

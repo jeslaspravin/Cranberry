@@ -6,8 +6,8 @@
 #include "../../VulkanGraphicsHelper.h"
 #include "../../../RenderInterface/Resources/GraphicsSyncResource.h"
 #include "../../../RenderInterface/PlatformIndependentHelper.h"
-#include <assert.h>
 #include "../Debugging.h"
+#include "../../../Core/Platform/PlatformAssertionErrors.h"
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanWindowCanvas, VK_OBJECT_TYPE_SURFACE_KHR)
 
@@ -83,8 +83,14 @@ uint32 VulkanWindowCanvas::requestNextImage(SharedPtr<GraphicsSemaphore>* waitOn
 
 VkImage VulkanWindowCanvas::swapchainImage(uint32 index) const
 {
-    assert(index >= 0 && index < swapchainImages.size());
+    fatalAssert(index >= 0 && index < swapchainImages.size(),"Invalid swapchain index");
     return swapchainImages[index];
+}
+
+VkImageView VulkanWindowCanvas::swapchainImageView(uint32 index) const
+{
+    fatalAssert(index >= 0 && index < swapchainImages.size(), "Invalid swapchain index");
+    return swapchainImageViews[index];
 }
 
 String VulkanWindowCanvas::getObjectName() const
@@ -121,18 +127,21 @@ void VulkanWindowCanvas::reinitResources()
     swapchainPtr = nextSwapchain;
     VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)swapchainPtr,
         windowName+"Swapchain", VK_OBJECT_TYPE_SWAPCHAIN_KHR);
-    VulkanGraphicsHelper::fillSwapchainImages(gInstance, swapchainPtr, &swapchainImages);
+    VulkanGraphicsHelper::fillSwapchainImages(gInstance, swapchainPtr, &swapchainImages, &swapchainImageViews);
     if (swapchainImages.size() > 0)
     {
         semaphores.resize(swapchainImages.size());
         fences.resize(swapchainImages.size());
         for (int32 i = 0; i < swapchainImages.size(); ++i)
         {
-            semaphores[i] = GraphicsHelper::createSemaphore(gInstance,(windowName + "Semaphore" + std::to_string(i)).c_str());
-            fences[i] = GraphicsHelper::createFence(gInstance,(windowName + "Fence" + std::to_string(i)).c_str());
+            String indexString = std::to_string(i);
+            semaphores[i] = GraphicsHelper::createSemaphore(gInstance,(windowName + "Semaphore" + indexString).c_str());
+            fences[i] = GraphicsHelper::createFence(gInstance,(windowName + "Fence" + indexString).c_str());
 
             VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)swapchainImages[i],
-                (windowName + "Image" + std::to_string(i)), VK_OBJECT_TYPE_IMAGE);
+                (windowName + "Image" + indexString), VK_OBJECT_TYPE_IMAGE);
+            VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)swapchainImageViews[i],
+                (windowName + "ImageView" + indexString), VK_OBJECT_TYPE_IMAGE_VIEW);
         }
     }
 }

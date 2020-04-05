@@ -9,9 +9,9 @@
 #include "../RenderInterface/Resources/GraphicsResources.h"
 #include "VulkanInternals/Debugging.h"
 #include "VulkanInternals/VulkanMemoryAllocator.h"
+#include "../Core/Platform/PlatformAssertionErrors.h"
 
 #include <iostream>
-#include <assert.h>
 #include <algorithm>
 #include <vulkan_core.h>
 #include <sstream>
@@ -83,7 +83,7 @@ void VulkanGraphicsInstance::loadGlobalFunctions()
 void VulkanGraphicsInstance::createVulkanInstance()
 {
     Logger::debug("Vulkan", "%s() : Creating vulkan application instance", __func__);
-    assert(gEngine);
+    fatalAssert(gEngine,"Global engine instance cannot be null");
     CREATE_APP_INFO(appInfo);
     appInfo.pApplicationName = gEngine->getAppName().getChar();
     int32 majorVer, minorVer, headVer;
@@ -104,7 +104,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
     if (!collectInstanceExtensions(registeredInstanceExtensions))
     {
         Logger::error("Vulkan", "%s() : Failed collecting extensions", __func__);
-        assert(!"Necessary extensions are not collected!");
+        debugAssert(!"Necessary extensions are not collected!");
     }
 
     instanceCreateInfo.ppEnabledExtensionNames = &registeredInstanceExtensions[0];
@@ -113,10 +113,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
 
     VkResult result = Vk::vkCreateInstance(&instanceCreateInfo, nullptr, &vulkanInstance);
 
-    if (result != VkResult::VK_SUCCESS || vulkanInstance == nullptr) {
-        Logger::error("Vulkan", "%s() : Could not create vulkan instance", __func__);
-        assert(false);
-    }
+    fatalAssert(result == VkResult::VK_SUCCESS && vulkanInstance != nullptr,"Could not create vulkan instance");
 }
 
 #if _DEBUG
