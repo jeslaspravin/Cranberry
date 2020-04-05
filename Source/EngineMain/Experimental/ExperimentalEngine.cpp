@@ -171,25 +171,9 @@ void ExperimentalEngine::createImages()
         rtTexture.image->setSampleCounts(EPixelSampleCount::SampleCount1);
         rtTexture.image->init();
 
-        IMAGE_VIEW_CREATE_INFO(rtViewCreateInfo);
-        rtViewCreateInfo.image = static_cast<VulkanImageResource*>(rtTexture.image)->image;
-        rtViewCreateInfo.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
-        rtViewCreateInfo.format = (VkFormat)EPixelDataFormat::getFormatInfo(EPixelDataFormat::RGBA_U8_NormPacked)->format;
-        rtViewCreateInfo.subresourceRange = {
-            VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT
-            , 0
-            , VK_REMAINING_MIP_LEVELS
-            , 0
-            , VK_REMAINING_ARRAY_LAYERS
-        };
+        rtTexture.imageView = static_cast<VulkanImageResource*>(rtTexture.image)->getImageView(ImageViewInfo());
 
-        if (vDevice->vkCreateImageView(device, &rtViewCreateInfo, nullptr, &rtTexture.imageView) != VK_SUCCESS)
-        {
-            rtTexture.imageView = nullptr;
-            Logger::error("ExperimentalEngine", "%s() : Failed creating image view for RT texture %s",
-                __func__, rtTexture.image->getResourceName().getChar());
-        }
-        else
+        if (rtTexture.imageView != nullptr)
         {
             graphicsDbg->markObject((uint64)rtTexture.imageView, "Test_RT_TextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
         }
@@ -203,25 +187,9 @@ void ExperimentalEngine::createImages()
         texture.image->setSampleCounts(EPixelSampleCount::SampleCount8);
         texture.image->init();
 
-        IMAGE_VIEW_CREATE_INFO(textureViewCreateInfo);
-        textureViewCreateInfo.image = static_cast<VulkanImageResource*>(texture.image)->image;
-        textureViewCreateInfo.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
-        textureViewCreateInfo.format = (VkFormat)EPixelDataFormat::getFormatInfo(EPixelDataFormat::RGBA_U8_NormPacked)->format;
-        textureViewCreateInfo.subresourceRange = {
-            VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT
-            , 0
-            , VK_REMAINING_MIP_LEVELS
-            , 0
-            , VK_REMAINING_ARRAY_LAYERS
-        };
+        texture.imageView = static_cast<VulkanImageResource*>(texture.image)->getImageView(ImageViewInfo());
 
-        if (vDevice->vkCreateImageView(device, &textureViewCreateInfo, nullptr, &texture.imageView) != VK_SUCCESS)
-        {
-            texture.imageView = nullptr;
-            Logger::error("ExperimentalEngine", "%s() : Failed creating image view for texture %s",
-                __func__, texture.image->getResourceName().getChar());
-        }
-        else
+        if (static_cast<VulkanImageResource*>(texture.image) != nullptr)
         {
             graphicsDbg->markObject((uint64)texture.imageView, "Test_TextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
         }
@@ -231,26 +199,19 @@ void ExperimentalEngine::createImages()
 void ExperimentalEngine::destroyImages()
 {
     commonSampler->release();
-    if (texture.imageView)
-    {
-        vDevice->vkDestroyImageView(device, texture.imageView, nullptr);
-        texture.imageView = nullptr;
-    }
+
     texture.image->release();
     delete texture.image;
     texture.image = nullptr;
+    texture.imageView = nullptr;
 
-    if (rtTexture.imageView)
-    {
-        vDevice->vkDestroyImageView(device, rtTexture.imageView, nullptr);
-        rtTexture.imageView = nullptr;
-    }
     rtTexture.image->release();
     delete rtTexture.image;
     rtTexture.image = nullptr;
+    rtTexture.imageView = nullptr;
 }
 
-void ExperimentalEngine::createPipelineResources()
+void ExperimentalEngine::createShaderResDescriptors()
 {
     // Descriptors for shaders
     {
@@ -404,7 +365,7 @@ void ExperimentalEngine::createPipelineResources()
     }
 }
 
-void ExperimentalEngine::destroyPipelineResources()
+void ExperimentalEngine::destroyShaderResDescriptors()
 {
     if (descriptorsSetLayout)
     {
@@ -417,6 +378,19 @@ void ExperimentalEngine::destroyPipelineResources()
             descriptorsSet = nullptr;
         }
     }
+}
+
+void ExperimentalEngine::createPipelineResources()
+{
+    // Shader pipeline's buffers and image access
+    createShaderResDescriptors();
+}
+
+void ExperimentalEngine::destroyPipelineResources()
+{
+
+    // Shader pipeline's buffers and image access
+    destroyShaderResDescriptors();
 }
 
 void ExperimentalEngine::onStartUp()
