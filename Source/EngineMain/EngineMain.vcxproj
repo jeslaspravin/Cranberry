@@ -235,6 +235,7 @@
     <ClInclude Include="Core\String\String.h" />
     <ClInclude Include="Core\Types\Colors.h" />
     <ClInclude Include="Core\Types\Functions.h" />
+    <ClInclude Include="Core\Types\HashTypes.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
     <ClInclude Include="RenderInterface\CoreTypes.h" />
     <ClInclude Include="RenderInterface\GraphicsHelper.h" />

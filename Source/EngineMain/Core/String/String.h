@@ -2,6 +2,7 @@
 
 #include <string>
 #include "../Platform/PlatformTypes.h"
+
 #include <type_traits>
 #include <vector>
 

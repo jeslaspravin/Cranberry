@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <glm/common.hpp>
 #include <vector>
 
@@ -15,6 +14,7 @@
 #include "VulkanInternals/VulkanMemoryAllocator.h"
 #include "VulkanInternals/VulkanFunctions.h"
 #include "VulkanInternals/Resources/VulkanSampler.h"
+#include "../Core/Platform/PlatformAssertionErrors.h"
 
 template <EQueueFunction QueueFunction>
 VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
@@ -73,7 +73,7 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
     VulkanQueueResource<EQueueFunction::Present>* presentQueue = getQueue<EQueueFunction::Present>(device->allQueues,device);
     VulkanQueueResource<EQueueFunction::Graphics>* graphicsQueue = getQueue<EQueueFunction::Graphics>(device->allQueues, device);
 
-    assert(presentQueue && graphicsQueue);
+    fatalAssert(presentQueue && graphicsQueue,"presenting queue or graphics queue cannot be null");
 
     if (presentQueue->queueFamilyIndex() == graphicsQueue->queueFamilyIndex())
     {
@@ -110,9 +110,9 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
     return swapchain;
 }
 
-void VulkanGraphicsHelper::fillSwapchainImages(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain, std::vector<VkImage>* images)
+void VulkanGraphicsHelper::fillSwapchainImages(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain, std::vector<VkImage>* images, std::vector<VkImageView>* imageViews)
 {
-    if (!images)
+    if (!images || !imageViews)
     {
         return;
     }
@@ -123,6 +123,24 @@ void VulkanGraphicsHelper::fillSwapchainImages(class IGraphicsInstance* graphics
     device->vkGetSwapchainImagesKHR(device->logicalDevice, swapchain, &imageCount, nullptr);
     images->resize(imageCount);
     device->vkGetSwapchainImagesKHR(device->logicalDevice, swapchain, &imageCount, images->data());
+
+    imageViews->resize(imageCount);
+
+    IMAGE_VIEW_CREATE_INFO(imgViewCreateInfo);
+    imgViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imgViewCreateInfo.subresourceRange = {
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        0,
+        VK_REMAINING_MIP_LEVELS,
+        0,
+        VK_REMAINING_ARRAY_LAYERS
+    };
+    imgViewCreateInfo.format = device->swapchainFormat.format;
+    for (uint32 i = 0; i < imageCount; ++i)
+    {
+        imgViewCreateInfo.image = images->at(i);
+        (*imageViews)[i] = createImageView(graphicsInstance, imgViewCreateInfo);
+    }
 }
 
 void VulkanGraphicsHelper::destroySwapchain(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain)
@@ -239,7 +257,7 @@ SharedPtr<class GraphicsTimelineSemaphore> VulkanGraphicsHelper::createTimelineS
 void VulkanGraphicsHelper::waitTimelineSemaphores(class IGraphicsInstance* graphicsInstance,
     std::vector<SharedPtr<class GraphicsTimelineSemaphore>>* semaphores, std::vector<uint64>* waitForValues)
 {
-    assert(semaphores->size() == waitForValues->size());
+    fatalAssert(semaphores->size() <= waitForValues->size(),"Cannot wait on semaphores if the wait for values is less than waiting semaphors count");
 
     const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
@@ -287,7 +305,7 @@ void VulkanGraphicsHelper::waitFences(class IGraphicsInstance* graphicsInstance,
         , 2000000000/*2 Seconds*/);
 }
 
-VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsInstance, const VkBufferCreateInfo* bufferCreateInfo
+VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsInstance, const VkBufferCreateInfo& bufferCreateInfo
     , EPixelDataFormat::Type bufferDataFormat)
 {
     VkBuffer buffer = nullptr;
@@ -296,9 +314,9 @@ VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsIns
     const VulkanDevice* device = &gInstance->selectedDevice;
 
 
-    VkFormatFeatureFlags requiredFeatures = (bufferCreateInfo->usage & VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT) > 0 ?
+    VkFormatFeatureFlags requiredFeatures = (bufferCreateInfo.usage & VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT) > 0 ?
         VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT : 0;
-    requiredFeatures |= (bufferCreateInfo->usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) > 0 ?
+    requiredFeatures |= (bufferCreateInfo.usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) > 0 ?
         VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT : 0;
     if (requiredFeatures > 0)
     {
@@ -320,7 +338,7 @@ VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsIns
         }
     }
 
-    if (device->vkCreateBuffer(device->logicalDevice, bufferCreateInfo, nullptr, &buffer) != VK_SUCCESS)
+    if (device->vkCreateBuffer(device->logicalDevice, &bufferCreateInfo, nullptr, &buffer) != VK_SUCCESS)
     {
         buffer = nullptr;
     }
@@ -360,6 +378,26 @@ void VulkanGraphicsHelper::deallocateBufferResource(class IGraphicsInstance* gra
     {
         gInstance->memoryAllocator->deallocateBuffer(resource->buffer, memoryResource->getMemoryData());
     }
+}
+
+VkBufferView VulkanGraphicsHelper::createBufferView(class IGraphicsInstance* graphicsInstance, const VkBufferViewCreateInfo& viewCreateInfo)
+{
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    VkBufferView view;
+    if (device->vkCreateBufferView(device->logicalDevice, &viewCreateInfo, nullptr, &view) != VK_SUCCESS)
+    {
+        Logger::error("VulkanGraphicsHelper", "%s() : Buffer view creation failed", __func__);
+        view = nullptr;
+    }
+    return view;
+}
+
+void VulkanGraphicsHelper::destroyBufferView(class IGraphicsInstance* graphicsInstance, VkBufferView view)
+{
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    device->vkDestroyBufferView(device->logicalDevice, view, nullptr);
 }
 
 VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInstance, VkImageCreateInfo& createInfo
@@ -451,6 +489,26 @@ void VulkanGraphicsHelper::deallocateImageResource(class IGraphicsInstance* grap
         gInstance->memoryAllocator->deallocateImage(resource->image, memoryResource->getMemoryData(),
             !resource->isStagingResource());// Every image apart from staging image are optimal
     }
+}
+
+VkImageView VulkanGraphicsHelper::createImageView(class IGraphicsInstance* graphicsInstance, const VkImageViewCreateInfo& viewCreateInfo)
+{
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    VkImageView view;
+    if (device->vkCreateImageView(device->logicalDevice, &viewCreateInfo, nullptr, &view) != VK_SUCCESS)
+    {
+        Logger::error("VulkanGraphicsHelper", "%s() : Image view creation failed", __func__);
+        view = nullptr;
+    }
+    return view;
+}
+
+void VulkanGraphicsHelper::destroyImageView(class IGraphicsInstance* graphicsInstance, VkImageView view)
+{
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    device->vkDestroyImageView(device->logicalDevice, view, nullptr);
 }
 
 SharedPtr<class SamplerInterface> VulkanGraphicsHelper::createSampler(class IGraphicsInstance* graphicsInstance,

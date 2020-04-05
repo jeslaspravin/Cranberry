@@ -8,6 +8,7 @@
 #include <glm/common.hpp>
 #include <set>
 #include <algorithm>
+#include "../../Core/Platform/PlatformAssertionErrors.h"
 
 struct VulkanMemoryBlock
 {
@@ -105,7 +106,7 @@ public:
     void setMemory(uint64 chunkSize, VkDeviceMemory dMemory)
     {
         // Ensure it is properly aligned
-        assert(chunkSize % alignment == 0);
+        fatalAssert(chunkSize % alignment == 0,"Chunk memory size is not properly aligned");
         cSize = chunkSize;
         deviceMemory = dMemory;
 
@@ -129,7 +130,7 @@ public:
             }
             block.free = 1;
             currentOffset += alignment;
-            assert(i == getBlockIndex(&block));
+            debugAssert(i == getBlockIndex(&block));
         }
     }
 
@@ -141,14 +142,14 @@ public:
     void alignSize(const uint64& size, uint64& alignedSize) const
     {
         // Ensure if it is power of 2
-        assert(((alignment - 1) & alignment) == 0);
+        debugAssert(((alignment - 1) & alignment) == 0);
         alignedSize = (size + alignment - 1) & ~(alignment - 1);
     }
     
     VulkanMemoryBlock* allocateBlock(const uint64& size, const uint64& offsetAlignment)
     {
         // Ensure it is properly aligned
-        assert(size % alignment == 0);
+        fatalAssert(size % alignment == 0,"Size allocating is not properly aligned");
         uint64 nOfBlocks = size / alignment;
 
         VulkanMemoryBlock* allocatedBlock = findAndAlloc(nOfBlocks, offsetAlignment);
@@ -578,7 +579,7 @@ public:
             }
         }
 
-        assert(!failedAny);
+        debugAssert(!failedAny);
     }
 
 };

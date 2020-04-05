@@ -140,7 +140,7 @@ VariableName.pQueueFamilyIndices = nullptr
 #endif
 
 #ifndef BUFFER_VIEW_CREATE_INFO
-#define BUFFER_VIEW_CREATE_INFO(VariableName)                  \
+#define BUFFER_VIEW_CREATE_INFO(VariableName)                   \
 VkBufferViewCreateInfo VariableName;                            \
 VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO; \
 VariableName.pNext = nullptr;                                   \
@@ -166,10 +166,10 @@ VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;  \
 VariableName.pNext = nullptr;                                   \
 VariableName.flags = 0;                                         \
 VariableName.components = {                                     \
+    VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,          \
+    VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,          \
+    VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,          \
     VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY           \
-    ,VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY          \
-    ,VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY          \
-    ,VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY          \
 };
 #endif
 

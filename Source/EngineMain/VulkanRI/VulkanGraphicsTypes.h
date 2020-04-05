@@ -2,10 +2,12 @@
 #ifndef VULKANGRAPHICSTYPES_H
 #define VULKANGRAPHICSTYPES_H
 
+#include <vulkan_core.h>
+
 namespace GraphicsTypes {
     typedef class VulkanGraphicsInstance GraphicInstance;
     typedef class VulkanWindowCanvas WindowCanvas;
-
+    
     typedef class VulkanRBuffer GraphicsRBuffer;
     typedef class VulkanWBuffer GraphicsWBuffer;
     typedef class VulkanRWBuffer GraphicsRWBuffer;
