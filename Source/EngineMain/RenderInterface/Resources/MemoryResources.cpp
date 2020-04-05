@@ -28,3 +28,13 @@ void ImageResource::setLayerCount(uint32 count)
 {
     layerCount = glm::max<uint32>(count, 1);
 }
+
+bool EPixelDataFormat::isDepthFormat(Type dataFormat)
+{
+    return EPixelDataFormat::DepthFormatBegin <= dataFormat && EPixelDataFormat::DepthFormatEnd >= dataFormat;
+}
+
+bool EPixelDataFormat::isStencilFormat(Type dataFormat)
+{
+    return EPixelDataFormat::StencilDepthEnd <= dataFormat && EPixelDataFormat::StencilDepthEnd >= dataFormat;
+}

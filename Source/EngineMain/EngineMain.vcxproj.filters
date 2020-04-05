@@ -112,7 +112,7 @@
     <Filter Include="Source Files\RenderInterface\Resources\Samplers">
       <UniqueIdentifier>{164c502a-daa0-4587-b7c8-9270afd35fec}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Types">
+    <Filter Include="Source Files\Core\Types">
       <UniqueIdentifier>{298adeaf-cc90-4ca7-9419-0a0fe1f86f0b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -235,7 +235,7 @@
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
     </ClCompile>
     <ClCompile Include="Core\Types\Colors.cpp">
-      <Filter>Source Files\Types</Filter>
+      <Filter>Source Files\Core\Types</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -420,6 +420,9 @@
       <Filter>Header Files\RenderInterface</Filter>
     </ClInclude>
     <ClInclude Include="Core\Types\Colors.h">
+      <Filter>Header Files\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\HashTypes.h">
       <Filter>Header Files\Core\Types</Filter>
     </ClInclude>
   </ItemGroup>

@@ -4,6 +4,8 @@
 #include "../VulkanMacros.h"
 #include "../../../Core/String/String.h"
 
+#include <unordered_map>
+
 class VulkanDevice;
 
 class VulkanBufferResource : public BufferResource, public IVulkanMemoryResources
@@ -14,9 +16,14 @@ protected:
     // Always buffer can be copied from and copied to
     VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
+    std::unordered_map<BufferViewInfo, VkBufferView> createdBufferViews;
+
 public:
     VkBuffer buffer;
 
+protected:
+    VkBufferView createBufferView(const BufferViewInfo& viewInfo);
+public:
     /* GraphicsResource implementations */
     void init() override;
     void reinitResources() override;
@@ -34,6 +41,8 @@ public:
     uint64 requiredSize() const override;
     bool canAllocateMemory() const override;
     /* End - IVulkanResources implementations */
+
+    VkBufferView getBufferView(const BufferViewInfo& viewInfo);
 };
 
 
@@ -49,10 +58,16 @@ protected:
     VkImageTiling tiling;
     VkImageType type;
 
+    std::unordered_map<ImageViewInfo, VkImageView> createdImageViews;
+    VkImageViewType viewType;
+
     VulkanImageResource();
 public:
     VkImage image;
 
+protected:
+    VkImageView createImageView(const ImageViewInfo& viewInfo);
+public:
     VulkanImageResource(EPixelDataFormat::Type imageFormat,bool cpuAccessible = false);
 
     /* GraphicsResource implementations */
@@ -73,4 +88,6 @@ public:
     uint64 requiredSize()  const override;
     bool canAllocateMemory() const override;
     /* End - IVulkanResources implementations */
+
+    VkImageView getImageView(const ImageViewInfo& viewInfo);
 };

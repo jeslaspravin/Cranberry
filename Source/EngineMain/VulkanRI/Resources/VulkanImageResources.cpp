@@ -28,6 +28,7 @@ VulkanCubeImageResource::VulkanCubeImageResource() : BaseType()
 {
     createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     layerCount = 6;
+    viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_CUBE;
 }
 
 VulkanCubeImageResource::VulkanCubeImageResource(EPixelDataFormat::Type imageFormat)
@@ -35,4 +36,5 @@ VulkanCubeImageResource::VulkanCubeImageResource(EPixelDataFormat::Type imageFor
 {
     createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     layerCount = 6;
+    viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_CUBE;
 }

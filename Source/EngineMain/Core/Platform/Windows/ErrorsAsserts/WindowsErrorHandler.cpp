@@ -71,12 +71,12 @@ void WindowsUnexpectedErrorHandler::registerFilter()
     previousFilter = SetUnhandledExceptionFilter(handlerFilter);
 }
 
-void WindowsUnexpectedErrorHandler::dumpCallStack()
+void WindowsUnexpectedErrorHandler::dumpCallStack(bool bShouldCrashEngine)
 {
     CONTEXT context = {};
     context.ContextFlags = CONTEXT_FULL;
     RtlCaptureContext(&context);
-    dumpStack(&context);
+    dumpStack(&context, bShouldCrashEngine);
 }
 
 void WindowsUnexpectedErrorHandler::unregisterFilter()
@@ -84,7 +84,7 @@ void WindowsUnexpectedErrorHandler::unregisterFilter()
     SetUnhandledExceptionFilter(previousFilter);
 }
 
-void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context)
+void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCloseEngine)
 {
     HANDLE processHandle = GetCurrentProcess();
     HANDLE threadHandle = GetCurrentThread();
@@ -161,7 +161,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context)
     
     Logger::error("WindowsUnexpectedErrorHandler", "Error call trace : \r\n%s", stackTrace.str().c_str());
 
-    if (gEngine && !gEngine->isExiting())
+    if (bCloseEngine && gEngine && !gEngine->isExiting())
     {
         gEngine->quit();
     }
@@ -256,6 +256,6 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS* ex
     LocalFree(errorMsg);
     
     getHandler()->unregisterFilter();
-    getHandler()->dumpStack(exp->ContextRecord);
+    getHandler()->dumpStack(exp->ContextRecord, true);
     return EXCEPTION_CONTINUE_SEARCH;
 }
