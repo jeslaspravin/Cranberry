@@ -51,15 +51,14 @@ void VulkanBufferResource::release()
     if (buffer)
     {
         IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
-        VulkanGraphicsHelper::deallocateBufferResource(graphicsInstance, this);
-        VulkanGraphicsHelper::destroyBuffer(graphicsInstance, buffer);
-        buffer = nullptr;
-
         for (const auto& bufferView : createdBufferViews)
         {
             VulkanGraphicsHelper::destroyBufferView(graphicsInstance, bufferView.second);
         }
         createdBufferViews.clear();
+        VulkanGraphicsHelper::deallocateBufferResource(graphicsInstance, this);
+        VulkanGraphicsHelper::destroyBuffer(graphicsInstance, buffer);
+        buffer = nullptr;
     }
 }
 
@@ -275,15 +274,14 @@ void VulkanImageResource::release()
     if (image)
     {
         IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
-        VulkanGraphicsHelper::deallocateImageResource(graphicsInstance, this);
-        VulkanGraphicsHelper::destroyImage(graphicsInstance, image);
-        image = nullptr;
-
         for (const auto& imageView : createdImageViews)
         {
             VulkanGraphicsHelper::destroyImageView(graphicsInstance, imageView.second);
         }
         createdImageViews.clear();
+        VulkanGraphicsHelper::deallocateImageResource(graphicsInstance, this);
+        VulkanGraphicsHelper::destroyImage(graphicsInstance, image);
+        image = nullptr;
     }
 }
 
