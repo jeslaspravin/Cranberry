@@ -1,7 +1,5 @@
 #include "../VulkanGraphicsTypes.h"
-#include "../../RenderInterface/CoreTypes.h"
-#include "../../RenderInterface/Resources/MemoryResources.h"
-#include "../../RenderInterface/Resources/Samplers/SamplerInterface.h"
+#include "../../RenderInterface/CoreGraphicsTypes.h"
 
 #include <map>
 #include <vulkan_core.h>
@@ -42,13 +40,17 @@ namespace EPixelDataFormat
 #define IMG_FORMAT_INFO_PAIR(PixelFormat,RelevantApiFormat,DataSize) { PixelFormat, { RelevantApiFormat, DataSize, #PixelFormat }}
     const std::map<Type, ImageFormatInfo> DATA_FORMAT_TO_API_FORMAT = {
         IMG_FORMAT_INFO_PAIR( Undefined, VK_FORMAT_UNDEFINED, 0),
-        IMG_FORMAT_INFO_PAIR( RGBA_UI8_Packed, VK_FORMAT_A8B8G8R8_UINT_PACK32, 4 ),
-        IMG_FORMAT_INFO_PAIR( RGBA_SI8_Packed , VK_FORMAT_A8B8G8R8_SINT_PACK32 , 4 ),
-        IMG_FORMAT_INFO_PAIR( RGBA_UI8_SrgbPacked , VK_FORMAT_A8B8G8R8_SRGB_PACK32 , 4 ),
-        IMG_FORMAT_INFO_PAIR( RGBA_U8_NormPacked , VK_FORMAT_A8B8G8R8_UNORM_PACK32 , 4 ),
-        IMG_FORMAT_INFO_PAIR( RGBA_S8_NormPacked , VK_FORMAT_A8B8G8R8_SNORM_PACK32 , 4 ),
-        IMG_FORMAT_INFO_PAIR( RGBA_U8_ScaledPacked , VK_FORMAT_A8B8G8R8_USCALED_PACK32 , 4 ),
-        IMG_FORMAT_INFO_PAIR( RGBA_S8_ScaledPacked , VK_FORMAT_A8B8G8R8_SSCALED_PACK32 , 4),
+        IMG_FORMAT_INFO_PAIR( ABGR_UI8_Packed, VK_FORMAT_A8B8G8R8_UINT_PACK32, 4 ),
+        IMG_FORMAT_INFO_PAIR( ABGR_SI8_Packed , VK_FORMAT_A8B8G8R8_SINT_PACK32 , 4 ),
+        IMG_FORMAT_INFO_PAIR( ABGR_UI8_SrgbPacked , VK_FORMAT_A8B8G8R8_SRGB_PACK32 , 4 ),
+        IMG_FORMAT_INFO_PAIR( ABGR_U8_NormPacked , VK_FORMAT_A8B8G8R8_UNORM_PACK32 , 4 ),
+        IMG_FORMAT_INFO_PAIR( ABGR_S8_NormPacked , VK_FORMAT_A8B8G8R8_SNORM_PACK32 , 4 ),
+        IMG_FORMAT_INFO_PAIR( ABGR_U8_ScaledPacked , VK_FORMAT_A8B8G8R8_USCALED_PACK32 , 4 ),
+        IMG_FORMAT_INFO_PAIR( ABGR_S8_ScaledPacked , VK_FORMAT_A8B8G8R8_SSCALED_PACK32 , 4),
+        IMG_FORMAT_INFO_PAIR( BGRA_U8_Norm , VK_FORMAT_B8G8R8A8_UNORM , 4),
+        IMG_FORMAT_INFO_PAIR( BGRA_S8_Norm , VK_FORMAT_B8G8R8A8_SNORM , 4),
+        IMG_FORMAT_INFO_PAIR( BGRA_U8_Scaled , VK_FORMAT_B8G8R8A8_USCALED , 4),
+        IMG_FORMAT_INFO_PAIR( BGRA_S8_Scaled , VK_FORMAT_B8G8R8A8_SSCALED , 4),
         IMG_FORMAT_INFO_PAIR( R_UI32 , VK_FORMAT_R32_UINT , 4),
         IMG_FORMAT_INFO_PAIR( R_SI32 , VK_FORMAT_R32_SINT , 4),
         IMG_FORMAT_INFO_PAIR( R_SF32 , VK_FORMAT_R32_SFLOAT , 4),
@@ -69,6 +71,17 @@ namespace EPixelDataFormat
             return &itr->second;
         }
         return nullptr;
+    }
+    EPixelDataFormat::Type fromApiFormat(uint32 apiFormat)
+    {
+        for (const std::pair<Type, ImageFormatInfo>& formatPair : DATA_FORMAT_TO_API_FORMAT)
+        {
+            if (formatPair.second.format == apiFormat)
+            {
+                return formatPair.first;
+            }
+        }
+        return Undefined;
     }
 }
 

@@ -14,7 +14,7 @@ private:
     static GenericFile* getLogFile();
 
     template<typename... Args>
-    static String fmtString(const char* fmt, Args ...args)
+    static String fmtString(const char* fmt, Args... args)
     {
         int32 size = std::snprintf(nullptr, 0, fmt, args...);
         String fmted;
