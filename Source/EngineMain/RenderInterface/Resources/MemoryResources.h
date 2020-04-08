@@ -3,90 +3,7 @@
 #include "../../Core/Math/CoreMathTypedefs.h"
 #include "../../Core/String/String.h"
 #include "../../Core/Types/HashTypes.h"
-
-
-namespace EPixelDataFormat
-{
-    enum Type
-    {
-        Undefined,
-        RGBA_UI8_Packed,
-        RGBA_SI8_Packed,
-        RGBA_UI8_SrgbPacked,
-        RGBA_U8_NormPacked,     /* 0 to 255 gives 0.0f - 1.0f per comp */
-        RGBA_S8_NormPacked,     /* -127 to 127 gives -1.0f - 1.0f per comp( -128 gets clamped to -127 ) */
-        RGBA_U8_ScaledPacked,   /* Just converts the value directly as float 0.0f - 255.0f per comp */
-        RGBA_S8_ScaledPacked,   /* Just converts the value directly as float -128.0f - 127.0f per comp */
-        R_UI32,
-        R_SI32,
-        R_SF32,
-        D_U16_Norm,             /* 0 to 65535 gives 0.0f to 1.0f */
-        D24X8_U32_NormPacked,   /* 0 to 16777215 depth gives 0.0f to 1.0f, 8bit not used */
-        D_SF32,
-        D32S8_SF32_UI8,
-        D16S8_U24_DNorm_SInt,   /* 0 to 65535 depth gives 0.0f to 1.0f, 0 - 255 as stencil */
-        D24S8_U32_DNorm_SInt,   /* 0 to 16777215 depth gives 0.0f to 1.0f, 0 - 255 as stencil */
-        DepthFormatBegin = D_U16_Norm,
-        DepthFormatEnd = D24S8_U32_DNorm_SInt,
-        StencilDepthBegin = D32S8_SF32_UI8,
-        StencilDepthEnd = D24S8_U32_DNorm_SInt
-    };
-
-    struct ImageFormatInfo
-    {
-        uint32 format;
-        uint32 pixelDataSize;
-        String formatName;
-    };
-
-    const ImageFormatInfo* getFormatInfo(EPixelDataFormat::Type dataFormat);
-    bool isDepthFormat(EPixelDataFormat::Type dataFormat);
-    bool isStencilFormat(EPixelDataFormat::Type dataFormat);
-}
-
-namespace EPixelSampleCount
-{
-    enum Type
-    {
-        SampleCount1 = 0x01,
-        SampleCount2 = 0x02,
-        SampleCount4 = 0x04,
-        SampleCount8 = 0x08,
-        SampleCount16 = 0x10,
-        SampleCount32 = 0x20,
-        SampleCount64 = 0x40,
-    };
-}
-
-namespace EImageShaderUsage
-{
-    enum Type
-    {
-        Sampling = 0x01,
-        Writing = 0x02
-    };
-}
-
-namespace EImageComponentMapping
-{
-    enum Type
-    {
-        SameComponent,
-        AlwaysOne,
-        AlwaysZero,
-        R,
-        G,
-        B,
-        A
-    };
-    struct ComponentMappingInfo
-    {
-        uint32 mapping;
-        String mappingName;
-    };
-
-    const ComponentMappingInfo* getComponentMapping(EImageComponentMapping::Type mapping);
-}
+#include "../CoreGraphicsTypes.h"
 
 struct BufferViewInfo
 {
@@ -205,6 +122,7 @@ struct std::hash<ImageViewInfo>
     }
 };
 
+
 class MemoryResource : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(MemoryResource, , GraphicsResource, )
@@ -224,6 +142,7 @@ protected:
 public:
     virtual uint64 getResourceSize() const { return 0; }
     virtual bool isValid() { return false; }
+
     bool isStagingResource() const { return bIsStagingResource; }
 
     /* GraphicsResource overrides */

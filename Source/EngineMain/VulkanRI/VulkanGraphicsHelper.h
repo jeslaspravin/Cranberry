@@ -15,7 +15,7 @@ public:
     static const class VulkanDebugGraphics* debugGraphics(class IGraphicsInstance* graphicsInstance);
 
 
-    static VkSwapchainKHR createSwapchain(class IGraphicsInstance* graphicsInstance, GenericAppWindow* appWindow);
+    static VkSwapchainKHR createSwapchain(class IGraphicsInstance* graphicsInstance, GenericAppWindow* appWindow, struct SwapchainInfo* swapchainInfo);
     static void fillSwapchainImages(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain,std::vector<VkImage>* images, std::vector<VkImageView>* imageViews);
     static void destroySwapchain(class IGraphicsInstance* graphicsInstance,VkSwapchainKHR swapchain);
     static uint32 getNextSwapchainImage(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain,

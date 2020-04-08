@@ -51,7 +51,7 @@ void VulkanSampler::reinitResources()
     createInfo.addressModeW = (VkSamplerAddressMode)ESamplerTilingMode::getSamplerTiling(tilingMode.z);
     // TODO(Jeslas) : following settings has to be obtained from global settings
     createInfo.mipLodBias = 0;
-    createInfo.anisotropyEnable = true;
+    createInfo.anisotropyEnable = false;
     createInfo.maxAnisotropy = 8;// PhysicalDeviceLimit check for this will be done at global level
 
     createInfo.compareEnable = useCompareOp;
