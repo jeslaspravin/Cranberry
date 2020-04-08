@@ -17,10 +17,11 @@ namespace HashUtility
     template <typename It>
     inline size_t hashRange(It first,It last)
     {
+        std::hash<decltype(*first)> hasher;
         size_t seed = 0;
         for (; first != last; ++first)
         {
-            hashCombine(seed, *first);
+            hashCombine(seed, hasher(*first));
         }
         return seed;
     }

@@ -108,6 +108,11 @@ DEVICE_VK_FUNCTIONS(vkAllocateDescriptorSets)
 DEVICE_VK_FUNCTIONS(vkFreeDescriptorSets)
 DEVICE_VK_FUNCTIONS(vkUpdateDescriptorSets)
 
+DEVICE_VK_FUNCTIONS(vkCreateRenderPass)
+DEVICE_VK_FUNCTIONS(vkDestroyRenderPass)
+DEVICE_VK_FUNCTIONS(vkCreateFramebuffer)
+DEVICE_VK_FUNCTIONS(vkDestroyFramebuffer)
+
 /* CommandPool Functions */
 DEVICE_VK_FUNCTIONS(vkCreateCommandPool)
 DEVICE_VK_FUNCTIONS(vkDestroyCommandPool)
@@ -123,6 +128,11 @@ DEVICE_VK_FUNCTIONS(vkEndCommandBuffer);
 /* Commands */
 DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier)
 DEVICE_VK_FUNCTIONS(vkCmdClearColorImage)
+
+DEVICE_VK_FUNCTIONS(vkCmdBeginRenderPass)
+DEVICE_VK_FUNCTIONS(vkCmdNextSubpass)
+DEVICE_VK_FUNCTIONS(vkCmdEndRenderPass)
+
 
 /* Debug Functions */
 DEVICE_VK_FUNCTIONS(vkQueueBeginDebugUtilsLabelEXT)

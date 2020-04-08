@@ -419,9 +419,6 @@
     <ClInclude Include="RenderInterface\Resources\Samplers\SamplerInterface.h">
       <Filter>Header Files\RenderInterface\Resources\Samplers</Filter>
     </ClInclude>
-    <ClInclude Include="RenderInterface\CoreTypes.h">
-      <Filter>Source Files\RenderInterface</Filter>
-    </ClInclude>
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.h">
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
     </ClInclude>
@@ -433,6 +430,9 @@
     </ClInclude>
     <ClInclude Include="Core\Types\HashTypes.h">
       <Filter>Header Files\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\CoreGraphicsTypes.h">
+      <Filter>Source Files\RenderInterface</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,43 +1,10 @@
 #pragma once
 #include "../../../Core/String/String.h"
 #include "../GraphicsResources.h"
-#include "../../CoreTypes.h"
+#include "../../CoreGraphicsTypes.h"
 
 #include <glm/detail/type_vec3.hpp>
 #include <glm/ext/vector_float2.hpp>
-
-namespace ESamplerFiltering
-{
-    enum Type
-    {
-        Nearest = 0,
-        Linear = 1,
-        Cubic = 2
-    };
-
-    struct SamplerFilteringInfo
-    {
-        uint32 filterTypeValue;
-        String filterName;
-    };
-
-    const SamplerFilteringInfo* getFilterInfo(ESamplerFiltering::Type dataFormat);
-    const SamplerFilteringInfo* getMipFilterInfo(ESamplerFiltering::Type dataFormat);
-}
-
-namespace ESamplerTilingMode
-{
-    enum Type
-    {
-        Repeat = 0,
-        MirroredRepeat = 1,
-        EdgeClamp = 2,
-        BorderClamp = 3,
-        EdgeMirroredClamp = 4
-    };
-
-    uint32 getSamplerTiling(ESamplerTilingMode::Type tilingMode);
-}
 
 class SamplerInterface : public GraphicsResource
 {

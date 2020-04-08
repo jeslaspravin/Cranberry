@@ -83,6 +83,16 @@ uint32 VulkanWindowCanvas::requestNextImage(SharedPtr<GraphicsSemaphore>* waitOn
     return currentSwapchainIdx;
 }
 
+EPixelDataFormat::Type VulkanWindowCanvas::windowCanvasFormat()
+{
+    return EPixelDataFormat::fromApiFormat((uint32)swapchainInfo.format);
+}
+
+int32 VulkanWindowCanvas::imagesCount()
+{
+    return (int32)swapchainImages.size();
+}
+
 VkImage VulkanWindowCanvas::swapchainImage(uint32 index) const
 {
     fatalAssert(index >= 0 && index < swapchainImages.size(),"Invalid swapchain index");
@@ -103,7 +113,7 @@ String VulkanWindowCanvas::getObjectName() const
 void VulkanWindowCanvas::reinitResources()
 {
     VkSwapchainKHR nextSwapchain = VulkanGraphicsHelper::createSwapchain(gEngine->getRenderApi()->getGraphicsInstance(),
-        ownerWindow);
+        ownerWindow, &swapchainInfo);
     IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
 
     if (!nextSwapchain || nextSwapchain == VK_NULL_HANDLE)

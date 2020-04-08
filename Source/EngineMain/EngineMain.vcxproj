@@ -239,7 +239,7 @@
     <ClInclude Include="Core\Types\HashTypes.h" />
     <ClInclude Include="Experimental\ExperimentalEngine.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
-    <ClInclude Include="RenderInterface\CoreTypes.h" />
+    <ClInclude Include="RenderInterface\CoreGraphicsTypes.h" />
     <ClInclude Include="RenderInterface\GraphicsHelper.h" />
     <ClInclude Include="RenderInterface\GraphicsIntance.h" />
     <ClInclude Include="RenderInterface\PlatformIndependentGraphicsTypes.h" />

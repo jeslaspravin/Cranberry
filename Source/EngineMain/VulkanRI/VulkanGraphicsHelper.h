@@ -18,7 +18,7 @@ public:
     static class VulkanDevice* getVulkanDevice(class IGraphicsInstance* graphicsInstance);
     static std::vector<class QueueResourceBase*>* getVDAllQueues(VulkanDevice* device);
 
-    static VkSwapchainKHR createSwapchain(class IGraphicsInstance* graphicsInstance, GenericAppWindow* appWindow);
+    static VkSwapchainKHR createSwapchain(class IGraphicsInstance* graphicsInstance, GenericAppWindow* appWindow, struct SwapchainInfo* swapchainInfo);
     static void fillSwapchainImages(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain,std::vector<VkImage>* images, std::vector<VkImageView>* imageViews);
     static void destroySwapchain(class IGraphicsInstance* graphicsInstance,VkSwapchainKHR swapchain);
     static uint32 getNextSwapchainImage(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain,

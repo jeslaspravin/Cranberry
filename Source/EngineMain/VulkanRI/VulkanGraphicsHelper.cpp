@@ -19,11 +19,6 @@
 template <EQueueFunction QueueFunction>
 VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
 
-namespace EPixelDataFormat
-{
-    const EPixelDataFormat::ImageFormatInfo* getFormatInfo(EPixelDataFormat::Type dataFormat);
-}
-
 VkInstance VulkanGraphicsHelper::getInstance(class IGraphicsInstance* graphicsInstance)
 {
     VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
@@ -58,7 +53,7 @@ template <EQueueFunction QueueFunction>
 VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
 
 VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* graphicsInstance, 
-    GenericAppWindow* appWindow)
+    GenericAppWindow* appWindow,struct SwapchainInfo* swapchainInfo)
 {
     const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
@@ -121,6 +116,12 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
 
     VkSwapchainKHR swapchain;
     device->vkCreateSwapchainKHR(device->logicalDevice, &swapchainCreateInfo, nullptr, &swapchain);
+
+    if (swapchainInfo)
+    {
+        swapchainInfo->format = device->swapchainFormat.format;
+    }
+
     return swapchain;
 }
 

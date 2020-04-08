@@ -227,6 +227,29 @@ VariableName.srcArrayElement = 0;                           \
 VariableName.dstArrayElement = 0
 #endif
 
+#ifndef RENDERPASS_CREATE_INFO
+#define RENDERPASS_CREATE_INFO(VariableName)                    \
+VkRenderPassCreateInfo VariableName;                            \
+VariableName.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO; \
+VariableName.flags = 0;                                         \
+VariableName.pNext = nullptr
+#endif
+
+#ifndef FRAMEBUFFER_CREATE_INFO
+#define FRAMEBUFFER_CREATE_INFO(VariableName)                   \
+VkFramebufferCreateInfo VariableName;                           \
+VariableName.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO; \
+VariableName.flags = 0;                                         \
+VariableName.pNext = nullptr
+#endif
+
+#ifndef RENDERPASS_BEGIN_INFO
+#define RENDERPASS_BEGIN_INFO(VariableName)                     \
+VkRenderPassBeginInfo VariableName;                             \
+VariableName.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;  \
+VariableName.pNext = nullptr
+#endif
+
 #ifndef CREATE_SEMAPHORE_INFO
 #define CREATE_SEMAPHORE_INFO(VariableName)                     \
 VkSemaphoreCreateInfo  VariableName;                            \
