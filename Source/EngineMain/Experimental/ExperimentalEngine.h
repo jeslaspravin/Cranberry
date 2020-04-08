@@ -25,6 +25,8 @@ struct BufferData
 struct ImageData
 {
     class ImageResource* image = nullptr;
+    EPixelDataFormat::Type format = EPixelDataFormat::Undefined;
+    EPixelSampleCount::Type sampleCount = EPixelSampleCount::SampleCount1;
     VkImageView imageView = nullptr;
 };
 
@@ -70,8 +72,8 @@ class ExperimentalEngine : public GameEngine
     const class VulkanDebugGraphics* graphicsDbg;
 
     std::map<EQueueFunction, QueueCommandPool> pools;
-    VkCommandBuffer swapchainCmdBuffer;
-    SharedPtr<GraphicsFence> vFence;
+    VkCommandBuffer renderPassCmdBuffer;
+    SharedPtr<GraphicsFence> cmdSubmitFence;
     void createPools();
     void destroyPools();
 
@@ -94,13 +96,17 @@ class ExperimentalEngine : public GameEngine
     void destroyShaderResDescriptors();
 
     VkRenderPass renderPass;
-    //void createRenderpass();
-    //void destroyRenderpass();
+    std::vector<VkClearValue> attachmentsClearColors;// For render pass
+    SharedPtr<GraphicsSemaphore> renderpassSemaphore;
+    std::vector<SharedPtr<GraphicsSemaphore>> presentWaitOn;
+    void createRenderpass();
+    void destroyRenderpass();
 
     // Common to many pipeline stuffs
     VkDescriptorPool descriptorsPool;
     // Since framebuffers with same FrameBufferFormat can be used with different render passes
-    std::map<FramebufferFormat, VkFramebuffer> framebuffers;
+    // std::map<FramebufferFormat, VkFramebuffer> framebuffers;
+    std::vector<VkFramebuffer> framebuffers;
 
     void createPipelineResources();
     void destroyPipelineResources();
