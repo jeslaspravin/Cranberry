@@ -4,6 +4,9 @@
 #include "../../../Core/Logger/Logger.h"
 #include "../../../Core/Engine/GameEngine.h"
 #include "../../VulkanGraphicsInstance.h"
+#include "../../../RenderInterface/GlobalRenderVariables.h"
+
+#include <glm/common.hpp>
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanSampler, VK_OBJECT_TYPE_SAMPLER)
 
@@ -51,8 +54,8 @@ void VulkanSampler::reinitResources()
     createInfo.addressModeW = (VkSamplerAddressMode)ESamplerTilingMode::getSamplerTiling(tilingMode.z);
     // TODO(Jeslas) : following settings has to be obtained from global settings
     createInfo.mipLodBias = 0;
-    createInfo.anisotropyEnable = false;
-    createInfo.maxAnisotropy = 8;// PhysicalDeviceLimit check for this will be done at global level
+    createInfo.anisotropyEnable = GlobalRenderVariables::ENABLE_ANISOTROPY.get() ? VK_TRUE : VK_FALSE;
+    createInfo.maxAnisotropy = glm::min(8.f,GlobalRenderVariables::MAX_ANISOTROPY.get());
 
     createInfo.compareEnable = useCompareOp;
     createInfo.compareOp = (VkCompareOp)CoreGraphicsTypes::getEnumTypeInfo(compareOp)->value;

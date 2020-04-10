@@ -2,7 +2,7 @@
 #ifndef VULKANGRAPHICSTYPES_H
 #define VULKANGRAPHICSTYPES_H
 
-#include <vulkan_core.h>
+#include "../Core/Engine/Config/EngineVariables.h"
 
 namespace GraphicsTypes {
     typedef class VulkanGraphicsInstance GraphicInstance;
@@ -18,6 +18,9 @@ namespace GraphicsTypes {
     typedef class VulkanRenderTargetResource GraphicsRenderTargetResource;
     typedef class VulkanCubeImageResource GraphicsCubeImageResource;
     typedef class VulkanImageResource GraphicsImageResource;
+
+    template <typename Type>
+    using GraphicsDeviceConstant = EngineConstant<Type, class VulkanDevice>;
 }
 
 #endif

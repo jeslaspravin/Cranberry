@@ -7,14 +7,43 @@
 #include "../../Core/Engine/GameEngine.h"
 #include "Resources/VulkanWindowCanvas.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../RenderInterface/GlobalRenderVariables.h"
 
 #include <sstream>
 #include <set>
 #include <glm/common.hpp>
 
+namespace GlobalRenderVariables
+{
+    GraphicsDeviceConstant<bool> ENABLE_ANISOTROPY;
+    GraphicsDeviceConstant<float> MAX_ANISOTROPY(0);
+
+    //extern GraphicsDeviceConstant<bool> ENABLED_TESSELLATION;
+
+    GraphicsDeviceConstant<bool> ENABLED_TIMELINE_SEMAPHORE;
+    GraphicsDeviceConstant<uint64> MAX_TIMELINE_OFFSET(0);
+}
+
 void VulkanDevice::markEnabledFeatures()
 {
     // TODO(Jeslas) : Check and enable necessary features on enabledFeatures
+    enabledFeatures.samplerAnisotropy = features.samplerAnisotropy;
+}
+
+void VulkanDevice::markGlobalConstants()
+{
+    if (enabledFeatures.samplerAnisotropy)
+    {
+        GlobalRenderVariables::ENABLE_ANISOTROPY.set(true);
+        GlobalRenderVariables::MAX_ANISOTROPY.set(properties.limits.maxSamplerAnisotropy);
+    }
+    else
+    {
+        GlobalRenderVariables::ENABLE_ANISOTROPY.set(false);
+        GlobalRenderVariables::MAX_ANISOTROPY.set(1);
+    }
+    GlobalRenderVariables::MAX_TIMELINE_OFFSET.set(timelineSemaphoreProps.maxTimelineSemaphoreValueDifference);
+    GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.set(timelineSemaphoreFeatures.timelineSemaphore == VK_TRUE ? true : false);
 }
 
 bool VulkanDevice::createQueueResources()
@@ -518,6 +547,7 @@ void VulkanDevice::createLogicDevice()
 {
     Logger::debug("VulkanDevice", "%s() : Creating logical device", __func__);
     fatalAssert(createQueueResources(), "Without vulkan queues application cannot proceed running");
+    markGlobalConstants();
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     queueCreateInfos.reserve(allQueues.size());
@@ -548,9 +578,9 @@ void VulkanDevice::createLogicDevice()
     deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
     deviceCreateInfo.queueCreateInfoCount = (uint32_t)queueCreateInfos.size();
     deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-
-    if(timelineSemaphoreFeatures.timelineSemaphore == VK_TRUE) // Include time line semaphore if supported
-        deviceCreateInfo.pNext = &timelineSemaphoreFeatures;
+    
+    // Additional features
+    deviceCreateInfo.pNext = &timelineSemaphoreFeatures;
 
     VkResult vulkanDeviceCreationResult = Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
     fatalAssert(vulkanDeviceCreationResult == VK_SUCCESS,"Failed creating logical device");
@@ -681,11 +711,6 @@ int32 VulkanDevice::compare(const VulkanDevice& otherDevice) const
 bool VulkanDevice::isValidDevice() const
 {
     return physicalDevice != nullptr && queueFamiliesSupported.size() > 0;
-}
-
-uint64 VulkanDevice::maxAllowedTimelineOffset() const
-{
-    return timelineSemaphoreProps.maxTimelineSemaphoreValueDifference;
 }
 
 void VulkanDevice::getMemoryStat(uint64& totalBudget, uint64& usage, uint32 heapIndex)
