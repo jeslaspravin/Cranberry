@@ -182,6 +182,7 @@
     <ClCompile Include="Core\Types\Colors.cpp" />
     <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
     <ClCompile Include="RenderApi\RenderApi.cpp" />
+    <ClCompile Include="RenderInterface\GlobalRenderVariables.cpp" />
     <ClCompile Include="RenderInterface\GraphicsInstance.cpp" />
     <ClCompile Include="RenderInterface\Resources\GraphicsResources.cpp" />
     <ClCompile Include="RenderInterface\Resources\GraphicsSyncResource.cpp" />
@@ -207,6 +208,7 @@
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanGraphicsTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Core\Engine\Config\EngineVariables.h" />
     <ClInclude Include="Core\Engine\GameEngine.h" />
     <ClInclude Include="Core\Engine\WindowManager.h" />
     <ClInclude Include="Core\Logger\Logger.h" />
@@ -240,6 +242,7 @@
     <ClInclude Include="Experimental\ExperimentalEngine.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
     <ClInclude Include="RenderInterface\CoreGraphicsTypes.h" />
+    <ClInclude Include="RenderInterface\GlobalRenderVariables.h" />
     <ClInclude Include="RenderInterface\GraphicsHelper.h" />
     <ClInclude Include="RenderInterface\GraphicsIntance.h" />
     <ClInclude Include="RenderInterface\PlatformIndependentGraphicsTypes.h" />
