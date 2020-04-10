@@ -3,6 +3,7 @@
 #include "../../../Core/Logger/Logger.h"
 #include "../../VulkanGraphicsHelper.h"
 #include "../../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../../RenderInterface/GlobalRenderVariables.h"
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanSemaphore,VK_OBJECT_TYPE_SEMAPHORE)
 
@@ -92,7 +93,7 @@ VulkanTimelineSemaphore::VulkanTimelineSemaphore(const VulkanDevice* deviceInsta
 
 void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
 {
-    if (!isSignaled(value))
+    if (!isSignaled(value) && GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get())
     {
         SEMAPHORE_WAIT_INFO(waitInfo);
         waitInfo.pSemaphores = &semaphore;
@@ -110,7 +111,8 @@ bool VulkanTimelineSemaphore::isSignaled(uint64 value) const
 void VulkanTimelineSemaphore::resetSignal(uint64 value)
 {
     uint64 currentVal = currentValue();
-    if (value > currentVal && (value - currentVal) < vulkanDevice->maxAllowedTimelineOffset())
+    if (GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get() && value > currentVal
+        && (value - currentVal) < GlobalRenderVariables::MAX_TIMELINE_OFFSET.get())
     {
         SEMAPHORE_SIGNAL_INFO(signalInfo);
         signalInfo.semaphore = semaphore;
@@ -125,8 +127,11 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
 
 uint64 VulkanTimelineSemaphore::currentValue() const
 {
-    uint64 counter;
-    TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkGetSemaphoreCounterValue)(ownerDevice, semaphore, &counter);
+    uint64 counter = 0;
+    if(GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get())
+    {
+        TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkGetSemaphoreCounterValue)(ownerDevice, semaphore, &counter);
+    }
     return counter;
 }
 
@@ -152,6 +157,12 @@ void VulkanTimelineSemaphore::init()
 
 void VulkanTimelineSemaphore::reinitResources()
 {
+    if (!GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get())
+    {
+        Logger::warn("VulkanTimelineSemaphore", "Cannot use timeline semaphore as feature is not supported");
+        semaphore = nullptr;
+        return;
+    }
     fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
     VkSemaphore nextSemaphore;
 

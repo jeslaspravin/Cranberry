@@ -27,6 +27,7 @@ private:
     VkPhysicalDeviceFeatures enabledFeatures;
     VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeatures;
     void markEnabledFeatures();
+    void markGlobalConstants();
     // Physical Device
 
     // Queues
@@ -93,7 +94,6 @@ public:
     [[nodiscard]] bool isValidDevice() const;
 
     // For time line semaphore.
-    uint64 maxAllowedTimelineOffset() const;
     void getMemoryStat(uint64& totalBudget, uint64& usage,uint32 heapIndex);
 
 public:

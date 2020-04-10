@@ -115,6 +115,12 @@
     <Filter Include="Source Files\Core\Types">
       <UniqueIdentifier>{298adeaf-cc90-4ca7-9419-0a0fe1f86f0b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Core\Engine\Config">
+      <UniqueIdentifier>{9daeef9a-c42f-4e17-9458-b1cb2a6c83b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Engine\Config">
+      <UniqueIdentifier>{0307cad9-dd9c-4b99-8176-e60270234690}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -236,6 +242,9 @@
     </ClCompile>
     <ClCompile Include="Core\Types\Colors.cpp">
       <Filter>Source Files\Core\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\GlobalRenderVariables.cpp">
+      <Filter>Source Files\RenderInterface</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -424,6 +433,12 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\CoreGraphicsTypes.h">
       <Filter>Source Files\RenderInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Engine\Config\EngineVariables.h">
+      <Filter>Header Files\Core\Engine\Config</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\GlobalRenderVariables.h">
+      <Filter>Header Files\RenderInterface</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

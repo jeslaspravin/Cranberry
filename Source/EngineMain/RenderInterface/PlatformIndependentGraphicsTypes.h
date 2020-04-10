@@ -21,3 +21,6 @@ typedef GraphicsTypes::GraphicsRWTexelBuffer GraphicsRWTexelBuffer;
 typedef GraphicsTypes::GraphicsRenderTargetResource GraphicsRenderTargetResource;
 typedef GraphicsTypes::GraphicsCubeImageResource GraphicsCubeImageResource;
 typedef GraphicsTypes::GraphicsImageResource GraphicsImageResource;
+
+template <typename Type>
+using GraphicsDeviceConstant = GraphicsTypes::GraphicsDeviceConstant<Type>;
