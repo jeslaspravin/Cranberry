@@ -8,19 +8,22 @@ static_assert(false, "Not supported render API");
 static_assert(false, "No available render API");
 #endif
 
-typedef GraphicsTypes::GraphicInstance GraphicInstance;
-typedef GraphicsTypes::WindowCanvas WindowCanvas;
 
-typedef GraphicsTypes::GraphicsRBuffer GraphicsRBuffer;
-typedef GraphicsTypes::GraphicsWBuffer GraphicsWBuffer;
-typedef GraphicsTypes::GraphicsRWBuffer GraphicsRWBuffer;
-typedef GraphicsTypes::GraphicsRTexelBuffer GraphicsRTexelBuffer;
-typedef GraphicsTypes::GraphicsWTexelBuffer GraphicsWTexelBuffer;
-typedef GraphicsTypes::GraphicsRWTexelBuffer GraphicsRWTexelBuffer;
+using GraphicInstance = GraphicsTypes::GraphicInstance;
+using WindowCanvas = GraphicsTypes::WindowCanvas;
 
-typedef GraphicsTypes::GraphicsRenderTargetResource GraphicsRenderTargetResource;
-typedef GraphicsTypes::GraphicsCubeImageResource GraphicsCubeImageResource;
-typedef GraphicsTypes::GraphicsImageResource GraphicsImageResource;
+using GraphicsRBuffer = GraphicsTypes::GraphicsRBuffer;
+using GraphicsWBuffer = GraphicsTypes::GraphicsWBuffer;
+using GraphicsRWBuffer = GraphicsTypes::GraphicsRWBuffer;
+using GraphicsRTexelBuffer = GraphicsTypes::GraphicsRTexelBuffer;
+using GraphicsWTexelBuffer = GraphicsTypes::GraphicsWTexelBuffer;
+using GraphicsRWTexelBuffer = GraphicsTypes::GraphicsRWTexelBuffer;
+
+using GraphicsRenderTargetResource = GraphicsTypes::GraphicsRenderTargetResource;
+using GraphicsCubeImageResource = GraphicsTypes::GraphicsCubeImageResource;
+using GraphicsImageResource = GraphicsTypes::GraphicsImageResource;
 
 template <typename Type>
 using GraphicsDeviceConstant = GraphicsTypes::GraphicsDeviceConstant<Type>;
+
+using GraphicsShaderResource = GraphicsTypes::GraphicsShaderResource;

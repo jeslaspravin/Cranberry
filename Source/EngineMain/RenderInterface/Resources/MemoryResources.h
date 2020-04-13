@@ -133,7 +133,8 @@ protected:
     bool bIsStagingResource;
 
     MemoryResource(EPixelDataFormat::Type resourceFormat = EPixelDataFormat::Undefined) 
-        : dataFormat(resourceFormat)
+        : BaseType()
+        , dataFormat(resourceFormat)
         , bIsStagingResource(false)
     {}
 

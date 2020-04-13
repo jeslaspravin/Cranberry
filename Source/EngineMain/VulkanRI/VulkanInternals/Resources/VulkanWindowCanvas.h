@@ -11,7 +11,7 @@ struct SwapchainInfo
     VkFormat format;
 };
 
-class VulkanWindowCanvas : public GenericWindowCanvas,public IVulkanResources
+class VulkanWindowCanvas final : public GenericWindowCanvas,public IVulkanResources
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanWindowCanvas,,GenericWindowCanvas,)
 private:

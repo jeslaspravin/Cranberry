@@ -40,11 +40,14 @@ VulkanSampler::VulkanSampler(class VulkanDevice* device, ESamplerTilingMode::Typ
 
 void VulkanSampler::init()
 {
+    BaseType::init();
     reinitResources();
 }
 
 void VulkanSampler::reinitResources()
 {
+    release();
+    BaseType::reinitResources();
     SAMPLER_CREATE_INFO(createInfo);
     createInfo.magFilter = (VkFilter)ESamplerFiltering::getFilterInfo(filtering)->filterTypeValue;
     createInfo.minFilter = VkFilter::VK_FILTER_NEAREST;
@@ -71,7 +74,6 @@ void VulkanSampler::reinitResources()
     if (ownerDevice->vkCreateSampler(VulkanGraphicsHelper::getDevice(ownerDevice), &createInfo, nullptr, &nextSampler)
         == VK_SUCCESS)
     {
-        release();
         sampler = nextSampler;
         ownerDevice->debugGraphics()->markObject(this);
     }
@@ -88,4 +90,5 @@ void VulkanSampler::release()
         ownerDevice->vkDestroySampler(VulkanGraphicsHelper::getDevice(ownerDevice), sampler, nullptr);
         sampler = nullptr;
     }
+    BaseType::release();
 }

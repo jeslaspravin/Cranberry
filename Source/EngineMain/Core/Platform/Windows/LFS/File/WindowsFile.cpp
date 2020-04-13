@@ -28,14 +28,38 @@ WindowsFile::WindowsFile(const WindowsFile& otherFile) : GenericFile()
     directoryPath = otherFile.directoryPath;
 }
 
-void WindowsFile::flush()
+void WindowsFile::operator=(const WindowsFile& otherFile)
+{
+    fileFlags = otherFile.fileFlags;
+    sharingMode = otherFile.sharingMode;
+    attributes = otherFile.attributes;
+    advancedFlags = otherFile.advancedFlags;
+    fileName = otherFile.fileName;
+    fullPath = otherFile.fullPath;
+    directoryPath = otherFile.directoryPath;
+}
+
+void WindowsFile::operator=(WindowsFile&& otherFile)
+{
+    fileHandle = otherFile.fileHandle;
+    otherFile.fileHandle = nullptr;
+    fileFlags = std::move(otherFile.fileFlags);
+    sharingMode = std::move(otherFile.sharingMode);
+    attributes = std::move(otherFile.attributes);
+    advancedFlags = std::move(otherFile.advancedFlags);
+    fileName = std::move(otherFile.fileName);
+    fullPath = std::move(otherFile.fullPath);
+    directoryPath = std::move(otherFile.directoryPath);
+}
+
+void WindowsFile::flush() const 
 {
     if (getFileHandleRaw()) {
         FlushFileBuffers(getFileHandleRaw());
     }
 }
 
-bool WindowsFile::exists()
+bool WindowsFile::exists() const
 {
     if (getFileName().compare(".") == 0 || getFileName().compare("..") == 0)// not valid files or folders
     {
@@ -57,7 +81,7 @@ bool WindowsFile::exists()
     return true;
 }
 
-uint64 WindowsFile::fileSize()
+uint64 WindowsFile::fileSize() const
 {
     UInt64 fSize;
     fSize.quadPart = 0;
@@ -78,7 +102,7 @@ uint64 WindowsFile::fileSize()
     return fSize.quadPart;
 }
 
-uint64 WindowsFile::filePointer()
+uint64 WindowsFile::filePointer() const
 {
     uint64 fPointer = 0;
     LARGE_INTEGER largePointer;
@@ -91,7 +115,7 @@ uint64 WindowsFile::filePointer()
     return fPointer;
 }
 
-void WindowsFile::seekEnd()
+void WindowsFile::seekEnd() const
 {
     if (getFileHandleRaw())
     {
@@ -99,14 +123,14 @@ void WindowsFile::seekEnd()
     }
 }
 
-void WindowsFile::seekBegin()
+void WindowsFile::seekBegin() const
 {
     if (getFileHandleRaw()) {
         SetFilePointer(getFileHandleRaw(), 0, nullptr, FILE_BEGIN);
     }
 }
 
-void WindowsFile::seek(const int64& pointer)
+void WindowsFile::seek(const int64& pointer) const
 {
     if (getFileHandleRaw()) {
         LARGE_INTEGER newPointer;
@@ -116,7 +140,7 @@ void WindowsFile::seek(const int64& pointer)
     }
 }
 
-void WindowsFile::offsetCursor(const int64& offset)
+void WindowsFile::offsetCursor(const int64& offset) const
 {
     if (getFileHandleRaw()) {
         LARGE_INTEGER newOffset;
@@ -126,7 +150,7 @@ void WindowsFile::offsetCursor(const int64& offset)
     }
 }
 
-void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead)
+void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*= (~0u)*/) const
 {
     if (!getFileHandleRaw() && !(fileFlags & EFileFlags::Read)) {
         return;
@@ -154,7 +178,7 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead)
     seek(filePointerCache);
 }
 
-void WindowsFile::write(const std::vector<uint8>& writeBytes)
+void WindowsFile::write(const std::vector<uint8>& writeBytes) const
 {
     if (!getFileHandleRaw() && !(fileFlags & EFileFlags::Write)) {
         return;
@@ -212,7 +236,7 @@ bool WindowsFile::renameFile(String newName)
     return false;
 }
 
-bool WindowsFile::createDirectory()
+bool WindowsFile::createDirectory() const
 {
     WindowsFile hostDirectoryFile = WindowsFile(getHostDirectory());
     if (!hostDirectoryFile.exists()) {
@@ -222,7 +246,7 @@ bool WindowsFile::createDirectory()
     return CreateDirectoryA(getFullPath().getChar(),nullptr);
 }
 
-uint64 WindowsFile::lastWriteTimeStamp()
+uint64 WindowsFile::lastWriteTimeStamp() const
 {
     UInt64 timeStamp;
     timeStamp.quadPart = 0;
@@ -279,7 +303,7 @@ GenericFileHandle* WindowsFile::openOrCreateImpl()
     return fHandle;
 }
 
-GenericFileHandle* WindowsFile::openImpl()
+GenericFileHandle* WindowsFile::openImpl() const
 {
     WindowsFileHandle* fHandle = new WindowsFileHandle(fileFlags, sharingMode, attributes, advancedFlags);
     
@@ -292,19 +316,19 @@ GenericFileHandle* WindowsFile::openImpl()
     return fHandle;
 }
 
-bool WindowsFile::closeImpl()
+bool WindowsFile::closeImpl() const
 {
     WindowsFileHandle* fHandle = static_cast<WindowsFileHandle*>(getFileHandle());
     flush();
     return fHandle->closeFile();
 }
 
-bool WindowsFile::dirDelete()
+bool WindowsFile::dirDelete() const
 {
     return RemoveDirectoryA(getFullPath().getChar());
 }
 
-bool WindowsFile::dirClearAndDelete()
+bool WindowsFile::dirClearAndDelete() const 
 {
     WIN32_FIND_DATAA data;
     HANDLE fHandle = FindFirstFileA(getFullPath().append("\\*").c_str(),&data);

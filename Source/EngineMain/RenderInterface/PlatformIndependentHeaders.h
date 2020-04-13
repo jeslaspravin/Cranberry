@@ -10,6 +10,8 @@
 #include "../VulkanRI/Resources/VulkanBufferResources.h"
 #include "../VulkanRI/Resources/VulkanImageResources.h"
 
+#include "../VulkanRI/Resources/VulkanShaderResources.h"
+
 #include "../VulkanRI/VulkanGraphicsTypes.h"
 #elif RENDERAPI_OPENGL
 static_assert(false, "Not supported render API");
@@ -17,16 +19,21 @@ static_assert(false, "Not supported render API");
 static_assert(false, "No available render API");
 #endif
 
-typedef GraphicsTypes::GraphicInstance GraphicInstance;
-typedef GraphicsTypes::WindowCanvas WindowCanvas;
+using GraphicInstance = GraphicsTypes::GraphicInstance;
+using WindowCanvas = GraphicsTypes::WindowCanvas;
 
-typedef GraphicsTypes::GraphicsRBuffer GraphicsRBuffer;
-typedef GraphicsTypes::GraphicsWBuffer GraphicsWBuffer;
-typedef GraphicsTypes::GraphicsRWBuffer GraphicsRWBuffer;
-typedef GraphicsTypes::GraphicsRTexelBuffer GraphicsRTexelBuffer;
-typedef GraphicsTypes::GraphicsWTexelBuffer GraphicsWTexelBuffer;
-typedef GraphicsTypes::GraphicsRWTexelBuffer GraphicsRWTexelBuffer;
+using GraphicsRBuffer = GraphicsTypes::GraphicsRBuffer;
+using GraphicsWBuffer = GraphicsTypes::GraphicsWBuffer;
+using GraphicsRWBuffer = GraphicsTypes::GraphicsRWBuffer;
+using GraphicsRTexelBuffer = GraphicsTypes::GraphicsRTexelBuffer;
+using GraphicsWTexelBuffer = GraphicsTypes::GraphicsWTexelBuffer;
+using GraphicsRWTexelBuffer = GraphicsTypes::GraphicsRWTexelBuffer;
 
-typedef GraphicsTypes::GraphicsRenderTargetResource GraphicsRenderTargetResource;
-typedef GraphicsTypes::GraphicsCubeImageResource GraphicsCubeImageResource;
-typedef GraphicsTypes::GraphicsImageResource GraphicsImageResource;
+using GraphicsRenderTargetResource = GraphicsTypes::GraphicsRenderTargetResource;
+using GraphicsCubeImageResource = GraphicsTypes::GraphicsCubeImageResource;
+using GraphicsImageResource = GraphicsTypes::GraphicsImageResource;
+
+template <typename Type>
+using GraphicsDeviceConstant = GraphicsTypes::GraphicsDeviceConstant<Type>;
+
+using GraphicsShaderResource = GraphicsTypes::GraphicsShaderResource;

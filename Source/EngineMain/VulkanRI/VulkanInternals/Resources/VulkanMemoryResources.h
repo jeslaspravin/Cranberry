@@ -48,7 +48,7 @@ public:
 
 class VulkanImageResource : public ImageResource, public IVulkanMemoryResources
 {
-    DECLARE_VK_GRAPHICS_RESOURCE(VulkanImageResource, , BufferResource, )
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanImageResource, , ImageResource, )
 
 protected:
 

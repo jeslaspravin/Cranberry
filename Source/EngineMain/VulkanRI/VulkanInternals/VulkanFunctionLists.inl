@@ -113,6 +113,9 @@ DEVICE_VK_FUNCTIONS(vkDestroyRenderPass)
 DEVICE_VK_FUNCTIONS(vkCreateFramebuffer)
 DEVICE_VK_FUNCTIONS(vkDestroyFramebuffer)
 
+DEVICE_VK_FUNCTIONS(vkCreateShaderModule)
+DEVICE_VK_FUNCTIONS(vkDestroyShaderModule)
+
 /* CommandPool Functions */
 DEVICE_VK_FUNCTIONS(vkCreateCommandPool)
 DEVICE_VK_FUNCTIONS(vkDestroyCommandPool)

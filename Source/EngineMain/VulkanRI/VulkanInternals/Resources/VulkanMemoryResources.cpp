@@ -12,11 +12,14 @@ DEFINE_VK_GRAPHICS_RESOURCE(VulkanBufferResource, VK_OBJECT_TYPE_BUFFER)
 
 void VulkanBufferResource::init()
 {
+    BaseType::init();
     reinitResources();
 }
 
 void VulkanBufferResource::reinitResources()
 {
+    release();
+    BaseType::reinitResources();
     if (getResourceSize() == 0)
     {
         Logger::error("VulkanBufferResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
@@ -34,7 +37,6 @@ void VulkanBufferResource::reinitResources()
 
     if (nextBuffer)
     {
-        release();
         buffer = nextBuffer;
         graphicsDebugger->markObject(this);
         fatalAssert(VulkanGraphicsHelper::allocateBufferResource(graphicsInstance, this, isStagingResource()),
@@ -60,6 +62,7 @@ void VulkanBufferResource::release()
         VulkanGraphicsHelper::destroyBuffer(graphicsInstance, buffer);
         buffer = nullptr;
     }
+    BaseType::release();
 }
 
 String VulkanBufferResource::getObjectName() const
@@ -162,11 +165,14 @@ VulkanImageResource::VulkanImageResource()
 
 void VulkanImageResource::init()
 {
+    BaseType::init();
     reinitResources();
 }
 
 void VulkanImageResource::reinitResources()
 {
+    release();
+    BaseType::reinitResources();
     VkImageUsageFlags imageUsage = defaultImageUsage;
     VkFormatFeatureFlags featuresRequired = defaultFeaturesRequired;
     
@@ -257,7 +263,6 @@ void VulkanImageResource::reinitResources()
 
     if (nextImage)
     {
-        release();
         image = nextImage;
         graphicsDebugger->markObject(this);
         fatalAssert(VulkanGraphicsHelper::allocateImageResource(graphicsInstance, this, isStagingResource()),
@@ -283,6 +288,7 @@ void VulkanImageResource::release()
         VulkanGraphicsHelper::destroyImage(graphicsInstance, image);
         image = nullptr;
     }
+    BaseType::release();
 }
 
 uint64 VulkanImageResource::getResourceSize() const

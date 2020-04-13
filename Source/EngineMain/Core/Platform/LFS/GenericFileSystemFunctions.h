@@ -16,6 +16,12 @@ public:
         return FileSystemType::applicationDirectory(appName);
     }
 
+    template <typename... Paths>
+    static String combinePath(Paths... paths)
+    {
+        return FileSystemType::combinePath(paths...);
+    }
+
     static bool moveFile(GenericFile* moveFrom, GenericFile* moveTo) {
         return FileSystemType::moveFile(moveFrom, moveTo);
     }

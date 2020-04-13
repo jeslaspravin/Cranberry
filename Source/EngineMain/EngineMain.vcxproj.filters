@@ -246,6 +246,12 @@
     <ClCompile Include="RenderInterface\GlobalRenderVariables.cpp">
       <Filter>Source Files\RenderInterface</Filter>
     </ClCompile>
+    <ClCompile Include="RenderInterface\Resources\ShaderResources.cpp">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\Resources\VulkanShaderResources.cpp">
+      <Filter>Source Files\VulkanRI\Resources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -439,6 +445,12 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\GlobalRenderVariables.h">
       <Filter>Header Files\RenderInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\ShaderResources.h">
+      <Filter>Header Files\RenderInterface\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\Resources\VulkanShaderResources.h">
+      <Filter>Source Files\VulkanRI\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
