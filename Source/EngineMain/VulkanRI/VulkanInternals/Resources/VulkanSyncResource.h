@@ -10,7 +10,7 @@
 
 class VulkanDevice;
 
-class VulkanSemaphore : public GraphicsSemaphore,public IVulkanResources
+class VulkanSemaphore final : public GraphicsSemaphore,public IVulkanResources
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanSemaphore,,GraphicsSemaphore,)
 
@@ -40,7 +40,7 @@ public:
     /* End - IVulkanResources implementations */
 };
 
-class VulkanTimelineSemaphore : public GraphicsTimelineSemaphore, public IVulkanResources
+class VulkanTimelineSemaphore final : public GraphicsTimelineSemaphore, public IVulkanResources
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanTimelineSemaphore, , GraphicsTimelineSemaphore, )
 
@@ -72,7 +72,7 @@ public:
     /* End - IVulkanResources implementations */
 };
 
-class VulkanFence : public GraphicsFence, public IVulkanResources
+class VulkanFence final : public GraphicsFence, public IVulkanResources
 {
 
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanFence, , GraphicsFence, )

@@ -16,9 +16,6 @@ class GenericWindowCanvas : public GraphicsResource
 protected:
     GenericAppWindow* ownerWindow = nullptr;
 public:
-    virtual void init() override;
-    virtual void reinitResources() override {}
-    virtual void release() override;
     String getResourceName() const override;
 
     // Setup function must be use before calling init

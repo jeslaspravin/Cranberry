@@ -3,7 +3,7 @@
 #include "../../PlatformFunctions.h"
 #include "../../../Logger/Logger.h"
 
-void* GenericFile::getFileHandleRaw()
+void* GenericFile::getFileHandleRaw() const
 {
     return fileHandle?fileHandle->getFileHandle():nullptr;
 }
@@ -42,7 +42,10 @@ GenericFile::GenericFile():
 GenericFile::GenericFile(const String& path) :
     fileHandle(nullptr)
 {
-    setPaths(path);
+    if(path.length() > 0)
+    {
+        setPaths(path);
+    }
 }
 
 GenericFile::~GenericFile()
@@ -81,27 +84,27 @@ bool GenericFile::closeFile()
     return false;
 }
 
-bool GenericFile::isDirectory()
+bool GenericFile::isDirectory() const
 {
     return fileName.empty();
 }
 
-bool GenericFile::isFile()
+bool GenericFile::isFile() const
 {
     return !isDirectory();
 }
 
-String GenericFile::getFileName()
+String GenericFile::getFileName() const
 {
     return fileName;
 }
 
-String GenericFile::getHostDirectory()
+String GenericFile::getHostDirectory() const
 {
     return directoryPath;
 }
 
-String GenericFile::getFullPath()
+String GenericFile::getFullPath() const
 {
     return fullPath;
 }

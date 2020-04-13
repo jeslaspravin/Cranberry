@@ -3,9 +3,11 @@
 class IGraphicsInstance;
 
 class RenderApi {
-    
+private:
     IGraphicsInstance* graphicsInstance;
 
+    void initAllShaders();
+    void releaseAllShaders();
 public:
 
     void initialize();

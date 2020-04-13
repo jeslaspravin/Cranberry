@@ -13,6 +13,7 @@ DEFINE_VK_GRAPHICS_RESOURCE(VulkanWindowCanvas, VK_OBJECT_TYPE_SURFACE_KHR)
 
 void VulkanWindowCanvas::init()
 {
+    BaseType::init();
     if (!ownerWindow || !ownerWindow->isValidWindow() || !gEngine)
     {
         Logger::error("VkSurfaceKHR", "%s() : Cannot initialize Vulkan windows canvas without valid windows", __func__);
@@ -28,8 +29,58 @@ void VulkanWindowCanvas::init()
     reinitResources();
 }
 
+void VulkanWindowCanvas::reinitResources()
+{
+    BaseType::reinitResources();
+    VkSwapchainKHR nextSwapchain = VulkanGraphicsHelper::createSwapchain(gEngine->getRenderApi()->getGraphicsInstance(),
+        ownerWindow, &swapchainInfo);
+    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
+
+    if (!nextSwapchain || nextSwapchain == VK_NULL_HANDLE)
+    {
+        Logger::error("VulkanWindowCanvas", "%s() : failed creating swap chain for surface", __func__);
+        return;
+    }
+    const String& windowName = ownerWindow->getWindowName();
+
+    VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)surfacePtr,
+        windowName + "Surface", VK_OBJECT_TYPE_SURFACE_KHR);
+
+    if (swapchainPtr && swapchainPtr != VK_NULL_HANDLE)
+    {
+        VulkanGraphicsHelper::destroySwapchain(gInstance, swapchainPtr);
+
+        for (int32 i = 0; i < swapchainImages.size(); ++i)
+        {
+            semaphores[i]->release();
+            fences[i]->release();
+        }
+    }
+    swapchainPtr = nextSwapchain;
+    VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)swapchainPtr,
+        windowName + "Swapchain", VK_OBJECT_TYPE_SWAPCHAIN_KHR);
+    VulkanGraphicsHelper::fillSwapchainImages(gInstance, swapchainPtr, &swapchainImages, &swapchainImageViews);
+    if (swapchainImages.size() > 0)
+    {
+        semaphores.resize(swapchainImages.size());
+        fences.resize(swapchainImages.size());
+        for (int32 i = 0; i < swapchainImages.size(); ++i)
+        {
+            String indexString = std::to_string(i);
+            semaphores[i] = GraphicsHelper::createSemaphore(gInstance, (windowName + "Semaphore" + indexString).c_str());
+            fences[i] = GraphicsHelper::createFence(gInstance, (windowName + "Fence" + indexString).c_str());
+
+            VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)swapchainImages[i],
+                (windowName + "Image" + indexString), VK_OBJECT_TYPE_IMAGE);
+            VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)swapchainImageViews[i],
+                (windowName + "ImageView" + indexString), VK_OBJECT_TYPE_IMAGE_VIEW);
+        }
+    }
+}
+
 void VulkanWindowCanvas::release()
 {
+    BaseType::release();
     IGraphicsInstance* graphicsInst = gEngine->getRenderApi()->getGraphicsInstance();
     for (int32 i = 0; i < swapchainImages.size(); ++i)
     {
@@ -108,52 +159,4 @@ VkImageView VulkanWindowCanvas::swapchainImageView(uint32 index) const
 String VulkanWindowCanvas::getObjectName() const
 {
     return getResourceName();
-}
-
-void VulkanWindowCanvas::reinitResources()
-{
-    VkSwapchainKHR nextSwapchain = VulkanGraphicsHelper::createSwapchain(gEngine->getRenderApi()->getGraphicsInstance(),
-        ownerWindow, &swapchainInfo);
-    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
-
-    if (!nextSwapchain || nextSwapchain == VK_NULL_HANDLE)
-    {
-        Logger::error("VulkanWindowCanvas", "%s() : failed creating swap chain for surface", __func__);
-        return;
-    }
-    const String& windowName = ownerWindow->getWindowName();
-
-    VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)surfacePtr,
-        windowName+"Surface", VK_OBJECT_TYPE_SURFACE_KHR);
-
-    if (swapchainPtr && swapchainPtr != VK_NULL_HANDLE)
-    {
-        VulkanGraphicsHelper::destroySwapchain(gInstance, swapchainPtr);
-        
-        for (int32 i = 0; i < swapchainImages.size(); ++i)
-        {
-            semaphores[i]->release();
-            fences[i]->release();
-        }
-    }
-    swapchainPtr = nextSwapchain;
-    VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)swapchainPtr,
-        windowName+"Swapchain", VK_OBJECT_TYPE_SWAPCHAIN_KHR);
-    VulkanGraphicsHelper::fillSwapchainImages(gInstance, swapchainPtr, &swapchainImages, &swapchainImageViews);
-    if (swapchainImages.size() > 0)
-    {
-        semaphores.resize(swapchainImages.size());
-        fences.resize(swapchainImages.size());
-        for (int32 i = 0; i < swapchainImages.size(); ++i)
-        {
-            String indexString = std::to_string(i);
-            semaphores[i] = GraphicsHelper::createSemaphore(gInstance,(windowName + "Semaphore" + indexString).c_str());
-            fences[i] = GraphicsHelper::createFence(gInstance,(windowName + "Fence" + indexString).c_str());
-
-            VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)swapchainImages[i],
-                (windowName + "Image" + indexString), VK_OBJECT_TYPE_IMAGE);
-            VulkanGraphicsHelper::debugGraphics(gInstance)->markObject((uint64)swapchainImageViews[i],
-                (windowName + "ImageView" + indexString), VK_OBJECT_TYPE_IMAGE_VIEW);
-        }
-    }
 }

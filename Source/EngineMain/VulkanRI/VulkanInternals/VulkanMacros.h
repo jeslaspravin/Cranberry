@@ -250,6 +250,14 @@ VariableName.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;  \
 VariableName.pNext = nullptr
 #endif
 
+#ifndef SHADER_MODULE_CREATE_INFO
+#define SHADER_MODULE_CREATE_INFO(VariableName)                     \
+VkShaderModuleCreateInfo VariableName;                              \
+VariableName.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;   \
+VariableName.pNext = nullptr;                                       \
+VariableName.flags = 0
+#endif
+
 #ifndef CREATE_SEMAPHORE_INFO
 #define CREATE_SEMAPHORE_INFO(VariableName)                     \
 VkSemaphoreCreateInfo  VariableName;                            \

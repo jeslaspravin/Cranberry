@@ -29,18 +29,20 @@ void VulkanSemaphore::resetSignal()
 
 void VulkanSemaphore::init()
 {
+    BaseType::init();
     reinitResources();
 }
 
 void VulkanSemaphore::reinitResources()
 {
+    release();
+    BaseType::reinitResources();
     fatalAssert(ownerDevice && vulkanDevice,"Required devices cannot be null");
     VkSemaphore nextSemaphore;
 
     CREATE_SEMAPHORE_INFO(semaphoreCreateInfo);
     if (vulkanDevice->vkCreateSemaphore(ownerDevice, &semaphoreCreateInfo, nullptr, &nextSemaphore) == VK_SUCCESS)
     {
-        release();
         semaphore = nextSemaphore;
         vulkanDevice->debugGraphics()->markObject(this);
     }
@@ -57,6 +59,7 @@ void VulkanSemaphore::release()
     {
         vulkanDevice->vkDestroySemaphore(ownerDevice, semaphore, nullptr);
     }
+    BaseType::release();
 }
 
 String VulkanSemaphore::getObjectName() const
@@ -152,11 +155,14 @@ uint64 VulkanTimelineSemaphore::getDispatchableHandle() const
 
 void VulkanTimelineSemaphore::init()
 {
+    BaseType::init();
     reinitResources();
 }
 
 void VulkanTimelineSemaphore::reinitResources()
 {
+    release();
+    BaseType::reinitResources();
     if (!GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get())
     {
         Logger::warn("VulkanTimelineSemaphore", "Cannot use timeline semaphore as feature is not supported");
@@ -172,7 +178,6 @@ void VulkanTimelineSemaphore::reinitResources()
 
     if (vulkanDevice->vkCreateSemaphore(ownerDevice, &semaphoreCreateInfo, nullptr, &nextSemaphore) == VK_SUCCESS)
     {
-        release();
         semaphore = nextSemaphore;
         vulkanDevice->debugGraphics()->markObject(this);
     }
@@ -189,6 +194,7 @@ void VulkanTimelineSemaphore::release()
     {
         vulkanDevice->vkDestroySemaphore(ownerDevice, semaphore, nullptr);
     }
+    BaseType::release();
 }
 
 #undef TIMIELINE_SEMAPHORE_FUNCTIONS
@@ -224,18 +230,20 @@ void VulkanFence::resetSignal()
 
 void VulkanFence::init()
 {
+    BaseType::init();
     reinitResources();
 }
 
 void VulkanFence::reinitResources()
 {
+    release();
+    BaseType::reinitResources();
     fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
     VkFence nextFence;
 
     CREATE_FENCE_INFO(fenceCreateInfo);
     if (vulkanDevice->vkCreateFence(ownerDevice, &fenceCreateInfo, nullptr, &nextFence) == VK_SUCCESS)
     {
-        release();
         fence = nextFence;
         vulkanDevice->debugGraphics()->markObject(this);
     }
@@ -253,6 +261,7 @@ void VulkanFence::release()
         vulkanDevice->vkDestroyFence(ownerDevice, fence, nullptr);
         fence = nullptr;
     }
+    BaseType::release();
 }
 
 String VulkanFence::getObjectName() const

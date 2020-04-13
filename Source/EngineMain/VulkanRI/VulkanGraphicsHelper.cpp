@@ -522,3 +522,28 @@ SharedPtr<class SamplerInterface> VulkanGraphicsHelper::createSampler(class IGra
 
     return SharedPtr<SamplerInterface>(sampler);
 }
+
+VkShaderModule VulkanGraphicsHelper::createShaderModule(class IGraphicsInstance* graphicsInstance, uint8* code, uint32 size)
+{
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    SHADER_MODULE_CREATE_INFO(createInfo);
+    createInfo.codeSize = size;
+    createInfo.pCode = reinterpret_cast<uint32*>(code);
+
+    VkShaderModule shaderModule;
+    if (device->vkCreateShaderModule(device->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
+    {
+        Logger::error("VulkanGraphicsHelper", "%s() : failure in creating shader module[Shader size : %d]", __func__, size);
+        shaderModule = nullptr;
+    }
+    return shaderModule;
+}
+
+void VulkanGraphicsHelper::destroyShaderModule(class IGraphicsInstance* graphicsInstance, VkShaderModule shaderModule)
+{
+    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    device->vkDestroyShaderModule(device->logicalDevice, shaderModule, nullptr);
+}

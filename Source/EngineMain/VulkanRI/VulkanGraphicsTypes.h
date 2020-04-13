@@ -21,6 +21,8 @@ namespace GraphicsTypes {
 
     template <typename Type>
     using GraphicsDeviceConstant = EngineConstant<Type, class VulkanDevice>;
+
+    typedef class VulkanShaderResource GraphicsShaderResource;
 }
 
 #endif

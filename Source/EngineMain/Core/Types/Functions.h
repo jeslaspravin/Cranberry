@@ -2,59 +2,75 @@
 
 #include <functional>
 
-//WARNING : nothing is test in this file 
-template <typename ReturnType, typename ...Parameters>
+template <typename ReturnType, typename... Parameters>
 struct Function {
 
-protected:
     typedef ReturnType(*StaticDelegate)(Parameters...);
 
-    StaticDelegate delegate;
-
-public:
+    StaticDelegate staticDelegate = nullptr;
 
     virtual void operator=(void* functionPointer)
     {
-        delegate = static_cast<StaticDelegate>(functionPointer);
+        staticDelegate = static_cast<StaticDelegate>(functionPointer);
     }
 
-    virtual ReturnType operator()(Parameters ...params)
+    virtual ReturnType operator()(Parameters... params)
     {
-        return (*delegate)(std::forward<Parameters>(params)...);
+        return (*staticDelegate)(std::forward<Parameters>(params)...);
+    }
+
+    operator bool()
+    {
+        return staticDelegate != nullptr;
     }
 };
 
-template <typename ClassType,typename ReturnType, typename ...Parameters>
+template <typename ClassType,typename ReturnType, typename... Parameters>
 struct ClassFunction {
-    typedef ReturnType(ClassType::* ClassDelegate)(Parameters...);
+    typedef ReturnType (ClassType::*ClassDelegate)(Parameters...);
 
-    ClassDelegate delegate;
+    ClassDelegate classDelegate = nullptr;
 
-    void operator=(void* functionPointer)
+    void operator=(const ClassDelegate& functionPointer)
     {
-        delegate = static_cast<ClassDelegate>(functionPointer);
+        classDelegate = functionPointer;
     }
 
-    ReturnType operator()(void* object,Parameters ...params)
+    ReturnType operator()(ClassType* object,Parameters... params)
     {
-        return static_cast<ClassType*>(object)->(*delegate)(std::forward<Parameters>(params)...);
+        return (object->*classDelegate)(std::forward<Parameters>(params)...);
+    }
+
+    ReturnType operator()(ClassType& object, Parameters... params)
+    {
+        return (object.*classDelegate)(std::forward<Parameters>(params)...);
+    }
+
+    operator bool()
+    {
+        return classDelegate != nullptr;
     }
 };
 
-template <typename ReturnType, typename ...Parameters>
+template <typename ReturnType, typename... Parameters>
 struct LambdaFunction {
 
     typedef std::function<ReturnType(Parameters...)> LambdaDelegate;
 
-    LambdaDelegate delegate;
+    LambdaDelegate lambdaDelegate = nullptr;
 
     void operator=(void* functionPointer)
     {
-        delegate = static_cast<LambdaDelegate>(functionPointer);
+        lambdaDelegate = static_cast<LambdaDelegate>(functionPointer);
     }
 
-    ReturnType operator()(Parameters ...params)
+    ReturnType operator()(Parameters... params)
     {
-        return (*delegate)(std::forward<Parameters>(params)...);
+        return (*lambdaDelegate)(std::forward<Parameters>(params)...);
+    }
+
+    operator bool()
+    {
+        return lambdaDelegate != nullptr;
     }
 };
