@@ -27,7 +27,7 @@ struct QueueBasePointer
 };
 
 template<EQueueFunction QueueType>
-class VulkanQueueResource : public QueueResourceBase,public IVulkanResources {
+class VulkanQueueResource final : public QueueResourceBase,public IVulkanResources {
         
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanQueueResource, <QueueType>, QueueResourceBase,)
 private:

@@ -39,3 +39,20 @@ struct std::hash<String> {
         return stringHash(keyval);
     }
 };
+
+template<typename T>
+struct IsStringUnqualified : std::false_type {};
+template<>
+struct IsStringUnqualified<String> : std::true_type {};
+template<>
+struct IsStringUnqualified<std::string> : std::true_type {};
+template<>
+struct IsStringUnqualified<AChar*> : std::true_type {};
+template<>
+struct IsStringUnqualified<const AChar*> : std::true_type {};
+
+template<typename T>
+struct IsString : IsStringUnqualified<typename std::remove_cv<typename std::remove_reference<T>::type>::type> {};
+
+template <typename... T>
+struct IsStringTypes : std::conjunction<IsString<T>...>{};

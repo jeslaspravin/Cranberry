@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include "../../../String/String.h"
+
 #include <memory>
 
 class GenericFileHandle;
@@ -22,15 +22,15 @@ protected:
 
 protected:
 
-    void* getFileHandleRaw();
-    GenericFileHandle* getFileHandle() { return fileHandle; }
+    void* getFileHandleRaw() const;
+    GenericFileHandle* getFileHandle() const { return fileHandle; }
 
     virtual GenericFileHandle* openOrCreateImpl()=0;
-    virtual GenericFileHandle* openImpl() = 0;
+    virtual GenericFileHandle* openImpl()  const = 0;
     // Must flush if necessary
-    virtual bool closeImpl() = 0;
-    virtual bool dirDelete() = 0;
-    virtual bool dirClearAndDelete() = 0;
+    virtual bool closeImpl() const = 0;
+    virtual bool dirDelete() const = 0;
+    virtual bool dirClearAndDelete() const = 0;
 
     void setPaths(const String& fPath);
 
@@ -46,20 +46,25 @@ public:
     // Closes the file if it exists 
     bool closeFile();
 
-    virtual void flush() = 0;
-    virtual bool exists() = 0;
+    virtual void flush() const = 0;
+    virtual bool exists() const = 0;
 
-    bool isDirectory();
-    bool isFile();
+    bool isDirectory() const;
+    bool isFile() const;
 
-    String getFileName();
-    String getHostDirectory();
-    String getFullPath();
+    String getFileName() const;
+    String getHostDirectory() const;
+    String getFullPath() const;
 
+    // Direct OS specific flags maps directly to OS bits
     void setAdvancedFlags(const uint64& flags) { advancedFlags = flags; }
+    // Sharing mode for other handles
     void setSharingMode(const uint8& sharingFlags) { sharingMode = sharingFlags; }
+    // How to open the file (Read or write or both)
     void setFileFlags(const uint8& flags);
+    // File specific attribute(Encodings and such)
     void setAttributes(const uint32& attribs) { attributes = attribs; }
+    // File on open or creation actions
     void setCreationAction(const uint8& creationAction);
 
     void addAdvancedFlags(const uint64& flags);
@@ -74,39 +79,37 @@ public:
     void addAttributes(const uint32& attribs);
     void removeAttributes(const uint32& attribs);
 
-    virtual uint64 lastWriteTimeStamp() = 0;
-    virtual uint64 fileSize() = 0;
-    virtual uint64 filePointer() = 0;
-    virtual void seekEnd() = 0;
-    virtual void seekBegin() = 0;
-    virtual void seek(const int64& pointer) = 0;
-    virtual void offsetCursor(const int64& offset) = 0;
+    virtual uint64 lastWriteTimeStamp() const = 0;
+    virtual uint64 fileSize() const = 0;
+    virtual uint64 filePointer() const = 0;
+    virtual void seekEnd() const = 0;
+    virtual void seekBegin() const = 0;
+    virtual void seek(const int64& pointer) const = 0;
+    virtual void offsetCursor(const int64& offset) const = 0;
 
-    virtual void read(std::vector<uint8>& readTo, const uint32& bytesToRead) = 0;
-    virtual void write(const std::vector<uint8>& writeBytes) = 0;
+    virtual void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const = 0;
+    virtual void write(const std::vector<uint8>& writeBytes) const = 0;
 
     virtual bool deleteFile() = 0;
     virtual bool renameFile(String newName) = 0;
 
     // Works only if directory
     template <bool ClearFiles>
-    bool deleteDirectory();
+    bool deleteDirectory() const;
 
     template <>
-    bool deleteDirectory<true>()
+    bool deleteDirectory<true>() const
     {
         return dirClearAndDelete();
     }
 
     template <>
-    bool deleteDirectory<false>()
+    bool deleteDirectory<false>() const
     {
         return dirDelete();
     }
 
-    virtual bool createDirectory()=0;
-
-
+    virtual bool createDirectory() const =0;
 };
 
 namespace std {

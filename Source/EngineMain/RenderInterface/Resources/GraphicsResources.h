@@ -1,69 +1,82 @@
 #pragma once
 #include "../../Core/Memory/SmartPointers.h"
 
+#include <forward_list>
+#include <vector>
+
 class GraphicsResource;
+class GraphicsResourceType;
 class String;
+
+/* This graph is not yet thread safe */
+class ResourceTypesGraph
+{
+public:
+    struct TypeNode
+    {
+        const GraphicsResourceType* type;
+        std::vector<TypeNode> childs;
+
+        bool isLeaf()
+        {
+            return childs.size() == 0;
+        }
+    };
+private:
+    TypeNode root;
+    std::vector<const GraphicsResourceType*> insertWaitQueue;
+    void insertType(const GraphicsResourceType* type, TypeNode* fromNode = nullptr);
+    void graphAllChilds(TypeNode* fromNode, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively) const;
+public:
+    // Insert happens only when quering for some resource
+    void lazyInsert(const GraphicsResourceType* type);
+    void findChildsOf(const GraphicsResourceType* type, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively = false);
+};
 
 class GraphicsResourceType {
 public:
     typedef void(*DeleteFn)(GraphicsResource*);
 private:
-    GraphicsResource* resource = nullptr;
 
-    
+    GraphicsResource* defaultResource = nullptr;
+
+    using GraphicsResourceList = std::forward_list<GraphicsResource*>;
+    GraphicsResourceList registeredResources;
+
     DeleteFn deleteResource;
+    ResourceTypesGraph& getTypeGraph() const;
+protected:
+    virtual bool verifyParent(const GraphicsResourceType* otherType) const = 0;
+
+    GraphicsResourceType(GraphicsResource* resource, DeleteFn deleteFunc);
+    virtual ~GraphicsResourceType();
 
 public:
 
-    GraphicsResourceType() {
-        resource = nullptr;
-        deleteResource = nullptr;
-    }
+    GraphicsResourceType(const GraphicsResourceType& other) = delete;
+    GraphicsResourceType() = delete;
+    void operator=(const GraphicsResourceType&) = delete;
+    void operator=(GraphicsResourceType&&) = delete;
 
-    GraphicsResourceType(GraphicsResource* resource, DeleteFn deleteFunc)
-    {
-        resource = resource;
-        deleteResource = deleteFunc;
-    }
+    bool operator==(const GraphicsResourceType& otherType) const { return defaultResource == otherType.defaultResource; }
+    bool operator!=(const GraphicsResourceType& otherType) const { return defaultResource != otherType.defaultResource; }
 
-    GraphicsResourceType(const GraphicsResourceType& other)
-    {
-        resource = other.resource;
-        deleteResource = other.deleteResource;
-    }
+    void registerResource(GraphicsResource* resource);
+    void unregisterResource(GraphicsResource* resource);
 
-    virtual ~GraphicsResourceType()
-    {
-        if (resource)
-        {
-            (*deleteResource)(resource);
-        }
-    }
+    GraphicsResource* getDefault() const { return defaultResource; }
+    // Returns all registered resources of this type only, no parent type resources are returned
+    void allRegisteredResources(std::vector<GraphicsResource*>& outResources) const;
+    void allChildDefaultResources(std::vector<GraphicsResource*>& outResources, bool bRecursively = false) const;
 
-    bool operator==(const GraphicsResourceType& otherType) const
-    {
-        return resource == otherType.resource;
-    }
-
-    bool operator==(const GraphicsResourceType* otherType) const
-    {
-        return resource == otherType->resource;
-    }
-
-    bool isChildOf(const GraphicsResourceType* otherType) const
-    {
-        return this == otherType || verifyParent(otherType);
-    }
+    bool isChildOf(const GraphicsResourceType* otherType) const;
+    virtual const GraphicsResourceType* getParent() const = 0;
+    virtual bool isRootType() const = 0;
 
     template<typename CheckType>
     constexpr bool isChildOf() const
     {
         return this == CheckType::staticType() || verifyParent(CheckType::staticType());
-    }
-
-    virtual bool verifyParent(const GraphicsResourceType* otherType) const
-    {
-        return false;
     }
 };
 
@@ -71,31 +84,39 @@ template<typename Parent,typename Child>
 class GraphicsResourceTypeSpecialized final : public GraphicsResourceType
 {
 protected:
-    typedef typename Child ThisType;
-    typedef typename Parent ParentType;
-
+    using ThisType = typename Child;
+    using ParentType = typename Parent;
 
     constexpr bool verifyParent(const GraphicsResourceType* otherType) const
     {
-        return ThisType::staticType() != ParentType::staticType() && ParentType::staticType()->isChildOf(otherType);
+        return !isRootType() && ParentType::staticType()->isChildOf(otherType);
     }
+
 public:
 
     GraphicsResourceTypeSpecialized(GraphicsResource* resource, GraphicsResourceType::DeleteFn deleteFunc):GraphicsResourceType(resource,deleteFunc)
     {}
 
-    GraphicsResourceTypeSpecialized(const GraphicsResourceTypeSpecialized& other) :GraphicsResourceType(other)
-    {}
+    const GraphicsResourceType* getParent() const override
+    {
+        return isRootType() ? nullptr : ParentType::staticType();
+    }
+
+    bool isRootType() const override
+    {
+        return ThisType::staticType() == ParentType::staticType();
+    }
 };
 
 #ifndef DECLARE_GRAPHICS_RESOURCE
 #define DECLARE_GRAPHICS_RESOURCE(NewTypeName,NewTypeTemplates,BaseTypeName,BaseTypeTemplates)\
 private: \
-    typedef NewTypeName##NewTypeTemplates NewType; \
-    typedef BaseTypeName##BaseTypeTemplates BaseType; \
+    using NewType = NewTypeName##NewTypeTemplates; \
+    using BaseType = BaseTypeName##BaseTypeTemplates; \
 protected:\
-    typedef GraphicsResourceTypeSpecialized<typename BaseType,typename NewType> NewTypeName##_Type;\
-    static SharedPtr<typename NewTypeName##_Type> STATIC_TYPE;\
+    using NewTypeName##_Type = GraphicsResourceTypeSpecialized<typename BaseType,typename NewType>;\
+    static UniquePtr<typename NewTypeName##_Type> STATIC_TYPE;\
+    virtual GraphicsResourceType* privateType() const;\
 public:\
     virtual const GraphicsResourceType* getType() const;\
     static const GraphicsResourceType* staticType();\
@@ -136,21 +157,22 @@ public:\
 
 #ifndef DEFINE_GRAPHICS_RESOURCE
 #define DEFINE_GRAPHICS_RESOURCE(NewTypeName)\
-    SharedPtr<NewTypeName::##NewTypeName##_Type> NewTypeName::STATIC_TYPE=SharedPtr<NewTypeName::##NewTypeName##_Type>(new NewTypeName::##NewTypeName##_Type(new NewTypeName(), &NewTypeName::delFn));\
+    UniquePtr<NewTypeName::##NewTypeName##_Type> NewTypeName::STATIC_TYPE=UniquePtr<NewTypeName::##NewTypeName##_Type>(new NewTypeName::##NewTypeName##_Type(new NewTypeName(), &NewTypeName::delFn));\
     \
     void NewTypeName::delFn(GraphicsResource* resource) \
     { \
         delete resource; \
     } \
-    const GraphicsResourceType* NewTypeName::getType() const { return STATIC_TYPE.get();}\
-    const GraphicsResourceType* NewTypeName::staticType() { return STATIC_TYPE.get();}
+    GraphicsResourceType* NewTypeName::privateType() const { return NewTypeName::STATIC_TYPE.get(); }\
+    const GraphicsResourceType* NewTypeName::getType() const { return NewTypeName::STATIC_TYPE.get();}\
+    const GraphicsResourceType* NewTypeName::staticType() { return NewTypeName::STATIC_TYPE.get();}
 #endif
 
 #ifndef DEFINE_TEMPLATED_GRAPHICS_RESOURCE
 #define DEFINE_TEMPLATED_GRAPHICS_RESOURCE(NewTypeName,NewTypeTemplates,TemplatesDefine)\
     template ##NewTypeTemplates## \
-    SharedPtr<typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type> NewTypeName##TemplatesDefine## \
-        ::STATIC_TYPE=SharedPtr<typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type>( \
+    UniquePtr<typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type> NewTypeName##TemplatesDefine## \
+        ::STATIC_TYPE=UniquePtr<typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type>( \
         new typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type(new typename NewTypeName##TemplatesDefine##::NewType(),\
         &NewTypeName##TemplatesDefine##::delFn));\
     \
@@ -160,9 +182,11 @@ public:\
         delete resource; \
     } \
     template ##NewTypeTemplates## \
-    const GraphicsResourceType* NewTypeName##TemplatesDefine##::getType() const { return STATIC_TYPE.get();}\
+    GraphicsResourceType* NewTypeName##TemplatesDefine##::privateType() const { return NewTypeName##TemplatesDefine##::STATIC_TYPE.get(); }\
     template ##NewTypeTemplates## \
-    const GraphicsResourceType* NewTypeName##TemplatesDefine##::staticType() { return STATIC_TYPE.get();}
+    const GraphicsResourceType* NewTypeName##TemplatesDefine##::getType() const { return NewTypeName##TemplatesDefine##::STATIC_TYPE.get();}\
+    template ##NewTypeTemplates## \
+    const GraphicsResourceType* NewTypeName##TemplatesDefine##::staticType() { return NewTypeName##TemplatesDefine##::STATIC_TYPE.get();}
 #endif // DEFINE_GRAPHICS_RESOURCE
 
 class GraphicsResource
@@ -170,14 +194,16 @@ class GraphicsResource
     DECLARE_GRAPHICS_RESOURCE(GraphicsResource,,GraphicsResource,)
     
 public:
-    GraphicsResource() = default;
     GraphicsResource(const GraphicsResource& otherResource) = delete;
     GraphicsResource(GraphicsResource&& otherResource) = delete;
+
+    GraphicsResource() = default;
     virtual ~GraphicsResource() = default;
 
+    // always call parent init and release functions if the resource needs to be registered in collection
     virtual void init() {};
-    virtual void reinitResources() {};
-    virtual void release() {};
+    virtual void reinitResources();
+    virtual void release();
     virtual String getResourceName() const;
     // This needs to be set before initializing or needs be reinit for the GPU resource be relabeled.
     virtual void setResourceName(const String& name) {};

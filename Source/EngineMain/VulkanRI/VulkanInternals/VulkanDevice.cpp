@@ -589,6 +589,7 @@ void VulkanDevice::createLogicDevice()
 
     for (QueueResourceBasePtr& queue : allQueues)
     {
+        queue->init();
         VulkanQueueResourceInvoker::invoke<void, CacheQueues>(queue,logicalDevice,vkGetDeviceQueue);
     }
 

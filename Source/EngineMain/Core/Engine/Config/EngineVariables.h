@@ -16,6 +16,8 @@ protected:
 public:
     EngineVar(const EngineVar&) = delete;
     EngineVar(EngineVar&&) = delete;
+    void operator=(const EngineVar&) = delete;
+    void operator=(EngineVar&&) = delete;
 
     EngineVar() = default;
     EngineVar(const VarType& defaultVal) : variable(defaultVal){}

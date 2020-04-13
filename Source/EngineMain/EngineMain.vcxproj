@@ -100,6 +100,8 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -117,6 +119,8 @@
       </UndefinePreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -134,6 +138,8 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -155,6 +161,8 @@
       </UndefinePreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -191,9 +199,11 @@
     <ClCompile Include="RenderInterface\Resources\QueueResource.cpp" />
     <ClCompile Include="RenderInterface\Resources\GenericWindowCanvas.cpp" />
     <ClCompile Include="RenderInterface\Resources\Samplers\SamplerInterface.cpp" />
+    <ClCompile Include="RenderInterface\Resources\ShaderResources.cpp" />
     <ClCompile Include="StartMain.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanBufferResources.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanImageResources.cpp" />
+    <ClCompile Include="VulkanRI\Resources\VulkanShaderResources.cpp" />
     <ClCompile Include="VulkanRI\VulkanGraphicsHelper.cpp" />
     <ClCompile Include="VulkanRI\VulkanGraphicsInstance.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Debugging.cpp" />
@@ -254,9 +264,11 @@
     <ClInclude Include="RenderInterface\Resources\QueueResource.h" />
     <ClInclude Include="RenderInterface\Resources\GenericWindowCanvas.h" />
     <ClInclude Include="RenderInterface\Resources\Samplers\SamplerInterface.h" />
+    <ClInclude Include="RenderInterface\Resources\ShaderResources.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanBufferResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanImageResources.h" />
+    <ClInclude Include="VulkanRI\Resources\VulkanShaderResources.h" />
     <ClInclude Include="VulkanRI\VulkanGraphicsHelper.h" />
     <ClInclude Include="VulkanRI\VulkanGraphicsInstance.h" />
     <ClInclude Include="VulkanRI\VulkanGraphicsTypes.h" />
