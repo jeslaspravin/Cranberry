@@ -124,6 +124,9 @@
     <Filter Include="Source Files\Core\Engine\Config">
       <UniqueIdentifier>{0307cad9-dd9c-4b99-8176-e60270234690}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Experimental\Shaders">
+      <UniqueIdentifier>{15da94e5-b9f2-4ef7-82c2-33bb666e127e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -257,6 +260,9 @@
     </ClCompile>
     <ClCompile Include="VulkanRI\Resources\VulkanShaderResources.cpp">
       <Filter>Source Files\VulkanRI\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\Shaders\TriangleShader.cpp">
+      <Filter>Source Files\Experimental\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -460,6 +466,9 @@
     </ClInclude>
     <ClInclude Include="VulkanRI\Resources\VulkanShaderResources.h">
       <Filter>Source Files\VulkanRI\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\Shaders\TriangleShader.h">
+      <Filter>Source Files\Experimental\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

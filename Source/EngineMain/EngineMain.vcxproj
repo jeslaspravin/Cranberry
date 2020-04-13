@@ -189,6 +189,7 @@
     <ClCompile Include="Core\String\String.cpp" />
     <ClCompile Include="Core\Types\Colors.cpp" />
     <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
+    <ClCompile Include="Experimental\Shaders\TriangleShader.cpp" />
     <ClCompile Include="RenderApi\RenderApi.cpp" />
     <ClCompile Include="RenderInterface\GlobalRenderVariables.cpp" />
     <ClCompile Include="RenderInterface\GraphicsInstance.cpp" />
@@ -250,6 +251,7 @@
     <ClInclude Include="Core\Types\Functions.h" />
     <ClInclude Include="Core\Types\HashTypes.h" />
     <ClInclude Include="Experimental\ExperimentalEngine.h" />
+    <ClInclude Include="Experimental\Shaders\TriangleShader.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
     <ClInclude Include="RenderInterface\CoreGraphicsTypes.h" />
     <ClInclude Include="RenderInterface\GlobalRenderVariables.h" />

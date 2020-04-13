@@ -513,6 +513,16 @@ void ExperimentalEngine::destroyRenderpass()
     renderPass = nullptr;
 }
 
+void ExperimentalEngine::createPipelineForSubpass()
+{
+
+}
+
+void ExperimentalEngine::destroySubpassPipelines()
+{
+
+}
+
 void ExperimentalEngine::createPipelineResources()
 {
     // Shader pipeline's buffers and image access

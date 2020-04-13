@@ -102,6 +102,9 @@ class ExperimentalEngine : public GameEngine
     void createRenderpass();
     void destroyRenderpass();
 
+    void createPipelineForSubpass();
+    void destroySubpassPipelines();
+
     // Common to many pipeline stuffs
     VkDescriptorPool descriptorsPool;
     // Since framebuffers with same FrameBufferFormat can be used with different render passes
