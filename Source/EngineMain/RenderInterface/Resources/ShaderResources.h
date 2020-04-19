@@ -17,9 +17,16 @@ namespace EShaderStage
         Geometry,
         Fragment
     };
+    
+    struct ShaderStageInfo
+    {
+        String name;
+        String shortName;
+        String entryPointName;
+        uint32 shaderStage;
+    };
 
-    String getStageName(EShaderStage::Type shaderStage);
-    String getStageEntryName(EShaderStage::Type shaderStage);
+    const ShaderStageInfo* getShaderStageInfo(EShaderStage::Type shaderStage);
 }
 
 // Shader subresource for ShaderResource
@@ -69,5 +76,6 @@ public:
 
     /* End overrides */
 
-    SharedPtr<ShaderCodeResource> getShaderCode(EShaderStage::Type shaderType);
+    SharedPtr<ShaderCodeResource> getShaderCode(EShaderStage::Type shaderType) const;
+    const std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>>& getShaders() const;
 };

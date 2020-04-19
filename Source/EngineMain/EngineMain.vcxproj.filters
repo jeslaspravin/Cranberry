@@ -121,6 +121,9 @@
     <Filter Include="Source Files\Core\Engine\Config">
       <UniqueIdentifier>{0307cad9-dd9c-4b99-8176-e60270234690}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\RenderInterface\Resources\Shaders">
+      <UniqueIdentifier>{4bece398-d6fd-45b3-bccd-78a0c3d761b0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -251,6 +254,9 @@
     </ClCompile>
     <ClCompile Include="VulkanRI\Resources\VulkanShaderResources.cpp">
       <Filter>Source Files\VulkanRI\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadWithTextureShader.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -451,6 +457,9 @@
     </ClInclude>
     <ClInclude Include="VulkanRI\Resources\VulkanShaderResources.h">
       <Filter>Source Files\VulkanRI\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\DrawQuadWithTextureShader.h">
+      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

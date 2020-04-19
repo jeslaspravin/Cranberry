@@ -13,7 +13,7 @@ protected:
     GenericAppWindow* parentWindow = nullptr;
     std::vector<GenericAppWindow*> childWindows;
 
-    bool isWindowed = false;
+    bool isWindowed = true;
 protected:
     virtual void resizeWindow() = 0;
 public:

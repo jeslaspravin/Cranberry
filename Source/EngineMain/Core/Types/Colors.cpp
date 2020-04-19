@@ -55,6 +55,18 @@ Color::Color(Color&& otherColor)
     , bSrgb(std::move(otherColor.bSrgb))
 {}
 
+void Color::operator=(Color && otherColor)
+{
+    bSrgb = otherColor.bSrgb;
+    colorValue = otherColor.colorValue;
+}
+
+void Color::operator=(const Color & otherColor)
+{
+    bSrgb = std::move(otherColor.bSrgb);
+    colorValue = std::move(otherColor.colorValue);
+}
+
 /*
 * sRGB to Linear and Vice versa refered from 
 * https://www.nayuki.io/page/srgb-transform-library  and  
@@ -131,3 +143,13 @@ LinearColor::LinearColor(const LinearColor& otherColor)
 LinearColor::LinearColor(LinearColor&& otherColor)
     :colorValue(std::move(otherColor.colorValue))
 {}
+
+void LinearColor::operator=(LinearColor&& otherColor)
+{
+    colorValue = otherColor.colorValue;
+}
+
+void LinearColor::operator=(const LinearColor& otherColor)
+{
+    colorValue = std::move(otherColor.colorValue);
+}
