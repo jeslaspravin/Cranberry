@@ -15,12 +15,14 @@ private:
 public:
 
     Color();
-    Color(Byte3D& value);
-    Color(Byte4D& value);
-    Color(uint8 r, uint8 g, uint8 b, uint8 a = 255);
+    explicit Color(Byte3D& value);
+    explicit Color(Byte4D& value);
+    explicit Color(uint8 r, uint8 g, uint8 b, uint8 a = 255);
     Color(const LinearColor& linearColor, bool bAsSrgb = false);
     Color(const Color& otherColor);
     Color(Color&& otherColor);
+    void operator=(const Color& otherColor);
+    void operator=(Color&& otherColor);
 
     inline Color toSrgb() const;
     inline Color toLinear() const;
@@ -39,17 +41,31 @@ private:
     glm::vec4 colorValue;
 public:
     LinearColor();
-    LinearColor(glm::vec3& value);
-    LinearColor(glm::vec4& value);
-    LinearColor(float r, float g, float b, float a = 1.0f);
+    explicit LinearColor(glm::vec3& value);
+    explicit LinearColor(glm::vec4& value);
+    explicit LinearColor(float r, float g, float b, float a = 1.0f);
     LinearColor(const Color& color, bool bFromSrgb = false);
     LinearColor(const LinearColor& otherColor);
     LinearColor(LinearColor&& otherColor);
+    void operator=(const LinearColor& otherColor);
+    void operator=(LinearColor&& otherColor);
 
-    const glm::vec4& getColorValue() { return colorValue; }
+    const glm::vec4& getColorValue() const { return colorValue; }
     float r() const { return colorValue.r; }
     float g() const { return colorValue.g; }
     float b() const { return colorValue.b; }
     float a() const { return colorValue.a; }
     glm::vec3 rgb() const { return glm::vec3(colorValue.r, colorValue.g, colorValue.b); }
 };
+
+namespace ColorConst
+{
+    const Color WHITE(255, 255, 255, 255);
+    const Color BLACK(0, 0, 0, 255);
+}
+
+namespace LinearColorConst
+{
+    const LinearColor WHITE(1, 1, 1, 1);
+    const LinearColor BLACK(0, 0, 0, 1);
+}

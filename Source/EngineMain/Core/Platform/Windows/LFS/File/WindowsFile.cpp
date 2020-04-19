@@ -156,7 +156,7 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*=
         return;
     }
 
-    dword readBufferSize = 2 * 1024 * 1024;// 2MB
+    dword readBufferSize = 10 * 1024 * 1024;// 10MB
 
     uint64 filePointerCache = filePointer();
     uint64 availableSizeCanRead = (fileSize() - filePointerCache);
@@ -187,7 +187,7 @@ void WindowsFile::write(const std::vector<uint8>& writeBytes) const
     std::vector<uint8>::size_type sizeLeft = writeBytes.size();
     const uint8* pData = writeBytes.data();
 
-    uint32 writeBufferSize = 512 * 1024;// 512KB
+    uint32 writeBufferSize = 5 * 1024 * 1024;// 5MB
     dword bytesWritten = 0;
     uint64 writeFrom = 0;
 
@@ -291,7 +291,8 @@ GenericFileHandle* WindowsFile::openOrCreateImpl()
             openSuccess = fHandle->openFile(getFullPath());
         }
     }
-    else {
+    else
+    {
         openSuccess = fHandle->openFile(getFullPath());
     }
 

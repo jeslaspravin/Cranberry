@@ -1,68 +1,6 @@
 #include "ShaderResources.h"
 #include "../../Core/Logger/Logger.h"
 
-namespace EShaderStage
-{
-    String getStageName(Type shaderStage)
-    {
-        String stage;
-        switch (shaderStage)
-        {
-        case EShaderStage::Compute:
-            stage = "comp";
-            break;
-        case EShaderStage::Vertex:
-            stage = "vert";
-            break;
-        case EShaderStage::TessellationControl:
-            stage = "tesc";
-            break;
-        case EShaderStage::TessellatonEvaluate:
-            stage = "tese";
-            break;
-        case EShaderStage::Geometry:
-            stage = "geom";
-            break;
-        case EShaderStage::Fragment:
-            stage = "frag";
-            break;
-        default:
-            break;
-        }
-        return stage;
-    }
-
-    String getStageEntryName(Type shaderStage)
-    {
-        String stage;
-        switch (shaderStage)
-        {
-        case EShaderStage::Compute:
-            stage = "mainComp";
-            break;
-        case EShaderStage::Vertex:
-            stage = "mainVS";
-            break;
-        case EShaderStage::TessellationControl:
-            stage = "mainTC";
-            break;
-        case EShaderStage::TessellatonEvaluate:
-            stage = "mainTE";
-            break;
-        case EShaderStage::Geometry:
-            stage = "mainGeo";
-            break;
-        case EShaderStage::Fragment:
-            stage = "mainFS";
-            break;
-        default:
-            break;
-        }
-        return stage;
-    }
-
-}
-
 DEFINE_GRAPHICS_RESOURCE(ShaderCodeResource)
 
 ShaderCodeResource::ShaderCodeResource(const String& filePath)
@@ -145,7 +83,7 @@ String ShaderResource::getResourceName() const
     return shaderName;
 }
 
-SharedPtr<ShaderCodeResource> ShaderResource::getShaderCode(EShaderStage::Type shaderType)
+SharedPtr<ShaderCodeResource> ShaderResource::getShaderCode(EShaderStage::Type shaderType) const
 {
     auto foundItr = shaders.find(shaderType);
     if (foundItr != shaders.end())
@@ -153,4 +91,9 @@ SharedPtr<ShaderCodeResource> ShaderResource::getShaderCode(EShaderStage::Type s
         return foundItr->second;
     }
     return nullptr;
+}
+
+const std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>>& ShaderResource::getShaders() const
+{
+    return shaders;
 }

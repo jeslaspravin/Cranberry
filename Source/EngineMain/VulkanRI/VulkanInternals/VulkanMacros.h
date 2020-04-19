@@ -258,6 +258,122 @@ VariableName.pNext = nullptr;                                       \
 VariableName.flags = 0
 #endif
 
+#ifndef PIPELINE_CACHE_CREATE_INFO
+#define PIPELINE_CACHE_CREATE_INFO(VariableName)                    \
+VkPipelineCacheCreateInfo VariableName;                             \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;  \
+VariableName.pNext = nullptr;                                       \
+VariableName.flags = 0
+#endif
+
+#ifndef PIPELINE_LAYOUT_CREATE_INFO
+#define PIPELINE_LAYOUT_CREATE_INFO(VariableName)                   \
+VkPipelineLayoutCreateInfo VariableName;                            \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO; \
+VariableName.pNext = nullptr;                                       \
+VariableName.flags = 0
+#endif
+
+#ifndef GRAPHICS_PIPELINE_CREATE_INFO
+#define GRAPHICS_PIPELINE_CREATE_INFO(VariableName)                     \
+VkGraphicsPipelineCreateInfo VariableName;                              \
+VariableName.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;   \
+VariableName.pNext = nullptr;                                           \
+VariableName.flags = 0;                                                 \
+VariableName.basePipelineIndex = -1;                                    \
+VariableName.basePipelineHandle = VK_NULL_HANDLE
+#endif
+
+#ifndef PIPELINE_SHADER_STAGE_CREATE_INFO
+#define PIPELINE_SHADER_STAGE_CREATE_INFO(VariableName)                     \
+VkPipelineShaderStageCreateInfo VariableName;                               \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;   \
+VariableName.pNext = nullptr;                                               \
+VariableName.flags = 0;                                                     \
+VariableName.pSpecializationInfo = VK_NULL_HANDLE
+#endif
+
+#ifndef PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO
+#define PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO(VariableName)                   \
+VkPipelineVertexInputStateCreateInfo VariableName;                              \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO; \
+VariableName.pNext = nullptr;                                                   \
+VariableName.flags = 0
+#endif
+
+#ifndef PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO
+#define PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO(VariableName)                     \
+VkPipelineInputAssemblyStateCreateInfo VariableName;                                \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;   \
+VariableName.pNext = nullptr;                                                       \
+VariableName.flags = 0;                                                             \
+VariableName.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;/*As it is common*/     \
+VariableName.primitiveRestartEnable = false
+#endif
+
+#ifndef PIPELINE_TESSELLATION_STATE_CREATE_INFO
+#define PIPELINE_TESSELLATION_STATE_CREATE_INFO(VariableName)                   \
+VkPipelineTessellationStateCreateInfo VariableName;                             \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO; \
+VariableName.pNext = nullptr;                                                   \
+VariableName.flags = 0
+#endif
+
+#ifndef PIPELINE_VIEWPORT_STATE_CREATE_INFO
+#define PIPELINE_VIEWPORT_STATE_CREATE_INFO(VariableName)                   \
+VkPipelineViewportStateCreateInfo VariableName;                             \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO; \
+VariableName.pNext = nullptr;                                               \
+VariableName.flags = 0
+#endif
+
+#ifndef PIPELINE_RASTERIZATION_STATE_CREATE_INFO
+#define PIPELINE_RASTERIZATION_STATE_CREATE_INFO(VariableName)                  \
+VkPipelineRasterizationStateCreateInfo VariableName;                            \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;\
+VariableName.pNext = nullptr;                                                   \
+VariableName.flags = 0;                                                         \
+VariableName.rasterizerDiscardEnable = VK_FALSE;                                \
+VariableName.depthClampEnable = VK_FALSE;                                       \
+VariableName.lineWidth = 1.0f;                                                  \
+VariableName.depthBiasEnable = VK_FALSE;                                        \
+VariableName.depthBiasClamp = VariableName.depthBiasConstantFactor = 0
+#endif
+
+#ifndef PIPELINE_MULTISAMPLE_STATE_CREATE_INFO
+#define PIPELINE_MULTISAMPLE_STATE_CREATE_INFO(VariableName)                    \
+VkPipelineMultisampleStateCreateInfo VariableName;                              \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;  \
+VariableName.pNext = nullptr;                                                   \
+VariableName.flags = 0
+#endif
+
+#ifndef PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO
+#define PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO(VariableName)                  \
+VkPipelineDepthStencilStateCreateInfo VariableName;                             \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;\
+VariableName.pNext = nullptr;                                                   \
+VariableName.flags = 0
+#endif
+
+#ifndef PIPELINE_COLOR_BLEND_STATE_CREATE_INFO
+#define PIPELINE_COLOR_BLEND_STATE_CREATE_INFO(VariableName)                    \
+VkPipelineColorBlendStateCreateInfo VariableName;                               \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;  \
+VariableName.pNext = nullptr;                                                   \
+VariableName.flags = 0;                                                         \
+VariableName.logicOpEnable = VK_FALSE;                                          \
+VariableName.logicOp = VK_LOGIC_OP_NO_OP
+#endif
+
+#ifndef PIPELINE_DYNAMIC_STATE_CREATE_INFO
+#define PIPELINE_DYNAMIC_STATE_CREATE_INFO(VariableName)                        \
+VkPipelineDynamicStateCreateInfo VariableName;                                  \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;  \
+VariableName.pNext = nullptr;                                                   \
+VariableName.flags = 0
+#endif
+
 #ifndef CREATE_SEMAPHORE_INFO
 #define CREATE_SEMAPHORE_INFO(VariableName)                     \
 VkSemaphoreCreateInfo  VariableName;                            \

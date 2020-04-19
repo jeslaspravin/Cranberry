@@ -29,8 +29,6 @@ public:
 
     bool createDirectory() const override;
 
-
-
 protected:
     virtual GenericFileHandle* openOrCreateImpl() override;
     virtual GenericFileHandle* openImpl()  const override;

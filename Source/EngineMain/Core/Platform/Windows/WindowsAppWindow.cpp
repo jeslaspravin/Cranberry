@@ -28,13 +28,14 @@ void WindowsAppWindow::createWindow(const GenericAppInstance* appInstance)
         RegisterClassA(&windowClass);
     }
 
-    dword style = isWindowed ? WS_OVERLAPPED/* | WS_CAPTION | WS_SYSMENU*/: WS_POPUP;
+    dword style = isWindowed ? WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU : WS_POPUP;
 
     RECT windowRect{ 0,0,(LONG)windowWidth,(LONG)windowHeight };
 
     AdjustWindowRect(&windowRect, style, false);
     
-    windowsHandle = CreateWindowA(windowName.getChar(), windowName.getChar(), style, 0, 0, windowWidth, windowHeight,
+    windowsHandle = CreateWindowA(windowName.getChar(), windowName.getChar(), style
+        , 0, 0, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top,
         parentWindow? static_cast<WindowsAppWindow*>(parentWindow)->windowsHandle : NULL, NULL, instanceHandle, this);
 
     if (windowsHandle == nullptr)

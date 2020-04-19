@@ -317,33 +317,19 @@ void VulkanDebugGraphics::markObject(const uint64& objectHandle, const String& o
     ownerDevice->vkSetDebugUtilsObjectNameEXT(VulkanGraphicsHelper::getDevice(ownerDevice), &objectNameInfo);
 }
 
-void VulkanDebugGraphics::beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4* color/*= nullptr*/) const
+void VulkanDebugGraphics::beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
 {
     DEBUG_UTILS_LABEL(label);
-    if (color)
-    {
-        memcpy(&label.color, color, sizeof(glm::vec4));
-    }
-    else
-    {
-        label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
-    }
+    memcpy(&label.color, &color.getColorValue(), sizeof(glm::vec4));
     label.pLabelName = name.getChar();
 
     ownerDevice->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, &label);
 }
 
-void VulkanDebugGraphics::insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4* color /*= nullptr*/) const
+void VulkanDebugGraphics::insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
 {
     DEBUG_UTILS_LABEL(label);
-    if (color)
-    {
-        memcpy(&label.color, color, sizeof(glm::vec4));
-    }
-    else
-    {
-        label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
-    }
+    memcpy(&label.color, &color.getColorValue(), sizeof(glm::vec4));
     label.pLabelName = name.getChar();
 
     ownerDevice->vkCmdInsertDebugUtilsLabelEXT(commandBuffer, &label);
@@ -354,33 +340,19 @@ void VulkanDebugGraphics::endCmdBufferMarker(VkCommandBuffer commandBuffer) cons
     ownerDevice->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 }
 
-void VulkanDebugGraphics::beginQueueMarker(VkQueue queue, const String& name, const glm::vec4* color /*= nullptr*/) const
+void VulkanDebugGraphics::beginQueueMarker(VkQueue queue, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
 {
     DEBUG_UTILS_LABEL(label);
-    if (color)
-    {
-        memcpy(&label.color, color, sizeof(glm::vec4));
-    }
-    else
-    {
-        label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
-    }
+    memcpy(&label.color, &color.getColorValue(), sizeof(glm::vec4));
     label.pLabelName = name.getChar();
 
     ownerDevice->vkQueueBeginDebugUtilsLabelEXT(queue, &label);
 }
 
-void VulkanDebugGraphics::insertQueueMarker(VkQueue queue, const String& name, const glm::vec4* color /*= nullptr*/) const
+void VulkanDebugGraphics::insertQueueMarker(VkQueue queue, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
 {
     DEBUG_UTILS_LABEL(label);
-    if (color)
-    {
-        memcpy(&label.color, color, sizeof(glm::vec4));
-    }
-    else
-    {
-        label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
-    }
+    memcpy(&label.color, &color.getColorValue(), sizeof(glm::vec4));
     label.pLabelName = name.getChar();
 
     ownerDevice->vkQueueInsertDebugUtilsLabelEXT(queue, &label);
@@ -391,11 +363,11 @@ void VulkanDebugGraphics::endQueueMarker(VkQueue queue) const
     ownerDevice->vkQueueEndDebugUtilsLabelEXT(queue);
 }
 
-ScopedCommandMarker::ScopedCommandMarker(VkCommandBuffer commandBuffer, const String& name, const glm::vec4& color)
+ScopedCommandMarker::ScopedCommandMarker(VkCommandBuffer commandBuffer, const String& name, const LinearColor& color /* = LinearColorConst::WHITE*/)
 {
     cmdBuffer = commandBuffer;
     const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
-    graphicsDebugger->beginCmdBufferMarker(cmdBuffer, name, &color);
+    graphicsDebugger->beginCmdBufferMarker(cmdBuffer, name, color);
 }
 
 ScopedCommandMarker::~ScopedCommandMarker()
@@ -404,11 +376,11 @@ ScopedCommandMarker::~ScopedCommandMarker()
     graphicsDebugger->endCmdBufferMarker(cmdBuffer);
 }
 
-ScopedQueueMarker::ScopedQueueMarker(VkQueue q, const String& name, const glm::vec4& color)
+ScopedQueueMarker::ScopedQueueMarker(VkQueue q, const String& name, const LinearColor& color /* = LinearColorConst::WHITE*/)
 {
     queue = q;
     const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
-    graphicsDebugger->beginQueueMarker(queue, name, &color);
+    graphicsDebugger->beginQueueMarker(queue, name, color);
 }
 
 ScopedQueueMarker::~ScopedQueueMarker()

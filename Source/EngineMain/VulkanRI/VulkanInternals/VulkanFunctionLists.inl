@@ -116,6 +116,17 @@ DEVICE_VK_FUNCTIONS(vkDestroyFramebuffer)
 DEVICE_VK_FUNCTIONS(vkCreateShaderModule)
 DEVICE_VK_FUNCTIONS(vkDestroyShaderModule)
 
+DEVICE_VK_FUNCTIONS(vkCreatePipelineCache)
+DEVICE_VK_FUNCTIONS(vkDestroyPipelineCache)
+DEVICE_VK_FUNCTIONS(vkGetPipelineCacheData)
+DEVICE_VK_FUNCTIONS(vkMergePipelineCaches)
+
+DEVICE_VK_FUNCTIONS(vkCreatePipelineLayout)
+DEVICE_VK_FUNCTIONS(vkDestroyPipelineLayout)
+
+DEVICE_VK_FUNCTIONS(vkCreateGraphicsPipelines)
+DEVICE_VK_FUNCTIONS(vkDestroyPipeline)
+
 /* CommandPool Functions */
 DEVICE_VK_FUNCTIONS(vkCreateCommandPool)
 DEVICE_VK_FUNCTIONS(vkDestroyCommandPool)
