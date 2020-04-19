@@ -11,6 +11,11 @@
 #include "../VulkanRI/VulkanInternals/Resources/VulkanSampler.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
 #include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
+#include "../Core/Platform/PlatformAssertionErrors.h"
+#include "../VulkanRI/Resources/VulkanShaderResources.h"
+#include "Shaders/TriangleShader.h"
+#include "../RenderInterface/Shaders/DrawQuadWithTextureShader.h"
+#include "../Core/Types/Colors.h"
 
 #include <glm/ext/vector_float3.hpp>
 #include <array>
@@ -513,14 +518,312 @@ void ExperimentalEngine::destroyRenderpass()
     renderPass = nullptr;
 }
 
+void ExperimentalEngine::createPipelineCache()
+{
+    {
+        String cacheFilePath;
+        cacheFilePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(cacheFilePath), "Cache", "gPipeline.cache");
+        pipelineCacheFile = PlatformFile(cacheFilePath);
+    }
+    pipelineCacheFile.setFileFlags(EFileFlags::Read | EFileFlags::Write | EFileFlags::OpenAlways);
+    pipelineCacheFile.setSharingMode(EFileSharing::NoSharing);
+    pipelineCacheFile.openOrCreate();
+
+    std::vector<uint8> cacheData;
+    pipelineCacheFile.read(cacheData);
+
+    PIPELINE_CACHE_CREATE_INFO(pipelineCacheCreateInfo);
+    pipelineCacheCreateInfo.initialDataSize = static_cast<uint32>(cacheData.size());
+    pipelineCacheCreateInfo.pInitialData = nullptr;
+    if (cacheData.size() > 0)
+    {
+        pipelineCacheCreateInfo.pInitialData = cacheData.data();
+    }
+    else
+    {
+        Logger::debug("ExperimentalEngine", "%s() : Cache for pipeline cache creation is not available", __func__);
+    }
+
+    if (vDevice->vkCreatePipelineCache(device,&pipelineCacheCreateInfo,nullptr,&drawTriPipeline.cache) != VK_SUCCESS)
+    {
+        Logger::warn("ExperimentalEngine", "%s() : Triangle drawing pipeline cache creation failed", __func__);
+        drawTriPipeline.cache = nullptr;
+    }
+    else
+    {
+        graphicsDbg->markObject((uint64)(drawTriPipeline.cache), "ExperimentalTrianglePipelineCache", VK_OBJECT_TYPE_PIPELINE_CACHE);
+    }
+    if (vDevice->vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &drawQuadPipeline.cache) != VK_SUCCESS)
+    {
+        Logger::warn("ExperimentalEngine", "%s() : Quad drawing pipeline cache creation failed", __func__);
+        drawQuadPipeline.cache = nullptr;
+    }
+    else
+    {
+        graphicsDbg->markObject((uint64)(drawTriPipeline.cache), "DrawQuadPipelineCache", VK_OBJECT_TYPE_PIPELINE_CACHE);
+    }
+
+    pipelineCacheFile.closeFile();
+}
+
+void ExperimentalEngine::writeAndDestroyPipelineCache()
+{
+    std::vector<VkPipelineCache> pipelineCaches;
+    if (drawTriPipeline.cache != nullptr)
+    {
+        pipelineCaches.push_back(drawTriPipeline.cache);
+    }
+    if (drawQuadPipeline.cache != nullptr)
+    {
+        pipelineCaches.push_back(drawQuadPipeline.cache);
+    }
+
+    VkPipelineCache mergedCache;
+    PIPELINE_CACHE_CREATE_INFO(pipelineCacheCreateInfo);
+    pipelineCacheCreateInfo.initialDataSize = 0;
+    pipelineCacheCreateInfo.pInitialData = nullptr;
+    if (vDevice->vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &mergedCache) == VK_SUCCESS)
+    {
+        if(vDevice->vkMergePipelineCaches(device,mergedCache,static_cast<uint32>(pipelineCaches.size()),pipelineCaches.data()) == VK_SUCCESS)
+        {
+            size_t cacheDataSize;
+            vDevice->vkGetPipelineCacheData(device, mergedCache, &cacheDataSize, nullptr);
+            if (cacheDataSize > 0)
+            {
+                std::vector<uint8> cacheData(cacheDataSize);
+                vDevice->vkGetPipelineCacheData(device, mergedCache, &cacheDataSize, cacheData.data());
+
+                pipelineCacheFile.setCreationAction(EFileFlags::ClearExisting);
+                pipelineCacheFile.openFile();
+
+                pipelineCacheFile.write(cacheData);
+                pipelineCacheFile.closeFile();
+            }
+        }
+        pipelineCaches.push_back(mergedCache);
+    }
+
+    for (VkPipelineCache cache : pipelineCaches)
+    {
+        vDevice->vkDestroyPipelineCache(device, cache, nullptr);
+    }
+}
+
 void ExperimentalEngine::createPipelineForSubpass()
 {
+    createPipelineCache();
 
+    PIPELINE_LAYOUT_CREATE_INFO(pipelineLayoutCreateInfo);
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutCreateInfo.setLayoutCount = 0;
+    pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+    fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout)
+        == VK_SUCCESS, "Failed creating pipeline layout");
+
+    createTriDrawPipeline();
+    createQuadDrawPipeline();
 }
 
 void ExperimentalEngine::destroySubpassPipelines()
 {
+    writeAndDestroyPipelineCache();
+    vDevice->vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
+    vDevice->vkDestroyPipeline(device, drawTriPipeline.pipeline, nullptr);
+    vDevice->vkDestroyPipeline(device, drawQuadPipeline.pipeline, nullptr);
+}
+
+void ExperimentalEngine::createTriDrawPipeline()
+{
+    ShaderResource* shaderResource = static_cast<ShaderResource*>(ExperimentalTriangleShader::staticType()->getDefault());
+
+    GRAPHICS_PIPELINE_CREATE_INFO(graphicsPipelineCreateInfo);
+    graphicsPipelineCreateInfo.pTessellationState = nullptr;// No tessellation right now
+    graphicsPipelineCreateInfo.pDepthStencilState = nullptr;// No depth tests right now
+
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+    shaderStages.reserve(shaderResource->getShaders().size());
+    for (const std::pair<const EShaderStage::Type, SharedPtr<ShaderCodeResource>>& shader : shaderResource->getShaders())
+    {
+        const EShaderStage::ShaderStageInfo* stageInfo = EShaderStage::getShaderStageInfo(shader.first);
+        if (stageInfo)
+        {
+            PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
+            shaderStageCreateInfo.stage = (VkShaderStageFlagBits)stageInfo->shaderStage;
+            shaderStageCreateInfo.pName = stageInfo->entryPointName.getChar();
+            shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource*>(shader.second.get())->shaderModule;
+            shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;// Compile time constants
+
+            shaderStages.push_back(shaderStageCreateInfo);
+        }
+    }
+    graphicsPipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
+    graphicsPipelineCreateInfo.pStages = shaderStages.data();
+    
+    PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO(vertexInputCreateInfo);
+    vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
+    vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
+    vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+    graphicsPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
+    
+    PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO(inputAssemCreateInfo);
+    graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemCreateInfo;
+
+    PIPELINE_VIEWPORT_STATE_CREATE_INFO(viewportCreateInfo);
+    VkViewport viewport;
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.minDepth = 0;
+    viewport.maxDepth = 1;
+    VkRect2D scissor = { {0,0},{0,0} };
+    getApplicationInstance()->appWindowManager.getMainWindow()->windowSize(scissor.extent.width, scissor.extent.height);
+    viewport.width = static_cast<float>(scissor.extent.width);
+    viewport.height = static_cast<float>(scissor.extent.height);
+    viewportCreateInfo.viewportCount = 1;
+    viewportCreateInfo.pViewports = &viewport;
+    viewportCreateInfo.scissorCount = 1;
+    viewportCreateInfo.pScissors = &scissor;
+    graphicsPipelineCreateInfo.pViewportState = &viewportCreateInfo;
+
+    PIPELINE_RASTERIZATION_STATE_CREATE_INFO(rasterizationCreateInfo);
+    rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizationCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    graphicsPipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
+
+    PIPELINE_MULTISAMPLE_STATE_CREATE_INFO(multisampleCreateInfo);
+    multisampleCreateInfo.sampleShadingEnable = multisampleCreateInfo.alphaToCoverageEnable = multisampleCreateInfo.alphaToOneEnable = VK_FALSE;
+    multisampleCreateInfo.minSampleShading = 1;
+    multisampleCreateInfo.pSampleMask = nullptr;
+    multisampleCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    graphicsPipelineCreateInfo.pMultisampleState = &multisampleCreateInfo;
+
+    PIPELINE_COLOR_BLEND_STATE_CREATE_INFO(colorBlendOpCreateInfo);
+    memcpy(colorBlendOpCreateInfo.blendConstants, &LinearColorConst::BLACK.getColorValue(), sizeof(glm::vec4));
+    VkPipelineColorBlendAttachmentState colorAttachmentBlendState{// Blend state for color attachment in subpass in which this pipeline is used.
+        VK_TRUE,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+    };
+    colorBlendOpCreateInfo.attachmentCount = 1;
+    colorBlendOpCreateInfo.pAttachments = &colorAttachmentBlendState;
+    graphicsPipelineCreateInfo.pColorBlendState = &colorBlendOpCreateInfo;
+
+    PIPELINE_DYNAMIC_STATE_CREATE_INFO(dynamicStateCreateInfo);
+    std::vector<VkDynamicState> dynamicStates{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    dynamicStateCreateInfo.dynamicStateCount = static_cast<VkDynamicState>(dynamicStates.size());
+    dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
+    graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
+    graphicsPipelineCreateInfo.layout = pipelineLayout;
+    graphicsPipelineCreateInfo.renderPass = renderPass;
+    graphicsPipelineCreateInfo.subpass = 0;
+
+    fatalAssert(vDevice->vkCreateGraphicsPipelines(device, drawTriPipeline.cache,1,&graphicsPipelineCreateInfo, nullptr, &drawTriPipeline.pipeline)
+        == VK_SUCCESS, "Failure in creating draw triangle pipelines");
+    graphicsDbg->markObject((uint64)(drawTriPipeline.pipeline), "ExperimentalTrianglePipeline", VK_OBJECT_TYPE_PIPELINE);
+}
+
+void ExperimentalEngine::createQuadDrawPipeline()
+{
+    ShaderResource* shaderResource = static_cast<ShaderResource*>(DrawQuadWithTextureShader::staticType()->getDefault());
+
+    GRAPHICS_PIPELINE_CREATE_INFO(graphicsPipelineCreateInfo);
+    graphicsPipelineCreateInfo.pTessellationState = nullptr;// No tessellation right now
+    graphicsPipelineCreateInfo.pDepthStencilState = nullptr;// No depth tests right now
+
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+    shaderStages.reserve(shaderResource->getShaders().size());
+    for (const std::pair<const EShaderStage::Type, SharedPtr<ShaderCodeResource>>& shader : shaderResource->getShaders())
+    {
+        const EShaderStage::ShaderStageInfo* stageInfo = EShaderStage::getShaderStageInfo(shader.first);
+        if (stageInfo)
+        {
+            PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
+            shaderStageCreateInfo.stage = (VkShaderStageFlagBits)stageInfo->shaderStage;
+            shaderStageCreateInfo.pName = stageInfo->entryPointName.getChar();
+            shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource*>(shader.second.get())->shaderModule;
+            shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;// Compile time constants
+
+            shaderStages.push_back(shaderStageCreateInfo);
+        }
+    }
+    graphicsPipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
+    graphicsPipelineCreateInfo.pStages = shaderStages.data();
+
+    PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO(vertexInputCreateInfo);
+    vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
+    vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
+    vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+    graphicsPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
+
+    PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO(inputAssemCreateInfo);
+    graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemCreateInfo;
+
+    PIPELINE_VIEWPORT_STATE_CREATE_INFO(viewportCreateInfo);
+    VkViewport viewport;
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.minDepth = 0;
+    viewport.maxDepth = 1;
+    VkRect2D scissor = { {0,0},{0,0} };
+    getApplicationInstance()->appWindowManager.getMainWindow()->windowSize(scissor.extent.width, scissor.extent.height);
+    viewport.width = static_cast<float>(scissor.extent.width);
+    viewport.height = static_cast<float>(scissor.extent.height);
+    viewportCreateInfo.viewportCount = 1;
+    viewportCreateInfo.pViewports = &viewport;
+    viewportCreateInfo.scissorCount = 1;
+    viewportCreateInfo.pScissors = &scissor;
+    graphicsPipelineCreateInfo.pViewportState = &viewportCreateInfo;
+
+    PIPELINE_RASTERIZATION_STATE_CREATE_INFO(rasterizationCreateInfo);
+    rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizationCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    graphicsPipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
+
+    PIPELINE_MULTISAMPLE_STATE_CREATE_INFO(multisampleCreateInfo);
+    multisampleCreateInfo.sampleShadingEnable = multisampleCreateInfo.alphaToCoverageEnable = multisampleCreateInfo.alphaToOneEnable = VK_FALSE;
+    multisampleCreateInfo.minSampleShading = 1;
+    multisampleCreateInfo.pSampleMask = nullptr;
+    multisampleCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    graphicsPipelineCreateInfo.pMultisampleState = &multisampleCreateInfo;
+
+    PIPELINE_COLOR_BLEND_STATE_CREATE_INFO(colorBlendOpCreateInfo);
+    memcpy(colorBlendOpCreateInfo.blendConstants, &LinearColorConst::BLACK.getColorValue(), sizeof(glm::vec4));
+    VkPipelineColorBlendAttachmentState colorAttachmentBlendState{// Blend state for color attachment in subpass in which this pipeline is used.
+        VK_TRUE,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+    };
+    colorBlendOpCreateInfo.attachmentCount = 1;
+    colorBlendOpCreateInfo.pAttachments = &colorAttachmentBlendState;
+    graphicsPipelineCreateInfo.pColorBlendState = &colorBlendOpCreateInfo;
+
+    PIPELINE_DYNAMIC_STATE_CREATE_INFO(dynamicStateCreateInfo);
+    std::vector<VkDynamicState> dynamicStates{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    dynamicStateCreateInfo.dynamicStateCount = static_cast<VkDynamicState>(dynamicStates.size());
+    dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
+    graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
+    graphicsPipelineCreateInfo.layout = pipelineLayout;
+    graphicsPipelineCreateInfo.renderPass = renderPass;
+    graphicsPipelineCreateInfo.subpass = 1;
+
+    fatalAssert(vDevice->vkCreateGraphicsPipelines(device, drawQuadPipeline.cache, 1, &graphicsPipelineCreateInfo, nullptr, &drawQuadPipeline.pipeline)
+        == VK_SUCCESS, "Failure in creating draw quad pipelines");
+    graphicsDbg->markObject((uint64)(drawTriPipeline.pipeline), "DrawQuadPipeline", VK_OBJECT_TYPE_PIPELINE);
 }
 
 void ExperimentalEngine::createPipelineResources()
@@ -528,10 +831,12 @@ void ExperimentalEngine::createPipelineResources()
     // Shader pipeline's buffers and image access
     createShaderResDescriptors();
     createRenderpass();
+    createPipelineForSubpass();
 }
 
 void ExperimentalEngine::destroyPipelineResources()
 {
+    destroySubpassPipelines();
     destroyRenderpass();
     // Shader pipeline's buffers and image access
     destroyShaderResDescriptors();
@@ -616,6 +921,7 @@ void ExperimentalEngine::tickEngine()
     qSubmitInfo.pSignalSemaphores = &static_cast<VulkanSemaphore*>(renderpassSemaphore.get())->semaphore;
     qSubmitInfo.signalSemaphoreCount = 1;
 
+    ScopedCommandMarker(renderPassCmdBuffer, "Frame");
     if (cmdSubmitFence->isSignaled())
     {
         cmdSubmitFence->resetSignal();

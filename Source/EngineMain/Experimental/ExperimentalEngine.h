@@ -4,6 +4,7 @@
 #include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanSyncResource.h"
 #include "../RenderInterface/Resources/MemoryResources.h"
+#include "../Core/Platform/LFS/PlatformLFS.h"
 
 #include <map>
 #include <vulkan_core.h>
@@ -64,6 +65,12 @@ struct FramebufferFormat
     }
 };
 
+struct BasicPipeline
+{
+    VkPipeline pipeline;
+    VkPipelineCache cache;
+};
+
 class ExperimentalEngine : public GameEngine
 {
     class VulkanDevice* vDevice;
@@ -102,8 +109,17 @@ class ExperimentalEngine : public GameEngine
     void createRenderpass();
     void destroyRenderpass();
 
+    VkPipelineLayout pipelineLayout;// Right now not using any descriptors set so same layout for both tri and quad draw pipelines
+    PlatformFile pipelineCacheFile;
+
+    BasicPipeline drawTriPipeline;
+    BasicPipeline drawQuadPipeline;
+    void createPipelineCache();
+    void writeAndDestroyPipelineCache();
     void createPipelineForSubpass();
     void destroySubpassPipelines();
+    void createTriDrawPipeline();
+    void createQuadDrawPipeline();
 
     // Common to many pipeline stuffs
     VkDescriptorPool descriptorsPool;
