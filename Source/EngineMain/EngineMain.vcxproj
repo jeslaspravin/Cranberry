@@ -201,6 +201,7 @@
     <ClCompile Include="RenderInterface\Resources\GenericWindowCanvas.cpp" />
     <ClCompile Include="RenderInterface\Resources\Samplers\SamplerInterface.cpp" />
     <ClCompile Include="RenderInterface\Resources\ShaderResources.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadWithTextureShader.cpp" />
     <ClCompile Include="StartMain.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanBufferResources.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanImageResources.cpp" />
@@ -267,6 +268,7 @@
     <ClInclude Include="RenderInterface\Resources\GenericWindowCanvas.h" />
     <ClInclude Include="RenderInterface\Resources\Samplers\SamplerInterface.h" />
     <ClInclude Include="RenderInterface\Resources\ShaderResources.h" />
+    <ClInclude Include="RenderInterface\Shaders\DrawQuadWithTextureShader.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanBufferResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanImageResources.h" />

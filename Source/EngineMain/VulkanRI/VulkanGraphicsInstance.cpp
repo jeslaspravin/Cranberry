@@ -92,6 +92,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
     appInfo.applicationVersion = VK_MAKE_VERSION(headVer, majorVer, minorVer);
     appInfo.pEngineName = "Cranberry";
     appInfo.engineVersion = VK_MAKE_VERSION(headVer, majorVer, minorVer);
+    appInfo.apiVersion = VK_MAKE_VERSION(1, 2, 0);
 
     CREATE_INSTANCE_INFO(instanceCreateInfo);
 #if _DEBUG

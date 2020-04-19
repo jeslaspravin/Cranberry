@@ -30,17 +30,25 @@ void GenericFile::setPaths(const String& fPath)
     }
 }
 
-GenericFile::GenericFile():
-    fileHandle(nullptr),
-    fullPath(),
-    directoryPath(),
-    fileName()
+GenericFile::GenericFile()
+    : fileHandle(nullptr)
+    , directoryPath()
+    , fileName()
+    , fullPath()
+    , fileFlags(0)
+    , sharingMode(0)
+    , attributes(0)
+    , advancedFlags(0)
 {
 
 }
 
-GenericFile::GenericFile(const String& path) :
-    fileHandle(nullptr)
+GenericFile::GenericFile(const String& path)
+    : fileHandle(nullptr)
+    , fileFlags(0)
+    , sharingMode(0)
+    , attributes(0)
+    , advancedFlags(0)
 {
     if(path.length() > 0)
     {
@@ -114,7 +122,8 @@ void GenericFile::setFileFlags(const uint8& flags)
     uint8 accessFlags = flags & FileFlags::ACCESS_FLAGS;
     uint8 actionFlags = flags & FileFlags::OPEN_ACTION_FLAGS;
 
-    if (!ONE_BIT_SET(actionFlags)) {
+    if (!ONE_BIT_SET(actionFlags)) 
+    {
         actionFlags = fileFlags & FileFlags::OPEN_ACTION_FLAGS;
     }
 
@@ -125,8 +134,13 @@ void GenericFile::setCreationAction(const uint8& creationAction)
 {
     uint8 actionFlags = creationAction & FileFlags::OPEN_ACTION_FLAGS;
 
-    if (!ONE_BIT_SET(actionFlags)) {
+    if (!ONE_BIT_SET(actionFlags)) 
+    {
         actionFlags = fileFlags & FileFlags::OPEN_ACTION_FLAGS;
+    }
+    else
+    {
+        removeFileFlags(FileFlags::OPEN_ACTION_FLAGS);
     }
 
     fileFlags |= actionFlags;
@@ -154,14 +168,15 @@ void GenericFile::removeSharingFlags(const uint8& sharingFlags)
 
 void GenericFile::addFileFlags(const uint8& flags)
 {
-
     uint8 accessFlags = flags & FileFlags::ACCESS_FLAGS;
     uint8 actionFlags = flags & FileFlags::OPEN_ACTION_FLAGS;
 
-    if (ONE_BIT_SET(actionFlags)){
+    if (ONE_BIT_SET(actionFlags))
+    {
         removeFileFlags(FileFlags::OPEN_ACTION_FLAGS);
     }
-    else {
+    else 
+    {
         actionFlags = fileFlags & FileFlags::OPEN_ACTION_FLAGS;
     }
 

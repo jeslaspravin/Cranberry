@@ -127,6 +127,9 @@
     <Filter Include="Source Files\Experimental\Shaders">
       <UniqueIdentifier>{15da94e5-b9f2-4ef7-82c2-33bb666e127e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\RenderInterface\Resources\Shaders">
+      <UniqueIdentifier>{4bece398-d6fd-45b3-bccd-78a0c3d761b0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -263,6 +266,9 @@
     </ClCompile>
     <ClCompile Include="Experimental\Shaders\TriangleShader.cpp">
       <Filter>Source Files\Experimental\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadWithTextureShader.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -469,6 +475,9 @@
     </ClInclude>
     <ClInclude Include="Experimental\Shaders\TriangleShader.h">
       <Filter>Source Files\Experimental\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\DrawQuadWithTextureShader.h">
+      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

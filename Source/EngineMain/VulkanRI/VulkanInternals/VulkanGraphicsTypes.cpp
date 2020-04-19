@@ -1,5 +1,6 @@
 #include "../VulkanGraphicsTypes.h"
 #include "../../RenderInterface/CoreGraphicsTypes.h"
+#include "../../RenderInterface/Resources/ShaderResources.h"
 
 #include <map>
 #include <vulkan_core.h>
@@ -135,19 +136,45 @@ namespace EImageComponentMapping
 {
 #define COMP_MAP_INFO_PAIR(ComponentMappingValue,RelevantApiFormat) { ComponentMappingValue, { RelevantApiFormat, #ComponentMappingValue }}
     const std::map<Type, ComponentMappingInfo> COMP_MAPPING_TO_API_COMP_SWIZZLE = {
-        COMP_MAP_INFO_PAIR(EImageComponentMapping::SameComponent, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY),
-        COMP_MAP_INFO_PAIR(EImageComponentMapping::AlwaysOne, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_ONE),
-        COMP_MAP_INFO_PAIR(EImageComponentMapping::AlwaysZero, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_ZERO),
-        COMP_MAP_INFO_PAIR(EImageComponentMapping::R, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_R),
-        COMP_MAP_INFO_PAIR(EImageComponentMapping::G, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_G),
-        COMP_MAP_INFO_PAIR(EImageComponentMapping::B, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_B),
-        COMP_MAP_INFO_PAIR(EImageComponentMapping::A, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_A)
+        COMP_MAP_INFO_PAIR(SameComponent, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY),
+        COMP_MAP_INFO_PAIR(AlwaysOne, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_ONE),
+        COMP_MAP_INFO_PAIR(AlwaysZero, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_ZERO),
+        COMP_MAP_INFO_PAIR(R, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_R),
+        COMP_MAP_INFO_PAIR(G, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_G),
+        COMP_MAP_INFO_PAIR(B, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_B),
+        COMP_MAP_INFO_PAIR(A, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_A)
     };
-#undef COMP_MAP_INFO_PAIR
     const ComponentMappingInfo* getComponentMapping(EImageComponentMapping::Type mapping)
     {
         return &COMP_MAPPING_TO_API_COMP_SWIZZLE.find(mapping)->second;
     }
+#undef COMP_MAP_INFO_PAIR
+}
+
+namespace EShaderStage
+{
+#define SHADER_STAGE_TO_API_PAIR(ShaderStage,RelevantApiStage,EntryPointName,ShortName) { ShaderStage, { #ShaderStage, ShortName, EntryPointName, RelevantApiStage }}
+
+    const ShaderStageInfo* getShaderStageInfo(EShaderStage::Type shaderStage)
+    {
+        // Using here because this will be accessed while static initialization so it will available always.
+        static const std::map<Type, ShaderStageInfo> shaderStageToApiStage = {
+            SHADER_STAGE_TO_API_PAIR(Compute,VK_SHADER_STAGE_COMPUTE_BIT,"mainComp","comp"),
+            SHADER_STAGE_TO_API_PAIR(Vertex,VK_SHADER_STAGE_VERTEX_BIT,"mainVS","vert"),
+            SHADER_STAGE_TO_API_PAIR(TessellationControl,VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,"mainTC","tesc"),
+            SHADER_STAGE_TO_API_PAIR(TessellatonEvaluate,VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,"mainTE","tese"),
+            SHADER_STAGE_TO_API_PAIR(Geometry,VK_SHADER_STAGE_GEOMETRY_BIT,"mainGeo","geom"),
+            SHADER_STAGE_TO_API_PAIR(Fragment,VK_SHADER_STAGE_FRAGMENT_BIT,"mainFS","frag")
+        };
+
+        auto itr = shaderStageToApiStage.find(shaderStage);
+        if (itr != shaderStageToApiStage.end())
+        {
+            return &itr->second;
+        }
+        return nullptr;
+    }
+#undef SHADER_STAGE_TO_API_PAIR
 }
 
 #endif
