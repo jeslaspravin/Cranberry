@@ -28,6 +28,7 @@ public:
     uint64 allocatedSize() const;
     uint64 allocationOffset() const;
     VkDeviceMemory getDeviceMemory() const;
+    void* getMappedMemory() const;
 
     // Internal use only
     void setMemoryData(VulkanMemoryBlock* block);

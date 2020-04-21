@@ -107,6 +107,42 @@ public:
     /* Overrides ends */
 };
 
+class VulkanVertexBuffer final : public VulkanBufferResource
+{
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanVertexBuffer, , VulkanBufferResource, )
+
+private:
+    uint32 count;
+    uint32 stride;
+
+    VulkanVertexBuffer();
+public:
+    VulkanVertexBuffer(uint32 bufferStride, uint32 bufferCount = 1);
+
+    /* MemoryResource overrides */
+    uint64 getResourceSize() const override;
+
+    /* Overrides ends */
+};
+
+class VulkanIndexBuffer final : public VulkanBufferResource
+{
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanIndexBuffer, , VulkanBufferResource, )
+
+private:
+    uint32 count;
+    uint32 stride;
+
+    VulkanIndexBuffer();
+public:
+    VulkanIndexBuffer(uint32 bufferStride, uint32 bufferCount = 1);
+
+    /* MemoryResource overrides */
+    uint64 getResourceSize() const override;
+
+    /* Overrides ends */
+};
+
 namespace GraphicsTypes {
 
     typedef VulkanRBuffer GraphicsRBuffer;
@@ -116,4 +152,7 @@ namespace GraphicsTypes {
     typedef VulkanRTexelBuffer GraphicsRTexelBuffer;
     typedef VulkanWTexelBuffer GraphicsWTexelBuffer;
     typedef VulkanRWTexelBuffer GraphicsRWTexelBuffer;
+
+    typedef VulkanVertexBuffer GraphicsVertexBuffer;
+    typedef VulkanIndexBuffer GraphicsIndexBuffer;
 }

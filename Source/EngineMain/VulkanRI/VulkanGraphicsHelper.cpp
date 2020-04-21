@@ -395,6 +395,28 @@ void VulkanGraphicsHelper::deallocateBufferResource(class IGraphicsInstance* gra
     }
 }
 
+void VulkanGraphicsHelper::mapResource(class IGraphicsInstance* graphicsInstance, BufferResource* buffer)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    IVulkanMemoryResources* memoryResource = static_cast<VulkanBufferResource*>(buffer);
+
+    if (memoryResource->getMappedMemory() == nullptr)
+    {
+        gInstance->memoryAllocator->mapBuffer(memoryResource->getMemoryData());
+    }
+}
+
+void VulkanGraphicsHelper::unmapResource(class IGraphicsInstance* graphicsInstance, BufferResource* buffer)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    IVulkanMemoryResources* memoryResource = static_cast<VulkanBufferResource*>(buffer);
+
+    if (memoryResource->getMappedMemory() != nullptr)
+    {
+        gInstance->memoryAllocator->unmapBuffer(memoryResource->getMemoryData());
+    }
+}
+
 VkBufferView VulkanGraphicsHelper::createBufferView(class IGraphicsInstance* graphicsInstance, const VkBufferViewCreateInfo& viewCreateInfo)
 {
     const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
@@ -503,6 +525,28 @@ void VulkanGraphicsHelper::deallocateImageResource(class IGraphicsInstance* grap
     {
         gInstance->memoryAllocator->deallocateImage(resource->image, memoryResource->getMemoryData(),
             !resource->isStagingResource());// Every image apart from staging image are optimal
+    }
+}
+
+void VulkanGraphicsHelper::mapResource(class IGraphicsInstance* graphicsInstance, ImageResource* image)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    IVulkanMemoryResources* memoryResource = static_cast<VulkanImageResource*>(image);
+
+    if (memoryResource->getMappedMemory() == nullptr)
+    {
+        gInstance->memoryAllocator->mapImage(memoryResource->getMemoryData(), !image->isStagingResource());
+    }
+}
+
+void VulkanGraphicsHelper::unmapResource(class IGraphicsInstance* graphicsInstance, ImageResource* image)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    IVulkanMemoryResources* memoryResource = static_cast<VulkanImageResource*>(image);
+
+    if (memoryResource->getMappedMemory() != nullptr)
+    {
+        gInstance->memoryAllocator->unmapImage(memoryResource->getMemoryData(), !image->isStagingResource());
     }
 }
 

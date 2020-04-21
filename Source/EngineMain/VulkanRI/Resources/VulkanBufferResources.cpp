@@ -163,3 +163,51 @@ uint64 VulkanRWTexelBuffer::getResourceSize() const
     }
     return 0;
 }
+
+//////////////////////////////////////////////////////////////////////////
+//// Vertex buffer
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanVertexBuffer, VK_OBJECT_TYPE_BUFFER);
+
+VulkanVertexBuffer::VulkanVertexBuffer(uint32 bufferStride, uint32 bufferCount /*= 1*/)
+    : BaseType()
+    , count(bufferCount)
+    , stride(bufferStride)
+{
+    bufferUsage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+}
+
+VulkanVertexBuffer::VulkanVertexBuffer() : count(1), stride(0)
+{
+    bufferUsage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+}
+
+uint64 VulkanVertexBuffer::getResourceSize() const
+{
+    return count * stride;
+}
+
+//////////////////////////////////////////////////////////////////////////
+//// Index buffer
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanIndexBuffer, VK_OBJECT_TYPE_BUFFER);
+
+VulkanIndexBuffer::VulkanIndexBuffer(uint32 bufferStride, uint32 bufferCount /*= 1*/)
+    : BaseType()
+    , count(bufferCount)
+    , stride(bufferStride)
+{
+    bufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+}
+
+VulkanIndexBuffer::VulkanIndexBuffer() : count(1), stride(0)
+{
+    bufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+}
+
+uint64 VulkanIndexBuffer::getResourceSize() const
+{
+    return count * stride;
+}
