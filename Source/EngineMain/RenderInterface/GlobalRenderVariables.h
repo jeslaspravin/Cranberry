@@ -12,4 +12,7 @@ namespace GlobalRenderVariables
 
     extern GraphicsDeviceConstant<bool> ENABLED_TIMELINE_SEMAPHORE;
     extern GraphicsDeviceConstant<uint64> MAX_TIMELINE_OFFSET;
+
+    //in nanoseconds
+    extern GraphicsDeviceConstant<uint64> MAX_SYNC_RES_WAIT_TIME;
 }

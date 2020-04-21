@@ -75,21 +75,29 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\</IntDir>
     <OutDir>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\</IntDir>
     <OutDir>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\</IntDir>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -107,6 +115,16 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -126,6 +144,16 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -147,6 +175,16 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -170,6 +208,16 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Core\Engine\GameEngine.cpp" />
@@ -199,7 +247,7 @@
     <ClCompile Include="RenderInterface\Resources\GenericWindowCanvas.cpp" />
     <ClCompile Include="RenderInterface\Resources\Samplers\SamplerInterface.cpp" />
     <ClCompile Include="RenderInterface\Resources\ShaderResources.cpp" />
-    <ClCompile Include="RenderInterface\Shaders\DrawQuadWithTextureShader.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.cpp" />
     <ClCompile Include="StartMain.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanBufferResources.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanImageResources.cpp" />
@@ -264,7 +312,7 @@
     <ClInclude Include="RenderInterface\Resources\GenericWindowCanvas.h" />
     <ClInclude Include="RenderInterface\Resources\Samplers\SamplerInterface.h" />
     <ClInclude Include="RenderInterface\Resources\ShaderResources.h" />
-    <ClInclude Include="RenderInterface\Shaders\DrawQuadWithTextureShader.h" />
+    <ClInclude Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanBufferResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanImageResources.h" />

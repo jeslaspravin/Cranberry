@@ -180,7 +180,7 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*=
 
 void WindowsFile::write(const std::vector<uint8>& writeBytes) const
 {
-    if (!getFileHandleRaw() && !(fileFlags & EFileFlags::Write)) {
+    if (!getFileHandleRaw() || (fileFlags & EFileFlags::Write) == 0) {
         return;
     }
 

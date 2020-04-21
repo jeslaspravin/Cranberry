@@ -18,6 +18,8 @@ using GraphicsRWBuffer = GraphicsTypes::GraphicsRWBuffer;
 using GraphicsRTexelBuffer = GraphicsTypes::GraphicsRTexelBuffer;
 using GraphicsWTexelBuffer = GraphicsTypes::GraphicsWTexelBuffer;
 using GraphicsRWTexelBuffer = GraphicsTypes::GraphicsRWTexelBuffer;
+using GraphicsVertexBuffer = GraphicsTypes::GraphicsVertexBuffer;
+using GraphicsIndexBuffer = GraphicsTypes::GraphicsIndexBuffer;
 
 using GraphicsRenderTargetResource = GraphicsTypes::GraphicsRenderTargetResource;
 using GraphicsCubeImageResource = GraphicsTypes::GraphicsCubeImageResource;
