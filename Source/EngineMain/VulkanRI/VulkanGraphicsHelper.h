@@ -39,6 +39,8 @@ public:
         class IVulkanMemoryResources* memoryResource, bool cpuAccessible);
     static void deallocateBufferResource(class IGraphicsInstance* graphicsInstance,
         class IVulkanMemoryResources* memoryResource);
+    static void mapResource(class IGraphicsInstance* graphicsInstance, BufferResource* buffer);
+    static void unmapResource(class IGraphicsInstance* graphicsInstance, BufferResource* buffer);
     static VkBufferView createBufferView(class IGraphicsInstance* graphicsInstance, const VkBufferViewCreateInfo& viewCreateInfo);
     static void destroyBufferView(class IGraphicsInstance* graphicsInstance, VkBufferView view);
 
@@ -49,6 +51,8 @@ public:
         class IVulkanMemoryResources* memoryResource, bool cpuAccessible);
     static void deallocateImageResource(class IGraphicsInstance* graphicsInstance,
         class IVulkanMemoryResources* memoryResource);
+    static void mapResource(class IGraphicsInstance* graphicsInstance, ImageResource* image);
+    static void unmapResource(class IGraphicsInstance* graphicsInstance, ImageResource* image);
     static VkImageView createImageView(class IGraphicsInstance* graphicsInstance, const VkImageViewCreateInfo& viewCreateInfo);
     static void destroyImageView(class IGraphicsInstance* graphicsInstance, VkImageView view);
 

@@ -16,6 +16,7 @@ struct VulkanMemoryBlock
     // When free size value will be alignment value and when allocated it will be value of its total requested size
     uint64 size;
     VkDeviceMemory deviceMemory;
+    void* mappedMemory = nullptr;
     VulkanMemoryBlock* nextFreeBlock;
     uint32 free : 1;
 };
@@ -25,6 +26,11 @@ class VulkanMemoryChunk
 private:
     std::vector<VulkanMemoryBlock> blocks;
     VulkanMemoryBlock* freeBlockHead = nullptr;
+
+    VkDeviceMemory deviceMemory;
+
+    void* mappedMemory;
+    uint64 mappedMemRefCounter;
 
     uint64 cSize;
     // Must be power of 2
@@ -95,11 +101,12 @@ private:
     }
 
 public:
-    VkDeviceMemory deviceMemory;
 
     VulkanMemoryChunk(uint64 blockSize) 
-        : cSize(0)
-        , deviceMemory(nullptr)
+        : deviceMemory(nullptr)
+        , mappedMemory(nullptr)
+        , mappedMemRefCounter(0)
+        , cSize(0)
         , alignment(blockSize)
     {}
 
@@ -224,6 +231,28 @@ public:
         }
     }
 
+    void mapMemory(VulkanMemoryBlock* block, VulkanDevice* device)
+    {
+        if (mappedMemory == nullptr)
+        {
+            device->vkMapMemory(VulkanGraphicsHelper::getDevice(device), deviceMemory, 0, cSize, 0, &mappedMemory);
+        }
+
+        block->mappedMemory = reinterpret_cast<uint8*>(mappedMemory) + block->offset;
+        mappedMemRefCounter++;
+    }
+
+    void unmapMemory(VulkanMemoryBlock* block, VulkanDevice* device)
+    {
+        block->mappedMemory = nullptr;
+        mappedMemRefCounter--;
+        if (mappedMemRefCounter == 0)
+        {
+            device->vkUnmapMemory(VulkanGraphicsHelper::getDevice(device), deviceMemory);
+            mappedMemory = nullptr;
+        }
+    }
+
     uint64 availableHeapSize() const
     {
         uint64 heapSizeLeft = 0;
@@ -244,6 +273,11 @@ public:
     {
         return cSize;
     }
+
+    VkDeviceMemory getDeviceMemory() const
+    {
+        return deviceMemory;
+    }
 };
 
 class VulkanChunkAllocator
@@ -254,22 +288,22 @@ class VulkanChunkAllocator
     uint32 tIndex;
     uint32 hIndex;
 
-    std::vector<VulkanMemoryChunk> chunks;
-    std::vector<VulkanMemoryChunk> chunks2xAligned;
+    std::vector<VulkanMemoryChunk*> chunks;
+    std::vector<VulkanMemoryChunk*> chunks2xAligned;
 
-    int32 allocateNewChunk(std::vector<VulkanMemoryChunk>& chunks, uint64 alignment)
+    int32 allocateNewChunk(std::vector<VulkanMemoryChunk*>& chunks, uint64 alignment)
     {
         uint64 currentUsageSize;
         uint64 totalHeapSize;
         device->getMemoryStat(totalHeapSize, currentUsageSize, hIndex);
 
         uint64 allocatingSize;
-        VulkanMemoryChunk chunk = VulkanMemoryChunk(alignment);
-        chunk.alignSize(cSize, allocatingSize);
+        VulkanMemoryChunk* chunk = new VulkanMemoryChunk(alignment);
+        chunk->alignSize(cSize, allocatingSize);
 
         if (totalHeapSize - currentUsageSize < allocatingSize)
         {
-            chunk.alignSize(totalHeapSize - currentUsageSize, allocatingSize);
+            chunk->alignSize(totalHeapSize - currentUsageSize, allocatingSize);
             allocatingSize -= alignment;// Just to stay in safe limits
         }
 
@@ -297,10 +331,30 @@ class VulkanChunkAllocator
             Logger::error("VulkanMemory", "%s() : Allocating memory failed", __func__);
             return -1;
         }
-        int32 chunkIndex = (int32)chunks.size();
+
+        chunk->setMemory(allocatingSize, memory);
+        int32 chunkIndex = static_cast<int32>(chunks.size());
         chunks.push_back(chunk);
-        chunks[chunkIndex].setMemory(allocatingSize, memory);
         return chunkIndex;
+    }
+
+    VulkanMemoryChunk* findBlockChunk(VulkanMemoryBlock* block)
+    {
+        for (VulkanMemoryChunk* chunk : chunks)
+        {
+            if (chunk->isInChunk(block))
+            {
+                return chunk;
+            }
+        }
+        for (VulkanMemoryChunk* chunk : chunks2xAligned)
+        {
+            if (chunk->isInChunk(block))
+            {
+                return chunk;
+            }
+        }
+        return nullptr;
     }
 
 public:
@@ -320,13 +374,15 @@ public:
 
     ~VulkanChunkAllocator()
     {
-        for (VulkanMemoryChunk& chunk : chunks)
+        for (VulkanMemoryChunk* chunk : chunks)
         {
-            device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk.deviceMemory, nullptr);
+            device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk->getDeviceMemory(), nullptr);
+            delete chunk;
         }
-        for (VulkanMemoryChunk& chunk : chunks2xAligned)
+        for (VulkanMemoryChunk* chunk : chunks2xAligned)
         {
-            device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk.deviceMemory, nullptr);
+            device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk->getDeviceMemory(), nullptr);
+            delete chunk;
         }
         chunks.clear();
         chunks2xAligned.clear();
@@ -335,13 +391,13 @@ public:
     uint64 allocatorSize() const
     {
         uint64 totalSize = 0;
-        for (const VulkanMemoryChunk& chunk : chunks)
+        for (const VulkanMemoryChunk* chunk : chunks)
         {
-            totalSize += chunk.chunkSize();
+            totalSize += chunk->chunkSize();
         }
-        for (const VulkanMemoryChunk& chunk : chunks2xAligned)
+        for (const VulkanMemoryChunk* chunk : chunks2xAligned)
         {
-            totalSize += chunk.chunkSize();
+            totalSize += chunk->chunkSize();
         }
         return totalSize;
     }
@@ -349,17 +405,17 @@ public:
     VulkanMemoryBlock* allocate(const uint64& size, const uint64& offsetAlignment)
     {
         VulkanMemoryBlock* allocatedBlock = nullptr;
-        std::vector<std::pair<std::vector<VulkanMemoryChunk>*, uint64>> sortedChunks;
+        std::vector<std::pair<std::vector<VulkanMemoryChunk*>*, uint64>> sortedChunks;
         {
             uint64 aligned;
             uint64 aligned2x;
-            chunks[0].alignSize(size, aligned);
-            chunks2xAligned[0].alignSize(size, aligned2x);
+            chunks[0]->alignSize(size, aligned);
+            chunks2xAligned[0]->alignSize(size, aligned2x);
 
             sortedChunks.push_back({ &chunks,aligned - size });
             sortedChunks.push_back({ &chunks2xAligned,aligned2x - size });
-            std::sort(sortedChunks.begin(), sortedChunks.end(), [](std::pair<std::vector<VulkanMemoryChunk>*, uint64>& lhs,
-                std::pair<std::vector<VulkanMemoryChunk>*, uint64>& rhs)
+            std::sort(sortedChunks.begin(), sortedChunks.end(), [](std::pair<std::vector<VulkanMemoryChunk*>*, uint64>& lhs,
+                std::pair<std::vector<VulkanMemoryChunk*>*, uint64>& rhs)
             {
                 return lhs.second < rhs.second;
             });
@@ -371,7 +427,7 @@ public:
             
             for (int32 index = (int32)chunks.first->size() - 1; index >= 0; --index)
             {
-                allocatedBlock = chunks.first->at(index).allocateBlock(alignedSize, offsetAlignment);
+                allocatedBlock = chunks.first->at(index)->allocateBlock(alignedSize, offsetAlignment);
                 if (allocatedBlock)
                 {
                     return allocatedBlock;
@@ -383,14 +439,14 @@ public:
         {
             uint64 alignedSize = size + chunks.second;
             uint64 alignment;
-            chunks.first->at(0).alignSize(1, alignment);
+            chunks.first->at(0)->alignSize(1, alignment);
             int32 index = allocateNewChunk(*chunks.first, alignment);
 
             if (index < 0)
             {
                 continue;
             }
-            allocatedBlock = chunks.first->at(index).allocateBlock(alignedSize, offsetAlignment);
+            allocatedBlock = chunks.first->at(index)->allocateBlock(alignedSize, offsetAlignment);
             if (allocatedBlock)
             {
                 break;
@@ -400,24 +456,37 @@ public:
         return allocatedBlock;
     }
 
+    bool mapMemory(VulkanMemoryBlock* block)
+    {
+        if (VulkanMemoryChunk* chunk = findBlockChunk(block))
+        {
+            chunk->mapMemory(block, device);
+            return true;
+        }
+        return false;
+    }
+
+    bool unmapMemory(VulkanMemoryBlock* block)
+    {
+        if (VulkanMemoryChunk* chunk = findBlockChunk(block))
+        {
+            chunk->unmapMemory(block, device);
+            return true;
+        }
+        return false;
+    }
+
     // return true if removed from this allocator
     bool free(VulkanMemoryBlock* block)
     {
-        for (VulkanMemoryChunk& chunk : chunks)
+        if (VulkanMemoryChunk* chunk = findBlockChunk(block))
         {
-            if (chunk.isInChunk(block))
+            if (block->mappedMemory != nullptr)
             {
-                chunk.freeBlock(block);
-                return true;
+                chunk->unmapMemory(block, device);
             }
-        }
-        for (VulkanMemoryChunk& chunk : chunks2xAligned)
-        {
-            if (chunk.isInChunk(block))
-            {
-                chunk.freeBlock(block);
-                return true;
-            }
+            chunk->freeBlock(block);
+            return true;
         }
         return false;
     }
@@ -680,7 +749,9 @@ public:
             block = linearChunkAllocators[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
 
             if (block)
+            {
                 break;
+            }
         }
 
         return block;
@@ -715,7 +786,9 @@ public:
             block = chunkAllocator[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
 
             if (block)
+            {
                 break;
+            }
         }
 
         return block;
@@ -751,6 +824,74 @@ public:
             if (chunkAllocator[indexPropPair.first]->free(block))
             {
                 break;
+            }
+        }
+    }
+
+
+    void mapBuffer(VulkanMemoryBlock* block) override
+    {
+        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        {
+            if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
+            {
+                continue;
+            }
+            if (linearChunkAllocators[indexPropPair.first]->mapMemory(block))
+            {
+                return;
+            }
+        }
+    }
+
+
+    void unmapBuffer(VulkanMemoryBlock* block) override
+    {
+        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        {
+            if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
+            {
+                continue;
+            }
+            if (linearChunkAllocators[indexPropPair.first]->unmapMemory(block))
+            {
+                return;
+            }
+        }
+    }
+
+
+    void mapImage(VulkanMemoryBlock* block, bool bIsOptimalTiled) override
+    {
+        VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
+
+        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        {
+            if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
+            {
+                continue;
+            }
+            if (chunkAllocator[indexPropPair.first]->mapMemory(block))
+            {
+                return;
+            }
+        }
+    }
+
+
+    void unmapImage(VulkanMemoryBlock* block, bool bIsOptimalTiled) override
+    {
+        VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
+
+        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        {
+            if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
+            {
+                continue;
+            }
+            if (chunkAllocator[indexPropPair.first]->unmapMemory(block))
+            {
+                return;
             }
         }
     }
@@ -836,5 +977,10 @@ VulkanMemoryBlock* IVulkanMemoryResources::getMemoryData() const
 VkDeviceMemory IVulkanMemoryResources::getDeviceMemory() const
 {
     return blockData->deviceMemory;
+}
+
+void* IVulkanMemoryResources::getMappedMemory() const
+{
+    return blockData->mappedMemory;
 }
 
