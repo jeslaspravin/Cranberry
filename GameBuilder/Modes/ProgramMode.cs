@@ -15,8 +15,7 @@ namespace GameBuilder.Modes
 
     class ProgramMode
     {
-
-        public virtual ModeExecutionResult execute(string[] args)
+        public virtual ModeExecutionResult execute(Dictionary<string,List<string>> consoleArgs)
         {
             return ModeExecutionResult.Failure;
         }
