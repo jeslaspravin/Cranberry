@@ -102,7 +102,7 @@ void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
         waitInfo.pSemaphores = &semaphore;
         waitInfo.semaphoreCount = 1;
         waitInfo.pValues = &value;
-        TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkWaitSemaphores)(ownerDevice, &waitInfo, 2000000000/*2 Seconds*/);
+        TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkWaitSemaphores)(ownerDevice, &waitInfo, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
     }
 }
 
@@ -210,7 +210,7 @@ VulkanFence::VulkanFence(const VulkanDevice* deviceInstance)
 
 void VulkanFence::waitForSignal() const
 {
-    VkResult result = vulkanDevice->vkWaitForFences(ownerDevice, 1, &fence, VK_TRUE, 20000000/*50ms*/);
+    VkResult result = vulkanDevice->vkWaitForFences(ownerDevice, 1, &fence, VK_TRUE, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
 
     if (result == VK_TIMEOUT)
     {

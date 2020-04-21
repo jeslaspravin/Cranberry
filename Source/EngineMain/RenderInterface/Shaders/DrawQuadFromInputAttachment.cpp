@@ -1,11 +1,11 @@
-#include "DrawQuadWithTextureShader.h"
+#include "DrawQuadFromInputAttachment.h"
 
-DEFINE_GRAPHICS_RESOURCE(DrawQuadWithTextureShader);
+DEFINE_GRAPHICS_RESOURCE(DrawQuadFromInputAttachment);
 
-DrawQuadWithTextureShader::DrawQuadWithTextureShader() : BaseType("DrawQuadWithTexture")
+DrawQuadFromInputAttachment::DrawQuadFromInputAttachment() : BaseType("DrawQuadFromInputAttachment")
 {
     String filePath;
-    filePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), "Shaders", "DrawQuad");
+    filePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), "Shaders", "DrawQuadFromInputAttachment");
 
     SharedPtr<ShaderCodeResource> vertexCode(shaderCodeFactory(this, filePath + "." 
         + EShaderStage::getShaderStageInfo(EShaderStage::Vertex)->shortName + "." + SHADER_EXTENSION));

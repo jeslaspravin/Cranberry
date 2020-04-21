@@ -255,7 +255,7 @@
     <ClCompile Include="VulkanRI\Resources\VulkanShaderResources.cpp">
       <Filter>Source Files\VulkanRI\Resources</Filter>
     </ClCompile>
-    <ClCompile Include="RenderInterface\Shaders\DrawQuadWithTextureShader.cpp">
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.cpp">
       <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
@@ -458,7 +458,7 @@
     <ClInclude Include="VulkanRI\Resources\VulkanShaderResources.h">
       <Filter>Source Files\VulkanRI\Resources</Filter>
     </ClInclude>
-    <ClInclude Include="RenderInterface\Shaders\DrawQuadWithTextureShader.h">
+    <ClInclude Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.h">
       <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClInclude>
   </ItemGroup>

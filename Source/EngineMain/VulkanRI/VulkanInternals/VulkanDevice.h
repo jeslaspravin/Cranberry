@@ -93,7 +93,6 @@ public:
     [[nodiscard]] int32 compare(const VulkanDevice& otherDevice) const;
     [[nodiscard]] bool isValidDevice() const;
 
-    // For time line semaphore.
     void getMemoryStat(uint64& totalBudget, uint64& usage,uint32 heapIndex);
 
 public:

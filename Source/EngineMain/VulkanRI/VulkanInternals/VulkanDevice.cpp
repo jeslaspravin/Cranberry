@@ -22,6 +22,8 @@ namespace GlobalRenderVariables
 
     GraphicsDeviceConstant<bool> ENABLED_TIMELINE_SEMAPHORE;
     GraphicsDeviceConstant<uint64> MAX_TIMELINE_OFFSET(0);
+
+    GraphicsDeviceConstant<uint64> MAX_SYNC_RES_WAIT_TIME(500000000);/*500ms*/
 }
 
 void VulkanDevice::markEnabledFeatures()
