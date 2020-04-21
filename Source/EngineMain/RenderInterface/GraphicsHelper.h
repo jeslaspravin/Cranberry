@@ -68,4 +68,21 @@ public:
     {
         return HelperType::createSampler(graphicsInstance, name, samplerTiling, samplerFiltering, poorMipLod);
     }
+
+    static void mapResource(class IGraphicsInstance* graphicsInstance, class BufferResource* buffer)
+    {
+        return HelperType::mapResource(graphicsInstance, buffer);
+    }
+    static void unmapResource(class IGraphicsInstance* graphicsInstance, class BufferResource* buffer)
+    {
+        return HelperType::unmapResource(graphicsInstance, buffer);
+    }
+    static void mapResource(class IGraphicsInstance* graphicsInstance, class ImageResource* image)
+    {
+        return HelperType::mapResource(graphicsInstance, image);
+    }
+    static void unmapResource(class IGraphicsInstance* graphicsInstance, class ImageResource* image)
+    {
+        return HelperType::unmapResource(graphicsInstance, image);
+    }
 };

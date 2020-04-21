@@ -79,6 +79,8 @@ DEVICE_VK_FUNCTIONS(vkDestroyFence)
 /* Memory and Buffers */
 DEVICE_VK_FUNCTIONS(vkAllocateMemory)
 DEVICE_VK_FUNCTIONS(vkFreeMemory)
+DEVICE_VK_FUNCTIONS(vkMapMemory)
+DEVICE_VK_FUNCTIONS(vkUnmapMemory)
 
 DEVICE_VK_FUNCTIONS(vkCreateBuffer)
 DEVICE_VK_FUNCTIONS(vkGetBufferMemoryRequirements)
@@ -141,12 +143,24 @@ DEVICE_VK_FUNCTIONS(vkEndCommandBuffer);
 
 /* Commands */
 DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier)
+
+DEVICE_VK_FUNCTIONS(vkCmdCopyBuffer);
+
 DEVICE_VK_FUNCTIONS(vkCmdClearColorImage)
+DEVICE_VK_FUNCTIONS(vkCmdDraw)
+DEVICE_VK_FUNCTIONS(vkCmdDrawIndexed)
 
 DEVICE_VK_FUNCTIONS(vkCmdBeginRenderPass)
 DEVICE_VK_FUNCTIONS(vkCmdNextSubpass)
 DEVICE_VK_FUNCTIONS(vkCmdEndRenderPass)
 
+DEVICE_VK_FUNCTIONS(vkCmdSetScissor)
+DEVICE_VK_FUNCTIONS(vkCmdSetViewport)
+
+DEVICE_VK_FUNCTIONS(vkCmdBindPipeline)
+DEVICE_VK_FUNCTIONS(vkCmdBindDescriptorSets)
+DEVICE_VK_FUNCTIONS(vkCmdBindVertexBuffers)
+DEVICE_VK_FUNCTIONS(vkCmdBindIndexBuffer)
 
 /* Debug Functions */
 DEVICE_VK_FUNCTIONS(vkQueueBeginDebugUtilsLabelEXT)

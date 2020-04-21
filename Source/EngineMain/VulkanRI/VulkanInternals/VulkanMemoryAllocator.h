@@ -23,6 +23,11 @@ public:
 
     virtual void deallocateBuffer(VkBuffer buffer, VulkanMemoryBlock* block) = 0;
     virtual void deallocateImage(VkImage image, VulkanMemoryBlock* block, bool bIsOptimalTiled) = 0;
+
+    virtual void mapBuffer(VulkanMemoryBlock* block) = 0;
+    virtual void unmapBuffer(VulkanMemoryBlock* block) = 0;
+    virtual void mapImage(VulkanMemoryBlock* block, bool bIsOptimalTiled) = 0;
+    virtual void unmapImage(VulkanMemoryBlock* block, bool bIsOptimalTiled) = 0;
 };
 
 namespace std {

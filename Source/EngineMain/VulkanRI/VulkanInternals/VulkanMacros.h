@@ -42,6 +42,7 @@ VkSubmitInfo VariableName;                          \
 VariableName.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; \
 VariableName.pNext = nullptr;                       \
 VariableName.pSignalSemaphores = nullptr;           \
+VariableName.pWaitDstStageMask = nullptr;             \
 VariableName.pWaitSemaphores = nullptr;             \
 VariableName.signalSemaphoreCount = 0;              \
 VariableName.waitSemaphoreCount = 0
