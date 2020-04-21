@@ -14,7 +14,7 @@ namespace GameBuilder.Logger
     {
         static LoggerUtils()
         {
-            string logDirectory = Path.Combine(Directories.ENGINE_ROOT, "Generated\\BuildLogs\\");
+            string logDirectory = Path.Combine(Directories.BINARIES_ROOT, "Generated\\BuildLogs\\");
 
             if (!Directory.Exists(logDirectory))
             {
@@ -54,23 +54,49 @@ namespace GameBuilder.Logger
             loggers.Add(new LogFile(fileToRename));
             loggers.Add(new LogConsole());
 
-            tasksPending = new Queue<Task>();
+            logsToWrite = new List<Queue<Action>>();
+            logsToWrite.Add(new Queue<Action>());
+            logsToWrite.Add(new Queue<Action>());
+
+            logWriterTask = Task.Run(logTaskExecute);
         }
 
         private static int MAX_ALLOWED_FILE = 5;
 
         private static List<LogBase> loggers;
-        private static Queue<Task> tasksPending;
+        // Will alway be > 1 count
+        private static List<Queue<Action>> logsToWrite;
+        private static int queueToWrite = 0;
 
-        private static int indentCounter = 0;
+        private static int exitTask = 0;
+        private static Task logWriterTask;
         
+        private static void logTaskExecute()
+        {
+            while(exitTask == 0)
+            {
+                int qIndex = queueToWrite;
+                Interlocked.Exchange(ref queueToWrite, (qIndex + 1) % logsToWrite.Count);
+
+                while (logsToWrite[qIndex].Count > 0)
+                {
+                    logsToWrite[qIndex].Peek().Invoke();
+                    logsToWrite[qIndex].Dequeue();
+                }
+            }
+
+            foreach(Queue<Action> q in logsToWrite)
+            {
+                while (q.Count > 0)
+                {
+                    q.Peek().Invoke();
+                    q.Dequeue();
+                }
+            }
+        }
 
         private static void WriteLog(string message)
         {
-            while (tasksPending.Count>0 && tasksPending.Peek().IsCompleted)
-            {
-                tasksPending.Dequeue();
-            }
             foreach (LogBase logger in loggers)
             {
                 logger.WriteLog(message);
@@ -82,40 +108,10 @@ namespace GameBuilder.Logger
         {
             StringBuilder sb = new StringBuilder(message);
 
-            if (indentCounter != 0)
-                sb.Insert(0, "\t", indentCounter);
-
-
             string finalMessage = string.Format(sb.ToString(), args);
 
-            tasksPending.Enqueue(Task.Run(() => WriteLog(finalMessage)));
+            logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
 
-        }
-
-
-        // Logs and then increments the indent
-        public static void LogBeforeIndent(bool forward, string message, params object[] args)
-        {
-            StringBuilder sb = new StringBuilder(message);
-
-            if (indentCounter != 0)
-                sb.Insert(0, "\t", indentCounter);
-
-            string finalMessage = string.Format(sb.ToString(), args);
-            tasksPending.Enqueue(Task.Run(() => WriteLog(finalMessage)));
-
-            if (forward)
-            {
-                Interlocked.Increment(ref indentCounter);
-            }
-            else
-            {
-                Interlocked.Decrement(ref indentCounter);
-                if (indentCounter < 0)
-                {
-                    Interlocked.Exchange(ref indentCounter, 0);
-                }
-            }
         }
 
         public static void Warn(string message, params object[] args)
@@ -124,9 +120,6 @@ namespace GameBuilder.Logger
             StringBuilder sb = new StringBuilder(message);
             sb.Insert(0, "WARN : ", 1);
 
-            if (indentCounter != 0)
-                sb.Insert(0, "\t", indentCounter);
-
             StackTrace st = new StackTrace(true);
             StackFrame frameOfInterest = st.GetFrame(1);
 
@@ -134,16 +127,12 @@ namespace GameBuilder.Logger
                 , frameOfInterest.GetMethod().ToString(), frameOfInterest.GetFileLineNumber()));
 
             string finalMessage = string.Format(sb.ToString(), args);
-            tasksPending.Enqueue(Task.Run(() => WriteLog(finalMessage)));
+            logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
         }
 
         public static void Error(string message, params object[] args)
         {
             StringBuilder sb = new StringBuilder(message);
-            sb.Insert(0, "ERROR : ", 1);
-
-            if (indentCounter != 0)
-                sb.Insert(0, "\t", indentCounter);
 
             StackTrace st = new StackTrace(true);
             StackFrame frameOfInterest = st.GetFrame(1);
@@ -151,7 +140,7 @@ namespace GameBuilder.Logger
                 , frameOfInterest.GetMethod().ToString(), frameOfInterest.GetFileLineNumber()));
 
             string finalMessage = string.Format(sb.ToString(), args);
-            tasksPending.Enqueue(Task.Run(() => WriteLog(finalMessage)));
+            logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
 
         }
 
@@ -159,9 +148,6 @@ namespace GameBuilder.Logger
         {
             StringBuilder sb = new StringBuilder(message);
             sb.Insert(0, "ERROR : ", 1);
-
-            if (indentCounter != 0)
-                sb.Insert(0, "\t", indentCounter);
 
             StackTrace st = new StackTrace(true);
             StackFrame frameOfInterest = st.GetFrame(1);
@@ -172,16 +158,13 @@ namespace GameBuilder.Logger
 
 
             string finalMessage = string.Format(sb.ToString(), args);
-            tasksPending.Enqueue(Task.Run(() => WriteLog(finalMessage)));
+            logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
         }
 
         public static void waitUntilTasksFinished()
         {
-            while(tasksPending.Count > 0)
-            {
-                Task task = tasksPending.Dequeue();
-                task.Wait();
-            }
+            Interlocked.Exchange(ref exitTask, 1);
+            logWriterTask.Wait();
         }
     }
 }
