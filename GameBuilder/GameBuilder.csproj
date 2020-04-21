@@ -44,16 +44,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuildFileUtils\Directories.cs" />
+    <Compile Include="BuildFileUtils\ProcessUtils.cs" />
     <Compile Include="Logger\LogBase.cs" />
     <Compile Include="Logger\LogConsole.cs" />
     <Compile Include="Logger\LogFile.cs" />
     <Compile Include="Logger\LoggerUtils.cs" />
     <Compile Include="Modes\BuildProjectMode.cs" />
     <Compile Include="Modes\CleanProjectMode.cs" />
+    <Compile Include="Modes\CompileShadersMode.cs" />
     <Compile Include="Modes\GenerateProjectFilesMode.cs" />
     <Compile Include="ProgramMain.cs" />
     <Compile Include="Modes\ProgramMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ShaderCompiling\ShaderCompiler.cs" />
+    <Compile Include="ShaderCompiling\VulkanShaderCompiler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
