@@ -69,6 +69,7 @@ struct BasicPipeline
 {
     VkPipeline pipeline;
     VkPipelineCache cache;
+    VkPipelineLayout layout;
 };
 
 class ExperimentalEngine : public GameEngine
@@ -106,13 +107,17 @@ class ExperimentalEngine : public GameEngine
     std::vector<VkClearValue> attachmentsClearColors;// For render pass
     SharedPtr<GraphicsSemaphore> renderpassSemaphore;
     std::vector<SharedPtr<GraphicsSemaphore>> presentWaitOn;
+    VkDescriptorSetLayout subpass1DescLayout;
+    VkDescriptorSet subpass1DescSet;
+    void createInputAttachmentDescriptors();
+    void destroyInputAttachmentDescriptors();
     void createRenderpass();
     void destroyRenderpass();
 
-    VkPipelineLayout pipelineLayout;// Right now not using any descriptors set so same layout for both tri and quad draw pipelines
     PlatformFile pipelineCacheFile;
-
     BasicPipeline drawTriPipeline;
+    class BufferResource* quadVertexBuffer = nullptr;
+    class BufferResource* quadIndexBuffer = nullptr;
     BasicPipeline drawQuadPipeline;
     void createPipelineCache();
     void writeAndDestroyPipelineCache();

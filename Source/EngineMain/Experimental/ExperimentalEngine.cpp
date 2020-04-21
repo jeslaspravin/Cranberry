@@ -14,7 +14,7 @@
 #include "../Core/Platform/PlatformAssertionErrors.h"
 #include "../VulkanRI/Resources/VulkanShaderResources.h"
 #include "Shaders/TriangleShader.h"
-#include "../RenderInterface/Shaders/DrawQuadWithTextureShader.h"
+#include "../RenderInterface/Shaders/DrawQuadFromInputAttachment.h"
 #include "../Core/Types/Colors.h"
 
 #include <glm/ext/vector_float3.hpp>
@@ -278,8 +278,8 @@ void ExperimentalEngine::createShaderResDescriptors()
     }
     // Descriptors set allocation and descriptors pool creation
     {
-        // Since our shader pipeline descriptor set has only 4 types of descriptor
-        std::array<VkDescriptorPoolSize, 4> descriptorsAndCounts;
+        // Since our shader pipeline descriptor set has only 4 + 1 input attachment types of descriptor
+        std::array<VkDescriptorPoolSize, 5> descriptorsAndCounts;
         // Index ordering doesnt matter between layout's binding and pool allocatable descriptors 
         // For vertex shader, vertex float texel buffer.
         descriptorsAndCounts[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
@@ -293,6 +293,9 @@ void ExperimentalEngine::createShaderResDescriptors()
         // For frag shader, texture
         descriptorsAndCounts[0].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         descriptorsAndCounts[0].descriptorCount = 1;
+        // For frag shader, input attachment
+        descriptorsAndCounts[4].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        descriptorsAndCounts[4].descriptorCount = 1;
 
         DESCRIPTOR_POOL_CREATE_INFO(descPoolCreateInfo);
         descPoolCreateInfo.maxSets = 3;
@@ -391,6 +394,64 @@ void ExperimentalEngine::destroyShaderResDescriptors()
     }
 }
 
+void ExperimentalEngine::createInputAttachmentDescriptors()
+{
+    {
+        VkDescriptorSetLayoutBinding inputAttachmentDescBinding;
+        inputAttachmentDescBinding.binding = 0;
+        inputAttachmentDescBinding.descriptorCount = 1;
+        inputAttachmentDescBinding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        inputAttachmentDescBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        inputAttachmentDescBinding.pImmutableSamplers = nullptr;
+        DESCRIPTOR_SET_LAYOUT_CREATE_INFO(layoutCreateInfo);
+        layoutCreateInfo.bindingCount = 1;
+        layoutCreateInfo.pBindings = &inputAttachmentDescBinding;
+
+        if (vDevice->vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &subpass1DescLayout) != VK_SUCCESS)
+        {
+            Logger::error("ExperimentalEngine", "%s() : Failed creating descriptors set layout for input attachment in subpass1", __func__);
+            subpass1DescLayout = nullptr;
+            return;
+        }
+    }
+
+    {
+        DESCRIPTOR_SET_ALLOCATE_INFO(descAllocateInfo);
+        descAllocateInfo.descriptorPool = descriptorsPool;
+        descAllocateInfo.descriptorSetCount = 1;
+        descAllocateInfo.pSetLayouts = &subpass1DescLayout;
+
+        if (vDevice->vkAllocateDescriptorSets(device, &descAllocateInfo, &subpass1DescSet) != VK_SUCCESS)
+        {
+            Logger::error("ExperimentalEngine", "%s() : Failed creating descriptors set for input attachment in subpass1", __func__);
+            subpass1DescSet = nullptr;
+            return;
+        }
+    }
+
+    VkDescriptorImageInfo textureInfo;
+    textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    textureInfo.imageView = rtTexture.imageView;
+    textureInfo.sampler = nullptr;
+
+    WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeToDescSet);
+    writeToDescSet.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    writeToDescSet.dstBinding = 0;
+    writeToDescSet.dstSet = subpass1DescSet;
+    writeToDescSet.pImageInfo = &textureInfo;
+
+    vDevice->vkUpdateDescriptorSets(device, 1, &writeToDescSet, 0, nullptr);
+}
+
+void ExperimentalEngine::destroyInputAttachmentDescriptors()
+{
+    if (subpass1DescLayout)
+    {
+        vDevice->vkDestroyDescriptorSetLayout(device, subpass1DescLayout, nullptr);
+        subpass1DescSet = nullptr;
+    }
+}
+
 void ExperimentalEngine::createRenderpass()
 {
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
@@ -413,7 +474,7 @@ void ExperimentalEngine::createRenderpass()
         renderTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachmentsDesc[0] = renderTargetAttachment;
         framebufferAttachments[0] = rtTexture.imageView;
-        attachmentsClearColors[0].color = { 0.0f ,1.0f,0.0f,1.0f };// Green
+        attachmentsClearColors[0].color = { 0.0f ,0.0f,0.0f,1.0f };// Green
 
         VkAttachmentDescription swapchainAttachment;
         swapchainAttachment.flags = 0;
@@ -505,10 +566,13 @@ void ExperimentalEngine::createRenderpass()
             Logger::error("ExperimentalEngine", "%s() : Creating frame buffer failed for swapchain index %d", __func__, i);
         }
     }
+
+    createInputAttachmentDescriptors();
 }
 
 void ExperimentalEngine::destroyRenderpass()
 {
+    destroyInputAttachmentDescriptors();
     for (int32 i = 0; i < framebuffers.size(); ++i)
     {
         vDevice->vkDestroyFramebuffer(device, framebuffers[i], nullptr);
@@ -612,26 +676,86 @@ void ExperimentalEngine::writeAndDestroyPipelineCache()
 void ExperimentalEngine::createPipelineForSubpass()
 {
     createPipelineCache();
-
-    PIPELINE_LAYOUT_CREATE_INFO(pipelineLayoutCreateInfo);
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
-    pipelineLayoutCreateInfo.setLayoutCount = 0;
-    pipelineLayoutCreateInfo.pSetLayouts = nullptr;
-    fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout)
-        == VK_SUCCESS, "Failed creating pipeline layout");
-
     createTriDrawPipeline();
+
+    const std::array<glm::vec3, 4> quadVerts = { glm::vec3(-1,-1,0),glm::vec3(1,-1,0),glm::vec3(-1,1,0),glm::vec3(1,1,0) };
+    const std::array<uint32, 6> quadIndices = { 0,3,2,0,1,3 };// 3 Per tri of quad
+
+    quadVertexBuffer = new GraphicsVertexBuffer(sizeof(glm::vec3), static_cast<uint32>(quadVerts.size()));
+    quadVertexBuffer->setResourceName("ScreenQuadVertices");
+    quadVertexBuffer->init();
+    quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
+    quadVertexBuffer->setResourceName("ScreenQuadIndices");
+    quadIndexBuffer->init();
+
+    {
+        GraphicsVertexBuffer vertStagingBuffer(sizeof(glm::vec3), static_cast<uint32>(quadVerts.size()));
+        vertStagingBuffer.setAsStagingResource(true);
+        vertStagingBuffer.init();
+        GraphicsIndexBuffer indexStagingBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
+        indexStagingBuffer.setAsStagingResource(true);
+        indexStagingBuffer.init();
+
+        // Uploading to staging buffer
+        {
+            IGraphicsInstance* graphicsInst = getRenderApi()->getGraphicsInstance();
+            GraphicsHelper::mapResource(graphicsInst,&vertStagingBuffer);
+            GraphicsHelper::mapResource(graphicsInst, &indexStagingBuffer);
+            memcpy(vertStagingBuffer.getMappedMemory(), quadVerts.data(), quadVertexBuffer->getResourceSize());
+            memcpy(indexStagingBuffer.getMappedMemory(), quadIndices.data(), quadIndexBuffer->getResourceSize());
+            GraphicsHelper::unmapResource(graphicsInst, &vertStagingBuffer);
+            GraphicsHelper::unmapResource(graphicsInst, &indexStagingBuffer);
+        }
+        // Copying to actual buffers
+        {
+            CMD_BUFFER_ALLOC_INFO(cmdAllocInfo);
+            cmdAllocInfo.commandBufferCount = 1;
+            cmdAllocInfo.commandPool = pools[EQueueFunction::Transfer].tempCommandsPool;
+            VkCommandBuffer tempBuffer;
+            vDevice->vkAllocateCommandBuffers(device, &cmdAllocInfo, &tempBuffer);
+
+            VkBufferCopy vertCopyRegion{ 0,0, quadVertexBuffer->getResourceSize() };
+            VkBufferCopy indexCopyRegion{ 0,0, quadIndexBuffer->getResourceSize() };
+
+            CMD_BUFFER_BEGIN_INFO(cmdBeginInfo);
+            cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            vDevice->vkBeginCommandBuffer(tempBuffer, &cmdBeginInfo);
+
+            vDevice->vkCmdCopyBuffer(tempBuffer, vertStagingBuffer.buffer, static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, 1, &vertCopyRegion);
+            vDevice->vkCmdCopyBuffer(tempBuffer, indexStagingBuffer.buffer, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 1, &indexCopyRegion);
+
+            vDevice->vkEndCommandBuffer(tempBuffer);
+
+            SUBMIT_INFO(tempCmdSubmit);
+            tempCmdSubmit.commandBufferCount = 1;
+            tempCmdSubmit.pCommandBuffers = &tempBuffer;
+            vDevice->vkQueueSubmit(getQueue<EQueueFunction::Transfer>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>(),
+                1, &tempCmdSubmit, static_cast<VulkanFence*>(cmdSubmitFence.get())->fence);
+
+            cmdSubmitFence->waitForSignal();
+            vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Transfer].tempCommandsPool, 1, &tempBuffer);
+        }
+        vertStagingBuffer.release();
+        indexStagingBuffer.release();
+    }
     createQuadDrawPipeline();
 }
 
 void ExperimentalEngine::destroySubpassPipelines()
 {
     writeAndDestroyPipelineCache();
-    vDevice->vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
+    vDevice->vkDestroyPipelineLayout(device, drawTriPipeline.layout, nullptr);
     vDevice->vkDestroyPipeline(device, drawTriPipeline.pipeline, nullptr);
+    vDevice->vkDestroyPipelineLayout(device, drawQuadPipeline.layout, nullptr);
     vDevice->vkDestroyPipeline(device, drawQuadPipeline.pipeline, nullptr);
+
+    quadVertexBuffer->release();
+    quadIndexBuffer->release();
+    delete quadVertexBuffer;
+    quadVertexBuffer = nullptr;
+    delete quadIndexBuffer;
+    quadIndexBuffer = nullptr;
 }
 
 void ExperimentalEngine::createTriDrawPipeline()
@@ -721,7 +845,17 @@ void ExperimentalEngine::createTriDrawPipeline()
     dynamicStateCreateInfo.dynamicStateCount = static_cast<VkDynamicState>(dynamicStates.size());
     dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
     graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
-    graphicsPipelineCreateInfo.layout = pipelineLayout;
+
+
+    PIPELINE_LAYOUT_CREATE_INFO(pipelineLayoutCreateInfo);
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutCreateInfo.setLayoutCount = 0;
+    pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+    fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &drawTriPipeline.layout)
+        == VK_SUCCESS, "Failed creating draw triangle pipeline layout");
+
+    graphicsPipelineCreateInfo.layout = drawTriPipeline.layout;
     graphicsPipelineCreateInfo.renderPass = renderPass;
     graphicsPipelineCreateInfo.subpass = 0;
 
@@ -732,7 +866,7 @@ void ExperimentalEngine::createTriDrawPipeline()
 
 void ExperimentalEngine::createQuadDrawPipeline()
 {
-    ShaderResource* shaderResource = static_cast<ShaderResource*>(DrawQuadWithTextureShader::staticType()->getDefault());
+    ShaderResource* shaderResource = static_cast<ShaderResource*>(DrawQuadFromInputAttachment::staticType()->getDefault());
 
     GRAPHICS_PIPELINE_CREATE_INFO(graphicsPipelineCreateInfo);
     graphicsPipelineCreateInfo.pTessellationState = nullptr;// No tessellation right now
@@ -758,10 +892,21 @@ void ExperimentalEngine::createQuadDrawPipeline()
     graphicsPipelineCreateInfo.pStages = shaderStages.data();
 
     PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO(vertexInputCreateInfo);
-    vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
-    vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
-    vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+
+    VkVertexInputBindingDescription vertexInputBinding;
+    vertexInputBinding.binding = 0;
+    vertexInputBinding.stride = sizeof(glm::vec3);
+    vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    VkVertexInputAttributeDescription vertexInputAttribute;
+    vertexInputAttribute.binding = 0;
+    vertexInputAttribute.location = 0;
+    vertexInputAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputAttribute.offset = 0;
+
+    vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
+    vertexInputCreateInfo.pVertexBindingDescriptions = &vertexInputBinding;
+    vertexInputCreateInfo.vertexAttributeDescriptionCount = 1;
+    vertexInputCreateInfo.pVertexAttributeDescriptions = &vertexInputAttribute;
     graphicsPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
 
     PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO(inputAssemCreateInfo);
@@ -817,13 +962,21 @@ void ExperimentalEngine::createQuadDrawPipeline()
     dynamicStateCreateInfo.dynamicStateCount = static_cast<VkDynamicState>(dynamicStates.size());
     dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
     graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
-    graphicsPipelineCreateInfo.layout = pipelineLayout;
+
+    PIPELINE_LAYOUT_CREATE_INFO(pipelineLayoutCreateInfo);
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutCreateInfo.setLayoutCount = 1;
+    pipelineLayoutCreateInfo.pSetLayouts = &subpass1DescLayout;
+    fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &drawQuadPipeline.layout)
+        == VK_SUCCESS, "Failed creating draw triangle pipeline layout");
+    graphicsPipelineCreateInfo.layout = drawQuadPipeline.layout;
     graphicsPipelineCreateInfo.renderPass = renderPass;
     graphicsPipelineCreateInfo.subpass = 1;
 
     fatalAssert(vDevice->vkCreateGraphicsPipelines(device, drawQuadPipeline.cache, 1, &graphicsPipelineCreateInfo, nullptr, &drawQuadPipeline.pipeline)
         == VK_SUCCESS, "Failure in creating draw quad pipelines");
-    graphicsDbg->markObject((uint64)(drawTriPipeline.pipeline), "DrawQuadPipeline", VK_OBJECT_TYPE_PIPELINE);
+    graphicsDbg->markObject((uint64)(drawQuadPipeline.pipeline), "DrawQuadPipeline", VK_OBJECT_TYPE_PIPELINE);
 }
 
 void ExperimentalEngine::createPipelineResources()
@@ -887,6 +1040,17 @@ void ExperimentalEngine::onQuit()
 void ExperimentalEngine::tickEngine()
 {
     GameEngine::tickEngine();
+    ScopedCommandMarker(renderPassCmdBuffer, "ExperimentalEngineFrame");
+
+    VkViewport viewport;
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.minDepth = 0;
+    viewport.maxDepth = 1;
+    VkRect2D scissor = { {0,0},{0,0} };
+    getApplicationInstance()->appWindowManager.getMainWindow()->windowSize(scissor.extent.width, scissor.extent.height);
+    viewport.width = static_cast<float>(scissor.extent.width);
+    viewport.height = static_cast<float>(scissor.extent.height);
 
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
@@ -894,40 +1058,56 @@ void ExperimentalEngine::tickEngine()
     std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
     std::vector<uint32> indices = { index };
 
-    CMD_BUFFER_BEGIN_INFO(cmdBeginInfo);
-    cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vDevice->vkBeginCommandBuffer(renderPassCmdBuffer, &cmdBeginInfo);
-    
-    RENDERPASS_BEGIN_INFO(renderPassBeginInfo);
-    renderPassBeginInfo.renderPass = renderPass;
-    renderPassBeginInfo.framebuffer = framebuffers[index];
-    renderPassBeginInfo.pClearValues = attachmentsClearColors.data();
-    renderPassBeginInfo.clearValueCount = (uint32)attachmentsClearColors.size();
-    renderPassBeginInfo.renderArea.offset = { 0,0 };
-    getApplicationInstance()->appWindowManager.getMainWindow()->windowSize(renderPassBeginInfo.renderArea.extent.width,
-        renderPassBeginInfo.renderArea.extent.height);
-    vDevice->vkCmdBeginRenderPass(renderPassCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vDevice->vkCmdNextSubpass(renderPassCmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
-    vDevice->vkCmdEndRenderPass(renderPassCmdBuffer);
-    vDevice->vkEndCommandBuffer(renderPassCmdBuffer);
-
-    VkPipelineStageFlags flag = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-    SUBMIT_INFO(qSubmitInfo);
-    qSubmitInfo.commandBufferCount = 1;
-    qSubmitInfo.pCommandBuffers = &renderPassCmdBuffer;
-    qSubmitInfo.pWaitDstStageMask = &flag;
-    qSubmitInfo.pWaitSemaphores = &static_cast<VulkanSemaphore*>(waitSemaphore.get())->semaphore;
-    qSubmitInfo.waitSemaphoreCount = 1;
-    qSubmitInfo.pSignalSemaphores = &static_cast<VulkanSemaphore*>(renderpassSemaphore.get())->semaphore;
-    qSubmitInfo.signalSemaphoreCount = 1;
-
-    ScopedCommandMarker(renderPassCmdBuffer, "Frame");
-    if (cmdSubmitFence->isSignaled())
     {
-        cmdSubmitFence->resetSignal();
+        ScopedCommandMarker(renderPassCmdBuffer, "RenderCommandRecording");
+        CMD_BUFFER_BEGIN_INFO(cmdBeginInfo);
+        cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vDevice->vkBeginCommandBuffer(renderPassCmdBuffer, &cmdBeginInfo);
+
+        RENDERPASS_BEGIN_INFO(renderPassBeginInfo);
+        renderPassBeginInfo.renderPass = renderPass;
+        renderPassBeginInfo.framebuffer = framebuffers[index];
+        renderPassBeginInfo.pClearValues = attachmentsClearColors.data();
+        renderPassBeginInfo.clearValueCount = (uint32)attachmentsClearColors.size();
+        renderPassBeginInfo.renderArea.offset = { 0,0 };
+        getApplicationInstance()->appWindowManager.getMainWindow()->windowSize(renderPassBeginInfo.renderArea.extent.width,
+            renderPassBeginInfo.renderArea.extent.height);
+        vDevice->vkCmdBeginRenderPass(renderPassCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vDevice->vkCmdSetViewport(renderPassCmdBuffer, 0, 1, &viewport);
+        vDevice->vkCmdSetScissor(renderPassCmdBuffer, 0, 1, &scissor);
+
+        vDevice->vkCmdBindPipeline(renderPassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, drawTriPipeline.pipeline);
+        vDevice->vkCmdDraw(renderPassCmdBuffer, 3, 1, 0, 0);
+
+        vDevice->vkCmdNextSubpass(renderPassCmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+        vDevice->vkCmdBindPipeline(renderPassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, drawQuadPipeline.pipeline);
+        vDevice->vkCmdBindDescriptorSets(renderPassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, drawQuadPipeline.layout, 0, 1, &subpass1DescSet, 0, nullptr);
+        uint64 vertexBufferOffset = 0;
+        vDevice->vkCmdBindVertexBuffers(renderPassCmdBuffer, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
+        vDevice->vkCmdBindIndexBuffer(renderPassCmdBuffer, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+
+        vDevice->vkCmdDrawIndexed(renderPassCmdBuffer, 6, 1, 0, 0, 0);
+
+        vDevice->vkCmdEndRenderPass(renderPassCmdBuffer);
+        vDevice->vkEndCommandBuffer(renderPassCmdBuffer);
+
+        VkPipelineStageFlags flag = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        SUBMIT_INFO(qSubmitInfo);
+        qSubmitInfo.commandBufferCount = 1;
+        qSubmitInfo.pCommandBuffers = &renderPassCmdBuffer;
+        qSubmitInfo.waitSemaphoreCount = 1;
+        qSubmitInfo.pWaitDstStageMask = &flag;
+        qSubmitInfo.pWaitSemaphores = &static_cast<VulkanSemaphore*>(waitSemaphore.get())->semaphore;
+        qSubmitInfo.signalSemaphoreCount = 1;
+        qSubmitInfo.pSignalSemaphores = &static_cast<VulkanSemaphore*>(renderpassSemaphore.get())->semaphore;
+
+        if (cmdSubmitFence->isSignaled())
+        {
+            cmdSubmitFence->resetSignal();
+        }
+        vDevice->vkQueueSubmit(getQueue<EQueueFunction::Graphics>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>()
+            , 1, &qSubmitInfo, static_cast<VulkanFence*>(cmdSubmitFence.get())->fence);
     }
-    vDevice->vkQueueSubmit(getQueue<EQueueFunction::Graphics>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>()
-        , 1, &qSubmitInfo, static_cast<VulkanFence*>(cmdSubmitFence.get())->fence);
 
     GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, &presentWaitOn);
     appInstance().appWindowManager.getMainWindow()->updateWindow();
