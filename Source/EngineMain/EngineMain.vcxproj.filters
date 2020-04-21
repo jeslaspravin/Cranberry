@@ -267,7 +267,7 @@
     <ClCompile Include="Experimental\Shaders\TriangleShader.cpp">
       <Filter>Source Files\Experimental\Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="RenderInterface\Shaders\DrawQuadWithTextureShader.cpp">
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.cpp">
       <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
@@ -476,7 +476,7 @@
     <ClInclude Include="Experimental\Shaders\TriangleShader.h">
       <Filter>Source Files\Experimental\Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="RenderInterface\Shaders\DrawQuadWithTextureShader.h">
+    <ClInclude Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.h">
       <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClInclude>
   </ItemGroup>
