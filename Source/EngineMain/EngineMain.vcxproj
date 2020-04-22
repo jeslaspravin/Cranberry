@@ -236,6 +236,7 @@
     <ClCompile Include="Core\Platform\Windows\WindowsPlatformFunctions.cpp" />
     <ClCompile Include="Core\String\String.cpp" />
     <ClCompile Include="Core\Types\Colors.cpp" />
+    <ClCompile Include="Core\Types\Time.cpp" />
     <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
     <ClCompile Include="Experimental\Shaders\TriangleShader.cpp" />
     <ClCompile Include="RenderApi\RenderApi.cpp" />
@@ -299,6 +300,7 @@
     <ClInclude Include="Core\Types\Colors.h" />
     <ClInclude Include="Core\Types\Functions.h" />
     <ClInclude Include="Core\Types\HashTypes.h" />
+    <ClInclude Include="Core\Types\Time.h" />
     <ClInclude Include="Experimental\ExperimentalEngine.h" />
     <ClInclude Include="Experimental\Shaders\TriangleShader.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />

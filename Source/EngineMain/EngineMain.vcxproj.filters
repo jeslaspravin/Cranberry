@@ -270,6 +270,9 @@
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.cpp">
       <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Types\Time.cpp">
+      <Filter>Source Files\Core\Types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -478,6 +481,9 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.h">
       <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Time.h">
+      <Filter>Header Files\Core\Types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
