@@ -236,6 +236,7 @@
     <ClCompile Include="Core\Platform\Windows\WindowsPlatformFunctions.cpp" />
     <ClCompile Include="Core\String\String.cpp" />
     <ClCompile Include="Core\Types\Colors.cpp" />
+    <ClCompile Include="Core\Types\Time.cpp" />
     <ClCompile Include="RenderApi\RenderApi.cpp" />
     <ClCompile Include="RenderInterface\GlobalRenderVariables.cpp" />
     <ClCompile Include="RenderInterface\GraphicsInstance.cpp" />
@@ -297,6 +298,7 @@
     <ClInclude Include="Core\Types\Colors.h" />
     <ClInclude Include="Core\Types\Functions.h" />
     <ClInclude Include="Core\Types\HashTypes.h" />
+    <ClInclude Include="Core\Types\Time.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
     <ClInclude Include="RenderInterface\CoreGraphicsTypes.h" />
     <ClInclude Include="RenderInterface\GlobalRenderVariables.h" />

@@ -61,6 +61,8 @@ public:
     void endQueueMarker(VkQueue queue) const;
 };
 
+#define SCOPED_CMD_MARKER(CommandBuffer,Name) ScopedCommandMarker cmdMarker_##Name(CommandBuffer,#Name)
+#define SCOPED_CMD_COLORMARKER(CommandBuffer,Name,Color) ScopedCommandMarker cmdMarker_##Name(CommandBuffer,#Name,Color)
 struct ScopedCommandMarker
 {
     VkCommandBuffer cmdBuffer;
@@ -68,6 +70,8 @@ struct ScopedCommandMarker
     ~ScopedCommandMarker();
 };
 
+#define SCOPED_QUEUE_MARKER(Queue,Name) ScopedQueueMarker queueMarker_##Name(Queue,#Name)
+#define SCOPED_QUEUE_COLORMARKER(Queue,Name,Color) ScopedQueueMarker queueMarker_##Name(Queue,#Name,Color)
 struct ScopedQueueMarker
 {
     VkQueue queue;

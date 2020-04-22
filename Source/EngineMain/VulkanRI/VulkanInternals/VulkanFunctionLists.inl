@@ -147,6 +147,8 @@ DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier)
 DEVICE_VK_FUNCTIONS(vkCmdCopyBuffer);
 
 DEVICE_VK_FUNCTIONS(vkCmdClearColorImage)
+DEVICE_VK_FUNCTIONS(vkCmdClearDepthStencilImage)
+DEVICE_VK_FUNCTIONS(vkCmdClearAttachments)
 DEVICE_VK_FUNCTIONS(vkCmdDraw)
 DEVICE_VK_FUNCTIONS(vkCmdDrawIndexed)
 
@@ -156,6 +158,7 @@ DEVICE_VK_FUNCTIONS(vkCmdEndRenderPass)
 
 DEVICE_VK_FUNCTIONS(vkCmdSetScissor)
 DEVICE_VK_FUNCTIONS(vkCmdSetViewport)
+DEVICE_VK_FUNCTIONS(vkCmdPushConstants)
 
 DEVICE_VK_FUNCTIONS(vkCmdBindPipeline)
 DEVICE_VK_FUNCTIONS(vkCmdBindDescriptorSets)
