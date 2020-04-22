@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace GameBuilder.ShaderCompiling
@@ -33,7 +34,7 @@ namespace GameBuilder.ShaderCompiling
             { "geom" , new VulkanShaderArg(new CommandArgument("stage", "S", "geom"), new CommandArgument("entry", "e", "mainGeo")) },
             { "comp" , new VulkanShaderArg(new CommandArgument("stage", "S", "comp"), new CommandArgument("entry", "e", "mainComp")) }
         };
-        private const string COMPILE_COMMAND = "{0} -{1} {2} -{3} {4} --source-entrypoint main -H -o \"{5}\" \"{6}\" > \"{7}\"";
+        private const string COMPILE_COMMAND = "{0} -{1} {2} -{3} {4} --source-entrypoint main -H -o \"{5}\" \"{6}\"";
 
         public VulkanShaderCompiler(string compilerPath, string targetPath) :
             base(compilerPath, targetPath)
@@ -85,16 +86,19 @@ namespace GameBuilder.ShaderCompiling
                         , shaderArg.entry.argKey, shaderArg.entry.argValue
                         , shaderFile.Item2.targetOutputFile
                         , shaderFile.Item1
-                        , shaderFile.Item2.logFile);
+                    );
 
                     LoggerUtils.Log("Compiling shader {0}", shaderFile.Item1);
 
                     string executionResult;
                     ProcessUtils.ExecuteCommand(out executionResult, cmd, Directories.BUILDER_ROOT);
-                    if (executionResult.Length > 0)
+
+                    executionResult = executionResult.Trim();
+                    if (executionResult.Length > 0 && executionResult.Contains("ERROR:"))
                     {
                         LoggerUtils.Log(executionResult);
                     }
+                    File.WriteAllText(shaderFile.Item2.logFile, executionResult,Encoding.UTF8);
                 }
             }
             return true;
