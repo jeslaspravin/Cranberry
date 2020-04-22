@@ -16,6 +16,7 @@
 #include "Shaders/TriangleShader.h"
 #include "../RenderInterface/Shaders/DrawQuadFromInputAttachment.h"
 #include "../Core/Types/Colors.h"
+#include "../Core/Types/Time.h"
 
 #include <glm/ext/vector_float3.hpp>
 #include <array>
@@ -848,8 +849,9 @@ void ExperimentalEngine::createTriDrawPipeline()
 
 
     PIPELINE_LAYOUT_CREATE_INFO(pipelineLayoutCreateInfo);
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+    VkPushConstantRange pushContant{ VK_SHADER_STAGE_VERTEX_BIT,0,4};// float value for rotation
+    pipelineLayoutCreateInfo.pPushConstantRanges = &pushContant;
     pipelineLayoutCreateInfo.setLayoutCount = 0;
     pipelineLayoutCreateInfo.pSetLayouts = nullptr;
     fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &drawTriPipeline.layout)
@@ -945,8 +947,8 @@ void ExperimentalEngine::createQuadDrawPipeline()
     memcpy(colorBlendOpCreateInfo.blendConstants, &LinearColorConst::BLACK.getColorValue(), sizeof(glm::vec4));
     VkPipelineColorBlendAttachmentState colorAttachmentBlendState{// Blend state for color attachment in subpass in which this pipeline is used.
         VK_TRUE,
-        VK_BLEND_FACTOR_ONE,
-        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_FACTOR_SRC_ALPHA,
+        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
         VK_BLEND_OP_ADD,
         VK_BLEND_FACTOR_ONE,
         VK_BLEND_FACTOR_ZERO,
@@ -1040,8 +1042,8 @@ void ExperimentalEngine::onQuit()
 void ExperimentalEngine::tickEngine()
 {
     GameEngine::tickEngine();
-    ScopedCommandMarker(renderPassCmdBuffer, "ExperimentalEngineFrame");
 
+    float timeSinceStartup = Time::asSeconds(Time::timeNow() - timeData.initEndTick);
     VkViewport viewport;
     viewport.x = 0;
     viewport.y = 0;
@@ -1058,11 +1060,12 @@ void ExperimentalEngine::tickEngine()
     std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
     std::vector<uint32> indices = { index };
 
+    CMD_BUFFER_BEGIN_INFO(cmdBeginInfo);
+    cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vDevice->vkBeginCommandBuffer(renderPassCmdBuffer, &cmdBeginInfo);
     {
-        ScopedCommandMarker(renderPassCmdBuffer, "RenderCommandRecording");
-        CMD_BUFFER_BEGIN_INFO(cmdBeginInfo);
-        cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vDevice->vkBeginCommandBuffer(renderPassCmdBuffer, &cmdBeginInfo);
+        SCOPED_CMD_MARKER(renderPassCmdBuffer, ExperimentalEngineFrame);
 
         RENDERPASS_BEGIN_INFO(renderPassBeginInfo);
         renderPassBeginInfo.renderPass = renderPass;
@@ -1072,42 +1075,51 @@ void ExperimentalEngine::tickEngine()
         renderPassBeginInfo.renderArea.offset = { 0,0 };
         getApplicationInstance()->appWindowManager.getMainWindow()->windowSize(renderPassBeginInfo.renderArea.extent.width,
             renderPassBeginInfo.renderArea.extent.height);
+
         vDevice->vkCmdBeginRenderPass(renderPassCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vDevice->vkCmdSetViewport(renderPassCmdBuffer, 0, 1, &viewport);
-        vDevice->vkCmdSetScissor(renderPassCmdBuffer, 0, 1, &scissor);
-
-        vDevice->vkCmdBindPipeline(renderPassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, drawTriPipeline.pipeline);
-        vDevice->vkCmdDraw(renderPassCmdBuffer, 3, 1, 0, 0);
-
-        vDevice->vkCmdNextSubpass(renderPassCmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
-        vDevice->vkCmdBindPipeline(renderPassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, drawQuadPipeline.pipeline);
-        vDevice->vkCmdBindDescriptorSets(renderPassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, drawQuadPipeline.layout, 0, 1, &subpass1DescSet, 0, nullptr);
-        uint64 vertexBufferOffset = 0;
-        vDevice->vkCmdBindVertexBuffers(renderPassCmdBuffer, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
-        vDevice->vkCmdBindIndexBuffer(renderPassCmdBuffer, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
-
-        vDevice->vkCmdDrawIndexed(renderPassCmdBuffer, 6, 1, 0, 0, 0);
-
-        vDevice->vkCmdEndRenderPass(renderPassCmdBuffer);
-        vDevice->vkEndCommandBuffer(renderPassCmdBuffer);
-
-        VkPipelineStageFlags flag = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        SUBMIT_INFO(qSubmitInfo);
-        qSubmitInfo.commandBufferCount = 1;
-        qSubmitInfo.pCommandBuffers = &renderPassCmdBuffer;
-        qSubmitInfo.waitSemaphoreCount = 1;
-        qSubmitInfo.pWaitDstStageMask = &flag;
-        qSubmitInfo.pWaitSemaphores = &static_cast<VulkanSemaphore*>(waitSemaphore.get())->semaphore;
-        qSubmitInfo.signalSemaphoreCount = 1;
-        qSubmitInfo.pSignalSemaphores = &static_cast<VulkanSemaphore*>(renderpassSemaphore.get())->semaphore;
-
-        if (cmdSubmitFence->isSignaled())
         {
-            cmdSubmitFence->resetSignal();
+            SCOPED_CMD_MARKER(renderPassCmdBuffer, Subpass_0);
+
+            vDevice->vkCmdSetViewport(renderPassCmdBuffer, 0, 1, &viewport);
+            vDevice->vkCmdSetScissor(renderPassCmdBuffer, 0, 1, &scissor);
+
+            vDevice->vkCmdBindPipeline(renderPassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, drawTriPipeline.pipeline);
+            vDevice->vkCmdPushConstants(renderPassCmdBuffer, drawTriPipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 4, &timeSinceStartup);
+            vDevice->vkCmdDraw(renderPassCmdBuffer, 3, 1, 0, 0);
         }
-        vDevice->vkQueueSubmit(getQueue<EQueueFunction::Graphics>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>()
-            , 1, &qSubmitInfo, static_cast<VulkanFence*>(cmdSubmitFence.get())->fence);
+        vDevice->vkCmdNextSubpass(renderPassCmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+        {
+            SCOPED_CMD_MARKER(renderPassCmdBuffer, Subpass_1);
+
+            vDevice->vkCmdBindPipeline(renderPassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, drawQuadPipeline.pipeline);
+            vDevice->vkCmdBindDescriptorSets(renderPassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, drawQuadPipeline.layout, 0, 1, &subpass1DescSet, 0, nullptr);
+            uint64 vertexBufferOffset = 0;
+            vDevice->vkCmdBindVertexBuffers(renderPassCmdBuffer, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
+            vDevice->vkCmdBindIndexBuffer(renderPassCmdBuffer, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+
+            vDevice->vkCmdDrawIndexed(renderPassCmdBuffer, 6, 1, 0, 0, 0);
+
+            vDevice->vkCmdEndRenderPass(renderPassCmdBuffer);
+        }
     }
+    vDevice->vkEndCommandBuffer(renderPassCmdBuffer);
+
+    VkPipelineStageFlags flag = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    SUBMIT_INFO(qSubmitInfo);
+    qSubmitInfo.commandBufferCount = 1;
+    qSubmitInfo.pCommandBuffers = &renderPassCmdBuffer;
+    qSubmitInfo.waitSemaphoreCount = 1;
+    qSubmitInfo.pWaitDstStageMask = &flag;
+    qSubmitInfo.pWaitSemaphores = &static_cast<VulkanSemaphore*>(waitSemaphore.get())->semaphore;
+    qSubmitInfo.signalSemaphoreCount = 1;
+    qSubmitInfo.pSignalSemaphores = &static_cast<VulkanSemaphore*>(renderpassSemaphore.get())->semaphore;
+
+    if (cmdSubmitFence->isSignaled())
+    {
+        cmdSubmitFence->resetSignal();
+    }
+    vDevice->vkQueueSubmit(getQueue<EQueueFunction::Graphics>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>()
+        , 1, &qSubmitInfo, static_cast<VulkanFence*>(cmdSubmitFence.get())->fence);
 
     GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, &presentWaitOn);
     appInstance().appWindowManager.getMainWindow()->updateWindow();
