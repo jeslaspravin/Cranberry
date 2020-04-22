@@ -22,8 +22,8 @@ public:
     GenericWindowCanvas* getWindowCanvas(GenericAppWindow* window) const;
 
     void initMain();
+    void destroyMain();
     // One time only function
     void postInitGraphicCore();
-    void destroyMain();
 };
 

@@ -3,6 +3,25 @@
 #include "../Memory/SmartPointers.h"
 #include "../../RenderApi/RenderApi.h"
 #include "../Platform/GenericAppInstance.h"
+
+struct EngineTime
+{
+    int64 startTick;
+    int64 initEndTick;
+    int64 lastFrameTick;
+    int64 frameTick;
+    // In Seconds
+    float lastDeltaTime = 0;
+    float deltaTime = 0;
+
+    float timeDilation = 1;
+
+    void engineStart();
+    void tickStart();
+    void progressTick();
+    float getDeltaTime();
+};
+
 class GameEngine
 {
 private:
@@ -10,7 +29,7 @@ private:
     bool bExitNextFrame = false;
 protected:
     UniquePtr<RenderApi> renderingApi;
-
+    EngineTime timeData;
 
     virtual void onStartUp();
     virtual void onQuit();

@@ -87,7 +87,7 @@ namespace GameBuilder.ShaderCompiling
                         , shaderFile.Item1
                         , shaderFile.Item2.logFile);
 
-                    //LoggerUtils.Log("Compiling shader {0} with cmd {1}", shaderFile.Item1,cmd);
+                    LoggerUtils.Log("Compiling shader {0}", shaderFile.Item1);
 
                     string executionResult;
                     ProcessUtils.ExecuteCommand(out executionResult, cmd, Directories.BUILDER_ROOT);
