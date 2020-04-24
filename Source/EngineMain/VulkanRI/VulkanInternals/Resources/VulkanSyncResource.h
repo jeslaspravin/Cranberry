@@ -18,7 +18,7 @@ private:
 
     const VulkanDevice* vulkanDevice;
     VkDevice ownerDevice;    
-    VulkanSemaphore(){}
+    VulkanSemaphore() = default;
 
 public:
     VkSemaphore semaphore;
@@ -48,7 +48,7 @@ private:
 
     const VulkanDevice* vulkanDevice;
     VkDevice ownerDevice;
-    VulkanTimelineSemaphore() {}
+    VulkanTimelineSemaphore() = default;
 
 public:
     VkSemaphore semaphore;
@@ -81,12 +81,13 @@ private:
 
     const VulkanDevice* vulkanDevice;
     VkDevice ownerDevice;
-    VulkanFence() {}
+    VulkanFence() = default;
 
+    bool bCreateSignaled;
 public:
     VkFence fence;
 
-    VulkanFence(const VulkanDevice* deviceInstance);
+    VulkanFence(const VulkanDevice* deviceInstance,bool bIsSignaled);
 
     void waitForSignal() const override;
     bool isSignaled() const override;

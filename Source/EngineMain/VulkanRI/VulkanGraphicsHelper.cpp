@@ -292,12 +292,12 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(class IGraphicsInstance* graph
     device->vkWaitSemaphoresKHR(device->logicalDevice, &waitInfo, 2000000000/*2 Seconds*/);
 }
 
-SharedPtr<class GraphicsFence> VulkanGraphicsHelper::createFence(class IGraphicsInstance* graphicsInstance, const char* fenceName)
+SharedPtr<class GraphicsFence> VulkanGraphicsHelper::createFence(class IGraphicsInstance* graphicsInstance, const char* fenceName, bool bIsSignaled /*= false*/)
 {
     const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
 
-    VulkanFence* fence = new VulkanFence(device);
+    VulkanFence* fence = new VulkanFence(device,bIsSignaled);
     fence->setObjectName(fenceName);
     fence->init();
     return SharedPtr<GraphicsFence>(fence);
