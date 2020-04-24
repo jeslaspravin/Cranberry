@@ -204,8 +204,11 @@ void VulkanTimelineSemaphore::release()
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanFence, VK_OBJECT_TYPE_FENCE)
 
-VulkanFence::VulkanFence(const VulkanDevice* deviceInstance)
-    :BaseType(), ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance)), vulkanDevice(deviceInstance)
+VulkanFence::VulkanFence(const VulkanDevice* deviceInstance, bool bIsSignaled)
+    :BaseType()
+    , vulkanDevice(deviceInstance)
+    , ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance))
+    , bCreateSignaled(bIsSignaled)
 {}
 
 void VulkanFence::waitForSignal() const
@@ -242,6 +245,7 @@ void VulkanFence::reinitResources()
     VkFence nextFence;
 
     CREATE_FENCE_INFO(fenceCreateInfo);
+    fenceCreateInfo.flags = bCreateSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
     if (vulkanDevice->vkCreateFence(ownerDevice, &fenceCreateInfo, nullptr, &nextFence) == VK_SUCCESS)
     {
         fence = nextFence;
