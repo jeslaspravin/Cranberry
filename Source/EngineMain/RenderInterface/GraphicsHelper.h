@@ -46,9 +46,9 @@ public:
         HelperType::waitTimelineSemaphores(graphicsInstance, semaphores,waitForValues);
     }
 
-    static SharedPtr<class GraphicsFence> createFence(class IGraphicsInstance* graphicsInstance,const char* fenceName)
+    static SharedPtr<class GraphicsFence> createFence(class IGraphicsInstance* graphicsInstance,const char* fenceName, bool bIsSignaled = false)
     {
-        return HelperType::createFence(graphicsInstance,fenceName);
+        return HelperType::createFence(graphicsInstance,fenceName, bIsSignaled);
     }
 
     static void waitFences(class IGraphicsInstance* graphicsInstance,
