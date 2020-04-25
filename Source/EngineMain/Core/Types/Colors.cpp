@@ -21,8 +21,8 @@ Color::Color(Byte4D& value)
     , bSrgb(false)
 {}
 
-Color::Color(uint8 r, uint8 g, uint8 b, uint8 a /*= 255*/)
-    : bSrgb(false)
+Color::Color(uint8 r, uint8 g, uint8 b, uint8 a /*= 255*/, bool bIsSrgb /*= false */)
+    : bSrgb(bIsSrgb)
 {
     colorValue = Byte4D(r, g, b, a);
 }
@@ -124,15 +124,15 @@ LinearColor::LinearColor(float r, float g, float b, float a /*= 1.0f*/)
     : colorValue(r,g,b,a)
 {}
 
-LinearColor::LinearColor(const Color& color, bool bFromSrgb /*= false*/)
+LinearColor::LinearColor(const Color& color, bool bFromSrgb)
 {
     if (bFromSrgb)
     {
-        colorValue = glm::vec4(color.toLinear().getColorValue()) / 255.f;
+        colorValue = glm::vec4(color.toSrgb().getColorValue()) / 255.f;
     }
     else
     {
-        colorValue = glm::vec4(color.getColorValue()) / 255.f;
+        colorValue = glm::vec4(color.toLinear().getColorValue()) / 255.f;
     }
 }
 
@@ -143,6 +143,11 @@ LinearColor::LinearColor(const LinearColor& otherColor)
 LinearColor::LinearColor(LinearColor&& otherColor)
     :colorValue(std::move(otherColor.colorValue))
 {}
+
+LinearColor::LinearColor(const Color& color)
+{
+    colorValue = glm::vec4(color.getColorValue()) / 255.f;
+}
 
 void LinearColor::operator=(LinearColor&& otherColor)
 {
