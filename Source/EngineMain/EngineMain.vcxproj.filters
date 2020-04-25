@@ -124,6 +124,15 @@
     <Filter Include="Source Files\RenderInterface\Resources\Shaders">
       <UniqueIdentifier>{4bece398-d6fd-45b3-bccd-78a0c3d761b0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\RenderApi">
+      <UniqueIdentifier>{13e41a8f-8be4-49c5-a36a-d5bac3a033f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Types\Textures">
+      <UniqueIdentifier>{fd5770b0-262e-4813-96e2-3e3924d01f9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Types\Textures">
+      <UniqueIdentifier>{b8516774-3f42-41e4-8cd4-2f3231345fd9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -260,6 +269,15 @@
     </ClCompile>
     <ClCompile Include="Core\Types\Time.cpp">
       <Filter>Source Files\Core\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderApi\GBuffersAndTextures.cpp">
+      <Filter>Source Files\RenderApi</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Textures\RenderTargetTextures.cpp">
+      <Filter>Source Files\Core\Types\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Textures\Texture2D.cpp">
+      <Filter>Source Files\Core\Types\Textures</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -466,6 +484,18 @@
     </ClInclude>
     <ClInclude Include="Core\Types\Time.h">
       <Filter>Header Files\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderApi\GBuffersAndTextures.h">
+      <Filter>Source Files\RenderApi</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Textures\RenderTargetTextures.h">
+      <Filter>Header Files\Core\Types\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Textures\Texture2D.h">
+      <Filter>Header Files\Core\Types\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Textures\TexturesBase.h">
+      <Filter>Header Files\Core\Types\Textures</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

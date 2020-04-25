@@ -17,7 +17,9 @@ public:
     Color();
     explicit Color(Byte3D& value);
     explicit Color(Byte4D& value);
-    explicit Color(uint8 r, uint8 g, uint8 b, uint8 a = 255);
+    // If values are in srgb bIsSrgb must be true
+    explicit Color(uint8 r, uint8 g, uint8 b, uint8 a = 255, bool bIsSrgb = false);
+    // if linear color has to be stored after converting to srgb then bAsSrgb must be true
     Color(const LinearColor& linearColor, bool bAsSrgb = false);
     Color(const Color& otherColor);
     Color(Color&& otherColor);
@@ -44,7 +46,10 @@ public:
     explicit LinearColor(glm::vec3& value);
     explicit LinearColor(glm::vec4& value);
     explicit LinearColor(float r, float g, float b, float a = 1.0f);
-    LinearColor(const Color& color, bool bFromSrgb = false);
+    // If store the color value here in srgb then bFromSrgb must be true, if color has to be converted to linear even if it is in srgb in Color bFromSrgb must be false
+    LinearColor(const Color& color, bool bFromSrgb);
+    // If store the color value as it is here use this constructor
+    LinearColor(const Color& color);
     LinearColor(const LinearColor& otherColor);
     LinearColor(LinearColor&& otherColor);
     void operator=(const LinearColor& otherColor);

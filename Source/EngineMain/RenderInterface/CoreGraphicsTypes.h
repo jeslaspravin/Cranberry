@@ -38,17 +38,34 @@ namespace EPixelDataFormat
     enum Type
     {
         Undefined,
-        ABGR_UI8_Packed,
-        ABGR_SI8_Packed,
-        ABGR_UI8_SrgbPacked,
+        BGR_U8_Norm,
+        BGR_S8_Norm,
+        BGR_U8_Scaled,
+        BGR_S8_Scaled,
+        BGR_UI8,
+        BGR_SI8,
+        BGR_U8_SRGB,            /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
         ABGR_U8_NormPacked,     /* 0 to 255 gives 0.0f - 1.0f per comp */
         ABGR_S8_NormPacked,     /* -127 to 127 gives -1.0f - 1.0f per comp( -128 gets clamped to -127 ) */
         ABGR_U8_ScaledPacked,   /* Just converts the value directly as float 0.0f - 255.0f per comp */
         ABGR_S8_ScaledPacked,   /* Just converts the value directly as float -128.0f - 127.0f per comp */
+        ABGR_UI8_Packed,
+        ABGR_SI8_Packed,
+        ABGR_U8_SrgbPacked,
         BGRA_U8_Norm,
         BGRA_S8_Norm,
         BGRA_U8_Scaled,
         BGRA_S8_Scaled,
+        BGRA_UI8,
+        BGRA_SI8,
+        BGRA_U8_SRGB,           /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
+        RGBA_U8_Norm,
+        RGBA_S8_Norm,
+        RGBA_U8_Scaled,
+        RGBA_S8_Scaled,
+        RGBA_UI8,
+        RGBA_SI8,
+        RGBA_U8_SRGB,           /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
         R_U16_Norm,             /* 0 to 65535 gives 0.0f to 1.0f */
         R_S16_Norm,             /* -32767 to 32767 gives -1.0f - 1.0f per comp( -32768 gets clamped to -32767 )*/
         R_U16_Scaled,
