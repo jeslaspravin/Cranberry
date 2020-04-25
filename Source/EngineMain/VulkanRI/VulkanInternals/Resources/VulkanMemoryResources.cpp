@@ -6,7 +6,7 @@
 #include "../../../Core/Platform/PlatformAssertionErrors.h"
 
 #include <glm/exponential.hpp>
-#include "glm/common.hpp"
+#include <glm/common.hpp>
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanBufferResource, VK_OBJECT_TYPE_BUFFER)
 
@@ -198,7 +198,6 @@ void VulkanImageResource::reinitResources()
             featuresRequired |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
         }
         tiling = VK_IMAGE_TILING_OPTIMAL;
-        numOfMips = 1;
     }
     else
     {
@@ -207,7 +206,12 @@ void VulkanImageResource::reinitResources()
             // TODO (Jeslas) : Check if 1D or 3D can have more mips
             numOfMips = (uint32)(1 + glm::floor(glm::log2((float)glm::max(dimensions.x, dimensions.y))));
         }
-        if(type != VK_IMAGE_TYPE_2D || sampleCounts != EPixelSampleCount::SampleCount1)
+        if (type != VK_IMAGE_TYPE_2D)
+        {
+            numOfMips = 1;
+            sampleCounts = EPixelSampleCount::SampleCount1;
+        }
+        if(sampleCounts != EPixelSampleCount::SampleCount1)
         {
             numOfMips = 1;
         }
