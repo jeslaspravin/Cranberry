@@ -43,7 +43,7 @@ uint64 VulkanShaderCodeResource::getDispatchableHandle() const
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderResource, VK_OBJECT_TYPE_SHADER_MODULE)
 
-ShaderCodeResource* VulkanShaderResource::createShaderCode(const String& filePath)
+ShaderCodeResource* VulkanShaderResource::createShaderCode(const String& filePath) const
 {
     return new VulkanShaderCodeResource(filePath);
 }
