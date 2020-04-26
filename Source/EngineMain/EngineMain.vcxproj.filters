@@ -133,6 +133,12 @@
     <Filter Include="Source Files\Core\Types\Textures">
       <UniqueIdentifier>{b8516774-3f42-41e4-8cd4-2f3231345fd9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Core\Types\Delegates">
+      <UniqueIdentifier>{5eea5864-e919-4196-88d8-6f57363bb5b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Types\Delegates">
+      <UniqueIdentifier>{604c5a2a-c525-457e-a190-1359f87abe34}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -278,6 +284,9 @@
     </ClCompile>
     <ClCompile Include="Core\Types\Textures\Texture2D.cpp">
       <Filter>Source Files\Core\Types\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Delegates\Delegate.cpp">
+      <Filter>Source Files\Core\Types\Delegates</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -496,6 +505,9 @@
     </ClInclude>
     <ClInclude Include="Core\Types\Textures\TexturesBase.h">
       <Filter>Header Files\Core\Types\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Delegates\Delegate.h">
+      <Filter>Header Files\Core\Types\Delegates</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
