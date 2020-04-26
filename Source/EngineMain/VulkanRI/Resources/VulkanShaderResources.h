@@ -29,7 +29,7 @@ class VulkanShaderResource : public ShaderResource, public IVulkanResources
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanShaderResource,,ShaderResource,)
 private:
-    ShaderCodeResource* createShaderCode(const String& filePath);
+    ShaderCodeResource* createShaderCode(const String& filePath) const;
     VulkanShaderResource();
 protected:
     VulkanShaderResource(const String& name);

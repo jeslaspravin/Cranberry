@@ -58,7 +58,7 @@ class ShaderResource : public GraphicsResource
 private:
     String shaderName;
 protected:
-    using ShaderCodeFactory = ClassFunction<ShaderResource,ShaderCodeResource*, const String&>;
+    using ShaderCodeFactory = ClassFunction<true,ShaderResource,ShaderCodeResource*, const String&>;
     ShaderCodeFactory shaderCodeFactory;
     std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>> shaders;
 

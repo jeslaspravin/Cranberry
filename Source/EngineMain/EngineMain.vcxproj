@@ -236,6 +236,7 @@
     <ClCompile Include="Core\Platform\Windows\WindowsPlatformFunctions.cpp" />
     <ClCompile Include="Core\String\String.cpp" />
     <ClCompile Include="Core\Types\Colors.cpp" />
+    <ClCompile Include="Core\Types\Delegates\Delegate.cpp" />
     <ClCompile Include="Core\Types\Textures\RenderTargetTextures.cpp" />
     <ClCompile Include="Core\Types\Textures\Texture2D.cpp" />
     <ClCompile Include="Core\Types\Time.cpp" />
@@ -301,6 +302,7 @@
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformTypes.h" />
     <ClInclude Include="Core\String\String.h" />
     <ClInclude Include="Core\Types\Colors.h" />
+    <ClInclude Include="Core\Types\Delegates\Delegate.h" />
     <ClInclude Include="Core\Types\Functions.h" />
     <ClInclude Include="Core\Types\HashTypes.h" />
     <ClInclude Include="Core\Types\Textures\RenderTargetTextures.h" />
