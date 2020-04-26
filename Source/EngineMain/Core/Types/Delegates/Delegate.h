@@ -368,6 +368,32 @@ public:
         }
     }
 
+    void unbindStatic(const DelegateHandle& handle)
+    {
+        if (handle.isValid())
+        {
+            auto& itr = allDelegates.find(handle.value);
+            if (itr != allDelegates.end())
+            {
+                boundStaticDelegates.remove(itr->second);
+                allDelegates.erase(itr);
+            }
+        }
+    }
+
+    void unbindObject(const DelegateHandle& handle)
+    {
+        if (handle.isValid())
+        {
+            auto& itr = allDelegates.find(handle.value);
+            if (itr != allDelegates.end())
+            {
+                boundObjectDelegates.remove(itr->second);
+                allDelegates.erase(itr);
+            }
+        }
+    }
+
     template<typename ObjectType>
     void unbindAll(const ObjectType* object)
     {
