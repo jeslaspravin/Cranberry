@@ -5,8 +5,7 @@
 #include "../../../Core/Engine/GameEngine.h"
 #include "../../VulkanGraphicsInstance.h"
 #include "../../../RenderInterface/GlobalRenderVariables.h"
-
-#include <glm/common.hpp>
+#include "../../../Core/Math/Math.h"
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanSampler, VK_OBJECT_TYPE_SAMPLER)
 
@@ -58,7 +57,7 @@ void VulkanSampler::reinitResources()
     // TODO(Jeslas) : following settings has to be obtained from global settings
     createInfo.mipLodBias = 0;
     createInfo.anisotropyEnable = GlobalRenderVariables::ENABLE_ANISOTROPY.get() ? VK_TRUE : VK_FALSE;
-    createInfo.maxAnisotropy = glm::min(8.f,GlobalRenderVariables::MAX_ANISOTROPY.get());
+    createInfo.maxAnisotropy = Math::min(8.f,GlobalRenderVariables::MAX_ANISOTROPY.get());
 
     createInfo.compareEnable = useCompareOp;
     createInfo.compareOp = (VkCompareOp)CoreGraphicsTypes::getEnumTypeInfo(compareOp)->value;

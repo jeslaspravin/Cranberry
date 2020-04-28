@@ -8,10 +8,10 @@
 #include "Resources/VulkanWindowCanvas.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../RenderInterface/GlobalRenderVariables.h"
+#include "../../Core/Math/Math.h"
 
 #include <sstream>
 #include <set>
-#include <glm/common.hpp>
 
 namespace GlobalRenderVariables
 {
@@ -258,14 +258,14 @@ void VulkanDevice::cacheGlobalSurfaceProperties()
         {
             globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR;
             Logger::debug("VulkanDevice", "%s() : Choosen mailbox present mode", __func__);
-            choosenImageCount = glm::max<uint32>(choosenImageCount, 3);
+            choosenImageCount = Math::max<uint32>(choosenImageCount, 3);
         }
         else if (std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_RELAXED_KHR)
             != presentModes.cend())
         {
             globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_RELAXED_KHR;
             Logger::debug("VulkanDevice", "%s() : Choosen fifo relaxed present mode", __func__);
-            choosenImageCount = glm::max<uint32>(choosenImageCount, 3);
+            choosenImageCount = Math::max<uint32>(choosenImageCount, 3);
         }
         else
         {
@@ -273,13 +273,13 @@ void VulkanDevice::cacheGlobalSurfaceProperties()
                 != presentModes.cend(),"No accepted present mode is found, not even default case");
             globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
             Logger::debug("VulkanDevice", "%s() : Choosen fifo present mode", __func__);
-            choosenImageCount = glm::max<uint32>(choosenImageCount, 2);
+            choosenImageCount = Math::max<uint32>(choosenImageCount, 2);
         }
     }    
 
     if (swapchainCapabilities.maxImageCount > 0)
     {
-        choosenImageCount = glm::min<uint32>(choosenImageCount, swapchainCapabilities.maxImageCount);
+        choosenImageCount = Math::min<uint32>(choosenImageCount, swapchainCapabilities.maxImageCount);
     }
     swapchainImgUsage = swapchainCapabilities.supportedUsageFlags
         & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);

@@ -16,4 +16,5 @@ struct GenericAppInstance {
     String cmdLine;
 
     WindowManager appWindowManager;
+    const InputSystem* inputSystem() const;
 };

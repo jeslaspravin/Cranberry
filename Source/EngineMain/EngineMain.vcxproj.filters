@@ -145,6 +145,18 @@
     <Filter Include="Source Files\Core\Types\Delegates">
       <UniqueIdentifier>{604c5a2a-c525-457e-a190-1359f87abe34}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\Input">
+      <UniqueIdentifier>{29418a0c-0c28-4ad0-b927-b19029b8a8b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Input">
+      <UniqueIdentifier>{3aa3583c-6aa2-46c9-aac8-30dcebf819b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Input\Windows">
+      <UniqueIdentifier>{fdb7ee59-9774-4d91-bd26-b1f2cd2c94ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Math">
+      <UniqueIdentifier>{67fb5762-d084-4d58-a35d-47d73c536cdb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -299,6 +311,21 @@
     </ClCompile>
     <ClCompile Include="Core\Types\Delegates\Delegate.cpp">
       <Filter>Source Files\Core\Types\Delegates</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Engine\Config\EngineGlobalConfigs.cpp">
+      <Filter>Source Files\Core\Engine\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Input\Keys.cpp">
+      <Filter>Source Files\Core\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Input\InputSystem.cpp">
+      <Filter>Source Files\Core\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Math\Vector2D.cpp">
+      <Filter>Source Files\Core\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Math\Vector3D.cpp">
+      <Filter>Header Files\Core\Math</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -491,9 +518,6 @@
     <ClInclude Include="RenderInterface\CoreGraphicsTypes.h">
       <Filter>Source Files\RenderInterface</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Engine\Config\EngineVariables.h">
-      <Filter>Header Files\Core\Engine\Config</Filter>
-    </ClInclude>
     <ClInclude Include="RenderInterface\GlobalRenderVariables.h">
       <Filter>Header Files\RenderInterface</Filter>
     </ClInclude>
@@ -526,6 +550,33 @@
     </ClInclude>
     <ClInclude Include="Core\Types\Delegates\Delegate.h">
       <Filter>Header Files\Core\Types\Delegates</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Engine\Config\EngineVariableTypes.h">
+      <Filter>Header Files\Core\Engine\Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Engine\Config\EngineGlobalConfigs.h">
+      <Filter>Source Files\Core\Engine\Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\Windows\WindowsKeyCodes.h">
+      <Filter>Source Files\Core\Input\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\Keys.h">
+      <Filter>Header Files\Core\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\InputSystem.h">
+      <Filter>Header Files\Core\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Math.h">
+      <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\CoreDefines.h">
+      <Filter>Header Files\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Vector2D.h">
+      <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Vector3D.h">
+      <Filter>Header Files\Core\Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,8 +1,6 @@
 #include "RenderTargetTextures.h"
 #include "../../../RenderInterface/PlatformIndependentHeaders.h"
-
-#include <glm/exponential.hpp>
-#include <glm/common.hpp>
+#include "../../Math/Math.h"
 
 template<bool bIsSrgb>
 EPixelDataFormat::Type RtFormatToPixelFormat(ERenderTargetFormat::Type);
@@ -61,8 +59,8 @@ RenderTargetTexture* RenderTargetTexture::createTexture(const RenderTextureCreat
     texture->mipCount = createParams.mipCount;
     if (createParams.mipCount != 0)
     {
-        texture->mipCount = glm::min((uint32)(1 + glm::floor(glm::log2(
-            (float)glm::max(createParams.textureSize.x, createParams.textureSize.y)))), createParams.mipCount);
+        texture->mipCount = Math::min((uint32)(1 + Math::floor(Math::log2(
+            (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))), createParams.mipCount);
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->sampleCount = createParams.sampleCount;

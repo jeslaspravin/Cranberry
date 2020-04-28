@@ -2,7 +2,7 @@
 #ifndef VULKANGRAPHICSTYPES_H
 #define VULKANGRAPHICSTYPES_H
 
-#include "../Core/Engine/Config/EngineVariables.h"
+#include "../Core/Engine/Config/EngineVariableTypes.h"
 
 namespace GraphicsTypes {
     typedef class VulkanGraphicsInstance GraphicInstance;

@@ -4,9 +4,7 @@
 #include "../../../Core/Logger/Logger.h"
 #include "../../../Core/Engine/GameEngine.h"
 #include "../../../Core/Platform/PlatformAssertionErrors.h"
-
-#include <glm/exponential.hpp>
-#include <glm/common.hpp>
+#include "../../../Core/Math/Math.h"
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanBufferResource, VK_OBJECT_TYPE_BUFFER)
 
@@ -204,7 +202,7 @@ void VulkanImageResource::reinitResources()
         if (numOfMips == 0)
         {
             // TODO (Jeslas) : Check if 1D or 3D can have more mips
-            numOfMips = (uint32)(1 + glm::floor(glm::log2((float)glm::max(dimensions.x, dimensions.y))));
+            numOfMips = (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y))));
         }
         if (type != VK_IMAGE_TYPE_2D)
         {
