@@ -1,9 +1,6 @@
 #include "Texture2D.h"
 #include "../../../RenderInterface/PlatformIndependentHeaders.h"
-
-
-#include <glm/exponential.hpp>
-#include <glm/common.hpp>
+#include "../../Math/Math.h"
 
 uint32 Texture2D::getMipCount() const
 {
@@ -12,7 +9,7 @@ uint32 Texture2D::getMipCount() const
 
 void Texture2D::setData(const std::vector<class Color>& newData, bool bIsSrgb)
 {
-    rawData.resize(glm::max((uint32)newData.size(), textureSize.x * textureSize.y));
+    rawData.resize(Math::max((uint32)newData.size(), textureSize.x * textureSize.y));
 
     int32 copyIndex = 0;
     if (bIsSrgb)
@@ -49,8 +46,8 @@ Texture2D* Texture2D::createTexture(const Texture2DCreateParams& createParams)
     texture->mipCount = createParams.mipCount;
     if (createParams.mipCount != 0)
     {
-        texture->mipCount = glm::min((uint32)(1 + glm::floor(glm::log2(
-            (float)glm::max(createParams.textureSize.x, createParams.textureSize.y)))), createParams.mipCount);
+        texture->mipCount = Math::min((uint32)(1 + Math::floor(Math::log2(
+            (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))), createParams.mipCount);
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->sampleCount = createParams.sampleCount;

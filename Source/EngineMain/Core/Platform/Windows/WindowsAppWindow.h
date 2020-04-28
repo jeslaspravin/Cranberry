@@ -2,7 +2,7 @@
 #include "../GenericAppWindow.h"
 #include <windows.h>
 
-class WindowsAppWindow:public GenericAppWindow {
+class WindowsAppWindow final : public GenericAppWindow {
     
 private:
     HWND windowsHandle;
@@ -14,10 +14,11 @@ public:
     void createWindow(const GenericAppInstance* appInstance) override;
     void updateWindow() override;
     void destroyWindow() override;
-
-    HWND getWindowHandle() const { return windowsHandle; }
     bool isValidWindow() const override;
 
+    HWND getWindowHandle() const { return windowsHandle; }
+    void activateWindow() const;
+    void deactivateWindow() const;
 };
 
 namespace GPlatformInstances {

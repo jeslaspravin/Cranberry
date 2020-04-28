@@ -14,7 +14,10 @@ struct EngineTime
     float lastDeltaTime = 0;
     float deltaTime = 0;
 
+    /* Global time dilation */
     float timeDilation = 1;
+    /* Time dilation for activity of app 1 if app is active 0 if app is in background not active*/
+    int32 activeTimeDilation = 1;
 
     void engineStart();
     void tickStart();

@@ -4,11 +4,11 @@
 #include "../VulkanGraphicsHelper.h"
 #include "VulkanMacros.h"
 #include "../Resources/IVulkanResources.h"
+#include "../../Core/Platform/PlatformAssertionErrors.h"
 
-#include <glm/common.hpp>
 #include <set>
 #include <algorithm>
-#include "../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../Core/Math/Math.h"
 
 struct VulkanMemoryBlock
 {
@@ -367,7 +367,7 @@ public:
         uint64 currentUsageSize;
         uint64 totalHeapSize;
         device->getMemoryStat(totalHeapSize, currentUsageSize, hIndex);
-        cSize = (uint64)(glm::min<uint64>(2*cSize, totalHeapSize) * 0.5f);
+        cSize = (uint64)(Math::min<uint64>(2*cSize, totalHeapSize) * 0.5f);
         allocateNewChunk(chunks, alignment);
         allocateNewChunk(chunks2xAligned, alignment * 2);
     }
@@ -674,7 +674,7 @@ public:
         TestChunk::testChunk();
 #endif
         // to handle offset alignment
-        uint64 alignment = glm::max<uint64>(glm::max<uint64>(device->properties.limits.minStorageBufferOffsetAlignment, 
+        uint64 alignment = Math::max<uint64>(Math::max<uint64>(device->properties.limits.minStorageBufferOffsetAlignment,
             device->properties.limits.minUniformBufferOffsetAlignment), device->properties.limits.minTexelBufferOffsetAlignment);
 
         uint64 totalLinearStorage = 0;

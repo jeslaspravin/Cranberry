@@ -220,9 +220,14 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Core\Engine\Config\EngineGlobalConfigs.cpp" />
     <ClCompile Include="Core\Engine\GameEngine.cpp" />
     <ClCompile Include="Core\Engine\WindowManager.cpp" />
+    <ClCompile Include="Core\Input\InputSystem.cpp" />
+    <ClCompile Include="Core\Input\Keys.cpp" />
     <ClCompile Include="Core\Logger\Logger.cpp" />
+    <ClCompile Include="Core\Math\Vector2D.cpp" />
+    <ClCompile Include="Core\Math\Vector3D.cpp" />
     <ClCompile Include="Core\Platform\GenericAppWindow.cpp" />
     <ClCompile Include="Core\Platform\LFS\File\GenericFile.cpp" />
     <ClCompile Include="Core\Platform\ModuleManager.cpp" />
@@ -271,11 +276,18 @@
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanGraphicsTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core\Engine\Config\EngineVariables.h" />
+    <ClInclude Include="Core\Engine\Config\EngineGlobalConfigs.h" />
+    <ClInclude Include="Core\Engine\Config\EngineVariableTypes.h" />
     <ClInclude Include="Core\Engine\GameEngine.h" />
     <ClInclude Include="Core\Engine\WindowManager.h" />
+    <ClInclude Include="Core\Input\InputSystem.h" />
+    <ClInclude Include="Core\Input\Keys.h" />
+    <ClInclude Include="Core\Input\Windows\WindowsKeyCodes.h" />
     <ClInclude Include="Core\Logger\Logger.h" />
     <ClInclude Include="Core\Math\CoreMathTypedefs.h" />
+    <ClInclude Include="Core\Math\Math.h" />
+    <ClInclude Include="Core\Math\Vector2D.h" />
+    <ClInclude Include="Core\Math\Vector3D.h" />
     <ClInclude Include="Core\Memory\SmartPointers.h" />
     <ClInclude Include="Core\Platform\GenericAppInstance.h" />
     <ClInclude Include="Core\Platform\GenericAppWindow.h" />
@@ -300,6 +312,7 @@
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformTypes.h" />
     <ClInclude Include="Core\String\String.h" />
     <ClInclude Include="Core\Types\Colors.h" />
+    <ClInclude Include="Core\Types\CoreDefines.h" />
     <ClInclude Include="Core\Types\Delegates\Delegate.h" />
     <ClInclude Include="Core\Types\Functions.h" />
     <ClInclude Include="Core\Types\HashTypes.h" />

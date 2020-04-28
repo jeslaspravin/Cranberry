@@ -1,0 +1,71 @@
+#pragma once
+
+namespace EWindowsKeyCode
+{
+    enum KeyCode
+    {
+        MOUSE_LEFT = 0x01,
+        MOUSE_RIGHT = 0x02,
+        MOUSE_MID = 0x04,
+        MOUSE_X1 = 0x05,
+        MOUSE_X2 = 0x06,
+        KEY_BACKSPACE = 0x08,
+        KEY_TAB = 0x09,
+        KEY_CAPS = 0x14,
+        KEY_ESC = 0x1B,
+        KEY_ENTER = 0x1E,
+        KEY_SPACE = 0x20,
+        KEY_LEFT = 0x25,
+        KEY_UP,
+        KEY_RIGHT,
+        KEY_DOWN,
+        KEY_DELETE = 0x2E,
+        KEY_0 = 0x30,
+        KEY_1,
+        KEY_2,
+        KEY_3,
+        KEY_4,
+        KEY_5,
+        KEY_6,
+        KEY_7,
+        KEY_8,
+        KEY_9,
+        KEY_A = 0x41,
+        KEY_B,
+        KEY_C,
+        KEY_D,
+        KEY_E,
+        KEY_F,
+        KEY_G,
+        KEY_H,
+        KEY_I,
+        KEY_J,
+        KEY_K,
+        KEY_L,
+        KEY_M,
+        KEY_N,
+        KEY_O,
+        KEY_P,
+        KEY_Q,
+        KEY_R,
+        KEY_S,
+        KEY_T,
+        KEY_U,
+        KEY_V,
+        KEY_W,
+        KEY_X,
+        KEY_Y,
+        KEY_Z,
+        KEY_LSHIFT = 0xA0,
+        KEY_RSHIFT,
+        KEY_LCTRL,
+        KEY_RCTRL,
+        KEY_LALT,
+        KEY_RALT,
+    };
+}
+
+namespace KeyCode
+{
+    typedef EWindowsKeyCode::KeyCode EKeyCode;
+}

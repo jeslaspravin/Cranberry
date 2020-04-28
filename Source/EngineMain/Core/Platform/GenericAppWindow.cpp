@@ -16,6 +16,11 @@ void GenericAppWindow::setWindowSize(const uint32& width, const uint32& height, 
         resizeWindow();
 }
 
+void GenericAppWindow::setWindowMode(bool bIsFullScreen)
+{
+    bIsWindowed = !bIsFullScreen;
+}
+
 void GenericAppWindow::setWindowName(const String& wndName)
 {
     windowName = wndName;
@@ -25,7 +30,10 @@ void GenericAppWindow::destroyWindow()
 {
     for (GenericAppWindow* child : childWindows)
     {
+        // TODO(Jeslas) : change this to call destroy in window manager as it needs to be updated there as well.
         child->destroyWindow();
     }
     childWindows.clear();
+    onWindowDeactived.clear();
+    onWindowActivated.clear();
 }

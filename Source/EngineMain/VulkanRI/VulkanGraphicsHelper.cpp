@@ -1,4 +1,3 @@
-#include <glm/common.hpp>
 #include <vector>
 
 #include "VulkanGraphicsHelper.h"
@@ -15,6 +14,8 @@
 #include "VulkanInternals/VulkanFunctions.h"
 #include "VulkanInternals/Resources/VulkanSampler.h"
 #include "../Core/Platform/PlatformAssertionErrors.h"
+#include "../Core/Engine/Config/EngineGlobalConfigs.h"
+#include "../Core/Math/Math.h"
 
 template <EQueueFunction QueueFunction>
 VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
@@ -84,20 +85,23 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
         swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices.data();
     }
 
+    /* Updating other necessary values */
     VkExtent2D surfaceSize = device->swapchainCapabilities.currentExtent;
     if (surfaceSize.height == 0xFFFFFFFF
         || surfaceSize.width == 0xFFFFFFFF)
     {
-        appWindow->windowSize(surfaceSize.width, surfaceSize.height);
-        surfaceSize.height = glm::clamp<uint32>(surfaceSize.height, device->swapchainCapabilities.minImageExtent.height,
+        surfaceSize.height = Math::clamp<uint32>(EngineSettings::screenSize.get().x, device->swapchainCapabilities.minImageExtent.height,
             device->swapchainCapabilities.maxImageExtent.height);
-        surfaceSize.width = glm::clamp<uint32>(surfaceSize.width, device->swapchainCapabilities.minImageExtent.width,
+        surfaceSize.width = Math::clamp<uint32>(EngineSettings::screenSize.get().y, device->swapchainCapabilities.minImageExtent.width,
             device->swapchainCapabilities.maxImageExtent.width);
+        EngineSettings::screenSize.set(Size2D(surfaceSize.width, surfaceSize.height));
     }
     else
     {
+        // surfaceSize will always give window's actual size in machine so setting it back to window class
         appWindow->setWindowSize(surfaceSize.width, surfaceSize.height, false);
     }
+    EngineSettings::surfaceSize.set(Size2D(surfaceSize.width, surfaceSize.height));
     swapchainCreateInfo.imageExtent = surfaceSize;
 
     VkSwapchainKHR swapchain;

@@ -1,8 +1,8 @@
 #pragma once
 #include "../../Core/Platform/PlatformTypes.h"
 #include "../../Core/Types/Colors.h"
+
 #include <vulkan_core.h>
-#include <glm/vec4.hpp>
 
 struct DebugMessengerData;
 class IVulkanResources;
