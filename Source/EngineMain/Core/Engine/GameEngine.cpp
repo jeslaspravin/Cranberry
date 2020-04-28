@@ -53,6 +53,7 @@ void GameEngine::engineLoop()
 
     while (!isExiting())
     {
+        timeData.activeTimeDilation = applicationInstance->appWindowManager.pollWindows()? 1 : 0;
         timeData.progressTick();
         tickEngine();
     }

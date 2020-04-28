@@ -43,6 +43,11 @@ public:
     {
         variable = newValue;
     }
+
+    VarType& operator*()
+    {
+        return variable;
+    }
 };
 
 template <typename Type,typename OwnerType>
@@ -62,9 +67,9 @@ private:
         variable = newValue;
     }
 
-    VarType* operator*()
+    VarType& operator*()
     {
-        return &variable;
+        return variable;
     }
 public:
     EngineConstant() = default;

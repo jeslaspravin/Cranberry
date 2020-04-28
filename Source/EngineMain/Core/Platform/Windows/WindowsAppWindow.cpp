@@ -28,7 +28,7 @@ void WindowsAppWindow::createWindow(const GenericAppInstance* appInstance)
         RegisterClassA(&windowClass);
     }
 
-    dword style = isWindowed ? WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU : WS_POPUP;
+    dword style = bIsWindowed ? WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU /*| WS_MAXIMIZEBOX | WS_MINIMIZEBOX*/ : WS_POPUP | WS_MAXIMIZE;
 
     RECT windowRect{ 0,0,(LONG)windowWidth,(LONG)windowHeight };
 
@@ -60,6 +60,22 @@ void WindowsAppWindow::updateWindow()
 bool WindowsAppWindow::isValidWindow() const
 {
     return windowsHandle != nullptr && windowsHandle != NULL; 
+}
+
+void WindowsAppWindow::activateWindow() const
+{
+    if (onWindowActivated.isBound())
+    {
+        onWindowActivated.invoke();
+    }
+}
+
+void WindowsAppWindow::deactivateWindow() const
+{
+    if (onWindowDeactived.isBound())
+    {
+        onWindowDeactived.invoke();
+    }
 }
 
 void WindowsAppWindow::destroyWindow()
@@ -99,6 +115,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             gEngine->requestExit();
         }
         break;
+    }
+    case WM_ACTIVATEAPP:
+    {
+        const WindowsAppWindow* const windowPtr = reinterpret_cast<const WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
+        if (!windowPtr)
+        {
+            break;
+        }
+        if (wParam == TRUE)
+        {
+            windowPtr->activateWindow();
+        }
+        else
+        {
+            windowPtr->deactivateWindow();
+        }
     }
     default:
         return DefWindowProcA(hwnd, uMsg, wParam, lParam);

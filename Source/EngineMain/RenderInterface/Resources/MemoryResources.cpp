@@ -1,6 +1,5 @@
 #include "MemoryResources.h"
-
-#include <glm/common.hpp>
+#include "../../Core/Math/Math.h"
 
 DEFINE_GRAPHICS_RESOURCE(MemoryResource)
 
@@ -26,7 +25,7 @@ ImageResource::ImageResource(EPixelDataFormat::Type imageFormat)
 
 void ImageResource::setLayerCount(uint32 count)
 {
-    layerCount = glm::max<uint32>(count, 1);
+    layerCount = Math::max<uint32>(count, 1);
 }
 
 bool EPixelDataFormat::isDepthFormat(Type dataFormat)
