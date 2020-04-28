@@ -25,9 +25,7 @@ struct BufferData
 
 struct ImageData
 {
-    class ImageResource* image = nullptr;
-    EPixelDataFormat::Type format = EPixelDataFormat::Undefined;
-    EPixelSampleCount::Type sampleCount = EPixelSampleCount::SampleCount1;
+    class TextureBase* image = nullptr;
     VkImageView imageView = nullptr;
 };
 
@@ -72,6 +70,16 @@ struct BasicPipeline
     VkPipelineLayout layout;
 };
 
+struct FrameResource
+{
+    std::vector<SharedPtr<GraphicsSemaphore>> usageWaitSemaphore;
+    VkCommandBuffer perFrameCommands;
+    ImageData rtTexture;
+    VkFramebuffer frameBuffer;
+    VkDescriptorSet iAttachSetSubpass1;
+    SharedPtr<GraphicsFence> recordingFence;
+};
+
 class ExperimentalEngine : public GameEngine
 {
     class VulkanDevice* vDevice;
@@ -80,7 +88,6 @@ class ExperimentalEngine : public GameEngine
     const class VulkanDebugGraphics* graphicsDbg;
 
     std::map<EQueueFunction, QueueCommandPool> pools;
-    VkCommandBuffer renderPassCmdBuffer;
     SharedPtr<GraphicsFence> cmdSubmitFence;
     void createPools();
     void destroyPools();
@@ -88,12 +95,13 @@ class ExperimentalEngine : public GameEngine
     BufferData normalBuffer;
     BufferData texelBuffer;
     void createBuffers();
+    void writeBuffers();
     void destroyBuffers();
 
     ImageData texture;
-    ImageData rtTexture;
     SharedPtr<class SamplerInterface> commonSampler = nullptr;
     void createImages();
+    void writeImages();
     void destroyImages();
 
     // Test shader pipeline resources
@@ -105,12 +113,11 @@ class ExperimentalEngine : public GameEngine
 
     VkRenderPass renderPass;
     std::vector<VkClearValue> attachmentsClearColors;// For render pass
-    SharedPtr<GraphicsSemaphore> renderpassSemaphore;
-    std::vector<SharedPtr<GraphicsSemaphore>> presentWaitOn;
     VkDescriptorSetLayout subpass1DescLayout;
-    VkDescriptorSet subpass1DescSet;
     void createInputAttachmentDescriptors();
     void destroyInputAttachmentDescriptors();
+    void createFrameResources();
+    void destroyFrameResources();
     void createRenderpass();
     void destroyRenderpass();
 
@@ -128,17 +135,21 @@ class ExperimentalEngine : public GameEngine
 
     // Common to many pipeline stuffs
     VkDescriptorPool descriptorsPool;
-    // Since framebuffers with same FrameBufferFormat can be used with different render passes
+    // Since frame buffers with same FrameBufferFormat can be used with different render passes
     // std::map<FramebufferFormat, VkFramebuffer> framebuffers;
-    std::vector<VkFramebuffer> framebuffers;
+    std::vector<FrameResource> frameResources;
 
     void createPipelineResources();
     void destroyPipelineResources();
 
     // End shader pipeline resources
+
+    float rotationOffset = 0;
 protected:
     void onStartUp() override;
     void onQuit() override;
     void tickEngine() override;
 
+    void tempTest();
+    void tempTestPerFrame();
 };
