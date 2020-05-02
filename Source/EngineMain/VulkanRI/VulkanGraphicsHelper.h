@@ -1,6 +1,6 @@
 #pragma once
 #include "../RenderInterface/GraphicsHelper.h"
-#include "../RenderInterface/Resources/MemoryResources.h"
+#include "../RenderInterface/CoreGraphicsTypes.h"
 
 #include <vulkan_core.h>
 

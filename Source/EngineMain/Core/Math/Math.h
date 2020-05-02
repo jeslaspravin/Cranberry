@@ -5,9 +5,12 @@
 
 #include <glm/common.hpp>
 #include <glm/exponential.hpp>
+#include <glm/trigonometric.hpp>
 
 class Vector3D;
 class Vector2D;
+class Vector4D;
+class Rotation;
 
 class Math
 {
@@ -101,6 +104,68 @@ public:
         return glm::inversesqrt(value);
     }
 
+    template <typename Type>
+    FORCEINLINE static Type deg2Rad(const Type& value)
+    {
+        return glm::radians(value);
+    }
+    template <typename Type>
+    FORCEINLINE static Type rad2Deg(const Type& value)
+    {
+        return glm::degrees(value);
+    }
+
+    template <typename Type>
+    FORCEINLINE static Type sin(const Type& value)
+    {
+        return glm::sin(value);
+    }
+
+    template <typename Type>
+    FORCEINLINE static Type cos(const Type& value)
+    {
+        return glm::cos(value);
+    }
+
+    template <typename Type>
+    FORCEINLINE static Type tan(const Type& value)
+    {
+        return glm::tan(value);
+    }
+
+    template <typename Type>
+    FORCEINLINE static Type asin(const Type& value)
+    {
+        return glm::asin(value);
+    }
+
+    template <typename Type>
+    FORCEINLINE static Type acos(const Type& value)
+    {
+        return glm::acos(value);
+    }
+
+    template <typename Type>
+    FORCEINLINE static Type atan(const Type& value)
+    {
+        return glm::atan(value);
+    }
+
+    template <typename Type>
+    FORCEINLINE static Type atan(const Type& numerator, const Type& denominator)
+    {
+        return glm::atan(numerator,denominator);
+    }
+
+    static Rotation deg2Rad(const Rotation& value);
+    static Rotation rad2Deg(const Rotation& value);
+    static Rotation sin(const Rotation& value);
+    static Rotation cos(const Rotation& value);
+    static Rotation tan(const Rotation& value);
+    static Rotation asin(const Rotation& value);
+    static Rotation acos(const Rotation& value);
+    static Rotation atan(const Rotation& value);
+
     //////////////////////////////////////////////////////////////////////////
 
     template <typename Type>
@@ -115,6 +180,8 @@ public:
         return abs(a - b) <= epsilon;
     }
 
-    static bool isEqual(const Vector3D& a, const Vector3D& b, float epsilon = SMALL_EPSILON);
     static bool isEqual(const Vector2D& a, const Vector2D& b, float epsilon = SMALL_EPSILON);
+    static bool isEqual(const Vector3D& a, const Vector3D& b, float epsilon = SMALL_EPSILON);
+    static bool isEqual(const Vector4D& a, const Vector4D& b, float epsilon = SMALL_EPSILON);
+    static bool isEqual(const Rotation& a, const Rotation& b, float epsilon = SMALL_EPSILON);
 };

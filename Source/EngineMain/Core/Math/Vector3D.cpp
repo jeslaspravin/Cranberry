@@ -3,7 +3,7 @@
 
 #include <glm/geometric.hpp>
 
-Vector3D::Vector3D(const glm::vec3& vector3d)
+Vector3D::Vector3D(const Matrix3Col& vector3d)
     : value(vector3d)
 {}
 
@@ -30,6 +30,16 @@ Vector3D::Vector3D(Vector3D&& other)
 Vector3D::Vector3D(const float& x, const float& y, const float& z)
     : value(x,y,z)
 {}
+
+void Vector3D::operator=(const Vector3D & other)
+{
+    value = other.value;
+}
+
+void Vector3D::operator=(Vector3D && other)
+{
+    value = std::move(other.value);
+}
 
 float& Vector3D::x()
 {
@@ -73,7 +83,87 @@ float Vector3D::operator|(const Vector3D& b) const
 
 Vector3D Vector3D::operator^(const Vector3D& b) const
 {
-    return glm::cross(value, b.value);
+    return Vector3D(glm::cross(value, b.value));
+}
+
+Vector3D Vector3D::operator*(const Vector3D& b) const
+{
+    return Vector3D(value * b.value);
+}
+
+void Vector3D::operator*=(const Vector3D& b)
+{
+    value *= b.value;
+}
+
+Vector3D Vector3D::operator*(const float& scalar) const
+{
+    return Vector3D(value * scalar);
+}
+
+void Vector3D::operator*=(const float& scalar)
+{
+    value *= scalar;
+}
+
+Vector3D Vector3D::operator/(const Vector3D& b) const
+{
+    return Vector3D(value / b.value);
+}
+
+void Vector3D::operator/=(const Vector3D& b)
+{
+    value /= b.value;
+}
+
+Vector3D Vector3D::operator/(const float& scalar) const
+{
+    return Vector3D(value / scalar);
+}
+
+void Vector3D::operator/=(const float& scalar)
+{
+    value /= scalar;
+}
+
+Vector3D Vector3D::operator-(const Vector3D& b) const
+{
+    return Vector3D(value - b.value);
+}
+
+void Vector3D::operator-=(const Vector3D& b)
+{
+    value -= b.value;
+}
+
+Vector3D Vector3D::operator-(const float& scalar) const
+{
+    return Vector3D(value - scalar);
+}
+
+void Vector3D::operator-=(const float& scalar)
+{
+    value -= scalar;
+}
+
+Vector3D Vector3D::operator+(const Vector3D& b) const
+{
+    return Vector3D(value + b.value);
+}
+
+void Vector3D::operator+=(const Vector3D& b)
+{
+    value += b.value;
+}
+
+Vector3D Vector3D::operator+(const float& scalar) const
+{
+    return Vector3D(value + scalar);
+}
+
+void Vector3D::operator+=(const float& scalar)
+{
+    value += scalar;
 }
 
 bool Vector3D::isSame(const Vector3D& b, float epsilon /*= SMALL_EPSILON*/) const
@@ -84,7 +174,7 @@ bool Vector3D::isSame(const Vector3D& b, float epsilon /*= SMALL_EPSILON*/) cons
 
 Vector3D Vector3D::normalized()
 {
-    return glm::normalize(value);
+    return Vector3D(glm::normalize(value));
 }
 
 Vector3D Vector3D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
@@ -94,7 +184,7 @@ Vector3D Vector3D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
     {
         return Vector3D::ZERO;
     }
-    return value * Math::invSqrt(sqrLen);
+    return Vector3D(value * Math::invSqrt(sqrLen));
 }
 
 float Vector3D::length()

@@ -226,8 +226,14 @@
     <ClCompile Include="Core\Input\InputSystem.cpp" />
     <ClCompile Include="Core\Input\Keys.cpp" />
     <ClCompile Include="Core\Logger\Logger.cpp" />
+    <ClCompile Include="Core\Math\Matrix2.cpp" />
+    <ClCompile Include="Core\Math\Matrix3.cpp" />
+    <ClCompile Include="Core\Math\Matrix4.cpp" />
+    <ClCompile Include="Core\Math\Rotation.cpp" />
+    <ClCompile Include="Core\Math\RotationMatrix.cpp" />
     <ClCompile Include="Core\Math\Vector2D.cpp" />
     <ClCompile Include="Core\Math\Vector3D.cpp" />
+    <ClCompile Include="Core\Math\Vector4D.cpp" />
     <ClCompile Include="Core\Platform\GenericAppWindow.cpp" />
     <ClCompile Include="Core\Platform\LFS\File\GenericFile.cpp" />
     <ClCompile Include="Core\Platform\ModuleManager.cpp" />
@@ -245,6 +251,7 @@
     <ClCompile Include="Core\Types\Textures\RenderTargetTextures.cpp" />
     <ClCompile Include="Core\Types\Textures\Texture2D.cpp" />
     <ClCompile Include="Core\Types\Time.cpp" />
+    <ClCompile Include="Core\Types\Transform3D.cpp" />
     <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
     <ClCompile Include="Experimental\Shaders\TriangleShader.cpp" />
     <ClCompile Include="RenderApi\GBuffersAndTextures.cpp" />
@@ -288,8 +295,14 @@
     <ClInclude Include="Core\Logger\Logger.h" />
     <ClInclude Include="Core\Math\CoreMathTypedefs.h" />
     <ClInclude Include="Core\Math\Math.h" />
+    <ClInclude Include="Core\Math\Matrix2.h" />
+    <ClInclude Include="Core\Math\Matrix3.h" />
+    <ClInclude Include="Core\Math\Matrix4.h" />
+    <ClInclude Include="Core\Math\Rotation.h" />
+    <ClInclude Include="Core\Math\RotationMatrix.h" />
     <ClInclude Include="Core\Math\Vector2D.h" />
     <ClInclude Include="Core\Math\Vector3D.h" />
+    <ClInclude Include="Core\Math\Vector4D.h" />
     <ClInclude Include="Core\Memory\SmartPointers.h" />
     <ClInclude Include="Core\Platform\GenericAppInstance.h" />
     <ClInclude Include="Core\Platform\GenericAppWindow.h" />
@@ -322,6 +335,7 @@
     <ClInclude Include="Core\Types\Textures\Texture2D.h" />
     <ClInclude Include="Core\Types\Textures\TexturesBase.h" />
     <ClInclude Include="Core\Types\Time.h" />
+    <ClInclude Include="Core\Types\Transform3D.h" />
     <ClInclude Include="Experimental\ExperimentalEngine.h" />
     <ClInclude Include="Experimental\Shaders\TriangleShader.h" />
     <ClInclude Include="RenderApi\GBuffersAndTextures.h" />
