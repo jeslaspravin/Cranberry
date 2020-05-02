@@ -37,3 +37,7 @@ typedef glm::vec<2, uint32, glm::defaultp> Size2D;
 
 typedef glm::vec<3, uint8, glm::defaultp> Byte3D;
 typedef glm::vec<4, uint8, glm::defaultp> Byte4D;
+
+typedef glm::vec<2, float, glm::defaultp> Matrix2Col;
+typedef glm::vec<3, float, glm::defaultp> Matrix3Col;
+typedef glm::vec<4, float, glm::defaultp> Matrix4Col;
