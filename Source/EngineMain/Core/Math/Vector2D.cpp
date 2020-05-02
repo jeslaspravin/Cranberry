@@ -4,7 +4,7 @@
 #include <glm/geometric.hpp>
 #include <glm/ext/vector_float3.hpp>
 
-Vector2D::Vector2D(const glm::vec2& vector2d)
+Vector2D::Vector2D(const Matrix2Col& vector2d)
     : value(vector2d)
 {}
 
@@ -27,6 +27,16 @@ Vector2D::Vector2D(Vector2D&& other)
 Vector2D::Vector2D(const float& allValue)
     : value(allValue)
 {}
+
+void Vector2D::operator=(const Vector2D & other)
+{
+    value = other.value;
+}
+
+void Vector2D::operator=(Vector2D && other)
+{
+    value = std::move(other.value);
+}
 
 float& Vector2D::x()
 {
@@ -63,6 +73,86 @@ float Vector2D::operator^(const Vector2D& b) const
     return glm::cross(glm::vec3(value,0), glm::vec3(b.value,0)).z;
 }
 
+Vector2D Vector2D::operator*(const Vector2D& b) const
+{
+    return Vector2D(value * b.value);
+}
+
+void Vector2D::operator*=(const Vector2D& b)
+{
+    value *= b.value;
+}
+
+Vector2D Vector2D::operator*(const float& scalar) const
+{
+    return Vector2D(value * scalar);
+}
+
+void Vector2D::operator*=(const float& scalar)
+{
+    value *= scalar;
+}
+
+Vector2D Vector2D::operator/(const Vector2D& b) const
+{
+    return Vector2D(value / b.value);
+}
+
+void Vector2D::operator/=(const Vector2D& b)
+{
+    value /= b.value;
+}
+
+Vector2D Vector2D::operator/(const float& scalar) const
+{
+    return Vector2D(value / scalar);
+}
+
+void Vector2D::operator/=(const float& scalar)
+{
+    value /= scalar;
+}
+
+Vector2D Vector2D::operator-(const Vector2D& b) const
+{
+    return Vector2D(value - b.value);
+}
+
+void Vector2D::operator-=(const Vector2D& b)
+{
+    value -= b.value;
+}
+
+Vector2D Vector2D::operator-(const float& scalar) const
+{
+    return Vector2D(value - scalar);
+}
+
+void Vector2D::operator-=(const float& scalar)
+{
+    value -= scalar;
+}
+
+Vector2D Vector2D::operator+(const Vector2D& b) const
+{
+    return Vector2D(value + b.value);
+}
+
+void Vector2D::operator+=(const Vector2D& b)
+{
+    value += b.value;
+}
+
+Vector2D Vector2D::operator+(const float& scalar) const
+{
+    return Vector2D(value + scalar);
+}
+
+void Vector2D::operator+=(const float& scalar)
+{
+    value += scalar;
+}
+
 bool Vector2D::isSame(const Vector2D& b, float epsilon /*= SMALL_EPSILON*/) const
 {
     return Math::isEqual(value.x, b.value.x, epsilon) && Math::isEqual(value.y, b.value.y, epsilon);
@@ -70,7 +160,7 @@ bool Vector2D::isSame(const Vector2D& b, float epsilon /*= SMALL_EPSILON*/) cons
 
 Vector2D Vector2D::normalized()
 {
-    return glm::normalize(value);
+    return Vector2D(glm::normalize(value));
 }
 
 Vector2D Vector2D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
@@ -80,7 +170,7 @@ Vector2D Vector2D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
     {
         return Vector2D::ZERO;
     }
-    return value * Math::invSqrt(sqrLen);
+    return Vector2D(value * Math::invSqrt(sqrLen));
 }
 
 float Vector2D::length()
