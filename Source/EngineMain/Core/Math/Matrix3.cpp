@@ -84,16 +84,29 @@ void Matrix3::operator*=(const float& scalar)
     value *= scalar;
 }
 
+Matrix3 Matrix3::inverse() const
+{
+    return glm::inverse(value);
+}
+
+float Matrix3::determinant() const
+{
+    return glm::determinant(value);
+}
+
+Matrix3 Matrix3::transpost() const
+{
+    return glm::transpose(value);
+}
+
 Matrix3 Matrix3::operator|(const Matrix3& b) const
 {
-    return Matrix3(Vector3D(value[0] * b.value[0]), Vector3D(value[1] * b.value[1]), Vector3D(value[2] * b.value[2]));
+    return glm::matrixCompMult(value, b.value);
 }
 
 void Matrix3::operator|=(const Matrix3& b)
 {
-    value[0] *= b.value[0];
-    value[1] *= b.value[1];
-    value[2] *= b.value[2];
+    value = glm::matrixCompMult(value, b.value);
 }
 
 Matrix3 Matrix3::operator/(const Matrix3& b) const
