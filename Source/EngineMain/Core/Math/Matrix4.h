@@ -36,6 +36,10 @@ public:
     Matrix4 operator*(const Matrix4& b) const;
     void operator*=(const Matrix4& b);
 
+    Matrix4 inverse() const;
+    float determinant() const;
+    Matrix4 transpost() const;
+
     // Component wise operations
     Matrix4 operator|(const Matrix4& b) const;
     void operator|=(const Matrix4& b);

@@ -30,6 +30,10 @@ public:
     Matrix2 operator*(const Matrix2& b) const;
     void operator*=(const Matrix2& b);
 
+    Matrix2 inverse() const;
+    float determinant() const;
+    Matrix2 transpost() const;
+
     // Component wise operations
     Matrix2 operator|(const Matrix2& b) const;
     void operator|=(const Matrix2& b);

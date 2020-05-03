@@ -102,18 +102,29 @@ void Matrix4::operator*=(const float& scalar)
     value *= scalar;
 }
 
+Matrix4 Matrix4::inverse() const
+{
+    return glm::inverse(value);
+}
+
+float Matrix4::determinant() const
+{
+    return glm::determinant(value);
+}
+
+Matrix4 Matrix4::transpost() const
+{
+    return glm::transpose(value);
+}
+
 Matrix4 Matrix4::operator|(const Matrix4& b) const
 {
-    return Matrix4(Vector4D(value[0] * b.value[0]), Vector4D(value[1] * b.value[1]), Vector4D(value[2] * b.value[2])
-        , Vector4D(value[3] * b.value[3]));
+    return glm::matrixCompMult(value, b.value);
 }
 
 void Matrix4::operator|=(const Matrix4& b)
 {
-    value[0] *= b.value[0];
-    value[1] *= b.value[1];
-    value[2] *= b.value[2];
-    value[3] *= b.value[3];
+    value = glm::matrixCompMult(value, b.value);
 }
 
 Matrix4 Matrix4::operator/(const Matrix4& b) const
