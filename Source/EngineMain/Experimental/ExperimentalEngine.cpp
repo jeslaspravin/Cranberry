@@ -22,6 +22,8 @@
 #include "../Core/Types/Delegates/Delegate.h"
 #include "../Core/Engine/Config/EngineGlobalConfigs.h"
 #include "../Core/Input/InputSystem.h"
+#include "../Core/Math/Vector2D.h"
+#include "../Core/Math/Vector3D.h"
 
 #include <glm/ext/vector_float3.hpp>
 #include <array>
@@ -143,7 +145,7 @@ void ExperimentalEngine::destroyPools()
 
 void ExperimentalEngine::createBuffers()
 {
-    normalBuffer.buffer = new GraphicsRBuffer(sizeof(glm::vec3), 1);
+    normalBuffer.buffer = new GraphicsRBuffer(sizeof(Vector3D), 1);
     normalBuffer.buffer->setResourceName("Test_Buffer");
     normalBuffer.buffer->init();
     texelBuffer.buffer = new GraphicsRTexelBuffer(EPixelDataFormat::RG_SF32, 3);
@@ -166,7 +168,7 @@ void ExperimentalEngine::writeBuffers()
 
     // Triangles data to texel buffer
     {
-        std::array<glm::vec2, 3> triVerts = { glm::vec2(0.0f , -0.75f),glm::vec2(0.75f , 0.75f), glm::vec2(-0.75f , 0.75f) };
+        std::array<Vector2D, 3> triVerts = { Vector2D(0.0f , -0.75f),Vector2D(0.75f , 0.75f), Vector2D(-0.75f , 0.75f) };
         stagingResTriVerts.setAsStagingResource(true);
         stagingResTriVerts.init();
 
@@ -769,10 +771,10 @@ void ExperimentalEngine::createPipelineForSubpass()
     createPipelineCache();
     createTriDrawPipeline();
 
-    const std::array<glm::vec3, 4> quadVerts = { glm::vec3(-1,-1,0),glm::vec3(1,-1,0),glm::vec3(-1,1,0),glm::vec3(1,1,0) };
+    const std::array<Vector3D, 4> quadVerts = { Vector3D(-1,-1,0),Vector3D(1,-1,0),Vector3D(-1,1,0),Vector3D(1,1,0) };
     const std::array<uint32, 6> quadIndices = { 0,3,2,0,1,3 };// 3 Per tri of quad
 
-    quadVertexBuffer = new GraphicsVertexBuffer(sizeof(glm::vec3), static_cast<uint32>(quadVerts.size()));
+    quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
     quadVertexBuffer->setResourceName("ScreenQuadVertices");
     quadVertexBuffer->init();
     quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
@@ -780,7 +782,7 @@ void ExperimentalEngine::createPipelineForSubpass()
     quadIndexBuffer->init();
 
     {
-        GraphicsVertexBuffer vertStagingBuffer(sizeof(glm::vec3), static_cast<uint32>(quadVerts.size()));
+        GraphicsVertexBuffer vertStagingBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
         vertStagingBuffer.setAsStagingResource(true);
         vertStagingBuffer.init();
         GraphicsIndexBuffer indexStagingBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
@@ -988,7 +990,7 @@ void ExperimentalEngine::createQuadDrawPipeline()
 
     VkVertexInputBindingDescription vertexInputBinding;
     vertexInputBinding.binding = 0;
-    vertexInputBinding.stride = sizeof(glm::vec3);
+    vertexInputBinding.stride = sizeof(Vector3D);
     vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     VkVertexInputAttributeDescription vertexInputAttribute;
     vertexInputAttribute.binding = 0;
