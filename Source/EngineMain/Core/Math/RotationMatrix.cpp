@@ -41,7 +41,7 @@ Rotation RotationMatrix::asRotation() const
     glm::vec3 denominator(rotationMatrix[2][2], Math::sqrt(rotationMatrix[2][1] * rotationMatrix[2][1] + rotationMatrix[2][2] * rotationMatrix[2][2])
         , rotationMatrix[0][0]);
 
-    numerator = Math::atan(numerator, denominator);
+    numerator = Math::rad2Deg(Math::atan(numerator, denominator));
     return Rotation(-numerator.x, numerator.y, -numerator.z);
 }
 

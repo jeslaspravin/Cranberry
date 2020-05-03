@@ -199,20 +199,20 @@ Rotation Math::tan(const Rotation& value)
 Rotation Math::asin(const Rotation& value)
 {
     glm::vec3 rotVal(value.roll(), value.pitch(), value.yaw());
-    rotVal = Math::asin(Math::deg2Rad(rotVal));
+    rotVal = Math::rad2Deg(Math::asin(Math::deg2Rad(rotVal)));
     return Rotation(rotVal.x, rotVal.y, rotVal.z);
 }
 
 Rotation Math::acos(const Rotation& value)
 {
     glm::vec3 rotVal(value.roll(), value.pitch(), value.yaw());
-    rotVal = Math::acos(Math::deg2Rad(rotVal));
+    rotVal = Math::rad2Deg(Math::acos(Math::deg2Rad(rotVal)));
     return Rotation(rotVal.x, rotVal.y, rotVal.z);
 }
 
 Rotation Math::atan(const Rotation& value)
 {
     glm::vec3 rotVal(value.roll(), value.pitch(), value.yaw());
-    rotVal = Math::atan(Math::deg2Rad(rotVal));
+    rotVal = Math::rad2Deg(Math::atan(Math::deg2Rad(rotVal)));
     return Rotation(rotVal.x, rotVal.y, rotVal.z);
 }

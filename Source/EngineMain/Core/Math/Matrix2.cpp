@@ -68,6 +68,21 @@ void Matrix2::operator*=(const Matrix2& b)
     value *= b.value;
 }
 
+Matrix2 Matrix2::inverse() const
+{
+    return glm::inverse(value);
+}
+
+float Matrix2::determinant() const
+{
+    return glm::determinant(value);
+}
+
+Matrix2 Matrix2::transpost() const
+{
+    return glm::transpose(value);
+}
+
 Matrix2 Matrix2::operator*(const float& scalar) const
 {
     return value * scalar;
@@ -80,13 +95,12 @@ void Matrix2::operator*=(const float& scalar)
 
 Matrix2 Matrix2::operator|(const Matrix2& b) const
 {
-    return Matrix2(Vector2D(value[0] * b.value[0]), Vector2D(value[1] * b.value[1]));
+    return glm::matrixCompMult(value,b.value);
 }
 
 void Matrix2::operator|=(const Matrix2& b)
 {
-    value[0] *= b.value[0];
-    value[1] *= b.value[1];
+    value = glm::matrixCompMult(value, b.value);
 }
 
 Matrix2 Matrix2::operator/(const Matrix2& b) const
