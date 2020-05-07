@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\SpirV">
+      <UniqueIdentifier>{3c03b7a3-aa32-46f3-9713-d0b6f168e836}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\EngineShaderSpec">
+      <UniqueIdentifier>{9114042d-26f8-4df2-8618-e628a7c16396}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utilities">
+      <UniqueIdentifier>{e9cc429d-a617-4d84-a27d-88b61813fcc9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SpirV\spirv_reflect.cpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClCompile>
+    <ClCompile Include="SpirV\spirv_parser.cpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClCompile>
+    <ClCompile Include="SpirV\spirv_cross_parsed_ir.cpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClCompile>
+    <ClCompile Include="SpirV\spirv_glsl.cpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClCompile>
+    <ClCompile Include="SpirV\spirv_cross.cpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClCompile>
+    <ClCompile Include="SpirV\spirv_cfg.cpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineShaderSpec\ShaderReflectionProcessor.cpp">
+      <Filter>Source Files\EngineShaderSpec</Filter>
+    </ClCompile>
+    <ClCompile Include="ConsoleMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\CommonFunctions.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SpirV\spirv_parser.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\spirv_reflect.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\spirv_cross_parsed_ir.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\spirv_glsl.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\GLSL.std.450.h">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\spirv_cross.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\spirv_common.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\spirv.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\spirv_cfg.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\spirv_cross_containers.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="SpirV\spirv_cross_error_handling.hpp">
+      <Filter>Source Files\SpirV</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineShaderSpec\ShaderReflectionProcessor.h">
+      <Filter>Source Files\EngineShaderSpec</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\CommonFunctions.h">
+      <Filter>Source Files\Utilities</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

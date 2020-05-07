@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
 #include "../Platform/PlatformTypes.h"
 
+#include <string>
 #include <type_traits>
 #include <vector>
 
