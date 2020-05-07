@@ -19,6 +19,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utilities", "Utilities", "{
 		Source\EngineShaders\Utilities\DrawQuadFromTexture.vert.glsl = Source\EngineShaders\Utilities\DrawQuadFromTexture.vert.glsl
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Experimental", "Experimental", "{AC01F6C1-F1B9-4C1C-83BB-D5225DF1550E}"
+	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\Experimental\ExperimentalTriangle.frag.glsl = Source\EngineShaders\Experimental\ExperimentalTriangle.frag.glsl
+		Source\EngineShaders\Experimental\ExperimentalTriangle.vert.glsl = Source\EngineShaders\Experimental\ExperimentalTriangle.vert.glsl
+		Source\EngineShaders\Experimental\TestShaderReflect.frag.glsl = Source\EngineShaders\Experimental\TestShaderReflect.frag.glsl
+		Source\EngineShaders\Experimental\TestShaderReflect.tesc.glsl = Source\EngineShaders\Experimental\TestShaderReflect.tesc.glsl
+		Source\EngineShaders\Experimental\TestShaderReflect.tese.glsl = Source\EngineShaders\Experimental\TestShaderReflect.tese.glsl
+		Source\EngineShaders\Experimental\TestShaderReflect.vert.glsl = Source\EngineShaders\Experimental\TestShaderReflect.vert.glsl
+	EndProjectSection
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineShaderData", "Source\EngineShaderData\EngineShaderData.vcxitems", "{2415042A-187A-407F-90DF-29A1BB24943D}"
 EndProject
 Global
@@ -60,6 +70,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F6883E7B-0E8B-4459-AD80-F28864E92906} = {61CB758C-20C2-4897-9454-061721EF2C89}
+		{AC01F6C1-F1B9-4C1C-83BB-D5225DF1550E} = {61CB758C-20C2-4897-9454-061721EF2C89}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D05BB706-1F92-4580-853D-B271284B97FA}
