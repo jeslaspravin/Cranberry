@@ -7,9 +7,26 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameBuilder", "GameBuilder\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineMain", "Source\EngineMain\EngineMain.vcxproj", "{1D27FC53-FCDE-4242-A296-952EC6BC2CA4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineShared", "Source\EngineShared\EngineShared.vcxitems", "{26C11465-7D47-4410-A3B0-62EB1AE1BB3D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpirvShaderReflection", "Source\SpirvShaderReflection\SpirvShaderReflection.vcxproj", "{2F06BB11-669D-408D-AA9D-EC30F7DFB83F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EngineShaders", "EngineShaders", "{61CB758C-20C2-4897-9454-061721EF2C89}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utilities", "Utilities", "{F6883E7B-0E8B-4459-AD80-F28864E92906}"
+	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\Utilities\DrawQuadFromInputAttachment.frag.glsl = Source\EngineShaders\Utilities\DrawQuadFromInputAttachment.frag.glsl
+		Source\EngineShaders\Utilities\DrawQuadFromInputAttachment.vert.glsl = Source\EngineShaders\Utilities\DrawQuadFromInputAttachment.vert.glsl
+		Source\EngineShaders\Utilities\DrawQuadFromTexture.frag.glsl = Source\EngineShaders\Utilities\DrawQuadFromTexture.frag.glsl
+		Source\EngineShaders\Utilities\DrawQuadFromTexture.vert.glsl = Source\EngineShaders\Utilities\DrawQuadFromTexture.vert.glsl
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineShaderData", "Source\EngineShaderData\EngineShaderData.vcxitems", "{2415042A-187A-407F-90DF-29A1BB24943D}"
 EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Source\EngineShaderData\EngineShaderData.vcxitems*{1d27fc53-fcde-4242-a296-952ec6bc2ca4}*SharedItemsImports = 4
+		Source\EngineShaderData\EngineShaderData.vcxitems*{2415042a-187a-407f-90df-29a1bb24943d}*SharedItemsImports = 9
+		Source\EngineShaderData\EngineShaderData.vcxitems*{2f06bb11-669d-408d-aa9d-ec30f7dfb83f}*SharedItemsImports = 4
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
@@ -31,9 +48,18 @@ Global
 		{1D27FC53-FCDE-4242-A296-952EC6BC2CA4}.Release|Any CPU.ActiveCfg = Release|Win32
 		{1D27FC53-FCDE-4242-A296-952EC6BC2CA4}.Release|x64.ActiveCfg = Release|x64
 		{1D27FC53-FCDE-4242-A296-952EC6BC2CA4}.Release|x64.Build.0 = Release|x64
+		{2F06BB11-669D-408D-AA9D-EC30F7DFB83F}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{2F06BB11-669D-408D-AA9D-EC30F7DFB83F}.Debug|x64.ActiveCfg = Debug|x64
+		{2F06BB11-669D-408D-AA9D-EC30F7DFB83F}.Debug|x64.Build.0 = Debug|x64
+		{2F06BB11-669D-408D-AA9D-EC30F7DFB83F}.Release|Any CPU.ActiveCfg = Release|Win32
+		{2F06BB11-669D-408D-AA9D-EC30F7DFB83F}.Release|x64.ActiveCfg = Release|x64
+		{2F06BB11-669D-408D-AA9D-EC30F7DFB83F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F6883E7B-0E8B-4459-AD80-F28864E92906} = {61CB758C-20C2-4897-9454-061721EF2C89}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D05BB706-1F92-4580-853D-B271284B97FA}
