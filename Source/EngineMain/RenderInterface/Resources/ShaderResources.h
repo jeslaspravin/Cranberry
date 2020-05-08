@@ -1,7 +1,6 @@
 #pragma once
 #include "GraphicsResources.h"
 #include "../../Core/String/String.h"
-#include "../../Core/Platform/LFS/PlatformLFS.h"
 #include "../../Core/Types/Functions.h"
 
 #include <map>
@@ -35,20 +34,22 @@ class ShaderCodeResource : public GraphicsResource
     DECLARE_GRAPHICS_RESOURCE(ShaderCodeResource,,GraphicsResource,)
 
 private:
-    String fileName;
-    PlatformFile shaderFile;
+    String shaderFileName;
 protected:
-    std::vector<uint8> shaderCode;
+    const uint8* shaderCode;
 
     ShaderCodeResource() = default;
 public:
-    ShaderCodeResource(const String& filePath);
+    ShaderCodeResource(const String& shaderName, const uint8* shaderCodePtr);
 
+    /* GraphicsResources overrides */
     void init() override;
-    virtual void reinitResources() override;
-    virtual void release() override;
     String getResourceName() const override;
     void setResourceName(const String& name) override {}
+    /* End overrides */
+
+    virtual String entryPoint() const;
+    virtual EShaderStage::Type shaderStage() const;
 };
 
 class ShaderResource : public GraphicsResource
@@ -58,13 +59,13 @@ class ShaderResource : public GraphicsResource
 private:
     String shaderName;
 protected:
-    using ShaderCodeFactory = ClassFunction<true,ShaderResource,ShaderCodeResource*, const String&>;
-    ShaderCodeFactory shaderCodeFactory;
+    const String SHADER_EXTENSION = "shader";
+    const String REFLECTION_EXTENSION = "ref";
+protected:
     std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>> shaders;
 
     ShaderResource(const String& name = "");
 public:
-    const String SHADER_EXTENSION = "shader";
 
     /* GraphicsResource overrides */
     void init() override;

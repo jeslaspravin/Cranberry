@@ -571,14 +571,14 @@ SharedPtr<class SamplerInterface> VulkanGraphicsHelper::createSampler(class IGra
     return SharedPtr<SamplerInterface>(sampler);
 }
 
-VkShaderModule VulkanGraphicsHelper::createShaderModule(class IGraphicsInstance* graphicsInstance, uint8* code, uint32 size)
+VkShaderModule VulkanGraphicsHelper::createShaderModule(class IGraphicsInstance* graphicsInstance, const uint8* code, uint32 size)
 {
     const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
 
     SHADER_MODULE_CREATE_INFO(createInfo);
     createInfo.codeSize = size;
-    createInfo.pCode = reinterpret_cast<uint32*>(code);
+    createInfo.pCode = reinterpret_cast<const uint32*>(code);
 
     VkShaderModule shaderModule;
     if (device->vkCreateShaderModule(device->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)

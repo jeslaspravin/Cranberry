@@ -2,8 +2,24 @@
 #include "../../Core/Engine/GameEngine.h"
 #include "../VulkanGraphicsHelper.h"
 #include "../VulkanInternals/Debugging.h"
+#include "../../Core/Logger/Logger.h"
+#include "../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../Core/Platform/LFS/PlatformLFS.h"
+#include "ShaderArchive.h"
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderCodeResource, VK_OBJECT_TYPE_SHADER_MODULE)
+
+VulkanShaderCodeResource::VulkanShaderCodeResource(const String& shaderName, const ShaderStageDescription* desc, const uint8* shaderCodePtr)
+    : BaseType(shaderName, shaderCodePtr)
+    , stageDescription(desc)
+    , shaderModule(nullptr)
+{}
+
+VulkanShaderCodeResource::VulkanShaderCodeResource()
+    : BaseType()
+    , stageDescription(nullptr)
+    , shaderModule(nullptr)
+{}
 
 void VulkanShaderCodeResource::reinitResources()
 {
@@ -14,7 +30,9 @@ void VulkanShaderCodeResource::reinitResources()
     }
 
     BaseType::reinitResources();
-    shaderModule = VulkanGraphicsHelper::createShaderModule(graphicsInstance,shaderCode.data(), (uint32)shaderCode.size());
+    // Multiplying by sizeof(uint32) as reflection creates every calculation in uint32
+    shaderModule = VulkanGraphicsHelper::createShaderModule(graphicsInstance,shaderCode + getStageDesc().codeView.startIdx * sizeof(uint32)
+        , getStageDesc().codeView.size*sizeof(uint32));
     if (shaderModule != nullptr)
     {
         VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(this);
@@ -41,28 +59,68 @@ uint64 VulkanShaderCodeResource::getDispatchableHandle() const
     return (uint64)shaderModule;
 }
 
-DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderResource, VK_OBJECT_TYPE_SHADER_MODULE)
-
-ShaderCodeResource* VulkanShaderResource::createShaderCode(const String& filePath) const
+String VulkanShaderCodeResource::getResourceName() const 
 {
-    return new VulkanShaderCodeResource(filePath);
+    return BaseType::getResourceName() + EShaderStage::getShaderStageInfo(shaderStage())->shortName;
 }
+
+String VulkanShaderCodeResource::entryPoint() const
+{
+    debugAssert(stageDescription != nullptr);
+    return stageDescription->entryPoint;
+}
+
+EShaderStage::Type VulkanShaderCodeResource::shaderStage() const
+{
+    return EShaderStage::Type(stageDescription->stage);
+}
+
+const ShaderStageDescription& VulkanShaderCodeResource::getStageDesc() const
+{
+    debugAssert(stageDescription != nullptr);
+    return *stageDescription;
+}
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderResource, VK_OBJECT_TYPE_SHADER_MODULE)
 
 VulkanShaderResource::VulkanShaderResource(const String& name) : BaseType(name)
 {
-    if (!shaderCodeFactory)
+    String filePath;
+    filePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), "Shaders", name);
+    shaderFilePath = filePath + "." + SHADER_EXTENSION;
+    reflectionsFilePath = filePath + "." + REFLECTION_EXTENSION;
+    PlatformFile shaderFile(shaderFilePath);
+    shaderFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
+    shaderFile.addSharingFlags(EFileSharing::NoSharing);
+    shaderFile.addAttributes(EFileAdditionalFlags::ReadOnly);
+    PlatformFile reflectionFile(reflectionsFilePath);
+    reflectionFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
+    reflectionFile.addSharingFlags(EFileSharing::NoSharing);
+    reflectionFile.addAttributes(EFileAdditionalFlags::ReadOnly);
+
+    fatalAssert(shaderFile.exists() && reflectionFile.exists(), "Shader and reflection files are mandatory");
+    shaderFile.openFile();
+    reflectionFile.openFile();
+
+    std::vector<uint8> reflectionData;
+    shaderFile.read(shaderCode);
+    shaderFile.closeFile();
+    reflectionFile.read(reflectionData);
+    reflectionFile.closeFile();
+
+    // Ensure shader code is multiple of 4bytes as it is supposed to be
+    debugAssert(shaderCode.size() % sizeof(uint32) == 0);    
+    ShaderArchive archive(reflectionData);
+    archive << reflectedData;
+
+    for (ShaderStageDescription& stageDesc : reflectedData.stages)
     {
-        shaderCodeFactory = static_cast<ShaderCodeFactory::ClassDelegate>(&VulkanShaderResource::createShaderCode);
+        shaders[EShaderStage::Type(stageDesc.stage)] = SharedPtr<ShaderCodeResource>(new VulkanShaderCodeResource(name, &stageDesc, shaderCode.data()));
     }
 }
 
 VulkanShaderResource::VulkanShaderResource() : BaseType()
-{
-    if (!shaderCodeFactory)
-    {
-        shaderCodeFactory = static_cast<ShaderCodeFactory::ClassDelegate>(&VulkanShaderResource::createShaderCode);
-    }
-}
+{}
 
 String VulkanShaderResource::getObjectName() const
 {
