@@ -15,7 +15,7 @@ public:
 #include <assert.h>
 #define debugAssert(Expr)\
 if(!(Expr)){\
-    Logger::error("DebugAssertion", "%s() : Assert expression failed "#Expr,__func__);\
+    Logger::error("DebugAssertion", "%s() : Assert expression failed %s",#Expr,__func__);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(false);}\
     assert((Expr));
 #else
@@ -27,6 +27,6 @@ if((Expr)){}
 #ifndef fatalAssert
 #define fatalAssert(Expr,Message)\
 if(!(Expr)){\
-    Logger::error("DebugAssertion", "%s() : Assert expression failed "#Expr"[%s]",__func__,Message);\
+    Logger::error("DebugAssertion", "%s() : Assert expression failed %s [%s]",__func__, #Expr, Message);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(true);}
 #endif

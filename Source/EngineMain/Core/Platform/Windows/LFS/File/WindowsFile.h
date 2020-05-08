@@ -1,12 +1,13 @@
 #pragma once
 #include "../../../LFS/File/GenericFile.h"
 
-class WindowsFile : public GenericFile {
+class WindowsFile final : public GenericFile {
 
 public:
     WindowsFile(const String& path = ""):GenericFile(path){}
     WindowsFile(WindowsFile&& otherFile);
     WindowsFile(const WindowsFile& otherFile);
+    ~WindowsFile();
     void operator=(const WindowsFile& otherFile);
     void operator=(WindowsFile&& otherFile);
 

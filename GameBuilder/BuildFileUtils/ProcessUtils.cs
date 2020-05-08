@@ -60,6 +60,7 @@ namespace GameBuilder.BuildFileUtils
                 proc.BeginErrorReadLine();
                 proc.WaitForExit();
                 output = sb.ToString();
+                output.Trim();
                 return true;
             }
             catch (Exception objException)

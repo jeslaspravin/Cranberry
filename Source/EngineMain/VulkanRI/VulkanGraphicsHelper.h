@@ -62,7 +62,8 @@ public:
     static SharedPtr<class SamplerInterface> createSampler(class IGraphicsInstance* graphicsInstance, const char* name,
         ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod);
 
-    static VkShaderModule createShaderModule(class IGraphicsInstance* graphicsInstance, uint8* code, uint32 size);
+    // Size in bytes not 4bytes
+    static VkShaderModule createShaderModule(class IGraphicsInstance* graphicsInstance, const uint8* code, uint32 size);
     static void destroyShaderModule(class IGraphicsInstance* graphicsInstance, VkShaderModule shaderModule);
 };
 

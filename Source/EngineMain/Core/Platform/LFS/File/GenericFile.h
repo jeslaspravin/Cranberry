@@ -38,7 +38,7 @@ public:
     GenericFile();
     GenericFile(const String& path);
 
-    virtual ~GenericFile();
+    virtual ~GenericFile() = default;
 
     // Opens only if previous file is properly closed
     bool openOrCreate();

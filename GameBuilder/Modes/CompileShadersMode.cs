@@ -16,12 +16,13 @@ namespace GameBuilder.Modes
     {
         private const string RENDER_API = "api";
         private const string COMPILER_DIRECTORY = "binPath";
+        private const string INTERMEDIATE_DIR = "intermediatePath";
         private const string TARGET_DIR = "targetPath";
 
         private const string API_VULKAN = "vulkan";
         public override ModeExecutionResult execute(Dictionary<string,List<string>> consoleArgs)
         {
-            if(consoleArgs.ContainsKey(RENDER_API) && consoleArgs.ContainsKey(TARGET_DIR))
+            if(consoleArgs.ContainsKey(RENDER_API) && consoleArgs.ContainsKey(TARGET_DIR) && consoleArgs.ContainsKey(INTERMEDIATE_DIR))
             {
                 ShaderCompiler compiler = null;
                 string compilerPath = null;
@@ -33,7 +34,7 @@ namespace GameBuilder.Modes
                 switch(consoleArgs[RENDER_API][0])
                 {
                     case API_VULKAN:
-                        compiler = new VulkanShaderCompiler(compilerPath, consoleArgs[TARGET_DIR][0]);
+                        compiler = new VulkanShaderCompiler(compilerPath, consoleArgs[INTERMEDIATE_DIR][0], consoleArgs[TARGET_DIR][0]);
                         break;
                     default:
                         return ModeExecutionResult.Failure;

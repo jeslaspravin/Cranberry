@@ -1,48 +1,41 @@
 #include "ShaderResources.h"
+#include "../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../Core/Logger/Logger.h"
 
 DEFINE_GRAPHICS_RESOURCE(ShaderCodeResource)
 
-ShaderCodeResource::ShaderCodeResource(const String& filePath)
+ShaderCodeResource::ShaderCodeResource(const String& file, const uint8* shaderCodePtr)
     : BaseType()
-    , shaderFile(filePath)
-{
-    fileName = shaderFile.getFileName();
-    shaderFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
-    shaderFile.addSharingFlags(EFileSharing::NoSharing);
-    shaderFile.addAttributes(EFileAdditionalFlags::ReadOnly);
-}
+    , shaderFileName(file)
+    , shaderCode(shaderCodePtr)
+{}
 
 void ShaderCodeResource::init()
 {
     BaseType::init();
-    if (!shaderFile.openFile())
-    {
-        Logger::error("ShaderCodeResource", "%s() : Failed opening shader file %s", __func__, fileName.getChar());
-        return;
-    }
     // Don't need since will always be subresource of shader resources
     //reinitResources();
 }
 
-void ShaderCodeResource::reinitResources()
-{
-    BaseType::reinitResources();
-    shaderFile.read(shaderCode);
-}
-
-void ShaderCodeResource::release()
-{
-    shaderFile.closeFile();
-    BaseType::release();
-}
-
 String ShaderCodeResource::getResourceName() const
 {
-    return fileName;
+    return shaderFileName;
+}
+
+EShaderStage::Type ShaderCodeResource::shaderStage() const
+{
+    fatalAssert(false, "Not implemented");
+    return EShaderStage::Compute/*0*/;
+}
+
+String ShaderCodeResource::entryPoint() const
+{
+    fatalAssert(false, "Not implemented");
+    return "";
 }
 
 DEFINE_GRAPHICS_RESOURCE(ShaderResource)
+
 
 ShaderResource::ShaderResource(const String& name /*= ""*/) : BaseType()
 {
