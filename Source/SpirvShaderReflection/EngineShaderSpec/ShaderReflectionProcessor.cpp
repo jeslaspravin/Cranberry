@@ -14,9 +14,10 @@
 
 ShaderReflectionProcessor::ShaderReflectionProcessor(std::string shaderFilePath)
     : shaderPath(shaderFilePath)
+    , compiledData(nullptr)
 {
     shaderFileName = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
-    std::vector<char> data;
+    std::vector<unsigned char> data;
     if (CommonFunctions::readFromFile(shaderPath,data))
     {
         printf("Loaded shader file ----> %s\n", shaderPath.c_str());
@@ -852,13 +853,13 @@ void PipelineShaderStageProcessor::writeOutput()
 bool PipelineShaderStageProcessor::crossCheckWrittenData()
 {
     bool bIsSuccess = true;
-    std::vector<char> reflectionData;
+    std::vector<unsigned char> reflectionData;
     ShaderReflected reflectedShader;
     if (CommonFunctions::readFromFile(reflectionFile, reflectionData))
     {
         ShaderArchive archive(reflectionData);
         archive << reflectedShader;
-        std::vector<char> shaderReadData;
+        std::vector<unsigned char> shaderReadData;
 
         if (CommonFunctions::readFromFile(shaderFile, shaderReadData))
         {

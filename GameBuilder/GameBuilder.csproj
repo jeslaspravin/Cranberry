@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuildFileUtils\Directories.cs" />
+    <Compile Include="BuildFileUtils\FileUtils.cs" />
     <Compile Include="BuildFileUtils\ProcessUtils.cs" />
     <Compile Include="Logger\LogBase.cs" />
     <Compile Include="Logger\LogConsole.cs" />

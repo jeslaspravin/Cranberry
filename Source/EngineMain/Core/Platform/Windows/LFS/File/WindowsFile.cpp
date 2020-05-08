@@ -3,6 +3,7 @@
 #include <windows.h>
 #include "../../../PlatformFunctions.h"
 #include "../../../LFS/PlatformLFS.h"
+#include "../../../../Logger/Logger.h"
 
 WindowsFile::WindowsFile(WindowsFile&& otherFile) : GenericFile()
 {
@@ -50,6 +51,15 @@ void WindowsFile::operator=(WindowsFile&& otherFile)
     fileName = std::move(otherFile.fileName);
     fullPath = std::move(otherFile.fullPath);
     directoryPath = std::move(otherFile.directoryPath);
+}
+
+WindowsFile::~WindowsFile()
+{
+    if (getFileHandle() != nullptr)
+    {
+        Logger::warn("WindowsFile", "File %s is not closed, Please close it before destroying", getFullPath().getChar());
+        closeFile();
+    }
 }
 
 void WindowsFile::flush() const 

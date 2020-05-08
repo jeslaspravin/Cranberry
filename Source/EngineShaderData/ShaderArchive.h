@@ -10,7 +10,7 @@ class ShaderArchive
 private:
     // Always points to next read start point 
     uint32_t archivePtr;
-    std::vector<char> archive;
+    std::vector<unsigned char> archive;
     bool bIsLoading;
     bool status = true;
 
@@ -39,7 +39,7 @@ public:
         , bIsLoading(false)
     {}
 
-    ShaderArchive(const std::vector<char>& data)
+    ShaderArchive(const std::vector<unsigned char>& data)
         : archivePtr(0)
         , archive(data)
         , bIsLoading(true)
@@ -48,7 +48,7 @@ public:
     ShaderArchive(ShaderArchive&&) = delete;
 
     inline bool isLoading() const { return bIsLoading; }
-    const std::vector<char>& archiveData() const { return archive; }
+    const std::vector<unsigned char>& archiveData() const { return archive; }
 
     // Normal types both integral and custom specialized
     template<typename ArchiveType>

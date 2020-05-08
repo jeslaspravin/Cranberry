@@ -56,11 +56,6 @@ GenericFile::GenericFile(const String& path)
     }
 }
 
-GenericFile::~GenericFile()
-{
-    closeFile();
-}
-
 bool GenericFile::openOrCreate()
 {
     if (fileHandle)

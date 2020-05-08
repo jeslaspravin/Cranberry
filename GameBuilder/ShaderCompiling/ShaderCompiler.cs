@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace GameBuilder.ShaderCompiling
 {
-    public struct TargetFile
+    public struct IntermediateTargetFile
     {
         public string targetOutputFile;
         public string logFile;
@@ -16,17 +16,12 @@ namespace GameBuilder.ShaderCompiling
     public class ShaderCompiler
     {
         protected string compilerDir;
-        protected string outputDir;
+        protected string intermediateOutDir;
 
-        public ShaderCompiler(string compilerPath,string targetPath)
+        public ShaderCompiler(string compilerPath,string intermediatePath)
         {
-            outputDir = Path.Combine(targetPath, "Shaders");
+            intermediateOutDir = Path.Combine(intermediatePath, "Shaders");
             compilerDir = compilerPath;
-
-            if(!Directory.Exists(outputDir))
-            {
-                Directory.CreateDirectory(outputDir);
-            }
         }
         public virtual bool compile(Dictionary<string,List<string>> consoleArgs)
         {
