@@ -169,11 +169,6 @@ void VulkanImageResource::reinitResources()
     VkImageUsageFlags imageUsage = defaultImageUsage;
     VkFormatFeatureFlags featuresRequired = defaultFeaturesRequired;
 
-    if (numOfMips == 0)
-    {
-        // TODO (Jeslas) : Check if 1D or 3D can have more mips and render targets
-        numOfMips = (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y))));
-    }
     if (isRenderTarget)
     {
         imageUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
@@ -198,9 +193,16 @@ void VulkanImageResource::reinitResources()
         // In case of using same target as both Render target and shader sampled image
         imageUsage |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
         tiling = VK_IMAGE_TILING_OPTIMAL;
+        // In render targets only one mip map is allowed
+        numOfMips = 1;
     }
     else
     {
+        if (numOfMips == 0)
+        {
+            // TODO (Jeslas) : Check if 1D or 3D can have more mips and render targets
+            numOfMips = (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y))));
+        }
         if (type != VK_IMAGE_TYPE_2D)
         {
             numOfMips = 1;
@@ -210,7 +212,6 @@ void VulkanImageResource::reinitResources()
         {
             numOfMips = 1;
         }
-
         if ((createFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) > 0 && layerCount < 6)
         {
             Logger::warn("VulkanImageResource", "%s() : Cube map image should have at least 6 layers, current layer count %d", __func__, layerCount);

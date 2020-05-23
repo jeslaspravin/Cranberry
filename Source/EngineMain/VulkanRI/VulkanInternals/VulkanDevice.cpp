@@ -233,7 +233,7 @@ VulkanQueueResource<EQueueFunction::Transfer>* getQueue<EQueueFunction::Transfer
 void VulkanDevice::cacheGlobalSurfaceProperties()
 {
     // if not presenting?
-    if (!getQueue<EQueueFunction::Present>(nullptr))
+    if (!getQueue<EQueueFunction::Present>(this))
     {
         return;
     }
