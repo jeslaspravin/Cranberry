@@ -36,7 +36,7 @@ void WindowsAppWindow::createWindow(const GenericAppInstance* appInstance)
     
     windowsHandle = CreateWindowA(windowName.getChar(), windowName.getChar(), style
         , 0, 0, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top,
-        parentWindow? static_cast<WindowsAppWindow*>(parentWindow)->windowsHandle : NULL, NULL, instanceHandle, this);
+        parentWindow? static_cast<WindowsAppWindow*>(parentWindow)->windowsHandle : nullptr, nullptr, instanceHandle, this);
 
     if (windowsHandle == nullptr)
     {
@@ -59,7 +59,7 @@ void WindowsAppWindow::updateWindow()
 
 bool WindowsAppWindow::isValidWindow() const
 {
-    return windowsHandle != nullptr && windowsHandle != NULL; 
+    return windowsHandle != nullptr && windowsHandle != nullptr; 
 }
 
 void WindowsAppWindow::activateWindow() const
@@ -83,7 +83,7 @@ void WindowsAppWindow::destroyWindow()
     GenericAppWindow::destroyWindow();
 
     DestroyWindow(windowsHandle);
-    windowsHandle = NULL;
+    windowsHandle = nullptr;
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

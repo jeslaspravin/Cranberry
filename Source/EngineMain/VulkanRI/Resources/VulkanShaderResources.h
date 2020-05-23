@@ -17,14 +17,12 @@ public:
     VulkanShaderCodeResource(const String& shaderName, const ShaderStageDescription* desc, const uint8* shaderCodePtr);
     /* IVulkanResources overrides */
     String getObjectName() const override;
-    void setObjectName(const String& name) override {}
     uint64 getDispatchableHandle() const override;
     /* ShaderResource overrides */
     void reinitResources() override;
     void release() override;
     String getResourceName() const override;
 
-    String entryPoint() const override;
     EShaderStage::Type shaderStage() const override;
     /* End overrides */
 
@@ -47,8 +45,9 @@ protected:
 public:
     /* IVulkanResources overrides */
     String getObjectName() const override;
-    void setObjectName(const String& name) override {}
     uint64 getDispatchableHandle() const override { return 0; }
+    /* ShaderResource overrides */
+    const ShaderReflected* getReflection() const override;
     /* End overrides */
 };
 

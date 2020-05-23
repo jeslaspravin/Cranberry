@@ -49,10 +49,13 @@ public:
 
 
     bool isSame(const Vector2D& b, float epsilon = SMALL_EPSILON) const;
-    Vector2D normalized();
-    Vector2D safeNormalize(float threshold = SMALL_EPSILON);
-    float length();
-    float sqrlength();
+    Vector2D normalized() const;
+    Vector2D safeNormalize(float threshold = SMALL_EPSILON) const;
+    float length() const;
+    float sqrlength() const;
+
+    Vector2D projectTo(const Vector2D& b) const;
+    Vector2D rejectFrom(const Vector2D& b) const;
 
 //////////////////////////////////////////////////////////////////////////
 //// Static functions

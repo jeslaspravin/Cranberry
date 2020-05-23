@@ -35,7 +35,6 @@ public:
     /* End - GraphicsResource implementations */
     /* IVulkanResources implementations */
     String getObjectName() const override;
-    void setObjectName(const String& name) override;
     uint64 getDispatchableHandle() const override;
     /* End - IVulkanResources implementations */
 };
@@ -67,7 +66,6 @@ public:
 
     /* IVulkanResources implementations */
     String getObjectName() const override;
-    void setObjectName(const String& name) override;
     uint64 getDispatchableHandle() const override;
     /* End - IVulkanResources implementations */
 };
@@ -100,7 +98,6 @@ public:
 
     /* IVulkanResources implementations */
     String getObjectName() const override;
-    void setObjectName(const String& name) override;
     uint64 getDispatchableHandle() const override;
     /* End - IVulkanResources implementations */
 };

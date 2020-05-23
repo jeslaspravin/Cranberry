@@ -68,11 +68,6 @@ String VulkanBufferResource::getObjectName() const
     return getResourceName();
 }
 
-void VulkanBufferResource::setObjectName(const String& name)
-{
-    setResourceName(name);
-}
-
 uint64 VulkanBufferResource::getDispatchableHandle() const
 {
     return (uint64)buffer;
@@ -173,7 +168,12 @@ void VulkanImageResource::reinitResources()
     BaseType::reinitResources();
     VkImageUsageFlags imageUsage = defaultImageUsage;
     VkFormatFeatureFlags featuresRequired = defaultFeaturesRequired;
-    
+
+    if (numOfMips == 0)
+    {
+        // TODO (Jeslas) : Check if 1D or 3D can have more mips and render targets
+        numOfMips = (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y))));
+    }
     if (isRenderTarget)
     {
         imageUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
@@ -195,15 +195,12 @@ void VulkanImageResource::reinitResources()
             imageUsage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             featuresRequired |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
         }
+        // In case of using same target as both Render target and shader sampled image
+        imageUsage |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
         tiling = VK_IMAGE_TILING_OPTIMAL;
     }
     else
     {
-        if (numOfMips == 0)
-        {
-            // TODO (Jeslas) : Check if 1D or 3D can have more mips
-            numOfMips = (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y))));
-        }
         if (type != VK_IMAGE_TYPE_2D)
         {
             numOfMips = 1;
@@ -313,11 +310,6 @@ bool VulkanImageResource::isValid()
 String VulkanImageResource::getObjectName() const
 {
     return getResourceName();
-}
-
-void VulkanImageResource::setObjectName(const String& name)
-{
-    setResourceName(name);
 }
 
 uint64 VulkanImageResource::getDispatchableHandle() const

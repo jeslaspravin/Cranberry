@@ -26,8 +26,8 @@ public:
 
     virtual void mapBuffer(VulkanMemoryBlock* block) = 0;
     virtual void unmapBuffer(VulkanMemoryBlock* block) = 0;
-    virtual void mapImage(VulkanMemoryBlock* block, bool bIsOptimalTiled) = 0;
-    virtual void unmapImage(VulkanMemoryBlock* block, bool bIsOptimalTiled) = 0;
+    virtual void mapImage(VulkanMemoryBlock* block) = 0;
+    virtual void unmapImage(VulkanMemoryBlock* block) = 0;
 };
 
 namespace std {

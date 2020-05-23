@@ -4,22 +4,38 @@
 
 #include "../Core/Engine/Config/EngineVariableTypes.h"
 
-namespace GraphicsTypes {
-    typedef class VulkanGraphicsInstance GraphicInstance;
-    typedef class VulkanWindowCanvas WindowCanvas;
-    
-    typedef class VulkanRBuffer GraphicsRBuffer;
-    typedef class VulkanWBuffer GraphicsWBuffer;
-    typedef class VulkanRWBuffer GraphicsRWBuffer;
-    typedef class VulkanRTexelBuffer GraphicsRTexelBuffer;
-    typedef class VulkanWTexelBuffer GraphicsWTexelBuffer;
-    typedef class VulkanRWTexelBuffer GraphicsRWTexelBuffer;
-    typedef class VulkanVertexBuffer GraphicsVertexBuffer;
-    typedef class VulkanIndexBuffer GraphicsIndexBuffer;
+class VulkanGraphicsInstance;
+class VulkanWindowCanvas;
 
-    typedef class VulkanRenderTargetResource GraphicsRenderTargetResource;
-    typedef class VulkanCubeImageResource GraphicsCubeImageResource;
-    typedef class VulkanImageResource GraphicsImageResource;
+class VulkanRBuffer;
+class VulkanWBuffer;
+class VulkanRWBuffer;
+class VulkanRTexelBuffer;
+class VulkanWTexelBuffer;
+class VulkanRWTexelBuffer;
+class VulkanVertexBuffer;
+class VulkanIndexBuffer;
+
+class VulkanRenderTargetResource;
+class VulkanCubeImageResource;
+class VulkanImageResource;
+
+namespace GraphicsTypes {
+    typedef VulkanGraphicsInstance GraphicInstance;
+    typedef VulkanWindowCanvas WindowCanvas;
+    
+    typedef VulkanRBuffer GraphicsRBuffer;
+    typedef VulkanWBuffer GraphicsWBuffer;
+    typedef VulkanRWBuffer GraphicsRWBuffer;
+    typedef VulkanRTexelBuffer GraphicsRTexelBuffer;
+    typedef VulkanWTexelBuffer GraphicsWTexelBuffer;
+    typedef VulkanRWTexelBuffer GraphicsRWTexelBuffer;
+    typedef VulkanVertexBuffer GraphicsVertexBuffer;
+    typedef VulkanIndexBuffer GraphicsIndexBuffer;
+
+    typedef VulkanRenderTargetResource GraphicsRenderTargetResource;
+    typedef VulkanCubeImageResource GraphicsCubeImageResource;
+    typedef VulkanImageResource GraphicsImageResource;
 
     template <typename Type>
     using GraphicsDeviceConstant = EngineConstant<Type, class VulkanDevice>;

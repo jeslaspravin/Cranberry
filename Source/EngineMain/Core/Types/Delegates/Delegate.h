@@ -6,6 +6,7 @@
 
 #include <list>
 #include <map>
+#include <type_traits>
 
 // TODO(Jeslas) revisit all these later
 
@@ -292,9 +293,9 @@ protected:
     template<typename ObjectType, typename... Variables>
     using ConstObjDelegateType = ObjectDelegate<true, ObjectType, FuncType, Variables...>;
     template<typename... Variables>
-    using StaticDelegateType = StaticDelegate<void, Params..., Variables...>;
+    using StaticDelegateType = StaticDelegate<FuncType, Variables...>;
     template<typename... Variables>
-    using LambdaDelegateType = LambdaDelegate<void, Params..., Variables...>;
+    using LambdaDelegateType = LambdaDelegate<FuncType, Variables...>;
 
     int32 getNextId() const
     {
@@ -312,7 +313,8 @@ protected:
 
 public:
     template<typename ObjectType, typename... Variables>
-    DelegateHandle bind(ObjectType* object, const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction,Variables ...vars)
+    std::enable_if_t<!std::is_const_v<ObjectType>, DelegateHandle> bindObject(ObjectType* object
+        , const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction,Variables ...vars)
     {
         SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction,vars...));
         boundObjectDelegates.push_back(ptr);
@@ -323,7 +325,7 @@ public:
     }
 
     template<typename ObjectType, typename... Variables>
-    DelegateHandle bind(const ObjectType* object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
+    DelegateHandle bindObject(const ObjectType* object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
         SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, vars...));
         boundObjectDelegates.push_back(ptr);
@@ -334,10 +336,10 @@ public:
     }
 
     template<typename... Variables>
-    bool bind(const typename StaticDelegateType<Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
+    DelegateHandle bindStatic(const typename StaticDelegateType<Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
         SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new StaticDelegateType<Variables...>(bindingFunction, vars...));
-        boundObjectDelegates.push_back(ptr);
+        boundStaticDelegates.push_back(ptr);
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;
@@ -345,10 +347,10 @@ public:
     }
 
     template<typename... Variables>
-    bool bind(const typename LambdaDelegateType<Variables...>::FunctionPtr& lambda, Variables ...vars)
+    DelegateHandle bindLambda(const typename LambdaDelegateType<Variables...>::FunctionPtr& lambda, Variables ...vars)
     {
         SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(lambda, vars...));
-        boundObjectDelegates.push_back(ptr);
+        boundLambdaDelegates.push_back(ptr);
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;

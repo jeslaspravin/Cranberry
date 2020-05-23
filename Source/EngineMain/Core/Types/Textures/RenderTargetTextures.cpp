@@ -1,56 +1,108 @@
 #include "RenderTargetTextures.h"
 #include "../../../RenderInterface/PlatformIndependentHeaders.h"
 #include "../../Math/Math.h"
+#include "../../Logger/Logger.h"
 
-template<bool bIsSrgb>
-EPixelDataFormat::Type RtFormatToPixelFormat(ERenderTargetFormat::Type);
-
-template<>
-constexpr EPixelDataFormat::Type RtFormatToPixelFormat</*bIsSrgb = */true>(ERenderTargetFormat::Type rtFormat)
+namespace ERenderTargetFormat
 {
-	switch (rtFormat)
-	{
-    case ERenderTargetFormat::RT_U8:
-        return EPixelDataFormat::BGRA_U8_SRGB;
-        break;
-    case ERenderTargetFormat::RT_U8Packed:
-        return EPixelDataFormat::ABGR_U8_SrgbPacked;
-        break;
-    case ERenderTargetFormat::RT_U8_NoAlpha:
-        return EPixelDataFormat::BGR_U8_SRGB;
-        break;
-    case ERenderTargetFormat::RT_SF32:
-        return EPixelDataFormat::R_SF32;
-        break;
-    default:
-        break;
-	}
-    return EPixelDataFormat::Undefined;
-}
-
-template<>
-constexpr EPixelDataFormat::Type RtFormatToPixelFormat</*bIsSrgb = */false>(ERenderTargetFormat::Type rtFormat)
-{
-    switch (rtFormat)
+    template<>
+    constexpr EPixelDataFormat::Type rtFormatToPixelFormat</*bIsSrgb = */true>(ERenderTargetFormat::Type rtFormat)
     {
-    case ERenderTargetFormat::RT_U8:
-        return EPixelDataFormat::BGRA_U8_Norm;
-        break;
-    case ERenderTargetFormat::RT_U8Packed:
-        return EPixelDataFormat::ABGR_U8_NormPacked;
-        break;
-    case ERenderTargetFormat::RT_U8_NoAlpha:
-        return EPixelDataFormat::BGR_U8_Norm;
-        break;
-    case ERenderTargetFormat::RT_SF32:
-        return EPixelDataFormat::R_SF32;
-        break;
-    default:
-        break;
+        switch (rtFormat)
+        {
+        case ERenderTargetFormat::RT_U8:
+            return EPixelDataFormat::BGRA_U8_SRGB;
+        case ERenderTargetFormat::RT_U8Packed:
+            return EPixelDataFormat::ABGR_U8_SrgbPacked;
+        case ERenderTargetFormat::RT_U8_NoAlpha:
+            return EPixelDataFormat::BGR_U8_SRGB;
+        case ERenderTargetFormat::RT_NormalMap:
+            return EPixelDataFormat::A2BGR10_S32_NormPacked;
+        case ERenderTargetFormat::RT_SF32:
+            return EPixelDataFormat::R_SF32;
+        default:
+            break;
+        }
+        return EPixelDataFormat::Undefined;
     }
-    return EPixelDataFormat::Undefined;
+
+    template<>
+    constexpr EPixelDataFormat::Type rtFormatToPixelFormat</*bIsSrgb = */false>(ERenderTargetFormat::Type rtFormat)
+    {
+        switch (rtFormat)
+        {
+        case ERenderTargetFormat::RT_U8:
+            return EPixelDataFormat::BGRA_U8_Norm;
+        case ERenderTargetFormat::RT_U8Packed:
+            return EPixelDataFormat::ABGR_U8_NormPacked;
+        case ERenderTargetFormat::RT_U8_NoAlpha:
+            return EPixelDataFormat::BGR_U8_Norm;
+        case ERenderTargetFormat::RT_NormalMap:
+            return EPixelDataFormat::A2BGR10_S32_NormPacked;
+        case ERenderTargetFormat::RT_SF32:
+            return EPixelDataFormat::R_SF32;
+        default:
+            break;
+        }
+        return EPixelDataFormat::Undefined;
+    }
+
+    ERenderTargetFormat::Type pixelFormatToRTFormat(EPixelDataFormat::Type pixelFormat)
+    {
+        switch (pixelFormat)
+        {
+        case EPixelDataFormat::BGR_U8_Norm:
+        case EPixelDataFormat::BGR_U8_SRGB:
+            return ERenderTargetFormat::RT_U8_NoAlpha;
+        case EPixelDataFormat::ABGR_U8_SrgbPacked:
+        case EPixelDataFormat::ABGR_U8_NormPacked:
+            return ERenderTargetFormat::RT_U8Packed;
+        case EPixelDataFormat::BGRA_U8_Norm:
+        case EPixelDataFormat::BGRA_U8_SRGB:
+            return ERenderTargetFormat::RT_U8;
+        case EPixelDataFormat::A2BGR10_S32_NormPacked:
+            return ERenderTargetFormat::RT_NormalMap;
+        case EPixelDataFormat::R_SF32:
+            return ERenderTargetFormat::RT_SF32;
+        default:
+            break;
+        }
+
+        Logger::warn("ERenderTargetFormat", "%s() : Not support pixel format %s in Render target", __func__
+            , EPixelDataFormat::getFormatInfo(pixelFormat)->formatName.getChar());
+        return ERenderTargetFormat::RT_U8;
+    }
+
 }
 
+void RenderTargetTexture::reinitResources()
+{
+    TextureBase::reinitResources();
+
+    if (dataFormat != rtResource->imageFormat())
+    {
+        RenderTargetTexture::init(this);
+    }
+    else
+    {
+        rtResource->setImageSize(textureSize);
+        rtResource->setNumOfMips(mipCount);
+        rtResource->setSampleCounts(sampleCount);
+        rtResource->setResourceName(textureName);
+
+        rtResource->reinitResources();
+        if (!bSameReadWriteTexture)
+        {
+            textureResource->reinitResources();
+        }
+    }
+}
+
+void RenderTargetTexture::setTextureSize(Size2D newSize)
+{
+    textureSize = Size3D(newSize.x, newSize.y, 1);
+    markResourceDirty();
+}
 
 RenderTargetTexture* RenderTargetTexture::createTexture(const RenderTextureCreateParams& createParams)
 {
@@ -66,13 +118,14 @@ RenderTargetTexture* RenderTargetTexture::createTexture(const RenderTextureCreat
     texture->sampleCount = createParams.sampleCount;
     texture->textureName = createParams.textureName;
     texture->bIsSrgb = createParams.bIsSrgb;
+    texture->bSameReadWriteTexture = createParams.bSameReadWriteTexture;
     if (createParams.bIsSrgb)
     {
-        texture->dataFormat = RtFormatToPixelFormat<true>(createParams.format);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<true>(createParams.format);
     }
     else
     {
-        texture->dataFormat = RtFormatToPixelFormat<false>(createParams.format);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<false>(createParams.format);
     }
 
     RenderTargetTexture::init(texture);
@@ -87,28 +140,27 @@ void RenderTargetTexture::destroyTexture(RenderTargetTexture* texture)
 
 void RenderTargetTexture::init(RenderTargetTexture* texture)
 {
-    texture->textureResource = new GraphicsImageResource(texture->dataFormat);
-    texture->rtResource = new GraphicsRenderTargetResource(texture->dataFormat);
+    texture->textureResource = texture->rtResource = new GraphicsRenderTargetResource(texture->dataFormat);
 
-    texture->textureResource->setResourceName(texture->textureName);
     texture->rtResource->setResourceName(texture->textureName);
-
-    texture->textureResource->setShaderUsage(EImageShaderUsage::Sampling);
-
-    texture->textureResource->setSampleCounts(texture->sampleCount);
+    texture->rtResource->setShaderUsage(texture->bSameReadWriteTexture? EImageShaderUsage::Sampling : 0);
     texture->rtResource->setSampleCounts(texture->sampleCount);
-
-    texture->textureResource->setImageSize(texture->textureSize);
     texture->rtResource->setImageSize(texture->textureSize);
-
-    texture->textureResource->setLayerCount(1);
     texture->rtResource->setLayerCount(1);
-
-    texture->textureResource->setNumOfMips(texture->mipCount);
     texture->rtResource->setNumOfMips(texture->mipCount);
-
-    texture->textureResource->init();
     texture->rtResource->init();
+
+    if (!texture->bSameReadWriteTexture)
+    {
+        texture->textureResource = new GraphicsImageResource(texture->dataFormat);
+        texture->textureResource->setResourceName(texture->textureName);
+        texture->textureResource->setShaderUsage(EImageShaderUsage::Sampling);
+        texture->textureResource->setSampleCounts(texture->sampleCount);
+        texture->textureResource->setImageSize(texture->textureSize);
+        texture->textureResource->setLayerCount(1);
+        texture->textureResource->setNumOfMips(texture->mipCount);
+        texture->textureResource->init();
+    }
 }
 
 void RenderTargetTexture::release(RenderTargetTexture* texture)

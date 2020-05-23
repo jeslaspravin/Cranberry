@@ -43,6 +43,27 @@ void GameEngine::startup(GenericAppInstance* appInstance)
     renderingApi=UniquePtr<RenderApi>(new RenderApi());
     renderingApi->initialize();
     onStartUp();
+    applicationInstance->assetManager.load();
+
+    // Has to be done at last after all the other rendering related systems init
+    renderingApi->postInit();
+}
+
+void GameEngine::quit()
+{
+    bExitNextFrame = true;
+    onQuit();
+    applicationInstance->assetManager.unload();
+
+    // Has to be done after all rendering related systems are destroyed to clean up resources
+    renderingApi->preDestroy();
+
+    renderingApi->destroy();
+    renderingApi.release();
+    applicationInstance = nullptr;
+
+    Logger::debug("GameEngine", "%s() : Engine run time in %.3f minutes", __func__
+        , Time::asMinutes(Time::timeNow() - timeData.startTick));
 }
 
 void GameEngine::engineLoop()
@@ -56,6 +77,7 @@ void GameEngine::engineLoop()
         timeData.activeTimeDilation = applicationInstance->appWindowManager.pollWindows()? 1 : 0;
         timeData.progressTick();
         tickEngine();
+        renderingApi->renderFrame();
     }
 }
 
@@ -72,18 +94,6 @@ void GameEngine::onQuit()
 void GameEngine::tickEngine()
 {
 
-}
-
-void GameEngine::quit()
-{
-    bExitNextFrame = true;
-    onQuit();
-    renderingApi->destroy();
-    renderingApi.release();
-    applicationInstance = nullptr;
-
-    Logger::debug("GameEngine", "%s() : Engine run time in %.3f minutes", __func__
-        , Time::asMinutes(Time::timeNow() - timeData.startTick));
 }
 
 void GameEngine::requestExit()

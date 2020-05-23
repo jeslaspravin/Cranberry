@@ -61,6 +61,28 @@ bool String::findAny(size_t& outIndex, String& outFoundString, const std::vector
     return false;
 }
 
+String String::replaceAll(const String& from, const String& to) const
+{
+    String newStr = this->getChar();
+    size_t replaceAtPos = 0;
+    while ((replaceAtPos = newStr.find(from, replaceAtPos)) != npos)
+    {
+        newStr.replace(replaceAtPos, from.size(), to);
+        replaceAtPos += to.size();
+    }
+    return newStr;
+}
+
+void String::replaceAllInline(const String& from, const String& to)
+{
+    size_t replaceAtPos = 0;
+    while ((replaceAtPos = find(from, replaceAtPos)) != npos)
+    {
+        replace(replaceAtPos, from.size(), to);
+        replaceAtPos += to.size();
+    }
+}
+
 bool String::operator==(const String& rhs) const
 {
     return compare(rhs) == 0;

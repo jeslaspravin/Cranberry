@@ -50,10 +50,13 @@ public:
     Vector4D operator+(const float& scalar) const;
     void operator+=(const float& scalar);
     bool isSame(const Vector4D& b, float epsilon = SMALL_EPSILON) const;
-    Vector4D normalized();
-    Vector4D safeNormalize(float threshold = SMALL_EPSILON);
-    float length();
-    float sqrlength();
+    Vector4D normalized() const;
+    Vector4D safeNormalize(float threshold = SMALL_EPSILON) const;
+    float length() const;
+    float sqrlength() const;
+
+    Vector4D projectTo(const Vector4D& b) const;
+    Vector4D rejectFrom(const Vector4D& b) const;
 
     //////////////////////////////////////////////////////////////////////////
     //// Static functions

@@ -341,23 +341,7 @@ bool WindowsFile::dirDelete() const
 
 bool WindowsFile::dirClearAndDelete() const 
 {
-    WIN32_FIND_DATAA data;
-    HANDLE fHandle = FindFirstFileA(getFullPath().append("\\*").c_str(),&data);
-
-    std::vector<String> filesPath;
-    if (fHandle != INVALID_HANDLE_VALUE)
-    {
-        do {
-            String path = getFullPath().append("\\").append(&data.cFileName[0]);
-            PlatformFile foundFile{ path };
-            if (foundFile.exists() && foundFile.isFile())
-            {
-                filesPath.push_back(path);
-            }
-        } while (FindNextFileA(fHandle, &data));
-        FindClose(fHandle);
-    }
-    
+    std::vector<String> filesPath = FileSystemFunctions::listAllFiles(isDirectory() ? getFullPath() : getHostDirectory(), true);    
     for (const String& filePath : filesPath)
     {
         if (!DeleteFileA(filePath.getChar()))
@@ -365,6 +349,5 @@ bool WindowsFile::dirClearAndDelete() const
             return false;
         }
     }
-
     return dirDelete();
 }

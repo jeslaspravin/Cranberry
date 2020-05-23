@@ -9,14 +9,16 @@
 #include "../RenderInterface/Resources/GraphicsResources.h"
 #include "VulkanInternals/Debugging.h"
 #include "VulkanInternals/VulkanMemoryAllocator.h"
+#include "VulkanInternals/VulkanDescriptorAllocator.h"
+#include "VulkanInternals/Commands/VulkanRenderCmdList.h"
 #include "../Core/Platform/PlatformAssertionErrors.h"
+#include "../RenderInterface/Rendering/IRenderCommandList.h"
 
 #include <iostream>
 #include <algorithm>
 #include <vulkan_core.h>
 #include <sstream>
 #include <set>
-
 
 void VulkanGraphicsInstance::load()
 {
@@ -49,6 +51,8 @@ void VulkanGraphicsInstance::unload()
     if (selectedDevice.isValidDevice())
     {    
         memoryAllocator.reset();
+        descriptorsSetAllocator.reset();
+        vulkanCmdList.reset();
         selectedDevice.freeLogicDevice();
     }
 
@@ -225,6 +229,13 @@ void VulkanGraphicsInstance::loadSurfaceDependents()
     {        
         selectedDevice.createLogicDevice();
         memoryAllocator = IVulkanMemoryAllocator::createAllocator(&selectedDevice);
+        descriptorsSetAllocator = SharedPtr<VulkanDescriptorsSetAllocator>(new VulkanDescriptorsSetAllocator(&selectedDevice));
+        vulkanCmdList = SharedPtr<VulkanCommandList>(new VulkanCommandList(this, &selectedDevice));
     }
+}
+
+void VulkanGraphicsInstance::initializeCmds(class IRenderCommandList* commandList)
+{
+    commandList->setup(vulkanCmdList.get());
 }
 

@@ -151,6 +151,48 @@
     <Filter Include="Source Files\Core\Math">
       <UniqueIdentifier>{67fb5762-d084-4d58-a35d-47d73c536cdb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\RenderInterface\ShaderCore">
+      <UniqueIdentifier>{35177973-23ba-4d33-9e8d-7e41b460f8a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderInterface\ShaderCore">
+      <UniqueIdentifier>{9892a786-2ebc-49bf-9c99-399a9b4b89e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Reflections">
+      <UniqueIdentifier>{5533aac3-e87c-4526-98f4-3a525bc40789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Assets">
+      <UniqueIdentifier>{27b53354-78c9-45b7-aec0-ecd64a69141c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Assets\Asset">
+      <UniqueIdentifier>{fd2d5cd9-7095-44a2-9bc5-7fbf139fa49d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Assets">
+      <UniqueIdentifier>{c9367e8d-85fb-49c9-8750-23f0281c8060}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Assets\Asset">
+      <UniqueIdentifier>{56540d0a-bb4c-4ecc-9057-f171a10738a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Assets\AssetLoader">
+      <UniqueIdentifier>{fb112db9-4812-4f0e-a6cb-9d22d50c5010}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderInterface\Rendering">
+      <UniqueIdentifier>{084665af-fa8a-4349-b003-6111643e160e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderInterface\Rendering">
+      <UniqueIdentifier>{2772513f-6fdf-471e-9eb4-6a9426428b95}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderInterface\Resources\Shaders\StaticMesh">
+      <UniqueIdentifier>{6f8cb449-0daf-4724-a239-9d9634553f74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\VulkanRI\VulkanInternals\Commands">
+      <UniqueIdentifier>{d8b5038d-9a6d-4787-acae-c409f6512335}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Types\Camera">
+      <UniqueIdentifier>{29cf05da-3e18-4a1a-a98f-8f1bf623e2e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Types\Camera">
+      <UniqueIdentifier>{6fe4cac8-c53c-4f67-bba3-3dc952b93fe7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -336,6 +378,57 @@
     <ClCompile Include="Core\Math\RotationMatrix.cpp">
       <Filter>Source Files\Core\Math</Filter>
     </ClCompile>
+    <ClCompile Include="RenderInterface\ShaderCore\ShaderInputOutput.cpp">
+      <Filter>Source Files\RenderInterface\ShaderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\VulkanDescriptorAllocator.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\ShaderCore\ShaderParameters.cpp">
+      <Filter>Source Files\RenderInterface\ShaderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\AssetLoaderLibrary.cpp">
+      <Filter>Source Files\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\AssetsManager.cpp">
+      <Filter>Source Files\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\Asset\StaticMeshAsset.cpp">
+      <Filter>Source Files\Assets\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\Asset\MeshAsset.cpp">
+      <Filter>Source Files\Assets\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\AssetLoader\StaticMeshLoader.cpp">
+      <Filter>Source Files\Assets\AssetLoader</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\Asset\AssetObject.cpp">
+      <Filter>Source Files\Assets\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Rendering\RenderCommandList.cpp">
+      <Filter>Source Files\RenderInterface\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\VulkanFrameBuffer.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTexture.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\StaticMesh\StaticMeshUnlit.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Shaders\StaticMesh</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\Commands\VulkanRenderCmdList.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\Commands\VulkanCommandBufferManager.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Textures\TexturesBase.cpp">
+      <Filter>Source Files\Core\Types\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Camera\Camera.cpp">
+      <Filter>Source Files\Core\Types\Camera</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -343,9 +436,6 @@
     </ClInclude>
     <ClInclude Include="VulkanRI\VulkanGraphicsInstance.h">
       <Filter>Source Files\VulkanRI</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderApi\RenderApi.h">
-      <Filter>Source Files\RenderApi</Filter>
     </ClInclude>
     <ClInclude Include="Core\Memory\SmartPointers.h">
       <Filter>Header Files\Core\Memory</Filter>
@@ -601,6 +691,60 @@
     </ClInclude>
     <ClInclude Include="Core\Math\RotationMatrix.h">
       <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\ShaderCore\ShaderInputOutput.h">
+      <Filter>Header Files\RenderInterface\ShaderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\VulkanDescriptorAllocator.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\ShaderCore\ShaderParameters.h">
+      <Filter>Header Files\RenderInterface\ShaderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Reflections\MemberField.h">
+      <Filter>Header Files\Core\Reflections</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\AssetLoaderLibrary.h">
+      <Filter>Header Files\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\AssetsManager.h">
+      <Filter>Header Files\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\AssetLoader\StaticMeshLoader.h">
+      <Filter>Source Files\Assets\AssetLoader</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\Asset\AssetHeader.h">
+      <Filter>Header Files\Assets\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\Asset\AssetObject.h">
+      <Filter>Header Files\Assets\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\Asset\StaticMeshAsset.h">
+      <Filter>Header Files\Assets\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\Asset\MeshAsset.h">
+      <Filter>Header Files\Assets\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderApi\RenderApi.h">
+      <Filter>Header Files\RenderApi</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\DrawQuadFromTexture.h">
+      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\StaticMesh\StaticMeshUnlit.h">
+      <Filter>Source Files\RenderInterface\Resources\Shaders\StaticMesh</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Rendering\IRenderCommandList.h">
+      <Filter>Header Files\RenderInterface\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\Commands\VulkanCommandBufferManager.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\Commands\VulkanRenderCmdList.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Camera\Camera.h">
+      <Filter>Header Files\Core\Types\Camera</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -65,6 +65,12 @@ void Texture2D::destroyTexture(Texture2D* texture2D)
     texture2D = nullptr;
 }
 
+void Texture2D::reinitResources()
+{
+    TextureBase::reinitResources();
+    textureResource->reinitResources();
+}
+
 void Texture2D::init(Texture2D* texture)
 {
     texture->textureResource = new GraphicsImageResource(texture->dataFormat);

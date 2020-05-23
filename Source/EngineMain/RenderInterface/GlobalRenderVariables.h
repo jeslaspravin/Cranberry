@@ -15,4 +15,7 @@ namespace GlobalRenderVariables
 
     //in nanoseconds
     extern GraphicsDeviceConstant<uint64> MAX_SYNC_RES_WAIT_TIME;
+
+    // Frame buffer sample count
+    extern EngineGlobalConfig<uint32> FRAME_BUFFER_SAMPLE_COUNT;
 }

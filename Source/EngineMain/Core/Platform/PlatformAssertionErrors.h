@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Logger/Logger.h"
+
 class UnexpectedErrorHandler
 {
 public:
@@ -19,8 +21,7 @@ if(!(Expr)){\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(false);}\
     assert((Expr));
 #else
-#define debugAssert(Expr)\
-if((Expr)){}
+#define debugAssert(Expr)
 #endif// #define debugAssert(Expr)
 #endif// #ifndef debugAssert
 
