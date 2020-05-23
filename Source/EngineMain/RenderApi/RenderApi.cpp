@@ -28,16 +28,19 @@ void RenderApi::releaseAllShaders()
 void RenderApi::initialize()
 {
     graphicsInstance = new GraphicInstance();
-    graphicsInstance->load();
-    gEngine->appInstance().appWindowManager.initMain();
-    graphicsInstance->loadSurfaceDependents();
-    gEngine->appInstance().appWindowManager.postInitGraphicCore();
-
-    GBuffers::initialize();
     renderCmds = IRenderCommandList::genericInstance();
-    graphicsInstance->initializeCmds(renderCmds);
+    graphicsInstance->load();
 
-    initAllShaders();
+    ENQUEUE_COMMAND(InitRenderApi,
+        {
+            gEngine->appInstance().appWindowManager.initMain();
+            graphicsInstance->loadSurfaceDependents();
+            gEngine->appInstance().appWindowManager.postInitGraphicCore();
+            GBuffers::initialize();
+            graphicsInstance->initializeCmds(renderCmds);
+            initAllShaders();
+        }
+    , this);
 }
 
 void RenderApi::postInit()
@@ -46,20 +49,21 @@ void RenderApi::postInit()
     renderFrame();
 }
 
-void RenderApi::preDestroy()
-{
-    // Process pre-destroy other api clean up commands
-    renderFrame();
-}
-
 void RenderApi::destroy()
 {
-    releaseAllShaders();
-    GBuffers::destroy();
+    ENQUEUE_COMMAND(DestroyRenderApi,
+        {
+            releaseAllShaders();
+            GBuffers::destroy();
+            gEngine->appInstance().appWindowManager.destroyMain();
+        }
+        , this);
+
+    // Executing commands one last time
+    renderFrame();
     delete renderCmds;
     renderCmds = nullptr;
 
-    gEngine->appInstance().appWindowManager.destroyMain();
     graphicsInstance->unload();
     delete graphicsInstance;
     graphicsInstance = nullptr;
@@ -87,7 +91,7 @@ IGraphicsInstance* RenderApi::getGraphicsInstance() const
 
 void RenderApi::enqueueCommand(class IRenderCommand* renderCommand)
 {
-    if (bIsInsideRenderCommand)
+    if (bIsInsideRenderCommand && renderCmds)
     {
         renderCommand->execute(renderCmds, graphicsInstance);
         delete renderCommand;

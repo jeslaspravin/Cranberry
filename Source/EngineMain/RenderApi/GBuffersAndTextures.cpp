@@ -10,7 +10,7 @@
 std::unordered_map<FramebufferFormat, std::vector<Framebuffer*>> GBuffers::gBuffers
 {
     {
-        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_S32_NormPacked, EPixelDataFormat::R_SF32 }), {}
+        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32 }), {}
     }
 };
 
@@ -84,7 +84,7 @@ void GBuffers::initialize()
     EngineSettings::screenSize.onConfigChanged().bindStatic(&GBuffers::onResize);
     EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
     GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);
-    for (auto framebuferPair : gBuffers)
+    for (auto& framebuferPair : gBuffers)
     {
         framebuferPair.second.clear();
         for (uint32 i = 0; i < swapchainCount; ++i)
@@ -98,7 +98,7 @@ void GBuffers::initialize()
             {
                 RenderTextureCreateParams createParam;
                 createParam.format = ERenderTargetFormat::pixelFormatToRTFormat(frameBufferFormat);
-                createParam.mipCount = 0;
+                createParam.mipCount = 1;
                 createParam.sampleCount = sampleCount;
                 createParam.textureSize = initialSize;
                 createParam.bSameReadWriteTexture = true;
@@ -114,7 +114,7 @@ void GBuffers::initialize()
 
 void GBuffers::destroy()
 {
-    for (auto framebuferPair : gBuffers)
+    for (auto& framebuferPair : gBuffers)
     {
         for (auto* framebufferData : framebuferPair.second)
         {

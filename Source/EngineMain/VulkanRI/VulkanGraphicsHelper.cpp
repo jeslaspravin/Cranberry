@@ -578,13 +578,13 @@ SharedPtr<class SamplerInterface> VulkanGraphicsHelper::createSampler(class IGra
 
 void* VulkanGraphicsHelper::borrowMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource)
 {
-    if (resource->getType() == ImageResource::staticType())
+    if (resource->getType()->isChildOf(ImageResource::staticType()))
     {
         auto* imgRes = static_cast<VulkanImageResource*>(resource);
         mapResource(graphicsInstance, imgRes);
         return imgRes->getMappedMemory();
     }
-    else if(resource->getType() == BufferResource::staticType())
+    else if(resource->getType()->isChildOf(BufferResource::staticType()))
     {
         auto* bufferRes = static_cast<VulkanBufferResource*>(resource);
         mapResource(graphicsInstance, bufferRes);
@@ -595,11 +595,11 @@ void* VulkanGraphicsHelper::borrowMappedPtr(class IGraphicsInstance* graphicsIns
 
 void VulkanGraphicsHelper::returnMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource)
 {
-    if (resource->getType() == ImageResource::staticType())
+    if (resource->getType()->isChildOf(ImageResource::staticType()))
     {
         unmapResource(graphicsInstance, static_cast<ImageResource*>(resource));
     }
-    else if (resource->getType() == BufferResource::staticType())
+    else if (resource->getType()->isChildOf(BufferResource::staticType()))
     {
         unmapResource(graphicsInstance, static_cast<BufferResource*>(resource));
     }
