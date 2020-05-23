@@ -22,6 +22,9 @@ public:
 
     void load();
     void unload();
+    // Post unload when all assets are clear to be destroyed
+    void clearToDestroy();
+
     // Paths are relative to application path
     void addPathsToScan(const String& scanPath);
 

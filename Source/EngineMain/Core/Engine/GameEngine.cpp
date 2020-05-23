@@ -55,11 +55,10 @@ void GameEngine::quit()
     onQuit();
     applicationInstance->assetManager.unload();
 
-    // Has to be done after all rendering related systems are destroyed to clean up resources
-    renderingApi->preDestroy();
-
     renderingApi->destroy();
     renderingApi.release();
+
+    applicationInstance->assetManager.clearToDestroy();
     applicationInstance = nullptr;
 
     Logger::debug("GameEngine", "%s() : Engine run time in %.3f minutes", __func__

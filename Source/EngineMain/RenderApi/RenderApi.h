@@ -21,7 +21,6 @@ public:
 
     void initialize();
     void postInit();
-    void preDestroy();
     void destroy();
 
     void renderFrame();

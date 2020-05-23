@@ -194,6 +194,7 @@ VkCommandPool VulkanCommandPool::getCommandPool(class VulkanCommandBuffer const*
 //////////////////////////////////////////////////////////////////////////
 
 VulkanCmdBufferManager::VulkanCmdBufferManager(class VulkanDevice* vulkanDevice)
+    : vDevice(vulkanDevice)
 {
     createPools();
 }
@@ -490,7 +491,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Vulk
         signallingSemaphores[i] = static_cast<VulkanSemaphore*>(command.signalSemaphores[i])->semaphore;
     }
 
-    VkSubmitInfo cmdSubmitInfo;
+    SUBMIT_INFO(cmdSubmitInfo);
     cmdSubmitInfo.commandBufferCount = uint32(cmdBuffers.size());
     cmdSubmitInfo.pCommandBuffers = cmdBuffers.data();
     cmdSubmitInfo.signalSemaphoreCount = uint32(signallingSemaphores.size());

@@ -17,7 +17,7 @@ namespace ERenderTargetFormat
         case ERenderTargetFormat::RT_U8_NoAlpha:
             return EPixelDataFormat::BGR_U8_SRGB;
         case ERenderTargetFormat::RT_NormalMap:
-            return EPixelDataFormat::A2BGR10_S32_NormPacked;
+            return EPixelDataFormat::ABGR_S8_NormPacked;
         case ERenderTargetFormat::RT_SF32:
             return EPixelDataFormat::R_SF32;
         default:
@@ -38,7 +38,7 @@ namespace ERenderTargetFormat
         case ERenderTargetFormat::RT_U8_NoAlpha:
             return EPixelDataFormat::BGR_U8_Norm;
         case ERenderTargetFormat::RT_NormalMap:
-            return EPixelDataFormat::A2BGR10_S32_NormPacked;
+            return EPixelDataFormat::ABGR_S8_NormPacked;
         case ERenderTargetFormat::RT_SF32:
             return EPixelDataFormat::R_SF32;
         default:
@@ -60,7 +60,7 @@ namespace ERenderTargetFormat
         case EPixelDataFormat::BGRA_U8_Norm:
         case EPixelDataFormat::BGRA_U8_SRGB:
             return ERenderTargetFormat::RT_U8;
-        case EPixelDataFormat::A2BGR10_S32_NormPacked:
+        case EPixelDataFormat::ABGR_S8_NormPacked:
             return ERenderTargetFormat::RT_NormalMap;
         case EPixelDataFormat::R_SF32:
             return ERenderTargetFormat::RT_SF32;
@@ -168,8 +168,11 @@ void RenderTargetTexture::release(RenderTargetTexture* texture)
     texture->textureResource->release();
     texture->rtResource->release();
 
-    delete texture->textureResource;
     delete texture->rtResource;
+    if (!texture->bSameReadWriteTexture)
+    {
+        delete texture->textureResource;
+    }
 
     texture->textureResource = nullptr;
     texture->rtResource = nullptr;

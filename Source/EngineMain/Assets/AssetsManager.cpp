@@ -59,12 +59,19 @@ void AssetManager::load()
 
 void AssetManager::unload()
 {
-    for (std::pair<AssetHeader, AssetBase*> assetPair : assetsRegistered)
+    for (std::pair<const AssetHeader, AssetBase*>& assetPair : assetsRegistered)
     {
         if (assetPair.second->cleanableAsset())
         {
             assetPair.second->cleanableAsset()->clearAsset();
         }
+    }
+}
+
+void AssetManager::clearToDestroy()
+{
+    for (const std::pair<const AssetHeader, AssetBase*>& assetPair : assetsRegistered)
+    {
         delete assetPair.second;
     }
     assetsRegistered.clear();

@@ -73,24 +73,37 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
     {
         const ImageResource* resource = framebuffer->getImageResource(rtTexture);
         VkAttachmentDescription attachmentDesc;
+        attachmentDesc.flags = 0;
         attachmentDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(resource->imageFormat())->format);
         attachmentDesc.samples = VkSampleCountFlagBits(resource->sampleCount());
         // Since only above two matters for dummy render pass
         attachmentDesc.loadOp = attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachmentDesc.storeOp = attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         renderPassAttachments.push_back(attachmentDesc);
     }
+
+    VkSubpassDescription dummySubpass;
+    dummySubpass.flags = 0;
+    dummySubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    dummySubpass.colorAttachmentCount = 0;
+    dummySubpass.pColorAttachments = nullptr;
+    dummySubpass.pResolveAttachments = nullptr;
+    dummySubpass.inputAttachmentCount = 0;
+    dummySubpass.pInputAttachments = nullptr;
+    dummySubpass.preserveAttachmentCount = 0;
+    dummySubpass.pPreserveAttachments = nullptr;
+    dummySubpass.pDepthStencilAttachment = nullptr;
 
     RENDERPASS_CREATE_INFO(renderPassCreateInfo);
     renderPassCreateInfo.attachmentCount = uint32(renderPassAttachments.size());
     renderPassCreateInfo.pAttachments = renderPassAttachments.data();
     renderPassCreateInfo.dependencyCount = 0;
     renderPassCreateInfo.pDependencies = nullptr;
-    renderPassCreateInfo.subpassCount = 0;
-    renderPassCreateInfo.pSubpasses = nullptr;
+    renderPassCreateInfo.subpassCount = 1;
+    renderPassCreateInfo.pSubpasses = &dummySubpass;
 
     const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
