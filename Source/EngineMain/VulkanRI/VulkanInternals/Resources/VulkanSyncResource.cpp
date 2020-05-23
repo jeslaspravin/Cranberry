@@ -67,11 +67,6 @@ String VulkanSemaphore::getObjectName() const
     return getResourceName();
 }
 
-void VulkanSemaphore::setObjectName(const String& name)
-{
-    setResourceName(name);
-}
-
 uint64 VulkanSemaphore::getDispatchableHandle() const
 {
     return (uint64)semaphore;
@@ -141,11 +136,6 @@ uint64 VulkanTimelineSemaphore::currentValue() const
 String VulkanTimelineSemaphore::getObjectName() const
 {
     return getResourceName();
-}
-
-void VulkanTimelineSemaphore::setObjectName(const String& name)
-{
-    setResourceName(name);
 }
 
 uint64 VulkanTimelineSemaphore::getDispatchableHandle() const
@@ -271,11 +261,6 @@ void VulkanFence::release()
 String VulkanFence::getObjectName() const
 {
     return getResourceName();
-}
-
-void VulkanFence::setObjectName(const String& name)
-{
-    setResourceName(name);
 }
 
 uint64 VulkanFence::getDispatchableHandle() const

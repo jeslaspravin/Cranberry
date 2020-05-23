@@ -4,9 +4,10 @@
 
 DEFINE_GRAPHICS_RESOURCE(ShaderCodeResource)
 
-ShaderCodeResource::ShaderCodeResource(const String& file, const uint8* shaderCodePtr)
+ShaderCodeResource::ShaderCodeResource(const String& shaderName, const String& entryPointName, const uint8* shaderCodePtr)
     : BaseType()
-    , shaderFileName(file)
+    , shaderFileName(shaderName)
+    , shaderEntryPoint(entryPointName)
     , shaderCode(shaderCodePtr)
 {}
 
@@ -28,10 +29,9 @@ EShaderStage::Type ShaderCodeResource::shaderStage() const
     return EShaderStage::Compute/*0*/;
 }
 
-String ShaderCodeResource::entryPoint() const
+const String& ShaderCodeResource::entryPoint() const
 {
-    fatalAssert(false, "Not implemented");
-    return "";
+    return shaderEntryPoint;
 }
 
 DEFINE_GRAPHICS_RESOURCE(ShaderResource)

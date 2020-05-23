@@ -13,6 +13,7 @@ public:
     static VkInstance getInstance(class IGraphicsInstance* graphicsInstance);
     static VkDevice getDevice(const class VulkanDevice* vulkanDevice);
     static const class VulkanDebugGraphics* debugGraphics(class IGraphicsInstance* graphicsInstance);
+    static class VulkanDescriptorsSetAllocator* getDescriptorsSetAllocator(class IGraphicsInstance* graphicsInstance);
 
 
     static VkSwapchainKHR createSwapchain(class IGraphicsInstance* graphicsInstance, GenericAppWindow* appWindow, struct SwapchainInfo* swapchainInfo);
@@ -59,9 +60,19 @@ public:
     static SharedPtr<class SamplerInterface> createSampler(class IGraphicsInstance* graphicsInstance, const char* name,
         ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod);
 
+    static void* borrowMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource);
+    static void returnMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource);
+
     // Size in bytes not 4bytes
     static VkShaderModule createShaderModule(class IGraphicsInstance* graphicsInstance, const uint8* code, uint32 size);
     static void destroyShaderModule(class IGraphicsInstance* graphicsInstance, VkShaderModule shaderModule);
+    // Following two methods might change in future avoid using these
+    static VkRenderPass createDummyRenderPass(class IGraphicsInstance* graphicsInstance, const struct Framebuffer* framebuffer);
+    static void destroyRenderPass(class IGraphicsInstance* graphicsInstance, VkRenderPass renderPass);
+
+    static void createFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebufferCreateInfo& fbCreateInfo, VkFramebuffer* framebuffer);
+    static void destroyFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebuffer framebuffer);
+    static VkFramebuffer getFramebuffer(struct Framebuffer* appFrameBuffer);
 };
 
 

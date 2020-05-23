@@ -22,6 +22,11 @@ public:
         return FileSystemType::combinePath(paths...);
     }
 
+    static std::vector<String> listAllFiles(const String& directory, bool bRecursive)
+    {
+        return FileSystemType::listAllFiles(directory, bRecursive);
+    }
+
     static bool moveFile(GenericFile* moveFrom, GenericFile* moveTo) {
         return FileSystemType::moveFile(moveFrom, moveTo);
     }

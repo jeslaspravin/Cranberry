@@ -9,12 +9,14 @@ DEFINE_VK_GRAPHICS_RESOURCE(VulkanRenderTargetResource,VK_OBJECT_TYPE_IMAGE)
 VulkanRenderTargetResource::VulkanRenderTargetResource() : BaseType()
 {
     isRenderTarget = true;
+    shaderUsage = 0;
 }
 
 VulkanRenderTargetResource::VulkanRenderTargetResource(EPixelDataFormat::Type imageFormat)
     : BaseType(imageFormat,false)
 {
     isRenderTarget = true;
+    shaderUsage = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////

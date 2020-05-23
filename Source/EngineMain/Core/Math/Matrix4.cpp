@@ -44,9 +44,9 @@ Matrix4::Matrix4(const float& c1x, const float& c1y, const float& c1z, const flo
 
 Matrix4::Matrix4(const Vector3D& scale)
     : value(
-          scale.x(), scale.y(), scale.z(), 0
-        , scale.x(), scale.y(), scale.z(), 0
-        , scale.x(), scale.y(), scale.z(), 0
+          scale.x(), 0, 0, 0
+        , 0, scale.y(), 0, 0
+        , 0, 0, scale.z(), 0
         , 0, 0, 0, 1)
 {}
 

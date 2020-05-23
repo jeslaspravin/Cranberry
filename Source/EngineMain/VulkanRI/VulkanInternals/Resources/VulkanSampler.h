@@ -20,7 +20,6 @@ public:
 
     /* IVulkanResources Overrides */
     String getObjectName() const override;
-    void setObjectName(const String& name) override;
     uint64 getDispatchableHandle() const override;
 
     /* GraphicsResources Overrides */

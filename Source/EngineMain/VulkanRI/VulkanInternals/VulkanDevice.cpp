@@ -191,10 +191,15 @@ void VulkanDevice::loadDeviceFunctions()
 #include "VulkanFunctionLists.inl"
 }
 
-template <EQueueFunction QueueFunction>
-VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues,const VulkanDevice* device)
+const std::vector<VulkanDevice::QueueResourceBasePtr>& getAllQueues(const VulkanDevice* device)
 {
-    for (QueueResourceBase* queue : allQueues)
+    return device->allQueues;
+}
+
+template <EQueueFunction QueueFunction> 
+VulkanQueueResource<QueueFunction>* getQueue(const VulkanDevice* device)
+{
+    for (QueueResourceBase* queue : getAllQueues(device))
     {
         if (queue->getType()->isChildOf<VulkanQueueResource<QueueFunction>>())
         {
@@ -205,34 +210,30 @@ VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase
 }
 
 template <>
-VulkanQueueResource<EQueueFunction::Compute>* getQueue<EQueueFunction::Compute>(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device)
+VulkanQueueResource<EQueueFunction::Compute>* getQueue<EQueueFunction::Compute>(const VulkanDevice* device)
 {
-    return device->getComputeQueue() != nullptr 
-        ? static_cast<VulkanQueueResource<EQueueFunction::Compute>*>(device->getComputeQueue()) : nullptr;
+    return static_cast<VulkanQueueResource<EQueueFunction::Compute>*>(device->getComputeQueue());
 }
 template <>
-VulkanQueueResource<EQueueFunction::Generic>* getQueue<EQueueFunction::Generic>(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device)
+VulkanQueueResource<EQueueFunction::Generic>* getQueue<EQueueFunction::Generic>(const VulkanDevice* device)
 {
-    return device->getComputeQueue() != nullptr
-        ? static_cast<VulkanQueueResource<EQueueFunction::Generic>*>(device->getGenericQueue()) : nullptr;
+    return static_cast<VulkanQueueResource<EQueueFunction::Generic>*>(device->getGenericQueue());
 }
 template <>
-VulkanQueueResource<EQueueFunction::Graphics>* getQueue<EQueueFunction::Graphics>(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device)
+VulkanQueueResource<EQueueFunction::Graphics>* getQueue<EQueueFunction::Graphics>(const VulkanDevice* device)
 {
-    return device->getComputeQueue() != nullptr
-        ? static_cast<VulkanQueueResource<EQueueFunction::Graphics>*>(device->getGraphicsQueue()) : nullptr;
+    return static_cast<VulkanQueueResource<EQueueFunction::Graphics>*>(device->getGraphicsQueue());
 }
 template <>
-VulkanQueueResource<EQueueFunction::Transfer>* getQueue<EQueueFunction::Transfer>(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device)
+VulkanQueueResource<EQueueFunction::Transfer>* getQueue<EQueueFunction::Transfer>(const VulkanDevice* device)
 {
-    return device->getComputeQueue() != nullptr
-        ? static_cast<VulkanQueueResource<EQueueFunction::Transfer>*>(device->getTransferQueue()) : nullptr;
+    return static_cast<VulkanQueueResource<EQueueFunction::Transfer>*>(device->getTransferQueue());
 }
 
 void VulkanDevice::cacheGlobalSurfaceProperties()
 {
     // if not presenting?
-    if (!getQueue<EQueueFunction::Present>(allQueues, nullptr))
+    if (!getQueue<EQueueFunction::Present>(nullptr))
     {
         return;
     }
@@ -529,7 +530,7 @@ VulkanDevice::~VulkanDevice()
 
 template <typename QueueResType>
 struct GetQueueCreateInfo {
-    VkDeviceQueueCreateInfo operator()(const QueueResType queueRes)
+    VkDeviceQueueCreateInfo operator()(const QueueResType* queueRes)
     {
         CREATE_QUEUE_INFO(queueCreateInfo);
         queueRes->getQueueCreateInfo(queueCreateInfo);
@@ -539,7 +540,7 @@ struct GetQueueCreateInfo {
 
 template <typename QueueResType>
 struct CacheQueues {
-    void operator()(const QueueResType queueRes, VkDevice logicalDevice, PFN_vkGetDeviceQueue funcPtr)
+    void operator()(QueueResType* queueRes, VkDevice logicalDevice, PFN_vkGetDeviceQueue funcPtr)
     {
         queueRes->cacheQueues(logicalDevice, funcPtr);
     }

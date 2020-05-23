@@ -173,12 +173,12 @@ bool Vector4D::isSame(const Vector4D& b, float epsilon /*= SMALL_EPSILON*/) cons
         && Math::isEqual(value.z, b.value.z, epsilon);
 }
 
-Vector4D Vector4D::normalized()
+Vector4D Vector4D::normalized() const
 {
     return Vector4D(glm::normalize(value));
 }
 
-Vector4D Vector4D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
+Vector4D Vector4D::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
 {
     float sqrLen = sqrlength();
     if (sqrLen < SMALL_EPSILON)
@@ -188,15 +188,25 @@ Vector4D Vector4D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
     return Vector4D(value * Math::invSqrt(sqrLen));
 }
 
-float Vector4D::length()
+float Vector4D::length() const
 {
     return glm::length(value);
 }
 
-float Vector4D::sqrlength()
+float Vector4D::sqrlength() const
 {
     glm::vec4 sqrVal = Math::exp2(value);
     return sqrVal.x + sqrVal.y + sqrVal.z;
+}
+
+Vector4D Vector4D::projectTo(const Vector4D& b) const
+{
+    return Vector4D(b * (*this | b) / (b | b));
+}
+
+Vector4D Vector4D::rejectFrom(const Vector4D& b) const
+{
+    return *this - projectTo(b);
 }
 
 const Vector4D Vector4D::ZERO(0);

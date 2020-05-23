@@ -5,6 +5,7 @@
 #include "../Logger/Logger.h"
 #include "Config/EngineGlobalConfigs.h"
 #include "../Input/InputSystem.h"
+#include "../../RenderInterface/Rendering/IRenderCommandList.h"
 
 
 GenericAppWindow* WindowManager::getMainWindow() const
@@ -20,22 +21,33 @@ void WindowManager::initMain()
     appMainWindow->setWindowSize(EngineSettings::screenSize.get().x, EngineSettings::screenSize.get().y, false);
     appMainWindow->setWindowName(::gEngine->getAppName());
     appMainWindow->setWindowMode(EngineSettings::fullscreenMode.get());
-    appMainWindow->onWindowActivated.bind(this, &WindowManager::activateWindow, appMainWindow);
-    appMainWindow->onWindowDeactived.bind(this, &WindowManager::deactivateWindow, appMainWindow);
+    appMainWindow->onWindowActivated.bindObject(this, &WindowManager::activateWindow, appMainWindow);
+    appMainWindow->onWindowDeactived.bindObject(this, &WindowManager::deactivateWindow, appMainWindow);
     appMainWindow->createWindow(::gEngine->getApplicationInstance());
 
-    ManagerData& data = windowsOpened[appMainWindow];
-    data.windowCanvas = new WindowCanvas();
-    data.windowCanvas->setWindow(appMainWindow);
-    data.windowCanvas->init();
+    ENQUEUE_COMMAND(MainWindowInit,
+        {
+            ManagerData & data = windowsOpened[appMainWindow];
+            data.windowCanvas = new WindowCanvas();
+            data.windowCanvas->setWindow(appMainWindow);
+            data.windowCanvas->init();
+        }
+        , this);
+
 }
 
 void WindowManager::destroyMain()
 {
     for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
     {
-        windowData.second.windowCanvas->release();
-        delete windowData.second.windowCanvas;
+        GenericWindowCanvas* windowCanvas = windowData.second.windowCanvas;
+        ENQUEUE_COMMAND(MainWindowDestroy,
+            {
+                windowCanvas->release();
+                delete windowCanvas;
+            }
+            , windowCanvas);
+
         windowData.second.windowCanvas = nullptr;
 
         windowData.first->destroyWindow();

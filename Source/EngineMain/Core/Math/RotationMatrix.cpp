@@ -35,6 +35,14 @@ RotationMatrix::RotationMatrix(const Matrix4& rotMatrix)
         , rotMatrix[2].x, rotMatrix[2].y, rotMatrix[2].z)
 {}
 
+RotationMatrix::RotationMatrix(const RotationMatrix& other)
+    : rotationMatrix(other.rotationMatrix)
+{}
+
+RotationMatrix::RotationMatrix(RotationMatrix&& other)
+    : rotationMatrix(std::move(other.rotationMatrix))
+{}
+
 Rotation RotationMatrix::asRotation() const
 {
     glm::vec3 numerator(rotationMatrix[2][1], rotationMatrix[2][0], rotationMatrix[1][0]);
@@ -48,4 +56,84 @@ Rotation RotationMatrix::asRotation() const
 const Matrix3& RotationMatrix::matrix() const
 {
     return rotationMatrix;
+}
+
+void RotationMatrix::orthogonalize()
+{
+    Vector3D x(rotationMatrix[0]);
+    Vector3D y(rotationMatrix[1]);
+    Vector3D z(rotationMatrix[2]);
+
+    y = y.rejectFrom(x).safeNormalize();
+    z = z.rejectFrom(y).rejectFrom(x).safeNormalize();
+    rotationMatrix = Matrix3(x.safeNormalize(), y, z);
+}
+
+RotationMatrix RotationMatrix::fromX(const Vector3D& x)
+{
+    // Assuming z up
+    Vector3D normX = x.safeNormalize();
+
+    // If X Parallel to Z then consider y right
+    if (Math::isEqual(Math::abs(normX | Vector3D::UP), 1.f))
+    {
+        return RotationMatrix(Matrix3(normX, Vector3D::RIGHT, normX ^ Vector3D::RIGHT));
+    }
+    return RotationMatrix(Matrix3(normX, Vector3D::UP ^ normX, Vector3D::UP));
+}
+
+RotationMatrix RotationMatrix::fromY(const Vector3D& y)
+{
+    // Assuming z up
+    Vector3D normY = y.safeNormalize();
+
+    // If Y Parallel to Z then consider x fwd
+    if (Math::isEqual(Math::abs(normY | Vector3D::UP), 1.f))
+    {
+        return RotationMatrix(Matrix3(Vector3D::FWD, normY, Vector3D::FWD ^ normY));
+    }
+    return RotationMatrix(Matrix3(normY ^ Vector3D::UP, normY, Vector3D::UP));
+}
+
+RotationMatrix RotationMatrix::fromZ(const Vector3D& z)
+{
+    // Assuming x forward
+    Vector3D normZ = z.safeNormalize();
+    // If Z Parallel to X then consider y right
+    if (Math::isEqual(Math::abs(normZ | Vector3D::FWD), 1.f))
+    {
+        return RotationMatrix(Matrix3(Vector3D::RIGHT ^ normZ, Vector3D::RIGHT, normZ));
+    }
+    return RotationMatrix(Matrix3(Vector3D::FWD, normZ ^ Vector3D::FWD, normZ));
+}
+
+RotationMatrix RotationMatrix::fromXY(const Vector3D& x, const Vector3D& y)
+{
+    Vector3D normX = x.safeNormalize();
+    Vector3D normY = y.rejectFrom(normX).safeNormalize();
+
+    return RotationMatrix(Matrix3(normX, normY, normX ^ normY));
+}
+
+RotationMatrix RotationMatrix::fromYZ(const Vector3D& y, const Vector3D& z)
+{
+    Vector3D normZ = z.safeNormalize();
+    Vector3D normY = y.rejectFrom(normZ).safeNormalize();
+
+    return RotationMatrix(Matrix3(normY ^ normZ, normY, normZ));
+}
+
+RotationMatrix RotationMatrix::fromZX(const Vector3D& z, const Vector3D& x)
+{
+    Vector3D normX = x.safeNormalize();
+    Vector3D normZ = z.rejectFrom(normX).safeNormalize();
+
+    return RotationMatrix(Matrix3(normX, normZ ^ normX, normZ));
+}
+
+RotationMatrix RotationMatrix::fromXYZ(const Vector3D& x, const Vector3D& y, const Vector3D& z)
+{
+    RotationMatrix retVal(Matrix3(x.safeNormalize(), y, z));
+    retVal.orthogonalize();
+    return retVal;
 }

@@ -38,9 +38,9 @@ struct Function {
         : staticDelegate(functionPointer)
     {}
 
-    void operator=(void* functionPointer)
+    void operator=(const StaticDelegate& functionPointer)
     {
-        staticDelegate = static_cast<StaticDelegate>(functionPointer);
+        staticDelegate = functionPointer;
     }
 
     ReturnType operator()(Parameters... params) const
@@ -207,14 +207,14 @@ struct LambdaFunction {
         : lambdaDelegate(functionPointer)
     {}
 
-    void operator=(void* functionPointer)
+    void operator=(const LambdaDelegate& functionPointer)
     {
-        lambdaDelegate = static_cast<LambdaDelegate>(functionPointer);
+        lambdaDelegate = functionPointer;
     }
 
     ReturnType operator()(Parameters... params) const
     {
-        return (*lambdaDelegate)(std::forward<Parameters>(params)...);
+        return lambdaDelegate(std::forward<Parameters>(params)...);
     }
 
     operator bool() const

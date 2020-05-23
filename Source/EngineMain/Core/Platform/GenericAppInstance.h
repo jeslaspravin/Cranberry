@@ -3,6 +3,7 @@
 #include "../Platform/PlatformTypes.h"
 #include "../String/String.h"
 #include "../Engine/WindowManager.h"
+#include "../../Assets/AssetsManager.h"
 
 class GenericAppWindow;
 
@@ -16,5 +17,6 @@ struct GenericAppInstance {
     String cmdLine;
 
     WindowManager appWindowManager;
+    AssetManager assetManager;
     const InputSystem* inputSystem() const;
 };

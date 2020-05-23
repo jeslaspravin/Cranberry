@@ -158,12 +158,12 @@ bool Vector2D::isSame(const Vector2D& b, float epsilon /*= SMALL_EPSILON*/) cons
     return Math::isEqual(value.x, b.value.x, epsilon) && Math::isEqual(value.y, b.value.y, epsilon);
 }
 
-Vector2D Vector2D::normalized()
+Vector2D Vector2D::normalized() const
 {
     return Vector2D(glm::normalize(value));
 }
 
-Vector2D Vector2D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
+Vector2D Vector2D::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
 {
     float sqrLen = sqrlength();
     if (sqrLen < SMALL_EPSILON)
@@ -173,15 +173,25 @@ Vector2D Vector2D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
     return Vector2D(value * Math::invSqrt(sqrLen));
 }
 
-float Vector2D::length()
+float Vector2D::length() const
 {
     return glm::length(value);
 }
 
-float Vector2D::sqrlength()
+float Vector2D::sqrlength() const
 {
     glm::vec2 sqrVal = Math::exp2(value);
     return sqrVal.x + sqrVal.y;
+}
+
+Vector2D Vector2D::projectTo(const Vector2D& b) const
+{
+    return Vector2D(b * (*this | b) / (b | b));
+}
+
+Vector2D Vector2D::rejectFrom(const Vector2D& b) const
+{
+    return *this - projectTo(b);
 }
 
 const Vector2D Vector2D::RIGHT(0,1);

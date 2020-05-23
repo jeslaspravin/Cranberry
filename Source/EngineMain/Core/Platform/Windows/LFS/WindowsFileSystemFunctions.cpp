@@ -1,6 +1,52 @@
 #include "WindowsFileSystemFunctions.h"
 #include "File/WindowsFile.h"
+
 #include <windows.h>
+#include <queue>
+
+std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& directory, bool bRecursive)
+{
+    std::vector<String> fileList;
+    {
+        WindowsFile rootDirectory(directory);
+        if (!rootDirectory.isDirectory() || !rootDirectory.exists())
+        {
+            return fileList;
+        }
+    }
+
+    std::queue<String> directories;
+    directories.push(directory);
+
+    while (!directories.empty())
+    {
+        String currentDir = directories.front();
+        directories.pop();
+
+        WIN32_FIND_DATAA data;
+        HANDLE fHandle = FindFirstFileA(combinePath(currentDir, "*").c_str(), &data);
+
+        if (fHandle != INVALID_HANDLE_VALUE)
+        {
+            do {
+                String path = combinePath(currentDir, data.cFileName);
+                String fileName = data.cFileName;
+                fileName.replaceAllInline(".", "");
+                if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+                {
+                    fileList.push_back(path);
+                }
+                else if(bRecursive && !fileName.empty())
+                {
+                    directories.push(path);
+                }
+
+            } while (FindNextFileA(fHandle, &data));
+            FindClose(fHandle);
+        }
+    }
+    return fileList;
+}
 
 String WindowsFileSystemFunctions::applicationDirectory(String &appName)
 {

@@ -1,16 +1,31 @@
 #pragma once
 
+#include <queue>
+
 class IGraphicsInstance;
 
-class RenderApi {
+class RenderApi
+{
 private:
     IGraphicsInstance* graphicsInstance;
+
+    class IRenderCommandList* renderCmds;
+    std::queue<class IRenderCommand*> commands;
+
+    // TODO(Jeslas) : Once multi threaded rendering is added this should be changed to some TLS value
+    bool bIsInsideRenderCommand = false;
 
     void initAllShaders();
     void releaseAllShaders();
 public:
 
     void initialize();
+    void postInit();
+    void preDestroy();
     void destroy();
-    IGraphicsInstance* getGraphicsInstance() const { return graphicsInstance; }
+
+    void renderFrame();
+    IGraphicsInstance* getGraphicsInstance() const;
+
+    void enqueueCommand(class IRenderCommand* renderCommand);
 };

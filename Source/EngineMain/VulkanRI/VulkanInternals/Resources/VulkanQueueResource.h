@@ -307,35 +307,34 @@ namespace VulkanQueueResourceInvoker
     template<typename ReturnType, template<typename QueueType> typename Functor,typename ... Args>
     ReturnType invoke(QueueResourceBase* queueRes,Args ...args)
     {
-
         if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Compute>>())
         {
-            return Functor<VulkanQueueResource<EQueueFunction::Compute>*>{}
+            return Functor<VulkanQueueResource<EQueueFunction::Compute>>{}
                 (static_cast<VulkanQueueResource<EQueueFunction::Compute>*>(queueRes),args...);
         }
         else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Graphics>>())
         {
-            return Functor<VulkanQueueResource<EQueueFunction::Graphics>*>{}
+            return Functor<VulkanQueueResource<EQueueFunction::Graphics>>{}
                 (static_cast<VulkanQueueResource<EQueueFunction::Graphics>*>(queueRes), args...);
         }
         else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Transfer>>())
         {
-            return Functor<VulkanQueueResource<EQueueFunction::Transfer>*>{}
+            return Functor<VulkanQueueResource<EQueueFunction::Transfer>>{}
                 (static_cast<VulkanQueueResource<EQueueFunction::Transfer>*>(queueRes), args...);
         }
         else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Present>>())
         {
-            return Functor<VulkanQueueResource<EQueueFunction::Present>*>{}
+            return Functor<VulkanQueueResource<EQueueFunction::Present>>{}
             (static_cast<VulkanQueueResource<EQueueFunction::Present>*>(queueRes), args...);
         }
         else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Generic>>())
         {
-            return Functor<VulkanQueueResource<EQueueFunction::Generic>*>{}
+            return Functor<VulkanQueueResource<EQueueFunction::Generic>>{}
                 (static_cast<VulkanQueueResource<EQueueFunction::Generic>*>(queueRes), args...);
         }
         Logger::error("VulkanQueueResourceInvoker", "%s() : Invoker failed to find a type", __func__);
 
-        return Functor<VulkanQueueResource<EQueueFunction::Generic>*>{}
+        return Functor<VulkanQueueResource<EQueueFunction::Generic>>{}
             (static_cast<VulkanQueueResource<EQueueFunction::Generic>*>(queueRes), args...);
     }
 }

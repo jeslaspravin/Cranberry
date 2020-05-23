@@ -27,6 +27,9 @@ public:
 protected:
     Texture2D() = default;
     ~Texture2D() = default;
+
+    void reinitResources() override;
+
 private:
     static void init(Texture2D* texture);
     static void destroy(Texture2D* texture);

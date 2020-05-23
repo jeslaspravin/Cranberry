@@ -31,12 +31,11 @@ public:
     /* End - GraphicsResource implementations */
 
     /* MemoryResource implementations */
-    bool isValid();
+    bool isValid() override;
     /* End - MemoryResource implementations */
 
     /* IVulkanResources implementations */
     String getObjectName() const override;
-    void setObjectName(const String& name) override;
     uint64 getDispatchableHandle() const override;
     uint64 requiredSize() const override;
     bool canAllocateMemory() const override;
@@ -78,12 +77,11 @@ public:
     /* End - GraphicsResource implementations */
 
     /* MemoryResource implementations */
-    bool isValid();
+    bool isValid() override;
     /* End - MemoryResource implementations */
 
     /* IVulkanResources implementations */
     String getObjectName() const override;
-    void setObjectName(const String& name) override;
     uint64 getDispatchableHandle() const override;
     uint64 requiredSize()  const override;
     bool canAllocateMemory() const override;

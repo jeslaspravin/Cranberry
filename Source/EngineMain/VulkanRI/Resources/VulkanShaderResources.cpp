@@ -10,7 +10,7 @@
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderCodeResource, VK_OBJECT_TYPE_SHADER_MODULE)
 
 VulkanShaderCodeResource::VulkanShaderCodeResource(const String& shaderName, const ShaderStageDescription* desc, const uint8* shaderCodePtr)
-    : BaseType(shaderName, shaderCodePtr)
+    : BaseType(shaderName,desc->entryPoint, shaderCodePtr)
     , stageDescription(desc)
     , shaderModule(nullptr)
 {}
@@ -62,12 +62,6 @@ uint64 VulkanShaderCodeResource::getDispatchableHandle() const
 String VulkanShaderCodeResource::getResourceName() const 
 {
     return BaseType::getResourceName() + EShaderStage::getShaderStageInfo(shaderStage())->shortName;
-}
-
-String VulkanShaderCodeResource::entryPoint() const
-{
-    debugAssert(stageDescription != nullptr);
-    return stageDescription->entryPoint;
 }
 
 EShaderStage::Type VulkanShaderCodeResource::shaderStage() const
@@ -125,4 +119,9 @@ VulkanShaderResource::VulkanShaderResource() : BaseType()
 String VulkanShaderResource::getObjectName() const
 {
     return getResourceName();
+}
+
+const ShaderReflected* VulkanShaderResource::getReflection() const
+{
+    return &reflectedData;
 }

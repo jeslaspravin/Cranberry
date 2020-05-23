@@ -25,7 +25,7 @@ template<typename HelperType>
 class GraphicsHelperAPI
 {
 private:
-    GraphicsHelperAPI() {}
+    GraphicsHelperAPI() = default;
 
 public:
     
@@ -84,5 +84,13 @@ public:
     static void unmapResource(class IGraphicsInstance* graphicsInstance, class ImageResource* image)
     {
         return HelperType::unmapResource(graphicsInstance, image);
+    }
+    static void* borrowMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource)
+    {
+        return HelperType::borrowMappedPtr(graphicsInstance, resource);
+    }
+    static void returnMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource)
+    {
+        return HelperType::returnMappedPtr(graphicsInstance, resource);
     }
 };

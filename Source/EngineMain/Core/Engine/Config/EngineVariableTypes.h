@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../Types/Delegates/Delegate.h"
+
 #include <type_traits>
 
 template <typename Type>
@@ -12,7 +14,6 @@ public:
     using VarType = Type;
 protected:
     VarType variable;
-
 public:
     EngineVar(const EngineVar&) = delete;
     EngineVar(EngineVar&&) = delete;
@@ -35,18 +36,36 @@ private:
     using base = EngineVar<Type>;
     using VarType = base::VarType;
     using base::variable;
+
 public:
+    using GlobalConfigChanged = Event<EngineGlobalConfig<VarType>, VarType, VarType>;
+
+private:
+    GlobalConfigChanged onValueChanged;
+
+public:
+
     EngineGlobalConfig() = default;
     EngineGlobalConfig(const VarType& defaultVal) : base(defaultVal){}
 
     void set(const VarType& newValue)
     {
-        variable = newValue;
+        if (!(variable == newValue))
+        {
+            VarType oldValue = variable;
+            variable = newValue;
+            onValueChanged.invoke(oldValue, newValue);
+        }
     }
 
-    VarType& operator*()
+    void operator=(const VarType& newValue)
     {
-        return variable;
+        set(newValue);
+    }
+
+    GlobalConfigChanged& onConfigChanged()
+    {
+        return onValueChanged;
     }
 };
 
@@ -60,18 +79,33 @@ private:
     using base::variable;
 
     friend OwnerType;
+public:
+    using ConstantChanged = Event<EngineConstant<VarType, OwnerType>, VarType, VarType>;
+
+private:
+    ConstantChanged onValueChanged;
 
 private:
     void set(const VarType& newValue)
     {
-        variable = newValue;
+        if (!(variable == newValue))
+        {
+            VarType oldValue = variable;
+            variable = newValue;
+            onValueChanged.invoke(oldValue, newValue);
+        }
     }
 
-    VarType& operator*()
+    void operator=(const VarType& newValue)
     {
-        return variable;
+        set(newValue);
     }
 public:
     EngineConstant() = default;
     EngineConstant(const VarType & defaultVal) : base(defaultVal) {}
+
+    ConstantChanged& onChanged()
+    {
+        return onValueChanged;
+    }
 };
