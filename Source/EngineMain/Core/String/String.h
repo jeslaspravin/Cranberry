@@ -25,6 +25,8 @@ public:
     const AChar* getChar() const;
     bool findAny(size_t& outIndex, String& outFoundString, const std::vector<String>& findStrgs, size_t offset = 0, 
         bool fromEnd = false) const;
+    String replaceAll(const String& from, const String& to) const;
+    void replaceAllInline(const String& from, const String& to);
 
     bool operator==(const String& rhs) const;
 

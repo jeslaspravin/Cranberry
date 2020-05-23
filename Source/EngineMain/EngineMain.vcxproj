@@ -136,7 +136,7 @@
       <ConformanceMode>true</ConformanceMode>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm;$(SolutionDir)\Source\EngineShaderData;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm;%CPP_LIB%\tinyobjloader;$(SolutionDir)\Source\EngineShaderData;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
@@ -198,7 +198,7 @@
       <ConformanceMode>true</ConformanceMode>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm;%CPP_LIB%\tinyobjloader;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
@@ -221,6 +221,12 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Assets\AssetLoaderLibrary.cpp" />
+    <ClCompile Include="Assets\AssetLoader\StaticMeshLoader.cpp" />
+    <ClCompile Include="Assets\AssetsManager.cpp" />
+    <ClCompile Include="Assets\Asset\AssetObject.cpp" />
+    <ClCompile Include="Assets\Asset\MeshAsset.cpp" />
+    <ClCompile Include="Assets\Asset\StaticMeshAsset.cpp" />
     <ClCompile Include="Core\Engine\Config\EngineGlobalConfigs.cpp" />
     <ClCompile Include="Core\Engine\GameEngine.cpp" />
     <ClCompile Include="Core\Engine\WindowManager.cpp" />
@@ -247,10 +253,12 @@
     <ClCompile Include="Core\Platform\Windows\WindowsAppWindow.cpp" />
     <ClCompile Include="Core\Platform\Windows\WindowsPlatformFunctions.cpp" />
     <ClCompile Include="Core\String\String.cpp" />
+    <ClCompile Include="Core\Types\Camera\Camera.cpp" />
     <ClCompile Include="Core\Types\Colors.cpp" />
     <ClCompile Include="Core\Types\Delegates\Delegate.cpp" />
     <ClCompile Include="Core\Types\Textures\RenderTargetTextures.cpp" />
     <ClCompile Include="Core\Types\Textures\Texture2D.cpp" />
+    <ClCompile Include="Core\Types\Textures\TexturesBase.cpp" />
     <ClCompile Include="Core\Types\Time.cpp" />
     <ClCompile Include="Core\Types\Transform3D.cpp" />
     <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
@@ -259,6 +267,7 @@
     <ClCompile Include="RenderApi\RenderApi.cpp" />
     <ClCompile Include="RenderInterface\GlobalRenderVariables.cpp" />
     <ClCompile Include="RenderInterface\GraphicsInstance.cpp" />
+    <ClCompile Include="RenderInterface\Rendering\RenderCommandList.cpp" />
     <ClCompile Include="RenderInterface\Resources\GraphicsResources.cpp" />
     <ClCompile Include="RenderInterface\Resources\GraphicsSyncResource.cpp" />
     <ClCompile Include="RenderInterface\Resources\GraphicsTimelineSemaphore.cpp" />
@@ -267,25 +276,40 @@
     <ClCompile Include="RenderInterface\Resources\GenericWindowCanvas.cpp" />
     <ClCompile Include="RenderInterface\Resources\Samplers\SamplerInterface.cpp" />
     <ClCompile Include="RenderInterface\Resources\ShaderResources.cpp" />
+    <ClCompile Include="RenderInterface\ShaderCore\ShaderInputOutput.cpp" />
+    <ClCompile Include="RenderInterface\ShaderCore\ShaderParameters.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTexture.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\StaticMesh\StaticMeshUnlit.cpp" />
     <ClCompile Include="StartMain.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanBufferResources.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanImageResources.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanShaderResources.cpp" />
     <ClCompile Include="VulkanRI\VulkanGraphicsHelper.cpp" />
     <ClCompile Include="VulkanRI\VulkanGraphicsInstance.cpp" />
+    <ClCompile Include="VulkanRI\VulkanInternals\Commands\VulkanCommandBufferManager.cpp" />
+    <ClCompile Include="VulkanRI\VulkanInternals\Commands\VulkanRenderCmdList.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Debugging.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Platform\Windows\WindowsVulkanFunctions.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanWindowCanvas.cpp" />
+    <ClCompile Include="VulkanRI\VulkanInternals\VulkanDescriptorAllocator.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanDevice.cpp" />
+    <ClCompile Include="VulkanRI\VulkanInternals\VulkanFrameBuffer.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanFunctions.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanMemoryAllocator.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanGraphicsTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Assets\AssetLoaderLibrary.h" />
+    <ClInclude Include="Assets\AssetLoader\StaticMeshLoader.h" />
+    <ClInclude Include="Assets\AssetsManager.h" />
+    <ClInclude Include="Assets\Asset\AssetHeader.h" />
+    <ClInclude Include="Assets\Asset\AssetObject.h" />
+    <ClInclude Include="Assets\Asset\MeshAsset.h" />
+    <ClInclude Include="Assets\Asset\StaticMeshAsset.h" />
     <ClInclude Include="Core\Engine\Config\EngineGlobalConfigs.h" />
     <ClInclude Include="Core\Engine\Config\EngineVariableTypes.h" />
     <ClInclude Include="Core\Engine\GameEngine.h" />
@@ -326,7 +350,9 @@
     <ClInclude Include="Core\Platform\Windows\WindowsAppWindow.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformFunctions.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformTypes.h" />
+    <ClInclude Include="Core\Reflections\MemberField.h" />
     <ClInclude Include="Core\String\String.h" />
+    <ClInclude Include="Core\Types\Camera\Camera.h" />
     <ClInclude Include="Core\Types\Colors.h" />
     <ClInclude Include="Core\Types\CoreDefines.h" />
     <ClInclude Include="Core\Types\Delegates\Delegate.h" />
@@ -348,6 +374,7 @@
     <ClInclude Include="RenderInterface\PlatformIndependentGraphicsTypes.h" />
     <ClInclude Include="RenderInterface\PlatformIndependentHeaders.h" />
     <ClInclude Include="RenderInterface\PlatformIndependentHelper.h" />
+    <ClInclude Include="RenderInterface\Rendering\IRenderCommandList.h" />
     <ClInclude Include="RenderInterface\Resources\GraphicsResources.h" />
     <ClInclude Include="RenderInterface\Resources\GraphicsSyncResource.h" />
     <ClInclude Include="RenderInterface\Resources\MemoryResources.h" />
@@ -355,7 +382,11 @@
     <ClInclude Include="RenderInterface\Resources\GenericWindowCanvas.h" />
     <ClInclude Include="RenderInterface\Resources\Samplers\SamplerInterface.h" />
     <ClInclude Include="RenderInterface\Resources\ShaderResources.h" />
+    <ClInclude Include="RenderInterface\ShaderCore\ShaderInputOutput.h" />
+    <ClInclude Include="RenderInterface\ShaderCore\ShaderParameters.h" />
     <ClInclude Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.h" />
+    <ClInclude Include="RenderInterface\Shaders\DrawQuadFromTexture.h" />
+    <ClInclude Include="RenderInterface\Shaders\StaticMesh\StaticMeshUnlit.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanBufferResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanImageResources.h" />
@@ -363,6 +394,8 @@
     <ClInclude Include="VulkanRI\VulkanGraphicsHelper.h" />
     <ClInclude Include="VulkanRI\VulkanGraphicsInstance.h" />
     <ClInclude Include="VulkanRI\VulkanGraphicsTypes.h" />
+    <ClInclude Include="VulkanRI\VulkanInternals\Commands\VulkanCommandBufferManager.h" />
+    <ClInclude Include="VulkanRI\VulkanInternals\Commands\VulkanRenderCmdList.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Debugging.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Platform\GenericVulkanFunctions.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Platform\PlatformVulkanFunctions.h" />
@@ -372,6 +405,7 @@
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanWindowCanvas.h" />
+    <ClInclude Include="VulkanRI\VulkanInternals\VulkanDescriptorAllocator.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanDevice.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanFunctions.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\VulkanMacros.h" />

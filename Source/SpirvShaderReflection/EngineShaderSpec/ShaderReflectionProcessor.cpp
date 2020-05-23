@@ -1030,7 +1030,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
                 sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
                 sampledImageDesc.data.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 fillBufferFieldArrayInfo(sampledImageDesc.data.data.arraySize, type, specConstsMaps[i]);
-                sampledImageDesc.data.data.imageViewType = VkImageViewType(ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed));
+                sampledImageDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
                 fillSampledImageFormats(sampledImageDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
                 sampledImageDesc.data.data.bIsMultiSampled = baseType.image.ms;
 
@@ -1067,7 +1067,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
                 sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
                 sampledImageDesc.data.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
                 fillBufferFieldArrayInfo(sampledImageDesc.data.data.arraySize, type, specConstsMaps[i]);
-                sampledImageDesc.data.data.imageViewType = VkImageViewType(ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed));
+                sampledImageDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
                 fillSampledImageFormats(sampledImageDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
                 sampledImageDesc.data.data.bIsMultiSampled = baseType.image.ms;
 
@@ -1104,7 +1104,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
                 sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
                 sampledImageDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
                 fillBufferFieldArrayInfo(sampledImageDesc.data.data.arraySize, type, specConstsMaps[i]);
-                sampledImageDesc.data.data.imageViewType = VkImageViewType(ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed));
+                sampledImageDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
                 sampledImageDesc.data.data.format = ShaderReflectionProcessor::texelFormat(baseType.image.format);
                 sampledImageDesc.data.data.bIsMultiSampled = baseType.image.ms;
 

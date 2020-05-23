@@ -20,6 +20,8 @@ private:
     VkInstance vulkanInstance;
     VulkanDevice selectedDevice;
     SharedPtr<class IVulkanMemoryAllocator> memoryAllocator;
+    SharedPtr<class VulkanDescriptorsSetAllocator> descriptorsSetAllocator;
+    SharedPtr<class IRenderCommandList> vulkanCmdList;
 
     void loadGlobalFunctions();
     void loadInstanceFunctions();
@@ -33,10 +35,13 @@ private:
     [[nodiscard]] bool collectInstanceExtensions(std::vector<const char*>& extensions) const;
 public:
 
+    /* IGraphicsInstance override */
+
     void load() override;
     void unload() override;
-
     void loadSurfaceDependents() override;
+    void initializeCmds(class IRenderCommandList* commandList) override;
 
+    /* Override ends */
 };
 

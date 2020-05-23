@@ -861,9 +861,9 @@ public:
     }
 
 
-    void mapImage(VulkanMemoryBlock* block, bool bIsOptimalTiled) override
+    void mapImage(VulkanMemoryBlock* block) override
     {
-        VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
+        VulkanChunkAllocator** chunkAllocator = linearChunkAllocators;
 
         for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
@@ -879,9 +879,9 @@ public:
     }
 
 
-    void unmapImage(VulkanMemoryBlock* block, bool bIsOptimalTiled) override
+    void unmapImage(VulkanMemoryBlock* block) override
     {
-        VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
+        VulkanChunkAllocator** chunkAllocator = linearChunkAllocators;
 
         for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {

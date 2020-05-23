@@ -10,8 +10,13 @@ class QueueResourceBase;
 
 class VulkanDevice {
 
+private:
+    using QueueResourceBasePtr = QueueResourceBase*;
+
     friend class VulkanGraphicsHelper;
     friend class VulkanMemoryAllocator;
+
+    friend const std::vector<VulkanDevice::QueueResourceBasePtr>& getAllQueues(const VulkanDevice* device);
 
 private:
     VulkanDebugGraphics graphicsDebug;
@@ -32,7 +37,6 @@ private:
 
     // Queues
     std::vector<VkQueueFamilyProperties> queueFamiliesSupported;
-    typedef QueueResourceBase* QueueResourceBasePtr;
     std::vector<QueueResourceBasePtr> allQueues;
     QueueResourceBasePtr graphicsQueue = nullptr;
     QueueResourceBasePtr computeQueue = nullptr;

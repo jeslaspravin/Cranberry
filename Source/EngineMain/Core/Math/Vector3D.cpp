@@ -172,12 +172,12 @@ bool Vector3D::isSame(const Vector3D& b, float epsilon /*= SMALL_EPSILON*/) cons
         && Math::isEqual(value.z, b.value.z, epsilon);
 }
 
-Vector3D Vector3D::normalized()
+Vector3D Vector3D::normalized() const
 {
     return Vector3D(glm::normalize(value));
 }
 
-Vector3D Vector3D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
+Vector3D Vector3D::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
 {
     float sqrLen = sqrlength();
     if (sqrLen < SMALL_EPSILON)
@@ -187,15 +187,25 @@ Vector3D Vector3D::safeNormalize(float threshold /*= SMALL_EPSILON*/)
     return Vector3D(value * Math::invSqrt(sqrLen));
 }
 
-float Vector3D::length()
+float Vector3D::length() const
 {
     return glm::length(value);
 }
 
-float Vector3D::sqrlength()
+float Vector3D::sqrlength() const
 {
     glm::vec3 sqrVal = Math::exp2(value);
     return sqrVal.x + sqrVal.y + sqrVal.z;
+}
+
+Vector3D Vector3D::projectTo(const Vector3D& b) const
+{
+    return Vector3D(b * (*this | b) / (b | b));
+}
+
+Vector3D Vector3D::rejectFrom(const Vector3D& b) const
+{
+    return *this - projectTo(b);
 }
 
 const Vector3D Vector3D::RIGHT(0, 1);

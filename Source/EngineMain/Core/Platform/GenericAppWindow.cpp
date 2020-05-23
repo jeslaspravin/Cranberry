@@ -12,8 +12,10 @@ void GenericAppWindow::setWindowSize(const uint32& width, const uint32& height, 
 {
     windowWidth = width;
     windowHeight = height;
-    if(updateResources)
+    if (updateResources)
+    {
         resizeWindow();
+    }
 }
 
 void GenericAppWindow::setWindowMode(bool bIsFullScreen)

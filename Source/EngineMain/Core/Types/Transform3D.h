@@ -12,6 +12,9 @@ private:
 
     Matrix4 transformMatrixCache;
     bool bCachedLatest;
+private:
+    Matrix4 normalTransformMatrix() const;
+    Matrix4 getTransformMatrix() const;
 public:
     Transform3D();
     Transform3D(const Vector3D& translation, const Rotation& rotation, const Vector3D& scale);
@@ -21,6 +24,7 @@ public:
     Transform3D(Transform3D&& otherTransform);
     void operator=(const Transform3D& otherTransform);
     void operator=(Transform3D&& otherTransform);
+    void operator=(const Matrix4& transformMatrix);
 
     Vector3D getTranslation() const;
     Rotation getRotation() const;
@@ -29,7 +33,13 @@ public:
     void setRotation(const Rotation& newRotation);
     void setScale(const Vector3D& newScale);
 
-    Matrix4 getTransformMatrix();
+    const Matrix4& getTransformMatrix();
+    Vector3D transformNormal(const Vector3D& normal) const;
+    Vector3D invTransformNormal(const Vector3D& normal) const;
+    Vector3D transformPoint(const Vector3D& point);
+    Vector3D invTransformPoint(const Vector3D& point);
+    Transform3D transform(const Transform3D& other);
+    Transform3D invTransform(const Transform3D& other);
 
 public:
     static Transform3D ZERO_TRANSFORM;

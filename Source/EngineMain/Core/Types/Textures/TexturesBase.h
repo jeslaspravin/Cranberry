@@ -18,12 +18,20 @@ protected:
     EPixelSampleCount::Type sampleCount;
     EPixelDataFormat::Type dataFormat;
     String textureName;
+
+    bool bNeedsUpdate;
+
+protected:
+    virtual void reinitResources();
 public:
 
     ImageResource* getTextureResource() const { return textureResource; }
     EPixelSampleCount::Type getSampleCount() const { return sampleCount; }
     EPixelDataFormat::Type getFormat() const { return dataFormat; }
     const String& getTextureName() const { return textureName; }
+
+    void setSampleCount(EPixelSampleCount::Type newSampleCount);
+    void markResourceDirty();
 
     // Each type of texture has to provide an implementation for this template
     template<typename TextureType,typename CreateParamType>

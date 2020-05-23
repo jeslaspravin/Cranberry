@@ -59,6 +59,27 @@ namespace EPixelDataFormat
         BGRA_UI8,
         BGRA_SI8,
         BGRA_U8_SRGB,           /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
+        R_U8_Norm,
+        R_S8_Norm,
+        R_U8_Scaled,
+        R_S8_Scaled,
+        R_UI8,
+        R_SI8,
+        R_U8_SRGB,
+        RG_U8_Norm,
+        RG_S8_Norm,
+        RG_U8_Scaled,
+        RG_S8_Scaled,
+        RG_UI8,
+        RG_SI8,
+        RG_U8_SRGB,
+        RGB_U8_Norm,
+        RGB_S8_Norm,
+        RGB_U8_Scaled,
+        RGB_S8_Scaled,
+        RGB_UI8,
+        RGB_SI8,
+        RGB_U8_SRGB,
         RGBA_U8_Norm,
         RGBA_S8_Norm,
         RGBA_U8_Scaled,
@@ -66,6 +87,18 @@ namespace EPixelDataFormat
         RGBA_UI8,
         RGBA_SI8,
         RGBA_U8_SRGB,           /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
+        A2RGB10_U32_NormPacked,
+        A2RGB10_S32_NormPacked,
+        A2RGB10_U32_ScaledPacked,
+        A2RGB10_S32_ScaledPacked,
+        A2RGB10_UI32_Packed,
+        A2RGB10_SI32_Packed,
+        A2BGR10_U32_NormPacked,
+        A2BGR10_S32_NormPacked,
+        A2BGR10_U32_ScaledPacked,
+        A2BGR10_S32_ScaledPacked,
+        A2BGR10_UI32_Packed,
+        A2BGR10_SI32_Packed,
         R_U16_Norm,             /* 0 to 65535 gives 0.0f to 1.0f */
         R_S16_Norm,             /* -32767 to 32767 gives -1.0f - 1.0f per comp( -32768 gets clamped to -32767 )*/
         R_U16_Scaled,
@@ -106,16 +139,29 @@ namespace EPixelDataFormat
         RGBA_UI32,
         RGBA_SI32,
         RGBA_SF32,
+        R_UI64,
+        R_SI64,
+        R_SF64,
+        RG_UI64,
+        RG_SI64,
+        RG_SF64,
+        RGB_UI64,
+        RGB_SI64,
+        RGB_SF64,
+        RGBA_UI64,
+        RGBA_SI64,
+        RGBA_SF64,
         D_U16_Norm,             /* 0 to 65535 gives 0.0f to 1.0f */
         D24X8_U32_NormPacked,   /* 0 to 16777215 depth gives 0.0f to 1.0f, 8bit not used */
         D_SF32,
         D32S8_SF32_UI8,
         D16S8_U24_DNorm_SInt,   /* 0 to 65535 depth gives 0.0f to 1.0f, 0 - 255 as stencil */
-        D24S8_U32_DNorm_SInt,   /* 0 to 16777215 depth gives 0.0f to 1.0f, 0 - 255 as stencil */
+        D24S8_U40_DNorm_SInt,   /* 0 to 16777215 depth gives 0.0f to 1.0f, 0 - 255 as stencil */
+        AllFormatEnd,
         DepthFormatBegin = D_U16_Norm,
-        DepthFormatEnd = D24S8_U32_DNorm_SInt,
+        DepthFormatEnd = D24S8_U40_DNorm_SInt,
         StencilDepthBegin = D32S8_SF32_UI8,
-        StencilDepthEnd = D24S8_U32_DNorm_SInt
+        StencilDepthEnd = D24S8_U40_DNorm_SInt
     };
 
     struct ImageFormatInfo

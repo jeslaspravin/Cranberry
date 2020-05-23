@@ -159,6 +159,9 @@ class BufferResource : public MemoryResource
 public:
     // TODO(Jeslas) : Check if this is needed later point of development
     void setAsStagingResource(bool isStaging) { bIsStagingResource = isStaging; }
+
+    // Valid value only in case of texel buffer, ordinary buffer gives EPixelDataFormat::Undefined
+    EPixelDataFormat::Type texelFormat() { return dataFormat; }
 };
 
 class ImageResource : public MemoryResource
@@ -187,4 +190,7 @@ public:
     void setShaderUsage(uint32 usage) { shaderUsage = usage; }
     void setImageSize(const Size3D& imageSize) { dimensions = imageSize; }
     const Size3D& getImageSize() const { return dimensions; }
+
+    EPixelDataFormat::Type imageFormat() const { return dataFormat; }
+    EPixelSampleCount::Type sampleCount() const { return sampleCounts; }
 };

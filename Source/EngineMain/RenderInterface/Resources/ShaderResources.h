@@ -21,6 +21,7 @@ namespace EShaderStage
     {
         String name;
         String shortName;
+        // TODO(Jeslas) : Entry point is obtained from reflection data right now, so do I need here?
         String entryPointName;
         uint32 shaderStage;
     };
@@ -35,12 +36,13 @@ class ShaderCodeResource : public GraphicsResource
 
 private:
     String shaderFileName;
+    String shaderEntryPoint;
 protected:
     const uint8* shaderCode;
 
     ShaderCodeResource() = default;
 public:
-    ShaderCodeResource(const String& shaderName, const uint8* shaderCodePtr);
+    ShaderCodeResource(const String& shaderName,const String& entryPointName, const uint8* shaderCodePtr);
 
     /* GraphicsResources overrides */
     void init() override;
@@ -48,7 +50,7 @@ public:
     void setResourceName(const String& name) override {}
     /* End overrides */
 
-    virtual String entryPoint() const;
+    const String& entryPoint() const;
     virtual EShaderStage::Type shaderStage() const;
 };
 
@@ -77,6 +79,7 @@ public:
 
     /* End overrides */
 
+    virtual struct ShaderReflected const* getReflection() const { return nullptr; }
     SharedPtr<ShaderCodeResource> getShaderCode(EShaderStage::Type shaderType) const;
     const std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>>& getShaders() const;
 };

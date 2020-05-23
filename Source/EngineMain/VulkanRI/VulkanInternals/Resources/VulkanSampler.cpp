@@ -14,11 +14,6 @@ String VulkanSampler::getObjectName() const
     return getResourceName();
 }
 
-void VulkanSampler::setObjectName(const String& name)
-{
-    setResourceName(name);
-}
-
 uint64 VulkanSampler::getDispatchableHandle() const
 {
     return (uint64)sampler;
@@ -54,9 +49,9 @@ void VulkanSampler::reinitResources()
     createInfo.addressModeU = (VkSamplerAddressMode)ESamplerTilingMode::getSamplerTiling(tilingMode.x);
     createInfo.addressModeV = (VkSamplerAddressMode)ESamplerTilingMode::getSamplerTiling(tilingMode.y);
     createInfo.addressModeW = (VkSamplerAddressMode)ESamplerTilingMode::getSamplerTiling(tilingMode.z);
-    // TODO(Jeslas) : following settings has to be obtained from global settings
     createInfo.mipLodBias = 0;
     createInfo.anisotropyEnable = GlobalRenderVariables::ENABLE_ANISOTROPY.get() ? VK_TRUE : VK_FALSE;
+    // TODO(Jeslas) : Check if need to use some sort of asset type specific custom max limit, Instead of hardcoded 8
     createInfo.maxAnisotropy = Math::min(8.f,GlobalRenderVariables::MAX_ANISOTROPY.get());
 
     createInfo.compareEnable = useCompareOp;

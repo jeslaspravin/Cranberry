@@ -87,7 +87,7 @@ protected:
     using ThisType = typename Child;
     using ParentType = typename Parent;
 
-    constexpr bool verifyParent(const GraphicsResourceType* otherType) const
+    constexpr bool verifyParent(const GraphicsResourceType* otherType) const override
     {
         return !isRootType() && ParentType::staticType()->isChildOf(otherType);
     }
