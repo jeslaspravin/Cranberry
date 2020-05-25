@@ -139,6 +139,30 @@ uint32_t ShaderReflectionProcessor::pipelineStageFlag(spv::ExecutionModel spirvS
     case spv::ExecutionModelGLCompute:
         return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     default:
+        assert(!"Unsupported pipeline stage");
+        printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
+        break;
+    }
+    return 0;
+}
+
+uint32_t ShaderReflectionProcessor::shaderStageFlag(spv::ExecutionModel spirvStage)
+{
+    switch (spirvStage)
+    {
+    case spv::ExecutionModelVertex:
+        return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+    case spv::ExecutionModelTessellationControl:
+        return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+    case spv::ExecutionModelTessellationEvaluation:
+        return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+    case spv::ExecutionModelGeometry:
+        return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
+    case spv::ExecutionModelFragment:
+        return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+    case spv::ExecutionModelGLCompute:
+        return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
+    default:
         assert(!"Unsupported shader stage");
         printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
         break;
@@ -1015,7 +1039,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
                 DescEntryTexelBuffer samplerBufferDesc;
                 samplerBufferDesc.attributeName = resource.name;
                 samplerBufferDesc.data.binding = binding;
-                samplerBufferDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+                samplerBufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 samplerBufferDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
                 fillBufferFieldArrayInfo(samplerBufferDesc.data.data.arraySize, type, specConstsMaps[i]);
                 fillSampledImageFormats(samplerBufferDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
@@ -1027,7 +1051,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
                 DescEntryTexture sampledImageDesc;
                 sampledImageDesc.attributeName = resource.name;
                 sampledImageDesc.data.binding = binding;
-                sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+                sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 sampledImageDesc.data.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 fillBufferFieldArrayInfo(sampledImageDesc.data.data.arraySize, type, specConstsMaps[i]);
                 sampledImageDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
@@ -1052,7 +1076,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
                 DescEntryTexelBuffer samplerBufferDesc;
                 samplerBufferDesc.attributeName = resource.name;
                 samplerBufferDesc.data.binding = binding;
-                samplerBufferDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+                samplerBufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 samplerBufferDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
                 fillBufferFieldArrayInfo(samplerBufferDesc.data.data.arraySize, type, specConstsMaps[i]);
                 fillSampledImageFormats(samplerBufferDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
@@ -1064,7 +1088,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
                 DescEntryTexture sampledImageDesc;
                 sampledImageDesc.attributeName = resource.name;
                 sampledImageDesc.data.binding = binding;
-                sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+                sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 sampledImageDesc.data.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
                 fillBufferFieldArrayInfo(sampledImageDesc.data.data.arraySize, type, specConstsMaps[i]);
                 sampledImageDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
@@ -1089,7 +1113,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
                 DescEntryTexelBuffer samplerBufferDesc;
                 samplerBufferDesc.attributeName = resource.name;
                 samplerBufferDesc.data.binding = binding;
-                samplerBufferDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+                samplerBufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 samplerBufferDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
                 fillBufferFieldArrayInfo(samplerBufferDesc.data.data.arraySize, type, specConstsMaps[i]);
                 samplerBufferDesc.data.data.format = ShaderReflectionProcessor::texelFormat(baseType.image.format);
@@ -1101,7 +1125,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
                 DescEntryTexture sampledImageDesc;
                 sampledImageDesc.attributeName = resource.name;
                 sampledImageDesc.data.binding = binding;
-                sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+                sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 sampledImageDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
                 fillBufferFieldArrayInfo(sampledImageDesc.data.data.arraySize, type, specConstsMaps[i]);
                 sampledImageDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
@@ -1123,7 +1147,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
             DescEntrySubpassInput samplerDesc;
             samplerDesc.attributeName = resource.name;
             samplerDesc.data.binding = binding;
-            samplerDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+            samplerDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
             samplerDesc.data.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
             samplerDesc.data.data = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationInputAttachmentIndex);
 
@@ -1141,7 +1165,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
             DescEntrySampler samplerDesc;
             samplerDesc.attributeName = resource.name;
             samplerDesc.data.binding = binding;
-            samplerDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+            samplerDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
             samplerDesc.data.type = VK_DESCRIPTOR_TYPE_SAMPLER;
             fillBufferFieldArrayInfo(samplerDesc.data.data, type, specConstsMaps[i]);
 
@@ -1159,7 +1183,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
             DescEntryBuffer bufferDesc;
             bufferDesc.attributeName = shaderStage->compiledData->get_name(resource.id);
             bufferDesc.data.binding = binding;
-            bufferDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+            bufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
             bufferDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             fillBufferFields(bufferDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i]);
 
@@ -1177,7 +1201,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
             DescEntryBuffer bufferDesc;
             bufferDesc.attributeName = shaderStage->compiledData->get_name(resource.id);
             bufferDesc.data.binding = binding;
-            bufferDesc.data.stagesUsed = ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+            bufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
             bufferDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             fillBufferFields(bufferDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i]);
 
@@ -1215,7 +1239,7 @@ void PipelineShaderStageProcessor::processPushConstants(const std::vector<std::m
         {
             auto& resource = resources.push_constant_buffers[0];
             reflectedData.pushConstants.attributeName = shaderStage->compiledData->get_name(resource.id);
-            reflectedData.pushConstants.data.stagesUsed |= ShaderReflectionProcessor::pipelineStageFlag(entryPoint.execution_model);
+            reflectedData.pushConstants.data.stagesUsed |= ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
 
             const SPIRV_CROSS_NAMESPACE::SPIRType& basetype = shaderStage->compiledData->get_type(resource.base_type_id);
             fillBufferFields(reflectedData.pushConstants.data.pushConstantField, basetype, shaderStage->compiledData, specConstsMaps[i]);

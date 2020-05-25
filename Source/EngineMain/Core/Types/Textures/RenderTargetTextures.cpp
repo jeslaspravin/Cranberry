@@ -46,33 +46,6 @@ namespace ERenderTargetFormat
         }
         return EPixelDataFormat::Undefined;
     }
-
-    ERenderTargetFormat::Type pixelFormatToRTFormat(EPixelDataFormat::Type pixelFormat)
-    {
-        switch (pixelFormat)
-        {
-        case EPixelDataFormat::BGR_U8_Norm:
-        case EPixelDataFormat::BGR_U8_SRGB:
-            return ERenderTargetFormat::RT_U8_NoAlpha;
-        case EPixelDataFormat::ABGR_U8_SrgbPacked:
-        case EPixelDataFormat::ABGR_U8_NormPacked:
-            return ERenderTargetFormat::RT_U8Packed;
-        case EPixelDataFormat::BGRA_U8_Norm:
-        case EPixelDataFormat::BGRA_U8_SRGB:
-            return ERenderTargetFormat::RT_U8;
-        case EPixelDataFormat::ABGR_S8_NormPacked:
-            return ERenderTargetFormat::RT_NormalMap;
-        case EPixelDataFormat::R_SF32:
-            return ERenderTargetFormat::RT_SF32;
-        default:
-            break;
-        }
-
-        Logger::warn("ERenderTargetFormat", "%s() : Not support pixel format %s in Render target", __func__
-            , EPixelDataFormat::getFormatInfo(pixelFormat)->formatName.getChar());
-        return ERenderTargetFormat::RT_U8;
-    }
-
 }
 
 void RenderTargetTexture::reinitResources()

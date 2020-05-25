@@ -5,6 +5,7 @@
 #include "../../../Core/String/String.h"
 #include "../VulkanMacros.h"
 #include "../../../RenderInterface/Resources/QueueResource.h"
+#include "../../../RenderInterface/Rendering/CommandBuffer.h"
 
 #include <map>
 
@@ -12,6 +13,7 @@ class QueueResourceBase;
 class VulkanDevice;
 class GraphicsSemaphore;
 class GraphicsFence;
+struct CommandSubmitInfo;
 
 struct VulkanCommandPoolInfo
 {
@@ -48,29 +50,8 @@ public:
     VkCommandPool getCommandPool(class VulkanCommandBuffer const* cmdBuffer) const;
 };
 
-struct VulkanSubmitInfo
-{
-    struct WaitInfo
-    {
-        GraphicsSemaphore* waitOnSemaphore;
-        // Pipeline Stages that are recorded in this command buffer that waits on the corresponding semaphore
-        VkPipelineStageFlags stagesThatWaits;
-    };
-    std::vector<const GraphicsResource*> cmdBuffers;
-    std::vector<WaitInfo> waitOn;
-    std::vector<GraphicsSemaphore*> signalSemaphores;
-};
-
 struct VulkanCmdBufferState
 {
-    enum ECmdState
-    {
-        Idle, // Not recorded idle state
-        Recording, // Between begin and end recording
-        Recorded,// Recorded idle state after end recording before submit
-        Submitted
-    };
-
     class VulkanCommandBuffer* cmdBuffer;
     ECmdState cmdState = ECmdState::Idle;
 };
@@ -102,7 +83,8 @@ public:
     void cmdFinished(const GraphicsResource* cmdBuffer);
     void freeCmdBuffer(const GraphicsResource* cmdBuffer);
 
-    VkCommandBuffer getRawBuffer(const GraphicsResource* cmdBuffer);
+    VkCommandBuffer getRawBuffer(const GraphicsResource* cmdBuffer) const;
+    ECmdState getState(const GraphicsResource* cmdBuffer) const;
 
     //************************************
     // Method:    submitCmds - Currently all commands being submitted must be from same queue
@@ -113,7 +95,7 @@ public:
     // Parameter: const std::vector<VulkanSubmitInfo> & commands - List of commands to be submitted
     // Parameter: GraphicsFence * cmdsCompleteFence - Fence that gets signalled when all of the commands submitted are complete
     //************************************
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<VulkanSubmitInfo>& commands, GraphicsFence* cmdsCompleteFence);
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo>& commands, GraphicsFence* cmdsCompleteFence);
 
-    void submitCmd(EQueuePriority::Enum priority, const VulkanSubmitInfo& command, GraphicsFence* cmdsCompleteFence);
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& command, GraphicsFence* cmdsCompleteFence);
 };

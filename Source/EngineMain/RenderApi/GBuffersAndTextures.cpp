@@ -5,7 +5,6 @@
 #include "../RenderInterface/Resources/GenericWindowCanvas.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
-#include "../Core/Types/Textures/RenderTargetTextures.h"
 
 std::unordered_map<FramebufferFormat, std::vector<Framebuffer*>> GBuffers::gBuffers
 {
@@ -13,6 +12,8 @@ std::unordered_map<FramebufferFormat, std::vector<Framebuffer*>> GBuffers::gBuff
         FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32 }), {}
     }
 };
+std::vector<Framebuffer*> GBuffers::swapchainFbs;
+
 
 bool FramebufferFormat::operator==(const FramebufferFormat& otherFormat) const
 {
@@ -33,11 +34,6 @@ FramebufferFormat::FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frame
     : attachments(std::move(frameBuffers))
 {}
 
-class ImageResource* Framebuffer::getImageResource(const RenderTargetTexture * rtTexture) const
-{
-    return rtTexture->getRtTexture();
-}
-
 void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
 {
     ENQUEUE_COMMAND(GBufferSampleCountChange, 
@@ -48,7 +44,8 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
                 {
                     for (auto* imageResource : framebufferData->textures)
                     {
-                        imageResource->setSampleCount(EPixelSampleCount::Type(newValue));
+                        imageResource->setSampleCounts(EPixelSampleCount::Type(newValue));
+                        imageResource->reinitResources();
                     }
                     initializeInternal(framebufferData);
                 }
@@ -57,7 +54,7 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
     , newValue);
 }
 
-void GBuffers::onResize(Size2D oldSize, Size2D newSize)
+void GBuffers::onScreenResized(Size2D oldSize, Size2D newSize)
 {
     ENQUEUE_COMMAND(GBufferResize,
         {
@@ -67,7 +64,8 @@ void GBuffers::onResize(Size2D oldSize, Size2D newSize)
                 {
                     for (auto* imageResource : framebufferData->textures)
                     {
-                        imageResource->setTextureSize(newSize);
+                        imageResource->setImageSize({ newSize.x, newSize.y, 1 });
+                        imageResource->reinitResources();
                     }
                     initializeInternal(framebufferData);
                 }
@@ -76,14 +74,35 @@ void GBuffers::onResize(Size2D oldSize, Size2D newSize)
     , newSize);
 }
 
+void GBuffers::onSurfaceResized(Size2D oldSize, Size2D newSize)
+{
+    ENQUEUE_COMMAND(SwapchainResize,
+        {
+            const GenericWindowCanvas * windowCanvas = gEngine->getApplicationInstance()->appWindowManager
+                .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
+
+            uint32 swapchainIdx = 0;
+            for (Framebuffer* fb : swapchainFbs)
+            {
+                initializeSwapchainFb(fb, windowCanvas, swapchainIdx);
+                ++swapchainIdx;
+            }
+        }
+    , newSize);
+}
+
 void GBuffers::initialize()
 {
-    uint32 swapchainCount = gEngine->getApplicationInstance()->appWindowManager.getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount();
+    const GenericWindowCanvas* windowCanvas = gEngine->getApplicationInstance()->appWindowManager
+        .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
+    uint32 swapchainCount = windowCanvas->imagesCount();
 
     const Size2D initialSize = EngineSettings::screenSize.get();
-    EngineSettings::screenSize.onConfigChanged().bindStatic(&GBuffers::onResize);
-    EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
+    EngineSettings::screenSize.onConfigChanged().bindStatic(&GBuffers::onScreenResized);
+    EngineSettings::surfaceSize.onConfigChanged().bindStatic(&GBuffers::onSurfaceResized);
     GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);
+
+    EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
     for (auto& framebuferPair : gBuffers)
     {
         framebuferPair.second.clear();
@@ -96,19 +115,26 @@ void GBuffers::initialize()
             }
             for (auto frameBufferFormat : framebuferPair.first.attachments)
             {
-                RenderTextureCreateParams createParam;
-                createParam.format = ERenderTargetFormat::pixelFormatToRTFormat(frameBufferFormat);
-                createParam.mipCount = 1;
-                createParam.sampleCount = sampleCount;
-                createParam.textureSize = initialSize;
-                createParam.bSameReadWriteTexture = true;
-                createParam.textureName = "GBuffer_" + EPixelDataFormat::getFormatInfo(frameBufferFormat)->formatName;
+                ImageResource* imgResource = new GraphicsRenderTargetResource(frameBufferFormat);
+                imgResource->setImageSize({ initialSize.x, initialSize.y, 1 });
+                imgResource->setNumOfMips(1);
+                imgResource->setSampleCounts(sampleCount);
+                imgResource->setShaderUsage(EImageShaderUsage::Sampling);
+                imgResource->setResourceName("GBuffer_" + EPixelDataFormat::getFormatInfo(frameBufferFormat)->formatName);
+                imgResource->init();
 
-                framebufferData->textures.push_back(TextureBase::createTexture<RenderTargetTexture>(createParam));
+                framebufferData->textures.push_back(imgResource);
             }
             initializeInternal(framebufferData);
             framebuferPair.second.push_back(framebufferData);
         }
+    }
+
+    for (uint32 i = 0; i < swapchainCount; ++i)
+    {
+        Framebuffer* fb = createFbInternal();
+        initializeSwapchainFb(fb, windowCanvas, i);
+        swapchainFbs.push_back(fb);
     }
 }
 
@@ -118,14 +144,37 @@ void GBuffers::destroy()
     {
         for (auto* framebufferData : framebuferPair.second)
         {
-            for (auto* imageResource : framebufferData->textures)
+            for (auto* imgResource : framebufferData->textures)
             {
-                TextureBase::destroyTexture<RenderTargetTexture>(imageResource);
+                imgResource->release();
+                delete imgResource;
             }
             framebufferData->textures.clear();
             delete framebufferData;
         }
         framebuferPair.second.clear();
     }
+    gBuffers.clear();
+
+    for (Framebuffer* fb : swapchainFbs)
+    {
+        delete fb;
+    }
+    swapchainFbs.clear();
+}
+
+Framebuffer* GBuffers::getFramebuffer(const FramebufferFormat& framebufferFormat, uint32 frameIdx)
+{
+    std::unordered_map<FramebufferFormat,std::vector<Framebuffer*>>::const_iterator framebufferItr = gBuffers.find(framebufferFormat);
+    if (framebufferItr != gBuffers.cend())
+    {
+        return framebufferItr->second[frameIdx];
+    }
+    return nullptr;
+}
+
+Framebuffer* GBuffers::getSwapchainFramebuffer(uint32 frameIdx)
+{
+    return swapchainFbs[frameIdx];
 }
 
