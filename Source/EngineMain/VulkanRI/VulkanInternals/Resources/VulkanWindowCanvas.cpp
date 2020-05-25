@@ -134,12 +134,12 @@ uint32 VulkanWindowCanvas::requestNextImage(SharedPtr<GraphicsSemaphore>* waitOn
     return currentSwapchainIdx;
 }
 
-EPixelDataFormat::Type VulkanWindowCanvas::windowCanvasFormat()
+EPixelDataFormat::Type VulkanWindowCanvas::windowCanvasFormat() const 
 {
     return EPixelDataFormat::fromApiFormat((uint32)swapchainInfo.format);
 }
 
-int32 VulkanWindowCanvas::imagesCount()
+int32 VulkanWindowCanvas::imagesCount() const 
 {
     return (int32)swapchainImages.size();
 }

@@ -31,8 +31,8 @@ public:
     void release() override;
 
     uint32 requestNextImage(SharedPtr<GraphicsSemaphore>* waitOnSemaphore ,SharedPtr<GraphicsFence>* waitOnFence = nullptr) override;
-    EPixelDataFormat::Type windowCanvasFormat() override;
-    int32 imagesCount() override;
+    EPixelDataFormat::Type windowCanvasFormat() const override;
+    int32 imagesCount() const override;
 
     VkSurfaceKHR surface() const { return surfacePtr; }
     VkSwapchainKHR swapchain() const { return swapchainPtr; }

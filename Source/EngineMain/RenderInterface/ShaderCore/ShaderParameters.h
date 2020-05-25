@@ -68,7 +68,7 @@ struct ShaderBufferTypedField : public ShaderBufferField
 {
     ShaderBufferTypedField(const String& pName) : ShaderBufferField(pName) {}
 
-    virtual void* fieldData(OuterType* outerPtr) = 0;
+    virtual const void* fieldData(uint32& typeSize, const OuterType* outerPtr) const = 0;
 };
 
 template<typename OuterType, typename MemberType>
@@ -84,7 +84,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     FieldPtr memberPtr;
 
     ShaderBufferMemberField(const String& pName, const FieldPtr& fieldPtr)
-        : ShaderBufferTypedField(pName)
+        : ShaderBufferTypedField<OuterType>(pName)
         , memberPtr(fieldPtr)
     {
         bIsArray = std::is_array_v<MemberType>;
@@ -95,8 +95,9 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         }
     }
 
-    void* fieldData(OuterType* outerPtr) override
+    const void* fieldData(uint32& typeSize, const OuterType* outerPtr) const override
     {
+        typeSize = sizeof(MemberType);
         return &memberPtr.get(outerPtr);
     }
 };
@@ -109,7 +110,7 @@ struct ShaderBufferStructField : public ShaderBufferMemberField<OuterType, Membe
     using typename ShaderBufferMemberField<OuterType, MemberType>::FieldPtr;
 
     ShaderBufferStructField(const String& pName, const FieldPtr& fieldPtr, ShaderBufferParamInfo* pInfo)
-        : ShaderBufferMemberField<OuterType, MemberType>::ShaderBufferMemberField(pName, fieldPtr)
+        : ShaderBufferMemberField<OuterType, MemberType>(pName, fieldPtr)
     {
         paramInfo = pInfo;
         bIsStruct = true;
@@ -140,6 +141,11 @@ struct ShaderParamFieldNode
         prevNode->nextNode = this;
         prevNode->field = paramField;
     }
+
+    bool isValid() const
+    {
+        return field != nullptr;
+    }
 };
 
 
@@ -168,10 +174,11 @@ struct BufferType##BufferParamInfo : public ShaderBufferParamInfo \
     ShaderBufferMemberField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { #FieldName, &BufferDataType::##FieldName }; \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
+// NOTE : Right now only supporting inner struct with proper alignment with respect to GPU(Alignment correction on copying to GPU is only done for first level of variables)  
 #define ADD_BUFFER_STRUCT_FIELD(FieldName, FieldType) \
     FieldType##BufferParamInfo FieldName##ParamInfo; \
     ShaderBufferStructField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { #FieldName, &BufferDataType::##FieldName##, &##FieldName##ParamInfo }; \
-    ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field,& startNode };
+    ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 
 #define BEGIN_VERTEX_DEFINITION(VertexType) \

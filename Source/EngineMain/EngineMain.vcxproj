@@ -370,6 +370,7 @@
     <ClInclude Include="RenderInterface\PlatformIndependentGraphicsTypes.h" />
     <ClInclude Include="RenderInterface\PlatformIndependentHeaders.h" />
     <ClInclude Include="RenderInterface\PlatformIndependentHelper.h" />
+    <ClInclude Include="RenderInterface\Rendering\CommandBuffer.h" />
     <ClInclude Include="RenderInterface\Rendering\IRenderCommandList.h" />
     <ClInclude Include="RenderInterface\Resources\GraphicsResources.h" />
     <ClInclude Include="RenderInterface\Resources\GraphicsSyncResource.h" />

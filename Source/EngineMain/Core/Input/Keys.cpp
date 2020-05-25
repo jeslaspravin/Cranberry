@@ -83,10 +83,12 @@ const Key Keys::C{ EKeyCode::KEY_C,"C", 'C' };
 const Key Keys::D{ EKeyCode::KEY_D,"D", 'D' };
 const Key Keys::E{ EKeyCode::KEY_E,"E", 'E' };
 const Key Keys::F{ EKeyCode::KEY_F,"F", 'F' };
-const Key Keys::R{ EKeyCode::KEY_R,"G", 'G' };
-const Key Keys::S{ EKeyCode::KEY_S,"H", 'H' };
-const Key Keys::X{ EKeyCode::KEY_X,"I", 'I' };
-const Key Keys::Z{ EKeyCode::KEY_Z,"J", 'J' };
+const Key Keys::R{ EKeyCode::KEY_R,"R", 'R' };
+const Key Keys::S{ EKeyCode::KEY_S,"S", 'S' };
+const Key Keys::W{ EKeyCode::KEY_W,"W", 'W' };
+const Key Keys::X{ EKeyCode::KEY_X,"X", 'I' };
+const Key Keys::Y{ EKeyCode::KEY_Y,"Y", 'Y' };
+const Key Keys::Z{ EKeyCode::KEY_Z,"Z", 'Z' };
 const Key Keys::LSHIFT{ EKeyCode::KEY_LSHIFT,"Left Shift", 0 };
 const Key Keys::RSHIFT{ EKeyCode::KEY_RSHIFT,"Right Shift", 0 };
 const Key Keys::LCTRL{ EKeyCode::KEY_LCTRL,"Left Control", 0 };
@@ -130,7 +132,9 @@ std::initializer_list<std::pair<const Key*, KeyState>> Keys::KEYSTATES_INITIALIZ
     { &F, KeyState()},
     { &R, KeyState()},
     { &S, KeyState()},
+    { &W, KeyState()},
     { &X, KeyState()},
+    { &Y, KeyState()},
     { &Z, KeyState()},
     { &LSHIFT, KeyState()},
     { &RSHIFT, KeyState()},

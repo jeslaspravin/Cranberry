@@ -21,7 +21,7 @@ public:
     // Setup function must be use before calling init
     virtual void setWindow(GenericAppWindow* forWindow);
     virtual uint32 requestNextImage(SharedPtr<GraphicsSemaphore>* waitOnSemaphore, SharedPtr<GraphicsFence>* waitOnFence = nullptr);
-    virtual EPixelDataFormat::Type windowCanvasFormat() { return EPixelDataFormat::Undefined; }
-    virtual int32 imagesCount() { return -1; }
+    virtual EPixelDataFormat::Type windowCanvasFormat() const { return EPixelDataFormat::Undefined; }
+    virtual int32 imagesCount() const { return -1; }
 };
 

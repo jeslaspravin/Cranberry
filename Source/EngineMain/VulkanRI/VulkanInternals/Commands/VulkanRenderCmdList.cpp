@@ -19,17 +19,18 @@ VulkanCommandList::~VulkanCommandList()
 
 void VulkanCommandList::copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo)
 {
-    VkBufferCopy bufferCopyRegion{ copyInfo.srcOffset, copyInfo.dstOffset, copyInfo.copySize };
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "CopyBufferTemp", false);
 
     const GraphicsResource* commandBuffer = cmdBufferManager->beginTempCmdBuffer("Copy buffer", EQueueFunction::Transfer);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
 
+    VkBufferCopy bufferCopyRegion{ copyInfo.srcOffset, copyInfo.dstOffset, copyInfo.copySize };
     vDevice->vkCmdCopyBuffer(rawCmdBuffer, static_cast<VulkanBufferResource*>(src)->buffer
         , static_cast<VulkanBufferResource*>(dst)->buffer, 1, &bufferCopyRegion);
+
     cmdBufferManager->endCmdBuffer(commandBuffer);
 
-    VulkanSubmitInfo submitInfo;
+    CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.push_back(commandBuffer);
     cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence.get());
 
@@ -51,7 +52,7 @@ void VulkanCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, cons
     if (dst->isStagingResource())
     {
         auto* vulkanDst = static_cast<VulkanBufferResource*>(dst);
-        void* stagingPtr = GraphicsHelper::borrowMappedPtr(gInstance, dst);
+        void* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, dst)) + dstOffset;
         memcpy(stagingPtr, dataToCopy, size);
         GraphicsHelper::returnMappedPtr(gInstance, dst);
     }
@@ -64,6 +65,7 @@ void VulkanCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, cons
         if (dst->getType()->isChildOf<GraphicsRBuffer>() || dst->getType()->isChildOf<GraphicsRWBuffer>()
             || dst->getType()->isChildOf<GraphicsVertexBuffer>() || dst->getType()->isChildOf<GraphicsIndexBuffer>())
         {
+            // In case of buffer larger than 4GB using UINT32 will create issue
             auto stagingBuffer = GraphicsRBuffer(uint32(stagingSize));
             stagingBuffer.setAsStagingResource(true);
             stagingBuffer.init();
@@ -76,6 +78,7 @@ void VulkanCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, cons
         }
         else if(dst->getType()->isChildOf<GraphicsRTexelBuffer>() || dst->getType()->isChildOf<GraphicsRWTexelBuffer>())
         {
+            // In case of buffer larger than 4GB using UINT32 will create issue
             auto stagingBuffer = GraphicsRTexelBuffer(dst->texelFormat(), uint32(stagingSize / EPixelDataFormat::getFormatInfo(dst->texelFormat())->pixelDataSize));
             stagingBuffer.setAsStagingResource(true);
             stagingBuffer.init();
@@ -86,5 +89,127 @@ void VulkanCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, cons
 
             stagingBuffer.release();
         }
+        else
+        {
+            Logger::error("VulkanCommandList", "%s() : Copying buffer type is invalid", __func__);
+        }
     }
+}
+
+void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyData>& batchCopies)
+{
+    // For each buffer there will be bunch of copies associated to it
+    std::map<VulkanBufferResource*, std::pair<VulkanBufferResource*, std::vector<const BatchCopyData*>>> dstToStagingBufferMap;
+    
+    // Filling per buffer copy region data and staging data
+    for (const auto& copyData : batchCopies)
+    {
+        auto* vulkanDst = static_cast<VulkanBufferResource*>(copyData.dst);
+        if (vulkanDst->isStagingResource())
+        {
+            copyToBuffer(vulkanDst, copyData.dstOffset, copyData.dataToCopy, copyData.size);
+        }
+        else
+        {
+            VulkanBufferResource* stagingBuffer = nullptr;
+            auto stagingBufferItr = dstToStagingBufferMap.find(vulkanDst);
+            if (stagingBufferItr == dstToStagingBufferMap.end())
+            {
+                if (vulkanDst->getType()->isChildOf<GraphicsRBuffer>() || vulkanDst->getType()->isChildOf<GraphicsRWBuffer>()
+                    || vulkanDst->getType()->isChildOf<GraphicsVertexBuffer>() || vulkanDst->getType()->isChildOf<GraphicsIndexBuffer>())
+                {
+                    // In case of buffer larger than 4GB using UINT32 will create issue
+                    stagingBuffer = new GraphicsRBuffer(uint32(vulkanDst->getResourceSize()));
+                }
+                else if (vulkanDst->getType()->isChildOf<GraphicsRTexelBuffer>() || vulkanDst->getType()->isChildOf<GraphicsRWTexelBuffer>())
+                {
+                    // In case of buffer larger than 4GB using UINT32 will create issue
+                    stagingBuffer = new GraphicsRTexelBuffer(vulkanDst->texelFormat()
+                        , uint32(vulkanDst->getResourceSize() / EPixelDataFormat::getFormatInfo(vulkanDst->texelFormat())->pixelDataSize));
+                }
+                else
+                {
+                    Logger::error("VulkanCommandList", "%s() : Copying buffer type is invalid", __func__);
+                    continue;
+                }
+                dstToStagingBufferMap[vulkanDst] = { stagingBuffer, { &copyData } };
+                stagingBuffer->setAsStagingResource(true);
+                stagingBuffer->init();
+            }
+            else
+            {
+                stagingBuffer = stagingBufferItr->second.first;
+                stagingBufferItr->second.second.push_back(&copyData);
+            }
+            copyToBuffer(stagingBuffer, copyData.dstOffset, copyData.dataToCopy, copyData.size);
+        }
+    }
+
+    // Copying between buffers
+    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "BatchCopyBufferTemp", false);
+    const GraphicsResource* commandBuffer = cmdBufferManager->beginTempCmdBuffer("Batch copy buffers", EQueueFunction::Transfer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
+
+    for (const auto& dstToStagingPair : dstToStagingBufferMap)
+    {
+        std::vector<VkBufferCopy> copyRegions;
+        for (const auto& copyData : dstToStagingPair.second.second)
+        {
+            copyRegions.push_back({ copyData->dstOffset, copyData->dstOffset, copyData->size });
+        }
+        vDevice->vkCmdCopyBuffer(rawCmdBuffer, dstToStagingPair.second.first->buffer
+            , dstToStagingPair.first->buffer, uint32(copyRegions.size()), copyRegions.data());
+    }
+
+    cmdBufferManager->endCmdBuffer(commandBuffer);
+    CommandSubmitInfo submitInfo;
+    submitInfo.cmdBuffers.push_back(commandBuffer);
+    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence.get());
+    tempFence->waitForSignal();
+    cmdBufferManager->freeCmdBuffer(commandBuffer);
+    tempFence->release();
+
+    for (const auto& dstToStagingPair : dstToStagingBufferMap)
+    {
+        dstToStagingPair.second.first->release();
+        delete dstToStagingPair.second.first;
+    }
+    dstToStagingBufferMap.clear();
+}
+
+const GraphicsResource* VulkanCommandList::startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable)
+{
+    if (bIsReusable)
+    {
+        return cmdBufferManager->beginReuseCmdBuffer(uniqueName, queue);
+    }
+    else
+    {
+        return cmdBufferManager->beginRecordOnceCmdBuffer(uniqueName, queue);
+    }
+}
+
+void VulkanCommandList::endCmd(const GraphicsResource* cmdBuffer)
+{
+    cmdBufferManager->endCmdBuffer(cmdBuffer);
+}
+
+void VulkanCommandList::freeCmd(const GraphicsResource* cmdBuffer)
+{
+    cmdBufferManager->freeCmdBuffer(cmdBuffer);
+}
+
+void VulkanCommandList::submitCmd(EQueuePriority::Enum priority
+    , const CommandSubmitInfo& submitInfo, const SharedPtr<GraphicsFence>& fence)
+{
+    cmdBufferManager->submitCmd(priority, submitInfo, (bool(fence)? fence.get() : nullptr));
+}
+
+void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority
+    , const CommandSubmitInfo& submitInfo)
+{
+    SharedPtr<GraphicsFence> fence = GraphicsHelper::createFence(gInstance, "CommandSubmitFence");
+    cmdBufferManager->submitCmd(priority, submitInfo, fence.get());
+    fence->waitForSignal();
+    fence->release();
 }
