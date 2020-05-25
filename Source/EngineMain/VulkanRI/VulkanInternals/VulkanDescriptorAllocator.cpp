@@ -9,7 +9,7 @@
 #include <array>
 
 
-constexpr bool DescriptorPoolSizeLessThan::operator()(const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs) const
+bool DescriptorPoolSizeLessThan::operator()(const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs) const
 {
     return lhs.type == rhs.type ? lhs.descriptorCount < rhs.descriptorCount : lhs.type < rhs.type;
 }
@@ -287,7 +287,7 @@ VkDescriptorSet VulkanDescriptorsSetAllocator::allocDescriptorsSet(const Descrip
         {
             Logger::debug("DescriptorsSetAllocator", "Allocating set from global descriptors set pool");
             chooseSets.push_back(allocateSetFromPool(globalPool, descriptorsSetLayout));
-            globalPool.allocatedSets[chooseSets[1]] = query;
+            globalPool.allocatedSets[chooseSets[0]] = query;
         }
         else
         {
@@ -304,7 +304,7 @@ VkDescriptorSet VulkanDescriptorsSetAllocator::allocDescriptorsSet(const Descrip
         {
             Logger::debug("DescriptorsSetAllocator", "Allocating set from non global pool");
             chooseSets.push_back(allocateSetFromPool(allocationPool, descriptorsSetLayout));
-            allocationPool.allocatedSets[chooseSets[1]] = query;
+            allocationPool.allocatedSets[chooseSets[0]] = query;
         }
     }
     return chooseSets[0];

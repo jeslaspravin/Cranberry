@@ -6,7 +6,7 @@
 #include <vector>
 #include <unordered_map>
 
-class RenderTargetTexture;
+class ImageResource;
 
 struct FramebufferFormat
 {
@@ -30,10 +30,9 @@ struct std::hash<FramebufferFormat> {
 
 struct Framebuffer
 {
-    std::vector<RenderTargetTexture*> textures;
+    std::vector<ImageResource*> textures;
 
     virtual ~Framebuffer() = default;
-    class ImageResource* getImageResource(const RenderTargetTexture * rtTexture) const;
 };
 
 class GBuffers
@@ -41,12 +40,18 @@ class GBuffers
 private:
     // Frame buffer format to frame buffers swapchain count times
     static std::unordered_map<FramebufferFormat, std::vector<Framebuffer*>> gBuffers;
+    static std::vector<Framebuffer*> swapchainFbs;
 
     static Framebuffer* createFbInternal();
     static void initializeInternal(Framebuffer* fb);
+    static void initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, uint32 swapchainIdx);
     static void onSampleCountChanged(uint32 oldValue, uint32 newValue);
-    static void onResize(Size2D oldSize, Size2D newSize);
+    static void onScreenResized(Size2D oldSize, Size2D newSize);
+    static void onSurfaceResized(Size2D oldSize, Size2D newSize);
 public:
     static void initialize();
     static void destroy();
+
+    static Framebuffer* getFramebuffer(const FramebufferFormat& framebufferFormat, uint32 frameIdx);
+    static Framebuffer* getSwapchainFramebuffer(uint32 frameIdx);
 };

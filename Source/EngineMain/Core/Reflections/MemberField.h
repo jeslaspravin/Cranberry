@@ -139,6 +139,16 @@ public:
     {
         return object->*memberPtr;
     }
+
+    const MemberType& get(const ClassType& object) const
+    {
+        return object.*memberPtr;
+    }
+
+    const MemberType& get(const ClassType* object) const
+    {
+        return object->*memberPtr;
+    }
 };
 template <typename ClassType, typename MemberType>
 class ClassMemberField<true, ClassType, MemberType>

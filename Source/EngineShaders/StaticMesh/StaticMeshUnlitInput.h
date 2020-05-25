@@ -1,5 +1,5 @@
 
-layout(location = 0) in vec3 inWorldPosition;
+layout(location = 0) in vec4 inWorldPosition;
 layout(location = 1) in vec3 inLocalPosition;
 layout(location = 2) in vec3 inWorldNormal;
 layout(location = 3) in vec3 inLocalNormal;

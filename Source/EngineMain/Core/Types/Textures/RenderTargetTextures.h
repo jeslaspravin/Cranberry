@@ -15,8 +15,6 @@ namespace ERenderTargetFormat
 
     template<bool bIsSrgb>
     EPixelDataFormat::Type rtFormatToPixelFormat(ERenderTargetFormat::Type);
-
-    ERenderTargetFormat::Type pixelFormatToRTFormat(EPixelDataFormat::Type pixelFormat);
 }
 
 struct RenderTextureCreateParams : public TextureBaseCreateParams

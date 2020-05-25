@@ -13,7 +13,7 @@ struct DescriptorsSetQuery;
 
 struct DescriptorPoolSizeLessThan {
 
-    constexpr bool operator()(const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs) const;
+    bool operator()(const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs) const;
 };
 
 struct DescriptorsSetQueryLessThan {

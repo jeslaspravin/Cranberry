@@ -764,6 +764,9 @@
     <ClInclude Include="Core\Types\Camera\Camera.h">
       <Filter>Header Files\Core\Types\Camera</Filter>
     </ClInclude>
+    <ClInclude Include="RenderInterface\Rendering\CommandBuffer.h">
+      <Filter>Header Files\RenderInterface\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="VulkanRI\VulkanInternals\VulkanFunctionLists.inl">

@@ -70,7 +70,9 @@ public:
     const static Key F;
     const static Key R;
     const static Key S;
+    const static Key W;
     const static Key X;
+    const static Key Y;
     const static Key Z;
     const static Key LSHIFT;
     const static Key RSHIFT;

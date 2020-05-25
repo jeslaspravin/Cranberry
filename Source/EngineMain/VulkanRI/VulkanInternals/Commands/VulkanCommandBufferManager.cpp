@@ -250,7 +250,6 @@ const GraphicsResource* VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
 
         cmdBuffer = new VulkanCommandBuffer();
         cmdBuffer->setResourceName(cmdName);
-        cmdBuffer->bIsTempBuffer = true;
         cmdBuffer->fromQueue = cmdPool.cmdPoolInfo.queueType;
 
         fatalAssert(vDevice->vkAllocateCommandBuffers(VulkanGraphicsHelper::getDevice(vDevice), &cmdBuffAllocInfo
@@ -258,21 +257,21 @@ const GraphicsResource* VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
         cmdBuffer->init();
         vDevice->debugGraphics()->markObject(cmdBuffer);
 
-        commandBuffers[cmdName] = { cmdBuffer, VulkanCmdBufferState::Recording };
+        commandBuffers[cmdName] = { cmdBuffer, ECmdState::Recording };
     }
     else
     {
         switch (cmdBufferItr->second.cmdState)
         {
-        case VulkanCmdBufferState::Recorded:
-        case VulkanCmdBufferState::Submitted:
+        case ECmdState::Recorded:
+        case ECmdState::Submitted:
             Logger::error("VulkanCommandBufferManager", "%s() : Trying to record a prerecorded command again is restricted Command = [%s]", __func__, cmdName.getChar());
             fatalAssert(false, "Cannot record prerecorded command again");
             return cmdBufferItr->second.cmdBuffer;
-        case VulkanCmdBufferState::Recording:
+        case ECmdState::Recording:
             Logger::warn("VulkanCommandBufferManager", "%s() : Command %s is already being recorded", __func__, cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
-        case VulkanCmdBufferState::Idle:
+        case ECmdState::Idle:
         default:
             cmdBuffer = cmdBufferItr->second.cmdBuffer;
         }
@@ -302,7 +301,7 @@ const GraphicsResource* VulkanCmdBufferManager::beginReuseCmdBuffer(const String
 
         cmdBuffer = new VulkanCommandBuffer();
         cmdBuffer->setResourceName(cmdName);
-        cmdBuffer->bIsTempBuffer = true;
+        cmdBuffer->bIsResetable = true;
         cmdBuffer->fromQueue = cmdPool.cmdPoolInfo.queueType;
 
         fatalAssert(vDevice->vkAllocateCommandBuffers(VulkanGraphicsHelper::getDevice(vDevice), &cmdBuffAllocInfo
@@ -310,25 +309,25 @@ const GraphicsResource* VulkanCmdBufferManager::beginReuseCmdBuffer(const String
         cmdBuffer->init();
         vDevice->debugGraphics()->markObject(cmdBuffer);
 
-        commandBuffers[cmdName] = { cmdBuffer, VulkanCmdBufferState::Recording };
+        commandBuffers[cmdName] = { cmdBuffer, ECmdState::Recording };
     }
     else
     {
         switch (cmdBufferItr->second.cmdState)
         {
-        case VulkanCmdBufferState::Submitted:
+        case ECmdState::Submitted:
             Logger::error("VulkanCommandBufferManager", "%s() : Trying to record a submitted command [%s] is restricted before it is finished", __func__, cmdName.getChar());
             fatalAssert(false, "Cannot record command while it is still executing");
             return cmdBufferItr->second.cmdBuffer;
-        case VulkanCmdBufferState::Recording:
+        case ECmdState::Recording:
             Logger::warn("VulkanCommandBufferManager", "%s() : Command [%s] is already being recorded", __func__, cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
-        case VulkanCmdBufferState::Recorded:
-        case VulkanCmdBufferState::Idle:
+        case ECmdState::Recorded:
+        case ECmdState::Idle:
         default:
             cmdBuffer = cmdBufferItr->second.cmdBuffer;
         }
-        cmdBufferItr->second.cmdState = VulkanCmdBufferState::Recording;
+        cmdBufferItr->second.cmdState = ECmdState::Recording;
     }
 
     CMD_BUFFER_BEGIN_INFO(cmdBuffBeginInfo);
@@ -348,7 +347,7 @@ void VulkanCmdBufferManager::endCmdBuffer(const GraphicsResource* cmdBuffer)
 
     if (!vCmdBuffer->bIsTempBuffer)
     {
-        commandBuffers[cmdBuffer->getResourceName()].cmdState = VulkanCmdBufferState::Recorded;
+        commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Recorded;
     }
 }
 
@@ -358,7 +357,7 @@ void VulkanCmdBufferManager::cmdFinished(const GraphicsResource* cmdBuffer)
 
     if (!vCmdBuffer->bIsTempBuffer)
     {
-        commandBuffers[cmdBuffer->getResourceName()].cmdState = VulkanCmdBufferState::Recorded;
+        commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Recorded;
     }
 }
 
@@ -377,12 +376,23 @@ void VulkanCmdBufferManager::freeCmdBuffer(const GraphicsResource* cmdBuffer)
     delete cmdBuffer;
 }
 
-VkCommandBuffer VulkanCmdBufferManager::getRawBuffer(const GraphicsResource* cmdBuffer)
+VkCommandBuffer VulkanCmdBufferManager::getRawBuffer(const GraphicsResource* cmdBuffer) const
 {
     return cmdBuffer->getType()->isChildOf<VulkanCommandBuffer>() ? static_cast<const VulkanCommandBuffer*>(cmdBuffer)->cmdBuffer : nullptr;
 }
 
-void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std::vector<VulkanSubmitInfo>& commands, GraphicsFence* cmdsCompleteFence)
+ECmdState VulkanCmdBufferManager::getState(const GraphicsResource* cmdBuffer) const
+{
+    auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());
+    if (cmdBufferItr != commandBuffers.cend())
+    {
+        return cmdBufferItr->second.cmdState;
+    }
+    Logger::debug("VulkanCmdBufferManager", "%s() : Not available command buffer[%s] queried for state", __func__, cmdBuffer->getResourceName().getChar());
+    return ECmdState::Idle;
+}
+
+void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo>& commands, GraphicsFence* cmdsCompleteFence)
 {
     QueueResourceBase* queueRes = nullptr;
 
@@ -449,12 +459,12 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
     {
         for (auto& cmdBuffer : command.cmdBuffers)
         {
-            commandBuffers[cmdBuffer->getResourceName()].cmdState = VulkanCmdBufferState::Submitted;
+            commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
         }
     }
 }
 
-void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const VulkanSubmitInfo& command, GraphicsFence* cmdsCompleteFence)
+void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& command, GraphicsFence* cmdsCompleteFence)
 {
     QueueResourceBase* queueRes = nullptr;
 
@@ -508,7 +518,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Vulk
 
     for (auto& cmdBuffer : command.cmdBuffers)
     {
-        commandBuffers[cmdBuffer->getResourceName()].cmdState = VulkanCmdBufferState::Submitted;
+        commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
     }
 }
 

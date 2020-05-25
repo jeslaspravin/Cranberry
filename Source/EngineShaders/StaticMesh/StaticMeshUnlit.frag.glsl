@@ -19,5 +19,5 @@ void mainFS()
 {
     colorAttachment0 = mix(texture(diffuseTexture, inTextureCoord), inVertexColor, pushConsts.vertexDiffuseColorBlend);
     colorAttachment1 = vec4(inWorldNormal, 1);
-    colorAttachment2 = gl_FragDepth;
+    colorAttachment2 = inWorldPosition.w / 5000.f;
 }
