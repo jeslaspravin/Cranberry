@@ -42,8 +42,8 @@ void GameEngine::startup(GenericAppInstance* appInstance)
     applicationInstance = appInstance;
     renderingApi=UniquePtr<RenderApi>(new RenderApi());
     renderingApi->initialize();
-    onStartUp();
     applicationInstance->assetManager.load();
+    onStartUp();
 
     // Has to be done at last after all the other rendering related systems init
     renderingApi->postInit();
@@ -123,4 +123,9 @@ GenericAppInstance& GameEngine::appInstance() const
 {
     debugAssert(GameEngine::applicationInstance);
     return *applicationInstance;
+}
+
+void GameEngine::waitOnRenderApi()
+{
+    renderingApi->waitOnCommands();
 }

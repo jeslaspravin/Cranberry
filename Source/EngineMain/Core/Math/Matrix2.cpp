@@ -163,4 +163,4 @@ void Matrix2::operator+=(const float& scalar)
     value += scalar;
 }
 
-const Matrix2 Matrix2::IDENTITY{ Vector2D::FWD, Vector2D::RIGHT };
+const Matrix2 Matrix2::IDENTITY{ 1,0 ,0,1 };

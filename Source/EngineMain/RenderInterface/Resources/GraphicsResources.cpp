@@ -73,7 +73,7 @@ void ResourceTypesGraph::graphAllChilds(TypeNode* fromNode, std::vector<const Gr
 void ResourceTypesGraph::findChildsOf(const GraphicsResourceType* type, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively /*= false*/)
 {
     // TODO(Jeslas) : Remove this to some sort of latent task at engine startup and make this function const
-    if (insertWaitQueue.size() > 0)
+    if (!insertWaitQueue.empty())
     {
         for (const GraphicsResourceType* resourceType : insertWaitQueue)
         {

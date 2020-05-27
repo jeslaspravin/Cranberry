@@ -453,15 +453,15 @@ Delegate<Params...>::~Delegate()
 template <typename... Params>
 void Delegate<Params...>::invoke(Params... params) const
 {
-    for (const SharedPtr<DelegateInterface>& delegateInterface : boundObjectDelegates)
-    {
-        delegateInterface->invoke(std::forward<Params>(params)...);
-    }
     for (const SharedPtr<DelegateInterface>& delegateInterface : boundStaticDelegates)
     {
         delegateInterface->invoke(std::forward<Params>(params)...);
     }
     for (const SharedPtr<DelegateInterface>& delegateInterface : boundLambdaDelegates)
+    {
+        delegateInterface->invoke(std::forward<Params>(params)...);
+    }
+    for (const SharedPtr<DelegateInterface>& delegateInterface : boundObjectDelegates)
     {
         delegateInterface->invoke(std::forward<Params>(params)...);
     }
@@ -495,15 +495,15 @@ Event<OwnerType, Params...>::~Event()
 template <typename OwnerType, typename... Params>
 void Event<OwnerType, Params...>::invoke(Params... params) const
 {
-    for (const SharedPtr<DelegateInterface>& delegateInterface : boundObjectDelegates)
-    {
-        delegateInterface->invoke(std::forward<Params>(params)...);
-    }
     for (const SharedPtr<DelegateInterface>& delegateInterface : boundStaticDelegates)
     {
         delegateInterface->invoke(std::forward<Params>(params)...);
     }
     for (const SharedPtr<DelegateInterface>& delegateInterface : boundLambdaDelegates)
+    {
+        delegateInterface->invoke(std::forward<Params>(params)...);
+    }
+    for (const SharedPtr<DelegateInterface>& delegateInterface : boundObjectDelegates)
     {
         delegateInterface->invoke(std::forward<Params>(params)...);
     }

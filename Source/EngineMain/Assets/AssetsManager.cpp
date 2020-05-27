@@ -11,7 +11,7 @@ void AssetManager::loadUnderPath(const String& scanPath)
     for (const String& filePath : foundFiles)
     {
         AssetHeader header;
-        header.assetPath = filePath;
+        header.assetPath = filePath.replaceAll("\\","/");
         header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
         loadAsset(header);
     }
@@ -86,13 +86,14 @@ void AssetManager::addPathsToScan(const String& scanPath)
     }
 }
 
-AssetBase* AssetManager::getOrLoadAsset(const String& assetPath)
+AssetBase* AssetManager::getOrLoadAsset(const String& relAssetPath)
 {
-    AssetHeader header;
-    header.assetPath = assetPath;
-    header.type = AssetLoaderLibrary::typeFromAssetPath(assetPath);
-    header.assetName = PlatformFile(assetPath).getFileName();
+    String newRelPath = relAssetPath.replaceAll("\\", "/");
     String extension;
+    AssetHeader header;
+    header.assetPath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(extension), "Assets", newRelPath);
+    header.type = AssetLoaderLibrary::typeFromAssetPath(newRelPath);
+    header.assetName = PlatformFile(header.assetPath).getFileName();
     header.assetName = FileSystemFunctions::stripExtension(header.assetName, extension);
 
     return getOrLoadAsset(header);
@@ -100,17 +101,20 @@ AssetBase* AssetManager::getOrLoadAsset(const String& assetPath)
 
 AssetBase* AssetManager::getOrLoadAsset(const AssetHeader& header)
 {
-    auto headerItr = assetsRegistered.find(header);
+    AssetHeader newHeader = header;
+    newHeader.assetPath = header.assetPath.replaceAll("\\", "/");
+
+    auto headerItr = assetsRegistered.find(newHeader);
     if (headerItr != assetsRegistered.end())
     {
         return headerItr->second;
     }
 
-    std::vector<AssetBase*> assets = loadAsset(header);
+    std::vector<AssetBase*> assets = loadAsset(newHeader);
     AssetBase* returnVal = nullptr; 
     for (AssetBase* asset : assets)
     {
-        if (asset->assetHeader.assetName == header.assetName)
+        if (asset->assetHeader.assetName == newHeader.assetName)
         {
             returnVal = asset;
             break;

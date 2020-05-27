@@ -17,9 +17,13 @@ protected:
     std::vector<GenericAppWindow*> childWindows;
 
     bool bIsWindowed = true;
+    std::map<uint32, LambdaFunction<void>> accumulatedEvents;
+
+    using OnResizeDelegate = Delegate<uint32, uint32>;
 
     SimpleDelegate onWindowActivated;
     SimpleDelegate onWindowDeactived;
+    OnResizeDelegate onResize;
 
 protected:
     virtual void resizeWindow() = 0;
@@ -33,8 +37,8 @@ public:
     void setWindowName(const String& wndName);
     const String& getWindowName() const { return windowName; }
 
-    virtual void createWindow(const GenericAppInstance* appInstance) {};
-    virtual void updateWindow() = 0;
+    virtual void createWindow(const GenericAppInstance* appInstance) = 0;
+    virtual void updateWindow();
     virtual void destroyWindow();
     virtual bool isValidWindow() const = 0;
 };

@@ -25,8 +25,14 @@ int appMain(GenericAppInstance* appInstance)
 
 #include <wtypes.h>
 
+//#define _CRTDBG_MAP_ALLOC
+//#include <cstdlib>
+//#include <crtdbg.h>
+
 int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
+    /*_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);*/
+
     PlatformAppInstance appInstance;
     FileSystemFunctions::applicationDirectory(appInstance.applicationName);
     String extension;

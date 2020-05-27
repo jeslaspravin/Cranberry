@@ -75,11 +75,13 @@ RotationMatrix RotationMatrix::fromX(const Vector3D& x)
     Vector3D normX = x.safeNormalize();
 
     // If X Parallel to Z then consider y right
-    if (Math::isEqual(Math::abs(normX | Vector3D::UP), 1.f))
+    if (Math::isEqual(Math::abs(normX | Vector3D::UP), 1.f, SLIGHTLY_SMALL_EPSILON))
     {
-        return RotationMatrix(Matrix3(normX, Vector3D::RIGHT, normX ^ Vector3D::RIGHT));
+        Vector3D normZ = normX ^ Vector3D::RIGHT;
+        return RotationMatrix(Matrix3(normX, normZ ^ normX, normZ));
     }
-    return RotationMatrix(Matrix3(normX, Vector3D::UP ^ normX, Vector3D::UP));
+    Vector3D normY = Vector3D::UP ^ normX;
+    return RotationMatrix(Matrix3(normX, normY, normX ^ normY));
 }
 
 RotationMatrix RotationMatrix::fromY(const Vector3D& y)
@@ -88,11 +90,13 @@ RotationMatrix RotationMatrix::fromY(const Vector3D& y)
     Vector3D normY = y.safeNormalize();
 
     // If Y Parallel to Z then consider x fwd
-    if (Math::isEqual(Math::abs(normY | Vector3D::UP), 1.f))
+    if (Math::isEqual(Math::abs(normY | Vector3D::UP), 1.f, SLIGHTLY_SMALL_EPSILON))
     {
-        return RotationMatrix(Matrix3(Vector3D::FWD, normY, Vector3D::FWD ^ normY));
+        Vector3D normZ = Vector3D::FWD ^ normY;
+        return RotationMatrix(Matrix3(normY ^ normZ, normY, normZ));
     }
-    return RotationMatrix(Matrix3(normY ^ Vector3D::UP, normY, Vector3D::UP));
+    Vector3D normX = normY ^ Vector3D::UP;
+    return RotationMatrix(Matrix3(normX , normY, normX ^ normY));
 }
 
 RotationMatrix RotationMatrix::fromZ(const Vector3D& z)
@@ -100,11 +104,13 @@ RotationMatrix RotationMatrix::fromZ(const Vector3D& z)
     // Assuming x forward
     Vector3D normZ = z.safeNormalize();
     // If Z Parallel to X then consider y right
-    if (Math::isEqual(Math::abs(normZ | Vector3D::FWD), 1.f))
+    if (Math::isEqual(Math::abs(normZ | Vector3D::FWD), 1.f, SLIGHTLY_SMALL_EPSILON))
     {
-        return RotationMatrix(Matrix3(Vector3D::RIGHT ^ normZ, Vector3D::RIGHT, normZ));
+        Vector3D normX = Vector3D::RIGHT ^ normZ;
+        return RotationMatrix(Matrix3(normX, normZ ^ normX, normZ));
     }
-    return RotationMatrix(Matrix3(Vector3D::FWD, normZ ^ Vector3D::FWD, normZ));
+    Vector3D normY = normZ ^ Vector3D::FWD;
+    return RotationMatrix(Matrix3(normY ^ normZ, normY, normZ));
 }
 
 RotationMatrix RotationMatrix::fromXY(const Vector3D& x, const Vector3D& y)

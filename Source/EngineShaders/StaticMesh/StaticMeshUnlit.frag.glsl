@@ -17,7 +17,7 @@ layout(push_constant) uniform PustConstants
 
 void mainFS()
 {
-    colorAttachment0 = mix(texture(diffuseTexture, inTextureCoord), inVertexColor, pushConsts.vertexDiffuseColorBlend);
+    colorAttachment0 = vec4(mix(texture(diffuseTexture, inTextureCoord).xyz, inVertexColor.xyz, pushConsts.vertexDiffuseColorBlend), 1);
     colorAttachment1 = vec4(inWorldNormal, 1);
-    colorAttachment2 = inWorldPosition.w / 5000.f;
+    colorAttachment2 = inWorldPosition.w;
 }

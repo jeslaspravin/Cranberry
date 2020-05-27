@@ -27,4 +27,5 @@ public:
     IGraphicsInstance* getGraphicsInstance() const;
 
     void enqueueCommand(class IRenderCommand* renderCommand);
+    void waitOnCommands();
 };

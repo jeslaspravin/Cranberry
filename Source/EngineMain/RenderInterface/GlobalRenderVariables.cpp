@@ -3,5 +3,5 @@
 
 namespace GlobalRenderVariables
 {
-    EngineGlobalConfig<uint32> FRAME_BUFFER_SAMPLE_COUNT(EPixelSampleCount::SampleCount8);
+    EngineGlobalConfig<uint32> FRAME_BUFFER_SAMPLE_COUNT(EPixelSampleCount::SampleCount1);
 }

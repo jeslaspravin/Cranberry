@@ -28,4 +28,6 @@ public:
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo
         , const SharedPtr<GraphicsFence>& fence) override;
     void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) override;
+    void waitIdle() override;
+
 };

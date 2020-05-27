@@ -194,8 +194,7 @@ float Vector3D::length() const
 
 float Vector3D::sqrlength() const
 {
-    glm::vec3 sqrVal = Math::exp2(value);
-    return sqrVal.x + sqrVal.y + sqrVal.z;
+    return Math::pow2(value.x) + Math::pow2(value.y) + Math::pow2(value.z);
 }
 
 Vector3D Vector3D::projectTo(const Vector3D& b) const

@@ -195,8 +195,7 @@ float Vector4D::length() const
 
 float Vector4D::sqrlength() const
 {
-    glm::vec4 sqrVal = Math::exp2(value);
-    return sqrVal.x + sqrVal.y + sqrVal.z;
+    return Math::pow2(value.x) + Math::pow2(value.y) + Math::pow2(value.z) + Math::pow2(value.w);
 }
 
 Vector4D Vector4D::projectTo(const Vector4D& b) const

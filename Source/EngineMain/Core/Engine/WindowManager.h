@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include "../Platform/PlatformTypes.h"
 
 class GenericAppWindow;
 class GenericWindowCanvas;
@@ -24,6 +25,7 @@ private:
 
     void activateWindow(GenericAppWindow* window);
     void deactivateWindow(GenericAppWindow* window);
+    void onWindowResize(uint32 width, uint32 height, GenericAppWindow* window);
 public:
 
     GenericAppWindow* getMainWindow() const;
