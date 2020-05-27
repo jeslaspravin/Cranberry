@@ -6,6 +6,7 @@
 #include "Config/EngineGlobalConfigs.h"
 #include "../Input/InputSystem.h"
 #include "../../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../../RenderApi/GBuffersAndTextures.h"
 
 
 GenericAppWindow* WindowManager::getMainWindow() const
@@ -23,6 +24,7 @@ void WindowManager::initMain()
     appMainWindow->setWindowMode(EngineSettings::fullscreenMode.get());
     appMainWindow->onWindowActivated.bindObject(this, &WindowManager::activateWindow, appMainWindow);
     appMainWindow->onWindowDeactived.bindObject(this, &WindowManager::deactivateWindow, appMainWindow);
+    appMainWindow->onResize.bindObject(this, &WindowManager::onWindowResize, appMainWindow);
     appMainWindow->createWindow(::gEngine->getApplicationInstance());
 
     ENQUEUE_COMMAND(MainWindowInit,
@@ -71,11 +73,15 @@ GenericWindowCanvas* WindowManager::getWindowCanvas(GenericAppWindow* window) co
 
 void WindowManager::postInitGraphicCore()
 {
-    for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
-    {
-        // As init might have failed when preparing initial surface
-        windowData.second.windowCanvas->reinitResources();
-    }
+    ENQUEUE_COMMAND(InitWindowCanvas,
+        {
+            for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
+            {
+                // As init might have failed when preparing initial surface
+                windowData.second.windowCanvas->reinitResources();
+            }
+            EngineSettings::surfaceSize.set(Size2D(appMainWindow->windowWidth, appMainWindow->windowHeight));
+        }, this);
 }
 
 void WindowManager::activateWindow(GenericAppWindow* window)
@@ -120,6 +126,25 @@ bool WindowManager::pollWindows()
 const InputSystem* WindowManager::getInputSystem() const
 {
     return inputSystem;
+}
+
+void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow* window)
+{
+    if(window->windowHeight != height || window->windowWidth != width)
+    {
+        ENQUEUE_COMMAND(WindowResize, LAMBDA_BODY
+            (
+                cmdList->waitIdle();
+                window->setWindowSize(width, height, true);
+                if(window == appMainWindow)
+                {
+                    Size2D newSize{ window->windowWidth, window->windowHeight };
+                    GBuffers::onSurfaceResized(newSize);
+                    EngineSettings::surfaceSize.set(newSize);
+                }
+            ), this, window, width, height);
+        //gEngine->waitOnRenderApi();
+    }
 }
 
 const InputSystem* GenericAppInstance::inputSystem() const

@@ -9,7 +9,7 @@
 std::unordered_map<FramebufferFormat, std::vector<Framebuffer*>> GBuffers::gBuffers
 {
     {
-        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32 }), {}
+        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 }), {}
     }
 };
 std::vector<Framebuffer*> GBuffers::swapchainFbs;
@@ -36,55 +36,58 @@ FramebufferFormat::FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frame
 
 void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
 {
-    ENQUEUE_COMMAND(GBufferSampleCountChange, 
+    ENQUEUE_COMMAND(GBufferSampleCountChange,
         {
-            for (auto framebuferPair : gBuffers)
+            cmdList->waitIdle();
+            for (const std::pair<FramebufferFormat, std::vector<Framebuffer*>>& framebuferPair : gBuffers)
             {
-                for (auto* framebufferData : framebuferPair.second)
+                for (Framebuffer* framebufferData : framebuferPair.second)
                 {
-                    for (auto* imageResource : framebufferData->textures)
+                    for (ImageResource* imageResource : framebufferData->textures)
                     {
                         imageResource->setSampleCounts(EPixelSampleCount::Type(newValue));
                         imageResource->reinitResources();
                     }
-                    initializeInternal(framebufferData);
+                    initializeInternal(framebufferData, EngineSettings::screenSize.get());
                 }
             }
         }
     , newValue);
 }
 
-void GBuffers::onScreenResized(Size2D oldSize, Size2D newSize)
+void GBuffers::onScreenResized(Size2D newSize)
 {
     ENQUEUE_COMMAND(GBufferResize,
         {
-            for (auto framebuferPair : gBuffers)
+            cmdList->waitIdle();
+            for (const std::pair<FramebufferFormat, std::vector<Framebuffer*>>& framebuferPair : gBuffers)
             {
-                for (auto* framebufferData : framebuferPair.second)
+                for (Framebuffer* framebufferData : framebuferPair.second)
                 {
-                    for (auto* imageResource : framebufferData->textures)
+                    for (ImageResource* imageResource : framebufferData->textures)
                     {
                         imageResource->setImageSize({ newSize.x, newSize.y, 1 });
                         imageResource->reinitResources();
                     }
-                    initializeInternal(framebufferData);
+                    initializeInternal(framebufferData, newSize);
                 }
             }
         }
     , newSize);
 }
 
-void GBuffers::onSurfaceResized(Size2D oldSize, Size2D newSize)
+void GBuffers::onSurfaceResized(Size2D newSize)
 {
     ENQUEUE_COMMAND(SwapchainResize,
         {
+            cmdList->waitIdle();
             const GenericWindowCanvas * windowCanvas = gEngine->getApplicationInstance()->appWindowManager
                 .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
 
             uint32 swapchainIdx = 0;
             for (Framebuffer* fb : swapchainFbs)
             {
-                initializeSwapchainFb(fb, windowCanvas, swapchainIdx);
+                initializeSwapchainFb(fb, windowCanvas, newSize, swapchainIdx);
                 ++swapchainIdx;
             }
         }
@@ -97,13 +100,11 @@ void GBuffers::initialize()
         .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
 
-    const Size2D initialSize = EngineSettings::screenSize.get();
-    EngineSettings::screenSize.onConfigChanged().bindStatic(&GBuffers::onScreenResized);
-    EngineSettings::surfaceSize.onConfigChanged().bindStatic(&GBuffers::onSurfaceResized);
+    const Size2D& initialSize = EngineSettings::screenSize.get();
     GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);
 
     EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
-    for (auto& framebuferPair : gBuffers)
+    for (std::pair<const FramebufferFormat, std::vector<Framebuffer*>>& framebuferPair : gBuffers)
     {
         framebuferPair.second.clear();
         for (uint32 i = 0; i < swapchainCount; ++i)
@@ -113,7 +114,7 @@ void GBuffers::initialize()
             {
                 continue;
             }
-            for (auto frameBufferFormat : framebuferPair.first.attachments)
+            for (const EPixelDataFormat::Type& frameBufferFormat : framebuferPair.first.attachments)
             {
                 ImageResource* imgResource = new GraphicsRenderTargetResource(frameBufferFormat);
                 imgResource->setImageSize({ initialSize.x, initialSize.y, 1 });
@@ -125,7 +126,7 @@ void GBuffers::initialize()
 
                 framebufferData->textures.push_back(imgResource);
             }
-            initializeInternal(framebufferData);
+            initializeInternal(framebufferData, initialSize);
             framebuferPair.second.push_back(framebufferData);
         }
     }
@@ -133,21 +134,21 @@ void GBuffers::initialize()
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         Framebuffer* fb = createFbInternal();
-        initializeSwapchainFb(fb, windowCanvas, i);
+        initializeSwapchainFb(fb, windowCanvas, EngineSettings::surfaceSize.get(), i);
         swapchainFbs.push_back(fb);
     }
 }
 
 void GBuffers::destroy()
 {
-    for (auto& framebuferPair : gBuffers)
+    for (std::pair<const FramebufferFormat, std::vector<Framebuffer*>>& framebuferPair : gBuffers)
     {
-        for (auto* framebufferData : framebuferPair.second)
+        for (Framebuffer* framebufferData : framebuferPair.second)
         {
-            for (auto* imgResource : framebufferData->textures)
+            for (ImageResource* imageResource : framebufferData->textures)
             {
-                imgResource->release();
-                delete imgResource;
+                imageResource->release();
+                delete imageResource;
             }
             framebufferData->textures.clear();
             delete framebufferData;

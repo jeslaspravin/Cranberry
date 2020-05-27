@@ -6,6 +6,7 @@
 #include "../VulkanGraphicsInstance.h"
 #include "../../Core/Logger/Logger.h"
 #include "Resources/VulkanWindowCanvas.h"
+#include "../../Core/Platform/PlatformAssertionErrors.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -14,7 +15,7 @@
 
 struct VulkanFrameBuffer final : public Framebuffer
 {
-    VkFramebuffer frameBuffer;
+    VkFramebuffer frameBuffer = nullptr;
 
     ~VulkanFrameBuffer();
 };
@@ -31,33 +32,39 @@ Framebuffer* GBuffers::createFbInternal()
     return new VulkanFrameBuffer();
 }
 
-void GBuffers::initializeInternal(Framebuffer* fb)
+void GBuffers::initializeInternal(Framebuffer* fb, const Size2D& frameSize)
 {
+    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
     auto* vulkanFb = static_cast<VulkanFrameBuffer*>(fb);
     VkRenderPass dummyRenderPass = VulkanGraphicsHelper::createDummyRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), fb);
 
     std::vector<VkImageView> imageViews;
     imageViews.reserve(fb->textures.size());
     ImageViewInfo imageViewInfo;
-    for (auto* imgRes : fb->textures)
+    for (ImageResource* imgRes : fb->textures)
     {
         imageViews.push_back(static_cast<VulkanImageResource*>(imgRes)->getImageView(imageViewInfo));
     }
 
     FRAMEBUFFER_CREATE_INFO(fbCreateInfo);
     fbCreateInfo.renderPass = dummyRenderPass;
-    fbCreateInfo.width = EngineSettings::screenSize.get().x;
-    fbCreateInfo.height = EngineSettings::screenSize.get().y;
+    fbCreateInfo.width = frameSize.x;
+    fbCreateInfo.height = frameSize.y;
     fbCreateInfo.layers = 1;
     fbCreateInfo.attachmentCount = uint32(imageViews.size());
     fbCreateInfo.pAttachments = imageViews.data();
 
-    VulkanGraphicsHelper::createFramebuffer(gEngine->getRenderApi()->getGraphicsInstance(), fbCreateInfo, &vulkanFb->frameBuffer);
-    VulkanGraphicsHelper::destroyRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), dummyRenderPass);
+    if (vulkanFb->frameBuffer)
+    {
+        VulkanGraphicsHelper::destroyFramebuffer(gInstance, vulkanFb->frameBuffer);
+    }
+    VulkanGraphicsHelper::createFramebuffer(gInstance, fbCreateInfo, &vulkanFb->frameBuffer);
+    VulkanGraphicsHelper::destroyRenderPass(gInstance, dummyRenderPass);
 }
 
-void GBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, uint32 swapchainIdx)
+void GBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx)
 {
+    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
     const auto* vulkanWindowCanvas = static_cast<const VulkanWindowCanvas*>(canvas);
     ImageResource dummyImageResource(vulkanWindowCanvas->windowCanvasFormat());
 
@@ -71,12 +78,16 @@ void GBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWindowC
     fbCreateInfo.attachmentCount = 1;
     fbCreateInfo.pAttachments = &swapchainImgView;
     fbCreateInfo.renderPass = dummyRenderPass;
-    fbCreateInfo.width = EngineSettings::surfaceSize.get().x;
-    fbCreateInfo.height = EngineSettings::surfaceSize.get().y;
+    fbCreateInfo.width = frameSize.x;
+    fbCreateInfo.height = frameSize.y;
     fbCreateInfo.layers = 1;
 
-    VulkanGraphicsHelper::createFramebuffer(gEngine->getRenderApi()->getGraphicsInstance(), fbCreateInfo, &vulkanFb->frameBuffer);
-    VulkanGraphicsHelper::destroyRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), dummyRenderPass);
+    if (vulkanFb->frameBuffer)
+    {
+        VulkanGraphicsHelper::destroyFramebuffer(gInstance, vulkanFb->frameBuffer);
+    }
+    VulkanGraphicsHelper::createFramebuffer(gInstance, fbCreateInfo, &vulkanFb->frameBuffer);
+    VulkanGraphicsHelper::destroyRenderPass(gInstance, dummyRenderPass);
     vulkanFb->textures.clear();
 }
 
@@ -96,6 +107,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
 
     std::vector<VkAttachmentDescription> renderPassAttachments;
     std::vector<VkAttachmentReference> colorAttachmentRefs;
+    std::vector<VkAttachmentReference> depthAttachmentRef;
 
     renderPassAttachments.reserve((framebuffer->textures.size()));
 
@@ -114,7 +126,12 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
         attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         renderPassAttachments.push_back(attachmentDesc);
-        if (!EPixelDataFormat::isDepthFormat(resource->imageFormat()))
+        if (EPixelDataFormat::isDepthFormat(resource->imageFormat()))
+        {
+            fatalAssert(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
+            depthAttachmentRef.push_back({ attachmentIdx , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
+        }
+        else
         {
             colorAttachmentRefs.push_back({ attachmentIdx , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
         }
@@ -131,7 +148,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
     dummySubpass.pInputAttachments = nullptr;
     dummySubpass.preserveAttachmentCount = 0;
     dummySubpass.pPreserveAttachments = nullptr;
-    dummySubpass.pDepthStencilAttachment = nullptr;
+    dummySubpass.pDepthStencilAttachment = depthAttachmentRef.size() != 0 ? &depthAttachmentRef[0] : nullptr;
 
     RENDERPASS_CREATE_INFO(renderPassCreateInfo);
     renderPassCreateInfo.attachmentCount = uint32(renderPassAttachments.size());

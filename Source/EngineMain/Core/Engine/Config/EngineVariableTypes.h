@@ -23,7 +23,7 @@ public:
     EngineVar() = default;
     EngineVar(const VarType& defaultVal) : variable(defaultVal){}
 
-    VarType get() const
+    const VarType& get() const
     {
         return variable;
     }

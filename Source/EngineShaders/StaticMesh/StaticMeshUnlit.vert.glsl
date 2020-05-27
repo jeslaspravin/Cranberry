@@ -21,8 +21,8 @@ layout(set = 1, binding = 0) uniform InstanceData
 void mainVS()
 {
     vec4 worldPos = instanceData.model * vec4(position.xyz, 1);
-    vec4 clipPos = viewData.projection * viewData.view * worldPos;
-    outWorldPosition = vec4(worldPos.xyz, clipPos.w);
+    vec4 clipPos = viewData.projection * viewData.invView * worldPos;
+    outWorldPosition = vec4(worldPos.xyz, clipPos.z);
     gl_Position = clipPos;
     outLocalPosition = position.xyz;
     outWorldNormal = (transpose(instanceData.invModel) * vec4(normal.xyz, 1)).xyz;

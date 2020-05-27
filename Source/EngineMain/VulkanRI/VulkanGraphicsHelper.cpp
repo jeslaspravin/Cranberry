@@ -91,30 +91,26 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
     }
 
     /* Updating other necessary values */
-    VkExtent2D surfaceSize = device->swapchainCapabilities.currentExtent;
+    VkSurfaceCapabilitiesKHR swapchainCapabilities;
+    Vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->physicalDevice, swapchainCreateInfo.surface, &swapchainCapabilities);
+    VkExtent2D surfaceSize = swapchainCapabilities.currentExtent;
     if (surfaceSize.height == 0xFFFFFFFF
         || surfaceSize.width == 0xFFFFFFFF)
     {
-        surfaceSize.height = Math::clamp<uint32>(EngineSettings::screenSize.get().x, device->swapchainCapabilities.minImageExtent.height,
-            device->swapchainCapabilities.maxImageExtent.height);
-        surfaceSize.width = Math::clamp<uint32>(EngineSettings::screenSize.get().y, device->swapchainCapabilities.minImageExtent.width,
-            device->swapchainCapabilities.maxImageExtent.width);
+        surfaceSize.height = Math::clamp<uint32>(EngineSettings::screenSize.get().x, swapchainCapabilities.minImageExtent.height,
+            swapchainCapabilities.maxImageExtent.height);
+        surfaceSize.width = Math::clamp<uint32>(EngineSettings::screenSize.get().y, swapchainCapabilities.minImageExtent.width,
+            swapchainCapabilities.maxImageExtent.width);
         EngineSettings::screenSize.set(Size2D(surfaceSize.width, surfaceSize.height));
     }
-    else
-    {
-        // surfaceSize will always give window's actual size in machine so setting it back to window class
-        appWindow->setWindowSize(surfaceSize.width, surfaceSize.height, false);
-    }
-    EngineSettings::surfaceSize.set(Size2D(surfaceSize.width, surfaceSize.height));
     swapchainCreateInfo.imageExtent = surfaceSize;
-
     VkSwapchainKHR swapchain;
     device->vkCreateSwapchainKHR(device->logicalDevice, &swapchainCreateInfo, nullptr, &swapchain);
 
     if (swapchainInfo)
     {
         swapchainInfo->format = device->swapchainFormat.format;
+        swapchainInfo->size = Size2D(surfaceSize.width, surfaceSize.height);
     }
 
     return swapchain;
@@ -192,8 +188,8 @@ uint32 VulkanGraphicsHelper::getNextSwapchainImage(class IGraphicsInstance* grap
     return imageIndex;
 }
 
-void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstance, std::vector<GenericWindowCanvas*>* canvases
-    , std::vector<uint32>* imageIndex, std::vector<SharedPtr<class GraphicsSemaphore>>* waitOnSemaphores)
+void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstance, const std::vector<class GenericWindowCanvas*>* canvases
+    , const std::vector<uint32>* imageIndex, const std::vector<SharedPtr<class GraphicsSemaphore>>* waitOnSemaphores)
 {
     if (!canvases || !imageIndex || canvases->size() != imageIndex->size())
         return;

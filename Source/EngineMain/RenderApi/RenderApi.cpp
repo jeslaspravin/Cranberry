@@ -35,9 +35,9 @@ void RenderApi::initialize()
         {
             gEngine->appInstance().appWindowManager.initMain();
             graphicsInstance->loadSurfaceDependents();
+            graphicsInstance->initializeCmds(renderCmds);
             gEngine->appInstance().appWindowManager.postInitGraphicCore();
             GBuffers::initialize();
-            graphicsInstance->initializeCmds(renderCmds);
             initAllShaders();
         }
     , this);
@@ -46,7 +46,7 @@ void RenderApi::initialize()
 void RenderApi::postInit()
 {
     // Process post init pre-frame render commands
-    renderFrame();
+    waitOnCommands();
 }
 
 void RenderApi::destroy()
@@ -60,7 +60,7 @@ void RenderApi::destroy()
         , this);
 
     // Executing commands one last time
-    renderFrame();
+    waitOnCommands();
     delete renderCmds;
     renderCmds = nullptr;
 
@@ -100,6 +100,11 @@ void RenderApi::enqueueCommand(class IRenderCommand* renderCommand)
     {
         commands.push(renderCommand);
     }
+}
+
+void RenderApi::waitOnCommands()
+{
+    renderFrame();
 }
 
 void GameEngine::issueRenderCommand(class IRenderCommand* renderCommand)

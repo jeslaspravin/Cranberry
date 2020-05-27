@@ -21,8 +21,8 @@ public:
     static void destroySwapchain(class IGraphicsInstance* graphicsInstance,VkSwapchainKHR swapchain);
     static uint32 getNextSwapchainImage(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain,
         SharedPtr<GraphicsSemaphore>* waitOnSemaphore, SharedPtr<GraphicsFence>* waitOnFence = nullptr);
-    static void presentImage(class IGraphicsInstance* graphicsInstance, std::vector<GenericWindowCanvas*>* canvases,
-        std::vector<uint32>* imageIndex, std::vector<SharedPtr<class GraphicsSemaphore>>* waitOnSemaphores);
+    static void presentImage(class IGraphicsInstance* graphicsInstance, const std::vector<class GenericWindowCanvas*>* canvases,
+        const std::vector<uint32>* imageIndex, const std::vector<SharedPtr<class GraphicsSemaphore>>* waitOnSemaphores);
 
 
     static SharedPtr<class GraphicsSemaphore> createSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName);

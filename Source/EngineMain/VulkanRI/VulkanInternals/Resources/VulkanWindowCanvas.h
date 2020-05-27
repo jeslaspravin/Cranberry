@@ -3,12 +3,14 @@
 #include "../VulkanMacros.h"
 #include "../../Resources/IVulkanResources.h"
 #include "../../../Core/String/String.h"
+#include "../../../Core/Math/CoreMathTypedefs.h"
 
 #include <vector>
 
 struct SwapchainInfo
 {
     VkFormat format;
+    Size2D size;
 };
 
 class VulkanWindowCanvas final : public GenericWindowCanvas,public IVulkanResources

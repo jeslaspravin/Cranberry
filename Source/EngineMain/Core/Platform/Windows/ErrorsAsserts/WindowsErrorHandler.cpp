@@ -99,7 +99,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
     symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
     SymSetOptions(symOptions);
 
-    auto modulesDataPairs = ModuleManager::get()->getAllModuleData();
+    std::vector<std::pair<LibPointerPtr, ModuleData>> modulesDataPairs = ModuleManager::get()->getAllModuleData();
 
     IMAGE_NT_HEADERS* imageHeader = ImageNtHeader(modulesDataPairs[0].second.basePtr);
     dword imageType = imageHeader->FileHeader.Machine;
@@ -130,7 +130,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
             uint64 moduleBase = SymGetModuleBase64(processHandle, frame.AddrPC.Offset);
             SymbolInfo symInfo = SymbolInfo(processHandle, frame.AddrPC.Offset, symOffset);
             String moduleName;
-            for (auto modulePair : modulesDataPairs)
+            for (const std::pair<LibPointerPtr, ModuleData>& modulePair : modulesDataPairs)
             {
                 if (moduleBase == (uint64)modulePair.second.basePtr)
                 {
@@ -150,8 +150,8 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
             stackTrace << "No symbols found";
         }
 
-        if (!StackWalk64(imageType, processHandle, threadHandle, &frame, context, NULL, SymFunctionTableAccess64,
-            SymGetModuleBase64, NULL) || frame.AddrReturn.Offset == 0)
+        if (!StackWalk64(imageType, processHandle, threadHandle, &frame, context, nullptr, SymFunctionTableAccess64,
+            SymGetModuleBase64, nullptr) || frame.AddrReturn.Offset == 0)
         {
             break;
         }

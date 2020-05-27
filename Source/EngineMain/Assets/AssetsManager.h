@@ -27,7 +27,7 @@ public:
 
     // Paths are relative to application path
     void addPathsToScan(const String& scanPath);
-
-    AssetBase* getOrLoadAsset(const String& assetPath);
+    // Relative to application assets root path
+    AssetBase* getOrLoadAsset(const String& relAssetPath);
     AssetBase* getOrLoadAsset(const AssetHeader& header);
 };

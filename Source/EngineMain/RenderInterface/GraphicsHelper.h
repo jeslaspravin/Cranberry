@@ -57,8 +57,8 @@ public:
         HelperType::waitFences(graphicsInstance, fences,waitAll);
     }
 
-    static void presentImage(class IGraphicsInstance* graphicsInstance, std::vector<class GenericWindowCanvas*>* canvases,
-        std::vector<uint32>* imageIndex, std::vector<SharedPtr<class GraphicsSemaphore>>* waitOnSemaphores)
+    static void presentImage(class IGraphicsInstance* graphicsInstance, const std::vector<class GenericWindowCanvas*>* canvases,
+        const std::vector<uint32>* imageIndex, const std::vector<SharedPtr<class GraphicsSemaphore>>* waitOnSemaphores)
     {
         HelperType::presentImage(graphicsInstance, canvases,imageIndex,waitOnSemaphores);
     }

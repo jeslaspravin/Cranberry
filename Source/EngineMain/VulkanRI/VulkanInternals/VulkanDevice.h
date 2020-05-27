@@ -63,7 +63,6 @@ private:
 
     // Swap chain and surface    
     VkPresentModeKHR globalPresentMode;
-    VkSurfaceCapabilitiesKHR swapchainCapabilities;
     VkSurfaceFormatKHR swapchainFormat;
     uint32 choosenImageCount = 1;
     VkImageUsageFlags swapchainImgUsage;

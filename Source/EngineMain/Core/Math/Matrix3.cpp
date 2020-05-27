@@ -169,4 +169,4 @@ void Matrix3::operator+=(const float& scalar)
     value += scalar;
 }
 
-const Matrix3 Matrix3::IDENTITY{ Vector3D::FWD, Vector3D::RIGHT, Vector3D::UP };
+const Matrix3 Matrix3::IDENTITY{ Vector3D(1, 0), Vector3D(0, 1), Vector3D(0,0,1) };

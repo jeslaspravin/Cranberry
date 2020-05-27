@@ -421,7 +421,7 @@ void fillBufferFields(ReflectBufferShaderField& shaderBufferField, const SPIRV_C
     shaderBufferField.stride = shaderBufferField.stride > newStride? shaderBufferField.stride : newStride;
     for (const SPIRV_CROSS_NAMESPACE::TypeID& memberTypeID : structType.member_types)
     {
-        const auto& memberType = compiledData->get_type(memberTypeID);
+        const SPIRV_CROSS_NAMESPACE::SPIRType& memberType = compiledData->get_type(memberTypeID);
         if (memberType.basetype == SPIRV_CROSS_NAMESPACE::SPIRType::BaseType::Struct)
         {
             ReflectBufferStructEntry innerStruct;
@@ -1237,7 +1237,7 @@ void PipelineShaderStageProcessor::processPushConstants(const std::vector<std::m
 
         if (resources.push_constant_buffers.size() == 1)
         {
-            auto& resource = resources.push_constant_buffers[0];
+            const Resource& resource = resources.push_constant_buffers[0];
             reflectedData.pushConstants.attributeName = shaderStage->compiledData->get_name(resource.id);
             reflectedData.pushConstants.data.stagesUsed |= ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
 

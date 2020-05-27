@@ -26,12 +26,15 @@ public:
     typedef unsigned long dword;
 
 
-    typedef union _uint64 {
-        struct {
+    typedef union _uint64
+    {
+        struct 
+        {
             dword lowPart;
             dword highPart;
         };
-        struct {
+        struct
+        {
             dword lowPart;
             dword highPart;
         } u;

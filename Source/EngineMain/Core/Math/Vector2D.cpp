@@ -45,12 +45,12 @@ float& Vector2D::x()
 
 float Vector2D::x() const
 {
-    return value.y;
+    return value.x;
 }
 
 float& Vector2D::y()
 {
-    return value.x;
+    return value.y;
 }
 
 float Vector2D::y() const
@@ -180,8 +180,7 @@ float Vector2D::length() const
 
 float Vector2D::sqrlength() const
 {
-    glm::vec2 sqrVal = Math::exp2(value);
-    return sqrVal.x + sqrVal.y;
+    return Math::pow2(value.x) + Math::pow2(value.y);
 }
 
 Vector2D Vector2D::projectTo(const Vector2D& b) const

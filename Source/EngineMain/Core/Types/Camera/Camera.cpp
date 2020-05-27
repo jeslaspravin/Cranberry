@@ -3,6 +3,8 @@
 #include "../Transform3D.h"
 #include "../../Math/RotationMatrix.h"
 #include "../../Math/Math.h"
+#include "../../../RenderInterface/GlobalRenderVariables.h"
+#include "../../Math/Vector2D.h"
 
 const float Camera::MAX_FOV(175.f);
 const float Camera::MIN_NEAR_FAR_DIFF(1.f);
@@ -137,6 +139,7 @@ Matrix4 Camera::viewMatrix() const
     viewMat[0] = transform.getTransformMatrix()[1];
     viewMat[1] = transform.getTransformMatrix()[2];
     viewMat[2] = transform.getTransformMatrix()[0];
+    viewMat[3] = transform.getTransformMatrix()[3];
 
     return viewMat;
 }
