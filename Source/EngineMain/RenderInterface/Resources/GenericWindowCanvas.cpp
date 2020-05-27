@@ -1,5 +1,6 @@
 #include "GenericWindowCanvas.h"
 #include "../../Core/Platform/GenericAppWindow.h"
+#include "../../Core/Math/CoreMathTypedefs.h"
 
 DEFINE_GRAPHICS_RESOURCE(GenericWindowCanvas)
 

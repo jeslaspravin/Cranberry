@@ -19,6 +19,7 @@ public:
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo
         , const SharedPtr<GraphicsFence>& fence) override;
     void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) override;
+    void waitIdle() override;
 };
 
 void RenderCommandList::setup(IRenderCommandList* commandList)
@@ -69,6 +70,11 @@ void RenderCommandList::submitWaitCmd(EQueuePriority::Enum priority
     , const CommandSubmitInfo& submitInfo)
 {
     cmdList->submitWaitCmd(priority, submitInfo);
+}
+
+void RenderCommandList::waitIdle()
+{
+    cmdList->waitIdle();
 }
 
 IRenderCommandList* IRenderCommandList::genericInstance()

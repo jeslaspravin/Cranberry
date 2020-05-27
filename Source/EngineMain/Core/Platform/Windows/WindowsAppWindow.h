@@ -19,6 +19,8 @@ public:
     HWND getWindowHandle() const { return windowsHandle; }
     void activateWindow() const;
     void deactivateWindow() const;
+    void pushEvent(uint32 eventType, LambdaFunction<void> function);
+    void windowResizing(uint32 width, uint32 height);
 };
 
 namespace GPlatformInstances {

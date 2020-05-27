@@ -28,6 +28,15 @@ void GenericAppWindow::setWindowName(const String& wndName)
     windowName = wndName;
 }
 
+void GenericAppWindow::updateWindow()
+{
+    for (const std::pair<uint32, LambdaFunction<void>>& eventFunc : accumulatedEvents)
+    {
+        eventFunc.second();
+    }
+    accumulatedEvents.clear();
+}
+
 void GenericAppWindow::destroyWindow()
 {
     for (GenericAppWindow* child : childWindows)

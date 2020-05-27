@@ -3,6 +3,8 @@
 #include "PlatformIndependentGraphicsTypes.h"
 #include "../Core/Platform/PlatformTypes.h"
 
+class Vector2D;
+
 namespace GlobalRenderVariables
 {
     extern GraphicsDeviceConstant<bool> ENABLE_ANISOTROPY;

@@ -275,4 +275,5 @@ namespace EShaderStage
     }
 #undef SHADER_STAGE_TO_API_PAIR
 }
+
 #endif//RENDERAPI_VULKAN

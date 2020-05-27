@@ -6,6 +6,7 @@
 #include "../../Core/Math/Vector3D.h"
 #include "../../Core/Math/Vector2D.h"
 #include "../../Core/Math/Math.h"
+#include "../../Core/Platform/LFS/PlatformLFS.h"
 
 #include <unordered_map>
 #include <set>
@@ -53,25 +54,12 @@ bool hasSmoothedNormals(const tinyobj::shape_t& mesh)
 
 void fillVertexInfo(StaticMeshVertex& vertexData, const tinyobj::attrib_t& attrib, const tinyobj::index_t& index)
 {
-    vertexData.position = Vector4D(attrib.vertices[index.vertex_index * 3], -attrib.vertices[index.vertex_index * 3 + 1]
+    vertexData.position = Vector4D(attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1]
         , attrib.vertices[index.vertex_index * 3 + 2], attrib.texcoords[index.texcoord_index * 2 + 0]);
-    vertexData.normal = Vector4D(attrib.normals[index.normal_index * 3], -attrib.normals[index.normal_index * 3 + 1]
+    vertexData.normal = Vector4D(attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1]
         , attrib.normals[index.normal_index * 3 + 2], attrib.texcoords[index.texcoord_index * 2 + 1]);
-    vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3], -attrib.colors[index.vertex_index * 3 + 1]
+    vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1]
         , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
-}
-
-void StaticMeshLoader::makeCW(uint32& index0, uint32& index1, uint32& index2, const std::vector<StaticMeshVertex>& verticesData) const
-{
-    Vector2D dir1(verticesData[index1].position.x() - verticesData[index0].position.x(), verticesData[index1].position.y() - verticesData[index0].position.y());
-    Vector2D dir2(verticesData[index2].position.x() - verticesData[index0].position.x(), verticesData[index2].position.y() - verticesData[index0].position.y());
-
-    if ((dir1 ^ dir2) < 0)
-    {
-        uint32 temp = index0;
-        index0 = index2;
-        index2 = temp;
-    }
 }
 
 Vector3D StaticMeshLoader::getFaceNormal(const uint32& index0, const uint32& index1, const uint32& index2, const std::vector<StaticMeshVertex>& verticesData) const
@@ -109,9 +97,12 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> meshes;
+    std::vector<tinyobj::material_t> materials;
+
     String warning("");
     String error("");
-    bIsSuccessful = tinyobj::LoadObj(&attrib, &meshes, nullptr, &warning, &error, assetPath.getChar());
+    bIsSuccessful = tinyobj::LoadObj(&attrib, &meshes, &materials, &warning, &error, assetPath.getChar()
+        , PlatformFile(assetPath).getHostDirectory().getChar());
     if (!warning.empty())
     {
         Logger::warn("StaticMeshLoader", "Tiny obj loader %s", warning.getChar());
@@ -202,7 +193,7 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
                     }
                 }
 
-                makeCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
+                //makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
 
                 meshLoaderData.indices[faceIdx * 3 + 0] = newVertIdx0;
                 meshLoaderData.indices[faceIdx * 3 + 1] = newVertIdx1;
@@ -287,7 +278,7 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
             {
                 std::vector<std::set<uint32>> faceGroups;
 
-                for (auto adjacentFaces : vertexFaceAdjacency[vertIdx])
+                for (const std::pair<uint32,std::vector<uint32>>& adjacentFaces : vertexFaceAdjacency[vertIdx])
                 {
                     float dotVal = 1;
                     bool isSameSmoothing = true;
@@ -427,7 +418,7 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
             meshLoaderData.indices.reserve(faceCount * 3);
             meshLoaderData.meshBatches.clear();
             meshLoaderData.meshBatches.reserve(materialIdToIndices.size());
-            for (auto matIdIndices : materialIdToIndices)
+            for (const std::pair<uint32, std::vector<uint32>>& matIdIndices : materialIdToIndices)
             {
                 StaticMeshVertexView vertexBatchView;
                 vertexBatchView.startIndex = uint32(meshLoaderData.indices.size());
@@ -435,6 +426,13 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
                 meshLoaderData.indices.insert(meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
                 meshLoaderData.meshBatches.push_back(vertexBatchView);
             }
+        }
+        else
+        {
+            StaticMeshVertexView vertexBatchView;
+            vertexBatchView.startIndex = 0;
+            vertexBatchView.numOfIndices = uint32(meshLoaderData.indices.size());
+            meshLoaderData.meshBatches.push_back(vertexBatchView);
         }
         
         // Normalizing all the vertex normals
@@ -445,12 +443,12 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
     }
 }
 
-bool StaticMeshLoader::fillAssetInformation(std::vector<StaticMeshAsset*>& assets) const
+bool StaticMeshLoader::fillAssetInformation(const std::vector<StaticMeshAsset*>& assets) const
 {
     if (bIsSuccessful)
     {
         uint32 idx = 0;
-        for (auto meshDataPair : loadedMeshes)
+        for (const std::pair<String, MeshLoaderData>& meshDataPair : loadedMeshes)
         {
             StaticMeshAsset* staticMesh = assets[idx];
             staticMesh->setAssetName(meshDataPair.first);

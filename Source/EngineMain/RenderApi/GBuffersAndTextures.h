@@ -20,7 +20,7 @@ struct std::hash<FramebufferFormat> {
 
     _NODISCARD size_t operator()(const FramebufferFormat& keyval) const noexcept {
         size_t hashVal = std::hash<size_t>{}(keyval.attachments.size());
-        for (auto format : keyval.attachments)
+        for (const EPixelDataFormat::Type& format : keyval.attachments)
         {
             HashUtility::hashCombine(hashVal, format);
         }
@@ -43,15 +43,16 @@ private:
     static std::vector<Framebuffer*> swapchainFbs;
 
     static Framebuffer* createFbInternal();
-    static void initializeInternal(Framebuffer* fb);
-    static void initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, uint32 swapchainIdx);
+    static void initializeInternal(Framebuffer* fb, const Size2D& frameSize);
+    static void initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx);
     static void onSampleCountChanged(uint32 oldValue, uint32 newValue);
-    static void onScreenResized(Size2D oldSize, Size2D newSize);
-    static void onSurfaceResized(Size2D oldSize, Size2D newSize);
 public:
     static void initialize();
     static void destroy();
 
     static Framebuffer* getFramebuffer(const FramebufferFormat& framebufferFormat, uint32 frameIdx);
     static Framebuffer* getSwapchainFramebuffer(uint32 frameIdx);
+
+    static void onScreenResized(Size2D newSize);
+    static void onSurfaceResized(Size2D newSize);
 };

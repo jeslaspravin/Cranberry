@@ -13,6 +13,7 @@
 #include <sstream>
 #include <set>
 
+#if RENDERAPI_VULKAN
 namespace GlobalRenderVariables
 {
     GraphicsDeviceConstant<bool> ENABLE_ANISOTROPY;
@@ -25,6 +26,7 @@ namespace GlobalRenderVariables
 
     GraphicsDeviceConstant<uint64> MAX_SYNC_RES_WAIT_TIME(500000000);/*500ms*/
 }
+#endif
 
 void VulkanDevice::markEnabledFeatures()
 {
@@ -44,6 +46,7 @@ void VulkanDevice::markGlobalConstants()
         GlobalRenderVariables::ENABLE_ANISOTROPY.set(false);
         GlobalRenderVariables::MAX_ANISOTROPY.set(1);
     }
+
     GlobalRenderVariables::MAX_TIMELINE_OFFSET.set(timelineSemaphoreProps.maxTimelineSemaphoreValueDifference);
     GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.set(timelineSemaphoreFeatures.timelineSemaphore == VK_TRUE ? true : false);
 }
@@ -240,6 +243,7 @@ void VulkanDevice::cacheGlobalSurfaceProperties()
     const VulkanWindowCanvas* canvas = static_cast<const VulkanWindowCanvas*>(gEngine->getApplicationInstance()
         ->appWindowManager.getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow()));
 
+    VkSurfaceCapabilitiesKHR swapchainCapabilities;
     Vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, canvas->surface(), &swapchainCapabilities);
 
     choosenImageCount = swapchainCapabilities.minImageCount + 1;

@@ -102,7 +102,7 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyData>& batchCopi
     std::map<VulkanBufferResource*, std::pair<VulkanBufferResource*, std::vector<const BatchCopyData*>>> dstToStagingBufferMap;
     
     // Filling per buffer copy region data and staging data
-    for (const auto& copyData : batchCopies)
+    for (const BatchCopyData& copyData : batchCopies)
     {
         auto* vulkanDst = static_cast<VulkanBufferResource*>(copyData.dst);
         if (vulkanDst->isStagingResource())
@@ -153,7 +153,7 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyData>& batchCopi
     for (const auto& dstToStagingPair : dstToStagingBufferMap)
     {
         std::vector<VkBufferCopy> copyRegions;
-        for (const auto& copyData : dstToStagingPair.second.second)
+        for (const BatchCopyData* const& copyData : dstToStagingPair.second.second)
         {
             copyRegions.push_back({ copyData->dstOffset, copyData->dstOffset, copyData->size });
         }
@@ -212,4 +212,9 @@ void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority
     cmdBufferManager->submitCmd(priority, submitInfo, fence.get());
     fence->waitForSignal();
     fence->release();
+}
+
+void VulkanCommandList::waitIdle()
+{
+    vDevice->vkDeviceWaitIdle(VulkanGraphicsHelper::getDevice(vDevice));
 }

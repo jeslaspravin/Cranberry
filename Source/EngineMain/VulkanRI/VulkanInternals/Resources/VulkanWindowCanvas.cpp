@@ -32,6 +32,8 @@ void VulkanWindowCanvas::init()
 void VulkanWindowCanvas::reinitResources()
 {
     BaseType::reinitResources();
+    SwapchainInfo currentInfo = swapchainInfo;
+
     VkSwapchainKHR nextSwapchain = VulkanGraphicsHelper::createSwapchain(gEngine->getRenderApi()->getGraphicsInstance(),
         ownerWindow, &swapchainInfo);
     IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
@@ -54,6 +56,7 @@ void VulkanWindowCanvas::reinitResources()
         {
             semaphores[i]->release();
             fences[i]->release();
+            VulkanGraphicsHelper::destroyImageView(gInstance, swapchainImageViews[i]);
         }
     }
     swapchainPtr = nextSwapchain;
@@ -76,17 +79,19 @@ void VulkanWindowCanvas::reinitResources()
                 (windowName + "ImageView" + indexString), VK_OBJECT_TYPE_IMAGE_VIEW);
         }
     }
+
+    ownerWindow->setWindowSize(swapchainInfo.size.x, swapchainInfo.size.y, false);
 }
 
 void VulkanWindowCanvas::release()
 {
     BaseType::release();
-    IGraphicsInstance* graphicsInst = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
     for (int32 i = 0; i < swapchainImages.size(); ++i)
     {
         semaphores[i]->release();
         fences[i]->release();
-        VulkanGraphicsHelper::destroyImageView(graphicsInst, swapchainImageViews[i]);
+        VulkanGraphicsHelper::destroyImageView(gInstance, swapchainImageViews[i]);
     }
     semaphores.clear();
     fences.clear();
@@ -94,11 +99,11 @@ void VulkanWindowCanvas::release()
 
     if (swapchainPtr || swapchainPtr != VK_NULL_HANDLE)
     {
-        VulkanGraphicsHelper::destroySwapchain(graphicsInst, swapchainPtr);
+        VulkanGraphicsHelper::destroySwapchain(gInstance, swapchainPtr);
     }
     swapchainPtr = nullptr;
 
-    Vk::vkDestroySurfaceKHR(VulkanGraphicsHelper::getInstance(graphicsInst),surfacePtr, nullptr);
+    Vk::vkDestroySurfaceKHR(VulkanGraphicsHelper::getInstance(gInstance),surfacePtr, nullptr);
     surfacePtr = nullptr;
 }
 

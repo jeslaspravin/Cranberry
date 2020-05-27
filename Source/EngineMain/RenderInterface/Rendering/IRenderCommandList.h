@@ -17,6 +17,7 @@ struct CommandSubmitInfo;
 class IRenderCommand
 {
 public:
+    virtual ~IRenderCommand() = default;
     virtual void execute(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance) = 0;
 };
 
@@ -83,6 +84,9 @@ public:
     virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo
         , const SharedPtr<GraphicsFence>& fence) = 0;
     virtual void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) = 0;
+
+    // Waits until gpu is idle
+    virtual void waitIdle() = 0;
 };
 
 template<typename BufferDataType>

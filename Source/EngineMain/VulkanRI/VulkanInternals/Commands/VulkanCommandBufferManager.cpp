@@ -90,9 +90,8 @@ void VulkanCommandPool::reinitResources()
         Logger::error("VulkanCommandPool", "%s() : Command pool information is invalid", __func__);
         return;
     }
-    BaseType::reinitResources();
-
     release();
+    BaseType::reinitResources();
 
     CREATE_COMMAND_POOL_INFO(commandPoolCreateInfo);
     commandPoolCreateInfo.queueFamilyIndex = cmdPoolInfo.vulkanQueueIndex;
@@ -201,7 +200,7 @@ VulkanCmdBufferManager::VulkanCmdBufferManager(class VulkanDevice* vulkanDevice)
 
 VulkanCmdBufferManager::~VulkanCmdBufferManager()
 {
-    for (auto& poolPair : pools)
+    for (std::pair<const EQueueFunction, VulkanCommandPool>& poolPair : pools)
     {
         poolPair.second.release();
     }
@@ -416,7 +415,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
         for (int32 i = 0; i < commands[cmdSubmitIdx].cmdBuffers.size(); ++i)
         {
             const auto* vCmdBuffer = static_cast<const VulkanCommandBuffer*>(commands[cmdSubmitIdx].cmdBuffers[i]);
-            auto& cmdPool = getPool(vCmdBuffer->fromQueue);
+            VulkanCommandPool& cmdPool = getPool(vCmdBuffer->fromQueue);
             cmdBuffers[i] = vCmdBuffer->cmdBuffer;
             if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
             {
@@ -455,9 +454,9 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
         ? nullptr : static_cast<VulkanFence*>(cmdsCompleteFence)->fence) == VK_SUCCESS
         , "Failed submitting commands to queue");
 
-    for (auto& command : commands)
+    for (const CommandSubmitInfo& command : commands)
     {
-        for (auto& cmdBuffer : command.cmdBuffers)
+        for (const GraphicsResource* cmdBuffer : command.cmdBuffers)
         {
             commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
         }
@@ -516,7 +515,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
         ? nullptr : static_cast<VulkanFence*>(cmdsCompleteFence)->fence) == VK_SUCCESS
         , "Failed submitting command to queue");
 
-    for (auto& cmdBuffer : command.cmdBuffers)
+    for (const GraphicsResource* cmdBuffer : command.cmdBuffers)
     {
         commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
     }
