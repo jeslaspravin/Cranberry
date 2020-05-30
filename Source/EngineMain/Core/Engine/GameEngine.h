@@ -55,7 +55,6 @@ public:
 
     const RenderApi* getRenderApi() const { return renderingApi.get(); }
     void issueRenderCommand(class IRenderCommand* renderCommand);
-    void waitOnRenderApi();
 };
 
 class GameEngineWrapper final

@@ -1,5 +1,6 @@
 #pragma once
 #include "TexturesBase.h"
+#include "../Colors.h"
 
 struct Texture2DCreateParams : public TextureBaseCreateParams
 {
@@ -8,9 +9,11 @@ struct Texture2DCreateParams : public TextureBaseCreateParams
     // If greater than acceptable it will be clamped, if 0 mips get auto calculated from size
     uint32 mipCount = 0;
     // Must be Size == textureSize.x * textureSize.y 
-    std::vector<class Color> colorData;
+    std::vector<Color> colorData;
     // whether colorData is encoded in sRGB or needs to be stored in sRGB
     bool bIsSrgb;
+    // Color that will be used if any pixel data is not available in color collection
+    Color defaultColor = ColorConst::BLACK;
 };
 
 // Texture 2Ds are texture that will be static and gets created from certain data
@@ -20,7 +23,7 @@ public:
     std::vector<class Color> rawData;
 public:
     uint32 getMipCount() const;
-    void setData(const std::vector<class Color>& newData,bool bIsSrgb);
+    void setData(const std::vector<class Color>& newData, const Color& defaultColor,bool bIsSrgb);
 
     static Texture2D* createTexture(const Texture2DCreateParams& createParams);
     static void destroyTexture(Texture2D* texture2D);
