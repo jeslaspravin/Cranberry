@@ -19,7 +19,11 @@ public:
 
     void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) override;
     void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) override;
-    void copyToBuffer(const std::vector<BatchCopyData>& batchCopies) override;
+    void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) override;
+
+    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData) override;
+    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo) override;
+    void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo) override;
 
     // Reusable here mean rerecord able command buffer
     const GraphicsResource* startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable) override;
@@ -29,5 +33,4 @@ public:
         , const SharedPtr<GraphicsFence>& fence) override;
     void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) override;
     void waitIdle() override;
-
 };

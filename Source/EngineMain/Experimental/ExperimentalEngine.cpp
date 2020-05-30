@@ -13,20 +13,54 @@
 #include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "../Core/Platform/PlatformAssertionErrors.h"
 #include "../VulkanRI/Resources/VulkanShaderResources.h"
-#include "Shaders/TriangleShader.h"
-#include "../RenderInterface/Shaders/DrawQuadFromInputAttachment.h"
+#include "../Assets/Asset/StaticMeshAsset.h"
+#include "../RenderInterface/Shaders/StaticMesh/StaticMeshUnlit.h"
+#include "../RenderInterface/Shaders/DrawQuadFromTexture.h"
+#include "../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../Core/Types/Textures/RenderTargetTextures.h"
 #include "../Core/Types/Textures/Texture2D.h"
+#include "../VulkanRI/VulkanInternals/VulkanDescriptorAllocator.h"
+#include "../RenderInterface/GlobalRenderVariables.h"
+#include "../RenderApi/GBuffersAndTextures.h"
 #include "../Core/Types/Colors.h"
 #include "../Core/Types/Time.h"
 #include "../Core/Types/Delegates/Delegate.h"
+#include "../Core/Reflections/MemberField.h"
 #include "../Core/Engine/Config/EngineGlobalConfigs.h"
 #include "../Core/Input/InputSystem.h"
 #include "../Core/Math/Vector2D.h"
+#include "../Core/Math/Vector4D.h"
 #include "../Core/Math/Vector3D.h"
+#include "../Core/Math/Matrix4.h"
 
-#include <glm/ext/vector_float3.hpp>
 #include <array>
+
+
+struct InstanceData
+{
+    Matrix4 model;
+    Matrix4 invModel;
+};
+
+struct ViewData
+{
+    Matrix4 view;
+    Matrix4 invView;
+    Matrix4 projection;
+    Matrix4 invProjection;
+};
+
+BEGIN_BUFFER_DEFINITION(InstanceData)
+ADD_BUFFER_TYPED_FIELD(model)
+ADD_BUFFER_TYPED_FIELD(invModel)
+END_BUFFER_DEFINITION();
+
+BEGIN_BUFFER_DEFINITION(ViewData)
+ADD_BUFFER_TYPED_FIELD(view)
+ADD_BUFFER_TYPED_FIELD(invView)
+ADD_BUFFER_TYPED_FIELD(projection)
+ADD_BUFFER_TYPED_FIELD(invProjection)
+END_BUFFER_DEFINITION();
 
 void ExperimentalEngine::tempTest()
 {
@@ -38,13 +72,12 @@ void ExperimentalEngine::tempTestPerFrame()
 
 }
 
-template <EQueueFunction QueueFunction>
-VulkanQueueResource<QueueFunction>* getQueue(const std::vector<QueueResourceBase*>& allQueues, const VulkanDevice* device);
+template <EQueueFunction QueueFunction> VulkanQueueResource<QueueFunction>* getQueue(const VulkanDevice* device);
 
 void ExperimentalEngine::createPools()
 {
     {
-        VulkanQueueResource<EQueueFunction::Compute>* queue = getQueue<EQueueFunction::Compute>(*deviceQueues, vDevice);
+        VulkanQueueResource<EQueueFunction::Compute>* queue = getQueue<EQueueFunction::Compute>(vDevice);
         if (queue != nullptr)
         {
             QueueCommandPool& pool = pools[EQueueFunction::Compute];
@@ -66,7 +99,7 @@ void ExperimentalEngine::createPools()
         }
     }
     {
-        VulkanQueueResource<EQueueFunction::Graphics>* queue = getQueue<EQueueFunction::Graphics>(*deviceQueues, vDevice);
+        VulkanQueueResource<EQueueFunction::Graphics>* queue = getQueue<EQueueFunction::Graphics>(vDevice);
         if (queue != nullptr)
         {
             QueueCommandPool& pool = pools[EQueueFunction::Graphics];
@@ -88,7 +121,7 @@ void ExperimentalEngine::createPools()
         }
     }
     {
-        VulkanQueueResource<EQueueFunction::Transfer>* queue = getQueue<EQueueFunction::Transfer>(*deviceQueues, vDevice);
+        VulkanQueueResource<EQueueFunction::Transfer>* queue = getQueue<EQueueFunction::Transfer>(vDevice);
         if (queue != nullptr)
         {
             QueueCommandPool& pool = pools[EQueueFunction::Transfer];
@@ -110,7 +143,7 @@ void ExperimentalEngine::createPools()
         }
     }
     {
-        VulkanQueueResource<EQueueFunction::Present>* queue = getQueue<EQueueFunction::Present>(*deviceQueues, vDevice);
+        VulkanQueueResource<EQueueFunction::Present>* queue = getQueue<EQueueFunction::Present>(vDevice);
         if (queue != nullptr)
         {
             QueueCommandPool& pool = pools[EQueueFunction::Present];
@@ -135,7 +168,7 @@ void ExperimentalEngine::createPools()
 
 void ExperimentalEngine::destroyPools()
 {
-    for (auto& pool : pools)
+    for (const std::pair<EQueueFunction, QueueCommandPool>& pool : pools)
     {
         vDevice->vkDestroyCommandPool(device, pool.second.oneTimeRecordPool, nullptr);
         vDevice->vkDestroyCommandPool(device, pool.second.resetableCommandPool, nullptr);
@@ -145,118 +178,108 @@ void ExperimentalEngine::destroyPools()
 
 void ExperimentalEngine::createBuffers()
 {
-    normalBuffer.buffer = new GraphicsRBuffer(sizeof(Vector3D), 1);
-    normalBuffer.buffer->setResourceName("Test_Buffer");
-    normalBuffer.buffer->init();
-    texelBuffer.buffer = new GraphicsRTexelBuffer(EPixelDataFormat::RG_SF32, 3);
-    texelBuffer.buffer->setResourceName("Test_TexelBuffer");
-    texelBuffer.buffer->init();
-    texelBuffer.bufferView = static_cast<VulkanBufferResource*>(texelBuffer.buffer)->getBufferView(BufferViewInfo());
-    graphicsDbg->markObject((uint64)texelBuffer.bufferView, "Test_TexelBufferView", VK_OBJECT_TYPE_BUFFER_VIEW);
-}
+    viewBuffer.buffer = new GraphicsRBuffer(smUniformBinding["viewData"]->paramStride(), 1);
+    viewBuffer.buffer->setResourceName("ViewData");
+    viewBuffer.buffer->init();
 
-void ExperimentalEngine::writeBuffers()
-{
-    IGraphicsInstance* graphicsInst = getRenderApi()->getGraphicsInstance();
-    VkCommandBuffer uploadCmdBuffer;
-    CMD_BUFFER_ALLOC_INFO(allocationInfo);
-    allocationInfo.commandBufferCount = 1;
-    allocationInfo.commandPool = pools[EQueueFunction::Transfer].tempCommandsPool;
-    fatalAssert(vDevice->vkAllocateCommandBuffers(device, &allocationInfo, &uploadCmdBuffer) == VK_SUCCESS,
-        "Failed allocating cmd buffer for copying buffers");
-    GraphicsRTexelBuffer stagingResTriVerts = GraphicsRTexelBuffer(EPixelDataFormat::RG_SF32, 3);//cannot access format from buffer as they will be available only in wrapper of buffer.
-
-    // Triangles data to texel buffer
-    {
-        std::array<Vector2D, 3> triVerts = { Vector2D(0.0f , -0.75f),Vector2D(0.75f , 0.75f), Vector2D(-0.75f , 0.75f) };
-        stagingResTriVerts.setAsStagingResource(true);
-        stagingResTriVerts.init();
-
-        GraphicsHelper::mapResource(graphicsInst, &stagingResTriVerts);
-        memcpy(stagingResTriVerts.getMappedMemory(), triVerts.data(), stagingResTriVerts.getResourceSize());
-        GraphicsHelper::unmapResource(graphicsInst, &stagingResTriVerts);
-    }
-
-    CMD_BUFFER_BEGIN_INFO(beginInfo);
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vDevice->vkBeginCommandBuffer(uploadCmdBuffer, &beginInfo);
-    VkBufferCopy texelCopy{ 0,0, texelBuffer.buffer->getResourceSize() };
-    vDevice->vkCmdCopyBuffer(uploadCmdBuffer, stagingResTriVerts.buffer, static_cast<VulkanBufferResource*>(texelBuffer.buffer)->buffer, 1, &texelCopy);
-    vDevice->vkEndCommandBuffer(uploadCmdBuffer);
-
-    SUBMIT_INFO(cmdSubmitInfo);
-    cmdSubmitInfo.commandBufferCount = 1;
-    cmdSubmitInfo.pCommandBuffers = &uploadCmdBuffer;    
-    fatalAssert(vDevice->vkQueueSubmit(getQueue<EQueueFunction::Transfer>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>()
-        ,1,&cmdSubmitInfo,static_cast<VulkanFence*>(cmdSubmitFence.get())->fence) == VK_SUCCESS, "Failure at submitting copy commands");
-    cmdSubmitFence->waitForSignal();
-    cmdSubmitFence->resetSignal();
-
-    stagingResTriVerts.release();
-    vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Transfer].tempCommandsPool, 1, &uploadCmdBuffer);
+    instanceBuffer.buffer = new GraphicsRBuffer(smUniformBinding["instanceData"]->paramStride(), 1);
+    instanceBuffer.buffer->setResourceName("InstanceData");
+    instanceBuffer.buffer->init();
 }
 
 void ExperimentalEngine::destroyBuffers()
 {
-    normalBuffer.buffer->release();
-    delete normalBuffer.buffer;
-    normalBuffer.buffer = nullptr;
+    viewBuffer.buffer->release();
+    delete viewBuffer.buffer;
+    viewBuffer.buffer = nullptr;
 
-    texelBuffer.buffer->release();
-    delete texelBuffer.buffer;
-    texelBuffer.buffer = nullptr;
+    instanceBuffer.buffer->release();
+    delete instanceBuffer.buffer;
+    instanceBuffer.buffer = nullptr;
+
+    for (const std::pair<String,ShaderBufferParamInfo*>& pairs : smUniformBinding)
+    {
+        delete pairs.second;
+    }
+    smUniformBinding.clear();
 }
 
 void ExperimentalEngine::createImages()
 {
     commonSampler = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "CommonSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
-    // Render target texture
-    {
-        RenderTextureCreateParams rtCreateParam;
-        rtCreateParam.textureSize = EngineSettings::surfaceSize.get();
-        rtCreateParam.format = ERenderTargetFormat::RT_U8;
-        rtCreateParam.sampleCount = EPixelSampleCount::SampleCount1;
-        for (int32 i = 0; i < getApplicationInstance()->appWindowManager
-            .getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount(); ++i)
-        {
-            const String indexString = std::to_string(i);
-            rtCreateParam.textureName = "Test_RT_Texture" + indexString;
-            const String textureViewName = "Test_RT_TextureView" + indexString;
-
-            frameResources[i].rtTexture.image = TextureBase::createTexture<RenderTargetTexture>(rtCreateParam);
-
-            frameResources[i].rtTexture.imageView = static_cast<VulkanImageResource*>(
-                static_cast<RenderTargetTexture*>(frameResources[i].rtTexture.image)->getRtTexture())->getImageView(ImageViewInfo());
-
-            if (frameResources[i].rtTexture.imageView != nullptr)
-            {
-                graphicsDbg->markObject((uint64)frameResources[i].rtTexture.imageView, textureViewName, VK_OBJECT_TYPE_IMAGE_VIEW);
-            }
-        }
-    }
     // common shader sampling texture
     {
         Texture2DCreateParams t2dCreateParams
         {
-            "Test_Texture",
+            "DiffuseTexture",
             Size2D(1024, 1024),
-            EPixelSampleCount::SampleCount8
+            EPixelSampleCount::SampleCount1// Not yet enabled MSAA
         };
         texture.image = TextureBase::createTexture<Texture2D>(t2dCreateParams);
-
-        texture.imageView = static_cast<VulkanImageResource*>(texture.image->getTextureResource())->getImageView(ImageViewInfo());
+        texture.imageView = static_cast<VulkanImageResource*>(texture.image->getTextureResource())->getImageView({});
 
         if (texture.imageView != nullptr)
         {
-            graphicsDbg->markObject((uint64)texture.imageView, "Test_TextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
+            graphicsDbg->markObject((uint64)texture.imageView, "DiffuseTextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
+        }
+
+        t2dCreateParams.textureName = "NormalTexture";
+        normalTexture.image = TextureBase::createTexture<Texture2D>(t2dCreateParams);
+        normalTexture.imageView = static_cast<VulkanImageResource*>(normalTexture.image->getTextureResource())->getImageView({});
+        if (normalTexture.imageView != nullptr)
+        {
+            graphicsDbg->markObject((uint64)normalTexture.imageView, "DiffuseTextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
         }
     }
 }
 
 void ExperimentalEngine::writeImages()
 {
-    // TODO(Jeslas) : load and write images
+    // TODO(Jeslas) : load and write images and abstract change transition
+
+    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(),"TransitionFence");
+
+    VkCommandBuffer transitionTempBuffer;
+    CMD_BUFFER_ALLOC_INFO(allocInfo);
+    allocInfo.commandBufferCount = 1;
+    allocInfo.commandPool = pools[EQueueFunction::Graphics].tempCommandsPool;
+    vDevice->vkAllocateCommandBuffers(device, &allocInfo, &transitionTempBuffer);
+
+    std::vector<VkImageMemoryBarrier> transitionBarriers;
+    
+    IMAGE_MEMORY_BARRIER(imgBarrier);
+    imgBarrier.srcQueueFamilyIndex = getQueue<EQueueFunction::Graphics>(vDevice)->queueFamilyIndex();
+    imgBarrier.srcAccessMask = 0;
+    imgBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+    imgBarrier.dstQueueFamilyIndex = getQueue<EQueueFunction::Graphics>(vDevice)->queueFamilyIndex();
+    imgBarrier.dstAccessMask = VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    imgBarrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imgBarrier.subresourceRange = { VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
+
+    imgBarrier.image = static_cast<VulkanImageResource*>(texture.image->getTextureResource())->image;
+    transitionBarriers.push_back(imgBarrier);
+    imgBarrier.image = static_cast<VulkanImageResource*>(normalTexture.image->getTextureResource())->image;
+    transitionBarriers.push_back(imgBarrier);
+
+    CMD_BUFFER_BEGIN_INFO(beginInfo);
+    beginInfo.flags = VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vDevice->vkBeginCommandBuffer(transitionTempBuffer, &beginInfo);
+    vDevice->vkCmdPipelineBarrier(transitionTempBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+        , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
+        , 0, nullptr, 0, nullptr, uint32(transitionBarriers.size()), transitionBarriers.data());
+    vDevice->vkEndCommandBuffer(transitionTempBuffer);
+
+    SUBMIT_INFO(submitInfo);
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &transitionTempBuffer;
+
+    vDevice->vkQueueSubmit(getQueue<EQueueFunction::Graphics>(vDevice)->getQueueOfPriority<EQueuePriority::High>()
+        , 1, &submitInfo, static_cast<VulkanFence*>(tempFence.get())->fence);
+    tempFence->waitForSignal();
+    tempFence->release();
+
+    vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Graphics].tempCommandsPool, 1, &transitionTempBuffer);
 }
 
 void ExperimentalEngine::destroyImages()
@@ -267,248 +290,482 @@ void ExperimentalEngine::destroyImages()
     texture.image = nullptr;
     texture.imageView = nullptr;
 
-    for (int32 i = 0; i < getApplicationInstance()->appWindowManager
-        .getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount(); ++i)
+    TextureBase::destroyTexture<Texture2D>(normalTexture.image);
+    normalTexture.image = nullptr;
+    normalTexture.imageView = nullptr;
+}
+
+void ExperimentalEngine::fillBindings()
+{
+    smTextureBinding["diffuseTexture"] = &texture;
+    smTextureBinding["normalTexture"] = &normalTexture;
+    smUniformBinding["viewData"] = new ViewDataBufferParamInfo();
+    smUniformBinding["instanceData"] = new InstanceDataBufferParamInfo();
+
+    const ShaderReflected* reflectedData = static_cast<ShaderResource*>(StaticMeshUnlit::staticType()->getDefault())->getReflection();
+    // Only doing for fields and none arrays as that is only needed here
+    for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
     {
-        TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].rtTexture.image);
-        frameResources[i].rtTexture.image = nullptr;
-        frameResources[i].rtTexture.imageView = nullptr;
+        for (const DescEntryBuffer& uniformBuff : descriptorsSet.uniforms)
+        {
+            auto buffItr = smUniformBinding.find(uniformBuff.attributeName);
+            if (buffItr != smUniformBinding.end())
+            {
+                buffItr->second->setStride(uniformBuff.data.data.stride);
+                ShaderBufferFieldNode* node = &buffItr->second->startNode;
+                while (node->isValid())
+                {
+                    if (!node->field->bIsStruct)
+                    {
+                        for (const ReflectBufferEntry& field : uniformBuff.data.data.bufferFields)
+                        {
+                            if (field.attributeName == node->field->paramName)
+                            {
+                                node->field->offset = field.data.offset;
+                                node->field->size = field.data.totalSize;
+                                node->field->stride = field.data.stride;
+                                break;
+                            }
+                        }
+                    }
+                    node = node->nextNode;
+                }
+            }
+        }
+    }
+
+    for (const ReflectInputOutput& inputVertexAttrib : reflectedData->inputs)
+    {
+        ShaderVertexFieldNode* node = &MeshAsset::getShaderParamInfo<StaticMeshAsset>()->startNode;
+        while (node->isValid())
+        {
+            if (inputVertexAttrib.attributeName == node->field->attributeName)
+            {
+                node->field->format = EShaderInputAttribFormat::getInputFormat(inputVertexAttrib.data.type);
+                node->field->location = inputVertexAttrib.data.location;
+                break;
+            }
+            node = node->nextNode;
+        }
+    }    
+}
+
+void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std::map<String, uint32>& bindingNames, std::vector<VkDescriptorSetLayoutBinding>& descLayoutBindings
+    , const ReflectDescriptorBody& descReflected)
+{
+    for (const DescEntryBuffer& descriptorInfo : descReflected.uniforms)
+    {
+        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
+        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = 1;
+
+        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = 1;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
+        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
+    }
+    for (const DescEntryBuffer& descriptorInfo : descReflected.buffers)
+    {
+        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
+        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = 1;
+
+        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = 1;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
+        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
+    }
+    for (const DescEntryTexelBuffer& descriptorInfo : descReflected.imageBuffers)
+    {
+        uint32 descCount = 1;
+        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
+        {
+            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
+            descCount *= arrayDimInfo.dimension;
+        }
+        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
+        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
+
+        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
+        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
+    }
+    for (const DescEntryTexelBuffer& descriptorInfo : descReflected.samplerBuffers)
+    {
+        uint32 descCount = 1;
+        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
+        {
+            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
+            descCount *= arrayDimInfo.dimension;
+        }
+        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
+        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
+
+        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
+        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
+    }
+    for (const DescEntryTexture& descriptorInfo : descReflected.imagesAndImgArrays)
+    {
+        uint32 descCount = 1;
+        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
+        {
+            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
+            descCount *= arrayDimInfo.dimension;
+        }
+        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
+        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
+
+        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
+        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
+    }
+    for (const DescEntryTexture& descriptorInfo : descReflected.textureAndArrays)
+    {
+        uint32 descCount = 1;
+        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
+        {
+            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
+            descCount *= arrayDimInfo.dimension;
+        }
+        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
+        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
+
+        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
+        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
+    }
+    for (const DescEntryTexture& descriptorInfo : descReflected.sampledTexAndArrays)
+    {
+        uint32 descCount = 1;
+        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
+        {
+            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
+            descCount *= arrayDimInfo.dimension;
+        }
+        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
+        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
+
+        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
+        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
+    }
+    for (const DescEntrySampler& descriptorInfo : descReflected.samplers)
+    {
+        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
+        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = 1;
+
+        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = 1;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
+        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
+    }
+    for (const DescEntrySubpassInput& descriptorInfo : descReflected.subpassInputs)
+    {
+        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
+        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = 1;
+
+        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = 1;
+        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
+        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
     }
 }
 
 void ExperimentalEngine::createShaderResDescriptors()
 {
-    // Descriptors for shaders
+    uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
+    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderApi()->getGraphicsInstance());
+    // Static mesh unlit rendering
     {
-        std::array<VkDescriptorSetLayoutBinding, 4> bindings;
-        {
-            VkDescriptorSetLayoutBinding texelBufferBinding;
-            texelBufferBinding.binding = 0;
-            texelBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-            texelBufferBinding.descriptorCount = 1;
-            texelBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-            texelBufferBinding.pImmutableSamplers = nullptr;
-            bindings[0] = texelBufferBinding;
-        }
-        {
-            VkDescriptorSetLayoutBinding lightBufferBinding;
-            lightBufferBinding.binding = 1;
-            lightBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            lightBufferBinding.descriptorCount = 1;
-            lightBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-            lightBufferBinding.pImmutableSamplers = nullptr;
-            bindings[1] = lightBufferBinding;
-        }
-        {
-            VkDescriptorSetLayoutBinding samplerBinding;
-            samplerBinding.binding = 2;
-            samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-            samplerBinding.descriptorCount = 1;
-            samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-            samplerBinding.pImmutableSamplers = nullptr;
-            bindings[2] = samplerBinding;
-        }
-        {
-            VkDescriptorSetLayoutBinding sampledImageBinding;
-            sampledImageBinding.binding = 3;
-            sampledImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            sampledImageBinding.descriptorCount = 1;
-            sampledImageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-            sampledImageBinding.pImmutableSamplers = nullptr;
-            bindings[3] = sampledImageBinding;
-        }
+        staticMeshDescs.clear();
 
-        DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descSetLayoutCreateInfo);
-        descSetLayoutCreateInfo.bindingCount = (uint32)bindings.size();
-        descSetLayoutCreateInfo.pBindings = bindings.data();
+        const ShaderReflected* reflectedData = static_cast<ShaderResource*>(StaticMeshUnlit::staticType()->getDefault())->getReflection();
 
-        if (vDevice->vkCreateDescriptorSetLayout(device, &descSetLayoutCreateInfo, nullptr, &descriptorsSetLayout) != VK_SUCCESS)
+        staticMeshDescs.reserve(reflectedData->descriptorsSets.size());
+        for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
         {
-            Logger::error("ExperimentalEngine", "%s() : Failure in creating descriptor set layout", __func__);
-            descriptorsSetLayout = nullptr;
-            requestExit();
-            return;
+            DescSetInfo setInfo;
+            setInfo.descLayoutInfo.resize(descriptorsSet.usedBindings.size());
+            std::vector<VkDescriptorSetLayoutBinding> layoutBindings(descriptorsSet.usedBindings.size());
+
+            fillDescriptorsSet(setInfo.descLayoutInfo, setInfo.descBindingNames, layoutBindings, descriptorsSet);
+
+            DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
+            descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
+            descLayoutCreateInfo.pBindings = layoutBindings.data();
+
+            fatalAssert(vDevice->vkCreateDescriptorSetLayout(device, &descLayoutCreateInfo, nullptr, &setInfo.descLayout) == VK_SUCCESS, "Failed creating descriptors set layout for unlit static mesh descriptors");
+
+            DescriptorsSetQuery query;
+            query.supportedTypes.insert(setInfo.descLayoutInfo.cbegin(), setInfo.descLayoutInfo.cend());
+            setInfo.descSet = descsSetAllocator->allocDescriptorsSet(query, setInfo.descLayout);
+
+            staticMeshDescs.push_back(std::move(setInfo));
         }
     }
-    // Descriptors set allocation and descriptors pool creation
+
+    // Drawing textures to quad
     {
-        // Since our shader pipeline descriptor set has only 4 + 1 input attachment types of descriptor
-        std::array<VkDescriptorPoolSize, 5> descriptorsAndCounts;
-        // Index ordering doesn't matter between layout's binding and pool allocatable descriptors 
-        // For vertex shader, vertex float texel buffer.
-        descriptorsAndCounts[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-        descriptorsAndCounts[3].descriptorCount = 1;
-        // For frag shader, Light locations
-        descriptorsAndCounts[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorsAndCounts[2].descriptorCount = 1;
-        // For frag shader, texture sampler
-        descriptorsAndCounts[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-        descriptorsAndCounts[1].descriptorCount = 1;
-        // For frag shader, texture
-        descriptorsAndCounts[0].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        descriptorsAndCounts[0].descriptorCount = 1;
-        // For frag shader, input attachment
-        descriptorsAndCounts[4].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-        descriptorsAndCounts[4].descriptorCount = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount();
+        drawQuadTextureDescs.resize(swapchainCount);
+        drawQuadNormalDescs.resize(swapchainCount);
+        drawQuadDepthDescs.resize(swapchainCount);
 
-        DESCRIPTOR_POOL_CREATE_INFO(descPoolCreateInfo);
-        descPoolCreateInfo.maxSets = 4;
-        descPoolCreateInfo.poolSizeCount = (uint32)descriptorsAndCounts.size();
-        descPoolCreateInfo.pPoolSizes = descriptorsAndCounts.data();
+        const ShaderReflected* reflectedData = static_cast<ShaderResource*>(DrawQuadFromTexture::staticType()->getDefault())->getReflection();
 
-        if (vDevice->vkCreateDescriptorPool(device, &descPoolCreateInfo, nullptr, &descriptorsPool) != VK_SUCCESS)
+        for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
         {
-            Logger::error("ExperimentalEngine", "%s() : Failed creating descriptors pool", __func__);
-            descriptorsPool = nullptr;
-            requestExit();
-            return;
-        }
+            DescSetInfo setInfo;
+            setInfo.descLayoutInfo.resize(descriptorsSet.usedBindings.size());
+            std::vector<VkDescriptorSetLayoutBinding> layoutBindings(descriptorsSet.usedBindings.size());
 
-        DESCRIPTOR_SET_ALLOCATE_INFO(descSetsAllocInfo);
-        descSetsAllocInfo.descriptorSetCount = 1;
-        descSetsAllocInfo.pSetLayouts = &descriptorsSetLayout;
-        descSetsAllocInfo.descriptorPool = descriptorsPool;
-        if (vDevice->vkAllocateDescriptorSets(device, &descSetsAllocInfo, &descriptorsSet) != VK_SUCCESS)
-        {
-            Logger::error("ExperimentalEngine", "%s() : Descriptors set allocation failed", __func__);
-            descriptorsSet = nullptr;
-            requestExit();
-            return;
+            fillDescriptorsSet(setInfo.descLayoutInfo, setInfo.descBindingNames, layoutBindings, descriptorsSet);
+
+            DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
+            descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
+            descLayoutCreateInfo.pBindings = layoutBindings.data();
+
+            fatalAssert(vDevice->vkCreateDescriptorSetLayout(device, &descLayoutCreateInfo, nullptr, &setInfo.descLayout) == VK_SUCCESS, "Failed creating descriptors set layout for draw quad from texture descriptors");
+
+            DescriptorsSetQuery query;
+            query.supportedTypes.insert(setInfo.descLayoutInfo.cbegin(), setInfo.descLayoutInfo.cend());
+
+            for (uint32 i = 0; i < swapchainCount; ++i)
+            {
+                DescSetInfo diffuseDescSetInfo = setInfo;
+                DescSetInfo normalDescSetInfo = setInfo;
+                DescSetInfo depthDescSetInfo = setInfo;
+
+                diffuseDescSetInfo.descSet = descsSetAllocator->allocDescriptorsSet(query, setInfo.descLayout);
+                drawQuadTextureDescs[i].push_back(std::move(diffuseDescSetInfo));
+
+                normalDescSetInfo.descSet = descsSetAllocator->allocDescriptorsSet(query, setInfo.descLayout);
+                drawQuadNormalDescs[i].push_back(std::move(normalDescSetInfo));
+
+                depthDescSetInfo.descSet = descsSetAllocator->allocDescriptorsSet(query, setInfo.descLayout);
+                drawQuadDepthDescs[i].push_back(std::move(depthDescSetInfo));
+            }
         }
     }
-    // Updating the descriptors set with resource
+
+    std::vector<std::pair<VkWriteDescriptorSet, uint32>> writingBufferDescriptors;
+    std::vector<VkDescriptorBufferInfo> bufferInfo;
+    std::vector<std::pair<VkWriteDescriptorSet, uint32>> writingImageDescriptors;
+    std::vector<VkDescriptorImageInfo> imageInfo;
+
+    // Static mesh descriptors
     {
-        // Since our shader pipeline descriptor set has only 4 types of descriptor
-        std::array<VkWriteDescriptorSet, 4> descriptorsToWrite;        
+        for (const DescSetInfo& descSetInfo : staticMeshDescs)
+        {
+            auto foundItr = descSetInfo.descBindingNames.find("viewData");
+            if (foundItr != descSetInfo.descBindingNames.end())
+            {
+                uint32 bufferInfoIdx = uint32(bufferInfo.size());
+                bufferInfo.push_back({});
+                bufferInfo[bufferInfoIdx].buffer = static_cast<VulkanBufferResource*>(viewBuffer.buffer)->buffer;
+                bufferInfo[bufferInfoIdx].offset = 0;
+                bufferInfo[bufferInfoIdx].range = viewBuffer.buffer->getResourceSize();
 
-        // Index ordering doesn't matter between layout's binding and write descriptors 
-        // For vertex shader, vertex float texel buffer.
-        WRITE_RESOURCE_TO_DESCRIPTORS_SET(triVertexAsTexelToSet);
-        triVertexAsTexelToSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-        triVertexAsTexelToSet.dstBinding = 0;
-        triVertexAsTexelToSet.dstSet = descriptorsSet;
-        triVertexAsTexelToSet.pTexelBufferView = &texelBuffer.bufferView;
-        descriptorsToWrite[0] = triVertexAsTexelToSet;
-        
-        // For frag shader, Light locations
-        VkDescriptorBufferInfo lightPosBufferInfo;
-        lightPosBufferInfo.buffer = static_cast<VulkanBufferResource*>(normalBuffer.buffer)->buffer;
-        lightPosBufferInfo.offset = 0;
-        lightPosBufferInfo.range = VK_WHOLE_SIZE;
+                WRITE_RESOURCE_TO_DESCRIPTORS_SET(viewDataDescWrite);
+                viewDataDescWrite.dstSet = descSetInfo.descSet;
+                viewDataDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
+                viewDataDescWrite.dstBinding = foundItr->second;
+                writingBufferDescriptors.push_back({ viewDataDescWrite, bufferInfoIdx });
+            }
+            foundItr = descSetInfo.descBindingNames.find("instanceData");
+            if (foundItr != descSetInfo.descBindingNames.end())
+            {
+                uint32 bufferInfoIdx = uint32(bufferInfo.size());
+                bufferInfo.push_back({});
+                bufferInfo[bufferInfoIdx].buffer = static_cast<VulkanBufferResource*>(instanceBuffer.buffer)->buffer;
+                bufferInfo[bufferInfoIdx].offset = 0;
+                bufferInfo[bufferInfoIdx].range = instanceBuffer.buffer->getResourceSize();
 
-        WRITE_RESOURCE_TO_DESCRIPTORS_SET(lightPositionWriteToSet);
-        lightPositionWriteToSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        lightPositionWriteToSet.dstBinding = 1;
-        lightPositionWriteToSet.dstSet = descriptorsSet;
-        lightPositionWriteToSet.pBufferInfo = &lightPosBufferInfo;
-        descriptorsToWrite[1] = lightPositionWriteToSet;
+                WRITE_RESOURCE_TO_DESCRIPTORS_SET(instanceDataDescWrite);
+                instanceDataDescWrite.dstSet = descSetInfo.descSet;
+                instanceDataDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
+                instanceDataDescWrite.dstBinding = foundItr->second;
+                writingBufferDescriptors.push_back({ instanceDataDescWrite, bufferInfoIdx });
+            }
 
-        // For frag shader, texture sampler
-        VkDescriptorImageInfo samplerInfo;
-        samplerInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        samplerInfo.imageView = nullptr;
-        samplerInfo.sampler = static_cast<VulkanSampler*>(&(*commonSampler))->sampler;
+            for (const std::pair<const String, ImageData*>& texturePairs : smTextureBinding)
+            {
+                foundItr = descSetInfo.descBindingNames.find(texturePairs.first);
+                if (foundItr != descSetInfo.descBindingNames.end())
+                {
+                    uint32 imageInfoIdx = uint32(imageInfo.size());
+                    imageInfo.push_back({});
+                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo[imageInfoIdx].imageView = texturePairs.second->imageView;
+                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
-        WRITE_RESOURCE_TO_DESCRIPTORS_SET(textureSamplerWriteToSet);
-        textureSamplerWriteToSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        textureSamplerWriteToSet.dstBinding = 2;
-        textureSamplerWriteToSet.dstSet = descriptorsSet;
-        textureSamplerWriteToSet.pImageInfo = &samplerInfo;
-        descriptorsToWrite[2] = textureSamplerWriteToSet;
-
-        // For frag shader, texture
-        VkDescriptorImageInfo textureInfo;
-        textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        textureInfo.imageView = texture.imageView;
-        textureInfo.sampler = nullptr;
-
-        WRITE_RESOURCE_TO_DESCRIPTORS_SET(textureWriteToSet);
-        textureWriteToSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        textureWriteToSet.dstBinding = 3;
-        textureWriteToSet.dstSet = descriptorsSet;
-        textureWriteToSet.pImageInfo = &textureInfo;
-        descriptorsToWrite[3] = textureWriteToSet;
-
-        vDevice->vkUpdateDescriptorSets(device, (uint32)descriptorsToWrite.size(), descriptorsToWrite.data(), 0, nullptr);
+                    WRITE_RESOURCE_TO_DESCRIPTORS_SET(textureDescWrite);
+                    textureDescWrite.dstSet = descSetInfo.descSet;
+                    textureDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
+                    textureDescWrite.dstBinding = foundItr->second;
+                    textureDescWrite.pImageInfo = &imageInfo[imageInfoIdx];
+                    writingImageDescriptors.push_back({ textureDescWrite, imageInfoIdx });
+                }
+            }
+        }
     }
+    // Draw quad descriptors
+    {
+        for (uint32 swapchainIdx = 0; swapchainIdx < swapchainCount; ++swapchainIdx)
+        {
+            for (uint32 i = 0; i < drawQuadTextureDescs[swapchainIdx].size(); ++i)
+            {
+                const DescSetInfo& descSetInfo = drawQuadTextureDescs[swapchainIdx][i];
+
+                auto foundItr = descSetInfo.descBindingNames.find("quadTexture");
+                if (foundItr != descSetInfo.descBindingNames.end())
+                {
+                    WRITE_RESOURCE_TO_DESCRIPTORS_SET(quadTextureDescWrite);
+                    quadTextureDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
+                    quadTextureDescWrite.dstBinding = foundItr->second;
+
+                    FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
+                    Framebuffer* fb = GBuffers::getFramebuffer(unlitFbFormat, swapchainIdx);
+                    fatalAssert(fb != nullptr, "Framebuffer is invalid");
+
+                    uint32 imageInfoIdx = uint32(imageInfo.size());
+                    imageInfo.push_back({});
+                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[0])->getImageView({});// Diffuse is at 0
+                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+
+                    quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][i].descSet;
+                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+
+                    imageInfoIdx = uint32(imageInfo.size());
+                    imageInfo.push_back({});
+                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Normal texture is at 1
+                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+
+                    quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][i].descSet;
+                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+
+                    imageInfoIdx = uint32(imageInfo.size());
+                    imageInfo.push_back({});
+                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[2])->getImageView({});// Depth is at 2
+                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+
+                    quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][i].descSet;
+                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+                }
+            }
+        }
+    }
+
+    std::vector<VkWriteDescriptorSet> writingDescriptors;
+    writingDescriptors.reserve(writingBufferDescriptors.size() + writingImageDescriptors.size());
+    for (std::pair<VkWriteDescriptorSet, uint32>& writingBufferDesc : writingBufferDescriptors)
+    {
+        writingBufferDesc.first.pBufferInfo = &bufferInfo[writingBufferDesc.second];
+        writingDescriptors.push_back(writingBufferDesc.first);
+    }
+    for (std::pair<VkWriteDescriptorSet, uint32>& writingImageDesc : writingImageDescriptors)
+    {
+        writingImageDesc.first.pImageInfo = &imageInfo[writingImageDesc.second];
+        writingDescriptors.push_back(writingImageDesc.first);
+    }
+
+    vDevice->vkUpdateDescriptorSets(device, uint32(writingDescriptors.size()), writingDescriptors.data(), 0, nullptr);
+}
+
+void ExperimentalEngine::writeUnlitBuffToQuadDrawDescs()
+{
+    uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
+    std::vector<std::pair<VkWriteDescriptorSet, uint32>> writingImageDescriptors;
+    std::vector<VkDescriptorImageInfo> imageInfo;
+
+    // Draw quad descriptors
+    {
+        for (uint32 swapchainIdx = 0; swapchainIdx < swapchainCount; ++swapchainIdx)
+        {
+            for (uint32 i = 0; i < drawQuadTextureDescs[swapchainIdx].size(); ++i)
+            {
+                const DescSetInfo& descSetInfo = drawQuadTextureDescs[swapchainIdx][i];
+
+                auto foundItr = descSetInfo.descBindingNames.find("quadTexture");
+                if (foundItr != descSetInfo.descBindingNames.end())
+                {
+                    WRITE_RESOURCE_TO_DESCRIPTORS_SET(quadTextureDescWrite);
+                    quadTextureDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
+                    quadTextureDescWrite.dstBinding = foundItr->second;
+
+                    FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
+                    Framebuffer* fb = GBuffers::getFramebuffer(unlitFbFormat, swapchainIdx);
+                    fatalAssert(fb != nullptr, "Framebuffer is invalid");
+
+                    uint32 imageInfoIdx = uint32(imageInfo.size());
+                    imageInfo.push_back({});
+                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[0])->getImageView({});// Diffuse is at 0
+                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+
+                    quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][i].descSet;
+                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+
+                    imageInfoIdx = uint32(imageInfo.size());
+                    imageInfo.push_back({});
+                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Normal texture is at 1
+                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+
+                    quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][i].descSet;
+                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+
+                    imageInfoIdx = uint32(imageInfo.size());
+                    imageInfo.push_back({});
+                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[2])->getImageView({});// Depth is at 2
+                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+
+                    quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][i].descSet;
+                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+                }
+            }
+        }
+    }
+
+    std::vector<VkWriteDescriptorSet> writingDescriptors;
+    for (std::pair<VkWriteDescriptorSet, uint32>& writingImageDesc : writingImageDescriptors)
+    {
+        writingImageDesc.first.pImageInfo = &imageInfo[writingImageDesc.second];
+        writingDescriptors.push_back(writingImageDesc.first);
+    }
+
+    vDevice->vkUpdateDescriptorSets(device, uint32(writingDescriptors.size()), writingDescriptors.data(), 0, nullptr);
 }
 
 void ExperimentalEngine::destroyShaderResDescriptors()
 {
-    if (descriptorsSetLayout)
-    {
-        vDevice->vkDestroyDescriptorSetLayout(device, descriptorsSetLayout, nullptr);
+    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderApi()->getGraphicsInstance());
 
-        if (descriptorsPool)
+    for (DescSetInfo& descInfo : staticMeshDescs)
+    {
+        descsSetAllocator->releaseDescriptorsSet(descInfo.descSet);
+        descInfo.descLayoutInfo.clear();
+        vDevice->vkDestroyDescriptorSetLayout(device, descInfo.descLayout, nullptr);
+    }
+    staticMeshDescs.clear();
+
+    vDevice->vkDestroyDescriptorSetLayout(device, drawQuadTextureDescs[0][0].descLayout, nullptr);
+    for (std::vector<DescSetInfo>& descInfos : drawQuadTextureDescs)
+    {
+        for(DescSetInfo& descInfo : descInfos)
         {
-            vDevice->vkResetDescriptorPool(device, descriptorsPool, 0);
-            vDevice->vkDestroyDescriptorPool(device, descriptorsPool, nullptr);
-            descriptorsSet = nullptr;
+            descsSetAllocator->releaseDescriptorsSet(descInfo.descSet);
+            descInfo.descLayoutInfo.clear();
         }
     }
-}
-
-void ExperimentalEngine::createInputAttachmentDescriptors()
-{
-    {
-        VkDescriptorSetLayoutBinding inputAttachmentDescBinding;
-        inputAttachmentDescBinding.binding = 0;
-        inputAttachmentDescBinding.descriptorCount = 1;
-        inputAttachmentDescBinding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-        inputAttachmentDescBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        inputAttachmentDescBinding.pImmutableSamplers = nullptr;
-        DESCRIPTOR_SET_LAYOUT_CREATE_INFO(layoutCreateInfo);
-        layoutCreateInfo.bindingCount = 1;
-        layoutCreateInfo.pBindings = &inputAttachmentDescBinding;
-
-        if (vDevice->vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &subpass1DescLayout) != VK_SUCCESS)
-        {
-            Logger::error("ExperimentalEngine", "%s() : Failed creating descriptors set layout for input attachment in subpass1", __func__);
-            subpass1DescLayout = nullptr;
-            return;
-        }
-    }
-
-    int32 frameResCount = getApplicationInstance()->appWindowManager
-        .getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount();
-    std::vector<VkWriteDescriptorSet> writeSets(frameResCount);
-    std::vector<VkDescriptorImageInfo> imageInfos(frameResCount);
-
-    DESCRIPTOR_SET_ALLOCATE_INFO(descAllocateInfo);
-    descAllocateInfo.descriptorPool = descriptorsPool;
-    descAllocateInfo.descriptorSetCount = 1;
-    descAllocateInfo.pSetLayouts = &subpass1DescLayout;
-
-    for (int32 i = 0; i < frameResCount; ++i)
-    {
-        if (vDevice->vkAllocateDescriptorSets(device, &descAllocateInfo, &frameResources[i].iAttachSetSubpass1) != VK_SUCCESS)
-        {
-            Logger::error("ExperimentalEngine", "%s() : Failed creating descriptors set for input attachment for rt at %d in subpass1", __func__,i);
-            frameResources[i].iAttachSetSubpass1 = nullptr;
-            return;
-        }
-
-        imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfos[i].imageView = frameResources[i].rtTexture.imageView;
-        imageInfos[i].sampler = nullptr;
-
-        WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeToDescSet);
-        writeToDescSet.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-        writeToDescSet.dstBinding = 0;
-        writeToDescSet.dstSet = frameResources[i].iAttachSetSubpass1;
-        writeToDescSet.pImageInfo = &imageInfos[i];
-        writeSets[i] = writeToDescSet;
-    }
-
-    vDevice->vkUpdateDescriptorSets(device, (uint32)writeSets.size(), writeSets.data() , 0, nullptr);
-}
-
-void ExperimentalEngine::destroyInputAttachmentDescriptors()
-{
-    if (subpass1DescLayout)
-    {
-        vDevice->vkDestroyDescriptorSetLayout(device, subpass1DescLayout, nullptr);
-    }
+    drawQuadTextureDescs.clear();
 }
 
 void ExperimentalEngine::createFrameResources()
@@ -528,20 +785,6 @@ void ExperimentalEngine::createFrameResources()
         String name = "Frame";
         name.append(std::to_string(i));
 
-        std::array<VkImageView, 2> attachments = { frameResources[i].rtTexture.imageView
-            , static_cast<VulkanWindowCanvas*>(windowCanvas)->swapchainImageView(i) };
-
-        FRAMEBUFFER_CREATE_INFO(frameBufferCreateInfo);
-        frameBufferCreateInfo.layers = 1;
-        frameBufferCreateInfo.attachmentCount = (uint32)attachments.size();
-        frameBufferCreateInfo.pAttachments = attachments.data();
-        frameBufferCreateInfo.renderPass = renderPass;
-        frameBufferCreateInfo.width = EngineSettings::surfaceSize.get().x;
-        frameBufferCreateInfo.height = EngineSettings::surfaceSize.get().y;
-
-        fatalAssert(vDevice->vkCreateFramebuffer(device, &frameBufferCreateInfo, nullptr, &frameResources[i].frameBuffer) == VK_SUCCESS, "Frame buffer creation failed");
-        graphicsDbg->markObject((uint64)frameResources[i].frameBuffer, (name + "FrameBuffer").c_str(), VK_OBJECT_TYPE_FRAMEBUFFER);
-
         frameResources[i].perFrameCommands = cmdBuffers[i];
         frameResources[i].usageWaitSemaphore.push_back(GraphicsHelper::createSemaphore(getRenderApi()->getGraphicsInstance(), (name + "QueueSubmit").c_str()));
         frameResources[i].recordingFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(), (name + "RecordingGaurd").c_str(),true);
@@ -559,9 +802,6 @@ void ExperimentalEngine::destroyFrameResources()
         cmdBuffers[i] = frameResources[i].perFrameCommands;
         frameResources[i].usageWaitSemaphore[0]->release();
         frameResources[i].recordingFence->release();
-        frameResources[i].iAttachSetSubpass1 = nullptr;
-        vDevice->vkDestroyFramebuffer(device, frameResources[i].frameBuffer, nullptr);
-        frameResources[i].frameBuffer = nullptr;
         frameResources[i].perFrameCommands = nullptr;
         frameResources[i].usageWaitSemaphore[0].reset();
         frameResources[i].recordingFence.reset();
@@ -574,105 +814,165 @@ void ExperimentalEngine::createRenderpass()
 {
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow());
-
-    attachmentsClearColors.resize(2);
-    std::array<VkAttachmentDescription, 2> attachmentsDesc;
+    // Static mesh unlit render pass
     {
-        VkAttachmentDescription renderTargetAttachment;
-        renderTargetAttachment.flags = 0;
-        renderTargetAttachment.format = (VkFormat)EPixelDataFormat::getFormatInfo(frameResources[0].rtTexture.image->getFormat())->format;
-        renderTargetAttachment.samples = (VkSampleCountFlagBits)frameResources[0].rtTexture.image->getSampleCount();
-        renderTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        renderTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        renderTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        renderTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        renderTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        renderTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachmentsDesc[0] = renderTargetAttachment;
-        attachmentsClearColors[0].color = { 0.0f ,0.0f,0.0f,1.0f };// Black
+        smAttachmentsClearColors.resize(4);
+        smAttachmentsFormat.resize(4);
+        std::array<VkAttachmentReference, 4> attachmentRefs;
+        std::array<VkAttachmentDescription, 4> attachmentsDesc;
+        {
+            VkAttachmentDescription diffuseTargetAttachment;
+            diffuseTargetAttachment.flags = 0;
+            diffuseTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::BGRA_U8_Norm)->format);
+            diffuseTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
+            diffuseTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            diffuseTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            diffuseTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            diffuseTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            diffuseTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            diffuseTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentsDesc[0] = diffuseTargetAttachment;
+            smAttachmentsClearColors[0].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
+            smAttachmentsFormat[0] = EPixelDataFormat::BGRA_U8_Norm;
+            attachmentRefs[0].attachment = 0;
+            attachmentRefs[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        VkAttachmentDescription swapchainAttachment;
-        swapchainAttachment.flags = 0;
-        swapchainAttachment.format = (VkFormat)EPixelDataFormat::getFormatInfo(windowCanvas->windowCanvasFormat())->format;
-        swapchainAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        swapchainAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        swapchainAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        swapchainAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        swapchainAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        swapchainAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        swapchainAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachmentsDesc[1] = swapchainAttachment;
-        attachmentsClearColors[1].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
+            VkAttachmentDescription normalTargetAttachment;
+            normalTargetAttachment.flags = 0;
+            normalTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::ABGR_S8_NormPacked)->format);
+            normalTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
+            normalTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            normalTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            normalTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            normalTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            normalTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            normalTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentsDesc[1] = normalTargetAttachment;
+            smAttachmentsClearColors[1].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
+            smAttachmentsFormat[1] = EPixelDataFormat::ABGR_S8_NormPacked;
+            attachmentRefs[1].attachment = 1;
+            attachmentRefs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            VkAttachmentDescription depthTargetAttachment;
+            depthTargetAttachment.flags = 0;
+            depthTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::R_SF32)->format);
+            depthTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
+            depthTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            depthTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            depthTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            depthTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            depthTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            depthTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentsDesc[2] = depthTargetAttachment;
+            smAttachmentsClearColors[2].color = { 0.0f,0.0f,0.0f,0.0f };// Black
+            smAttachmentsFormat[2] = EPixelDataFormat::R_SF32;
+            attachmentRefs[2].attachment = 2;
+            attachmentRefs[2].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            VkAttachmentDescription realDepthAttachment;
+            realDepthAttachment.flags = 0;
+            realDepthAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::D_SF32)->format);
+            realDepthAttachment.samples = VkSampleCountFlagBits(EPixelSampleCount::SampleCount1);
+            realDepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            realDepthAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+            realDepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            realDepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            realDepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            realDepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachmentsDesc[3] = realDepthAttachment;
+            smAttachmentsClearColors[3].color = { 0.0f,0.0f,0.0f,0.0f };// Black
+            smAttachmentsFormat[3] = EPixelDataFormat::D_SF32;
+            attachmentRefs[3].attachment = 3;
+            attachmentRefs[3].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+
+        VkSubpassDescription subpass;
+        subpass.flags = 0;
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.pDepthStencilAttachment = &attachmentRefs[3];
+        subpass.colorAttachmentCount = uint32(attachmentRefs.size() - 1);
+        subpass.pColorAttachments = attachmentRefs.data();
+        subpass.pResolveAttachments = nullptr;
+        subpass.inputAttachmentCount = 0;
+        subpass.pInputAttachments = nullptr;
+        subpass.preserveAttachmentCount = 0;
+        subpass.pPreserveAttachments = nullptr;
+
+        RENDERPASS_CREATE_INFO(renderPassCreateInfo);
+        renderPassCreateInfo.attachmentCount = (uint32)attachmentsDesc.size();
+        renderPassCreateInfo.pAttachments = attachmentsDesc.data();
+        renderPassCreateInfo.subpassCount = 1;
+        renderPassCreateInfo.pSubpasses = &subpass;
+        renderPassCreateInfo.dependencyCount = 0;
+        renderPassCreateInfo.pDependencies = nullptr;
+
+        if (vDevice->vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &smRenderPass) != VK_SUCCESS)
+        {
+            Logger::error("ExperimentalEngine", "%s() : Failed creating render pass", __func__);
+            smRenderPass = nullptr;
+            return;
+        }
     }
-    std::array<VkSubpassDescription,2> subpasses;
-    VkSubpassDependency subpassesDependency;
 
-    VkAttachmentReference pass1RtAttachmentRef;
-    pass1RtAttachmentRef.attachment = 0;// Index in attachment description
-    pass1RtAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    subpasses[0].flags = 0;
-    subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpasses[0].pDepthStencilAttachment = nullptr;
-    subpasses[0].colorAttachmentCount = 1;
-    subpasses[0].pColorAttachments = &pass1RtAttachmentRef;
-    subpasses[0].pResolveAttachments = nullptr;
-    subpasses[0].inputAttachmentCount = 0;
-    subpasses[0].pInputAttachments = nullptr;
-    subpasses[0].preserveAttachmentCount = 0;
-    subpasses[0].pPreserveAttachments = nullptr;
-
-    VkAttachmentReference pass2SwapchainAttachmentRef;
-    pass2SwapchainAttachmentRef.attachment = 1;
-    pass2SwapchainAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    VkAttachmentReference pass2RtInputAttachmentRef;
-    pass2RtInputAttachmentRef.attachment = 0;
-    pass2RtInputAttachmentRef.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    subpasses[1].flags = 0;
-    subpasses[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpasses[1].pDepthStencilAttachment = nullptr;
-    subpasses[1].colorAttachmentCount = 1;
-    subpasses[1].pColorAttachments = &pass2SwapchainAttachmentRef;
-    subpasses[1].pResolveAttachments = nullptr;
-    subpasses[1].inputAttachmentCount = 1;
-    subpasses[1].pInputAttachments = &pass2RtInputAttachmentRef;
-    subpasses[1].preserveAttachmentCount = 0;
-    subpasses[1].pPreserveAttachments = nullptr;
-
-    subpassesDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-    subpassesDependency.srcSubpass = 0;
-    subpassesDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    subpassesDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpassesDependency.dstSubpass = 1;
-    subpassesDependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    subpassesDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
-    RENDERPASS_CREATE_INFO(renderPassCreateInfo);
-    renderPassCreateInfo.attachmentCount = (uint32)attachmentsDesc.size();
-    renderPassCreateInfo.pAttachments = attachmentsDesc.data();
-    renderPassCreateInfo.subpassCount = (uint32)subpasses.size();
-    renderPassCreateInfo.pSubpasses = subpasses.data();
-    renderPassCreateInfo.dependencyCount = 1;
-    renderPassCreateInfo.pDependencies = &subpassesDependency;
-
-    if (vDevice->vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass) != VK_SUCCESS)
+    // Draw quad render pass
     {
-        Logger::error("ExperimentalEngine", "%s() : Failed creating render pass", __func__);
-        renderPass = nullptr;
-        return;
+        VkAttachmentDescription quadTarget;
+        quadTarget.flags = 0;
+        quadTarget.format = VkFormat(EPixelDataFormat::getFormatInfo(windowCanvas->windowCanvasFormat())->format);
+        quadTarget.samples = VK_SAMPLE_COUNT_1_BIT;
+        quadTarget.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        quadTarget.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        quadTarget.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        quadTarget.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        quadTarget.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        quadTarget.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+        swapchainClearColor.color = { 0.0f,0.0f,0.0f,0.0f };// Black
+
+        VkAttachmentReference quadAttachRef;
+        quadAttachRef.attachment = 0;
+        quadAttachRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription subpass;
+        subpass.flags = 0;
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.pDepthStencilAttachment = nullptr;
+        subpass.colorAttachmentCount = 1;
+        subpass.pColorAttachments = &quadAttachRef;
+        subpass.pResolveAttachments = nullptr;
+        subpass.inputAttachmentCount = 0;
+        subpass.pInputAttachments = nullptr;
+        subpass.preserveAttachmentCount = 0;
+        subpass.pPreserveAttachments = nullptr;
+
+
+        RENDERPASS_CREATE_INFO(renderPassCreateInfo);
+        renderPassCreateInfo.attachmentCount = 1;
+        renderPassCreateInfo.pAttachments = &quadTarget;
+        renderPassCreateInfo.dependencyCount = 0;
+        renderPassCreateInfo.pDependencies = nullptr;
+        renderPassCreateInfo.subpassCount = 1;
+        renderPassCreateInfo.pSubpasses = &subpass;
+
+        if (vDevice->vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &swapchainRenderPass) != VK_SUCCESS)
+        {
+            Logger::error("ExperimentalEngine", "%s() : Failed creating render pass", __func__);
+            swapchainRenderPass = nullptr;
+            return;
+        }
     }
 
     createFrameResources();
-    createInputAttachmentDescriptors();
 }
 
 void ExperimentalEngine::destroyRenderpass()
 {
-    destroyInputAttachmentDescriptors();
     destroyFrameResources();
-    vDevice->vkDestroyRenderPass(device, renderPass, nullptr);
-    renderPass = nullptr;
+    vDevice->vkDestroyRenderPass(device, smRenderPass, nullptr);
+    smRenderPass = nullptr;
+
+    vDevice->vkDestroyRenderPass(device, swapchainRenderPass, nullptr);
+    swapchainRenderPass = nullptr;
 }
 
 void ExperimentalEngine::createPipelineCache()
@@ -701,14 +1001,14 @@ void ExperimentalEngine::createPipelineCache()
         Logger::debug("ExperimentalEngine", "%s() : Cache for pipeline cache creation is not available", __func__);
     }
 
-    if (vDevice->vkCreatePipelineCache(device,&pipelineCacheCreateInfo,nullptr,&drawTriPipeline.cache) != VK_SUCCESS)
+    if (vDevice->vkCreatePipelineCache(device,&pipelineCacheCreateInfo,nullptr,&drawSmPipeline.cache) != VK_SUCCESS)
     {
-        Logger::warn("ExperimentalEngine", "%s() : Triangle drawing pipeline cache creation failed", __func__);
-        drawTriPipeline.cache = nullptr;
+        Logger::warn("ExperimentalEngine", "%s() : Staticmesh drawing pipeline cache creation failed", __func__);
+        drawSmPipeline.cache = nullptr;
     }
     else
     {
-        graphicsDbg->markObject((uint64)(drawTriPipeline.cache), "ExperimentalTrianglePipelineCache", VK_OBJECT_TYPE_PIPELINE_CACHE);
+        graphicsDbg->markObject((uint64)(drawSmPipeline.cache), "ExperimentalTrianglePipelineCache", VK_OBJECT_TYPE_PIPELINE_CACHE);
     }
     if (vDevice->vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &drawQuadPipeline.cache) != VK_SUCCESS)
     {
@@ -717,7 +1017,7 @@ void ExperimentalEngine::createPipelineCache()
     }
     else
     {
-        graphicsDbg->markObject((uint64)(drawTriPipeline.cache), "DrawQuadPipelineCache", VK_OBJECT_TYPE_PIPELINE_CACHE);
+        graphicsDbg->markObject((uint64)(drawSmPipeline.cache), "DrawQuadPipelineCache", VK_OBJECT_TYPE_PIPELINE_CACHE);
     }
 
     pipelineCacheFile.closeFile();
@@ -726,9 +1026,9 @@ void ExperimentalEngine::createPipelineCache()
 void ExperimentalEngine::writeAndDestroyPipelineCache()
 {
     std::vector<VkPipelineCache> pipelineCaches;
-    if (drawTriPipeline.cache != nullptr)
+    if (drawSmPipeline.cache != nullptr)
     {
-        pipelineCaches.push_back(drawTriPipeline.cache);
+        pipelineCaches.push_back(drawSmPipeline.cache);
     }
     if (drawQuadPipeline.cache != nullptr)
     {
@@ -743,7 +1043,7 @@ void ExperimentalEngine::writeAndDestroyPipelineCache()
     {
         if(vDevice->vkMergePipelineCaches(device,mergedCache,static_cast<uint32>(pipelineCaches.size()),pipelineCaches.data()) == VK_SUCCESS)
         {
-            size_t cacheDataSize;
+            uint64 cacheDataSize;
             vDevice->vkGetPipelineCacheData(device, mergedCache, &cacheDataSize, nullptr);
             if (cacheDataSize > 0)
             {
@@ -769,69 +1069,26 @@ void ExperimentalEngine::writeAndDestroyPipelineCache()
 void ExperimentalEngine::createPipelineForSubpass()
 {
     createPipelineCache();
-    createTriDrawPipeline();
+    createSmPipeline();
 
-    const std::array<Vector3D, 4> quadVerts = { Vector3D(-1,-1,0),Vector3D(1,-1,0),Vector3D(-1,1,0),Vector3D(1,1,0) };
-    const std::array<uint32, 6> quadIndices = { 0,3,2,0,1,3 };// 3 Per tri of quad
 
-    quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
-    quadVertexBuffer->setResourceName("ScreenQuadVertices");
-    quadVertexBuffer->init();
-    quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
-    quadIndexBuffer->setResourceName("ScreenQuadIndices");
-    quadIndexBuffer->init();
+    ENQUEUE_COMMAND(QuadVerticesInit,LAMBDA_BODY
+        (
+            const std::array<Vector3D, 4> quadVerts = { Vector3D(-1,-1,0),Vector3D(1,-1,0),Vector3D(-1,1,0),Vector3D(1,1,0) };
+            const std::array<uint32, 6> quadIndices = { 0,3,2,0,1,3 };// 3 Per tri of quad
 
-    {
-        GraphicsVertexBuffer vertStagingBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
-        vertStagingBuffer.setAsStagingResource(true);
-        vertStagingBuffer.init();
-        GraphicsIndexBuffer indexStagingBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
-        indexStagingBuffer.setAsStagingResource(true);
-        indexStagingBuffer.init();
+            quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
+            quadVertexBuffer->setResourceName("ScreenQuadVertices");
+            quadVertexBuffer->init();
+            quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
+            quadIndexBuffer->setResourceName("ScreenQuadIndices");
+            quadIndexBuffer->init();
 
-        // Uploading to staging buffer
-        {
-            IGraphicsInstance* graphicsInst = getRenderApi()->getGraphicsInstance();
-            GraphicsHelper::mapResource(graphicsInst,&vertStagingBuffer);
-            GraphicsHelper::mapResource(graphicsInst, &indexStagingBuffer);
-            memcpy(vertStagingBuffer.getMappedMemory(), quadVerts.data(), quadVertexBuffer->getResourceSize());
-            memcpy(indexStagingBuffer.getMappedMemory(), quadIndices.data(), quadIndexBuffer->getResourceSize());
-            GraphicsHelper::unmapResource(graphicsInst, &vertStagingBuffer);
-            GraphicsHelper::unmapResource(graphicsInst, &indexStagingBuffer);
-        }
-        // Copying to actual buffers
-        {
-            CMD_BUFFER_ALLOC_INFO(cmdAllocInfo);
-            cmdAllocInfo.commandBufferCount = 1;
-            cmdAllocInfo.commandPool = pools[EQueueFunction::Transfer].tempCommandsPool;
-            VkCommandBuffer tempBuffer;
-            vDevice->vkAllocateCommandBuffers(device, &cmdAllocInfo, &tempBuffer);
+            cmdList->copyToBuffer(quadVertexBuffer, 0, quadVerts.data(), uint32(quadVertexBuffer->getResourceSize()));
+            cmdList->copyToBuffer(quadIndexBuffer, 0, quadIndices.data(), uint32(quadIndexBuffer->getResourceSize()));
+        )
+        , this);
 
-            VkBufferCopy vertCopyRegion{ 0,0, quadVertexBuffer->getResourceSize() };
-            VkBufferCopy indexCopyRegion{ 0,0, quadIndexBuffer->getResourceSize() };
-
-            CMD_BUFFER_BEGIN_INFO(cmdBeginInfo);
-            cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            vDevice->vkBeginCommandBuffer(tempBuffer, &cmdBeginInfo);
-
-            vDevice->vkCmdCopyBuffer(tempBuffer, vertStagingBuffer.buffer, static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, 1, &vertCopyRegion);
-            vDevice->vkCmdCopyBuffer(tempBuffer, indexStagingBuffer.buffer, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 1, &indexCopyRegion);
-
-            vDevice->vkEndCommandBuffer(tempBuffer);
-
-            SUBMIT_INFO(tempCmdSubmit);
-            tempCmdSubmit.commandBufferCount = 1;
-            tempCmdSubmit.pCommandBuffers = &tempBuffer;
-            vDevice->vkQueueSubmit(getQueue<EQueueFunction::Transfer>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>(),
-                1, &tempCmdSubmit, static_cast<VulkanFence*>(cmdSubmitFence.get())->fence);
-
-            cmdSubmitFence->waitForSignal();
-            cmdSubmitFence->resetSignal();
-            vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Transfer].tempCommandsPool, 1, &tempBuffer);
-        }
-        vertStagingBuffer.release();
-        indexStagingBuffer.release();
-    }
     createQuadDrawPipeline();
 }
 
@@ -839,51 +1096,82 @@ void ExperimentalEngine::destroySubpassPipelines()
 {
     writeAndDestroyPipelineCache();
 
-    vDevice->vkDestroyPipelineLayout(device, drawTriPipeline.layout, nullptr);
-    vDevice->vkDestroyPipeline(device, drawTriPipeline.pipeline, nullptr);
+    vDevice->vkDestroyPipelineLayout(device, drawSmPipeline.layout, nullptr);
+    vDevice->vkDestroyPipeline(device, drawSmPipeline.pipeline, nullptr);
     vDevice->vkDestroyPipelineLayout(device, drawQuadPipeline.layout, nullptr);
     vDevice->vkDestroyPipeline(device, drawQuadPipeline.pipeline, nullptr);
 
-    quadVertexBuffer->release();
-    quadIndexBuffer->release();
-    delete quadVertexBuffer;
-    quadVertexBuffer = nullptr;
-    delete quadIndexBuffer;
-    quadIndexBuffer = nullptr;
+    ENQUEUE_COMMAND(QuadVerticesRelease,
+        {
+            quadVertexBuffer->release();
+            quadIndexBuffer->release();
+            delete quadVertexBuffer;
+            quadVertexBuffer = nullptr;
+            delete quadIndexBuffer;
+            quadIndexBuffer = nullptr;
+        }
+        , this);
 }
 
-void ExperimentalEngine::createTriDrawPipeline()
+void ExperimentalEngine::createSmPipeline()
 {
-    ShaderResource* shaderResource = static_cast<ShaderResource*>(ExperimentalTriangleShader::staticType()->getDefault());
+    auto* shaderResource = static_cast<ShaderResource*>(StaticMeshUnlit::staticType()->getDefault());
+    const ShaderReflected* shaderReflected = shaderResource->getReflection();
 
     GRAPHICS_PIPELINE_CREATE_INFO(graphicsPipelineCreateInfo);
     graphicsPipelineCreateInfo.pTessellationState = nullptr;// No tessellation right now
-    graphicsPipelineCreateInfo.pDepthStencilState = nullptr;// No depth tests right now
+
+    PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO(depthStencilState);
+    depthStencilState.depthWriteEnable = VK_TRUE; 
+    depthStencilState.depthTestEnable = VK_TRUE;
+    depthStencilState.depthBoundsTestEnable = VK_FALSE;
+    depthStencilState.stencilTestEnable = VK_FALSE;
+    depthStencilState.depthCompareOp = VK_COMPARE_OP_GREATER;
+    depthStencilState.front = depthStencilState.back = { VK_STENCIL_OP_KEEP,VK_STENCIL_OP_KEEP,VK_STENCIL_OP_KEEP,VK_COMPARE_OP_NEVER,0,0,0 };
+
+    graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilState;
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     shaderStages.reserve(shaderResource->getShaders().size());
     for (const std::pair<const EShaderStage::Type, SharedPtr<ShaderCodeResource>>& shader : shaderResource->getShaders())
     {
-        const EShaderStage::ShaderStageInfo* stageInfo = EShaderStage::getShaderStageInfo(shader.first);
-        if (stageInfo)
-        {
-            PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
-            shaderStageCreateInfo.stage = (VkShaderStageFlagBits)stageInfo->shaderStage;
-            shaderStageCreateInfo.pName = stageInfo->entryPointName.getChar();
-            shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource*>(shader.second.get())->shaderModule;
-            shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;// Compile time constants
+        const EShaderStage::ShaderStageInfo* stageInfo = EShaderStage::getShaderStageInfo(shader.second->shaderStage());
+        PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
+        shaderStageCreateInfo.stage = (VkShaderStageFlagBits)stageInfo->shaderStage;
+        shaderStageCreateInfo.pName = shader.second->entryPoint().getChar();
+        shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource*>(shader.second.get())->shaderModule;
+        shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;// Compile time constants
 
-            shaderStages.push_back(shaderStageCreateInfo);
-        }
+        shaderStages.push_back(shaderStageCreateInfo);
     }
     graphicsPipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
     graphicsPipelineCreateInfo.pStages = shaderStages.data();
-    
+
+    std::vector<VkVertexInputBindingDescription> vertBindings{
+    {
+        0,
+        MeshAsset::getShaderParamInfo<StaticMeshAsset>()->paramStride(),
+        VK_VERTEX_INPUT_RATE_VERTEX
+    }};
+    std::vector<VkVertexInputAttributeDescription> vertAttributes;
+    const ShaderVertexFieldNode* node = &MeshAsset::getShaderParamInfo<StaticMeshAsset>()->startNode;
+    while (node->isValid())
+    {
+        VkVertexInputAttributeDescription vertAttribute;
+        vertAttribute.binding = 0;
+        vertAttribute.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::Type(node->field->format))->format);
+        vertAttribute.location = node->field->location;
+        vertAttribute.offset = node->field->offset;
+        vertAttributes.push_back(vertAttribute);
+
+        node = node->nextNode;
+    }
+
     PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO(vertexInputCreateInfo);
-    vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
-    vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
-    vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+    vertexInputCreateInfo.vertexBindingDescriptionCount = uint32(vertBindings.size());
+    vertexInputCreateInfo.pVertexBindingDescriptions = vertBindings.data();
+    vertexInputCreateInfo.vertexAttributeDescriptionCount = uint32(vertAttributes.size());
+    vertexInputCreateInfo.pVertexAttributeDescriptions = vertAttributes.data();
     graphicsPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
     
     PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO(inputAssemCreateInfo);
@@ -895,8 +1183,7 @@ void ExperimentalEngine::createTriDrawPipeline()
     viewport.y = 0;
     viewport.minDepth = 0;
     viewport.maxDepth = 1;
-    VkRect2D scissor = { {0,0},{0,0} };
-    getApplicationInstance()->appWindowManager.getMainWindow()->windowSize(scissor.extent.width, scissor.extent.height);
+    VkRect2D scissor = { {0,0},{ EngineSettings::screenSize.get().x, EngineSettings::screenSize.get().y} };
     viewport.width = static_cast<float>(scissor.extent.width);
     viewport.height = static_cast<float>(scissor.extent.height);
     viewportCreateInfo.viewportCount = 1;
@@ -915,7 +1202,7 @@ void ExperimentalEngine::createTriDrawPipeline()
     multisampleCreateInfo.sampleShadingEnable = multisampleCreateInfo.alphaToCoverageEnable = multisampleCreateInfo.alphaToOneEnable = VK_FALSE;
     multisampleCreateInfo.minSampleShading = 1;
     multisampleCreateInfo.pSampleMask = nullptr;
-    multisampleCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampleCreateInfo.rasterizationSamples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
     graphicsPipelineCreateInfo.pMultisampleState = &multisampleCreateInfo;
 
     PIPELINE_COLOR_BLEND_STATE_CREATE_INFO(colorBlendOpCreateInfo);
@@ -930,8 +1217,11 @@ void ExperimentalEngine::createTriDrawPipeline()
         VK_BLEND_OP_ADD,
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
     };
-    colorBlendOpCreateInfo.attachmentCount = 1;
-    colorBlendOpCreateInfo.pAttachments = &colorAttachmentBlendState;
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlends;
+    colorBlends.insert(colorBlends.end(), 3, colorAttachmentBlendState);
+
+    colorBlendOpCreateInfo.attachmentCount = uint32(colorBlends.size());
+    colorBlendOpCreateInfo.pAttachments = colorBlends.data();
     graphicsPipelineCreateInfo.pColorBlendState = &colorBlendOpCreateInfo;
 
     PIPELINE_DYNAMIC_STATE_CREATE_INFO(dynamicStateCreateInfo);
@@ -941,27 +1231,31 @@ void ExperimentalEngine::createTriDrawPipeline()
     graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
 
 
+    std::vector<VkDescriptorSetLayout> descSetsLayouts;
+    descSetsLayouts.reserve(staticMeshDescs.size());
+    for (const DescSetInfo& smDescSetInfo : staticMeshDescs) { descSetsLayouts.push_back(smDescSetInfo.descLayout); }
     PIPELINE_LAYOUT_CREATE_INFO(pipelineLayoutCreateInfo);
+    // TODO(Jeslas)(Less priority) : change this to get from reflection(anyway in real pipeline creation this gets changed. 
+    VkPushConstantRange pushConstRange{ VK_SHADER_STAGE_FRAGMENT_BIT, 0 , sizeof(float)};
     pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-    VkPushConstantRange pushContant{ VK_SHADER_STAGE_VERTEX_BIT,0,4};// float value for rotation
-    pipelineLayoutCreateInfo.pPushConstantRanges = &pushContant;
-    pipelineLayoutCreateInfo.setLayoutCount = 1;
-    pipelineLayoutCreateInfo.pSetLayouts = &descriptorsSetLayout;
-    fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &drawTriPipeline.layout)
-        == VK_SUCCESS, "Failed creating draw triangle pipeline layout");
+    pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstRange;
+    pipelineLayoutCreateInfo.setLayoutCount = uint32(descSetsLayouts.size());
+    pipelineLayoutCreateInfo.pSetLayouts = descSetsLayouts.data();
+    fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &drawSmPipeline.layout)
+        == VK_SUCCESS, "Failed creating draw staticmesh pipeline layout");
 
-    graphicsPipelineCreateInfo.layout = drawTriPipeline.layout;
-    graphicsPipelineCreateInfo.renderPass = renderPass;
+    graphicsPipelineCreateInfo.layout = drawSmPipeline.layout;
+    graphicsPipelineCreateInfo.renderPass = smRenderPass;
     graphicsPipelineCreateInfo.subpass = 0;
 
-    fatalAssert(vDevice->vkCreateGraphicsPipelines(device, drawTriPipeline.cache,1,&graphicsPipelineCreateInfo, nullptr, &drawTriPipeline.pipeline)
-        == VK_SUCCESS, "Failure in creating draw triangle pipelines");
-    graphicsDbg->markObject((uint64)(drawTriPipeline.pipeline), "ExperimentalTrianglePipeline", VK_OBJECT_TYPE_PIPELINE);
+    fatalAssert(vDevice->vkCreateGraphicsPipelines(device, drawSmPipeline.cache,1,&graphicsPipelineCreateInfo, nullptr, &drawSmPipeline.pipeline)
+        == VK_SUCCESS, "Failure in creating draw staticmesh pipelines");
+    graphicsDbg->markObject((uint64)(drawSmPipeline.pipeline), "StaticMeshPipeline", VK_OBJECT_TYPE_PIPELINE);
 }
 
 void ExperimentalEngine::createQuadDrawPipeline()
 {
-    ShaderResource* shaderResource = static_cast<ShaderResource*>(DrawQuadFromInputAttachment::staticType()->getDefault());
+    ShaderResource* shaderResource = static_cast<ShaderResource*>(DrawQuadFromTexture::staticType()->getDefault());
 
     GRAPHICS_PIPELINE_CREATE_INFO(graphicsPipelineCreateInfo);
     graphicsPipelineCreateInfo.pTessellationState = nullptr;// No tessellation right now
@@ -1058,16 +1352,20 @@ void ExperimentalEngine::createQuadDrawPipeline()
     dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
     graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
 
+    std::vector<VkDescriptorSetLayout> descSetsLayouts;
+    descSetsLayouts.reserve(drawQuadTextureDescs[0].size());
+    for (const DescSetInfo& descSetInfo : drawQuadTextureDescs[0]) { descSetsLayouts.push_back(descSetInfo.descLayout); }
+
     PIPELINE_LAYOUT_CREATE_INFO(pipelineLayoutCreateInfo);
     pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
-    pipelineLayoutCreateInfo.setLayoutCount = 1;
-    pipelineLayoutCreateInfo.pSetLayouts = &subpass1DescLayout;
+    pipelineLayoutCreateInfo.setLayoutCount = uint32(descSetsLayouts.size());
+    pipelineLayoutCreateInfo.pSetLayouts = descSetsLayouts.data();
     fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &drawQuadPipeline.layout)
         == VK_SUCCESS, "Failed creating draw triangle pipeline layout");
     graphicsPipelineCreateInfo.layout = drawQuadPipeline.layout;
-    graphicsPipelineCreateInfo.renderPass = renderPass;
-    graphicsPipelineCreateInfo.subpass = 1;
+    graphicsPipelineCreateInfo.renderPass = swapchainRenderPass;
+    graphicsPipelineCreateInfo.subpass = 0;
 
     fatalAssert(vDevice->vkCreateGraphicsPipelines(device, drawQuadPipeline.cache, 1, &graphicsPipelineCreateInfo, nullptr, &drawQuadPipeline.pipeline)
         == VK_SUCCESS, "Failure in creating draw quad pipelines");
@@ -1090,9 +1388,100 @@ void ExperimentalEngine::destroyPipelineResources()
     destroyShaderResDescriptors();
 }
 
+void ExperimentalEngine::writeBuffers()
+{
+    ViewData viewData;
+    viewData.projection = camera.projectionMatrix();
+    viewData.invProjection = viewData.projection.inverse();
+    viewData.view = camera.viewMatrix();
+    viewData.invView = viewData.view.inverse();
+
+    InstanceData instanceData;
+    instanceData.invModel = Matrix4::IDENTITY;
+    instanceData.model = Matrix4::IDENTITY;
+
+    ENQUEUE_COMMAND(WritingUniforms,
+        {
+            cmdList->copyToBuffer<ViewData>(viewBuffer.buffer, 0, &viewData, smUniformBinding["viewData"]);
+            cmdList->copyToBuffer<InstanceData>(instanceBuffer.buffer, 0, &instanceData, smUniformBinding["instanceData"]);
+        }
+    , this, viewData, instanceData);
+}
+
+void ExperimentalEngine::updateCameraParams()
+{
+
+    if (appInstance().inputSystem()->isKeyPressed(Keys::A))
+    {
+        rotationOffset += timeData.deltaTime * timeData.activeTimeDilation * 15.f;
+    }
+    if (appInstance().inputSystem()->isKeyPressed(Keys::D))
+    {
+        rotationOffset -= timeData.deltaTime * timeData.activeTimeDilation * 15.f;
+    }
+    if (appInstance().inputSystem()->isKeyPressed(Keys::W))
+    {
+        distanceOffset -= timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+    }
+    if (appInstance().inputSystem()->isKeyPressed(Keys::S))
+    {
+        distanceOffset += timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+    }
+    if (appInstance().inputSystem()->keyState(Keys::X)->keyWentUp)
+    {
+        toggleRes = !toggleRes;
+        ENQUEUE_COMMAND(WritingDescs,
+            {
+                const Size2D & screenSize = toggleRes ? EngineSettings::surfaceSize.get() : Size2D(1280, 720);
+                GBuffers::onScreenResized(screenSize);
+                writeUnlitBuffToQuadDrawDescs();
+                EngineSettings::screenSize.set(screenSize);
+            }, this);
+    }
+    if (appInstance().inputSystem()->keyState(Keys::LSHIFT)->keyWentUp)
+    {
+        useSuzanne = !useSuzanne;
+    }
+
+    Transform3D translation;
+    translation.setTranslation(Vector3D(0.f, 1.f ,0.75f).safeNormalize() * (500 + distanceOffset));
+    
+    Transform3D cameraTransform;
+    cameraTransform.setRotation(Rotation(0, 0, rotationOffset));
+
+    camera.setTranslation(cameraTransform.transform(translation).getTranslation());
+    camera.lookAt(Vector3D::ZERO);
+
+    AssetHeader staticMeshHeader;
+    staticMeshHeader.type = EAssetType::StaticMesh;
+    if (useSuzanne)
+    {
+        staticMeshHeader.assetPath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(staticMeshHeader.assetName), "Assets/TestOb.obj");
+        staticMeshHeader.assetName = "Suzanne";
+    }
+    else
+    {
+        staticMeshHeader.assetPath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(staticMeshHeader.assetName), "Assets/Gizmos.obj");
+        staticMeshHeader.assetName = "Gizmos";
+    }
+    meshAsset = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset(staticMeshHeader));
+}
+
 void ExperimentalEngine::onStartUp()
 {
     GameEngine::onStartUp();
+
+    ENQUEUE_COMMAND(EngineStartUp, { startUpRenderInit(); }, this);
+
+    camera.cameraProjection = ECameraProjection::Perspective;
+    camera.setClippingPlane(1.f, 600.f);
+    camera.setFOV(110.f, 90.f);
+    
+    tempTest();
+}
+
+void ExperimentalEngine::startUpRenderInit()
+{
     vDevice = VulkanGraphicsHelper::getVulkanDevice(getRenderApi()->getGraphicsInstance());
     device = VulkanGraphicsHelper::getDevice(vDevice);
     deviceQueues = VulkanGraphicsHelper::getVDAllQueues(vDevice);
@@ -1101,16 +1490,21 @@ void ExperimentalEngine::onStartUp()
     frameResources.resize(getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount());
     cmdSubmitFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(), "cmdSubmitFence");
 
+    fillBindings();
     createBuffers();
-    writeBuffers();
     createImages();
     writeImages();
     createPipelineResources();
-
-    tempTest();
 }
 
 void ExperimentalEngine::onQuit()
+{
+    ENQUEUE_COMMAND(EngineQuit, { renderQuit(); }, this);
+
+    GameEngine::onQuit();
+}
+
+void ExperimentalEngine::renderQuit()
 {
     vDevice->vkDeviceWaitIdle(device);
 
@@ -1122,36 +1516,41 @@ void ExperimentalEngine::onQuit()
     cmdSubmitFence->release();
     cmdSubmitFence.reset();
     destroyPools();
-    GameEngine::onQuit();
 }
 
-void ExperimentalEngine::tickEngine()
+void ExperimentalEngine::frameRender()
 {
-    GameEngine::tickEngine();
-    
-    if (appInstance().inputSystem()->isKeyPressed(Keys::RMB))
-    {
-        rotationOffset += timeData.deltaTime * timeData.activeTimeDilation * 0.5f;
-    }
-    else if(appInstance().inputSystem()->isKeyPressed(Keys::LMB))
-    {
-        rotationOffset -= timeData.deltaTime * timeData.activeTimeDilation * 0.5f;
-    }
+    writeBuffers();
 
     VkViewport viewport;
     viewport.x = 0;
-    viewport.y = 0;
     viewport.minDepth = 0;
     viewport.maxDepth = 1;
-    viewport.width = (float)EngineSettings::surfaceSize.get().x;
-    viewport.height = (float)EngineSettings::surfaceSize.get().y;
-    VkRect2D scissor = { {0,0},{EngineSettings::surfaceSize.get().x,EngineSettings::surfaceSize.get().y} };
+    viewport.width = float(EngineSettings::screenSize.get().x);
+    // Since view matrix positive y is along up while vulkan positive y in view is down
+    viewport.height = -(float(EngineSettings::screenSize.get().y));
+    viewport.y = float(EngineSettings::screenSize.get().y);
+    VkRect2D scissor = { {0,0},{EngineSettings::screenSize.get().x,EngineSettings::screenSize.get().y} };
 
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
-    std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
-    std::vector<uint32> indices = { index };
+
+    std::vector<DescSetInfo>* drawQuadDescs = nullptr;
+    switch (frameVisualizeId)
+    {
+    case 1:
+        drawQuadDescs = &drawQuadNormalDescs[index];
+        break;
+    case 2:
+        drawQuadDescs = &drawQuadDepthDescs[index];
+        break;
+    case 0:
+    default:
+        drawQuadDescs = &drawQuadTextureDescs[index];
+        break;
+    }
+
 
     if (!frameResources[index].recordingFence->isSignaled())
     {
@@ -1166,39 +1565,83 @@ void ExperimentalEngine::tickEngine()
     {
         SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ExperimentalEngineFrame);
 
-        RENDERPASS_BEGIN_INFO(renderPassBeginInfo);
-        renderPassBeginInfo.renderPass = renderPass;
-        renderPassBeginInfo.framebuffer = frameResources[index].frameBuffer;
-        renderPassBeginInfo.pClearValues = attachmentsClearColors.data();
-        renderPassBeginInfo.clearValueCount = (uint32)attachmentsClearColors.size();
-        renderPassBeginInfo.renderArea.offset = { 0,0 };
-        renderPassBeginInfo.renderArea.extent = scissor.extent;
-
-        vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        std::vector<VkDescriptorSet> descSets;
+        descSets.reserve(staticMeshDescs.size());
+        for (const DescSetInfo& descSetInfo : staticMeshDescs)
         {
-            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, Subpass_0);
+            descSets.push_back(descSetInfo.descSet);
+        }
+
+        RENDERPASS_BEGIN_INFO(renderPassBeginInfo);
+        renderPassBeginInfo.renderPass = smRenderPass;
+        renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(GBuffers::getFramebuffer(
+            { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } }, index));
+
+        renderPassBeginInfo.pClearValues = smAttachmentsClearColors.data();
+        renderPassBeginInfo.clearValueCount = (uint32)smAttachmentsClearColors.size();
+        renderPassBeginInfo.renderArea = scissor;
+
+        vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+        {
+            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, MainUnlitPass);
 
             vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
             vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
-            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, drawTriPipeline.pipeline);
-            vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, drawTriPipeline.layout, 0, 1, &descriptorsSet, 0, nullptr);
-            vDevice->vkCmdPushConstants(frameResources[index].perFrameCommands, drawTriPipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 4, &rotationOffset);
-            vDevice->vkCmdDraw(frameResources[index].perFrameCommands, 3, 1, 0, 0);
+
+            vDevice->vkCmdPushConstants(frameResources[index].perFrameCommands, drawSmPipeline.layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &useVertexColor);
+
+            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, drawSmPipeline.pipeline);
+            vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                , drawSmPipeline.layout, 0, uint32(descSets.size()), descSets.data(), 0, nullptr);
+
+            uint64 vertexBufferOffset = 0;
+            vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(meshAsset->vertexBuffer)->buffer, &vertexBufferOffset);
+            vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(meshAsset->indexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+            for (const StaticMeshVertexView& meshBatch : meshAsset->meshBatches)
+            {
+                vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, meshBatch.numOfIndices, 1, meshBatch.startIndex, 0, 0);
+            }
         }
-        vDevice->vkCmdNextSubpass(frameResources[index].perFrameCommands, VK_SUBPASS_CONTENTS_INLINE);
+        vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
+
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = float(EngineSettings::surfaceSize.get().x);
+        viewport.height = float(EngineSettings::surfaceSize.get().y);
+        scissor = { {0,0},{EngineSettings::surfaceSize.get().x,EngineSettings::surfaceSize.get().y} };
+
+        // Copying to swapchain
+        descSets.clear();
+        descSets.reserve(drawQuadDescs->size());
+        for (const DescSetInfo& descSetInfo : *drawQuadDescs)
         {
-            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, Subpass_1);
+            descSets.push_back(descSetInfo.descSet);
+        }
+
+        renderPassBeginInfo.clearValueCount = 1;
+        renderPassBeginInfo.pClearValues = &swapchainClearColor;
+        renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(GBuffers::getSwapchainFramebuffer(index));
+        renderPassBeginInfo.renderArea = scissor;
+        renderPassBeginInfo.renderPass = swapchainRenderPass;
+
+        vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+        {
+            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ResolveToSwapchain);
+
+            vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
+            vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
 
             vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, drawQuadPipeline.pipeline);
-            vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, drawQuadPipeline.layout, 0, 1, &frameResources[index].iAttachSetSubpass1, 0, nullptr);
+            vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                , drawQuadPipeline.layout, 0, uint32(descSets.size()), descSets.data(), 0, nullptr);
+
             uint64 vertexBufferOffset = 0;
             vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
             vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
 
             vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, 6, 1, 0, 0, 0);
-
-            vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
         }
+        vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
     }
     vDevice->vkEndCommandBuffer(frameResources[index].perFrameCommands);
 
@@ -1212,10 +1655,34 @@ void ExperimentalEngine::tickEngine()
     qSubmitInfo.signalSemaphoreCount = 1;
     qSubmitInfo.pSignalSemaphores = &static_cast<VulkanSemaphore*>(frameResources[index].usageWaitSemaphore[0].get())->semaphore;
 
-    vDevice->vkQueueSubmit(getQueue<EQueueFunction::Graphics>(*deviceQueues, vDevice)->getQueueOfPriority<EQueuePriority::High>()
+    vDevice->vkQueueSubmit(getQueue<EQueueFunction::Graphics>(vDevice)->getQueueOfPriority<EQueuePriority::High>()
         , 1, &qSubmitInfo, static_cast<VulkanFence*>(frameResources[index].recordingFence.get())->fence);
 
+    std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
+    std::vector<uint32> indices = { index };
     GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, &frameResources[index].usageWaitSemaphore);
+
+}
+
+void ExperimentalEngine::tickEngine()
+{
+    GameEngine::tickEngine();
+    updateCameraParams();
+
+    if (getApplicationInstance()->inputSystem()->isKeyPressed(Keys::ONE))
+    {
+        frameVisualizeId = 0;
+    }
+    else if(getApplicationInstance()->inputSystem()->isKeyPressed(Keys::TWO))
+    {
+        frameVisualizeId = 1;
+    }
+    else if (getApplicationInstance()->inputSystem()->isKeyPressed(Keys::THREE))
+    {
+        frameVisualizeId = 2;
+    }
+
+    ENQUEUE_COMMAND(TickFrame, { frameRender(); }, this);
 
     tempTestPerFrame();
 }

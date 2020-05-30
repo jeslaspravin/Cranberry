@@ -9,9 +9,12 @@ public:
     void setup(IRenderCommandList* commandList) override;
 
     void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) override;
-    void copyToBuffer(const std::vector<BatchCopyData>& batchCopies) override;
-
+    void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) override;
     void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) override;
+    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData) override;
+
+    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo) override;
+    void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo) override;
 
     const GraphicsResource* startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable) override;
     void endCmd(const GraphicsResource* cmdBuffer) override;
@@ -40,7 +43,7 @@ void RenderCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, cons
     cmdList->copyToBuffer(dst, dstOffset, dataToCopy, size);
 }
 
-void RenderCommandList::copyToBuffer(const std::vector<BatchCopyData>& batchCopies)
+void RenderCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies)
 {
     cmdList->copyToBuffer(batchCopies);
 }
@@ -75,6 +78,21 @@ void RenderCommandList::submitWaitCmd(EQueuePriority::Enum priority
 void RenderCommandList::waitIdle()
 {
     cmdList->waitIdle();
+}
+
+void RenderCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData)
+{
+    cmdList->copyToImage(dst, pixelData);
+}
+
+void RenderCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo)
+{
+    cmdList->copyToImage(dst, pixelData, copyInfo);
+}
+
+void RenderCommandList::copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo)
+{
+    cmdList->copyOrResolveImage(src, dst, copyInfo);
 }
 
 IRenderCommandList* IRenderCommandList::genericInstance()

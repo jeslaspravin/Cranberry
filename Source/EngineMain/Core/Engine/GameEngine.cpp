@@ -124,8 +124,3 @@ GenericAppInstance& GameEngine::appInstance() const
     debugAssert(GameEngine::applicationInstance);
     return *applicationInstance;
 }
-
-void GameEngine::waitOnRenderApi()
-{
-    renderingApi->waitOnCommands();
-}

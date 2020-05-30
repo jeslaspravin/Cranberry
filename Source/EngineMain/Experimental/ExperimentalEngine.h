@@ -4,7 +4,10 @@
 #include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanSyncResource.h"
 #include "../RenderInterface/Resources/MemoryResources.h"
+#include "../RenderInterface/ShaderCore/ShaderParameters.h"
 #include "../Core/Platform/LFS/PlatformLFS.h"
+#include "../Core/Types/Transform3D.h"
+#include "../Core/Types/Camera/Camera.h"
 
 #include <map>
 #include <vulkan_core.h>
@@ -29,39 +32,6 @@ struct ImageData
     VkImageView imageView = nullptr;
 };
 
-struct FramebufferFormat
-{
-    struct FramebufferAttachmentFormat
-    {
-        EPixelDataFormat::Type pixelFormat;
-        EPixelSampleCount::Type sampleCount;
-
-        bool operator==(const FramebufferAttachmentFormat& otherFormat) const
-        {
-            return pixelFormat == otherFormat.pixelFormat && sampleCount == otherFormat.sampleCount;
-        }
-    };
-
-    std::vector<FramebufferAttachmentFormat> attachments;
-
-    bool operator==(const FramebufferFormat& otherFormat) const
-    {
-        bool isEqual = true;
-        if(otherFormat.attachments.size() != attachments.size())
-        {
-            isEqual = false;
-        }
-        else
-        {
-            for (int32 index = 0; index < (int32)attachments.size(); ++index)
-            {
-                isEqual = isEqual && (attachments[index] == otherFormat.attachments[index]);
-            }
-        }
-
-        return isEqual;
-    }
-};
 
 struct BasicPipeline
 {
@@ -70,13 +40,18 @@ struct BasicPipeline
     VkPipelineLayout layout;
 };
 
+struct DescSetInfo
+{
+    std::map<String, uint32> descBindingNames;
+    std::vector<VkDescriptorPoolSize> descLayoutInfo;
+    VkDescriptorSetLayout descLayout;
+    VkDescriptorSet descSet;
+};
+
 struct FrameResource
 {
     std::vector<SharedPtr<GraphicsSemaphore>> usageWaitSemaphore;
     VkCommandBuffer perFrameCommands;
-    ImageData rtTexture;
-    VkFramebuffer frameBuffer;
-    VkDescriptorSet iAttachSetSubpass1;
     SharedPtr<GraphicsFence> recordingFence;
 };
 
@@ -92,13 +67,14 @@ class ExperimentalEngine : public GameEngine
     void createPools();
     void destroyPools();
 
-    BufferData normalBuffer;
-    BufferData texelBuffer;
+    BufferData viewBuffer;
+    BufferData instanceBuffer;
     void createBuffers();
     void writeBuffers();
     void destroyBuffers();
 
     ImageData texture;
+    ImageData normalTexture;
     SharedPtr<class SamplerInterface> commonSampler = nullptr;
     void createImages();
     void writeImages();
@@ -106,37 +82,43 @@ class ExperimentalEngine : public GameEngine
 
     // Test shader pipeline resources
     // Pipeline specific stuffs
-    VkDescriptorSetLayout descriptorsSetLayout;
-    VkDescriptorSet descriptorsSet;
+    std::map<String, ImageData*> smTextureBinding;
+    std::map<String, ShaderBufferParamInfo*> smUniformBinding;
+    std::vector<DescSetInfo> staticMeshDescs;
+
+    std::vector<std::vector<DescSetInfo>> drawQuadTextureDescs;
+    std::vector<std::vector<DescSetInfo>> drawQuadNormalDescs;
+    std::vector<std::vector<DescSetInfo>> drawQuadDepthDescs;
+    void fillBindings();
+
     void createShaderResDescriptors();
+    void writeUnlitBuffToQuadDrawDescs();
     void destroyShaderResDescriptors();
 
-    VkRenderPass renderPass;
-    std::vector<VkClearValue> attachmentsClearColors;// For render pass
-    VkDescriptorSetLayout subpass1DescLayout;
-    void createInputAttachmentDescriptors();
-    void destroyInputAttachmentDescriptors();
+    VkRenderPass smRenderPass;
+    std::vector<VkClearValue> smAttachmentsClearColors;
+    std::vector<EPixelDataFormat::Type> smAttachmentsFormat;
+
+    VkRenderPass swapchainRenderPass;
+    VkClearValue swapchainClearColor;
     void createFrameResources();
     void destroyFrameResources();
     void createRenderpass();
     void destroyRenderpass();
 
-    PlatformFile pipelineCacheFile;
-    BasicPipeline drawTriPipeline;
+    BasicPipeline drawSmPipeline;
+
     class BufferResource* quadVertexBuffer = nullptr;
     class BufferResource* quadIndexBuffer = nullptr;
     BasicPipeline drawQuadPipeline;
+    PlatformFile pipelineCacheFile;
     void createPipelineCache();
     void writeAndDestroyPipelineCache();
     void createPipelineForSubpass();
     void destroySubpassPipelines();
-    void createTriDrawPipeline();
+    void createSmPipeline();
     void createQuadDrawPipeline();
 
-    // Common to many pipeline stuffs
-    VkDescriptorPool descriptorsPool;
-    // Since frame buffers with same FrameBufferFormat can be used with different render passes
-    // std::map<FramebufferFormat, VkFramebuffer> framebuffers;
     std::vector<FrameResource> frameResources;
 
     void createPipelineResources();
@@ -144,11 +126,26 @@ class ExperimentalEngine : public GameEngine
 
     // End shader pipeline resources
 
+    // Camera parameters
+    Camera camera;
+    void updateCameraParams();
+
+    float distanceOffset = 0;
     float rotationOffset = 0;
+    uint32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
+    bool toggleRes;
+    bool useSuzanne;
+    float useVertexColor = 0.0f;
+
+    class StaticMeshAsset* meshAsset;
 protected:
     void onStartUp() override;
     void onQuit() override;
     void tickEngine() override;
+
+    void startUpRenderInit();
+    void renderQuit();
+    void frameRender();
 
     void tempTest();
     void tempTestPerFrame();

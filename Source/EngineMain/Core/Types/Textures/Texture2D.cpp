@@ -1,13 +1,14 @@
 #include "Texture2D.h"
 #include "../../../RenderInterface/PlatformIndependentHeaders.h"
 #include "../../Math/Math.h"
+#include "../../../RenderInterface/Rendering/IRenderCommandList.h"
 
 uint32 Texture2D::getMipCount() const
 {
     return mipCount;
 }
 
-void Texture2D::setData(const std::vector<class Color>& newData, bool bIsSrgb)
+void Texture2D::setData(const std::vector<class Color>& newData, const Color& defaultColor, bool bIsSrgb)
 {
     rawData.resize(Math::max((uint32)newData.size(), textureSize.x * textureSize.y));
 
@@ -30,12 +31,12 @@ void Texture2D::setData(const std::vector<class Color>& newData, bool bIsSrgb)
     }
     for (; copyIndex < static_cast<int32>(rawData.size()); ++copyIndex)
     {
-        rawData[copyIndex] = ColorConst::BLACK;
+        rawData[copyIndex] = defaultColor;
     }
 
     if (textureResource)
     {
-        // TODO(Jeslas) : copy and generate mips to image resource
+        markResourceDirty();
     }
 }
 
@@ -52,7 +53,7 @@ Texture2D* Texture2D::createTexture(const Texture2DCreateParams& createParams)
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->sampleCount = createParams.sampleCount;
     texture->textureName = createParams.textureName;
-    texture->setData(createParams.colorData,createParams.bIsSrgb);
+    texture->setData(createParams.colorData, createParams.defaultColor, createParams.bIsSrgb);
 
     Texture2D::init(texture);
     return texture;
@@ -68,7 +69,19 @@ void Texture2D::destroyTexture(Texture2D* texture2D)
 void Texture2D::reinitResources()
 {
     TextureBase::reinitResources();
-    textureResource->reinitResources();
+
+    ENQUEUE_COMMAND(ReinitTexture2D, 
+        {
+            if (textureResource->isValid())
+            {
+                textureResource->reinitResources();
+                cmdList->copyToImage(textureResource, rawData);
+            }
+            else
+            {
+                Texture2D::init(this);
+            }
+        }, this);
 }
 
 void Texture2D::init(Texture2D* texture)
@@ -80,14 +93,23 @@ void Texture2D::init(Texture2D* texture)
     texture->textureResource->setImageSize(texture->textureSize);
     texture->textureResource->setLayerCount(1);
     texture->textureResource->setNumOfMips(texture->mipCount);
-    texture->textureResource->init();
 
-    // TODO(Jeslas) : copy and generate mips to image resource
+    ENQUEUE_COMMAND(InitTexture2D,
+        {
+            texture->textureResource->init();
+            cmdList->copyToImage(texture->textureResource, texture->rawData);
+        }
+        , texture);
 }
 
 void Texture2D::destroy(Texture2D* texture)
 {
-    texture->textureResource->release();
-    delete texture->textureResource;
+    ImageResource* textureResource = texture->textureResource;
+    ENQUEUE_COMMAND(DestroyTexture2D,
+        {
+            textureResource->release();
+            delete textureResource;
+        }, textureResource);
+
     texture->textureResource = nullptr;
 }
