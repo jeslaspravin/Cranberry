@@ -6,6 +6,7 @@
 #include "../GraphicsIntance.h"
 #include "../../Core/Engine/GameEngine.h"
 #include "../Resources/QueueResource.h"
+#include "../../Core/Math/CoreMathTypedefs.h"
 
 #include <type_traits>
 
@@ -13,6 +14,7 @@ class BufferResource;
 class GraphicsResource;
 class GraphicsFence;
 struct CommandSubmitInfo;
+class ImageResource;
 
 class IRenderCommand
 {
@@ -49,12 +51,26 @@ struct CopyBufferInfo
     uint32 copySize;
 };
 
-struct BatchCopyData
+struct BatchCopyBufferData
 {
     BufferResource* dst;
     uint32 dstOffset;
     const void* dataToCopy;
     uint32 size;
+};
+
+struct CopyImageInfo
+{
+    Size3D srcOffset;
+    Size3D dstOffset;
+    Size3D extent;
+
+    uint32 mipBase;
+    uint32 mipCount;
+    uint32 layerBase;
+    uint32 layerCount;
+
+    bool bGenerateMips;
 };
 
 class IRenderCommandList
@@ -66,11 +82,15 @@ public:
     virtual void setup(IRenderCommandList* commandList) {};
 
     virtual void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) = 0;
-    virtual void copyToBuffer(const std::vector<BatchCopyData>& batchCopies) = 0;
+    virtual void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) = 0;
     virtual void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) = 0;
-
     template<typename BufferDataType>
     void copyToBuffer(BufferResource* dst, uint32 dstOffset, const BufferDataType* dataToCopy, const ShaderBufferParamInfo* bufferFields);
+
+    // Copy pixel data to only first mip level of all layers.
+    virtual void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData) = 0;
+    virtual void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo) = 0;
+    virtual void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo) = 0;
 
     ///////////////////////////////////////////////////////////////////////////////
     //// Command buffer related function access if you know what you are doing ////
@@ -93,14 +113,14 @@ template<typename BufferDataType>
 void IRenderCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, const BufferDataType* dataToCopy
     , const ShaderBufferParamInfo* bufferFields)
 {
-    std::vector<BatchCopyData> batchedCopies;
+    std::vector<BatchCopyBufferData> batchedCopies;
 
     const ShaderBufferFieldNode* fieldNode = &bufferFields->startNode;
     while (fieldNode->isValid())
     {
         auto* bufferMemberField = static_cast<ShaderBufferTypedField<BufferDataType>*>(fieldNode->field);
 
-        BatchCopyData copyData;
+        BatchCopyBufferData copyData;
         copyData.dst = dst;
         copyData.dstOffset = dstOffset + bufferMemberField->offset;
         copyData.dataToCopy = bufferMemberField->fieldData(copyData.size, dataToCopy);

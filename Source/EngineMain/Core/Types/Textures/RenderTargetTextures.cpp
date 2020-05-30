@@ -2,6 +2,7 @@
 #include "../../../RenderInterface/PlatformIndependentHeaders.h"
 #include "../../Math/Math.h"
 #include "../../Logger/Logger.h"
+#include "../../../RenderInterface/Rendering/IRenderCommandList.h"
 
 namespace ERenderTargetFormat
 {
@@ -63,11 +64,14 @@ void RenderTargetTexture::reinitResources()
         rtResource->setSampleCounts(sampleCount);
         rtResource->setResourceName(textureName);
 
-        rtResource->reinitResources();
-        if (!bSameReadWriteTexture)
-        {
-            textureResource->reinitResources();
-        }
+        ENQUEUE_COMMAND(RtReinitTexture,
+            {
+                rtResource->reinitResources();
+                if (!bSameReadWriteTexture)
+                {
+                    textureResource->reinitResources();
+                } 
+            }, this);
     }
 }
 
@@ -121,7 +125,6 @@ void RenderTargetTexture::init(RenderTargetTexture* texture)
     texture->rtResource->setImageSize(texture->textureSize);
     texture->rtResource->setLayerCount(1);
     texture->rtResource->setNumOfMips(texture->mipCount);
-    texture->rtResource->init();
 
     if (!texture->bSameReadWriteTexture)
     {
@@ -132,20 +135,33 @@ void RenderTargetTexture::init(RenderTargetTexture* texture)
         texture->textureResource->setImageSize(texture->textureSize);
         texture->textureResource->setLayerCount(1);
         texture->textureResource->setNumOfMips(texture->mipCount);
-        texture->textureResource->init();
     }
+
+    ENQUEUE_COMMAND(RtInitTexture,
+        {
+            texture->rtResource->init();
+            if (!texture->bSameReadWriteTexture)
+            {
+                texture->textureResource->init();
+            }
+        }, texture);
 }
 
 void RenderTargetTexture::release(RenderTargetTexture* texture)
 {
-    texture->textureResource->release();
-    texture->rtResource->release();
+    ImageResource* rtResource = texture->rtResource;
+    ImageResource* textureResource = texture->textureResource;
+    ENQUEUE_COMMAND(RtDestroyTexture,
+        {
+            textureResource->release();
+            rtResource->release();
 
-    delete texture->rtResource;
-    if (!texture->bSameReadWriteTexture)
-    {
-        delete texture->textureResource;
-    }
+            delete rtResource;
+            if (rtResource != textureResource)
+            {
+                delete textureResource;
+            }
+        }, rtResource, textureResource);
 
     texture->textureResource = nullptr;
     texture->rtResource = nullptr;

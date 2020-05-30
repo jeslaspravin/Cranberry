@@ -96,13 +96,13 @@ void VulkanCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, cons
     }
 }
 
-void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyData>& batchCopies)
+void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies)
 {
     // For each buffer there will be bunch of copies associated to it
-    std::map<VulkanBufferResource*, std::pair<VulkanBufferResource*, std::vector<const BatchCopyData*>>> dstToStagingBufferMap;
+    std::map<VulkanBufferResource*, std::pair<VulkanBufferResource*, std::vector<const BatchCopyBufferData*>>> dstToStagingBufferMap;
     
     // Filling per buffer copy region data and staging data
-    for (const BatchCopyData& copyData : batchCopies)
+    for (const BatchCopyBufferData& copyData : batchCopies)
     {
         auto* vulkanDst = static_cast<VulkanBufferResource*>(copyData.dst);
         if (vulkanDst->isStagingResource())
@@ -153,7 +153,7 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyData>& batchCopi
     for (const auto& dstToStagingPair : dstToStagingBufferMap)
     {
         std::vector<VkBufferCopy> copyRegions;
-        for (const BatchCopyData* const& copyData : dstToStagingPair.second.second)
+        for (const BatchCopyBufferData* const& copyData : dstToStagingPair.second.second)
         {
             copyRegions.push_back({ copyData->dstOffset, copyData->dstOffset, copyData->size });
         }
@@ -217,4 +217,33 @@ void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority
 void VulkanCommandList::waitIdle()
 {
     vDevice->vkDeviceWaitIdle(VulkanGraphicsHelper::getDevice(vDevice));
+}
+
+void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData)
+{
+    if (pixelData.size() < (dst->getImageSize().z * dst->getImageSize().y * dst->getImageSize().x) * dst->getLayerCount())
+    {
+        Logger::error("VulkanCommandList", "%s() : Texel data count is not sufficient to fill all texels of %s",__func__
+            , dst->getResourceName().getChar());
+        return;
+    }
+    CopyImageInfo copyInfo;
+    copyInfo.dstOffset = { 0,0,0 };
+    copyInfo.extent = dst->getImageSize();
+    copyInfo.layerBase = 0;
+    copyInfo.layerCount = dst->getLayerCount();
+    copyInfo.mipBase = 0;
+    copyInfo.mipCount = 1;
+    copyInfo.bGenerateMips = false;
+    copyToImage(dst, pixelData, copyInfo);
+}
+
+void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo)
+{
+    // TODO(ASAP) 
+}
+
+void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo)
+{
+    // TODO(ASAP) 
 }
