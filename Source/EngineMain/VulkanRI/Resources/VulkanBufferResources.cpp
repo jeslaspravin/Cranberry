@@ -104,7 +104,7 @@ VulkanRTexelBuffer::VulkanRTexelBuffer(EPixelDataFormat::Type texelFormat, uint3
 
 uint64 VulkanRTexelBuffer::getResourceSize() const
 {
-    const EPixelDataFormat::ImageFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
+    const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
 
     if (formatInfo)
     {
@@ -137,7 +137,7 @@ VulkanWTexelBuffer::VulkanWTexelBuffer(EPixelDataFormat::Type texelFormat, uint3
 
 uint64 VulkanWTexelBuffer::getResourceSize() const
 {
-    const EPixelDataFormat::ImageFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
+    const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
 
     if (formatInfo)
     {
@@ -170,7 +170,7 @@ VulkanRWTexelBuffer::VulkanRWTexelBuffer(EPixelDataFormat::Type texelFormat, uin
 
 uint64 VulkanRWTexelBuffer::getResourceSize() const
 {
-    const EPixelDataFormat::ImageFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
+    const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
 
     if (formatInfo)
     {

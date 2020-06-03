@@ -173,7 +173,7 @@ void VulkanImageResource::reinitResources()
     {
         imageUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
         featuresRequired = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
-        const EPixelDataFormat::ImageFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
+        const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
 
         if (!formatInfo)
         {
@@ -192,6 +192,7 @@ void VulkanImageResource::reinitResources()
         }
         // In case of using same target as both Render target and shader sampled image
         imageUsage |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
+        featuresRequired |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT : 0;
         tiling = VK_IMAGE_TILING_OPTIMAL;
         // In render targets only one mip map is allowed
         numOfMips = 1;
@@ -201,7 +202,7 @@ void VulkanImageResource::reinitResources()
         if (numOfMips == 0)
         {
             // TODO (Jeslas) : Check if 1D or 3D can have more mips and render targets
-            numOfMips = (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y))));
+            numOfMips = mipCountFromDim();
         }
         if (type != VK_IMAGE_TYPE_2D)
         {
@@ -293,7 +294,7 @@ void VulkanImageResource::release()
 
 uint64 VulkanImageResource::getResourceSize() const
 {
-    const EPixelDataFormat::ImageFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
+    const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
 
     if (formatInfo)
     {
@@ -353,10 +354,10 @@ VkImageView VulkanImageResource::createImageView(const ImageViewInfo& viewInfo)
         viewInfo.viewSubresource.layersCount
     };
     imageViewCreateInfo.components = {
-        (VkComponentSwizzle)EImageComponentMapping::getComponentMapping(viewInfo.componentMapping.r)->mapping,
-        (VkComponentSwizzle)EImageComponentMapping::getComponentMapping(viewInfo.componentMapping.g)->mapping,
-        (VkComponentSwizzle)EImageComponentMapping::getComponentMapping(viewInfo.componentMapping.b)->mapping,
-        (VkComponentSwizzle)EImageComponentMapping::getComponentMapping(viewInfo.componentMapping.a)->mapping,
+        (VkComponentSwizzle)EPixelComponentMapping::getComponentMapping(viewInfo.componentMapping.r)->mapping,
+        (VkComponentSwizzle)EPixelComponentMapping::getComponentMapping(viewInfo.componentMapping.g)->mapping,
+        (VkComponentSwizzle)EPixelComponentMapping::getComponentMapping(viewInfo.componentMapping.b)->mapping,
+        (VkComponentSwizzle)EPixelComponentMapping::getComponentMapping(viewInfo.componentMapping.a)->mapping,
     };
 
     return VulkanGraphicsHelper::createImageView(gEngine->getRenderApi()->getGraphicsInstance(), imageViewCreateInfo);

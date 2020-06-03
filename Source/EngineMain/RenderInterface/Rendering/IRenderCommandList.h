@@ -71,10 +71,15 @@ struct CopyImageInfo
     uint32 layerCount;
 
     bool bGenerateMips;
+    // Filtering to be used to generate mips
+    ESamplerFiltering::Type mipFiltering;
 };
 
 class IRenderCommandList
 {
+protected:
+    // raw copies the pixels to staging buffer
+    void copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class Color>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo) const;
 public:
     virtual ~IRenderCommandList() = default;
     static IRenderCommandList* genericInstance();
@@ -88,7 +93,7 @@ public:
     void copyToBuffer(BufferResource* dst, uint32 dstOffset, const BufferDataType* dataToCopy, const ShaderBufferParamInfo* bufferFields);
 
     // Copy pixel data to only first mip level of all layers.
-    virtual void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData) = 0;
+    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData);
     virtual void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo) = 0;
     virtual void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo) = 0;
 

@@ -23,9 +23,34 @@ ImageResource::ImageResource(EPixelDataFormat::Type imageFormat)
 
 }
 
+uint32 ImageResource::mipCountFromDim()
+{
+    return (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y))));
+}
+
 void ImageResource::setLayerCount(uint32 count)
 {
     layerCount = Math::max<uint32>(count, 1);
+}
+
+void ImageResource::setSampleCounts(EPixelSampleCount::Type samples)
+{
+    sampleCounts = samples;
+}
+
+void ImageResource::setNumOfMips(uint32 mipCount)
+{
+    numOfMips = mipCount;
+}
+
+void ImageResource::setShaderUsage(uint32 usage)
+{
+    shaderUsage = usage;
+}
+
+void ImageResource::setImageSize(const Size3D& imageSize)
+{
+    dimensions = imageSize;
 }
 
 bool EPixelDataFormat::isDepthFormat(Type dataFormat)
@@ -36,4 +61,9 @@ bool EPixelDataFormat::isDepthFormat(Type dataFormat)
 bool EPixelDataFormat::isStencilFormat(Type dataFormat)
 {
     return EPixelDataFormat::StencilDepthEnd <= dataFormat && EPixelDataFormat::StencilDepthEnd >= dataFormat;
+}
+
+bool EPixelDataFormat::isFloatingFormat(Type dataFormat)
+{
+    return EPixelDataFormat::FloatFormatEnd <= dataFormat && EPixelDataFormat::FloatFormatBegin >= dataFormat;
 }

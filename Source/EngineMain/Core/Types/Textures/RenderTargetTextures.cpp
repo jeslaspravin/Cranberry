@@ -61,7 +61,6 @@ void RenderTargetTexture::reinitResources()
     {
         rtResource->setImageSize(textureSize);
         rtResource->setNumOfMips(mipCount);
-        rtResource->setSampleCounts(sampleCount);
         rtResource->setResourceName(textureName);
 
         ENQUEUE_COMMAND(RtReinitTexture,
@@ -92,7 +91,6 @@ RenderTargetTexture* RenderTargetTexture::createTexture(const RenderTextureCreat
             (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))), createParams.mipCount);
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
-    texture->sampleCount = createParams.sampleCount;
     texture->textureName = createParams.textureName;
     texture->bIsSrgb = createParams.bIsSrgb;
     texture->bSameReadWriteTexture = createParams.bSameReadWriteTexture;
@@ -104,6 +102,9 @@ RenderTargetTexture* RenderTargetTexture::createTexture(const RenderTextureCreat
     {
         texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<false>(createParams.format);
     }
+    // Dependent values
+    texture->setSampleCount(createParams.bSameReadWriteTexture ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
+    texture->setFilteringMode(createParams.filtering);
 
     RenderTargetTexture::init(texture);
     return texture;
@@ -121,7 +122,7 @@ void RenderTargetTexture::init(RenderTargetTexture* texture)
 
     texture->rtResource->setResourceName(texture->textureName);
     texture->rtResource->setShaderUsage(texture->bSameReadWriteTexture? EImageShaderUsage::Sampling : 0);
-    texture->rtResource->setSampleCounts(texture->sampleCount);
+    texture->rtResource->setSampleCounts(texture->getSampleCount());
     texture->rtResource->setImageSize(texture->textureSize);
     texture->rtResource->setLayerCount(1);
     texture->rtResource->setNumOfMips(texture->mipCount);
@@ -131,7 +132,7 @@ void RenderTargetTexture::init(RenderTargetTexture* texture)
         texture->textureResource = new GraphicsImageResource(texture->dataFormat);
         texture->textureResource->setResourceName(texture->textureName);
         texture->textureResource->setShaderUsage(EImageShaderUsage::Sampling);
-        texture->textureResource->setSampleCounts(texture->sampleCount);
+        texture->textureResource->setSampleCounts(EPixelSampleCount::SampleCount1);
         texture->textureResource->setImageSize(texture->textureSize);
         texture->textureResource->setLayerCount(1);
         texture->textureResource->setNumOfMips(texture->mipCount);

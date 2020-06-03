@@ -380,6 +380,16 @@ VkCommandBuffer VulkanCmdBufferManager::getRawBuffer(const GraphicsResource* cmd
     return cmdBuffer->getType()->isChildOf<VulkanCommandBuffer>() ? static_cast<const VulkanCommandBuffer*>(cmdBuffer)->cmdBuffer : nullptr;
 }
 
+uint32 VulkanCmdBufferManager::getQueueFamilyIdx(EQueueFunction queue) const
+{
+    return pools.at(queue).cmdPoolInfo.vulkanQueueIndex;
+}
+
+uint32 VulkanCmdBufferManager::getQueueFamilyIdx(const GraphicsResource* cmdBuffer) const
+{
+    return getQueueFamilyIdx(static_cast<const VulkanCommandBuffer*>(cmdBuffer)->fromQueue);
+}
+
 ECmdState VulkanCmdBufferManager::getState(const GraphicsResource* cmdBuffer) const
 {
     auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());

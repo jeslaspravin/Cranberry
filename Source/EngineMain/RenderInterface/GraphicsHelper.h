@@ -19,6 +19,10 @@ namespace ESamplerFiltering
 {
     enum Type;
 }
+namespace EPixelDataFormat
+{
+    enum Type;
+}
 /* Fwd declarations end */
 
 template<typename HelperType>
@@ -67,6 +71,12 @@ public:
         ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod = 0)
     {
         return HelperType::createSampler(graphicsInstance, name, samplerTiling, samplerFiltering, poorMipLod);
+    }
+
+    static ESamplerFiltering::Type getClampedFiltering(class IGraphicsInstance* graphicsInstance, ESamplerFiltering::Type sampleFiltering
+        , EPixelDataFormat::Type imageFormat)
+    {
+        return HelperType::getClampedFiltering(graphicsInstance, sampleFiltering, imageFormat);
     }
 
     static void mapResource(class IGraphicsInstance* graphicsInstance, class BufferResource* buffer)

@@ -83,6 +83,7 @@ const Key Keys::C{ EKeyCode::KEY_C,"C", 'C' };
 const Key Keys::D{ EKeyCode::KEY_D,"D", 'D' };
 const Key Keys::E{ EKeyCode::KEY_E,"E", 'E' };
 const Key Keys::F{ EKeyCode::KEY_F,"F", 'F' };
+const Key Keys::Q{ EKeyCode::KEY_Q,"Q", 'Q' };
 const Key Keys::R{ EKeyCode::KEY_R,"R", 'R' };
 const Key Keys::S{ EKeyCode::KEY_S,"S", 'S' };
 const Key Keys::W{ EKeyCode::KEY_W,"W", 'W' };
@@ -130,6 +131,7 @@ std::initializer_list<std::pair<const Key*, KeyState>> Keys::KEYSTATES_INITIALIZ
     { &D, KeyState()},
     { &E, KeyState()},
     { &F, KeyState()},
+    { &Q, KeyState()},
     { &R, KeyState()},
     { &S, KeyState()},
     { &W, KeyState()},

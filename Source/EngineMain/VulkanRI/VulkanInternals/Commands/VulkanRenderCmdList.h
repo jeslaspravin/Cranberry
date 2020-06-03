@@ -21,7 +21,6 @@ public:
     void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) override;
     void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) override;
 
-    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData) override;
     void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo) override;
     void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo) override;
 
