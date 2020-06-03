@@ -19,11 +19,11 @@ namespace EShaderStage
     
     struct ShaderStageInfo
     {
-        String name;
-        String shortName;
+        const String name;
+        const String shortName;
         // TODO(Jeslas) : Entry point is obtained from reflection data right now, so do I need here?
-        String entryPointName;
-        uint32 shaderStage;
+        const String entryPointName;
+        const uint32 shaderStage;
     };
 
     const ShaderStageInfo* getShaderStageInfo(EShaderStage::Type shaderStage);

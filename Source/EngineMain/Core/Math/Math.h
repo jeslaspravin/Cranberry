@@ -19,37 +19,37 @@ private:
 
 public:
     template <typename ClampType>
-    FORCEINLINE static ClampType clamp(const ClampType& value, const ClampType& min, const ClampType& max)
+    FORCE_INLINE static ClampType clamp(const ClampType& value, const ClampType& min, const ClampType& max)
     {
         return glm::clamp(value, min, max);
     }
 
     template <typename Type>
-    FORCEINLINE static Type min(const Type& a, const Type& b)
+    FORCE_INLINE static Type min(const Type& a, const Type& b)
     {
         return glm::min(a,b);
     }
 
     template <typename Type>
-    FORCEINLINE static Type max(const Type& a, const Type& b)
+    FORCE_INLINE static Type max(const Type& a, const Type& b)
     {
         return glm::max(a, b);
     }
 
     template <typename Type>
-    FORCEINLINE static Type abs(const Type& value)
+    FORCE_INLINE static Type abs(const Type& value)
     {
         return glm::abs(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type floor(const Type& value)
+    FORCE_INLINE static Type floor(const Type& value)
     {
         return glm::floor(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type ceil(const Type& value)
+    FORCE_INLINE static Type ceil(const Type& value)
     {
         return glm::ceil(value);
     }
@@ -57,102 +57,102 @@ public:
     //////////////////////////////////////////////////////////////////////////
 
     template <typename Type>
-    FORCEINLINE static Type pow2(const Type& base)
+    FORCE_INLINE static float pow2(const Type& base)
     {
-        return glm::pow(base,2);
+        return float(glm::pow(base,2));
     }
 
     template <typename BaseType, typename PowType>
-    FORCEINLINE static BaseType pow(const BaseType& base,const PowType& power)
+    FORCE_INLINE static float pow(const BaseType& base,const PowType& power)
     {
-        return glm::pow(base, power);
+        return float(glm::pow(base, power));
     }
 
     template <typename Type>
-    FORCEINLINE static Type exp2(const Type& value)
+    FORCE_INLINE static Type exp2(const Type& value)
     {
         return glm::exp2(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type log2(const Type& value)
+    FORCE_INLINE static Type log2(const Type& value)
     {
         return glm::log2(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type log(const Type& value)
+    FORCE_INLINE static Type log(const Type& value)
     {
         return glm::log(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type exp(const Type& value)
+    FORCE_INLINE static Type exp(const Type& value)
     {
         return glm::exp(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type sqrt(const Type& value)
+    FORCE_INLINE static Type sqrt(const Type& value)
     {
         return glm::sqrt(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type invSqrt(const Type& value)
+    FORCE_INLINE static Type invSqrt(const Type& value)
     {
         return glm::inversesqrt(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type deg2Rad(const Type& value)
+    FORCE_INLINE static Type deg2Rad(const Type& value)
     {
         return glm::radians(value);
     }
     template <typename Type>
-    FORCEINLINE static Type rad2Deg(const Type& value)
+    FORCE_INLINE static Type rad2Deg(const Type& value)
     {
         return glm::degrees(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type sin(const Type& value)
+    FORCE_INLINE static Type sin(const Type& value)
     {
         return glm::sin(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type cos(const Type& value)
+    FORCE_INLINE static Type cos(const Type& value)
     {
         return glm::cos(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type tan(const Type& value)
+    FORCE_INLINE static Type tan(const Type& value)
     {
         return glm::tan(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type asin(const Type& value)
+    FORCE_INLINE static Type asin(const Type& value)
     {
         return glm::asin(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type acos(const Type& value)
+    FORCE_INLINE static Type acos(const Type& value)
     {
         return glm::acos(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type atan(const Type& value)
+    FORCE_INLINE static Type atan(const Type& value)
     {
         return glm::atan(value);
     }
 
     template <typename Type>
-    FORCEINLINE static Type atan(const Type& numerator, const Type& denominator)
+    FORCE_INLINE static Type atan(const Type& numerator, const Type& denominator)
     {
         return glm::atan(numerator,denominator);
     }
@@ -169,13 +169,13 @@ public:
     //////////////////////////////////////////////////////////////////////////
 
     template <typename Type>
-    FORCEINLINE static std::enable_if_t<std::is_integral_v<Type>, bool> isEqual(const Type& a, const Type& b, Type epsilon = 0)
+    FORCE_INLINE static std::enable_if_t<std::is_integral_v<Type>, bool> isEqual(const Type& a, const Type& b, Type epsilon = 0)
     {
         return abs(a - b) <= epsilon;
     }
 
     template <typename Type>
-    FORCEINLINE static std::enable_if_t<std::is_floating_point_v<Type>, bool> isEqual(const Type& a, const Type& b, Type epsilon = SMALL_EPSILON)
+    FORCE_INLINE static std::enable_if_t<std::is_floating_point_v<Type>, bool> isEqual(const Type& a, const Type& b, Type epsilon = SMALL_EPSILON)
     {
         return abs(a - b) <= epsilon;
     }

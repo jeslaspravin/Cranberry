@@ -36,6 +36,7 @@ void VulkanDevice::markEnabledFeatures()
 
 void VulkanDevice::markGlobalConstants()
 {
+    // Anisotropy
     if (enabledFeatures.samplerAnisotropy)
     {
         GlobalRenderVariables::ENABLE_ANISOTROPY.set(true);
@@ -47,8 +48,11 @@ void VulkanDevice::markGlobalConstants()
         GlobalRenderVariables::MAX_ANISOTROPY.set(1);
     }
 
+    // Sync resources
     GlobalRenderVariables::MAX_TIMELINE_OFFSET.set(timelineSemaphoreProps.maxTimelineSemaphoreValueDifference);
     GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.set(timelineSemaphoreFeatures.timelineSemaphore == VK_TRUE ? true : false);
+
+    // Sampling texture
 }
 
 bool VulkanDevice::createQueueResources()

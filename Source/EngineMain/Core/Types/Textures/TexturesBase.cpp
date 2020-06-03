@@ -2,6 +2,11 @@
 #include "../../../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../../../RenderInterface/Resources/MemoryResources.h"
 
+void TextureBase::setFilteringMode(ESamplerFiltering::Type filtering)
+{
+    
+}
+
 void TextureBase::reinitResources()
 {
     textureResource->setImageSize(textureSize);
@@ -18,8 +23,9 @@ void TextureBase::setSampleCount(EPixelSampleCount::Type newSampleCount)
 
 void TextureBase::markResourceDirty()
 {
-    if (!bNeedsUpdate)
+    if (!bNeedsUpdate && textureResource)
     {
+        bNeedsUpdate = true;
         ENQUEUE_COMMAND(UpdateTexture,
             {
                 reinitResources();

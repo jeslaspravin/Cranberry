@@ -145,6 +145,11 @@ DEVICE_VK_FUNCTIONS(vkEndCommandBuffer);
 DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier)
 
 DEVICE_VK_FUNCTIONS(vkCmdCopyBuffer);
+DEVICE_VK_FUNCTIONS(vkCmdCopyBufferToImage)
+DEVICE_VK_FUNCTIONS(vkCmdCopyImageToBuffer)
+DEVICE_VK_FUNCTIONS(vkCmdCopyImage)
+DEVICE_VK_FUNCTIONS(vkCmdResolveImage)
+DEVICE_VK_FUNCTIONS(vkCmdBlitImage)
 
 DEVICE_VK_FUNCTIONS(vkCmdClearColorImage)
 DEVICE_VK_FUNCTIONS(vkCmdClearDepthStencilImage)

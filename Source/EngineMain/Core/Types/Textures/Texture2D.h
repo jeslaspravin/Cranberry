@@ -5,7 +5,6 @@
 struct Texture2DCreateParams : public TextureBaseCreateParams
 {
     Size2D textureSize;
-    EPixelSampleCount::Type sampleCount;
     // If greater than acceptable it will be clamped, if 0 mips get auto calculated from size
     uint32 mipCount = 0;
     // Must be Size == textureSize.x * textureSize.y 

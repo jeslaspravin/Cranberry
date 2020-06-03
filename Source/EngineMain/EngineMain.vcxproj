@@ -337,6 +337,7 @@
     <ClInclude Include="Core\Platform\LFS\PlatformLFS.h" />
     <ClInclude Include="Core\Platform\ModuleManager.h" />
     <ClInclude Include="Core\Platform\PlatformAssertionErrors.h" />
+    <ClInclude Include="Core\Platform\PlatformDefines.h" />
     <ClInclude Include="Core\Platform\PlatformFunctions.h" />
     <ClInclude Include="Core\Platform\PlatformInstances.h" />
     <ClInclude Include="Core\Platform\PlatformTypes.h" />
@@ -346,6 +347,7 @@
     <ClInclude Include="Core\Platform\Windows\LFS\WindowsFileSystemFunctions.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsAppInstance.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsAppWindow.h" />
+    <ClInclude Include="Core\Platform\Windows\WindowsPlatformDefines.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformFunctions.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformTypes.h" />
     <ClInclude Include="Core\Reflections\MemberField.h" />
