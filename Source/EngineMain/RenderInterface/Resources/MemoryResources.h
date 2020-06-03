@@ -3,6 +3,7 @@
 #include "../../Core/Math/CoreMathTypedefs.h"
 #include "../../Core/String/String.h"
 #include "../../Core/Types/HashTypes.h"
+#include "../../Core/Types/CoreDefines.h"
 #include "../CoreGraphicsTypes.h"
 
 struct BufferViewInfo
@@ -32,39 +33,40 @@ struct std::hash<BufferViewInfo>
     }
 };
 
+
+struct ImageSubresource
+{
+    uint32 baseMip = 0;
+    uint32 mipCount = (~0U); /* VK_REMAINING_MIP_LEVELS */
+    uint32 baseLayer = 0;
+    uint32 layersCount = (~0U);
+
+    bool operator<(const ImageSubresource& otherSubresource) const
+    {
+        return layersCount == otherSubresource.layersCount
+            ? mipCount < otherSubresource.mipCount
+            : layersCount < otherSubresource.layersCount;
+    }
+
+    bool operator==(const ImageSubresource& otherSubresource) const
+    {
+        return baseLayer == otherSubresource.baseLayer && baseMip == otherSubresource.baseMip
+            && mipCount == otherSubresource.mipCount && layersCount == otherSubresource.layersCount;
+    }
+};
+
 struct ImageViewInfo
 {
     struct ImageComponentMapping
     {
-        EImageComponentMapping::Type r = EImageComponentMapping::SameComponent;
-        EImageComponentMapping::Type g = EImageComponentMapping::SameComponent;
-        EImageComponentMapping::Type b = EImageComponentMapping::SameComponent;
-        EImageComponentMapping::Type a = EImageComponentMapping::SameComponent;
+        EPixelComponentMapping::Type r = EPixelComponentMapping::SameComponent;
+        EPixelComponentMapping::Type g = EPixelComponentMapping::SameComponent;
+        EPixelComponentMapping::Type b = EPixelComponentMapping::SameComponent;
+        EPixelComponentMapping::Type a = EPixelComponentMapping::SameComponent;
 
         bool operator==(const ImageComponentMapping& otherCompMapping) const
         {
             return r == otherCompMapping.r && g == otherCompMapping.g && b == otherCompMapping.b && a == otherCompMapping.a;
-        }
-    };
-
-    struct ImageSubresource
-    {
-        uint32 baseMip = 0;
-        uint32 mipCount = (~0U); /* VK_REMAINING_MIP_LEVELS */
-        uint32 baseLayer = 0;
-        uint32 layersCount = (~0U);
-
-        bool operator<(const ImageSubresource& otherSubresource) const
-        {
-            return layersCount == otherSubresource.layersCount
-                ? mipCount < otherSubresource.mipCount
-                : layersCount < otherSubresource.layersCount;
-        }
-
-        bool operator==(const ImageSubresource& otherSubresource) const
-        {
-            return baseLayer == otherSubresource.baseLayer && baseMip == otherSubresource.baseMip
-                && mipCount == otherSubresource.mipCount && layersCount == otherSubresource.layersCount;
         }
     };
 
@@ -99,9 +101,9 @@ struct std::hash<ImageViewInfo::ImageComponentMapping>
 };
 
 template <>
-struct std::hash<ImageViewInfo::ImageSubresource>
+struct std::hash<ImageSubresource>
 {
-    _NODISCARD size_t operator()(const ImageViewInfo::ImageSubresource& keyval) const noexcept {
+    _NODISCARD size_t operator()(const ImageSubresource& keyval) const noexcept {
         hash<uint32> uint32Hasher;
         size_t seed = uint32Hasher(keyval.baseLayer);
         HashUtility::hashCombine(seed, keyval.baseMip);
@@ -177,20 +179,24 @@ protected:
     bool isRenderTarget = false;
 
     ImageResource() = default;
+
+    uint32 mipCountFromDim();
 public:
     ImageResource(EPixelDataFormat::Type imageFormat);
 
     void setLayerCount(uint32 count);
-    uint32 getLayerCount() const { return layerCount; }
 
-    void setSampleCounts(EPixelSampleCount::Type samples) { sampleCounts = samples; }
-    void setNumOfMips(uint32 mipCount) { numOfMips = mipCount; }
-    uint32 getNumOfMips() const { return numOfMips; };
+    void setSampleCounts(EPixelSampleCount::Type samples);
+    void setNumOfMips(uint32 mipCount);
 
-    void setShaderUsage(uint32 usage) { shaderUsage = usage; }
-    void setImageSize(const Size3D& imageSize) { dimensions = imageSize; }
-    const Size3D& getImageSize() const { return dimensions; }
+    void setShaderUsage(uint32 usage);
+    void setImageSize(const Size3D& imageSize);
 
-    EPixelDataFormat::Type imageFormat() const { return dataFormat; }
-    EPixelSampleCount::Type sampleCount() const { return sampleCounts; }
+    FORCE_INLINE uint32 getLayerCount() const { return layerCount; }
+    FORCE_INLINE uint32 getNumOfMips() const { return numOfMips; };
+    FORCE_INLINE const Size3D& getImageSize() const { return dimensions; }
+    FORCE_INLINE EPixelDataFormat::Type imageFormat() const { return dataFormat; }
+    FORCE_INLINE EPixelSampleCount::Type sampleCount() const { return sampleCounts; }
+    FORCE_INLINE bool isShaderRead() const { return (shaderUsage & EImageShaderUsage::Sampling) > 0; }
+    FORCE_INLINE bool isShaderWrite() const { return (shaderUsage & EImageShaderUsage::Writing) > 0; }
 };

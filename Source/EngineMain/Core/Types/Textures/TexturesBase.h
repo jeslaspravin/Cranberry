@@ -7,30 +7,34 @@ class ImageResource;
 struct TextureBaseCreateParams
 {
     String textureName;
+    ESamplerFiltering::Type filtering;
 };
 // Always clear using destroyTexture and create using createTexture
 class TextureBase
 {
+private:
+    ESamplerFiltering::Type sampleFiltering;
+    EPixelSampleCount::Type sampleCount;
 protected:
     ImageResource* textureResource = nullptr;
     Size3D textureSize;
     uint32 mipCount;
-    EPixelSampleCount::Type sampleCount;
     EPixelDataFormat::Type dataFormat;
     String textureName;
 
     bool bNeedsUpdate;
-
 protected:
+    void setSampleCount(EPixelSampleCount::Type newSampleCount);
+    void setFilteringMode(ESamplerFiltering::Type filtering);
     virtual void reinitResources();
 public:
 
     ImageResource* getTextureResource() const { return textureResource; }
     EPixelSampleCount::Type getSampleCount() const { return sampleCount; }
     EPixelDataFormat::Type getFormat() const { return dataFormat; }
+    ESamplerFiltering::Type filteringMode() const { return sampleFiltering; }
     const String& getTextureName() const { return textureName; }
 
-    void setSampleCount(EPixelSampleCount::Type newSampleCount);
     void markResourceDirty();
 
     // Each type of texture has to provide an implementation for this template

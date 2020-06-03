@@ -62,6 +62,8 @@ public:
 
     static SharedPtr<class SamplerInterface> createSampler(class IGraphicsInstance* graphicsInstance, const char* name,
         ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod);
+    static ESamplerFiltering::Type getClampedFiltering(class IGraphicsInstance* graphicsInstance, ESamplerFiltering::Type sampleFiltering
+        , EPixelDataFormat::Type imageFormat);
 
     static void* borrowMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource);
     static void returnMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource);

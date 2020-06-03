@@ -34,10 +34,7 @@ void Texture2D::setData(const std::vector<class Color>& newData, const Color& de
         rawData[copyIndex] = defaultColor;
     }
 
-    if (textureResource)
-    {
-        markResourceDirty();
-    }
+    markResourceDirty();
 }
 
 Texture2D* Texture2D::createTexture(const Texture2DCreateParams& createParams)
@@ -51,9 +48,11 @@ Texture2D* Texture2D::createTexture(const Texture2DCreateParams& createParams)
             (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))), createParams.mipCount);
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
-    texture->sampleCount = createParams.sampleCount;
     texture->textureName = createParams.textureName;
     texture->setData(createParams.colorData, createParams.defaultColor, createParams.bIsSrgb);
+    // Dependent values
+    texture->setSampleCount(EPixelSampleCount::SampleCount1);// MS not possible for read only textures
+    texture->setFilteringMode(createParams.filtering);
 
     Texture2D::init(texture);
     return texture;
@@ -89,7 +88,7 @@ void Texture2D::init(Texture2D* texture)
     texture->textureResource = new GraphicsImageResource(texture->dataFormat);
     texture->textureResource->setResourceName(texture->textureName);
     texture->textureResource->setShaderUsage(EImageShaderUsage::Sampling);
-    texture->textureResource->setSampleCounts(texture->sampleCount);
+    texture->textureResource->setSampleCounts(texture->getSampleCount());
     texture->textureResource->setImageSize(texture->textureSize);
     texture->textureResource->setLayerCount(1);
     texture->textureResource->setNumOfMips(texture->mipCount);

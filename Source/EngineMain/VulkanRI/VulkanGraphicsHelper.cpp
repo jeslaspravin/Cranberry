@@ -337,7 +337,7 @@ VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsIns
         VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT : 0;
     if (requiredFeatures > 0)
     {
-        const EPixelDataFormat::ImageFormatInfo* imageFormatInfo = EPixelDataFormat::getFormatInfo(bufferDataFormat);
+        const EPixelDataFormat::PixelFormatInfo* imageFormatInfo = EPixelDataFormat::getFormatInfo(bufferDataFormat);
         if (bufferDataFormat == EPixelDataFormat::Undefined || !imageFormatInfo)
         {
             Logger::error("NewBufferCreation", "%s() : Invalid expected pixel format for buffer", __func__);
@@ -581,6 +581,51 @@ SharedPtr<class SamplerInterface> VulkanGraphicsHelper::createSampler(class IGra
     sampler->init();
 
     return SharedPtr<SamplerInterface>(sampler);
+}
+
+ESamplerFiltering::Type VulkanGraphicsHelper::getClampedFiltering(class IGraphicsInstance* graphicsInstance
+    , ESamplerFiltering::Type sampleFiltering, EPixelDataFormat::Type imageFormat)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    VkFormatProperties formatProps;
+    Vk::vkGetPhysicalDeviceFormatProperties(device->physicalDevice, VkFormat(EPixelDataFormat::getFormatInfo(imageFormat)->format)
+        , &formatProps);
+    ESamplerFiltering::Type choosenFiltering = sampleFiltering;
+
+    // Since filtering is done currently only on optimal tiled data
+    while (choosenFiltering != ESamplerFiltering::Nearest)
+    {
+        VkFormatFeatureFlags requiredFeature = 0;
+        switch (choosenFiltering)
+        {
+        case ESamplerFiltering::Nearest:
+            requiredFeature |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+            break;
+        case ESamplerFiltering::Linear:
+            requiredFeature |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+            break;
+        case ESamplerFiltering::Cubic:
+            requiredFeature |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG;
+            break;
+        default:
+            Logger::error("VulkanGraphicsHelper", "%s() : not supported filtering mode %s", __func__
+                , ESamplerFiltering::getFilterInfo(choosenFiltering)->filterName.getChar());
+            choosenFiltering = ESamplerFiltering::Type(choosenFiltering - 1);
+            continue;
+        }
+
+        if ((formatProps.optimalTilingFeatures & requiredFeature) == requiredFeature)
+        {
+            return choosenFiltering;
+        }
+        else
+        {
+            choosenFiltering = ESamplerFiltering::Type(choosenFiltering - 1);
+        }
+    }
+    return choosenFiltering;
 }
 
 void* VulkanGraphicsHelper::borrowMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource)

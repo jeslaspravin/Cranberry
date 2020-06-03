@@ -626,9 +626,6 @@
     <ClInclude Include="Core\Types\HashTypes.h">
       <Filter>Header Files\Core\Types</Filter>
     </ClInclude>
-    <ClInclude Include="RenderInterface\CoreGraphicsTypes.h">
-      <Filter>Source Files\RenderInterface</Filter>
-    </ClInclude>
     <ClInclude Include="RenderInterface\GlobalRenderVariables.h">
       <Filter>Header Files\RenderInterface</Filter>
     </ClInclude>
@@ -766,6 +763,15 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\Rendering\CommandBuffer.h">
       <Filter>Header Files\RenderInterface\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\CoreGraphicsTypes.h">
+      <Filter>Header Files\RenderInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\PlatformDefines.h">
+      <Filter>Header Files\Core\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\Windows\WindowsPlatformDefines.h">
+      <Filter>Source Files\Core\Platform\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

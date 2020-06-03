@@ -4,6 +4,9 @@
 #include "../../../RenderInterface/PlatformIndependentHelper.h"
 #include "../../../Core/Platform/PlatformAssertionErrors.h"
 #include "VulkanCommandBufferManager.h"
+#include "../../../Core/Math/Math.h"
+
+#include <array>
 
 VulkanCommandList::VulkanCommandList(IGraphicsInstance* graphicsInstance, VulkanDevice* vulkanDevice)
     : gInstance(graphicsInstance)
@@ -219,28 +222,170 @@ void VulkanCommandList::waitIdle()
     vDevice->vkDeviceWaitIdle(VulkanGraphicsHelper::getDevice(vDevice));
 }
 
-void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData)
-{
-    if (pixelData.size() < (dst->getImageSize().z * dst->getImageSize().y * dst->getImageSize().x) * dst->getLayerCount())
-    {
-        Logger::error("VulkanCommandList", "%s() : Texel data count is not sufficient to fill all texels of %s",__func__
-            , dst->getResourceName().getChar());
-        return;
-    }
-    CopyImageInfo copyInfo;
-    copyInfo.dstOffset = { 0,0,0 };
-    copyInfo.extent = dst->getImageSize();
-    copyInfo.layerBase = 0;
-    copyInfo.layerCount = dst->getLayerCount();
-    copyInfo.mipBase = 0;
-    copyInfo.mipCount = 1;
-    copyInfo.bGenerateMips = false;
-    copyToImage(dst, pixelData, copyInfo);
-}
-
 void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo)
 {
-    // TODO(ASAP) 
+    fatalAssert(dst->isValid(), "Invalid image resource");
+    if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
+    {
+        Logger::error("VulkanCommandList", "%s() : Depth/Float format is not supported for copying from Color data", __func__);
+        return;
+    }
+    const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dst->imageFormat());
+    const VkFilter filtering = VkFilter(ESamplerFiltering::getFilterInfo(GraphicsHelper::getClampedFiltering(gInstance
+        , copyInfo.mipFiltering, dst->imageFormat()))->filterTypeValue);
+
+    const VkImageAspectFlagBits imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+
+    bool bIsRenderTarget = dst->getType()->isChildOf(GraphicsRenderTargetResource::staticType());
+    // Layout that is acceptable for this image
+    VkImageLayout postCopyLayout = bIsRenderTarget ? VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : dst->isShaderWrite()
+        ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    VkAccessFlagBits postCopyAccessMask = bIsRenderTarget ? VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : dst->isShaderWrite()
+        ? VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT : VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+
+    // TODO(Jeslas) : change this to get final layout from some resource tracked layout
+    VkImageLayout currentLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+
+    GraphicsRTexelBuffer stagingBuffer = GraphicsRTexelBuffer(dst->imageFormat(), uint32(pixelData.size()));
+    stagingBuffer.setAsStagingResource(true);
+    stagingBuffer.init();
+    uint8* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, &stagingBuffer));
+    copyPixelsTo(&stagingBuffer, stagingPtr, pixelData, formatInfo);
+
+    std::vector<VkBufferImageCopy> copies;
+    if (copyInfo.bGenerateMips)
+    {
+        copies.resize(1);
+        copies[0].imageExtent = { dst->getImageSize().x, dst->getImageSize().y, dst->getImageSize().z };
+        copies[0].imageOffset = { 0,0,0 };
+        copies[0].bufferOffset = copies[0].bufferRowLength = copies[0].bufferImageHeight = 0;
+        copies[0].imageSubresource = { imageAspect, copyInfo.mipBase, copyInfo.layerBase, copyInfo.layerCount };
+    }
+    else
+    {
+        uint32 mipOffset = 0;
+        Size3D mipSize = Math::max(dst->getImageSize() / uint32(Math::pow(2u,copyInfo.mipBase)),Size3D(1,1,1));
+
+        for (uint32 mipLevel = 0; mipLevel < copyInfo.mipCount; ++mipLevel)
+        {
+            VkBufferImageCopy vkCopyInfo;
+            vkCopyInfo.imageExtent = { mipSize.x, mipSize.y, mipSize.z };
+            vkCopyInfo.imageOffset = { 0,0,0 };
+            vkCopyInfo.bufferOffset = mipOffset;
+            vkCopyInfo.bufferRowLength = mipSize.x;
+            vkCopyInfo.bufferImageHeight = mipSize.y;
+            vkCopyInfo.imageSubresource = { imageAspect, copyInfo.mipBase + mipLevel, copyInfo.layerBase, copyInfo.layerCount };
+
+            copies.emplace_back(vkCopyInfo);
+
+            mipOffset += mipSize.x * mipSize.y * mipSize.z * copyInfo.layerCount;
+            mipSize = Math::max(mipSize / 2u, Size3D(1, 1, 1));
+        }
+    }
+
+    const GraphicsResource* cmdBuffer = cmdBufferManager->beginTempCmdBuffer("CopyPixelToImage_" + dst->getResourceName()
+        , copyInfo.bGenerateMips ? EQueueFunction::Graphics : EQueueFunction::Transfer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    
+    // Transitioning all mips to Transfer Destination layout
+    {
+        IMAGE_MEMORY_BARRIER(layoutTransition);
+        layoutTransition.oldLayout = currentLayout;
+        layoutTransition.newLayout = currentLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        layoutTransition.srcQueueFamilyIndex = layoutTransition.dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(cmdBuffer);
+        layoutTransition.srcAccessMask = postCopyAccessMask;
+        layoutTransition.dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+        layoutTransition.image = static_cast<VulkanImageResource*>(dst)->image;
+        layoutTransition.subresourceRange = { imageAspect, copyInfo.mipBase, copyInfo.mipCount, copyInfo.layerBase, copyInfo.layerCount };
+
+        vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT
+            , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
+            , 0, nullptr, 0, nullptr, 1, &layoutTransition);
+    }
+
+    vDevice->vkCmdCopyBufferToImage(rawCmdBuffer, static_cast<VulkanBufferResource*>(&stagingBuffer)->buffer
+        , static_cast<VulkanImageResource*>(dst)->image, currentLayout, uint32(copies.size()), copies.data());
+
+    if (copyInfo.bGenerateMips && copyInfo.mipCount > 1)
+    {
+        IMAGE_MEMORY_BARRIER(transitionToSrc);
+        transitionToSrc.oldLayout = currentLayout;
+        transitionToSrc.newLayout = currentLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        transitionToSrc.srcQueueFamilyIndex = transitionToSrc.dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Graphics);
+        transitionToSrc.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+        transitionToSrc.dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+        transitionToSrc.image = static_cast<VulkanImageResource*>(dst)->image;
+        transitionToSrc.subresourceRange = { imageAspect, copyInfo.mipBase, 1, copyInfo.layerBase, copyInfo.layerCount };
+
+        Size3D srcMipSize = Math::max(dst->getImageSize() / uint32(Math::pow(2u, copyInfo.mipBase)), Size3D(1, 1, 1));
+        for (uint32 mipLevel = 1; mipLevel < copyInfo.mipCount; ++mipLevel)
+        {
+            transitionToSrc.subresourceRange.baseMipLevel = copyInfo.mipBase + mipLevel - 1;
+            vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
+                , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
+                , 0, nullptr, 0, nullptr, 1, &transitionToSrc);
+
+            Size3D dstMipSize = Math::max(srcMipSize / 2u, Size3D(1, 1, 1));
+            VkImageBlit blitRegion;
+            blitRegion.dstOffsets[0] = blitRegion.srcOffsets[0] = { 0,0,0 };
+            blitRegion.srcOffsets[1] = { int32(srcMipSize.x), int32(srcMipSize.y), int32(srcMipSize.z) };
+            blitRegion.dstOffsets[1] = { int32(dstMipSize.x), int32(dstMipSize.y), int32(dstMipSize.z) };
+            blitRegion.dstSubresource = blitRegion.srcSubresource = { imageAspect, copyInfo.mipBase + mipLevel, copyInfo.layerBase, copyInfo.layerCount };
+            blitRegion.srcSubresource.mipLevel = transitionToSrc.subresourceRange.baseMipLevel;
+
+            vDevice->vkCmdBlitImage(rawCmdBuffer, transitionToSrc.image, currentLayout, transitionToSrc.image, transitionToSrc.oldLayout
+                , 1, &blitRegion, filtering);
+
+            srcMipSize = dstMipSize;
+        }
+        // 2 needed as lowest mip will be in transfer dst layout while others will be in transfer src layout
+        std::array<VkImageMemoryBarrier, 2> toFinalLayout;
+
+        // Lowest mip from dst to post copy
+        transitionToSrc.newLayout = postCopyLayout;
+        transitionToSrc.dstAccessMask = postCopyAccessMask;
+        transitionToSrc.subresourceRange.baseMipLevel = copyInfo.mipBase + copyInfo.mipCount - 1;
+        toFinalLayout[0] = transitionToSrc;
+
+        // base mip to mip count - 1 from src to post copy
+        transitionToSrc.oldLayout = currentLayout;
+        transitionToSrc.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+        transitionToSrc.subresourceRange.baseMipLevel = copyInfo.mipBase;
+        transitionToSrc.subresourceRange.levelCount = copyInfo.mipCount - 1;
+        toFinalLayout[1] = transitionToSrc;
+
+        currentLayout = transitionToSrc.newLayout;
+        vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
+            , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
+            , 0, nullptr, 0, nullptr, uint32(toFinalLayout.size()), toFinalLayout.data());
+    }
+    else
+    {
+        IMAGE_MEMORY_BARRIER(layoutTransition);
+        layoutTransition.oldLayout = currentLayout;
+        layoutTransition.newLayout = postCopyLayout;
+        layoutTransition.srcQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(cmdBuffer);
+        layoutTransition.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+        layoutTransition.dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Graphics);
+        layoutTransition.dstAccessMask = postCopyAccessMask;
+        layoutTransition.image = static_cast<VulkanImageResource*>(dst)->image;
+        layoutTransition.subresourceRange = { imageAspect, copyInfo.mipBase, copyInfo.mipCount, copyInfo.layerBase, copyInfo.layerCount };
+
+        vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
+            , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
+            , 0, nullptr, 0, nullptr, 1, &layoutTransition);
+    }
+
+    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "TempCpyImageFence");
+    CommandSubmitInfo submitInfo;
+    submitInfo.cmdBuffers.emplace_back(cmdBuffer);
+    cmdBufferManager->endCmdBuffer(cmdBuffer);
+    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence.get());
+    tempFence->waitForSignal();
+
+    cmdBufferManager->freeCmdBuffer(cmdBuffer);
+    stagingBuffer.release();
+    tempFence->release();
 }
 
 void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo)
