@@ -1,4 +1,5 @@
 #include "Vector2D.h"
+#include "../Platform/PlatformAssertionErrors.h"
 #include "Math.h"
 
 #include <glm/geometric.hpp>
@@ -56,6 +57,18 @@ float& Vector2D::y()
 float Vector2D::y() const
 {
     return value.y;
+}
+
+float Vector2D::operator[](uint32 index) const
+{
+    debugAssert(index < 2);
+    return value[index];
+}
+
+float& Vector2D::operator[](uint32 index)
+{
+    debugAssert(index < 2);
+    return value[index];
 }
 
 bool Vector2D::operator==(const Vector2D& b) const
@@ -201,17 +214,81 @@ const Vector2D Vector2D::ZERO(0);
 
 const Vector2D Vector2D::ONE(1);
 
-float Vector2D::dot(const Vector2D& a, const Vector2D& b)
+FORCE_INLINE float Vector2D::dot(const Vector2D& a, const Vector2D& b)
 {
     return a | b;
 }
 
-float Vector2D::cross(const Vector2D& a, const Vector2D& b)
+FORCE_INLINE float Vector2D::cross(const Vector2D& a, const Vector2D& b)
 {
     return a ^ b;
 }
 
+FORCE_INLINE Vector2D Vector2D::clamp(const Vector2D& value, const Vector2D& min, const Vector2D& max)
+{
+    return Vector2D(glm::clamp(value.value, min.value, max.value));
+}
+
+FORCE_INLINE Vector2D Vector2D::min(const Vector2D& a, const Vector2D& b)
+{
+    return Vector2D(glm::min(a.value, b.value));
+}
+
+FORCE_INLINE Vector2D Vector2D::max(const Vector2D& a, const Vector2D& b)
+{
+    return Vector2D(glm::max(a.value, b.value));
+}
+
+FORCE_INLINE Vector2D Vector2D::abs(const Vector2D& value)
+{
+    return Vector2D(glm::abs(value.value));
+}
+
+FORCE_INLINE Vector2D Vector2D::floor(const Vector2D& value)
+{
+    return Vector2D(glm::floor(value.value));
+}
+
+FORCE_INLINE Vector2D Vector2D::ceil(const Vector2D& value)
+{
+    return Vector2D(glm::ceil(value.value));
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Math functions
+//////////////////////////////////////////////////////////////////////////
+
 bool Math::isEqual(const Vector2D& a, const Vector2D& b, float epsilon /*= SMALL_EPSILON*/)
 {
     return a.isSame(b,epsilon);
+}
+
+Vector2D Math::clamp(const Vector2D& value, const Vector2D& min, const Vector2D& max)
+{
+    return Vector2D::clamp(value, min, max);
+}
+
+Vector2D Math::min(const Vector2D& a, const Vector2D& b)
+{
+    return Vector2D::min(a, b);
+}
+
+Vector2D Math::max(const Vector2D& a, const Vector2D& b)
+{
+    return Vector2D::max(a, b);
+}
+
+Vector2D Math::abs(const Vector2D& value)
+{
+    return Vector2D::abs(value);
+}
+
+Vector2D Math::floor(const Vector2D& value)
+{
+    return Vector2D::floor(value);
+}
+
+Vector2D Math::ceil(const Vector2D& value)
+{
+    return Vector2D::ceil(value);
 }

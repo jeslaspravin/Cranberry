@@ -157,6 +157,7 @@ public:
         return glm::atan(numerator,denominator);
     }
 
+    // Rotation specializations
     static Rotation deg2Rad(const Rotation& value);
     static Rotation rad2Deg(const Rotation& value);
     static Rotation sin(const Rotation& value);
@@ -165,6 +166,28 @@ public:
     static Rotation asin(const Rotation& value);
     static Rotation acos(const Rotation& value);
     static Rotation atan(const Rotation& value);
+
+    // Vector2D specializations
+    static Vector2D clamp(const Vector2D& value, const Vector2D& min, const Vector2D& max);
+    static Vector2D min(const Vector2D& a, const Vector2D& b);
+    static Vector2D max(const Vector2D& a, const Vector2D& b);
+    static Vector2D abs(const Vector2D& value);
+    static Vector2D floor(const Vector2D& value);
+    static Vector2D ceil(const Vector2D& value);
+    // Vector3D specializations
+    static Vector3D clamp(const Vector3D& value, const Vector3D& min, const Vector3D& max);
+    static Vector3D min(const Vector3D& a, const Vector3D& b);
+    static Vector3D max(const Vector3D& a, const Vector3D& b);
+    static Vector3D abs(const Vector3D& value);
+    static Vector3D floor(const Vector3D& value);
+    static Vector3D ceil(const Vector3D& value);
+    // Vector4D specializations
+    static Vector4D clamp(const Vector4D& value, const Vector4D& min, const Vector4D& max);
+    static Vector4D min(const Vector4D& a, const Vector4D& b);
+    static Vector4D max(const Vector4D& a, const Vector4D& b);
+    static Vector4D abs(const Vector4D& value);
+    static Vector4D floor(const Vector4D& value);
+    static Vector4D ceil(const Vector4D& value);
 
     //////////////////////////////////////////////////////////////////////////
 

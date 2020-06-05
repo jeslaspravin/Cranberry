@@ -773,6 +773,15 @@
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformDefines.h">
       <Filter>Source Files\Core\Platform\Windows</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Math\Box.h">
+      <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Grid.h">
+      <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\VectorND.h">
+      <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="VulkanRI\VulkanInternals\VulkanFunctionLists.inl">
