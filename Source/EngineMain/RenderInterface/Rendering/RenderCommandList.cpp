@@ -1,9 +1,7 @@
 #include "IRenderCommandList.h"
 #include "../GraphicsHelper.h"
-#include "../Resources/MemoryResources.h"
 #include "../../Core/Types/Colors.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
-#include "../../Core/Types/CoreDefines.h"
 
 #include <utility>
 
@@ -19,8 +17,8 @@ public:
     void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) override;
     void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) override;
 
-    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo) override;
-    void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo) override;
+    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
+    void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) override;
 
     const GraphicsResource* startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable) override;
     void endCmd(const GraphicsResource* cmdBuffer) override;
@@ -86,14 +84,14 @@ void RenderCommandList::waitIdle()
     cmdList->waitIdle();
 }
 
-void RenderCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo)
+void RenderCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo)
 {
     cmdList->copyToImage(dst, pixelData, copyInfo);
 }
 
-void RenderCommandList::copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo)
+void RenderCommandList::copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo)
 {
-    cmdList->copyOrResolveImage(src, dst, copyInfo);
+    cmdList->copyOrResolveImage(src, dst, srcInfo, dstInfo);
 }
 
 #if LITTLE_ENDIAN
@@ -105,25 +103,24 @@ void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stag
 
     memset(stagingPtr, 0, stagingBuffer->getResourceSize());
 
-    {// Copying data
-        for (uint32 i = 0; i < pixelData.size(); ++i)
+    // Copying data
+    for (uint32 i = 0; i < pixelData.size(); ++i)
+    {
+        uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+        for (uint8 compIdx = 0; compIdx < formatInfo->componentCount; ++compIdx)
         {
-            uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
-            for (uint8 compIdx = 0; compIdx < formatInfo->componentCount; ++compIdx)
+            const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
+            uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
+
+            // Left shift
+            const uint32 byte1Shift = compOffset % colorCompBits;
+            const uint8 byte1Mask = 0xFF << byte1Shift;
+            *offsetStagingPtr |= (byte1Mask & (pixelData[i].getColorValue()[compIdx] << byte1Shift));
+
+            if (byte1Shift > 0)
             {
-                const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
-                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
-
-                // Left shift
-                const uint32 byte1Shift = compOffset % colorCompBits;
-                const uint8 byte1Mask = 0xFF << byte1Shift;
-                *offsetStagingPtr |= (byte1Mask & (pixelData[i].getColorValue()[compIdx] << byte1Shift));
-
-                if (byte1Shift > 0)
-                {
-                    const uint8 byte2Mask = ~byte1Mask;
-                    *(offsetStagingPtr + 1) |= (byte2Mask & (pixelData[i].getColorValue()[compIdx] >> (colorCompBits - byte1Shift)));
-                }
+                const uint8 byte2Mask = ~byte1Mask;
+                *(offsetStagingPtr + 1) |= (byte2Mask & (pixelData[i].getColorValue()[compIdx] >> (colorCompBits - byte1Shift)));
             }
         }
     }
@@ -140,13 +137,13 @@ void IRenderCommandList::copyToImage(ImageResource* dst, const std::vector<class
             , dst->getResourceName().getChar());
         return;
     }
-    CopyImageInfo copyInfo;
+    CopyPixelsToImageInfo copyInfo;
     copyInfo.dstOffset = { 0,0,0 };
     copyInfo.extent = dst->getImageSize();
-    copyInfo.layerBase = 0;
-    copyInfo.layerCount = dst->getLayerCount();
-    copyInfo.mipBase = 0;
-    copyInfo.mipCount = dst->getNumOfMips();
+    copyInfo.subres.baseLayer = 0;
+    copyInfo.subres.layersCount = dst->getLayerCount();
+    copyInfo.subres.baseMip = 0;
+    copyInfo.subres.mipCount = dst->getNumOfMips();
     copyInfo.bGenerateMips = true;
     copyInfo.mipFiltering = ESamplerFiltering::Nearest;
     copyToImage(dst, pixelData, copyInfo);

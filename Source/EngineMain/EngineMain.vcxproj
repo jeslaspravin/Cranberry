@@ -316,7 +316,9 @@
     <ClInclude Include="Core\Input\Keys.h" />
     <ClInclude Include="Core\Input\Windows\WindowsKeyCodes.h" />
     <ClInclude Include="Core\Logger\Logger.h" />
+    <ClInclude Include="Core\Math\Box.h" />
     <ClInclude Include="Core\Math\CoreMathTypedefs.h" />
+    <ClInclude Include="Core\Math\Grid.h" />
     <ClInclude Include="Core\Math\Math.h" />
     <ClInclude Include="Core\Math\Matrix2.h" />
     <ClInclude Include="Core\Math\Matrix3.h" />
@@ -326,6 +328,7 @@
     <ClInclude Include="Core\Math\Vector2D.h" />
     <ClInclude Include="Core\Math\Vector3D.h" />
     <ClInclude Include="Core\Math\Vector4D.h" />
+    <ClInclude Include="Core\Math\VectorND.h" />
     <ClInclude Include="Core\Memory\SmartPointers.h" />
     <ClInclude Include="Core\Platform\GenericAppInstance.h" />
     <ClInclude Include="Core\Platform\GenericAppWindow.h" />

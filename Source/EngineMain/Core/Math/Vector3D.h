@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMathTypedefs.h"
+#include "../Types/CoreDefines.h"
 
 #include <glm/ext/vector_float3.hpp>
 
@@ -27,6 +28,8 @@ public:
     float x() const;
     float y() const;
     float z() const;
+    float operator[](uint32 index) const;
+    float& operator[](uint32 index);
 
 public:
     bool operator==(const Vector3D& b) const;
@@ -68,6 +71,13 @@ public:
     const static Vector3D ZERO;
     const static Vector3D ONE;
 
-    static float dot(const Vector3D& a, const Vector3D& b);
-    static Vector3D cross(const Vector3D& a, const Vector3D& b);
+    static FORCE_INLINE float dot(const Vector3D& a, const Vector3D& b);
+    static FORCE_INLINE Vector3D cross(const Vector3D& a, const Vector3D& b);
+
+    static FORCE_INLINE Vector3D clamp(const Vector3D& value, const Vector3D& min, const Vector3D& max);
+    static FORCE_INLINE Vector3D min(const Vector3D& a, const Vector3D& b);
+    static FORCE_INLINE Vector3D max(const Vector3D& a, const Vector3D& b);
+    static FORCE_INLINE Vector3D abs(const Vector3D& value);
+    static FORCE_INLINE Vector3D floor(const Vector3D& value);
+    static FORCE_INLINE Vector3D ceil(const Vector3D& value);
 };

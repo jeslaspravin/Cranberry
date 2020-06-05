@@ -12,6 +12,13 @@ private:
     VulkanDevice* vDevice;
 
     class VulkanCmdBufferManager* cmdBufferManager;
+
+    FORCE_INLINE VkImageAspectFlags determineImageAspect(const ImageResource* image) const;
+    // Determines mask that has info on how image can be access in pipelines
+    FORCE_INLINE VkAccessFlags determineImageAccessMask(const ImageResource* image) const;
+    // Determines the image layout if layout is yet to be defined
+    FORCE_INLINE VkImageLayout determineImageLayout(const ImageResource* image) const;
+    FORCE_INLINE VkImageLayout getImageLayout(const ImageResource* image) const;
 public:
 
     VulkanCommandList(IGraphicsInstance* graphicsInstance, VulkanDevice* vulkanDevice);
@@ -21,8 +28,8 @@ public:
     void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) override;
     void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) override;
 
-    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyImageInfo& copyInfo) override;
-    void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& copyInfo) override;
+    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
+    void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) override;
 
     // Reusable here mean rerecord able command buffer
     const GraphicsResource* startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable) override;
