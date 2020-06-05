@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMathTypedefs.h"
+#include "../Types/CoreDefines.h"
 
 #include <glm/ext/vector_float4.hpp>
 
@@ -28,6 +29,8 @@ public:
     float y() const;
     float z() const;
     float w() const;
+    float operator[](uint32 index) const;
+    float& operator[](uint32 index);
 
 public:
     bool operator==(const Vector4D& b) const;
@@ -65,5 +68,12 @@ public:
     const static Vector4D ZERO;
     const static Vector4D ONE;
 
-    static float dot(const Vector4D& a, const Vector4D& b);
+    static FORCE_INLINE float dot(const Vector4D& a, const Vector4D& b);
+
+    static FORCE_INLINE Vector4D clamp(const Vector4D& value, const Vector4D& min, const Vector4D& max);
+    static FORCE_INLINE Vector4D min(const Vector4D& a, const Vector4D& b);
+    static FORCE_INLINE Vector4D max(const Vector4D& a, const Vector4D& b);
+    static FORCE_INLINE Vector4D abs(const Vector4D& value);
+    static FORCE_INLINE Vector4D floor(const Vector4D& value);
+    static FORCE_INLINE Vector4D ceil(const Vector4D& value);
 };
