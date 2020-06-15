@@ -1,6 +1,6 @@
 #pragma once
 
-#include <type_traits>
+#include "../Engine/Config/EngineVariableTypes.h"
 #include "GenericPlatformFunctions.h"
 
 #if _WIN32
@@ -15,11 +15,6 @@ static_assert(false, "Platform not supported!");
 #elif __APPLE__
 static_assert(false, "Platform not supported!");
 #endif
-
-typedef GPlatformFunctions::PlatformFunctions PlatformFunctions;
-
-#define ONE_BIT_SET(FlagStatement) (FlagStatement) && !((FlagStatement) & ((FlagStatement) - 1))
-
 
 // Preserves the bits while conversion
 template<typename SignedType, typename UnsignedType, bool IncludeSignBit>
@@ -93,3 +88,25 @@ struct TypeConversion<SignedType, UnsignedType, false>
         return (value & typeMaskUnsigned()) > 0 ? (SignedType)(value & ~typeMaskUnsigned()) : value;
     }
 };
+
+enum class EndianType
+{
+    Big,
+    Little
+};
+
+class PlatformEndian : public EngineVar<EndianType>
+{
+public:
+    PlatformEndian();
+
+    bool isBigEndian() const;
+    bool isLittleEndian() const;
+};
+
+typedef GPlatformFunctions::PlatformFunctions PlatformFunctions;
+
+namespace GPlatformConfigs
+{
+    extern PlatformEndian PLATFORM_ENDIAN;
+}

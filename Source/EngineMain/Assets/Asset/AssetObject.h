@@ -15,7 +15,7 @@ class AssetBase
 {
 private:
     friend class AssetManager;
-
+protected:
     AssetHeader assetHeader;
 public:
     virtual ~AssetBase() = default;

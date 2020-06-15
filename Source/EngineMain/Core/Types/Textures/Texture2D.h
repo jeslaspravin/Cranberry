@@ -10,7 +10,7 @@ struct Texture2DCreateParams : public TextureBaseCreateParams
     // Must be Size == textureSize.x * textureSize.y 
     std::vector<Color> colorData;
     // whether colorData is encoded in sRGB or needs to be stored in sRGB
-    bool bIsSrgb;
+    bool bIsSrgb = false;
     // Color that will be used if any pixel data is not available in color collection
     Color defaultColor = ColorConst::BLACK;
 };

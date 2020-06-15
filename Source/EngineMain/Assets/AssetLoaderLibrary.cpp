@@ -12,7 +12,8 @@ EAssetType::Type AssetLoaderLibrary::typeFromAssetPath(const String& assetPath)
     {
         return EAssetType::StaticMesh;
     }
-    else if (std::strcmp(extensionChar, "jpg") == 0 || std::strcmp(extensionChar, "jpeg") == 0 || std::strcmp(extensionChar, "png") == 0)
+    else if (std::strcmp(extensionChar, "jpg") == 0 || std::strcmp(extensionChar, "jpeg") == 0 
+        || std::strcmp(extensionChar, "png") == 0 || std::strcmp(extensionChar, "tga") == 0)
     {
         return EAssetType::Texture2D;
     }

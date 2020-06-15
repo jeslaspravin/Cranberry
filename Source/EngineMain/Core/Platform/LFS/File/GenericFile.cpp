@@ -1,7 +1,7 @@
 #include "GenericFile.h"
 #include "GenericFileHandle.h"
-#include "../../PlatformFunctions.h"
 #include "../../../Logger/Logger.h"
+#include "../../../Types/CoreDefines.h"
 
 void* GenericFile::getFileHandleRaw() const
 {

@@ -14,11 +14,11 @@ namespace ERenderTargetFormat
         case ERenderTargetFormat::RT_U8:
             return EPixelDataFormat::BGRA_U8_SRGB;
         case ERenderTargetFormat::RT_U8Packed:
-            return EPixelDataFormat::ABGR_U8_SrgbPacked;
+            return EPixelDataFormat::ABGR8_U32_SrgbPacked;
         case ERenderTargetFormat::RT_U8_NoAlpha:
             return EPixelDataFormat::BGR_U8_SRGB;
         case ERenderTargetFormat::RT_NormalMap:
-            return EPixelDataFormat::ABGR_S8_NormPacked;
+            return EPixelDataFormat::ABGR8_S32_NormPacked;
         case ERenderTargetFormat::RT_SF32:
             return EPixelDataFormat::R_SF32;
         default:
@@ -35,11 +35,11 @@ namespace ERenderTargetFormat
         case ERenderTargetFormat::RT_U8:
             return EPixelDataFormat::BGRA_U8_Norm;
         case ERenderTargetFormat::RT_U8Packed:
-            return EPixelDataFormat::ABGR_U8_NormPacked;
+            return EPixelDataFormat::ABGR8_U32_NormPacked;
         case ERenderTargetFormat::RT_U8_NoAlpha:
             return EPixelDataFormat::BGR_U8_Norm;
         case ERenderTargetFormat::RT_NormalMap:
-            return EPixelDataFormat::ABGR_S8_NormPacked;
+            return EPixelDataFormat::ABGR8_S32_NormPacked;
         case ERenderTargetFormat::RT_SF32:
             return EPixelDataFormat::R_SF32;
         default:

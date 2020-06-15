@@ -13,7 +13,7 @@
 #include <array>
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#include <tinyobjloader/tiny_obj_loader.h>
+#include <tiny_obj_loader.h>
 
 struct MeshLoaderData
 {
@@ -54,10 +54,13 @@ bool hasSmoothedNormals(const tinyobj::shape_t& mesh)
 
 void fillVertexInfo(StaticMeshVertex& vertexData, const tinyobj::attrib_t& attrib, const tinyobj::index_t& index)
 {
+    // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
+    Vector2D uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - Math::frac(attrib.texcoords[index.texcoord_index * 2 + 1])) };
+
     vertexData.position = Vector4D(attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1]
-        , attrib.vertices[index.vertex_index * 3 + 2], attrib.texcoords[index.texcoord_index * 2 + 0]);
+        , attrib.vertices[index.vertex_index * 3 + 2], uvCoord.x());
     vertexData.normal = Vector4D(attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1]
-        , attrib.normals[index.normal_index * 3 + 2], attrib.texcoords[index.texcoord_index * 2 + 1]);
+        , attrib.normals[index.normal_index * 3 + 2], uvCoord.y());
     vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1]
         , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
 }
@@ -442,6 +445,7 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
         }
     }
 }
+#undef TINYOBJLOADER_IMPLEMENTATION
 
 bool StaticMeshLoader::fillAssetInformation(const std::vector<StaticMeshAsset*>& assets) const
 {

@@ -136,7 +136,7 @@
       <ConformanceMode>true</ConformanceMode>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm;%CPP_LIB%\tinyobjloader;$(SolutionDir)\Source\EngineShaderData;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm;%CPP_LIB%\tinyobjloader;%CPP_LIB%\stb;$(SolutionDir)\Source\EngineShaderData;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
@@ -198,7 +198,7 @@
       <ConformanceMode>true</ConformanceMode>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm;%CPP_LIB%\tinyobjloader;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm;%CPP_LIB%\tinyobjloader;%CPP_LIB%\stb;$(SolutionDir)\Source\EngineShaderData;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
@@ -223,10 +223,12 @@
   <ItemGroup>
     <ClCompile Include="Assets\AssetLoaderLibrary.cpp" />
     <ClCompile Include="Assets\AssetLoader\StaticMeshLoader.cpp" />
+    <ClCompile Include="Assets\AssetLoader\TextureLoader.cpp" />
     <ClCompile Include="Assets\AssetsManager.cpp" />
     <ClCompile Include="Assets\Asset\AssetObject.cpp" />
     <ClCompile Include="Assets\Asset\MeshAsset.cpp" />
     <ClCompile Include="Assets\Asset\StaticMeshAsset.cpp" />
+    <ClCompile Include="Assets\Asset\TextureAsset.cpp" />
     <ClCompile Include="Core\Engine\Config\EngineGlobalConfigs.cpp" />
     <ClCompile Include="Core\Engine\GameEngine.cpp" />
     <ClCompile Include="Core\Engine\WindowManager.cpp" />
@@ -241,6 +243,7 @@
     <ClCompile Include="Core\Math\Vector2D.cpp" />
     <ClCompile Include="Core\Math\Vector3D.cpp" />
     <ClCompile Include="Core\Math\Vector4D.cpp" />
+    <ClCompile Include="Core\Memory\EndianFunctionsImpl.cpp" />
     <ClCompile Include="Core\Platform\GenericAppWindow.cpp" />
     <ClCompile Include="Core\Platform\LFS\File\GenericFile.cpp" />
     <ClCompile Include="Core\Platform\ModuleManager.cpp" />
@@ -303,11 +306,13 @@
   <ItemGroup>
     <ClInclude Include="Assets\AssetLoaderLibrary.h" />
     <ClInclude Include="Assets\AssetLoader\StaticMeshLoader.h" />
+    <ClInclude Include="Assets\AssetLoader\TextureLoader.h" />
     <ClInclude Include="Assets\AssetsManager.h" />
     <ClInclude Include="Assets\Asset\AssetHeader.h" />
     <ClInclude Include="Assets\Asset\AssetObject.h" />
     <ClInclude Include="Assets\Asset\MeshAsset.h" />
     <ClInclude Include="Assets\Asset\StaticMeshAsset.h" />
+    <ClInclude Include="Assets\Asset\TextureAsset.h" />
     <ClInclude Include="Core\Engine\Config\EngineGlobalConfigs.h" />
     <ClInclude Include="Core\Engine\Config\EngineVariableTypes.h" />
     <ClInclude Include="Core\Engine\GameEngine.h" />

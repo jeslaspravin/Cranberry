@@ -147,7 +147,7 @@ VulkanImageResource::VulkanImageResource(EPixelDataFormat::Type imageFormat, boo
 }
 
 VulkanImageResource::VulkanImageResource()
-    : ImageResource(EPixelDataFormat::ABGR_UI8_Packed)
+    : ImageResource(EPixelDataFormat::ABGR8_UI32_Packed)
     , defaultImageUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
     , defaultFeaturesRequired(VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)
     , createFlags(0)
