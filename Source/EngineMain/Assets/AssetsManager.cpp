@@ -26,7 +26,7 @@ std::vector<AssetBase*> AssetManager::loadAsset(const AssetHeader& header)
         AssetLoaderLibrary::loadStaticMesh(header.assetPath, loadedAssets);
         break;
     case EAssetType::Texture2D:
-        Logger::error("AssetManager", "Texture 2D loading is not yet implemented");
+        loadedAssets.emplace_back(AssetLoaderLibrary::loadTexture(header.assetPath));
     case EAssetType::InvalidType:
     default:
         break;

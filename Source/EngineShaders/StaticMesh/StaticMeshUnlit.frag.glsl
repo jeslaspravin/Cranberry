@@ -19,6 +19,6 @@ void mainFS()
 {
     colorAttachment0 = vec4(mix(texture(diffuseTexture, inTextureCoord).xyz
         , vec3(fract(inWorldPosition.x/10.f),fract(inWorldPosition.y/10.f),fract(inWorldPosition.z/10.f)), pushConsts.vertexDiffuseColorBlend), 1);
-    colorAttachment1 = vec4(inWorldNormal, 1);
+    colorAttachment1 = vec4((inWorldNormal + 1) * 0.5, 1);
     colorAttachment2 = inWorldPosition.w;
 }

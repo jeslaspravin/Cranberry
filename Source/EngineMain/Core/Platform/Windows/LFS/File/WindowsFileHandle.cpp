@@ -1,5 +1,5 @@
 #include "WindowsFileHandle.h"
-#include "../../../PlatformFunctions.h"
+#include "../../../../Types/CoreDefines.h"
 #include "../../../../Logger/Logger.h"
 
 void* WindowsFileHandle::getFileHandle()

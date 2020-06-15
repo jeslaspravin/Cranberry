@@ -199,6 +199,9 @@
     <Filter Include="Header Files\Core\Types\Camera">
       <UniqueIdentifier>{6fe4cac8-c53c-4f67-bba3-3dc952b93fe7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\Memory">
+      <UniqueIdentifier>{c334e766-ec89-4b07-92c7-8e125f4320ce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -440,6 +443,15 @@
     </ClCompile>
     <ClCompile Include="Core\Types\Camera\Camera.cpp">
       <Filter>Source Files\Core\Types\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Memory\EndianFunctionsImpl.cpp">
+      <Filter>Source Files\Core\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\AssetLoader\TextureLoader.cpp">
+      <Filter>Source Files\Assets\AssetLoader</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\Asset\TextureAsset.cpp">
+      <Filter>Source Files\Assets\Asset</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -781,6 +793,12 @@
     </ClInclude>
     <ClInclude Include="Core\Math\VectorND.h">
       <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\AssetLoader\TextureLoader.h">
+      <Filter>Source Files\Assets\AssetLoader</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\Asset\TextureAsset.h">
+      <Filter>Header Files\Assets\Asset</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

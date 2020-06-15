@@ -2,6 +2,7 @@
 #include "../GraphicsHelper.h"
 #include "../../Core/Types/Colors.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../Core/Platform/PlatformFunctions.h"
 
 #include <utility>
 
@@ -94,7 +95,6 @@ void RenderCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     cmdList->copyOrResolveImage(src, dst, srcInfo, dstInfo);
 }
 
-#if LITTLE_ENDIAN
 void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<Color>& pixelData
     , const EPixelDataFormat::PixelFormatInfo* formatInfo) const
 {
@@ -103,31 +103,35 @@ void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stag
 
     memset(stagingPtr, 0, stagingBuffer->getResourceSize());
 
-    // Copying data
-    for (uint32 i = 0; i < pixelData.size(); ++i)
+    if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
     {
-        uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
-        for (uint8 compIdx = 0; compIdx < formatInfo->componentCount; ++compIdx)
+        // Copying data
+        for (uint32 i = 0; i < pixelData.size(); ++i)
         {
-            const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
-            uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
-
-            // Left shift
-            const uint32 byte1Shift = compOffset % colorCompBits;
-            const uint8 byte1Mask = 0xFF << byte1Shift;
-            *offsetStagingPtr |= (byte1Mask & (pixelData[i].getColorValue()[compIdx] << byte1Shift));
-
-            if (byte1Shift > 0)
+            uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+            for (uint8 compIdx = 0; compIdx < formatInfo->componentCount; ++compIdx)
             {
-                const uint8 byte2Mask = ~byte1Mask;
-                *(offsetStagingPtr + 1) |= (byte2Mask & (pixelData[i].getColorValue()[compIdx] >> (colorCompBits - byte1Shift)));
+                const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
+                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
+
+                // Left shift
+                const uint32 byte1Shift = compOffset % colorCompBits;
+                const uint8 byte1Mask = 0xFF << byte1Shift;
+                *offsetStagingPtr |= (byte1Mask & (pixelData[i].getColorValue()[compIdx] << byte1Shift));
+
+                if (byte1Shift > 0)
+                {
+                    const uint8 byte2Mask = ~byte1Mask;
+                    *(offsetStagingPtr + 1) |= (byte2Mask & (pixelData[i].getColorValue()[compIdx] >> (colorCompBits - byte1Shift)));
+                }
             }
         }
     }
+    else
+    {
+        fatalAssert(false, "Big endian platform not supported yet");
+    }
 }
-#elif BIG_ENDIAN
-static_assert(false, "Not supported endian platform");
-#endif
 
 void IRenderCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData)
 {
