@@ -14,6 +14,7 @@
 #include "../Core/Platform/PlatformAssertionErrors.h"
 #include "../VulkanRI/Resources/VulkanShaderResources.h"
 #include "../Assets/Asset/StaticMeshAsset.h"
+#include "../Assets/Asset/TextureAsset.h"
 #include "../RenderInterface/Shaders/StaticMesh/StaticMeshUnlit.h"
 #include "../RenderInterface/Shaders/DrawQuadFromTexture.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
@@ -32,6 +33,7 @@
 #include "../Core/Math/Vector4D.h"
 #include "../Core/Math/Vector3D.h"
 #include "../Core/Math/Matrix4.h"
+#include "../Core/Math/Math.h"
 
 #include <array>
 
@@ -207,16 +209,10 @@ void ExperimentalEngine::destroyBuffers()
 void ExperimentalEngine::createImages()
 {
     commonSampler = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "CommonSampler",
-        ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
+        ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest);
     // common shader sampling texture
     {
-        Texture2DCreateParams t2dCreateParams
-        {
-            "DiffuseTexture",
-            Size2D(1024, 1024),
-            EPixelSampleCount::SampleCount1// Not yet enabled MSAA
-        };
-        texture.image = TextureBase::createTexture<Texture2D>(t2dCreateParams);
+        texture.image = static_cast<TextureAsset*>(appInstance().assetManager.getOrLoadAsset("TestImageData.png"))->getTexture();
         texture.imageView = static_cast<VulkanImageResource*>(texture.image->getTextureResource())->getImageView({});
 
         if (texture.imageView != nullptr)
@@ -224,12 +220,18 @@ void ExperimentalEngine::createImages()
             graphicsDbg->markObject((uint64)texture.imageView, "DiffuseTextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
         }
 
-        t2dCreateParams.textureName = "NormalTexture";
+        Texture2DCreateParams t2dCreateParams
+        {
+            "NormalTexture",
+            ESamplerFiltering::Nearest,
+            Size2D(1024, 1024)
+        };
+        t2dCreateParams.defaultColor = Color(0, 0, 1);
         normalTexture.image = TextureBase::createTexture<Texture2D>(t2dCreateParams);
         normalTexture.imageView = static_cast<VulkanImageResource*>(normalTexture.image->getTextureResource())->getImageView({});
         if (normalTexture.imageView != nullptr)
         {
-            graphicsDbg->markObject((uint64)normalTexture.imageView, "DiffuseTextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
+            graphicsDbg->markObject((uint64)normalTexture.imageView, "NormalTextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
         }
     }
 }
@@ -237,49 +239,6 @@ void ExperimentalEngine::createImages()
 void ExperimentalEngine::writeImages()
 {
     // TODO(Jeslas) : load and write images and abstract change transition
-
-    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(),"TransitionFence");
-
-    VkCommandBuffer transitionTempBuffer;
-    CMD_BUFFER_ALLOC_INFO(allocInfo);
-    allocInfo.commandBufferCount = 1;
-    allocInfo.commandPool = pools[EQueueFunction::Graphics].tempCommandsPool;
-    vDevice->vkAllocateCommandBuffers(device, &allocInfo, &transitionTempBuffer);
-
-    std::vector<VkImageMemoryBarrier> transitionBarriers;
-    
-    IMAGE_MEMORY_BARRIER(imgBarrier);
-    imgBarrier.srcQueueFamilyIndex = getQueue<EQueueFunction::Graphics>(vDevice)->queueFamilyIndex();
-    imgBarrier.srcAccessMask = 0;
-    imgBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
-    imgBarrier.dstQueueFamilyIndex = getQueue<EQueueFunction::Graphics>(vDevice)->queueFamilyIndex();
-    imgBarrier.dstAccessMask = VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    imgBarrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imgBarrier.subresourceRange = { VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
-
-    imgBarrier.image = static_cast<VulkanImageResource*>(texture.image->getTextureResource())->image;
-    transitionBarriers.push_back(imgBarrier);
-    imgBarrier.image = static_cast<VulkanImageResource*>(normalTexture.image->getTextureResource())->image;
-    transitionBarriers.push_back(imgBarrier);
-
-    CMD_BUFFER_BEGIN_INFO(beginInfo);
-    beginInfo.flags = VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vDevice->vkBeginCommandBuffer(transitionTempBuffer, &beginInfo);
-    vDevice->vkCmdPipelineBarrier(transitionTempBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
-        , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
-        , 0, nullptr, 0, nullptr, uint32(transitionBarriers.size()), transitionBarriers.data());
-    vDevice->vkEndCommandBuffer(transitionTempBuffer);
-
-    SUBMIT_INFO(submitInfo);
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &transitionTempBuffer;
-
-    vDevice->vkQueueSubmit(getQueue<EQueueFunction::Graphics>(vDevice)->getQueueOfPriority<EQueuePriority::High>()
-        , 1, &submitInfo, static_cast<VulkanFence*>(tempFence.get())->fence);
-    tempFence->waitForSignal();
-    tempFence->release();
-
-    vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Graphics].tempCommandsPool, 1, &transitionTempBuffer);
 }
 
 void ExperimentalEngine::destroyImages()
@@ -627,7 +586,7 @@ void ExperimentalEngine::createShaderResDescriptors()
                     quadTextureDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
                     quadTextureDescWrite.dstBinding = foundItr->second;
 
-                    FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
+                    FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
                     Framebuffer* fb = GBuffers::getFramebuffer(unlitFbFormat, swapchainIdx);
                     fatalAssert(fb != nullptr, "Framebuffer is invalid");
 
@@ -652,7 +611,8 @@ void ExperimentalEngine::createShaderResDescriptors()
                     imageInfoIdx = uint32(imageInfo.size());
                     imageInfo.push_back({});
                     imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[2])->getImageView({});// Depth is at 2
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[2])->getImageView({ 
+                        {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
                     imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
                     quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][i].descSet;
@@ -699,7 +659,7 @@ void ExperimentalEngine::writeUnlitBuffToQuadDrawDescs()
                     quadTextureDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
                     quadTextureDescWrite.dstBinding = foundItr->second;
 
-                    FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
+                    FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
                     Framebuffer* fb = GBuffers::getFramebuffer(unlitFbFormat, swapchainIdx);
                     fatalAssert(fb != nullptr, "Framebuffer is invalid");
 
@@ -724,7 +684,8 @@ void ExperimentalEngine::writeUnlitBuffToQuadDrawDescs()
                     imageInfoIdx = uint32(imageInfo.size());
                     imageInfo.push_back({});
                     imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[2])->getImageView({});// Depth is at 2
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[2])->getImageView({
+                        {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
                     imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
                     quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][i].descSet;
@@ -839,7 +800,7 @@ void ExperimentalEngine::createRenderpass()
 
             VkAttachmentDescription normalTargetAttachment;
             normalTargetAttachment.flags = 0;
-            normalTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::ABGR_S8_NormPacked)->format);
+            normalTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::ABGR8_S32_NormPacked)->format);
             normalTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
             normalTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             normalTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -849,7 +810,7 @@ void ExperimentalEngine::createRenderpass()
             normalTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             attachmentsDesc[1] = normalTargetAttachment;
             smAttachmentsClearColors[1].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
-            smAttachmentsFormat[1] = EPixelDataFormat::ABGR_S8_NormPacked;
+            smAttachmentsFormat[1] = EPixelDataFormat::ABGR8_S32_NormPacked;
             attachmentRefs[1].attachment = 1;
             attachmentRefs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -872,7 +833,7 @@ void ExperimentalEngine::createRenderpass()
             VkAttachmentDescription realDepthAttachment;
             realDepthAttachment.flags = 0;
             realDepthAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::D_SF32)->format);
-            realDepthAttachment.samples = VkSampleCountFlagBits(EPixelSampleCount::SampleCount1);
+            realDepthAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
             realDepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             realDepthAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
             realDepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -1427,6 +1388,14 @@ void ExperimentalEngine::updateCameraParams()
     {
         distanceOffset += timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
+    if (appInstance().inputSystem()->isKeyPressed(Keys::Q))
+    {
+        useVertexColor = Math::min(useVertexColor + timeData.deltaTime * timeData.activeTimeDilation, 1.0f);
+    }
+    else
+    {
+        useVertexColor = Math::max(useVertexColor - timeData.deltaTime * timeData.activeTimeDilation, 0.0f);
+    }
     if (appInstance().inputSystem()->keyState(Keys::X)->keyWentUp)
     {
         toggleRes = !toggleRes;
@@ -1575,7 +1544,7 @@ void ExperimentalEngine::frameRender()
         RENDERPASS_BEGIN_INFO(renderPassBeginInfo);
         renderPassBeginInfo.renderPass = smRenderPass;
         renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(GBuffers::getFramebuffer(
-            { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } }, index));
+            { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } }, index));
 
         renderPassBeginInfo.pClearValues = smAttachmentsClearColors.data();
         renderPassBeginInfo.clearValueCount = (uint32)smAttachmentsClearColors.size();
