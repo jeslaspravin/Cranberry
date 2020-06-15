@@ -9,7 +9,7 @@
 std::unordered_map<FramebufferFormat, std::vector<Framebuffer*>> GBuffers::gBuffers
 {
     {
-        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR_S8_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 }), {}
+        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 }), {}
     }
 };
 std::vector<Framebuffer*> GBuffers::swapchainFbs;

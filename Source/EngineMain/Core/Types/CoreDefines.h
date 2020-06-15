@@ -9,6 +9,8 @@
 // Debug-able inline
 #define DEBUG_INLINE inline
 
+#define ONE_BIT_SET(FlagStatement) (FlagStatement) && !((FlagStatement) & ((FlagStatement) - 1))
+
 #define MAKE_INITIALIZER(...) { __VA_ARGS__ }
 
 #define FIRST_internal(X,...) X

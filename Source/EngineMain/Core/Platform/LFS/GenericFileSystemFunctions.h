@@ -7,7 +7,7 @@ template <typename FileSystemType>
 class GenericFileSystemFunctions
 {
 private:
-    GenericFileSystemFunctions(){}
+    GenericFileSystemFunctions() = default;
 
 public:
 

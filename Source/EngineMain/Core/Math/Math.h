@@ -43,6 +43,12 @@ public:
     }
 
     template <typename Type>
+    FORCE_INLINE static Type frac(const Type& value)
+    {
+        return glm::fract(value);
+    }
+
+    template <typename Type>
     FORCE_INLINE static Type floor(const Type& value)
     {
         return glm::floor(value);

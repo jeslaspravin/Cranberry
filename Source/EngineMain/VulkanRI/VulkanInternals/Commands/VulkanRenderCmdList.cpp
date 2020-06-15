@@ -287,7 +287,7 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
     // TODO(Jeslas) : change this to get current layout from some resource tracked layout
     VkImageLayout currentLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 
-    GraphicsRTexelBuffer stagingBuffer = GraphicsRTexelBuffer(dst->imageFormat(), uint32(pixelData.size()));
+    GraphicsRBuffer stagingBuffer = GraphicsRBuffer(formatInfo->pixelDataSize, uint32(pixelData.size()));
     stagingBuffer.setAsStagingResource(true);
     stagingBuffer.init();
     uint8* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, &stagingBuffer));

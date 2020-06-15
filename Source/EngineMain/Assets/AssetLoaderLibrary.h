@@ -13,4 +13,5 @@ public:
     static EAssetType::Type typeFromAssetPath(const String& assetPath);
 
     static void loadStaticMesh(const String& assetPath, std::vector<AssetBase*>& staticMeshes);
+    static AssetBase* loadTexture(const String& assetPath);
 };

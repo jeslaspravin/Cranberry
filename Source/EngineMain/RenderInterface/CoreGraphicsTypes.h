@@ -93,13 +93,6 @@ namespace EPixelDataFormat
         BGR_UI8,
         BGR_SI8,
         BGR_U8_SRGB,            /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
-        ABGR_U8_NormPacked,     /* 0 to 255 gives 0.0f - 1.0f per comp */
-        ABGR_S8_NormPacked,     /* -127 to 127 gives -1.0f - 1.0f per comp( -128 gets clamped to -127 ) */
-        ABGR_U8_ScaledPacked,   /* Just converts the value directly as float 0.0f - 255.0f per comp */
-        ABGR_S8_ScaledPacked,   /* Just converts the value directly as float -128.0f - 127.0f per comp */
-        ABGR_UI8_Packed,
-        ABGR_SI8_Packed,
-        ABGR_U8_SrgbPacked,
         BGRA_U8_Norm,
         BGRA_S8_Norm,
         BGRA_U8_Scaled,
@@ -135,18 +128,6 @@ namespace EPixelDataFormat
         RGBA_UI8,
         RGBA_SI8,
         RGBA_U8_SRGB,           /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
-        A2RGB10_U32_NormPacked,
-        A2RGB10_S32_NormPacked,
-        A2RGB10_U32_ScaledPacked,
-        A2RGB10_S32_ScaledPacked,
-        A2RGB10_UI32_Packed,
-        A2RGB10_SI32_Packed,
-        A2BGR10_U32_NormPacked,
-        A2BGR10_S32_NormPacked,
-        A2BGR10_U32_ScaledPacked,
-        A2BGR10_S32_ScaledPacked,
-        A2BGR10_UI32_Packed,
-        A2BGR10_SI32_Packed,
         R_U16_Norm,             /* 0 to 65535 gives 0.0f to 1.0f */
         R_S16_Norm,             /* -32767 to 32767 gives -1.0f - 1.0f per comp( -32768 gets clamped to -32767 )*/
         R_U16_Scaled,
@@ -200,9 +181,28 @@ namespace EPixelDataFormat
         RG_SF64,
         RGB_SF64,
         RGBA_SF64,
+        ABGR8_U32_NormPacked,     /* 0 to 255 gives 0.0f - 1.0f per comp */
+        ABGR8_S32_NormPacked,     /* -127 to 127 gives -1.0f - 1.0f per comp( -128 gets clamped to -127 ) */
+        ABGR8_U32_ScaledPacked,   /* Just converts the value directly as float 0.0f - 255.0f per comp */
+        ABGR8_S32_ScaledPacked,   /* Just converts the value directly as float -128.0f - 127.0f per comp */
+        ABGR8_UI32_Packed,
+        ABGR8_SI32_Packed,
+        ABGR8_U32_SrgbPacked,
+        A2RGB10_U32_NormPacked,
+        A2RGB10_S32_NormPacked,
+        A2RGB10_U32_ScaledPacked,
+        A2RGB10_S32_ScaledPacked,
+        A2RGB10_UI32_Packed,
+        A2RGB10_SI32_Packed,
+        A2BGR10_U32_NormPacked,
+        A2BGR10_S32_NormPacked,
+        A2BGR10_U32_ScaledPacked,
+        A2BGR10_S32_ScaledPacked,
+        A2BGR10_UI32_Packed,
+        A2BGR10_SI32_Packed,
         /* Depth and stencil formats */
-        D_U16_Norm,             /* 0 to 65535 gives 0.0f to 1.0f */
         D24X8_U32_NormPacked,   /* 0 to 16777215 depth gives 0.0f to 1.0f, 8bit not used */
+        D_U16_Norm,             /* 0 to 65535 gives 0.0f to 1.0f */
         D_SF32,
         D32S8_SF32_UI8,
         D16S8_U24_DNorm_SInt,   /* 0 to 65535 depth gives 0.0f to 1.0f, 0 - 255 as stencil */
@@ -210,7 +210,9 @@ namespace EPixelDataFormat
         AllFormatEnd,
         FloatFormatBegin = R_SF16,
         FloatFormatEnd = RGBA_SF64,
-        DepthFormatBegin = D_U16_Norm,
+        PackedFormatBegin = ABGR8_U32_NormPacked,
+        PackedFormatEnd = D24X8_U32_NormPacked,
+        DepthFormatBegin = D24X8_U32_NormPacked,
         DepthFormatEnd = D24S8_U32_DNorm_SInt,
         StencilDepthBegin = D32S8_SF32_UI8,
         StencilDepthEnd = D24S8_U32_DNorm_SInt

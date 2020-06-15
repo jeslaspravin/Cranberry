@@ -15,10 +15,12 @@ void StaticMeshAsset::initAsset()
     ENQUEUE_COMMAND(InitializeSMVertices,
         {
             vertexBuffer = new GraphicsVertexBuffer(getShaderParamInfo<StaticMeshAsset>()->paramStride(), uint32(vertices.size()));
+            vertexBuffer->setResourceName(assetHeader.assetName + "_VertexBuffer");
             vertexBuffer->init();
             cmdList->copyToBuffer(vertexBuffer, 0, vertices.data(), uint32(vertexBuffer->getResourceSize()));
 
             indexBuffer = new GraphicsIndexBuffer(sizeof(uint32), uint32(indices.size()));
+            indexBuffer->setResourceName(assetHeader.assetName + "_IndexBuffer");
             indexBuffer->init();
             cmdList->copyToBuffer(indexBuffer, 0, indices.data(), uint32(indexBuffer->getResourceSize()));
         }
