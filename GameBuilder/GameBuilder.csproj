@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\Binaries\GameBuilder\</OutputPath>
-	<IntermediateOutputPath>..\Binaries\GameBuilder\Intermediate</IntermediateOutputPath>
+    <IntermediateOutputPath>..\Binaries\GameBuilder\Intermediate</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -29,7 +29,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\Binaries\GameBuilder\</OutputPath>
-	<IntermediateOutputPath>..\Binaries\GameBuilder\Intermediate</IntermediateOutputPath>
+    <IntermediateOutputPath>..\Binaries\GameBuilder\Intermediate</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
