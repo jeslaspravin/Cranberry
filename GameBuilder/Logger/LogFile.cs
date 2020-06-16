@@ -10,7 +10,11 @@ namespace GameBuilder.Logger
     {
         public LogFile(string filePath)
         {
-            FileStream fileStream = new FileStream(filePath, FileMode.CreateNew);
+            FileStream fileStream = File.Create(filePath);
+            fileStream.Close();
+            File.SetCreationTime(filePath, DateTime.Now);
+
+            fileStream = File.OpenWrite(filePath);
             writer = new StreamWriter(fileStream);
             //writer.AutoFlush = true;
         }
