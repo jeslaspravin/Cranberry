@@ -72,9 +72,12 @@ DEVICE_VK_FUNCTIONS(vkGetFenceStatus)
 DEVICE_VK_FUNCTIONS(vkResetFences)
 DEVICE_VK_FUNCTIONS(vkWaitForFences)
 DEVICE_VK_FUNCTIONS(vkDestroyFence)
-//DEVICE_VK_FUNCTIONS(vkGetSemaphoreCounterValue)
-//DEVICE_VK_FUNCTIONS(vkWaitSemaphores)
-//DEVICE_VK_FUNCTIONS(vkSignalSemaphore)
+// TODO(Jeslas)(API Update) : Remove this #if once driver providers update to Vulkan 1.2
+#if VK_VERSION_1_2
+DEVICE_VK_FUNCTIONS(vkGetSemaphoreCounterValue)
+DEVICE_VK_FUNCTIONS(vkWaitSemaphores)
+DEVICE_VK_FUNCTIONS(vkSignalSemaphore)
+#endif
 
 /* Memory and Buffers */
 DEVICE_VK_FUNCTIONS(vkAllocateMemory)
@@ -191,10 +194,12 @@ DEVICE_VK_EXT_FUNCTIONS(vkGetSwapchainImagesKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME
 DEVICE_VK_EXT_FUNCTIONS(vkAcquireNextImageKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 DEVICE_VK_EXT_FUNCTIONS(vkQueuePresentKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 
-// TODO(Jeslas)(API Update) : Change to non extension functions(under Synchronizing Functions of device functions) once driver providers update to Vulkan 1.2
+// TODO(Jeslas)(API Update) : Remove this once driver providers update to Vulkan 1.2
+#if VK_VERSION_1_1 & !VK_VERSION_1_2
 /* Synchronizing Functions */
 DEVICE_VK_EXT_FUNCTIONS(vkGetSemaphoreCounterValueKHR, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)
 DEVICE_VK_EXT_FUNCTIONS(vkWaitSemaphoresKHR, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)
 DEVICE_VK_EXT_FUNCTIONS(vkSignalSemaphoreKHR, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)
+#endif
 
 #undef DEVICE_VK_EXT_FUNCTIONS
