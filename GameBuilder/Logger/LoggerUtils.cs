@@ -21,7 +21,7 @@ namespace GameBuilder.Logger
                 Directory.CreateDirectory(logDirectory);
             }
 
-            IEnumerable<string> logFiles=Directory.EnumerateFiles(logDirectory, "*.log", SearchOption.TopDirectoryOnly);
+            IEnumerable<string> logFiles = Directory.EnumerateFiles(logDirectory, "*.log", SearchOption.TopDirectoryOnly);
 
             // Clearing extra files
             if (logFiles.Count() > MAX_ALLOWED_FILE)
@@ -35,20 +35,29 @@ namespace GameBuilder.Logger
             }
 
             // Finding last log file for renaming
-            logFiles = logFiles.Where(fileName => fileName.Contains(Directories.APP_NAME+".Log"));
+            logFiles = logFiles.Where(fileName => fileName.Contains(Directories.APP_NAME+LOG_EXTENSION));
 
             string fileToRename = "";
             if (logFiles.Count()>0)
             {
                 fileToRename = logFiles.First();
                 string renameTo = Path.GetFileNameWithoutExtension(fileToRename) + "-" +
-                    File.GetCreationTime(fileToRename).ToString("yyyy'-'MM'-'dd'-'HHmmssfff") + ".log";
-
-                File.Move(fileToRename, Path.Combine(logDirectory,renameTo));
+                    File.GetCreationTime(fileToRename).ToString("yyyy'-'MM'-'dd'-'HHmmssfff");
+                {
+                    int fileCount = 1;
+                    string finalRenameTo = renameTo + LOG_EXTENSION;
+                    while (File.Exists(Path.Combine(logDirectory, finalRenameTo)))
+                    {
+                        finalRenameTo = $"{renameTo}_{fileCount}{LOG_EXTENSION}";
+                        fileCount++;
+                    }
+                    renameTo = finalRenameTo;
+                }
+                File.Move(fileToRename, Path.Combine(logDirectory, renameTo));
             }
             else
             {
-                fileToRename = Path.Combine(logDirectory, Directories.APP_NAME+".Log");
+                fileToRename = Path.Combine(logDirectory, Directories.APP_NAME+".log");
             }
             loggers = new List<LogBase>();
             loggers.Add(new LogFile(fileToRename));
@@ -62,6 +71,7 @@ namespace GameBuilder.Logger
         }
 
         private static int MAX_ALLOWED_FILE = 5;
+        private static string LOG_EXTENSION = ".log";
 
         private static List<LogBase> loggers;
         // Will alway be > 1 count

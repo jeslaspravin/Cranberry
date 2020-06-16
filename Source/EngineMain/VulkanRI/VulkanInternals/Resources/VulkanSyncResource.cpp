@@ -74,16 +74,9 @@ uint64 VulkanSemaphore::getDispatchableHandle() const
 
 //////////////////////////////////////////////////////////////////////////
 // VulkanTimelineSemaphore 
+//////////////////////////////////////////////////////////////////////////
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanTimelineSemaphore, VK_OBJECT_TYPE_SEMAPHORE)
-
-// TODO(Jeslas)(API Update) : Change and remove this macro once driver providers update to Vulkan 1.2
-#if 0 
-#define TIMIELINE_SEMAPHORE_FUNCTIONS(VDevice,FunctionName) VDevice->FunctionName
-#else
-#define TIMIELINE_SEMAPHORE_FUNCTIONS(VDevice,FunctionName) VDevice->FunctionName##KHR
-#endif                      
-
 
 VulkanTimelineSemaphore::VulkanTimelineSemaphore(const VulkanDevice* deviceInstance)
     :BaseType(), ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance)), vulkanDevice(deviceInstance)
@@ -97,7 +90,7 @@ void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
         waitInfo.pSemaphores = &semaphore;
         waitInfo.semaphoreCount = 1;
         waitInfo.pValues = &value;
-        TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkWaitSemaphores)(ownerDevice, &waitInfo, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
+        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(ownerDevice, &waitInfo, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
     }
 }
 
@@ -116,7 +109,7 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
         signalInfo.semaphore = semaphore;
         signalInfo.value = value;
 
-        if (TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkSignalSemaphore)(ownerDevice, &signalInfo) != VK_SUCCESS)
+        if (vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkSignalSemaphore)(ownerDevice, &signalInfo) != VK_SUCCESS)
         {
             Logger::error("VulkanTimelineSemaphore", "%s() : Signaling to value %d failed", __func__, value);
         }
@@ -128,7 +121,7 @@ uint64 VulkanTimelineSemaphore::currentValue() const
     uint64 counter = 0;
     if(GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get())
     {
-        TIMIELINE_SEMAPHORE_FUNCTIONS(vulkanDevice,vkGetSemaphoreCounterValue)(ownerDevice, semaphore, &counter);
+        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkGetSemaphoreCounterValue)(ownerDevice, semaphore, &counter);
     }
     return counter;
 }
@@ -187,10 +180,9 @@ void VulkanTimelineSemaphore::release()
     BaseType::release();
 }
 
-#undef TIMIELINE_SEMAPHORE_FUNCTIONS
-
 //////////////////////////////////////////////////////////////////////////
 // VulkanFence
+//////////////////////////////////////////////////////////////////////////
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanFence, VK_OBJECT_TYPE_FENCE)
 

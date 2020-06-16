@@ -26,7 +26,10 @@ std::vector<AssetBase*> AssetManager::loadAsset(const AssetHeader& header)
         AssetLoaderLibrary::loadStaticMesh(header.assetPath, loadedAssets);
         break;
     case EAssetType::Texture2D:
-        loadedAssets.emplace_back(AssetLoaderLibrary::loadTexture(header.assetPath));
+        if (AssetBase* loadedTextureAsset = AssetLoaderLibrary::loadTexture(header.assetPath))
+        {
+            loadedAssets.emplace_back(loadedTextureAsset);
+        }
     case EAssetType::InvalidType:
     default:
         break;
