@@ -279,8 +279,8 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(class IGraphicsInstance* graph
     waitInfo.pSemaphores = deviceSemaphores.data();
     waitInfo.semaphoreCount = (uint32)deviceSemaphores.size();
     waitInfo.pValues = waitForValues->data();
-
-    device->vkWaitSemaphoresKHR(device->logicalDevice, &waitInfo, 2000000000/*2 Seconds*/);
+    
+    device->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(device->logicalDevice, &waitInfo, 2000000000/*2 Seconds*/);
 }
 
 SharedPtr<class GraphicsFence> VulkanGraphicsHelper::createFence(class IGraphicsInstance* graphicsInstance, const char* fenceName, bool bIsSignaled /*= false*/)

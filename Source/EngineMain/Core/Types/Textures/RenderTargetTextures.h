@@ -6,6 +6,7 @@ namespace ERenderTargetFormat
 {
     enum Type
     {
+        RT_UseDefault,
         RT_U8,// Unsigned int8 normalized between 0.0 to 1.0
         RT_U8Packed,
         RT_U8_NoAlpha,
@@ -14,7 +15,7 @@ namespace ERenderTargetFormat
     };
 
     template<bool bIsSrgb>
-    EPixelDataFormat::Type rtFormatToPixelFormat(ERenderTargetFormat::Type);
+    EPixelDataFormat::Type rtFormatToPixelFormat(ERenderTargetFormat::Type, EPixelDataFormat::Type);
 }
 
 struct RenderTextureCreateParams : public TextureBaseCreateParams
@@ -33,14 +34,18 @@ class RenderTargetTexture : public TextureBase
 private:
     ERenderTargetFormat::Type rtFormat;
     ImageResource* rtResource = nullptr;
+protected:
     bool bIsSrgb;
     // If using same texture for both reading from shader and writing to shader
     bool bSameReadWriteTexture;
-protected:
+
     RenderTargetTexture() = default;
     ~RenderTargetTexture() = default;
 
     void reinitResources() override;
+
+    static void init(RenderTargetTexture* texture);
+    static void release(RenderTargetTexture* texture);
 public:
 
     ERenderTargetFormat::Type getRtFormat() const { return rtFormat; }
@@ -49,7 +54,4 @@ public:
 
     static RenderTargetTexture* createTexture(const RenderTextureCreateParams& createParams);
     static void destroyTexture(RenderTargetTexture* texture);
-private:
-    static void init(RenderTargetTexture* texture);
-    static void release(RenderTargetTexture* texture);
 };

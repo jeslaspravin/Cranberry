@@ -5,15 +5,68 @@
 #include "../RenderInterface/Resources/GenericWindowCanvas.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../Core/Types/Textures/RenderTargetTextures.h"
+#include "../Core/Math/Math.h"
 
-std::unordered_map<FramebufferFormat, std::vector<Framebuffer*>> GBuffers::gBuffers
+//////////////////////////////////////////////////////////////////////////
+// Custom Render target texture for GBuffers
+//////////////////////////////////////////////////////////////////////////
+
+struct GBufferRTCreateParams : public RenderTextureCreateParams
+{
+    EPixelDataFormat::Type dataFormat;
+};
+
+class GBufferRenderTexture : public RenderTargetTexture
+{
+public:
+    static GBufferRenderTexture* createTexture(const GBufferRTCreateParams& createParams);
+    static void destroyTexture(GBufferRenderTexture* texture);
+};
+
+GBufferRenderTexture* GBufferRenderTexture::createTexture(const GBufferRTCreateParams& createParams)
+{
+    GBufferRenderTexture* texture = new GBufferRenderTexture();
+
+    texture->mipCount = 1;
+    texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
+    texture->textureName = createParams.textureName;
+    texture->bIsSrgb = createParams.bIsSrgb;
+    texture->bSameReadWriteTexture = createParams.bSameReadWriteTexture;
+    if (createParams.bIsSrgb)
+    {
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<true>(createParams.format, createParams.dataFormat);
+    }
+    else
+    {
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<false>(createParams.format, createParams.dataFormat);
+    }
+    // Dependent values
+
+    // If depth texture then it should use same sample count as RT as it will not be used directly as shader read texture
+    texture->setSampleCount(createParams.bSameReadWriteTexture && !EPixelDataFormat::isDepthFormat(texture->dataFormat) ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
+    texture->setFilteringMode(createParams.filtering);
+
+    RenderTargetTexture::init(texture);
+    return texture;
+}
+
+void GBufferRenderTexture::destroyTexture(GBufferRenderTexture* texture)
+{
+    RenderTargetTexture::destroyTexture(texture);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// GBuffers
+//////////////////////////////////////////////////////////////////////////
+
+std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> GBuffers::gBuffers
 {
     {
         FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 }), {}
     }
 };
 std::vector<Framebuffer*> GBuffers::swapchainFbs;
-
 
 bool FramebufferFormat::operator==(const FramebufferFormat& otherFormat) const
 {
@@ -36,22 +89,50 @@ FramebufferFormat::FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frame
 
 void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
 {
-    ENQUEUE_COMMAND(GBufferSampleCountChange,
-        {
+    ENQUEUE_COMMAND(GBufferSampleCountChange,LAMBDA_BODY
+        (
             cmdList->waitIdle();
-            for (const std::pair<FramebufferFormat, std::vector<Framebuffer*>>& framebuferPair : gBuffers)
+
+            const Size2D & screenSize = EngineSettings::screenSize.get();
+            const EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(newValue);
+
+            for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
             {
-                for (Framebuffer* framebufferData : framebuferPair.second)
+                for (FramebufferWrapper& framebufferData : framebufferPair.second)
                 {
-                    for (ImageResource* imageResource : framebufferData->textures)
+                    for (GBufferRenderTexture* rtTexture : framebufferData.rtTextures)
                     {
-                        imageResource->setSampleCounts(EPixelSampleCount::Type(newValue));
-                        imageResource->reinitResources();
+                        TextureBase::destroyTexture<GBufferRenderTexture>(rtTexture);
                     }
-                    initializeInternal(framebufferData, EngineSettings::screenSize.get());
+                    framebufferData.framebuffer->textures.clear();
+                    framebufferData.rtTextures.clear();
+
+                    for (const EPixelDataFormat::Type& framebufferFormat : framebufferPair.first.attachments)
+                    {
+                        GBufferRTCreateParams rtCreateParam;
+                        rtCreateParam.bSameReadWriteTexture = EPixelDataFormat::isDepthFormat(framebufferFormat);
+                        rtCreateParam.filtering = ESamplerFiltering::Type(GlobalRenderVariables::GBUFFER_FILTERING.get());
+                        rtCreateParam.format = ERenderTargetFormat::RT_UseDefault;
+                        rtCreateParam.dataFormat = framebufferFormat;
+                        rtCreateParam.sampleCount = sampleCount;
+                        rtCreateParam.textureSize = { screenSize.x, screenSize.y };
+                        rtCreateParam.textureName = "GBuffer_" + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
+
+                        GBufferRenderTexture* rtTexture = TextureBase::createTexture<GBufferRenderTexture>(rtCreateParam);
+
+                        framebufferData.framebuffer->textures.emplace_back(rtTexture->getRtTexture());
+                        if (!EPixelDataFormat::isDepthFormat(framebufferFormat))
+                        {
+                            framebufferData.framebuffer->textures.emplace_back(rtTexture->getTextureResource());
+                        }
+
+                        framebufferData.rtTextures.emplace_back(rtTexture);
+                    }
+                    framebufferData.framebuffer->bHasResolves = true;
+                    initializeInternal(framebufferData.framebuffer, screenSize);
                 }
             }
-        }
+        )
     , newValue);
 }
 
@@ -60,16 +141,23 @@ void GBuffers::onScreenResized(Size2D newSize)
     ENQUEUE_COMMAND(GBufferResize,
         {
             cmdList->waitIdle();
-            for (const std::pair<FramebufferFormat, std::vector<Framebuffer*>>& framebuferPair : gBuffers)
+
+            for (const std::pair<FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
             {
-                for (Framebuffer* framebufferData : framebuferPair.second)
+                for (const FramebufferWrapper& framebufferData : framebufferPair.second)
                 {
-                    for (ImageResource* imageResource : framebufferData->textures)
+                    framebufferData.framebuffer->textures.clear();
+                    for (GBufferRenderTexture* rtTexture : framebufferData.rtTextures)
                     {
-                        imageResource->setImageSize({ newSize.x, newSize.y, 1 });
-                        imageResource->reinitResources();
+                        rtTexture->setTextureSize({ newSize.x, newSize.y });
+                        framebufferData.framebuffer->textures.emplace_back(rtTexture->getRtTexture());
+
+                        if (!EPixelDataFormat::isDepthFormat(rtTexture->getFormat()))
+                        {
+                            framebufferData.framebuffer->textures.emplace_back(rtTexture->getTextureResource());
+                        }
                     }
-                    initializeInternal(framebufferData, newSize);
+                    initializeInternal(framebufferData.framebuffer, newSize);
                 }
             }
         }
@@ -101,59 +189,70 @@ void GBuffers::initialize()
     uint32 swapchainCount = windowCanvas->imagesCount();
 
     const Size2D& initialSize = EngineSettings::screenSize.get();
-    GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);
+    GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);
 
-    EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
-    for (std::pair<const FramebufferFormat, std::vector<Framebuffer*>>& framebuferPair : gBuffers)
+    EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
+    for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
     {
-        framebuferPair.second.clear();
+        framebufferPair.second.clear();
         for (uint32 i = 0; i < swapchainCount; ++i)
         {
-            Framebuffer* framebufferData = createFbInternal();
-            if (framebufferData == nullptr)
+            FramebufferWrapper framebufferData;
+            framebufferData.framebuffer = createFbInternal();
+            if (framebufferData.framebuffer == nullptr)
             {
                 continue;
             }
-            for (const EPixelDataFormat::Type& frameBufferFormat : framebuferPair.first.attachments)
+            for (const EPixelDataFormat::Type& framebufferFormat : framebufferPair.first.attachments)
             {
-                ImageResource* imgResource = new GraphicsRenderTargetResource(frameBufferFormat);
-                imgResource->setImageSize({ initialSize.x, initialSize.y, 1 });
-                imgResource->setNumOfMips(1);
-                imgResource->setSampleCounts(sampleCount);
-                imgResource->setShaderUsage(EImageShaderUsage::Sampling);
-                imgResource->setResourceName("GBuffer_" + EPixelDataFormat::getFormatInfo(frameBufferFormat)->formatName);
-                imgResource->init();
+                GBufferRTCreateParams rtCreateParam;
+                rtCreateParam.bSameReadWriteTexture = EPixelDataFormat::isDepthFormat(framebufferFormat);
+                rtCreateParam.filtering = ESamplerFiltering::Type(GlobalRenderVariables::GBUFFER_FILTERING.get());
+                rtCreateParam.format = ERenderTargetFormat::RT_UseDefault;
+                rtCreateParam.dataFormat = framebufferFormat;
+                rtCreateParam.sampleCount = sampleCount;
+                rtCreateParam.textureSize = { initialSize.x, initialSize.y };
+                rtCreateParam.textureName = "GBuffer_" + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
 
-                framebufferData->textures.push_back(imgResource);
+                GBufferRenderTexture* rtTexture = TextureBase::createTexture<GBufferRenderTexture>(rtCreateParam);
+
+                framebufferData.framebuffer->textures.emplace_back(rtTexture->getRtTexture());
+                // Since there cannot be any resolve for depth texture as of Vulkan 1.2.135 we do not have resolve attachment for depth
+                if (!EPixelDataFormat::isDepthFormat(framebufferFormat))
+                {
+                    framebufferData.framebuffer->textures.emplace_back(rtTexture->getTextureResource());
+                }
+
+                framebufferData.rtTextures.emplace_back(rtTexture);
             }
-            initializeInternal(framebufferData, initialSize);
-            framebuferPair.second.push_back(framebufferData);
+            framebufferData.framebuffer->bHasResolves = true;
+            initializeInternal(framebufferData.framebuffer, initialSize);
+            framebufferPair.second.emplace_back(framebufferData);
         }
     }
 
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         Framebuffer* fb = createFbInternal();
+        fb->bHasResolves = false;
         initializeSwapchainFb(fb, windowCanvas, EngineSettings::surfaceSize.get(), i);
-        swapchainFbs.push_back(fb);
+        swapchainFbs.emplace_back(fb);
     }
 }
 
 void GBuffers::destroy()
 {
-    for (std::pair<const FramebufferFormat, std::vector<Framebuffer*>>& framebuferPair : gBuffers)
+    for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
     {
-        for (Framebuffer* framebufferData : framebuferPair.second)
+        for (FramebufferWrapper& framebufferData : framebufferPair.second)
         {
-            for (ImageResource* imageResource : framebufferData->textures)
+            for (GBufferRenderTexture* rtTexture : framebufferData.rtTextures)
             {
-                imageResource->release();
-                delete imageResource;
+                TextureBase::destroyTexture<GBufferRenderTexture>(rtTexture);
             }
-            framebufferData->textures.clear();
-            delete framebufferData;
+            delete framebufferData.framebuffer;
         }
-        framebuferPair.second.clear();
+        framebufferPair.second.clear();
     }
     gBuffers.clear();
 
@@ -166,10 +265,10 @@ void GBuffers::destroy()
 
 Framebuffer* GBuffers::getFramebuffer(const FramebufferFormat& framebufferFormat, uint32 frameIdx)
 {
-    std::unordered_map<FramebufferFormat,std::vector<Framebuffer*>>::const_iterator framebufferItr = gBuffers.find(framebufferFormat);
+    std::unordered_map<FramebufferFormat,std::vector<FramebufferWrapper>>::const_iterator framebufferItr = gBuffers.find(framebufferFormat);
     if (framebufferItr != gBuffers.cend())
     {
-        return framebufferItr->second[frameIdx];
+        return framebufferItr->second[frameIdx].framebuffer;
     }
     return nullptr;
 }

@@ -18,6 +18,8 @@ namespace GlobalRenderVariables
     //in nanoseconds
     extern GraphicsDeviceConstant<uint64> MAX_SYNC_RES_WAIT_TIME;
 
-    // Frame buffer sample count
-    extern EngineGlobalConfig<uint32> FRAME_BUFFER_SAMPLE_COUNT;
+    // GBuffer's framebuffer sample count
+    extern EngineGlobalConfig<uint32> GBUFFER_SAMPLE_COUNT;
+    // Filtering for shader read textures of GBuffers
+    extern EngineVar<uint32> GBUFFER_FILTERING;
 }
