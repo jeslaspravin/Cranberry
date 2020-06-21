@@ -68,6 +68,7 @@ public:
     const static Key D;
     const static Key E;
     const static Key F;
+    const static Key P;
     const static Key Q;
     const static Key R;
     const static Key S;

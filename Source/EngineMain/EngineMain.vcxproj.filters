@@ -782,6 +782,12 @@
     <ClInclude Include="Assets\Asset\TextureAsset.h">
       <Filter>Header Files\Assets\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="RenderInterface\Rendering\RenderingContexts.h">
+      <Filter>Header Files\RenderInterface\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Rendering\FramebufferTypes.h">
+      <Filter>Header Files\RenderInterface\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="VulkanRI\VulkanInternals\VulkanFunctionLists.inl">

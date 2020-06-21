@@ -107,14 +107,15 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
 
     std::vector<VkAttachmentDescription> renderPassAttachments;
     std::vector<VkAttachmentReference> colorAttachmentRefs;
+    std::vector<VkAttachmentReference> resolveAttachmentRefs;
     std::vector<VkAttachmentReference> depthAttachmentRef;
 
     renderPassAttachments.reserve((framebuffer->textures.size()));
 
-
-    uint32 attachmentIdx = 0;
-    for (const ImageResource* resource : framebuffer->textures)
+    for (uint32 attachmentIdx = 0; attachmentIdx < framebuffer->textures.size();)
     {
+        const ImageResource* resource = framebuffer->textures[attachmentIdx];
+
         VkAttachmentDescription attachmentDesc;
         attachmentDesc.flags = 0;
         attachmentDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(resource->imageFormat())->format);
@@ -126,16 +127,32 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
         attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         renderPassAttachments.push_back(attachmentDesc);
+        // Since there cannot be any resolve for depth texture as of Vulkan 1.2.135 we do not have resolve attachment for depth
         if (EPixelDataFormat::isDepthFormat(resource->imageFormat()))
         {
             fatalAssert(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
             depthAttachmentRef.push_back({ attachmentIdx , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
+            ++attachmentIdx;
         }
         else
         {
             colorAttachmentRefs.push_back({ attachmentIdx , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+
+            if (framebuffer->bHasResolves)
+            {
+                attachmentDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(framebuffer->textures[attachmentIdx + 1]->imageFormat())->format);
+                attachmentDesc.samples = VkSampleCountFlagBits(framebuffer->textures[attachmentIdx + 1]->sampleCount());
+
+                renderPassAttachments.push_back(attachmentDesc);
+                resolveAttachmentRefs.push_back({ attachmentIdx + 1 , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+
+                attachmentIdx += 2;
+            }
+            else
+            {
+                ++attachmentIdx;
+            }
         }
-        ++attachmentIdx;
     }
 
     VkSubpassDescription dummySubpass;
@@ -143,7 +160,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
     dummySubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     dummySubpass.colorAttachmentCount = uint32(colorAttachmentRefs.size());
     dummySubpass.pColorAttachments = colorAttachmentRefs.data();
-    dummySubpass.pResolveAttachments = nullptr;
+    dummySubpass.pResolveAttachments = resolveAttachmentRefs.data();
     dummySubpass.inputAttachmentCount = 0;
     dummySubpass.pInputAttachments = nullptr;
     dummySubpass.preserveAttachmentCount = 0;
