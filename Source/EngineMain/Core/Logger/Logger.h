@@ -9,7 +9,7 @@ class GenericFile;
 class Logger {
 
 private:
-    Logger(){}
+    Logger() = default;
 
     static GenericFile* getLogFile();
 

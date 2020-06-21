@@ -7,7 +7,7 @@
 namespace ERenderTargetFormat
 {
     template<>
-    constexpr EPixelDataFormat::Type rtFormatToPixelFormat</*bIsSrgb = */true>(ERenderTargetFormat::Type rtFormat)
+    constexpr EPixelDataFormat::Type rtFormatToPixelFormat</*bIsSrgb = */true>(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
     {
         switch (rtFormat)
         {
@@ -21,6 +21,8 @@ namespace ERenderTargetFormat
             return EPixelDataFormat::ABGR8_S32_NormPacked;
         case ERenderTargetFormat::RT_SF32:
             return EPixelDataFormat::R_SF32;
+        case ERenderTargetFormat::RT_UseDefault:
+            return defaultFormat;
         default:
             break;
         }
@@ -28,7 +30,7 @@ namespace ERenderTargetFormat
     }
 
     template<>
-    constexpr EPixelDataFormat::Type rtFormatToPixelFormat</*bIsSrgb = */false>(ERenderTargetFormat::Type rtFormat)
+    constexpr EPixelDataFormat::Type rtFormatToPixelFormat</*bIsSrgb = */false>(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
     {
         switch (rtFormat)
         {
@@ -42,6 +44,8 @@ namespace ERenderTargetFormat
             return EPixelDataFormat::ABGR8_S32_NormPacked;
         case ERenderTargetFormat::RT_SF32:
             return EPixelDataFormat::R_SF32;
+        case ERenderTargetFormat::RT_UseDefault:
+            return defaultFormat;
         default:
             break;
         }
@@ -51,8 +55,6 @@ namespace ERenderTargetFormat
 
 void RenderTargetTexture::reinitResources()
 {
-    TextureBase::reinitResources();
-
     if (dataFormat != rtResource->imageFormat())
     {
         RenderTargetTexture::init(this);
@@ -62,7 +64,9 @@ void RenderTargetTexture::reinitResources()
         rtResource->setImageSize(textureSize);
         rtResource->setNumOfMips(mipCount);
         rtResource->setResourceName(textureName);
-
+        textureResource->setImageSize(textureSize);
+        textureResource->setNumOfMips(mipCount);
+        textureResource->setResourceName(textureName);
         ENQUEUE_COMMAND(RtReinitTexture,
             {
                 rtResource->reinitResources();
@@ -96,14 +100,14 @@ RenderTargetTexture* RenderTargetTexture::createTexture(const RenderTextureCreat
     texture->bSameReadWriteTexture = createParams.bSameReadWriteTexture;
     if (createParams.bIsSrgb)
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<true>(createParams.format);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<true>(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     else
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<false>(createParams.format);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<false>(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     // Dependent values
-    texture->setSampleCount(createParams.bSameReadWriteTexture ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
+    texture->setSampleCount(createParams.bSameReadWriteTexture? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
     texture->setFilteringMode(createParams.filtering);
 
     RenderTargetTexture::init(texture);

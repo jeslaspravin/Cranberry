@@ -104,7 +104,7 @@ public:
         return executor.execute<ReturnType>(delegateData.functionPtr, delegateData.objectPtr, std::forward<Params>(params)...);
     }
 
-    virtual bool hasSameObject(const void* object) const override
+    bool hasSameObject(const void* object) const override
     {
         return delegateData.objectPtr == object;
     }
@@ -160,7 +160,7 @@ public:
         return executor.execute<ReturnType>(delegateData.functionPtr, delegateData.objectPtr, std::forward<Params>(params)...);
     }
 
-    virtual bool hasSameObject(const void* object) const override
+    bool hasSameObject(const void* object) const override
     {
         return delegateData.objectPtr == object;
     }

@@ -3,5 +3,6 @@
 
 namespace GlobalRenderVariables
 {
-    EngineGlobalConfig<uint32> FRAME_BUFFER_SAMPLE_COUNT(EPixelSampleCount::SampleCount1);// Right now GBuffers do not support more than 1 sample count
+    EngineGlobalConfig<uint32> GBUFFER_SAMPLE_COUNT(EPixelSampleCount::SampleCount2);
+    EngineVar<uint32> GBUFFER_FILTERING(ESamplerFiltering::Linear);
 }

@@ -291,7 +291,7 @@ class VulkanChunkAllocator
     std::vector<VulkanMemoryChunk*> chunks;
     std::vector<VulkanMemoryChunk*> chunks2xAligned;
 
-    int32 allocateNewChunk(std::vector<VulkanMemoryChunk*>& chunks, uint64 alignment)
+    int32 allocateNewChunk(std::vector<VulkanMemoryChunk*>& chunks, uint64 alignment, uint64 chunkSize)
     {
         uint64 currentUsageSize;
         uint64 totalHeapSize;
@@ -299,7 +299,7 @@ class VulkanChunkAllocator
 
         uint64 allocatingSize;
         VulkanMemoryChunk* chunk = new VulkanMemoryChunk(alignment);
-        chunk->alignSize(cSize, allocatingSize);
+        chunk->alignSize(chunkSize, allocatingSize);
 
         if (totalHeapSize - currentUsageSize < allocatingSize)
         {
@@ -368,8 +368,8 @@ public:
         uint64 totalHeapSize;
         device->getMemoryStat(totalHeapSize, currentUsageSize, hIndex);
         cSize = (uint64)(Math::min<uint64>(2*cSize, totalHeapSize) * 0.5f);
-        allocateNewChunk(chunks, alignment);
-        allocateNewChunk(chunks2xAligned, alignment * 2);
+        allocateNewChunk(chunks, alignment, cSize);
+        allocateNewChunk(chunks2xAligned, alignment * 2, cSize);
     }
 
     ~VulkanChunkAllocator()
@@ -405,6 +405,7 @@ public:
     VulkanMemoryBlock* allocate(const uint64& size, const uint64& offsetAlignment)
     {
         VulkanMemoryBlock* allocatedBlock = nullptr;
+        // Chunks to min wastage after alignment pair
         std::vector<std::pair<std::vector<VulkanMemoryChunk*>*, uint64>> sortedChunks;
         {
             uint64 aligned;
@@ -440,7 +441,8 @@ public:
             uint64 alignedSize = size + chunks.second;
             uint64 alignment;
             chunks.first->at(0)->alignSize(1, alignment);
-            int32 index = allocateNewChunk(*chunks.first, alignment);
+            // In case if requested size is greater then allocate requested amount
+            int32 index = allocateNewChunk(*chunks.first, alignment, Math::max(cSize, alignedSize));
 
             if (index < 0)
             {
@@ -692,7 +694,7 @@ public:
                         device->memoryProperties.memoryTypes[i].heapIndex);
                     totalLinearStorage += linearChunkAllocators[i]->allocatorSize();
 
-                    optimalChunkAllocators[i] = new VulkanChunkAllocator(64 * 1024 * 1024, alignment, device, i,
+                    optimalChunkAllocators[i] = new VulkanChunkAllocator(128 * 1024 * 1024, alignment, device, i,
                         device->memoryProperties.memoryTypes[i].heapIndex);
                     totalOptimalStorage += optimalChunkAllocators[i]->allocatorSize();
 
