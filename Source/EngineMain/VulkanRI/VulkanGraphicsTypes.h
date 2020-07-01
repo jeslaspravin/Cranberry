@@ -41,6 +41,8 @@ namespace GraphicsTypes {
     using GraphicsDeviceConstant = EngineConstant<Type, class VulkanDevice>;
 
     typedef class VulkanShaderResource GraphicsShaderResource;
+
+    typedef class VulkanGlobalRenderingContext GlobalRenderingContext;
 }
 
 #endif

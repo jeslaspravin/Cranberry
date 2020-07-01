@@ -29,3 +29,5 @@ template <typename Type>
 using GraphicsDeviceConstant = GraphicsTypes::GraphicsDeviceConstant<Type>;
 
 using GraphicsShaderResource = GraphicsTypes::GraphicsShaderResource;
+
+using GlobalRenderingContext = GraphicsTypes::GlobalRenderingContext;

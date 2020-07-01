@@ -9,18 +9,12 @@ struct StaticMeshVertex
     Vector4D vertexColor;
 };
 
-struct StaticMeshVertexView
-{
-    uint32 startIndex;
-    uint32 numOfIndices;
-};
-
 class StaticMeshAsset : public MeshAsset
 {
 public:
     std::vector<StaticMeshVertex> vertices;
     std::vector<uint32> indices;
-    std::vector<StaticMeshVertexView> meshBatches;
+    std::vector<MeshVertexView> meshBatches;
 public:
     void initAsset() override;
     void clearAsset() override;

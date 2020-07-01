@@ -38,9 +38,8 @@ private:
 
     std::vector<uint8> shaderCode;
     ShaderReflected reflectedData;
-private:
-    VulkanShaderResource();
 protected:
+    VulkanShaderResource() = default;
     VulkanShaderResource(const String& name);
 public:
     /* IVulkanResources overrides */

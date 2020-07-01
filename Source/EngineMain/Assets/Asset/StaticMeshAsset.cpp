@@ -3,18 +3,14 @@
 #include "../../RenderInterface/PlatformIndependentHelper.h"
 #include "../../Core/Engine/GameEngine.h"
 #include "../../RenderInterface/Rendering/IRenderCommandList.h"
-
-BEGIN_VERTEX_DEFINITION(StaticMeshVertex)
-ADD_VERTEX_FIELD(position)
-ADD_VERTEX_FIELD(normal)
-ADD_VERTEX_FIELD(vertexColor)
-END_VERTEX_DEFINITION();
+#include "../../RenderApi/VertexData.h"
 
 void StaticMeshAsset::initAsset()
 {
     ENQUEUE_COMMAND(InitializeSMVertices,
         {
-            vertexBuffer = new GraphicsVertexBuffer(getShaderParamInfo<StaticMeshAsset>()->paramStride(), uint32(vertices.size()));
+            vertexBuffer = new GraphicsVertexBuffer(EVertexType::vertexParamInfo<EVertexType::StaticMesh>()[0]->paramStride()
+                , uint32(vertices.size()));
             vertexBuffer->setResourceName(assetHeader.assetName + "_VertexBuffer");
             vertexBuffer->init();
             cmdList->copyToBuffer(vertexBuffer, 0, vertices.data(), uint32(vertexBuffer->getResourceSize()));
@@ -37,11 +33,4 @@ void StaticMeshAsset::clearAsset()
             delete indexBuffer;
         }
     , this);
-}
-
-template<>
-ShaderVertexParamInfo* MeshAsset::getShaderParamInfo<StaticMeshAsset>()
-{
-    static StaticMeshVertexVertexParamInfo vertexParamInfo;
-    return &vertexParamInfo;
 }

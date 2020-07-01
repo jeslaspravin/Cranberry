@@ -2,6 +2,7 @@
 #include "GraphicsResources.h"
 #include "../../Core/String/String.h"
 #include "../../Core/Types/Functions.h"
+#include "../ShaderCore/ShaderInputOutput.h"
 
 #include <map>
 
@@ -67,6 +68,9 @@ protected:
     std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>> shaders;
 
     ShaderResource(const String& name = "");
+
+    // Provides file name from which the shaders have to be loaded
+    virtual String getShaderFileName() const;
 public:
 
     /* GraphicsResource overrides */
@@ -74,12 +78,18 @@ public:
     void reinitResources() override;
     void release() override;
 
-    String getResourceName() const override;
-    void setResourceName(const String& name) override {}
+    String getResourceName() const final;
+    void setResourceName(const String& name) final {}
 
     /* End overrides */
 
     virtual struct ShaderReflected const* getReflection() const { return nullptr; }
+    /*
+    * Binds BufferParamInfo for each buffer descriptor(Depending upon override corresponding set varies)
+    * for eg: DrawMeshShader only binds set 3 using this while others bind all set this way
+    */ 
+    virtual void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const {}
+
     SharedPtr<ShaderCodeResource> getShaderCode(EShaderStage::Type shaderType) const;
     const std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>>& getShaders() const;
 };

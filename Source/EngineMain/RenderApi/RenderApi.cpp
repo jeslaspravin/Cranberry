@@ -3,31 +3,21 @@
 #include "../Core/Engine/GameEngine.h"
 #include "GBuffersAndTextures.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../RenderInterface/Rendering/RenderingContexts.h"
 #include "../Core/Platform/PlatformAssertionErrors.h"
 
-void RenderApi::initAllShaders()
+void RenderApi::createSingletons()
 {
-    std::vector<GraphicsResource*> shaderResources;
-    GraphicsShaderResource::staticType()->allChildDefaultResources(shaderResources, true);
-    for (GraphicsResource* shader : shaderResources)
-    {
-        shader->init();
-    }
-}
+    static GraphicInstance gGraphicsInstance;
+    graphicsInstance = &gGraphicsInstance;
 
-void RenderApi::releaseAllShaders()
-{
-    std::vector<GraphicsResource*> shaderResources;
-    GraphicsShaderResource::staticType()->allChildDefaultResources(shaderResources, true);
-    for (GraphicsResource* shader : shaderResources)
-    {
-        shader->release();
-    }
+    static GlobalRenderingContext gGlobalContext;
+    globalContext = &gGlobalContext;
 }
 
 void RenderApi::initialize()
 {
-    graphicsInstance = new GraphicInstance();
+    createSingletons();
     renderCmds = IRenderCommandList::genericInstance();
     graphicsInstance->load();
 
@@ -36,9 +26,9 @@ void RenderApi::initialize()
             gEngine->appInstance().appWindowManager.initMain();
             graphicsInstance->loadSurfaceDependents();
             graphicsInstance->initializeCmds(renderCmds);
+            globalContext->initContext(graphicsInstance);
             gEngine->appInstance().appWindowManager.postInitGraphicCore();
             GBuffers::initialize();
-            initAllShaders();
         }
     , this);
 }
@@ -53,7 +43,7 @@ void RenderApi::destroy()
 {
     ENQUEUE_COMMAND(DestroyRenderApi,
         {
-            releaseAllShaders();
+            globalContext->clearContext();
             GBuffers::destroy();
             gEngine->appInstance().appWindowManager.destroyMain();
         }
@@ -65,7 +55,6 @@ void RenderApi::destroy()
     renderCmds = nullptr;
 
     graphicsInstance->unload();
-    delete graphicsInstance;
     graphicsInstance = nullptr;
 }
 
@@ -109,5 +98,5 @@ void RenderApi::waitOnCommands()
 
 void GameEngine::issueRenderCommand(class IRenderCommand* renderCommand)
 {
-    renderingApi->enqueueCommand(renderCommand);
+    renderingApi.enqueueCommand(renderCommand);
 }

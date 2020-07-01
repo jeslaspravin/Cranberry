@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../Memory/SmartPointers.h"
 #include "../../RenderApi/RenderApi.h"
 #include "../Platform/GenericAppInstance.h"
 
@@ -31,7 +30,7 @@ private:
     GenericAppInstance* applicationInstance;
     bool bExitNextFrame = false;
 protected:
-    UniquePtr<RenderApi> renderingApi;
+    RenderApi renderingApi;
     EngineTime timeData;
 
     virtual void onStartUp();
@@ -53,7 +52,7 @@ public:
     const GenericAppInstance* getApplicationInstance() const;
     GenericAppInstance& appInstance() const;
 
-    const RenderApi* getRenderApi() const { return renderingApi.get(); }
+    const RenderApi* getRenderApi() const { return &renderingApi; }
     void issueRenderCommand(class IRenderCommand* renderCommand);
 };
 
@@ -73,7 +72,6 @@ public:
 
     ~GameEngineWrapper()
     {
-        delete gEngine;
         gEngine = nullptr;
     }
 
