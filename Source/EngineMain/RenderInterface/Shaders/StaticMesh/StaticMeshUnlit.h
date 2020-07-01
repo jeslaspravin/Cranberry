@@ -1,10 +1,11 @@
 #pragma once
+#include "../Base/DrawMeshShader.h"
 
-#include "../../PlatformIndependentHeaders.h"
 
-class StaticMeshUnlit : public GraphicsShaderResource
+// TODO(Jeslas) : Change this to proper shader from test shader
+class StaticMeshUnlit : public DrawMeshShader
 {
-    DECLARE_GRAPHICS_RESOURCE(StaticMeshUnlit, , GraphicsShaderResource, );
+    DECLARE_GRAPHICS_RESOURCE(StaticMeshUnlit, , DrawMeshShader, );
 private:
     StaticMeshUnlit();
 };

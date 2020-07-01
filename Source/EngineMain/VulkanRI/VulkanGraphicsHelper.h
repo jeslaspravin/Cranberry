@@ -75,6 +75,9 @@ public:
     static void createFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebufferCreateInfo& fbCreateInfo, VkFramebuffer* framebuffer);
     static void destroyFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebuffer framebuffer);
     static VkFramebuffer getFramebuffer(struct Framebuffer* appFrameBuffer);
+
+    static VkDescriptorSetLayout createDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, const VkDescriptorSetLayoutCreateInfo& layoutCreateInfo);
+    static VkDescriptorSetLayout destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, VkDescriptorSetLayout descriptorsSetLayout);
 };
 
 

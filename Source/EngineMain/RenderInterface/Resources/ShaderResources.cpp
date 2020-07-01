@@ -2,6 +2,10 @@
 #include "../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../Core/Logger/Logger.h"
 
+//////////////////////////////////////////////////////////////////////////
+// ShaderCodeResource
+//////////////////////////////////////////////////////////////////////////
+
 DEFINE_GRAPHICS_RESOURCE(ShaderCodeResource)
 
 ShaderCodeResource::ShaderCodeResource(const String& shaderName, const String& entryPointName, const uint8* shaderCodePtr)
@@ -33,6 +37,10 @@ const String& ShaderCodeResource::entryPoint() const
 {
     return shaderEntryPoint;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// ShaderResource
+//////////////////////////////////////////////////////////////////////////
 
 DEFINE_GRAPHICS_RESOURCE(ShaderResource)
 
@@ -74,6 +82,11 @@ void ShaderResource::release()
 String ShaderResource::getResourceName() const
 {
     return shaderName;
+}
+
+String ShaderResource::getShaderFileName() const
+{
+    return getResourceName();
 }
 
 SharedPtr<ShaderCodeResource> ShaderResource::getShaderCode(EShaderStage::Type shaderType) const

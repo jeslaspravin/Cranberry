@@ -23,13 +23,10 @@ VulkanShaderCodeResource::VulkanShaderCodeResource()
 
 void VulkanShaderCodeResource::reinitResources()
 {
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
-    if (shaderModule)
-    {
-        VulkanGraphicsHelper::destroyShaderModule(graphicsInstance, shaderModule);
-    }
-
+    release();
     BaseType::reinitResources();
+
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
     // Multiplying by sizeof(uint32) as reflection creates every calculation in uint32
     shaderModule = VulkanGraphicsHelper::createShaderModule(graphicsInstance,shaderCode + getStageDesc().codeView.startIdx * sizeof(uint32)
         , getStageDesc().codeView.size*sizeof(uint32));
@@ -80,7 +77,7 @@ DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderResource, VK_OBJECT_TYPE_SHADER_MODULE)
 VulkanShaderResource::VulkanShaderResource(const String& name) : BaseType(name)
 {
     String filePath;
-    filePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), "Shaders", name);
+    filePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), "Shaders", getShaderFileName());
     shaderFilePath = filePath + "." + SHADER_EXTENSION;
     reflectionsFilePath = filePath + "." + REFLECTION_EXTENSION;
     PlatformFile shaderFile(shaderFilePath);
@@ -112,9 +109,6 @@ VulkanShaderResource::VulkanShaderResource(const String& name) : BaseType(name)
         shaders[EShaderStage::Type(stageDesc.stage)] = SharedPtr<ShaderCodeResource>(new VulkanShaderCodeResource(name, &stageDesc, shaderCode.data()));
     }
 }
-
-VulkanShaderResource::VulkanShaderResource() : BaseType()
-{}
 
 String VulkanShaderResource::getObjectName() const
 {

@@ -2,9 +2,6 @@
 
 #include "CommonShaderTypes.h"
 
-#include <vector>
-#include <vulkan_core.h>
-
 struct ReflectTexelBufferShaderField;
 struct ReflectTextureShaderField;
 
