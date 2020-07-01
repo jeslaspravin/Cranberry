@@ -77,7 +77,6 @@ class ExperimentalEngine : public GameEngine
     ImageData normalTexture;
     SharedPtr<class SamplerInterface> commonSampler = nullptr;
     void createImages();
-    void writeImages();
     void destroyImages();
 
     // Test shader pipeline resources
@@ -97,7 +96,6 @@ class ExperimentalEngine : public GameEngine
 
     VkRenderPass smRenderPass;
     std::vector<VkClearValue> smAttachmentsClearColors;
-    std::vector<EPixelDataFormat::Type> smAttachmentsFormat;
 
     VkRenderPass swapchainRenderPass;
     VkClearValue swapchainClearColor;

@@ -37,33 +37,6 @@
 
 #include <array>
 
-
-struct InstanceData
-{
-    Matrix4 model;
-    Matrix4 invModel;
-};
-
-struct ViewData
-{
-    Matrix4 view;
-    Matrix4 invView;
-    Matrix4 projection;
-    Matrix4 invProjection;
-};
-
-BEGIN_BUFFER_DEFINITION(InstanceData)
-ADD_BUFFER_TYPED_FIELD(model)
-ADD_BUFFER_TYPED_FIELD(invModel)
-END_BUFFER_DEFINITION();
-
-BEGIN_BUFFER_DEFINITION(ViewData)
-ADD_BUFFER_TYPED_FIELD(view)
-ADD_BUFFER_TYPED_FIELD(invView)
-ADD_BUFFER_TYPED_FIELD(projection)
-ADD_BUFFER_TYPED_FIELD(invProjection)
-END_BUFFER_DEFINITION();
-
 void ExperimentalEngine::tempTest()
 {
 
@@ -236,18 +209,9 @@ void ExperimentalEngine::createImages()
     }
 }
 
-void ExperimentalEngine::writeImages()
-{
-    // TODO(Jeslas) : load and write images and abstract change transition
-}
-
 void ExperimentalEngine::destroyImages()
 {
     commonSampler->release();
-
-    TextureBase::destroyTexture<Texture2D>(texture.image);
-    texture.image = nullptr;
-    texture.imageView = nullptr;
 
     TextureBase::destroyTexture<Texture2D>(normalTexture.image);
     normalTexture.image = nullptr;
@@ -573,6 +537,7 @@ void ExperimentalEngine::createShaderResDescriptors()
     }
     // Draw quad descriptors
     {
+        const FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
         for (uint32 swapchainIdx = 0; swapchainIdx < swapchainCount; ++swapchainIdx)
         {
             for (uint32 i = 0; i < drawQuadTextureDescs[swapchainIdx].size(); ++i)
@@ -586,14 +551,13 @@ void ExperimentalEngine::createShaderResDescriptors()
                     quadTextureDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
                     quadTextureDescWrite.dstBinding = foundItr->second;
 
-                    FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
                     Framebuffer* fb = GBuffers::getFramebuffer(unlitFbFormat, swapchainIdx);
                     fatalAssert(fb != nullptr, "Framebuffer is invalid");
 
                     uint32 imageInfoIdx = uint32(imageInfo.size());
                     imageInfo.push_back({});
                     imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[0])->getImageView({});// Diffuse is at 0
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Diffuse is at 0
                     imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
                     quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][i].descSet;
@@ -602,7 +566,7 @@ void ExperimentalEngine::createShaderResDescriptors()
                     imageInfoIdx = uint32(imageInfo.size());
                     imageInfo.push_back({});
                     imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Normal texture is at 1
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[3])->getImageView({});// Normal texture is at 1
                     imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
                     quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][i].descSet;
@@ -611,7 +575,7 @@ void ExperimentalEngine::createShaderResDescriptors()
                     imageInfoIdx = uint32(imageInfo.size());
                     imageInfo.push_back({});
                     imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[2])->getImageView({ 
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[5])->getImageView({ 
                         {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
                     imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
@@ -666,7 +630,7 @@ void ExperimentalEngine::writeUnlitBuffToQuadDrawDescs()
                     uint32 imageInfoIdx = uint32(imageInfo.size());
                     imageInfo.push_back({});
                     imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[0])->getImageView({});// Diffuse is at 0
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Diffuse is at 0
                     imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
                     quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][i].descSet;
@@ -675,7 +639,7 @@ void ExperimentalEngine::writeUnlitBuffToQuadDrawDescs()
                     imageInfoIdx = uint32(imageInfo.size());
                     imageInfo.push_back({});
                     imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Normal texture is at 1
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[3])->getImageView({});// Normal texture is at 1
                     imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
                     quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][i].descSet;
@@ -684,7 +648,7 @@ void ExperimentalEngine::writeUnlitBuffToQuadDrawDescs()
                     imageInfoIdx = uint32(imageInfo.size());
                     imageInfo.push_back({});
                     imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[2])->getImageView({
+                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[5])->getImageView({
                         {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
                     imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
@@ -777,83 +741,91 @@ void ExperimentalEngine::createRenderpass()
         ->appWindowManager.getMainWindow());
     // Static mesh unlit render pass
     {
-        smAttachmentsClearColors.resize(4);
-        smAttachmentsFormat.resize(4);
+        smAttachmentsClearColors.resize(7);
         std::array<VkAttachmentReference, 4> attachmentRefs;
-        std::array<VkAttachmentDescription, 4> attachmentsDesc;
+        std::array<VkAttachmentReference, 3> resolveAttachmentRefs;
+        std::array<VkAttachmentDescription, 7> attachmentsDesc;
         {
             VkAttachmentDescription diffuseTargetAttachment;
             diffuseTargetAttachment.flags = 0;
             diffuseTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::BGRA_U8_Norm)->format);
-            diffuseTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
+            diffuseTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
             diffuseTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            diffuseTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            diffuseTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             diffuseTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             diffuseTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             diffuseTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             diffuseTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             attachmentsDesc[0] = diffuseTargetAttachment;
-            smAttachmentsClearColors[0].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
-            smAttachmentsFormat[0] = EPixelDataFormat::BGRA_U8_Norm;
+            smAttachmentsClearColors[0].color = smAttachmentsClearColors[1].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
             attachmentRefs[0].attachment = 0;
-            attachmentRefs[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentRefs[0].layout = resolveAttachmentRefs[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            diffuseTargetAttachment.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+            diffuseTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attachmentsDesc[1] = diffuseTargetAttachment;
+            resolveAttachmentRefs[0].attachment = 1;
 
             VkAttachmentDescription normalTargetAttachment;
             normalTargetAttachment.flags = 0;
             normalTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::ABGR8_S32_NormPacked)->format);
-            normalTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
+            normalTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
             normalTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            normalTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            normalTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             normalTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             normalTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             normalTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             normalTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentsDesc[1] = normalTargetAttachment;
-            smAttachmentsClearColors[1].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
-            smAttachmentsFormat[1] = EPixelDataFormat::ABGR8_S32_NormPacked;
-            attachmentRefs[1].attachment = 1;
-            attachmentRefs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentsDesc[2] = normalTargetAttachment;
+            smAttachmentsClearColors[2].color = smAttachmentsClearColors[3].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
+            attachmentRefs[1].attachment = 2;
+            attachmentRefs[1].layout = resolveAttachmentRefs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            normalTargetAttachment.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+            normalTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attachmentsDesc[3] = normalTargetAttachment;
+            resolveAttachmentRefs[1].attachment = 3;
 
             VkAttachmentDescription depthTargetAttachment;
             depthTargetAttachment.flags = 0;
             depthTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::R_SF32)->format);
-            depthTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
+            depthTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
             depthTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            depthTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            depthTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             depthTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             depthTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             depthTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentsDesc[2] = depthTargetAttachment;
-            smAttachmentsClearColors[2].color = { 0.0f,0.0f,0.0f,0.0f };// Black
-            smAttachmentsFormat[2] = EPixelDataFormat::R_SF32;
-            attachmentRefs[2].attachment = 2;
-            attachmentRefs[2].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentsDesc[4] = depthTargetAttachment;
+            smAttachmentsClearColors[4].color = smAttachmentsClearColors[5].color = { 0.0f,0.0f,0.0f,0.0f };// Black
+            attachmentRefs[2].attachment = 4;
+            attachmentRefs[2].layout = resolveAttachmentRefs[2].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            depthTargetAttachment.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+            depthTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attachmentsDesc[5] = depthTargetAttachment;
+            resolveAttachmentRefs[2].attachment = 5;
 
             VkAttachmentDescription realDepthAttachment;
             realDepthAttachment.flags = 0;
             realDepthAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::D_SF32)->format);
-            realDepthAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
+            realDepthAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
             realDepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             realDepthAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
             realDepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             realDepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             realDepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             realDepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentsDesc[3] = realDepthAttachment;
-            smAttachmentsClearColors[3].color = { 0.0f,0.0f,0.0f,0.0f };// Black
-            smAttachmentsFormat[3] = EPixelDataFormat::D_SF32;
-            attachmentRefs[3].attachment = 3;
+            attachmentsDesc[6] = realDepthAttachment;
+            smAttachmentsClearColors[6].color = { 0.0f,0.0f,0.0f,0.0f };// Black
+            attachmentRefs[3].attachment = 6;
             attachmentRefs[3].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         }
 
         VkSubpassDescription subpass;
         subpass.flags = 0;
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.pDepthStencilAttachment = &attachmentRefs[3];
-        subpass.colorAttachmentCount = uint32(attachmentRefs.size() - 1);
+        subpass.pDepthStencilAttachment = &attachmentRefs[resolveAttachmentRefs.size()];
+        subpass.colorAttachmentCount = uint32(resolveAttachmentRefs.size());
         subpass.pColorAttachments = attachmentRefs.data();
-        subpass.pResolveAttachments = nullptr;
+        subpass.pResolveAttachments = resolveAttachmentRefs.data();
         subpass.inputAttachmentCount = 0;
         subpass.pInputAttachments = nullptr;
         subpass.preserveAttachmentCount = 0;
@@ -1163,7 +1135,7 @@ void ExperimentalEngine::createSmPipeline()
     multisampleCreateInfo.sampleShadingEnable = multisampleCreateInfo.alphaToCoverageEnable = multisampleCreateInfo.alphaToOneEnable = VK_FALSE;
     multisampleCreateInfo.minSampleShading = 1;
     multisampleCreateInfo.pSampleMask = nullptr;
-    multisampleCreateInfo.rasterizationSamples = VkSampleCountFlagBits(GlobalRenderVariables::FRAME_BUFFER_SAMPLE_COUNT.get());
+    multisampleCreateInfo.rasterizationSamples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
     graphicsPipelineCreateInfo.pMultisampleState = &multisampleCreateInfo;
 
     PIPELINE_COLOR_BLEND_STATE_CREATE_INFO(colorBlendOpCreateInfo);
@@ -1371,7 +1343,6 @@ void ExperimentalEngine::writeBuffers()
 
 void ExperimentalEngine::updateCameraParams()
 {
-
     if (appInstance().inputSystem()->isKeyPressed(Keys::A))
     {
         rotationOffset += timeData.deltaTime * timeData.activeTimeDilation * 15.f;
@@ -1395,6 +1366,10 @@ void ExperimentalEngine::updateCameraParams()
     else
     {
         useVertexColor = Math::max(useVertexColor - timeData.deltaTime * timeData.activeTimeDilation, 0.0f);
+    }
+    if (appInstance().inputSystem()->keyState(Keys::P)->keyWentUp)
+    {
+        camera.cameraProjection = camera.cameraProjection == ECameraProjection::Perspective ? ECameraProjection::Orthographic : ECameraProjection::Perspective;
     }
     if (appInstance().inputSystem()->keyState(Keys::X)->keyWentUp)
     {
@@ -1443,6 +1418,7 @@ void ExperimentalEngine::onStartUp()
     ENQUEUE_COMMAND(EngineStartUp, { startUpRenderInit(); }, this);
 
     camera.cameraProjection = ECameraProjection::Perspective;
+    camera.setOrthoSize({ 1280,720 });
     camera.setClippingPlane(1.f, 600.f);
     camera.setFOV(110.f, 90.f);
     
@@ -1462,7 +1438,6 @@ void ExperimentalEngine::startUpRenderInit()
     fillBindings();
     createBuffers();
     createImages();
-    writeImages();
     createPipelineResources();
 }
 
@@ -1566,7 +1541,7 @@ void ExperimentalEngine::frameRender()
             uint64 vertexBufferOffset = 0;
             vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(meshAsset->vertexBuffer)->buffer, &vertexBufferOffset);
             vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(meshAsset->indexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
-            for (const StaticMeshVertexView& meshBatch : meshAsset->meshBatches)
+            for (const MeshVertexView& meshBatch : meshAsset->meshBatches)
             {
                 vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, meshBatch.numOfIndices, 1, meshBatch.startIndex, 0, 0);
             }
@@ -1629,7 +1604,7 @@ void ExperimentalEngine::frameRender()
 
     std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
     std::vector<uint32> indices = { index };
-    GraphicsHelper::presentImage(renderingApi->getGraphicsInstance(), &canvases, &indices, &frameResources[index].usageWaitSemaphore);
+    GraphicsHelper::presentImage(getRenderApi()->getGraphicsInstance(), &canvases, &indices, &frameResources[index].usageWaitSemaphore);
 
 }
 
@@ -1658,5 +1633,6 @@ void ExperimentalEngine::tickEngine()
 
 GameEngine* GameEngineWrapper::createEngineInstance()
 {
-    return new ExperimentalEngine();
+    static ExperimentalEngine gameEngine;
+    return &gameEngine;
 }
