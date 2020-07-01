@@ -27,7 +27,18 @@ public:
     static void initialize();
     static void destroy();
 
-    static Framebuffer* getFramebuffer(const FramebufferFormat& framebufferFormat, uint32 frameIdx);
+    /**
+    * GBuffers::getFramebuffer - Gets framebuffer and framebuffer format for a renderpass format passed in with framebuffer format
+    *
+    * Access:    public static 
+    *
+    * @param FramebufferFormat & framebufferFormat - Format struct that contains renderpass format type and gets filled back with framebuffer format as response
+    * @param uint32 frameIdx - Current frame's swapchain acquired index
+    *
+    * @return Framebuffer* - framebuffer wrapper object ptr
+    */
+    static Framebuffer* getFramebuffer(FramebufferFormat& framebufferFormat, uint32 frameIdx);
+    static Framebuffer* getFramebuffer(ERenderpassFormat::Type renderpassFormat, uint32 frameIdx);
     static Framebuffer* getSwapchainFramebuffer(uint32 frameIdx);
 
     static void onScreenResized(Size2D newSize);

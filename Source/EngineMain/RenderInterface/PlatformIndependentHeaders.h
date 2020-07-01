@@ -12,6 +12,8 @@
 
 #include "../VulkanRI/Resources/VulkanShaderResources.h"
 
+#include "../VulkanRI/VulkanInternals/Rendering/VulkanRenderingContexts.h"
+
 #include "../VulkanRI/VulkanGraphicsTypes.h"
 #elif RENDERAPI_OPENGL
 static_assert(false, "Not supported render API");
@@ -39,3 +41,5 @@ template <typename Type>
 using GraphicsDeviceConstant = GraphicsTypes::GraphicsDeviceConstant<Type>;
 
 using GraphicsShaderResource = GraphicsTypes::GraphicsShaderResource;
+
+using GlobalRenderingContext = GraphicsTypes::GlobalRenderingContext;

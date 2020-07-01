@@ -19,7 +19,7 @@ public:
 
         bool isLeaf()
         {
-            return childs.size() == 0;
+            return childs.empty();
         }
     };
 private:
@@ -28,7 +28,7 @@ private:
     void insertType(const GraphicsResourceType* type, TypeNode* fromNode = nullptr);
     void graphAllChilds(TypeNode* fromNode, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively) const;
 public:
-    // Insert happens only when quering for some resource
+    // Insert happens only when querying for some resource
     void lazyInsert(const GraphicsResourceType* type);
     void findChildsOf(const GraphicsResourceType* type, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively = false);
 };

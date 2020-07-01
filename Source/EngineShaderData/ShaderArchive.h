@@ -1,8 +1,6 @@
 #pragma once
 #include "ShaderReflected.h"
 
-#include <vector>
-#include <string>
 #include <type_traits>
 
 class ShaderArchive

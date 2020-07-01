@@ -706,3 +706,26 @@ void VulkanGraphicsHelper::destroyFramebuffer(class IGraphicsInstance* graphicsI
     const VulkanDevice* device = &gInstance->selectedDevice;
     device->vkDestroyFramebuffer(device->logicalDevice, framebuffer, nullptr);
 }
+
+VkDescriptorSetLayout VulkanGraphicsHelper::createDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance
+    , const VkDescriptorSetLayoutCreateInfo& layoutCreateInfo)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    VkDescriptorSetLayout layout;
+    if (device->vkCreateDescriptorSetLayout(device->logicalDevice, &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS)
+    {
+        Logger::error("VulkanGraphicsHelper", "%s : Failed creating descriptor set layout", __func__);
+        layout = nullptr;
+    }
+    return layout;
+}
+
+VkDescriptorSetLayout VulkanGraphicsHelper::destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance
+    , VkDescriptorSetLayout descriptorsSetLayout)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    device->vkDestroyDescriptorSetLayout(device->logicalDevice, descriptorsSetLayout, nullptr);
+}

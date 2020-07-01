@@ -160,7 +160,7 @@ struct ShaderParamInfo
 };
 
 #define BEGIN_BUFFER_DEFINITION(BufferType) \
-struct BufferType##BufferParamInfo : public ShaderBufferParamInfo \
+struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo \
 { \
     typedef BufferType BufferDataType; \
     uint32 stride = sizeof(BufferDataType); \
@@ -182,7 +182,7 @@ struct BufferType##BufferParamInfo : public ShaderBufferParamInfo \
 
 
 #define BEGIN_VERTEX_DEFINITION(VertexType) \
-struct VertexType##VertexParamInfo : public ShaderVertexParamInfo \
+struct VertexType##VertexParamInfo final : public ShaderVertexParamInfo \
 { \
     typedef VertexType VertexDataType; \
     uint32 stride = sizeof(VertexDataType); \

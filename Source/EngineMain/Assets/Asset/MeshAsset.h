@@ -1,8 +1,13 @@
 #pragma once
 #include "AssetObject.h"
-#include "../../RenderInterface/ShaderCore/ShaderParameters.h"
 
 class BufferResource;
+
+struct MeshVertexView
+{
+    uint32 startIndex;
+    uint32 numOfIndices;
+};
 
 class MeshAsset : public AssetBase, public ICleanupAsset
 {
@@ -15,17 +20,5 @@ public:
 
     BufferResource* getVertexBuffer();
     BufferResource* getIndexBuffer();
-
-    template<typename MeshType>
-    static ShaderVertexParamInfo* getShaderParamInfo();
 };
-
-template<>
-ShaderVertexParamInfo* MeshAsset::getShaderParamInfo<class StaticMeshAsset>();
-
-template<typename MeshType>
-ShaderVertexParamInfo* MeshAsset::getShaderParamInfo()
-{
-    return nullptr;
-}
 

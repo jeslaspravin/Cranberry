@@ -63,28 +63,44 @@ void GBufferRenderTexture::destroyTexture(GBufferRenderTexture* texture)
 std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> GBuffers::gBuffers
 {
     {
-        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 }), {}
+        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 }, ERenderpassFormat::Multibuffers), {}
     }
 };
 std::vector<Framebuffer*> GBuffers::swapchainFbs;
 
 bool FramebufferFormat::operator==(const FramebufferFormat& otherFormat) const
 {
-    bool isEqual = false;
-    if (otherFormat.attachments.size() == attachments.size())
-    {
-        isEqual = true;
-        for (int32 index = 0; index < (int32)attachments.size(); ++index)
-        {
-            isEqual = isEqual && (attachments[index] == otherFormat.attachments[index]);
-        }
-    }
-
-    return isEqual;
+    //bool isEqual = false;
+    //if (otherFormat.attachments.size() == attachments.size())
+    //{
+    //    isEqual = true;
+    //    for (int32 index = 0; index < (int32)attachments.size(); ++index)
+    //    {
+    //        isEqual = isEqual && (attachments[index] == otherFormat.attachments[index]);
+    //    }
+    //}
+    //return isEqual;
+    return rpFormat == otherFormat.rpFormat;
 }
 
-FramebufferFormat::FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frameBuffers)
+bool FramebufferFormat::operator<(const FramebufferFormat& otherFormat) const
+{
+    //const int32 minFormatCount = int32(Math::min(attachments.size(), otherFormat.attachments.size()));
+    //for (int32 index = 0; index < minFormatCount; ++index)
+    //{
+    //    if (attachments[index] != otherFormat.attachments[index])
+    //    {
+    //        return attachments[index] < otherFormat.attachments[index];
+    //    }
+    //}
+    //return attachments.size() < otherFormat.attachments.size();
+
+    return rpFormat < otherFormat.rpFormat;
+}
+
+FramebufferFormat::FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frameBuffers, ERenderpassFormat::Type renderpassFormat)
     : attachments(std::move(frameBuffers))
+    , rpFormat(renderpassFormat)
 {}
 
 void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
@@ -263,9 +279,20 @@ void GBuffers::destroy()
     swapchainFbs.clear();
 }
 
-Framebuffer* GBuffers::getFramebuffer(const FramebufferFormat& framebufferFormat, uint32 frameIdx)
+Framebuffer* GBuffers::getFramebuffer(FramebufferFormat& framebufferFormat, uint32 frameIdx)
 {
     std::unordered_map<FramebufferFormat,std::vector<FramebufferWrapper>>::const_iterator framebufferItr = gBuffers.find(framebufferFormat);
+    if (framebufferItr != gBuffers.cend())
+    {
+        framebufferFormat = framebufferItr->first;
+        return framebufferItr->second[frameIdx].framebuffer;
+    }
+    return nullptr;
+}
+
+Framebuffer* GBuffers::getFramebuffer(ERenderpassFormat::Type renderpassFormat, uint32 frameIdx)
+{
+    std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr = gBuffers.find(FramebufferFormat(renderpassFormat));
     if (framebufferItr != gBuffers.cend())
     {
         return framebufferItr->second[frameIdx].framebuffer;

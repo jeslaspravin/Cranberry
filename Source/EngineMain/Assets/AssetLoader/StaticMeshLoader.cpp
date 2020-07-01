@@ -19,7 +19,7 @@ struct MeshLoaderData
 {
     std::vector<StaticMeshVertex> vertices;
     std::vector<uint32> indices;
-    std::vector<StaticMeshVertexView> meshBatches;
+    std::vector<MeshVertexView> meshBatches;
 };
 
 template <>
@@ -423,7 +423,7 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
             meshLoaderData.meshBatches.reserve(materialIdToIndices.size());
             for (const std::pair<uint32, std::vector<uint32>>& matIdIndices : materialIdToIndices)
             {
-                StaticMeshVertexView vertexBatchView;
+                MeshVertexView vertexBatchView;
                 vertexBatchView.startIndex = uint32(meshLoaderData.indices.size());
                 vertexBatchView.numOfIndices = uint32(matIdIndices.second.size());
                 meshLoaderData.indices.insert(meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
@@ -432,7 +432,7 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
         }
         else
         {
-            StaticMeshVertexView vertexBatchView;
+            MeshVertexView vertexBatchView;
             vertexBatchView.startIndex = 0;
             vertexBatchView.numOfIndices = uint32(meshLoaderData.indices.size());
             meshLoaderData.meshBatches.push_back(vertexBatchView);

@@ -40,13 +40,12 @@ void GameEngine::startup(GenericAppInstance* appInstance)
     timeData.engineStart();
 
     applicationInstance = appInstance;
-    renderingApi=UniquePtr<RenderApi>(new RenderApi());
-    renderingApi->initialize();
+    renderingApi.initialize();
     applicationInstance->assetManager.load();
     onStartUp();
 
     // Has to be done at last after all the other rendering related systems init
-    renderingApi->postInit();
+    renderingApi.postInit();
 }
 
 void GameEngine::quit()
@@ -55,8 +54,7 @@ void GameEngine::quit()
     onQuit();
     applicationInstance->assetManager.unload();
 
-    renderingApi->destroy();
-    renderingApi.release();
+    renderingApi.destroy();
 
     applicationInstance->assetManager.clearToDestroy();
     applicationInstance = nullptr;
@@ -76,7 +74,7 @@ void GameEngine::engineLoop()
         timeData.activeTimeDilation = applicationInstance->appWindowManager.pollWindows()? 1 : 0;
         timeData.progressTick();
         tickEngine();
-        renderingApi->renderFrame();
+        renderingApi.renderFrame();
     }
 }
 

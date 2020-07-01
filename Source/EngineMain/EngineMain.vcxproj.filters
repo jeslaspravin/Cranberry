@@ -202,6 +202,24 @@
     <Filter Include="Source Files\Core\Memory">
       <UniqueIdentifier>{c334e766-ec89-4b07-92c7-8e125f4320ce}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\RenderApi\Scene">
+      <UniqueIdentifier>{cbcd36b5-aa5b-44e7-b500-373c85401f61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\VulkanRI\VulkanInternals\Rendering">
+      <UniqueIdentifier>{ce14c2dd-2990-4cec-aacd-50788c5e5362}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Types\Patterns">
+      <UniqueIdentifier>{14d931e2-0229-4a0b-a087-4df7b3658ce3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\VulkanRI\VulkanInternals\ShaderCore">
+      <UniqueIdentifier>{775e70a5-a0cc-44f3-87f4-5433596e280b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderApi\Material">
+      <UniqueIdentifier>{a745f974-7586-4a79-82cc-92fdce36da77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderInterface\Resources\Shaders\Base">
+      <UniqueIdentifier>{ff6e8378-dcd0-49f2-bb4d-7a7e8e66cfd8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -452,6 +470,42 @@
     </ClCompile>
     <ClCompile Include="Assets\Asset\TextureAsset.cpp">
       <Filter>Source Files\Assets\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Resources\GraphicsPipeline.cpp">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\ShaderCore\ShaderObjectBase.cpp">
+      <Filter>Source Files\RenderInterface\ShaderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Resources\ShaderParameterResources.cpp">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderApi\Scene\RenderScene.cpp">
+      <Filter>Source Files\RenderApi\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderApi\VertexData.cpp">
+      <Filter>Source Files\RenderApi</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\ShaderCore\ShaderParameterUtility.cpp">
+      <Filter>Source Files\RenderInterface\ShaderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Rendering\RenderingContexts.cpp">
+      <Filter>Source Files\RenderInterface\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\Rendering\VulkanRenderingContexts.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\ShaderCore\VulkanShaderParamResources.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\ShaderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderApi\Material\MaterialCommonUniforms.cpp">
+      <Filter>Source Files\RenderApi\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\Base\UtilityShaders.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\ShaderCore\VulkanShaderParamResourcesFactory.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals\ShaderCore</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -805,6 +859,45 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\Rendering\FramebufferTypes.h">
       <Filter>Header Files\RenderInterface\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\GraphicsPipeline.h">
+      <Filter>Header Files\RenderInterface\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\ShaderCore\ShaderObject.h">
+      <Filter>Header Files\RenderInterface\ShaderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\ShaderParameterResources.h">
+      <Filter>Source Files\RenderInterface\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderApi\Scene\RenderScene.h">
+      <Filter>Source Files\RenderApi\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderApi\VertexData.h">
+      <Filter>Source Files\RenderApi</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\ShaderCore\ShaderParameterUtility.h">
+      <Filter>Source Files\RenderInterface\ShaderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\Rendering\VulkanRenderingContexts.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Patterns\FactoriesBase.h">
+      <Filter>Header Files\Core\Types\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\ShaderCore\VulkanShaderParamResources.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\ShaderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderApi\Material\MaterialCommonUniforms.h">
+      <Filter>Source Files\RenderApi\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\Base\DrawMeshShader.h">
+      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\Base\UtilityShaders.h">
+      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRI\VulkanInternals\ShaderCore\VulkanShaderParamResourcesFactory.h">
+      <Filter>Source Files\VulkanRI\VulkanInternals\ShaderCore</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
