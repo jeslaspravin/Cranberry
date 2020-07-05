@@ -50,6 +50,8 @@ public:
 
     ERenderTargetFormat::Type getRtFormat() const { return rtFormat; }
     ImageResource* getRtTexture() const { return rtResource; }
+    bool isSameReadWriteTexture() const { return bSameReadWriteTexture; }
+
     void setTextureSize(Size2D newSize);
 
     static RenderTargetTexture* createTexture(const RenderTextureCreateParams& createParams);

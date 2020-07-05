@@ -25,4 +25,11 @@ namespace HashUtility
         }
         return seed;
     }
+
+    template <typename T>
+    inline size_t hash(const T& v)
+    {
+        std::hash<T> hasher;
+        return hasher(v);
+    }
 }

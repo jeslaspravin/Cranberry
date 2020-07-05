@@ -150,12 +150,14 @@ bool VulkanDevice::collectDeviceExtensions(std::vector<const char*>& extensions)
 #include "VulkanFunctionLists.inl"
 
     std::stringstream extensionsStream;
-    for (const VkExtensionProperties& extProperty : availableExtensions) {
+    for (const VkExtensionProperties& extProperty : availableExtensions) 
+    {
         extensionsStream << extProperty.extensionName;
     }
     String extensionsString = extensionsStream.str();
 
-    for (const char* mandatoryExt : mandatoryExtensions) {
+    for (const char* mandatoryExt : mandatoryExtensions) 
+    {
         if (extensionsString.find(mandatoryExt, 0) != String::npos)
         {
             extensions.push_back(mandatoryExt);
@@ -163,7 +165,8 @@ bool VulkanDevice::collectDeviceExtensions(std::vector<const char*>& extensions)
         }
     }
 
-    if (mandatoryExtensions.size() != extensions.size()) {
+    if (mandatoryExtensions.size() != extensions.size()) 
+    {
         Logger::error("VulkanDevice", "%s() : Missing mandatory extensions", __func__);
         return false;
     }
