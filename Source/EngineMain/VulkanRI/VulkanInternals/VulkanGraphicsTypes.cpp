@@ -2,6 +2,7 @@
 #include "../../Core/Types/CoreDefines.h"
 #include "../../RenderInterface/CoreGraphicsTypes.h"
 #include "../../RenderInterface/Resources/ShaderResources.h"
+#include "../../RenderInterface/Resources/GraphicsPipeline.h"
 #include "../../RenderApi/GBuffersAndTextures.h"
 
 #include <map>
@@ -280,6 +281,23 @@ namespace EShaderStage
         return nullptr;
     }
 #undef SHADER_STAGE_TO_API_PAIR
+}
+
+namespace EVertexTopology
+{
+    uint32 apiInputAssemblyState(EVertexTopology::Type inputAssembly)
+    {
+        switch (inputAssembly)
+        {
+        case EVertexTopology::Triangle:
+            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        case EVertexTopology::Line:
+            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        case EVertexTopology::Point:
+            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        }
+        return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+    }
 }
 
 #endif//RENDERAPI_VULKAN

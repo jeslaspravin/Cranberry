@@ -111,9 +111,10 @@ private:
 
         VkDescriptorSetLayout descriptorLayout = nullptr;
     };
-
+public:
     std::map<uint32, SetParametersLayoutInfo> setToLayoutInfo;
 
+private:
     VulkanShaderParametersLayout() = default;
 public:
     VulkanShaderParametersLayout(const ShaderResource* shaderResource);

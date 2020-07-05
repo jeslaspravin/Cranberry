@@ -8,6 +8,7 @@ namespace ERenderpassFormat
 {
     enum Type
     {
+        Generic,
         Multibuffers,
         Depth
     };
@@ -16,6 +17,8 @@ namespace ERenderpassFormat
     {
         switch (renderpassFormat)
         {
+        case ERenderpassFormat::Generic:
+            return "Generic";
         case ERenderpassFormat::Multibuffers:
             return "Multibuffer";
         case ERenderpassFormat::Depth:
@@ -25,7 +28,8 @@ namespace ERenderpassFormat
     }
 
 #define FOR_EACH_RENDERPASS_FORMAT(OpMacro) \
-    OpMacro(Multibuffers)                   \
+    OpMacro(Generic),                       \
+    OpMacro(Multibuffers),                  \
     OpMacro(Depth)
 }
 
@@ -53,13 +57,17 @@ struct std::hash<FramebufferFormat>
 {
     _NODISCARD size_t operator()(const FramebufferFormat& keyval) const noexcept 
     {
-        //size_t hashVal = std::hash<size_t>{}(keyval.attachments.size());
-        //for (const EPixelDataFormat::Type& format : keyval.attachments)
-        //{
-        //    HashUtility::hashCombine(hashVal, format);
-        //}
-        //return hashVal;
-        return std::hash<decltype(keyval.rpFormat)>{}(keyval.rpFormat);
+        // If generic then keying is based on formats
+        if (keyval.rpFormat == ERenderpassFormat::Generic)
+        {
+            size_t hashVal = HashUtility::hash(keyval.attachments.size());
+            for (const EPixelDataFormat::Type& format : keyval.attachments)
+            {
+                HashUtility::hashCombine(hashVal, format);
+            }
+            return hashVal;
+        }        
+        return HashUtility::hash(keyval.rpFormat);
     }
 };
 
@@ -70,4 +78,38 @@ struct Framebuffer
     bool bHasResolves = false;
 
     virtual ~Framebuffer() = default;
+};
+
+
+/*
+* Complying with our assumptions on how complex a render pass can be see VulkanFrameBuffer.cpp
+*/
+struct GenericRenderpassProperties
+{
+    FramebufferFormat renderpassAttachmentFormat;
+    EPixelSampleCount::Type multisampleCount;
+    // if all RT used is using same read write textures?
+    bool bOneRtPerFormat;
+    
+    GenericRenderpassProperties() : renderpassAttachmentFormat(ERenderpassFormat::Generic) {}
+
+    bool operator==(const GenericRenderpassProperties& otherProperties) const;
+};
+
+bool GenericRenderpassProperties::operator==(const GenericRenderpassProperties& otherProperties) const
+{
+    return renderpassAttachmentFormat == otherProperties.renderpassAttachmentFormat && multisampleCount == otherProperties.multisampleCount 
+        && bOneRtPerFormat == otherProperties.bOneRtPerFormat;
+}
+
+template <>
+struct std::hash<GenericRenderpassProperties>
+{
+    _NODISCARD size_t operator()(const GenericRenderpassProperties& keyval) const noexcept
+    {
+        size_t hashVal = HashUtility::hash(keyval.renderpassAttachmentFormat);
+        HashUtility::hashCombine(hashVal, keyval.multisampleCount);
+        HashUtility::hashCombine(hashVal, keyval.bOneRtPerFormat);
+        return hashVal;
+    }
 };

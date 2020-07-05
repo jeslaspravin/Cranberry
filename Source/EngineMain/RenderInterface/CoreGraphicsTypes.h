@@ -332,3 +332,90 @@ namespace ESamplerTilingMode
 
     uint32 getSamplerTiling(ESamplerTilingMode::Type tilingMode);
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Pipeline types
+//////////////////////////////////////////////////////////////////////////
+
+enum class ECullingMode
+{
+    FrontFace,
+    BackFace,
+    Both,
+    None
+};
+
+enum EStencilOp
+{
+    KeepOld = 0,
+    Zero = 1,
+    KeepNew = 2,
+    IncrementClamped = 3,
+    DecrementClamped = 4,
+    Invert = 5,
+    IncrementWrap = 6,
+    DecrementWrap = 7
+};
+
+enum EBlendOp
+{
+    Add = 0,// S + D
+    Subtract = 1,// S - D
+    InvertedSubtract = 2,// D - S
+    Min = 3,
+    Max = 4
+    // TODO(Jeslas) Not very important : support for advanced blending options
+};
+
+enum EBlendFactor
+{
+    Zero = 0,
+    One = 1,
+    SrcColor = 2,
+    OneMinusSrcColor = 3,
+    DstColor = 4,
+    OneMinusDstColor = 5,
+    SrcAlpha = 6,
+    OneMinusSrcAlpha = 7,
+    DstAlpha = 8,
+    OneMinusDstAlpha = 9,
+    ConstColor = 10,
+    OneMinusConstColor = 11,
+    ConstAlpha = 12,
+    OneMinusConstAlpha = 13,
+    SrcAlphaSaturate = 14,
+    Src1Color = 15,
+    OneMinusSrc1Color = 16,
+    Src1Alpha = 17,
+    OneMinusSrc1Alpha = 18,
+};
+
+struct DepthState
+{
+    bool bEnableWrite = false;
+    CoreGraphicsTypes::ECompareOp::Type compareOp = CoreGraphicsTypes::ECompareOp::Always;
+};
+
+
+struct StencilState
+{
+    // Passed both depth and stencil test
+    EStencilOp passOp = EStencilOp::KeepOld;
+    // Failed stencil test
+    EStencilOp failOp = EStencilOp::KeepOld;
+    // Passed stencil test but failed depth test
+    EStencilOp depthFailOp = EStencilOp::KeepOld;
+
+    CoreGraphicsTypes::ECompareOp::Type compareOp = CoreGraphicsTypes::ECompareOp::Never;
+};
+
+struct AttachmentBlendState
+{
+    bool bBlendEnable = false;
+    EBlendFactor srcColorFactor;
+    EBlendFactor dstColorFactor;
+    EBlendOp colorBlendOp;
+    EBlendFactor srcAlphaFactor;
+    EBlendFactor dstAlphaFactor;
+    EBlendOp alphaBlendOp;
+};

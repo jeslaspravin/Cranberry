@@ -2,13 +2,16 @@
 #include "../../RenderApi/VertexData.h"
 #include "../../Core/Types/Patterns/FactoriesBase.h"
 
-#include <map>
+#include <unordered_map>
 
-class MeshDrawShaderObjectBase;
 class String;
 class IGraphicsInstance;
 class GraphicsResource;
 class ShaderResource;
+class ShaderObjectBase;
+class RenderTargetTexture;
+struct GenericRenderpassProperties;
+struct Framebuffer;
 
 /////////////////////////////////////////////////////////////////////////////////
 // Contains most of the global common items that could be one time initialized
@@ -25,26 +28,25 @@ private:
 
     struct ShaderDataCollection
     {
-        // For mesh draw shaders this will be not null
-        MeshDrawShaderObjectBase* meshDrawShaders;
-        // For unique shaders like utility or computes this will be not null
-        ShaderResource* shader;
+        ShaderObjectBase* shaderObject;
 
         // One for each unique of material(not shader)
         GraphicsResource* shadersParamLayout;
     };
 
     // Shader(material as all shader with same name considered as same material) name to collection
-    std::map<String, ShaderDataCollection> rawShaderObjects;
+    std::unordered_map<String, ShaderDataCollection> rawShaderObjects;
 
     // Has one layout(Descriptors set layout) for each vertex type
-    std::map<EVertexType::Type, GraphicsResource*> perVertexTypeLayouts;
+    std::unordered_map<EVertexType::Type, GraphicsResource*> perVertexTypeLayouts;
     // Scene's common layout(Descriptors set layout)
     GraphicsResource* sceneViewParamLayout;
 
+    std::unordered_map<GenericRenderpassProperties, std::vector<const Framebuffer*>> rtFramebuffers;
+
 protected:
 
-    FactoriesBase<MeshDrawShaderObjectBase, const String&>* meshShaderObjectFactory;
+    FactoriesBase<ShaderObjectBase, const String&, const ShaderResource*>* shaderObjectFactory;
     FactoriesBase<GraphicsResource, const ShaderResource*, uint32>* shaderParamLayoutsFactory;
 
 private:
@@ -53,4 +55,9 @@ private:
 
 protected:
     virtual void initApiFactories() = 0;
+
+    // Functions for none mesh draw shader passes
+    // Get generic render pass properties from Render targets
+    GenericRenderpassProperties renderpassPropsFromRts(const std::vector<RenderTargetTexture*>& rtTextures) const;
+    const Framebuffer* getFramebuffer(const GenericRenderpassProperties& renderpassProps, const std::vector<RenderTargetTexture*>& rtTextures) const;
 };
