@@ -61,7 +61,8 @@ public:
 		return data[idx];
 	}
 
-	void clear() {
+	void clear()
+	{
 		cellsCount = CellIndex<d>();
 		data.clear();
 	}

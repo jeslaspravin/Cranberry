@@ -70,30 +70,41 @@ std::vector<Framebuffer*> GBuffers::swapchainFbs;
 
 bool FramebufferFormat::operator==(const FramebufferFormat& otherFormat) const
 {
-    //bool isEqual = false;
-    //if (otherFormat.attachments.size() == attachments.size())
-    //{
-    //    isEqual = true;
-    //    for (int32 index = 0; index < (int32)attachments.size(); ++index)
-    //    {
-    //        isEqual = isEqual && (attachments[index] == otherFormat.attachments[index]);
-    //    }
-    //}
-    //return isEqual;
-    return rpFormat == otherFormat.rpFormat;
+    bool isEqual = rpFormat == otherFormat.rpFormat;
+
+    // If generic then check all attachments for equality
+    if(isEqual && rpFormat == ERenderpassFormat::Generic)
+    {
+        if (otherFormat.attachments.size() == attachments.size())
+        {
+            isEqual = true;
+            for (int32 index = 0; index < (int32)attachments.size(); ++index)
+            {
+                isEqual = isEqual && (attachments[index] == otherFormat.attachments[index]);
+            }
+        }
+        else
+        {
+            isEqual = false;
+        }
+    }
+    return isEqual;
 }
 
 bool FramebufferFormat::operator<(const FramebufferFormat& otherFormat) const
 {
-    //const int32 minFormatCount = int32(Math::min(attachments.size(), otherFormat.attachments.size()));
-    //for (int32 index = 0; index < minFormatCount; ++index)
-    //{
-    //    if (attachments[index] != otherFormat.attachments[index])
-    //    {
-    //        return attachments[index] < otherFormat.attachments[index];
-    //    }
-    //}
-    //return attachments.size() < otherFormat.attachments.size();
+    if (rpFormat == otherFormat.rpFormat && rpFormat == ERenderpassFormat::Generic)
+    {
+        const int32 minFormatCount = int32(Math::min(attachments.size(), otherFormat.attachments.size()));
+        for (int32 index = 0; index < minFormatCount; ++index)
+        {
+            if (attachments[index] != otherFormat.attachments[index])
+            {
+                return attachments[index] < otherFormat.attachments[index];
+            }
+        }
+        return attachments.size() < otherFormat.attachments.size();
+    }
 
     return rpFormat < otherFormat.rpFormat;
 }
@@ -145,7 +156,7 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
                         framebufferData.rtTextures.emplace_back(rtTexture);
                     }
                     framebufferData.framebuffer->bHasResolves = true;
-                    initializeInternal(framebufferData.framebuffer, screenSize);
+                    initializeFb(framebufferData.framebuffer, screenSize);
                 }
             }
         )
@@ -173,7 +184,7 @@ void GBuffers::onScreenResized(Size2D newSize)
                             framebufferData.framebuffer->textures.emplace_back(rtTexture->getTextureResource());
                         }
                     }
-                    initializeInternal(framebufferData.framebuffer, newSize);
+                    initializeFb(framebufferData.framebuffer, newSize);
                 }
             }
         }
@@ -214,7 +225,7 @@ void GBuffers::initialize()
         for (uint32 i = 0; i < swapchainCount; ++i)
         {
             FramebufferWrapper framebufferData;
-            framebufferData.framebuffer = createFbInternal();
+            framebufferData.framebuffer = createFbInstance();
             if (framebufferData.framebuffer == nullptr)
             {
                 continue;
@@ -242,14 +253,14 @@ void GBuffers::initialize()
                 framebufferData.rtTextures.emplace_back(rtTexture);
             }
             framebufferData.framebuffer->bHasResolves = true;
-            initializeInternal(framebufferData.framebuffer, initialSize);
+            initializeFb(framebufferData.framebuffer, initialSize);
             framebufferPair.second.emplace_back(framebufferData);
         }
     }
 
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* fb = createFbInternal();
+        Framebuffer* fb = createFbInstance();
         fb->bHasResolves = false;
         initializeSwapchainFb(fb, windowCanvas, EngineSettings::surfaceSize.get(), i);
         swapchainFbs.emplace_back(fb);

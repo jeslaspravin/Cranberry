@@ -18,9 +18,6 @@ private:
     static std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> gBuffers;
     static std::vector<Framebuffer*> swapchainFbs;
 
-    static Framebuffer* createFbInternal();
-    // Destroy if any already existing raw framebuffer resource
-    static void initializeInternal(Framebuffer* fb, const Size2D& frameSize);
     static void initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx);
     static void onSampleCountChanged(uint32 oldValue, uint32 newValue);
 public:
@@ -43,4 +40,8 @@ public:
 
     static void onScreenResized(Size2D newSize);
     static void onSurfaceResized(Size2D newSize);
+
+    static Framebuffer* createFbInstance();
+    // Destroy if any already existing raw framebuffer resource
+    static void initializeFb(Framebuffer* fb, const Size2D& frameSize);
 };

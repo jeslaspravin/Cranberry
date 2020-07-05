@@ -18,6 +18,9 @@ struct VulkanFrameBuffer final : public Framebuffer
     VkFramebuffer frameBuffer = nullptr;
 
     ~VulkanFrameBuffer();
+
+    static VulkanFrameBuffer* createInstance();
+    static void initializeFb(Framebuffer* fb, const Size2D& frameSize);
 };
 
 VulkanFrameBuffer::~VulkanFrameBuffer()
@@ -25,14 +28,12 @@ VulkanFrameBuffer::~VulkanFrameBuffer()
     VulkanGraphicsHelper::destroyFramebuffer(gEngine->getRenderApi()->getGraphicsInstance(), frameBuffer);
 }
 
-#if RENDERAPI_VULKAN
-
-Framebuffer* GBuffers::createFbInternal()
+VulkanFrameBuffer* VulkanFrameBuffer::createInstance()
 {
     return new VulkanFrameBuffer();
 }
 
-void GBuffers::initializeInternal(Framebuffer* fb, const Size2D& frameSize)
+void VulkanFrameBuffer::initializeFb(Framebuffer* fb, const Size2D& frameSize)
 {
     IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
     auto* vulkanFb = static_cast<VulkanFrameBuffer*>(fb);
@@ -60,6 +61,22 @@ void GBuffers::initializeInternal(Framebuffer* fb, const Size2D& frameSize)
     }
     VulkanGraphicsHelper::createFramebuffer(gInstance, fbCreateInfo, &vulkanFb->frameBuffer);
     VulkanGraphicsHelper::destroyRenderPass(gInstance, dummyRenderPass);
+}
+
+#if RENDERAPI_VULKAN
+
+//////////////////////////////////////////////////////////////////////////
+// GBuffers
+//////////////////////////////////////////////////////////////////////////
+
+Framebuffer* GBuffers::createFbInstance()
+{
+    return VulkanFrameBuffer::createInstance();
+}
+
+void GBuffers::initializeFb(Framebuffer* fb, const Size2D& frameSize)
+{
+    VulkanFrameBuffer::initializeFb(fb, frameSize);
 }
 
 void GBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx)
@@ -90,6 +107,10 @@ void GBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWindowC
     VulkanGraphicsHelper::destroyRenderPass(gInstance, dummyRenderPass);
     vulkanFb->textures.clear();
 }
+
+//////////////////////////////////////////////////////////////////////////
+// 
+//////////////////////////////////////////////////////////////////////////
 
 #endif//RENDERAPI_VULKAN
 
