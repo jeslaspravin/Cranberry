@@ -8,7 +8,6 @@
 #include <map>
 
 class ShaderResource;
-class ShaderParametersLayout;
 
 class PipelineCacheBase : public GraphicsResource
 {
@@ -37,21 +36,27 @@ private:
     String pipelineName;
 protected:
     const PipelineBase* parentPipeline;
-    int32 parentPipelineIdx = -1;// If both parent and this is being created in same create call.
 
-    ShaderResource* pipelineShader;
-    std::vector<ShaderParametersLayout*> shaderParamLayouts;// At each set index changes based on mesh draw shader or others
+    const ShaderResource* pipelineShader;
+    std::vector<const GraphicsResource*> shaderParamLayouts;// At each set index changes based on mesh draw shader or others
 
 protected:
     PipelineBase() = default;
+    PipelineBase(const PipelineBase * parent);
 public:
-    PipelineBase(const PipelineBase* parent);
 
     /* GraphicsResource overrides */
     String getResourceName() const final;
     void setResourceName(const String& name) final;
 
     /* Override ends */
+
+    void setParentPipeline(const PipelineBase* parent);
+    void setPipelineShader(const ShaderResource* shader) { pipelineShader = shader; }
+    void setParamLayoutAtSet(const GraphicsResource* paramLayout, int32 setIdx = -1);
+
+    const GraphicsResource* getParamLayoutAtSet(int32 setIdx) const;
+    const ShaderResource* getShaderResource() const { return pipelineShader; }
 };
 
 namespace EVertexTopology
@@ -77,23 +82,23 @@ protected:
     // In draw mesh shader, only renderpassAttachmentFormat of below property will be valid value
     GenericRenderpassProperties renderpassProps;
 
-    // TODO(Jeslas) Remove this Multi sampling from global value for gbuffers and from set value for other shaders
-
     EVertexTopology::Type primitiveTopology;
     // Tessellation control points per patch, If zero ignored
     uint32 cntrlPts = 0;
-
-    ECullingMode cullingMode;
-    // Considered from this only for non mesh pipelines
-    EPixelSampleCount::Type multisampling;
+    std::vector<ECullingMode> supportedCullings;
 
     DepthState depthState;
     StencilState stencilState;
     std::vector<AttachmentBlendState> attachmentBlendStates;
 protected:
     GraphicsPipeline() = default;
+    GraphicsPipeline(const GraphicsPipeline * parent);
 public:
-    GraphicsPipeline(const GraphicsPipeline* parent);
+
+    void setRenderpassProperties(const GenericRenderpassProperties& newProps) { renderpassProps = newProps; }
+
+    const std::vector<ECullingMode>& getCullingModes() const { return supportedCullings; }
+    const GenericRenderpassProperties& getRenderpassProperties() const { return renderpassProps; }
 };
 
 
@@ -103,7 +108,8 @@ public:
 
 struct PipelineFactoryArgs
 {
-    ShaderResource* pipelineShader;
+    const ShaderResource* pipelineShader;
+    const PipelineBase* parentPipeline = nullptr;
 };
 
 struct PipelineFactoryRegister
@@ -112,7 +118,7 @@ struct PipelineFactoryRegister
     virtual PipelineBase* operator()(const PipelineFactoryArgs& args) const = 0;
 };
 
-class PipelineFactory : FactoriesBase<PipelineBase, const PipelineFactoryArgs&>
+class PipelineFactory : public FactoriesBase<PipelineBase, const PipelineFactoryArgs&>
 {
 private:
     friend PipelineFactoryRegister;

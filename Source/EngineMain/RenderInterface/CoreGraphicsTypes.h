@@ -339,10 +339,10 @@ namespace ESamplerTilingMode
 
 enum class ECullingMode
 {
-    FrontFace,
-    BackFace,
-    Both,
-    None
+    None = 0,
+    FrontFace = 1,
+    BackFace = 2,
+    Both = 3
 };
 
 enum EStencilOp
