@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../Resources/IVulkanResources.h"
-#include "../../../RenderInterface/Resources/ShaderParameterResources.h"
+#include "../../../RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "../VulkanMacros.h"
 
 class VulkanShaderSetParamsLayout : public ShaderSetParametersLayout, public IVulkanResources
@@ -133,5 +133,5 @@ public:
     /* Override ends */
 
     const std::vector<VkDescriptorPoolSize>& getDescPoolAllocInfo(uint32 setIdx) const;
-    const VkDescriptorSetLayout getDescSetLayout(uint32 setIdx) const;
+    VkDescriptorSetLayout getDescSetLayout(uint32 setIdx) const;
 };

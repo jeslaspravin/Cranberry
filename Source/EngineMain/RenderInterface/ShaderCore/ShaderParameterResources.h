@@ -1,7 +1,7 @@
 #pragma once
-#include "GraphicsResources.h"
+#include "../Resources/GraphicsResources.h"
 #include "ShaderDataTypes.h"
-#include "../ShaderCore/ShaderParameters.h"
+#include "ShaderParameters.h"
 
 #include <map>
 

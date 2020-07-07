@@ -73,6 +73,7 @@ public:
     static void destroyShaderModule(class IGraphicsInstance* graphicsInstance, VkShaderModule shaderModule);
     // Following two methods might change in future avoid using these
     static VkRenderPass createDummyRenderPass(class IGraphicsInstance* graphicsInstance, const struct Framebuffer* framebuffer);
+    static VkRenderPass createRenderPass(class IGraphicsInstance* graphicsInstance, const struct GenericRenderpassProperties& renderpassProps);
     static void destroyRenderPass(class IGraphicsInstance* graphicsInstance, VkRenderPass renderPass);
 
     static void createFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebufferCreateInfo& fbCreateInfo, VkFramebuffer* framebuffer);
@@ -81,6 +82,8 @@ public:
 
     static VkDescriptorSetLayout createDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, const VkDescriptorSetLayoutCreateInfo& layoutCreateInfo);
     static VkDescriptorSetLayout destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, VkDescriptorSetLayout descriptorsSetLayout);
+
+    static VkPipelineLayout createPipelineLayout(class IGraphicsInstance* graphicsInstance, const class PipelineBase* pipeline);
 };
 
 

@@ -32,6 +32,7 @@ public:
     ImageResource* getTextureResource() const { return textureResource; }
     EPixelSampleCount::Type getSampleCount() const { return sampleCount; }
     EPixelDataFormat::Type getFormat() const { return dataFormat; }
+    Size2D getTextureSize() const { return textureSize; }
     ESamplerFiltering::Type filteringMode() const { return sampleFiltering; }
     const String& getTextureName() const { return textureName; }
 
