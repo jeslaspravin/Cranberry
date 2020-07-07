@@ -273,7 +273,7 @@
     <ClCompile Include="RenderInterface\GraphicsInstance.cpp" />
     <ClCompile Include="RenderInterface\Rendering\RenderCommandList.cpp" />
     <ClCompile Include="RenderInterface\Rendering\RenderingContexts.cpp" />
-    <ClCompile Include="RenderInterface\Resources\GraphicsPipeline.cpp" />
+    <ClCompile Include="RenderInterface\Resources\Pipelines.cpp" />
     <ClCompile Include="RenderInterface\Resources\GraphicsResources.cpp" />
     <ClCompile Include="RenderInterface\Resources\GraphicsSyncResource.cpp" />
     <ClCompile Include="RenderInterface\Resources\GraphicsTimelineSemaphore.cpp" />
@@ -281,10 +281,10 @@
     <ClCompile Include="RenderInterface\Resources\QueueResource.cpp" />
     <ClCompile Include="RenderInterface\Resources\GenericWindowCanvas.cpp" />
     <ClCompile Include="RenderInterface\Resources\Samplers\SamplerInterface.cpp" />
-    <ClCompile Include="RenderInterface\Resources\ShaderParameterResources.cpp" />
     <ClCompile Include="RenderInterface\Resources\ShaderResources.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderInputOutput.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderObjectBase.cpp" />
+    <ClCompile Include="RenderInterface\ShaderCore\ShaderParameterResources.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderParameters.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderParameterUtility.cpp" />
     <ClCompile Include="RenderInterface\Shaders\Base\UtilityShaders.cpp" />
@@ -303,6 +303,7 @@
     <ClCompile Include="VulkanRI\VulkanInternals\Platform\Windows\WindowsVulkanFunctions.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Rendering\VulkanRenderingContexts.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.cpp" />
+    <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanPipelines.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.cpp" />
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanWindowCanvas.cpp" />
@@ -400,17 +401,17 @@
     <ClInclude Include="RenderInterface\Rendering\FramebufferTypes.h" />
     <ClInclude Include="RenderInterface\Rendering\IRenderCommandList.h" />
     <ClInclude Include="RenderInterface\Rendering\RenderingContexts.h" />
-    <ClInclude Include="RenderInterface\Resources\GraphicsPipeline.h" />
+    <ClInclude Include="RenderInterface\Resources\Pipelines.h" />
     <ClInclude Include="RenderInterface\Resources\GraphicsResources.h" />
     <ClInclude Include="RenderInterface\Resources\GraphicsSyncResource.h" />
     <ClInclude Include="RenderInterface\Resources\MemoryResources.h" />
     <ClInclude Include="RenderInterface\Resources\QueueResource.h" />
     <ClInclude Include="RenderInterface\Resources\GenericWindowCanvas.h" />
     <ClInclude Include="RenderInterface\Resources\Samplers\SamplerInterface.h" />
-    <ClInclude Include="RenderInterface\Resources\ShaderParameterResources.h" />
     <ClInclude Include="RenderInterface\Resources\ShaderResources.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderInputOutput.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderObject.h" />
+    <ClInclude Include="RenderInterface\ShaderCore\ShaderParameterResources.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderParameters.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderParameterUtility.h" />
     <ClInclude Include="RenderInterface\Shaders\Base\DrawMeshShader.h" />
@@ -433,6 +434,7 @@
     <ClInclude Include="VulkanRI\VulkanInternals\Platform\Windows\WindowsVulkanFunctions.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Rendering\VulkanRenderingContexts.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanMemoryResources.h" />
+    <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanPipelines.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanQueueResource.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSampler.h" />
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanSyncResource.h" />

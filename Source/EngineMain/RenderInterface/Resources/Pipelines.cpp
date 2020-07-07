@@ -1,4 +1,4 @@
-#include "GraphicsPipeline.h"
+#include "Pipelines.h"
 #include "ShaderResources.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
 
@@ -13,19 +13,18 @@ void PipelineCacheBase::setResourceName(const String& name)
     cacheName = name;
 }
 
-PipelineBase::PipelineBase(const PipelineBase* parent)
-    : pipelineName(parent->pipelineName)
-    , parentPipeline(parent)
-    , parentPipelineIdx(-1)
-    , pipelineShader(parent->pipelineShader)
-    , shaderParamLayouts(parent->shaderParamLayouts)
-{}
-
 //////////////////////////////////////////////////////////////////////////
 // Pipeline resource
 //////////////////////////////////////////////////////////////////////////
 
 DEFINE_GRAPHICS_RESOURCE(PipelineBase)
+
+PipelineBase::PipelineBase(const PipelineBase* parent)
+    : pipelineName(parent->pipelineName)
+    , parentPipeline(parent)
+    , pipelineShader(parent->pipelineShader)
+    , shaderParamLayouts(parent->shaderParamLayouts)
+{}
 
 String PipelineBase::getResourceName() const
 {
@@ -36,7 +35,33 @@ void PipelineBase::setResourceName(const String& name)
 {
     pipelineName = name;
 }
-    
+
+void PipelineBase::setParentPipeline(const PipelineBase* parent)
+{
+    parentPipeline = parent;
+}
+
+void PipelineBase::setParamLayoutAtSet(const GraphicsResource* paramLayout, int32 setIdx /*= -1*/)
+{
+    if (setIdx < 0)
+    {
+        shaderParamLayouts.clear();
+        shaderParamLayouts.emplace_back(paramLayout);
+    }
+    else
+    {
+        if (shaderParamLayouts.size() <= setIdx)
+        {
+            shaderParamLayouts.resize(setIdx + 1);
+        }
+        shaderParamLayouts[setIdx] = paramLayout;
+    }
+}
+
+const GraphicsResource* PipelineBase::getParamLayoutAtSet(int32 setIdx) const
+{
+    return shaderParamLayouts[setIdx];
+}
 
 DEFINE_GRAPHICS_RESOURCE(GraphicsPipeline)
 
@@ -45,8 +70,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline* parent)
     , renderpassProps(parent->renderpassProps)
     , primitiveTopology(parent->primitiveTopology)
     , cntrlPts(parent->cntrlPts)
-    , cullingMode(parent->cullingMode)
-    , multisampling(parent->multisampling)
+    , supportedCullings(parent->supportedCullings)
     , depthState(parent->depthState)
     , stencilState(parent->stencilState)
     , attachmentBlendStates(parent->attachmentBlendStates)

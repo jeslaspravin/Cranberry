@@ -14,16 +14,22 @@ struct FramebufferFormat;
 struct GenericRenderpassProperties;
 
 class GraphicsPipeline;
-using PGraphicsPipelineBase = GraphicsPipeline*;//Ptr
-using PPGraphicsPipelineBaseRef = PGraphicsPipelineBase*;// Ptr to Ptr
+using PGraphicsPipeline = GraphicsPipeline*;//Ptr
+using PPGraphicsPipelineBaseRef = PGraphicsPipeline*;// Ptr to Ptr
 
 class ShaderObjectBase
 {
-protected:
+private:
     String shaderName;
-public:
+
+protected:
     ShaderObjectBase(const String& sName);
+public:
     virtual ~ShaderObjectBase() = default;
+
+    const String& getShaderName() const { return shaderName; }
+
+    virtual const GraphicsResourceType* baseShaderType() const = 0;
 };
 
 /**
@@ -34,10 +40,10 @@ public:
 *
 * @date June 2020
 */
-class DrawMeshShaderObject : ShaderObjectBase
+class DrawMeshShaderObject final : public ShaderObjectBase
 {
 private:
-    using ShaderResourcePair = std::pair<const DrawMeshShader*, PGraphicsPipelineBase>;
+    using ShaderResourcePair = std::pair<const DrawMeshShader*, PGraphicsPipeline>;
     using ShaderResourceList = std::vector<ShaderResourcePair>;
     using ShaderResourcesIterator = ShaderResourceList::iterator;
     using ShaderResourcesConstIterator = ShaderResourceList::const_iterator;
@@ -50,13 +56,20 @@ private:
 
 public:
     DrawMeshShaderObject(const String& sName);
+    ~DrawMeshShaderObject();
 
     const DrawMeshShader* getShader(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat
         , PPGraphicsPipelineBaseRef outGraphicsPipeline = nullptr) const;
+    const ShaderResourceList& getAllShaders() const;
 
     // Internal use functions
-    void addShader(const ShaderResource* shaderResource, const FramebufferFormat& usageFormats);
-    void setPipeline(const ShaderResource* shaderResource, PGraphicsPipelineBase graphicsPipeline);
+    void addShader(const ShaderResource* shaderResource);
+    void setPipeline(const ShaderResource* shaderResource, PGraphicsPipeline graphicsPipeline);
+
+    /* ShaderObjectBase overrides */
+    const GraphicsResourceType* baseShaderType() const final;
+
+    /* Override ends */
 };
 
 
@@ -68,20 +81,26 @@ public:
 *
 * @date July 2020
 */
-class UniqueUtilityShaderObject : ShaderObjectBase
+class UniqueUtilityShaderObject final : public ShaderObjectBase
 {
 private:
     const UniqueUtilityShader* utilityShader;
 
     GenericRenderpassProperties defaultPipelineProps;
-    std::unordered_map<GenericRenderpassProperties, PGraphicsPipelineBase> graphicsPipelines;
+    std::unordered_map<GenericRenderpassProperties, PGraphicsPipeline> graphicsPipelines;
 public:
     UniqueUtilityShaderObject(const String& sName, const ShaderResource* shaderResource);
+    ~UniqueUtilityShaderObject();
 
     const UniqueUtilityShader* getShader() const;
-    PGraphicsPipelineBase getPipeline(const GenericRenderpassProperties& renderpassProps) const;
-    PGraphicsPipelineBase getDefaultPipeline() const;
+    PGraphicsPipeline getPipeline(const GenericRenderpassProperties& renderpassProps) const;
+    PGraphicsPipeline getDefaultPipeline() const;
 
     // Internal use functions
-    void setPipeline(const GenericRenderpassProperties& renderpassProps, PGraphicsPipelineBase graphicsPipeline);
+    void setPipeline(const GenericRenderpassProperties& renderpassProps, PGraphicsPipeline graphicsPipeline);
+
+    /* ShaderObjectBase overrides */
+    const GraphicsResourceType* baseShaderType() const final;
+
+    /* Override ends */
 };

@@ -7,6 +7,7 @@
 #include "../../Core/Logger/Logger.h"
 #include "Resources/VulkanWindowCanvas.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../RenderInterface/Rendering/FramebufferTypes.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -121,7 +122,7 @@ VkFramebuffer VulkanGraphicsHelper::getFramebuffer(struct Framebuffer* appFrameB
 
 // Assumption made : that  we are never going to use input attachments so all texture except depth attachments will be used as color attachment only
 // Assumption made : we only use one subpass to make things easier and also one subpass will not consider depth and preserve attachments for compatibility
-// Assumption made : we are never going to use resolve or preserve attachments
+// Assumption made : we are never going to use preserve attachments
 VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance* graphicsInstance, const struct Framebuffer* framebuffer)
 {
     VkRenderPass renderPass;
@@ -147,7 +148,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
         attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        renderPassAttachments.push_back(attachmentDesc);
+        renderPassAttachments.emplace_back(attachmentDesc);
         // Since there cannot be any resolve for depth texture as of Vulkan 1.2.135 we do not have resolve attachment for depth
         if (EPixelDataFormat::isDepthFormat(resource->imageFormat()))
         {
@@ -164,7 +165,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
                 attachmentDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(framebuffer->textures[attachmentIdx + 1]->imageFormat())->format);
                 attachmentDesc.samples = VkSampleCountFlagBits(framebuffer->textures[attachmentIdx + 1]->sampleCount());
 
-                renderPassAttachments.push_back(attachmentDesc);
+                renderPassAttachments.emplace_back(attachmentDesc);
                 resolveAttachmentRefs.push_back({ attachmentIdx + 1 , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
                 attachmentIdx += 2;
@@ -186,7 +187,99 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
     dummySubpass.pInputAttachments = nullptr;
     dummySubpass.preserveAttachmentCount = 0;
     dummySubpass.pPreserveAttachments = nullptr;
-    dummySubpass.pDepthStencilAttachment = depthAttachmentRef.size() != 0 ? &depthAttachmentRef[0] : nullptr;
+    dummySubpass.pDepthStencilAttachment = depthAttachmentRef.empty() ? nullptr : &depthAttachmentRef[0];
+
+    RENDERPASS_CREATE_INFO(renderPassCreateInfo);
+    renderPassCreateInfo.attachmentCount = uint32(renderPassAttachments.size());
+    renderPassCreateInfo.pAttachments = renderPassAttachments.data();
+    renderPassCreateInfo.dependencyCount = 0;
+    renderPassCreateInfo.pDependencies = nullptr;
+    renderPassCreateInfo.subpassCount = 1;
+    renderPassCreateInfo.pSubpasses = &dummySubpass;
+
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    if (device->vkCreateRenderPass(device->logicalDevice, &renderPassCreateInfo, nullptr, &renderPass) != VK_SUCCESS)
+    {
+        Logger::error("VulkanGraphicsHelper", "%s() : Failed creating render pass", __func__);
+        renderPass = nullptr;
+    }
+    return renderPass;
+}
+
+VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance* graphicsInstance, const struct GenericRenderpassProperties& renderpassProps)
+{
+    VkRenderPass renderPass;
+
+    std::vector<VkAttachmentDescription> renderPassAttachments;
+    std::vector<VkAttachmentReference> colorAttachmentRefs;
+    std::vector<VkAttachmentReference> resolveAttachmentRefs;
+    std::vector<VkAttachmentReference> depthAttachmentRef;
+
+    for (EPixelDataFormat::Type attachmentFormat : renderpassProps.renderpassAttachmentFormat.attachments)
+    {
+        VkAttachmentDescription attachmentDesc;
+        attachmentDesc.flags = 0;
+        attachmentDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(attachmentFormat)->format);
+        attachmentDesc.samples = VkSampleCountFlagBits(renderpassProps.multisampleCount);
+        attachmentDesc.loadOp = attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachmentDesc.storeOp = attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        // Since there cannot be any resolve for depth texture as of Vulkan 1.2.135 we do not have resolve attachment for depth
+        if (EPixelDataFormat::isDepthFormat(attachmentFormat))
+        {
+            fatalAssert(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
+
+            attachmentDesc.loadOp = attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachmentDesc.storeOp = attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+            // Since depths are always same texture for both attachments and shader read
+            attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+            depthAttachmentRef.push_back({ uint32(renderPassAttachments.size()) , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
+            renderPassAttachments.push_back(attachmentDesc);
+        }
+        else
+        {
+            attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachmentDesc.initialLayout = attachmentDesc.finalLayout = renderpassProps.bOneRtPerFormat ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            colorAttachmentRefs.push_back({ uint32(renderPassAttachments.size()) , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+            renderPassAttachments.push_back(attachmentDesc);
+
+            if (!renderpassProps.bOneRtPerFormat)
+            {
+                // Since resolve attachment has to be shader read only before and after pass
+                // LOAD and STORE assumed it is right choice
+                attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                attachmentDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(attachmentFormat)->format);
+                attachmentDesc.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;// Since resolve attachments(Shader read only) always have 1 samples 
+
+                resolveAttachmentRefs.push_back({ uint32(renderPassAttachments.size()) , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+                renderPassAttachments.push_back(attachmentDesc);
+            }
+        }
+    }
+
+    VkSubpassDescription dummySubpass;
+    dummySubpass.flags = 0;
+    dummySubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    dummySubpass.colorAttachmentCount = uint32(colorAttachmentRefs.size());
+    dummySubpass.pColorAttachments = colorAttachmentRefs.data();
+    dummySubpass.pResolveAttachments = resolveAttachmentRefs.data();
+    dummySubpass.inputAttachmentCount = 0;
+    dummySubpass.pInputAttachments = nullptr;
+    dummySubpass.preserveAttachmentCount = 0;
+    dummySubpass.pPreserveAttachments = nullptr;
+    dummySubpass.pDepthStencilAttachment = depthAttachmentRef.empty() ? nullptr : &depthAttachmentRef[0];
 
     RENDERPASS_CREATE_INFO(renderPassCreateInfo);
     renderPassCreateInfo.attachmentCount = uint32(renderPassAttachments.size());

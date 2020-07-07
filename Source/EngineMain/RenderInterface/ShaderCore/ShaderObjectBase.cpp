@@ -4,6 +4,7 @@
 #include "../Shaders/Base/UtilityShaders.h"
 #include "../../Core/Math/Math.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
+#include "../Resources/Pipelines.h"
 
 #include <algorithm>
 
@@ -43,9 +44,10 @@ const DrawMeshShader* DrawMeshShaderObject::getShader(EVertexType::Type inputVer
     return nullptr;
 }
 
-void DrawMeshShaderObject::addShader(const ShaderResource* shaderResource, const FramebufferFormat& usageFormats)
+void DrawMeshShaderObject::addShader(const ShaderResource* shaderResource)
 {
     const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
+    FramebufferFormat usageFormats(drawMeshShader->renderpassUsage());
     ShaderResourcesConstIterator itr = std::find_if(shaderResources.cbegin(), shaderResources.cend()
         , [drawMeshShader](ShaderResourcesConstIterator& itr) { return itr->first == drawMeshShader; });
     if (itr == shaderResources.cend())
@@ -76,7 +78,7 @@ void DrawMeshShaderObject::addShader(const ShaderResource* shaderResource, const
     }
 }
 
-void DrawMeshShaderObject::setPipeline(const ShaderResource* shaderResource, PGraphicsPipelineBase graphicsPipeline)
+void DrawMeshShaderObject::setPipeline(const ShaderResource* shaderResource, PGraphicsPipeline graphicsPipeline)
 {
     const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
     ShaderResourcesIterator itr = std::find_if(shaderResources.begin(), shaderResources.end()
@@ -85,6 +87,26 @@ void DrawMeshShaderObject::setPipeline(const ShaderResource* shaderResource, PGr
     debugAssert(itr != shaderResources.end());
 
     itr->second = graphicsPipeline;
+}
+
+DrawMeshShaderObject::~DrawMeshShaderObject()
+{
+    for (const ShaderResourcePair& shaderPipelinePair : shaderResources)
+    {
+        shaderPipelinePair.second->release();
+        delete shaderPipelinePair.second;
+    }
+    shaderResources.clear();
+}
+
+const DrawMeshShaderObject::ShaderResourceList& DrawMeshShaderObject::getAllShaders() const
+{
+    return shaderResources;
+}
+
+const GraphicsResourceType* DrawMeshShaderObject::baseShaderType() const
+{
+    return DrawMeshShader::staticType();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -101,19 +123,19 @@ const UniqueUtilityShader* UniqueUtilityShaderObject::getShader() const
     return utilityShader;
 }
 
-PGraphicsPipelineBase UniqueUtilityShaderObject::getPipeline(const GenericRenderpassProperties& renderpassProps) const
+PGraphicsPipeline UniqueUtilityShaderObject::getPipeline(const GenericRenderpassProperties& renderpassProps) const
 {
-    std::unordered_map<GenericRenderpassProperties, PGraphicsPipelineBase>::const_iterator itr = graphicsPipelines.find(renderpassProps);
+    std::unordered_map<GenericRenderpassProperties, PGraphicsPipeline>::const_iterator itr = graphicsPipelines.find(renderpassProps);
 
     return itr != graphicsPipelines.cend() ? itr->second : nullptr;
 }
 
-PGraphicsPipelineBase UniqueUtilityShaderObject::getDefaultPipeline() const
+PGraphicsPipeline UniqueUtilityShaderObject::getDefaultPipeline() const
 {
     return graphicsPipelines.find(defaultPipelineProps)->second;
 }
 
-void UniqueUtilityShaderObject::setPipeline(const GenericRenderpassProperties& renderpassProps, PGraphicsPipelineBase graphicsPipeline)
+void UniqueUtilityShaderObject::setPipeline(const GenericRenderpassProperties& renderpassProps, PGraphicsPipeline graphicsPipeline)
 {
     if (graphicsPipelines.empty())
     {
@@ -121,8 +143,23 @@ void UniqueUtilityShaderObject::setPipeline(const GenericRenderpassProperties& r
     }
     else
     {
-        std::unordered_map<GenericRenderpassProperties, PGraphicsPipelineBase>::iterator itr = graphicsPipelines.find(renderpassProps);
+        std::unordered_map<GenericRenderpassProperties, PGraphicsPipeline>::iterator itr = graphicsPipelines.find(renderpassProps);
         debugAssert(itr != graphicsPipelines.end());
     }
     graphicsPipelines[renderpassProps] = graphicsPipeline;
+}
+
+UniqueUtilityShaderObject::~UniqueUtilityShaderObject()
+{
+    for (const std::pair<GenericRenderpassProperties, PGraphicsPipeline>& pipeline : graphicsPipelines)
+    {
+        pipeline.second->release();
+        delete pipeline.second;
+    }
+    graphicsPipelines.clear();
+}
+
+const GraphicsResourceType* UniqueUtilityShaderObject::baseShaderType() const
+{
+    return UniqueUtilityShader::staticType();
 }

@@ -8,6 +8,7 @@
 #include "ShaderReflected.h"
 #include "../../../RenderInterface/Resources/ShaderParameterResources.h"
 #include "../../../RenderApi/Scene/RenderScene.h"
+#include "../../../RenderInterface/Shaders/Base/DrawMeshShader.h"
 
 void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std::vector<VkDescriptorSetLayoutBinding>& descLayoutBindings
     , const ReflectDescriptorBody& descReflected)
@@ -251,7 +252,7 @@ String VulkanShaderUniqDescLayout::getObjectName() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-// VulkanShaderUniqDescLayout
+// VulkanVertexUniqDescLayout
 //////////////////////////////////////////////////////////////////////////
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanVertexUniqDescLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT)
@@ -267,7 +268,8 @@ String VulkanVertexUniqDescLayout::getObjectName() const
 
 void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const
 {
-    const std::map<String, ShaderBufferParamInfo*>& vertexSpecificBufferInfo = MaterialVertexUniforms::bufferParamInfo(respectiveShaderRes->vertexUsage());
+    const std::map<String, ShaderBufferParamInfo*>& vertexSpecificBufferInfo = 
+        MaterialVertexUniforms::bufferParamInfo(static_cast<const DrawMeshShader*>(respectiveShaderRes)->vertexUsage());
 
     for (const std::pair<String, ShaderBufferParamInfo*>& bufferInfo : vertexSpecificBufferInfo)
     {
@@ -280,7 +282,7 @@ void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<String, struct Sha
 }
 
 //////////////////////////////////////////////////////////////////////////
-// VulkanShaderUniqDescLayout
+// VulkanViewUniqDescLayout
 //////////////////////////////////////////////////////////////////////////
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanViewUniqDescLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT)
@@ -401,7 +403,7 @@ const std::vector<VkDescriptorPoolSize>& VulkanShaderParametersLayout::getDescPo
     return foundItr->second.poolAllocation;
 }
 
-const VkDescriptorSetLayout VulkanShaderParametersLayout::getDescSetLayout(uint32 setIdx) const
+VkDescriptorSetLayout VulkanShaderParametersLayout::getDescSetLayout(uint32 setIdx) const
 {
     auto foundItr = setToLayoutInfo.find(setIdx);
     debugAssert(foundItr != setToLayoutInfo.cend());

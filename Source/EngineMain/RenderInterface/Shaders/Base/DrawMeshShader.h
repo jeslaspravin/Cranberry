@@ -3,6 +3,7 @@
 #include "../../Rendering/FramebufferTypes.h"
 #include "../../PlatformIndependentHeaders.h"
 
+#define DEFAULT_SHADER_NAME "Default"
 
 class DrawMeshShader : public GraphicsShaderResource
 {
