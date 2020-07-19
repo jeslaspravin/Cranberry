@@ -127,8 +127,3 @@ GameEngine* GameEngineWrapper::createEngineInstance()
 {
     return new GameEngine();
 }
-
-void GameEngine::waitOnRenderApi()
-{
-    renderingApi->waitOnCommands();
-}
