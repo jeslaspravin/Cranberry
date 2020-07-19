@@ -27,10 +27,11 @@ private:
     std::vector<const GraphicsResourceType*> insertWaitQueue;
     void insertType(const GraphicsResourceType* type, TypeNode* fromNode = nullptr);
     void graphAllChilds(TypeNode* fromNode, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively) const;
+    void graphAllLeafChilds(TypeNode* fromNode, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively) const;
 public:
     // Insert happens only when querying for some resource
     void lazyInsert(const GraphicsResourceType* type);
-    void findChildsOf(const GraphicsResourceType* type, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively = false);
+    void findChildsOf(const GraphicsResourceType* type, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively = false, bool bOnlyLeafChilds = false);
 };
 
 class GraphicsResourceType {
@@ -67,7 +68,7 @@ public:
     GraphicsResource* getDefault() const { return defaultResource; }
     // Returns all registered resources of this type only, no parent type resources are returned
     void allRegisteredResources(std::vector<GraphicsResource*>& outResources) const;
-    void allChildDefaultResources(std::vector<GraphicsResource*>& outResources, bool bRecursively = false) const;
+    void allChildDefaultResources(std::vector<GraphicsResource*>& outResources, bool bRecursively = false, bool bOnlyLeaf = false) const;
 
     bool isChildOf(const GraphicsResourceType* otherType) const;
     virtual const GraphicsResourceType* getParent() const = 0;

@@ -1,6 +1,7 @@
 #pragma once
 #include "GraphicsResources.h"
 #include "../../Core/String/String.h"
+#include "../../Core/Types/CoreDefines.h"
 #include "../CoreGraphicsTypes.h"
 #include "../Rendering/FramebufferTypes.h"
 #include "../../Core/Types/Patterns/FactoriesBase.h"
@@ -12,15 +13,24 @@ class ShaderResource;
 class PipelineCacheBase : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(PipelineCacheBase, , GraphicsResource, )
-
+private:
     String cacheName;
+    String cacheFileName;
+protected:
+    std::vector<const class PipelineBase*> pipelinesToCache;
 
+    // raw data of pipeline cache file to write out
+    virtual std::vector<uint8> getRawToWrite() const { return {}; }
+    std::vector<uint8> getRawFromFile() const;
 public:
     /* GraphicsResource overrides */
     String getResourceName() const final;
     void setResourceName(const String& name) final;
 
     /* Override ends */
+
+    void addPipelineToCache(const class PipelineBase* pipeline);
+    void writeCache() const;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -35,7 +45,11 @@ class PipelineBase : public GraphicsResource
 private:
     String pipelineName;
 protected:
+    // If this pipeline will be used as parent to any other pipelines?
+    bool bCanBeParent;
+
     const PipelineBase* parentPipeline;
+    const PipelineCacheBase* parentCache;
 
     const ShaderResource* pipelineShader;
     std::vector<const GraphicsResource*> shaderParamLayouts;// At each set index changes based on mesh draw shader or others
@@ -55,11 +69,18 @@ public:
     void setPipelineShader(const ShaderResource* shader) { pipelineShader = shader; }
     void setParamLayoutAtSet(const GraphicsResource* paramLayout, int32 setIdx = -1);
 
+    void setCanBeParent(bool bIsParent) { bCanBeParent = bIsParent; }
+    void setPipelineCache(const PipelineCacheBase* pipelineCache);
+
     const GraphicsResource* getParamLayoutAtSet(int32 setIdx) const;
     const ShaderResource* getShaderResource() const { return pipelineShader; }
 };
 
-namespace EVertexTopology
+//////////////////////////////////////////////////////////////////////////
+/// Graphics pipeline related types
+//////////////////////////////////////////////////////////////////////////
+
+namespace EPrimitiveTopology
 {
     enum Type
     {
@@ -68,37 +89,55 @@ namespace EVertexTopology
         Point
     };
 
-    uint32 apiInputAssemblyState(EVertexTopology::Type inputAssembly);
+    uint32 apiInputAssemblyState(EPrimitiveTopology::Type inputAssembly);
 }
+
+struct GraphicsPipelineQueryParams
+{
+    EPolygonDrawMode drawMode;
+    ECullingMode cullingMode;
+};
 
 /*
 * Right now no specialization constants are supported
 */
-class GraphicsPipeline : public PipelineBase
+class GraphicsPipelineBase : public PipelineBase
 {
-    DECLARE_GRAPHICS_RESOURCE(GraphicsPipeline,, PipelineBase,)
+    DECLARE_GRAPHICS_RESOURCE(GraphicsPipelineBase,, PipelineBase,)
 
 protected:
     // In draw mesh shader, only renderpassAttachmentFormat of below property will be valid value
-    GenericRenderpassProperties renderpassProps;
+    GenericRenderPassProperties renderpassProps;
 
-    EVertexTopology::Type primitiveTopology;
+    EPrimitiveTopology::Type primitiveTopology = EPrimitiveTopology::Triangle;
     // Tessellation control points per patch, If zero ignored
     uint32 cntrlPts = 0;
-    std::vector<ECullingMode> supportedCullings;
+
+    //bool bEnableDepthBias = false;
 
     DepthState depthState;
-    StencilState stencilState;
+    StencilState stencilStateFront;
+    StencilState stencilStateBack;
+
     std::vector<AttachmentBlendState> attachmentBlendStates;
+
+    // Dynamic params(All permuted combination of pipeline with below states will be created)
+    std::vector<EPolygonDrawMode> allowedDrawModes;
+    std::vector<ECullingMode> supportedCullings;
+
 protected:
-    GraphicsPipeline() = default;
-    GraphicsPipeline(const GraphicsPipeline * parent);
+    GraphicsPipelineBase() = default;
+    GraphicsPipelineBase(const GraphicsPipelineBase * parent);
+
+    GraphicsPipelineQueryParams paramForIdx(int32 idx) const;
+    int32 idxFromParam(GraphicsPipelineQueryParams queryParam) const;
+    FORCE_INLINE int32 pipelinesCount() const;
+
 public:
 
-    void setRenderpassProperties(const GenericRenderpassProperties& newProps) { renderpassProps = newProps; }
+    void setRenderpassProperties(const GenericRenderPassProperties& newProps) { renderpassProps = newProps; }
 
-    const std::vector<ECullingMode>& getCullingModes() const { return supportedCullings; }
-    const GenericRenderpassProperties& getRenderpassProperties() const { return renderpassProps; }
+    const GenericRenderPassProperties& getRenderpassProperties() const { return renderpassProps; }
 };
 
 
@@ -118,12 +157,35 @@ struct PipelineFactoryRegister
     virtual PipelineBase* operator()(const PipelineFactoryArgs& args) const = 0;
 };
 
-class PipelineFactory : public FactoriesBase<PipelineBase, const PipelineFactoryArgs&>
+/*
+* Graphics pipeline registration - common case
+*/
+template <typename PipelineType>
+struct GenericGraphicsPipelineRegister final : public PipelineFactoryRegister
+{
+    GenericGraphicsPipelineRegister(const String& shaderName)
+        : PipelineFactoryRegister(shaderName)
+    {}
+
+    PipelineBase* operator()(const PipelineFactoryArgs& args) const final
+    {
+        if (args.parentPipeline != nullptr)
+        {
+            return new PipelineType(args.pipelineShader, args.parentPipeline);
+        }
+        else
+        {
+            return new PipelineType(args.pipelineShader);
+        }
+    }
+};
+
+class PipelineFactory final : public FactoriesBase<PipelineBase, const PipelineFactoryArgs&>
 {
 private:
     friend PipelineFactoryRegister;
-    static std::map<String, const PipelineFactoryRegister*> REGISTERED_PIPELINE_FACTORIES;
+    static std::map<String, const PipelineFactoryRegister*>& pipelineFactoriesRegistry();
 public:
-    PipelineBase* create(const PipelineFactoryArgs& args) const override;
+    PipelineBase* create(const PipelineFactoryArgs& args) const final;
 
 };

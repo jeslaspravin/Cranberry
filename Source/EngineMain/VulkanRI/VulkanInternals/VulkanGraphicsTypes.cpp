@@ -2,8 +2,8 @@
 #include "../../Core/Types/CoreDefines.h"
 #include "../../RenderInterface/CoreGraphicsTypes.h"
 #include "../../RenderInterface/Resources/ShaderResources.h"
-#include "../../RenderInterface/Resources/GraphicsPipeline.h"
 #include "../../RenderApi/GBuffersAndTextures.h"
+#include "../../RenderInterface/Resources/Pipelines.h"
 
 #include <map>
 #include <vulkan_core.h>
@@ -283,20 +283,50 @@ namespace EShaderStage
 #undef SHADER_STAGE_TO_API_PAIR
 }
 
-namespace EVertexTopology
+namespace EPrimitiveTopology
 {
-    uint32 apiInputAssemblyState(EVertexTopology::Type inputAssembly)
+    uint32 apiInputAssemblyState(EPrimitiveTopology::Type inputAssembly)
     {
         switch (inputAssembly)
         {
-        case EVertexTopology::Triangle:
+        case EPrimitiveTopology::Triangle:
             return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        case EVertexTopology::Line:
+        case EPrimitiveTopology::Line:
             return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-        case EVertexTopology::Point:
+        case EPrimitiveTopology::Point:
             return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
         }
         return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+    }
+}
+
+namespace EAttachmentOp
+{
+    uint32 getLoadOp(LoadOp loadOp)
+    {
+        switch (loadOp)
+        {
+        case EAttachmentOp::LoadOp::DontCare:
+            return VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        case EAttachmentOp::LoadOp::Load:
+            return VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD;
+        case EAttachmentOp::LoadOp::Clear:
+            return VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+        }
+
+        return VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    }
+
+    uint32 getStoreOp(StoreOp storeOp)
+    {
+        switch (storeOp)
+        {
+        case EAttachmentOp::StoreOp::DontCare:
+            return VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        case EAttachmentOp::StoreOp::Store:
+            return VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+        }
+        return VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
     }
 }
 

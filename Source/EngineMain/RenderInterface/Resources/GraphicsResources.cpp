@@ -70,7 +70,26 @@ void ResourceTypesGraph::graphAllChilds(TypeNode* fromNode, std::vector<const Gr
     }
 }
 
-void ResourceTypesGraph::findChildsOf(const GraphicsResourceType* type, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively /*= false*/)
+void ResourceTypesGraph::graphAllLeafChilds(TypeNode* fromNode, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively) const
+{
+    outChilds.reserve(outChilds.size() + fromNode->childs.size());
+    for (TypeNode& child : fromNode->childs)
+    {
+        if (child.isLeaf())
+        {
+            outChilds.push_back(child.type);
+        }
+    }
+    if (bRecursively)
+    {
+        for (TypeNode& child : fromNode->childs)
+        {
+            graphAllLeafChilds(&child, outChilds, bRecursively);
+        }
+    }
+}
+
+void ResourceTypesGraph::findChildsOf(const GraphicsResourceType* type, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively /*= false*/, bool bOnlyLeafChilds /*= false*/)
 {
     // TODO(Jeslas) : Remove this to some sort of latent task at engine startup and make this function const
     if (!insertWaitQueue.empty())
@@ -94,7 +113,14 @@ void ResourceTypesGraph::findChildsOf(const GraphicsResourceType* type, std::vec
             }
         }
     }
-    graphAllChilds(node, outChilds, bRecursively);
+    if (bOnlyLeafChilds)
+    {
+        graphAllLeafChilds(node, outChilds, bRecursively);
+    }
+    else
+    {
+        graphAllChilds(node, outChilds, bRecursively);
+    }
 }
 
 void GraphicsResourceType::registerResource(GraphicsResource* resource)
@@ -113,10 +139,11 @@ void GraphicsResourceType::allRegisteredResources(std::vector<GraphicsResource*>
     outResources.insert(outResources.end(), registeredResources.cbegin(), registeredResources.cend());
 }
 
-void GraphicsResourceType::allChildDefaultResources(std::vector<GraphicsResource*>& outResources, bool bRecursively /*= false*/) const
+void GraphicsResourceType::allChildDefaultResources(std::vector<GraphicsResource*>& outResources, bool bRecursively /*= false*/
+    , bool bOnlyLeaf /*= false*/) const
 {
     std::vector<const GraphicsResourceType*> childResourceTypes;
-    getTypeGraph().findChildsOf(this, childResourceTypes, bRecursively);
+    getTypeGraph().findChildsOf(this, childResourceTypes, bRecursively, bOnlyLeaf);
 
     outResources.reserve(outResources.size() + childResourceTypes.size());
     for (const GraphicsResourceType* type : childResourceTypes)

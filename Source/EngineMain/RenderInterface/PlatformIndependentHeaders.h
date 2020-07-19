@@ -11,7 +11,7 @@
 #include "../VulkanRI/Resources/VulkanImageResources.h"
 
 #include "../VulkanRI/Resources/VulkanShaderResources.h"
-
+#include "../VulkanRI/VulkanInternals/Resources/VulkanPipelines.h"
 #include "../VulkanRI/VulkanInternals/Rendering/VulkanRenderingContexts.h"
 
 #include "../VulkanRI/VulkanGraphicsTypes.h"
@@ -41,5 +41,5 @@ template <typename Type>
 using GraphicsDeviceConstant = GraphicsTypes::GraphicsDeviceConstant<Type>;
 
 using GraphicsShaderResource = GraphicsTypes::GraphicsShaderResource;
-
+using GraphicsPipeline = GraphicsTypes::GraphicsPipeline;
 using GlobalRenderingContext = GraphicsTypes::GlobalRenderingContext;

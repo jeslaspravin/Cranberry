@@ -1,22 +1,16 @@
 #version 450
 #extension GL_GOOGLE_include_directive:enable
 
-#include "StaticMeshVertex.h"
-#include "StaticMeshUnlitOutput.h"
+#define STATIC_MESH 1
+#include "../Common/VertexInputs.inl.glsl"
+#include "../Common/ViewDescriptors.inl.glsl"
+#include "../Common/VertexInstanceDescriptors.inl.glsl"
 
-layout(set = 0, binding = 0) uniform ViewData
-{
-    mat4 view;
-    mat4 invView;
-    mat4 projection;
-    mat4 invProjection;
-} viewData;
+#define OUTPUT 1
+#include "DefaultStageIO.inl.glsl"
+#undef OUTPUT
 
-layout(set = 1, binding = 0) uniform InstanceData
-{
-    mat4 model;
-    mat4 invModel;
-} instanceData;
+#undef STATIC_MESH
 
 void mainVS()
 {

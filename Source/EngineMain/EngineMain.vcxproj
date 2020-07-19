@@ -140,6 +140,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
+      <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -202,6 +203,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
+      <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -273,6 +275,7 @@
     <ClCompile Include="RenderApi\VertexData.cpp" />
     <ClCompile Include="RenderInterface\GlobalRenderVariables.cpp" />
     <ClCompile Include="RenderInterface\GraphicsInstance.cpp" />
+    <ClCompile Include="RenderInterface\Rendering\FramebufferTypes.cpp" />
     <ClCompile Include="RenderInterface\Rendering\RenderCommandList.cpp" />
     <ClCompile Include="RenderInterface\Rendering\RenderingContexts.cpp" />
     <ClCompile Include="RenderInterface\Resources\Pipelines.cpp" />
@@ -286,13 +289,14 @@
     <ClCompile Include="RenderInterface\Resources\ShaderResources.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderInputOutput.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderObjectBase.cpp" />
+    <ClCompile Include="RenderInterface\ShaderCore\ShaderObjectFactory.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderParameterResources.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderParameters.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderParameterUtility.cpp" />
-    <ClCompile Include="RenderInterface\Shaders\Base\UtilityShaders.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\Base\BaseShaderDefines.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTexture.cpp" />
-    <ClCompile Include="RenderInterface\Shaders\StaticMesh\StaticMeshUnlit.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\DefaultShader.cpp" />
     <ClCompile Include="StartMain.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanBufferResources.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanImageResources.cpp" />
@@ -415,14 +419,13 @@
     <ClInclude Include="RenderInterface\Resources\ShaderResources.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderInputOutput.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderObject.h" />
+    <ClInclude Include="RenderInterface\ShaderCore\ShaderObjectFactory.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderParameterResources.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderParameters.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderParameterUtility.h" />
     <ClInclude Include="RenderInterface\Shaders\Base\DrawMeshShader.h" />
+    <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h" />
     <ClInclude Include="RenderInterface\Shaders\Base\UtilityShaders.h" />
-    <ClInclude Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.h" />
-    <ClInclude Include="RenderInterface\Shaders\DrawQuadFromTexture.h" />
-    <ClInclude Include="RenderInterface\Shaders\StaticMesh\StaticMeshUnlit.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanBufferResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanImageResources.h" />

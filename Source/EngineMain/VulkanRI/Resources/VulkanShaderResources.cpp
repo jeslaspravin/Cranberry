@@ -75,6 +75,14 @@ const ShaderStageDescription& VulkanShaderCodeResource::getStageDesc() const
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderResource, VK_OBJECT_TYPE_SHADER_MODULE)
 
 VulkanShaderResource::VulkanShaderResource(const String& name) : BaseType(name)
+{}
+
+String VulkanShaderResource::getObjectName() const
+{
+    return getResourceName();
+}
+
+void VulkanShaderResource::init()
 {
     String filePath;
     filePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), "Shaders", getShaderFileName());
@@ -100,19 +108,16 @@ VulkanShaderResource::VulkanShaderResource(const String& name) : BaseType(name)
     reflectionFile.closeFile();
 
     // Ensure shader code is multiple of 4bytes as it is supposed to be
-    debugAssert(shaderCode.size() % sizeof(uint32) == 0);    
+    debugAssert(shaderCode.size() % sizeof(uint32) == 0);
     ShaderArchive archive(reflectionData);
     archive << reflectedData;
 
     for (ShaderStageDescription& stageDesc : reflectedData.stages)
     {
-        shaders[EShaderStage::Type(stageDesc.stage)] = SharedPtr<ShaderCodeResource>(new VulkanShaderCodeResource(name, &stageDesc, shaderCode.data()));
+        shaders[EShaderStage::Type(stageDesc.stage)] = SharedPtr<ShaderCodeResource>(new VulkanShaderCodeResource(getResourceName(), &stageDesc, shaderCode.data()));
     }
-}
 
-String VulkanShaderResource::getObjectName() const
-{
-    return getResourceName();
+    BaseType::init();
 }
 
 const ShaderReflected* VulkanShaderResource::getReflection() const

@@ -1,5 +1,6 @@
 #pragma once
 #include "../RenderInterface/ShaderCore/ShaderParameters.h"
+#include "../Core/Math/Vector4D.h"
 
 namespace EVertexType
 {
@@ -28,5 +29,21 @@ namespace EVertexType
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<StaticMesh>();
 
-    constexpr const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType);
+    constexpr const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType)
+    {
+        switch (vertexType)
+        {
+        case EVertexType::Simple2:
+            return vertexParamInfo<Simple2>();
+        case EVertexType::Simple3:
+            return vertexParamInfo<Simple3>();
+        case EVertexType::Simple4:
+            return vertexParamInfo<Simple4>();
+        default:
+        case EVertexType::BasicMesh:
+            return vertexParamInfo<BasicMesh>();
+        case EVertexType::StaticMesh:
+            return vertexParamInfo<StaticMesh>();
+        }
+    }
 }

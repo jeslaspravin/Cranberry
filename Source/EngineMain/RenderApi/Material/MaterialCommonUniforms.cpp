@@ -9,7 +9,7 @@ END_BUFFER_DEFINITION();
 namespace MaterialVertexUniforms
 {
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<Simple2>()
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple2>()
     {
         static InstanceDataBufferParamInfo instanceDataBufferInfo;
         static const std::map<String, ShaderBufferParamInfo*> VERTEX_BUFFER_PARAMS
@@ -21,41 +21,23 @@ namespace MaterialVertexUniforms
     }
 
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<Simple3>()
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3>()
     {
-        return bufferParamInfo<Simple2>();
+        return bufferParamInfo<EVertexType::Simple2>();
     }
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<Simple4>()
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple4>()
     {
-        return bufferParamInfo<Simple2>();
+        return bufferParamInfo<EVertexType::Simple2>();
     }
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<BasicMesh>()
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::BasicMesh>()
     {
-        return bufferParamInfo<Simple2>();
+        return bufferParamInfo<EVertexType::Simple2>();
     }
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<StaticMesh>()
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::StaticMesh>()
     {
-        return bufferParamInfo<Simple2>();
-    }
-
-    constexpr const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo(EVertexType::Type vertexType)
-    {
-        switch (vertexType)
-        {
-        case EVertexType::Simple2:
-            return bufferParamInfo<Simple2>();
-        case EVertexType::Simple3:
-            return bufferParamInfo<Simple3>();
-        case EVertexType::Simple4:
-            return bufferParamInfo<Simple4>();
-        default:
-        case EVertexType::BasicMesh:
-            return bufferParamInfo<BasicMesh>();
-        case EVertexType::StaticMesh:
-            return bufferParamInfo<StaticMesh>();
-        }
+        return bufferParamInfo<EVertexType::Simple2>();
     }
 }

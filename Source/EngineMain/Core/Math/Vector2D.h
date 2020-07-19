@@ -69,13 +69,13 @@ public:
     const static Vector2D ZERO;
     const static Vector2D ONE;
 
-    static FORCE_INLINE float dot(const Vector2D& a, const Vector2D& b);
-    static FORCE_INLINE float cross(const Vector2D& a, const Vector2D& b);
+    static float dot(const Vector2D& a, const Vector2D& b);
+    static float cross(const Vector2D& a, const Vector2D& b);
 
-    static FORCE_INLINE Vector2D clamp(const Vector2D& value, const Vector2D& min, const Vector2D& max);
-    static FORCE_INLINE Vector2D min(const Vector2D& a, const Vector2D& b);
-    static FORCE_INLINE Vector2D max(const Vector2D& a, const Vector2D& b);
-    static FORCE_INLINE Vector2D abs(const Vector2D& value);
-    static FORCE_INLINE Vector2D floor(const Vector2D& value);
-    static FORCE_INLINE Vector2D ceil(const Vector2D& value);
+    static Vector2D clamp(const Vector2D& value, const Vector2D& min, const Vector2D& max);
+    static Vector2D min(const Vector2D& a, const Vector2D& b);
+    static Vector2D max(const Vector2D& a, const Vector2D& b);
+    static Vector2D abs(const Vector2D& value);
+    static Vector2D floor(const Vector2D& value);
+    static Vector2D ceil(const Vector2D& value);
 };

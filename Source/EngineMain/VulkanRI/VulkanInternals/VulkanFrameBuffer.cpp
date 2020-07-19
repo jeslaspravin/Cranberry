@@ -208,8 +208,13 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
     return renderPass;
 }
 
-VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance* graphicsInstance, const struct GenericRenderpassProperties& renderpassProps)
+VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance* graphicsInstance, const struct GenericRenderPassProperties& renderpassProps
+    , const struct RenderPassAdditionalProps& additionalProps)
 {
+    using namespace EAttachmentOp;
+    fatalAssert(!additionalProps.bUsedAsPresentSource || (renderpassProps.bOneRtPerFormat
+        && renderpassProps.renderpassAttachmentFormat.attachments.size() == 1), "Presentable swapchain attachments cannot have more than one attachments or more than 1 sample count");
+
     VkRenderPass renderPass;
 
     std::vector<VkAttachmentDescription> renderPassAttachments;
@@ -217,51 +222,57 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance* gra
     std::vector<VkAttachmentReference> resolveAttachmentRefs;
     std::vector<VkAttachmentReference> depthAttachmentRef;
 
+    bool bCanInitialLayoutBeUndef = additionalProps.bAllowUndefinedLayout && additionalProps.depthLoadOp != EAttachmentOp::LoadOp::Load;
+
     for (EPixelDataFormat::Type attachmentFormat : renderpassProps.renderpassAttachmentFormat.attachments)
     {
         VkAttachmentDescription attachmentDesc;
         attachmentDesc.flags = 0;
         attachmentDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(attachmentFormat)->format);
         attachmentDesc.samples = VkSampleCountFlagBits(renderpassProps.multisampleCount);
-        attachmentDesc.loadOp = attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachmentDesc.storeOp = attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        attachmentDesc.stencilLoadOp = VkAttachmentLoadOp(getLoadOp(additionalProps.stencilLoadOp));
+        attachmentDesc.stencilStoreOp = VkAttachmentStoreOp(getStoreOp(additionalProps.stencilStoreOp));
 
         // Since there cannot be any resolve for depth texture as of Vulkan 1.2.135 we do not have resolve attachment for depth
         if (EPixelDataFormat::isDepthFormat(attachmentFormat))
         {
             fatalAssert(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
 
-            attachmentDesc.loadOp = attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            attachmentDesc.storeOp = attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachmentDesc.loadOp = VkAttachmentLoadOp(getLoadOp(additionalProps.depthLoadOp));
+            attachmentDesc.storeOp = VkAttachmentStoreOp(getStoreOp(additionalProps.depthStoreOp));
+
             // Since depths are always same texture for both attachments and shader read
-            attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attachmentDesc.initialLayout = attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attachmentDesc.initialLayout = bCanInitialLayoutBeUndef? VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED: attachmentDesc.initialLayout;         
 
             depthAttachmentRef.push_back({ uint32(renderPassAttachments.size()) , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
             renderPassAttachments.push_back(attachmentDesc);
         }
         else
         {
-            attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            attachmentDesc.initialLayout = attachmentDesc.finalLayout = renderpassProps.bOneRtPerFormat ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentDesc.loadOp = VkAttachmentLoadOp(getLoadOp(additionalProps.colorAttachmentLoadOp));
+            attachmentDesc.storeOp = VkAttachmentStoreOp(getStoreOp(additionalProps.colorAttachmentStoreOp));
+            attachmentDesc.initialLayout = attachmentDesc.finalLayout = additionalProps.bUsedAsPresentSource 
+                ? VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : renderpassProps.bOneRtPerFormat 
+                ? VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentDesc.initialLayout = bCanInitialLayoutBeUndef ? VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED : attachmentDesc.initialLayout;
 
             colorAttachmentRefs.push_back({ uint32(renderPassAttachments.size()) , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
             renderPassAttachments.push_back(attachmentDesc);
 
             if (!renderpassProps.bOneRtPerFormat)
             {
-                // Since resolve attachment has to be shader read only before and after pass
+                // Since resolve attachments(Shader read only) always have 1 samples 
+                attachmentDesc.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+
                 // LOAD and STORE assumed it is right choice
-                attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
                 attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-                attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                attachmentDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(attachmentFormat)->format);
-                attachmentDesc.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;// Since resolve attachments(Shader read only) always have 1 samples 
+
+                // Since resolve attachment has to be shader read only before(if required by default) and after pass
+                attachmentDesc.initialLayout = attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; 
+                attachmentDesc.initialLayout = bCanInitialLayoutBeUndef? VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED : attachmentDesc.initialLayout;
+                
 
                 resolveAttachmentRefs.push_back({ uint32(renderPassAttachments.size()) , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
                 renderPassAttachments.push_back(attachmentDesc);

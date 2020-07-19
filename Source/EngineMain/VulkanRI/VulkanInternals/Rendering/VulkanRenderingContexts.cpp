@@ -1,21 +1,25 @@
 #include "VulkanRenderingContexts.h"
-#include "../ShaderCore/VulkanShaderParamResourcesFactory.h"
+#include "../../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../../Core/Logger/Logger.h"
+#include "../../../Core/Engine/GameEngine.h"
+#include "../../../RenderInterface/ShaderCore/ShaderObjectFactory.h"
 #include "../../../RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "../../../RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "../../../RenderInterface/ShaderCore/ShaderObject.h"
 #include "../../../RenderApi/GBuffersAndTextures.h"
 #include "../../../RenderInterface/GlobalRenderVariables.h"
 #include "../../VulkanGraphicsHelper.h"
-#include "../../../Core/Engine/GameEngine.h"
+#include "../ShaderCore/VulkanShaderParamResourcesFactory.h"
 #include "../ShaderCore/VulkanShaderParamResources.h"
-#include "../../../Core/Logger/Logger.h"
 #include "../Resources/VulkanPipelines.h"
-#include "../../../Core/Platform/PlatformAssertionErrors.h"
 
-void VulkanGlobalRenderingContext::initApiFactories()
+void VulkanGlobalRenderingContext::initApiInstances()
 {
     shaderParamLayoutsFactory = new VulkanShaderParametersLayoutFactory();
     pipelineFactory = new PipelineFactory();
+    shaderObjectFactory = new ShaderObjectFactory();
+
+    pipelinesCache = new VulkanPipelineCache();
 }
 
 void VulkanGlobalRenderingContext::initializeApiContext()
@@ -24,17 +28,21 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
     ShaderDataCollection& defaultShaderCollection = rawShaderObjects[DEFAULT_SHADER_NAME];
     {
-        const std::vector<std::pair<const DrawMeshShader*, PGraphicsPipeline>>& defaultShaders
+        const std::vector<std::pair<const DrawMeshShader*, GraphicsPipelineBase*>>& defaultShaders
             = static_cast<DrawMeshShaderObject*>(defaultShaderCollection.shaderObject)->getAllShaders();
-        for (const std::pair<const DrawMeshShader*, PGraphicsPipeline>& defaultShader : defaultShaders)
+        for (const std::pair<const DrawMeshShader*, GraphicsPipelineBase*>& defaultShader : defaultShaders)
         {
             VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(defaultShader.second);
-            graphicsPipeline->compatibleRenderpass = createGbufferRenderpass(defaultShader.first);
+            VkRenderPass renderpass = createGbufferRenderpass(defaultShader.first->renderpassUsage(), {});
+
+            // Since default alone will be used as parent
+            graphicsPipeline->setCanBeParent(true);
+            graphicsPipeline->setCompatibleRenderpass(renderpass);
             graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, graphicsPipeline);
 
             defaultShader.second->init();
 
-            gbufferRenderpasses[defaultShader.first->renderpassUsage()] = graphicsPipeline->compatibleRenderpass;
+            gbufferRenderPasses[defaultShader.first->renderpassUsage()].emplace_back(RenderpassPropsPair({}, renderpass));
             pipelineLayouts[defaultShader.first] = graphicsPipeline->pipelineLayout;
         }
     }
@@ -48,13 +56,13 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
         if (shaderCollection.second.shaderObject->baseShaderType() == DrawMeshShader::staticType())
         {
-            const std::vector<std::pair<const DrawMeshShader*, PGraphicsPipeline>>& allShaders
+            const std::vector<std::pair<const DrawMeshShader*, GraphicsPipelineBase*>>& allShaders
                 = static_cast<DrawMeshShaderObject*>(shaderCollection.second.shaderObject)->getAllShaders();
 
-            for (const std::pair<const DrawMeshShader*, PGraphicsPipeline>& shaderPair : allShaders)
+            for (const std::pair<const DrawMeshShader*, GraphicsPipelineBase*>& shaderPair : allShaders)
             {
                 FramebufferFormat fbFormat(shaderPair.first->renderpassUsage());
-                PGraphicsPipeline defaultGraphicsPipeline;
+                GraphicsPipelineBase* defaultGraphicsPipeline;
                 const DrawMeshShader* defaultShader = static_cast<DrawMeshShaderObject*>(defaultShaderCollection.shaderObject)
                     ->getShader(shaderPair.first->vertexUsage(), fbFormat, &defaultGraphicsPipeline);
 
@@ -62,13 +70,13 @@ void VulkanGlobalRenderingContext::initializeApiContext()
                 {
                     Logger::error("VulkanGlobalRenderingContext", "%s : Default shader must contain all the permutations, Missing for [%s %s]"
                         , __func__, EVertexType::toString(shaderPair.first->vertexUsage()).getChar()
-                        , ERenderpassFormat::toString(shaderPair.first->renderpassUsage()).getChar());
+                        , ERenderPassFormat::toString(shaderPair.first->renderpassUsage()).getChar());
                     fatalAssert(defaultShader, "Default shader missing!");
                 }
 
                 shaderPair.second->setParentPipeline(defaultGraphicsPipeline);
                 VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(shaderPair.second);
-                graphicsPipeline->compatibleRenderpass = static_cast<VulkanGraphicsPipeline*>(defaultGraphicsPipeline)->compatibleRenderpass;
+                graphicsPipeline->setCompatibleRenderpass(getRenderPass(shaderPair.first->renderpassUsage(), {}));
                 graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, shaderPair.second);
                 graphicsPipeline->init();
 
@@ -82,41 +90,120 @@ void VulkanGlobalRenderingContext::initializeApiContext()
             graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, graphicsPipeline);
 
             initializeNewPipeline(shaderObject, shaderObject->getDefaultPipeline());
+            pipelineLayouts[shaderObject->getShader()] = graphicsPipeline->pipelineLayout;
         }
     }
 }
 
 void VulkanGlobalRenderingContext::clearApiContext()
 {
-    // TODO(Jeslas) : Asap
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    for (const std::pair<const ShaderResource* , VkPipelineLayout>& pipelineLayout : pipelineLayouts)
+    {
+        VulkanGraphicsHelper::destroyPipelineLayout(graphicsInstance, pipelineLayout.second);
+    }
+    pipelineLayouts.clear();
+
+    for (const std::pair<ERenderPassFormat::Type, std::vector<RenderpassPropsPair>>& renderpasses : gbufferRenderPasses)
+    {
+        for (const RenderpassPropsPair& renderpass : renderpasses.second)
+        {
+            VulkanGraphicsHelper::destroyRenderPass(graphicsInstance, renderpass.second);
+        }
+    }
+    gbufferRenderPasses.clear();
+
+    for (const std::pair<GenericRenderPassProperties, std::vector<RenderpassPropsPair>>& renderpasses : genericRenderPasses)
+    {
+        for (const RenderpassPropsPair& renderpass : renderpasses.second)
+        {
+            VulkanGraphicsHelper::destroyRenderPass(graphicsInstance, renderpass.second);
+        }
+    }
+    genericRenderPasses.clear();
 }
 
-VkRenderPass VulkanGlobalRenderingContext::createGbufferRenderpass(const DrawMeshShader* shaderResource) const
+VkRenderPass VulkanGlobalRenderingContext::createGbufferRenderpass(ERenderPassFormat::Type rpUsageFormat
+    , const RenderPassAdditionalProps& additionalProps) const
 {
-    GenericRenderpassProperties renderpassProps;
+    GenericRenderPassProperties renderpassProps;
     renderpassProps.multisampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
-    renderpassProps.renderpassAttachmentFormat.rpFormat = shaderResource->renderpassUsage();
+    renderpassProps.renderpassAttachmentFormat.rpFormat = rpUsageFormat;
     Framebuffer* fb = GBuffers::getFramebuffer(renderpassProps.renderpassAttachmentFormat, 0);
     renderpassProps.bOneRtPerFormat = !fb->bHasResolves;
 
-    return VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderpassProps);
+    return VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderpassProps, additionalProps);
 }
 
 void VulkanGlobalRenderingContext::initializeNewPipeline(UniqueUtilityShaderObject* shaderObject, PipelineBase* pipeline)
 {
     VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(shaderObject->getDefaultPipeline());
-    GenericRenderpassProperties renderpassProps = graphicsPipeline->getRenderpassProperties();
+    GenericRenderPassProperties renderPassProps = graphicsPipeline->getRenderpassProperties();
 
-    VkRenderPass renderpass;
-    auto renderpassItr = genericRenderpasses.find(renderpassProps);
-    if (renderpassItr == genericRenderpasses.end())
+    VkRenderPass renderPass = nullptr;
+    auto renderpassItr = genericRenderPasses.find(renderPassProps);
+    if (renderpassItr == genericRenderPasses.end())
     {
-        renderpass = VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderpassProps);
-        genericRenderpasses[renderpassProps] = renderpass;
+        renderPass = VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderPassProps, {});
+        genericRenderPasses[renderPassProps].emplace_back(RenderpassPropsPair({}, renderPass));
+    }
+    else
+    {
+        renderPass = renderpassItr->second[0].second;
     }
 
-    graphicsPipeline->compatibleRenderpass = renderpass;
+    graphicsPipeline->setCompatibleRenderpass(renderPass);
     graphicsPipeline->init();
+}
+
+VkRenderPass VulkanGlobalRenderingContext::getRenderPass(ERenderPassFormat::Type renderpassFormat, const RenderPassAdditionalProps& additionalProps)
+{
+    auto renderpassItr = gbufferRenderPasses.find(renderpassFormat);
+    if (renderpassItr != gbufferRenderPasses.end())
+    {
+        VkRenderPass renderpass = nullptr;
+        for (const RenderpassPropsPair& renderpassPair : renderpassItr->second)
+        {
+            if (renderpassPair.first == additionalProps)
+            {
+                renderpass = renderpassPair.second;
+                break;
+            }
+        }
+
+        if (renderpass == nullptr)
+        {
+            renderpass = createGbufferRenderpass(renderpassFormat, additionalProps);
+            renderpassItr->second.emplace_back(RenderpassPropsPair(additionalProps, renderpass));
+        }
+        return renderpass;
+    }
+    return nullptr;
+}
+
+VkRenderPass VulkanGlobalRenderingContext::getRenderPass(const GenericRenderPassProperties& renderpassProps, const RenderPassAdditionalProps& additionalProps)
+{
+    auto renderpassItr = genericRenderPasses.find(renderpassProps);
+    if (renderpassItr != genericRenderPasses.end())
+    {
+        VkRenderPass renderpass = nullptr;
+        for (const RenderpassPropsPair& renderpassPair : renderpassItr->second)
+        {
+            if (renderpassPair.first == additionalProps)
+            {
+                renderpass = renderpassPair.second;
+                break;
+            }
+        }
+
+        if (renderpass == nullptr)
+        {
+            renderpass = VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderpassProps, additionalProps);
+            renderpassItr->second.emplace_back(RenderpassPropsPair(additionalProps, renderpass));
+        }
+        return renderpass;
+    }
+    return nullptr;
 }
 
 VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInstance* graphicsInstance, const class PipelineBase* pipeline)
@@ -134,14 +221,14 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
                 descSetLayouts.resize(reflectDescBody.set + 1);
             }
             const VulkanShaderSetParamsLayout* shaderSetParamsLayout = static_cast<const VulkanShaderSetParamsLayout*>(
-                static_cast<const GraphicsPipeline*>(pipeline)->getParamLayoutAtSet(reflectDescBody.set));
+                pipeline->getParamLayoutAtSet(reflectDescBody.set));
             descSetLayouts[reflectDescBody.set] = shaderSetParamsLayout->descriptorLayout;
         }
     }
     else if (shaderResource->getType()->isChildOf(UniqueUtilityShader::staticType()))
     {
         const VulkanShaderParametersLayout* shaderParametersLayout = static_cast<const VulkanShaderParametersLayout*>(
-            static_cast<const GraphicsPipeline*>(pipeline)->getParamLayoutAtSet(0));
+            pipeline->getParamLayoutAtSet(0));
 
         for (const ReflectDescriptorBody& reflectDescBody : shaderResource->getReflection()->descriptorsSets)
         {
@@ -153,14 +240,23 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
         }
     }
 
+    PIPELINE_LAYOUT_CREATE_INFO(layoutCreateInfo);
+
     VkPushConstantRange pushConstant;
     pushConstant.offset = 0;
     pushConstant.size = shaderResource->getReflection()->pushConstants.data.pushConstantField.stride;
     pushConstant.stageFlags = shaderResource->getReflection()->pushConstants.data.stagesUsed;
 
-    PIPELINE_LAYOUT_CREATE_INFO(layoutCreateInfo);
-    layoutCreateInfo.pushConstantRangeCount = 1;
-    layoutCreateInfo.pPushConstantRanges = &pushConstant;
+    if (shaderResource->getReflection()->pushConstants.data.stagesUsed > 0 && shaderResource->getReflection()->pushConstants.data.pushConstantField.stride > 0)
+    {
+        layoutCreateInfo.pushConstantRangeCount = 1;
+        layoutCreateInfo.pPushConstantRanges = &pushConstant;
+    }
+    else
+    {
+        layoutCreateInfo.pushConstantRangeCount = 0;
+        layoutCreateInfo.pPushConstantRanges = nullptr;
+    }
     layoutCreateInfo.setLayoutCount = uint32(descSetLayouts.size());
     layoutCreateInfo.pSetLayouts = descSetLayouts.data();
 

@@ -722,10 +722,109 @@ VkDescriptorSetLayout VulkanGraphicsHelper::createDescriptorsSetLayout(class IGr
     return layout;
 }
 
-VkDescriptorSetLayout VulkanGraphicsHelper::destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance
+void VulkanGraphicsHelper::destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance
     , VkDescriptorSetLayout descriptorsSetLayout)
 {
     const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
     device->vkDestroyDescriptorSetLayout(device->logicalDevice, descriptorsSetLayout, nullptr);
+}
+
+void VulkanGraphicsHelper::destroyPipelineLayout(class IGraphicsInstance* graphicsInstance, const VkPipelineLayout pipelineLayout)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    device->vkDestroyPipelineLayout(device->logicalDevice, pipelineLayout, nullptr);
+}
+
+VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstance* graphicsInstance, const std::vector<uint8>& cacheData)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    
+    PIPELINE_CACHE_CREATE_INFO(cacheCreateInfo);
+    if (!cacheData.empty())
+    {
+        cacheCreateInfo.initialDataSize = cacheData.size();
+        cacheCreateInfo.pInitialData = cacheData.data();
+    }
+
+    VkPipelineCache pipelineCache;
+    if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
+    {
+        Logger::error("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
+        pipelineCache = nullptr;
+    }
+    return pipelineCache;
+}
+
+VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstance* graphicsInstance)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    PIPELINE_CACHE_CREATE_INFO(cacheCreateInfo);
+
+    VkPipelineCache pipelineCache;
+    if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
+    {
+        Logger::error("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
+        pipelineCache = nullptr;
+    }
+    return pipelineCache;
+}
+
+void VulkanGraphicsHelper::destroyPipelineCache(class IGraphicsInstance* graphicsInstance, VkPipelineCache pipelineCache)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    device->vkDestroyPipelineCache(device->logicalDevice, pipelineCache, nullptr);
+}
+
+void VulkanGraphicsHelper::mergePipelineCaches(class IGraphicsInstance* graphicsInstance, VkPipelineCache dstCache
+    , const std::vector<VkPipelineCache>& srcCaches)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    if (device->vkMergePipelineCaches(device->logicalDevice, dstCache, uint32(srcCaches.size()), srcCaches.data()) != VK_SUCCESS)
+    {
+        Logger::error("VulkanGraphicsHelper", "%s : Merging pipeline caches failed", __func__);
+    }
+}
+
+void VulkanGraphicsHelper::getPipelineCacheData(class IGraphicsInstance* graphicsInstance, VkPipelineCache pipelineCache
+    , std::vector<uint8>& cacheData)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    uint64 cacheDataSize;
+    device->vkGetPipelineCacheData(device->logicalDevice, pipelineCache, &cacheDataSize, nullptr);
+    if (cacheDataSize > 0)
+    {
+        std::vector<uint8> cacheData(cacheDataSize);
+        device->vkGetPipelineCacheData(device->logicalDevice, pipelineCache, &cacheDataSize, cacheData.data());
+    }
+}
+
+std::vector<VkPipeline> VulkanGraphicsHelper::createGraphicsPipeline(class IGraphicsInstance* graphicsInstance,
+    const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCI, VkPipelineCache pipelineCache)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    std::vector<VkPipeline> pipelines(graphicsPipelineCI.size());
+    fatalAssert(device->vkCreateGraphicsPipelines(device->logicalDevice, pipelineCache, uint32(graphicsPipelineCI.size())
+        , graphicsPipelineCI.data(), nullptr, pipelines.data()) == VK_SUCCESS, "Graphics pipeline creation failed");
+
+    return pipelines;
+}
+
+void VulkanGraphicsHelper::destroyPipeline(class IGraphicsInstance* graphicsInstance, VkPipeline pipeline)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+    device->vkDestroyPipeline(device->logicalDevice, pipeline, nullptr);
 }

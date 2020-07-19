@@ -187,9 +187,6 @@
     <Filter Include="Header Files\RenderInterface\Rendering">
       <UniqueIdentifier>{2772513f-6fdf-471e-9eb4-6a9426428b95}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\RenderInterface\Resources\Shaders\StaticMesh">
-      <UniqueIdentifier>{6f8cb449-0daf-4724-a239-9d9634553f74}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\VulkanRI\VulkanInternals\Commands">
       <UniqueIdentifier>{d8b5038d-9a6d-4787-acae-c409f6512335}</UniqueIdentifier>
     </Filter>
@@ -219,6 +216,9 @@
     </Filter>
     <Filter Include="Source Files\RenderInterface\Resources\Shaders\Base">
       <UniqueIdentifier>{ff6e8378-dcd0-49f2-bb4d-7a7e8e66cfd8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderInterface\Resources\Shaders\EngineShaders">
+      <UniqueIdentifier>{e80a7384-8730-4158-9e33-55b1a65be2de}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -441,14 +441,8 @@
     <ClCompile Include="RenderInterface\Rendering\RenderCommandList.cpp">
       <Filter>Source Files\RenderInterface\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="VulkanRI\VulkanInternals\VulkanFrameBuffer.cpp">
-      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
-    </ClCompile>
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTexture.cpp">
       <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderInterface\Shaders\StaticMesh\StaticMeshUnlit.cpp">
-      <Filter>Source Files\RenderInterface\Resources\Shaders\StaticMesh</Filter>
     </ClCompile>
     <ClCompile Include="VulkanRI\VulkanInternals\Commands\VulkanRenderCmdList.cpp">
       <Filter>Source Files\VulkanRI\VulkanInternals\Commands</Filter>
@@ -495,9 +489,6 @@
     <ClCompile Include="RenderApi\Material\MaterialCommonUniforms.cpp">
       <Filter>Source Files\RenderApi\Material</Filter>
     </ClCompile>
-    <ClCompile Include="RenderInterface\Shaders\Base\UtilityShaders.cpp">
-      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
-    </ClCompile>
     <ClCompile Include="VulkanRI\VulkanInternals\ShaderCore\VulkanShaderParamResourcesFactory.cpp">
       <Filter>Source Files\VulkanRI\VulkanInternals\ShaderCore</Filter>
     </ClCompile>
@@ -509,6 +500,21 @@
     </ClCompile>
     <ClCompile Include="VulkanRI\VulkanInternals\Resources\VulkanPipelines.cpp">
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\ShaderCore\ShaderObjectFactory.cpp">
+      <Filter>Source Files\RenderInterface\ShaderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\DefaultShader.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Shaders\EngineShaders</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRI\VulkanInternals\VulkanFrameBuffer.cpp">
+      <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Rendering\FramebufferTypes.cpp">
+      <Filter>Source Files\RenderInterface\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\Base\BaseShaderDefines.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -707,9 +713,6 @@
     <ClInclude Include="Experimental\Shaders\TriangleShader.h">
       <Filter>Source Files\Experimental\Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.h">
-      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Types\Time.h">
       <Filter>Header Files\Core\Types</Filter>
     </ClInclude>
@@ -812,12 +815,6 @@
     <ClInclude Include="RenderApi\RenderApi.h">
       <Filter>Header Files\RenderApi</Filter>
     </ClInclude>
-    <ClInclude Include="RenderInterface\Shaders\DrawQuadFromTexture.h">
-      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderInterface\Shaders\StaticMesh\StaticMeshUnlit.h">
-      <Filter>Source Files\RenderInterface\Resources\Shaders\StaticMesh</Filter>
-    </ClInclude>
     <ClInclude Include="RenderInterface\Rendering\IRenderCommandList.h">
       <Filter>Header Files\RenderInterface\Rendering</Filter>
     </ClInclude>
@@ -904,6 +901,12 @@
     </ClInclude>
     <ClInclude Include="VulkanRI\VulkanInternals\Resources\VulkanPipelines.h">
       <Filter>Source Files\VulkanRI\VulkanInternals\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\ShaderCore\ShaderObjectFactory.h">
+      <Filter>Source Files\RenderInterface\ShaderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h">
+      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

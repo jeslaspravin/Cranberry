@@ -19,15 +19,31 @@ namespace MaterialVertexUniforms
     const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo();
 
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<Simple2>();
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple2>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<Simple3>();
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<Simple4>();
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple4>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<BasicMesh>();
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::BasicMesh>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<StaticMesh>();
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::StaticMesh>();
 
-    constexpr const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo(EVertexType::Type vertexType);
+    constexpr const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo(EVertexType::Type vertexType)
+    {
+        switch (vertexType)
+        {
+        case EVertexType::Simple2:
+            return bufferParamInfo<EVertexType::Simple2>();
+        case EVertexType::Simple3:
+            return bufferParamInfo<EVertexType::Simple3>();
+        case EVertexType::Simple4:
+            return bufferParamInfo<EVertexType::Simple4>();
+        default:
+        case EVertexType::BasicMesh:
+            return bufferParamInfo<EVertexType::BasicMesh>();
+        case EVertexType::StaticMesh:
+            return bufferParamInfo<EVertexType::StaticMesh>();
+        }
+    }
 }

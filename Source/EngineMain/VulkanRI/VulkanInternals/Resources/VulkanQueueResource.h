@@ -282,10 +282,18 @@ public:
     template <EQueuePriority::Enum Priority>
     constexpr VkQueue getQueueOfPriority()
     {
-        uint32 currentQueueIndex = queuePointer.lastQueueIndex[Priority]++;
-        queuePointer.lastQueueIndex[Priority] %= queuePointer.countPerPriority;
+        EQueuePriority::Enum PriorityToFetch = Priority;
+        // If less than min supported priority, Then offset it to min supported one
+        if (Priority < queuePointer.minAvailablePriority)
+        {
+            PriorityToFetch = queuePointer.minAvailablePriority;
+            Logger::warn("VulkanQueue", "%s : %s queue requested priority %d is not available using priority %d", __func__
+                , getSupportedQueueName().getChar(), Priority, PriorityToFetch);
+        }
+        uint32 currentQueueIndex = queuePointer.lastQueueIndex[PriorityToFetch]++;
+        queuePointer.lastQueueIndex[PriorityToFetch] %= queuePointer.countPerPriority;
 
-        return queuePointer.queueBasePointer[Priority][currentQueueIndex];
+        return queuePointer.queueBasePointer[PriorityToFetch][currentQueueIndex];
     }
 
     String getResourceName() const override

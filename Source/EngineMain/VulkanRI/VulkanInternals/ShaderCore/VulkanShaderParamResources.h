@@ -28,7 +28,7 @@ public:
     String getResourceName() const final;
 
     /* GraphicsResource overrides */
-    void reinitResources() final;
+    //void reinitResources() final;
 
     /* Override ends */
 
@@ -128,7 +128,7 @@ public:
     String getResourceName() const final;
 
     /* GraphicsResource overrides */
-    void reinitResources() final;
+    //void reinitResources() final;
 
     /* Override ends */
 

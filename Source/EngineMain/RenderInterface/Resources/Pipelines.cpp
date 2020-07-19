@@ -1,8 +1,24 @@
 #include "Pipelines.h"
 #include "ShaderResources.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../Core/Platform/LFS/PlatformLFS.h"
 
 DEFINE_GRAPHICS_RESOURCE(PipelineCacheBase)
+
+std::vector<uint8> PipelineCacheBase::getRawFromFile() const
+{
+    PlatformFile cacheFile(cacheFileName);
+    cacheFile.setSharingMode(EFileSharing::ReadOnly);
+    cacheFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
+
+    std::vector<uint8> cacheData;
+    if (cacheFile.exists() && cacheFile.openFile())
+    {
+        cacheFile.read(cacheData);
+        cacheFile.closeFile();
+    }
+    return cacheData;
+}
 
 String PipelineCacheBase::getResourceName() const
 {
@@ -11,6 +27,23 @@ String PipelineCacheBase::getResourceName() const
 void PipelineCacheBase::setResourceName(const String& name)
 {
     cacheName = name;
+    cacheFileName = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(cacheFileName), "Cache", cacheName + ".cache");
+}
+
+void PipelineCacheBase::addPipelineToCache(const class PipelineBase* pipeline)
+{
+    pipelinesToCache.emplace_back(pipeline);
+}
+
+void PipelineCacheBase::writeCache() const
+{
+    PlatformFile cacheFile(cacheFileName);
+    cacheFile.setSharingMode(EFileSharing::NoSharing);
+    cacheFile.setFileFlags(EFileFlags::Write | EFileFlags::CreateAlways);
+
+    cacheFile.openOrCreate();
+    cacheFile.write(getRawToWrite());
+    cacheFile.closeFile();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -21,7 +54,9 @@ DEFINE_GRAPHICS_RESOURCE(PipelineBase)
 
 PipelineBase::PipelineBase(const PipelineBase* parent)
     : pipelineName(parent->pipelineName)
+    , bCanBeParent(false)
     , parentPipeline(parent)
+    , parentCache(parent->parentCache)
     , pipelineShader(parent->pipelineShader)
     , shaderParamLayouts(parent->shaderParamLayouts)
 {}
@@ -58,23 +93,75 @@ void PipelineBase::setParamLayoutAtSet(const GraphicsResource* paramLayout, int3
     }
 }
 
+void PipelineBase::setPipelineCache(const PipelineCacheBase* pipelineCache)
+{
+    parentCache = pipelineCache;
+}
+
 const GraphicsResource* PipelineBase::getParamLayoutAtSet(int32 setIdx) const
 {
     return shaderParamLayouts[setIdx];
 }
 
-DEFINE_GRAPHICS_RESOURCE(GraphicsPipeline)
+DEFINE_GRAPHICS_RESOURCE(GraphicsPipelineBase)
 
-GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline* parent)
+GraphicsPipelineBase::GraphicsPipelineBase(const GraphicsPipelineBase* parent)
     : PipelineBase(parent)
     , renderpassProps(parent->renderpassProps)
     , primitiveTopology(parent->primitiveTopology)
     , cntrlPts(parent->cntrlPts)
-    , supportedCullings(parent->supportedCullings)
+    //, bEnableDepthBias(parent->bEnableDepthBias)
     , depthState(parent->depthState)
-    , stencilState(parent->stencilState)
+    , stencilStateFront(parent->stencilStateFront)
+    , stencilStateBack(parent->stencilStateBack)
     , attachmentBlendStates(parent->attachmentBlendStates)
+    , allowedDrawModes(parent->allowedDrawModes)
+    , supportedCullings(parent->supportedCullings)
 {}
+
+GraphicsPipelineQueryParams GraphicsPipelineBase::paramForIdx(int32 idx) const
+{
+    GraphicsPipelineQueryParams queryParam;
+
+    int32 denominator = pipelinesCount();
+    int32 numerator = idx;
+
+    // Draw mode
+    denominator /= int32(allowedDrawModes.size());
+    queryParam.drawMode = allowedDrawModes[numerator / denominator];
+    numerator %= denominator;
+    // Culling mode
+    denominator /= int32(supportedCullings.size());
+    queryParam.cullingMode = supportedCullings[numerator / denominator];
+    //numerator %= denominator;
+
+    return queryParam;
+}
+
+int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam) const
+{
+    int32 idx = 0;
+
+    int32 polyDeg = pipelinesCount();
+    int32 tempIdx = 0;
+
+    // Draw mode
+    polyDeg /= int32(allowedDrawModes.size());
+    while (tempIdx < allowedDrawModes.size() && allowedDrawModes[tempIdx] != queryParam.drawMode) ++tempIdx;
+    idx += (tempIdx % allowedDrawModes.size()) * polyDeg;
+    // Culling mode
+    polyDeg /= int32(supportedCullings.size());
+    tempIdx = 0;
+    while (tempIdx < supportedCullings.size() && supportedCullings[tempIdx] != queryParam.cullingMode) ++tempIdx;
+    idx += (tempIdx % supportedCullings.size()) * polyDeg;
+
+    return idx;
+}
+
+FORCE_INLINE int32 GraphicsPipelineBase::pipelinesCount() const
+{
+    return int32(allowedDrawModes.size() * supportedCullings.size());
+}
 
 //////////////////////////////////////////////////////////////////////////
 // PipelineFactory
@@ -82,15 +169,19 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline* parent)
 
 PipelineFactoryRegister::PipelineFactoryRegister(const String& shaderName)
 {
-    PipelineFactory::REGISTERED_PIPELINE_FACTORIES.insert({ shaderName , this });
+    PipelineFactory::pipelineFactoriesRegistry().insert({ shaderName , this });
 }
 
-std::map<String, const PipelineFactoryRegister*> PipelineFactory::REGISTERED_PIPELINE_FACTORIES;
+std::map<String, const PipelineFactoryRegister*>& PipelineFactory::pipelineFactoriesRegistry()
+{
+    static std::map<String, const PipelineFactoryRegister*> REGISTERED_PIPELINE_FACTORIES;
+    return REGISTERED_PIPELINE_FACTORIES;
+}
 
 PipelineBase* PipelineFactory::create(const PipelineFactoryArgs& args) const
 {
-    auto factoryItr = REGISTERED_PIPELINE_FACTORIES.find(args.pipelineShader->getResourceName());
-    fatalAssert(factoryItr != REGISTERED_PIPELINE_FACTORIES.end(), "Failed finding factory to create pipeline for shader");
+    auto factoryItr = pipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
+    fatalAssert(factoryItr != pipelineFactoriesRegistry().end(), "Failed finding factory to create pipeline for shader");
 
     return (*factoryItr->second)(args);
 }

@@ -46,6 +46,7 @@ public:
     String getObjectName() const override;
     uint64 getDispatchableHandle() const override { return 0; }
     /* ShaderResource overrides */
+    void init() final;
     const ShaderReflected* getReflection() const override;
     /* End overrides */
 };

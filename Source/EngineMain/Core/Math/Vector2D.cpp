@@ -214,42 +214,42 @@ const Vector2D Vector2D::ZERO(0);
 
 const Vector2D Vector2D::ONE(1);
 
-FORCE_INLINE float Vector2D::dot(const Vector2D& a, const Vector2D& b)
+float Vector2D::dot(const Vector2D& a, const Vector2D& b)
 {
     return a | b;
 }
 
-FORCE_INLINE float Vector2D::cross(const Vector2D& a, const Vector2D& b)
+float Vector2D::cross(const Vector2D& a, const Vector2D& b)
 {
     return a ^ b;
 }
 
-FORCE_INLINE Vector2D Vector2D::clamp(const Vector2D& value, const Vector2D& min, const Vector2D& max)
+Vector2D Vector2D::clamp(const Vector2D& value, const Vector2D& min, const Vector2D& max)
 {
     return Vector2D(glm::clamp(value.value, min.value, max.value));
 }
 
-FORCE_INLINE Vector2D Vector2D::min(const Vector2D& a, const Vector2D& b)
+Vector2D Vector2D::min(const Vector2D& a, const Vector2D& b)
 {
     return Vector2D(glm::min(a.value, b.value));
 }
 
-FORCE_INLINE Vector2D Vector2D::max(const Vector2D& a, const Vector2D& b)
+Vector2D Vector2D::max(const Vector2D& a, const Vector2D& b)
 {
     return Vector2D(glm::max(a.value, b.value));
 }
 
-FORCE_INLINE Vector2D Vector2D::abs(const Vector2D& value)
+Vector2D Vector2D::abs(const Vector2D& value)
 {
     return Vector2D(glm::abs(value.value));
 }
 
-FORCE_INLINE Vector2D Vector2D::floor(const Vector2D& value)
+Vector2D Vector2D::floor(const Vector2D& value)
 {
     return Vector2D(glm::floor(value.value));
 }
 
-FORCE_INLINE Vector2D Vector2D::ceil(const Vector2D& value)
+Vector2D Vector2D::ceil(const Vector2D& value)
 {
     return Vector2D(glm::ceil(value.value));
 }
