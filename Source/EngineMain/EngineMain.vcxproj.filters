@@ -214,6 +214,9 @@
     <Filter Include="Source Files\RenderInterface\Resources\Shaders\EngineShaders">
       <UniqueIdentifier>{e80a7384-8730-4158-9e33-55b1a65be2de}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Experimental">
+      <UniqueIdentifier>{2914e851-ff20-4621-bb26-b0fd890b7e31}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -503,6 +506,9 @@
     </ClCompile>
     <ClCompile Include="RenderInterface\Shaders\Base\BaseShaderDefines.cpp">
       <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ExperimentalEngine.cpp">
+      <Filter>Source Files\Experimental</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -889,6 +895,9 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h">
       <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ExperimentalEngine.h">
+      <Filter>Source Files\Experimental</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

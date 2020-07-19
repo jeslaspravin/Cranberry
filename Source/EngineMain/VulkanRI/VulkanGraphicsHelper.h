@@ -9,6 +9,8 @@ class GenericAppWindow;
 class VulkanGraphicsHelper : public GraphicsHelperAPI<VulkanGraphicsHelper>
 {
 public:
+    // Only in experimental branch
+    static class VulkanDevice* getVulkanDevice(class IGraphicsInstance* graphicsInstance);
 
     static VkInstance getInstance(class IGraphicsInstance* graphicsInstance);
     static VkDevice getDevice(const class VulkanDevice* vulkanDevice);

@@ -123,7 +123,7 @@ GenericAppInstance& GameEngine::appInstance() const
     return *applicationInstance;
 }
 
-GameEngine* GameEngineWrapper::createEngineInstance()
-{
-    return new GameEngine();
-}
+//GameEngine* GameEngineWrapper::createEngineInstance()
+//{
+//    return new GameEngine();
+//}
