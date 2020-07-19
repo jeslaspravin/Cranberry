@@ -1,39 +1,29 @@
 #include "ExperimentalEngine.h"
-#include "../RenderInterface/Resources/GenericWindowCanvas.h"
-#include "../RenderInterface/PlatformIndependentHelper.h"
-#include "../Core/Engine/WindowManager.h"
-#include "../Core/Platform/GenericAppWindow.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanQueueResource.h"
-#include "../VulkanRI/VulkanInternals/VulkanDevice.h"
 #include "../VulkanRI/VulkanInternals/Debugging.h"
-#include "../VulkanRI/VulkanInternals/Resources/VulkanWindowCanvas.h"
-#include "../VulkanRI/VulkanInternals/Resources/VulkanMemoryResources.h"
-#include "../VulkanRI/VulkanInternals/Resources/VulkanSampler.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
-#include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
+#include "../RenderInterface/PlatformIndependentHelper.h"
 #include "../Core/Platform/PlatformAssertionErrors.h"
-#include "../VulkanRI/Resources/VulkanShaderResources.h"
-#include "../Assets/Asset/StaticMeshAsset.h"
-#include "../Assets/Asset/TextureAsset.h"
-#include "../RenderInterface/Shaders/StaticMesh/StaticMeshUnlit.h"
-#include "../RenderInterface/Shaders/DrawQuadFromTexture.h"
-#include "../RenderInterface/Rendering/IRenderCommandList.h"
-#include "../Core/Types/Textures/RenderTargetTextures.h"
-#include "../Core/Types/Textures/Texture2D.h"
 #include "../VulkanRI/VulkanInternals/VulkanDescriptorAllocator.h"
-#include "../RenderInterface/GlobalRenderVariables.h"
-#include "../RenderApi/GBuffersAndTextures.h"
-#include "../Core/Types/Colors.h"
-#include "../Core/Types/Time.h"
-#include "../Core/Types/Delegates/Delegate.h"
-#include "../Core/Reflections/MemberField.h"
-#include "../Core/Engine/Config/EngineGlobalConfigs.h"
-#include "../Core/Input/InputSystem.h"
-#include "../Core/Math/Vector2D.h"
-#include "../Core/Math/Vector4D.h"
+#include "../VulkanRI/VulkanInternals/Resources/VulkanSampler.h"
 #include "../Core/Math/Vector3D.h"
-#include "../Core/Math/Matrix4.h"
+#include "../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../Assets/Asset/TextureAsset.h"
+#include "../Core/Types/Textures/TexturesBase.h"
+#include "../RenderApi/GBuffersAndTextures.h"
+#include "../Core/Input/Keys.h"
+#include "../Core/Engine/Config/EngineGlobalConfigs.h"
+#include "../Assets/Asset/StaticMeshAsset.h"
+#include "../VulkanRI/VulkanGraphicsHelper.h"
+#include "../RenderApi/RenderApi.h"
+#include "../Core/Platform/GenericAppInstance.h"
+#include "../Core/Input/InputSystem.h"
 #include "../Core/Math/Math.h"
+#include "../RenderInterface/Shaders/Base/DrawMeshShader.h"
+#include "../RenderInterface/CoreGraphicsTypes.h"
+#include "../VulkanRI/VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
+#include "../RenderApi/Scene/RenderScene.h"
+#include "../RenderApi/Material/MaterialCommonUniforms.h"
 
 #include <array>
 
@@ -44,7 +34,7 @@ void ExperimentalEngine::tempTest()
 
 void ExperimentalEngine::tempTestPerFrame()
 {
-
+    
 }
 
 template <EQueueFunction QueueFunction> VulkanQueueResource<QueueFunction>* getQueue(const VulkanDevice* device);
@@ -153,11 +143,17 @@ void ExperimentalEngine::destroyPools()
 
 void ExperimentalEngine::createBuffers()
 {
-    viewBuffer.buffer = new GraphicsRBuffer(smUniformBinding["viewData"]->paramStride(), 1);
+    const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
+    const ShaderSetParametersLayout* paramSetLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(0));// 0 is view data
+
+    const ShaderBufferDescriptorType* paramDescription = static_cast<const ShaderBufferDescriptorType*>(paramSetLayout->parameterDescription("viewData"));
+    viewBuffer.buffer = new GraphicsRBuffer(paramDescription->bufferParamInfo->paramStride(), 1);
     viewBuffer.buffer->setResourceName("ViewData");
     viewBuffer.buffer->init();
 
-    instanceBuffer.buffer = new GraphicsRBuffer(smUniformBinding["instanceData"]->paramStride(), 1);
+    paramSetLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(1));// 1 is instance data
+    paramDescription = static_cast<const ShaderBufferDescriptorType*>(paramSetLayout->parameterDescription("instanceData"));
+    instanceBuffer.buffer = new GraphicsRBuffer(paramDescription->bufferParamInfo->paramStride(), 1);
     instanceBuffer.buffer->setResourceName("InstanceData");
     instanceBuffer.buffer->init();
 }
@@ -171,18 +167,13 @@ void ExperimentalEngine::destroyBuffers()
     instanceBuffer.buffer->release();
     delete instanceBuffer.buffer;
     instanceBuffer.buffer = nullptr;
-
-    for (const std::pair<String,ShaderBufferParamInfo*>& pairs : smUniformBinding)
-    {
-        delete pairs.second;
-    }
-    smUniformBinding.clear();
 }
 
 void ExperimentalEngine::createImages()
 {
     commonSampler = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "CommonSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest);
+
     // common shader sampling texture
     {
         texture.image = static_cast<TextureAsset*>(appInstance().assetManager.getOrLoadAsset("TestImageData.png"))->getTexture();
@@ -192,210 +183,12 @@ void ExperimentalEngine::createImages()
         {
             graphicsDbg->markObject((uint64)texture.imageView, "DiffuseTextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
         }
-
-        Texture2DCreateParams t2dCreateParams
-        {
-            "NormalTexture",
-            ESamplerFiltering::Nearest,
-            Size2D(1024, 1024)
-        };
-        t2dCreateParams.defaultColor = Color(0, 0, 1);
-        normalTexture.image = TextureBase::createTexture<Texture2D>(t2dCreateParams);
-        normalTexture.imageView = static_cast<VulkanImageResource*>(normalTexture.image->getTextureResource())->getImageView({});
-        if (normalTexture.imageView != nullptr)
-        {
-            graphicsDbg->markObject((uint64)normalTexture.imageView, "NormalTextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
-        }
     }
 }
 
 void ExperimentalEngine::destroyImages()
 {
     commonSampler->release();
-
-    TextureBase::destroyTexture<Texture2D>(normalTexture.image);
-    normalTexture.image = nullptr;
-    normalTexture.imageView = nullptr;
-}
-
-void ExperimentalEngine::fillBindings()
-{
-    smTextureBinding["diffuseTexture"] = &texture;
-    smTextureBinding["normalTexture"] = &normalTexture;
-    smUniformBinding["viewData"] = new ViewDataBufferParamInfo();
-    smUniformBinding["instanceData"] = new InstanceDataBufferParamInfo();
-
-    const ShaderReflected* reflectedData = static_cast<ShaderResource*>(StaticMeshUnlit::staticType()->getDefault())->getReflection();
-    // Only doing for fields and none arrays as that is only needed here
-    for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
-    {
-        for (const DescEntryBuffer& uniformBuff : descriptorsSet.uniforms)
-        {
-            auto buffItr = smUniformBinding.find(uniformBuff.attributeName);
-            if (buffItr != smUniformBinding.end())
-            {
-                buffItr->second->setStride(uniformBuff.data.data.stride);
-                ShaderBufferFieldNode* node = &buffItr->second->startNode;
-                while (node->isValid())
-                {
-                    if (!node->field->bIsStruct)
-                    {
-                        for (const ReflectBufferEntry& field : uniformBuff.data.data.bufferFields)
-                        {
-                            if (field.attributeName == node->field->paramName)
-                            {
-                                node->field->offset = field.data.offset;
-                                node->field->size = field.data.totalSize;
-                                node->field->stride = field.data.stride;
-                                break;
-                            }
-                        }
-                    }
-                    node = node->nextNode;
-                }
-            }
-        }
-    }
-
-    for (const ReflectInputOutput& inputVertexAttrib : reflectedData->inputs)
-    {
-        ShaderVertexFieldNode* node = &MeshAsset::getShaderParamInfo<StaticMeshAsset>()->startNode;
-        while (node->isValid())
-        {
-            if (inputVertexAttrib.attributeName == node->field->attributeName)
-            {
-                node->field->format = EShaderInputAttribFormat::getInputFormat(inputVertexAttrib.data.type);
-                node->field->location = inputVertexAttrib.data.location;
-                break;
-            }
-            node = node->nextNode;
-        }
-    }    
-}
-
-void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std::map<String, uint32>& bindingNames, std::vector<VkDescriptorSetLayoutBinding>& descLayoutBindings
-    , const ReflectDescriptorBody& descReflected)
-{
-    for (const DescEntryBuffer& descriptorInfo : descReflected.uniforms)
-    {
-        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
-        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = 1;
-
-        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = 1;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
-        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
-    }
-    for (const DescEntryBuffer& descriptorInfo : descReflected.buffers)
-    {
-        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
-        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = 1;
-
-        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = 1;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
-        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
-    }
-    for (const DescEntryTexelBuffer& descriptorInfo : descReflected.imageBuffers)
-    {
-        uint32 descCount = 1;
-        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
-        {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
-        }
-        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
-        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
-
-        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
-        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
-    }
-    for (const DescEntryTexelBuffer& descriptorInfo : descReflected.samplerBuffers)
-    {
-        uint32 descCount = 1;
-        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
-        {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
-        }
-        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
-        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
-
-        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
-        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
-    }
-    for (const DescEntryTexture& descriptorInfo : descReflected.imagesAndImgArrays)
-    {
-        uint32 descCount = 1;
-        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
-        {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
-        }
-        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
-        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
-
-        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
-        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
-    }
-    for (const DescEntryTexture& descriptorInfo : descReflected.textureAndArrays)
-    {
-        uint32 descCount = 1;
-        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
-        {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
-        }
-        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
-        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
-
-        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
-        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
-    }
-    for (const DescEntryTexture& descriptorInfo : descReflected.sampledTexAndArrays)
-    {
-        uint32 descCount = 1;
-        for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
-        {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
-        }
-        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
-        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
-
-        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = descCount;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
-        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
-    }
-    for (const DescEntrySampler& descriptorInfo : descReflected.samplers)
-    {
-        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
-        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = 1;
-
-        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = 1;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
-        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
-    }
-    for (const DescEntrySubpassInput& descriptorInfo : descReflected.subpassInputs)
-    {
-        poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
-        poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = 1;
-
-        descLayoutBindings[descriptorInfo.data.binding].binding = bindingNames[descriptorInfo.attributeName] = descriptorInfo.data.binding;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorCount = 1;
-        descLayoutBindings[descriptorInfo.data.binding].descriptorType = VkDescriptorType(descriptorInfo.data.type);
-        descLayoutBindings[descriptorInfo.data.binding].stageFlags = descriptorInfo.data.stagesUsed;
-    }
 }
 
 void ExperimentalEngine::createShaderResDescriptors()
@@ -406,28 +199,20 @@ void ExperimentalEngine::createShaderResDescriptors()
     {
         staticMeshDescs.clear();
 
-        const ShaderReflected* reflectedData = static_cast<ShaderResource*>(StaticMeshUnlit::staticType()->getDefault())->getReflection();
+        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
+        const ShaderReflected* reflectedData = smPipeline->getShaderResource()->getReflection();
 
         staticMeshDescs.reserve(reflectedData->descriptorsSets.size());
         for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
         {
-            DescSetInfo setInfo;
-            setInfo.descLayoutInfo.resize(descriptorsSet.usedBindings.size());
-            std::vector<VkDescriptorSetLayoutBinding> layoutBindings(descriptorsSet.usedBindings.size());
+            const VulkanShaderSetParamsLayout* paramSetLayout = static_cast<const VulkanShaderSetParamsLayout*>(smPipeline->getParamLayoutAtSet(descriptorsSet.set));
 
-            fillDescriptorsSet(setInfo.descLayoutInfo, setInfo.descBindingNames, layoutBindings, descriptorsSet);
-
-            DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
-            descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
-            descLayoutCreateInfo.pBindings = layoutBindings.data();
-
-            fatalAssert(vDevice->vkCreateDescriptorSetLayout(device, &descLayoutCreateInfo, nullptr, &setInfo.descLayout) == VK_SUCCESS, "Failed creating descriptors set layout for unlit static mesh descriptors");
-
+            VkDescriptorSet descSet;
             DescriptorsSetQuery query;
-            query.supportedTypes.insert(setInfo.descLayoutInfo.cbegin(), setInfo.descLayoutInfo.cend());
-            setInfo.descSet = descsSetAllocator->allocDescriptorsSet(query, setInfo.descLayout);
+            query.supportedTypes.insert(paramSetLayout->getDescPoolAllocInfo().cbegin(), paramSetLayout->getDescPoolAllocInfo().cend());
+            descSet = descsSetAllocator->allocDescriptorsSet(query, paramSetLayout->descriptorLayout);
 
-            staticMeshDescs.push_back(std::move(setInfo));
+            staticMeshDescs.push_back(descSet);
         }
     }
 
@@ -437,39 +222,25 @@ void ExperimentalEngine::createShaderResDescriptors()
         drawQuadNormalDescs.resize(swapchainCount);
         drawQuadDepthDescs.resize(swapchainCount);
 
-        const ShaderReflected* reflectedData = static_cast<ShaderResource*>(DrawQuadFromTexture::staticType()->getDefault())->getReflection();
+        const PipelineBase* drawQuadPipeline = static_cast<const GraphicsPipelineBase*>(drawQuadPipelineContext.getPipeline());
+        const VulkanShaderParametersLayout* paramsLayout = static_cast<const VulkanShaderParametersLayout*>(drawQuadPipeline->getParamLayoutAtSet(0));
+        const ShaderReflected* reflectedData = drawQuadPipeline->getShaderResource()->getReflection();
 
         for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
         {
-            DescSetInfo setInfo;
-            setInfo.descLayoutInfo.resize(descriptorsSet.usedBindings.size());
-            std::vector<VkDescriptorSetLayoutBinding> layoutBindings(descriptorsSet.usedBindings.size());
-
-            fillDescriptorsSet(setInfo.descLayoutInfo, setInfo.descBindingNames, layoutBindings, descriptorsSet);
-
-            DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
-            descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
-            descLayoutCreateInfo.pBindings = layoutBindings.data();
-
-            fatalAssert(vDevice->vkCreateDescriptorSetLayout(device, &descLayoutCreateInfo, nullptr, &setInfo.descLayout) == VK_SUCCESS, "Failed creating descriptors set layout for draw quad from texture descriptors");
-
+            const std::vector<VkDescriptorPoolSize> descriptorsPoolSize = paramsLayout->getDescPoolAllocInfo(descriptorsSet.set);
             DescriptorsSetQuery query;
-            query.supportedTypes.insert(setInfo.descLayoutInfo.cbegin(), setInfo.descLayoutInfo.cend());
+            query.supportedTypes.insert(descriptorsPoolSize.cbegin(), descriptorsPoolSize.cend());
+
+            VkDescriptorSetLayout setLayout = paramsLayout->getDescSetLayout(descriptorsSet.set);
 
             for (uint32 i = 0; i < swapchainCount; ++i)
             {
-                DescSetInfo diffuseDescSetInfo = setInfo;
-                DescSetInfo normalDescSetInfo = setInfo;
-                DescSetInfo depthDescSetInfo = setInfo;
+                drawQuadTextureDescs[i].emplace_back(descsSetAllocator->allocDescriptorsSet(query, setLayout));
 
-                diffuseDescSetInfo.descSet = descsSetAllocator->allocDescriptorsSet(query, setInfo.descLayout);
-                drawQuadTextureDescs[i].push_back(std::move(diffuseDescSetInfo));
+                drawQuadNormalDescs[i].emplace_back(descsSetAllocator->allocDescriptorsSet(query, setLayout));
 
-                normalDescSetInfo.descSet = descsSetAllocator->allocDescriptorsSet(query, setInfo.descLayout);
-                drawQuadNormalDescs[i].push_back(std::move(normalDescSetInfo));
-
-                depthDescSetInfo.descSet = descsSetAllocator->allocDescriptorsSet(query, setInfo.descLayout);
-                drawQuadDepthDescs[i].push_back(std::move(depthDescSetInfo));
+                drawQuadDepthDescs[i].emplace_back(descsSetAllocator->allocDescriptorsSet(query, setLayout));
             }
         }
     }
@@ -481,10 +252,14 @@ void ExperimentalEngine::createShaderResDescriptors()
 
     // Static mesh descriptors
     {
-        for (const DescSetInfo& descSetInfo : staticMeshDescs)
+        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
+
+        for (int32 setIdx = 0;setIdx < staticMeshDescs.size(); ++setIdx)
         {
-            auto foundItr = descSetInfo.descBindingNames.find("viewData");
-            if (foundItr != descSetInfo.descBindingNames.end())
+            const ShaderSetParametersLayout* setParamsLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(setIdx));
+            const ShaderBufferDescriptorType* paramDescription = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("viewData"));
+
+            if (paramDescription != nullptr)
             {
                 uint32 bufferInfoIdx = uint32(bufferInfo.size());
                 bufferInfo.push_back({});
@@ -493,13 +268,14 @@ void ExperimentalEngine::createShaderResDescriptors()
                 bufferInfo[bufferInfoIdx].range = viewBuffer.buffer->getResourceSize();
 
                 WRITE_RESOURCE_TO_DESCRIPTORS_SET(viewDataDescWrite);
-                viewDataDescWrite.dstSet = descSetInfo.descSet;
-                viewDataDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
-                viewDataDescWrite.dstBinding = foundItr->second;
+                viewDataDescWrite.dstSet = staticMeshDescs[setIdx];
+                viewDataDescWrite.descriptorType = VkDescriptorType(paramDescription->bufferEntryPtr->data.type);
+                viewDataDescWrite.dstBinding = paramDescription->bufferEntryPtr->data.binding;
                 writingBufferDescriptors.push_back({ viewDataDescWrite, bufferInfoIdx });
             }
-            foundItr = descSetInfo.descBindingNames.find("instanceData");
-            if (foundItr != descSetInfo.descBindingNames.end())
+
+            paramDescription = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("instanceData"));
+            if (paramDescription != nullptr)
             {
                 uint32 bufferInfoIdx = uint32(bufferInfo.size());
                 bufferInfo.push_back({});
@@ -508,80 +284,59 @@ void ExperimentalEngine::createShaderResDescriptors()
                 bufferInfo[bufferInfoIdx].range = instanceBuffer.buffer->getResourceSize();
 
                 WRITE_RESOURCE_TO_DESCRIPTORS_SET(instanceDataDescWrite);
-                instanceDataDescWrite.dstSet = descSetInfo.descSet;
-                instanceDataDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
-                instanceDataDescWrite.dstBinding = foundItr->second;
+                instanceDataDescWrite.dstSet = staticMeshDescs[setIdx];
+                instanceDataDescWrite.descriptorType = VkDescriptorType(paramDescription->bufferEntryPtr->data.type);
+                instanceDataDescWrite.dstBinding = paramDescription->bufferEntryPtr->data.binding;
                 writingBufferDescriptors.push_back({ instanceDataDescWrite, bufferInfoIdx });
-            }
-
-            for (const std::pair<const String, ImageData*>& texturePairs : smTextureBinding)
-            {
-                foundItr = descSetInfo.descBindingNames.find(texturePairs.first);
-                if (foundItr != descSetInfo.descBindingNames.end())
-                {
-                    uint32 imageInfoIdx = uint32(imageInfo.size());
-                    imageInfo.push_back({});
-                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = texturePairs.second->imageView;
-                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
-
-                    WRITE_RESOURCE_TO_DESCRIPTORS_SET(textureDescWrite);
-                    textureDescWrite.dstSet = descSetInfo.descSet;
-                    textureDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
-                    textureDescWrite.dstBinding = foundItr->second;
-                    textureDescWrite.pImageInfo = &imageInfo[imageInfoIdx];
-                    writingImageDescriptors.push_back({ textureDescWrite, imageInfoIdx });
-                }
             }
         }
     }
     // Draw quad descriptors
     {
-        const FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
-        for (uint32 swapchainIdx = 0; swapchainIdx < swapchainCount; ++swapchainIdx)
+        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawQuadPipelineContext.getPipeline());
+        const VulkanShaderParametersLayout* paramsLayout = static_cast<const VulkanShaderParametersLayout*>(smPipeline->getParamLayoutAtSet(0));
+        uint32 paramSetIdx;
+        const ShaderTextureDescriptorType* textureDescription = static_cast<const ShaderTextureDescriptorType*>(paramsLayout->parameterDescription(paramSetIdx, "quadTexture"));
+
+        if (textureDescription != nullptr)
         {
-            for (uint32 i = 0; i < drawQuadTextureDescs[swapchainIdx].size(); ++i)
+            FramebufferFormat multibufferFormat(ERenderPassFormat::Multibuffers);
+            for (uint32 swapchainIdx = 0; swapchainIdx < swapchainCount; ++swapchainIdx)
             {
-                const DescSetInfo& descSetInfo = drawQuadTextureDescs[swapchainIdx][i];
+                WRITE_RESOURCE_TO_DESCRIPTORS_SET(quadTextureDescWrite);
+                quadTextureDescWrite.descriptorType = VkDescriptorType(textureDescription->textureEntryPtr->data.type);
+                quadTextureDescWrite.dstBinding = textureDescription->textureEntryPtr->data.binding;
 
-                auto foundItr = descSetInfo.descBindingNames.find("quadTexture");
-                if (foundItr != descSetInfo.descBindingNames.end())
-                {
-                    WRITE_RESOURCE_TO_DESCRIPTORS_SET(quadTextureDescWrite);
-                    quadTextureDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
-                    quadTextureDescWrite.dstBinding = foundItr->second;
+                Framebuffer* fb = GBuffers::getFramebuffer(multibufferFormat, swapchainIdx);
+                fatalAssert(fb != nullptr, "Framebuffer is invalid");
 
-                    Framebuffer* fb = GBuffers::getFramebuffer(unlitFbFormat, swapchainIdx);
-                    fatalAssert(fb != nullptr, "Framebuffer is invalid");
+                uint32 imageInfoIdx = uint32(imageInfo.size());
+                imageInfo.push_back({});
+                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Diffuse is at 0
+                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
-                    uint32 imageInfoIdx = uint32(imageInfo.size());
-                    imageInfo.push_back({});
-                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Diffuse is at 0
-                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+                quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][paramSetIdx];
+                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
 
-                    quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][i].descSet;
-                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+                imageInfoIdx = uint32(imageInfo.size());
+                imageInfo.push_back({});
+                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[3])->getImageView({});// Normal texture is at 1
+                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
-                    imageInfoIdx = uint32(imageInfo.size());
-                    imageInfo.push_back({});
-                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[3])->getImageView({});// Normal texture is at 1
-                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+                quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][paramSetIdx];
+                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
 
-                    quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][i].descSet;
-                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+                imageInfoIdx = uint32(imageInfo.size());
+                imageInfo.push_back({});
+                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[5])->getImageView({
+                    {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
+                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
-                    imageInfoIdx = uint32(imageInfo.size());
-                    imageInfo.push_back({});
-                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[5])->getImageView({ 
-                        {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
-                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
-
-                    quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][i].descSet;
-                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
-                }
+                quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][paramSetIdx];
+                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
             }
         }
     }
@@ -610,51 +365,50 @@ void ExperimentalEngine::writeUnlitBuffToQuadDrawDescs()
 
     // Draw quad descriptors
     {
-        for (uint32 swapchainIdx = 0; swapchainIdx < swapchainCount; ++swapchainIdx)
+        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawQuadPipelineContext.getPipeline());
+        const VulkanShaderParametersLayout* paramsLayout = static_cast<const VulkanShaderParametersLayout*>(smPipeline->getParamLayoutAtSet(0));
+        uint32 paramSetIdx;
+        const ShaderTextureDescriptorType* textureDescription = static_cast<const ShaderTextureDescriptorType*>(paramsLayout->parameterDescription(paramSetIdx, "quadTexture"));
+
+        if (textureDescription != nullptr)
         {
-            for (uint32 i = 0; i < drawQuadTextureDescs[swapchainIdx].size(); ++i)
+            FramebufferFormat multibufferFormat(ERenderPassFormat::Multibuffers);
+            for (uint32 swapchainIdx = 0; swapchainIdx < swapchainCount; ++swapchainIdx)
             {
-                const DescSetInfo& descSetInfo = drawQuadTextureDescs[swapchainIdx][i];
+                WRITE_RESOURCE_TO_DESCRIPTORS_SET(quadTextureDescWrite);
+                quadTextureDescWrite.descriptorType = VkDescriptorType(textureDescription->textureEntryPtr->data.type);
+                quadTextureDescWrite.dstBinding = textureDescription->textureEntryPtr->data.binding;
 
-                auto foundItr = descSetInfo.descBindingNames.find("quadTexture");
-                if (foundItr != descSetInfo.descBindingNames.end())
-                {
-                    WRITE_RESOURCE_TO_DESCRIPTORS_SET(quadTextureDescWrite);
-                    quadTextureDescWrite.descriptorType = descSetInfo.descLayoutInfo[foundItr->second].type;
-                    quadTextureDescWrite.dstBinding = foundItr->second;
+                Framebuffer* fb = GBuffers::getFramebuffer(multibufferFormat, swapchainIdx);
+                fatalAssert(fb != nullptr, "Framebuffer is invalid");
 
-                    FramebufferFormat unlitFbFormat = { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } };
-                    Framebuffer* fb = GBuffers::getFramebuffer(unlitFbFormat, swapchainIdx);
-                    fatalAssert(fb != nullptr, "Framebuffer is invalid");
+                uint32 imageInfoIdx = uint32(imageInfo.size());
+                imageInfo.push_back({});
+                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Diffuse is at 0
+                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
-                    uint32 imageInfoIdx = uint32(imageInfo.size());
-                    imageInfo.push_back({});
-                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Diffuse is at 0
-                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+                quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][paramSetIdx];
+                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
 
-                    quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][i].descSet;
-                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+                imageInfoIdx = uint32(imageInfo.size());
+                imageInfo.push_back({});
+                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[3])->getImageView({});// Normal texture is at 1
+                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
-                    imageInfoIdx = uint32(imageInfo.size());
-                    imageInfo.push_back({});
-                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[3])->getImageView({});// Normal texture is at 1
-                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
+                quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][paramSetIdx];
+                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
 
-                    quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][i].descSet;
-                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
+                imageInfoIdx = uint32(imageInfo.size());
+                imageInfo.push_back({});
+                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[5])->getImageView({
+                    {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
+                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
 
-                    imageInfoIdx = uint32(imageInfo.size());
-                    imageInfo.push_back({});
-                    imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[5])->getImageView({
-                        {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
-                    imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
-
-                    quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][i].descSet;
-                    writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
-                }
+                quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][paramSetIdx];
+                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
             }
         }
     }
@@ -673,21 +427,17 @@ void ExperimentalEngine::destroyShaderResDescriptors()
 {
     VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderApi()->getGraphicsInstance());
 
-    for (DescSetInfo& descInfo : staticMeshDescs)
+    for (VkDescriptorSet& descSet : staticMeshDescs)
     {
-        descsSetAllocator->releaseDescriptorsSet(descInfo.descSet);
-        descInfo.descLayoutInfo.clear();
-        vDevice->vkDestroyDescriptorSetLayout(device, descInfo.descLayout, nullptr);
+        descsSetAllocator->releaseDescriptorsSet(descSet);
     }
     staticMeshDescs.clear();
 
-    vDevice->vkDestroyDescriptorSetLayout(device, drawQuadTextureDescs[0][0].descLayout, nullptr);
-    for (std::vector<DescSetInfo>& descInfos : drawQuadTextureDescs)
+    for (std::vector<VkDescriptorSet>& descSets : drawQuadTextureDescs)
     {
-        for(DescSetInfo& descInfo : descInfos)
+        for(VkDescriptorSet& descSet : descSets)
         {
-            descsSetAllocator->releaseDescriptorsSet(descInfo.descSet);
-            descInfo.descLayoutInfo.clear();
+            descsSetAllocator->releaseDescriptorsSet(descSet);
         }
     }
     drawQuadTextureDescs.clear();
@@ -735,275 +485,37 @@ void ExperimentalEngine::destroyFrameResources()
     vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Graphics].resetableCommandPool, (uint32)cmdBuffers.size(), cmdBuffers.data());
 }
 
-void ExperimentalEngine::createRenderpass()
+void ExperimentalEngine::getPipelineForSubpass()
 {
-    GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
-        ->appWindowManager.getMainWindow());
-    // Static mesh unlit render pass
-    {
-        smAttachmentsClearColors.resize(7);
-        std::array<VkAttachmentReference, 4> attachmentRefs;
-        std::array<VkAttachmentReference, 3> resolveAttachmentRefs;
-        std::array<VkAttachmentDescription, 7> attachmentsDesc;
-        {
-            VkAttachmentDescription diffuseTargetAttachment;
-            diffuseTargetAttachment.flags = 0;
-            diffuseTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::BGRA_U8_Norm)->format);
-            diffuseTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
-            diffuseTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            diffuseTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            diffuseTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            diffuseTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            diffuseTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            diffuseTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentsDesc[0] = diffuseTargetAttachment;
-            smAttachmentsClearColors[0].color = smAttachmentsClearColors[1].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
-            attachmentRefs[0].attachment = 0;
-            attachmentRefs[0].layout = resolveAttachmentRefs[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            diffuseTargetAttachment.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-            diffuseTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            attachmentsDesc[1] = diffuseTargetAttachment;
-            resolveAttachmentRefs[0].attachment = 1;
+    VulkanGlobalRenderingContext* vulkanRenderingContext = static_cast<VulkanGlobalRenderingContext*>(getRenderApi()->getGlobalRenderingContext());
 
-            VkAttachmentDescription normalTargetAttachment;
-            normalTargetAttachment.flags = 0;
-            normalTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::ABGR8_S32_NormPacked)->format);
-            normalTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
-            normalTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            normalTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            normalTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            normalTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            normalTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            normalTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentsDesc[2] = normalTargetAttachment;
-            smAttachmentsClearColors[2].color = smAttachmentsClearColors[3].color = { 0.267f ,0.4f,0.0f,1.0f };// Some good color
-            attachmentRefs[1].attachment = 2;
-            attachmentRefs[1].layout = resolveAttachmentRefs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            normalTargetAttachment.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-            normalTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            attachmentsDesc[3] = normalTargetAttachment;
-            resolveAttachmentRefs[1].attachment = 3;
+    drawSmPipelineContext.forVertexType = EVertexType::StaticMesh;
+    drawSmPipelineContext.materialName = DEFAULT_SHADER_NAME;
+    drawSmPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
+    drawSmPipelineContext.swapchainIdx = 0;
+    vulkanRenderingContext->preparePipelineContext(&drawSmPipelineContext);
+    drawSmRenderPass = vulkanRenderingContext->getRenderPass(drawSmPipelineContext.renderpassFormat, {});
 
-            VkAttachmentDescription depthTargetAttachment;
-            depthTargetAttachment.flags = 0;
-            depthTargetAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::R_SF32)->format);
-            depthTargetAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
-            depthTargetAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            depthTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            depthTargetAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            depthTargetAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            depthTargetAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            depthTargetAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentsDesc[4] = depthTargetAttachment;
-            smAttachmentsClearColors[4].color = smAttachmentsClearColors[5].color = { 0.0f,0.0f,0.0f,0.0f };// Black
-            attachmentRefs[2].attachment = 4;
-            attachmentRefs[2].layout = resolveAttachmentRefs[2].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            depthTargetAttachment.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-            depthTargetAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            attachmentsDesc[5] = depthTargetAttachment;
-            resolveAttachmentRefs[2].attachment = 5;
+    RenderPassAdditionalProps renderPassAdditionalProps;
+    renderPassAdditionalProps.bUsedAsPresentSource = true;
 
-            VkAttachmentDescription realDepthAttachment;
-            realDepthAttachment.flags = 0;
-            realDepthAttachment.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::D_SF32)->format);
-            realDepthAttachment.samples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
-            realDepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            realDepthAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-            realDepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            realDepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            realDepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            realDepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachmentsDesc[6] = realDepthAttachment;
-            smAttachmentsClearColors[6].color = { 0.0f,0.0f,0.0f,0.0f };// Black
-            attachmentRefs[3].attachment = 6;
-            attachmentRefs[3].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        }
-
-        VkSubpassDescription subpass;
-        subpass.flags = 0;
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.pDepthStencilAttachment = &attachmentRefs[resolveAttachmentRefs.size()];
-        subpass.colorAttachmentCount = uint32(resolveAttachmentRefs.size());
-        subpass.pColorAttachments = attachmentRefs.data();
-        subpass.pResolveAttachments = resolveAttachmentRefs.data();
-        subpass.inputAttachmentCount = 0;
-        subpass.pInputAttachments = nullptr;
-        subpass.preserveAttachmentCount = 0;
-        subpass.pPreserveAttachments = nullptr;
-
-        RENDERPASS_CREATE_INFO(renderPassCreateInfo);
-        renderPassCreateInfo.attachmentCount = (uint32)attachmentsDesc.size();
-        renderPassCreateInfo.pAttachments = attachmentsDesc.data();
-        renderPassCreateInfo.subpassCount = 1;
-        renderPassCreateInfo.pSubpasses = &subpass;
-        renderPassCreateInfo.dependencyCount = 0;
-        renderPassCreateInfo.pDependencies = nullptr;
-
-        if (vDevice->vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &smRenderPass) != VK_SUCCESS)
-        {
-            Logger::error("ExperimentalEngine", "%s() : Failed creating render pass", __func__);
-            smRenderPass = nullptr;
-            return;
-        }
-    }
-
-    // Draw quad render pass
-    {
-        VkAttachmentDescription quadTarget;
-        quadTarget.flags = 0;
-        quadTarget.format = VkFormat(EPixelDataFormat::getFormatInfo(windowCanvas->windowCanvasFormat())->format);
-        quadTarget.samples = VK_SAMPLE_COUNT_1_BIT;
-        quadTarget.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        quadTarget.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        quadTarget.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        quadTarget.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        quadTarget.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        quadTarget.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-        swapchainClearColor.color = { 0.0f,0.0f,0.0f,0.0f };// Black
-
-        VkAttachmentReference quadAttachRef;
-        quadAttachRef.attachment = 0;
-        quadAttachRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkSubpassDescription subpass;
-        subpass.flags = 0;
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.pDepthStencilAttachment = nullptr;
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &quadAttachRef;
-        subpass.pResolveAttachments = nullptr;
-        subpass.inputAttachmentCount = 0;
-        subpass.pInputAttachments = nullptr;
-        subpass.preserveAttachmentCount = 0;
-        subpass.pPreserveAttachments = nullptr;
-
-
-        RENDERPASS_CREATE_INFO(renderPassCreateInfo);
-        renderPassCreateInfo.attachmentCount = 1;
-        renderPassCreateInfo.pAttachments = &quadTarget;
-        renderPassCreateInfo.dependencyCount = 0;
-        renderPassCreateInfo.pDependencies = nullptr;
-        renderPassCreateInfo.subpassCount = 1;
-        renderPassCreateInfo.pSubpasses = &subpass;
-
-        if (vDevice->vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &swapchainRenderPass) != VK_SUCCESS)
-        {
-            Logger::error("ExperimentalEngine", "%s() : Failed creating render pass", __func__);
-            swapchainRenderPass = nullptr;
-            return;
-        }
-    }
-
-    createFrameResources();
+    drawQuadPipelineContext.bUseSwapchainFb = true;
+    drawQuadPipelineContext.materialName = "DrawQuadFromTexture";
+    drawQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    drawQuadPipelineContext.swapchainIdx = 0;
+    vulkanRenderingContext->preparePipelineContext(&drawQuadPipelineContext);
+    drawQuadRenderPass = vulkanRenderingContext->getRenderPass(
+        static_cast<const GraphicsPipelineBase*>(drawQuadPipelineContext.getPipeline())->getRenderpassProperties(), renderPassAdditionalProps);
 }
 
-void ExperimentalEngine::destroyRenderpass()
+void ExperimentalEngine::createPipelineResources()
 {
-    destroyFrameResources();
-    vDevice->vkDestroyRenderPass(device, smRenderPass, nullptr);
-    smRenderPass = nullptr;
-
-    vDevice->vkDestroyRenderPass(device, swapchainRenderPass, nullptr);
-    swapchainRenderPass = nullptr;
-}
-
-void ExperimentalEngine::createPipelineCache()
-{
-    {
-        String cacheFilePath;
-        cacheFilePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(cacheFilePath), "Cache", "gPipeline.cache");
-        pipelineCacheFile = PlatformFile(cacheFilePath);
-    }
-    pipelineCacheFile.setFileFlags(EFileFlags::Read | EFileFlags::Write | EFileFlags::OpenAlways);
-    pipelineCacheFile.setSharingMode(EFileSharing::NoSharing);
-    pipelineCacheFile.openOrCreate();
-
-    std::vector<uint8> cacheData;
-    pipelineCacheFile.read(cacheData);
-
-    PIPELINE_CACHE_CREATE_INFO(pipelineCacheCreateInfo);
-    pipelineCacheCreateInfo.initialDataSize = static_cast<uint32>(cacheData.size());
-    pipelineCacheCreateInfo.pInitialData = nullptr;
-    if (cacheData.size() > 0)
-    {
-        pipelineCacheCreateInfo.pInitialData = cacheData.data();
-    }
-    else
-    {
-        Logger::debug("ExperimentalEngine", "%s() : Cache for pipeline cache creation is not available", __func__);
-    }
-
-    if (vDevice->vkCreatePipelineCache(device,&pipelineCacheCreateInfo,nullptr,&drawSmPipeline.cache) != VK_SUCCESS)
-    {
-        Logger::warn("ExperimentalEngine", "%s() : Staticmesh drawing pipeline cache creation failed", __func__);
-        drawSmPipeline.cache = nullptr;
-    }
-    else
-    {
-        graphicsDbg->markObject((uint64)(drawSmPipeline.cache), "ExperimentalTrianglePipelineCache", VK_OBJECT_TYPE_PIPELINE_CACHE);
-    }
-    if (vDevice->vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &drawQuadPipeline.cache) != VK_SUCCESS)
-    {
-        Logger::warn("ExperimentalEngine", "%s() : Quad drawing pipeline cache creation failed", __func__);
-        drawQuadPipeline.cache = nullptr;
-    }
-    else
-    {
-        graphicsDbg->markObject((uint64)(drawSmPipeline.cache), "DrawQuadPipelineCache", VK_OBJECT_TYPE_PIPELINE_CACHE);
-    }
-
-    pipelineCacheFile.closeFile();
-}
-
-void ExperimentalEngine::writeAndDestroyPipelineCache()
-{
-    std::vector<VkPipelineCache> pipelineCaches;
-    if (drawSmPipeline.cache != nullptr)
-    {
-        pipelineCaches.push_back(drawSmPipeline.cache);
-    }
-    if (drawQuadPipeline.cache != nullptr)
-    {
-        pipelineCaches.push_back(drawQuadPipeline.cache);
-    }
-
-    VkPipelineCache mergedCache;
-    PIPELINE_CACHE_CREATE_INFO(pipelineCacheCreateInfo);
-    pipelineCacheCreateInfo.initialDataSize = 0;
-    pipelineCacheCreateInfo.pInitialData = nullptr;
-    if (vDevice->vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &mergedCache) == VK_SUCCESS)
-    {
-        if(vDevice->vkMergePipelineCaches(device,mergedCache,static_cast<uint32>(pipelineCaches.size()),pipelineCaches.data()) == VK_SUCCESS)
-        {
-            uint64 cacheDataSize;
-            vDevice->vkGetPipelineCacheData(device, mergedCache, &cacheDataSize, nullptr);
-            if (cacheDataSize > 0)
-            {
-                std::vector<uint8> cacheData(cacheDataSize);
-                vDevice->vkGetPipelineCacheData(device, mergedCache, &cacheDataSize, cacheData.data());
-
-                pipelineCacheFile.setCreationAction(EFileFlags::ClearExisting);
-                pipelineCacheFile.openFile();
-
-                pipelineCacheFile.write(cacheData);
-                pipelineCacheFile.closeFile();
-            }
-        }
-        pipelineCaches.push_back(mergedCache);
-    }
-
-    for (VkPipelineCache cache : pipelineCaches)
-    {
-        vDevice->vkDestroyPipelineCache(device, cache, nullptr);
-    }
-}
-
-void ExperimentalEngine::createPipelineForSubpass()
-{
-    createPipelineCache();
-    createSmPipeline();
-
+    VkClearValue baseClearValue;
+    baseClearValue.color = { 0.0f, 0.0f, 0.0f, 0.0f };
+    baseClearValue.depthStencil.depth = 0;
+    baseClearValue.depthStencil.stencil = 0;
+    smAttachmentsClearColors.resize(drawSmPipelineContext.getFb()->textures.size(), baseClearValue);
+    swapchainClearColor = baseClearValue;
 
     ENQUEUE_COMMAND(QuadVerticesInit,LAMBDA_BODY
         (
@@ -1022,301 +534,22 @@ void ExperimentalEngine::createPipelineForSubpass()
         )
         , this);
 
-    createQuadDrawPipeline();
+    // Shader pipeline's buffers and image access
+    createShaderResDescriptors();
 }
 
-void ExperimentalEngine::destroySubpassPipelines()
+void ExperimentalEngine::destroyPipelineResources()
 {
-    writeAndDestroyPipelineCache();
-
-    vDevice->vkDestroyPipelineLayout(device, drawSmPipeline.layout, nullptr);
-    vDevice->vkDestroyPipeline(device, drawSmPipeline.pipeline, nullptr);
-    vDevice->vkDestroyPipelineLayout(device, drawQuadPipeline.layout, nullptr);
-    vDevice->vkDestroyPipeline(device, drawQuadPipeline.pipeline, nullptr);
-
-    ENQUEUE_COMMAND(QuadVerticesRelease,
-        {
+    ENQUEUE_COMMAND(QuadVerticesRelease,LAMBDA_BODY
+        (
             quadVertexBuffer->release();
             quadIndexBuffer->release();
             delete quadVertexBuffer;
             quadVertexBuffer = nullptr;
             delete quadIndexBuffer;
             quadIndexBuffer = nullptr;
-        }
-        , this);
-}
-
-void ExperimentalEngine::createSmPipeline()
-{
-    auto* shaderResource = static_cast<ShaderResource*>(StaticMeshUnlit::staticType()->getDefault());
-    const ShaderReflected* shaderReflected = shaderResource->getReflection();
-
-    GRAPHICS_PIPELINE_CREATE_INFO(graphicsPipelineCreateInfo);
-    graphicsPipelineCreateInfo.pTessellationState = nullptr;// No tessellation right now
-
-    PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO(depthStencilState);
-    depthStencilState.depthWriteEnable = VK_TRUE; 
-    depthStencilState.depthTestEnable = VK_TRUE;
-    depthStencilState.depthBoundsTestEnable = VK_FALSE;
-    depthStencilState.stencilTestEnable = VK_FALSE;
-    depthStencilState.depthCompareOp = VK_COMPARE_OP_GREATER;
-    depthStencilState.front = depthStencilState.back = { VK_STENCIL_OP_KEEP,VK_STENCIL_OP_KEEP,VK_STENCIL_OP_KEEP,VK_COMPARE_OP_NEVER,0,0,0 };
-
-    graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilState;
-
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    shaderStages.reserve(shaderResource->getShaders().size());
-    for (const std::pair<const EShaderStage::Type, SharedPtr<ShaderCodeResource>>& shader : shaderResource->getShaders())
-    {
-        const EShaderStage::ShaderStageInfo* stageInfo = EShaderStage::getShaderStageInfo(shader.second->shaderStage());
-        PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
-        shaderStageCreateInfo.stage = (VkShaderStageFlagBits)stageInfo->shaderStage;
-        shaderStageCreateInfo.pName = shader.second->entryPoint().getChar();
-        shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource*>(shader.second.get())->shaderModule;
-        shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;// Compile time constants
-
-        shaderStages.push_back(shaderStageCreateInfo);
-    }
-    graphicsPipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
-    graphicsPipelineCreateInfo.pStages = shaderStages.data();
-
-    std::vector<VkVertexInputBindingDescription> vertBindings{
-    {
-        0,
-        MeshAsset::getShaderParamInfo<StaticMeshAsset>()->paramStride(),
-        VK_VERTEX_INPUT_RATE_VERTEX
-    }};
-    std::vector<VkVertexInputAttributeDescription> vertAttributes;
-    const ShaderVertexFieldNode* node = &MeshAsset::getShaderParamInfo<StaticMeshAsset>()->startNode;
-    while (node->isValid())
-    {
-        VkVertexInputAttributeDescription vertAttribute;
-        vertAttribute.binding = 0;
-        vertAttribute.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::Type(node->field->format))->format);
-        vertAttribute.location = node->field->location;
-        vertAttribute.offset = node->field->offset;
-        vertAttributes.push_back(vertAttribute);
-
-        node = node->nextNode;
-    }
-
-    PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO(vertexInputCreateInfo);
-    vertexInputCreateInfo.vertexBindingDescriptionCount = uint32(vertBindings.size());
-    vertexInputCreateInfo.pVertexBindingDescriptions = vertBindings.data();
-    vertexInputCreateInfo.vertexAttributeDescriptionCount = uint32(vertAttributes.size());
-    vertexInputCreateInfo.pVertexAttributeDescriptions = vertAttributes.data();
-    graphicsPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
-    
-    PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO(inputAssemCreateInfo);
-    graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemCreateInfo;
-
-    PIPELINE_VIEWPORT_STATE_CREATE_INFO(viewportCreateInfo);
-    VkViewport viewport;
-    viewport.x = 0;
-    viewport.y = 0;
-    viewport.minDepth = 0;
-    viewport.maxDepth = 1;
-    VkRect2D scissor = { {0,0},{ EngineSettings::screenSize.get().x, EngineSettings::screenSize.get().y} };
-    viewport.width = static_cast<float>(scissor.extent.width);
-    viewport.height = static_cast<float>(scissor.extent.height);
-    viewportCreateInfo.viewportCount = 1;
-    viewportCreateInfo.pViewports = &viewport;
-    viewportCreateInfo.scissorCount = 1;
-    viewportCreateInfo.pScissors = &scissor;
-    graphicsPipelineCreateInfo.pViewportState = &viewportCreateInfo;
-
-    PIPELINE_RASTERIZATION_STATE_CREATE_INFO(rasterizationCreateInfo);
-    rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizationCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    graphicsPipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
-
-    PIPELINE_MULTISAMPLE_STATE_CREATE_INFO(multisampleCreateInfo);
-    multisampleCreateInfo.sampleShadingEnable = multisampleCreateInfo.alphaToCoverageEnable = multisampleCreateInfo.alphaToOneEnable = VK_FALSE;
-    multisampleCreateInfo.minSampleShading = 1;
-    multisampleCreateInfo.pSampleMask = nullptr;
-    multisampleCreateInfo.rasterizationSamples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
-    graphicsPipelineCreateInfo.pMultisampleState = &multisampleCreateInfo;
-
-    PIPELINE_COLOR_BLEND_STATE_CREATE_INFO(colorBlendOpCreateInfo);
-    memcpy(colorBlendOpCreateInfo.blendConstants, &LinearColorConst::BLACK.getColorValue(), sizeof(glm::vec4));
-    VkPipelineColorBlendAttachmentState colorAttachmentBlendState{// Blend state for color attachment in subpass in which this pipeline is used.
-        VK_TRUE,
-        VK_BLEND_FACTOR_ONE,
-        VK_BLEND_FACTOR_ZERO,
-        VK_BLEND_OP_ADD,
-        VK_BLEND_FACTOR_ONE,
-        VK_BLEND_FACTOR_ZERO,
-        VK_BLEND_OP_ADD,
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
-    };
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlends;
-    colorBlends.insert(colorBlends.end(), 3, colorAttachmentBlendState);
-
-    colorBlendOpCreateInfo.attachmentCount = uint32(colorBlends.size());
-    colorBlendOpCreateInfo.pAttachments = colorBlends.data();
-    graphicsPipelineCreateInfo.pColorBlendState = &colorBlendOpCreateInfo;
-
-    PIPELINE_DYNAMIC_STATE_CREATE_INFO(dynamicStateCreateInfo);
-    std::vector<VkDynamicState> dynamicStates{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    dynamicStateCreateInfo.dynamicStateCount = static_cast<VkDynamicState>(dynamicStates.size());
-    dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
-    graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
-
-
-    std::vector<VkDescriptorSetLayout> descSetsLayouts;
-    descSetsLayouts.reserve(staticMeshDescs.size());
-    for (const DescSetInfo& smDescSetInfo : staticMeshDescs) { descSetsLayouts.push_back(smDescSetInfo.descLayout); }
-    PIPELINE_LAYOUT_CREATE_INFO(pipelineLayoutCreateInfo);
-    // TODO(Jeslas)(Less priority) : change this to get from reflection(anyway in real pipeline creation this gets changed. 
-    VkPushConstantRange pushConstRange{ VK_SHADER_STAGE_FRAGMENT_BIT, 0 , sizeof(float)};
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-    pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstRange;
-    pipelineLayoutCreateInfo.setLayoutCount = uint32(descSetsLayouts.size());
-    pipelineLayoutCreateInfo.pSetLayouts = descSetsLayouts.data();
-    fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &drawSmPipeline.layout)
-        == VK_SUCCESS, "Failed creating draw staticmesh pipeline layout");
-
-    graphicsPipelineCreateInfo.layout = drawSmPipeline.layout;
-    graphicsPipelineCreateInfo.renderPass = smRenderPass;
-    graphicsPipelineCreateInfo.subpass = 0;
-
-    fatalAssert(vDevice->vkCreateGraphicsPipelines(device, drawSmPipeline.cache,1,&graphicsPipelineCreateInfo, nullptr, &drawSmPipeline.pipeline)
-        == VK_SUCCESS, "Failure in creating draw staticmesh pipelines");
-    graphicsDbg->markObject((uint64)(drawSmPipeline.pipeline), "StaticMeshPipeline", VK_OBJECT_TYPE_PIPELINE);
-}
-
-void ExperimentalEngine::createQuadDrawPipeline()
-{
-    ShaderResource* shaderResource = static_cast<ShaderResource*>(DrawQuadFromTexture::staticType()->getDefault());
-
-    GRAPHICS_PIPELINE_CREATE_INFO(graphicsPipelineCreateInfo);
-    graphicsPipelineCreateInfo.pTessellationState = nullptr;// No tessellation right now
-    graphicsPipelineCreateInfo.pDepthStencilState = nullptr;// No depth tests right now
-
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    shaderStages.reserve(shaderResource->getShaders().size());
-    for (const std::pair<const EShaderStage::Type, SharedPtr<ShaderCodeResource>>& shader : shaderResource->getShaders())
-    {
-        const EShaderStage::ShaderStageInfo* stageInfo = EShaderStage::getShaderStageInfo(shader.first);
-        if (stageInfo)
-        {
-            PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
-            shaderStageCreateInfo.stage = (VkShaderStageFlagBits)stageInfo->shaderStage;
-            shaderStageCreateInfo.pName = stageInfo->entryPointName.getChar();
-            shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource*>(shader.second.get())->shaderModule;
-            shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;// Compile time constants
-
-            shaderStages.push_back(shaderStageCreateInfo);
-        }
-    }
-    graphicsPipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
-    graphicsPipelineCreateInfo.pStages = shaderStages.data();
-
-    PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO(vertexInputCreateInfo);
-
-    VkVertexInputBindingDescription vertexInputBinding;
-    vertexInputBinding.binding = 0;
-    vertexInputBinding.stride = sizeof(Vector3D);
-    vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    VkVertexInputAttributeDescription vertexInputAttribute;
-    vertexInputAttribute.binding = 0;
-    vertexInputAttribute.location = 0;
-    vertexInputAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexInputAttribute.offset = 0;
-
-    vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-    vertexInputCreateInfo.pVertexBindingDescriptions = &vertexInputBinding;
-    vertexInputCreateInfo.vertexAttributeDescriptionCount = 1;
-    vertexInputCreateInfo.pVertexAttributeDescriptions = &vertexInputAttribute;
-    graphicsPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
-
-    PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO(inputAssemCreateInfo);
-    graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemCreateInfo;
-
-    PIPELINE_VIEWPORT_STATE_CREATE_INFO(viewportCreateInfo);
-    VkViewport viewport;
-    viewport.x = 0;
-    viewport.y = 0;
-    viewport.minDepth = 0;
-    viewport.maxDepth = 1;
-    VkRect2D scissor = { {0,0},{0,0} };
-    getApplicationInstance()->appWindowManager.getMainWindow()->windowSize(scissor.extent.width, scissor.extent.height);
-    viewport.width = static_cast<float>(scissor.extent.width);
-    viewport.height = static_cast<float>(scissor.extent.height);
-    viewportCreateInfo.viewportCount = 1;
-    viewportCreateInfo.pViewports = &viewport;
-    viewportCreateInfo.scissorCount = 1;
-    viewportCreateInfo.pScissors = &scissor;
-    graphicsPipelineCreateInfo.pViewportState = &viewportCreateInfo;
-
-    PIPELINE_RASTERIZATION_STATE_CREATE_INFO(rasterizationCreateInfo);
-    rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizationCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    graphicsPipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
-
-    PIPELINE_MULTISAMPLE_STATE_CREATE_INFO(multisampleCreateInfo);
-    multisampleCreateInfo.sampleShadingEnable = multisampleCreateInfo.alphaToCoverageEnable = multisampleCreateInfo.alphaToOneEnable = VK_FALSE;
-    multisampleCreateInfo.minSampleShading = 1;
-    multisampleCreateInfo.pSampleMask = nullptr;
-    multisampleCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    graphicsPipelineCreateInfo.pMultisampleState = &multisampleCreateInfo;
-
-    PIPELINE_COLOR_BLEND_STATE_CREATE_INFO(colorBlendOpCreateInfo);
-    memcpy(colorBlendOpCreateInfo.blendConstants, &LinearColorConst::BLACK.getColorValue(), sizeof(glm::vec4));
-    VkPipelineColorBlendAttachmentState colorAttachmentBlendState{// Blend state for color attachment in subpass in which this pipeline is used.
-        VK_TRUE,
-        VK_BLEND_FACTOR_SRC_ALPHA,
-        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-        VK_BLEND_OP_ADD,
-        VK_BLEND_FACTOR_ONE,
-        VK_BLEND_FACTOR_ZERO,
-        VK_BLEND_OP_ADD,
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
-    };
-    colorBlendOpCreateInfo.attachmentCount = 1;
-    colorBlendOpCreateInfo.pAttachments = &colorAttachmentBlendState;
-    graphicsPipelineCreateInfo.pColorBlendState = &colorBlendOpCreateInfo;
-
-    PIPELINE_DYNAMIC_STATE_CREATE_INFO(dynamicStateCreateInfo);
-    std::vector<VkDynamicState> dynamicStates{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    dynamicStateCreateInfo.dynamicStateCount = static_cast<VkDynamicState>(dynamicStates.size());
-    dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
-    graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
-
-    std::vector<VkDescriptorSetLayout> descSetsLayouts;
-    descSetsLayouts.reserve(drawQuadTextureDescs[0].size());
-    for (const DescSetInfo& descSetInfo : drawQuadTextureDescs[0]) { descSetsLayouts.push_back(descSetInfo.descLayout); }
-
-    PIPELINE_LAYOUT_CREATE_INFO(pipelineLayoutCreateInfo);
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
-    pipelineLayoutCreateInfo.setLayoutCount = uint32(descSetsLayouts.size());
-    pipelineLayoutCreateInfo.pSetLayouts = descSetsLayouts.data();
-    fatalAssert(vDevice->vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &drawQuadPipeline.layout)
-        == VK_SUCCESS, "Failed creating draw triangle pipeline layout");
-    graphicsPipelineCreateInfo.layout = drawQuadPipeline.layout;
-    graphicsPipelineCreateInfo.renderPass = swapchainRenderPass;
-    graphicsPipelineCreateInfo.subpass = 0;
-
-    fatalAssert(vDevice->vkCreateGraphicsPipelines(device, drawQuadPipeline.cache, 1, &graphicsPipelineCreateInfo, nullptr, &drawQuadPipeline.pipeline)
-        == VK_SUCCESS, "Failure in creating draw quad pipelines");
-    graphicsDbg->markObject((uint64)(drawQuadPipeline.pipeline), "DrawQuadPipeline", VK_OBJECT_TYPE_PIPELINE);
-}
-
-void ExperimentalEngine::createPipelineResources()
-{
-    // Shader pipeline's buffers and image access
-    createShaderResDescriptors();
-    createRenderpass();
-    createPipelineForSubpass();
-}
-
-void ExperimentalEngine::destroyPipelineResources()
-{
-    destroySubpassPipelines();
-    destroyRenderpass();
+        )
+    , this);
     // Shader pipeline's buffers and image access
     destroyShaderResDescriptors();
 }
@@ -1335,8 +568,13 @@ void ExperimentalEngine::writeBuffers()
 
     ENQUEUE_COMMAND(WritingUniforms,
         {
-            cmdList->copyToBuffer<ViewData>(viewBuffer.buffer, 0, &viewData, smUniformBinding["viewData"]);
-            cmdList->copyToBuffer<InstanceData>(instanceBuffer.buffer, 0, &instanceData, smUniformBinding["instanceData"]);
+            const ShaderSetParametersLayout * setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmPipelineContext.getPipeline()->getParamLayoutAtSet(0));
+            const ShaderBufferDescriptorType * bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("viewData"));
+            cmdList->copyToBuffer<ViewData>(viewBuffer.buffer, 0, &viewData, bufferDesc->bufferParamInfo);
+
+            setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmPipelineContext.getPipeline()->getParamLayoutAtSet(1));
+            bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("instanceData"));
+            cmdList->copyToBuffer<InstanceData>(instanceBuffer.buffer, 0, &instanceData, bufferDesc->bufferParamInfo);
         }
     , this, viewData, instanceData);
 }
@@ -1433,11 +671,11 @@ void ExperimentalEngine::startUpRenderInit()
     graphicsDbg = VulkanGraphicsHelper::debugGraphics(getRenderApi()->getGraphicsInstance());
     createPools();
     frameResources.resize(getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount());
-    cmdSubmitFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(), "cmdSubmitFence");
 
-    fillBindings();
+    getPipelineForSubpass();
     createBuffers();
     createImages();
+    createFrameResources();
     createPipelineResources();
 }
 
@@ -1453,12 +691,11 @@ void ExperimentalEngine::renderQuit()
     vDevice->vkDeviceWaitIdle(device);
 
     destroyPipelineResources();
+    destroyFrameResources();
 
     destroyBuffers();
     destroyImages();
 
-    cmdSubmitFence->release();
-    cmdSubmitFence.reset();
     destroyPools();
 }
 
@@ -1479,19 +716,26 @@ void ExperimentalEngine::frameRender()
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
+    drawSmPipelineContext.swapchainIdx = drawQuadPipelineContext.swapchainIdx = index;
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawSmPipelineContext);
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawQuadPipelineContext);
 
-    std::vector<DescSetInfo>* drawQuadDescs = nullptr;
+    GraphicsPipelineQueryParams queryParam;
+    queryParam.cullingMode = ECullingMode::BackFace;
+    queryParam.drawMode = EPolygonDrawMode::Fill;
+
+    std::vector<VkDescriptorSet>* drawQuadDescSets = nullptr;
     switch (frameVisualizeId)
     {
     case 1:
-        drawQuadDescs = &drawQuadNormalDescs[index];
+        drawQuadDescSets = &drawQuadNormalDescs[index];
         break;
     case 2:
-        drawQuadDescs = &drawQuadDepthDescs[index];
+        drawQuadDescSets = &drawQuadDepthDescs[index];
         break;
     case 0:
     default:
-        drawQuadDescs = &drawQuadTextureDescs[index];
+        drawQuadDescSets = &drawQuadTextureDescs[index];
         break;
     }
 
@@ -1507,19 +751,13 @@ void ExperimentalEngine::frameRender()
 
     vDevice->vkBeginCommandBuffer(frameResources[index].perFrameCommands, &cmdBeginInfo);
     {
+        const GraphicsPipeline* tempPipeline = static_cast<const GraphicsPipeline*>(drawSmPipelineContext.getPipeline());
+
         SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ExperimentalEngineFrame);
 
-        std::vector<VkDescriptorSet> descSets;
-        descSets.reserve(staticMeshDescs.size());
-        for (const DescSetInfo& descSetInfo : staticMeshDescs)
-        {
-            descSets.push_back(descSetInfo.descSet);
-        }
-
         RENDERPASS_BEGIN_INFO(renderPassBeginInfo);
-        renderPassBeginInfo.renderPass = smRenderPass;
-        renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(GBuffers::getFramebuffer(
-            { { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 } }, index));
+        renderPassBeginInfo.renderPass = drawSmRenderPass;
+        renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, index));
 
         renderPassBeginInfo.pClearValues = smAttachmentsClearColors.data();
         renderPassBeginInfo.clearValueCount = (uint32)smAttachmentsClearColors.size();
@@ -1532,11 +770,11 @@ void ExperimentalEngine::frameRender()
             vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
             vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
 
-            vDevice->vkCmdPushConstants(frameResources[index].perFrameCommands, drawSmPipeline.layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &useVertexColor);
+            //vDevice->vkCmdPushConstants(frameResources[index].perFrameCommands, tempPipeline->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &useVertexColor);
 
-            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, drawSmPipeline.pipeline);
+            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, tempPipeline->getPipeline(queryParam));
             vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                , drawSmPipeline.layout, 0, uint32(descSets.size()), descSets.data(), 0, nullptr);
+                , tempPipeline->pipelineLayout, 0, uint32(staticMeshDescs.size()), staticMeshDescs.data(), 0, nullptr);
 
             uint64 vertexBufferOffset = 0;
             vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(meshAsset->vertexBuffer)->buffer, &vertexBufferOffset);
@@ -1548,25 +786,19 @@ void ExperimentalEngine::frameRender()
         }
         vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
 
+        tempPipeline = static_cast<const GraphicsPipeline*>(drawQuadPipelineContext.getPipeline());
+
         viewport.x = 0;
         viewport.y = 0;
         viewport.width = float(EngineSettings::surfaceSize.get().x);
         viewport.height = float(EngineSettings::surfaceSize.get().y);
         scissor = { {0,0},{EngineSettings::surfaceSize.get().x,EngineSettings::surfaceSize.get().y} };
 
-        // Copying to swapchain
-        descSets.clear();
-        descSets.reserve(drawQuadDescs->size());
-        for (const DescSetInfo& descSetInfo : *drawQuadDescs)
-        {
-            descSets.push_back(descSetInfo.descSet);
-        }
-
         renderPassBeginInfo.clearValueCount = 1;
         renderPassBeginInfo.pClearValues = &swapchainClearColor;
         renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(GBuffers::getSwapchainFramebuffer(index));
         renderPassBeginInfo.renderArea = scissor;
-        renderPassBeginInfo.renderPass = swapchainRenderPass;
+        renderPassBeginInfo.renderPass = drawQuadRenderPass;
 
         vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
         {
@@ -1575,9 +807,9 @@ void ExperimentalEngine::frameRender()
             vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
             vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
 
-            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, drawQuadPipeline.pipeline);
+            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, tempPipeline->getPipeline(queryParam));
             vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                , drawQuadPipeline.layout, 0, uint32(descSets.size()), descSets.data(), 0, nullptr);
+                , tempPipeline->pipelineLayout, 0, uint32(drawQuadDescSets->size()), drawQuadDescSets->data(), 0, nullptr);
 
             uint64 vertexBufferOffset = 0;
             vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);

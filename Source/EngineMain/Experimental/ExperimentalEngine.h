@@ -8,6 +8,7 @@
 #include "../Core/Platform/LFS/PlatformLFS.h"
 #include "../Core/Types/Transform3D.h"
 #include "../Core/Types/Camera/Camera.h"
+#include "../RenderInterface/Rendering/RenderingContexts.h"
 
 #include <map>
 #include <vulkan_core.h>
@@ -32,22 +33,6 @@ struct ImageData
     VkImageView imageView = nullptr;
 };
 
-
-struct BasicPipeline
-{
-    VkPipeline pipeline;
-    VkPipelineCache cache;
-    VkPipelineLayout layout;
-};
-
-struct DescSetInfo
-{
-    std::map<String, uint32> descBindingNames;
-    std::vector<VkDescriptorPoolSize> descLayoutInfo;
-    VkDescriptorSetLayout descLayout;
-    VkDescriptorSet descSet;
-};
-
 struct FrameResource
 {
     std::vector<SharedPtr<GraphicsSemaphore>> usageWaitSemaphore;
@@ -63,7 +48,6 @@ class ExperimentalEngine : public GameEngine
     const class VulkanDebugGraphics* graphicsDbg;
 
     std::map<EQueueFunction, QueueCommandPool> pools;
-    SharedPtr<GraphicsFence> cmdSubmitFence;
     void createPools();
     void destroyPools();
 
@@ -74,51 +58,39 @@ class ExperimentalEngine : public GameEngine
     void destroyBuffers();
 
     ImageData texture;
-    ImageData normalTexture;
     SharedPtr<class SamplerInterface> commonSampler = nullptr;
     void createImages();
     void destroyImages();
 
     // Test shader pipeline resources
     // Pipeline specific stuffs
-    std::map<String, ImageData*> smTextureBinding;
-    std::map<String, ShaderBufferParamInfo*> smUniformBinding;
-    std::vector<DescSetInfo> staticMeshDescs;
+    std::vector<VkDescriptorSet> staticMeshDescs;
 
-    std::vector<std::vector<DescSetInfo>> drawQuadTextureDescs;
-    std::vector<std::vector<DescSetInfo>> drawQuadNormalDescs;
-    std::vector<std::vector<DescSetInfo>> drawQuadDepthDescs;
-    void fillBindings();
+    std::vector<std::vector<VkDescriptorSet>> drawQuadTextureDescs;
+    std::vector<std::vector<VkDescriptorSet>> drawQuadNormalDescs;
+    std::vector<std::vector<VkDescriptorSet>> drawQuadDepthDescs;
 
     void createShaderResDescriptors();
     void writeUnlitBuffToQuadDrawDescs();
     void destroyShaderResDescriptors();
 
-    VkRenderPass smRenderPass;
     std::vector<VkClearValue> smAttachmentsClearColors;
 
-    VkRenderPass swapchainRenderPass;
     VkClearValue swapchainClearColor;
     void createFrameResources();
     void destroyFrameResources();
-    void createRenderpass();
-    void destroyRenderpass();
 
-    BasicPipeline drawSmPipeline;
+    VkRenderPass drawSmRenderPass;
+    LocalPipelineContext drawSmPipelineContext;
 
     class BufferResource* quadVertexBuffer = nullptr;
     class BufferResource* quadIndexBuffer = nullptr;
-    BasicPipeline drawQuadPipeline;
-    PlatformFile pipelineCacheFile;
-    void createPipelineCache();
-    void writeAndDestroyPipelineCache();
-    void createPipelineForSubpass();
-    void destroySubpassPipelines();
-    void createSmPipeline();
-    void createQuadDrawPipeline();
+    VkRenderPass drawQuadRenderPass;
+    LocalPipelineContext drawQuadPipelineContext;
+     
+    void getPipelineForSubpass();
 
     std::vector<FrameResource> frameResources;
-
     void createPipelineResources();
     void destroyPipelineResources();
 
