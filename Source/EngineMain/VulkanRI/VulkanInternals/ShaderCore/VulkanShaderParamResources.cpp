@@ -6,7 +6,6 @@
 #include "../../VulkanGraphicsHelper.h"
 #include "../Debugging.h"
 #include "ShaderReflected.h"
-#include "../../../RenderInterface/Resources/ShaderParameterResources.h"
 #include "../../../RenderApi/Scene/RenderScene.h"
 #include "../../../RenderInterface/Shaders/Base/DrawMeshShader.h"
 
@@ -169,7 +168,7 @@ void VulkanShaderSetParamsLayout::init()
         if (descriptorsSet.set == shaderSetID)
         {
             // Since bindings are sorted ascending
-            uint32 maxBinding = descriptorsSet.usedBindings.back();
+            uint32 maxBinding = descriptorsSet.usedBindings.back() + 1;
             poolAllocation.resize(maxBinding);
             layoutBindings.resize(maxBinding);
             fillDescriptorsSet(poolAllocation, layoutBindings, descriptorsSet);
@@ -193,7 +192,14 @@ void VulkanShaderSetParamsLayout::init()
         }
     }
 
-    reinitResources();
+    //reinitResources();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+
+    DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
+    descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
+    descLayoutCreateInfo.pBindings = layoutBindings.data();
+    descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
+    VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(this);
 }
 
 void VulkanShaderSetParamsLayout::release()
@@ -205,20 +211,6 @@ void VulkanShaderSetParamsLayout::release()
         descriptorLayout = nullptr;
     }
     BaseType::release();
-}
-
-void VulkanShaderSetParamsLayout::reinitResources()
-{
-    release();
-    BaseType::reinitResources();
-
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
-
-    DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
-    descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
-    descLayoutCreateInfo.pBindings = layoutBindings.data();
-    descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
-    VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(this);
 }
 
 String VulkanShaderSetParamsLayout::getResourceName() const
@@ -333,7 +325,7 @@ void VulkanShaderParametersLayout::init()
         SetParametersLayoutInfo& descSetLayoutInfo = setToLayoutInfo[descriptorsSet.set];
 
         // Since bindings are sorted ascending
-        uint32 maxBinding = descriptorsSet.usedBindings.back();
+        uint32 maxBinding = descriptorsSet.usedBindings.back() + 1;
         descSetLayoutInfo.poolAllocation.resize(maxBinding);
         descSetLayoutInfo.layoutBindings.resize(maxBinding);
         fillDescriptorsSet(descSetLayoutInfo.poolAllocation, descSetLayoutInfo.layoutBindings, descriptorsSet);
@@ -356,7 +348,18 @@ void VulkanShaderParametersLayout::init()
         }
     }
 
-    reinitResources();
+    //reinitResources();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    for (std::pair<const uint32, SetParametersLayoutInfo>& setParamsLayout : setToLayoutInfo)
+    {
+        DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
+        descLayoutCreateInfo.bindingCount = uint32(setParamsLayout.second.layoutBindings.size());
+        descLayoutCreateInfo.pBindings = setParamsLayout.second.layoutBindings.data();
+        setParamsLayout.second.descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
+
+        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(setParamsLayout.second.descriptorLayout)
+            , getResourceName() + std::to_string(setParamsLayout.first), getObjectType());
+    }
 }
 
 void VulkanShaderParametersLayout::release()
@@ -371,24 +374,6 @@ void VulkanShaderParametersLayout::release()
         }
     }
     BaseType::release();
-}
-
-void VulkanShaderParametersLayout::reinitResources()
-{
-    release();
-    BaseType::reinitResources();
-
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
-    for (std::pair<const uint32, SetParametersLayoutInfo>& setParamsLayout : setToLayoutInfo)
-    {
-        DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
-        descLayoutCreateInfo.bindingCount = uint32(setParamsLayout.second.layoutBindings.size());
-        descLayoutCreateInfo.pBindings = setParamsLayout.second.layoutBindings.data();
-        setParamsLayout.second.descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
-
-        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(setParamsLayout.second.descriptorLayout)
-            , getResourceName() + std::to_string(setParamsLayout.first), getObjectType());
-    }
 }
 
 String VulkanShaderParametersLayout::getResourceName() const

@@ -20,7 +20,12 @@ class VulkanRenderTargetResource;
 class VulkanCubeImageResource;
 class VulkanImageResource;
 
-namespace GraphicsTypes {
+class VulkanShaderResource;
+class VulkanGraphicsPipeline;
+class VulkanGlobalRenderingContext;
+
+namespace GraphicsTypes 
+{
     typedef VulkanGraphicsInstance GraphicInstance;
     typedef VulkanWindowCanvas WindowCanvas;
     
@@ -40,9 +45,10 @@ namespace GraphicsTypes {
     template <typename Type>
     using GraphicsDeviceConstant = EngineConstant<Type, class VulkanDevice>;
 
-    typedef class VulkanShaderResource GraphicsShaderResource;
+    typedef VulkanShaderResource GraphicsShaderResource;
 
-    typedef class VulkanGlobalRenderingContext GlobalRenderingContext;
+    typedef VulkanGlobalRenderingContext GlobalRenderingContext;
+    typedef VulkanGraphicsPipeline GraphicsPipeline;
 }
 
 #endif

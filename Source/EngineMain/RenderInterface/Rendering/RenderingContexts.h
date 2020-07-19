@@ -1,6 +1,7 @@
 #pragma once
 #include "../../RenderApi/VertexData.h"
 #include "../../Core/Types/Patterns/FactoriesBase.h"
+#include "FramebufferTypes.h"
 
 #include <unordered_map>
 
@@ -14,7 +15,6 @@ class PipelineBase;
 class PipelineCacheBase;
 class RenderTargetTexture;
 struct PipelineFactoryArgs;
-struct GenericRenderpassProperties;
 struct Framebuffer;
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -48,7 +48,7 @@ protected:
     // Scene's common layout(Descriptors set layout)
     GraphicsResource* sceneViewParamLayout = nullptr;
 
-    std::unordered_map<GenericRenderpassProperties, std::vector<const Framebuffer*>> rtFramebuffers;
+    std::unordered_map<GenericRenderPassProperties, std::vector<const Framebuffer*>> rtFramebuffers;
     PipelineCacheBase* pipelinesCache;
 
     FactoriesBase<ShaderObjectBase, const String&, const ShaderResource*>* shaderObjectFactory;
@@ -61,12 +61,10 @@ private:
 
     void initShaderResources();
     void destroyShaderResources();
+    void writeAndDestroyPipelineCache();
 protected:
-    const GraphicsResource* getSceneViewParamLayout() const { return sceneViewParamLayout; }
-    const GraphicsResource* getVertexTypeParamLayout(EVertexType::Type vertexType) const { return perVertexTypeLayouts.at(vertexType); }
-
     // Graphics API specific codes
-    virtual void initApiFactories() = 0;
+    virtual void initApiInstances() = 0;
     virtual void initializeApiContext() = 0;
     virtual void clearApiContext() = 0;
 
@@ -75,12 +73,41 @@ protected:
     // Fills necessary values to pipeline and initializes it
     virtual void initializeNewPipeline(UniqueUtilityShaderObject* shaderObject, PipelineBase* pipeline) = 0;
     // Get generic render pass properties from Render targets
-    GenericRenderpassProperties renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const;
-    const Framebuffer* getFramebuffer(const GenericRenderpassProperties& renderpassProps
+    GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const;
+    // Get generic render pass properties from framebuffer
+    GenericRenderPassProperties renderpassPropsFromFb(const Framebuffer* fb) const;
+    const Framebuffer* getFramebuffer(const GenericRenderPassProperties& renderpassProps
         , const std::vector<RenderTargetTexture*>& rtTextures) const;
-    const Framebuffer* createNewFramebuffer(const GenericRenderpassProperties& renderpassProps
+    const Framebuffer* createNewFramebuffer(const GenericRenderPassProperties& renderpassProps
         , const std::vector<RenderTargetTexture*>& rtTextures) const;
     // Creates new pipeline based on default pipeline of shader object but with new render pass or different render pass and returns it
-    PipelineBase* createNewPipeline(UniqueUtilityShaderObject* shaderObject, const GenericRenderpassProperties& renderpassProps);
+    PipelineBase* createNewPipeline(UniqueUtilityShaderObject* shaderObject, const GenericRenderPassProperties& renderpassProps);
 
+public:
+
+    void preparePipelineContext(class LocalPipelineContext* pipelineContext);
+};
+
+// Temporary class high chance to change later so avoid relying on this.
+class LocalPipelineContext
+{
+private:
+    friend GlobalRenderingContextBase;
+
+    const Framebuffer* framebuffer = nullptr;
+    const PipelineBase* pipelineUsed = nullptr;
+
+public:
+    uint32 swapchainIdx;
+
+    std::vector<RenderTargetTexture*> rtTextures;
+    ERenderPassFormat::Type renderpassFormat;
+    bool bUseSwapchainFb = false;
+
+    EVertexType::Type forVertexType;
+
+    String materialName;
+
+    const Framebuffer* getFb() const { return framebuffer; }
+    const PipelineBase* getPipeline() const { return pipelineUsed; }
 };

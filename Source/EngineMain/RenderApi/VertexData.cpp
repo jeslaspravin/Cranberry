@@ -1,11 +1,42 @@
 #include "VertexData.h"
 #include "../Assets/Asset/StaticMeshAsset.h"
 #include "../Core/Platform/PlatformAssertionErrors.h"
+#include "../Core/Math/Vector2D.h"
+#include "../Core/Math/Vector3D.h"
+#include "../Core/Math/Vector4D.h"
 
-BEGIN_VERTEX_DEFINITION(StaticMeshVertex)
+BEGIN_VERTEX_DEFINITION(StaticMeshVertex, EShaderInputFrequency::PerVertex)
 ADD_VERTEX_FIELD(position)
 ADD_VERTEX_FIELD(normal)
 ADD_VERTEX_FIELD(vertexColor)
+END_VERTEX_DEFINITION();
+
+// Just for using vertex info to fill all pipeline input information from reflection, Real data will be plain VectorND
+struct VertexSimple2D
+{
+    Vector2D position;
+};
+
+struct VertexSimple3D
+{
+    Vector3D position;
+};
+
+struct VertexSimple4D
+{
+    Vector4D position;
+};
+
+BEGIN_VERTEX_DEFINITION(VertexSimple2D, EShaderInputFrequency::PerVertex)
+ADD_VERTEX_FIELD(position)
+END_VERTEX_DEFINITION();
+
+BEGIN_VERTEX_DEFINITION(VertexSimple3D, EShaderInputFrequency::PerVertex)
+ADD_VERTEX_FIELD(position)
+END_VERTEX_DEFINITION();
+
+BEGIN_VERTEX_DEFINITION(VertexSimple4D, EShaderInputFrequency::PerVertex)
+ADD_VERTEX_FIELD(position)
 END_VERTEX_DEFINITION();
 
 namespace EVertexType
@@ -13,23 +44,23 @@ namespace EVertexType
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple2>()
     {
-        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS;
-        debugAssert(!"Not implemented");
+        static VertexSimple2DVertexParamInfo STATIC_VERTEX_PARAM_INFO;
+        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &STATIC_VERTEX_PARAM_INFO };
         return VERTEX_PARAMS;
     }
 
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3>()
     {
-        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS;
-        debugAssert(!"Not implemented");
+        static VertexSimple3DVertexParamInfo STATIC_VERTEX_PARAM_INFO;
+        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &STATIC_VERTEX_PARAM_INFO };
         return VERTEX_PARAMS;
     }
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple4>()
     {
-        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS;
-        debugAssert(!"Not implemented");
+        static VertexSimple4DVertexParamInfo STATIC_VERTEX_PARAM_INFO;
+        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &STATIC_VERTEX_PARAM_INFO };
         return VERTEX_PARAMS;
     }
     template<>
@@ -68,23 +99,4 @@ namespace EVertexType
         }
         return "";
     }
-
-    constexpr const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType)
-    {
-        switch (vertexType)
-        {
-        case EVertexType::Simple2:
-            return vertexParamInfo<Simple2>();
-        case EVertexType::Simple3:
-            return vertexParamInfo<Simple3>();
-        case EVertexType::Simple4:
-            return vertexParamInfo<Simple4>();
-        default:
-        case EVertexType::BasicMesh:
-            return vertexParamInfo<BasicMesh>();
-        case EVertexType::StaticMesh:
-            return vertexParamInfo<StaticMesh>();
-        }
-    }
-
 }

@@ -11,6 +11,7 @@ namespace GlobalRenderVariables
     extern GraphicsDeviceConstant<float> MAX_ANISOTROPY;
 
     //extern GraphicsDeviceConstant<bool> ENABLED_TESSELLATION;
+    extern GraphicsDeviceConstant<bool> ENABLE_NON_FILL_DRAWS;
 
     extern GraphicsDeviceConstant<bool> ENABLED_TIMELINE_SEMAPHORE;
     extern GraphicsDeviceConstant<uint64> MAX_TIMELINE_OFFSET;

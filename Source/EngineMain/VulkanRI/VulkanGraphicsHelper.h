@@ -70,7 +70,7 @@ public:
     static void destroyShaderModule(class IGraphicsInstance* graphicsInstance, VkShaderModule shaderModule);
     // Following two methods might change in future avoid using these
     static VkRenderPass createDummyRenderPass(class IGraphicsInstance* graphicsInstance, const struct Framebuffer* framebuffer);
-    static VkRenderPass createRenderPass(class IGraphicsInstance* graphicsInstance, const struct GenericRenderpassProperties& renderpassProps);
+    static VkRenderPass createRenderPass(class IGraphicsInstance* graphicsInstance, const struct GenericRenderPassProperties& renderpassProps, const struct RenderPassAdditionalProps& additionalProps);
     static void destroyRenderPass(class IGraphicsInstance* graphicsInstance, VkRenderPass renderPass);
 
     static void createFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebufferCreateInfo& fbCreateInfo, VkFramebuffer* framebuffer);
@@ -78,9 +78,22 @@ public:
     static VkFramebuffer getFramebuffer(struct Framebuffer* appFrameBuffer);
 
     static VkDescriptorSetLayout createDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, const VkDescriptorSetLayoutCreateInfo& layoutCreateInfo);
-    static VkDescriptorSetLayout destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, VkDescriptorSetLayout descriptorsSetLayout);
+    static void destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, VkDescriptorSetLayout descriptorsSetLayout);
 
     static VkPipelineLayout createPipelineLayout(class IGraphicsInstance* graphicsInstance, const class PipelineBase* pipeline);
+    static void destroyPipelineLayout(class IGraphicsInstance* graphicsInstance, const VkPipelineLayout pipelineLayout);
+
+    static VkPipelineCache createPipelineCache(class IGraphicsInstance* graphicsInstance, const std::vector<uint8>& cacheData);
+    static VkPipelineCache createPipelineCache(class IGraphicsInstance* graphicsInstance);
+    static void destroyPipelineCache(class IGraphicsInstance* graphicsInstance, VkPipelineCache pipelineCache);
+    static void mergePipelineCaches(class IGraphicsInstance* graphicsInstance, VkPipelineCache dstCache, const std::vector<VkPipelineCache>& srcCaches);
+    static void getPipelineCacheData(class IGraphicsInstance* graphicsInstance, VkPipelineCache pipelineCache, std::vector<uint8>& cacheData);
+    static void getMergedCacheData(class IGraphicsInstance* graphicsInstance, std::vector<uint8>& cacheData, const std::vector<const class PipelineBase*>& pipelines);
+
+    static std::vector<VkPipeline> createGraphicsPipeline(class IGraphicsInstance* graphicsInstance, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCI
+        , VkPipelineCache pipelineCache);
+
+    static void destroyPipeline(class IGraphicsInstance* graphicsInstance, VkPipeline pipeline);
 };
 
 

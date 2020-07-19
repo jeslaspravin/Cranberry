@@ -26,9 +26,9 @@ void RenderApi::initialize()
             gEngine->appInstance().appWindowManager.initMain();
             graphicsInstance->loadSurfaceDependents();
             graphicsInstance->initializeCmds(renderCmds);
-            globalContext->initContext(graphicsInstance);
             gEngine->appInstance().appWindowManager.postInitGraphicCore();
             GBuffers::initialize();
+            globalContext->initContext(graphicsInstance);
         }
     , this);
 }
@@ -47,7 +47,7 @@ void RenderApi::destroy()
             GBuffers::destroy();
             gEngine->appInstance().appWindowManager.destroyMain();
         }
-        , this);
+    , this);
 
     // Executing commands one last time
     waitOnCommands();
@@ -76,6 +76,12 @@ IGraphicsInstance* RenderApi::getGraphicsInstance() const
 {
     debugAssert(bIsInsideRenderCommand && "using graphics instance any where outside render commands is not allowed");
     return graphicsInstance;
+}
+
+GlobalRenderingContextBase* RenderApi::getGlobalRenderingContext() const
+{
+    debugAssert(bIsInsideRenderCommand && "using non const rendering context any where outside render commands is not allowed");
+    return globalContext;
 }
 
 void RenderApi::enqueueCommand(class IRenderCommand* renderCommand)

@@ -3,32 +3,91 @@
 #include "../../Resources/IVulkanResources.h"
 #include "../VulkanMacros.h"
 
-class VulkanGraphicsPipeline : public GraphicsPipeline, public IVulkanResources
+class VulkanPipelineCache : public PipelineCacheBase, public IVulkanResources
 {
-    DECLARE_VK_GRAPHICS_RESOURCE(VulkanGraphicsPipeline,, GraphicsPipeline,)
-private:
-    std::vector<VkPipelineShaderStageCreateInfo> stages;
-    VkPipelineVertexInputStateCreateInfo vertexInputState;
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState;
-    VkPipelineTessellationStateCreateInfo tessellationState;
-    VkPipelineViewportStateCreateInfo viewportState;
-    VkPipelineRasterizationStateCreateInfo rasterizationState;
-    VkPipelineMultisampleStateCreateInfo multisampleState;
-    VkPipelineDepthStencilStateCreateInfo depthStencilState;
-    VkPipelineColorBlendStateCreateInfo colorBlendState;
-    VkPipelineDynamicStateCreateInfo dynamicState;
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanPipelineCache,, PipelineCacheBase,)
 
 public:
-    std::map<ECullingMode, VkPipeline> pipelines;
+    VkPipelineCache pipelineCacheRead;
+
+    /* IVulanResources overrides */
+public:
+    String getObjectName() const override;
+    uint64 getDispatchableHandle() const override;
+
+    /* GraphicsResource overrides */
+    void init() override;
+    void reinitResources() override;
+    void release() override;
+
+    /* PipelineCacheBase overrides */
+protected:
+    std::vector<uint8> getRawToWrite() const override;
+
+    /* Override ends */
+};
+
+class VulkanGraphicsPipeline : public GraphicsPipelineBase, public IVulkanResources
+{
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanGraphicsPipeline,, GraphicsPipelineBase,)
+private:
+    // Just a replica of VkGraphicsPipelineCreateInfo but non const
+    struct VulkanPipelineCreateInfo
+    {
+        // Ptr for common informations
+        std::vector<VkPipelineShaderStageCreateInfo>* shaderStageCIs;
+
+        // VertexInputs
+        std::vector<VkVertexInputBindingDescription>* vertexInputBindings;
+        std::vector<VkVertexInputAttributeDescription>* vertexInputAttribs;
+        VkPipelineVertexInputStateCreateInfo* vertexInputStateCI;
+        // Input assembly
+        VkPipelineInputAssemblyStateCreateInfo* inputAsmStateCI;
+        // Tessellation
+        VkPipelineTessellationStateCreateInfo* tessStateCI;
+        // Viewport and scissors
+        VkPipelineViewportStateCreateInfo* viewportStateCI;
+        // Rasterization state - unique to each variant
+        // Multi sampling
+        VkPipelineMultisampleStateCreateInfo* multisampleStateCI;
+        // Depth and stencil
+        VkPipelineDepthStencilStateCreateInfo* depthStencilStateCI;
+        // Color blending
+        std::vector<VkPipelineColorBlendAttachmentState>* colorBlendAttachmentStates;
+        VkPipelineColorBlendStateCreateInfo* colorBlendStateCI;
+
+        // Unique informations
+        VkPipelineCreateFlags pipelineFlags;
+        VkPipeline basePipelineHandle = VK_NULL_HANDLE;
+        int32 basePipelineIdx = -1;
+
+        VkPipelineRasterizationStateCreateInfo rasterizationStateCI;
+        std::vector<VkDynamicState> dynamicStates;
+    };
+
+    std::vector<VkPipeline> pipelines;
+    VkRenderPass compatibleRenderpass;
+public:
+    VkPipelineCache pipelineLocalCache;
 
     // Just copies original resource handled at GlobalRenderingContext
     VkPipelineLayout pipelineLayout;
-    VkRenderPass compatibleRenderpass;
-
 private:
-    VkGraphicsPipelineCreateInfo generateCreateInfo() const;
+    void fillShaderStages(std::vector<VkPipelineShaderStageCreateInfo>& shaderStages) const;
+    void fillVertexInputState(VkPipelineVertexInputStateCreateInfo& vertexInputStateCI
+        , std::vector<VkVertexInputBindingDescription>& bindings, std::vector<VkVertexInputAttributeDescription>& attributes) const;
+    void fillMultisampleState(VkPipelineMultisampleStateCreateInfo& multisampleStateCI) const;
+    void fillDepthStencilState(VkPipelineDepthStencilStateCreateInfo& depthStencilStateCI, std::vector<VkDynamicState>& dynamicStates) const;
+    void fillColorBlendStates(VkPipelineColorBlendStateCreateInfo& colorBlendStateCI, std::vector<VkPipelineColorBlendAttachmentState>& blendStates
+        , std::vector<VkDynamicState>& dynamicStates) const;
+
+    void fillPipelineStates(VulkanPipelineCreateInfo& createInfo) const;
+    void fillDynamicPermutedStates(VulkanPipelineCreateInfo& createInfo
+        , const GraphicsPipelineQueryParams& params) const;
+
+    void createPipelines(const std::vector<VulkanPipelineCreateInfo>& createInfos);
 public:
-    VulkanGraphicsPipeline(const VulkanGraphicsPipeline* parent);
+    VulkanGraphicsPipeline(const GraphicsPipelineBase* parent);
     VulkanGraphicsPipeline() = default;
 
     /* IVulkanResources overrides */
@@ -41,5 +100,7 @@ public:
 
     /* Override ends */
 
+    void setCompatibleRenderpass(VkRenderPass renderpass);
 
+    VkPipeline getPipeline(const GraphicsPipelineQueryParams& pipelineQuery) const;
 };

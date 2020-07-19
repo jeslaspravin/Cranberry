@@ -1,10 +1,24 @@
-#include "DrawQuadFromTexture.h"
+#include "Base/UtilityShaders.h"
+#include "Base/ScreenspaceQuadGraphicsPipeline.h"
+
+#define DRAW_QUAD_FROM_TEXTURE "DrawQuadFromTexture"
+
+class DrawQuadFromTexture : public UniqueUtilityShader
+{
+    DECLARE_GRAPHICS_RESOURCE(DrawQuadFromTexture, , UniqueUtilityShader, );
+private:
+    DrawQuadFromTexture();
+};
 
 DEFINE_GRAPHICS_RESOURCE(DrawQuadFromTexture)
 
 DrawQuadFromTexture::DrawQuadFromTexture()
-    : BaseType("DrawQuadFromTexture")
-{
-    compatibleVertex = EVertexType::Simple3;
-    compatibleRenderpassFormat = ERenderpassFormat::Multibuffers;
-}
+    : BaseType(DRAW_QUAD_FROM_TEXTURE)
+{}
+
+//////////////////////////////////////////////////////////////////////////
+/// Pipeline registration
+//////////////////////////////////////////////////////////////////////////
+
+// Registrar
+ScreenSpaceQuadShaderPipelineRegister QUAD_FROM_TEXTURE_PIPELINE_REGISTER(DRAW_QUAD_FROM_TEXTURE);
