@@ -230,42 +230,42 @@ const Vector3D Vector3D::ZERO(0);
 
 const Vector3D Vector3D::ONE(1);
 
-FORCE_INLINE float Vector3D::dot(const Vector3D& a, const Vector3D& b)
+float Vector3D::dot(const Vector3D& a, const Vector3D& b)
 {
     return a | b;
 }
 
-FORCE_INLINE Vector3D Vector3D::cross(const Vector3D& a, const Vector3D& b)
+Vector3D Vector3D::cross(const Vector3D& a, const Vector3D& b)
 {
     return a ^ b;
 }
 
-FORCE_INLINE Vector3D Vector3D::clamp(const Vector3D& value, const Vector3D& min, const Vector3D& max)
+Vector3D Vector3D::clamp(const Vector3D& value, const Vector3D& min, const Vector3D& max)
 {
     return Vector3D(glm::clamp(value.value, min.value, max.value));
 }
 
-FORCE_INLINE Vector3D Vector3D::min(const Vector3D& a, const Vector3D& b)
+Vector3D Vector3D::min(const Vector3D& a, const Vector3D& b)
 {
     return Vector3D(glm::min(a.value, b.value));
 }
 
-FORCE_INLINE Vector3D Vector3D::max(const Vector3D& a, const Vector3D& b)
+Vector3D Vector3D::max(const Vector3D& a, const Vector3D& b)
 {
     return Vector3D(glm::max(a.value, b.value));
 }
 
-FORCE_INLINE Vector3D Vector3D::abs(const Vector3D& value)
+Vector3D Vector3D::abs(const Vector3D& value)
 {
     return Vector3D(glm::abs(value.value));
 }
 
-FORCE_INLINE Vector3D Vector3D::floor(const Vector3D& value)
+Vector3D Vector3D::floor(const Vector3D& value)
 {
     return Vector3D(glm::floor(value.value));
 }
 
-FORCE_INLINE Vector3D Vector3D::ceil(const Vector3D& value)
+Vector3D Vector3D::ceil(const Vector3D& value)
 {
     return Vector3D(glm::ceil(value.value));
 }

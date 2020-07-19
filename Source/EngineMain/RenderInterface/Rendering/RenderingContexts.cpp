@@ -4,16 +4,16 @@
 #include "../Shaders/Base/DrawMeshShader.h"
 #include "../Shaders/Base/UtilityShaders.h"
 #include "../ShaderCore/ShaderParameters.h"
-#include "FramebufferTypes.h"
 #include "../ShaderCore/ShaderParameterUtility.h"
 #include "../../Core/Types/Textures/RenderTargetTextures.h"
 #include "../ShaderCore/ShaderObject.h"
 #include "../Resources/Pipelines.h"
 #include "../../RenderApi/GBuffersAndTextures.h"
+#include "../../Core/Engine/GameEngine.h"
 
 void GlobalRenderingContextBase::initContext(IGraphicsInstance* graphicsInstance)
 {
-    initApiFactories();
+    initApiInstances();
 
     initShaderResources();
 
@@ -26,12 +26,29 @@ void GlobalRenderingContextBase::clearContext()
     delete shaderObjectFactory;
     delete shaderParamLayoutsFactory;
 
-    clearApiContext();
+    writeAndDestroyPipelineCache();
     destroyShaderResources();
+
+    for (const std::pair<GenericRenderPassProperties, std::vector<const Framebuffer*>>& framebuffers : rtFramebuffers)
+    {
+        for (Framebuffer const* const& fb : framebuffers.second)
+        {
+            delete fb;
+        }
+    }
+    rtFramebuffers.clear();
+
+    clearApiContext();
 }
 
 void GlobalRenderingContextBase::initShaderResources()
 {
+    if (pipelinesCache)
+    {
+        pipelinesCache->setResourceName("shaders");
+        pipelinesCache->init();
+    }
+
     std::set<EVertexType::Type> filledVertexInfo;
     auto vertexAttribFillLambda = [&filledVertexInfo](EVertexType::Type vertexUsed, const std::vector<ReflectInputOutput>& vertexShaderInputs)
     {
@@ -47,9 +64,9 @@ void GlobalRenderingContextBase::initShaderResources()
         }
     };
 
-    std::vector<GraphicsResource*> defaultModeShaders;
-    GraphicsShaderResource::staticType()->allChildDefaultResources(defaultModeShaders);// TODO(Jeslas) : change this to only leaf childs
-    for (GraphicsResource* shader : defaultModeShaders)
+    std::vector<GraphicsResource*> allShaderResources;
+    GraphicsShaderResource::staticType()->allChildDefaultResources(allShaderResources, true, true);
+    for (GraphicsResource* shader : allShaderResources)
     {
         shader->init();
 
@@ -84,12 +101,13 @@ void GlobalRenderingContextBase::initShaderResources()
             {
                 shaderCollection.shaderObject = shaderObjectFactory->create(shader->getResourceName(), drawMeshShader);
             }
-            PGraphicsPipeline graphicsPipeline = static_cast<GraphicsPipeline*>(pipelineFactory->create({ drawMeshShader }));
+            GraphicsPipelineBase* graphicsPipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create({ drawMeshShader }));
             graphicsPipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout, 2);
             graphicsPipeline->setParamLayoutAtSet(perVertexTypeLayouts[drawMeshShader->vertexUsage()], 1);
             graphicsPipeline->setParamLayoutAtSet(sceneViewParamLayout, 0);
             graphicsPipeline->setPipelineShader(drawMeshShader);
-            GenericRenderpassProperties renderpassProp;
+            graphicsPipeline->setPipelineCache(pipelinesCache);
+            GenericRenderPassProperties renderpassProp;
             renderpassProp.renderpassAttachmentFormat.rpFormat = drawMeshShader->renderpassUsage();
             graphicsPipeline->setRenderpassProperties(renderpassProp);
 
@@ -110,9 +128,12 @@ void GlobalRenderingContextBase::initShaderResources()
             shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(utilityShader, 0/*doesn't matter*/);
             shaderCollection.shadersParamLayout->init();
 
-            PGraphicsPipeline graphicsPipeline = static_cast<PGraphicsPipeline>(pipelineFactory->create({ utilityShader }));
+            GraphicsPipelineBase* graphicsPipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create({ utilityShader }));
             graphicsPipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout);
+            // Can be parents since other child pipelines will be derived from this initial defaults
             graphicsPipeline->setPipelineShader(utilityShader);
+            graphicsPipeline->setPipelineCache(pipelinesCache);
+            graphicsPipeline->setCanBeParent(true);
 
             static_cast<UniqueUtilityShaderObject*>(shaderCollection.shaderObject)->setPipeline(graphicsPipeline->getRenderpassProperties()
                 , graphicsPipeline);
@@ -122,18 +143,69 @@ void GlobalRenderingContextBase::initShaderResources()
 
 void GlobalRenderingContextBase::destroyShaderResources()
 {
-    // TODO(Jeslas) : clear properly
     std::vector<GraphicsResource*> shaderResources;
-    GraphicsShaderResource::staticType()->allChildDefaultResources(shaderResources, true);
+    GraphicsShaderResource::staticType()->allChildDefaultResources(shaderResources, true, true);
     for (GraphicsResource* shader : shaderResources)
     {
         shader->release();
     }
+
+    sceneViewParamLayout->release();
+    delete sceneViewParamLayout;
+    sceneViewParamLayout = nullptr;
+
+    for (std::pair<const EVertexType::Type, GraphicsResource*>& shaderVertexParamLayout : perVertexTypeLayouts)
+    {
+        shaderVertexParamLayout.second->release();
+        delete shaderVertexParamLayout.second;
+    }
+    perVertexTypeLayouts.clear();
+
+    for (std::pair<const String, ShaderDataCollection>& shaderDataCollection : rawShaderObjects)
+    {
+        shaderDataCollection.second.shadersParamLayout->release();
+        delete shaderDataCollection.second.shadersParamLayout;
+
+        delete shaderDataCollection.second.shaderObject;
+    }
+    rawShaderObjects.clear();
 }
 
-GenericRenderpassProperties GlobalRenderingContextBase::renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const
+void GlobalRenderingContextBase::writeAndDestroyPipelineCache()
 {
-    GenericRenderpassProperties renderpassProperties;
+    if (pipelinesCache)
+    {
+        for (const std::pair<String, ShaderDataCollection>& shaderDataCollection : rawShaderObjects)
+        {
+            if (shaderDataCollection.second.shaderObject->baseShaderType() == DrawMeshShader::staticType())
+            {
+                const DrawMeshShaderObject* drawMeshShaderObj = static_cast<const DrawMeshShaderObject*>(shaderDataCollection.second.shaderObject);
+                for (const std::pair<const DrawMeshShader*, GraphicsPipelineBase*>& shaderResourcePair : drawMeshShaderObj->getAllShaders())
+                {
+                    pipelinesCache->addPipelineToCache(shaderResourcePair.second);
+                }
+            }
+            else if (shaderDataCollection.second.shaderObject->baseShaderType() == UniqueUtilityShader::staticType())
+            {
+                const UniqueUtilityShaderObject* uniqUtilShaderObj = static_cast<const UniqueUtilityShaderObject*>(shaderDataCollection.second.shaderObject);
+                for (const GraphicsPipelineBase* pipeline : uniqUtilShaderObj->getAllPipelines())
+                {
+                    pipelinesCache->addPipelineToCache(pipeline);
+                }
+            }
+        }
+
+        pipelinesCache->writeCache();
+        pipelinesCache->release();
+        delete pipelinesCache;
+        pipelinesCache = nullptr;
+    }
+}
+
+GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const
+{
+    GenericRenderPassProperties renderpassProperties;
+    renderpassProperties.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
     if (!rtTextures.empty())
     {
         // Since all the textures in a same framebuffer must have same properties on below two
@@ -150,7 +222,29 @@ GenericRenderpassProperties GlobalRenderingContextBase::renderpassPropsFromRTs(c
     return renderpassProperties;
 }
 
-const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRenderpassProperties& renderpassProps, const std::vector<RenderTargetTexture*>& rtTextures) const
+GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromFb(const Framebuffer* fb) const
+{
+    GenericRenderPassProperties renderpassProperties;
+    renderpassProperties.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
+    if (!fb->textures.empty())
+    {
+        // Since all the textures in a same framebuffer must have same properties on below two
+        renderpassProperties.bOneRtPerFormat = !fb->bHasResolves;
+        renderpassProperties.multisampleCount = fb->textures[0]->sampleCount();
+
+        renderpassProperties.renderpassAttachmentFormat.attachments.reserve(fb->textures.size());
+        for (int32 i = 0; i < fb->textures.size(); ++i)
+        {
+            renderpassProperties.renderpassAttachmentFormat.attachments.emplace_back(fb->textures[i]->imageFormat());
+            i += fb->bHasResolves && !EPixelDataFormat::isDepthFormat(fb->textures[i]->imageFormat()) ? 1 : 0;
+        }
+        renderpassProperties.renderpassAttachmentFormat.attachments.shrink_to_fit();
+    }
+
+    return renderpassProperties;
+}
+
+const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRenderPassProperties& renderpassProps, const std::vector<RenderTargetTexture*>& rtTextures) const
 {
     auto renderpassFbs = rtFramebuffers.find(renderpassProps);
 
@@ -194,7 +288,7 @@ const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRende
     return nullptr;
 }
 
-const Framebuffer* GlobalRenderingContextBase::createNewFramebuffer(const GenericRenderpassProperties& renderpassProps
+const Framebuffer* GlobalRenderingContextBase::createNewFramebuffer(const GenericRenderPassProperties& renderpassProps
     , const std::vector<RenderTargetTexture*>& rtTextures) const
 {
     Framebuffer* fb = GBuffers::createFbInstance();
@@ -224,11 +318,71 @@ const Framebuffer* GlobalRenderingContextBase::createNewFramebuffer(const Generi
 }
 
 PipelineBase* GlobalRenderingContextBase::createNewPipeline(UniqueUtilityShaderObject* shaderObject
-    , const GenericRenderpassProperties& renderpassProps)
+    , const GenericRenderPassProperties& renderpassProps)
 {
-    GraphicsPipeline* pipeline = static_cast<GraphicsPipeline*>(pipelineFactory->create({ shaderObject->getShader(), shaderObject->getDefaultPipeline() }));
+    fatalAssert(renderpassProps.renderpassAttachmentFormat.attachments.size() == shaderObject->getDefaultPipeline()->getRenderpassProperties().renderpassAttachmentFormat.attachments.size()
+        , "Attachment count must be same for utility shader pipeline variants");
+    GraphicsPipelineBase* pipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create({ shaderObject->getShader(), shaderObject->getDefaultPipeline() }));
     pipeline->setRenderpassProperties(renderpassProps);
 
     initializeNewPipeline(shaderObject, pipeline);
     return pipeline;
+}
+
+void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineContext* pipelineContext)
+{
+    std::unordered_map<String, ShaderDataCollection>::const_iterator shaderDataCollectionItr 
+        = rawShaderObjects.find(pipelineContext->materialName);
+    if (shaderDataCollectionItr == rawShaderObjects.cend())
+    {
+        Logger::error("GlobalRenderingContext", "%s : Requested material %s is not found", __func__, pipelineContext->materialName.getChar());
+        return;
+    }
+
+    if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == DrawMeshShader::staticType())
+    {
+        DrawMeshShaderObject* drawMeshShaderObj = static_cast<DrawMeshShaderObject*>(shaderDataCollectionItr->second.shaderObject);
+
+        GraphicsPipelineBase* graphicsPipeline;
+        drawMeshShaderObj->getShader(pipelineContext->forVertexType, FramebufferFormat(pipelineContext->renderpassFormat), &graphicsPipeline);
+        pipelineContext->pipelineUsed = graphicsPipeline;
+
+        pipelineContext->framebuffer = GBuffers::getFramebuffer(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx);
+    }
+    else if(shaderDataCollectionItr->second.shaderObject->baseShaderType() == UniqueUtilityShader::staticType())
+    {
+        GenericRenderPassProperties renderpassProps;
+        const Framebuffer* fb = nullptr;
+        if (pipelineContext->bUseSwapchainFb)
+        {
+            fb = GBuffers::getSwapchainFramebuffer(pipelineContext->swapchainIdx);
+
+            const GenericWindowCanvas* windowCanvas = gEngine->getApplicationInstance()->appWindowManager
+                .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
+            renderpassProps.bOneRtPerFormat = true;
+            renderpassProps.multisampleCount = EPixelSampleCount::SampleCount1;
+            renderpassProps.renderpassAttachmentFormat.attachments.resize(1);
+            renderpassProps.renderpassAttachmentFormat.attachments[0] = windowCanvas->windowCanvasFormat();
+            renderpassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
+        }
+        else
+        {
+            renderpassProps = renderpassPropsFromRTs(pipelineContext->rtTextures);
+            fb = getFramebuffer(renderpassProps, pipelineContext->rtTextures);
+            if (fb == nullptr)
+            {
+                fb = createNewFramebuffer(renderpassProps, pipelineContext->rtTextures);
+                rtFramebuffers[renderpassProps].emplace_back(fb);
+            }
+        }
+        UniqueUtilityShaderObject* uniqUtilShaderObj = static_cast<UniqueUtilityShaderObject*>(shaderDataCollectionItr->second.shaderObject);
+        GraphicsPipelineBase* graphicsPipeline = uniqUtilShaderObj->getPipeline(renderpassProps);
+        if (graphicsPipeline == nullptr)
+        {
+            graphicsPipeline = static_cast<GraphicsPipelineBase*>(createNewPipeline(uniqUtilShaderObj, renderpassProps));
+            uniqUtilShaderObj->setPipeline(renderpassProps, graphicsPipeline);
+        }
+        pipelineContext->pipelineUsed = graphicsPipeline;        
+        pipelineContext->framebuffer = fb;
+    }
 }

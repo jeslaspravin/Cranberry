@@ -224,37 +224,37 @@ Vector4D Vector4D::rejectFrom(const Vector4D& b) const
 const Vector4D Vector4D::ZERO(0);
 const Vector4D Vector4D::ONE(1);
 
-FORCE_INLINE float Vector4D::dot(const Vector4D& a, const Vector4D& b)
+float Vector4D::dot(const Vector4D& a, const Vector4D& b)
 {
     return a | b;
 }
 
-FORCE_INLINE Vector4D Vector4D::clamp(const Vector4D& value, const Vector4D& min, const Vector4D& max)
+Vector4D Vector4D::clamp(const Vector4D& value, const Vector4D& min, const Vector4D& max)
 {
     return Vector4D(glm::clamp(value.value, min.value, max.value));
 }
 
-FORCE_INLINE Vector4D Vector4D::min(const Vector4D& a, const Vector4D& b)
+Vector4D Vector4D::min(const Vector4D& a, const Vector4D& b)
 {
     return Vector4D(glm::min(a.value, b.value));
 }
 
-FORCE_INLINE Vector4D Vector4D::max(const Vector4D& a, const Vector4D& b)
+Vector4D Vector4D::max(const Vector4D& a, const Vector4D& b)
 {
     return Vector4D(glm::max(a.value, b.value));
 }
 
-FORCE_INLINE Vector4D Vector4D::abs(const Vector4D& value)
+Vector4D Vector4D::abs(const Vector4D& value)
 {
     return Vector4D(glm::abs(value.value));
 }
 
-FORCE_INLINE Vector4D Vector4D::floor(const Vector4D& value)
+Vector4D Vector4D::floor(const Vector4D& value)
 {
     return Vector4D(glm::floor(value.value));
 }
 
-FORCE_INLINE Vector4D Vector4D::ceil(const Vector4D& value)
+Vector4D Vector4D::ceil(const Vector4D& value)
 {
     return Vector4D(glm::ceil(value.value));
 }

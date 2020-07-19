@@ -266,7 +266,9 @@ VariableName.flags = 0
 VkPipelineCacheCreateInfo VariableName;                             \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;  \
 VariableName.pNext = nullptr;                                       \
-VariableName.flags = 0
+VariableName.flags = 0;                                             \
+VariableName.initialDataSize = 0;                                   \
+VariableName.pInitialData = nullptr
 #endif
 
 #ifndef PIPELINE_LAYOUT_CREATE_INFO
@@ -311,7 +313,7 @@ VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO
 VariableName.pNext = nullptr;                                                       \
 VariableName.flags = 0;                                                             \
 VariableName.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;/*As it is common*/     \
-VariableName.primitiveRestartEnable = false
+VariableName.primitiveRestartEnable = VK_FALSE
 #endif
 
 #ifndef PIPELINE_TESSELLATION_STATE_CREATE_INFO

@@ -1,6 +1,5 @@
 #include "ShaderParameterResources.h"
 #include "ShaderReflected.h"
-#include "ShaderResources.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
 #include "../ShaderCore/ShaderParameterUtility.h"
 #include "../Shaders/Base/UtilityShaders.h"
@@ -76,7 +75,7 @@ void ShaderDescriptorParamType::wrapReflectedDescriptors(std::map<String, Shader
     }
     for (const DescEntrySubpassInput& descriptorInfo : reflectDescriptors.subpassInputs)
     {
-        debugAssert(!"Subpass inputs are not supported yet");
+        Logger::warn("DescriptorTypeParams", "%s : Sub pass inputs are not supported yet %s", __func__, descriptorInfo.attributeName.c_str());
     }
 }
 
@@ -157,6 +156,25 @@ void ShaderSetParametersLayout::release()
     BaseType::release();
 }
 
+const ShaderDescriptorParamType* ShaderSetParametersLayout::parameterDescription(const String& paramName) const
+{
+    uint32 temp;
+    return parameterDescription(temp, paramName);
+}
+
+const ShaderDescriptorParamType* ShaderSetParametersLayout::parameterDescription(uint32& outSetIdx, const String& paramName) const
+{
+    auto foundParamItr = paramsLayout.find(paramName);
+    if (foundParamItr != paramsLayout.cend())
+    {
+        outSetIdx = shaderSetID;
+        return foundParamItr->second;
+    }
+    Logger::error("ShaderSetParametersLayout", "%s : Parameter %s is not available in shader %s", __func__
+        , paramName.getChar(), respectiveShaderRes->getResourceName().getChar());
+    return nullptr;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // ShaderParametersLayout
 //////////////////////////////////////////////////////////////////////////
@@ -186,6 +204,7 @@ void ShaderParametersLayout::init()
     respectiveShaderRes->bindBufferParamInfo(bufferDescriptors);
     for (const std::pair<String, ShaderBufferDescriptorType*>& bufferDescWrapper : bufferDescriptors)
     {
+        bufferDescWrapper.second->bufferNativeStride = bufferDescWrapper.second->bufferParamInfo->paramStride();
         ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data);
     }
 
@@ -209,4 +228,23 @@ void ShaderParametersLayout::release()
     paramsLayout.clear();
 
     BaseType::release();
+}
+
+const ShaderDescriptorParamType* ShaderParametersLayout::parameterDescription(uint32& outSetIdx, const String& paramName) const
+{
+    auto foundParamItr = paramsLayout.find(paramName);
+    if (foundParamItr != paramsLayout.cend())
+    {
+        outSetIdx = foundParamItr->second.first;
+        return foundParamItr->second.second;
+    }
+    Logger::error("ShaderParametersLayout", "%s : Parameter %s is not available in shader %s", __func__
+        , paramName.getChar(), respectiveShaderRes->getResourceName().getChar());
+    return nullptr;
+}
+
+const ShaderDescriptorParamType* ShaderParametersLayout::parameterDescription(const String& paramName) const
+{
+    uint32 temp;
+    return parameterDescription(temp, paramName);
 }

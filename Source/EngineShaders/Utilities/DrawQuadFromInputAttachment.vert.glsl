@@ -1,11 +1,14 @@
 #version 450
+#extension GL_GOOGLE_include_directive:enable
 
-layout(location = 0) in vec3 coordinate;
+#define SIMPLE3D 1
+#include "../Common/VertexInputs.inl.glsl"
+#undef SIMPLE3D
 
 layout(location = 0) out vec2 outTextureCoord;
 
 void mainVS()
 {
-    gl_Position = vec4(coordinate,1);
-    outTextureCoord = coordinate.xy;
+    gl_Position = vec4(position,1);
+    outTextureCoord = position.xy;
 }

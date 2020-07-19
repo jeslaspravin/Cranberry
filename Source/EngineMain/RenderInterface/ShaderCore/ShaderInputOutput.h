@@ -1,5 +1,4 @@
 #pragma once
-#include "../../Core/String/String.h"
 #include "../CoreGraphicsTypes.h"
 
 struct ReflectFieldType;

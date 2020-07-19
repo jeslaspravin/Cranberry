@@ -12,11 +12,11 @@ namespace GameBuilder.BuildFileUtils
         public string argumentName;
         public string argKey;
         public string argValue;
-        public CommandArgument(string n,string k,string v)
+        public CommandArgument(string name,string key,string value)
         {
-            argumentName = n;
-            argKey = k;
-            argValue = v;
+            argumentName = name;
+            argKey = key;
+            argValue = value;
         }
     }
     public class ProcessUtils

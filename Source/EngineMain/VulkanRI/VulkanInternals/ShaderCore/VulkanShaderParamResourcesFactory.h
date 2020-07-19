@@ -3,6 +3,7 @@
 #include "../../../Core/Platform/PlatformTypes.h"
 
 class ShaderResource;
+class GraphicsResource;
 
 class VulkanShaderParametersLayoutFactory final : public FactoriesBase<GraphicsResource, const ShaderResource*, uint32>
 {

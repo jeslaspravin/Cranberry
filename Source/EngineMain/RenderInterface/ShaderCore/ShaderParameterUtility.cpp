@@ -45,6 +45,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
 
         currentFieldNode = currentFieldNode->nextNode;
     }
+    return true;
 }
 
 bool ShaderParameterUtility::fillRefToVertexParamInfo(ShaderVertexParamInfo& vertexParamInfo, const std::vector<ReflectInputOutput>& inputEntries)
@@ -62,4 +63,5 @@ bool ShaderParameterUtility::fillRefToVertexParamInfo(ShaderVertexParamInfo& ver
         }
         currentFieldNode = currentFieldNode->nextNode;
     }
+    return true;
 }

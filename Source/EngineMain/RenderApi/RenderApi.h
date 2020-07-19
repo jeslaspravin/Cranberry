@@ -26,6 +26,7 @@ public:
 
     void renderFrame();
     IGraphicsInstance* getGraphicsInstance() const;
+    GlobalRenderingContextBase* getGlobalRenderingContext() const;
 
     void enqueueCommand(class IRenderCommand* renderCommand);
     void waitOnCommands();

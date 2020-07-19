@@ -1,6 +1,7 @@
 #pragma once
 #include "../../Core/String/String.h"
 #include "../../RenderApi/VertexData.h"
+#include "../Rendering/FramebufferTypes.h"
 #include "ShaderInputOutput.h"
 
 #include <set>
@@ -11,11 +12,8 @@ class ShaderResource;
 class DrawMeshShader;
 class UniqueUtilityShader;
 struct FramebufferFormat;
-struct GenericRenderpassProperties;
 
-class GraphicsPipeline;
-using PGraphicsPipeline = GraphicsPipeline*;//Ptr
-using PPGraphicsPipelineBaseRef = PGraphicsPipeline*;// Ptr to Ptr
+class GraphicsPipelineBase;
 
 class ShaderObjectBase
 {
@@ -43,7 +41,7 @@ public:
 class DrawMeshShaderObject final : public ShaderObjectBase
 {
 private:
-    using ShaderResourcePair = std::pair<const DrawMeshShader*, PGraphicsPipeline>;
+    using ShaderResourcePair = std::pair<const DrawMeshShader*, GraphicsPipelineBase*>;
     using ShaderResourceList = std::vector<ShaderResourcePair>;
     using ShaderResourcesIterator = ShaderResourceList::iterator;
     using ShaderResourcesConstIterator = ShaderResourceList::const_iterator;
@@ -59,12 +57,12 @@ public:
     ~DrawMeshShaderObject();
 
     const DrawMeshShader* getShader(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat
-        , PPGraphicsPipelineBaseRef outGraphicsPipeline = nullptr) const;
+        ,  GraphicsPipelineBase** outGraphicsPipeline = nullptr) const;
     const ShaderResourceList& getAllShaders() const;
 
     // Internal use functions
     void addShader(const ShaderResource* shaderResource);
-    void setPipeline(const ShaderResource* shaderResource, PGraphicsPipeline graphicsPipeline);
+    void setPipeline(const ShaderResource* shaderResource, GraphicsPipelineBase* graphicsPipeline);
 
     /* ShaderObjectBase overrides */
     const GraphicsResourceType* baseShaderType() const final;
@@ -86,18 +84,19 @@ class UniqueUtilityShaderObject final : public ShaderObjectBase
 private:
     const UniqueUtilityShader* utilityShader;
 
-    GenericRenderpassProperties defaultPipelineProps;
-    std::unordered_map<GenericRenderpassProperties, PGraphicsPipeline> graphicsPipelines;
+    GenericRenderPassProperties defaultPipelineProps;
+    std::unordered_map<GenericRenderPassProperties, GraphicsPipelineBase*> graphicsPipelines;
 public:
     UniqueUtilityShaderObject(const String& sName, const ShaderResource* shaderResource);
     ~UniqueUtilityShaderObject();
 
     const UniqueUtilityShader* getShader() const;
-    PGraphicsPipeline getPipeline(const GenericRenderpassProperties& renderpassProps) const;
-    PGraphicsPipeline getDefaultPipeline() const;
+    GraphicsPipelineBase* getPipeline(const GenericRenderPassProperties& renderpassProps) const;
+    GraphicsPipelineBase* getDefaultPipeline() const;
+    std::vector<const GraphicsPipelineBase*> getAllPipelines() const;
 
     // Internal use functions
-    void setPipeline(const GenericRenderpassProperties& renderpassProps, PGraphicsPipeline graphicsPipeline);
+    void setPipeline(const GenericRenderPassProperties& renderpassProps, GraphicsPipelineBase* graphicsPipeline);
 
     /* ShaderObjectBase overrides */
     const GraphicsResourceType* baseShaderType() const final;

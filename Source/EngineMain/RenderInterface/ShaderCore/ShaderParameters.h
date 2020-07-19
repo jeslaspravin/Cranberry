@@ -14,7 +14,7 @@ struct ShaderParamInfo;
 using ShaderVertexFieldNode = ShaderParamFieldNode<ShaderVertexField>;
 using ShaderBufferFieldNode = ShaderParamFieldNode<ShaderBufferField>;
 
-using ShaderVertexParamInfo = ShaderParamInfo<ShaderVertexFieldNode>;
+struct ShaderVertexParamInfo;
 using ShaderBufferParamInfo = ShaderParamInfo<ShaderBufferFieldNode>;
 
 //////////////////////////////////////////////////////////////////////////
@@ -153,10 +153,28 @@ struct ShaderParamFieldNode
 template<typename FieldNodeType>
 struct ShaderParamInfo
 {
+public:
     FieldNodeType startNode;
+    // TODO(Jeslas) : change param info to use ranged for loop rather than manual while based iteration
+    //FieldNodeType* endNode;
+    //ShaderParamInfo()
+    //{
+    //    FieldNodeType* node = &startNode;
+    //    while (node->isValid())
+    //    {
+    //        node = node->nextNode;
+    //    }
+    //    endNode = node;
+    //}
 
-    virtual uint32 paramStride() = 0;
+    virtual uint32 paramStride() const = 0;
     virtual void setStride(uint32 newStride) = 0;
+};
+
+struct ShaderVertexParamInfo : public ShaderParamInfo<ShaderVertexFieldNode>
+{
+public:
+    virtual EShaderInputFrequency::Type inputFrequency() const = 0;
 };
 
 #define BEGIN_BUFFER_DEFINITION(BufferType) \
@@ -164,7 +182,7 @@ struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo \
 { \
     typedef BufferType BufferDataType; \
     uint32 stride = sizeof(BufferDataType); \
-    uint32 paramStride() { return stride; } \
+    uint32 paramStride() const { return stride; } \
     void setStride(uint32 newStride) { stride = newStride; }
 
 #define END_BUFFER_DEFINITION() \
@@ -181,13 +199,15 @@ struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 
-#define BEGIN_VERTEX_DEFINITION(VertexType) \
+#define BEGIN_VERTEX_DEFINITION(VertexType, InputFrequency) \
 struct VertexType##VertexParamInfo final : public ShaderVertexParamInfo \
 { \
     typedef VertexType VertexDataType; \
-    uint32 stride = sizeof(VertexDataType); \
-    uint32 paramStride() { return stride; } \
-    void setStride(uint32 newStride) {}
+    const uint32 stride = sizeof(VertexDataType); \
+    const EShaderInputFrequency::Type vertexInputFreq =  InputFrequency; \
+    uint32 paramStride() const final { return stride; } \
+    void setStride(uint32 newStride) final {} \
+    EShaderInputFrequency::Type inputFrequency() const final { return  vertexInputFreq; }
 
 #define ADD_VERTEX_FIELD(FieldName) \
     ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field = { #FieldName, &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName) }; \

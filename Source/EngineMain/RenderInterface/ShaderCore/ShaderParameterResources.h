@@ -45,11 +45,11 @@ public:
 
     ShaderTextureDescriptorType();
 
+    const DescEntryTexture* textureEntryPtr;
+
     // If sampling or storing
     EImageShaderUsage::Type imageUsageFlags;
     bool bIsAttachedSampler;
-
-    const DescEntryTexture* textureEntryPtr;
 };
 
 struct ShaderBufferDescriptorType : public ShaderDescriptorParamType
@@ -59,12 +59,15 @@ public:
 
     ShaderBufferDescriptorType();
 
-    bool bIsStorage;
-    const DescEntryBuffer* bufferEntryPtr = nullptr;
     // Buffer parameters info that specify the internal structure of buffer this will be filled with offset and informations from reflection
     ShaderBufferParamInfo* bufferParamInfo;
+    const DescEntryBuffer* bufferEntryPtr = nullptr;
 
     const DescEntryTexelBuffer* texelBufferEntryPtr = nullptr;
+
+    // C++ size of buffer as this gets lost when bufferParamInfo gets filled with GPU stride and offsets
+    uint32 bufferNativeStride;
+    bool bIsStorage;
 };
 
 struct ShaderSamplerDescriptorType : public ShaderDescriptorParamType
@@ -105,6 +108,9 @@ public:
     virtual void init() override;
     virtual void release() override;
     /* Override ends */
+
+    const ShaderDescriptorParamType* parameterDescription(uint32& outSetIdx, const String& paramName) const;
+    const ShaderDescriptorParamType* parameterDescription(const String& paramName) const;
 };
 
 // Contains shader's all descriptors set layouts
@@ -130,4 +136,7 @@ public:
     virtual void init() override;
     virtual void release() override;
     /* Override ends */
+
+    const ShaderDescriptorParamType* parameterDescription(uint32& outSetIdx, const String& paramName) const;
+    const ShaderDescriptorParamType* parameterDescription(const String& paramName) const;
 };

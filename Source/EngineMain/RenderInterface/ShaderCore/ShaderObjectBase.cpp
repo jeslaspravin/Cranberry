@@ -1,5 +1,4 @@
 #include "ShaderObject.h"
-#include "../Rendering/FramebufferTypes.h"
 #include "../Shaders/Base/DrawMeshShader.h"
 #include "../Shaders/Base/UtilityShaders.h"
 #include "../../Core/Math/Math.h"
@@ -22,7 +21,7 @@ DrawMeshShaderObject::DrawMeshShaderObject(const String& sName)
 {}
 
 const DrawMeshShader* DrawMeshShaderObject::getShader(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat
-    , PPGraphicsPipelineBaseRef outGraphicsPipeline /*= nullptr*/) const
+    , GraphicsPipelineBase** outGraphicsPipeline /*= nullptr*/) const
 {
     auto shadersForFormatItr = shadersForRenderPass.find(outputBufferFormat);
     auto shadersForVertex = shadersForVertexType.find(inputVertexType);
@@ -49,7 +48,7 @@ void DrawMeshShaderObject::addShader(const ShaderResource* shaderResource)
     const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
     FramebufferFormat usageFormats(drawMeshShader->renderpassUsage());
     ShaderResourcesConstIterator itr = std::find_if(shaderResources.cbegin(), shaderResources.cend()
-        , [drawMeshShader](ShaderResourcesConstIterator& itr) { return itr->first == drawMeshShader; });
+        , [drawMeshShader](const ShaderResourcePair& shaderPipelinePair) { return shaderPipelinePair.first == drawMeshShader; });
     if (itr == shaderResources.cend())
     {
         int32 shaderResIndex = int32(shaderResources.size());
@@ -78,11 +77,11 @@ void DrawMeshShaderObject::addShader(const ShaderResource* shaderResource)
     }
 }
 
-void DrawMeshShaderObject::setPipeline(const ShaderResource* shaderResource, PGraphicsPipeline graphicsPipeline)
+void DrawMeshShaderObject::setPipeline(const ShaderResource* shaderResource, GraphicsPipelineBase* graphicsPipeline)
 {
     const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
     ShaderResourcesIterator itr = std::find_if(shaderResources.begin(), shaderResources.end()
-        , [drawMeshShader](ShaderResourcesIterator& itr) { return itr->first == drawMeshShader; });
+        , [drawMeshShader](const ShaderResourcePair& shaderPipelinePair) { return shaderPipelinePair.first == drawMeshShader; });
 
     debugAssert(itr != shaderResources.end());
 
@@ -123,19 +122,19 @@ const UniqueUtilityShader* UniqueUtilityShaderObject::getShader() const
     return utilityShader;
 }
 
-PGraphicsPipeline UniqueUtilityShaderObject::getPipeline(const GenericRenderpassProperties& renderpassProps) const
+GraphicsPipelineBase* UniqueUtilityShaderObject::getPipeline(const GenericRenderPassProperties& renderpassProps) const
 {
-    std::unordered_map<GenericRenderpassProperties, PGraphicsPipeline>::const_iterator itr = graphicsPipelines.find(renderpassProps);
+    std::unordered_map<GenericRenderPassProperties, GraphicsPipelineBase*>::const_iterator itr = graphicsPipelines.find(renderpassProps);
 
     return itr != graphicsPipelines.cend() ? itr->second : nullptr;
 }
 
-PGraphicsPipeline UniqueUtilityShaderObject::getDefaultPipeline() const
+GraphicsPipelineBase* UniqueUtilityShaderObject::getDefaultPipeline() const
 {
     return graphicsPipelines.find(defaultPipelineProps)->second;
 }
 
-void UniqueUtilityShaderObject::setPipeline(const GenericRenderpassProperties& renderpassProps, PGraphicsPipeline graphicsPipeline)
+void UniqueUtilityShaderObject::setPipeline(const GenericRenderPassProperties& renderpassProps, GraphicsPipelineBase* graphicsPipeline)
 {
     if (graphicsPipelines.empty())
     {
@@ -143,7 +142,7 @@ void UniqueUtilityShaderObject::setPipeline(const GenericRenderpassProperties& r
     }
     else
     {
-        std::unordered_map<GenericRenderpassProperties, PGraphicsPipeline>::iterator itr = graphicsPipelines.find(renderpassProps);
+        std::unordered_map<GenericRenderPassProperties, GraphicsPipelineBase*>::iterator itr = graphicsPipelines.find(renderpassProps);
         debugAssert(itr != graphicsPipelines.end());
     }
     graphicsPipelines[renderpassProps] = graphicsPipeline;
@@ -151,7 +150,7 @@ void UniqueUtilityShaderObject::setPipeline(const GenericRenderpassProperties& r
 
 UniqueUtilityShaderObject::~UniqueUtilityShaderObject()
 {
-    for (const std::pair<GenericRenderpassProperties, PGraphicsPipeline>& pipeline : graphicsPipelines)
+    for (const std::pair<GenericRenderPassProperties, GraphicsPipelineBase*>& pipeline : graphicsPipelines)
     {
         pipeline.second->release();
         delete pipeline.second;
@@ -162,4 +161,15 @@ UniqueUtilityShaderObject::~UniqueUtilityShaderObject()
 const GraphicsResourceType* UniqueUtilityShaderObject::baseShaderType() const
 {
     return UniqueUtilityShader::staticType();
+}
+
+std::vector<const GraphicsPipelineBase*> UniqueUtilityShaderObject::getAllPipelines() const
+{
+    std::vector<const GraphicsPipelineBase*> pipelines;
+    pipelines.reserve(graphicsPipelines.size());
+    for (const std::pair<GenericRenderPassProperties, GraphicsPipelineBase*>& pipeline : graphicsPipelines)
+    {
+        pipelines.emplace_back(pipeline.second);
+    }
+    return pipelines;
 }

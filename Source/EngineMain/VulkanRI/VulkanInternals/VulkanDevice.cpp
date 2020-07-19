@@ -20,6 +20,7 @@ namespace GlobalRenderVariables
     GraphicsDeviceConstant<float> MAX_ANISOTROPY(0);
 
     //extern GraphicsDeviceConstant<bool> ENABLED_TESSELLATION;
+    GraphicsDeviceConstant<bool> ENABLE_NON_FILL_DRAWS;
 
     GraphicsDeviceConstant<bool> ENABLED_TIMELINE_SEMAPHORE;
     GraphicsDeviceConstant<uint64> MAX_TIMELINE_OFFSET(0);
@@ -32,6 +33,7 @@ void VulkanDevice::markEnabledFeatures()
 {
     // TODO(Jeslas) : Check and enable necessary features on enabledFeatures
     enabledFeatures.samplerAnisotropy = features.samplerAnisotropy;
+    enabledFeatures.fillModeNonSolid = features.fillModeNonSolid;
 }
 
 void VulkanDevice::markGlobalConstants()
@@ -47,6 +49,8 @@ void VulkanDevice::markGlobalConstants()
         GlobalRenderVariables::ENABLE_ANISOTROPY.set(false);
         GlobalRenderVariables::MAX_ANISOTROPY.set(1);
     }
+
+    GlobalRenderVariables::ENABLE_NON_FILL_DRAWS.set(enabledFeatures.fillModeNonSolid);
 
     // Sync resources
     GlobalRenderVariables::MAX_TIMELINE_OFFSET.set(timelineSemaphoreProps.maxTimelineSemaphoreValueDifference);

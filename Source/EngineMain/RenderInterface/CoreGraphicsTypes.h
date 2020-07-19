@@ -337,6 +337,13 @@ namespace ESamplerTilingMode
 // Pipeline types
 //////////////////////////////////////////////////////////////////////////
 
+enum class EPolygonDrawMode
+{
+    Fill = 0,
+    Line = 1,
+    Point = 2
+};
+
 enum class ECullingMode
 {
     None = 0,
@@ -345,7 +352,7 @@ enum class ECullingMode
     Both = 3
 };
 
-enum EStencilOp
+enum class EStencilOp
 {
     KeepOld = 0,
     Zero = 1,
@@ -357,7 +364,7 @@ enum EStencilOp
     DecrementWrap = 7
 };
 
-enum EBlendOp
+enum class EBlendOp
 {
     Add = 0,// S + D
     Subtract = 1,// S - D
@@ -367,7 +374,7 @@ enum EBlendOp
     // TODO(Jeslas) Not very important : support for advanced blending options
 };
 
-enum EBlendFactor
+enum class EBlendFactor
 {
     Zero = 0,
     One = 1,
@@ -392,8 +399,9 @@ enum EBlendFactor
 
 struct DepthState
 {
-    bool bEnableWrite = false;
-    CoreGraphicsTypes::ECompareOp::Type compareOp = CoreGraphicsTypes::ECompareOp::Always;
+    CoreGraphicsTypes::ECompareOp::Type compareOp = CoreGraphicsTypes::ECompareOp::Greater;
+    bool bEnableWrite = true;
+    //bool bEnableDepthBounds = false;
 };
 
 
@@ -412,10 +420,45 @@ struct StencilState
 struct AttachmentBlendState
 {
     bool bBlendEnable = false;
-    EBlendFactor srcColorFactor;
-    EBlendFactor dstColorFactor;
-    EBlendOp colorBlendOp;
-    EBlendFactor srcAlphaFactor;
-    EBlendFactor dstAlphaFactor;
-    EBlendOp alphaBlendOp;
+    EBlendFactor srcColorFactor = EBlendFactor::One;
+    EBlendFactor dstColorFactor = EBlendFactor::Zero;
+    EBlendOp colorBlendOp = EBlendOp::Add;
+    EBlendFactor srcAlphaFactor = EBlendFactor::One;
+    EBlendFactor dstAlphaFactor = EBlendFactor::Zero;
+    EBlendOp alphaBlendOp = EBlendOp::Add;
+
+    bool usesBlendConstant() const
+    {
+        return srcColorFactor == EBlendFactor::ConstColor || srcColorFactor == EBlendFactor::OneMinusConstColor
+            || srcColorFactor == EBlendFactor::ConstAlpha || srcColorFactor == EBlendFactor::ConstColor
+            || dstColorFactor == EBlendFactor::ConstColor || dstColorFactor == EBlendFactor::OneMinusConstColor
+            || dstColorFactor == EBlendFactor::ConstAlpha || dstColorFactor == EBlendFactor::ConstColor
+            || srcAlphaFactor == EBlendFactor::ConstColor || srcAlphaFactor == EBlendFactor::OneMinusConstColor
+            || srcAlphaFactor == EBlendFactor::ConstAlpha || srcAlphaFactor == EBlendFactor::ConstColor
+            || dstAlphaFactor == EBlendFactor::ConstColor || dstAlphaFactor == EBlendFactor::OneMinusConstColor
+            || dstAlphaFactor == EBlendFactor::ConstAlpha || dstAlphaFactor == EBlendFactor::ConstColor;
+    }
 };
+
+//////////////////////////////////////////////////////////////////////////
+/// Render pass attachment types
+//////////////////////////////////////////////////////////////////////////
+
+namespace EAttachmentOp
+{
+    enum class LoadOp
+    {
+        DontCare,
+        Load,
+        Clear
+    };
+
+    enum class StoreOp
+    {
+        DontCare,
+        Store
+    };
+
+    uint32 getLoadOp(LoadOp loadOp);
+    uint32 getStoreOp(StoreOp storeOp);
+}
