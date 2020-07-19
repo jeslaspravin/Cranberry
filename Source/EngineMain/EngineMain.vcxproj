@@ -266,6 +266,7 @@
     <ClCompile Include="Core\Types\Textures\TexturesBase.cpp" />
     <ClCompile Include="Core\Types\Time.cpp" />
     <ClCompile Include="Core\Types\Transform3D.cpp" />
+    <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
     <ClCompile Include="RenderApi\GBuffersAndTextures.cpp" />
     <ClCompile Include="RenderApi\Material\MaterialCommonUniforms.cpp" />
     <ClCompile Include="RenderApi\RenderApi.cpp" />
@@ -389,6 +390,7 @@
     <ClInclude Include="Core\Types\Textures\TexturesBase.h" />
     <ClInclude Include="Core\Types\Time.h" />
     <ClInclude Include="Core\Types\Transform3D.h" />
+    <ClInclude Include="Experimental\ExperimentalEngine.h" />
     <ClInclude Include="RenderApi\GBuffersAndTextures.h" />
     <ClInclude Include="RenderApi\Material\MaterialCommonUniforms.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />

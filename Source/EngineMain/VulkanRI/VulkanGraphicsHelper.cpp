@@ -17,6 +17,13 @@
 #include "../Core/Engine/Config/EngineGlobalConfigs.h"
 #include "../Core/Math/Math.h"
 
+// Only in experimental branch
+class VulkanDevice* VulkanGraphicsHelper::getVulkanDevice(class IGraphicsInstance* graphicsInstance)
+{
+    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    return &gInstance->selectedDevice;
+}
+
 template <EQueueFunction QueueFunction> VulkanQueueResource<QueueFunction>* getQueue(const VulkanDevice* device);
 
 VkInstance VulkanGraphicsHelper::getInstance(class IGraphicsInstance* graphicsInstance)
