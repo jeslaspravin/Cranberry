@@ -284,6 +284,7 @@ class VulkanChunkAllocator
 {
     // Chunk size
     uint64 cSize;
+    uint64 initialAlignment;
     VulkanDevice* device;
     uint32 tIndex;
     uint32 hIndex;
@@ -360,6 +361,7 @@ class VulkanChunkAllocator
 public:
     VulkanChunkAllocator(uint64 chunkSize,uint64 alignment, VulkanDevice* vDevice,uint32 typeIndex,uint32 heapIndex) 
         : cSize(chunkSize)
+        , initialAlignment(alignment)
         , device(vDevice)
         , tIndex(typeIndex)
         , hIndex(heapIndex)
@@ -368,8 +370,9 @@ public:
         uint64 totalHeapSize;
         device->getMemoryStat(totalHeapSize, currentUsageSize, hIndex);
         cSize = (uint64)(Math::min<uint64>(2*cSize, totalHeapSize) * 0.5f);
-        allocateNewChunk(chunks, alignment, cSize);
-        allocateNewChunk(chunks2xAligned, alignment * 2, cSize);
+        /* Allocate as required as even 100MB in graphics memory is important */
+        //allocateNewChunk(chunks, alignment, cSize);
+        //allocateNewChunk(chunks2xAligned, alignment * 2, cSize);
     }
 
     ~VulkanChunkAllocator()
@@ -404,6 +407,16 @@ public:
 
     VulkanMemoryBlock* allocate(const uint64& size, const uint64& offsetAlignment)
     {
+        // If using chunk allocator for first time, Moved from constructor allocation to here
+        if (chunks.empty())
+        {
+            allocateNewChunk(chunks, initialAlignment, cSize);
+        }
+        if (chunks2xAligned.empty())
+        {
+            allocateNewChunk(chunks2xAligned, initialAlignment * 2, cSize);
+        }
+
         VulkanMemoryBlock* allocatedBlock = nullptr;
         // Chunks to min wastage after alignment pair
         std::vector<std::pair<std::vector<VulkanMemoryChunk*>*, uint64>> sortedChunks;
@@ -679,36 +692,25 @@ public:
         uint64 alignment = Math::max<uint64>(Math::max<uint64>(device->properties.limits.minStorageBufferOffsetAlignment,
             device->properties.limits.minUniformBufferOffsetAlignment), device->properties.limits.minTexelBufferOffsetAlignment);
 
-        uint64 totalLinearStorage = 0;
-        uint64 totalOptimalStorage = 0;
+        for (uint32 i = 0; i < device->memoryProperties.memoryTypeCount; ++i)
         {
-            std::set<uint32> uniqAllocatorCheck;
-            for (uint32 i = 0; i < device->memoryProperties.memoryTypeCount; ++i)
+            linearChunkAllocators[i] = nullptr;
+            optimalChunkAllocators[i] = nullptr;
+            if (device->memoryProperties.memoryTypes[i].propertyFlags != 0)
             {
-                auto insertResult = uniqAllocatorCheck.insert(device->memoryProperties.memoryTypes[i].propertyFlags);
-                
-                if (insertResult.second && device->memoryProperties.memoryTypes[i].propertyFlags != 0)
-                {
-                    // TODO(Jeslas) : Revisit hard coded size per chunk part.
-                    linearChunkAllocators[i] = new VulkanChunkAllocator(128 * 1024 * 1024, alignment, device, i,
-                        device->memoryProperties.memoryTypes[i].heapIndex);
-                    totalLinearStorage += linearChunkAllocators[i]->allocatorSize();
+                // TODO(Jeslas) : Revisit hard coded size per chunk part.
+                linearChunkAllocators[i] = new VulkanChunkAllocator(128 * 1024 * 1024, alignment, device, i,
+                    device->memoryProperties.memoryTypes[i].heapIndex);
 
-                    optimalChunkAllocators[i] = new VulkanChunkAllocator(128 * 1024 * 1024, alignment, device, i,
-                        device->memoryProperties.memoryTypes[i].heapIndex);
-                    totalOptimalStorage += optimalChunkAllocators[i]->allocatorSize();
-
-                    availableMemoryProps.push_back({ i,device->memoryProperties.memoryTypes[i].propertyFlags });
-                }
-                else
+                if((device->memoryProperties.memoryTypes[i].propertyFlags & VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0)
                 {
-                    linearChunkAllocators[i] = nullptr;
-                    optimalChunkAllocators[i] = nullptr;
+                    optimalChunkAllocators[i] = new VulkanChunkAllocator(64 * 1024 * 1024, alignment, device, i,
+                        device->memoryProperties.memoryTypes[i].heapIndex);
                 }
+
+                availableMemoryProps.push_back({ i,device->memoryProperties.memoryTypes[i].propertyFlags });
             }
         }
-        Logger::debug("VulkanMemoryAllocator", "%s() : Initial allocation size Linear : %dBytes Optimal : %dBytes",
-            __func__, totalLinearStorage,totalOptimalStorage);
     }
 
 
@@ -723,10 +725,13 @@ public:
             delete linearChunkAllocators[indexPropPair.first];
             linearChunkAllocators[indexPropPair.first] = nullptr;
 
-            Logger::debug("VulkanMemoryAllocator", "%s() : Freeing %dBytes of optimal memory", __func__,
-                optimalChunkAllocators[indexPropPair.first]->allocatorSize());
-            delete optimalChunkAllocators[indexPropPair.first];
-            optimalChunkAllocators[indexPropPair.first] = nullptr;
+            if (optimalChunkAllocators[indexPropPair.first] != nullptr)
+            {
+                Logger::debug("VulkanMemoryAllocator", "%s() : Freeing %dBytes of optimal memory", __func__,
+                    optimalChunkAllocators[indexPropPair.first]->allocatorSize());
+                delete optimalChunkAllocators[indexPropPair.first];
+                optimalChunkAllocators[indexPropPair.first] = nullptr;
+            }
         }
         availableMemoryProps.clear();
     }
@@ -737,17 +742,16 @@ public:
         VkMemoryRequirements memRequirement;
         device->vkGetBufferMemoryRequirements(device->logicalDevice, buffer, &memRequirement);
 
-        if (!cpuAccessible && (memRequirement.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
-        {
-            return block;
-        }
         sortAvailableByPriority(cpuAccessible);
         for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
-            if (cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) // Cannot use pure device local as CPU accessible
+            uint32 memoryTypeBit = 1u << indexPropPair.first;
+            if ((cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+                || (memoryTypeBit & memRequirement.memoryTypeBits) == 0) // Cannot use pure device local as CPU accessible or not supported memory type
             {
                 continue;
             }
+
             block = linearChunkAllocators[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
 
             if (block)
@@ -759,32 +763,23 @@ public:
         return block;
     }
 
-
     VulkanMemoryBlock* allocateImage(VkImage image, bool cpuAccessible, bool bIsOptimalTiled) override
     {
         VulkanMemoryBlock* block = nullptr;
         VkMemoryRequirements memRequirement;
         device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
-        /* Cannot rely on spec at https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/chap11.html#vkGetImageMemoryRequirements
-        As it is behaving differently on hardware with on board graphics either dedicated or internal */
-        //bool isOptimalImage = (memRequirement.memoryTypeBits 
-        //    & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == 0;
-        //
-        //// if being device local and not available or is optimal and being host accessible
-        //if ((!cpuAccessible && (memRequirement.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) 
-        //    || (cpuAccessible && isOptimalImage))
-        //{
-        //    return block;
-        //}
 
         VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
         sortAvailableByPriority(cpuAccessible);
         for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
-            if (cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0) // Cannot use pure device local as CPU accessible
+            uint32 memoryTypeBit = 1u << indexPropPair.first;
+            if ((cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+                || (memoryTypeBit & memRequirement.memoryTypeBits) == 0) // Cannot use pure device local as CPU accessible or not supported memory type
             {
                 continue;
             }
+
             block = chunkAllocator[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
 
             if (block)
@@ -796,34 +791,24 @@ public:
         return block;
     }
 
-
     void deallocateBuffer(VkBuffer buffer, VulkanMemoryBlock* block) override
     {
         for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
-            if (linearChunkAllocators[indexPropPair.first]->free(block))
+            if (linearChunkAllocators[indexPropPair.first] != nullptr && linearChunkAllocators[indexPropPair.first]->free(block))
             {
                 break;
             }
         }
     }
 
-
     void deallocateImage(VkImage image, VulkanMemoryBlock* block, bool bIsOptimalTiled) override
     {
-        /* Cannot rely on spec at https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/chap11.html#vkGetImageMemoryRequirements
-        As it is behaving differently on hardware with on board graphics either dedicated or internal */
-        //VkMemoryRequirements memRequirement;
-        //device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
-        //
-        //bool isOptimalImage = (memRequirement.memoryTypeBits 
-        //    & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == 0;
-
         VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
 
         for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
-            if (chunkAllocator[indexPropPair.first]->free(block))
+            if (chunkAllocator[indexPropPair.first] != nullptr && chunkAllocator[indexPropPair.first]->free(block))
             {
                 break;
             }

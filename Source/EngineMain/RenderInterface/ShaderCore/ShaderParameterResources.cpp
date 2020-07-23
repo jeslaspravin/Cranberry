@@ -141,6 +141,7 @@ void ShaderSetParametersLayout::init()
     // Fill those bound buffer info with GPU reflect data
     for (const std::pair<String, ShaderBufferDescriptorType*>& bufferDescWrapper : bufferDescriptors)
     {
+        bufferDescWrapper.second->bufferNativeStride = bufferDescWrapper.second->bufferParamInfo->paramStride();
         ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data);
     }
 }
@@ -170,8 +171,8 @@ const ShaderDescriptorParamType* ShaderSetParametersLayout::parameterDescription
         outSetIdx = shaderSetID;
         return foundParamItr->second;
     }
-    Logger::error("ShaderSetParametersLayout", "%s : Parameter %s is not available in shader %s", __func__
-        , paramName.getChar(), respectiveShaderRes->getResourceName().getChar());
+    Logger::error("ShaderSetParametersLayout", "%s : Parameter %s is not available in shader %s at set %u", __func__
+        , paramName.getChar(), respectiveShaderRes->getResourceName().getChar(), shaderSetID);
     return nullptr;
 }
 
