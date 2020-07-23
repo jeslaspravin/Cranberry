@@ -325,7 +325,7 @@ PipelineBase* GlobalRenderingContextBase::createNewPipeline(UniqueUtilityShaderO
     GraphicsPipelineBase* pipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create({ shaderObject->getShader(), shaderObject->getDefaultPipeline() }));
     pipeline->setRenderpassProperties(renderpassProps);
 
-    initializeNewPipeline(shaderObject, pipeline);
+    initializeGenericGraphicsPipeline(shaderObject, pipeline);
     return pipeline;
 }
 
