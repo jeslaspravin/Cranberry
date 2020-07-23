@@ -70,8 +70,8 @@ protected:
 
     // Functions for none mesh draw shader passes
 
-    // Fills necessary values to pipeline and initializes it
-    virtual void initializeNewPipeline(UniqueUtilityShaderObject* shaderObject, PipelineBase* pipeline) = 0;
+    // Fills necessary render pass info to pipeline(Pipeline render pass properties has to filled before using this) and initializes it
+    virtual void initializeGenericGraphicsPipeline(UniqueUtilityShaderObject* shaderObject, PipelineBase* pipeline) = 0;
     // Get generic render pass properties from Render targets
     GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const;
     // Get generic render pass properties from framebuffer

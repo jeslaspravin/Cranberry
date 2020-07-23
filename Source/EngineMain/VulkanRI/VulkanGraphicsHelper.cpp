@@ -800,7 +800,7 @@ void VulkanGraphicsHelper::getPipelineCacheData(class IGraphicsInstance* graphic
     device->vkGetPipelineCacheData(device->logicalDevice, pipelineCache, &cacheDataSize, nullptr);
     if (cacheDataSize > 0)
     {
-        std::vector<uint8> cacheData(cacheDataSize);
+        cacheData.resize(cacheDataSize);
         device->vkGetPipelineCacheData(device->logicalDevice, pipelineCache, &cacheDataSize, cacheData.data());
     }
 }
