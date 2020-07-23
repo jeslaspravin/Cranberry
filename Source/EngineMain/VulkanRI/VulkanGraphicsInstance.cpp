@@ -118,13 +118,23 @@ void VulkanGraphicsInstance::createVulkanInstance()
 
     VkResult result = Vk::vkCreateInstance(&instanceCreateInfo, nullptr, &vulkanInstance);
 
+    if (result == VkResult::VK_ERROR_LAYER_NOT_PRESENT)
+    {
+        String layersStr;
+        for (const char* layer : layers)
+        {
+            layersStr.append("\n\t");
+            layersStr.append(layer);
+        }
+        Logger::error("Vulkan", "%s() : Requested layer/s not available%s", __func__, layersStr.getChar());
+    }
     fatalAssert(result == VkResult::VK_SUCCESS && vulkanInstance != nullptr,"Could not create vulkan instance");
 }
 
 #if _DEBUG
 void VulkanGraphicsInstance::collectInstanceLayers(std::vector<const char*>& layers) const
 {
-    layers.push_back("VK_LAYER_LUNARG_standard_validation");
+    layers.push_back("VK_LAYER_KHRONOS_validation");
 }
 #endif
 

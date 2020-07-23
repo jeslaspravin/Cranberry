@@ -89,7 +89,7 @@ void VulkanGlobalRenderingContext::initializeApiContext()
             VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(shaderObject->getDefaultPipeline());
             graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, graphicsPipeline);
 
-            initializeNewPipeline(shaderObject, shaderObject->getDefaultPipeline());
+            initializeGenericGraphicsPipeline(shaderObject, shaderObject->getDefaultPipeline());
             pipelineLayouts[shaderObject->getShader()] = graphicsPipeline->pipelineLayout;
         }
     }
@@ -135,9 +135,9 @@ VkRenderPass VulkanGlobalRenderingContext::createGbufferRenderpass(ERenderPassFo
     return VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderpassProps, additionalProps);
 }
 
-void VulkanGlobalRenderingContext::initializeNewPipeline(UniqueUtilityShaderObject* shaderObject, PipelineBase* pipeline)
+void VulkanGlobalRenderingContext::initializeGenericGraphicsPipeline(UniqueUtilityShaderObject* shaderObject, PipelineBase* pipeline)
 {
-    VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(shaderObject->getDefaultPipeline());
+    VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(pipeline);
     GenericRenderPassProperties renderPassProps = graphicsPipeline->getRenderpassProperties();
 
     VkRenderPass renderPass = nullptr;
