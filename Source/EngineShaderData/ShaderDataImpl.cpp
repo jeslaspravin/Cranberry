@@ -64,8 +64,8 @@ template<>
 void operator<< <ShaderStageDescription>(ShaderArchive& archive, ShaderStageDescription& typeData)
 {
     archive << typeData.stage;
-    archive << typeData.entryPoint;
     archive << typeData.pipelineBindPoint;
+    archive << typeData.entryPoint;
     archive << typeData.codeView;
     archive << typeData.stageSpecializationEntries;
 }
@@ -115,7 +115,7 @@ void operator<< <ReflectDescriptorBody>(ShaderArchive& archive, ReflectDescripto
     archive << typeData.textureAndArrays;
     archive << typeData.subpassInputs;
     archive << typeData.imagesAndImgArrays;
-    archive << typeData.samplerBuffers;
+    archive << typeData.samplers;
 }
 
 template<>
@@ -184,8 +184,8 @@ void operator<<(ShaderArchive& archive, NamedAttribute<Type>& typeData)
 template<typename Type>
 void operator<<(ShaderArchive& archive, StructInnerFields<Type>& typeData)
 {
-    archive << typeData.stride;
     archive << typeData.offset;
+    archive << typeData.stride;
     archive << typeData.totalSize;
     archive << typeData.arraySize;
     archive << typeData.data;
