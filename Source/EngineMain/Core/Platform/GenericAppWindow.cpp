@@ -1,7 +1,5 @@
 #include "GenericAppWindow.h"
 
-
-
 void GenericAppWindow::windowSize(uint32& width, uint32& height) const
 {
     width = windowWidth;

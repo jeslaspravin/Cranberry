@@ -1,55 +1,5 @@
 #include "Keys.h"
-
-#if _WIN32
-
-#include "Windows/WindowsKeyCodes.h"
-
-#include <windows.h>
-
-void Keys::pollInputs()
-{
-    uint32 keysCount = sizeof(rawKeyStates) / sizeof(uint8);
-    for (uint32 keyIndex = 0; keyIndex < keysCount; ++keyIndex)
-    {
-        // MSB must be non zero
-        rawKeyStates[keyIndex] = (GetAsyncKeyState(keyIndex) & 0x8000) > 0 ? TRUE : FALSE;
-    }
-
-    for (std::pair<const Key* const, KeyState>& keyState : keyStates)
-    {
-        keyState.second.keyWentUp = 0;
-        keyState.second.keyWentDown = 0;
-        if (keyState.second.isPressed == 0)
-        {
-            if (rawKeyStates[keyState.first->keyCode] == TRUE)
-            {
-                keyState.second.pressedTick = Time::timeNow();
-                keyState.second.isPressed = 1;
-                keyState.second.keyWentDown = 1;
-            }
-        }
-        else
-        {
-            if (rawKeyStates[keyState.first->keyCode] == FALSE)
-            {
-                keyState.second.isPressed = 0;
-                keyState.second.keyWentUp = 1;
-            }
-        }
-    }
-
-}
-
-#elif __unix__
-
-static_assert(false, "Platform not supported!");
-#elif __linux__
-static_assert(false, "Platform not supported!");
-#elif __APPLE__
-static_assert(false, "Platform not supported!");
-#endif
-
-using EKeyCode = KeyCode::EKeyCode;
+#include "PlatformInputTypes.h"
 
 const Key Keys::LMB{ EKeyCode::MOUSE_LEFT,"Mouse Left", 0 };
 const Key Keys::RMB{ EKeyCode::MOUSE_RIGHT,"Mouse Right", 0 };
@@ -155,29 +105,68 @@ Keys::Keys()
 
 }
 
-const KeyState* Keys::queryKeyState(const Key& key) const
+const KeyState* Keys::queryState(const Key& key) const
 {
     return &keyStates.at(&key);
 }
 
-void Keys::resetInit()
+std::map<const Key*, KeyState>& Keys::getKeyStates()
 {
-    pollInputs();
-    for (std::pair<const Key* const, KeyState>& keyState : keyStates)
+    return keyStates;
+}
+
+void Keys::resetStates()
+{
+    for (std::pair<Key const* const, KeyState>& keyStatePair : keyStates)
     {
-        keyState.second.keyWentDown = keyState.second.keyWentUp = 0;
+        keyStatePair.second.isPressed = keyStatePair.second.keyWentUp = keyStatePair.second.keyWentDown = 0;
     }
 }
 
-void Keys::clear()
+bool Keys::isKeyboardKey(uint32 keyCode)
 {
-    for (std::pair<const Key* const, KeyState>& keyState : keyStates)
+    return !isMouseKey(keyCode);
+}
+
+bool Keys::isMouseKey(uint32 keyCode)
+{
+    return EKeyCode::MOUSE_START <= keyCode && EKeyCode::MOUSE_END >= keyCode;
+}
+
+std::initializer_list<std::pair<AnalogStates::EStates, InputAnalogState>> AnalogStates::ANALOGSTATES_INITIALIZER
+{
+    { RelMouseX, InputAnalogState() },
+    { RelMouseX, InputAnalogState() },
+    { AbsMouseX, InputAnalogState() },
+    { AbsMouseX, InputAnalogState() },
+    { ScrollWheelX, InputAnalogState() },
+    { ScrollWheelY, InputAnalogState() }
+};
+
+AnalogStates::AnalogStates()
+    : analogStates(ANALOGSTATES_INITIALIZER.begin(), ANALOGSTATES_INITIALIZER.end())
+{}
+
+const InputAnalogState* AnalogStates::queryState(EStates analogState) const
+{
+    auto stateItr = analogStates.find(analogState);
+    if (stateItr != analogStates.cend())
     {
-        keyState.second.keyWentDown = keyState.second.keyWentUp = 0;
-        if (keyState.second.isPressed)
-        {
-            keyState.second.isPressed = 0;
-            keyState.second.keyWentUp = 1;
-        }
+        return &stateItr->second;
+    }
+    return nullptr;
+}
+
+std::map<AnalogStates::EStates, InputAnalogState>& AnalogStates::getAnalogStates()
+{
+    return analogStates;
+}
+
+void AnalogStates::resetStates()
+{
+    for (std::pair<const EStates, InputAnalogState>& analogStatePair : analogStates)
+    {
+        analogStatePair.second.acceleration = analogStatePair.second.currentValue = analogStatePair.second.startedThisFrame =
+            analogStatePair.second.startedThisFrame = 0;
     }
 }

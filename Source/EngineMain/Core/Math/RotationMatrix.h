@@ -7,7 +7,7 @@ class RotationMatrix
 {
 private:
     Matrix3 rotationMatrix;
-
+    inline void fromRotation(const class Rotation& rotation);
 public:
     RotationMatrix();
     RotationMatrix(const RotationMatrix& other);

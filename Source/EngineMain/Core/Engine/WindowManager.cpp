@@ -26,6 +26,7 @@ void WindowManager::initMain()
     appMainWindow->onWindowDeactived.bindObject(this, &WindowManager::deactivateWindow, appMainWindow);
     appMainWindow->onResize.bindObject(this, &WindowManager::onWindowResize, appMainWindow);
     appMainWindow->createWindow(::gEngine->getApplicationInstance());
+    inputSystem->registerWindow(appMainWindow);
 
     ENQUEUE_COMMAND(MainWindowInit,
         {
@@ -93,9 +94,6 @@ void WindowManager::activateWindow(GenericAppWindow* window)
             deactivateWindow(activeWindow);
         }
         activeWindow = window;
-
-        // Capture and reset inputs when window become activated again
-        inputSystem->resetToStart();
     }
 }
 
@@ -103,14 +101,14 @@ void WindowManager::deactivateWindow(GenericAppWindow* window)
 {
     if (window == activeWindow)
     {
-        inputSystem->clearInputs();
-
         activeWindow = nullptr;
+        inputSystem->resetStates();
     }
 }
 
 bool WindowManager::pollWindows()
 {
+    bool bActive = false;
     for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
     {
         windowData.first->updateWindow();
@@ -118,9 +116,9 @@ bool WindowManager::pollWindows()
     if (activeWindow != nullptr)
     {
         inputSystem->updateInputStates();
-        return true;
+        bActive = true;
     }
-    return false;
+    return bActive;
 }
 
 const InputSystem* WindowManager::getInputSystem() const
@@ -145,6 +143,11 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
             ), this, window, width, height);
         //gEngine->waitOnRenderApi();
     }
+}
+
+void WindowManager::onMouseMoved(uint32 xPos, uint32 yPos, GenericAppWindow* window)
+{
+    Logger::log("Test", "Mouse abs x : %d, y : %d", xPos, yPos);
 }
 
 const InputSystem* GenericAppInstance::inputSystem() const

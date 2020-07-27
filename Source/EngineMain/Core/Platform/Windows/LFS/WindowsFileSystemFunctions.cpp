@@ -1,7 +1,7 @@
 #include "WindowsFileSystemFunctions.h"
 #include "File/WindowsFile.h"
+#include "../WindowsCommonHeaders.h"
 
-#include <windows.h>
 #include <queue>
 
 std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& directory, bool bRecursive)

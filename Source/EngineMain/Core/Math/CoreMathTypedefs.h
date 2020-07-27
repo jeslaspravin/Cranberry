@@ -7,13 +7,6 @@
 #include <glm/detail/type_vec3.hpp>
 #include <glm/detail/type_vec4.hpp>
 
-#ifdef min
-#undef min
-#endif
-#ifdef max
-#undef max
-#endif
-
 #undef PI
 #define PI (3.1415926535897932f)
 #define SMALL_EPSILON (1.e-8f)

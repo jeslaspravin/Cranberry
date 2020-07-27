@@ -1,12 +1,10 @@
 #pragma once
 #include "../../../LFS/File/GenericFileHandle.h"
 #include "../../../../String/String.h"
-#include <windows.h>
-
 class WindowsFileHandle final : public GenericFileHandle
 {
 private:
-    HANDLE fileHandle=nullptr;
+    void* fileHandle=nullptr;
 
 protected:
     void* getFileHandle() override;

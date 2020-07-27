@@ -1,4 +1,5 @@
 #include "WindowsFileHandle.h"
+#include "../../WindowsCommonHeaders.h"
 #include "../../../../Types/CoreDefines.h"
 #include "../../../../Logger/Logger.h"
 
