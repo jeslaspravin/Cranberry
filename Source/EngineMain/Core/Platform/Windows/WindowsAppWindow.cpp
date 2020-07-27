@@ -4,6 +4,8 @@
 #include "../../Engine/GameEngine.h"
 #include "../../../RenderInterface/Resources/GenericWindowCanvas.h"
 
+#include <set>
+
 void WindowsAppWindow::resizeWindow()
 {
     GenericWindowCanvas* windowCanvas = gEngine->getApplicationInstance()->appWindowManager.getWindowCanvas(this);
@@ -31,7 +33,7 @@ void WindowsAppWindow::createWindow(const GenericAppInstance* appInstance)
         RegisterClassA(&windowClass);
     }
 
-    dword style = bIsWindowed ? WS_OVERLAPPED | WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX : WS_POPUP | WS_MAXIMIZE;
+    dword style = bIsWindowed ? WS_OVERLAPPED | WS_THICKFRAME | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX : WS_POPUP | WS_MAXIMIZE;
 
     RECT windowRect{ 0,0,(LONG)windowWidth,(LONG)windowHeight };
 
@@ -52,18 +54,46 @@ void WindowsAppWindow::createWindow(const GenericAppInstance* appInstance)
 
 void WindowsAppWindow::updateWindow()
 {
-    MSG msg;
-    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) > 0)
+    const static std::set<uint32> IGNORED_MSGS{ WM_INPUT };
+
+    auto peekMsgsLambda = [this](uint32 minFilter, uint32 maxFilter, uint32 removeFlag)
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        MSG msg;
+        while (PeekMessage(&msg, nullptr, minFilter, maxFilter, removeFlag) > 0)
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    };
+
+    uint32 ignoreFilterStart = 0;
+    for (const uint32& msgFilter : IGNORED_MSGS)
+    {
+        peekMsgsLambda(ignoreFilterStart, msgFilter - 1, PM_REMOVE);
+        ignoreFilterStart = msgFilter + 1;
     }
+    peekMsgsLambda(ignoreFilterStart, ~0u, PM_REMOVE);
+
     GenericAppWindow::updateWindow();
 }
+
+void WindowsAppWindow::destroyWindow()
+{
+    GenericAppWindow::destroyWindow();
+
+    DestroyWindow(windowsHandle);
+    windowsHandle = nullptr;
+}
+
 
 bool WindowsAppWindow::isValidWindow() const
 {
     return windowsHandle != nullptr && windowsHandle != nullptr; 
+}
+
+void WindowsAppWindow::pushEvent(uint32 eventType, LambdaFunction<void> function)
+{
+    accumulatedEvents[eventType] = function;
 }
 
 void WindowsAppWindow::activateWindow() const
@@ -81,26 +111,12 @@ void WindowsAppWindow::deactivateWindow() const
         onWindowDeactived.invoke();
     }
 }
-
-void WindowsAppWindow::destroyWindow()
-{
-    GenericAppWindow::destroyWindow();
-
-    DestroyWindow(windowsHandle);
-    windowsHandle = nullptr;
-}
-
-void WindowsAppWindow::windowResizing(uint32 width, uint32 height)
+void WindowsAppWindow::windowResizing(uint32 width, uint32 height) const
 {
     if (onResize.isBound())
     {
         onResize.invoke(width, height);
     }
-}
-
-void WindowsAppWindow::pushEvent(uint32 eventType, LambdaFunction<void> function)
-{
-    accumulatedEvents[eventType] = function;
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -113,13 +129,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             reinterpret_cast<LPCREATESTRUCTA>(lParam)->lpCreateParams);
         SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(windowPtr));
         Logger::log("WindowsAppWindow", "%s() : Created window %s", __func__, windowPtr->getWindowName().getChar());
-        break;
+        return 0;
     }        
     case WM_DESTROY:
     {        
         const WindowsAppWindow* const windowPtr = reinterpret_cast<const WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        Logger::log("WindowsAppWindow", "%s() : Destroying window %s", __func__, windowPtr->getWindowName().getChar()); 
-        break;
+        Logger::log("WindowsAppWindow", "%s() : Destroying window %s", __func__, windowPtr->getWindowName().getChar());
+        return 0;
     }
 
     case WM_CLOSE:
@@ -131,22 +147,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
             gEngine->requestExit();
         }
-        break;
+        return 0;
     }
     case WM_ACTIVATEAPP:
     {
         WindowsAppWindow* const windowPtr = reinterpret_cast<WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        if (!windowPtr)
+        if (windowPtr)
         {
-            return DefWindowProcA(hwnd, uMsg, wParam, lParam);
-        }
-        if (wParam == TRUE)
-        {
-            windowPtr->activateWindow();
-        }
-        else
-        {
-            windowPtr->deactivateWindow();
+            if (wParam == TRUE)
+            {
+                windowPtr->activateWindow();
+            }
+            else
+            {
+                windowPtr->deactivateWindow();
+            }
+            return 0;
         }
         break;
     }
@@ -160,13 +176,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     Logger::log("WindowsAppWindow", "%s() : Resizing window %s ( %d, %d )", __func__, windowPtr->getWindowName().getChar(), LOWORD(lParam), HIWORD(lParam));
                     windowPtr->windowResizing(LOWORD(lParam), HIWORD(lParam));
                 }});
-            break;
+            return 0;
         }
-        return DefWindowProcA(hwnd, uMsg, wParam, lParam);
+        break;
     }
     default:
-        return DefWindowProcA(hwnd, uMsg, wParam, lParam);
+        break;
     }
 
-    return 0;
+    return DefWindowProcA(hwnd, uMsg, wParam, lParam);
 }

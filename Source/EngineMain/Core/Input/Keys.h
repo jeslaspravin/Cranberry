@@ -8,6 +8,7 @@
 // TODO (Jeslas) : change this to proper input system later on
 struct Key
 {
+    // Make/Break code
     uint32 keyCode;
     String keyname;
     uint32 character;
@@ -32,7 +33,6 @@ class Keys
 {
 private:
     static std::initializer_list<std::pair<const Key*, KeyState>> KEYSTATES_INITIALIZER;
-    uint8 rawKeyStates[256];
 
     std::map<const Key*, KeyState> keyStates;
 public:
@@ -85,10 +85,44 @@ public:
 
     Keys();
 
-    void pollInputs();
-    // Resets and init with values so that input will be zero in any time relative values(eg, deltas will be zero,clicked and release this frame will be 0)
-    void resetInit();
-    // Clears all input marking the once that were pressed as released this frame.
-    void clear();
-    const KeyState* queryKeyState(const Key& key) const;
+    const KeyState* queryState(const Key& key) const;
+    std::map<const Key*, KeyState>& getKeyStates();
+    void resetStates();
+
+    static bool isKeyboardKey(uint32 keyCode);
+    static bool isMouseKey(uint32 keyCode);
+};
+
+// Analog states like scroll wheel or mouse movements
+struct InputAnalogState
+{
+    float acceleration = 0;
+    float currentValue = 0;
+    uint8 startedThisFrame = 0;
+    uint8 stoppedThisFrame = 0;
+};
+
+class AnalogStates
+{
+public:
+    enum EStates
+    {
+        RelMouseX,
+        RelMouseY,
+        AbsMouseX,
+        AbsMouseY,
+        ScrollWheelX,
+        ScrollWheelY
+    };
+
+private:
+    static std::initializer_list<std::pair<AnalogStates::EStates, InputAnalogState>> ANALOGSTATES_INITIALIZER;
+
+    std::map<AnalogStates::EStates, InputAnalogState> analogStates;
+
+public:
+    AnalogStates();
+    const InputAnalogState* queryState(AnalogStates::EStates analogState) const;
+    std::map<AnalogStates::EStates, InputAnalogState>& getAnalogStates();
+    void resetStates();
 };

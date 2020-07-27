@@ -1,6 +1,6 @@
 #pragma once
 #include "../GenericAppInstance.h"
-#include <windows.h>
+#include "WindowsCommonHeaders.h"
 
 struct WindowsAppInstance : public GenericAppInstance {
     HINSTANCE windowsInstance;

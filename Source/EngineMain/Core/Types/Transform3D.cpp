@@ -43,6 +43,14 @@ Transform3D::Transform3D(Transform3D&& otherTransform)
     , bCachedLatest(std::move(otherTransform.bCachedLatest))
 {}
 
+Transform3D::Transform3D(const Rotation& rotation)
+    : transformTranslation(Vector3D::ZERO)
+    , transformScale(Vector3D::ONE)
+    , transformRotation(rotation)
+    , transformMatrixCache()
+    , bCachedLatest(false)
+{}
+
 void Transform3D::operator=(const Transform3D& otherTransform)
 {
     transformTranslation = otherTransform.transformTranslation;
@@ -111,7 +119,7 @@ Matrix4 Transform3D::normalTransformMatrix() const
     normTranform[0] = Matrix4Col(rotMatrix.matrix()[0], 0.0f);
     normTranform[1] = Matrix4Col(rotMatrix.matrix()[1], 0.0f);
     normTranform[2] = Matrix4Col(rotMatrix.matrix()[2], 0.0f);
-
+    // Inversing scale alone
     normTranform *= Matrix4(Vector3D::ONE / transformScale);
     return normTranform;
 }

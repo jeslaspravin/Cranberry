@@ -2,7 +2,7 @@
 
 namespace EWindowsKeyCode
 {
-    enum KeyCode
+    enum EKeyCode
     {
         MOUSE_LEFT = 0x01,
         MOUSE_RIGHT = 0x02,
@@ -11,9 +11,9 @@ namespace EWindowsKeyCode
         MOUSE_X2 = 0x06,
         KEY_BACKSPACE = 0x08,
         KEY_TAB = 0x09,
+        KEY_ENTER = 0x0D,
         KEY_CAPS = 0x14,
         KEY_ESC = 0x1B,
-        KEY_ENTER = 0x1E,
         KEY_SPACE = 0x20,
         KEY_LEFT = 0x25,
         KEY_UP,
@@ -67,5 +67,5 @@ namespace EWindowsKeyCode
 
 namespace KeyCode
 {
-    typedef EWindowsKeyCode::KeyCode EKeyCode;
+    typedef EWindowsKeyCode::EKeyCode EKeyCode;
 }
