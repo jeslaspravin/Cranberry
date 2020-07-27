@@ -18,6 +18,7 @@ private:
 public:
     Transform3D();
     Transform3D(const Vector3D& translation, const Rotation& rotation, const Vector3D& scale);
+    Transform3D(const Rotation& rotation);
     // Matrix should be proper orthogonal matrix
     Transform3D(const Matrix4& transformMatrix);
     Transform3D(const Transform3D& otherTransform);

@@ -26,6 +26,7 @@ private:
     void activateWindow(GenericAppWindow* window);
     void deactivateWindow(GenericAppWindow* window);
     void onWindowResize(uint32 width, uint32 height, GenericAppWindow* window);
+    void onMouseMoved(uint32 xPos, uint32 yPos, GenericAppWindow* window);
 public:
 
     GenericAppWindow* getMainWindow() const;

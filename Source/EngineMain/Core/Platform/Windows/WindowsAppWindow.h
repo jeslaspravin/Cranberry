@@ -1,8 +1,9 @@
 #pragma once
 #include "../GenericAppWindow.h"
-#include <windows.h>
+#include "WindowsCommonHeaders.h"
 
-class WindowsAppWindow final : public GenericAppWindow {
+class WindowsAppWindow final : public GenericAppWindow 
+{
     
 private:
     HWND windowsHandle;
@@ -17,10 +18,11 @@ public:
     bool isValidWindow() const override;
 
     HWND getWindowHandle() const { return windowsHandle; }
+
+    void pushEvent(uint32 eventType, LambdaFunction<void> function);
     void activateWindow() const;
     void deactivateWindow() const;
-    void pushEvent(uint32 eventType, LambdaFunction<void> function);
-    void windowResizing(uint32 width, uint32 height);
+    void windowResizing(uint32 width, uint32 height) const;
 };
 
 namespace GPlatformInstances {

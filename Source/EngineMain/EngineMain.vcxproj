@@ -236,6 +236,8 @@
     <ClCompile Include="Core\Engine\WindowManager.cpp" />
     <ClCompile Include="Core\Input\InputSystem.cpp" />
     <ClCompile Include="Core\Input\Keys.cpp" />
+    <ClCompile Include="Core\Input\Windows\WindowsDevices.cpp" />
+    <ClCompile Include="Core\Input\Windows\WindowsRawInputBuffer.cpp" />
     <ClCompile Include="Core\Logger\Logger.cpp" />
     <ClCompile Include="Core\Math\Matrix2.cpp" />
     <ClCompile Include="Core\Math\Matrix3.cpp" />
@@ -335,9 +337,16 @@
     <ClInclude Include="Core\Engine\Config\EngineVariableTypes.h" />
     <ClInclude Include="Core\Engine\GameEngine.h" />
     <ClInclude Include="Core\Engine\WindowManager.h" />
+    <ClInclude Include="Core\Input\InputDevice.h" />
     <ClInclude Include="Core\Input\InputSystem.h" />
     <ClInclude Include="Core\Input\Keys.h" />
+    <ClInclude Include="Core\Input\MakeBreakKeyCodes.h" />
+    <ClInclude Include="Core\Input\PlatformInputTypes.h" />
+    <ClInclude Include="Core\Input\RawInputBuffer.h" />
+    <ClInclude Include="Core\Input\Windows\WindowsKeyboardDevice.h" />
     <ClInclude Include="Core\Input\Windows\WindowsKeyCodes.h" />
+    <ClInclude Include="Core\Input\Windows\WindowsMouseDevice.h" />
+    <ClInclude Include="Core\Input\Windows\WindowsRawInputBuffer.h" />
     <ClInclude Include="Core\Logger\Logger.h" />
     <ClInclude Include="Core\Math\Box.h" />
     <ClInclude Include="Core\Math\CoreMathTypedefs.h" />
@@ -373,6 +382,7 @@
     <ClInclude Include="Core\Platform\Windows\LFS\WindowsFileSystemFunctions.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsAppInstance.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsAppWindow.h" />
+    <ClInclude Include="Core\Platform\Windows\WindowsCommonHeaders.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformDefines.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformFunctions.h" />
     <ClInclude Include="Core\Platform\Windows\WindowsPlatformTypes.h" />

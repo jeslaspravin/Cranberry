@@ -510,6 +510,12 @@
     <ClCompile Include="Experimental\ExperimentalEngine.cpp">
       <Filter>Source Files\Experimental</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Input\Windows\WindowsDevices.cpp">
+      <Filter>Source Files\Core\Input\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Input\Windows\WindowsRawInputBuffer.cpp">
+      <Filter>Source Files\Core\Input\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -898,6 +904,30 @@
     </ClInclude>
     <ClInclude Include="Experimental\ExperimentalEngine.h">
       <Filter>Source Files\Experimental</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\InputDevice.h">
+      <Filter>Source Files\Core\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\Windows\WindowsKeyboardDevice.h">
+      <Filter>Source Files\Core\Input\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\Windows\WindowsMouseDevice.h">
+      <Filter>Source Files\Core\Input\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\PlatformInputTypes.h">
+      <Filter>Source Files\Core\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\RawInputBuffer.h">
+      <Filter>Source Files\Core\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\Windows\WindowsRawInputBuffer.h">
+      <Filter>Source Files\Core\Input\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\MakeBreakKeyCodes.h">
+      <Filter>Source Files\Core\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Platform\Windows\WindowsCommonHeaders.h">
+      <Filter>Source Files\Core\Platform\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

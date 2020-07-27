@@ -4,6 +4,8 @@
 
 #include <glm/ext/vector_float3.hpp>
 
+class Vector3D;
+
 class Rotation
 {
 private:
@@ -27,6 +29,9 @@ public:
     float pitch() const;
     float yaw() const;
 
+    Vector3D fwdVector() const;
+    Vector3D rightVector() const;
+    Vector3D upVector() const;
 public:
     bool operator==(const Rotation& b) const;
     // Component wise operations

@@ -1,6 +1,6 @@
 #include "WindowsFile.h"
 #include "WindowsFileHandle.h"
-#include <windows.h>
+#include "../../WindowsCommonHeaders.h"
 #include "../../../PlatformFunctions.h"
 #include "../../../LFS/PlatformLFS.h"
 #include "../../../../Logger/Logger.h"

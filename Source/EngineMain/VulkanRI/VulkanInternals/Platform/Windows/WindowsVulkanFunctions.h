@@ -2,7 +2,7 @@
 #include "../GenericVulkanFunctions.h"
 #include "vulkan_core.h"
 #include "../../../../Core/Platform/GenericAppInstance.h"
-#include <windows.h>
+#include "../../../../Core/Platform/Windows/WindowsCommonHeaders.h"
 
 struct PFN_Win32SurfaceKHR : PFN_SurfaceKHR<VkInstance, const void*, const VkAllocationCallbacks*, VkSurfaceKHR*>
 {
