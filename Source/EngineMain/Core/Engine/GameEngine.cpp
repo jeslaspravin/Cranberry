@@ -71,7 +71,7 @@ void GameEngine::engineLoop()
 
     while (!isExiting())
     {
-        timeData.activeTimeDilation = applicationInstance->appWindowManager.pollWindows()? 1 : 0;
+        timeData.activeTimeDilation = applicationInstance->appWindowManager.pollWindows()? 1.0f : 0.0f;
         timeData.progressTick();
         tickEngine();
         renderingApi.renderFrame();

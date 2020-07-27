@@ -21,8 +21,8 @@ private:
     float nearClip;
     float farClip;
 
-    Vector3D location;
-    Rotation rotation;
+    Vector3D camTranslation;
+    Rotation camRotation;
 
     static const float MAX_FOV;
     static const float MIN_NEAR_FAR_DIFF;
@@ -46,7 +46,9 @@ public:
     void setClippingPlane(float near, float far);
 
     void setTranslation(const Vector3D& newLocation);
+    Vector3D translation() const { return camTranslation; }
     void setRotation(const Rotation& newRotation);
+    Rotation rotation() const { return camRotation; }
 
     void lookAt(const Vector3D& lookAtTarget);
 

@@ -9,20 +9,7 @@ RotationMatrix::RotationMatrix()
 
 RotationMatrix::RotationMatrix(const class Rotation& rotation)
 {
-    Rotation cosVal = Math::cos(rotation);
-    Rotation sinVal = Math::sin(rotation);
-
-    rotationMatrix[0].x = cosVal.yaw() * cosVal.pitch();
-    rotationMatrix[0].y = sinVal.yaw() * cosVal.roll() + cosVal.yaw() * sinVal.pitch() * sinVal.roll();
-    rotationMatrix[0].z = sinVal.yaw() * sinVal.roll() - cosVal.yaw() * sinVal.pitch() * cosVal.roll();
-
-    rotationMatrix[1].x = -sinVal.yaw() * cosVal.pitch();
-    rotationMatrix[1].y = cosVal.yaw() * cosVal.roll() - sinVal.yaw() * sinVal.pitch() * sinVal.roll();
-    rotationMatrix[1].z = cosVal.yaw() * sinVal.roll() + sinVal.yaw() * sinVal.pitch() * cosVal.roll();
-
-    rotationMatrix[2].x = sinVal.pitch();
-    rotationMatrix[2].y = -cosVal.pitch() * sinVal.roll();
-    rotationMatrix[2].z = cosVal.pitch() * cosVal.roll();
+    fromRotation(rotation);
 }
 
 RotationMatrix::RotationMatrix(const Matrix3& rotMatrix)
@@ -43,15 +30,113 @@ RotationMatrix::RotationMatrix(RotationMatrix&& other)
     : rotationMatrix(std::move(other.rotationMatrix))
 {}
 
+#define ROTATIONORDER_RPY 1// Yaw on top of Pitch on top of Roll
+#define ROTATIONORDER_YPR 0
+void RotationMatrix::fromRotation(const class Rotation& rotation)
+{
+    Rotation cosVal = Math::cos(rotation);
+    Rotation sinVal = Math::sin(rotation);
+
+#if ROTATIONORDER_YPR
+    rotationMatrix[0].x = cosVal.yaw() * cosVal.pitch();
+    rotationMatrix[0].y = sinVal.yaw() * cosVal.roll() + cosVal.yaw() * sinVal.pitch() * sinVal.roll();
+    rotationMatrix[0].z = sinVal.yaw() * sinVal.roll() - cosVal.yaw() * sinVal.pitch() * cosVal.roll();
+
+    rotationMatrix[1].x = -sinVal.yaw() * cosVal.pitch();
+    rotationMatrix[1].y = cosVal.yaw() * cosVal.roll() - sinVal.yaw() * sinVal.pitch() * sinVal.roll();
+    rotationMatrix[1].z = cosVal.yaw() * sinVal.roll() + sinVal.yaw() * sinVal.pitch() * cosVal.roll();
+
+    rotationMatrix[2].x = sinVal.pitch();
+    rotationMatrix[2].y = -cosVal.pitch() * sinVal.roll();
+    rotationMatrix[2].z = cosVal.pitch() * cosVal.roll();
+#elif ROTATIONORDER_RPY
+    rotationMatrix[0].x = cosVal.yaw() * cosVal.pitch();
+    rotationMatrix[0].y = sinVal.yaw() * cosVal.pitch();
+    rotationMatrix[0].z = -sinVal.pitch();
+
+    rotationMatrix[1].x = cosVal.yaw() * sinVal.pitch() * sinVal.roll() - sinVal.yaw() * cosVal.roll();
+    rotationMatrix[1].y = sinVal.yaw() * sinVal.pitch() * sinVal.roll() + cosVal.yaw() * cosVal.roll();
+    rotationMatrix[1].z = cosVal.pitch() * sinVal.roll(); 
+
+    rotationMatrix[2].x = cosVal.yaw() * sinVal.pitch() * cosVal.roll() + sinVal.yaw() * sinVal.roll();
+    rotationMatrix[2].y = sinVal.yaw() * sinVal.pitch() * cosVal.roll() - cosVal.yaw() * sinVal.roll();
+    rotationMatrix[2].z = cosVal.pitch() * cosVal.roll();
+#endif
+}
+
+/* Related Rotation Impl */
+Vector3D Rotation::fwdVector() const
+{
+    Rotation cosVal = Math::cos(*this);
+    Rotation sinVal = Math::sin(*this);
+
+    Vector3D fwd;
+#if ROTATIONORDER_YPR
+    fwd[0] = cosVal.yaw() * cosVal.pitch();
+    fwd[1] = sinVal.yaw() * cosVal.roll() + cosVal.yaw() * sinVal.pitch() * sinVal.roll();
+    fwd[2] = sinVal.yaw() * sinVal.roll() - cosVal.yaw() * sinVal.pitch() * cosVal.roll();
+#elif ROTATIONORDER_RPY
+    fwd[0] = cosVal.yaw() * cosVal.pitch();
+    fwd[1] = sinVal.yaw() * cosVal.pitch();
+    fwd[2] = -sinVal.pitch();
+#endif
+    return fwd;
+}
+
+Vector3D Rotation::rightVector() const
+{
+    Rotation cosVal = Math::cos(*this);
+    Rotation sinVal = Math::sin(*this);
+
+    Vector3D right;
+#if ROTATIONORDER_YPR
+    right[0] = -sinVal.yaw() * cosVal.pitch();
+    right[1] = cosVal.yaw() * cosVal.roll() - sinVal.yaw() * sinVal.pitch() * sinVal.roll();
+    right[2] = cosVal.yaw() * sinVal.roll() + sinVal.yaw() * sinVal.pitch() * cosVal.roll();
+#elif ROTATIONORDER_RPY
+    right[0] = cosVal.yaw() * sinVal.pitch() * sinVal.roll() - sinVal.yaw() * cosVal.roll();
+    right[1] = sinVal.yaw() * sinVal.pitch() * sinVal.roll() + cosVal.yaw() * cosVal.roll();
+    right[2] = cosVal.pitch() * sinVal.roll();
+#endif
+    return right;
+}
+
+Vector3D Rotation::upVector() const
+{
+    Rotation cosVal = Math::cos(*this);
+    Rotation sinVal = Math::sin(*this);
+
+    Vector3D up;
+#if ROTATIONORDER_YPR
+    up[0] = sinVal.pitch();
+    up[1] = -cosVal.pitch() * sinVal.roll();
+    up[2] = cosVal.pitch() * cosVal.roll();
+#elif ROTATIONORDER_RPY
+    up[0] = cosVal.yaw() * sinVal.pitch() * cosVal.roll() + sinVal.yaw() * sinVal.roll();
+    up[1] = sinVal.yaw() * sinVal.pitch() * cosVal.roll() - cosVal.yaw() * sinVal.roll();
+    up[2] = cosVal.pitch() * cosVal.roll();
+#endif
+    return up;
+}
+
 Rotation RotationMatrix::asRotation() const
 {
-    glm::vec3 numerator(rotationMatrix[2][1], rotationMatrix[2][0], rotationMatrix[1][0]);
+#if ROTATIONORDER_YPR
+    glm::vec3 numerator(-rotationMatrix[2][1], rotationMatrix[2][0], -rotationMatrix[1][0]);
     glm::vec3 denominator(rotationMatrix[2][2], Math::sqrt(rotationMatrix[2][1] * rotationMatrix[2][1] + rotationMatrix[2][2] * rotationMatrix[2][2])
         , rotationMatrix[0][0]);
 
+#elif ROTATIONORDER_RPY
+    glm::vec3 numerator(rotationMatrix[1][2], -rotationMatrix[0][2], rotationMatrix[0][1]);
+    glm::vec3 denominator(rotationMatrix[2][2], Math::sqrt(rotationMatrix[1][2] * rotationMatrix[1][2] + rotationMatrix[2][2] * rotationMatrix[2][2])
+        , rotationMatrix[0][0]);
+
+#endif
     numerator = Math::rad2Deg(Math::atan(numerator, denominator));
-    return Rotation(-numerator.x, numerator.y, -numerator.z);
+    return Rotation(numerator.x, numerator.y, numerator.z);
 }
+#undef ROTATIONORDER_RPY
+#undef ROTATIONORDER_YPR
 
 const Matrix3& RotationMatrix::matrix() const
 {

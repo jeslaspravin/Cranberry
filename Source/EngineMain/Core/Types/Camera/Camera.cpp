@@ -114,25 +114,25 @@ void Camera::setClippingPlane(float near, float far)
 
 void Camera::setTranslation(const Vector3D& newLocation)
 {
-    location = newLocation;
+    camTranslation = newLocation;
 }
 
 void Camera::setRotation(const Rotation& newRotation)
 {
-    rotation = newRotation;
+    camRotation = newRotation;
 }
 
 void Camera::lookAt(const Vector3D& lookAtTarget)
 {
-    RotationMatrix rotMatrix = RotationMatrix::fromX(lookAtTarget - location);
+    RotationMatrix rotMatrix = RotationMatrix::fromX(lookAtTarget - camTranslation);
     setRotation(rotMatrix.asRotation());
 }
 
 Matrix4 Camera::viewMatrix() const
 {
     Transform3D transform;
-    transform.setRotation(rotation);
-    transform.setTranslation(location);
+    transform.setRotation(camRotation);
+    transform.setTranslation(camTranslation);
 
     // Since in view space fwd is Z axis so cyclically rotating axis to make real fwd as up
     Matrix4 viewMat;
