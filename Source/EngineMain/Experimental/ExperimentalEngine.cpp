@@ -1,4 +1,5 @@
 #include "ExperimentalEngine.h"
+
 #include "../VulkanRI/VulkanInternals/Resources/VulkanQueueResource.h"
 #include "../VulkanRI/VulkanInternals/Debugging.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
@@ -24,6 +25,7 @@
 #include "../VulkanRI/VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
 #include "../RenderApi/Scene/RenderScene.h"
 #include "../RenderApi/Material/MaterialCommonUniforms.h"
+#include "../Core/Math/RotationMatrix.h"
 
 #include <array>
 
@@ -34,7 +36,7 @@ void ExperimentalEngine::tempTest()
 
 void ExperimentalEngine::tempTestPerFrame()
 {
-    
+
 }
 
 template <EQueueFunction QueueFunction> VulkanQueueResource<QueueFunction>* getQueue(const VulkanDevice* device);
@@ -563,8 +565,8 @@ void ExperimentalEngine::writeBuffers()
     viewData.invView = viewData.view.inverse();
 
     InstanceData instanceData;
-    instanceData.invModel = Matrix4::IDENTITY;
-    instanceData.model = Matrix4::IDENTITY;
+    instanceData.model = Transform3D(modelRotation).getTransformMatrix();
+    instanceData.invModel = instanceData.model.inverse();
 
     ENQUEUE_COMMAND(WritingUniforms,
         {
@@ -581,21 +583,27 @@ void ExperimentalEngine::writeBuffers()
 
 void ExperimentalEngine::updateCameraParams()
 {
+    if (appInstance().inputSystem()->isKeyPressed(Keys::RMB))
+    {
+        cameraRotation.yaw() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.deltaTime * timeData.activeTimeDilation * 15.0f;
+        cameraRotation.pitch() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.deltaTime * timeData.activeTimeDilation * 15.0f;
+    }
+
     if (appInstance().inputSystem()->isKeyPressed(Keys::A))
     {
-        rotationOffset += timeData.deltaTime * timeData.activeTimeDilation * 15.f;
+        cameraTranslation -= cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
     if (appInstance().inputSystem()->isKeyPressed(Keys::D))
     {
-        rotationOffset -= timeData.deltaTime * timeData.activeTimeDilation * 15.f;
+        cameraTranslation += cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
     if (appInstance().inputSystem()->isKeyPressed(Keys::W))
     {
-        distanceOffset -= timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation += cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
     if (appInstance().inputSystem()->isKeyPressed(Keys::S))
     {
-        distanceOffset += timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
     if (appInstance().inputSystem()->isKeyPressed(Keys::Q))
     {
@@ -624,15 +632,16 @@ void ExperimentalEngine::updateCameraParams()
     {
         useSuzanne = !useSuzanne;
     }
+    if (appInstance().inputSystem()->keyState(Keys::R)->keyWentUp)
+    {
+        cameraRotation = Rotation();
+    }
 
-    Transform3D translation;
-    translation.setTranslation(Vector3D(0.f, 1.f ,0.75f).safeNormalize() * (500 + distanceOffset));
-    
-    Transform3D cameraTransform;
-    cameraTransform.setRotation(Rotation(0, 0, rotationOffset));
+    camera.setRotation(cameraRotation);
+    camera.setTranslation(cameraTranslation);
 
-    camera.setTranslation(cameraTransform.transform(translation).getTranslation());
-    camera.lookAt(Vector3D::ZERO);
+    //modelRotation.pitch() += timeData.deltaTime * timeData.activeTimeDilation * 15.0f;
+    //modelRotation.roll() -= timeData.deltaTime * timeData.activeTimeDilation * 30.0f;
 
     AssetHeader staticMeshHeader;
     staticMeshHeader.type = EAssetType::StaticMesh;
@@ -659,7 +668,13 @@ void ExperimentalEngine::onStartUp()
     camera.setOrthoSize({ 1280,720 });
     camera.setClippingPlane(1.f, 600.f);
     camera.setFOV(110.f, 90.f);
-    
+
+    cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
+
+    camera.setTranslation(cameraTranslation);
+    camera.lookAt(Vector3D::ZERO);
+    cameraRotation = camera.rotation();
+
     tempTest();
 }
 
