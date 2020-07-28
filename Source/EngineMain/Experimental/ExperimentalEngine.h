@@ -97,10 +97,12 @@ class ExperimentalEngine : public GameEngine
 
     // Camera parameters
     Camera camera;
+    Vector3D cameraTranslation;
+    Rotation cameraRotation;
     void updateCameraParams();
 
-    float distanceOffset = 0;
-    float rotationOffset = 0;
+    Rotation modelRotation;
+
     uint32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
     bool toggleRes;
     bool useSuzanne;
