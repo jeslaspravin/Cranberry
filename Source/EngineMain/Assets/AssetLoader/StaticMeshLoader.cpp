@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <set>
 #include <array>
+#include <algorithm>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>

@@ -239,8 +239,8 @@ void VulkanDescriptorsSetAllocator::resetAllocationPool(VulkanDescriptorsSetAllo
 VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice* device)
     : ownerDevice(device)
 {
-    std::array<VkDescriptorPoolSize,VK_DESCRIPTOR_TYPE_RANGE_SIZE> globalDescriptorsSetPoolSizes;
-    for (uint32 i = VK_DESCRIPTOR_TYPE_BEGIN_RANGE; i <= VK_DESCRIPTOR_TYPE_END_RANGE; ++i)
+    std::array<VkDescriptorPoolSize, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1> globalDescriptorsSetPoolSizes;
+    for (uint32 i = VK_DESCRIPTOR_TYPE_SAMPLER; i <= VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT; ++i)
     {
         globalDescriptorsSetPoolSizes[i].type = VkDescriptorType(i);
         globalDescriptorsSetPoolSizes[i].descriptorCount = DESCRIPTORS_COUNT_PER_SET;
