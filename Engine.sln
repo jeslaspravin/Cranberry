@@ -38,6 +38,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{160411
 		Source\EngineShaders\Common\ViewDescriptors.inl.glsl = Source\EngineShaders\Common\ViewDescriptors.inl.glsl
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GoochModel", "GoochModel", "{9AE437AD-6B01-476D-9DF1-0687948333F2}"
+	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\GoochModel\GoochModelStageIO.inl.glsl = Source\EngineShaders\GoochModel\GoochModelStageIO.inl.glsl
+		Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.frag.glsl = Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.frag.glsl
+		Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.vert.glsl = Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.vert.glsl
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Source\EngineShaderData\EngineShaderData.vcxitems*{1d27fc53-fcde-4242-a296-952ec6bc2ca4}*SharedItemsImports = 4
@@ -79,6 +86,7 @@ Global
 		{F6883E7B-0E8B-4459-AD80-F28864E92906} = {61CB758C-20C2-4897-9454-061721EF2C89}
 		{F568FBD1-EF8E-4166-A3FF-B48C32D33FCD} = {61CB758C-20C2-4897-9454-061721EF2C89}
 		{160411F8-2D91-49C9-AF1D-80E9E33AC675} = {61CB758C-20C2-4897-9454-061721EF2C89}
+		{9AE437AD-6B01-476D-9DF1-0687948333F2} = {61CB758C-20C2-4897-9454-061721EF2C89}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D05BB706-1F92-4580-853D-B271284B97FA}
