@@ -52,6 +52,7 @@ class ExperimentalEngine : public GameEngine
 
     BufferData viewBuffer;
     BufferData instanceBuffer;
+    BufferData goochSurfaceDataBuffer;
     void createBuffers();
     void writeBuffers();
     void destroyBuffers();
@@ -80,7 +81,8 @@ class ExperimentalEngine : public GameEngine
     void destroyFrameResources();
 
     VkRenderPass drawSmRenderPass;
-    LocalPipelineContext drawSmPipelineContext;
+    LocalPipelineContext drawSmDefaultPipelineContext;
+    LocalPipelineContext drawSmGoochPipelineContext;
 
     class BufferResource* quadVertexBuffer = nullptr;
     class BufferResource* quadIndexBuffer = nullptr;
@@ -102,6 +104,9 @@ class ExperimentalEngine : public GameEngine
     void updateCameraParams();
 
     Rotation modelRotation;
+
+    Vector3D lightTranslation;
+    float lightRotation;
 
     uint32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
     bool toggleRes;

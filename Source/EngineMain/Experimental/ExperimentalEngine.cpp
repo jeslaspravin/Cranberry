@@ -1,5 +1,6 @@
 #include "ExperimentalEngine.h"
 
+#include "../RenderInterface/Shaders/EngineShaders/GoochModel.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanQueueResource.h"
 #include "../VulkanRI/VulkanInternals/Debugging.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
@@ -145,7 +146,7 @@ void ExperimentalEngine::destroyPools()
 
 void ExperimentalEngine::createBuffers()
 {
-    const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
+    const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmDefaultPipelineContext.getPipeline());
     const ShaderSetParametersLayout* paramSetLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(0));// 0 is view data
 
     const ShaderBufferDescriptorType* paramDescription = static_cast<const ShaderBufferDescriptorType*>(paramSetLayout->parameterDescription("viewData"));
@@ -158,6 +159,13 @@ void ExperimentalEngine::createBuffers()
     instanceBuffer.buffer = new GraphicsRBuffer(paramDescription->bufferParamInfo->paramStride(), 1);
     instanceBuffer.buffer->setResourceName("InstanceData");
     instanceBuffer.buffer->init();
+
+    smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmGoochPipelineContext.getPipeline());
+    paramSetLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(2));// 2 is shader data
+    paramDescription = static_cast<const ShaderBufferDescriptorType*>(paramSetLayout->parameterDescription("surfaceData"));
+    goochSurfaceDataBuffer.buffer = new GraphicsRBuffer(paramDescription->bufferParamInfo->paramStride(), 1);
+    goochSurfaceDataBuffer.buffer->setResourceName("GoochSurfaceData");
+    goochSurfaceDataBuffer.buffer->init();
 }
 
 void ExperimentalEngine::destroyBuffers()
@@ -169,6 +177,10 @@ void ExperimentalEngine::destroyBuffers()
     instanceBuffer.buffer->release();
     delete instanceBuffer.buffer;
     instanceBuffer.buffer = nullptr;
+
+    goochSurfaceDataBuffer.buffer->release();
+    delete goochSurfaceDataBuffer.buffer;
+    goochSurfaceDataBuffer.buffer = nullptr;
 }
 
 void ExperimentalEngine::createImages()
@@ -201,7 +213,7 @@ void ExperimentalEngine::createShaderResDescriptors()
     {
         staticMeshDescs.clear();
 
-        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
+        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmDefaultPipelineContext.getPipeline());
         const ShaderReflected* reflectedData = smPipeline->getShaderResource()->getReflection();
 
         staticMeshDescs.reserve(reflectedData->descriptorsSets.size());
@@ -216,6 +228,19 @@ void ExperimentalEngine::createShaderResDescriptors()
 
             staticMeshDescs.push_back(descSet);
         }
+    }
+    // Gooch model rendering
+    {
+        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmGoochPipelineContext.getPipeline());
+        // 2 has shader specific descriptors set layout
+        const VulkanShaderSetParamsLayout* paramSetLayout = static_cast<const VulkanShaderSetParamsLayout*>(smPipeline->getParamLayoutAtSet(2));
+
+        VkDescriptorSet descSet;
+        DescriptorsSetQuery query;
+        query.supportedTypes.insert(paramSetLayout->getDescPoolAllocInfo().cbegin(), paramSetLayout->getDescPoolAllocInfo().cend());
+        descSet = descsSetAllocator->allocDescriptorsSet(query, paramSetLayout->descriptorLayout);
+
+        staticMeshDescs.push_back(descSet);
     }
 
     // Drawing textures to quad
@@ -254,11 +279,12 @@ void ExperimentalEngine::createShaderResDescriptors()
 
     // Static mesh descriptors
     {
-        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
+        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmDefaultPipelineContext.getPipeline());
+        const ShaderReflected* reflectedData = smPipeline->getShaderResource()->getReflection();
 
-        for (int32 setIdx = 0;setIdx < staticMeshDescs.size(); ++setIdx)
+        for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
         {
-            const ShaderSetParametersLayout* setParamsLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(setIdx));
+            const ShaderSetParametersLayout* setParamsLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(descriptorsSet.set));
             const ShaderBufferDescriptorType* paramDescription = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("viewData"));
 
             if (paramDescription != nullptr)
@@ -270,7 +296,7 @@ void ExperimentalEngine::createShaderResDescriptors()
                 bufferInfo[bufferInfoIdx].range = viewBuffer.buffer->getResourceSize();
 
                 WRITE_RESOURCE_TO_DESCRIPTORS_SET(viewDataDescWrite);
-                viewDataDescWrite.dstSet = staticMeshDescs[setIdx];
+                viewDataDescWrite.dstSet = staticMeshDescs[descriptorsSet.set];
                 viewDataDescWrite.descriptorType = VkDescriptorType(paramDescription->bufferEntryPtr->data.type);
                 viewDataDescWrite.dstBinding = paramDescription->bufferEntryPtr->data.binding;
                 writingBufferDescriptors.push_back({ viewDataDescWrite, bufferInfoIdx });
@@ -286,13 +312,35 @@ void ExperimentalEngine::createShaderResDescriptors()
                 bufferInfo[bufferInfoIdx].range = instanceBuffer.buffer->getResourceSize();
 
                 WRITE_RESOURCE_TO_DESCRIPTORS_SET(instanceDataDescWrite);
-                instanceDataDescWrite.dstSet = staticMeshDescs[setIdx];
+                instanceDataDescWrite.dstSet = staticMeshDescs[descriptorsSet.set];
                 instanceDataDescWrite.descriptorType = VkDescriptorType(paramDescription->bufferEntryPtr->data.type);
                 instanceDataDescWrite.dstBinding = paramDescription->bufferEntryPtr->data.binding;
                 writingBufferDescriptors.push_back({ instanceDataDescWrite, bufferInfoIdx });
             }
         }
     }
+    // Gooch model rendering
+    {
+        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmGoochPipelineContext.getPipeline());
+        // 2 has shader specific descriptors set layout
+        const VulkanShaderSetParamsLayout* paramSetLayout = static_cast<const VulkanShaderSetParamsLayout*>(smPipeline->getParamLayoutAtSet(2));
+        const ShaderBufferDescriptorType* paramDescription = static_cast<const ShaderBufferDescriptorType*>(paramSetLayout->parameterDescription("surfaceData"));
+
+        debugAssert(paramDescription);
+
+        uint32 bufferInfoIdx = uint32(bufferInfo.size());
+        bufferInfo.push_back({});
+        bufferInfo[bufferInfoIdx].buffer = static_cast<VulkanBufferResource*>(goochSurfaceDataBuffer.buffer)->buffer;
+        bufferInfo[bufferInfoIdx].offset = 0;
+        bufferInfo[bufferInfoIdx].range = goochSurfaceDataBuffer.buffer->getResourceSize();
+
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(instanceDataDescWrite);
+        instanceDataDescWrite.dstSet = staticMeshDescs[2];
+        instanceDataDescWrite.descriptorType = VkDescriptorType(paramDescription->bufferEntryPtr->data.type);
+        instanceDataDescWrite.dstBinding = paramDescription->bufferEntryPtr->data.binding;
+        writingBufferDescriptors.push_back({ instanceDataDescWrite, bufferInfoIdx });
+    }
+
     // Draw quad descriptors
     {
         const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawQuadPipelineContext.getPipeline());
@@ -491,12 +539,19 @@ void ExperimentalEngine::getPipelineForSubpass()
 {
     VulkanGlobalRenderingContext* vulkanRenderingContext = static_cast<VulkanGlobalRenderingContext*>(getRenderApi()->getGlobalRenderingContext());
 
-    drawSmPipelineContext.forVertexType = EVertexType::StaticMesh;
-    drawSmPipelineContext.materialName = DEFAULT_SHADER_NAME;
-    drawSmPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
-    drawSmPipelineContext.swapchainIdx = 0;
-    vulkanRenderingContext->preparePipelineContext(&drawSmPipelineContext);
-    drawSmRenderPass = vulkanRenderingContext->getRenderPass(drawSmPipelineContext.renderpassFormat, {});
+    drawSmDefaultPipelineContext.forVertexType = EVertexType::StaticMesh;
+    drawSmDefaultPipelineContext.materialName = DEFAULT_SHADER_NAME;
+    drawSmDefaultPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
+    drawSmDefaultPipelineContext.swapchainIdx = 0;
+    vulkanRenderingContext->preparePipelineContext(&drawSmDefaultPipelineContext);
+    drawSmRenderPass = vulkanRenderingContext->getRenderPass(drawSmDefaultPipelineContext.renderpassFormat, {});
+
+    // Gooch model
+    drawSmGoochPipelineContext.forVertexType = EVertexType::StaticMesh;
+    drawSmGoochPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
+    drawSmGoochPipelineContext.swapchainIdx = 0;
+    drawSmGoochPipelineContext.materialName = "GoochModel";
+    vulkanRenderingContext->preparePipelineContext(&drawSmGoochPipelineContext);
 
     RenderPassAdditionalProps renderPassAdditionalProps;
     renderPassAdditionalProps.bUsedAsPresentSource = true;
@@ -516,7 +571,7 @@ void ExperimentalEngine::createPipelineResources()
     baseClearValue.color = { 0.0f, 0.0f, 0.0f, 0.0f };
     baseClearValue.depthStencil.depth = 0;
     baseClearValue.depthStencil.stencil = 0;
-    smAttachmentsClearColors.resize(drawSmPipelineContext.getFb()->textures.size(), baseClearValue);
+    smAttachmentsClearColors.resize(drawSmDefaultPipelineContext.getFb()->textures.size(), baseClearValue);
     swapchainClearColor = baseClearValue;
 
     ENQUEUE_COMMAND(QuadVerticesInit,LAMBDA_BODY
@@ -568,17 +623,26 @@ void ExperimentalEngine::writeBuffers()
     instanceData.model = Transform3D(modelRotation).getTransformMatrix();
     instanceData.invModel = instanceData.model.inverse();
 
+    SurfaceData surfaceData;
+    surfaceData.lightPos = Transform3D(Rotation(0, 0, lightRotation)).transformPoint(lightTranslation);
+    surfaceData.highlightColor = Vector4D(1, 1, 1, 1);
+    surfaceData.surfaceColor = Vector4D(0.80f, 0.78f, 0.60f, 1.0f);
+
     ENQUEUE_COMMAND(WritingUniforms,
         {
-            const ShaderSetParametersLayout * setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmPipelineContext.getPipeline()->getParamLayoutAtSet(0));
+            const ShaderSetParametersLayout * setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmDefaultPipelineContext.getPipeline()->getParamLayoutAtSet(0));
             const ShaderBufferDescriptorType * bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("viewData"));
             cmdList->copyToBuffer<ViewData>(viewBuffer.buffer, 0, &viewData, bufferDesc->bufferParamInfo);
 
-            setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmPipelineContext.getPipeline()->getParamLayoutAtSet(1));
+            setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmDefaultPipelineContext.getPipeline()->getParamLayoutAtSet(1));
             bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("instanceData"));
             cmdList->copyToBuffer<InstanceData>(instanceBuffer.buffer, 0, &instanceData, bufferDesc->bufferParamInfo);
+
+            setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmGoochPipelineContext.getPipeline()->getParamLayoutAtSet(2));
+            bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("surfaceData"));
+            cmdList->copyToBuffer<SurfaceData>(goochSurfaceDataBuffer.buffer, 0, &surfaceData, bufferDesc->bufferParamInfo);
         }
-    , this, viewData, instanceData);
+    , this, viewData, instanceData, surfaceData);
 }
 
 void ExperimentalEngine::updateCameraParams()
@@ -642,6 +706,7 @@ void ExperimentalEngine::updateCameraParams()
 
     //modelRotation.pitch() += timeData.deltaTime * timeData.activeTimeDilation * 15.0f;
     //modelRotation.roll() -= timeData.deltaTime * timeData.activeTimeDilation * 30.0f;
+    lightRotation += timeData.deltaTime * timeData.activeTimeDilation * 90.0f;
 
     AssetHeader staticMeshHeader;
     staticMeshHeader.type = EAssetType::StaticMesh;
@@ -670,6 +735,7 @@ void ExperimentalEngine::onStartUp()
     camera.setFOV(110.f, 90.f);
 
     cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
+    lightTranslation = Vector3D(100,0,0);
 
     camera.setTranslation(cameraTranslation);
     camera.lookAt(Vector3D::ZERO);
@@ -730,8 +796,8 @@ void ExperimentalEngine::frameRender()
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
-    drawSmPipelineContext.swapchainIdx = drawQuadPipelineContext.swapchainIdx = index;
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawSmPipelineContext);
+    drawSmDefaultPipelineContext.swapchainIdx = drawQuadPipelineContext.swapchainIdx = index;
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawSmDefaultPipelineContext);
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawQuadPipelineContext);
 
     GraphicsPipelineQueryParams queryParam;
@@ -765,7 +831,7 @@ void ExperimentalEngine::frameRender()
 
     vDevice->vkBeginCommandBuffer(frameResources[index].perFrameCommands, &cmdBeginInfo);
     {
-        const GraphicsPipeline* tempPipeline = static_cast<const GraphicsPipeline*>(drawSmPipelineContext.getPipeline());
+        const GraphicsPipeline* tempPipeline = static_cast<const GraphicsPipeline*>(drawSmGoochPipelineContext.getPipeline());
 
         SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ExperimentalEngineFrame);
 
