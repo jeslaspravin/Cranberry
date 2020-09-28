@@ -214,6 +214,12 @@
     <Filter Include="Source Files\RenderInterface\Resources\Shaders\EngineShaders">
       <UniqueIdentifier>{e80a7384-8730-4158-9e33-55b1a65be2de}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\RenderInterface\Resources\Shaders">
+      <UniqueIdentifier>{17066662-08ef-4182-a58f-28948bf43223}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderInterface\Resources\Shaders\EngineShaders">
+      <UniqueIdentifier>{126fe3d0-d6ea-46a6-8510-d761b3f3ff44}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -509,6 +515,9 @@
     </ClCompile>
     <ClCompile Include="Core\Input\Windows\WindowsRawInputBuffer.cpp">
       <Filter>Source Files\Core\Input\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\GoochModel.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Shaders\EngineShaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -919,6 +928,9 @@
     </ClInclude>
     <ClInclude Include="Core\Platform\Windows\WindowsCommonHeaders.h">
       <Filter>Source Files\Core\Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\EngineShaders\GoochModel.h">
+      <Filter>Header Files\RenderInterface\Resources\Shaders\EngineShaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
