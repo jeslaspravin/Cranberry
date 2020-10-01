@@ -101,6 +101,8 @@ public:
     virtual void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) = 0;
     template<typename BufferDataType>
     void copyToBuffer(BufferResource* dst, uint32 dstOffset, const BufferDataType* dataToCopy, const ShaderBufferParamInfo* bufferFields);
+    template<typename BufferDataType>
+    void recordCopyToBuffer(std::vector<BatchCopyBufferData>& recordTo, BufferResource* dst, uint32 dstOffset, const BufferDataType* dataToCopy, const ShaderBufferParamInfo* bufferFields);
 
     // Copy pixel data to only first MIP level of all layers.
     void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData);
@@ -144,4 +146,23 @@ void IRenderCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, con
         fieldNode = fieldNode->nextNode;
     }
     copyToBuffer(batchedCopies);
+}
+
+template<typename BufferDataType>
+void IRenderCommandList::recordCopyToBuffer(std::vector<BatchCopyBufferData>& recordTo, BufferResource* dst
+    , uint32 dstOffset, const BufferDataType* dataToCopy, const ShaderBufferParamInfo* bufferFields)
+{
+    const ShaderBufferFieldNode* fieldNode = &bufferFields->startNode;
+    while (fieldNode->isValid())
+    {
+        auto* bufferMemberField = static_cast<ShaderBufferTypedField<BufferDataType>*>(fieldNode->field);
+
+        BatchCopyBufferData copyData;
+        copyData.dst = dst;
+        copyData.dstOffset = dstOffset + bufferMemberField->offset;
+        copyData.dataToCopy = bufferMemberField->fieldData(copyData.size, dataToCopy);
+        recordTo.push_back(copyData);
+
+        fieldNode = fieldNode->nextNode;
+    }
 }
