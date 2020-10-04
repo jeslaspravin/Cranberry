@@ -75,6 +75,7 @@ void GlobalRenderingContextBase::initShaderResources()
             DrawMeshShader* drawMeshShader = static_cast<DrawMeshShader*>(shader);
             vertexAttribFillLambda(drawMeshShader->vertexUsage(), drawMeshShader->getReflection()->inputs);
 
+            // TODO(Jeslas) : Change the common desc set layout creation so that it can be used in max number of shader stages across all shaders
             // View unique param layout
             if (sceneViewParamLayout == nullptr)
             {
