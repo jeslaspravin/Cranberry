@@ -143,7 +143,7 @@ void UniqueUtilityShaderObject::setPipeline(const GenericRenderPassProperties& r
     else
     {
         std::unordered_map<GenericRenderPassProperties, GraphicsPipelineBase*>::iterator itr = graphicsPipelines.find(renderpassProps);
-        debugAssert(itr != graphicsPipelines.end());
+        debugAssert(itr == graphicsPipelines.end());
     }
     graphicsPipelines[renderpassProps] = graphicsPipeline;
 }
