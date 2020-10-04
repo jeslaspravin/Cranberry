@@ -12,7 +12,7 @@
 #if STATIC_MESH
 layout(location = 0) PREFIX vec4 VAR(WorldPosition);
 layout(location = 1) PREFIX vec3 VAR(WorldNormal);
-layout(location = 2) PREFIX vec4 VAR(Color);
+layout(location = 4) PREFIX vec3 VAR(ViewFwd);
 #endif
 
 #undef PREFIX
