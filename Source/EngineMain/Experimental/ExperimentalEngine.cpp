@@ -576,8 +576,8 @@ void ExperimentalEngine::createPipelineResources()
 
     ENQUEUE_COMMAND(QuadVerticesInit,LAMBDA_BODY
         (
-            const std::array<Vector3D, 4> quadVerts = { Vector3D(-1,-1,0),Vector3D(1,-1,0),Vector3D(-1,1,0),Vector3D(1,1,0) };
-            const std::array<uint32, 6> quadIndices = { 0,3,2,0,1,3 };// 3 Per tri of quad
+            const std::array<Vector3D, 3> quadVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
+            const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
 
             quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
             quadVertexBuffer->setResourceName("ScreenQuadVertices");
@@ -630,17 +630,21 @@ void ExperimentalEngine::writeBuffers()
 
     ENQUEUE_COMMAND(WritingUniforms,
         {
-            const ShaderSetParametersLayout * setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmDefaultPipelineContext.getPipeline()->getParamLayoutAtSet(0));
-            const ShaderBufferDescriptorType * bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("viewData"));
-            cmdList->copyToBuffer<ViewData>(viewBuffer.buffer, 0, &viewData, bufferDesc->bufferParamInfo);
+            std::vector<BatchCopyBufferData> batchedCopies;
+
+            const ShaderSetParametersLayout* setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmDefaultPipelineContext.getPipeline()->getParamLayoutAtSet(0));
+            const ShaderBufferDescriptorType* bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("viewData"));
+            cmdList->recordCopyToBuffer<ViewData>(batchedCopies, viewBuffer.buffer, 0, &viewData, bufferDesc->bufferParamInfo);
 
             setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmDefaultPipelineContext.getPipeline()->getParamLayoutAtSet(1));
             bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("instanceData"));
-            cmdList->copyToBuffer<InstanceData>(instanceBuffer.buffer, 0, &instanceData, bufferDesc->bufferParamInfo);
+            cmdList->recordCopyToBuffer<InstanceData>(batchedCopies, instanceBuffer.buffer, 0, &instanceData, bufferDesc->bufferParamInfo);
 
             setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmGoochPipelineContext.getPipeline()->getParamLayoutAtSet(2));
             bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("surfaceData"));
-            cmdList->copyToBuffer<SurfaceData>(goochSurfaceDataBuffer.buffer, 0, &surfaceData, bufferDesc->bufferParamInfo);
+            cmdList->recordCopyToBuffer<SurfaceData>(batchedCopies, goochSurfaceDataBuffer.buffer, 0, &surfaceData, bufferDesc->bufferParamInfo);
+
+            cmdList->copyToBuffer(batchedCopies);
         }
     , this, viewData, instanceData, surfaceData);
 }
@@ -735,7 +739,7 @@ void ExperimentalEngine::onStartUp()
     camera.setFOV(110.f, 90.f);
 
     cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
-    lightTranslation = Vector3D(100,0,0);
+    lightTranslation = Vector3D(300,0,0);
 
     camera.setTranslation(cameraTranslation);
     camera.lookAt(Vector3D::ZERO);
@@ -895,7 +899,7 @@ void ExperimentalEngine::frameRender()
             vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
             vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
 
-            vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, 6, 1, 0, 0, 0);
+            vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, 3, 1, 0, 0, 0);
         }
         vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
     }
