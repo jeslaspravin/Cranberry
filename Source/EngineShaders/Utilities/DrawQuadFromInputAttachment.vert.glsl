@@ -10,5 +10,5 @@ layout(location = 0) out vec2 outTextureCoord;
 void mainVS()
 {
     gl_Position = vec4(position,1);
-    outTextureCoord = position.xy;
+    outTextureCoord = (position.xy + 1) * 0.5f;;
 }
