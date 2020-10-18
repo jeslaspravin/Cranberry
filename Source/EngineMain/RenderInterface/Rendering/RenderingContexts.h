@@ -86,6 +86,7 @@ protected:
 public:
 
     void preparePipelineContext(class LocalPipelineContext* pipelineContext);
+    void clearExternInitRtsFramebuffer(const std::vector<RenderTargetTexture*>& rtTextures);
 };
 
 // Temporary class high chance to change later so avoid relying on this.

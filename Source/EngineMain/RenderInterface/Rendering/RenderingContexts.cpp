@@ -29,11 +29,11 @@ void GlobalRenderingContextBase::clearContext()
     writeAndDestroyPipelineCache();
     destroyShaderResources();
 
-    for (const std::pair<GenericRenderPassProperties, std::vector<const Framebuffer*>>& framebuffers : rtFramebuffers)
+    for (const std::pair<const GenericRenderPassProperties, std::vector<const Framebuffer*>>& framebuffers : rtFramebuffers)
     {
         for (Framebuffer const* const& fb : framebuffers.second)
         {
-            delete fb;
+            GBuffers::destroyFbInstance(fb);
         }
     }
     rtFramebuffers.clear();
@@ -176,7 +176,7 @@ void GlobalRenderingContextBase::writeAndDestroyPipelineCache()
 {
     if (pipelinesCache)
     {
-        for (const std::pair<String, ShaderDataCollection>& shaderDataCollection : rawShaderObjects)
+        for (const std::pair<const String, ShaderDataCollection>& shaderDataCollection : rawShaderObjects)
         {
             if (shaderDataCollection.second.shaderObject->baseShaderType() == DrawMeshShader::staticType())
             {
@@ -256,7 +256,7 @@ const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRende
             // there can be only one render pass without any attachments.
             return renderpassFbs->second[0];
         }
-        // Note: not handling outdated resources case right now
+        // Note: not handling outdated resources case right now, if outdated remove manually and recreate fbs for external RTs
         std::vector<const ImageResource*> expectedAttachments;
         for (const RenderTargetTexture* const& rtTexture : rtTextures)
         {
@@ -274,7 +274,7 @@ const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRende
             if (fb->textures.size() == expectedAttachments.size())
             {
                 bool bSameTextures = true;
-                for (int32 attachmentIdx = 0; attachmentIdx < renderpassFbs->second.size(); ++attachmentIdx)
+                for (int32 attachmentIdx = 0; attachmentIdx < fb->textures.size(); ++attachmentIdx)
                 {
                     bSameTextures = bSameTextures && fb->textures[attachmentIdx] == expectedAttachments[attachmentIdx];
                 }
@@ -385,5 +385,53 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         }
         pipelineContext->pipelineUsed = graphicsPipeline;        
         pipelineContext->framebuffer = fb;
+    }
+}
+
+void GlobalRenderingContextBase::clearExternInitRtsFramebuffer(const std::vector<RenderTargetTexture*>& rtTextures)
+{
+    GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);
+
+    auto renderpassFbs = rtFramebuffers.find(renderpassProps);
+    if (renderpassFbs != rtFramebuffers.cend() && !renderpassFbs->second.empty())
+    {
+        if (renderpassProps.renderpassAttachmentFormat.attachments.empty())
+        {
+            // there can be only one render pass without any attachments.
+            GBuffers::destroyFbInstance(renderpassFbs->second[0]);
+            renderpassFbs->second.clear();
+            return;
+        }
+        std::vector<const ImageResource*> expectedAttachments;
+        for (const RenderTargetTexture* const& rtTexture : rtTextures)
+        {
+            expectedAttachments.emplace_back(rtTexture->getRtTexture());
+
+            // Since depth formats do not have resolve
+            if (!renderpassProps.bOneRtPerFormat && !EPixelDataFormat::isDepthFormat(rtTexture->getFormat()))
+            {
+                expectedAttachments.emplace_back(rtTexture->getTextureResource());
+            }
+        }
+
+        for (auto itr = renderpassFbs->second.begin(); itr != renderpassFbs->second.end(); ++itr)
+        {
+            const Framebuffer *fb = *itr;
+            if (fb->textures.size() == expectedAttachments.size())
+            {
+                bool bSameTextures = true;
+                for (int32 attachmentIdx = 0; attachmentIdx < fb->textures.size(); ++attachmentIdx)
+                {
+                    bSameTextures = bSameTextures && fb->textures[attachmentIdx] == expectedAttachments[attachmentIdx];
+                }
+
+                if (bSameTextures)
+                {
+                    GBuffers::destroyFbInstance(fb);
+                    renderpassFbs->second.erase(itr);
+                    return;
+                }
+            }
+        }
     }
 }

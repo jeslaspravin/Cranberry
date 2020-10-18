@@ -44,13 +44,13 @@ void VulkanSampler::reinitResources()
     BaseType::reinitResources();
     SAMPLER_CREATE_INFO(createInfo);
     createInfo.magFilter = (VkFilter)ESamplerFiltering::getFilterInfo(filtering)->filterTypeValue;
-    createInfo.minFilter = VkFilter::VK_FILTER_NEAREST;
+    createInfo.minFilter = (VkFilter)ESamplerFiltering::getFilterInfo(filtering)->filterTypeValue;
     createInfo.mipmapMode = (VkSamplerMipmapMode)ESamplerFiltering::getMipFilterInfo(mipFiltering)->filterTypeValue;
     createInfo.addressModeU = (VkSamplerAddressMode)ESamplerTilingMode::getSamplerTiling(tilingMode.x);
     createInfo.addressModeV = (VkSamplerAddressMode)ESamplerTilingMode::getSamplerTiling(tilingMode.y);
     createInfo.addressModeW = (VkSamplerAddressMode)ESamplerTilingMode::getSamplerTiling(tilingMode.z);
     createInfo.mipLodBias = 0;
-    createInfo.anisotropyEnable = GlobalRenderVariables::ENABLE_ANISOTROPY.get() ? VK_TRUE : VK_FALSE;
+    createInfo.anisotropyEnable = GlobalRenderVariables::ENABLE_ANISOTROPY.get() && filtering != ESamplerFiltering::Cubic? VK_TRUE : VK_FALSE;
     // TODO(Jeslas) : Check if need to use some sort of asset type specific custom max limit, Instead of hardcoded 8
     createInfo.maxAnisotropy = Math::min(8.f,GlobalRenderVariables::MAX_ANISOTROPY.get());
 

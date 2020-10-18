@@ -1,4 +1,6 @@
+// Including on top to avoid redefinition warning on vector and set
 #include <vector>
+#include <set>
 
 #include "VulkanGraphicsHelper.h"
 #include "VulkanGraphicsInstance.h"
@@ -13,6 +15,7 @@
 #include "VulkanInternals/VulkanMemoryAllocator.h"
 #include "VulkanInternals/VulkanFunctions.h"
 #include "VulkanInternals/Resources/VulkanSampler.h"
+#include "VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
 #include "../Core/Platform/PlatformAssertionErrors.h"
 #include "../Core/Engine/Config/EngineGlobalConfigs.h"
 #include "../Core/Math/Math.h"
@@ -717,6 +720,30 @@ void VulkanGraphicsHelper::destroyDescriptorsSetLayout(class IGraphicsInstance* 
     const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
     device->vkDestroyDescriptorSetLayout(device->logicalDevice, descriptorsSetLayout, nullptr);
+}
+
+void VulkanGraphicsHelper::updateDescriptorsSet(class IGraphicsInstance* graphicsInstance, const std::vector<VkWriteDescriptorSet>& writingDescriptors, const std::vector<VkCopyDescriptorSet>& copyingDescsSets)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    device->vkUpdateDescriptorSets(device->logicalDevice, uint32(writingDescriptors.size()), writingDescriptors.data()
+        , uint32(copyingDescsSets.size()), copyingDescsSets.data());
+}
+
+SharedPtr<class ShaderParameters> VulkanGraphicsHelper::createShaderParameters(class IGraphicsInstance* graphicsInstance, const class GraphicsResource* paramLayout
+    , const std::set<uint32>& ignoredSetIds)
+{
+    SharedPtr<ShaderParameters> shaderParameter;
+    if (paramLayout->getType()->isChildOf<ShaderSetParametersLayout>())
+    {
+        shaderParameter.reset(new VulkanShaderSetParameters(paramLayout));
+    }
+    else if (paramLayout->getType()->isChildOf<ShaderParametersLayout>())
+    {
+        shaderParameter.reset(new VulkanShaderParameters(paramLayout, ignoredSetIds));
+    }
+    return shaderParameter;
 }
 
 void VulkanGraphicsHelper::destroyPipelineLayout(class IGraphicsInstance* graphicsInstance, const VkPipelineLayout pipelineLayout)

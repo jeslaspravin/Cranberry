@@ -75,10 +75,13 @@ public:
 
     static void createFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebufferCreateInfo& fbCreateInfo, VkFramebuffer* framebuffer);
     static void destroyFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebuffer framebuffer);
-    static VkFramebuffer getFramebuffer(struct Framebuffer* appFrameBuffer);
+    static VkFramebuffer getFramebuffer(const struct Framebuffer* appFrameBuffer);
 
     static VkDescriptorSetLayout createDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, const VkDescriptorSetLayoutCreateInfo& layoutCreateInfo);
     static void destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, VkDescriptorSetLayout descriptorsSetLayout);
+    static void updateDescriptorsSet(class IGraphicsInstance* graphicsInstance, const std::vector<VkWriteDescriptorSet>& writingDescriptors
+        , const std::vector<VkCopyDescriptorSet>& copyingDescsSets);
+    static SharedPtr<class ShaderParameters> createShaderParameters(class IGraphicsInstance* graphicsInstance, const class GraphicsResource* paramLayout, const std::set<uint32>& ignoredSetIds);
 
     static VkPipelineLayout createPipelineLayout(class IGraphicsInstance* graphicsInstance, const class PipelineBase* pipeline);
     static void destroyPipelineLayout(class IGraphicsInstance* graphicsInstance, const VkPipelineLayout pipelineLayout);

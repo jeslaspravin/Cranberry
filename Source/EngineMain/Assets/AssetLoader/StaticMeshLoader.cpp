@@ -282,7 +282,7 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
             {
                 std::vector<std::set<uint32>> faceGroups;
 
-                for (const std::pair<uint32,std::vector<uint32>>& adjacentFaces : vertexFaceAdjacency[vertIdx])
+                for (const std::pair<const uint32,std::vector<uint32>>& adjacentFaces : vertexFaceAdjacency[vertIdx])
                 {
                     float dotVal = 1;
                     bool isSameSmoothing = true;
@@ -422,7 +422,7 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
             meshLoaderData.indices.reserve(faceCount * 3);
             meshLoaderData.meshBatches.clear();
             meshLoaderData.meshBatches.reserve(materialIdToIndices.size());
-            for (const std::pair<uint32, std::vector<uint32>>& matIdIndices : materialIdToIndices)
+            for (const std::pair<const uint32, std::vector<uint32>>& matIdIndices : materialIdToIndices)
             {
                 MeshVertexView vertexBatchView;
                 vertexBatchView.startIndex = uint32(meshLoaderData.indices.size());
@@ -453,7 +453,7 @@ bool StaticMeshLoader::fillAssetInformation(const std::vector<StaticMeshAsset*>&
     if (bIsSuccessful)
     {
         uint32 idx = 0;
-        for (const std::pair<String, MeshLoaderData>& meshDataPair : loadedMeshes)
+        for (const std::pair<const String, MeshLoaderData>& meshDataPair : loadedMeshes)
         {
             StaticMeshAsset* staticMesh = assets[idx];
             staticMesh->setAssetName(meshDataPair.first);

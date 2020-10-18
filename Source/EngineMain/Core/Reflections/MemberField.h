@@ -40,6 +40,11 @@ public:
         return memberPtr != nullptr;
     }
 
+    void set(const MemberType& newValue) const
+    {
+        *memberPtr = newValue;
+    }
+
     MemberType& get() const
     {
         return *memberPtr;
@@ -128,6 +133,16 @@ public:
     operator bool() const
     {
         return memberPtr != nullptr;
+    }
+
+    void set(ClassType& object, const MemberType& newValue) const
+    {
+        object.*memberPtr = newValue;
+    }
+
+    void set(ClassType* object, const MemberType& newValue) const
+    {
+        object->*memberPtr = newValue;
     }
 
     MemberType& get(ClassType& object) const

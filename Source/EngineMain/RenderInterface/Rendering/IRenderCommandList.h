@@ -109,6 +109,8 @@ public:
     virtual void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) = 0;
     virtual void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) = 0;
 
+    virtual void setupInitialLayout(ImageResource* image) = 0;
+
     ///////////////////////////////////////////////////////////////////////////////
     //// Command buffer related function access if you know what you are doing ////
     ///////////////////////////////////////////////////////////////////////////////

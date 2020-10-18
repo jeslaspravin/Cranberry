@@ -1,13 +1,17 @@
 #include "VulkanShaderParamResources.h"
 #include "../../../RenderInterface/Resources/ShaderResources.h"
+#include "../Resources/VulkanSampler.h"
 #include "../../../RenderApi/Material/MaterialCommonUniforms.h"
 #include "../../../Core/Engine/GameEngine.h"
 #include "../../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../VulkanGraphicsHelper.h"
+#include "../../../Core/Math/Math.h"
 #include "../Debugging.h"
 #include "ShaderReflected.h"
 #include "../../../RenderApi/Scene/RenderScene.h"
 #include "../../../RenderInterface/Shaders/Base/DrawMeshShader.h"
+#include "../VulkanDescriptorAllocator.h"
+#include "../../../RenderInterface/Rendering/IRenderCommandList.h"
 
 void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std::vector<VkDescriptorSetLayoutBinding>& descLayoutBindings
     , const ReflectDescriptorBody& descReflected)
@@ -191,6 +195,23 @@ void VulkanShaderSetParamsLayout::init()
             ++i;
         }
     }
+    // sort and merge type duplicate descriptor pool size
+    std::sort(poolAllocation.begin(), poolAllocation.end(), [](const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs)
+        {
+            return lhs.type < rhs.type;
+        }
+    );
+    for (std::vector<VkDescriptorPoolSize>::iterator itr = poolAllocation.begin(); itr != poolAllocation.end();)
+    {
+        auto endItr = itr + 1;
+        while (endItr != poolAllocation.end() && endItr->type == itr->type)
+        {
+            itr->descriptorCount += endItr->descriptorCount;
+            ++endItr;
+        }
+        itr = poolAllocation.erase(itr + 1, endItr);
+    }
+
 
     //reinitResources();
     IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
@@ -263,7 +284,7 @@ void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<String, struct Sha
     const std::map<String, ShaderBufferParamInfo*>& vertexSpecificBufferInfo = 
         MaterialVertexUniforms::bufferParamInfo(static_cast<const DrawMeshShader*>(respectiveShaderRes)->vertexUsage());
 
-    for (const std::pair<String, ShaderBufferParamInfo*>& bufferInfo : vertexSpecificBufferInfo)
+    for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : vertexSpecificBufferInfo)
     {
         auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -292,7 +313,7 @@ void VulkanViewUniqDescLayout::bindBufferParamInfo(std::map<String, struct Shade
 {
     const std::map<String, ShaderBufferParamInfo*>& viewSpecificBufferInfo = RenderSceneBase::sceneViewParamInfo();
 
-    for (const std::pair<String, ShaderBufferParamInfo*>& bufferInfo : viewSpecificBufferInfo)
+    for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : viewSpecificBufferInfo)
     {
         auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -346,6 +367,24 @@ void VulkanShaderParametersLayout::init()
                 ++i;
             }
         }
+        // sort and merge type duplicate descriptor pool size
+        std::sort(descSetLayoutInfo.poolAllocation.begin(), descSetLayoutInfo.poolAllocation.end()
+            , [](const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs)
+            {
+                return lhs.type < rhs.type;
+            }
+        );
+        for (std::vector<VkDescriptorPoolSize>::iterator itr = descSetLayoutInfo.poolAllocation.begin()
+            ; itr != descSetLayoutInfo.poolAllocation.end();)
+        {
+            auto endItr = itr + 1;
+            while (endItr != descSetLayoutInfo.poolAllocation.end() && endItr->type == itr->type)
+            {
+                itr->descriptorCount += endItr->descriptorCount;
+                ++endItr;
+            }
+            itr = descSetLayoutInfo.poolAllocation.erase(itr + 1, endItr);
+        }
     }
 
     //reinitResources();
@@ -394,3 +433,344 @@ VkDescriptorSetLayout VulkanShaderParametersLayout::getDescSetLayout(uint32 setI
     debugAssert(foundItr != setToLayoutInfo.cend());
     return foundItr->second.descriptorLayout;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// VulkanShaderSetParameters implementation
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderSetParameters, VK_OBJECT_TYPE_DESCRIPTOR_SET)
+
+String VulkanShaderSetParameters::getObjectName() const
+{
+    return getResourceName() + "_DescSet" + std::to_string(static_cast<const ShaderSetParametersLayout*>(paramLayout)->getSetID());
+}
+
+void VulkanShaderSetParameters::init()
+{
+    ignoredSets.clear();
+    BaseType::init();
+
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstance);
+    DescriptorsSetQuery query;
+    query.supportedTypes.insert(static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->getDescPoolAllocInfo().cbegin()
+        , static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->getDescPoolAllocInfo().cend());
+    descriptorsSet = descsSetAllocator->allocDescriptorsSet(query, static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->descriptorLayout);
+    debugAssert(descriptorsSet != VK_NULL_HANDLE);
+
+    VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(this);
+
+    std::vector<VkWriteDescriptorSet> bufferDescWrites;
+    bufferDescWrites.reserve(shaderBuffers.size());
+    std::vector<VkDescriptorBufferInfo> bufferInfos(shaderBuffers.size());
+    uint32 descWriteIdx = 0;
+    for (const std::pair<const String, BufferParametersData>& bufferParam : shaderBuffers)
+    {
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
+        writeDescSet.dstSet = descriptorsSet;
+        writeDescSet.dstBinding = bufferParam.second.descriptorInfo->bufferEntryPtr->data.binding;
+        writeDescSet.descriptorCount = 1;
+        writeDescSet.descriptorType = VkDescriptorType(bufferParam.second.descriptorInfo->bufferEntryPtr->data.type);
+        writeDescSet.pBufferInfo = &bufferInfos[descWriteIdx];
+        bufferDescWrites.emplace_back(writeDescSet);
+
+        bufferInfos[descWriteIdx].buffer = static_cast<VulkanBufferResource*>(bufferParam.second.gpuBuffer)->buffer;
+        bufferInfos[descWriteIdx].offset = 0;
+        bufferInfos[descWriteIdx].range = bufferParam.second.gpuBuffer->getResourceSize();
+
+        ++descWriteIdx;
+    }
+
+    VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, bufferDescWrites, {});
+    ENQUEUE_COMMAND(FinalizeShaderParams, LAMBDA_BODY
+    (
+        updateParams(cmdList, graphicsInstance);
+    ), this);
+}
+
+void VulkanShaderSetParameters::release()
+{
+    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderApi()->getGraphicsInstance());
+    descsSetAllocator->releaseDescriptorsSet(descriptorsSet);
+    descriptorsSet = VK_NULL_HANDLE;
+    BaseType::release();
+}
+
+void VulkanShaderSetParameters::updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+{
+    BaseType::updateParams(cmdList, graphicsInstance);
+    std::vector<DescriptorWriteData> writeDescs;
+    writeDescs.reserve(textureUpdates.size() + texelUpdates.size() + samplerUpdates.size());
+    const uint32 texelStartIdx = 0;
+    const uint32 textureStartIdx = uint32(texelUpdates.size());
+
+    if (writeDescs.capacity() == 0)
+    {
+        return;
+    }
+
+    std::vector<VkBufferView> texelViews;
+    texelViews.reserve(texelUpdates.size());
+    std::vector<VkDescriptorImageInfo> imageAndSamplerInfos;
+    imageAndSamplerInfos.reserve(textureUpdates.size() + samplerUpdates.size());
+
+    for (const String& texelBufferName : texelUpdates)
+    {
+        DescriptorWriteData& texelWriteData = writeDescs.emplace_back();
+        texelWriteData.ParamData.texel = &shaderTexels.at(texelBufferName);
+        texelWriteData.writeInfoIdx = uint32(texelViews.size());
+
+        texelViews.emplace_back(
+            static_cast<VulkanBufferResource*>(texelWriteData.ParamData.texel->gpuBuffer)->getBufferView({}));
+    }
+    for (const String& textureName : textureUpdates)
+    {
+        DescriptorWriteData& texWriteData = writeDescs.emplace_back();
+        texWriteData.ParamData.texture = &shaderTextures.at(textureName);
+        texWriteData.writeInfoIdx = uint32(imageAndSamplerInfos.size());
+
+        VkDescriptorImageInfo& imageInfo = imageAndSamplerInfos.emplace_back();
+        imageInfo.imageLayout = texWriteData.ParamData.texture->texture->isShaderWrite()
+            ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.sampler = texWriteData.ParamData.texture->sampler
+            ? static_cast<VulkanSampler*>(texWriteData.ParamData.texture->sampler.get())->sampler : nullptr;
+        imageInfo.imageView = static_cast<VulkanImageResource*>(texWriteData.ParamData.texture->texture)->getImageView({});
+    }
+    for (const String& samplerName : samplerUpdates)
+    {
+        DescriptorWriteData& samplerWriteData = writeDescs.emplace_back();
+        samplerWriteData.ParamData.texture = &shaderTextures.at(samplerName);
+        samplerWriteData.writeInfoIdx = uint32(imageAndSamplerInfos.size());
+
+        VkDescriptorImageInfo& imageInfo = imageAndSamplerInfos.emplace_back();
+        imageInfo.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
+        imageInfo.imageView = nullptr;
+        imageInfo.sampler = static_cast<VulkanSampler*>(samplerWriteData.ParamData.sampler->sampler.get())->sampler;
+    }
+
+    std::vector<VkWriteDescriptorSet> vkWrites(writeDescs.size());
+    for (uint32 i = texelStartIdx; i < textureStartIdx; ++i)
+    {
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
+        writeDescSet.dstSet = descriptorsSet;
+        writeDescSet.pTexelBufferView = &texelViews[writeDescs[i].writeInfoIdx];
+        writeDescSet.dstBinding = writeDescs[i].ParamData.texel->descriptorInfo->texelBufferEntryPtr->data.binding;
+        writeDescSet.descriptorType = VkDescriptorType(writeDescs[i].ParamData.texel->descriptorInfo->texelBufferEntryPtr->data.type);
+        writeDescSet.descriptorCount = 1;
+        vkWrites[i] = writeDescSet;
+    }
+    const uint32 endIdx = uint32(writeDescs.size());
+    for (uint32 i = textureStartIdx; i < endIdx; ++i)
+    {
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
+        writeDescSet.dstSet = descriptorsSet;
+        writeDescSet.pImageInfo = &imageAndSamplerInfos[writeDescs[i].writeInfoIdx];
+        writeDescSet.dstBinding = writeDescs[i].ParamData.texture->descriptorInfo->textureEntryPtr->data.binding;
+        writeDescSet.descriptorType = VkDescriptorType(writeDescs[i].ParamData.texture->descriptorInfo->textureEntryPtr->data.type);
+        writeDescSet.descriptorCount = 1;
+        vkWrites[i] = writeDescSet;
+    }
+    VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, vkWrites, {});
+}
+
+uint64 VulkanShaderSetParameters::getDispatchableHandle() const
+{
+    return uint64(descriptorsSet);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// VulkanShaderParameters implementation
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderParameters, VK_OBJECT_TYPE_DESCRIPTOR_SET)
+
+String VulkanShaderParameters::getObjectName() const
+{
+    return getResourceName() + "_DescSet";
+}
+
+void VulkanShaderParameters::init()
+{
+    BaseType::init();
+
+    std::map<uint32, int32> setIdToVectorIdx;
+    std::vector<VkDescriptorSetLayout> layouts;
+    DescriptorsSetQuery query;
+
+    {
+        std::map<VkDescriptorType, uint32> descriptorPoolSizes;
+
+        const ShaderReflected* reflectedData = static_cast<const ShaderParametersLayout*>(paramLayout)->getShaderResource()->getReflection();
+        for (const ReflectDescriptorBody& descriptorsBody : reflectedData->descriptorsSets)
+        {
+            if (ignoredSets.find(descriptorsBody.set) != ignoredSets.end())
+            {
+                continue;
+            }
+
+            setIdToVectorIdx[descriptorsBody.set] = int32(layouts.size());
+            layouts.emplace_back(static_cast<const VulkanShaderParametersLayout*>(paramLayout)
+                ->getDescSetLayout(descriptorsBody.set));
+
+            for (const VkDescriptorPoolSize& descriptorPoolSize : static_cast<const VulkanShaderParametersLayout*>(paramLayout)
+                ->getDescPoolAllocInfo(descriptorsBody.set))
+            {
+                 auto poolSizeItr = descriptorPoolSizes.find(descriptorPoolSize.type);
+                 if (poolSizeItr == descriptorPoolSizes.end())
+                 {
+                     descriptorPoolSizes[descriptorPoolSize.type] = descriptorPoolSize.descriptorCount;
+                 }
+                 else
+                 {
+                     poolSizeItr->second = Math::max(poolSizeItr->second, descriptorPoolSize.descriptorCount);
+                 }
+            }
+        }
+
+        for (const std::pair<const VkDescriptorType, uint32>& descPoolSize : descriptorPoolSizes)
+        {
+            query.supportedTypes.insert({ descPoolSize.first, descPoolSize.second });
+        }
+    }
+
+    std::vector<VkDescriptorSet> descsSets;
+
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstance);
+    if (!descsSetAllocator->allocDescriptorsSets(descsSets, query, layouts))
+    {
+        Logger::error("VulkanShaderParameters", "%s() : Allocation of descriptors set failed %s", __func__, getResourceName().getChar());
+        return;
+    }
+
+    for (const std::pair<const uint32, int32>& descSetToIdx : setIdToVectorIdx)
+    {
+        descriptorsSets[descSetToIdx.first] = descsSets[descSetToIdx.second];
+        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(descsSets[descSetToIdx.second])
+            , getObjectName() + std::to_string(descSetToIdx.second), getObjectType());
+    }
+    
+    std::vector<VkWriteDescriptorSet> bufferDescWrites;
+    bufferDescWrites.reserve(shaderBuffers.size());
+    std::vector<VkDescriptorBufferInfo> bufferInfos(shaderBuffers.size());
+    uint32 descWriteIdx = 0;
+    for (const std::pair<const String, BufferParametersData>& bufferParam : shaderBuffers)
+    {
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
+        writeDescSet.dstSet = descriptorsSets[static_cast<const ShaderParametersLayout*>(paramLayout)->getSetID(bufferParam.first)];
+        writeDescSet.dstBinding = bufferParam.second.descriptorInfo->bufferEntryPtr->data.binding;
+        writeDescSet.descriptorType = VkDescriptorType(bufferParam.second.descriptorInfo->bufferEntryPtr->data.type);
+        writeDescSet.descriptorCount = 1;
+        writeDescSet.pBufferInfo = &bufferInfos[descWriteIdx];
+        bufferDescWrites.emplace_back(writeDescSet);
+
+        bufferInfos[descWriteIdx].buffer = static_cast<VulkanBufferResource*>(bufferParam.second.gpuBuffer)->buffer;
+        bufferInfos[descWriteIdx].offset = 0;
+        bufferInfos[descWriteIdx].range = bufferParam.second.gpuBuffer->getResourceSize();
+
+        ++descWriteIdx;
+    }
+
+    VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, bufferDescWrites, {});
+    ENQUEUE_COMMAND(FinalizeShaderParams, LAMBDA_BODY
+    (
+        updateParams(cmdList, graphicsInstance);
+    ), this);
+}
+
+void VulkanShaderParameters::release()
+{
+    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderApi()->getGraphicsInstance());
+    for (const std::pair<const uint32, VkDescriptorSet>& setIdToSet : descriptorsSets)
+    {
+        descsSetAllocator->releaseDescriptorsSet(setIdToSet.second);
+    }
+    descriptorsSets.clear();
+
+    BaseType::release();
+}
+
+void VulkanShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+{
+    BaseType::updateParams(cmdList, graphicsInstance);
+
+    std::vector<DescriptorWriteData> writeDescs;
+    writeDescs.reserve(textureUpdates.size() + texelUpdates.size() + samplerUpdates.size());
+    const uint32 texelStartIdx = 0;
+    const uint32 textureStartIdx = uint32(texelUpdates.size());
+
+    if (writeDescs.capacity() == 0)
+    {
+        return;
+    }
+
+    std::vector<VkBufferView> texelViews;
+    texelViews.reserve(texelUpdates.size());
+    std::vector<VkDescriptorImageInfo> imageAndSamplerInfos;
+    imageAndSamplerInfos.reserve(textureUpdates.size() + samplerUpdates.size());
+
+    for (const String& texelBufferName : texelUpdates)
+    {
+        DescriptorWriteData& texelWriteData = writeDescs.emplace_back();
+        texelWriteData.ParamData.texel = &shaderTexels.at(texelBufferName);
+        texelWriteData.setID = static_cast<const ShaderParametersLayout*>(paramLayout)->getSetID(texelBufferName);
+        texelWriteData.writeInfoIdx = uint32(texelViews.size());
+
+        texelViews.emplace_back(
+            static_cast<VulkanBufferResource*>(texelWriteData.ParamData.texel->gpuBuffer)->getBufferView({}));
+    }
+    for (const String& textureName : textureUpdates)
+    {
+        DescriptorWriteData& texWriteData = writeDescs.emplace_back();
+        texWriteData.ParamData.texture = &shaderTextures.at(textureName);
+        texWriteData.setID = static_cast<const ShaderParametersLayout*>(paramLayout)->getSetID(textureName);
+        texWriteData.writeInfoIdx = uint32(imageAndSamplerInfos.size());
+
+        VkDescriptorImageInfo& imageInfo = imageAndSamplerInfos.emplace_back();
+        imageInfo.imageLayout = texWriteData.ParamData.texture->texture->isShaderWrite() 
+            ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.sampler = texWriteData.ParamData.texture->sampler
+            ? static_cast<VulkanSampler*>(texWriteData.ParamData.texture->sampler.get())->sampler : nullptr;
+        imageInfo.imageView = static_cast<VulkanImageResource*>(texWriteData.ParamData.texture->texture)->getImageView({});
+    }
+    for (const String& samplerName : samplerUpdates)
+    {
+        DescriptorWriteData& samplerWriteData = writeDescs.emplace_back();
+        samplerWriteData.ParamData.texture = &shaderTextures.at(samplerName);
+        samplerWriteData.setID = static_cast<const ShaderParametersLayout*>(paramLayout)->getSetID(samplerName);
+        samplerWriteData.writeInfoIdx = uint32(imageAndSamplerInfos.size());
+
+        VkDescriptorImageInfo& imageInfo = imageAndSamplerInfos.emplace_back();
+        imageInfo.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
+        imageInfo.imageView = nullptr;
+        imageInfo.sampler = static_cast<VulkanSampler*>(samplerWriteData.ParamData.sampler->sampler.get())->sampler;
+    }
+
+    std::vector<VkWriteDescriptorSet> vkWrites(writeDescs.size());
+    for (uint32 i = texelStartIdx; i < textureStartIdx; ++i)
+    {
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
+        writeDescSet.dstSet = descriptorsSets[writeDescs[i].setID];
+        writeDescSet.pTexelBufferView = &texelViews[writeDescs[i].writeInfoIdx];
+        writeDescSet.dstBinding = writeDescs[i].ParamData.texel->descriptorInfo->texelBufferEntryPtr->data.binding;
+        writeDescSet.descriptorType = VkDescriptorType(writeDescs[i].ParamData.texel->descriptorInfo->texelBufferEntryPtr->data.type);
+        writeDescSet.descriptorCount = 1;
+        vkWrites[i] = writeDescSet;
+    }
+    const uint32 endIdx = uint32(writeDescs.size());
+    for (uint32 i = textureStartIdx; i < endIdx; ++i)
+    {
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
+        writeDescSet.dstSet = descriptorsSets[writeDescs[i].setID];
+        writeDescSet.pImageInfo = &imageAndSamplerInfos[writeDescs[i].writeInfoIdx];
+        writeDescSet.dstBinding = writeDescs[i].ParamData.texture->descriptorInfo->textureEntryPtr->data.binding;
+        writeDescSet.descriptorType = VkDescriptorType(writeDescs[i].ParamData.texture->descriptorInfo->textureEntryPtr->data.type);
+        writeDescSet.descriptorCount = 1;
+        vkWrites[i] = writeDescSet;
+    }
+    VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, vkWrites, {});
+    texelUpdates.clear();
+    textureUpdates.clear();
+    samplerUpdates.clear();
+}
+

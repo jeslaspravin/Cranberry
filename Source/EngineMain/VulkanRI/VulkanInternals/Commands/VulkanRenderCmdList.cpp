@@ -11,10 +11,10 @@
 
 FORCE_INLINE VkImageAspectFlags VulkanCommandList::determineImageAspect(const ImageResource* image) const
 {
-    VkImageAspectFlags imgAspects = EPixelDataFormat::isDepthFormat(image->imageFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT
-        : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
-    imgAspects |= EPixelDataFormat::isStencilFormat(image->imageFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_STENCIL_BIT : 0;
-    return imgAspects;
+    return (EPixelDataFormat::isDepthFormat(image->imageFormat())
+        ? (VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT
+            | (EPixelDataFormat::isStencilFormat(image->imageFormat()) ? VkImageAspectFlagBits::VK_IMAGE_ASPECT_STENCIL_BIT : 0))
+        : VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 FORCE_INLINE VkAccessFlags VulkanCommandList::determineImageAccessMask(const ImageResource* image) const
@@ -37,8 +37,10 @@ FORCE_INLINE VkImageLayout VulkanCommandList::determineImageLayout(const ImageRe
     VkImageLayout imgLayout = getImageLayout(image);
     if (imgLayout == VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED)
     {
+        imgLayout = EPixelDataFormat::isDepthFormat(image->imageFormat())
+            ? VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         imgLayout = image->getType()->isChildOf(GraphicsRenderTargetResource::staticType())
-            ? VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : image->isShaderWrite()
+            ? imgLayout : image->isShaderWrite()
             ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
     return imgLayout;
@@ -47,9 +49,12 @@ FORCE_INLINE VkImageLayout VulkanCommandList::determineImageLayout(const ImageRe
 FORCE_INLINE VkImageLayout VulkanCommandList::getImageLayout(const ImageResource* image) const
 {
     // TODO(Jeslas) : change this to get final layout from some resource tracked layout
-    return image->getType()->isChildOf(GraphicsRenderTargetResource::staticType())
-        ? VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : image->isShaderWrite()
+    VkImageLayout imgLayout = EPixelDataFormat::isDepthFormat(image->imageFormat())
+        ? VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    imgLayout = image->getType()->isChildOf(GraphicsRenderTargetResource::staticType())
+        ? imgLayout : image->isShaderWrite()
         ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    return imgLayout;
 }
 
 VulkanCommandList::VulkanCommandList(IGraphicsInstance* graphicsInstance, VulkanDevice* vulkanDevice)
@@ -264,6 +269,37 @@ void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority
 void VulkanCommandList::waitIdle()
 {
     vDevice->vkDeviceWaitIdle(VulkanGraphicsHelper::getDevice(vDevice));
+}
+
+void VulkanCommandList::setupInitialLayout(ImageResource* image)
+{
+    const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(image->imageFormat());
+
+    const GraphicsResource* cmdBuffer = cmdBufferManager->beginTempCmdBuffer("LayoutTransition_" + image->getResourceName(), EQueueFunction::Graphics);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+
+    IMAGE_MEMORY_BARRIER(layoutTransition);
+    layoutTransition.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+    layoutTransition.newLayout = determineImageLayout(image);
+    layoutTransition.srcQueueFamilyIndex = layoutTransition.dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(cmdBuffer);
+    layoutTransition.srcAccessMask = layoutTransition.dstAccessMask = determineImageAccessMask(image);
+    layoutTransition.image = static_cast<VulkanImageResource*>(image)->image;
+    layoutTransition.subresourceRange = { determineImageAspect(image), 0, image->getNumOfMips(), 0, image->getLayerCount() };
+
+    vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT
+        , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
+        , 0, nullptr, 0, nullptr, 1, &layoutTransition);
+
+    cmdBufferManager->endCmdBuffer(cmdBuffer);
+
+    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "TempLayoutTransitionFence");
+    CommandSubmitInfo submitInfo;
+    submitInfo.cmdBuffers.emplace_back(cmdBuffer);
+    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence.get());
+    tempFence->waitForSignal();
+
+    cmdBufferManager->freeCmdBuffer(cmdBuffer);
+    tempFence->release();
 }
 
 void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo)

@@ -169,7 +169,7 @@ void GBuffers::onScreenResized(Size2D newSize)
         {
             cmdList->waitIdle();
 
-            for (const std::pair<FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
+            for (const std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
             {
                 for (const FramebufferWrapper& framebufferData : framebufferPair.second)
                 {
@@ -277,7 +277,7 @@ void GBuffers::destroy()
             {
                 TextureBase::destroyTexture<GBufferRenderTexture>(rtTexture);
             }
-            delete framebufferData.framebuffer;
+            destroyFbInstance(framebufferData.framebuffer);
         }
         framebufferPair.second.clear();
     }
@@ -285,7 +285,7 @@ void GBuffers::destroy()
 
     for (Framebuffer* fb : swapchainFbs)
     {
-        delete fb;
+        destroyFbInstance(fb);
     }
     swapchainFbs.clear();
 }
@@ -316,3 +316,7 @@ Framebuffer* GBuffers::getSwapchainFramebuffer(uint32 frameIdx)
     return swapchainFbs[frameIdx];
 }
 
+void GBuffers::destroyFbInstance(const Framebuffer* fb)
+{
+    delete fb;
+}

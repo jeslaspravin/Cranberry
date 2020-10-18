@@ -30,4 +30,5 @@ public:
     // Relative to application assets root path
     AssetBase* getOrLoadAsset(const String& relAssetPath);
     AssetBase* getOrLoadAsset(const AssetHeader& header);
+    AssetBase* getAsset(const String& assetName) const;
 };
