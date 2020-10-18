@@ -21,6 +21,8 @@ public:
     void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
     void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) override;
 
+    void setupInitialLayout(ImageResource* image) override;
+
     const GraphicsResource* startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable) override;
     void endCmd(const GraphicsResource* cmdBuffer) override;
     void freeCmd(const GraphicsResource* cmdBuffer) override;
@@ -93,6 +95,11 @@ void RenderCommandList::copyToImage(ImageResource* dst, const std::vector<class 
 void RenderCommandList::copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo)
 {
     cmdList->copyOrResolveImage(src, dst, srcInfo, dstInfo);
+}
+
+void RenderCommandList::setupInitialLayout(ImageResource* image)
+{
+    cmdList->setupInitialLayout(image);
 }
 
 void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<Color>& pixelData

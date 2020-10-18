@@ -42,6 +42,7 @@ public:
     static void onSurfaceResized(Size2D newSize);
 
     static Framebuffer* createFbInstance();
+    static void destroyFbInstance(const Framebuffer* fb);
     // Destroy if any already existing raw framebuffer resource
     static void initializeFb(Framebuffer* fb, const Size2D& frameSize);
 };

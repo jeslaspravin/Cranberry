@@ -117,9 +117,9 @@ void GBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWindowC
 
 #endif//RENDERAPI_VULKAN
 
-VkFramebuffer VulkanGraphicsHelper::getFramebuffer(struct Framebuffer* appFrameBuffer)
+VkFramebuffer VulkanGraphicsHelper::getFramebuffer(const struct Framebuffer* appFrameBuffer)
 {
-    return static_cast<VulkanFrameBuffer*>(appFrameBuffer)->frameBuffer;
+    return static_cast<const VulkanFrameBuffer*>(appFrameBuffer)->frameBuffer;
 }
 
 // Assumption made : that  we are never going to use input attachments so all texture except depth attachments will be used as color attachment only

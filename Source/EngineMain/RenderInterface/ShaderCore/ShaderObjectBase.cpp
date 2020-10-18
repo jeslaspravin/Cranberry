@@ -150,7 +150,7 @@ void UniqueUtilityShaderObject::setPipeline(const GenericRenderPassProperties& r
 
 UniqueUtilityShaderObject::~UniqueUtilityShaderObject()
 {
-    for (const std::pair<GenericRenderPassProperties, GraphicsPipelineBase*>& pipeline : graphicsPipelines)
+    for (const std::pair<const GenericRenderPassProperties, GraphicsPipelineBase*>& pipeline : graphicsPipelines)
     {
         pipeline.second->release();
         delete pipeline.second;
@@ -167,7 +167,7 @@ std::vector<const GraphicsPipelineBase*> UniqueUtilityShaderObject::getAllPipeli
 {
     std::vector<const GraphicsPipelineBase*> pipelines;
     pipelines.reserve(graphicsPipelines.size());
-    for (const std::pair<GenericRenderPassProperties, GraphicsPipelineBase*>& pipeline : graphicsPipelines)
+    for (const std::pair<const GenericRenderPassProperties, GraphicsPipelineBase*>& pipeline : graphicsPipelines)
     {
         pipelines.emplace_back(pipeline.second);
     }

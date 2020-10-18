@@ -98,13 +98,13 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 void VulkanGlobalRenderingContext::clearApiContext()
 {
     IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
-    for (const std::pair<const ShaderResource* , VkPipelineLayout>& pipelineLayout : pipelineLayouts)
+    for (const std::pair<ShaderResource const* const, VkPipelineLayout>& pipelineLayout : pipelineLayouts)
     {
         VulkanGraphicsHelper::destroyPipelineLayout(graphicsInstance, pipelineLayout.second);
     }
     pipelineLayouts.clear();
 
-    for (const std::pair<ERenderPassFormat::Type, std::vector<RenderpassPropsPair>>& renderpasses : gbufferRenderPasses)
+    for (const std::pair<const ERenderPassFormat::Type, std::vector<RenderpassPropsPair>>& renderpasses : gbufferRenderPasses)
     {
         for (const RenderpassPropsPair& renderpass : renderpasses.second)
         {
@@ -113,7 +113,7 @@ void VulkanGlobalRenderingContext::clearApiContext()
     }
     gbufferRenderPasses.clear();
 
-    for (const std::pair<GenericRenderPassProperties, std::vector<RenderpassPropsPair>>& renderpasses : genericRenderPasses)
+    for (const std::pair<const GenericRenderPassProperties, std::vector<RenderpassPropsPair>>& renderpasses : genericRenderPasses)
     {
         for (const RenderpassPropsPair& renderpass : renderpasses.second)
         {

@@ -70,9 +70,11 @@ void RenderTargetTexture::reinitResources()
         ENQUEUE_COMMAND(RtReinitTexture,
             {
                 rtResource->reinitResources();
+                cmdList->setupInitialLayout(rtResource);
                 if (!bSameReadWriteTexture)
                 {
                     textureResource->reinitResources();
+                    cmdList->setupInitialLayout(textureResource);
                 } 
             }, this);
     }
@@ -133,6 +135,8 @@ void RenderTargetTexture::init(RenderTargetTexture* texture)
 
     if (!texture->bSameReadWriteTexture)
     {
+        texture->rtResource->setResourceName(texture->textureName + "_RT");
+
         texture->textureResource = new GraphicsImageResource(texture->dataFormat);
         texture->textureResource->setResourceName(texture->textureName);
         texture->textureResource->setShaderUsage(EImageShaderUsage::Sampling);
@@ -145,9 +149,11 @@ void RenderTargetTexture::init(RenderTargetTexture* texture)
     ENQUEUE_COMMAND(RtInitTexture,
         {
             texture->rtResource->init();
+            cmdList->setupInitialLayout(texture->rtResource);
             if (!texture->bSameReadWriteTexture)
             {
                 texture->textureResource->init();
+                cmdList->setupInitialLayout(texture->textureResource);
             }
         }, texture);
 }

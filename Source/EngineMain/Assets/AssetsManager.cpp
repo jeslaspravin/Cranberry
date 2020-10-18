@@ -125,3 +125,15 @@ AssetBase* AssetManager::getOrLoadAsset(const AssetHeader& header)
     }
     return returnVal;
 }
+
+AssetBase* AssetManager::getAsset(const String& assetName) const
+{
+    for (const std::pair<const AssetHeader, AssetBase*>& asset : assetsRegistered)
+    {
+        if (asset.first.assetName == assetName)
+        {
+            return asset.second;
+        }
+    }
+    return nullptr;
+}

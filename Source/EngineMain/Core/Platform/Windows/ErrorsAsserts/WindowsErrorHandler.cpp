@@ -130,7 +130,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
             uint64 moduleBase = SymGetModuleBase64(processHandle, frame.AddrPC.Offset);
             SymbolInfo symInfo = SymbolInfo(processHandle, frame.AddrPC.Offset, symOffset);
             String moduleName;
-            for (const std::pair<LibPointerPtr, ModuleData>& modulePair : modulesDataPairs)
+            for (const std::pair<const LibPointerPtr, ModuleData>& modulePair : modulesDataPairs)
             {
                 if (moduleBase == (uint64)modulePair.second.basePtr)
                 {

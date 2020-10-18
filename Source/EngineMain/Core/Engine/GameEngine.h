@@ -5,13 +5,15 @@
 
 struct EngineTime
 {
+    uint64 frameCounter = 0;
     int64 startTick;
     int64 initEndTick;
     int64 lastFrameTick;
     int64 frameTick;
     // In Seconds
-    float lastDeltaTime = 0;
-    float deltaTime = 0;
+    // Start with 100FPS
+    float lastDeltaTime = 0.01f;
+    float deltaTime = 0.01f;
 
     /* Global time dilation */
     float timeDilation = 1;
@@ -20,7 +22,7 @@ struct EngineTime
 
     void engineStart();
     void tickStart();
-    void progressTick();
+    void progressFrame();
     float getDeltaTime();
 };
 
