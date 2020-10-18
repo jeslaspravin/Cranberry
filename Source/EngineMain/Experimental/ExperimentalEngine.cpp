@@ -27,8 +27,11 @@
 #include "../RenderApi/Scene/RenderScene.h"
 #include "../RenderApi/Material/MaterialCommonUniforms.h"
 #include "../Core/Math/RotationMatrix.h"
+#include "../Core/Types/Textures/RenderTargetTextures.h"
+#include "../RenderInterface/GlobalRenderVariables.h"
 
 #include <array>
+#include <random>
 
 void ExperimentalEngine::tempTest()
 {
@@ -136,7 +139,7 @@ void ExperimentalEngine::createPools()
 
 void ExperimentalEngine::destroyPools()
 {
-    for (const std::pair<EQueueFunction, QueueCommandPool>& pool : pools)
+    for (const std::pair<const EQueueFunction, QueueCommandPool>& pool : pools)
     {
         vDevice->vkDestroyCommandPool(device, pool.second.oneTimeRecordPool, nullptr);
         vDevice->vkDestroyCommandPool(device, pool.second.resetableCommandPool, nullptr);
@@ -144,49 +147,12 @@ void ExperimentalEngine::destroyPools()
     }
 }
 
-void ExperimentalEngine::createBuffers()
-{
-    const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmDefaultPipelineContext.getPipeline());
-    const ShaderSetParametersLayout* paramSetLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(0));// 0 is view data
-
-    const ShaderBufferDescriptorType* paramDescription = static_cast<const ShaderBufferDescriptorType*>(paramSetLayout->parameterDescription("viewData"));
-    viewBuffer.buffer = new GraphicsRBuffer(paramDescription->bufferParamInfo->paramStride(), 1);
-    viewBuffer.buffer->setResourceName("ViewData");
-    viewBuffer.buffer->init();
-
-    paramSetLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(1));// 1 is instance data
-    paramDescription = static_cast<const ShaderBufferDescriptorType*>(paramSetLayout->parameterDescription("instanceData"));
-    instanceBuffer.buffer = new GraphicsRBuffer(paramDescription->bufferParamInfo->paramStride(), 1);
-    instanceBuffer.buffer->setResourceName("InstanceData");
-    instanceBuffer.buffer->init();
-
-    smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmGoochPipelineContext.getPipeline());
-    paramSetLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(2));// 2 is shader data
-    paramDescription = static_cast<const ShaderBufferDescriptorType*>(paramSetLayout->parameterDescription("surfaceData"));
-    goochSurfaceDataBuffer.buffer = new GraphicsRBuffer(paramDescription->bufferParamInfo->paramStride(), 1);
-    goochSurfaceDataBuffer.buffer->setResourceName("GoochSurfaceData");
-    goochSurfaceDataBuffer.buffer->init();
-}
-
-void ExperimentalEngine::destroyBuffers()
-{
-    viewBuffer.buffer->release();
-    delete viewBuffer.buffer;
-    viewBuffer.buffer = nullptr;
-
-    instanceBuffer.buffer->release();
-    delete instanceBuffer.buffer;
-    instanceBuffer.buffer = nullptr;
-
-    goochSurfaceDataBuffer.buffer->release();
-    delete goochSurfaceDataBuffer.buffer;
-    goochSurfaceDataBuffer.buffer = nullptr;
-}
-
 void ExperimentalEngine::createImages()
 {
-    commonSampler = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "CommonSampler",
+    nearestFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "NearestSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest);
+    linearFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "LinearSampler",
+        ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
 
     // common shader sampling texture
     {
@@ -202,295 +168,331 @@ void ExperimentalEngine::createImages()
 
 void ExperimentalEngine::destroyImages()
 {
-    commonSampler->release();
+    nearestFiltering->release();
+    linearFiltering->release();
 }
 
-void ExperimentalEngine::createShaderResDescriptors()
+void ExperimentalEngine::createScene()
+{
+    StaticMeshAsset* cube = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cube.obj"));
+    StaticMeshAsset* sphere = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Sphere.obj"));
+    StaticMeshAsset* cylinder = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cylinder.obj"));
+    StaticMeshAsset* cone = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cone.obj"));
+
+    SceneEntity sceneFloor;
+    sceneFloor.meshAsset = cube;
+    sceneFloor.transform.setScale(Vector3D(10, 10, 1));
+    sceneFloor.transform.setTranslation(Vector3D(0, 0, -50));
+    sceneFloor.meshBatchColors.emplace_back(LinearColor(0.80f, 0.78f, 0.60f));
+
+    sceneData.emplace_back(sceneFloor);
+
+    // Ceiling
+    sceneFloor.transform.setTranslation(Vector3D(0, 0, 550));
+    sceneData.emplace_back(sceneFloor);
+
+    std::array<StaticMeshAsset*, 4> assets{ cube, sphere, cylinder, cone };
+
+    std::default_random_engine generator(uint32(timeData.initEndTick));
+    std::uniform_real_distribution<double> distribution(-1.0, 1.0);
+    std::normal_distribution<float> distribution1(0.0, 1.0);
+    for (uint32 i = 0; i < 5; ++i)
+    {
+        SceneEntity entity;
+        entity.meshAsset = assets[std::rand() % assets.size()];
+        entity.transform.setTranslation(Vector3D(float(distribution(generator) * 450), float(distribution(generator) * 450), float(distribution(generator) * 100) + 50));
+        entity.meshBatchColors.emplace_back(LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1));
+        sceneData.emplace_back(entity);
+    }
+
+    GoochModelLightData light;
+    light.warmOffsetAndPosX = Vector4D(0.3f, 0.3f, 0.0f, 0);
+    light.coolOffsetAndPosY = Vector4D(0.0f, 0.0f, 0.55f, 0);
+
+    // Near floor
+    float height = 150;
+    // Light 1
+    light.highlightColorAndPosZ = Vector4D(0.49f, 0.66f, 0.75f, height);
+    light.lightColorAndRadius = Vector4D(0.45f, 0.58f, 0.80f, 0);
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+
+    light.warmOffsetAndPosX.w() = light.coolOffsetAndPosY.w() = 400;
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    // Light 2
+    light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    // Light 3
+    light.warmOffsetAndPosX.w() = -light.warmOffsetAndPosX.w();
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    // Light 4
+    light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+
+    // Near ceiling
+    height = 475;
+    // Light 5
+    light.highlightColorAndPosZ = Vector4D(1.f, 1.f, 1.f, height);
+    light.lightColorAndRadius = Vector4D(1.f, 1.f, 1.f, 0);
+    light.warmOffsetAndPosX.w() = light.coolOffsetAndPosY.w() = 400;
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    // Light 6
+    light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    // Light 7
+    light.warmOffsetAndPosX.w() = -light.warmOffsetAndPosX.w();
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    // Light 8
+    light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+}
+
+void ExperimentalEngine::destroyScene()
+{
+    sceneData.clear();
+}
+
+void ExperimentalEngine::createShaderParameters()
+{
+    IGraphicsInstance* graphicsInstance = getRenderApi()->getGraphicsInstance();
+    const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmDefaultPipelineContext.getPipeline());
+    // Since view data and other view related data are at set 0
+    viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(0));
+    viewParameters->setResourceName("View");
+    for (SceneEntity& entity : sceneData)
+    {
+        entity.instanceParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(1));
+        entity.instanceParameters->setResourceName(entity.meshAsset->assetName());
+        entity.meshBatchParameters.resize(entity.meshAsset->meshBatches.size());
+        uint32 meshBatchIdx = 0;
+        for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
+        {
+            meshBatchParam = (GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(2)));
+            meshBatchParam->setResourceName(entity.meshAsset->assetName() + "_MeshBatch_" + std::to_string(meshBatchIdx));
+            ++meshBatchIdx;
+        }
+    }
+
+    uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
+    lightTextures.resize(swapchainCount);
+    drawQuadTextureDescs.resize(swapchainCount);
+    drawQuadNormalDescs.resize(swapchainCount);
+    drawQuadDepthDescs.resize(swapchainCount);
+    drawLitColorsDescs.resize(swapchainCount);
+
+    // Light related descriptors
+    // as 1 and 2 are textures and light data
+    const GraphicsResource* goochModelDescLayout = drawGoochPipelineContext.getPipeline()->getParamLayoutAtSet(0);
+    lightCommon = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1,2 });
+    lightCommon->setResourceName("LightCommon");
+    uint32 lightIdx = 0;
+    for (std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
+    {
+        // as 0 and 1 are light common and textures
+        light.second = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0, 1 });
+        light.second->setResourceName("Light" + std::to_string(lightIdx));
+        ++lightIdx;
+    }
+
+    const GraphicsResource* drawQuadDescLayout = drawQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0);
+    for (uint32 i = 0; i < swapchainCount; ++i)
+    {
+        const String iString = std::to_string(i);
+        lightTextures[i] = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0,2 });
+        lightTextures[i]->setResourceName("LightFrameCommon_" + iString);
+        drawQuadTextureDescs[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout);
+        drawQuadTextureDescs[i]->setResourceName("QuadUnlit_" + iString);
+        drawQuadNormalDescs[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout);
+        drawQuadNormalDescs[i]->setResourceName("QuadNormal_" + iString);
+        drawQuadDepthDescs[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout);
+        drawQuadDepthDescs[i]->setResourceName("QuadDepth_" + iString);
+        drawLitColorsDescs[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout);
+        drawLitColorsDescs[i]->setResourceName("QuadLit_" + iString);
+    }
+
+    clearInfoParams = GraphicsHelper::createShaderParameters(graphicsInstance, clearQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0));
+    clearInfoParams->setResourceName("ClearInfo");
+}
+
+void ExperimentalEngine::setupShaderParameterParams()
+{
+    IGraphicsInstance* graphicsInstance = getRenderApi()->getGraphicsInstance();
+
+    ViewData viewData;
+    viewData.view = camera.viewMatrix();
+    viewData.invView = viewData.view.inverse();
+    viewData.projection = camera.projectionMatrix();
+    viewData.invProjection = viewData.projection.inverse();
+    viewParameters->setBuffer("viewData", viewData);
+    viewParameters->init();
+    for (SceneEntity& entity : sceneData)
+    {
+        entity.instanceParameters->setMatrixParam("model", entity.transform.getTransformMatrix());
+        entity.instanceParameters->setMatrixParam("invModel", entity.transform.getTransformMatrix().inverse());
+        entity.instanceParameters->init();
+
+        uint32 batchIdx = 0;
+        for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
+        {
+            meshBatchParam->setVector4Param("color", Vector4D(entity.meshBatchColors[batchIdx].getColorValue()));
+            meshBatchParam->init();
+            ++batchIdx;
+        }
+    }
+
+    lightCommon->setBuffer("viewData", viewData);
+    lightCommon->setIntParam("lightsCount", uint32(lightData.size()));
+    lightCommon->setFloatParam("invLightsCount", 1.0f / lightData.size());
+    lightCommon->init();
+    for (std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
+    {
+        light.second->setBuffer("light", light.first);
+        light.second->init();
+    }
+
+    uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
+
+    for (uint32 i = 0; i < swapchainCount; ++i)
+    {
+        Framebuffer* multibuffer = GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        lightTextures[i]->setTextureParam("ssUnlitColor", multibuffer->textures[1], nearestFiltering);
+        lightTextures[i]->setTextureParam("ssNormal", multibuffer->textures[3], nearestFiltering);
+        lightTextures[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering);
+        lightTextures[i]->setTextureParam("ssColor", frameResources[i].lightingPassRt->getTextureResource(), nearestFiltering);
+        lightTextures[i]->init();
+
+        drawQuadTextureDescs[i]->setTextureParam("quadTexture", multibuffer->textures[1], linearFiltering);
+        drawQuadTextureDescs[i]->init();
+        drawQuadNormalDescs[i]->setTextureParam("quadTexture", multibuffer->textures[3], linearFiltering);
+        drawQuadNormalDescs[i]->init();
+        drawQuadDepthDescs[i]->setTextureParam("quadTexture", multibuffer->textures[5], linearFiltering);
+        drawQuadDepthDescs[i]->init();
+        drawLitColorsDescs[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
+        drawLitColorsDescs[i]->init();
+    }
+
+    clearInfoParams->setVector4Param("clearColor", Vector4D(0, 0, 0, 0));
+    clearInfoParams->init();
+}
+
+void ExperimentalEngine::updateShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+{
+    //const bool canUpdate = timeData.frameCounter % frameResources.size() == 0;
+
+    // Update once every swapchain cycles are presented
+    //if(canUpdate)
+    {
+        //for (const FrameResource& frameRes : frameResources)
+        //{
+        //    if (!frameRes.recordingFence->isSignaled())
+        //    {
+        //        frameRes.recordingFence->waitForSignal();
+        //    }
+        //}
+        viewParameters->updateParams(cmdList, graphicsInstance);
+        for (SceneEntity& entity : sceneData)
+        {
+            entity.instanceParameters->updateParams(cmdList, graphicsInstance);
+
+            for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
+            {
+                meshBatchParam->updateParams(cmdList, graphicsInstance);
+            }
+        }
+
+        lightCommon->updateParams(cmdList, graphicsInstance);
+        for (std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
+        {
+            light.second->updateParams(cmdList, graphicsInstance);
+        }
+
+        uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
+        for (uint32 i = 0; i < swapchainCount; ++i)
+        {
+            lightTextures[i]->updateParams(cmdList, graphicsInstance);
+            drawQuadTextureDescs[i]->updateParams(cmdList, graphicsInstance);
+            drawQuadNormalDescs[i]->updateParams(cmdList, graphicsInstance);
+            drawQuadDepthDescs[i]->updateParams(cmdList, graphicsInstance);
+            drawLitColorsDescs[i]->updateParams(cmdList, graphicsInstance);
+        }
+
+        clearInfoParams->updateParams(cmdList, graphicsInstance);
+    }
+}
+
+void ExperimentalEngine::reupdateTextureParamsOnResize()
 {
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
-    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderApi()->getGraphicsInstance());
-    // Static mesh unlit rendering
+
+    for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        staticMeshDescs.clear();
+        Framebuffer* multibuffer = GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        lightTextures[i]->setTextureParam("ssUnlitColor", multibuffer->textures[1], nearestFiltering);
+        lightTextures[i]->setTextureParam("ssNormal", multibuffer->textures[3], nearestFiltering);
+        lightTextures[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering);
+        lightTextures[i]->setTextureParam("ssColor", frameResources[i].lightingPassRt->getTextureResource(), nearestFiltering);
 
-        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmDefaultPipelineContext.getPipeline());
-        const ShaderReflected* reflectedData = smPipeline->getShaderResource()->getReflection();
-
-        staticMeshDescs.reserve(reflectedData->descriptorsSets.size());
-        for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
-        {
-            const VulkanShaderSetParamsLayout* paramSetLayout = static_cast<const VulkanShaderSetParamsLayout*>(smPipeline->getParamLayoutAtSet(descriptorsSet.set));
-
-            VkDescriptorSet descSet;
-            DescriptorsSetQuery query;
-            query.supportedTypes.insert(paramSetLayout->getDescPoolAllocInfo().cbegin(), paramSetLayout->getDescPoolAllocInfo().cend());
-            descSet = descsSetAllocator->allocDescriptorsSet(query, paramSetLayout->descriptorLayout);
-
-            staticMeshDescs.push_back(descSet);
-        }
+        drawQuadTextureDescs[i]->setTextureParam("quadTexture", multibuffer->textures[1], linearFiltering);
+        drawQuadNormalDescs[i]->setTextureParam("quadTexture", multibuffer->textures[3], linearFiltering);
+        drawQuadDepthDescs[i]->setTextureParam("quadTexture", multibuffer->textures[5], linearFiltering);
+        drawLitColorsDescs[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
-    // Gooch model rendering
-    {
-        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmGoochPipelineContext.getPipeline());
-        // 2 has shader specific descriptors set layout
-        const VulkanShaderSetParamsLayout* paramSetLayout = static_cast<const VulkanShaderSetParamsLayout*>(smPipeline->getParamLayoutAtSet(2));
-
-        VkDescriptorSet descSet;
-        DescriptorsSetQuery query;
-        query.supportedTypes.insert(paramSetLayout->getDescPoolAllocInfo().cbegin(), paramSetLayout->getDescPoolAllocInfo().cend());
-        descSet = descsSetAllocator->allocDescriptorsSet(query, paramSetLayout->descriptorLayout);
-
-        staticMeshDescs.push_back(descSet);
-    }
-
-    // Drawing textures to quad
-    {
-        drawQuadTextureDescs.resize(swapchainCount);
-        drawQuadNormalDescs.resize(swapchainCount);
-        drawQuadDepthDescs.resize(swapchainCount);
-
-        const PipelineBase* drawQuadPipeline = static_cast<const GraphicsPipelineBase*>(drawQuadPipelineContext.getPipeline());
-        const VulkanShaderParametersLayout* paramsLayout = static_cast<const VulkanShaderParametersLayout*>(drawQuadPipeline->getParamLayoutAtSet(0));
-        const ShaderReflected* reflectedData = drawQuadPipeline->getShaderResource()->getReflection();
-
-        for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
-        {
-            const std::vector<VkDescriptorPoolSize> descriptorsPoolSize = paramsLayout->getDescPoolAllocInfo(descriptorsSet.set);
-            DescriptorsSetQuery query;
-            query.supportedTypes.insert(descriptorsPoolSize.cbegin(), descriptorsPoolSize.cend());
-
-            VkDescriptorSetLayout setLayout = paramsLayout->getDescSetLayout(descriptorsSet.set);
-
-            for (uint32 i = 0; i < swapchainCount; ++i)
-            {
-                drawQuadTextureDescs[i].emplace_back(descsSetAllocator->allocDescriptorsSet(query, setLayout));
-
-                drawQuadNormalDescs[i].emplace_back(descsSetAllocator->allocDescriptorsSet(query, setLayout));
-
-                drawQuadDepthDescs[i].emplace_back(descsSetAllocator->allocDescriptorsSet(query, setLayout));
-            }
-        }
-    }
-
-    std::vector<std::pair<VkWriteDescriptorSet, uint32>> writingBufferDescriptors;
-    std::vector<VkDescriptorBufferInfo> bufferInfo;
-    std::vector<std::pair<VkWriteDescriptorSet, uint32>> writingImageDescriptors;
-    std::vector<VkDescriptorImageInfo> imageInfo;
-
-    // Static mesh descriptors
-    {
-        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmDefaultPipelineContext.getPipeline());
-        const ShaderReflected* reflectedData = smPipeline->getShaderResource()->getReflection();
-
-        for (const ReflectDescriptorBody& descriptorsSet : reflectedData->descriptorsSets)
-        {
-            const ShaderSetParametersLayout* setParamsLayout = static_cast<const ShaderSetParametersLayout*>(smPipeline->getParamLayoutAtSet(descriptorsSet.set));
-            const ShaderBufferDescriptorType* paramDescription = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("viewData"));
-
-            if (paramDescription != nullptr)
-            {
-                uint32 bufferInfoIdx = uint32(bufferInfo.size());
-                bufferInfo.push_back({});
-                bufferInfo[bufferInfoIdx].buffer = static_cast<VulkanBufferResource*>(viewBuffer.buffer)->buffer;
-                bufferInfo[bufferInfoIdx].offset = 0;
-                bufferInfo[bufferInfoIdx].range = viewBuffer.buffer->getResourceSize();
-
-                WRITE_RESOURCE_TO_DESCRIPTORS_SET(viewDataDescWrite);
-                viewDataDescWrite.dstSet = staticMeshDescs[descriptorsSet.set];
-                viewDataDescWrite.descriptorType = VkDescriptorType(paramDescription->bufferEntryPtr->data.type);
-                viewDataDescWrite.dstBinding = paramDescription->bufferEntryPtr->data.binding;
-                writingBufferDescriptors.push_back({ viewDataDescWrite, bufferInfoIdx });
-            }
-
-            paramDescription = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("instanceData"));
-            if (paramDescription != nullptr)
-            {
-                uint32 bufferInfoIdx = uint32(bufferInfo.size());
-                bufferInfo.push_back({});
-                bufferInfo[bufferInfoIdx].buffer = static_cast<VulkanBufferResource*>(instanceBuffer.buffer)->buffer;
-                bufferInfo[bufferInfoIdx].offset = 0;
-                bufferInfo[bufferInfoIdx].range = instanceBuffer.buffer->getResourceSize();
-
-                WRITE_RESOURCE_TO_DESCRIPTORS_SET(instanceDataDescWrite);
-                instanceDataDescWrite.dstSet = staticMeshDescs[descriptorsSet.set];
-                instanceDataDescWrite.descriptorType = VkDescriptorType(paramDescription->bufferEntryPtr->data.type);
-                instanceDataDescWrite.dstBinding = paramDescription->bufferEntryPtr->data.binding;
-                writingBufferDescriptors.push_back({ instanceDataDescWrite, bufferInfoIdx });
-            }
-        }
-    }
-    // Gooch model rendering
-    {
-        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmGoochPipelineContext.getPipeline());
-        // 2 has shader specific descriptors set layout
-        const VulkanShaderSetParamsLayout* paramSetLayout = static_cast<const VulkanShaderSetParamsLayout*>(smPipeline->getParamLayoutAtSet(2));
-        const ShaderBufferDescriptorType* paramDescription = static_cast<const ShaderBufferDescriptorType*>(paramSetLayout->parameterDescription("surfaceData"));
-
-        debugAssert(paramDescription);
-
-        uint32 bufferInfoIdx = uint32(bufferInfo.size());
-        bufferInfo.push_back({});
-        bufferInfo[bufferInfoIdx].buffer = static_cast<VulkanBufferResource*>(goochSurfaceDataBuffer.buffer)->buffer;
-        bufferInfo[bufferInfoIdx].offset = 0;
-        bufferInfo[bufferInfoIdx].range = goochSurfaceDataBuffer.buffer->getResourceSize();
-
-        WRITE_RESOURCE_TO_DESCRIPTORS_SET(instanceDataDescWrite);
-        instanceDataDescWrite.dstSet = staticMeshDescs[2];
-        instanceDataDescWrite.descriptorType = VkDescriptorType(paramDescription->bufferEntryPtr->data.type);
-        instanceDataDescWrite.dstBinding = paramDescription->bufferEntryPtr->data.binding;
-        writingBufferDescriptors.push_back({ instanceDataDescWrite, bufferInfoIdx });
-    }
-
-    // Draw quad descriptors
-    {
-        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawQuadPipelineContext.getPipeline());
-        const VulkanShaderParametersLayout* paramsLayout = static_cast<const VulkanShaderParametersLayout*>(smPipeline->getParamLayoutAtSet(0));
-        uint32 paramSetIdx;
-        const ShaderTextureDescriptorType* textureDescription = static_cast<const ShaderTextureDescriptorType*>(paramsLayout->parameterDescription(paramSetIdx, "quadTexture"));
-
-        if (textureDescription != nullptr)
-        {
-            FramebufferFormat multibufferFormat(ERenderPassFormat::Multibuffers);
-            for (uint32 swapchainIdx = 0; swapchainIdx < swapchainCount; ++swapchainIdx)
-            {
-                WRITE_RESOURCE_TO_DESCRIPTORS_SET(quadTextureDescWrite);
-                quadTextureDescWrite.descriptorType = VkDescriptorType(textureDescription->textureEntryPtr->data.type);
-                quadTextureDescWrite.dstBinding = textureDescription->textureEntryPtr->data.binding;
-
-                Framebuffer* fb = GBuffers::getFramebuffer(multibufferFormat, swapchainIdx);
-                fatalAssert(fb != nullptr, "Framebuffer is invalid");
-
-                uint32 imageInfoIdx = uint32(imageInfo.size());
-                imageInfo.push_back({});
-                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Diffuse is at 0
-                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
-
-                quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][paramSetIdx];
-                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
-
-                imageInfoIdx = uint32(imageInfo.size());
-                imageInfo.push_back({});
-                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[3])->getImageView({});// Normal texture is at 1
-                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
-
-                quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][paramSetIdx];
-                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
-
-                imageInfoIdx = uint32(imageInfo.size());
-                imageInfo.push_back({});
-                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[5])->getImageView({
-                    {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
-                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
-
-                quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][paramSetIdx];
-                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
-            }
-        }
-    }
-
-    std::vector<VkWriteDescriptorSet> writingDescriptors;
-    writingDescriptors.reserve(writingBufferDescriptors.size() + writingImageDescriptors.size());
-    for (std::pair<VkWriteDescriptorSet, uint32>& writingBufferDesc : writingBufferDescriptors)
-    {
-        writingBufferDesc.first.pBufferInfo = &bufferInfo[writingBufferDesc.second];
-        writingDescriptors.push_back(writingBufferDesc.first);
-    }
-    for (std::pair<VkWriteDescriptorSet, uint32>& writingImageDesc : writingImageDescriptors)
-    {
-        writingImageDesc.first.pImageInfo = &imageInfo[writingImageDesc.second];
-        writingDescriptors.push_back(writingImageDesc.first);
-    }
-
-    vDevice->vkUpdateDescriptorSets(device, uint32(writingDescriptors.size()), writingDescriptors.data(), 0, nullptr);
 }
 
-void ExperimentalEngine::writeUnlitBuffToQuadDrawDescs()
+void ExperimentalEngine::destroyShaderParameters()
 {
+    viewParameters->release();
+    viewParameters.reset();
+
+    for (SceneEntity& entity : sceneData)
+    {
+        entity.instanceParameters->release();
+        entity.instanceParameters.reset();
+        for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
+        {
+            meshBatchParam->release();
+        }
+        entity.meshBatchParameters.clear();
+    }
+
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
-    std::vector<std::pair<VkWriteDescriptorSet, uint32>> writingImageDescriptors;
-    std::vector<VkDescriptorImageInfo> imageInfo;
+    
+    lightCommon->release();
+    lightCommon.reset();
 
-    // Draw quad descriptors
+    for (std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
     {
-        const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawQuadPipelineContext.getPipeline());
-        const VulkanShaderParametersLayout* paramsLayout = static_cast<const VulkanShaderParametersLayout*>(smPipeline->getParamLayoutAtSet(0));
-        uint32 paramSetIdx;
-        const ShaderTextureDescriptorType* textureDescription = static_cast<const ShaderTextureDescriptorType*>(paramsLayout->parameterDescription(paramSetIdx, "quadTexture"));
-
-        if (textureDescription != nullptr)
-        {
-            FramebufferFormat multibufferFormat(ERenderPassFormat::Multibuffers);
-            for (uint32 swapchainIdx = 0; swapchainIdx < swapchainCount; ++swapchainIdx)
-            {
-                WRITE_RESOURCE_TO_DESCRIPTORS_SET(quadTextureDescWrite);
-                quadTextureDescWrite.descriptorType = VkDescriptorType(textureDescription->textureEntryPtr->data.type);
-                quadTextureDescWrite.dstBinding = textureDescription->textureEntryPtr->data.binding;
-
-                Framebuffer* fb = GBuffers::getFramebuffer(multibufferFormat, swapchainIdx);
-                fatalAssert(fb != nullptr, "Framebuffer is invalid");
-
-                uint32 imageInfoIdx = uint32(imageInfo.size());
-                imageInfo.push_back({});
-                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[1])->getImageView({});// Diffuse is at 0
-                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
-
-                quadTextureDescWrite.dstSet = drawQuadTextureDescs[swapchainIdx][paramSetIdx];
-                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
-
-                imageInfoIdx = uint32(imageInfo.size());
-                imageInfo.push_back({});
-                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[3])->getImageView({});// Normal texture is at 1
-                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
-
-                quadTextureDescWrite.dstSet = drawQuadNormalDescs[swapchainIdx][paramSetIdx];
-                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
-
-                imageInfoIdx = uint32(imageInfo.size());
-                imageInfo.push_back({});
-                imageInfo[imageInfoIdx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo[imageInfoIdx].imageView = static_cast<VulkanImageResource*>(fb->textures[5])->getImageView({
-                    {EPixelComponentMapping::SameComponent, EPixelComponentMapping::R,EPixelComponentMapping::R,EPixelComponentMapping::R} });// Depth is at 2
-                imageInfo[imageInfoIdx].sampler = static_cast<VulkanSampler*>(commonSampler.get())->sampler;
-
-                quadTextureDescWrite.dstSet = drawQuadDepthDescs[swapchainIdx][paramSetIdx];
-                writingImageDescriptors.push_back({ quadTextureDescWrite, imageInfoIdx });
-            }
-        }
+        light.second->release();
+        light.second.reset();
     }
 
-    std::vector<VkWriteDescriptorSet> writingDescriptors;
-    for (std::pair<VkWriteDescriptorSet, uint32>& writingImageDesc : writingImageDescriptors)
+    for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        writingImageDesc.first.pImageInfo = &imageInfo[writingImageDesc.second];
-        writingDescriptors.push_back(writingImageDesc.first);
+        lightTextures[i]->release();
+        drawQuadTextureDescs[i]->release();
+        drawQuadNormalDescs[i]->release();
+        drawQuadDepthDescs[i]->release();
+        drawLitColorsDescs[i]->release();
     }
-
-    vDevice->vkUpdateDescriptorSets(device, uint32(writingDescriptors.size()), writingDescriptors.data(), 0, nullptr);
-}
-
-void ExperimentalEngine::destroyShaderResDescriptors()
-{
-    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderApi()->getGraphicsInstance());
-
-    for (VkDescriptorSet& descSet : staticMeshDescs)
-    {
-        descsSetAllocator->releaseDescriptorsSet(descSet);
-    }
-    staticMeshDescs.clear();
-
-    for (std::vector<VkDescriptorSet>& descSets : drawQuadTextureDescs)
-    {
-        for(VkDescriptorSet& descSet : descSets)
-        {
-            descsSetAllocator->releaseDescriptorsSet(descSet);
-        }
-    }
+    lightTextures.clear();
     drawQuadTextureDescs.clear();
+    drawQuadNormalDescs.clear();
+    drawQuadDepthDescs.clear();
+    drawLitColorsDescs.clear();
+
+    clearInfoParams->release();
+    clearInfoParams.reset();
+}
+
+void ExperimentalEngine::resizeLightingRts(const Size2D& size)
+{
+    GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
+        ->appWindowManager.getMainWindow());
+
+    for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
+    {
+        frameResources[i].lightingPassRt->setTextureSize(size);
+        getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+    }
 }
 
 void ExperimentalEngine::createFrameResources()
@@ -505,6 +507,13 @@ void ExperimentalEngine::createFrameResources()
     cmdBufAllocInfo.commandBufferCount = windowCanvas->imagesCount();
     vDevice->vkAllocateCommandBuffers(device, &cmdBufAllocInfo, cmdBuffers.data());
 
+    RenderTextureCreateParams rtCreateParams;
+    rtCreateParams.bSameReadWriteTexture = false;
+    rtCreateParams.filtering = ESamplerFiltering::Linear;
+    rtCreateParams.format = ERenderTargetFormat::RT_U8;
+    rtCreateParams.sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
+    rtCreateParams.textureSize = EngineSettings::screenSize.get();
+
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
         String name = "Frame";
@@ -513,6 +522,9 @@ void ExperimentalEngine::createFrameResources()
         frameResources[i].perFrameCommands = cmdBuffers[i];
         frameResources[i].usageWaitSemaphore.push_back(GraphicsHelper::createSemaphore(getRenderApi()->getGraphicsInstance(), (name + "QueueSubmit").c_str()));
         frameResources[i].recordingFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(), (name + "RecordingGaurd").c_str(),true);
+
+        rtCreateParams.textureName = "LightingRT_" + std::to_string(i);
+        frameResources[i].lightingPassRt = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
     }
 }
 
@@ -530,6 +542,9 @@ void ExperimentalEngine::destroyFrameResources()
         frameResources[i].perFrameCommands = nullptr;
         frameResources[i].usageWaitSemaphore[0].reset();
         frameResources[i].recordingFence.reset();
+
+        getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassRt);
     }
 
     vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Graphics].resetableCommandPool, (uint32)cmdBuffers.size(), cmdBuffers.data());
@@ -547,11 +562,21 @@ void ExperimentalEngine::getPipelineForSubpass()
     drawSmRenderPass = vulkanRenderingContext->getRenderPass(drawSmDefaultPipelineContext.renderpassFormat, {});
 
     // Gooch model
-    drawSmGoochPipelineContext.forVertexType = EVertexType::StaticMesh;
-    drawSmGoochPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
-    drawSmGoochPipelineContext.swapchainIdx = 0;
-    drawSmGoochPipelineContext.materialName = "GoochModel";
-    vulkanRenderingContext->preparePipelineContext(&drawSmGoochPipelineContext);
+    drawGoochPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    drawGoochPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
+    drawGoochPipelineContext.swapchainIdx = 0;
+    drawGoochPipelineContext.materialName = "GoochModel";
+    vulkanRenderingContext->preparePipelineContext(&drawGoochPipelineContext);
+    RenderPassAdditionalProps additionalProps;
+    additionalProps.bAllowUndefinedLayout = false;
+    lightingRenderPass = vulkanRenderingContext->getRenderPass(
+        static_cast<const GraphicsPipelineBase*>(drawGoochPipelineContext.getPipeline())->getRenderpassProperties(), additionalProps);
+
+    clearQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    clearQuadPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
+    clearQuadPipelineContext.swapchainIdx = 0;
+    clearQuadPipelineContext.materialName = "ClearRT";
+    vulkanRenderingContext->preparePipelineContext(&clearQuadPipelineContext);
 
     RenderPassAdditionalProps renderPassAdditionalProps;
     renderPassAdditionalProps.bUsedAsPresentSource = true;
@@ -592,7 +617,7 @@ void ExperimentalEngine::createPipelineResources()
         , this);
 
     // Shader pipeline's buffers and image access
-    createShaderResDescriptors();
+    createShaderParameters();
 }
 
 void ExperimentalEngine::destroyPipelineResources()
@@ -608,49 +633,13 @@ void ExperimentalEngine::destroyPipelineResources()
         )
     , this);
     // Shader pipeline's buffers and image access
-    destroyShaderResDescriptors();
-}
-
-void ExperimentalEngine::writeBuffers()
-{
-    ViewData viewData;
-    viewData.projection = camera.projectionMatrix();
-    viewData.invProjection = viewData.projection.inverse();
-    viewData.view = camera.viewMatrix();
-    viewData.invView = viewData.view.inverse();
-
-    InstanceData instanceData;
-    instanceData.model = Transform3D(modelRotation).getTransformMatrix();
-    instanceData.invModel = instanceData.model.inverse();
-
-    SurfaceData surfaceData;
-    surfaceData.lightPos = Transform3D(Rotation(0, 0, lightRotation)).transformPoint(lightTranslation);
-    surfaceData.highlightColor = Vector4D(1, 1, 1, 1);
-    surfaceData.surfaceColor = Vector4D(0.80f, 0.78f, 0.60f, 1.0f);
-
-    ENQUEUE_COMMAND(WritingUniforms,
-        {
-            std::vector<BatchCopyBufferData> batchedCopies;
-
-            const ShaderSetParametersLayout* setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmDefaultPipelineContext.getPipeline()->getParamLayoutAtSet(0));
-            const ShaderBufferDescriptorType* bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("viewData"));
-            cmdList->recordCopyToBuffer<ViewData>(batchedCopies, viewBuffer.buffer, 0, &viewData, bufferDesc->bufferParamInfo);
-
-            setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmDefaultPipelineContext.getPipeline()->getParamLayoutAtSet(1));
-            bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("instanceData"));
-            cmdList->recordCopyToBuffer<InstanceData>(batchedCopies, instanceBuffer.buffer, 0, &instanceData, bufferDesc->bufferParamInfo);
-
-            setParamsLayout = static_cast<const ShaderSetParametersLayout*>(drawSmGoochPipelineContext.getPipeline()->getParamLayoutAtSet(2));
-            bufferDesc = static_cast<const ShaderBufferDescriptorType*>(setParamsLayout->parameterDescription("surfaceData"));
-            cmdList->recordCopyToBuffer<SurfaceData>(batchedCopies, goochSurfaceDataBuffer.buffer, 0, &surfaceData, bufferDesc->bufferParamInfo);
-
-            cmdList->copyToBuffer(batchedCopies);
-        }
-    , this, viewData, instanceData, surfaceData);
+    destroyShaderParameters();
 }
 
 void ExperimentalEngine::updateCameraParams()
 {
+    ViewData viewDataTemp;
+
     if (appInstance().inputSystem()->isKeyPressed(Keys::RMB))
     {
         cameraRotation.yaw() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.deltaTime * timeData.activeTimeDilation * 15.0f;
@@ -673,32 +662,16 @@ void ExperimentalEngine::updateCameraParams()
     {
         cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (appInstance().inputSystem()->isKeyPressed(Keys::Q))
-    {
-        useVertexColor = Math::min(useVertexColor + timeData.deltaTime * timeData.activeTimeDilation, 1.0f);
-    }
-    else
-    {
-        useVertexColor = Math::max(useVertexColor - timeData.deltaTime * timeData.activeTimeDilation, 0.0f);
-    }
     if (appInstance().inputSystem()->keyState(Keys::P)->keyWentUp)
     {
         camera.cameraProjection = camera.cameraProjection == ECameraProjection::Perspective ? ECameraProjection::Orthographic : ECameraProjection::Perspective;
-    }
-    if (appInstance().inputSystem()->keyState(Keys::X)->keyWentUp)
-    {
-        toggleRes = !toggleRes;
-        ENQUEUE_COMMAND(WritingDescs,
-            {
-                const Size2D & screenSize = toggleRes ? EngineSettings::surfaceSize.get() : Size2D(1280, 720);
-                GBuffers::onScreenResized(screenSize);
-                writeUnlitBuffToQuadDrawDescs();
-                EngineSettings::screenSize.set(screenSize);
-            }, this);
-    }
-    if (appInstance().inputSystem()->keyState(Keys::LSHIFT)->keyWentUp)
-    {
-        useSuzanne = !useSuzanne;
+        viewDataTemp.projection = camera.projectionMatrix();
+        viewDataTemp.invProjection = viewDataTemp.projection.inverse();
+
+        viewParameters->setMatrixParam("projection", viewDataTemp.projection);
+        viewParameters->setMatrixParam("invProjection", viewDataTemp.invProjection);
+        lightCommon->setMatrixParam("projection", viewDataTemp.projection);
+        lightCommon->setMatrixParam("invProjection", viewDataTemp.invProjection);
     }
     if (appInstance().inputSystem()->keyState(Keys::R)->keyWentUp)
     {
@@ -708,23 +681,12 @@ void ExperimentalEngine::updateCameraParams()
     camera.setRotation(cameraRotation);
     camera.setTranslation(cameraTranslation);
 
-    //modelRotation.pitch() += timeData.deltaTime * timeData.activeTimeDilation * 15.0f;
-    //modelRotation.roll() -= timeData.deltaTime * timeData.activeTimeDilation * 30.0f;
-    lightRotation += timeData.deltaTime * timeData.activeTimeDilation * 90.0f;
-
-    AssetHeader staticMeshHeader;
-    staticMeshHeader.type = EAssetType::StaticMesh;
-    if (useSuzanne)
-    {
-        staticMeshHeader.assetPath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(staticMeshHeader.assetName), "Assets/TestOb.obj");
-        staticMeshHeader.assetName = "Suzanne";
-    }
-    else
-    {
-        staticMeshHeader.assetPath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(staticMeshHeader.assetName), "Assets/Gizmos.obj");
-        staticMeshHeader.assetName = "Gizmos";
-    }
-    meshAsset = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset(staticMeshHeader));
+    viewDataTemp.view = camera.viewMatrix();
+    viewDataTemp.invView = viewDataTemp.view.inverse();
+    viewParameters->setMatrixParam("view", viewDataTemp.view);
+    viewParameters->setMatrixParam("invView", viewDataTemp.invView);
+    lightCommon->setMatrixParam("view", viewDataTemp.view);
+    lightCommon->setMatrixParam("invView", viewDataTemp.invView);
 }
 
 void ExperimentalEngine::onStartUp()
@@ -735,15 +697,17 @@ void ExperimentalEngine::onStartUp()
 
     camera.cameraProjection = ECameraProjection::Perspective;
     camera.setOrthoSize({ 1280,720 });
-    camera.setClippingPlane(1.f, 600.f);
+    camera.setClippingPlane(0.5f, 5000.f);
     camera.setFOV(110.f, 90.f);
 
     cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
-    lightTranslation = Vector3D(300,0,0);
+    cameraTranslation.z() += 200;
 
     camera.setTranslation(cameraTranslation);
     camera.lookAt(Vector3D::ZERO);
     cameraRotation = camera.rotation();
+
+    createScene();
 
     tempTest();
 }
@@ -756,11 +720,11 @@ void ExperimentalEngine::startUpRenderInit()
     createPools();
     frameResources.resize(getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount());
 
-    getPipelineForSubpass();
-    createBuffers();
-    createImages();
     createFrameResources();
+    getPipelineForSubpass();
+    createImages();
     createPipelineResources();
+    setupShaderParameterParams();
 }
 
 void ExperimentalEngine::onQuit()
@@ -777,16 +741,15 @@ void ExperimentalEngine::renderQuit()
     destroyPipelineResources();
     destroyFrameResources();
 
-    destroyBuffers();
     destroyImages();
+
+    destroyScene();
 
     destroyPools();
 }
 
 void ExperimentalEngine::frameRender()
 {
-    writeBuffers();
-
     VkViewport viewport;
     viewport.x = 0;
     viewport.minDepth = 0;
@@ -804,22 +767,28 @@ void ExperimentalEngine::frameRender()
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawSmDefaultPipelineContext);
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawQuadPipelineContext);
 
+    drawGoochPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawGoochPipelineContext);
+
     GraphicsPipelineQueryParams queryParam;
     queryParam.cullingMode = ECullingMode::BackFace;
     queryParam.drawMode = EPolygonDrawMode::Fill;
 
-    std::vector<VkDescriptorSet>* drawQuadDescSets = nullptr;
+    SharedPtr<ShaderParameters> drawQuadDescs;
     switch (frameVisualizeId)
     {
     case 1:
-        drawQuadDescSets = &drawQuadNormalDescs[index];
+        drawQuadDescs = drawQuadTextureDescs[index];
         break;
     case 2:
-        drawQuadDescSets = &drawQuadDepthDescs[index];
+        drawQuadDescs = drawQuadNormalDescs[index];
+        break;
+    case 3:
+        drawQuadDescs = drawQuadDepthDescs[index];
         break;
     case 0:
     default:
-        drawQuadDescSets = &drawQuadTextureDescs[index];
+        drawQuadDescs = drawLitColorsDescs[index];
         break;
     }
 
@@ -835,7 +804,7 @@ void ExperimentalEngine::frameRender()
 
     vDevice->vkBeginCommandBuffer(frameResources[index].perFrameCommands, &cmdBeginInfo);
     {
-        const GraphicsPipeline* tempPipeline = static_cast<const GraphicsPipeline*>(drawSmGoochPipelineContext.getPipeline());
+        const GraphicsPipeline* tempPipeline = static_cast<const GraphicsPipeline*>(drawSmDefaultPipelineContext.getPipeline());
 
         SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ExperimentalEngineFrame);
 
@@ -857,19 +826,109 @@ void ExperimentalEngine::frameRender()
             //vDevice->vkCmdPushConstants(frameResources[index].perFrameCommands, tempPipeline->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &useVertexColor);
 
             vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, tempPipeline->getPipeline(queryParam));
+            // View set
             vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                , tempPipeline->pipelineLayout, 0, uint32(staticMeshDescs.size()), staticMeshDescs.data(), 0, nullptr);
+                , tempPipeline->pipelineLayout, 0, 1, &static_cast<const VulkanShaderSetParameters*>(viewParameters.get())->descriptorsSet, 0, nullptr);
 
-            uint64 vertexBufferOffset = 0;
-            vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(meshAsset->vertexBuffer)->buffer, &vertexBufferOffset);
-            vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(meshAsset->indexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
-            for (const MeshVertexView& meshBatch : meshAsset->meshBatches)
+            for (const SceneEntity& entity : sceneData)
             {
-                vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, meshBatch.numOfIndices, 1, meshBatch.startIndex, 0, 0);
+                // Instance set
+                vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                    , tempPipeline->pipelineLayout, 1, 1, &static_cast<const VulkanShaderSetParameters*>(entity.instanceParameters.get())->descriptorsSet, 0, nullptr);
+
+                uint64 vertexBufferOffset = 0;
+                vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(entity.meshAsset->vertexBuffer)->buffer, &vertexBufferOffset);
+                vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(entity.meshAsset->indexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+
+                uint32 meshBatchIdx = 0;
+                for (const MeshVertexView& meshBatch : entity.meshAsset->meshBatches)
+                {
+                    // Batch set
+                    //vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                    //    , tempPipeline->pipelineLayout, 2, 1, &static_cast<const VulkanShaderSetParameters*>(entity.meshBatchParameters[meshBatchIdx].get())->descriptorsSet, 0, nullptr);
+
+                    vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, meshBatch.numOfIndices, 1, meshBatch.startIndex, 0, 0);
+
+                    ++meshBatchIdx;
+                }
             }
         }
         vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
+        // Drawing lighting quads
+        tempPipeline = static_cast<const GraphicsPipeline*>(drawGoochPipelineContext.getPipeline());
+        viewport.height = float(EngineSettings::screenSize.get().y);
+        viewport.y = 0;
 
+        renderPassBeginInfo.clearValueCount = 2;
+        renderPassBeginInfo.pClearValues = smAttachmentsClearColors.data();
+        renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(drawGoochPipelineContext.getFb());
+        renderPassBeginInfo.renderArea = scissor;
+        renderPassBeginInfo.renderPass = lightingRenderPass;
+
+        vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+        {
+            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ClearLightingRTs);
+
+            vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
+            vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
+
+            uint64 vertexBufferOffset = 0;
+            vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
+            vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+
+            // Clear resolve first
+            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                , static_cast<const GraphicsPipeline*>(clearQuadPipelineContext.getPipeline())->getPipeline(queryParam));
+            for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : static_cast<VulkanShaderParameters*>(clearInfoParams.get())->descriptorsSets)
+            {
+                vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                    , static_cast<const GraphicsPipeline*>(clearQuadPipelineContext.getPipeline())->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
+            }
+            vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, 3, 1, 0, 0, 0);
+        }
+        vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
+
+        {
+            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, LightingPass);
+
+            // TODO(Jeslas) Change lighting to array of lights per pass
+            for (const std::pair<const GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
+            {
+                vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+                vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
+                vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
+
+                uint64 vertexBufferOffset = 0;
+                vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
+                vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+
+                vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, tempPipeline->getPipeline(queryParam));
+
+                VulkanShaderParameters* lightCommonParams = static_cast<VulkanShaderParameters*>(lightCommon.get());
+                VulkanShaderParameters* lightFrameParams = static_cast<VulkanShaderParameters*>(lightTextures[index].get());
+
+                // Right now only one set will be there but there is chances more set might get added
+                for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : lightCommonParams->descriptorsSets)
+                {
+                    vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                        , tempPipeline->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
+                }
+                for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : lightFrameParams->descriptorsSets)
+                {
+                    vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                        , tempPipeline->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
+                }
+                for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : static_cast<VulkanShaderParameters*>(light.second.get())->descriptorsSets)
+                {
+                    vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                        , tempPipeline->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
+                }
+                vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, 3, 1, 0, 0, 0);
+                vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
+            }
+        }
+
+        // Drawing final quad
         tempPipeline = static_cast<const GraphicsPipeline*>(drawQuadPipelineContext.getPipeline());
 
         viewport.x = 0;
@@ -892,8 +951,12 @@ void ExperimentalEngine::frameRender()
             vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
 
             vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, tempPipeline->getPipeline(queryParam));
-            vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                , tempPipeline->pipelineLayout, 0, uint32(drawQuadDescSets->size()), drawQuadDescSets->data(), 0, nullptr);
+
+            for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : static_cast<VulkanShaderParameters*>(drawQuadDescs.get())->descriptorsSets)
+            {
+                vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                    , tempPipeline->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
+            }
 
             uint64 vertexBufferOffset = 0;
             vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
@@ -941,8 +1004,29 @@ void ExperimentalEngine::tickEngine()
     {
         frameVisualizeId = 2;
     }
+    else if (getApplicationInstance()->inputSystem()->isKeyPressed(Keys::FOUR))
+    {
+        frameVisualizeId = 3;
+    }
 
-    ENQUEUE_COMMAND(TickFrame, { frameRender(); }, this);
+    if (appInstance().inputSystem()->keyState(Keys::X)->keyWentUp)
+    {
+        toggleRes = !toggleRes;
+        ENQUEUE_COMMAND(WritingDescs,
+            {
+                const Size2D& screenSize = toggleRes ? EngineSettings::surfaceSize.get() : Size2D(1280, 720);
+                GBuffers::onScreenResized(screenSize);
+                resizeLightingRts(screenSize);
+                reupdateTextureParamsOnResize();
+                EngineSettings::screenSize.set(screenSize);                
+            }, this);
+    }
+
+    ENQUEUE_COMMAND(TickFrame,
+        {
+            updateShaderParameters(cmdList, graphicsInstance);
+            frameRender(); 
+        }, this);
 
     tempTestPerFrame();
 }

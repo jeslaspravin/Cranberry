@@ -8,10 +8,14 @@
 #include "../Core/Platform/LFS/PlatformLFS.h"
 #include "../Core/Types/Transform3D.h"
 #include "../Core/Types/Camera/Camera.h"
+#include "../Core/Types/Colors.h"
 #include "../RenderInterface/Rendering/RenderingContexts.h"
 
 #include <map>
 #include <vulkan_core.h>
+
+class ShaderParameters;
+class IRenderCommandList;
 
 struct QueueCommandPool
 {
@@ -20,7 +24,7 @@ struct QueueCommandPool
     VkCommandPool oneTimeRecordPool;
 };
 
-struct BufferData
+struct TexelBuffer
 {
     class BufferResource* buffer = nullptr;
     // Only necessary for texel buffers
@@ -33,10 +37,21 @@ struct ImageData
     VkImageView imageView = nullptr;
 };
 
+struct SceneEntity
+{
+    Transform3D transform;
+    class StaticMeshAsset* meshAsset;
+
+    SharedPtr<ShaderParameters> instanceParameters;
+    std::vector<LinearColor> meshBatchColors;
+    std::vector<SharedPtr<ShaderParameters>> meshBatchParameters;
+};
+
 struct FrameResource
 {
     std::vector<SharedPtr<GraphicsSemaphore>> usageWaitSemaphore;
     VkCommandBuffer perFrameCommands;
+    RenderTargetTexture* lightingPassRt;
     SharedPtr<GraphicsFence> recordingFence;
 };
 
@@ -50,30 +65,43 @@ class ExperimentalEngine : public GameEngine
     void createPools();
     void destroyPools();
 
-    BufferData viewBuffer;
-    BufferData instanceBuffer;
-    BufferData goochSurfaceDataBuffer;
-    void createBuffers();
-    void writeBuffers();
-    void destroyBuffers();
-
     ImageData texture;
-    SharedPtr<class SamplerInterface> commonSampler = nullptr;
+    SharedPtr<class SamplerInterface> nearestFiltering = nullptr;
+    SharedPtr<class SamplerInterface> linearFiltering = nullptr;
+    // TODO(Jeslas) : Cubic filtering not working check new drivers or log bug in nvidia
+    // SharedPtr<class SamplerInterface> cubicFiltering = nullptr;
     void createImages();
     void destroyImages();
 
-    // Test shader pipeline resources
-    // Pipeline specific stuffs
-    std::vector<VkDescriptorSet> staticMeshDescs;
+    // Scene data
+    std::vector<SceneEntity> sceneData;
+    std::vector<std::pair<struct GoochModelLightData, SharedPtr<ShaderParameters>>> lightData;
+    SharedPtr<ShaderParameters> lightCommon;
+    std::vector<SharedPtr<ShaderParameters>> lightTextures;
+    SharedPtr<ShaderParameters> viewParameters;
+    void createScene();
+    void destroyScene();
 
-    std::vector<std::vector<VkDescriptorSet>> drawQuadTextureDescs;
-    std::vector<std::vector<VkDescriptorSet>> drawQuadNormalDescs;
-    std::vector<std::vector<VkDescriptorSet>> drawQuadDepthDescs;
+    // Camera parameters
+    Camera camera;
+    Vector3D cameraTranslation;
+    Rotation cameraRotation;
+    void updateCameraParams();
 
-    void createShaderResDescriptors();
-    void writeUnlitBuffToQuadDrawDescs();
-    void destroyShaderResDescriptors();
+    std::vector<SharedPtr<ShaderParameters>> drawQuadTextureDescs;
+    std::vector<SharedPtr<ShaderParameters>> drawQuadNormalDescs;
+    std::vector<SharedPtr<ShaderParameters>> drawQuadDepthDescs;
+    std::vector<SharedPtr<ShaderParameters>> drawLitColorsDescs;
 
+    void createShaderParameters();
+    void setupShaderParameterParams();
+    void updateShaderParameters(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    void destroyShaderParameters();
+
+    void resizeLightingRts(const Size2D& size);
+    void reupdateTextureParamsOnResize();
+
+    // Shader pipeline resources
     std::vector<VkClearValue> smAttachmentsClearColors;
 
     VkClearValue swapchainClearColor;
@@ -82,12 +110,17 @@ class ExperimentalEngine : public GameEngine
 
     VkRenderPass drawSmRenderPass;
     LocalPipelineContext drawSmDefaultPipelineContext;
-    LocalPipelineContext drawSmGoochPipelineContext;
+
+    VkRenderPass lightingRenderPass;
+    LocalPipelineContext drawGoochPipelineContext;
 
     class BufferResource* quadVertexBuffer = nullptr;
     class BufferResource* quadIndexBuffer = nullptr;
     VkRenderPass drawQuadRenderPass;
     LocalPipelineContext drawQuadPipelineContext;
+
+    SharedPtr<ShaderParameters> clearInfoParams;
+    LocalPipelineContext clearQuadPipelineContext;
      
     void getPipelineForSubpass();
 
@@ -97,23 +130,9 @@ class ExperimentalEngine : public GameEngine
 
     // End shader pipeline resources
 
-    // Camera parameters
-    Camera camera;
-    Vector3D cameraTranslation;
-    Rotation cameraRotation;
-    void updateCameraParams();
-
-    Rotation modelRotation;
-
-    Vector3D lightTranslation;
-    float lightRotation;
-
     uint32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
     bool toggleRes;
-    bool useSuzanne;
-    float useVertexColor = 0.0f;
 
-    class StaticMeshAsset* meshAsset;
 protected:
     void onStartUp() override;
     void onQuit() override;
