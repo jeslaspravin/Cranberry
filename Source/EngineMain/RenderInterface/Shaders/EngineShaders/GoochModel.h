@@ -1,11 +1,18 @@
 #pragma once
-#include "../../../Core/Math/Vector3D.h"
 #include "../../../Core/Math/Vector4D.h"
 
 
-struct SurfaceData
+struct GoochModelLightCommon
 {
-    Vector3D lightPos;
-    Vector4D highlightColor;
-    Vector4D surfaceColor;
+    uint32 lightsCount;
+    float invLightsCount;
+};
+
+
+struct GoochModelLightData
+{
+    Vector4D warmOffsetAndPosX;
+    Vector4D coolOffsetAndPosY;
+    Vector4D highlightColorAndPosZ;
+    Vector4D lightColorAndRadius;
 };

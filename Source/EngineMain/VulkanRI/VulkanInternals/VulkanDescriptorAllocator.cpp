@@ -11,7 +11,9 @@
 
 bool DescriptorPoolSizeLessThan::operator()(const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs) const
 {
-    return lhs.type == rhs.type ? lhs.descriptorCount < rhs.descriptorCount : lhs.type < rhs.type;
+    // Not using type count as the query pool's descriptors type will be unique and merged at calling code
+    // return lhs.type == rhs.type ? lhs.descriptorCount < rhs.descriptorCount : lhs.type < rhs.type;
+    return lhs.type < rhs.type;
 }
 
 bool DescriptorsSetQueryLessThan::recursivelyCompare(std::set<VkDescriptorPoolSize>::const_iterator& lhsItr
@@ -21,12 +23,24 @@ bool DescriptorsSetQueryLessThan::recursivelyCompare(std::set<VkDescriptorPoolSi
     uint32 lhsEnded = lhsItr == lhsEnd ? 1 : 0;
     uint32 rhsEnded = rhsItr == rhsEnd ? 1 : 0;
 
-    if (lhsEnded == 0 && rhsEnded == 0)
+    if ((lhsEnded + rhsEnded) == 0)
     {
-        return lhsItr->type == rhsItr->type ? recursivelyCompare(++lhsItr, lhsEnd, ++rhsItr, rhsEnd) : lhsItr->type < rhsItr->type;
+        if (lhsItr->type > rhsItr->type)
+        {
+            return false;
+        }
+        else if(lhsItr->type == rhsItr->type)
+        {
+            ++rhsItr;
+        }
+        // Lhstype is small/Equal to Rhstype increment lhs
+        ++lhsItr;
+        return recursivelyCompare(lhsItr, lhsEnd, rhsItr, rhsEnd);
     }
 
-    return rhsEnded == lhsEnded ? true : lhsEnded > rhsEnded;
+    // Rhs never reaches end unless all in rhs is matched with lhs, so lhs is obviously not less that rhs.
+    // If Rhs is not end then lhs must have reached end here so it means lhs exhausted all types that are smaller than rhs head so obviously small
+    return rhsEnded != 0 ? false : true;
 }
 
 bool DescriptorsSetQueryLessThan::operator()(const DescriptorsSetQuery& lhs, const DescriptorsSetQuery& rhs) const
@@ -35,7 +49,7 @@ bool DescriptorsSetQueryLessThan::operator()(const DescriptorsSetQuery& lhs, con
     auto lhsEnd = lhs.supportedTypes.cend();
     auto rhsItr = rhs.supportedTypes.cbegin();
     auto rhsEnd = rhs.supportedTypes.cend();
-    return recursivelyCompare(lhsItr, lhsEnd, rhsItr, rhsEnd);
+    return lhs.supportedTypes.size() < rhs.supportedTypes.size() || recursivelyCompare(lhsItr, lhsEnd, rhsItr, rhsEnd);
 }
 
 
@@ -137,7 +151,7 @@ VulkanDescriptorsSetAllocatorInfo& VulkanDescriptorsSetAllocator::createNewPool(
     descsSetPoolCreateInfo.pPoolSizes = descriptorsSetPoolSizes.data();
 
     auto queryDescPoolSizeItr = query.supportedTypes.cbegin();
-    for (uint32 i = 0; i <= descsSetPoolCreateInfo.poolSizeCount; ++i, ++queryDescPoolSizeItr)
+    for (uint32 i = 0; i < descsSetPoolCreateInfo.poolSizeCount; ++i, ++queryDescPoolSizeItr)
     {
         allocationPool.typeCountMap[queryDescPoolSizeItr->type] = queryDescPoolSizeItr->descriptorCount;
         descriptorsSetPoolSizes[i] = *queryDescPoolSizeItr;

@@ -31,6 +31,8 @@ public:
     void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
     void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) override;
 
+    void setupInitialLayout(ImageResource* image) override;
+
     // Reusable here mean rerecord able command buffer
     const GraphicsResource* startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable) override;
     void endCmd(const GraphicsResource* cmdBuffer) override;
@@ -39,4 +41,5 @@ public:
         , const SharedPtr<GraphicsFence>& fence) override;
     void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) override;
     void waitIdle() override;
+
 };

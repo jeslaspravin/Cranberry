@@ -718,7 +718,7 @@ public:
     {
         Logger::debug("VulkanMemoryAllocator", "%s()", __func__);
 
-        for (const std::pair<uint32,VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        for (const std::pair<const uint32,VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
             Logger::debug("VulkanMemoryAllocator", "%s() : Freeing %dBytes of linear memory", __func__, 
                 linearChunkAllocators[indexPropPair.first]->allocatorSize());
@@ -743,7 +743,7 @@ public:
         device->vkGetBufferMemoryRequirements(device->logicalDevice, buffer, &memRequirement);
 
         sortAvailableByPriority(cpuAccessible);
-        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        for (const std::pair<const uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
             uint32 memoryTypeBit = 1u << indexPropPair.first;
             if ((cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
@@ -771,7 +771,7 @@ public:
 
         VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
         sortAvailableByPriority(cpuAccessible);
-        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        for (const std::pair<const uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
             uint32 memoryTypeBit = 1u << indexPropPair.first;
             if ((cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
@@ -793,7 +793,7 @@ public:
 
     void deallocateBuffer(VkBuffer buffer, VulkanMemoryBlock* block) override
     {
-        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        for (const std::pair<const uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
             if (linearChunkAllocators[indexPropPair.first] != nullptr && linearChunkAllocators[indexPropPair.first]->free(block))
             {
@@ -806,7 +806,7 @@ public:
     {
         VulkanChunkAllocator** chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
 
-        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        for (const std::pair<const uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
             if (chunkAllocator[indexPropPair.first] != nullptr && chunkAllocator[indexPropPair.first]->free(block))
             {
@@ -818,7 +818,7 @@ public:
 
     void mapBuffer(VulkanMemoryBlock* block) override
     {
-        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        for (const std::pair<const uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
             if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
             {
@@ -834,7 +834,7 @@ public:
 
     void unmapBuffer(VulkanMemoryBlock* block) override
     {
-        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        for (const std::pair<const uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
             if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
             {
@@ -852,7 +852,7 @@ public:
     {
         VulkanChunkAllocator** chunkAllocator = linearChunkAllocators;
 
-        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        for (const std::pair<const uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
             if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
             {
@@ -870,7 +870,7 @@ public:
     {
         VulkanChunkAllocator** chunkAllocator = linearChunkAllocators;
 
-        for (const std::pair<uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
+        for (const std::pair<const uint32, VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
             if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
             {

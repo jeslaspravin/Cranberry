@@ -2,15 +2,9 @@
 #include "../Core/Memory/SmartPointers.h"
 #include "../Core/Platform/PlatformTypes.h"
 
-/* Fwd declarations */
-namespace std
-{
-    template <class _Ty>
-    class allocator;
+#include <vector>// TODO(Jeslas) : change vector ptrs to const ref vectors
+#include <set>
 
-    template <class _Ty, class _Alloc = allocator<_Ty>>
-    class vector;
-}
 namespace ESamplerTilingMode
 {
     enum Type;
@@ -71,6 +65,12 @@ public:
         ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod = 0)
     {
         return HelperType::createSampler(graphicsInstance, name, samplerTiling, samplerFiltering, poorMipLod);
+    }
+
+    static SharedPtr<class ShaderParameters> createShaderParameters(class IGraphicsInstance* graphicsInstance
+        , const class GraphicsResource* paramLayout, const std::set<uint32>& ignoredSetIds = {})
+    {
+        return HelperType::createShaderParameters(graphicsInstance, paramLayout, ignoredSetIds);
     }
 
     static ESamplerFiltering::Type getClampedFiltering(class IGraphicsInstance* graphicsInstance, ESamplerFiltering::Type sampleFiltering

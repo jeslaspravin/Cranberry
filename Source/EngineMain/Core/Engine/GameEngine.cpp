@@ -18,8 +18,9 @@ void EngineTime::tickStart()
     deltaTime = 0;
 }
 
-void EngineTime::progressTick()
+void EngineTime::progressFrame()
 {
+    frameCounter++;
     lastFrameTick = frameTick;
     frameTick = Time::timeNow();
     lastDeltaTime = deltaTime;
@@ -72,7 +73,7 @@ void GameEngine::engineLoop()
     while (!isExiting())
     {
         timeData.activeTimeDilation = applicationInstance->appWindowManager.pollWindows()? 1.0f : 0.0f;
-        timeData.progressTick();
+        timeData.progressFrame();
         tickEngine();
         renderingApi.renderFrame();
     }

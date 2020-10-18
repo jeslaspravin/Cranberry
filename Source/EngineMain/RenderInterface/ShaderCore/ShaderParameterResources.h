@@ -2,10 +2,20 @@
 #include "../Resources/GraphicsResources.h"
 #include "ShaderDataTypes.h"
 #include "ShaderParameters.h"
+#include "../../Core/Types/Functions.h"
+#include "../Rendering/IRenderCommandList.h"
 
 #include <map>
+#include <set>
 
 class ShaderResource;
+class BufferResource;
+class ImageResource;
+class IRenderCommandList;
+class IGraphicsInstance;
+class Vector2D;
+class Vector4D;
+class Matrix4;
 
 /**
 * ShaderDescriptorParamType - Wrapper for param type of an descriptors entry of any set. Currently it can be either a texture or buffer or sampler
@@ -33,7 +43,7 @@ public:
         , std::map<String, struct ShaderBufferDescriptorType*>* filterBufferDescriptors = nullptr);
 
     template<typename DescriptorParamType>
-    friend DescriptorParamType* Cast(const ShaderDescriptorParamType* shaderDescriptorType);
+    friend const DescriptorParamType* Cast(const ShaderDescriptorParamType* shaderDescriptorType);
     template<typename DescriptorParamType>
     friend DescriptorParamType* Cast(ShaderDescriptorParamType* shaderDescriptorType);
 };
@@ -111,6 +121,9 @@ public:
 
     const ShaderDescriptorParamType* parameterDescription(uint32& outSetIdx, const String& paramName) const;
     const ShaderDescriptorParamType* parameterDescription(const String& paramName) const;
+    const std::map<String, ShaderDescriptorParamType*>& allParameterDescriptions() const;
+    uint32 getSetID() const { return shaderSetID; }
+    const ShaderResource* getShaderResource() const { return respectiveShaderRes; }
 };
 
 // Contains shader's all descriptors set layouts
@@ -139,4 +152,189 @@ public:
 
     const ShaderDescriptorParamType* parameterDescription(uint32& outSetIdx, const String& paramName) const;
     const ShaderDescriptorParamType* parameterDescription(const String& paramName) const;
+    std::map<String, ShaderDescriptorParamType*> allParameterDescriptions() const;
+    uint32 getSetID(const String& paramName) const;
+    const ShaderResource* getShaderResource() const { return respectiveShaderRes; }
 };
+
+class ShaderParameters : public GraphicsResource
+{
+    DECLARE_GRAPHICS_RESOURCE(ShaderParameters, , GraphicsResource, )
+
+protected:
+
+    struct ParamUpdateLambdaOut
+    {
+        std::vector<struct BatchCopyBufferData>* bufferUpdates;
+    };
+
+    using ParamUpdateLambda = LambdaFunction<void, ParamUpdateLambdaOut&, IRenderCommandList*, IGraphicsInstance*>;
+    struct BufferParameterUpdate
+    {
+        String bufferName;
+        String paramName;
+
+        bool operator==(const BufferParameterUpdate& other) const
+        {
+            return bufferName == other.bufferName && paramName == other.paramName;
+        }
+        struct Hasher 
+        {
+            _NODISCARD size_t operator()(const BufferParameterUpdate& keyVal) const noexcept;
+        };
+    };
+
+    struct BufferParametersData
+    {
+        struct BufferParameter
+        {
+            void* outerPtr = nullptr;
+            const ShaderBufferField* bufferField = nullptr;
+        };
+
+        const ShaderBufferDescriptorType* descriptorInfo;
+        uint8* cpuBuffer;
+        BufferResource* gpuBuffer = nullptr;
+
+        std::map<String, BufferParameter> bufferParams;
+    };
+
+    struct TexelParameterData
+    {
+        const ShaderBufferDescriptorType* descriptorInfo;
+        BufferResource* gpuBuffer = nullptr;
+    };
+
+    struct TextureParameterData
+    {
+        const ShaderTextureDescriptorType* descriptorInfo;
+        ImageResource* texture = nullptr;
+        // for future use
+        int32 apiDataIndex;
+        // Optional sampler
+        SharedPtr<class SamplerInterface> sampler;
+    };
+
+    struct SamplerParameterData
+    {
+        const ShaderSamplerDescriptorType* descriptorInfo;
+        // for future use
+        int32 apiDataIndex;
+        SharedPtr<class SamplerInterface> sampler;
+    };
+
+    std::map<String, BufferParametersData> shaderBuffers;
+    std::map<String, TexelParameterData> shaderTexels;
+    std::map<String, TextureParameterData> shaderTextures;
+    std::map<String, SamplerParameterData> shaderSamplers;
+    // will be used only in terms of ShaderParametersLayout
+    std::set<uint32> ignoredSets;
+
+    std::vector<BufferParameterUpdate> bufferUpdates;
+    std::set<String> texelUpdates;
+    std::set<String> textureUpdates;
+    std::set<String> samplerUpdates;
+    std::vector<ParamUpdateLambda> genericUpdates;
+
+    const GraphicsResource* paramLayout;
+    String descriptorSetName;
+private:
+    void initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr) const;
+    void initParamsMaps(const std::map<String, ShaderDescriptorParamType*>& paramsDesc);
+    std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> findBufferParam(String& bufferName, const String& paramName) const;
+    template<typename FieldType>
+    bool setFieldParam(const String& paramName, const FieldType& value);
+    template<typename FieldType>
+    bool setFieldParam(const String& paramName, const String& bufferName, const FieldType& value);
+    template<typename FieldType>
+    FieldType getFieldParam(const String& paramName) const;
+    template<typename FieldType>
+    FieldType getFieldParam(const String& paramName, const String& bufferName) const;
+protected:
+    ShaderParameters() = default;
+    ShaderParameters(const GraphicsResource* shaderParamLayout, const std::set<uint32>& ignoredSetIds = {});
+public:
+    /* GraphicsResource overrides */
+    virtual void init() override;
+    virtual void release() override;
+    String getResourceName() const final;
+    void setResourceName(const String& name) final;
+    /* Override ends */
+
+    virtual void updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    bool setIntParam(const String& paramName, int32 value);
+    bool setIntParam(const String& paramName, uint32 value);
+    bool setFloatParam(const String& paramName, float value);
+    bool setVector2Param(const String& paramName, const Vector2D& value);
+    bool setVector4Param(const String& paramName, const Vector4D& value);
+    bool setMatrixParam(const String& paramName, const Matrix4& value);
+    bool setIntParam(const String& paramName, const String& bufferName, int32 value);
+    bool setIntParam(const String& paramName, const String& bufferName, uint32 value);
+    bool setFloatParam(const String& paramName, const String& bufferName, float value);
+    bool setVector2Param(const String& paramName, const String& bufferName, const Vector2D& value);
+    bool setVector4Param(const String& paramName, const String& bufferName, const Vector4D& value);
+    bool setMatrixParam(const String& paramName, const String& bufferName, const Matrix4& value);
+    template<typename BufferType>
+    bool setBuffer(const String& paramName, const BufferType& bufferValue);
+    bool setTexelParam(const String& paramName, BufferResource* texelBuffer);
+    bool setTextureParam(const String& paramName, ImageResource* texture);
+    bool setTextureParam(const String& paramName, ImageResource* texture, SharedPtr<SamplerInterface> sampler);
+    bool setSamplerParam(const String& paramName, SharedPtr<SamplerInterface> sampler);
+
+    int32 getIntParam(const String& paramName) const;
+    uint32 getUintParam(const String& paramName) const;
+    float getFloatParam(const String& paramName) const;
+    Vector2D getVector2Param(const String& paramName) const;
+    Vector4D getVector4Param(const String& paramName) const;
+    Matrix4 getMatrixParam(const String& paramName) const;
+    int32 getIntParam(const String& paramName, const String& bufferName) const;
+    uint32 getUintParam(const String& paramName, const String& bufferName) const;
+    float getFloatParam(const String& paramName, const String& bufferName) const;
+    Vector2D getVector2Param(const String& paramName, const String& bufferName) const;
+    Vector4D getVector4Param(const String& paramName, const String& bufferName) const;
+    Matrix4 getMatrixParam(const String& paramName, const String& bufferName) const;
+    BufferResource* getTexelParam(const String& paramName) const;
+    ImageResource* getTextureParam(const String& paramName) const;
+    ImageResource* getTextureParam(SharedPtr<SamplerInterface>& outSampler, const String& paramName) const;
+    SharedPtr<SamplerInterface> getSamplerParam(const String& paramName) const;
+};
+
+template<typename BufferType>
+bool ShaderParameters::setBuffer(const String& paramName, const BufferType& bufferValue)
+{
+    bool bValueSet = false;
+    auto bufferDataItr = shaderBuffers.find(paramName);
+
+    if (bufferDataItr == shaderBuffers.end())
+    {
+        String bufferName;
+        std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> foundInfo = findBufferParam(bufferName, paramName);
+        if (foundInfo.first && foundInfo.second && foundInfo.second->bufferField->bIsStruct)
+        {
+            if (bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue))
+            {
+                genericUpdates.emplace_back([foundInfo](ParamUpdateLambdaOut& paramOut, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+                    {
+                        uint32 typeSize;
+                        cmdList->recordCopyToBuffer<BufferType>(*paramOut.bufferUpdates, foundInfo.first->gpuBuffer
+                            , foundInfo.second->bufferField->offset, reinterpret_cast<BufferType*>(foundInfo.second->bufferField->fieldData(typeSize, foundInfo.second->outerPtr))
+                            , foundInfo.second->bufferField->paramInfo);
+                    });
+            }
+        }
+    }
+    else
+    {
+        BufferParametersData* bufferDataPtr = &bufferDataItr->second;
+        if (bValueSet = (bufferDataPtr->descriptorInfo->bufferNativeStride == sizeof(BufferType)))
+        {
+            (*reinterpret_cast<BufferType*>(bufferDataPtr->cpuBuffer)) = bufferValue;
+            genericUpdates.emplace_back([bufferDataPtr](ParamUpdateLambdaOut& paramOut, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+                {
+                    cmdList->recordCopyToBuffer<BufferType>(*paramOut.bufferUpdates, bufferDataPtr->gpuBuffer
+                        , 0, reinterpret_cast<BufferType*>(bufferDataPtr->cpuBuffer), bufferDataPtr->descriptorInfo->bufferParamInfo);
+                });
+        }
+    }
+    return bValueSet;
+}

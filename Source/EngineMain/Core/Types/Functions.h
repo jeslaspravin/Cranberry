@@ -219,6 +219,6 @@ struct LambdaFunction {
 
     operator bool() const
     {
-        return lambdaDelegate != nullptr;
+        return bool(lambdaDelegate);
     }
 };

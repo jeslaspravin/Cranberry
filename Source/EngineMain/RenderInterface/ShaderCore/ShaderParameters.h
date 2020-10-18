@@ -2,6 +2,8 @@
 #include "ShaderInputOutput.h"
 #include "../../Core/Reflections/MemberField.h"
 
+#include <any>
+
 struct ShaderVertexField;
 struct ShaderBufferField;
 
@@ -61,6 +63,11 @@ struct ShaderBufferField
     ShaderBufferParamInfo* paramInfo = nullptr;
 
     ShaderBufferField(const String& pName);
+
+    virtual bool setFieldData(void* outerPtr, const std::any& newValue) const = 0;
+    virtual bool setFieldDataArray(void* outerPtr, const std::any& newValuesPtr) const = 0;
+    virtual bool setFieldDataArray(void* outerPtr, const std::any& newValue, uint32 arrayIndex) const = 0;
+    virtual void* fieldData(uint32& typeSize, void* outerPtr) const = 0;
 };
 
 template<typename OuterType>
@@ -79,6 +86,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     using ShaderBufferTypedField<OuterType>::paramInfo;
     using ShaderBufferTypedField<OuterType>::size;
     using ShaderBufferTypedField<OuterType>::stride;
+    using ArrayType = std::remove_all_extents_t<MemberType>;
 
     using FieldPtr = ClassMemberField<false, OuterType, MemberType>;
     FieldPtr memberPtr;
@@ -91,14 +99,83 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         size = stride = sizeof(MemberType);
         if (bIsArray)
         {
-            stride = sizeof(std::remove_all_extents_t<MemberType>);
+            stride = sizeof(ArrayType);
         }
+    }
+
+    constexpr static uint32 totalArrayElements()
+    {
+        // Right now supporting only one dimension
+        return uint32(std::extent_v<MemberType, 0>);
+    }
+
+    template <typename DataType>
+    constexpr static std::enable_if_t<std::is_array_v<DataType>, DataType>* memberDataPtr(DataType& data)
+    {
+        return &data[0];
+    }
+
+    template <typename DataType>
+    constexpr static std::enable_if_t<std::negation_v<std::is_array<DataType>>, DataType>* memberDataPtr(DataType& data)
+    {
+        return &data;
+    }
+
+    bool setFieldData(void* outerPtr, const std::any& newValue) const override
+    {
+        OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
+        const MemberType* newValuePtr = std::any_cast<MemberType>(&newValue);
+
+        if (newValuePtr != nullptr)
+        {
+            memberPtr.set(castOuterPtr, *newValuePtr);
+            return true;
+        }
+        return false;
+    }
+
+    bool setFieldDataArray(void* outerPtr, const std::any& newValuesPtr) const override
+    {
+        OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
+        MemberType *const*newValuesPtrPtr = std::any_cast<MemberType*>(&newValuesPtr);
+
+        if (bIsArray && newValuesPtrPtr != nullptr && *newValuesPtrPtr != nullptr)
+        {
+            MemberType* newValues = *newValuesPtrPtr;
+            MemberType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+
+            memcpy(toValues, newValues, sizeof(MemberType));
+            return true;
+        }
+        return false;
+    }
+
+    bool setFieldDataArray(void* outerPtr, const std::any& newValue, uint32 arrayIndex) const override
+    {
+        OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
+        const MemberType* newValuesPtr = std::any_cast<MemberType>(&newValue);
+
+        if (bIsArray && arrayIndex < totalArrayElements() && newValuesPtr != nullptr)
+        {
+            MemberType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+
+            toValues[arrayIndex] = *newValuesPtr;
+
+            return true;
+        }
+        return false;
+    }
+
+    void* fieldData(uint32& typeSize, void* outerPtr) const override
+    {
+        typeSize = sizeof(MemberType);
+        return memberDataPtr(memberPtr.get(reinterpret_cast<OuterType*>(outerPtr)));
     }
 
     const void* fieldData(uint32& typeSize, const OuterType* outerPtr) const override
     {
         typeSize = sizeof(MemberType);
-        return &memberPtr.get(outerPtr);
+        return memberDataPtr(memberPtr.get(outerPtr));
     }
 };
 

@@ -24,7 +24,7 @@ ModuleManager::ModuleManager():loadedModules()
 
 ModuleManager::~ModuleManager()
 {
-    for (const std::pair<String, std::pair<LibPointerPtr, ModuleData>>& modulePair : loadedModules) {
+    for (const std::pair<const String, std::pair<LibPointerPtr, ModuleData>>& modulePair : loadedModules) {
         delete modulePair.second.first;
         Logger::debug("ModuleManager", "%s() : Unloaded module %s", __func__, modulePair.first.getChar());
     }
@@ -96,7 +96,7 @@ std::vector<std::pair<LibPointerPtr, ModuleData>> ModuleManager::getAllModuleDat
 
     std::vector<std::pair<LibPointerPtr, ModuleData>> libraries;
     libraries.reserve(loadedModules.size());
-    for (const std::pair<String, std::pair<LibPointerPtr, ModuleData>>& pairs : loadedModules)
+    for (const std::pair<const String, std::pair<LibPointerPtr, ModuleData>>& pairs : loadedModules)
     {
         libraries.push_back(pairs.second);
     }

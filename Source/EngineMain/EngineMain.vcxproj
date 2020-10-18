@@ -196,6 +196,7 @@
     <ClCompile Include="RenderInterface\ShaderCore\ShaderParameters.cpp" />
     <ClCompile Include="RenderInterface\ShaderCore\ShaderParameterUtility.cpp" />
     <ClCompile Include="RenderInterface\Shaders\Base\BaseShaderDefines.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\ClearRT.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTexture.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\DefaultShader.cpp" />
@@ -306,6 +307,7 @@
     <ClInclude Include="RenderApi\GBuffersAndTextures.h" />
     <ClInclude Include="RenderApi\Material\MaterialCommonUniforms.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
+    <ClInclude Include="RenderApi\Scene\Renderer\Renderer.h" />
     <ClInclude Include="RenderApi\Scene\RenderScene.h" />
     <ClInclude Include="RenderApi\VertexData.h" />
     <ClInclude Include="RenderInterface\CoreGraphicsTypes.h" />

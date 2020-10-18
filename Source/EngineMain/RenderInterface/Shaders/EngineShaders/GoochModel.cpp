@@ -1,39 +1,47 @@
 #include "GoochModel.h"
-#include "../Base/DrawMeshShader.h"
 #include "../../../Core/Types/CoreDefines.h"
 #include "../../../RenderApi/GBuffersAndTextures.h"
 #include "../../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../ShaderCore/ShaderParameterResources.h"
+#include "../../GlobalRenderVariables.h"
+#include "../Base/UtilityShaders.h"
+#include "../../../RenderApi/Scene/RenderScene.h"
 
-BEGIN_BUFFER_DEFINITION(SurfaceData)
-ADD_BUFFER_TYPED_FIELD(lightPos)
-ADD_BUFFER_TYPED_FIELD(highlightColor)
-ADD_BUFFER_TYPED_FIELD(surfaceColor)
+BEGIN_BUFFER_DEFINITION(GoochModelLightCommon)
+ADD_BUFFER_TYPED_FIELD(lightsCount)
+ADD_BUFFER_TYPED_FIELD(invLightsCount)
+END_BUFFER_DEFINITION();
+
+BEGIN_BUFFER_DEFINITION(GoochModelLightData)
+ADD_BUFFER_TYPED_FIELD(warmOffsetAndPosX)
+ADD_BUFFER_TYPED_FIELD(coolOffsetAndPosY)
+ADD_BUFFER_TYPED_FIELD(highlightColorAndPosZ)
+ADD_BUFFER_TYPED_FIELD(lightColorAndRadius)
 END_BUFFER_DEFINITION();
 
 #define GOOCH_SHADER_NAME "GoochModel"
 
-template<EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
-class GoochModelShader : public DrawMeshShader
+class GoochModelShader : public UniqueUtilityShader
 {
-    DECLARE_GRAPHICS_RESOURCE(GoochModelShader, <ExpandArgs(VertexUsage, RenderpassFormat)>, DrawMeshShader, )
+    DECLARE_GRAPHICS_RESOURCE(GoochModelShader, , UniqueUtilityShader, )
 protected:
     GoochModelShader()
         : BaseType(GOOCH_SHADER_NAME)
-    {
-        compatibleRenderpassFormat = RenderpassFormat;
-        compatibleVertex = VertexUsage;
-    }
+    {}
 public:
     void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
     {
-        static SurfaceDataBufferParamInfo SURFACE_DATA_INFO;
+        static GoochModelLightCommonBufferParamInfo LIGHTCOMMON_INFO;
+        static GoochModelLightDataBufferParamInfo LIGHTDATA_INFO;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "surfaceData", &SURFACE_DATA_INFO }
+            { "lightCommon", &LIGHTCOMMON_INFO },
+            { "light", &LIGHTDATA_INFO },
+            { "viewData", RenderSceneBase::sceneViewParamInfo().at("viewData") }
         };
 
-        for (const std::pair<String, ShaderBufferParamInfo*>& bufferInfo : SHADER_PARAMS_INFO)
+
+        for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -44,10 +52,7 @@ public:
     }
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(GoochModelShader, <ExpandArgs(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
-    , <ExpandArgs(VertexUsage, RenderpassFormat)>)
-
-template class GoochModelShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffers>;
+DEFINE_GRAPHICS_RESOURCE(GoochModelShader)
 
 //////////////////////////////////////////////////////////////////////////
 /// Pipeline registration
@@ -72,35 +77,24 @@ GoochModelShaderPipeline::GoochModelShaderPipeline(const ShaderResource* shaderR
 GoochModelShaderPipeline::GoochModelShaderPipeline(const ShaderResource* shaderResource)
     : BaseType()
 {
-    supportedCullings.resize(2);
-    supportedCullings[0] = ECullingMode::FrontFace;
-    supportedCullings[1] = ECullingMode::BackFace;
+    supportedCullings.resize(1);
+    supportedCullings[0] = ECullingMode::BackFace;
 
     allowedDrawModes.resize(2);
     allowedDrawModes[0] = EPolygonDrawMode::Fill;
-    allowedDrawModes[1] = EPolygonDrawMode::Line;
+
+    renderpassProps.bOneRtPerFormat = false;
+    renderpassProps.multisampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
+    renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::BGRA_U8_Norm);
+    renderpassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
 
     // No alpha based blending for default shaders
     AttachmentBlendState blendState;
     blendState.bBlendEnable = false;
+    attachmentBlendStates.emplace_back(blendState);
 
-    bool bHasDepth = false;
-    FramebufferFormat fbFormat(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage());
-    GBuffers::getFramebuffer(fbFormat, 0);
-    attachmentBlendStates.reserve(fbFormat.attachments.size());
-    for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
-    {
-        if (!EPixelDataFormat::isDepthFormat(attachmentFormat))
-        {
-            attachmentBlendStates.emplace_back(blendState);
-        }
-        else
-        {
-            bHasDepth = true;
-        }
-    }
-
-    depthState.bEnableWrite = bHasDepth;
+    depthState.bEnableWrite = false;
+    depthState.compareOp = CoreGraphicsTypes::ECompareOp::Always;
 }
 
 using GoochModelShaderPipelineRegister = GenericGraphicsPipelineRegister<GoochModelShaderPipeline>;

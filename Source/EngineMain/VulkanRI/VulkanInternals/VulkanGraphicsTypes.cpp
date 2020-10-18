@@ -181,7 +181,7 @@ namespace EPixelDataFormat
     }
     EPixelDataFormat::Type fromApiFormat(uint32 apiFormat)
     {
-        for (const std::pair<Type, PixelFormatInfo>& formatPair : DATA_FORMAT_TO_API_FORMAT)
+        for (const std::pair<const Type, PixelFormatInfo>& formatPair : DATA_FORMAT_TO_API_FORMAT)
         {
             if (formatPair.second.format == apiFormat)
             {
