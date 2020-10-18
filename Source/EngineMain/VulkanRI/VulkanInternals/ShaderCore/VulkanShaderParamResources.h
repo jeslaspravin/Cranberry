@@ -135,3 +135,72 @@ public:
     const std::vector<VkDescriptorPoolSize>& getDescPoolAllocInfo(uint32 setIdx) const;
     VkDescriptorSetLayout getDescSetLayout(uint32 setIdx) const;
 };
+
+// For shaders and layouts of DrawMeshShaders
+class VulkanShaderSetParameters final : public ShaderParameters, public IVulkanResources
+{
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanShaderSetParameters, , ShaderParameters, )
+private:
+    struct DescriptorWriteData
+    {
+        uint32 writeInfoIdx;
+        union
+        {
+            const TexelParameterData* texel;
+            const TextureParameterData* texture;
+            const SamplerParameterData* sampler;
+        } ParamData;
+    };
+public:
+    VkDescriptorSet descriptorsSet;
+
+private:
+    VulkanShaderSetParameters() = default;
+public:
+    VulkanShaderSetParameters(const GraphicsResource * shaderParamLayout)
+        : BaseType(shaderParamLayout)
+    {}
+
+    /* IVulkanResources overrides */
+    String getObjectName() const final;
+    uint64 getDispatchableHandle() const final;
+    /* ShaderParameters overrides */
+    void init() final;
+    void release() final;
+    void updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance) final;
+    /* Override ends */
+};
+
+// For shaders and layouts not corresponding to DrawMeshShaders
+class VulkanShaderParameters final : public ShaderParameters, public IVulkanResources
+{
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanShaderParameters, , ShaderParameters, )
+private:
+    struct DescriptorWriteData
+    {
+        uint32 setID;
+        uint32 writeInfoIdx;
+        union
+        {
+            const TexelParameterData* texel;
+            const TextureParameterData* texture;
+            const SamplerParameterData* sampler;
+        } ParamData;
+    };
+public:
+    std::map<uint32, VkDescriptorSet> descriptorsSets;
+private:
+    VulkanShaderParameters() = default;
+public:
+    VulkanShaderParameters(const GraphicsResource* shaderParamLayout, const std::set<uint32>& ignoredSetIds)
+        : BaseType(shaderParamLayout, ignoredSetIds)
+    {}
+
+    /* IVulkanResources overrides */
+    String getObjectName() const final;
+    /* ShaderParameters overrides */
+    void init() final;
+    void release() final;
+    void updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance) final;
+    /* Override ends */
+};

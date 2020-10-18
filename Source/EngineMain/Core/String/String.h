@@ -36,7 +36,7 @@ public:
 template <>
 struct std::hash<String> {
 
-    _NODISCARD size_t operator()(const String keyval) const noexcept {
+    _NODISCARD size_t operator()(const String& keyval) const noexcept {
         auto stringHash = hash<std::string>();
         return stringHash(keyval);
     }

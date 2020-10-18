@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EngineShaders", "EngineShad
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utilities", "Utilities", "{F6883E7B-0E8B-4459-AD80-F28864E92906}"
 	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\Utilities\ClearRT.frag.glsl = Source\EngineShaders\Utilities\ClearRT.frag.glsl
+		Source\EngineShaders\Utilities\ClearRT.vert.glsl = Source\EngineShaders\Utilities\ClearRT.vert.glsl
 		Source\EngineShaders\Utilities\DrawQuadFromInputAttachment.frag.glsl = Source\EngineShaders\Utilities\DrawQuadFromInputAttachment.frag.glsl
 		Source\EngineShaders\Utilities\DrawQuadFromInputAttachment.vert.glsl = Source\EngineShaders\Utilities\DrawQuadFromInputAttachment.vert.glsl
 		Source\EngineShaders\Utilities\DrawQuadFromTexture.frag.glsl = Source\EngineShaders\Utilities\DrawQuadFromTexture.frag.glsl
@@ -40,6 +42,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{160411
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GoochModel", "GoochModel", "{9AE437AD-6B01-476D-9DF1-0687948333F2}"
 	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\GoochModel\GoochModel.frag.glsl = Source\EngineShaders\GoochModel\GoochModel.frag.glsl
+		Source\EngineShaders\GoochModel\GoochModel.vert.glsl = Source\EngineShaders\GoochModel\GoochModel.vert.glsl
 		Source\EngineShaders\GoochModel\GoochModelStageIO.inl.glsl = Source\EngineShaders\GoochModel\GoochModelStageIO.inl.glsl
 		Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.frag.glsl = Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.frag.glsl
 		Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.vert.glsl = Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.vert.glsl

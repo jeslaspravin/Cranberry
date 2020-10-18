@@ -223,6 +223,9 @@
     <Filter Include="Header Files\RenderInterface\Resources\Shaders\EngineShaders">
       <UniqueIdentifier>{126fe3d0-d6ea-46a6-8510-d761b3f3ff44}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\RenderApi\Scene\Renderer">
+      <UniqueIdentifier>{3c6f5dd9-ca06-4d97-be9f-718ca521bde2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -524,6 +527,9 @@
     </ClCompile>
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\GoochModel.cpp">
       <Filter>Source Files\RenderInterface\Resources\Shaders\EngineShaders</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\ClearRT.cpp">
+      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -940,6 +946,9 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\GoochModel.h">
       <Filter>Header Files\RenderInterface\Resources\Shaders\EngineShaders</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderApi\Scene\Renderer\Renderer.h">
+      <Filter>Source Files\RenderApi\Scene\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

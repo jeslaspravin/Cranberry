@@ -22,4 +22,5 @@ public:
     virtual ICleanupAsset* cleanableAsset() { return nullptr; }
 
     void setAssetName(const String& name);
+    const String& assetName() const;
 };

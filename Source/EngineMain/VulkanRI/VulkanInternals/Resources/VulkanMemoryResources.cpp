@@ -51,7 +51,7 @@ void VulkanBufferResource::release()
     if (buffer)
     {
         IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
-        for (const std::pair<BufferViewInfo, VkBufferView>& bufferView : createdBufferViews)
+        for (const std::pair<const BufferViewInfo, VkBufferView>& bufferView : createdBufferViews)
         {
             VulkanGraphicsHelper::destroyBufferView(graphicsInstance, bufferView.second);
         }
@@ -280,7 +280,7 @@ void VulkanImageResource::release()
     if (image)
     {
         IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
-        for (const std::pair<ImageViewInfo, VkImageView>& imageView : createdImageViews)
+        for (const std::pair<const ImageViewInfo, VkImageView>& imageView : createdImageViews)
         {
             VulkanGraphicsHelper::destroyImageView(graphicsInstance, imageView.second);
         }

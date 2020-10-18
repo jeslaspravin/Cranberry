@@ -28,7 +28,7 @@ void GenericAppWindow::setWindowName(const String& wndName)
 
 void GenericAppWindow::updateWindow()
 {
-    for (const std::pair<uint32, LambdaFunction<void>>& eventFunc : accumulatedEvents)
+    for (const std::pair<const uint32, LambdaFunction<void>>& eventFunc : accumulatedEvents)
     {
         eventFunc.second();
     }
