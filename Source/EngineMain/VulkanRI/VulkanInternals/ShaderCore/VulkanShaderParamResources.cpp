@@ -731,7 +731,13 @@ void VulkanShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphics
             ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo.sampler = texWriteData.ParamData.texture->sampler
             ? static_cast<VulkanSampler*>(texWriteData.ParamData.texture->sampler.get())->sampler : nullptr;
-        imageInfo.imageView = static_cast<VulkanImageResource*>(texWriteData.ParamData.texture->texture)->getImageView({});
+
+        ImageViewInfo viewInfo;
+        if (EPixelDataFormat::getFormatInfo(texWriteData.ParamData.texture->texture->imageFormat())->componentCount == 1)
+        {
+            viewInfo.componentMapping.r = viewInfo.componentMapping.g = viewInfo.componentMapping.b = EPixelComponentMapping::R;
+        }
+        imageInfo.imageView = static_cast<VulkanImageResource*>(texWriteData.ParamData.texture->texture)->getImageView(viewInfo);
     }
     for (const String& samplerName : samplerUpdates)
     {
