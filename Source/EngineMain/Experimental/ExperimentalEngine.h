@@ -109,7 +109,7 @@ class ExperimentalEngine : public GameEngine
     void destroyFrameResources();
 
     VkRenderPass drawSmRenderPass;
-    LocalPipelineContext drawSmDefaultPipelineContext;
+    LocalPipelineContext drawSmPipelineContext;
 
     VkRenderPass lightingRenderPass;
     LocalPipelineContext drawGoochPipelineContext;

@@ -1,6 +1,6 @@
 #include "ExperimentalEngine.h"
 
-#include "../RenderInterface/Shaders/EngineShaders/GoochModel.h"
+#include "../RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanQueueResource.h"
 #include "../VulkanRI/VulkanInternals/Debugging.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
@@ -191,16 +191,30 @@ void ExperimentalEngine::createScene()
     sceneFloor.transform.setTranslation(Vector3D(0, 0, 550));
     sceneData.emplace_back(sceneFloor);
 
+    // Pillars
+    sceneFloor.meshAsset = cylinder;
+    sceneFloor.transform.setScale(Vector3D(1, 1, 5));
+    sceneFloor.transform.setTranslation(Vector3D(450, 450, 250));
+    sceneData.emplace_back(sceneFloor);
+    sceneFloor.transform.setTranslation(Vector3D(-450, 450, 250));
+    sceneData.emplace_back(sceneFloor);
+    sceneFloor.transform.setTranslation(Vector3D(450, -450, 250));
+    sceneData.emplace_back(sceneFloor);
+    sceneFloor.transform.setTranslation(Vector3D(-450, -450, 250));
+    sceneData.emplace_back(sceneFloor);
+
     std::array<StaticMeshAsset*, 4> assets{ cube, sphere, cylinder, cone };
 
-    std::default_random_engine generator(uint32(timeData.initEndTick));
-    std::uniform_real_distribution<double> distribution(-1.0, 1.0);
+    std::default_random_engine generator;
+    std::uniform_real_distribution<float> distribution(-1.0, 1.0);
     std::normal_distribution<float> distribution1(0.0, 1.0);
     for (uint32 i = 0; i < 5; ++i)
     {
         SceneEntity entity;
         entity.meshAsset = assets[std::rand() % assets.size()];
-        entity.transform.setTranslation(Vector3D(float(distribution(generator) * 450), float(distribution(generator) * 450), float(distribution(generator) * 100) + 50));
+        entity.transform.setTranslation(Vector3D(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50));
+        entity.transform.setRotation(Rotation(0, 0, distribution(generator) * 45));
+
         entity.meshBatchColors.emplace_back(LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1));
         sceneData.emplace_back(entity);
     }
@@ -211,10 +225,15 @@ void ExperimentalEngine::createScene()
 
     // Near floor
     float height = 150;
+
+    // Middle light
+    light.highlightColorAndPosZ = Vector4D(1.f, 1.f, 1.f, height);
+    light.lightColorAndRadius = Vector4D(1.f, 1.f, 1.f, 0);
+    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+
     // Light 1
     light.highlightColorAndPosZ = Vector4D(0.49f, 0.66f, 0.75f, height);
     light.lightColorAndRadius = Vector4D(0.45f, 0.58f, 0.80f, 0);
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
 
     light.warmOffsetAndPosX.w() = light.coolOffsetAndPosY.w() = 400;
     lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
@@ -228,22 +247,20 @@ void ExperimentalEngine::createScene()
     light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
     lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
 
-    // Near ceiling
-    height = 475;
-    // Light 5
-    light.highlightColorAndPosZ = Vector4D(1.f, 1.f, 1.f, height);
-    light.lightColorAndRadius = Vector4D(1.f, 1.f, 1.f, 0);
-    light.warmOffsetAndPosX.w() = light.coolOffsetAndPosY.w() = 400;
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-    // Light 6
-    light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-    // Light 7
-    light.warmOffsetAndPosX.w() = -light.warmOffsetAndPosX.w();
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-    // Light 8
-    light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    //// Near ceiling
+    //height = 400;
+    //// Light 5
+    //light.warmOffsetAndPosX.w() = light.coolOffsetAndPosY.w() = 400;
+    //lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    //// Light 6
+    //light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
+    //lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    //// Light 7
+    //light.warmOffsetAndPosX.w() = -light.warmOffsetAndPosX.w();
+    //lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
+    //// Light 8
+    //light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
+    //lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
 }
 
 void ExperimentalEngine::destroyScene()
@@ -254,7 +271,7 @@ void ExperimentalEngine::destroyScene()
 void ExperimentalEngine::createShaderParameters()
 {
     IGraphicsInstance* graphicsInstance = getRenderApi()->getGraphicsInstance();
-    const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmDefaultPipelineContext.getPipeline());
+    const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
     // Since view data and other view related data are at set 0
     viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(0));
     viewParameters->setResourceName("View");
@@ -333,7 +350,7 @@ void ExperimentalEngine::setupShaderParameterParams()
         uint32 batchIdx = 0;
         for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
         {
-            meshBatchParam->setVector4Param("color", Vector4D(entity.meshBatchColors[batchIdx].getColorValue()));
+            meshBatchParam->setVector4Param("meshColor", Vector4D(entity.meshBatchColors[batchIdx].getColorValue()));
             meshBatchParam->init();
             ++batchIdx;
         }
@@ -554,12 +571,12 @@ void ExperimentalEngine::getPipelineForSubpass()
 {
     VulkanGlobalRenderingContext* vulkanRenderingContext = static_cast<VulkanGlobalRenderingContext*>(getRenderApi()->getGlobalRenderingContext());
 
-    drawSmDefaultPipelineContext.forVertexType = EVertexType::StaticMesh;
-    drawSmDefaultPipelineContext.materialName = DEFAULT_SHADER_NAME;
-    drawSmDefaultPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
-    drawSmDefaultPipelineContext.swapchainIdx = 0;
-    vulkanRenderingContext->preparePipelineContext(&drawSmDefaultPipelineContext);
-    drawSmRenderPass = vulkanRenderingContext->getRenderPass(drawSmDefaultPipelineContext.renderpassFormat, {});
+    drawSmPipelineContext.forVertexType = EVertexType::StaticMesh;
+    drawSmPipelineContext.materialName = "SingleColor";
+    drawSmPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
+    drawSmPipelineContext.swapchainIdx = 0;
+    vulkanRenderingContext->preparePipelineContext(&drawSmPipelineContext);
+    drawSmRenderPass = vulkanRenderingContext->getRenderPass(drawSmPipelineContext.renderpassFormat, {});
 
     // Gooch model
     drawGoochPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
@@ -596,7 +613,7 @@ void ExperimentalEngine::createPipelineResources()
     baseClearValue.color = { 0.0f, 0.0f, 0.0f, 0.0f };
     baseClearValue.depthStencil.depth = 0;
     baseClearValue.depthStencil.stencil = 0;
-    smAttachmentsClearColors.resize(drawSmDefaultPipelineContext.getFb()->textures.size(), baseClearValue);
+    smAttachmentsClearColors.resize(drawSmPipelineContext.getFb()->textures.size(), baseClearValue);
     swapchainClearColor = baseClearValue;
 
     ENQUEUE_COMMAND(QuadVerticesInit,LAMBDA_BODY
@@ -662,6 +679,14 @@ void ExperimentalEngine::updateCameraParams()
     {
         cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
+    if (appInstance().inputSystem()->isKeyPressed(Keys::Q))
+    {
+        cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+    }
+    if (appInstance().inputSystem()->isKeyPressed(Keys::E))
+    {
+        cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+    }
     if (appInstance().inputSystem()->keyState(Keys::P)->keyWentUp)
     {
         camera.cameraProjection = camera.cameraProjection == ECameraProjection::Perspective ? ECameraProjection::Orthographic : ECameraProjection::Perspective;
@@ -697,7 +722,7 @@ void ExperimentalEngine::onStartUp()
 
     camera.cameraProjection = ECameraProjection::Perspective;
     camera.setOrthoSize({ 1280,720 });
-    camera.setClippingPlane(0.5f, 5000.f);
+    camera.setClippingPlane(0.1f, 5000.f);
     camera.setFOV(110.f, 90.f);
 
     cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
@@ -763,8 +788,8 @@ void ExperimentalEngine::frameRender()
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
-    drawSmDefaultPipelineContext.swapchainIdx = drawQuadPipelineContext.swapchainIdx = index;
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawSmDefaultPipelineContext);
+    drawSmPipelineContext.swapchainIdx = drawQuadPipelineContext.swapchainIdx = index;
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawSmPipelineContext);
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawQuadPipelineContext);
 
     drawGoochPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
@@ -804,7 +829,7 @@ void ExperimentalEngine::frameRender()
 
     vDevice->vkBeginCommandBuffer(frameResources[index].perFrameCommands, &cmdBeginInfo);
     {
-        const GraphicsPipeline* tempPipeline = static_cast<const GraphicsPipeline*>(drawSmDefaultPipelineContext.getPipeline());
+        const GraphicsPipeline* tempPipeline = static_cast<const GraphicsPipeline*>(drawSmPipelineContext.getPipeline());
 
         SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ExperimentalEngineFrame);
 
@@ -844,8 +869,8 @@ void ExperimentalEngine::frameRender()
                 for (const MeshVertexView& meshBatch : entity.meshAsset->meshBatches)
                 {
                     // Batch set
-                    //vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                    //    , tempPipeline->pipelineLayout, 2, 1, &static_cast<const VulkanShaderSetParameters*>(entity.meshBatchParameters[meshBatchIdx].get())->descriptorsSet, 0, nullptr);
+                    vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
+                        , tempPipeline->pipelineLayout, 2, 1, &static_cast<const VulkanShaderSetParameters*>(entity.meshBatchParameters[meshBatchIdx].get())->descriptorsSet, 0, nullptr);
 
                     vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, meshBatch.numOfIndices, 1, meshBatch.startIndex, 0, 0);
 
