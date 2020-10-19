@@ -6,15 +6,17 @@
 #include "../Common/ShaderOutputs.inl.glsl"
 
 #define INPUT 1
-#include "DefaultStageIO.inl.glsl"
+#include "SingleColorStageIO.inl.glsl"
 #undef INPUT
 
 #undef STATE_MESH
 #undef MULTIBUFFER
 
+#include "SingleColorDescriptors.inl.glsl"
+
 void mainFS()
 {    
-    colorAttachment0 = vec4(fract(inTextureCoord.x * 10.f),fract(inTextureCoord.y * 10.f), 0, 1);
+    colorAttachment0 = meshData.meshColor;
     colorAttachment1 = vec4(normalize(inWorldNormal), 1);
     colorAttachment2 = inPerspectiveZW.x/inPerspectiveZW.y;
 }

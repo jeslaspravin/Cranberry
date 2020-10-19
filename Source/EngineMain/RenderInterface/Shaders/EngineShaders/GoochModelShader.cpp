@@ -1,4 +1,4 @@
-#include "GoochModel.h"
+#include "GoochModelShader.h"
 #include "../../../Core/Types/CoreDefines.h"
 #include "../../../RenderApi/GBuffersAndTextures.h"
 #include "../../../Core/Platform/PlatformAssertionErrors.h"

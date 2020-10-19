@@ -39,9 +39,9 @@ void mainFS()
 
     const vec4 unlitColor = texture(ssUnlitColor, inTextureCoord);
     const vec4 litColor = mix(vec4(light.warmOffsetAndPosX.xyz + 0.25f * unlitColor.xyz, unlitColor.w)
-        , vec4(light.highlightColorAndPosZ.xyz, unlitColor.w), clamp(100 * dot(rLightDir, viewFwd()) - 97, 0.0, 1.0));
+        , vec4(light.highlightColorAndPosZ.xyz, unlitColor.w), clamp(100 * dot(rLightDir, -viewFwd()) - 97, 0.0, 1.0));
     const vec4 coolColor = vec4(light.coolOffsetAndPosY.xyz + 0.25f * unlitColor.xyz, unlitColor.w);
 
     colorAttachment0 = mix( texture(ssColor, inTextureCoord), 0.5 * lightCommon.invLightsCount * coolColor + texture(ssColor, inTextureCoord)
-        + clamp(lDn, 0, abs(lDn)) * vec4(light.lightColorAndRadius.xyz, unlitColor.w) * litColor, ceil(depth));
+        + clamp(lDn, 0.0, 1.0) * vec4(light.lightColorAndRadius.xyz, unlitColor.w) * litColor, ceil(depth));
 }

@@ -12,5 +12,6 @@ void mainVS()
 {
     gl_Position = vec4(position,1);
     outTextureCoord = (position.xy + 1) * 0.5f;
-    outNdcCoord = position.xy;
+    // Fliping y since Quad draw uses vulkan screen coord top left -1,-1 bottom right 1,1. But our view/projection y coordinate is from bottom(-1) to top(1)
+    outNdcCoord = vec2(position.x, -position.y);
 }
