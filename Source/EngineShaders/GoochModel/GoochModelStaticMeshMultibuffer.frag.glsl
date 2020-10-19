@@ -31,5 +31,5 @@ void mainFS()
         * (colorCoeff * vec4(vec3(0.3, 0.3, 0.0) + 0.25 * surfaceData.surfaceColor.xyz, surfaceData.surfaceColor.w) 
         + (1 - colorCoeff) * vec4(vec3(0, 0, 0.55) + 0.25 * surfaceData.surfaceColor.xyz, surfaceData.surfaceColor.w));
     colorAttachment1 = vec4((worldNormal + 1) * 0.5, 1);
-    colorAttachment2 = inWorldPosition.w;
+    colorAttachment2 = inPerspectiveZW.x/inPerspectiveZW.y;
 }

@@ -121,9 +121,6 @@
     <Filter Include="Source Files\Core\Engine\Config">
       <UniqueIdentifier>{0307cad9-dd9c-4b99-8176-e60270234690}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\RenderInterface\Resources\Shaders">
-      <UniqueIdentifier>{4bece398-d6fd-45b3-bccd-78a0c3d761b0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\RenderApi">
       <UniqueIdentifier>{13e41a8f-8be4-49c5-a36a-d5bac3a033f0}</UniqueIdentifier>
     </Filter>
@@ -208,20 +205,26 @@
     <Filter Include="Source Files\RenderApi\Material">
       <UniqueIdentifier>{a745f974-7586-4a79-82cc-92fdce36da77}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\RenderInterface\Resources\Shaders\Base">
-      <UniqueIdentifier>{ff6e8378-dcd0-49f2-bb4d-7a7e8e66cfd8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\RenderInterface\Resources\Shaders\EngineShaders">
-      <UniqueIdentifier>{e80a7384-8730-4158-9e33-55b1a65be2de}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\RenderInterface\Resources\Shaders">
-      <UniqueIdentifier>{17066662-08ef-4182-a58f-28948bf43223}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\RenderInterface\Resources\Shaders\EngineShaders">
-      <UniqueIdentifier>{126fe3d0-d6ea-46a6-8510-d761b3f3ff44}</UniqueIdentifier>
+    <Filter Include="Source Files\Experimental">
+      <UniqueIdentifier>{2914e851-ff20-4621-bb26-b0fd890b7e31}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\RenderApi\Scene\Renderer">
       <UniqueIdentifier>{3c6f5dd9-ca06-4d97-be9f-718ca521bde2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderInterface\Shaders">
+      <UniqueIdentifier>{4bece398-d6fd-45b3-bccd-78a0c3d761b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderInterface\Shaders\Base">
+      <UniqueIdentifier>{ff6e8378-dcd0-49f2-bb4d-7a7e8e66cfd8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderInterface\Shaders\EngineShaders">
+      <UniqueIdentifier>{e80a7384-8730-4158-9e33-55b1a65be2de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderInterface\Shaders">
+      <UniqueIdentifier>{17066662-08ef-4182-a58f-28948bf43223}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderInterface\Shaders\EngineShaders">
+      <UniqueIdentifier>{126fe3d0-d6ea-46a6-8510-d761b3f3ff44}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -354,9 +357,6 @@
     <ClCompile Include="VulkanRI\Resources\VulkanShaderResources.cpp">
       <Filter>Source Files\VulkanRI\Resources</Filter>
     </ClCompile>
-    <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachment.cpp">
-      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Types\Time.cpp">
       <Filter>Source Files\Core\Types</Filter>
     </ClCompile>
@@ -438,9 +438,6 @@
     <ClCompile Include="RenderInterface\Rendering\RenderCommandList.cpp">
       <Filter>Source Files\RenderInterface\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTexture.cpp">
-      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="VulkanRI\VulkanInternals\Commands\VulkanRenderCmdList.cpp">
       <Filter>Source Files\VulkanRI\VulkanInternals\Commands</Filter>
     </ClCompile>
@@ -502,7 +499,7 @@
       <Filter>Source Files\RenderInterface\ShaderCore</Filter>
     </ClCompile>
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\DefaultShader.cpp">
-      <Filter>Source Files\RenderInterface\Resources\Shaders\EngineShaders</Filter>
+      <Filter>Source Files\RenderInterface\Shaders\EngineShaders</Filter>
     </ClCompile>
     <ClCompile Include="VulkanRI\VulkanInternals\VulkanFrameBuffer.cpp">
       <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
@@ -511,7 +508,7 @@
       <Filter>Source Files\RenderInterface\Rendering</Filter>
     </ClCompile>
     <ClCompile Include="RenderInterface\Shaders\Base\BaseShaderDefines.cpp">
-      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
+      <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
     </ClCompile>
     <ClCompile Include="Core\Input\Windows\WindowsDevices.cpp">
       <Filter>Source Files\Core\Input\Windows</Filter>
@@ -519,11 +516,20 @@
     <ClCompile Include="Core\Input\Windows\WindowsRawInputBuffer.cpp">
       <Filter>Source Files\Core\Input\Windows</Filter>
     </ClCompile>
-    <ClCompile Include="RenderInterface\Shaders\EngineShaders\GoochModel.cpp">
-      <Filter>Source Files\RenderInterface\Resources\Shaders\EngineShaders</Filter>
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.cpp">
+      <Filter>Source Files\RenderInterface\Shaders\EngineShaders</Filter>
     </ClCompile>
-    <ClCompile Include="RenderInterface\Shaders\ClearRT.cpp">
-      <Filter>Source Files\RenderInterface\Resources\Shaders</Filter>
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.cpp">
+      <Filter>Source Files\RenderInterface\Shaders\EngineShaders</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\ClearRTShader.cpp">
+      <Filter>Source Files\RenderInterface\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTextureShader.cpp">
+      <Filter>Source Files\RenderInterface\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachmentShader.cpp">
+      <Filter>Source Files\RenderInterface\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -888,10 +894,10 @@
       <Filter>Source Files\RenderApi\Material</Filter>
     </ClInclude>
     <ClInclude Include="RenderInterface\Shaders\Base\DrawMeshShader.h">
-      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
+      <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
     </ClInclude>
     <ClInclude Include="RenderInterface\Shaders\Base\UtilityShaders.h">
-      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
+      <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
     </ClInclude>
     <ClInclude Include="VulkanRI\VulkanInternals\ShaderCore\VulkanShaderParamResourcesFactory.h">
       <Filter>Source Files\VulkanRI\VulkanInternals\ShaderCore</Filter>
@@ -909,7 +915,7 @@
       <Filter>Source Files\RenderInterface\ShaderCore</Filter>
     </ClInclude>
     <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h">
-      <Filter>Source Files\RenderInterface\Resources\Shaders\Base</Filter>
+      <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
     </ClInclude>
     <ClInclude Include="Core\Input\InputDevice.h">
       <Filter>Source Files\Core\Input</Filter>
@@ -935,11 +941,14 @@
     <ClInclude Include="Core\Platform\Windows\WindowsCommonHeaders.h">
       <Filter>Source Files\Core\Platform\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="RenderInterface\Shaders\EngineShaders\GoochModel.h">
-      <Filter>Header Files\RenderInterface\Resources\Shaders\EngineShaders</Filter>
-    </ClInclude>
     <ClInclude Include="RenderApi\Scene\Renderer\Renderer.h">
       <Filter>Source Files\RenderApi\Scene\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.h">
+      <Filter>Header Files\RenderInterface\Shaders\EngineShaders</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.h">
+      <Filter>Header Files\RenderInterface\Shaders\EngineShaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

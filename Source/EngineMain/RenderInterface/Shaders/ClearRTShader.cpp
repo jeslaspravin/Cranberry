@@ -6,12 +6,12 @@
 
 #define CLEAR_RT "ClearRT"
 
-struct ClearRT_ClearInfo
+struct ClearRTClearInfo
 {
     Vector4D clearColor;
 };
 
-BEGIN_BUFFER_DEFINITION(ClearRT_ClearInfo)
+BEGIN_BUFFER_DEFINITION(ClearRTClearInfo)
 ADD_BUFFER_TYPED_FIELD(clearColor)
 END_BUFFER_DEFINITION();
 
@@ -23,7 +23,7 @@ private:
 public:
     void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
     {
-        static ClearRT_ClearInfoBufferParamInfo CLEAR_INFO;
+        static ClearRTClearInfoBufferParamInfo CLEAR_INFO;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
             { "clearInfo", &CLEAR_INFO }
