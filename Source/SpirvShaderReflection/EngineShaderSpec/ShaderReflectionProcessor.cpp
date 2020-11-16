@@ -647,6 +647,31 @@ void squashDuplicates(ReflectDescriptorBody& descriptorsSet)
     squashDuplicates(descriptorsSet.samplers);
 }
 
+// Combines the descriptors usage of list of same typed descriptors
+template<typename Type>
+uint32_t combinedDescritorsUsage(const std::vector<NamedAttribute<DescriptorSetEntry<Type>>>& descriptorsCollection)
+{
+    uint32_t combinedUsage = 0;
+    for (const NamedAttribute<DescriptorSetEntry<Type>>& descriptor : descriptorsCollection)
+    {
+        combinedUsage |= descriptor.data.stagesUsed;
+    }
+    return combinedUsage;
+}
+
+uint32_t combinedDescritorsUsage(const ReflectDescriptorBody& descriptorsSet)
+{
+    return combinedDescritorsUsage(descriptorsSet.uniforms)         |
+        combinedDescritorsUsage(descriptorsSet.buffers)             |
+        combinedDescritorsUsage(descriptorsSet.samplerBuffers)      |
+        combinedDescritorsUsage(descriptorsSet.imageBuffers)        |
+        combinedDescritorsUsage(descriptorsSet.sampledTexAndArrays) |
+        combinedDescritorsUsage(descriptorsSet.textureAndArrays)    |
+        combinedDescritorsUsage(descriptorsSet.imagesAndImgArrays)  |
+        combinedDescritorsUsage(descriptorsSet.subpassInputs)       |
+        combinedDescritorsUsage(descriptorsSet.samplers);
+}
+
 void printArrayDefs(const std::vector<ArrayDefinition>& arrayDefs, std::string indent)
 {
     printf("%sArraySize : ",indent.c_str());
@@ -737,7 +762,7 @@ void printTexelCompFormat(const TexelComponentFormat& componentFormat, std::stri
 
 void printDescriptorsSet(const ReflectDescriptorBody& descriptorsSet)
 {
-    printf("Descriptors Set = %d\n", descriptorsSet.set);
+    printf("Descriptors Set = %d Combined stages usage = %d\n", descriptorsSet.set, descriptorsSet.combinedSetUsage);
     for (const uint32_t& binding : descriptorsSet.usedBindings)
     {
         auto finderFunc = [&binding](const auto& descriptor) {
@@ -1220,6 +1245,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
         sort(reflectedData.descriptorsSets[idx].usedBindings.begin(), reflectedData.descriptorsSets[idx].usedBindings.end());
 
         squashDuplicates(reflectedData.descriptorsSets[idx]);
+        reflectedData.descriptorsSets[idx].combinedSetUsage = combinedDescritorsUsage(reflectedData.descriptorsSets[idx]);
         printDescriptorsSet(reflectedData.descriptorsSets[idx]);
     }
 }

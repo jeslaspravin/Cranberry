@@ -417,6 +417,13 @@ struct StencilState
     CoreGraphicsTypes::ECompareOp::Type compareOp = CoreGraphicsTypes::ECompareOp::Never;
 };
 
+enum class EStencilFaceMode
+{
+    FrontFace = 1,
+    BackFace = 2,
+    Both = 3
+};
+
 struct AttachmentBlendState
 {
     bool bBlendEnable = false;

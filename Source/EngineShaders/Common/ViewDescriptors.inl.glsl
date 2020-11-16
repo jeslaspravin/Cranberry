@@ -7,6 +7,7 @@ layout(set = 0, binding = 0) uniform ViewData
     mat4 invProjection;
 } viewData;
 
+// TODO(Jeslas) : Can be simplified for orthographics camera
 vec3 getWorldPosition(vec4 screenPos)
 {
     vec4 world = viewData.invProjection * screenPos;
@@ -18,4 +19,9 @@ vec3 getWorldPosition(vec4 screenPos)
 vec3 viewFwd()
 {
     return viewData.view[2].xyz;
+}
+
+vec3 viewPos()
+{
+    return viewData.view[3].xyz;
 }

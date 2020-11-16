@@ -261,6 +261,8 @@ public:
     void setResourceName(const String& name) final;
     /* Override ends */
 
+    const GraphicsResource* getParamLayout() const { return paramLayout; }
+
     virtual void updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
     bool setIntParam(const String& paramName, int32 value);
     bool setIntParam(const String& paramName, uint32 value);
