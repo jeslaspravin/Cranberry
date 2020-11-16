@@ -1,5 +1,6 @@
 #include "RenderingContexts.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../Core/Platform/PlatformFunctions.h"
 #include "../PlatformIndependentHeaders.h"
 #include "../Shaders/Base/DrawMeshShader.h"
 #include "../Shaders/Base/UtilityShaders.h"
@@ -49,6 +50,73 @@ void GlobalRenderingContextBase::initShaderResources()
         pipelinesCache->init();
     }
 
+    std::vector<GraphicsResource*> allShaderResources;
+    GraphicsShaderResource::staticType()->allChildDefaultResources(allShaderResources, true, true);
+    // Initialize all shaders
+    {
+        uint32 viewParamUsageMaxBitCount = 0;
+        ShaderResource* usedInShader = nullptr;
+
+        std::map<EVertexType::Type, std::pair<uint32, ShaderResource*>> vertexParamUsageMaxBitCount;
+
+        for (GraphicsResource* shader : allShaderResources)
+        {
+            shader->init();
+
+            if (shader->getType()->isChildOf(DrawMeshShader::staticType()))
+            {
+                DrawMeshShader* drawMeshShader = static_cast<DrawMeshShader*>(shader);
+
+                for (const ReflectDescriptorBody& descriptorsSetMeta : drawMeshShader->getReflection()->descriptorsSets)
+                {
+                    uint32 setBitCount = PlatformFunctions::getSetBitCount(descriptorsSetMeta.combinedSetUsage);
+
+                    if (descriptorsSetMeta.set == 1) // Vertex param
+                    {
+                        auto itr = vertexParamUsageMaxBitCount.find(drawMeshShader->vertexUsage());
+                        if (itr == vertexParamUsageMaxBitCount.end())
+                        {
+                            vertexParamUsageMaxBitCount[drawMeshShader->vertexUsage()] = { setBitCount, drawMeshShader };
+                        }
+                        else if (itr->second.first < setBitCount)
+                        {
+                            itr->second.first = setBitCount;
+                            itr->second.second = drawMeshShader;
+                        }
+                        continue;
+                    }
+
+                    if(descriptorsSetMeta.set == 0 && viewParamUsageMaxBitCount < setBitCount)// View param
+                    {
+                        viewParamUsageMaxBitCount = setBitCount;
+                        usedInShader = drawMeshShader;
+                    } 
+                }
+            }
+        }
+
+        // View unique param layout
+        debugAssert(usedInShader != nullptr && sceneViewParamLayout == nullptr);
+        sceneViewParamLayout = shaderParamLayoutsFactory->create(usedInShader, 0);
+        debugAssert(sceneViewParamLayout != nullptr);
+        sceneViewParamLayout->init();
+
+        for (const std::pair<const EVertexType::Type, std::pair<uint32, ShaderResource*>>& vertexParamLayoutInfo : vertexParamUsageMaxBitCount)
+        {
+            // Vertex unique param layout
+            auto perVertParamLayoutItr = perVertexTypeLayouts.find(static_cast<DrawMeshShader*>(vertexParamLayoutInfo.second.second)->vertexUsage());
+            debugAssert(perVertParamLayoutItr == perVertexTypeLayouts.end());
+            GraphicsResource* paramLayout = shaderParamLayoutsFactory->create(vertexParamLayoutInfo.second.second, 1);
+            debugAssert(paramLayout != nullptr);
+            paramLayout->init();
+            perVertexTypeLayouts[static_cast<DrawMeshShader*>(vertexParamLayoutInfo.second.second)->vertexUsage()] = paramLayout;
+        }
+    }
+    initShaderPipelines(allShaderResources);
+}
+
+void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsResource*>& allShaderResources)
+{
     std::set<EVertexType::Type> filledVertexInfo;
     auto vertexAttribFillLambda = [&filledVertexInfo](EVertexType::Type vertexUsed, const std::vector<ReflectInputOutput>& vertexShaderInputs)
     {
@@ -64,33 +132,12 @@ void GlobalRenderingContextBase::initShaderResources()
         }
     };
 
-    std::vector<GraphicsResource*> allShaderResources;
-    GraphicsShaderResource::staticType()->allChildDefaultResources(allShaderResources, true, true);
     for (GraphicsResource* shader : allShaderResources)
     {
-        shader->init();
-
         if (shader->getType()->isChildOf(DrawMeshShader::staticType()))
         {
             DrawMeshShader* drawMeshShader = static_cast<DrawMeshShader*>(shader);
             vertexAttribFillLambda(drawMeshShader->vertexUsage(), drawMeshShader->getReflection()->inputs);
-
-            // TODO(Jeslas) : Change the common desc set layout creation so that it can be used in max number of shader stages across all shaders
-            // View unique param layout
-            if (sceneViewParamLayout == nullptr)
-            {
-                sceneViewParamLayout = shaderParamLayoutsFactory->create(drawMeshShader, 0);
-                sceneViewParamLayout->init();
-            }
-
-            // Vertex unique param layout
-            auto perVertParamLayoutItr = perVertexTypeLayouts.find(drawMeshShader->vertexUsage());
-            if (perVertParamLayoutItr == perVertexTypeLayouts.end())
-            {
-                GraphicsResource* paramLayout = shaderParamLayoutsFactory->create(drawMeshShader, 1);
-                paramLayout->init();
-                perVertexTypeLayouts[drawMeshShader->vertexUsage()] = paramLayout;
-            }
 
             ShaderDataCollection& shaderCollection = rawShaderObjects[shader->getResourceName()];
             if (shaderCollection.shadersParamLayout == nullptr)

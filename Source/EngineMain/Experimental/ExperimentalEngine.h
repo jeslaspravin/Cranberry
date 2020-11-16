@@ -1,5 +1,8 @@
 #pragma once
 #include "../Core/Engine/GameEngine.h"
+
+#if EXPERIMENTAL
+
 #include "../RenderInterface/Resources/QueueResource.h"
 #include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanSyncResource.h"
@@ -10,6 +13,7 @@
 #include "../Core/Types/Camera/Camera.h"
 #include "../Core/Types/Colors.h"
 #include "../RenderInterface/Rendering/RenderingContexts.h"
+#include "../RenderInterface/Rendering/IRenderCommandList.h"
 
 #include <map>
 #include <vulkan_core.h>
@@ -50,8 +54,8 @@ struct SceneEntity
 struct FrameResource
 {
     std::vector<SharedPtr<GraphicsSemaphore>> usageWaitSemaphore;
-    VkCommandBuffer perFrameCommands;
     RenderTargetTexture* lightingPassRt;
+    RenderTargetTexture* lightingPassResolved;
     SharedPtr<GraphicsFence> recordingFence;
 };
 
@@ -102,13 +106,11 @@ class ExperimentalEngine : public GameEngine
     void reupdateTextureParamsOnResize();
 
     // Shader pipeline resources
-    std::vector<VkClearValue> smAttachmentsClearColors;
+    RenderPassClearValue clearValues;
 
-    VkClearValue swapchainClearColor;
     void createFrameResources();
     void destroyFrameResources();
 
-    VkRenderPass drawSmRenderPass;
     LocalPipelineContext drawSmPipelineContext;
 
     VkRenderPass lightingRenderPass;
@@ -116,8 +118,8 @@ class ExperimentalEngine : public GameEngine
 
     class BufferResource* quadVertexBuffer = nullptr;
     class BufferResource* quadIndexBuffer = nullptr;
-    VkRenderPass drawQuadRenderPass;
     LocalPipelineContext drawQuadPipelineContext;
+    LocalPipelineContext resolveLightRtPipelineContext;
 
     SharedPtr<ShaderParameters> clearInfoParams;
     LocalPipelineContext clearQuadPipelineContext;
@@ -140,8 +142,10 @@ protected:
 
     void startUpRenderInit();
     void renderQuit();
-    void frameRender();
+    void frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
 
     void tempTest();
     void tempTestPerFrame();
 };
+
+#endif

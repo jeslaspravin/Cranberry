@@ -9,8 +9,11 @@ class GenericAppWindow;
 class VulkanGraphicsHelper : public GraphicsHelperAPI<VulkanGraphicsHelper>
 {
 public:
+#if EXPERIMENTAL
     // Only in experimental branch
     static class VulkanDevice* getVulkanDevice(class IGraphicsInstance* graphicsInstance);
+    static VkCommandBuffer getRawCmdBuffer(class IGraphicsInstance* graphicsInstance, const GraphicsResource* cmdBuffer);
+#endif
 
     static VkInstance getInstance(class IGraphicsInstance* graphicsInstance);
     static VkDevice getDevice(const class VulkanDevice* vulkanDevice);

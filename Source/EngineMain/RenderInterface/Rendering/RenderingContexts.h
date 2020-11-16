@@ -60,6 +60,7 @@ private:
     void clearContext();
 
     void initShaderResources();
+    void initShaderPipelines(const std::vector<GraphicsResource*>& allShaderResources);
     void destroyShaderResources();
     void writeAndDestroyPipelineCache();
 protected:

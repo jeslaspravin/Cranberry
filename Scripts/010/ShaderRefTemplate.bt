@@ -226,7 +226,9 @@ struct ReflectDescriptorBody
 {
     uint set;
     int32 bindingsNum<hidden=true>;
-    uint32 usedBindings[bindingsNum];
+    uint32 usedBindings[bindingsNum]<optimize=false>;
+
+    uint32 combinedSetUsage<read = StagesBitFlagDisplay>;
 
     int32 uniformsNum<hidden=true>;
     DescEntryBuffer uniforms[uniformsNum]<optimize=false, read = DescEntryBufferDisplay>;

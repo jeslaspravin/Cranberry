@@ -11,7 +11,7 @@ public:
 	T minBound;
 	T maxBound;
 
-	Box():minBound(FLT_MAX),maxBound(0){}
+	Box() = default;
 
 	Box(const T& min, const T& max) {
 		minBound = min;
@@ -121,6 +121,18 @@ public:
 		return regionBox;
 	}
 
+    bool isValidAABB() const
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            if (minBound[i] > maxBound[i])
+            {
+				return false;
+            }
+        }
+		return true;
+    }
+
 	void fixAABB()
 	{
 		for (uint32 i = 0; i < d; i++)
@@ -143,6 +155,11 @@ public:
 			}
 		}
 		return true;
+	}
+
+	T size() const
+	{
+		return maxBound - minBound;
 	}
 
 	// Ensure start point is outside the box
@@ -216,3 +233,6 @@ public:
 
 using SizeBox2D = Box<Size2D, 2>;
 using SizeBox3D = Box<Size3D, 3>;
+
+using QuantizedBox2D = Box<Int2D, 2>;
+using QuantizedBox3D = Box<Int3D, 3>;
