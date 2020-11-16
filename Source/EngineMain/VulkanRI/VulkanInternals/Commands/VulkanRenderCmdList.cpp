@@ -4,6 +4,7 @@
 #include "../../../RenderInterface/PlatformIndependentHelper.h"
 #include "../../../Core/Platform/PlatformAssertionErrors.h"
 #include "VulkanCommandBufferManager.h"
+#include "../ShaderCore/VulkanShaderParamResources.h"
 #include "../../../Core/Math/Math.h"
 #include "../../../Core/Math/Box.h"
 
@@ -55,6 +56,17 @@ FORCE_INLINE VkImageLayout VulkanCommandList::getImageLayout(const ImageResource
         ? imgLayout : image->isShaderWrite()
         ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     return imgLayout;
+}
+
+FORCE_INLINE VkPipelineBindPoint VulkanCommandList::getPipelineBindPoint(const PipelineBase* pipeline) const
+{
+    if (pipeline->getType()->isChildOf<GraphicsPipelineBase>())
+    {
+        return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
+    }
+
+    Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, pipeline->getResourceName().getChar());
+    return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_MAX_ENUM;
 }
 
 VulkanCommandList::VulkanCommandList(IGraphicsInstance* graphicsInstance, VulkanDevice* vulkanDevice)
@@ -229,7 +241,7 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
     dstToStagingBufferMap.clear();
 }
 
-const GraphicsResource* VulkanCommandList::startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable)
+const GraphicsResource* VulkanCommandList::startCmd(const String& uniqueName, EQueueFunction queue, bool bIsReusable)
 {
     if (bIsReusable)
     {
@@ -263,7 +275,26 @@ void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority
     SharedPtr<GraphicsFence> fence = GraphicsHelper::createFence(gInstance, "CommandSubmitFence");
     cmdBufferManager->submitCmd(priority, submitInfo, fence.get());
     fence->waitForSignal();
+    for (const GraphicsResource* cmdBuffer : submitInfo.cmdBuffers)
+    {
+        cmdBufferManager->cmdFinished(cmdBuffer);
+    }
     fence->release();
+}
+
+void VulkanCommandList::finishCmd(const GraphicsResource* cmdBuffer)
+{
+    cmdBufferManager->cmdFinished(cmdBuffer);
+}
+
+void VulkanCommandList::finishCmd(const String& uniqueName)
+{
+    cmdBufferManager->cmdFinished(uniqueName);
+}
+
+const GraphicsResource* VulkanCommandList::getCmdBuffer(const String& uniqueName) const
+{
+    return cmdBufferManager->getCmdBuffer(uniqueName);
 }
 
 void VulkanCommandList::waitIdle()
@@ -300,6 +331,297 @@ void VulkanCommandList::setupInitialLayout(ImageResource* image)
 
     cmdBufferManager->freeCmdBuffer(cmdBuffer);
     tempFence->release();
+}
+
+void VulkanCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor) const
+{
+    if (!renderArea.isValidAABB())
+    {
+        Logger::error("VulkanCommandList", "%s() : Incorrect render area", __func__);
+        debugAssert(false);
+        return;
+    }
+    if (cmdBuffer == nullptr || contextPipeline.getPipeline() == nullptr || contextPipeline.getFb() == nullptr)
+    {
+        debugAssert(false);
+        return;
+    }
+    VulkanGlobalRenderingContext* renderingContext = static_cast<VulkanGlobalRenderingContext*>(gEngine->getRenderApi()->getGlobalRenderingContext());
+    const VulkanGraphicsPipeline* graphicsPipeline = static_cast<const VulkanGraphicsPipeline*>(contextPipeline.getPipeline());
+
+    Size2D extent = renderArea.size();
+    std::vector<VkClearValue> clearValues;
+
+    VkClearColorValue lastClearColor;
+    lastClearColor.float32[0] = LinearColorConst::BLACK.r();
+    lastClearColor.float32[1] = LinearColorConst::BLACK.g();
+    lastClearColor.float32[2] = LinearColorConst::BLACK.b();
+    lastClearColor.float32[3] = LinearColorConst::BLACK.a();
+    if (contextPipeline.bUseSwapchainFb)
+    {
+        for (const LinearColor& clearCol : clearColor.colors)
+        {
+            lastClearColor.float32[0] = clearCol.r();
+            lastClearColor.float32[1] = clearCol.g();
+            lastClearColor.float32[2] = clearCol.b();
+            lastClearColor.float32[3] = clearCol.a();
+
+            VkClearValue clearVal;
+            clearVal.color = lastClearColor;
+            clearValues.emplace_back(clearVal);
+        }
+    }
+    else
+    {
+        uint32 colorIdx = 0;
+        for (const ImageResource* frameTexture : contextPipeline.getFb()->textures)
+        {
+            if (EPixelDataFormat::isDepthFormat(frameTexture->imageFormat()))
+            {
+                VkClearValue clearVal;
+                clearVal.depthStencil = { clearColor.depth, clearColor.stencil };
+                clearValues.emplace_back(clearVal);
+            }
+            else
+            {
+                if (colorIdx < clearColor.colors.size())
+                {
+                    lastClearColor.float32[0] = clearColor.colors[colorIdx].r();
+                    lastClearColor.float32[1] = clearColor.colors[colorIdx].g();
+                    lastClearColor.float32[2] = clearColor.colors[colorIdx].b();
+                    lastClearColor.float32[3] = clearColor.colors[colorIdx].a();
+                }
+                VkClearValue clearVal;
+                clearVal.color = lastClearColor;
+                clearValues.emplace_back(clearVal);
+                colorIdx++;
+            }
+        }
+    }
+
+    RENDERPASS_BEGIN_INFO(beginInfo);
+    beginInfo.clearValueCount = uint32(clearValues.size());
+    beginInfo.pClearValues = clearValues.data();
+    beginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(contextPipeline.getFb());
+    beginInfo.renderPass = renderingContext->getRenderPass(graphicsPipeline->getRenderpassProperties(), renderpassAdditionalProps);
+    beginInfo.renderArea = {
+        { renderArea.minBound.x, renderArea.minBound.y },// offset
+        { extent.x, extent.y }
+    };
+
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    vDevice->vkCmdBeginRenderPass(rawCmdBuffer, &beginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void VulkanCommandList::cmdEndRenderPass(const GraphicsResource* cmdBuffer) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    vDevice->vkCmdEndRenderPass(rawCmdBuffer);
+}
+
+void VulkanCommandList::cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const GraphicsPipelineState& state) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+
+    const VulkanGraphicsPipeline* graphicsPipeline = static_cast<const VulkanGraphicsPipeline*>(contextPipeline.getPipeline());
+    VkPipeline pipeline = graphicsPipeline->getPipeline(state.pipelineQuery);
+
+    if (pipeline == VK_NULL_HANDLE)
+    {
+        Logger::error("VulkanCommandList", "%s() : Pipeline is invalid", __func__);
+        debugAssert(false);
+        return;
+    }
+    vDevice->vkCmdBindPipeline(rawCmdBuffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    if (state.blendConstant)
+    {
+        float blendConst[] = { state.blendConstant->r(), state.blendConstant->g(), state.blendConstant->b(), state.blendConstant->a() };
+        vDevice->vkCmdSetBlendConstants(rawCmdBuffer, blendConst);
+    }
+    if (state.lineWidth)
+    {
+        vDevice->vkCmdSetLineWidth(rawCmdBuffer, *state.lineWidth);
+    }
+    for(const std::pair<EStencilFaceMode, uint32>& stencilRef : state.stencilReferences)
+    {
+        vDevice->vkCmdSetStencilReference(rawCmdBuffer, VkStencilFaceFlagBits(stencilRef.first), stencilRef.second);
+    }
+}
+
+void VulkanCommandList::cmdBindDescriptorsSetInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::map<uint32, const ShaderParameters*>& descriptorsSets) const
+{
+    std::map<uint32, std::vector<VkDescriptorSet>> descsSets;
+
+    for (const std::pair<const uint32, const ShaderParameters*>& descsSet : descriptorsSets)
+    {
+        // If first element or next expected sequential set ID is not equal to current ID
+        if (descsSets.empty() || descsSet.first != (--descsSets.end())->first + (--descsSets.end())->second.size())
+        {
+            descsSets[descsSet.first].emplace_back(static_cast<const VulkanShaderSetParameters*>(descsSet.second)->descriptorsSet);
+        }
+        else
+        {
+            (--descsSets.end())->second.emplace_back(static_cast<const VulkanShaderSetParameters*>(descsSet.second)->descriptorsSet);
+        }
+    }
+
+    VkPipelineBindPoint pipelineBindPt = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_MAX_ENUM;
+    VkPipelineLayout pipelineLayout = nullptr;
+    if (contextPipeline->getType()->isChildOf<GraphicsPipelineBase>())
+    {
+        pipelineBindPt = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
+        pipelineLayout = static_cast<const VulkanGraphicsPipeline*>(contextPipeline)->pipelineLayout;
+    }
+    else
+    {
+        Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline->getResourceName().getChar());
+        debugAssert(false);
+        return;
+    }
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    for (const std::pair<const uint32, std::vector<VkDescriptorSet>>& descsSet : descsSets)
+    {
+        vDevice->vkCmdBindDescriptorSets(rawCmdBuffer, pipelineBindPt, pipelineLayout, descsSet.first, uint32(descsSet.second.size()), descsSet.second.data(), 0, nullptr);
+    }
+}
+
+void VulkanCommandList::cmdBindDescriptorsSetsInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const
+{
+    std::map<uint32, std::vector<VkDescriptorSet>> descsSets;
+    {
+        std::map<uint32, VkDescriptorSet> tempDescsSets;
+        for (const ShaderParameters* shaderParams : descriptorsSets)
+        {
+            const VulkanShaderParameters* vulkanShaderParams = static_cast<const VulkanShaderParameters*>(shaderParams);
+            tempDescsSets.insert(vulkanShaderParams->descriptorsSets.cbegin(), vulkanShaderParams->descriptorsSets.cend());
+        }
+
+        for (const std::pair<const uint32, VkDescriptorSet>& descsSet : tempDescsSets)
+        {
+            // If first element or next expected sequential set ID is not equal to current ID
+            if (descsSets.empty() || descsSet.first != (--descsSets.end())->first + (--descsSets.end())->second.size())
+            {
+                descsSets[descsSet.first].emplace_back(descsSet.second);
+            }
+            else
+            {
+                (--descsSets.end())->second.emplace_back(descsSet.second);
+            }
+        }
+    }
+
+    VkPipelineBindPoint pipelineBindPt = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_MAX_ENUM;
+    VkPipelineLayout pipelineLayout = nullptr;
+    if (contextPipeline->getType()->isChildOf<GraphicsPipelineBase>())
+    {
+        pipelineBindPt = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
+        pipelineLayout = static_cast<const VulkanGraphicsPipeline*>(contextPipeline)->pipelineLayout;
+    }
+    else
+    {
+        Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline->getResourceName().getChar());
+        debugAssert(false);
+        return;
+    }
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    for (const std::pair<const uint32, std::vector<VkDescriptorSet>>& descsSet : descsSets)
+    {
+        vDevice->vkCmdBindDescriptorSets(rawCmdBuffer, pipelineBindPt, pipelineLayout, descsSet.first, uint32(descsSet.second.size()), descsSet.second.data(), 0, nullptr);
+    }
+}
+
+void VulkanCommandList::cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, uint32 firstBinding, const std::vector<const BufferResource*>& vertexBuffers, const std::vector<uint64>& offsets) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+
+    fatalAssert(vertexBuffers.size() == offsets.size(), "Offsets must be equivalent to vertex buffers");
+    std::vector<VkBuffer> vertBuffers(vertexBuffers.size());
+    for (int32 i = 0; i < vertexBuffers.size(); ++i)
+    {
+        vertBuffers[i] = static_cast<const VulkanBufferResource*>(vertexBuffers[i])->buffer;
+    }
+
+    vDevice->vkCmdBindVertexBuffers(rawCmdBuffer, firstBinding, uint32(vertexBuffers.size()), vertBuffers.data(), offsets.data());
+}
+
+void VulkanCommandList::cmdBindIndexBuffer(const GraphicsResource* cmdBuffer, const BufferResource* indexBuffer, uint64 offset /*= 0*/) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    vDevice->vkCmdBindIndexBuffer(rawCmdBuffer, static_cast<const VulkanBufferResource*>(indexBuffer)->buffer, offset, VkIndexType::VK_INDEX_TYPE_UINT32);
+}
+
+void VulkanCommandList::cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance /*= 0*/, uint32 instanceCount /*= 1*/, int32 vertexOffset /*= 0*/) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    vDevice->vkCmdDrawIndexed(rawCmdBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+void VulkanCommandList::cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport /*= 0*/) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+
+    std::vector<VkViewport> viewports;
+    viewports.reserve(viewportAndScissors.size());
+    std::vector<VkRect2D> scissors;
+    scissors.reserve(viewportAndScissors.size());
+    for (std::pair<QuantizedBox2D, QuantizedBox2D> viewportAndScis : viewportAndScissors)
+    {
+        Int2D viewportSize = viewportAndScis.first.size();
+        viewports.emplace_back(VkViewport{ float(viewportAndScis.first.minBound.x), float(viewportAndScis.first.minBound.y )
+            , float(viewportSize.x), float(viewportSize.y), 0.f/* Min depth */, 1.f/* Max depth */ });
+
+        viewportAndScis.second.fixAABB();
+        Size2D scissorSize = viewportAndScis.second.size();
+        scissors.emplace_back(VkRect2D{ { viewportAndScis.second.minBound.x, viewportAndScis.second.minBound.y }, { scissorSize.x, scissorSize.y} });
+    }
+
+    vDevice->vkCmdSetViewport(rawCmdBuffer, firstViewport, uint32(viewports.size()), viewports.data());
+    vDevice->vkCmdSetScissor(rawCmdBuffer, firstViewport, uint32(scissors.size()), scissors.data());
+}
+
+void VulkanCommandList::cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport /*= 0*/) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+
+    Int2D viewportSize = viewport.size();
+    VkViewport vulkanViewport{ float(viewport.minBound.x), float(viewport.minBound.y)
+            , float(viewportSize.x), float(viewportSize.y), 0.f/* Min depth */, 1.f/* Max depth */ };
+    vDevice->vkCmdSetViewport(rawCmdBuffer, atViewport, 1, &vulkanViewport);
+
+    if (scissor.isValidAABB())
+    {
+        Size2D scissorSize = scissor.size();
+        VkRect2D vulkanScissor{ { scissor.minBound.x, scissor.minBound.y }, { scissorSize.x, scissorSize.y} };
+        vDevice->vkCmdSetScissor(rawCmdBuffer, atViewport, 1, &vulkanScissor);
+    }
+    else
+    {
+        QuantizedBox2D tempScissor(scissor);
+        tempScissor.fixAABB();
+
+        Size2D scissorSize = tempScissor.size();
+        VkRect2D vulkanScissor{ { tempScissor.minBound.x, tempScissor.minBound.y }, { scissorSize.x, scissorSize.y} };
+        vDevice->vkCmdSetScissor(rawCmdBuffer, atViewport, 1, &vulkanScissor);
+    }
+}
+
+void VulkanCommandList::cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
+    VulkanGraphicsHelper::debugGraphics(gInstance)->beginCmdBufferMarker(rawCmdBuffer, name, color);
+}
+
+void VulkanCommandList::cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
+    VulkanGraphicsHelper::debugGraphics(gInstance)->insertCmdBufferMarker(rawCmdBuffer, name, color);
+}
+
+void VulkanCommandList::cmdEndBufferMarker(const GraphicsResource* commandBuffer) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
+    VulkanGraphicsHelper::debugGraphics(gInstance)->endCmdBufferMarker(rawCmdBuffer);
 }
 
 void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo)

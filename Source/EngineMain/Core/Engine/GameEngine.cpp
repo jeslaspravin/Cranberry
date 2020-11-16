@@ -124,7 +124,9 @@ GenericAppInstance& GameEngine::appInstance() const
     return *applicationInstance;
 }
 
-//GameEngine* GameEngineWrapper::createEngineInstance()
-//{
-//    return new GameEngine();
-//}
+#if !EXPERIMENTAL
+GameEngine* GameEngineWrapper::createEngineInstance()
+{
+    return new GameEngine();
+}
+#endif

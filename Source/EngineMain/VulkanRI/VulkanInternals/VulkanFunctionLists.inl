@@ -166,6 +166,9 @@ DEVICE_VK_FUNCTIONS(vkCmdEndRenderPass)
 
 DEVICE_VK_FUNCTIONS(vkCmdSetScissor)
 DEVICE_VK_FUNCTIONS(vkCmdSetViewport)
+DEVICE_VK_FUNCTIONS(vkCmdSetBlendConstants)
+DEVICE_VK_FUNCTIONS(vkCmdSetStencilReference)
+DEVICE_VK_FUNCTIONS(vkCmdSetLineWidth)
 DEVICE_VK_FUNCTIONS(vkCmdPushConstants)
 
 DEVICE_VK_FUNCTIONS(vkCmdBindPipeline)

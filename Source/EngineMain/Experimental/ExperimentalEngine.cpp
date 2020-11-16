@@ -1,5 +1,7 @@
 #include "ExperimentalEngine.h"
 
+#if EXPERIMENTAL
+
 #include "../RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanQueueResource.h"
 #include "../VulkanRI/VulkanInternals/Debugging.h"
@@ -29,6 +31,7 @@
 #include "../Core/Math/RotationMatrix.h"
 #include "../Core/Types/Textures/RenderTargetTextures.h"
 #include "../RenderInterface/GlobalRenderVariables.h"
+#include "../RenderInterface/Rendering/CommandBuffer.h"
 
 #include <array>
 #include <random>
@@ -374,7 +377,7 @@ void ExperimentalEngine::setupShaderParameterParams()
         lightTextures[i]->setTextureParam("ssUnlitColor", multibuffer->textures[1], nearestFiltering);
         lightTextures[i]->setTextureParam("ssNormal", multibuffer->textures[3], nearestFiltering);
         lightTextures[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering);
-        lightTextures[i]->setTextureParam("ssColor", frameResources[i].lightingPassRt->getTextureResource(), nearestFiltering);
+        lightTextures[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
         lightTextures[i]->init();
 
         drawQuadTextureDescs[i]->setTextureParam("quadTexture", multibuffer->textures[1], linearFiltering);
@@ -446,7 +449,7 @@ void ExperimentalEngine::reupdateTextureParamsOnResize()
         lightTextures[i]->setTextureParam("ssUnlitColor", multibuffer->textures[1], nearestFiltering);
         lightTextures[i]->setTextureParam("ssNormal", multibuffer->textures[3], nearestFiltering);
         lightTextures[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering);
-        lightTextures[i]->setTextureParam("ssColor", frameResources[i].lightingPassRt->getTextureResource(), nearestFiltering);
+        lightTextures[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
         drawQuadTextureDescs[i]->setTextureParam("quadTexture", multibuffer->textures[1], linearFiltering);
         drawQuadNormalDescs[i]->setTextureParam("quadTexture", multibuffer->textures[3], linearFiltering);
@@ -508,7 +511,9 @@ void ExperimentalEngine::resizeLightingRts(const Size2D& size)
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
         frameResources[i].lightingPassRt->setTextureSize(size);
+        frameResources[i].lightingPassResolved->setTextureSize(size);
         getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
     }
 }
 
@@ -517,18 +522,11 @@ void ExperimentalEngine::createFrameResources()
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow());
 
-    std::vector<VkCommandBuffer> cmdBuffers(windowCanvas->imagesCount());
-
-    CMD_BUFFER_ALLOC_INFO(cmdBufAllocInfo);
-    cmdBufAllocInfo.commandPool = pools[EQueueFunction::Graphics].resetableCommandPool;
-    cmdBufAllocInfo.commandBufferCount = windowCanvas->imagesCount();
-    vDevice->vkAllocateCommandBuffers(device, &cmdBufAllocInfo, cmdBuffers.data());
-
     RenderTextureCreateParams rtCreateParams;
-    rtCreateParams.bSameReadWriteTexture = false;
+    rtCreateParams.bSameReadWriteTexture = true;
     rtCreateParams.filtering = ESamplerFiltering::Linear;
     rtCreateParams.format = ERenderTargetFormat::RT_U8;
-    rtCreateParams.sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
+    rtCreateParams.sampleCount = EPixelSampleCount::SampleCount1;
     rtCreateParams.textureSize = EngineSettings::screenSize.get();
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
@@ -536,12 +534,13 @@ void ExperimentalEngine::createFrameResources()
         String name = "Frame";
         name.append(std::to_string(i));
 
-        frameResources[i].perFrameCommands = cmdBuffers[i];
         frameResources[i].usageWaitSemaphore.push_back(GraphicsHelper::createSemaphore(getRenderApi()->getGraphicsInstance(), (name + "QueueSubmit").c_str()));
         frameResources[i].recordingFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(), (name + "RecordingGaurd").c_str(),true);
 
         rtCreateParams.textureName = "LightingRT_" + std::to_string(i);
         frameResources[i].lightingPassRt = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
+        rtCreateParams.textureName = "LightingResolved_" + std::to_string(i);
+        frameResources[i].lightingPassResolved = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
     }
 }
 
@@ -550,21 +549,17 @@ void ExperimentalEngine::destroyFrameResources()
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow());
 
-    std::vector<VkCommandBuffer> cmdBuffers(windowCanvas->imagesCount());
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
-        cmdBuffers[i] = frameResources[i].perFrameCommands;
         frameResources[i].usageWaitSemaphore[0]->release();
         frameResources[i].recordingFence->release();
-        frameResources[i].perFrameCommands = nullptr;
         frameResources[i].usageWaitSemaphore[0].reset();
         frameResources[i].recordingFence.reset();
 
         getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassRt);
+        TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassResolved);
     }
-
-    vDevice->vkFreeCommandBuffers(device, pools[EQueueFunction::Graphics].resetableCommandPool, (uint32)cmdBuffers.size(), cmdBuffers.data());
 }
 
 void ExperimentalEngine::getPipelineForSubpass()
@@ -576,45 +571,35 @@ void ExperimentalEngine::getPipelineForSubpass()
     drawSmPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
     drawSmPipelineContext.swapchainIdx = 0;
     vulkanRenderingContext->preparePipelineContext(&drawSmPipelineContext);
-    drawSmRenderPass = vulkanRenderingContext->getRenderPass(drawSmPipelineContext.renderpassFormat, {});
 
     // Gooch model
     drawGoochPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawGoochPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
-    drawGoochPipelineContext.swapchainIdx = 0;
     drawGoochPipelineContext.materialName = "GoochModel";
     vulkanRenderingContext->preparePipelineContext(&drawGoochPipelineContext);
-    RenderPassAdditionalProps additionalProps;
-    additionalProps.bAllowUndefinedLayout = false;
     lightingRenderPass = vulkanRenderingContext->getRenderPass(
-        static_cast<const GraphicsPipelineBase*>(drawGoochPipelineContext.getPipeline())->getRenderpassProperties(), additionalProps);
+        static_cast<const GraphicsPipelineBase*>(drawGoochPipelineContext.getPipeline())->getRenderpassProperties(), {});
 
     clearQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
-    clearQuadPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
-    clearQuadPipelineContext.swapchainIdx = 0;
+    clearQuadPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassResolved);
     clearQuadPipelineContext.materialName = "ClearRT";
     vulkanRenderingContext->preparePipelineContext(&clearQuadPipelineContext);
-
-    RenderPassAdditionalProps renderPassAdditionalProps;
-    renderPassAdditionalProps.bUsedAsPresentSource = true;
+    
+    resolveLightRtPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    resolveLightRtPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassResolved);
+    resolveLightRtPipelineContext.materialName = "DrawQuadFromTexture";
+    vulkanRenderingContext->preparePipelineContext(&resolveLightRtPipelineContext);
 
     drawQuadPipelineContext.bUseSwapchainFb = true;
     drawQuadPipelineContext.materialName = "DrawQuadFromTexture";
     drawQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawQuadPipelineContext.swapchainIdx = 0;
     vulkanRenderingContext->preparePipelineContext(&drawQuadPipelineContext);
-    drawQuadRenderPass = vulkanRenderingContext->getRenderPass(
-        static_cast<const GraphicsPipelineBase*>(drawQuadPipelineContext.getPipeline())->getRenderpassProperties(), renderPassAdditionalProps);
 }
 
 void ExperimentalEngine::createPipelineResources()
 {
-    VkClearValue baseClearValue;
-    baseClearValue.color = { 0.0f, 0.0f, 0.0f, 0.0f };
-    baseClearValue.depthStencil.depth = 0;
-    baseClearValue.depthStencil.stencil = 0;
-    smAttachmentsClearColors.resize(drawSmPipelineContext.getFb()->textures.size(), baseClearValue);
-    swapchainClearColor = baseClearValue;
+    clearValues.colors.resize(drawSmPipelineContext.getFb()->textures.size(), LinearColorConst::BLACK);
 
     ENQUEUE_COMMAND(QuadVerticesInit,LAMBDA_BODY
         (
@@ -773,18 +758,8 @@ void ExperimentalEngine::renderQuit()
     destroyPools();
 }
 
-void ExperimentalEngine::frameRender()
+void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
 {
-    VkViewport viewport;
-    viewport.x = 0;
-    viewport.minDepth = 0;
-    viewport.maxDepth = 1;
-    viewport.width = float(EngineSettings::screenSize.get().x);
-    // Since view matrix positive y is along up while vulkan positive y in view is down
-    viewport.height = -(float(EngineSettings::screenSize.get().y));
-    viewport.y = float(EngineSettings::screenSize.get().y);
-    VkRect2D scissor = { {0,0},{EngineSettings::screenSize.get().x,EngineSettings::screenSize.get().y} };
-
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
@@ -794,6 +769,8 @@ void ExperimentalEngine::frameRender()
 
     drawGoochPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawGoochPipelineContext);
+    resolveLightRtPipelineContext.rtTextures[0] = frameResources[index].lightingPassResolved;
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
 
     GraphicsPipelineQueryParams queryParam;
     queryParam.cullingMode = ECullingMode::BackFace;
@@ -824,192 +801,139 @@ void ExperimentalEngine::frameRender()
     }
     frameResources[index].recordingFence->resetSignal();
 
-    CMD_BUFFER_BEGIN_INFO(cmdBeginInfo);
-    cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    QuantizedBox2D viewport;
+    // Since view matrix positive y is along up while vulkan positive y in view is down
+    viewport.minBound.x = 0;
+    viewport.minBound.y = EngineSettings::screenSize.get().y;
+    viewport.maxBound.x = EngineSettings::screenSize.get().x;
+    viewport.maxBound.y = 0;
 
-    vDevice->vkBeginCommandBuffer(frameResources[index].perFrameCommands, &cmdBeginInfo);
+    QuantizedBox2D scissor;
+    scissor.minBound = { 0, 0 };
+    scissor.maxBound = EngineSettings::screenSize.get();
+
+    String cmdName = "FrameRender" + std::to_string(index);
+    cmdList->finishCmd(cmdName);
+    const GraphicsResource* cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
+    VkCommandBuffer frameCmdBuffer = VulkanGraphicsHelper::getRawCmdBuffer(graphicsInstance, cmdBuffer);
     {
-        const GraphicsPipeline* tempPipeline = static_cast<const GraphicsPipeline*>(drawSmPipelineContext.getPipeline());
-
-        SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ExperimentalEngineFrame);
-
-        RENDERPASS_BEGIN_INFO(renderPassBeginInfo);
-        renderPassBeginInfo.renderPass = drawSmRenderPass;
-        renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, index));
-
-        renderPassBeginInfo.pClearValues = smAttachmentsClearColors.data();
-        renderPassBeginInfo.clearValueCount = (uint32)smAttachmentsClearColors.size();
-        renderPassBeginInfo.renderArea = scissor;
-
-        vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEngineFrame);
+        cmdList->cmdBeginRenderPass(cmdBuffer, drawSmPipelineContext, scissor, {}, clearValues);
         {
-            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, MainUnlitPass);
+            SCOPED_CMD_MARKER(cmdList, cmdBuffer, MainUnlitPass);
 
-            vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
-            vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
+            cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
             //vDevice->vkCmdPushConstants(frameResources[index].perFrameCommands, tempPipeline->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &useVertexColor);
+            cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawSmPipelineContext, { queryParam });
 
-            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, tempPipeline->getPipeline(queryParam));
             // View set
-            vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                , tempPipeline->pipelineLayout, 0, 1, &static_cast<const VulkanShaderSetParameters*>(viewParameters.get())->descriptorsSet, 0, nullptr);
-
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, viewParameters.get());
             for (const SceneEntity& entity : sceneData)
             {
                 // Instance set
-                vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                    , tempPipeline->pipelineLayout, 1, 1, &static_cast<const VulkanShaderSetParameters*>(entity.instanceParameters.get())->descriptorsSet, 0, nullptr);
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, entity.instanceParameters.get());
 
-                uint64 vertexBufferOffset = 0;
-                vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(entity.meshAsset->vertexBuffer)->buffer, &vertexBufferOffset);
-                vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(entity.meshAsset->indexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+                cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { entity.meshAsset->vertexBuffer }, { 0 });
+                cmdList->cmdBindIndexBuffer(cmdBuffer, entity.meshAsset->indexBuffer);
 
                 uint32 meshBatchIdx = 0;
                 for (const MeshVertexView& meshBatch : entity.meshAsset->meshBatches)
                 {
                     // Batch set
-                    vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                        , tempPipeline->pipelineLayout, 2, 1, &static_cast<const VulkanShaderSetParameters*>(entity.meshBatchParameters[meshBatchIdx].get())->descriptorsSet, 0, nullptr);
-
-                    vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, meshBatch.numOfIndices, 1, meshBatch.startIndex, 0, 0);
-
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, entity.meshBatchParameters[meshBatchIdx].get());
+                    cmdList->cmdDrawIndexed(cmdBuffer, meshBatch.startIndex, meshBatch.numOfIndices);
                     ++meshBatchIdx;
                 }
             }
         }
-        vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
+        cmdList->cmdEndRenderPass(cmdBuffer);
+
         // Drawing lighting quads
-        tempPipeline = static_cast<const GraphicsPipeline*>(drawGoochPipelineContext.getPipeline());
-        viewport.height = float(EngineSettings::screenSize.get().y);
-        viewport.y = 0;
+        viewport.minBound = Int2D(0, 0);
+        viewport.maxBound = EngineSettings::screenSize.get();
 
-        renderPassBeginInfo.clearValueCount = 2;
-        renderPassBeginInfo.pClearValues = smAttachmentsClearColors.data();
-        renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(drawGoochPipelineContext.getFb());
-        renderPassBeginInfo.renderArea = scissor;
-        renderPassBeginInfo.renderPass = lightingRenderPass;
-
-        vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { quadVertexBuffer }, { 0 });
+        cmdList->cmdBindIndexBuffer(cmdBuffer, quadIndexBuffer);
+        cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
+        cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
         {
-            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ClearLightingRTs);
-
-            vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
-            vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
-
-            uint64 vertexBufferOffset = 0;
-            vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
-            vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+            SCOPED_CMD_MARKER(cmdList, cmdBuffer, ClearLightingRTs);
 
             // Clear resolve first
-            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                , static_cast<const GraphicsPipeline*>(clearQuadPipelineContext.getPipeline())->getPipeline(queryParam));
-            for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : static_cast<VulkanShaderParameters*>(clearInfoParams.get())->descriptorsSets)
-            {
-                vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                    , static_cast<const GraphicsPipeline*>(clearQuadPipelineContext.getPipeline())->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
-            }
-            vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, 3, 1, 0, 0, 0);
+            cmdList->cmdBindGraphicsPipeline(cmdBuffer, clearQuadPipelineContext, { queryParam });
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, clearQuadPipelineContext, clearInfoParams.get());
+            cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
         }
-        vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
+        cmdList->cmdEndRenderPass(cmdBuffer);
 
         {
-            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, LightingPass);
+            SCOPED_CMD_MARKER(cmdList, cmdBuffer, LightingPass);
 
             // TODO(Jeslas) Change lighting to array of lights per pass
+            int32 lightIndex = 0;
             for (const std::pair<const GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
             {
-                vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
-                vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
-                vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
-
-                uint64 vertexBufferOffset = 0;
-                vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
-                vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
-
-                vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, tempPipeline->getPipeline(queryParam));
-
-                VulkanShaderParameters* lightCommonParams = static_cast<VulkanShaderParameters*>(lightCommon.get());
-                VulkanShaderParameters* lightFrameParams = static_cast<VulkanShaderParameters*>(lightTextures[index].get());
-
-                // Right now only one set will be there but there is chances more set might get added
-                for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : lightCommonParams->descriptorsSets)
+                cmdList->cmdBeginRenderPass(cmdBuffer, drawGoochPipelineContext, scissor, {}, clearValues);
                 {
-                    vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                        , tempPipeline->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
+                    SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLight);
+                    cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGoochPipelineContext, { queryParam });
+
+                    VulkanShaderParameters* lightCommonParams = static_cast<VulkanShaderParameters*>(lightCommon.get());
+                    VulkanShaderParameters* lightFrameParams = static_cast<VulkanShaderParameters*>(lightTextures[index].get());
+
+                    // Right now only one set will be there but there is chances more set might get added
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), lightTextures[index].get(), light.second.get() });
+                    cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                 }
-                for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : lightFrameParams->descriptorsSets)
+                cmdList->cmdEndRenderPass(cmdBuffer);
+
+                lightIndex++;
+
+                if (lightIndex < lightData.size())
                 {
-                    vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                        , tempPipeline->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
-                }
-                for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : static_cast<VulkanShaderParameters*>(light.second.get())->descriptorsSets)
-                {
-                    vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                        , tempPipeline->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
-                }
-                vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, 3, 1, 0, 0, 0);
-                vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
+                    cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
+                    {
+                        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ResolveLightRT);
+
+                        cmdList->cmdBindGraphicsPipeline(cmdBuffer, resolveLightRtPipelineContext, { queryParam });
+                        cmdList->cmdBindDescriptorsSets(cmdBuffer, resolveLightRtPipelineContext, drawLitColorsDescs[index].get());
+
+                        cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+                    }
+                    cmdList->cmdEndRenderPass(cmdBuffer);
+                }                
             }
         }
 
-        // Drawing final quad
-        tempPipeline = static_cast<const GraphicsPipeline*>(drawQuadPipelineContext.getPipeline());
+        // Drawing final quad        
+        viewport.maxBound = scissor.maxBound = EngineSettings::surfaceSize.get();
 
-        viewport.x = 0;
-        viewport.y = 0;
-        viewport.width = float(EngineSettings::surfaceSize.get().x);
-        viewport.height = float(EngineSettings::surfaceSize.get().y);
-        scissor = { {0,0},{EngineSettings::surfaceSize.get().x,EngineSettings::surfaceSize.get().y} };
-
-        renderPassBeginInfo.clearValueCount = 1;
-        renderPassBeginInfo.pClearValues = &swapchainClearColor;
-        renderPassBeginInfo.framebuffer = VulkanGraphicsHelper::getFramebuffer(GBuffers::getSwapchainFramebuffer(index));
-        renderPassBeginInfo.renderArea = scissor;
-        renderPassBeginInfo.renderPass = drawQuadRenderPass;
-
-        vDevice->vkCmdBeginRenderPass(frameResources[index].perFrameCommands, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+        RenderPassAdditionalProps renderPassAdditionalProps;
+        renderPassAdditionalProps.bUsedAsPresentSource = true;
+        cmdList->cmdBeginRenderPass(cmdBuffer, drawQuadPipelineContext, scissor, renderPassAdditionalProps, clearValues);
         {
-            SCOPED_CMD_MARKER(frameResources[index].perFrameCommands, ResolveToSwapchain);
+            SCOPED_CMD_MARKER(cmdList, cmdBuffer, ResolveToSwapchain);
 
-            vDevice->vkCmdSetViewport(frameResources[index].perFrameCommands, 0, 1, &viewport);
-            vDevice->vkCmdSetScissor(frameResources[index].perFrameCommands, 0, 1, &scissor);
-
-            vDevice->vkCmdBindPipeline(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS, tempPipeline->getPipeline(queryParam));
-
-            for (const std::pair<const uint32, VkDescriptorSet>& descriptorsSet : static_cast<VulkanShaderParameters*>(drawQuadDescs.get())->descriptorsSets)
-            {
-                vDevice->vkCmdBindDescriptorSets(frameResources[index].perFrameCommands, VK_PIPELINE_BIND_POINT_GRAPHICS
-                    , tempPipeline->pipelineLayout, descriptorsSet.first, 1, &descriptorsSet.second, 0, nullptr);
-            }
-
-            uint64 vertexBufferOffset = 0;
-            vDevice->vkCmdBindVertexBuffers(frameResources[index].perFrameCommands, 0, 1, &static_cast<VulkanBufferResource*>(quadVertexBuffer)->buffer, &vertexBufferOffset);
-            vDevice->vkCmdBindIndexBuffer(frameResources[index].perFrameCommands, static_cast<VulkanBufferResource*>(quadIndexBuffer)->buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
-
-            vDevice->vkCmdDrawIndexed(frameResources[index].perFrameCommands, 3, 1, 0, 0, 0);
+            cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
+            cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawQuadPipelineContext, { queryParam });
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawQuadPipelineContext, drawQuadDescs.get());
+            cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
         }
-        vDevice->vkCmdEndRenderPass(frameResources[index].perFrameCommands);
+        cmdList->cmdEndRenderPass(cmdBuffer);
     }
-    vDevice->vkEndCommandBuffer(frameResources[index].perFrameCommands);
+    cmdList->endCmd(cmdBuffer);
 
-    VkPipelineStageFlags flag = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    SUBMIT_INFO(qSubmitInfo);
-    qSubmitInfo.commandBufferCount = 1;
-    qSubmitInfo.pCommandBuffers = &frameResources[index].perFrameCommands;
-    qSubmitInfo.waitSemaphoreCount = 1;
-    qSubmitInfo.pWaitDstStageMask = &flag;
-    qSubmitInfo.pWaitSemaphores = &static_cast<VulkanSemaphore*>(waitSemaphore.get())->semaphore;
-    qSubmitInfo.signalSemaphoreCount = 1;
-    qSubmitInfo.pSignalSemaphores = &static_cast<VulkanSemaphore*>(frameResources[index].usageWaitSemaphore[0].get())->semaphore;
+    CommandSubmitInfo submitInfo;
+    submitInfo.waitOn = { CommandSubmitInfo::WaitInfo{ waitSemaphore.get(), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT } };
+    submitInfo.signalSemaphores = { frameResources[index].usageWaitSemaphore[0].get() };
+    submitInfo.cmdBuffers = { cmdBuffer };
 
-    vDevice->vkQueueSubmit(getQueue<EQueueFunction::Graphics>(vDevice)->getQueueOfPriority<EQueuePriority::High>()
-        , 1, &qSubmitInfo, static_cast<VulkanFence*>(frameResources[index].recordingFence.get())->fence);
+    cmdList->submitCmd(EQueuePriority::High, submitInfo, frameResources[index].recordingFence);
 
     std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
     std::vector<uint32> indices = { index };
     GraphicsHelper::presentImage(getRenderApi()->getGraphicsInstance(), &canvases, &indices, &frameResources[index].usageWaitSemaphore);
-
 }
 
 void ExperimentalEngine::tickEngine()
@@ -1050,7 +974,7 @@ void ExperimentalEngine::tickEngine()
     ENQUEUE_COMMAND(TickFrame,
         {
             updateShaderParameters(cmdList, graphicsInstance);
-            frameRender(); 
+            frameRender(cmdList, graphicsInstance); 
         }, this);
 
     tempTestPerFrame();
@@ -1061,3 +985,4 @@ GameEngine* GameEngineWrapper::createEngineInstance()
     static ExperimentalEngine gameEngine;
     return &gameEngine;
 }
+#endif

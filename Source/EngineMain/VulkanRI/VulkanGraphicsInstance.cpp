@@ -99,8 +99,8 @@ void VulkanGraphicsInstance::createVulkanInstance()
     appInfo.apiVersion = VK_MAKE_VERSION(1, 2, 0);
 
     CREATE_INSTANCE_INFO(instanceCreateInfo);
-#if _DEBUG
     std::vector<const char*> layers;
+#if _DEBUG
     collectInstanceLayers(layers);
     instanceCreateInfo.ppEnabledLayerNames = layers.size() > 0 ? &layers[0] : nullptr;
     instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();

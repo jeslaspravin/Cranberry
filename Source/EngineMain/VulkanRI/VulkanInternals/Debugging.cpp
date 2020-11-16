@@ -363,27 +363,27 @@ void VulkanDebugGraphics::endQueueMarker(VkQueue queue) const
     ownerDevice->vkQueueEndDebugUtilsLabelEXT(queue);
 }
 
-ScopedCommandMarker::ScopedCommandMarker(VkCommandBuffer commandBuffer, const String& name, const LinearColor& color /* = LinearColorConst::WHITE*/)
+ScopedVulkanCommandMarker::ScopedVulkanCommandMarker(VkCommandBuffer commandBuffer, const String& name, const LinearColor& color /* = LinearColorConst::WHITE*/)
 {
     cmdBuffer = commandBuffer;
     const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
     graphicsDebugger->beginCmdBufferMarker(cmdBuffer, name, color);
 }
 
-ScopedCommandMarker::~ScopedCommandMarker()
+ScopedVulkanCommandMarker::~ScopedVulkanCommandMarker()
 {
     const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
     graphicsDebugger->endCmdBufferMarker(cmdBuffer);
 }
 
-ScopedQueueMarker::ScopedQueueMarker(VkQueue q, const String& name, const LinearColor& color /* = LinearColorConst::WHITE*/)
+ScopedVulkanQueueMarker::ScopedVulkanQueueMarker(VkQueue q, const String& name, const LinearColor& color /* = LinearColorConst::WHITE*/)
 {
     queue = q;
     const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
     graphicsDebugger->beginQueueMarker(queue, name, color);
 }
 
-ScopedQueueMarker::~ScopedQueueMarker()
+ScopedVulkanQueueMarker::~ScopedVulkanQueueMarker()
 {
     const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance());
     graphicsDebugger->endQueueMarker(queue);
