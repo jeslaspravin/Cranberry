@@ -2,6 +2,7 @@
 #include <wtypes.h>
 #include <libloaderapi.h>
 #include <Psapi.h>
+#include <intrin.h>
 
 struct WindowsLibHandle : public LibPointer
 {
@@ -100,4 +101,24 @@ void WindowsPlatformFunctions::getAllModules(void* processHandle, LibPointerPtr*
         }
         modulesSize = totalInserts;
     }
+}
+
+uint32 WindowsPlatformFunctions::getSetBitCount(const uint8& value)
+{
+    return uint32(__popcnt16(uint16(value)));
+}
+
+uint32 WindowsPlatformFunctions::getSetBitCount(const uint16& value)
+{
+    return uint32(__popcnt16(value));
+}
+
+uint32 WindowsPlatformFunctions::getSetBitCount(const uint32& value)
+{
+    return uint32(__popcnt(value));
+}
+
+uint32 WindowsPlatformFunctions::getSetBitCount(const uint64& value)
+{
+    return uint32(__popcnt64(value));
 }

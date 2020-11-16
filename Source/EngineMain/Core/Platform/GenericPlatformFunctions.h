@@ -58,4 +58,12 @@ public:
     {
         PlatformClass::getModuleInfo(processHandle, libraryHandle, moduleData);
     }
+
+    template<typename UnsignedType>
+    static std::enable_if_t
+        <std::conjunction_v<std::is_integral<UnsignedType>, std::is_unsigned<UnsignedType>>
+        , uint32> getSetBitCount(const UnsignedType& value)
+    {
+        return PlatformClass::getSetBitCount(value);
+    }
 };

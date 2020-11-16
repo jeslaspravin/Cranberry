@@ -1,10 +1,24 @@
 #include "IRenderCommandList.h"
+#include "RenderingContexts.h"
 #include "../GraphicsHelper.h"
 #include "../../Core/Types/Colors.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../Core/Platform/PlatformFunctions.h"
+#include "../ShaderCore/ShaderParameterResources.h"
 
 #include <utility>
+
+ScopedCommandMarker::ScopedCommandMarker(const class IRenderCommandList* commandList, const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/)
+    : cmdList(commandList)
+    , cmdBuffer(commandBuffer)
+{
+    cmdList->cmdBeginBufferMarker(cmdBuffer, name, color);
+}
+
+ScopedCommandMarker::~ScopedCommandMarker()
+{
+    cmdList->cmdEndBufferMarker(cmdBuffer);
+}
 
 class RenderCommandList final : public IRenderCommandList
 {
@@ -23,14 +37,61 @@ public:
 
     void setupInitialLayout(ImageResource* image) override;
 
-    const GraphicsResource* startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable) override;
+    void cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor) const override;
+    void cmdEndRenderPass(const GraphicsResource* cmdBuffer) const override;
+
+    void cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const GraphicsPipelineState& state) const override;
+    void cmdBindDescriptorsSetInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::map<uint32, const ShaderParameters*>& descriptorsSets) const override;
+    void cmdBindDescriptorsSetsInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const override;
+    void cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, uint32 firstBinding, const std::vector<const BufferResource*>& vertexBuffers, const std::vector<uint64>& offsets) const override;
+    void cmdBindIndexBuffer(const GraphicsResource* cmdBuffer, const BufferResource* indexBuffer, uint64 offset = 0) const override;
+
+    void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const override;
+
+    void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const override;
+    void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const override;
+
+    void cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const override;
+    void cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const override;
+    void cmdEndBufferMarker(const GraphicsResource* commandBuffer) const override;
+
+    const GraphicsResource* startCmd(const String& uniqueName, EQueueFunction queue, bool bIsReusable) override;
     void endCmd(const GraphicsResource* cmdBuffer) override;
     void freeCmd(const GraphicsResource* cmdBuffer) override;
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo
         , const SharedPtr<GraphicsFence>& fence) override;
     void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) override;
+    void finishCmd(const GraphicsResource* cmdBuffer) override;
+    void finishCmd(const String& uniqueName) override;
+    const GraphicsResource* getCmdBuffer(const String& uniqueName) const override;
     void waitIdle() override;
+
 };
+
+void RenderCommandList::cmdBindDescriptorsSetInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::map<uint32, const ShaderParameters*>& descriptorsSets) const
+{
+    cmdList->cmdBindDescriptorsSetInternal(cmdBuffer, contextPipeline, descriptorsSets);
+}
+
+void RenderCommandList::cmdBindDescriptorsSetsInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const
+{
+    cmdList->cmdBindDescriptorsSetsInternal(cmdBuffer, contextPipeline, descriptorsSets);
+}
+
+void RenderCommandList::cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, uint32 firstBinding, const std::vector<const BufferResource*>& vertexBuffers, const std::vector<uint64>& offsets) const
+{
+    cmdList->cmdBindVertexBuffers(cmdBuffer, firstBinding, vertexBuffers, offsets);
+}
+
+void RenderCommandList::cmdBindIndexBuffer(const GraphicsResource* cmdBuffer, const BufferResource* indexBuffer, uint64 offset /*= 0*/) const
+{
+    cmdList->cmdBindIndexBuffer(cmdBuffer, indexBuffer, offset);
+}
+
+void RenderCommandList::cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance /*= 0*/, uint32 instanceCount /*= 1*/, int32 vertexOffset /*= 0*/) const
+{
+    cmdList->cmdDrawIndexed(cmdBuffer, firstIndex, indexCount, firstInstance, instanceCount, vertexOffset);
+}
 
 void RenderCommandList::setup(IRenderCommandList* commandList)
 {
@@ -55,7 +116,7 @@ void RenderCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
     cmdList->copyToBuffer(batchCopies);
 }
 
-const GraphicsResource* RenderCommandList::startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable)
+const GraphicsResource* RenderCommandList::startCmd(const String& uniqueName, EQueueFunction queue, bool bIsReusable)
 {
     return cmdList->startCmd(uniqueName, queue, bIsReusable);
 }
@@ -82,6 +143,21 @@ void RenderCommandList::submitWaitCmd(EQueuePriority::Enum priority
     cmdList->submitWaitCmd(priority, submitInfo);
 }
 
+void RenderCommandList::finishCmd(const GraphicsResource* cmdBuffer)
+{
+    cmdList->finishCmd(cmdBuffer);
+}
+
+void RenderCommandList::finishCmd(const String& uniqueName)
+{
+    cmdList->finishCmd(uniqueName);
+}
+
+const GraphicsResource* RenderCommandList::getCmdBuffer(const String& uniqueName) const
+{
+    return cmdList->getCmdBuffer(uniqueName);
+}
+
 void RenderCommandList::waitIdle()
 {
     cmdList->waitIdle();
@@ -100,6 +176,46 @@ void RenderCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
 void RenderCommandList::setupInitialLayout(ImageResource* image)
 {
     cmdList->setupInitialLayout(image);
+}
+
+void RenderCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor) const
+{
+    cmdList->cmdBeginRenderPass(cmdBuffer, contextPipeline, renderArea, renderpassAdditionalProps, clearColor);
+}
+
+void RenderCommandList::cmdEndRenderPass(const GraphicsResource* cmdBuffer) const
+{
+    cmdList->cmdEndRenderPass(cmdBuffer);
+}
+
+void RenderCommandList::cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const GraphicsPipelineState& state) const
+{
+    cmdList->cmdBindGraphicsPipeline(cmdBuffer, contextPipeline, state);
+}
+
+void RenderCommandList::cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport /*= 0*/) const
+{
+    cmdList->cmdSetViewportAndScissors(cmdBuffer, viewportAndScissors, firstViewport);
+}
+
+void RenderCommandList::cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport /*= 0*/) const
+{
+    cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor, atViewport);
+}
+
+void RenderCommandList::cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
+{
+    cmdList->cmdBeginBufferMarker(commandBuffer, name, color);
+}
+
+void RenderCommandList::cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
+{
+    cmdList->cmdInsertBufferMarker(commandBuffer, name, color);
+}
+
+void RenderCommandList::cmdEndBufferMarker(const GraphicsResource* commandBuffer) const
+{
+    cmdList->cmdEndBufferMarker(commandBuffer);
 }
 
 void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<Color>& pixelData
@@ -158,6 +274,49 @@ void IRenderCommandList::copyToImage(ImageResource* dst, const std::vector<class
     copyInfo.bGenerateMips = true;
     copyInfo.mipFiltering = ESamplerFiltering::Nearest;
     copyToImage(dst, pixelData, copyInfo);
+}
+
+void IRenderCommandList::cmdBindDescriptorsSets(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const ShaderParameters* descriptorsSets) const
+{
+    if (descriptorsSets->getParamLayout()->getType()->isChildOf<ShaderParametersLayout>())
+    {
+        cmdBindDescriptorsSetsInternal(cmdBuffer, contextPipeline.getPipeline(), { descriptorsSets });
+    }
+    else if(descriptorsSets->getParamLayout()->getType()->isChildOf<ShaderSetParametersLayout>())
+    {
+        std::pair<uint32, const ShaderParameters*> setIdToDescsSet{ 
+            static_cast<const ShaderSetParametersLayout*>(descriptorsSets->getParamLayout())->getSetID()
+            , descriptorsSets };
+        cmdBindDescriptorsSetInternal(cmdBuffer, contextPipeline.getPipeline(), { setIdToDescsSet });
+    }
+}
+
+void IRenderCommandList::cmdBindDescriptorsSets(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const
+{
+    std::vector<const ShaderParameters*> shaderParamsSetsList;
+    std::map<uint32, const ShaderParameters*> shaderParamsSetList;
+
+    for (const ShaderParameters* shaderParams : descriptorsSets)
+    {
+        if (shaderParams->getParamLayout()->getType()->isChildOf<ShaderParametersLayout>())
+        {
+            shaderParamsSetsList.emplace_back(shaderParams);
+        }
+        else if (shaderParams->getParamLayout()->getType()->isChildOf<ShaderSetParametersLayout>())
+        {
+            shaderParamsSetList[static_cast<const ShaderSetParametersLayout*>(shaderParams->getParamLayout())->getSetID()] = shaderParams;
+        }
+    }
+
+    if (!shaderParamsSetsList.empty())
+    {
+        cmdBindDescriptorsSetsInternal(cmdBuffer, contextPipeline.getPipeline(), shaderParamsSetsList);
+    }
+
+    if (!shaderParamsSetList.empty())
+    {
+        cmdBindDescriptorsSetInternal(cmdBuffer, contextPipeline.getPipeline(), shaderParamsSetList);
+    }
 }
 
 IRenderCommandList* IRenderCommandList::genericInstance()

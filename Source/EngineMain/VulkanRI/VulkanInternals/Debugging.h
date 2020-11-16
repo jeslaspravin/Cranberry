@@ -61,20 +61,20 @@ public:
     void endQueueMarker(VkQueue queue) const;
 };
 
-#define SCOPED_CMD_MARKER(CommandBuffer,Name) ScopedCommandMarker cmdMarker_##Name(CommandBuffer,#Name)
-#define SCOPED_CMD_COLORMARKER(CommandBuffer,Name,Color) ScopedCommandMarker cmdMarker_##Name(CommandBuffer,#Name,Color)
-struct ScopedCommandMarker
+#define SCOPED_VULKAN_CMD_MARKER(CommandBuffer,Name) ScopedVulkanCommandMarker cmdMarker_##Name(CommandBuffer,#Name)
+#define SCOPED_VULKAN_CMD_COLORMARKER(CommandBuffer,Name,Color) ScopedVulkanCommandMarker cmdMarker_##Name(CommandBuffer,#Name,Color)
+struct ScopedVulkanCommandMarker
 {
     VkCommandBuffer cmdBuffer;
-    ScopedCommandMarker(VkCommandBuffer commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE);
-    ~ScopedCommandMarker();
+    ScopedVulkanCommandMarker(VkCommandBuffer commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE);
+    ~ScopedVulkanCommandMarker();
 };
 
-#define SCOPED_QUEUE_MARKER(Queue,Name) ScopedQueueMarker queueMarker_##Name(Queue,#Name)
-#define SCOPED_QUEUE_COLORMARKER(Queue,Name,Color) ScopedQueueMarker queueMarker_##Name(Queue,#Name,Color)
-struct ScopedQueueMarker
+#define SCOPED_VULKAN_QUEUE_MARKER(Queue,Name) ScopedVulkanQueueMarker queueMarker_##Name(Queue,#Name)
+#define SCOPED_VULKAN_QUEUE_COLORMARKER(Queue,Name,Color) ScopedVulkanQueueMarker queueMarker_##Name(Queue,#Name,Color)
+struct ScopedVulkanQueueMarker
 {
     VkQueue queue;
-    ScopedQueueMarker(VkQueue q, const String& name, const LinearColor& color = LinearColorConst::WHITE);
-    ~ScopedQueueMarker();
+    ScopedVulkanQueueMarker(VkQueue q, const String& name, const LinearColor& color = LinearColorConst::WHITE);
+    ~ScopedVulkanQueueMarker();
 };

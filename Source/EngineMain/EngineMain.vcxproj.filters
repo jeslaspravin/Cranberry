@@ -510,6 +510,9 @@
     <ClCompile Include="RenderInterface\Shaders\Base\BaseShaderDefines.cpp">
       <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
     </ClCompile>
+    <ClCompile Include="Experimental\ExperimentalEngine.cpp">
+      <Filter>Source Files\Experimental</Filter>
+    </ClCompile>
     <ClCompile Include="Core\Input\Windows\WindowsDevices.cpp">
       <Filter>Source Files\Core\Input\Windows</Filter>
     </ClCompile>
@@ -916,6 +919,9 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h">
       <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ExperimentalEngine.h">
+      <Filter>Source Files\Experimental</Filter>
     </ClInclude>
     <ClInclude Include="Core\Input\InputDevice.h">
       <Filter>Source Files\Core\Input</Filter>

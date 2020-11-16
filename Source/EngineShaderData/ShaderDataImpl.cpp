@@ -106,6 +106,7 @@ void operator<< <ReflectDescriptorBody>(ShaderArchive& archive, ReflectDescripto
 {
     archive << typeData.set;
     archive << typeData.usedBindings;
+    archive << typeData.combinedSetUsage;
 
     archive << typeData.uniforms;
     archive << typeData.buffers;
