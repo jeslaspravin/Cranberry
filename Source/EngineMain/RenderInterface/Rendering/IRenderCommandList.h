@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "../../Core/Platform/PlatformTypes.h"
 #include "../ShaderCore/ShaderParameters.h"
 #include "../../Core/Types/Functions.h"
@@ -7,12 +9,18 @@
 #include "../../Core/Engine/GameEngine.h"
 #include "../Resources/QueueResource.h"
 #include "../Resources/MemoryResources.h"
+#include "../../Core/Math/Box.h"
+#include "../../Core/Types/Colors.h"
+#include "../Resources/Pipelines.h"
 
 class BufferResource;
 class GraphicsResource;
 class GraphicsFence;
 struct CommandSubmitInfo;
 class ImageResource;
+class LocalPipelineContext;
+struct RenderPassAdditionalProps;
+class ShaderParameters;
 
 class IRenderCommand
 {
@@ -40,6 +48,16 @@ public: \
     } \
 }; \
 gEngine->issueRenderCommand(new CommandName##_RenderCommand ({ [ ##__VA_ARGS__## ](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)##LambdaBody }))
+
+#define SCOPED_CMD_MARKER(CmdList,CommandBuffer,Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, #Name)
+#define SCOPED_CMD_COLORMARKER(CmdList,CommandBuffer,Name,Color) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, #Name, Color)
+struct ScopedCommandMarker
+{
+    const GraphicsResource* cmdBuffer;
+    const class IRenderCommandList* cmdList;
+    ScopedCommandMarker(const class IRenderCommandList* commandList, const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE);
+    ~ScopedCommandMarker();
+};
 
 
 struct CopyBufferInfo
@@ -85,6 +103,22 @@ struct CopyImageInfo
     }
 };
 
+struct RenderPassClearValue
+{
+    std::vector<LinearColor> colors;
+    float depth = 0;
+    uint32 stencil = 0;
+};
+
+struct GraphicsPipelineState
+{
+    GraphicsPipelineQueryParams pipelineQuery;
+    // Dynamic states
+    std::optional<LinearColor> blendConstant;
+    std::vector<std::pair<EStencilFaceMode, uint32>> stencilReferences;
+    std::optional<float> lineWidth;
+};
+
 class IRenderCommandList
 {
 protected:
@@ -115,14 +149,37 @@ public:
     //// Command buffer related function access if you know what you are doing ////
     ///////////////////////////////////////////////////////////////////////////////
 
+    virtual void cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor) const = 0;
+    virtual void cmdEndRenderPass(const GraphicsResource* cmdBuffer) const = 0;
+
+    virtual void cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const GraphicsPipelineState& state) const = 0;
+    void cmdBindDescriptorsSets(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const ShaderParameters* descriptorsSets) const;
+    void cmdBindDescriptorsSets(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const;
+    virtual void cmdBindDescriptorsSetInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::map<uint32, const ShaderParameters*>& descriptorsSets) const = 0;
+    virtual void cmdBindDescriptorsSetsInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const = 0;
+    virtual void cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, uint32 firstBinding, const std::vector<const BufferResource*>& vertexBuffers, const std::vector<uint64>& offsets) const = 0;
+    virtual void cmdBindIndexBuffer(const GraphicsResource* cmdBuffer, const BufferResource* indexBuffer, uint64 offset = 0) const = 0;
+
+    virtual void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const = 0;
+
+    virtual void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const = 0;
+    virtual void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const = 0;
+
+    virtual void cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const = 0;
+    virtual void cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const = 0;
+    virtual void cmdEndBufferMarker(const GraphicsResource* commandBuffer) const = 0;
+
     // Reusable here mean rerecord able command buffer
-    virtual const GraphicsResource* startCmd(String uniqueName, EQueueFunction queue, bool bIsReusable) = 0;
+    virtual const GraphicsResource* startCmd(const String& uniqueName, EQueueFunction queue, bool bIsReusable) = 0;
     virtual void endCmd(const GraphicsResource* cmdBuffer) = 0;
     // Frees the command buffer after usage
     virtual void freeCmd(const GraphicsResource* cmdBuffer) = 0;
     virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo
         , const SharedPtr<GraphicsFence>& fence) = 0;
     virtual void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) = 0;
+    virtual void finishCmd(const GraphicsResource* cmdBuffer) = 0;
+    virtual void finishCmd(const String& uniqueName) = 0;
+    virtual const GraphicsResource* getCmdBuffer(const String& uniqueName) const = 0;
 
     // Waits until GPU is idle
     virtual void waitIdle() = 0;

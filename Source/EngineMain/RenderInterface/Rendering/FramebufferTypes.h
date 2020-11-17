@@ -30,6 +30,7 @@ class ImageResource;
 
 struct FramebufferFormat
 {
+    // One format per RT and resolve pair
     std::vector<EPixelDataFormat::Type> attachments;
     ERenderPassFormat::Type rpFormat;
 
