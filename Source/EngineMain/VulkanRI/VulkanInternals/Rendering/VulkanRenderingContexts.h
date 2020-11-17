@@ -19,7 +19,7 @@ private:
     VkRenderPass createGbufferRenderpass(ERenderPassFormat::Type rpUsageFormat, const RenderPassAdditionalProps& additionalProps) const;
 protected:
     /* GlobalRenderingContextBase overrides */
-	void initApiInstances() final;
+    void initApiInstances() final;
     void initializeApiContext() final;
     void clearApiContext() final;
     void initializeGenericGraphicsPipeline(UniqueUtilityShaderObject* shaderObject, PipelineBase* pipeline) final;

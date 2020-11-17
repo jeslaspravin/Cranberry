@@ -5,161 +5,161 @@
 template<uint32 d>
 struct CellIndex
 {
-	uint32 idx[d];
+    uint32 idx[d];
 
-	CellIndex() 
-	{
-		for (uint32 i = 0; i < d; i++)
-		{
-			idx[i] = 0;
-		}
-	}
+    CellIndex() 
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            idx[i] = 0;
+        }
+    }
 
-	CellIndex(uint32 cmnIdx) 
-	{
-		for (uint32 i = 0; i < d; i++)
-		{
-			idx[i] = cmnIdx;
-		}
-	}
+    CellIndex(uint32 cmnIdx) 
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            idx[i] = cmnIdx;
+        }
+    }
 
-	CellIndex(const CellIndex& other)
-	{
-		for (uint32 i = 0; i < d; i++)
-		{
-			idx[i] = other.idx[i];
-		}
-	}
+    CellIndex(const CellIndex& other)
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            idx[i] = other.idx[i];
+        }
+    }
 
-	CellIndex(CellIndex&& other)
-	{
-		for (uint32 i = 0; i < d; i++)
-		{
-			idx[i] = other.idx[i];
-		}
-	}
+    CellIndex(CellIndex&& other)
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            idx[i] = other.idx[i];
+        }
+    }
 
-	void operator=(const CellIndex& other)
-	{
-		for (uint32 i = 0; i < d; i++)
-		{
-			idx[i] = other.idx[i];
-		}
-	}
+    void operator=(const CellIndex& other)
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            idx[i] = other.idx[i];
+        }
+    }
 
-	template<class T>
-	T operator*(const T& other) const
-	{
-		T newVal;
-		for (uint32 i = 0; i < d; i++)
-		{
-			newVal[i] = other[i] * idx[i];
-		}
-		return newVal;
-	}
+    template<class T>
+    T operator*(const T& other) const
+    {
+        T newVal;
+        for (uint32 i = 0; i < d; i++)
+        {
+            newVal[i] = other[i] * idx[i];
+        }
+        return newVal;
+    }
 
-	CellIndex operator+(const CellIndex& other)
-	{
-		CellIndex c;
-		for (uint32 i = 0; i < d; i++)
-		{
-			c.idx[i] = idx[i] + other.idx[i];
-		}
+    CellIndex operator+(const CellIndex& other)
+    {
+        CellIndex c;
+        for (uint32 i = 0; i < d; i++)
+        {
+            c.idx[i] = idx[i] + other.idx[i];
+        }
 
-		return c;
-	}
-
-
-	CellIndex operator-(const CellIndex& other)
-	{
-		CellIndex c;
-		for (uint32 i = 0; i < d; i++)
-		{
-			c.idx[i] = Math::abs(idx[i] - other.idx[i]);
-		}
-
-		return c;
-	}
+        return c;
+    }
 
 
-	void operator+=(const CellIndex& other)
-	{
-		for (uint32 i = 0; i < d; i++)
-		{
-			 idx[i] += other.idx[i];
-		}
-	}
+    CellIndex operator-(const CellIndex& other)
+    {
+        CellIndex c;
+        for (uint32 i = 0; i < d; i++)
+        {
+            c.idx[i] = Math::abs(idx[i] - other.idx[i]);
+        }
 
-	void operator-=(const CellIndex& other)
-	{
-		for (uint32 i = 0; i < d; i++)
-		{
-			idx[i]=glm::abs(idx[i] - other.idx[i]);
-		}
-	}
+        return c;
+    }
 
-	uint32 operator[](const uint32& axis) const
-	{
-		if (axis < d)
-		{
-			return idx[axis];
-		}
-		return -1;
-	}
 
-	bool operator==(const CellIndex& other) const
-	{
-		for (uint32 i = 0; i < d; i++)
-		{
-			if (idx[i] != other.idx[i])
-				return false;
-		}
-		return true;
-	}
+    void operator+=(const CellIndex& other)
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+             idx[i] += other.idx[i];
+        }
+    }
 
-	uint32 size() {
-		uint32 s = 1;
-		for (uint32 i = 0; i < d; i++)
-		{
-			s *= idx[i];
-		}
-		return s;
-	}
+    void operator-=(const CellIndex& other)
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            idx[i]=glm::abs(idx[i] - other.idx[i]);
+        }
+    }
+
+    uint32 operator[](const uint32& axis) const
+    {
+        if (axis < d)
+        {
+            return idx[axis];
+        }
+        return -1;
+    }
+
+    bool operator==(const CellIndex& other) const
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            if (idx[i] != other.idx[i])
+                return false;
+        }
+        return true;
+    }
+
+    uint32 size() {
+        uint32 s = 1;
+        for (uint32 i = 0; i < d; i++)
+        {
+            s *= idx[i];
+        }
+        return s;
+    }
 };
 
 template<uint32 d>
 struct CellIndexHash{
-	using TYPE = CellIndex<d>;
-	using RESULT = std::size_t;
+    using TYPE = CellIndex<d>;
+    using RESULT = std::size_t;
 
-	RESULT operator ()(const TYPE& cellIndex) const {
-		RESULT hashVal = 0;
-		for (uint32 i = 0; i < d; i++)
-		{
-			hashCombine(hashVal, cellIndex[i]);
-		}
-		return hashVal;
-	}
+    RESULT operator ()(const TYPE& cellIndex) const {
+        RESULT hashVal = 0;
+        for (uint32 i = 0; i < d; i++)
+        {
+            hashCombine(hashVal, cellIndex[i]);
+        }
+        return hashVal;
+    }
 };
 
 template <class T,uint32 d>
 void vectorToCellIdx(T vec, CellIndex<d>& cellIdx)
 {
-	for (uint32 i = 0; i < d; i++)
-	{
-		cellIdx.idx[i] = (uint32)vec[i];
-	}
+    for (uint32 i = 0; i < d; i++)
+    {
+        cellIdx.idx[i] = (uint32)vec[i];
+    }
 }
 
 template <class T, uint32 d>
 CellIndex<d> vectorToCellIdx(T vec)
 {
-	CellIndex<d> cellIdx;
-	for (uint32 i = 0; i < d; i++)
-	{
-		cellIdx.idx[i] = (uint32)vec[i];
-	}
-	return cellIdx;
+    CellIndex<d> cellIdx;
+    for (uint32 i = 0; i < d; i++)
+    {
+        cellIdx.idx[i] = (uint32)vec[i];
+    }
+    return cellIdx;
 }
 
 template<class T,uint32 d>
@@ -168,63 +168,63 @@ class UniformGrid
 
 private:
 
-	T nCells;
-	T cellDx;
-	T minCorner;
-	T maxCorner;
+    T nCells;
+    T cellDx;
+    T minCorner;
+    T maxCorner;
 
 public:
 
-	UniformGrid()
-		: nCells(0)
-		, cellDx(0)
-		, minCorner(0)
-		, maxCorner(0)
-	{}
+    UniformGrid()
+        : nCells(0)
+        , cellDx(0)
+        , minCorner(0)
+        , maxCorner(0)
+    {}
 
-	void InitWithCount(const T& min, const T& max, const CellIndex<d>& n);
+    void InitWithCount(const T& min, const T& max, const CellIndex<d>& n);
     void InitWithSize(const T& min, const T& max, const T& cellSize);
 
-	T location(const CellIndex<d>& cell) const
-	{
-		return cell*cellDx + minCorner + (cellDx * 0.5f);
-	}
+    T location(const CellIndex<d>& cell) const
+    {
+        return cell*cellDx + minCorner + (cellDx * 0.5f);
+    }
 
-	CellIndex<d> cell(const T& location) const
-	{
-		return vectorToCellIdx<T, d>((location - minCorner) / cellDx);
-	}
+    CellIndex<d> cell(const T& location) const
+    {
+        return vectorToCellIdx<T, d>((location - minCorner) / cellDx);
+    }
 
     CellIndex<d> getNdIndex(const uint32 index) const;
 
-	T center(const uint32 index) const
-	{
-		return location(getNdIndex(index));
-	}
+    T center(const uint32 index) const
+    {
+        return location(getNdIndex(index));
+    }
 
-	CellIndex<d> cellCount()
-	{
-		return vectorToCellIdx<T, d>(nCells);
-	}
+    CellIndex<d> cellCount()
+    {
+        return vectorToCellIdx<T, d>(nCells);
+    }
 
-	void cellCount(CellIndex<d>& cellCnt)
-	{
-		vectorToCellIdx<T,d>(nCells, cellCnt);
-	}
+    void cellCount(CellIndex<d>& cellCnt)
+    {
+        vectorToCellIdx<T,d>(nCells, cellCnt);
+    }
 
     CellIndex<d> clampCellIndex(const CellIndex<d>& cell);
     T clampLocation(const T& location);
     bool isInside(const CellIndex<d> cell);
 
-	T cellSize() {
-		return cellDx;
-	}
+    T cellSize() {
+        return cellDx;
+    }
 
-	void getBound(T& minB, T& maxB)
-	{
-		minB = minCorner;
-		maxB = maxCorner;
-	}
+    void getBound(T& minB, T& maxB)
+    {
+        minB = minCorner;
+        maxB = maxCorner;
+    }
 };
 
 template<class T, uint32 d>
