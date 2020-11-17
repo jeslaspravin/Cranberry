@@ -9,6 +9,6 @@ class VulkanShaderParametersLayoutFactory final : public FactoriesBase<GraphicsR
 {
 
 public:
-	GraphicsResource* create(const ShaderResource* forShader, uint32 descriptorsSetIdx) const final;
+    GraphicsResource* create(const ShaderResource* forShader, uint32 descriptorsSetIdx) const final;
 
 };

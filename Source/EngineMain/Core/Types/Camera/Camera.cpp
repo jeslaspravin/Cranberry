@@ -148,8 +148,8 @@ Matrix4 Camera::projectionMatrix() const
 {
     Matrix4 projectionMat = Matrix4::IDENTITY;
 
-	switch (cameraProjection)
-	{
+    switch (cameraProjection)
+    {
     case ECameraProjection::Perspective:
         perspectiveMatrix(projectionMat);
         break;
@@ -158,6 +158,6 @@ Matrix4 Camera::projectionMatrix() const
         break;
     default:
         break;
-	}
+    }
     return projectionMat;
 }

@@ -9,5 +9,5 @@ class ShaderObjectFactory : public FactoriesBase<ShaderObjectBase, const String&
 {
 
 public:
-	ShaderObjectBase* create(const String& shaderName, const ShaderResource* shader) const override;
+    ShaderObjectBase* create(const String& shaderName, const ShaderResource* shader) const override;
 };

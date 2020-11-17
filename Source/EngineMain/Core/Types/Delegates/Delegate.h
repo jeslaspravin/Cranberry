@@ -110,31 +110,31 @@ public:
     }
 
 private:
-	struct FunctionHolder
-	{
-		FunctionPtr functionPtr;
-		ObjectType* objectPtr;
+    struct FunctionHolder
+    {
+        FunctionPtr functionPtr;
+        ObjectType* objectPtr;
 
-		FunctionHolder(ObjectType* object,const FunctionPtr& functionPtr)
-			: objectPtr(object)
-			, functionPtr(functionPtr)
-		{}
+        FunctionHolder(ObjectType* object,const FunctionPtr& functionPtr)
+            : objectPtr(object)
+            , functionPtr(functionPtr)
+        {}
 
         FunctionHolder(FunctionHolder&& other)
             : objectPtr(std::move(objectPtr))
-			, functionPtr(std::move(other.functionPtr))
+            , functionPtr(std::move(other.functionPtr))
         {
             other.objectPtr = nullptr;
             other.functionPtr = nullptr;
         }
 
-		bool operator==(const FunctionHolder& otherType) const
-		{
-			return objectPtr == otherType.objectPtr && functionPtr == otherType.functionPtr;
-		}
-	};
+        bool operator==(const FunctionHolder& otherType) const
+        {
+            return objectPtr == otherType.objectPtr && functionPtr == otherType.functionPtr;
+        }
+    };
 
-	FunctionHolder delegateData;
+    FunctionHolder delegateData;
     FunctionExecutor<Variables...> executor;
 };
 
@@ -283,7 +283,7 @@ public:
 protected:
     std::list<SharedPtr<DelegateInterface>> boundStaticDelegates;
     std::list<SharedPtr<DelegateInterface>> boundLambdaDelegates;
-	std::list<SharedPtr<DelegateInterface>> boundObjectDelegates;
+    std::list<SharedPtr<DelegateInterface>> boundObjectDelegates;
 
     std::map<int32, SharedPtr<DelegateInterface>> allDelegates;
 
