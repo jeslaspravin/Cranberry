@@ -62,6 +62,15 @@ struct ReflectDescriptorBody
 {
     uint32_t set;
     std::vector<uint32_t> usedBindings;
+    /*
+    * 
+    * Provides shader stages usage of all descriptors combined for this set.
+    * 
+    * NOTE : Useful in places where all descriptors of a set is used in every stage(none sparse usage like using *.inl to just include all, View or Vertex descriptors is one case)
+    * As each descriptors will have same usage.
+    * In case of sparse usage of descriptors will have different usage and this value might be inaccurate.
+    */
+    uint32_t combinedSetUsage;
 
     std::vector<DescEntryBuffer> uniforms;
     std::vector<DescEntryBuffer> buffers;

@@ -16,6 +16,7 @@ enum class ECmdState
 
 struct CommandSubmitInfo
 {
+public:
     struct WaitInfo
     {
         GraphicsSemaphore* waitOnSemaphore;

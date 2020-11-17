@@ -49,6 +49,19 @@ public:
     /* Override ends */
 };
 
+#if EXPERIMENTAL
+
+VkCommandBuffer VulkanGraphicsHelper::getRawCmdBuffer(class IGraphicsInstance* graphicsInstance, const GraphicsResource* cmdBuffer)
+{
+    if (cmdBuffer->getType()->isChildOf<VulkanCommandBuffer>())
+    {
+        return static_cast<const VulkanCommandBuffer*>(cmdBuffer)->cmdBuffer;
+    }
+    return nullptr;
+}
+
+#endif
+
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanCommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER)
 
 String VulkanCommandBuffer::getObjectName() const
@@ -277,11 +290,9 @@ const GraphicsResource* VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
     }
 
     CMD_BUFFER_BEGIN_INFO(cmdBuffBeginInfo);
-    cmdBuffBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    cmdBuffBeginInfo.flags = 0;
 
     vDevice->vkBeginCommandBuffer(cmdBuffer->cmdBuffer, &cmdBuffBeginInfo);
-    vDevice->debugGraphics()->beginCmdBufferMarker(cmdBuffer->cmdBuffer, cmdName);
-
     return cmdBuffer;
 }
 
@@ -295,7 +306,7 @@ const GraphicsResource* VulkanCmdBufferManager::beginReuseCmdBuffer(const String
         VulkanCommandPool& cmdPool = getPool(usingQueue);
 
         CMD_BUFFER_ALLOC_INFO(cmdBuffAllocInfo);
-        cmdBuffAllocInfo.commandPool = cmdPool.oneTimeRecordPool;
+        cmdBuffAllocInfo.commandPool = cmdPool.rerecordableCommandPool;
         cmdBuffAllocInfo.commandBufferCount = 1;
 
         cmdBuffer = new VulkanCommandBuffer();
@@ -333,15 +344,12 @@ const GraphicsResource* VulkanCmdBufferManager::beginReuseCmdBuffer(const String
     cmdBuffBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     vDevice->vkBeginCommandBuffer(cmdBuffer->cmdBuffer, &cmdBuffBeginInfo);
-    vDevice->debugGraphics()->beginCmdBufferMarker(cmdBuffer->cmdBuffer, cmdName);
-
     return cmdBuffer;
 }
 
 void VulkanCmdBufferManager::endCmdBuffer(const GraphicsResource* cmdBuffer)
 {
     const auto* vCmdBuffer = static_cast<const VulkanCommandBuffer*>(cmdBuffer);
-    vDevice->debugGraphics()->endCmdBufferMarker(vCmdBuffer->cmdBuffer);
     vDevice->vkEndCommandBuffer(vCmdBuffer->cmdBuffer);
 
     if (!vCmdBuffer->bIsTempBuffer)
@@ -357,6 +365,15 @@ void VulkanCmdBufferManager::cmdFinished(const GraphicsResource* cmdBuffer)
     if (!vCmdBuffer->bIsTempBuffer)
     {
         commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Recorded;
+    }
+}
+
+void VulkanCmdBufferManager::cmdFinished(const String& cmdName)
+{
+    auto cmdBufferItr = commandBuffers.find(cmdName);
+    if (cmdBufferItr != commandBuffers.end())
+    {
+        cmdBufferItr->second.cmdState = ECmdState::Recorded;
     }
 }
 
@@ -378,6 +395,16 @@ void VulkanCmdBufferManager::freeCmdBuffer(const GraphicsResource* cmdBuffer)
 VkCommandBuffer VulkanCmdBufferManager::getRawBuffer(const GraphicsResource* cmdBuffer) const
 {
     return cmdBuffer->getType()->isChildOf<VulkanCommandBuffer>() ? static_cast<const VulkanCommandBuffer*>(cmdBuffer)->cmdBuffer : nullptr;
+}
+
+const GraphicsResource* VulkanCmdBufferManager::getCmdBuffer(const String& cmdName) const
+{
+    auto cmdBufferItr = commandBuffers.find(cmdName);
+    if (cmdBufferItr != commandBuffers.end())
+    {
+        return cmdBufferItr->second.cmdBuffer;
+    }
+    return nullptr;
 }
 
 uint32 VulkanCmdBufferManager::getQueueFamilyIdx(EQueueFunction queue) const
@@ -468,7 +495,10 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
     {
         for (const GraphicsResource* cmdBuffer : command.cmdBuffers)
         {
-            commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
+            if (!static_cast<const VulkanCommandBuffer*>(cmdBuffer)->bIsTempBuffer)
+            {
+                commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
+            }
         }
     }
 }
@@ -527,7 +557,10 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
 
     for (const GraphicsResource* cmdBuffer : command.cmdBuffers)
     {
-        commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
+        if (!static_cast<const VulkanCommandBuffer*>(cmdBuffer)->bIsTempBuffer)
+        {
+            commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
+        }
     }
 }
 

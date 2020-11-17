@@ -14,6 +14,11 @@ public:
     static void* getCurrentThreadHandle();
     static void* getCurrentProcessHandle();
     static void getAllModules(void* processHandle, LibPointerPtr* modules, uint32& modulesSize);
+
+    static uint32 getSetBitCount(const uint8& value);
+    static uint32 getSetBitCount(const uint16& value);
+    static uint32 getSetBitCount(const uint32& value);
+    static uint32 getSetBitCount(const uint64& value);
 };
 
 namespace GPlatformFunctions {

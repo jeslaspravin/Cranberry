@@ -15,6 +15,9 @@ pushd %binariesPath%\GameBuilder
 echo EXE : GameBuilder.exe -mode shaderCompile -targetPath "%binariesPath%/EngineMain/x64/Debug" -intermediatePath "%binariesPath%/EngineMain/x64/Debug/Intermediate" -api vulkan
 GameBuilder.exe -mode shaderCompile -targetPath "%binariesPath%/EngineMain/x64/Debug" -intermediatePath "%binariesPath%/EngineMain/x64/Debug/Intermediate" -api vulkan
 
+echo EXE : GameBuilder.exe -mode shaderCompile -targetPath "%binariesPath%/EngineMain/x64/EXPERIMENTAL" -intermediatePath "%binariesPath%/EngineMain/x64/EXPERIMENTAL/Intermediate" -api vulkan
+GameBuilder.exe -mode shaderCompile -targetPath "%binariesPath%/EngineMain/x64/EXPERIMENTAL" -intermediatePath "%binariesPath%/EngineMain/x64/EXPERIMENTAL/Intermediate" -api vulkan
+
 echo EXE : GameBuilder.exe -mode shaderCompile -targetPath "%binariesPath%/EngineMain/x64/Release" -intermediatePath "%binariesPath%/EngineMain/x64/Release/Intermediate" -api vulkan
 GameBuilder.exe -mode shaderCompile -targetPath "%binariesPath%/EngineMain/x64/Release" -intermediatePath "%binariesPath%/EngineMain/x64/Release/Intermediate" -api vulkan
 

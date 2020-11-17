@@ -183,6 +183,10 @@ VkRenderPass VulkanGlobalRenderingContext::getRenderPass(ERenderPassFormat::Type
 
 VkRenderPass VulkanGlobalRenderingContext::getRenderPass(const GenericRenderPassProperties& renderpassProps, const RenderPassAdditionalProps& additionalProps)
 {
+    if (renderpassProps.renderpassAttachmentFormat.rpFormat != ERenderPassFormat::Generic)
+    {
+        return getRenderPass(renderpassProps.renderpassAttachmentFormat.rpFormat, additionalProps);
+    }
     auto renderpassItr = genericRenderPasses.find(renderpassProps);
     if (renderpassItr != genericRenderPasses.end())
     {

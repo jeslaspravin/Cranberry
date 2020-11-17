@@ -6,6 +6,7 @@
 #include "../../GlobalRenderVariables.h"
 #include "../Base/UtilityShaders.h"
 #include "../../../RenderApi/Scene/RenderScene.h"
+#include "../Base/ScreenspaceQuadGraphicsPipeline.h"
 
 BEGIN_BUFFER_DEFINITION(GoochModelLightCommon)
 ADD_BUFFER_TYPED_FIELD(lightsCount)
@@ -58,44 +59,4 @@ DEFINE_GRAPHICS_RESOURCE(GoochModelShader)
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-class GoochModelShaderPipeline : public GraphicsPipeline
-{
-    DECLARE_GRAPHICS_RESOURCE(GoochModelShaderPipeline, , GraphicsPipeline, )
-private:
-    GoochModelShaderPipeline() = default;
-public:
-    GoochModelShaderPipeline(const ShaderResource* shaderResource, const PipelineBase* parent);
-    GoochModelShaderPipeline(const ShaderResource* shaderResource);
-};
-
-DEFINE_GRAPHICS_RESOURCE(GoochModelShaderPipeline)
-
-GoochModelShaderPipeline::GoochModelShaderPipeline(const ShaderResource* shaderResource, const PipelineBase* parent)
-    : BaseType(static_cast<const GraphicsPipelineBase*>(parent))
-{}
-
-GoochModelShaderPipeline::GoochModelShaderPipeline(const ShaderResource* shaderResource)
-    : BaseType()
-{
-    supportedCullings.resize(1);
-    supportedCullings[0] = ECullingMode::BackFace;
-
-    allowedDrawModes.resize(2);
-    allowedDrawModes[0] = EPolygonDrawMode::Fill;
-
-    renderpassProps.bOneRtPerFormat = false;
-    renderpassProps.multisampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
-    renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::BGRA_U8_Norm);
-    renderpassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
-
-    // No alpha based blending for default shaders
-    AttachmentBlendState blendState;
-    blendState.bBlendEnable = false;
-    attachmentBlendStates.emplace_back(blendState);
-
-    depthState.bEnableWrite = false;
-    depthState.compareOp = CoreGraphicsTypes::ECompareOp::Always;
-}
-
-using GoochModelShaderPipelineRegister = GenericGraphicsPipelineRegister<GoochModelShaderPipeline>;
-GoochModelShaderPipelineRegister GOOCHMODEL_SHADER_PIPELINE_REGISTER(GOOCH_SHADER_NAME);
+ScreenSpaceQuadShaderPipelineRegister GOOCHMODEL_SHADER_PIPELINE_REGISTER(GOOCH_SHADER_NAME);

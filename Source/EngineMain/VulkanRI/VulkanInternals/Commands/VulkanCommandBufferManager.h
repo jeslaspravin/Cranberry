@@ -81,9 +81,11 @@ public:
 
     void endCmdBuffer(const GraphicsResource* cmdBuffer);
     void cmdFinished(const GraphicsResource* cmdBuffer);
+    void cmdFinished(const String& cmdName);
     void freeCmdBuffer(const GraphicsResource* cmdBuffer);
 
     VkCommandBuffer getRawBuffer(const GraphicsResource* cmdBuffer) const;
+    const GraphicsResource* getCmdBuffer(const String& cmdName) const;
     uint32 getQueueFamilyIdx(const GraphicsResource* cmdBuffer) const;
     uint32 getQueueFamilyIdx(EQueueFunction queue) const;
     ECmdState getState(const GraphicsResource* cmdBuffer) const;
