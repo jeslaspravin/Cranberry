@@ -1,12 +1,12 @@
 #pragma once
 #include "../../Core/Memory/SmartPointers.h"
+#include "../../Core/String/String.h"
 
 #include <forward_list>
 #include <vector>
 
 class GraphicsResource;
 class GraphicsResourceType;
-class String;
 
 /* This graph is not yet thread safe */
 class ResourceTypesGraph
@@ -34,11 +34,14 @@ public:
     void findChildsOf(const GraphicsResourceType* type, std::vector<const GraphicsResourceType*>& outChilds, bool bRecursively = false, bool bOnlyLeafChilds = false);
 };
 
-class GraphicsResourceType {
+class GraphicsResourceType 
+{
+
 public:
     typedef void(*DeleteFn)(GraphicsResource*);
 private:
 
+    String typeName;
     GraphicsResource* defaultResource = nullptr;
 
     using GraphicsResourceList = std::forward_list<GraphicsResource*>;
@@ -49,7 +52,7 @@ private:
 protected:
     virtual bool verifyParent(const GraphicsResourceType* otherType) const = 0;
 
-    GraphicsResourceType(GraphicsResource* resource, DeleteFn deleteFunc);
+    GraphicsResourceType(GraphicsResource* resource, DeleteFn deleteFunc, const String& resTypeName);
     virtual ~GraphicsResourceType();
 
 public:
@@ -66,8 +69,9 @@ public:
     void unregisterResource(GraphicsResource* resource);
 
     GraphicsResource* getDefault() const { return defaultResource; }
+    const String& getName() const { return typeName; }
     // Returns all registered resources of this type only, no parent type resources are returned
-    void allRegisteredResources(std::vector<GraphicsResource*>& outResources) const;
+    void allRegisteredResources(std::vector<GraphicsResource*>& outResources, bool bRecursively = false, bool bOnlyLeaf = false) const;
     void allChildDefaultResources(std::vector<GraphicsResource*>& outResources, bool bRecursively = false, bool bOnlyLeaf = false) const;
 
     bool isChildOf(const GraphicsResourceType* otherType) const;
@@ -95,7 +99,8 @@ protected:
 
 public:
 
-    GraphicsResourceTypeSpecialized(GraphicsResource* resource, GraphicsResourceType::DeleteFn deleteFunc):GraphicsResourceType(resource,deleteFunc)
+    GraphicsResourceTypeSpecialized(GraphicsResource* resource, GraphicsResourceType::DeleteFn deleteFunc, const String& resTypeName)
+        :GraphicsResourceType(resource, deleteFunc, resTypeName)
     {}
 
     const GraphicsResourceType* getParent() const override
@@ -158,7 +163,8 @@ public:\
 
 #ifndef DEFINE_GRAPHICS_RESOURCE
 #define DEFINE_GRAPHICS_RESOURCE(NewTypeName)\
-    UniquePtr<NewTypeName::##NewTypeName##_Type> NewTypeName::STATIC_TYPE=UniquePtr<NewTypeName::##NewTypeName##_Type>(new NewTypeName::##NewTypeName##_Type(new NewTypeName(), &NewTypeName::delFn));\
+    UniquePtr<NewTypeName::##NewTypeName##_Type> NewTypeName::STATIC_TYPE \
+        = UniquePtr<NewTypeName::##NewTypeName##_Type>(new NewTypeName::##NewTypeName##_Type(new NewTypeName(), &NewTypeName::delFn, #NewTypeName));\
     \
     void NewTypeName::delFn(GraphicsResource* resource) \
     { \
@@ -175,7 +181,7 @@ public:\
     UniquePtr<typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type> NewTypeName##TemplatesDefine## \
         ::STATIC_TYPE=UniquePtr<typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type>( \
         new typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type(new typename NewTypeName##TemplatesDefine##::NewType(),\
-        &NewTypeName##TemplatesDefine##::delFn));\
+        &NewTypeName##TemplatesDefine##::delFn, #NewTypeName#TemplatesDefine));\
     \
     template ##NewTypeTemplates## \
     void NewTypeName##TemplatesDefine##::delFn(GraphicsResource* resource) \
@@ -202,7 +208,7 @@ public:
     virtual ~GraphicsResource() = default;
 
     // always call parent init and release functions if the resource needs to be registered in collection
-    virtual void init() {};
+    virtual void init();
     virtual void reinitResources();
     virtual void release();
     virtual String getResourceName() const;

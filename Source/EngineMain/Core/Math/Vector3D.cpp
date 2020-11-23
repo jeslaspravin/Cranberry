@@ -308,3 +308,23 @@ Vector3D Math::ceil(const Vector3D& value)
 {
     return Vector3D::ceil(value);
 }
+
+Vector3D operator/(float n, const Vector3D& d)
+{
+    return Vector3D(n / d.value);
+}
+
+Vector3D operator-(float n, const Vector3D& d)
+{
+    return Vector3D(n - d.value);
+}
+
+Vector3D operator*(float n, const Vector3D& d)
+{
+    return d * n;
+}
+
+Vector3D operator+(float n, const Vector3D& d)
+{
+    return d + n;
+}

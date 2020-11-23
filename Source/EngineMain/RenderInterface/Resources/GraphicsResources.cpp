@@ -134,9 +134,15 @@ void GraphicsResourceType::unregisterResource(GraphicsResource* resource)
     registeredResources.remove(resource);
 }
 
-void GraphicsResourceType::allRegisteredResources(std::vector<GraphicsResource*>& outResources) const
+void GraphicsResourceType::allRegisteredResources(std::vector<GraphicsResource*>& outResources, bool bRecursively /*= false*/, bool bOnlyLeaf /*= false*/) const
 {
-    outResources.insert(outResources.end(), registeredResources.cbegin(), registeredResources.cend());
+    std::vector<const GraphicsResourceType*> childResourceTypes;
+    getTypeGraph().findChildsOf(this, childResourceTypes, bRecursively, bOnlyLeaf);
+
+    for (const GraphicsResourceType* type : childResourceTypes)
+    {
+        outResources.insert(outResources.end(), type->registeredResources.cbegin(), type->registeredResources.cend());
+    }
 }
 
 void GraphicsResourceType::allChildDefaultResources(std::vector<GraphicsResource*>& outResources, bool bRecursively /*= false*/
@@ -163,10 +169,11 @@ ResourceTypesGraph& GraphicsResourceType::getTypeGraph() const
     return typeGraph;
 }
 
-GraphicsResourceType::GraphicsResourceType(GraphicsResource* resource, DeleteFn deleteFunc)
+GraphicsResourceType::GraphicsResourceType(GraphicsResource* resource, DeleteFn deleteFunc, const String& resTypeName)
+    : typeName(resTypeName)
+    , defaultResource(resource)
+    , deleteResource(deleteFunc)
 {
-    defaultResource = resource;
-    deleteResource = deleteFunc;
     getTypeGraph().lazyInsert(this);
 }
 
@@ -180,8 +187,14 @@ GraphicsResourceType::~GraphicsResourceType()
 
 DEFINE_GRAPHICS_RESOURCE(GraphicsResource)
 
+void GraphicsResource::init()
+{
+    privateType()->registerResource(this);
+}
+
 void GraphicsResource::reinitResources()
 {
+    // Registering here as well as release in reinitializing removes it
     privateType()->registerResource(this);
 }
 

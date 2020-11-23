@@ -213,6 +213,11 @@ VulkanCmdBufferManager::VulkanCmdBufferManager(class VulkanDevice* vulkanDevice)
 
 VulkanCmdBufferManager::~VulkanCmdBufferManager()
 {
+    for (const std::pair<const String, VulkanCmdBufferState>& cmdBuffer : commandBuffers)
+    {
+        cmdBuffer.second.cmdBuffer->release();
+        delete cmdBuffer.second.cmdBuffer;
+    }
     for (std::pair<const EQueueFunction, VulkanCommandPool>& poolPair : pools)
     {
         poolPair.second.release();
@@ -355,6 +360,10 @@ void VulkanCmdBufferManager::endCmdBuffer(const GraphicsResource* cmdBuffer)
     if (!vCmdBuffer->bIsTempBuffer)
     {
         commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Recorded;
+    }
+    else
+    {
+        vDevice->debugGraphics()->endCmdBufferMarker(vCmdBuffer->cmdBuffer);
     }
 }
 

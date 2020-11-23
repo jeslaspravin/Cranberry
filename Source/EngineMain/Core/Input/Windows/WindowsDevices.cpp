@@ -26,6 +26,7 @@ bool WindowsMouseDevice::sendInRaw(const void* rawInput)
     {
         return false;
     }
+    bReceivedInput = true;
 
     const RAWMOUSE& mouseData = winRawInput->data.mouse;
     if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_1_DOWN | RI_MOUSE_BUTTON_1_UP)) != 0)// LMB
@@ -67,14 +68,12 @@ bool WindowsMouseDevice::sendInRaw(const void* rawInput)
         Logger::warn("WindowMouseDevice", "%s : Virtual desktop setup is not supported", __func__);
     }
 
-    // TODO(Jeslas) : Change absolute position retrieval to some other better way(using this as this is only way i found that gives screen coordinate even when mouse is out of client rect)
-    MSG absPosMsg;
-    if (PeekMessage(&absPosMsg, nullptr, 0, 0, PM_NOREMOVE))
+    POINT cursorPos{ 0,0 };
+    if (GetCursorPos(&cursorPos))
     {
-        analogRawStates[AnalogStates::AbsMouseX] = float(absPosMsg.pt.x);
-        analogRawStates[AnalogStates::AbsMouseY] = float(absPosMsg.pt.y);
+        analogRawStates[AnalogStates::AbsMouseX] = float(cursorPos.x);
+        analogRawStates[AnalogStates::AbsMouseY] = float(cursorPos.y);
     }
-
     return true;
 }
 
@@ -137,16 +136,24 @@ void WindowsMouseDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* anal
     for (std::pair<const uint32, float>& rawAnalogState : analogRawStates)
     {
         InputAnalogState& outAnalogState = analogStatesMap[AnalogStates::EStates(rawAnalogState.first)];
-
-        outAnalogState.startedThisFrame = (Math::isEqual(outAnalogState.currentValue, 0.0f) && rawAnalogState.second != 0.0f)
-            ? 1 : 0;
-        outAnalogState.stoppedThisFrame = (Math::isEqual(rawAnalogState.second, 0.0f) && outAnalogState.currentValue != 0.0f)
-            ? 1 : 0;
-        outAnalogState.acceleration = rawAnalogState.second - outAnalogState.currentValue;
-        outAnalogState.currentValue = rawAnalogState.second;
-
+        if (bReceivedInput || !AnalogStates::isAbsoluteValue(AnalogStates::EStates(rawAnalogState.first)))
+        {
+            outAnalogState.startedThisFrame = (Math::isEqual(outAnalogState.currentValue, 0.0f) && rawAnalogState.second != 0.0f)
+                ? 1 : 0;
+            outAnalogState.stoppedThisFrame = (Math::isEqual(rawAnalogState.second, 0.0f) && outAnalogState.currentValue != 0.0f)
+                ? 1 : 0;
+            outAnalogState.acceleration = rawAnalogState.second - outAnalogState.currentValue;
+            outAnalogState.currentValue = rawAnalogState.second;
+        }
+        else // Analog state has not changed
+        {
+            outAnalogState.startedThisFrame = 0;
+            outAnalogState.stoppedThisFrame = 0;
+            outAnalogState.acceleration = 0;
+        }
         rawAnalogState.second = 0;
     }
+    bReceivedInput = false;
 }
 
 //////////////////////////////////////////////////////////////////////////

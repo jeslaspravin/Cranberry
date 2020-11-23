@@ -15,12 +15,15 @@ class GenericWindowCanvas : public GraphicsResource
 
 protected:
     GenericAppWindow* ownerWindow = nullptr;
+
+    uint32 currentSwapchainIdx = 0;
 public:
     String getResourceName() const override;
 
     // Setup function must be use before calling init
     virtual void setWindow(GenericAppWindow* forWindow);
     virtual uint32 requestNextImage(SharedPtr<GraphicsSemaphore>* waitOnSemaphore, SharedPtr<GraphicsFence>* waitOnFence = nullptr);
+    uint32 currentImgIdx() const { return currentSwapchainIdx; }
     virtual EPixelDataFormat::Type windowCanvasFormat() const { return EPixelDataFormat::Undefined; }
     virtual int32 imagesCount() const { return -1; }
 };

@@ -4,7 +4,7 @@
 
 void TextureBase::setFilteringMode(ESamplerFiltering::Type filtering)
 {
-    
+    sampleFiltering = filtering;
 }
 
 void TextureBase::reinitResources()

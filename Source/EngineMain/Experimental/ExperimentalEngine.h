@@ -14,6 +14,8 @@
 #include "../Core/Types/Colors.h"
 #include "../RenderInterface/Rendering/RenderingContexts.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../RenderInterface/Resources/BufferedResources.h"
+#include "ImGui/IImGuiLayer.h"
 
 #include <map>
 #include <vulkan_core.h>
@@ -59,7 +61,7 @@ struct FrameResource
     SharedPtr<GraphicsFence> recordingFence;
 };
 
-class ExperimentalEngine : public GameEngine
+class ExperimentalEngine : public GameEngine, public IImGuiLayer
 {
     class VulkanDevice* vDevice;
     VkDevice device;
@@ -81,7 +83,7 @@ class ExperimentalEngine : public GameEngine
     std::vector<SceneEntity> sceneData;
     std::vector<std::pair<struct GoochModelLightData, SharedPtr<ShaderParameters>>> lightData;
     SharedPtr<ShaderParameters> lightCommon;
-    std::vector<SharedPtr<ShaderParameters>> lightTextures;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> lightTextures;
     SharedPtr<ShaderParameters> viewParameters;
     void createScene();
     void destroyScene();
@@ -92,10 +94,10 @@ class ExperimentalEngine : public GameEngine
     Rotation cameraRotation;
     void updateCameraParams();
 
-    std::vector<SharedPtr<ShaderParameters>> drawQuadTextureDescs;
-    std::vector<SharedPtr<ShaderParameters>> drawQuadNormalDescs;
-    std::vector<SharedPtr<ShaderParameters>> drawQuadDepthDescs;
-    std::vector<SharedPtr<ShaderParameters>> drawLitColorsDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadTextureDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadNormalDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadDepthDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawLitColorsDescs;
 
     void createShaderParameters();
     void setupShaderParameterParams();
@@ -146,6 +148,12 @@ protected:
 
     void tempTest();
     void tempTestPerFrame();
+    /* IImGuiLayer Implementation */
+public:
+    int32 layerDepth() const override;
+    int32 sublayerDepth() const override;
+    void draw(class ImGuiDrawInterface* drawInterface) override;
+    /* end overrides */
 };
 
 #endif

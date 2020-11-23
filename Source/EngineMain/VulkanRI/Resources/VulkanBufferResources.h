@@ -16,6 +16,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
+    int32 bufferStride() const override;
+    void setBufferStride(int32 newStride) override;
+    int32 bufferCount() const override;
+    void setBufferCount(int32 newCount) override;
 
     /* Overrides ends */
 };
@@ -34,6 +38,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
+    int32 bufferStride() const override;
+    void setBufferStride(int32 newStride) override;
+    int32 bufferCount() const override;
+    void setBufferCount(int32 newCount) override;
 
     /* Overrides ends */
 };
@@ -52,6 +60,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
+    int32 bufferStride() const override;
+    void setBufferStride(int32 newStride) override;
+    int32 bufferCount() const override;
+    void setBufferCount(int32 newCount) override;
 
     /* Overrides ends */
 };
@@ -69,6 +81,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
+    void setTexelFormat(EPixelDataFormat::Type newFormat) override;
+    int32 bufferStride() const override;
+    int32 bufferCount() const override;
+    void setBufferCount(int32 newCount) override;
 
     /* Overrides ends */
 };
@@ -86,6 +102,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
+    void setTexelFormat(EPixelDataFormat::Type newFormat) override;
+    int32 bufferStride() const override;
+    int32 bufferCount() const override;
+    void setBufferCount(int32 newCount) override;
 
     /* Overrides ends */
 };
@@ -103,6 +123,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
+    void setTexelFormat(EPixelDataFormat::Type newFormat) override;
+    int32 bufferStride() const override;
+    int32 bufferCount() const override;
+    void setBufferCount(int32 newCount) override;
 
     /* Overrides ends */
 };
@@ -121,6 +145,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
+    int32 bufferStride() const override;
+    void setBufferStride(int32 newStride) override;
+    int32 bufferCount() const override;
+    void setBufferCount(int32 newCount) override;
 
     /* Overrides ends */
 };
@@ -139,6 +167,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
+    int32 bufferStride() const override;
+    void setBufferStride(int32 newStride) override;
+    int32 bufferCount() const override;
+    void setBufferCount(int32 newCount) override;
 
     /* Overrides ends */
 };

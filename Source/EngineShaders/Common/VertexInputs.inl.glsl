@@ -2,6 +2,11 @@
 #if SIMPLE2D
 layout(location = 0) in vec2 position;
 #endif
+#if UI
+layout(location = 0) in vec2 position;
+layout(location = 1) in vec2 uv;
+layout(location = 2) in vec4 color;
+#endif
 #if SIMPLE3D
 layout(location = 0) in vec3 position;
 #endif

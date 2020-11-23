@@ -159,11 +159,15 @@ class BufferResource : public MemoryResource
     DECLARE_GRAPHICS_RESOURCE(BufferResource, , MemoryResource, )
 
 public:
-    // TODO(Jeslas) : Check if this is needed later point of development
     void setAsStagingResource(bool isStaging) { bIsStagingResource = isStaging; }
 
     // Valid value only in case of texel buffer, ordinary buffer gives EPixelDataFormat::Undefined
-    EPixelDataFormat::Type texelFormat() { return dataFormat; }
+    EPixelDataFormat::Type texelFormat() const { return dataFormat; }
+    virtual void setTexelFormat(EPixelDataFormat::Type format) {}
+    virtual int32 bufferStride() const { return 0; }
+    virtual void setBufferStride(int32 newStride) {}
+    virtual int32 bufferCount() const { return 0; }
+    virtual void setBufferCount(int32 newCount) {}
 };
 
 class ImageResource : public MemoryResource

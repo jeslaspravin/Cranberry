@@ -226,6 +226,12 @@
     <Filter Include="Header Files\RenderInterface\Shaders\EngineShaders">
       <UniqueIdentifier>{126fe3d0-d6ea-46a6-8510-d761b3f3ff44}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Experimental\ImGui">
+      <UniqueIdentifier>{fcd4aec1-95c5-46ac-a9fe-ee99477370b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Experimental\ImGui\Shaders">
+      <UniqueIdentifier>{ee0a17b6-76e3-42af-a591-5131651c6455}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -533,6 +539,33 @@
     </ClCompile>
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachmentShader.cpp">
       <Filter>Source Files\RenderInterface\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ImGui\imgui.cpp">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ImGui\imgui_demo.cpp">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ImGui\imgui_draw.cpp">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ImGui\imgui_stdlib.cpp">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ImGui\imgui_widgets.cpp">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ImGui\ImGuiFontTextureAtlas.cpp">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ImGui\ImGuiDrawInterface.cpp">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ImGui\ImGuiManager.cpp">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Experimental\ImGui\Shaders\DrawImGuiShader.cpp">
+      <Filter>Source Files\Experimental\ImGui\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -955,6 +988,42 @@
     </ClInclude>
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.h">
       <Filter>Header Files\RenderInterface\Shaders\EngineShaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\imconfig.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\imgui.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\imgui_internal.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\imgui_stdlib.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\imstb_rectpack.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\imstb_textedit.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\imstb_truetype.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\ImGuiFontTextureAtlas.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\ImGuiDrawInterface.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\ImGuiManager.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Experimental\ImGui\IImGuiLayer.h">
+      <Filter>Source Files\Experimental\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Resources\BufferedResources.h">
+      <Filter>Header Files\RenderInterface\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

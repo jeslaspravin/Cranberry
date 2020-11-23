@@ -17,6 +17,13 @@ struct VertexSimple2D
     Vector2D position;
 };
 
+struct VertexUI
+{
+    Vector2D position;
+    Vector2D uv;
+    uint32 color;
+};
+
 struct VertexSimple3D
 {
     Vector3D position;
@@ -29,6 +36,12 @@ struct VertexSimple4D
 
 BEGIN_VERTEX_DEFINITION(VertexSimple2D, EShaderInputFrequency::PerVertex)
 ADD_VERTEX_FIELD(position)
+END_VERTEX_DEFINITION();
+
+BEGIN_VERTEX_DEFINITION(VertexUI, EShaderInputFrequency::PerVertex)
+ADD_VERTEX_FIELD(position)
+ADD_VERTEX_FIELD(uv)
+ADD_VERTEX_FIELD_AND_FORMAT(color, EShaderInputAttribFormat::UInt4Norm)
 END_VERTEX_DEFINITION();
 
 BEGIN_VERTEX_DEFINITION(VertexSimple3D, EShaderInputFrequency::PerVertex)
@@ -45,6 +58,14 @@ namespace EVertexType
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple2>()
     {
         static VertexSimple2DVertexParamInfo STATIC_VERTEX_PARAM_INFO;
+        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &STATIC_VERTEX_PARAM_INFO };
+        return VERTEX_PARAMS;
+    }
+
+    template<>
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<UI>()
+    {
+        static VertexUIVertexParamInfo STATIC_VERTEX_PARAM_INFO;
         static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &STATIC_VERTEX_PARAM_INFO };
         return VERTEX_PARAMS;
     }

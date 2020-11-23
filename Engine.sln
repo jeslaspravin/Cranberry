@@ -59,6 +59,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SingleColor", "SingleColor"
 		Source\EngineShaders\SingleColor\SingleColorStaticMeshMultibuffer.vert.glsl = Source\EngineShaders\SingleColor\SingleColorStaticMeshMultibuffer.vert.glsl
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{62B768BF-FF87-469F-8DC6-6CA3D1A6AE3C}"
+	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\UI\DrawImGui.frag.glsl = Source\EngineShaders\UI\DrawImGui.frag.glsl
+		Source\EngineShaders\UI\DrawImGui.vert.glsl = Source\EngineShaders\UI\DrawImGui.vert.glsl
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Source\EngineShaderData\EngineShaderData.vcxitems*{1d27fc53-fcde-4242-a296-952ec6bc2ca4}*SharedItemsImports = 4
@@ -112,6 +118,7 @@ Global
 		{160411F8-2D91-49C9-AF1D-80E9E33AC675} = {61CB758C-20C2-4897-9454-061721EF2C89}
 		{9AE437AD-6B01-476D-9DF1-0687948333F2} = {61CB758C-20C2-4897-9454-061721EF2C89}
 		{81FC9105-8C7A-463F-96C4-1878AB8F02F3} = {61CB758C-20C2-4897-9454-061721EF2C89}
+		{62B768BF-FF87-469F-8DC6-6CA3D1A6AE3C} = {61CB758C-20C2-4897-9454-061721EF2C89}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D05BB706-1F92-4580-853D-B271284B97FA}

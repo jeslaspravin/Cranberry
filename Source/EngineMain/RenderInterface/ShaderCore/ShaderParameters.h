@@ -32,6 +32,7 @@ struct ShaderVertexField
     EShaderInputAttribFormat::Type format = EShaderInputAttribFormat::Undefined;
 
     ShaderVertexField(const String& attribName, const uint32& offsetVal);
+    ShaderVertexField(const String& attribName, const uint32& offsetVal, EShaderInputAttribFormat::Type overrideFormat);
 };
 
 template<typename OuterType, typename MemberType>
@@ -42,6 +43,11 @@ struct ShaderVertexMemberField : public ShaderVertexField
 
     ShaderVertexMemberField(const String& pName, const FieldPtr& fieldPtr, const uint32& offsetVal)
         : ShaderVertexField(pName, offsetVal)
+        , memberPtr(fieldPtr)
+    {}
+
+    ShaderVertexMemberField(const String& pName, const FieldPtr& fieldPtr, const uint32& offsetVal, EShaderInputAttribFormat::Type overrideFormat)
+        : ShaderVertexField(pName, offsetVal, overrideFormat)
         , memberPtr(fieldPtr)
     {}
 };
@@ -288,6 +294,10 @@ struct VertexType##VertexParamInfo final : public ShaderVertexParamInfo \
 
 #define ADD_VERTEX_FIELD(FieldName) \
     ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field = { #FieldName, &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName) }; \
+    ShaderVertexFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
+
+#define ADD_VERTEX_FIELD_AND_FORMAT(FieldName, OverrideFormat) \
+    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field = { #FieldName, &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName), OverrideFormat }; \
     ShaderVertexFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 #define END_VERTEX_DEFINITION() \

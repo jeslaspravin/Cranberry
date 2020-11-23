@@ -32,6 +32,8 @@
 #include "../Core/Types/Textures/RenderTargetTextures.h"
 #include "../RenderInterface/GlobalRenderVariables.h"
 #include "../RenderInterface/Rendering/CommandBuffer.h"
+#include "ImGui/ImGuiManager.h"
+#include "ImGui/imgui.h"
 
 #include <array>
 #include <random>
@@ -293,11 +295,11 @@ void ExperimentalEngine::createShaderParameters()
     }
 
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
-    lightTextures.resize(swapchainCount);
-    drawQuadTextureDescs.resize(swapchainCount);
-    drawQuadNormalDescs.resize(swapchainCount);
-    drawQuadDepthDescs.resize(swapchainCount);
-    drawLitColorsDescs.resize(swapchainCount);
+    lightTextures.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
+    drawQuadTextureDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
+    drawQuadNormalDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
+    drawQuadDepthDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
+    drawLitColorsDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
 
     // Light related descriptors
     // as 1 and 2 are textures and light data
@@ -317,16 +319,16 @@ void ExperimentalEngine::createShaderParameters()
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         const String iString = std::to_string(i);
-        lightTextures[i] = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0,2 });
-        lightTextures[i]->setResourceName("LightFrameCommon_" + iString);
-        drawQuadTextureDescs[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout);
-        drawQuadTextureDescs[i]->setResourceName("QuadUnlit_" + iString);
-        drawQuadNormalDescs[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout);
-        drawQuadNormalDescs[i]->setResourceName("QuadNormal_" + iString);
-        drawQuadDepthDescs[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout);
-        drawQuadDepthDescs[i]->setResourceName("QuadDepth_" + iString);
-        drawLitColorsDescs[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout);
-        drawLitColorsDescs[i]->setResourceName("QuadLit_" + iString);
+        lightTextures.set(GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0,2 }), i);
+        lightTextures.getResources()[i]->setResourceName("LightFrameCommon_" + iString);
+        drawQuadTextureDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawQuadTextureDescs.getResources()[i]->setResourceName("QuadUnlit_" + iString);
+        drawQuadNormalDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawQuadNormalDescs.getResources()[i]->setResourceName("QuadNormal_" + iString);
+        drawQuadDepthDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawQuadDepthDescs.getResources()[i]->setResourceName("QuadDepth_" + iString);
+        drawLitColorsDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawLitColorsDescs.getResources()[i]->setResourceName("QuadLit_" + iString);
     }
 
     clearInfoParams = GraphicsHelper::createShaderParameters(graphicsInstance, clearQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0));
@@ -374,21 +376,21 @@ void ExperimentalEngine::setupShaderParameterParams()
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         Framebuffer* multibuffer = GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
-        lightTextures[i]->setTextureParam("ssUnlitColor", multibuffer->textures[1], nearestFiltering);
-        lightTextures[i]->setTextureParam("ssNormal", multibuffer->textures[3], nearestFiltering);
-        lightTextures[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering);
-        lightTextures[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
-        lightTextures[i]->init();
+        lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[1], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[3], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
-        drawQuadTextureDescs[i]->setTextureParam("quadTexture", multibuffer->textures[1], linearFiltering);
-        drawQuadTextureDescs[i]->init();
-        drawQuadNormalDescs[i]->setTextureParam("quadTexture", multibuffer->textures[3], linearFiltering);
-        drawQuadNormalDescs[i]->init();
-        drawQuadDepthDescs[i]->setTextureParam("quadTexture", multibuffer->textures[5], linearFiltering);
-        drawQuadDepthDescs[i]->init();
-        drawLitColorsDescs[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
-        drawLitColorsDescs[i]->init();
+        drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[1], linearFiltering);
+        drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[3], linearFiltering);
+        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[5], linearFiltering);
+        drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
+    lightTextures.init();
+    drawQuadTextureDescs.init();
+    drawQuadNormalDescs.init();
+    drawQuadDepthDescs.init();
+    drawLitColorsDescs.init();
 
     clearInfoParams->setVector4Param("clearColor", Vector4D(0, 0, 0, 0));
     clearInfoParams->init();
@@ -408,34 +410,13 @@ void ExperimentalEngine::updateShaderParameters(class IRenderCommandList* cmdLis
         //        frameRes.recordingFence->waitForSignal();
         //    }
         //}
-        viewParameters->updateParams(cmdList, graphicsInstance);
-        for (SceneEntity& entity : sceneData)
+
+        std::vector<GraphicsResource*> shaderParams;
+        ShaderParameters::staticType()->allRegisteredResources(shaderParams, true, true);
+        for (GraphicsResource* resource : shaderParams)
         {
-            entity.instanceParameters->updateParams(cmdList, graphicsInstance);
-
-            for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
-            {
-                meshBatchParam->updateParams(cmdList, graphicsInstance);
-            }
+            static_cast<ShaderParameters*>(resource)->updateParams(cmdList, graphicsInstance);
         }
-
-        lightCommon->updateParams(cmdList, graphicsInstance);
-        for (std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
-        {
-            light.second->updateParams(cmdList, graphicsInstance);
-        }
-
-        uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
-        for (uint32 i = 0; i < swapchainCount; ++i)
-        {
-            lightTextures[i]->updateParams(cmdList, graphicsInstance);
-            drawQuadTextureDescs[i]->updateParams(cmdList, graphicsInstance);
-            drawQuadNormalDescs[i]->updateParams(cmdList, graphicsInstance);
-            drawQuadDepthDescs[i]->updateParams(cmdList, graphicsInstance);
-            drawLitColorsDescs[i]->updateParams(cmdList, graphicsInstance);
-        }
-
-        clearInfoParams->updateParams(cmdList, graphicsInstance);
     }
 }
 
@@ -446,15 +427,15 @@ void ExperimentalEngine::reupdateTextureParamsOnResize()
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         Framebuffer* multibuffer = GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
-        lightTextures[i]->setTextureParam("ssUnlitColor", multibuffer->textures[1], nearestFiltering);
-        lightTextures[i]->setTextureParam("ssNormal", multibuffer->textures[3], nearestFiltering);
-        lightTextures[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering);
-        lightTextures[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[1], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[3], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
-        drawQuadTextureDescs[i]->setTextureParam("quadTexture", multibuffer->textures[1], linearFiltering);
-        drawQuadNormalDescs[i]->setTextureParam("quadTexture", multibuffer->textures[3], linearFiltering);
-        drawQuadDepthDescs[i]->setTextureParam("quadTexture", multibuffer->textures[5], linearFiltering);
-        drawLitColorsDescs[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
+        drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[1], linearFiltering);
+        drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[3], linearFiltering);
+        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[5], linearFiltering);
+        drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
 }
 
@@ -485,19 +466,11 @@ void ExperimentalEngine::destroyShaderParameters()
         light.second.reset();
     }
 
-    for (uint32 i = 0; i < swapchainCount; ++i)
-    {
-        lightTextures[i]->release();
-        drawQuadTextureDescs[i]->release();
-        drawQuadNormalDescs[i]->release();
-        drawQuadDepthDescs[i]->release();
-        drawLitColorsDescs[i]->release();
-    }
-    lightTextures.clear();
-    drawQuadTextureDescs.clear();
-    drawQuadNormalDescs.clear();
-    drawQuadDepthDescs.clear();
-    drawLitColorsDescs.clear();
+    lightTextures.reset();
+    drawQuadTextureDescs.reset();
+    drawQuadNormalDescs.reset();
+    drawQuadDepthDescs.reset();
+    drawLitColorsDescs.reset();
 
     clearInfoParams->release();
     clearInfoParams.reset();
@@ -717,6 +690,7 @@ void ExperimentalEngine::onStartUp()
     camera.lookAt(Vector3D::ZERO);
     cameraRotation = camera.rotation();
 
+    getRenderApi()->getImGuiManager()->addLayer(this);
     createScene();
 
     tempTest();
@@ -741,6 +715,7 @@ void ExperimentalEngine::onQuit()
 {
     ENQUEUE_COMMAND(EngineQuit, { renderQuit(); }, this);
 
+    getRenderApi()->getImGuiManager()->removeLayer(this);
     GameEngine::onQuit();
 }
 
@@ -776,21 +751,21 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
     queryParam.cullingMode = ECullingMode::BackFace;
     queryParam.drawMode = EPolygonDrawMode::Fill;
 
-    SharedPtr<ShaderParameters> drawQuadDescs;
+    ShaderParameters* drawQuadDescs;
     switch (frameVisualizeId)
     {
     case 1:
-        drawQuadDescs = drawQuadTextureDescs[index];
+        drawQuadDescs = *drawQuadTextureDescs;
         break;
     case 2:
-        drawQuadDescs = drawQuadNormalDescs[index];
+        drawQuadDescs = *drawQuadNormalDescs;
         break;
     case 3:
-        drawQuadDescs = drawQuadDepthDescs[index];
+        drawQuadDescs = *drawQuadDepthDescs;
         break;
     case 0:
     default:
-        drawQuadDescs = drawLitColorsDescs[index];
+        drawQuadDescs = *drawLitColorsDescs;
         break;
     }
 
@@ -879,11 +854,8 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
                     SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLight);
                     cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGoochPipelineContext, { queryParam });
 
-                    VulkanShaderParameters* lightCommonParams = static_cast<VulkanShaderParameters*>(lightCommon.get());
-                    VulkanShaderParameters* lightFrameParams = static_cast<VulkanShaderParameters*>(lightTextures[index].get());
-
                     // Right now only one set will be there but there is chances more set might get added
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), lightTextures[index].get(), light.second.get() });
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), *lightTextures, light.second.get() });
                     cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                 }
                 cmdList->cmdEndRenderPass(cmdBuffer);
@@ -897,7 +869,7 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
                         SCOPED_CMD_MARKER(cmdList, cmdBuffer, ResolveLightRT);
 
                         cmdList->cmdBindGraphicsPipeline(cmdBuffer, resolveLightRtPipelineContext, { queryParam });
-                        cmdList->cmdBindDescriptorsSets(cmdBuffer, resolveLightRtPipelineContext, drawLitColorsDescs[index].get());
+                        cmdList->cmdBindDescriptorsSets(cmdBuffer, resolveLightRtPipelineContext, *drawLitColorsDescs);
 
                         cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                     }
@@ -906,8 +878,18 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
             }
         }
 
+        // Drawing IMGUI
+        TinyDrawingContext drawingContext;
+        drawingContext.cmdBuffer = cmdBuffer;
+        drawingContext.rtTextures = drawGoochPipelineContext.rtTextures;
+        getRenderApi()->getImGuiManager()->draw(cmdList, graphicsInstance, drawingContext);
+
         // Drawing final quad        
         viewport.maxBound = scissor.maxBound = EngineSettings::surfaceSize.get();
+
+        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { quadVertexBuffer }, { 0 });
+        cmdList->cmdBindIndexBuffer(cmdBuffer, quadIndexBuffer);
+        cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
         RenderPassAdditionalProps renderPassAdditionalProps;
         renderPassAdditionalProps.bUsedAsPresentSource = true;
@@ -917,7 +899,7 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
 
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawQuadPipelineContext, { queryParam });
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawQuadPipelineContext, drawQuadDescs.get());
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawQuadPipelineContext, drawQuadDescs);
             cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
         }
         cmdList->cmdEndRenderPass(cmdBuffer);
@@ -978,6 +960,22 @@ void ExperimentalEngine::tickEngine()
         }, this);
 
     tempTestPerFrame();
+}
+
+int32 ExperimentalEngine::layerDepth() const
+{
+    return 0;
+}
+
+int32 ExperimentalEngine::sublayerDepth() const
+{
+    return 0;
+}
+
+void ExperimentalEngine::draw(class ImGuiDrawInterface* drawInterface)
+{
+    bool bOpen = true;
+    ImGui::ShowDemoWindow(&bOpen);
 }
 
 GameEngine* GameEngineWrapper::createEngineInstance()

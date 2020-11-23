@@ -50,6 +50,8 @@ namespace EShaderInputAttribFormat
         UByte2      = EPixelDataFormat::RG_UI8,
         UByte3      = EPixelDataFormat::RGB_UI8,
         UByte4      = EPixelDataFormat::RGBA_UI8,
+        // Additional formats for packed color values
+        UInt4Norm   = EPixelDataFormat::RGBA_U8_Norm,
         Matrix2x2   = EPixelDataFormat::AllFormatEnd,
         Matrix3x3,
         Matrix4x4

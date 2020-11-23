@@ -11,6 +11,8 @@ private:
     glm::vec4 value;
     // TODO(Jeslas) : To allow vector - matrix product - Remove once using native implemented vectors and matrices
     friend class Matrix4;
+    friend Vector4D operator/(float n, const Vector4D& d);
+    friend Vector4D operator-(float n, const Vector4D& d);
 public:
     Vector4D();
     Vector4D(const float& x, const float& y, const float& z, const float& w);
@@ -77,3 +79,8 @@ public:
     static Vector4D floor(const Vector4D& value);
     static Vector4D ceil(const Vector4D& value);
 };
+
+Vector4D operator/(float n, const Vector4D& d);
+Vector4D operator-(float n, const Vector4D& d);
+Vector4D operator*(float n, const Vector4D& d);
+Vector4D operator+(float n, const Vector4D& d);
