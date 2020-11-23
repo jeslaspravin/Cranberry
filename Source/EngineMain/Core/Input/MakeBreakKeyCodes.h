@@ -110,15 +110,8 @@ namespace MakeBreakKeyCodes
         KEY_NUMENTER = 0x74,
         KEY_CLR = 0x76,
         // Above 0xFF for application local
-        MOUSE_LEFT = 0x100,
-        MOUSE_RIGHT,
-        MOUSE_MID,
-        MOUSE_X1,
-        MOUSE_X2,
-        MOUSE_START = MOUSE_LEFT,
-        MOUSE_END = MOUSE_X2,
-        // E0 Keys
-        E0_CODE = 0xE000,
+        // E0 Keys, E0 is after 0xFF because These keys are denoted by additional flags and so it don't have to be in [0x00, 0xFE]
+        E0_CODE = 0x100,
         KEY_RCTRL = E0_CODE | KEY_LCTRL,
         KEY_RALT = E0_CODE | KEY_LALT,
         KEY_NUMFWDSLASH = E0_CODE | KEY_FWDSLASH,
@@ -131,6 +124,14 @@ namespace MakeBreakKeyCodes
         KEY_DOWN = E0_CODE | KEY_NUM2,
         KEY_PAGEDOWN = E0_CODE | KEY_NUM3,
         KEY_INSERT = E0_CODE | KEY_NUM0,
-        KEY_DELETE = E0_CODE | KEY_NUMFULLSTOP
+        KEY_DELETE = E0_CODE | KEY_NUMFULLSTOP,
+        // Mouse key codes above 512 as they are not keys, we use them just to hold key state for mouse in same data structure
+        MOUSE_LEFT = 0x200,
+        MOUSE_RIGHT,
+        MOUSE_MID,
+        MOUSE_X1,
+        MOUSE_X2,
+        MOUSE_START = MOUSE_LEFT,
+        MOUSE_END = MOUSE_X2
     };
 }

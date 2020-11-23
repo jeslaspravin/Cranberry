@@ -11,6 +11,8 @@ private:
     glm::vec2 value;
     // TODO(Jeslas) : To allow vector - matrix product - Remove once using native implemented vectors and matrices
     friend class Matrix2;
+    friend Vector2D operator/(float n, const Vector2D& d);
+    friend Vector2D operator-(float n, const Vector2D& d);
 public:
     Vector2D();
     explicit Vector2D(const Matrix2Col& vector2d);
@@ -79,3 +81,8 @@ public:
     static Vector2D floor(const Vector2D& value);
     static Vector2D ceil(const Vector2D& value);
 };
+
+Vector2D operator/(float n, const Vector2D& d);
+Vector2D operator-(float n, const Vector2D& d);
+Vector2D operator*(float n, const Vector2D& d);
+Vector2D operator+(float n, const Vector2D& d);

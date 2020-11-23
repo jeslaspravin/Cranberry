@@ -124,7 +124,7 @@ const Key Keys::FWDDEL{ EKeyCode::KEY_FWDDEL,"\b", '\b' };
 
 
 
-std::initializer_list<std::pair<const Key*, KeyState>> Keys::KEYSTATES_INITIALIZER
+std::initializer_list<std::pair<const Key*, KeyState>> Keys::STATES_INITIALIZER
 {
     { &LMB, KeyState()},
     { &RMB, KeyState()},
@@ -250,24 +250,24 @@ std::initializer_list<std::pair<const Key*, KeyState>> Keys::KEYSTATES_INITIALIZ
 
 
 Keys::Keys()
-    : keyStates(KEYSTATES_INITIALIZER.begin(), KEYSTATES_INITIALIZER.end())
+    : keyStates(STATES_INITIALIZER.begin(), STATES_INITIALIZER.end())
 {
 
 }
 
-const KeyState* Keys::queryState(const Key& key) const
+const Keys::StateInfoType* Keys::queryState(const Key& key) const
 {
     return &keyStates.at(&key);
 }
 
-std::map<const Key*, KeyState>& Keys::getKeyStates()
+std::map<Keys::StateKeyType, Keys::StateInfoType>& Keys::getKeyStates()
 {
     return keyStates;
 }
 
 void Keys::resetStates()
 {
-    for (std::pair<Key const* const, KeyState>& keyStatePair : keyStates)
+    for (std::pair<const StateKeyType, StateInfoType>& keyStatePair : keyStates)
     {
         keyStatePair.second.isPressed = keyStatePair.second.keyWentUp = keyStatePair.second.keyWentDown = 0;
     }
@@ -283,21 +283,21 @@ bool Keys::isMouseKey(uint32 keyCode)
     return EKeyCode::MOUSE_START <= keyCode && EKeyCode::MOUSE_END >= keyCode;
 }
 
-std::initializer_list<std::pair<AnalogStates::EStates, InputAnalogState>> AnalogStates::ANALOGSTATES_INITIALIZER
+std::initializer_list<std::pair<AnalogStates::EStates, InputAnalogState>> AnalogStates::STATES_INITIALIZER
 {
     { RelMouseX, InputAnalogState() },
-    { RelMouseX, InputAnalogState() },
+    { RelMouseY, InputAnalogState() },
     { AbsMouseX, InputAnalogState() },
-    { AbsMouseX, InputAnalogState() },
+    { AbsMouseY, InputAnalogState() },
     { ScrollWheelX, InputAnalogState() },
     { ScrollWheelY, InputAnalogState() }
 };
 
 AnalogStates::AnalogStates()
-    : analogStates(ANALOGSTATES_INITIALIZER.begin(), ANALOGSTATES_INITIALIZER.end())
+    : analogStates(STATES_INITIALIZER.begin(), STATES_INITIALIZER.end())
 {}
 
-const InputAnalogState* AnalogStates::queryState(EStates analogState) const
+const AnalogStates::StateInfoType* AnalogStates::queryState(EStates analogState) const
 {
     auto stateItr = analogStates.find(analogState);
     if (stateItr != analogStates.cend())
@@ -307,7 +307,7 @@ const InputAnalogState* AnalogStates::queryState(EStates analogState) const
     return nullptr;
 }
 
-std::map<AnalogStates::EStates, InputAnalogState>& AnalogStates::getAnalogStates()
+std::map<AnalogStates::StateKeyType, AnalogStates::StateInfoType>& AnalogStates::getAnalogStates()
 {
     return analogStates;
 }

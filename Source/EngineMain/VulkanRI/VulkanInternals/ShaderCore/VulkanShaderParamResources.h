@@ -35,8 +35,6 @@ public:
     const std::vector<VkDescriptorPoolSize>& getDescPoolAllocInfo() const;
 };
 
-// TODO(Jeslas) : change the way param info retrieved to something better and extend able later
-
 // descriptor set layout and its info unique to each shader
 class VulkanShaderUniqDescLayout final : public VulkanShaderSetParamsLayout
 {

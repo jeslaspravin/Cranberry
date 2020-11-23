@@ -11,6 +11,8 @@ private:
     glm::vec3 value;
     // TODO(Jeslas) : To allow vector - matrix product - Remove once using native implemented vectors and matrices
     friend class Matrix3;
+    friend Vector3D operator/(float n, const Vector3D& d);
+    friend Vector3D operator-(float n, const Vector3D& d);
 public:
     Vector3D();
     explicit Vector3D(const Matrix3Col& vector3d);
@@ -81,3 +83,8 @@ public:
     static Vector3D floor(const Vector3D& value);
     static Vector3D ceil(const Vector3D& value);
 };
+
+Vector3D operator/(float n, const Vector3D& d);
+Vector3D operator-(float n, const Vector3D& d);
+Vector3D operator*(float n, const Vector3D& d);
+Vector3D operator+(float n, const Vector3D& d);

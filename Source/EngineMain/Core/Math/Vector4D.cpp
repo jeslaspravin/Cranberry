@@ -297,3 +297,23 @@ Vector4D Math::ceil(const Vector4D& value)
 {
     return Vector4D::ceil(value);
 }
+
+Vector4D operator/(float n, const Vector4D& d)
+{
+    return Vector4D(n / d.value);
+}
+
+Vector4D operator-(float n, const Vector4D& d)
+{
+    return Vector4D(n - d.value);
+}
+
+Vector4D operator*(float n, const Vector4D& d)
+{
+    return d * n;
+}
+
+Vector4D operator+(float n, const Vector4D& d)
+{
+    return d + n;
+}

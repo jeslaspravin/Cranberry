@@ -3,6 +3,9 @@
 #include "CoreMathTypedefs.h"
 #include "Math.h"
 
+class Vector2D;
+class Vector3D;
+
 // Usage AABB
 template<class T,uint32 d>
 class Box
@@ -233,3 +236,9 @@ public:
 
 using SizeBox2D = Box<Size2D, 2>;
 using SizeBox3D = Box<Size3D, 3>;
+
+using QuantizedBox2D = Box<Int2D, 2>;
+using QuantizedBox3D = Box<Int3D, 3>;
+
+using Rect = Box<Vector2D, 2>;
+using AABB = Box<Vector3D, 3>;

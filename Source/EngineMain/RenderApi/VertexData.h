@@ -7,6 +7,7 @@ namespace EVertexType
     enum Type
     {
         Simple2,// position only vertices(vec2)
+        UI,// Currently ImGui vertices
         Simple3,// Position only vertices(vec3)
         Simple4,// position only vertices(vec4)
         BasicMesh, // Basic mesh with position, texture coordinates
@@ -20,6 +21,8 @@ namespace EVertexType
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo();
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple2>();
+    template<>
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<UI>();
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3>();
     template<>
@@ -35,6 +38,8 @@ namespace EVertexType
         {
         case EVertexType::Simple2:
             return vertexParamInfo<Simple2>();
+        case EVertexType::UI:
+            return vertexParamInfo<UI>();
         case EVertexType::Simple3:
             return vertexParamInfo<Simple3>();
         case EVertexType::Simple4:

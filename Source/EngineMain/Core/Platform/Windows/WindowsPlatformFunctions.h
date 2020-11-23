@@ -15,10 +15,15 @@ public:
     static void* getCurrentProcessHandle();
     static void getAllModules(void* processHandle, LibPointerPtr* modules, uint32& modulesSize);
 
+    static String getClipboard();
+    static bool setClipboard(const String& text);
+
     static uint32 getSetBitCount(const uint8& value);
     static uint32 getSetBitCount(const uint16& value);
     static uint32 getSetBitCount(const uint32& value);
     static uint32 getSetBitCount(const uint64& value);
+
+    static void wcharToStr(String& outStr, const WChar* wChar);
 };
 
 namespace GPlatformFunctions {

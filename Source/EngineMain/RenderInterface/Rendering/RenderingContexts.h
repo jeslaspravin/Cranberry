@@ -113,3 +113,11 @@ public:
     const Framebuffer* getFb() const { return framebuffer; }
     const PipelineBase* getPipeline() const { return pipelineUsed; }
 };
+
+struct TinyDrawingContext
+{
+    const GraphicsResource* cmdBuffer;
+
+    std::vector<RenderTargetTexture*> rtTextures;
+    uint32 swapchainIdx = ~(0u);
+};

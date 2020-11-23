@@ -75,7 +75,7 @@ void GameEngine::engineLoop()
         timeData.activeTimeDilation = applicationInstance->appWindowManager.pollWindows()? 1.0f : 0.0f;
         timeData.progressFrame();
         tickEngine();
-        renderingApi.renderFrame();
+        renderingApi.renderFrame(timeData.deltaTime);
     }
 }
 

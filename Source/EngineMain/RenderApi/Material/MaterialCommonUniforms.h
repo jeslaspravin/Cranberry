@@ -21,6 +21,8 @@ namespace MaterialVertexUniforms
     template<>
     const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple2>();
     template<>
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::UI>();
+    template<>
     const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3>();
     template<>
     const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple4>();
@@ -35,6 +37,8 @@ namespace MaterialVertexUniforms
         {
         case EVertexType::Simple2:
             return bufferParamInfo<EVertexType::Simple2>();
+        case EVertexType::UI:
+            return bufferParamInfo<EVertexType::UI>();
         case EVertexType::Simple3:
             return bufferParamInfo<EVertexType::Simple3>();
         case EVertexType::Simple4:

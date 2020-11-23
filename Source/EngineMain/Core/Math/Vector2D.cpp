@@ -292,3 +292,23 @@ Vector2D Math::ceil(const Vector2D& value)
 {
     return Vector2D::ceil(value);
 }
+
+Vector2D operator/(float n, const Vector2D& d)
+{
+    return Vector2D(n / d.value);
+}
+
+Vector2D operator-(float n, const Vector2D& d)
+{
+    return Vector2D(n - d.value);
+}
+
+Vector2D operator*(float n, const Vector2D& d)
+{
+    return d * n;
+}
+
+Vector2D operator+(float n, const Vector2D& d)
+{
+    return d + n;
+}

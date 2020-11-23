@@ -2,6 +2,7 @@
 #include "WindowsAppInstance.h"
 #include "../../Logger/Logger.h"
 #include "../../Engine/GameEngine.h"
+#include "../../Math/Vector2D.h"
 #include "../../../RenderInterface/Resources/GenericWindowCanvas.h"
 
 #include <set>
@@ -54,6 +55,7 @@ void WindowsAppWindow::createWindow(const GenericAppInstance* appInstance)
 
 void WindowsAppWindow::updateWindow()
 {
+    // Since we are processing only raw inputs which are buffered only if not removed here
     const static std::set<uint32> IGNORED_MSGS{ WM_INPUT };
 
     auto peekMsgsLambda = [this](uint32 minFilter, uint32 maxFilter, uint32 removeFlag)
@@ -117,6 +119,19 @@ void WindowsAppWindow::windowResizing(uint32 width, uint32 height) const
     {
         onResize.invoke(width, height);
     }
+}
+
+Rect WindowsAppWindow::windowClientRect() const
+{
+    Rect retVal(Vector2D::ZERO, Vector2D::ZERO);
+    RECT clientArea;
+    POINT clientOrigin{0, 0};
+    if (GetClientRect(windowsHandle, &clientArea) && ClientToScreen(windowsHandle, &clientOrigin))
+    {
+        retVal.minBound = Vector2D(float(clientArea.left + clientOrigin.x), float(clientArea.top + clientOrigin.y));
+        retVal.maxBound = Vector2D(float(clientArea.right + clientOrigin.x), float(clientArea.bottom + clientOrigin.y));
+    }
+    return retVal;
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

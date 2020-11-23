@@ -1,11 +1,66 @@
 #pragma once
 #include "../Platform/PlatformTypes.h"
+#include "../Types/CoreDefines.h"
 #include "../String/String.h"
 #include "../Types/Time.h"
 
 #include <map>
 
-// TODO (Jeslas) : change this to proper input system later on
+template<typename KeyType, typename ValueType>
+class InputStateIterator
+{
+private:
+    using Iterator = typename std::initializer_list<std::pair<KeyType, ValueType>>::const_iterator;
+
+    Iterator iterator;
+public:
+    InputStateIterator() = default;
+    InputStateIterator(Iterator itr) : iterator(itr) {}
+
+    const KeyType* operator->() const
+    {
+        return &iterator->first;
+    }
+
+    const KeyType& operator*() const
+    {
+        return iterator->first;
+    }
+
+    bool operator!=(const InputStateIterator& other) const
+    {
+        return **this != *other;
+    }
+
+    InputStateIterator& operator++()
+    {
+        ++iterator;
+        return *this;
+    }
+
+    InputStateIterator operator++(int)
+    {
+        InputStateIterator retVal(iterator);
+        ++iterator;
+        return retVal;
+    }
+};
+
+template <typename InputType>
+struct InputStateRange
+{
+    using IteratorType = InputStateIterator<typename InputType::StateKeyType, typename InputType::StateInfoType>;
+    IteratorType begin() const
+    {
+        return IteratorType(InputType::STATES_INITIALIZER.begin());
+    }
+
+    IteratorType end() const
+    {
+        return IteratorType(InputType::STATES_INITIALIZER.end());
+    }
+};
+
 struct Key
 {
     // Make/Break code
@@ -31,10 +86,15 @@ struct KeyState
 
 class Keys
 {
+public:
+    using StateKeyType = const Key*;
+    using StateInfoType = KeyState;
+    using Range = InputStateRange<Keys>;
 private:
-    static std::initializer_list<std::pair<const Key*, KeyState>> KEYSTATES_INITIALIZER;
+    friend Range;
+    static std::initializer_list<std::pair<StateKeyType, StateInfoType>> STATES_INITIALIZER;
 
-    std::map<const Key*, KeyState> keyStates;
+    std::map<StateKeyType, StateInfoType> keyStates;
 public:
     const static Key LMB;
     const static Key RMB;
@@ -159,8 +219,8 @@ public:
 
     Keys();
 
-    const KeyState* queryState(const Key& key) const;
-    std::map<const Key*, KeyState>& getKeyStates();
+    const StateInfoType* queryState(const Key& key) const;
+    std::map<StateKeyType, StateInfoType>& getKeyStates();
     void resetStates();
 
     static bool isKeyboardKey(uint32 keyCode);
@@ -183,20 +243,29 @@ public:
     {
         RelMouseX,
         RelMouseY,
+        ScrollWheelX,
+        ScrollWheelY,
+        // Add absolute values below this
         AbsMouseX,
         AbsMouseY,
-        ScrollWheelX,
-        ScrollWheelY
+        AbsValsStart = AbsMouseX,
+        AbsValsEnd = AbsMouseY
     };
 
-private:
-    static std::initializer_list<std::pair<AnalogStates::EStates, InputAnalogState>> ANALOGSTATES_INITIALIZER;
+    using StateKeyType = EStates;
+    using StateInfoType = InputAnalogState;
+    using Range = InputStateRange<AnalogStates>;
 
-    std::map<AnalogStates::EStates, InputAnalogState> analogStates;
+private:
+    friend Range;
+    static std::initializer_list<std::pair<StateKeyType, StateInfoType>> STATES_INITIALIZER;
+
+    std::map<StateKeyType, StateInfoType> analogStates;
 
 public:
     AnalogStates();
-    const InputAnalogState* queryState(AnalogStates::EStates analogState) const;
-    std::map<AnalogStates::EStates, InputAnalogState>& getAnalogStates();
+    FORCE_INLINE static bool isAbsoluteValue(AnalogStates::EStates analogSate) { return analogSate >= EStates::AbsValsStart && analogSate <= EStates::AbsValsEnd; }
+    const StateInfoType* queryState(AnalogStates::EStates analogState) const;
+    std::map<StateKeyType, StateInfoType>& getAnalogStates();
     void resetStates();
 };

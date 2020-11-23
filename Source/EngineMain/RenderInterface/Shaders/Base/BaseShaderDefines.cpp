@@ -32,8 +32,26 @@ EVertexType::Type UniqueUtilityShader::vertexUsage() const
     {
         return EVertexType::BasicMesh;
     }
+    else if (getReflection()->inputs.size() == 3)
+    {
+        auto isUiVertex = [this]()->bool
+        {
+            bool retVal = true;
+            const EShaderInputAttribFormat::Type UiAttribCheck[] = { EShaderInputAttribFormat::Float2, EShaderInputAttribFormat::Float2,EShaderInputAttribFormat::Float4 };
+            for (const ReflectInputOutput& refInput : getReflection()->inputs)
+            {
+                retVal = retVal && EShaderInputAttribFormat::getInputFormat(refInput.data.type) == UiAttribCheck[refInput.data.location];
+            }
+            return retVal;
+        };
 
-    Logger::error("UniqueUtilityShader", "%s : not supported vertex format for Utility shader");
+        if (isUiVertex())
+        {
+            return EVertexType::UI;
+        }
+    }
+
+    Logger::error("UniqueUtilityShader", "%s() : not supported vertex format for Utility shader %s", __func__, getResourceName().getChar());
     return EVertexType::Simple2;
 }
 
@@ -61,4 +79,17 @@ ScreenSpaceQuadShaderPipeline::ScreenSpaceQuadShaderPipeline(const ShaderResourc
     AttachmentBlendState blendState;
     blendState.bBlendEnable = false;
     attachmentBlendStates.emplace_back(blendState);
+}
+
+DEFINE_GRAPHICS_RESOURCE(OverBlendedSSQuadShaderPipeline)
+
+OverBlendedSSQuadShaderPipeline::OverBlendedSSQuadShaderPipeline(const ShaderResource* shaderResource)
+    : BaseType(shaderResource)
+{
+    attachmentBlendStates[0].bBlendEnable = true;
+    attachmentBlendStates[0].colorBlendOp = EBlendOp::Add;
+    attachmentBlendStates[0].srcColorFactor = EBlendFactor::SrcAlpha;
+    attachmentBlendStates[0].dstColorFactor = EBlendFactor::OneMinusSrcAlpha;
+    attachmentBlendStates[0].alphaBlendOp = EBlendOp::Add;
+    attachmentBlendStates[0].srcAlphaFactor = attachmentBlendStates[0].dstAlphaFactor = EBlendFactor::One;
 }

@@ -2,6 +2,7 @@
 #include "PlatformTypes.h"
 #include "../String/String.h"
 #include "../Types/Delegates/Delegate.h"
+#include "../Math/Box.h"
 
 struct GenericAppInstance;
 
@@ -41,5 +42,6 @@ public:
     virtual void createWindow(const GenericAppInstance* appInstance) = 0;
     virtual void updateWindow();
     virtual void destroyWindow();
+    virtual Rect windowClientRect() const = 0;
     virtual bool isValidWindow() const = 0;
 };

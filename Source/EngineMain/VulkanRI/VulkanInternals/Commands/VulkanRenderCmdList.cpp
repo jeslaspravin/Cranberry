@@ -209,6 +209,11 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
         }
     }
 
+    if (dstToStagingBufferMap.empty())
+    {
+        return;
+    }
+
     // Copying between buffers
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "BatchCopyBufferTemp", false);
     const GraphicsResource* commandBuffer = cmdBufferManager->beginTempCmdBuffer("Batch copy buffers", EQueueFunction::Transfer);

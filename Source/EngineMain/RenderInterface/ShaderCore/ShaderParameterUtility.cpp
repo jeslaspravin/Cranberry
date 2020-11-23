@@ -58,7 +58,10 @@ bool ShaderParameterUtility::fillRefToVertexParamInfo(ShaderVertexParamInfo& ver
             if (vertexAttribute.attributeName == currentFieldNode->field->attributeName)
             {
                 currentFieldNode->field->location = vertexAttribute.data.location;
-                currentFieldNode->field->format = EShaderInputAttribFormat::getInputFormat(vertexAttribute.data.type);
+                if (currentFieldNode->field->format == EShaderInputAttribFormat::Undefined)
+                {
+                    currentFieldNode->field->format = EShaderInputAttribFormat::getInputFormat(vertexAttribute.data.type);
+                }
             }
         }
         currentFieldNode = currentFieldNode->nextNode;

@@ -3,6 +3,7 @@
 #include "Core/Platform/PlatformInstances.h"
 #include "Core/Platform/LFS/PlatformLFS.h"
 #include "Core/Platform/PlatformAssertionErrors.h"
+#include "Core/Platform/PlatformFunctions.h"
 
 
 int appMain(GenericAppInstance* appInstance)
@@ -14,9 +15,9 @@ int appMain(GenericAppInstance* appInstance)
 
     gEngine->engineLoop();
 
-    UnexpectedErrorHandler::getHandler()->unregisterFilter();
     gEngine->quit();
     Logger::log("Engine", "%s() : Engine quit", __func__);
+    UnexpectedErrorHandler::getHandler()->unregisterFilter();
     
     return 0;
 }
@@ -43,20 +44,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     appInstance.subVersion = ENGINE_SUBVERSION;
     appInstance.windowsInstance = hInstance;
 
-    // TODO(JESLAS) : Change wide char to Ansi conversion to something robust(Not so important)
-    size_t cmdLen = wcslen(pCmdLine) + 1;
-    String cmdLine;
-    cmdLine.resize(cmdLen * 2);
-    size_t writtenLength; 
-    wcstombs_s(&writtenLength, cmdLine.data(), cmdLine.length(), pCmdLine, _TRUNCATE);
-    cmdLine.resize(writtenLength);
-    appInstance.cmdLine = cmdLine;
-
-    if ((writtenLength - cmdLen) > 1)
-    {
-        Logger::warn("CommandLine", "%s() : Command line has non-ansi characters, They are not accepted [command] = %s",
-            __func__, appInstance.cmdLine.getChar());
-    }
+    PlatformFunctions::wcharToStr(appInstance.cmdLine, pCmdLine);
     Logger::debug("CommandLine", "%s() : Command [%s]",__func__, appInstance.cmdLine.getChar());
     
     int32 exitCode = appMain(&appInstance);

@@ -122,15 +122,15 @@ LinearColor::LinearColor(float r, float g, float b, float a /*= 1.0f*/)
     : colorValue(r,g,b,a)
 {}
 
-LinearColor::LinearColor(const Color& color, bool bFromSrgb)
+LinearColor::LinearColor(const Color& color, bool bCheckSrgb)
 {
-    if (bFromSrgb)
+    if (bCheckSrgb)
     {
-        colorValue = glm::vec4(color.toSrgb().getColorValue()) / 255.f;
+        colorValue = glm::vec4(color.toLinear().getColorValue()) / 255.f;
     }
     else
     {
-        colorValue = glm::vec4(color.toLinear().getColorValue()) / 255.f;
+        colorValue = glm::vec4(color.getColorValue()) / 255.f;
     }
 }
 
@@ -141,11 +141,6 @@ LinearColor::LinearColor(const LinearColor& otherColor)
 LinearColor::LinearColor(LinearColor&& otherColor)
     :colorValue(std::move(otherColor.colorValue))
 {}
-
-LinearColor::LinearColor(const Color& color)
-{
-    colorValue = glm::vec4(color.getColorValue()) / 255.f;
-}
 
 void LinearColor::operator=(LinearColor&& otherColor)
 {
