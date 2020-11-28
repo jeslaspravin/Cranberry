@@ -108,17 +108,12 @@ void WindowManager::deactivateWindow(GenericAppWindow* window)
 
 bool WindowManager::pollWindows()
 {
-    bool bActive = false;
     for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
     {
         windowData.first->updateWindow();
     }
-    if (activeWindow != nullptr)
-    {
-        inputSystem->updateInputStates();
-        bActive = true;
-    }
-    return bActive;
+    inputSystem->updateInputStates();
+    return activeWindow != nullptr;
 }
 
 const InputSystem* WindowManager::getInputSystem() const

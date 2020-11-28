@@ -1,7 +1,7 @@
 #include "ImGuiFontTextureAtlas.h"
-#include "../../RenderInterface/Rendering/IRenderCommandList.h"
-#include "../../RenderInterface/PlatformIndependentHeaders.h"
-#include "imgui.h"
+#include "../../../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../../../RenderInterface/PlatformIndependentHeaders.h"
+#include "ImGuiLib/imgui.h"
 
 ImGuiFontTextureAtlas* ImGuiFontTextureAtlas::createTexture(const ImGuiFontTextureParams& createParams)
 {

@@ -5,7 +5,7 @@
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../RenderInterface/Rendering/RenderingContexts.h"
 #include "../Core/Platform/PlatformAssertionErrors.h"
-#include "../Experimental/ImGui/ImGuiManager.h"
+#include "../Editor/Core/ImGui/ImGuiManager.h"
 
 void RenderApi::createSingletons()
 {

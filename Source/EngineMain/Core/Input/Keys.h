@@ -66,7 +66,6 @@ struct Key
     // Make/Break code
     uint32 keyCode;
     String keyname;
-    uint32 character;
 };
 
 struct KeyState
@@ -194,6 +193,7 @@ public:
     const static Key F24;
     const static Key NUMLOCK;
     const static Key SCRLLOCK;
+    const static Key PAUSE;
     const static Key LSHIFT;
     const static Key RSHIFT;
     const static Key LCTRL;
@@ -241,6 +241,7 @@ class AnalogStates
 public:
     enum EStates
     {
+        None,
         RelMouseX,
         RelMouseY,
         ScrollWheelX,
@@ -248,8 +249,11 @@ public:
         // Add absolute values below this
         AbsMouseX,
         AbsMouseY,
+        CapsLock,
+        NumLock,
+        ScrollLock,
         AbsValsStart = AbsMouseX,
-        AbsValsEnd = AbsMouseY
+        AbsValsEnd = ScrollLock
     };
 
     using StateKeyType = EStates;

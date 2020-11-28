@@ -226,11 +226,29 @@
     <Filter Include="Header Files\RenderInterface\Shaders\EngineShaders">
       <UniqueIdentifier>{126fe3d0-d6ea-46a6-8510-d761b3f3ff44}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Experimental\ImGui">
-      <UniqueIdentifier>{fcd4aec1-95c5-46ac-a9fe-ee99477370b4}</UniqueIdentifier>
+    <Filter Include="Source Files\Editor">
+      <UniqueIdentifier>{04f48652-5597-4452-85a1-1931febf2bd6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Experimental\ImGui\Shaders">
-      <UniqueIdentifier>{ee0a17b6-76e3-42af-a591-5131651c6455}</UniqueIdentifier>
+    <Filter Include="Source Files\Editor\Core">
+      <UniqueIdentifier>{459b9532-7fa6-468f-8efd-d792183fca66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor\Core\ImGui">
+      <UniqueIdentifier>{a7f14aea-75b0-48ef-b5ae-abd7dc5fe591}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Editor">
+      <UniqueIdentifier>{790ac5ba-9a7c-45e8-b151-bfd812d8c238}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Editor\Core">
+      <UniqueIdentifier>{5f5145d7-aa13-4567-a6fa-05699f9502b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Editor\Core\ImGui">
+      <UniqueIdentifier>{33bcce9e-8dc1-42f8-af60-aa4f6f910e60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor\Core\ImGui\Shaders">
+      <UniqueIdentifier>{e9428263-a46a-4376-808b-6f11bc14f8d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor\Core\ImGui\ImGuiLib">
+      <UniqueIdentifier>{c77965db-ec8c-4f90-802e-f6f8854e39dd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -540,32 +558,35 @@
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachmentShader.cpp">
       <Filter>Source Files\RenderInterface\Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ImGui\imgui.cpp">
-      <Filter>Source Files\Experimental\ImGui</Filter>
+    <ClCompile Include="Core\Input\KeyToAsciiCharProcessor.cpp">
+      <Filter>Source Files\Core\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ImGui\imgui_demo.cpp">
-      <Filter>Source Files\Experimental\ImGui</Filter>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiFontTextureAtlas.cpp">
+      <Filter>Source Files\Editor\Core\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ImGui\imgui_draw.cpp">
-      <Filter>Source Files\Experimental\ImGui</Filter>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiManager.cpp">
+      <Filter>Source Files\Editor\Core\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ImGui\imgui_stdlib.cpp">
-      <Filter>Source Files\Experimental\ImGui</Filter>
+    <ClCompile Include="Editor\Core\ImGui\Shaders\DrawImGuiShader.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ImGui\imgui_widgets.cpp">
-      <Filter>Source Files\Experimental\ImGui</Filter>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ImGui\ImGuiFontTextureAtlas.cpp">
-      <Filter>Source Files\Experimental\ImGui</Filter>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_demo.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ImGui\ImGuiDrawInterface.cpp">
-      <Filter>Source Files\Experimental\ImGui</Filter>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_draw.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ImGui\ImGuiManager.cpp">
-      <Filter>Source Files\Experimental\ImGui</Filter>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_stdlib.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ImGui\Shaders\DrawImGuiShader.cpp">
-      <Filter>Source Files\Experimental\ImGui\Shaders</Filter>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_widgets.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiDrawInterface.cpp">
+      <Filter>Source Files\Editor\Core\ImGui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -989,41 +1010,47 @@
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.h">
       <Filter>Header Files\RenderInterface\Shaders\EngineShaders</Filter>
     </ClInclude>
-    <ClInclude Include="Experimental\ImGui\imconfig.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\imgui.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\imgui_internal.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\imgui_stdlib.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\imstb_rectpack.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\imstb_textedit.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\imstb_truetype.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\ImGuiFontTextureAtlas.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\ImGuiDrawInterface.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\ImGuiManager.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Experimental\ImGui\IImGuiLayer.h">
-      <Filter>Source Files\Experimental\ImGui</Filter>
-    </ClInclude>
     <ClInclude Include="RenderInterface\Resources\BufferedResources.h">
       <Filter>Header Files\RenderInterface\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\IKeyToCharProcessor.h">
+      <Filter>Source Files\Core\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Input\KeyToAsciiCharProcessor.h">
+      <Filter>Source Files\Core\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiFontTextureAtlas.h">
+      <Filter>Source Files\Editor\Core\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\IImGuiLayer.h">
+      <Filter>Header Files\Editor\Core\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiManager.h">
+      <Filter>Header Files\Editor\Core\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imconfig.h">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imgui.h">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imgui_internal.h">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imgui_stdlib.h">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_rectpack.h">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_textedit.h">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_truetype.h">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiDrawInterface.h">
+      <Filter>Header Files\Editor\Core\ImGui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

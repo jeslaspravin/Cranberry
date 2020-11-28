@@ -26,7 +26,6 @@ bool WindowsMouseDevice::sendInRaw(const void* rawInput)
     {
         return false;
     }
-    bReceivedInput = true;
 
     const RAWMOUSE& mouseData = winRawInput->data.mouse;
     if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_1_DOWN | RI_MOUSE_BUTTON_1_UP)) != 0)// LMB
@@ -68,12 +67,6 @@ bool WindowsMouseDevice::sendInRaw(const void* rawInput)
         Logger::warn("WindowMouseDevice", "%s : Virtual desktop setup is not supported", __func__);
     }
 
-    POINT cursorPos{ 0,0 };
-    if (GetCursorPos(&cursorPos))
-    {
-        analogRawStates[AnalogStates::AbsMouseX] = float(cursorPos.x);
-        analogRawStates[AnalogStates::AbsMouseY] = float(cursorPos.y);
-    }
     return true;
 }
 
@@ -132,28 +125,26 @@ void WindowsMouseDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* anal
         }
     }
 
+    // Filling direct accessible analog states
+    POINT cursorPos{ 0,0 };
+    if (GetCursorPos(&cursorPos))
+    {
+        analogRawStates[AnalogStates::AbsMouseX] = float(cursorPos.x);
+        analogRawStates[AnalogStates::AbsMouseY] = float(cursorPos.y);
+    }
+
     std::map<AnalogStates::EStates, InputAnalogState>& analogStatesMap = analogStates->getAnalogStates();
     for (std::pair<const uint32, float>& rawAnalogState : analogRawStates)
     {
         InputAnalogState& outAnalogState = analogStatesMap[AnalogStates::EStates(rawAnalogState.first)];
-        if (bReceivedInput || !AnalogStates::isAbsoluteValue(AnalogStates::EStates(rawAnalogState.first)))
-        {
-            outAnalogState.startedThisFrame = (Math::isEqual(outAnalogState.currentValue, 0.0f) && rawAnalogState.second != 0.0f)
-                ? 1 : 0;
-            outAnalogState.stoppedThisFrame = (Math::isEqual(rawAnalogState.second, 0.0f) && outAnalogState.currentValue != 0.0f)
-                ? 1 : 0;
-            outAnalogState.acceleration = rawAnalogState.second - outAnalogState.currentValue;
-            outAnalogState.currentValue = rawAnalogState.second;
-        }
-        else // Analog state has not changed
-        {
-            outAnalogState.startedThisFrame = 0;
-            outAnalogState.stoppedThisFrame = 0;
-            outAnalogState.acceleration = 0;
-        }
+        outAnalogState.startedThisFrame = (Math::isEqual(outAnalogState.currentValue, 0.0f) && rawAnalogState.second != 0.0f)
+            ? 1 : 0;
+        outAnalogState.stoppedThisFrame = (Math::isEqual(rawAnalogState.second, 0.0f) && outAnalogState.currentValue != 0.0f)
+            ? 1 : 0;
+        outAnalogState.acceleration = rawAnalogState.second - outAnalogState.currentValue;
+        outAnalogState.currentValue = rawAnalogState.second;
         rawAnalogState.second = 0;
     }
-    bReceivedInput = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -168,6 +159,22 @@ bool WindowsKeyboardDevice::sendInRaw(const void* rawInput)
         return false;
     }
     const uint8 keyState = (winRawInput->data.keyboard.Flags & RI_KEY_BREAK) == RI_KEY_BREAK ? UP_STATE : DOWN_STATE;
+    /*
+    * This is happening whenever multi-byte mapped keys are pressed
+    * Currently we are not handling those keys properly
+    */
+    if (winRawInput->data.keyboard.VKey == 0xFF)
+    {
+        Logger::warn("WindowsKeyboardDevice", "%s() : Possible multibyte key that is not handled properly : %d, Flags : %d", __func__
+            , winRawInput->data.keyboard.MakeCode, winRawInput->data.keyboard.Flags);
+        return true;
+    }
+    // If E1 flag is there then it is pause/break
+    if ((winRawInput->data.keyboard.Flags & RI_KEY_E1) == RI_KEY_E1)
+    {
+        rawKeyStates[EKeyCode::KEY_PAUSE] = keyState;
+        return true;
+    }
 
     EKeyCode keyCode = EKeyCode(winRawInput->data.keyboard.MakeCode);
     if ((winRawInput->data.keyboard.Flags & RI_KEY_E0) == RI_KEY_E0)
@@ -189,7 +196,7 @@ bool WindowsKeyboardDevice::registerWindow(const GenericAppWindow* window) const
 
     if (!RegisterRawInputDevices(&keyboardDevice, 1, sizeof(decltype(keyboardDevice))))
     {
-        Logger::warn("WindowsKeyboardDevice", "%s : Failed registering keyboard for window %s", __func__, window->getWindowName().getChar());
+        Logger::warn("WindowsKeyboardDevice", "%s() : Failed registering keyboard for window %s", __func__, window->getWindowName().getChar());
         return false;
     }
     return true;
@@ -232,5 +239,23 @@ void WindowsKeyboardDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* a
         {
             rawKeyStates.insert({ keyCode, INVALID_STATE });
         }
+    }
+
+    // Filling direct accessible analog states
+    analogRawStates[AnalogStates::CapsLock] = GetKeyState(VK_CAPITAL) & 0x0001;
+    analogRawStates[AnalogStates::NumLock] = GetKeyState(VK_NUMLOCK) & 0x0001;
+    analogRawStates[AnalogStates::ScrollLock] = GetKeyState(VK_SCROLL) & 0x0001;
+
+    std::map<AnalogStates::EStates, InputAnalogState>& analogStatesMap = analogStates->getAnalogStates();
+    for (std::pair<const uint32, int8>& rawAnalogState : analogRawStates)
+    {
+        InputAnalogState& outAnalogState = analogStatesMap[AnalogStates::EStates(rawAnalogState.first)];
+        outAnalogState.startedThisFrame = (!(outAnalogState.currentValue > 0.0f) && rawAnalogState.second != 0)
+            ? 1 : 0;
+        outAnalogState.stoppedThisFrame = (rawAnalogState.second == 0 && outAnalogState.currentValue > 0.0f)
+            ? 1 : 0;
+        outAnalogState.acceleration = rawAnalogState.second - outAnalogState.currentValue;
+        outAnalogState.currentValue = rawAnalogState.second;
+        rawAnalogState.second = 0;
     }
 }

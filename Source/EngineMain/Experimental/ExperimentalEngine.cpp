@@ -32,8 +32,8 @@
 #include "../Core/Types/Textures/RenderTargetTextures.h"
 #include "../RenderInterface/GlobalRenderVariables.h"
 #include "../RenderInterface/Rendering/CommandBuffer.h"
-#include "ImGui/ImGuiManager.h"
-#include "ImGui/imgui.h"
+#include "../Editor/Core/ImGui/ImGuiManager.h"
+#include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
 
 #include <array>
 #include <random>

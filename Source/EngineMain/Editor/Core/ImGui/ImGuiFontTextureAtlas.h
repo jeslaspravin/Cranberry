@@ -1,6 +1,6 @@
 #pragma once
-#include "../../Core/Types/Textures/TexturesBase.h"
-#include "../../Core/Types/Colors.h"
+#include "../../../Core/Types/Textures/TexturesBase.h"
+#include "../../../Core/Types/Colors.h"
 
 struct ImGuiContext;
 

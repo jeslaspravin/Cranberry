@@ -7,8 +7,9 @@
 class WindowsKeyboardDevice final : public IInputDevice
 {
 private:
-
     std::map<uint32, int8> rawKeyStates;
+    // Keys don't have analog states so no floats
+    std::map<uint32, int8> analogRawStates;
 public:
 
     /* IInputDevice overrides */

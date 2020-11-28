@@ -14,9 +14,9 @@
 
 #pragma once
 
-#include "../../Core/Platform/PlatformAssertionErrors.h"
-#include "../../Core/Math/Vector2D.h"
-#include "../../Core/Math/Vector4D.h"
+#include "../../../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../../../Core/Math/Vector2D.h"
+#include "../../../../Core/Math/Vector4D.h"
 
 //---- Define assertion handler. Defaults to calling assert().
 // If your macro uses multiple statements, make sure is enclosed in a 'do { .. } while (0)' block so it can be used as a single statement.
