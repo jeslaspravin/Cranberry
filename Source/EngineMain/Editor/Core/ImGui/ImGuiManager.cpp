@@ -1,22 +1,22 @@
 #include "ImGuiManager.h"
-#include "imgui.h"
+#include "ImGuiLib/imgui.h"
 #include "ImGuiFontTextureAtlas.h"
 #include "IImGuiLayer.h"
-#include "../../Core/String/String.h"
-#include "../../RenderInterface/PlatformIndependentHeaders.h"
-#include "../../Core/Platform/PlatformFunctions.h"
-#include "../../Core/Input/Keys.h"
-#include "../../Core/Input/InputSystem.h"
-#include "../../Core/Engine/Config/EngineGlobalConfigs.h"
-#include "../../RenderInterface/Rendering/IRenderCommandList.h"
-#include "../../RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "../../RenderInterface/PlatformIndependentHelper.h"
-#include "../../RenderInterface/Rendering/RenderingContexts.h"
-#include "../../RenderInterface/Resources/Samplers/SamplerInterface.h"
-#include "../../Core/Types/Textures/RenderTargetTextures.h"
-#include "../../Core/Math/Vector2D.h"
-#include "../../Core/Engine/WindowManager.h"
-#include "../../Core/Platform/GenericAppWindow.h"
+#include "../../../Core/String/String.h"
+#include "../../../RenderInterface/PlatformIndependentHeaders.h"
+#include "../../../Core/Platform/PlatformFunctions.h"
+#include "../../../Core/Input/Keys.h"
+#include "../../../Core/Input/InputSystem.h"
+#include "../../../Core/Engine/Config/EngineGlobalConfigs.h"
+#include "../../../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../../../RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "../../../RenderInterface/PlatformIndependentHelper.h"
+#include "../../../RenderInterface/Rendering/RenderingContexts.h"
+#include "../../../RenderInterface/Resources/Samplers/SamplerInterface.h"
+#include "../../../Core/Types/Textures/RenderTargetTextures.h"
+#include "../../../Core/Math/Vector2D.h"
+#include "../../../Core/Engine/WindowManager.h"
+#include "../../../Core/Platform/GenericAppWindow.h"
 
 using namespace ImGui;
 
@@ -143,9 +143,10 @@ void ImGuiManager::updateInputs()
             const KeyState* state = inputSystem->keyState(*key);
             io.KeysDown[key->keyCode] = state->isPressed;
 
-            if (key->character != 0 && state->keyWentUp)
+            Utf32 keyChar = inputSystem->keyChar(*key);
+            if (state->keyWentDown && keyChar != 0)
             {
-                io.AddInputCharacter(key->character);
+                io.AddInputCharacter(keyChar);
             }
         }
     }

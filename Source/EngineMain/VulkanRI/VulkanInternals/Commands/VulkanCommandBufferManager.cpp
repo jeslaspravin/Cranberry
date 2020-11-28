@@ -355,8 +355,6 @@ const GraphicsResource* VulkanCmdBufferManager::beginReuseCmdBuffer(const String
 void VulkanCmdBufferManager::endCmdBuffer(const GraphicsResource* cmdBuffer)
 {
     const auto* vCmdBuffer = static_cast<const VulkanCommandBuffer*>(cmdBuffer);
-    vDevice->vkEndCommandBuffer(vCmdBuffer->cmdBuffer);
-
     if (!vCmdBuffer->bIsTempBuffer)
     {
         commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Recorded;
@@ -365,6 +363,7 @@ void VulkanCmdBufferManager::endCmdBuffer(const GraphicsResource* cmdBuffer)
     {
         vDevice->debugGraphics()->endCmdBufferMarker(vCmdBuffer->cmdBuffer);
     }
+    vDevice->vkEndCommandBuffer(vCmdBuffer->cmdBuffer);
 }
 
 void VulkanCmdBufferManager::cmdFinished(const GraphicsResource* cmdBuffer)

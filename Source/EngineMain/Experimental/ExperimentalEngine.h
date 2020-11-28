@@ -15,7 +15,7 @@
 #include "../RenderInterface/Rendering/RenderingContexts.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../RenderInterface/Resources/BufferedResources.h"
-#include "ImGui/IImGuiLayer.h"
+#include "../Editor/Core/ImGui/IImGuiLayer.h"
 
 #include <map>
 #include <vulkan_core.h>

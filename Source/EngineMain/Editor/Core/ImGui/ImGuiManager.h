@@ -1,11 +1,11 @@
 #pragma once
 #include "ImGuiDrawInterface.h"
-#include "../../Core/Platform/PlatformTypes.h"
-#include "../../Core/String/String.h"
-#include "../../Core/Memory/SmartPointers.h"
-#include "../../Core/Types/Delegates/Delegate.h"
-#include "../../RenderInterface/PlatformIndependentGraphicsTypes.h"
-#include "../../RenderInterface/Resources/BufferedResources.h"
+#include "../../../Core/Platform/PlatformTypes.h"
+#include "../../../Core/String/String.h"
+#include "../../../Core/Memory/SmartPointers.h"
+#include "../../../Core/Types/Delegates/Delegate.h"
+#include "../../../RenderInterface/PlatformIndependentGraphicsTypes.h"
+#include "../../../RenderInterface/Resources/BufferedResources.h"
 
 #include <map>
 #include <vector>

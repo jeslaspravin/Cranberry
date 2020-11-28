@@ -109,7 +109,7 @@ namespace MakeBreakKeyCodes
         KEY_FWDDEL = 0x70,
         KEY_NUMENTER = 0x74,
         KEY_CLR = 0x76,
-        // Above 0xFF for application local
+        // Above 0xFF for application local as scan codes never goes above 128
         // E0 Keys, E0 is after 0xFF because These keys are denoted by additional flags and so it don't have to be in [0x00, 0xFE]
         E0_CODE = 0x100,
         KEY_RCTRL = E0_CODE | KEY_LCTRL,
@@ -125,6 +125,8 @@ namespace MakeBreakKeyCodes
         KEY_PAGEDOWN = E0_CODE | KEY_NUM3,
         KEY_INSERT = E0_CODE | KEY_NUM0,
         KEY_DELETE = E0_CODE | KEY_NUMFULLSTOP,
+        // E1 code Only pause/break so only one key after E0
+        KEY_PAUSE,
         // Mouse key codes above 512 as they are not keys, we use them just to hold key state for mouse in same data structure
         MOUSE_LEFT = 0x200,
         MOUSE_RIGHT,
