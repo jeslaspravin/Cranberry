@@ -372,18 +372,22 @@ void ExperimentalEngine::setupShaderParameterParams()
     }
 
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
-
+    ImageViewInfo depthImageViewInfo;
+    depthImageViewInfo.componentMapping.g = depthImageViewInfo.componentMapping.b 
+        = depthImageViewInfo.componentMapping.a = depthImageViewInfo.componentMapping.r = EPixelComponentMapping::R;
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         Framebuffer* multibuffer = GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[1], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[3], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[5], nearestFiltering); 
+        lightTextures.getResources()[i]->setTextureParamViewInfo("ssDepth", depthImageViewInfo);
         lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
         drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[1], linearFiltering);
         drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[3], linearFiltering);
         drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[5], linearFiltering);
+        drawQuadDepthDescs.getResources()[i]->setTextureParamViewInfo("quadTexture", depthImageViewInfo);
         drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
     lightTextures.init();

@@ -528,7 +528,7 @@ void squashDuplicates(ReflectBufferShaderField& shaderBufferField)
                 // If some duplicate has higher stride? use that value, happens when inner struct is also used selectively between shaders.
                 if (shaderBufferField.bufferStructFields[j].data.stride > shaderBufferField.bufferStructFields[i].data.stride)
                 {
-                    shaderBufferField.bufferStructFields[i].data.stride = shaderBufferField.bufferStructFields[j].data.stride;
+                    shaderBufferField.bufferStructFields[i].data.stride = shaderBufferField.bufferStructFields[i].data.data.stride = shaderBufferField.bufferStructFields[j].data.stride;
                     shaderBufferField.bufferStructFields[i].data.totalSize = shaderBufferField.bufferStructFields[j].data.totalSize;
                 }                
             }

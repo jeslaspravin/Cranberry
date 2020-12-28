@@ -250,6 +250,9 @@
     <Filter Include="Source Files\Editor\Core\ImGui\ImGuiLib">
       <UniqueIdentifier>{c77965db-ec8c-4f90-802e-f6f8854e39dd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Core\Types\Containers">
+      <UniqueIdentifier>{23415db2-d8e8-411e-a12b-c60c613ae3c5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -1051,6 +1054,9 @@
     </ClInclude>
     <ClInclude Include="Editor\Core\ImGui\ImGuiDrawInterface.h">
       <Filter>Header Files\Editor\Core\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Containers\ArrayView.h">
+      <Filter>Header Files\Core\Types\Containers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

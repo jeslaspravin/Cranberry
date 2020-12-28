@@ -356,6 +356,7 @@
     <ClInclude Include="Core\String\String.h" />
     <ClInclude Include="Core\Types\Camera\Camera.h" />
     <ClInclude Include="Core\Types\Colors.h" />
+    <ClInclude Include="Core\Types\Containers\ArrayView.h" />
     <ClInclude Include="Core\Types\CoreDefines.h" />
     <ClInclude Include="Core\Types\Delegates\Delegate.h" />
     <ClInclude Include="Core\Types\Functions.h" />
