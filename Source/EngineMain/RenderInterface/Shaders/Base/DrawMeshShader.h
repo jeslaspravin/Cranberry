@@ -19,6 +19,7 @@ protected:
 
     /* ShaderResource overrides */
     String getShaderFileName() const final;
+    virtual void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry>& specializationConst) const override;
 public:
     EVertexType::Type vertexUsage() const { return compatibleVertex; }
     ERenderPassFormat::Type renderpassUsage() const { return compatibleRenderpassFormat; }

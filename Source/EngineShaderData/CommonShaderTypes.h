@@ -12,7 +12,8 @@ struct ReflectBufferShaderField;
 struct ArrayDefinition
 {
     uint32_t dimension;// Will have specialization constant index if is specialization const is true
-    bool isSpecializationConst;
+    uint32_t stageIdx = 0;// Will have Index to stage of specialization constant index
+    bool isSpecializationConst = false;
 };
 
 template <typename AttributeType>
@@ -64,7 +65,7 @@ typedef NamedAttribute<StructInnerFields<BufferEntry>> ReflectBufferEntry;
 typedef NamedAttribute<StructInnerFields<ReflectBufferShaderField>> ReflectBufferStructEntry;
 
 // For uniform, storage buffer and push constant
-// Currently no AoS only SoA supported
+// Currently no AoS only SoA/SoAoS supported
 struct ReflectBufferShaderField
 {
     uint32_t stride = 0;// struct stride

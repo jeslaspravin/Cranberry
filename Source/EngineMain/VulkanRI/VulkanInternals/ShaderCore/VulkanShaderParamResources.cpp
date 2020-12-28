@@ -12,9 +12,10 @@
 #include "../../../RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "../VulkanDescriptorAllocator.h"
 #include "../../../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../../../RenderInterface/ShaderCore/ShaderParameterUtility.h"
 
 void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std::vector<VkDescriptorSetLayoutBinding>& descLayoutBindings
-    , const ReflectDescriptorBody& descReflected)
+    , const ReflectDescriptorBody& descReflected, const std::vector<std::vector<SpecializationConstantEntry>>& stageSpecializationConsts)
 {
     for (const DescEntryBuffer& descriptorInfo : descReflected.uniforms)
     {
@@ -41,8 +42,19 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         uint32 descCount = 1;
         for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
         {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
+            if (arrayDimInfo.isSpecializationConst)
+            {
+                uint32 tempDim;
+                if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
+                {
+                    fatalAssert(false, "Specialized data retrieval failed");
+                }
+                descCount *= tempDim;
+            }
+            else
+            {
+                descCount *= arrayDimInfo.dimension;
+            }
         }
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
@@ -57,8 +69,19 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         uint32 descCount = 1;
         for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
         {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
+            if (arrayDimInfo.isSpecializationConst)
+            {
+                uint32 tempDim;
+                if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
+                {
+                    fatalAssert(false, "Specialized data retrieval failed");
+                }
+                descCount *= tempDim;
+            }
+            else
+            {
+                descCount *= arrayDimInfo.dimension;
+            }
         }
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
@@ -73,8 +96,19 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         uint32 descCount = 1;
         for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
         {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
+            if (arrayDimInfo.isSpecializationConst)
+            {
+                uint32 tempDim;
+                if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
+                {
+                    fatalAssert(false, "Specialized data retrieval failed");
+                }
+                descCount *= tempDim;
+            }
+            else
+            {
+                descCount *= arrayDimInfo.dimension;
+            }
         }
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
@@ -89,8 +123,19 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         uint32 descCount = 1;
         for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
         {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
+            if (arrayDimInfo.isSpecializationConst)
+            {
+                uint32 tempDim;
+                if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
+                {
+                    fatalAssert(false, "Specialized data retrieval failed");
+                }
+                descCount *= tempDim;
+            }
+            else
+            {
+                descCount *= arrayDimInfo.dimension;
+            }
         }
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
@@ -105,8 +150,19 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         uint32 descCount = 1;
         for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data.arraySize)
         {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
+            if (arrayDimInfo.isSpecializationConst)
+            {
+                uint32 tempDim;
+                if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
+                {
+                    fatalAssert(false, "Specialized data retrieval failed");
+                }
+                descCount *= tempDim;
+            }
+            else
+            {
+                descCount *= arrayDimInfo.dimension;
+            }
         }
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
@@ -121,8 +177,19 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         uint32 descCount = 1;
         for (const ArrayDefinition& arrayDimInfo : descriptorInfo.data.data)
         {
-            fatalAssert(arrayDimInfo.isSpecializationConst == false, "Specialized data is not supported yet");
-            descCount *= arrayDimInfo.dimension;
+            if (arrayDimInfo.isSpecializationConst)
+            {
+                uint32 tempDim;
+                if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
+                {
+                    fatalAssert(false, "Specialized data retrieval failed");
+                }
+                descCount *= tempDim;
+            }
+            else
+            {
+                descCount *= arrayDimInfo.dimension;
+            }
         }
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
@@ -167,6 +234,13 @@ uint64 VulkanShaderSetParamsLayout::getDispatchableHandle() const
 void VulkanShaderSetParamsLayout::init()
 {
     BaseType::init();
+
+    std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
+    {
+        std::map<String, SpecializationConstantEntry> specConsts;
+        respectiveShaderRes->getSpecializationConsts(specConsts);
+        ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, respectiveShaderRes->getReflection());
+    }
     for (const ReflectDescriptorBody& descriptorsSet : respectiveShaderRes->getReflection()->descriptorsSets)
     {
         if (descriptorsSet.set == shaderSetID)
@@ -175,7 +249,7 @@ void VulkanShaderSetParamsLayout::init()
             uint32 maxBinding = descriptorsSet.usedBindings.back() + 1;
             poolAllocation.resize(maxBinding);
             layoutBindings.resize(maxBinding);
-            fillDescriptorsSet(poolAllocation, layoutBindings, descriptorsSet);
+            fillDescriptorsSet(poolAllocation, layoutBindings, descriptorsSet, specializationConsts);
         }
     }
 
@@ -341,6 +415,13 @@ String VulkanShaderParametersLayout::getObjectName() const
 void VulkanShaderParametersLayout::init()
 {
     BaseType::init();
+    std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
+    {
+        std::map<String, SpecializationConstantEntry> specConsts;
+        respectiveShaderRes->getSpecializationConsts(specConsts);
+        ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, respectiveShaderRes->getReflection());
+    }
+
     for (const ReflectDescriptorBody& descriptorsSet : respectiveShaderRes->getReflection()->descriptorsSets)
     {
         SetParametersLayoutInfo& descSetLayoutInfo = setToLayoutInfo[descriptorsSet.set];
@@ -349,7 +430,7 @@ void VulkanShaderParametersLayout::init()
         uint32 maxBinding = descriptorsSet.usedBindings.back() + 1;
         descSetLayoutInfo.poolAllocation.resize(maxBinding);
         descSetLayoutInfo.layoutBindings.resize(maxBinding);
-        fillDescriptorsSet(descSetLayoutInfo.poolAllocation, descSetLayoutInfo.layoutBindings, descriptorsSet);
+        fillDescriptorsSet(descSetLayoutInfo.poolAllocation, descSetLayoutInfo.layoutBindings, descriptorsSet, specializationConsts);
 
         // Remove unnecessary descriptors set info
         for (int32 i = 0; i < descSetLayoutInfo.poolAllocation.size();)
