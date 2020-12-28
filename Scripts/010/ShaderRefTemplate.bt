@@ -20,6 +20,7 @@ struct NamedAttribute
 struct ArrayDefinition
 {
     uint32 dimension;
+    uint32 shaderStageIndex;
     uchar isSpecializationConst;
     uchar padding[3]<hidden=true>;
 };

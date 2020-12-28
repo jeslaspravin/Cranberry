@@ -2,6 +2,7 @@
 #include "DrawMeshShader.h"
 #include "ScreenspaceQuadGraphicsPipeline.h"
 #include "../../../Core/Logger/Logger.h"
+#include "../../../RenderApi/Scene/RenderScene.h"
 
 DEFINE_GRAPHICS_RESOURCE(DrawMeshShader)
 
@@ -10,6 +11,12 @@ String DrawMeshShader::getShaderFileName() const
     return getResourceName() + EVertexType::toString(vertexUsage()) + ERenderPassFormat::toString(renderpassUsage());
 }
 
+void DrawMeshShader::getSpecializationConsts(std::map<String, struct SpecializationConstantEntry>& specializationConst) const
+{
+    BaseType::getSpecializationConsts(specializationConst);
+    RenderSceneBase::sceneViewSpecConsts(specializationConst);
+    EVertexType::vertexSpecConsts(vertexUsage(), specializationConst);
+}
 
 DEFINE_GRAPHICS_RESOURCE(UniqueUtilityShader)
 

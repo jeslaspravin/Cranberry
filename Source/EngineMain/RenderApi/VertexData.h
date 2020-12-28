@@ -2,6 +2,10 @@
 #include "../RenderInterface/ShaderCore/ShaderParameters.h"
 #include "../Core/Math/Vector4D.h"
 
+#include <map>
+
+struct SpecializationConstantEntry;
+
 namespace EVertexType
 {
     enum Type
@@ -32,23 +36,22 @@ namespace EVertexType
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<StaticMesh>();
 
-    constexpr const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType)
-    {
-        switch (vertexType)
-        {
-        case EVertexType::Simple2:
-            return vertexParamInfo<Simple2>();
-        case EVertexType::UI:
-            return vertexParamInfo<UI>();
-        case EVertexType::Simple3:
-            return vertexParamInfo<Simple3>();
-        case EVertexType::Simple4:
-            return vertexParamInfo<Simple4>();
-        default:
-        case EVertexType::BasicMesh:
-            return vertexParamInfo<BasicMesh>();
-        case EVertexType::StaticMesh:
-            return vertexParamInfo<StaticMesh>();
-        }
-    }
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType);
+
+    template<Type VertexType>
+    void vertexSpecConsts(std::map<String, SpecializationConstantEntry>& specializationConst);
+    template<>
+    void vertexSpecConsts<Simple2>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    template<>
+    void vertexSpecConsts<UI>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    template<>
+    void vertexSpecConsts<Simple3>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    template<>
+    void vertexSpecConsts<Simple4>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    template<>
+    void vertexSpecConsts<BasicMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    template<>
+    void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
+
+    void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry>& specializationConst);
 }

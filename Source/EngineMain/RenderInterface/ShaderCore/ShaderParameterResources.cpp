@@ -80,7 +80,7 @@ void ShaderDescriptorParamType::wrapReflectedDescriptors(std::map<String, Shader
     }
     for (const DescEntrySubpassInput& descriptorInfo : reflectDescriptors.subpassInputs)
     {
-        Logger::warn("DescriptorTypeParams", "%s : Sub pass inputs are not supported yet %s", __func__, descriptorInfo.attributeName.c_str());
+        Logger::warn("DescriptorTypeParams", "%s() : Sub pass inputs are not supported yet %s", __func__, descriptorInfo.attributeName.c_str());
     }
 }
 
@@ -143,11 +143,18 @@ void ShaderSetParametersLayout::init()
     }
 
     bindBufferParamInfo(bufferDescriptors);
+    std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
+    {
+        std::map<String, SpecializationConstantEntry> specConsts;
+        respectiveShaderRes->getSpecializationConsts(specConsts);
+        ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, shaderReflection);
+    }
+
     // Fill those bound buffer info with GPU reflect data
     for (const std::pair<const String, ShaderBufferDescriptorType*>& bufferDescWrapper : bufferDescriptors)
     {
         bufferDescWrapper.second->bufferNativeStride = bufferDescWrapper.second->bufferParamInfo->paramStride();
-        ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data);
+        ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data, specializationConsts);
     }
 }
 
@@ -176,7 +183,7 @@ const ShaderDescriptorParamType* ShaderSetParametersLayout::parameterDescription
         outSetIdx = shaderSetID;
         return foundParamItr->second;
     }
-    Logger::error("ShaderSetParametersLayout", "%s : Parameter %s is not available in shader %s at set %u", __func__
+    Logger::error("ShaderSetParametersLayout", "%s() : Parameter %s is not available in shader %s at set %u", __func__
         , paramName.getChar(), respectiveShaderRes->getResourceName().getChar(), shaderSetID);
     return nullptr;
 }
@@ -213,10 +220,17 @@ void ShaderParametersLayout::init()
 
     // Fill those bound buffer info with GPU reflect data
     respectiveShaderRes->bindBufferParamInfo(bufferDescriptors);
+    std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
+    {
+        std::map<String, SpecializationConstantEntry> specConsts;
+        respectiveShaderRes->getSpecializationConsts(specConsts);
+        ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, shaderReflection);
+    }
+
     for (const std::pair<const String, ShaderBufferDescriptorType*>& bufferDescWrapper : bufferDescriptors)
     {
         bufferDescWrapper.second->bufferNativeStride = bufferDescWrapper.second->bufferParamInfo->paramStride();
-        ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data);
+        ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data, specializationConsts);
     }
 
     for (const std::pair<const uint32, std::map<String, ShaderDescriptorParamType*>>& setToDescriptorsPair : setToParamsLayout)
@@ -249,7 +263,7 @@ const ShaderDescriptorParamType* ShaderParametersLayout::parameterDescription(ui
         outSetIdx = foundParamItr->second.first;
         return foundParamItr->second.second;
     }
-    Logger::error("ShaderParametersLayout", "%s : Parameter %s is not available in shader %s", __func__
+    Logger::error("ShaderParametersLayout", "%s() : Parameter %s is not available in shader %s", __func__
         , paramName.getChar(), respectiveShaderRes->getResourceName().getChar());
     return nullptr;
 }
