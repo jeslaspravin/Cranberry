@@ -142,6 +142,7 @@ private:
     struct DescriptorWriteData
     {
         uint32 writeInfoIdx;
+        uint32 arrayIdx;
         union
         {
             const TexelParameterData* texel;
@@ -178,6 +179,7 @@ private:
     {
         uint32 setID;
         uint32 writeInfoIdx;
+        uint32 arrayIdx;
         union
         {
             const TexelParameterData* texel;
