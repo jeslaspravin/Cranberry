@@ -335,6 +335,10 @@ bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(std::vector<VkDescripto
         Logger::error("DescriptorsSetAllocator", "%s() : Failed allocating required sets", __func__);
         return false;
     }
+    for (VkDescriptorSet& newAllocatedSet : sets)
+    {
+        allocationPool.allocatedSets[newAllocatedSet] = query;
+    }
     return true;
 }
 
@@ -357,6 +361,10 @@ bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(std::vector<VkDescripto
             {
                 Logger::error("DescriptorsSetAllocator", "%s() : Failed allocating required sets", __func__);
                 return false;
+            }
+            for (VkDescriptorSet& newAllocatedSet : sets)
+            {
+                allocationPool.allocatedSets[newAllocatedSet] = query;
             }
         }
         sets.insert(sets.end(), chooseSets.cbegin(), chooseSets.cend());

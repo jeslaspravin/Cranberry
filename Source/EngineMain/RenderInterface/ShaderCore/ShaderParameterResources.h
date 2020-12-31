@@ -246,7 +246,7 @@ protected:
     const GraphicsResource* paramLayout;
     String descriptorSetName;
 private:
-    void initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr) const;
+    void initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, bool bIsNested) const;
     void initParamsMaps(const std::map<String, ShaderDescriptorParamType*>& paramsDesc, const std::vector<std::vector<SpecializationConstantEntry>>& specializationConsts);
     std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> findBufferParam(String& bufferName, const String& paramName) const;
     template<typename FieldType>

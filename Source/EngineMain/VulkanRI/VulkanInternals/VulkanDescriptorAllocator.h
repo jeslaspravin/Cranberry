@@ -79,6 +79,6 @@ public:
     bool allocDescriptorsSets(std::vector<VkDescriptorSet>& sets, const DescriptorsSetQuery& query, const std::vector<VkDescriptorSetLayout>& layouts);
     bool allocDescriptorsSets(std::vector<VkDescriptorSet>& sets, const DescriptorsSetQuery& query, const VkDescriptorSetLayout& layout, const uint32& setsCount);
     void releaseDescriptorsSet(VkDescriptorSet descriptorSet);
-    // TODO(Jeslas) : Register for tick 
+    // #TODO(Jeslas) : Register for tick 
     void tick(const float& deltaTime);
 };
