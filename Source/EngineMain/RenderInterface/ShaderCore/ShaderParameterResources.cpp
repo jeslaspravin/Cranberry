@@ -365,20 +365,24 @@ void ShaderParameters::init()
     }
 }
 
-void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr) const
+void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, bool bIsNested) const
 {
     const ShaderBufferFieldNode* currentNode = &bufferParamInfo->startNode;
     while (currentNode->isValid())
     {
-        debugAssert(!currentNode->field->bIsArray);
         bufferParamData.bufferParams[currentNode->field->paramName] = { outerPtr, currentNode->field };
         if (currentNode->field->bIsStruct)
         {
+            // AoS inside shader base uniform struct is supported, AoSoA... not supported due to parameter indexing limitation being 1 right now
+            if (bIsNested && currentNode->field->bIsArray)
+            {
+                fatalAssert(!"We do not support nested array in parameters", "We do not support nested array in parameters");
+            }
             void* nextOuterPtr = nullptr;
             {
                 nextOuterPtr = currentNode->field->fieldData(outerPtr, nullptr, nullptr);
             }
-            initBufferParams(bufferParamData, currentNode->field->paramInfo, nextOuterPtr);
+            initBufferParams(bufferParamData, currentNode->field->paramInfo, nextOuterPtr, true);
         }
         currentNode = currentNode->nextNode;
     }
@@ -404,7 +408,7 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
                     paramData.gpuBuffer = new GraphicsRBuffer(bufferParamDesc->bufferParamInfo->paramStride());
                 }
 
-                initBufferParams(paramData, bufferParamDesc->bufferParamInfo, paramData.cpuBuffer);
+                initBufferParams(paramData, bufferParamDesc->bufferParamInfo, paramData.cpuBuffer, false);
                 shaderBuffers[bufferParamDesc->bufferEntryPtr->attributeName] = paramData;
             }
             else

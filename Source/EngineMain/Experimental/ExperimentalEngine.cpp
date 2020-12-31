@@ -38,9 +38,30 @@
 #include <array>
 #include <random>
 
+struct TestArraySetField
+{
+    float a;
+    int32 b[5];
+    float c[6];
+};
+
+BEGIN_BUFFER_DEFINITION(TestArraySetField)
+ADD_BUFFER_TYPED_FIELD(a)
+ADD_BUFFER_TYPED_FIELD(b)
+ADD_BUFFER_TYPED_FIELD(c)
+END_BUFFER_DEFINITION();
+
 void ExperimentalEngine::tempTest()
 {
+    TestArraySetFieldBufferParamInfo paramInfo;
+    TestArraySetField testData;
+    std::vector<int32> valB{ 1,2,3,4 };
+    std::vector<float> valC{ 6,5,4,3,2,1 };
 
+    paramInfo.aField.setFieldData(&testData, 10.0f);
+    paramInfo.bField.setFieldDataArray(&testData, ArrayView(valB));
+    paramInfo.cField.setFieldDataArray(&testData, ArrayView(valC));
+    paramInfo.cField.setFieldDataArray(&testData, 10.0f, 5);
 }
 
 void ExperimentalEngine::tempTestPerFrame()
@@ -183,89 +204,81 @@ void ExperimentalEngine::createScene()
     StaticMeshAsset* sphere = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Sphere.obj"));
     StaticMeshAsset* cylinder = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cylinder.obj"));
     StaticMeshAsset* cone = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cone.obj"));
-
-    SceneEntity sceneFloor;
-    sceneFloor.meshAsset = cube;
-    sceneFloor.transform.setScale(Vector3D(10, 10, 1));
-    sceneFloor.transform.setTranslation(Vector3D(0, 0, -50));
-    sceneFloor.meshBatchColors.emplace_back(LinearColor(0.80f, 0.78f, 0.60f));
-
-    sceneData.emplace_back(sceneFloor);
-
-    // Ceiling
-    sceneFloor.transform.setTranslation(Vector3D(0, 0, 550));
-    sceneData.emplace_back(sceneFloor);
-
-    // Pillars
-    sceneFloor.meshAsset = cylinder;
-    sceneFloor.transform.setScale(Vector3D(1, 1, 5));
-    sceneFloor.transform.setTranslation(Vector3D(450, 450, 250));
-    sceneData.emplace_back(sceneFloor);
-    sceneFloor.transform.setTranslation(Vector3D(-450, 450, 250));
-    sceneData.emplace_back(sceneFloor);
-    sceneFloor.transform.setTranslation(Vector3D(450, -450, 250));
-    sceneData.emplace_back(sceneFloor);
-    sceneFloor.transform.setTranslation(Vector3D(-450, -450, 250));
-    sceneData.emplace_back(sceneFloor);
-
     std::array<StaticMeshAsset*, 4> assets{ cube, sphere, cylinder, cone };
-
     std::default_random_engine generator;
     std::uniform_real_distribution<float> distribution(-1.0, 1.0);
     std::normal_distribution<float> distribution1(0.0, 1.0);
-    for (uint32 i = 0; i < 5; ++i)
+
+    for (int32 i = 0; i < 3; i++)
     {
-        SceneEntity entity;
-        entity.meshAsset = assets[std::rand() % assets.size()];
-        entity.transform.setTranslation(Vector3D(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50));
-        entity.transform.setRotation(Rotation(0, 0, distribution(generator) * 45));
+        for (int32 j = 0; j < 3; j++)
+        {
+            Vector3D offset = Vector3D(i * 1200.0f, j * 1200.0f, 0);
+            SceneEntity sceneFloor;
+            sceneFloor.meshAsset = cube;
+            sceneFloor.transform.setScale(Vector3D(10, 10, 1));
+            sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, -50));
+            sceneFloor.meshBatchColors.emplace_back(LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1));
 
-        entity.meshBatchColors.emplace_back(LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1));
-        sceneData.emplace_back(entity);
+            sceneData.emplace_back(sceneFloor);
+
+            // Ceiling
+            sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, 550));
+            sceneData.emplace_back(sceneFloor);
+
+            // Pillars
+            sceneFloor.meshAsset = cylinder;
+            sceneFloor.transform.setScale(Vector3D(1, 1, 5));
+            sceneFloor.transform.setTranslation(offset + Vector3D(450, 450, 250));
+            sceneData.emplace_back(sceneFloor);
+            sceneFloor.transform.setTranslation(offset + Vector3D(-450, 450, 250));
+            sceneData.emplace_back(sceneFloor);
+            sceneFloor.transform.setTranslation(offset + Vector3D(450, -450, 250));
+            sceneData.emplace_back(sceneFloor);
+            sceneFloor.transform.setTranslation(offset + Vector3D(-450, -450, 250));
+            sceneData.emplace_back(sceneFloor);
+
+            for (uint32 i = 0; i < 5; ++i)
+            {
+                SceneEntity entity;
+                entity.meshAsset = assets[std::rand() % assets.size()];
+                entity.transform.setTranslation(offset + Vector3D(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50));
+                entity.transform.setRotation(Rotation(0, 0, distribution(generator) * 45));
+
+                entity.meshBatchColors.emplace_back(LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1));
+                sceneData.emplace_back(entity);
+            }
+
+            GoochModelLightData light;
+            light.warmOffsetAndPosX = Vector4D(0.3f, 0.3f, 0.0f, offset.x() + 0);
+            light.coolOffsetAndPosY = Vector4D(0.0f, 0.0f, 0.55f, offset.y() + 0);
+
+            // Near floor
+            float height = 150;
+
+            // Middle light
+            light.highlightColorAndPosZ = Vector4D(1.f, 1.f, 1.f, offset.z() + height);
+            light.lightColorAndRadius = Vector4D(1.f, 1.f, 1.f, 0);
+            sceneLightData.emplace_back(light);
+
+            // Light 1
+            light.highlightColorAndPosZ = Vector4D(0.49f, 0.66f, 0.75f, offset.z() + height);
+            light.lightColorAndRadius = Vector4D(0.45f, 0.58f, 0.80f, 0);
+
+            light.warmOffsetAndPosX.w() = offset.x() + 400;
+            light.coolOffsetAndPosY.w() = offset.y() + 400;
+            sceneLightData.emplace_back(light);
+            // Light 2
+            light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
+            sceneLightData.emplace_back(light);
+            // Light 3
+            light.warmOffsetAndPosX.w() = -light.warmOffsetAndPosX.w();
+            sceneLightData.emplace_back(light);
+            // Light 4
+            light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
+            sceneLightData.emplace_back(light);
+        }
     }
-
-    GoochModelLightData light;
-    light.warmOffsetAndPosX = Vector4D(0.3f, 0.3f, 0.0f, 0);
-    light.coolOffsetAndPosY = Vector4D(0.0f, 0.0f, 0.55f, 0);
-
-    // Near floor
-    float height = 150;
-
-    // Middle light
-    light.highlightColorAndPosZ = Vector4D(1.f, 1.f, 1.f, height);
-    light.lightColorAndRadius = Vector4D(1.f, 1.f, 1.f, 0);
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-
-    // Light 1
-    light.highlightColorAndPosZ = Vector4D(0.49f, 0.66f, 0.75f, height);
-    light.lightColorAndRadius = Vector4D(0.45f, 0.58f, 0.80f, 0);
-
-    light.warmOffsetAndPosX.w() = light.coolOffsetAndPosY.w() = 400;
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-    // Light 2
-    light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-    // Light 3
-    light.warmOffsetAndPosX.w() = -light.warmOffsetAndPosX.w();
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-    // Light 4
-    light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
-    lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-
-    //// Near ceiling
-    //height = 400;
-    //// Light 5
-    //light.warmOffsetAndPosX.w() = light.coolOffsetAndPosY.w() = 400;
-    //lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-    //// Light 6
-    //light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
-    //lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-    //// Light 7
-    //light.warmOffsetAndPosX.w() = -light.warmOffsetAndPosX.w();
-    //lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
-    //// Light 8
-    //light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
-    //lightData.emplace_back(std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>{ light, {} });
 }
 
 void ExperimentalEngine::destroyScene()
@@ -306,13 +319,14 @@ void ExperimentalEngine::createShaderParameters()
     const GraphicsResource* goochModelDescLayout = drawGoochPipelineContext.getPipeline()->getParamLayoutAtSet(0);
     lightCommon = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1,2 });
     lightCommon->setResourceName("LightCommon");
-    uint32 lightIdx = 0;
-    for (std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
+    const uint32 lightDataCount = uint32(Math::ceil(sceneLightData.size() / float(ARRAY_LENGTH(GoochModelLightArray::lights))));
+    lightData.resize(lightDataCount);
+    for (uint32 i = 0; i < lightDataCount; ++i)
     {
         // as 0 and 1 are light common and textures
-        light.second = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0, 1 });
-        light.second->setResourceName("Light" + std::to_string(lightIdx));
-        ++lightIdx;
+        lightData[i] = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0, 1 });
+        lightData[i]->setResourceName("Light_" + std::to_string(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + "to"
+            + std::to_string(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights)));
     }
 
     const GraphicsResource* drawQuadDescLayout = drawQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0);
@@ -362,13 +376,21 @@ void ExperimentalEngine::setupShaderParameterParams()
     }
 
     lightCommon->setBuffer("viewData", viewData);
-    lightCommon->setIntParam("lightsCount", uint32(lightData.size()));
-    lightCommon->setFloatParam("invLightsCount", 1.0f / lightData.size());
+    lightCommon->setIntParam("lightsCount", uint32(sceneLightData.size()));
+    lightCommon->setFloatParam("invLightsCount", 1.0f / sceneLightData.size());
     lightCommon->init();
-    for (std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
+    uint32 lightStartIdx = 0;
+    for (SharedPtr<ShaderParameters>& light : lightData)
     {
-        light.second->setBuffer("light", light.first);
-        light.second->init();
+        uint32 rangeIdx = 0;
+        for (; rangeIdx < ARRAY_LENGTH(GoochModelLightArray::lights) && (rangeIdx + lightStartIdx) < sceneLightData.size(); ++rangeIdx)
+        {
+            light->setBuffer("lights", sceneLightData[rangeIdx + lightStartIdx], rangeIdx);
+        }
+        light->setIntParam("count", uint32(rangeIdx));
+        light->init();
+
+        lightStartIdx += ARRAY_LENGTH(GoochModelLightArray::lights);
     }
 
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
@@ -464,10 +486,10 @@ void ExperimentalEngine::destroyShaderParameters()
     lightCommon->release();
     lightCommon.reset();
 
-    for (std::pair<GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
+    for (SharedPtr<ShaderParameters>& light : lightData)
     {
-        light.second->release();
-        light.second.reset();
+        light->release();
+        light.reset();
     }
 
     lightTextures.reset();
@@ -684,7 +706,7 @@ void ExperimentalEngine::onStartUp()
 
     camera.cameraProjection = ECameraProjection::Perspective;
     camera.setOrthoSize({ 1280,720 });
-    camera.setClippingPlane(0.1f, 5000.f);
+    camera.setClippingPlane(0.1f, 6000.f);
     camera.setFOV(110.f, 90.f);
 
     cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
@@ -849,9 +871,8 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
         {
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, LightingPass);
 
-            // TODO(Jeslas) Change lighting to array of lights per pass
-            int32 lightIndex = 0;
-            for (const std::pair<const GoochModelLightData, SharedPtr<ShaderParameters>>& light : lightData)
+            int32 lightDataIndex = 0;
+            for (const SharedPtr<ShaderParameters>& light : lightData)
             {
                 cmdList->cmdBeginRenderPass(cmdBuffer, drawGoochPipelineContext, scissor, {}, clearValues);
                 {
@@ -859,14 +880,14 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
                     cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGoochPipelineContext, { queryParam });
 
                     // Right now only one set will be there but there is chances more set might get added
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), *lightTextures, light.second.get() });
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), *lightTextures, light.get() });
                     cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                 }
                 cmdList->cmdEndRenderPass(cmdBuffer);
 
-                lightIndex++;
+                lightDataIndex++;
 
-                if (lightIndex < lightData.size())
+                if (lightDataIndex < lightData.size())
                 {
                     cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
                     {
