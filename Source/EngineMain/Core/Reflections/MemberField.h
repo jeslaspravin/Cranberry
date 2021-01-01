@@ -40,9 +40,27 @@ public:
         return memberPtr != nullptr;
     }
 
-    void set(const MemberType& newValue) const
+    template<typename Type>
+    std::enable_if_t<std::conjunction_v<std::is_same<Type, MemberType>, std::negation<std::is_array<MemberType>>>, void>
+        set(const  Type& newValue) const
     {
         *memberPtr = newValue;
+    }
+
+    template<typename Type>
+    std::enable_if_t<std::conjunction_v<std::is_same<Type, MemberType>, std::is_array<MemberType>>, void> 
+        set(const Type& newValue) const
+    {
+        MemberType& memberValue = *memberPtr;
+        const uint32 arrayLen = uint32(ARRAY_LENGTH(memberValue));
+
+        using ElementType = std::remove_all_extents_t<MemberType>;
+        ElementType* memberValPtr = reinterpret_cast<ElementType*>(&memberValue);
+        ElementType* newValPtr = reinterpret_cast<ElementType*>(&newValue);
+        for (uint32 i = 0; i < arrayLen; ++i)
+        {
+            memberValPtr[i] = newValPtr[i];
+        }
     }
 
     MemberType& get() const
@@ -135,14 +153,50 @@ public:
         return memberPtr != nullptr;
     }
 
-    void set(ClassType& object, const MemberType& newValue) const
+    template<typename Type>
+    std::enable_if_t<std::conjunction_v<std::is_same<Type, MemberType>, std::negation<std::is_array<MemberType>>>, void>
+        set(ClassType& object, const Type& newValue) const
     {
         object.*memberPtr = newValue;
     }
 
-    void set(ClassType* object, const MemberType& newValue) const
+    template<typename Type>
+    std::enable_if_t<std::conjunction_v<std::is_same<Type, MemberType>, std::negation<std::is_array<MemberType>>>, void>
+        set(ClassType* object, const Type& newValue) const
     {
         object->*memberPtr = newValue;
+    }
+
+    template<typename Type>
+    std::enable_if_t<std::conjunction_v<std::is_same<Type, MemberType>, std::is_array<MemberType>>, void> 
+        set(ClassType& object, const Type& newValue) const
+    {
+        MemberType& memberValue = object->*memberPtr;
+        const uint32 arrayLen = uint32(ARRAY_LENGTH(memberValue));
+
+        using ElementType = std::remove_all_extents_t<MemberType>;
+        ElementType* memberValPtr = reinterpret_cast<ElementType*>(&memberValue);
+        const ElementType* newValPtr = reinterpret_cast<const ElementType*>(&newValue);
+        for (uint32 i = 0; i < arrayLen; ++i)
+        {
+            memberValPtr[i] = newValPtr[i];
+        }
+    }
+
+    template<typename Type>
+    std::enable_if_t<std::conjunction_v<std::is_same<Type, MemberType>, std::is_array<MemberType>>, void> 
+        set(ClassType* object, const Type& newValue) const
+    {
+        MemberType& memberValue = object->*memberPtr;
+        const uint32 arrayLen = uint32(ARRAY_LENGTH(memberValue));
+
+        using ElementType = std::remove_all_extents_t<MemberType>;
+        ElementType* memberValPtr = reinterpret_cast<ElementType*>(&memberValue);
+        const ElementType* newValPtr = reinterpret_cast<const ElementType*>(&newValue);
+        for (uint32 i = 0; i < arrayLen; ++i)
+        {
+            memberValPtr[i] = newValPtr[i];
+        }
     }
 
     MemberType& get(ClassType& object) const

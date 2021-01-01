@@ -1,6 +1,7 @@
 #pragma once
 #include "ShaderInputOutput.h"
 #include "../../Core/Reflections/MemberField.h"
+#include "../../Core/Types/Containers/ArrayView.h"
 
 #include <any>
 
@@ -73,7 +74,8 @@ struct ShaderBufferField
     virtual bool setFieldData(void* outerPtr, const std::any& newValue) const = 0;
     virtual bool setFieldDataArray(void* outerPtr, const std::any& newValuesPtr) const = 0;
     virtual bool setFieldDataArray(void* outerPtr, const std::any& newValue, uint32 arrayIndex) const = 0;
-    virtual void* fieldData(uint32& typeSize, void* outerPtr) const = 0;
+    // Element size individual element size in array and will be same as type size in non array
+    virtual void* fieldData(void* outerPtr, uint32* typeSize, uint32* elementSize) const = 0;
 };
 
 template<typename OuterType>
@@ -81,7 +83,8 @@ struct ShaderBufferTypedField : public ShaderBufferField
 {
     ShaderBufferTypedField(const String& pName) : ShaderBufferField(pName) {}
 
-    virtual const void* fieldData(uint32& typeSize, const OuterType* outerPtr) const = 0;
+    // Element size individual element size in array and will be same as type size in non array
+    virtual const void* fieldData(const OuterType* outerPtr, uint32* typeSize, uint32* elementSize) const = 0;
 };
 
 template<typename OuterType, typename MemberType>
@@ -111,12 +114,11 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
 
     constexpr static uint32 totalArrayElements()
     {
-        // Right now supporting only one dimension
-        return uint32(std::extent_v<MemberType, 0>);
+        return sizeof(MemberType)/sizeof(ArrayType);
     }
 
     template <typename DataType>
-    constexpr static std::enable_if_t<std::is_array_v<DataType>, DataType>* memberDataPtr(DataType& data)
+    constexpr static std::enable_if_t<std::is_array_v<DataType>, std::remove_all_extents_t<DataType>>* memberDataPtr(DataType& data)
     {
         return &data[0];
     }
@@ -143,14 +145,14 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     bool setFieldDataArray(void* outerPtr, const std::any& newValuesPtr) const override
     {
         OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
-        MemberType *const*newValuesPtrPtr = std::any_cast<MemberType*>(&newValuesPtr);
+        ArrayView<ArrayType> const*newValuesViewPtr = std::any_cast<ArrayView<ArrayType>>(&newValuesPtr);
 
-        if (bIsArray && newValuesPtrPtr != nullptr && *newValuesPtrPtr != nullptr)
+        if (bIsArray && newValuesViewPtr != nullptr && newValuesViewPtr->data() != nullptr)
         {
-            MemberType* newValues = *newValuesPtrPtr;
-            MemberType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+            const ArrayType* newValues = newValuesViewPtr->data();
+            ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
 
-            memcpy(toValues, newValues, sizeof(MemberType));
+            memcpy(toValues, newValues, Math::min(sizeof(MemberType), sizeof(ArrayType) * newValuesViewPtr->size()));
             return true;
         }
         return false;
@@ -159,28 +161,41 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     bool setFieldDataArray(void* outerPtr, const std::any& newValue, uint32 arrayIndex) const override
     {
         OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
-        const MemberType* newValuesPtr = std::any_cast<MemberType>(&newValue);
+        const ArrayType* newValuePtr = std::any_cast<ArrayType>(&newValue);
 
-        if (bIsArray && arrayIndex < totalArrayElements() && newValuesPtr != nullptr)
+        if (bIsArray && arrayIndex < totalArrayElements() && newValuePtr != nullptr)
         {
-            MemberType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+            ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
 
-            toValues[arrayIndex] = *newValuesPtr;
-
+            (toValues)[arrayIndex] = *newValuePtr;
             return true;
         }
         return false;
     }
 
-    void* fieldData(uint32& typeSize, void* outerPtr) const override
+    void* fieldData(void* outerPtr, uint32* typeSize, uint32* elementSize) const override
     {
-        typeSize = sizeof(MemberType);
+        if (typeSize)
+        {
+            (*typeSize) = sizeof(MemberType);
+        }
+        if (elementSize)
+        {
+            (*elementSize) = sizeof(ArrayType);
+        }
         return memberDataPtr(memberPtr.get(reinterpret_cast<OuterType*>(outerPtr)));
     }
 
-    const void* fieldData(uint32& typeSize, const OuterType* outerPtr) const override
+    const void* fieldData(const OuterType* outerPtr, uint32* typeSize, uint32* elementSize) const override
     {
-        typeSize = sizeof(MemberType);
+        if (typeSize)
+        {
+            (*typeSize) = sizeof(MemberType);
+        }
+        if (elementSize)
+        {
+            (*elementSize) = sizeof(ArrayType);
+        }
         return memberDataPtr(memberPtr.get(outerPtr));
     }
 };
@@ -275,7 +290,8 @@ struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo \
     ShaderBufferMemberField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { #FieldName, &BufferDataType::##FieldName }; \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
-// NOTE : Right now only supporting inner struct with proper alignment with respect to GPU(Alignment correction on copying to GPU is only done for first level of variables)  
+// NOTE : Right now supporting : Buffer with any alignment
+// but in case of inner struct only with proper alignment with respect to GPU(Alignment correction on copying to GPU is only done for first level of variables)  
 #define ADD_BUFFER_STRUCT_FIELD(FieldName, FieldType) \
     FieldType##BufferParamInfo FieldName##ParamInfo; \
     ShaderBufferStructField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { #FieldName, &BufferDataType::##FieldName##, &##FieldName##ParamInfo }; \

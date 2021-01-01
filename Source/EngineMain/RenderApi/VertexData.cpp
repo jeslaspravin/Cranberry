@@ -4,6 +4,7 @@
 #include "../Core/Math/Vector2D.h"
 #include "../Core/Math/Vector3D.h"
 #include "../Core/Math/Vector4D.h"
+#include "ShaderDataTypes.h"
 
 BEGIN_VERTEX_DEFINITION(StaticMeshVertex, EShaderInputFrequency::PerVertex)
 ADD_VERTEX_FIELD(position)
@@ -99,6 +100,26 @@ namespace EVertexType
         return VERTEX_PARAMS;
     }
 
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType)
+    {
+        switch (vertexType)
+        {
+        case EVertexType::Simple2:
+            return vertexParamInfo<Simple2>();
+        case EVertexType::UI:
+            return vertexParamInfo<UI>();
+        case EVertexType::Simple3:
+            return vertexParamInfo<Simple3>();
+        case EVertexType::Simple4:
+            return vertexParamInfo<Simple4>();
+        default:
+        case EVertexType::BasicMesh:
+            return vertexParamInfo<BasicMesh>();
+        case EVertexType::StaticMesh:
+            return vertexParamInfo<StaticMesh>();
+        }
+    }
+
     String toString(Type vertexType)
     {
         switch (vertexType)
@@ -120,4 +141,52 @@ namespace EVertexType
         }
         return "";
     }
+
+    template<>
+    void vertexSpecConsts<Simple2>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
+    {
+    }
+
+    template<>
+    void vertexSpecConsts<UI>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
+    {
+    }
+
+    template<>
+    void vertexSpecConsts<Simple3>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
+    {
+    }
+    template<>
+    void vertexSpecConsts<Simple4>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
+    {
+    }
+    template<>
+    void vertexSpecConsts<BasicMesh>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
+    {
+    }
+    template<>
+    void vertexSpecConsts<StaticMesh>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
+    {
+    }
+
+    void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry>& specializationConst)
+    {
+        switch (vertexType)
+        {
+        case EVertexType::Simple2:
+            return vertexSpecConsts<Simple2>(specializationConst);
+        case EVertexType::UI:
+            return vertexSpecConsts<UI>(specializationConst);
+        case EVertexType::Simple3:
+            return vertexSpecConsts<Simple3>(specializationConst);
+        case EVertexType::Simple4:
+            return vertexSpecConsts<Simple4>(specializationConst);
+        default:
+        case EVertexType::BasicMesh:
+            return vertexSpecConsts<BasicMesh>(specializationConst);
+        case EVertexType::StaticMesh:
+            return vertexSpecConsts<StaticMesh>(specializationConst);
+        }
+    }
+
 }

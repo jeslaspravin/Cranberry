@@ -123,7 +123,7 @@ struct SpecializationConstantDefaultValue
         double f64Val;
     };
 
-    Value defaltValue;
+    Value defaultValue;
 };
 // Only support scalar
 struct SpecializationConstantEntry
@@ -133,3 +133,60 @@ struct SpecializationConstantEntry
     uint32_t constantId;
 };
 typedef NamedAttribute<SpecializationConstantEntry> ReflectSpecializationConstant;
+
+namespace SpecializationConstUtility
+{
+    template<typename Type1, typename Type2>
+    struct IsSameType
+    {
+        static constexpr bool value = false;
+    };
+    template<typename Type>
+    struct IsSameType<Type, Type>
+    {
+        static constexpr bool value = true;
+    };
+
+    template<typename ValueType>
+    constexpr EReflectBufferPrimitiveType toPrimitiveType()
+    {
+        if constexpr (IsSameType<bool, ValueType>::value)
+        {
+            return EReflectBufferPrimitiveType::ReflectPrimitive_bool;
+        }
+        else if constexpr (IsSameType<int, ValueType>::value)
+        {
+            return EReflectBufferPrimitiveType::ReflectPrimitive_int;
+        }
+        else if constexpr (IsSameType<uint32_t, ValueType>::value)
+        {
+            return EReflectBufferPrimitiveType::ReflectPrimitive_uint;
+        }
+        else if constexpr (IsSameType<float, ValueType>::value)
+        {
+            return EReflectBufferPrimitiveType::ReflectPrimitive_float;
+        }
+        else if constexpr (IsSameType<double, ValueType>::value)
+        {
+            return EReflectBufferPrimitiveType::ReflectPrimitive_double;
+        }
+        return EReflectBufferPrimitiveType::RelectPrimitive_invalid;
+    }
+
+    template<typename ValueType>
+    SpecializationConstantEntry fromValue(ValueType value)
+    {
+        return { value, toPrimitiveType<ValueType>() };
+    }
+
+    template<typename ValueType>
+    bool asValue(ValueType& value, const SpecializationConstantEntry& specializationConst)
+    {
+        if (toPrimitiveType<ValueType>() == specializationConst.type)
+        {
+            value = *reinterpret_cast<const ValueType*>(&specializationConst.defaultValue.defaultValue);
+            return true;
+        }
+        return false;
+    }
+}

@@ -133,6 +133,7 @@ public:
     virtual void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) = 0;
     virtual void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) = 0;
     virtual void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) = 0;
+    // Below copies does not take inner structure alignment and offset into account so do not use this to copy structures that has inner structure which is not tightly packed
     template<typename BufferDataType>
     void copyToBuffer(BufferResource* dst, uint32 dstOffset, const BufferDataType* dataToCopy, const ShaderBufferParamInfo* bufferFields);
     template<typename BufferDataType>
@@ -199,7 +200,7 @@ void IRenderCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, con
         BatchCopyBufferData copyData;
         copyData.dst = dst;
         copyData.dstOffset = dstOffset + bufferMemberField->offset;
-        copyData.dataToCopy = bufferMemberField->fieldData(copyData.size, dataToCopy);
+        copyData.dataToCopy = bufferMemberField->fieldData(dataToCopy, &copyData.size, nullptr);
         batchedCopies.push_back(copyData);
 
         fieldNode = fieldNode->nextNode;
@@ -219,7 +220,7 @@ void IRenderCommandList::recordCopyToBuffer(std::vector<BatchCopyBufferData>& re
         BatchCopyBufferData copyData;
         copyData.dst = dst;
         copyData.dstOffset = dstOffset + bufferMemberField->offset;
-        copyData.dataToCopy = bufferMemberField->fieldData(copyData.size, dataToCopy);
+        copyData.dataToCopy = bufferMemberField->fieldData(dataToCopy, &copyData.size, nullptr);
         recordTo.push_back(copyData);
 
         fieldNode = fieldNode->nextNode;

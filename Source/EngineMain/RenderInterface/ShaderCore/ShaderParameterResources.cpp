@@ -80,7 +80,7 @@ void ShaderDescriptorParamType::wrapReflectedDescriptors(std::map<String, Shader
     }
     for (const DescEntrySubpassInput& descriptorInfo : reflectDescriptors.subpassInputs)
     {
-        Logger::warn("DescriptorTypeParams", "%s : Sub pass inputs are not supported yet %s", __func__, descriptorInfo.attributeName.c_str());
+        Logger::warn("DescriptorTypeParams", "%s() : Sub pass inputs are not supported yet %s", __func__, descriptorInfo.attributeName.c_str());
     }
 }
 
@@ -143,11 +143,18 @@ void ShaderSetParametersLayout::init()
     }
 
     bindBufferParamInfo(bufferDescriptors);
+    std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
+    {
+        std::map<String, SpecializationConstantEntry> specConsts;
+        respectiveShaderRes->getSpecializationConsts(specConsts);
+        ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, shaderReflection);
+    }
+
     // Fill those bound buffer info with GPU reflect data
     for (const std::pair<const String, ShaderBufferDescriptorType*>& bufferDescWrapper : bufferDescriptors)
     {
         bufferDescWrapper.second->bufferNativeStride = bufferDescWrapper.second->bufferParamInfo->paramStride();
-        ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data);
+        ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data, specializationConsts);
     }
 }
 
@@ -176,7 +183,7 @@ const ShaderDescriptorParamType* ShaderSetParametersLayout::parameterDescription
         outSetIdx = shaderSetID;
         return foundParamItr->second;
     }
-    Logger::error("ShaderSetParametersLayout", "%s : Parameter %s is not available in shader %s at set %u", __func__
+    Logger::error("ShaderSetParametersLayout", "%s() : Parameter %s is not available in shader %s at set %u", __func__
         , paramName.getChar(), respectiveShaderRes->getResourceName().getChar(), shaderSetID);
     return nullptr;
 }
@@ -213,10 +220,17 @@ void ShaderParametersLayout::init()
 
     // Fill those bound buffer info with GPU reflect data
     respectiveShaderRes->bindBufferParamInfo(bufferDescriptors);
+    std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
+    {
+        std::map<String, SpecializationConstantEntry> specConsts;
+        respectiveShaderRes->getSpecializationConsts(specConsts);
+        ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, shaderReflection);
+    }
+
     for (const std::pair<const String, ShaderBufferDescriptorType*>& bufferDescWrapper : bufferDescriptors)
     {
         bufferDescWrapper.second->bufferNativeStride = bufferDescWrapper.second->bufferParamInfo->paramStride();
-        ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data);
+        ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data, specializationConsts);
     }
 
     for (const std::pair<const uint32, std::map<String, ShaderDescriptorParamType*>>& setToDescriptorsPair : setToParamsLayout)
@@ -249,7 +263,7 @@ const ShaderDescriptorParamType* ShaderParametersLayout::parameterDescription(ui
         outSetIdx = foundParamItr->second.first;
         return foundParamItr->second.second;
     }
-    Logger::error("ShaderParametersLayout", "%s : Parameter %s is not available in shader %s", __func__
+    Logger::error("ShaderParametersLayout", "%s() : Parameter %s is not available in shader %s", __func__
         , paramName.getChar(), respectiveShaderRes->getResourceName().getChar());
     return nullptr;
 }
@@ -288,6 +302,7 @@ size_t ShaderParameters::BufferParameterUpdate::Hasher::operator()(const BufferP
 {
     size_t seed = HashUtility::hash(keyVal.bufferName);
     HashUtility::hashCombine(seed, keyVal.paramName);
+    HashUtility::hashCombine(seed, keyVal.index);
     return seed;
 }
 
@@ -298,7 +313,14 @@ ShaderParameters::ShaderParameters(const GraphicsResource* shaderParamLayout, co
 {
     if (paramLayout->getType()->isChildOf<ShaderSetParametersLayout>())
     {
-        initParamsMaps(static_cast<const ShaderSetParametersLayout*>(paramLayout)->allParameterDescriptions());
+        std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
+        {
+            const ShaderResource* shaderRes = static_cast<const ShaderSetParametersLayout*>(paramLayout)->getShaderResource();
+            std::map<String, SpecializationConstantEntry> specConsts;
+            shaderRes->getSpecializationConsts(specConsts);
+            ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, shaderRes->getReflection());
+        }
+        initParamsMaps(static_cast<const ShaderSetParametersLayout*>(paramLayout)->allParameterDescriptions(), specializationConsts);
     }
     else if (paramLayout->getType()->isChildOf<ShaderParametersLayout>())
     {
@@ -317,7 +339,15 @@ ShaderParameters::ShaderParameters(const GraphicsResource* shaderParamLayout, co
                 }
             }
         }
-        initParamsMaps(allParameters);
+
+        std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
+        {
+            const ShaderResource* shaderRes = static_cast<const ShaderParametersLayout*>(paramLayout)->getShaderResource();
+            std::map<String, SpecializationConstantEntry> specConsts;
+            shaderRes->getSpecializationConsts(specConsts);
+            ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, shaderRes->getReflection());
+        }
+        initParamsMaps(allParameters, specializationConsts);
     }
     else
     {
@@ -335,27 +365,30 @@ void ShaderParameters::init()
     }
 }
 
-void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr) const
+void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, bool bIsNested) const
 {
     const ShaderBufferFieldNode* currentNode = &bufferParamInfo->startNode;
     while (currentNode->isValid())
     {
-        debugAssert(!currentNode->field->bIsArray);
         bufferParamData.bufferParams[currentNode->field->paramName] = { outerPtr, currentNode->field };
         if (currentNode->field->bIsStruct)
         {
+            // AoS inside shader base uniform struct is supported, AoSoA... not supported due to parameter indexing limitation being 1 right now
+            if (bIsNested && currentNode->field->bIsArray)
+            {
+                fatalAssert(!"We do not support nested array in parameters", "We do not support nested array in parameters");
+            }
             void* nextOuterPtr = nullptr;
             {
-                uint32 dummy;
-                nextOuterPtr = currentNode->field->fieldData(dummy, outerPtr);
+                nextOuterPtr = currentNode->field->fieldData(outerPtr, nullptr, nullptr);
             }
-            initBufferParams(bufferParamData, currentNode->field->paramInfo, nextOuterPtr);
+            initBufferParams(bufferParamData, currentNode->field->paramInfo, nextOuterPtr, true);
         }
         currentNode = currentNode->nextNode;
     }
 }
 
-void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorParamType*>& paramsDesc)
+void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorParamType*>& paramsDesc, const std::vector<std::vector<SpecializationConstantEntry>>& specializationConsts)
 {
     for (const std::pair<const String, ShaderDescriptorParamType*>& paramDesc : paramsDesc)
     {
@@ -375,32 +408,66 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
                     paramData.gpuBuffer = new GraphicsRBuffer(bufferParamDesc->bufferParamInfo->paramStride());
                 }
 
-                initBufferParams(paramData, bufferParamDesc->bufferParamInfo, paramData.cpuBuffer);
+                initBufferParams(paramData, bufferParamDesc->bufferParamInfo, paramData.cpuBuffer, false);
                 shaderBuffers[bufferParamDesc->bufferEntryPtr->attributeName] = paramData;
             }
             else
             {
-                debugAssert(bufferParamDesc->texelBufferEntryPtr->data.data.arraySize.size() == 1 && bufferParamDesc->texelBufferEntryPtr->data.data.arraySize[0].dimension == 1);
-                TexelParameterData paramData;
+                debugAssert(bufferParamDesc->texelBufferEntryPtr->data.data.arraySize.size() == 1);
+                uint32 count = 0;
+                const ArrayDefinition& arrayDef = bufferParamDesc->texelBufferEntryPtr->data.data.arraySize[0];
+                if (!arrayDef.isSpecializationConst)
+                {
+                    count = arrayDef.dimension;
+                }
+                else if (!SpecializationConstUtility::asValue(count, specializationConsts[arrayDef.stageIdx][arrayDef.dimension]))
+                {
+                    Logger::error("ShaderParameters", "%s() : Texel buffer %s array count specialization invalid"
+                        , __func__, bufferParamDesc->texelBufferEntryPtr->attributeName.c_str());
+                }
+
+                TexelParameterData& paramData = shaderTexels[bufferParamDesc->texelBufferEntryPtr->attributeName];
                 paramData.descriptorInfo = bufferParamDesc;
-                shaderTexels[bufferParamDesc->texelBufferEntryPtr->attributeName] = paramData;
+                paramData.gpuBuffers.resize(count, nullptr);
             }
         }
         else if (const ShaderTextureDescriptorType* textureParamDesc = Cast<ShaderTextureDescriptorType>(paramDesc.second))
         {
-            TextureParameterData paramData;
-            paramData.descriptorInfo = textureParamDesc;
+            debugAssert(textureParamDesc->textureEntryPtr->data.data.arraySize.size() == 1);
+            uint32 count = 0;
+            const ArrayDefinition& arrayDef = textureParamDesc->textureEntryPtr->data.data.arraySize[0];
+            if (!arrayDef.isSpecializationConst)
+            {
+                count = arrayDef.dimension;
+            }
+            else if (!SpecializationConstUtility::asValue(count, specializationConsts[arrayDef.stageIdx][arrayDef.dimension]))
+            {
+                Logger::error("ShaderParameters", "%s() : Texture %s array count specialization invalid"
+                    , __func__, textureParamDesc->textureEntryPtr->attributeName.c_str());
+            }
 
-            debugAssert(textureParamDesc->textureEntryPtr->data.data.arraySize.size() == 1 && textureParamDesc->textureEntryPtr->data.data.arraySize[0].dimension == 1);
-            shaderTextures[textureParamDesc->textureEntryPtr->attributeName] = paramData;
+            TextureParameterData& paramData = shaderTextures[textureParamDesc->textureEntryPtr->attributeName];
+            paramData.textures.resize(count);
+            paramData.descriptorInfo = textureParamDesc;
         }
         else if (const ShaderSamplerDescriptorType* samplerParamDesc = Cast<ShaderSamplerDescriptorType>(paramDesc.second))
         {
-            SamplerParameterData paramData;
-            paramData.descriptorInfo = samplerParamDesc;
+            debugAssert(samplerParamDesc->samplerEntryPtr->data.data.size() == 1);
+            uint32 count = 0;
+            const ArrayDefinition& arrayDef = samplerParamDesc->samplerEntryPtr->data.data[0];
+            if (!arrayDef.isSpecializationConst)
+            {
+                count = arrayDef.dimension;
+            }
+            else if (!SpecializationConstUtility::asValue(count, specializationConsts[arrayDef.stageIdx][arrayDef.dimension]))
+            {
+                Logger::error("ShaderParameters", "%s() : Sampler %s array count specialization invalid"
+                    , __func__, samplerParamDesc->samplerEntryPtr->attributeName.c_str());
+            }
 
-            debugAssert(samplerParamDesc->samplerEntryPtr->data.data.size() == 1 && samplerParamDesc->samplerEntryPtr->data.data[0].dimension == 1);
-            shaderSamplers[samplerParamDesc->samplerEntryPtr->attributeName] = paramData;
+            SamplerParameterData& paramData = shaderSamplers[samplerParamDesc->samplerEntryPtr->attributeName];
+            paramData.samplers.resize(count);
+            paramData.descriptorInfo = samplerParamDesc;
         }
     }
 }
@@ -447,8 +514,9 @@ void ShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphicsInstan
 
             BatchCopyBufferData copyData;
             copyData.dst = bufferParamData.gpuBuffer;
-            copyData.dstOffset = bufferParamField.bufferField->offset;
-            copyData.dataToCopy = bufferParamField.bufferField->fieldData(copyData.size, bufferParamField.outerPtr);
+            copyData.dstOffset = bufferParamField.bufferField->offset + (bufferUpdate.index * bufferParamField.bufferField->stride);
+            copyData.dataToCopy = bufferParamField.bufferField->fieldData(bufferParamField.outerPtr, nullptr, &copyData.size);
+            copyData.dataToCopy = reinterpret_cast<const uint8*>(copyData.dataToCopy) + (bufferUpdate.index * copyData.size);
 
             copies.emplace_back(copyData);
         }
@@ -487,40 +555,66 @@ std::pair<const ShaderParameters::BufferParametersData*, const ShaderParameters:
 }
 
 template<typename FieldType>
-bool ShaderParameters::setFieldParam(const String& paramName, const FieldType& value)
+bool ShaderParameters::setFieldParam(const String& paramName, const FieldType& value, uint32 index)
 {
+    bool bValueSet = false;
     String bufferName;
     std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> foundInfo =
         findBufferParam(bufferName, paramName);
 
-    if (foundInfo.first && foundInfo.second && !foundInfo.second->bufferField->bIsStruct
-        && foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, value))
+    BufferParameterUpdate updateVal{ bufferName, paramName, 0 };
+
+    if (foundInfo.first && foundInfo.second && !foundInfo.second->bufferField->bIsStruct)
     {
-        bufferUpdates.emplace_back(BufferParameterUpdate{ bufferName, paramName });
-        return true;
+        if (foundInfo.second->bufferField->bIsArray)
+        {
+            bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, value, index);
+            updateVal.index = index;
+        }
+        else
+        {
+            bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, value);
+        }
     }
-    return false;
+    if (bValueSet)
+    {
+        bufferUpdates.emplace_back(updateVal);
+    }
+    return bValueSet;
 }
 
 template<typename FieldType>
-bool ShaderParameters::setFieldParam(const String& paramName, const String& bufferName, const FieldType& value)
+bool ShaderParameters::setFieldParam(const String& paramName, const String& bufferName, const FieldType& value, uint32 index)
 {
+    bool bValueSet = false;
+    BufferParameterUpdate updateVal{ bufferName, paramName, 0 };
+
     auto bufferParamsItr = shaderBuffers.find(bufferName);
     if (bufferParamsItr != shaderBuffers.end())
     {
         auto bufferParamItr = bufferParamsItr->second.bufferParams.find(paramName);
-        if (bufferParamItr != bufferParamsItr->second.bufferParams.end() && !bufferParamItr->second.bufferField->bIsStruct
-            && bufferParamItr->second.bufferField->setFieldData(bufferParamItr->second.outerPtr, value))
+        if (bufferParamItr != bufferParamsItr->second.bufferParams.end() && !bufferParamItr->second.bufferField->bIsStruct)
         {
-            bufferUpdates.emplace_back(BufferParameterUpdate{ bufferName, paramName });
-            return true;
+            if (bufferParamItr->second.bufferField->bIsArray)
+            {
+                bValueSet = bufferParamItr->second.bufferField->setFieldDataArray(bufferParamItr->second.outerPtr, value, index);
+                updateVal.index = index;
+            }
+            else
+            {
+                bValueSet = bufferParamItr->second.bufferField->setFieldData(bufferParamItr->second.outerPtr, value);
+            }
         }
     }
-    return false;
+    if (bValueSet)
+    {
+        bufferUpdates.emplace_back(updateVal);
+    }
+    return bValueSet;
 }
 
 template<typename FieldType>
-FieldType ShaderParameters::getFieldParam(const String& paramName) const
+FieldType ShaderParameters::getFieldParam(const String& paramName, uint32 index) const
 {
     String bufferName;
     std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> foundInfo =
@@ -528,18 +622,19 @@ FieldType ShaderParameters::getFieldParam(const String& paramName) const
 
     if (foundInfo.first && foundInfo.second && !foundInfo.second->bufferField->bIsStruct)
     {
-        uint32 typeSize;
-        void* dataPtr = foundInfo.second->bufferField->fieldData(typeSize, foundInfo.second->outerPtr);
-        if (sizeof(FieldType) == typeSize)
+        uint32 fieldTypeSize;
+        void* dataPtr = foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, &fieldTypeSize);
+        if (sizeof(FieldType) == fieldTypeSize)
         {
-            return *reinterpret_cast<FieldType*>(dataPtr);
+            uint32 idx = foundInfo.second->bufferField->bIsArray ? index : 0;
+            return reinterpret_cast<FieldType*>(dataPtr)[idx];
         }
     }
     return FieldType(0);
 }
 
 template<typename FieldType>
-FieldType ShaderParameters::getFieldParam(const String& paramName, const String& bufferName) const
+FieldType ShaderParameters::getFieldParam(const String& paramName, const String& bufferName, uint32 index) const
 {
     auto bufferParamsItr = shaderBuffers.find(bufferName);
     if (bufferParamsItr != shaderBuffers.end())
@@ -547,227 +642,240 @@ FieldType ShaderParameters::getFieldParam(const String& paramName, const String&
         auto bufferParamItr = bufferParamsItr->second.bufferParams.find(paramName);
         if (bufferParamItr != bufferParamsItr->second.bufferParams.end() && !bufferParamItr->second.bufferField->bIsStruct)
         {
-            uint32 typeSize;
-            void* dataPtr = bufferParamItr->second.bufferField->fieldData(typeSize, bufferParamItr->second.outerPtr);
-            if (sizeof(FieldType) == typeSize)
+            uint32 fieldTypeSize;
+            void* dataPtr = bufferParamItr->second.bufferField->fieldData(bufferParamItr->second.outerPtr, nullptr, &fieldTypeSize);
+            if (sizeof(FieldType) == fieldTypeSize)
             {
-                return *reinterpret_cast<FieldType*>(dataPtr);
+                uint32 idx = bufferParamItr->second.bufferField->bIsArray ? index : 0;
+                return reinterpret_cast<FieldType*>(dataPtr)[idx];
             }
         }
     }
     return FieldType(0);
 }
 
-bool ShaderParameters::setIntParam(const String& paramName, const String& bufferName, int32 value)
+bool ShaderParameters::setIntParam(const String& paramName, const String& bufferName, int32 value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, bufferName, value);
+    return setFieldParam(paramName, bufferName, value, index);
 }
 
-bool ShaderParameters::setIntParam(const String& paramName, const String& bufferName, uint32 value)
+bool ShaderParameters::setIntParam(const String& paramName, const String& bufferName, uint32 value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, bufferName, value);
+    return setFieldParam(paramName, bufferName, value, index);
 }
 
-bool ShaderParameters::setIntParam(const String& paramName, int32 value)
+bool ShaderParameters::setIntParam(const String& paramName, int32 value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, value);
+    return setFieldParam(paramName, value, index);
 }
 
-bool ShaderParameters::setIntParam(const String& paramName, uint32 value)
+bool ShaderParameters::setIntParam(const String& paramName, uint32 value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, value);
+    return setFieldParam(paramName, value, index);
 }
 
-bool ShaderParameters::setFloatParam(const String& paramName, const String& bufferName, float value)
+bool ShaderParameters::setFloatParam(const String& paramName, const String& bufferName, float value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, bufferName, value);
+    return setFieldParam(paramName, bufferName, value, index);
 }
 
-bool ShaderParameters::setFloatParam(const String& paramName, float value)
+bool ShaderParameters::setFloatParam(const String& paramName, float value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, value);
+    return setFieldParam(paramName, value, index);
 }
 
-bool ShaderParameters::setVector2Param(const String& paramName, const String& bufferName, const Vector2D& value)
+bool ShaderParameters::setVector2Param(const String& paramName, const String& bufferName, const Vector2D& value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, bufferName, value);
+    return setFieldParam(paramName, bufferName, value, index);
 }
 
-bool ShaderParameters::setVector2Param(const String& paramName, const Vector2D& value)
+bool ShaderParameters::setVector2Param(const String& paramName, const Vector2D& value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, value);
+    return setFieldParam(paramName, value, index);
 }
 
-bool ShaderParameters::setVector4Param(const String& paramName, const String& bufferName, const Vector4D& value)
+bool ShaderParameters::setVector4Param(const String& paramName, const String& bufferName, const Vector4D& value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, bufferName, value);
+    return setFieldParam(paramName, bufferName, value, index);
 }
 
-bool ShaderParameters::setVector4Param(const String& paramName, const Vector4D& value)
+bool ShaderParameters::setVector4Param(const String& paramName, const Vector4D& value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, value);
+    return setFieldParam(paramName, value, index);
 }
 
-bool ShaderParameters::setMatrixParam(const String& paramName, const String& bufferName, const Matrix4& value)
+bool ShaderParameters::setMatrixParam(const String& paramName, const String& bufferName, const Matrix4& value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, bufferName, value);
+    return setFieldParam(paramName, bufferName, value, index);
 }
 
-bool ShaderParameters::setMatrixParam(const String& paramName, const Matrix4& value)
+bool ShaderParameters::setMatrixParam(const String& paramName, const Matrix4& value, uint32 index/* = 0 */)
 {
-    return setFieldParam(paramName, value);
+    return setFieldParam(paramName, value, index);
 }
 
-bool ShaderParameters::setTexelParam(const String& paramName, BufferResource* texelBuffer)
+bool ShaderParameters::setTexelParam(const String& paramName, BufferResource* texelBuffer, uint32 index/* = 0 */)
 {
     auto texelParamItr = shaderTexels.find(paramName);
-    if (texelParamItr != shaderTexels.end())
+    if (texelParamItr != shaderTexels.end() && texelParamItr->second.gpuBuffers.size() > index)
     {
-        if (texelParamItr->second.gpuBuffer != texelBuffer)
+        if (texelParamItr->second.gpuBuffers[index] != texelBuffer)
         {
-            texelParamItr->second.gpuBuffer = texelBuffer;
-            texelUpdates.insert(texelParamItr->first);
+            texelParamItr->second.gpuBuffers[index] = texelBuffer;
+            texelUpdates.insert({ texelParamItr->first, index });
         }
         return true;
     }
     return false;
 }
 
-bool ShaderParameters::setTextureParam(const String& paramName, ImageResource* texture, SharedPtr<SamplerInterface> sampler)
+bool ShaderParameters::setTextureParam(const String& paramName, ImageResource* texture, SharedPtr<SamplerInterface> sampler, uint32 index/* = 0 */)
 {
     auto textureParamItr = shaderTextures.find(paramName);
-    if (textureParamItr != shaderTextures.end())
+    if (textureParamItr != shaderTextures.end() && textureParamItr->second.textures.size() > index)
     {
-        textureParamItr->second.texture = texture;
-        textureParamItr->second.sampler = sampler;
-        textureUpdates.insert(textureParamItr->first);
+        textureParamItr->second.textures[index].texture = texture;
+        textureParamItr->second.textures[index].sampler = sampler;
+        textureUpdates.insert({ textureParamItr->first, index });
         return true;
     }
     return false;
 }
 
-bool ShaderParameters::setTextureParam(const String& paramName, ImageResource* texture)
+bool ShaderParameters::setTextureParam(const String& paramName, ImageResource* texture, uint32 index/* = 0 */)
 {
     auto textureParamItr = shaderTextures.find(paramName);
-    if (textureParamItr != shaderTextures.end())
+    if (textureParamItr != shaderTextures.end() && textureParamItr->second.textures.size() > index)
     {
-        textureParamItr->second.texture = texture;
-        textureUpdates.insert(textureParamItr->first);
+        textureParamItr->second.textures[index].texture = texture;
+        textureUpdates.insert({ textureParamItr->first, index });
         return true;
     }
     return false;
 }
 
-bool ShaderParameters::setSamplerParam(const String& paramName, SharedPtr<SamplerInterface> sampler)
+bool ShaderParameters::setTextureParamViewInfo(const String& paramName, const ImageViewInfo& textureViewInfo, uint32 index /*= 0*/)
+{
+    auto textureParamItr = shaderTextures.find(paramName);
+    if (textureParamItr != shaderTextures.end() && textureParamItr->second.textures.size() > index)
+    {
+        textureParamItr->second.textures[index].viewInfo = textureViewInfo;
+        textureUpdates.insert({ textureParamItr->first, index });
+        return true;
+    }
+    return false;
+}
+
+bool ShaderParameters::setSamplerParam(const String& paramName, SharedPtr<SamplerInterface> sampler, uint32 index/* = 0 */)
 {
     auto samplerParamItr = shaderSamplers.find(paramName);
-    if (samplerParamItr != shaderSamplers.end())
+    if (samplerParamItr != shaderSamplers.end() && samplerParamItr->second.samplers.size() > index)
     {
-        samplerParamItr->second.sampler = sampler;
-        samplerUpdates.insert(samplerParamItr->first);
+        samplerParamItr->second.samplers[index] = sampler;
+        samplerUpdates.insert({ samplerParamItr->first, index });
         return true;
     }
     return false;
 }
 
-int32 ShaderParameters::getIntParam(const String& paramName, const String& bufferName) const
+int32 ShaderParameters::getIntParam(const String& paramName, const String& bufferName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<int32>(paramName, bufferName);
+    return getFieldParam<int32>(paramName, bufferName, index);
 }
 
-int32 ShaderParameters::getIntParam(const String& paramName) const
+int32 ShaderParameters::getIntParam(const String& paramName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<int32>(paramName);
+    return getFieldParam<int32>(paramName, index);
 }
 
-uint32 ShaderParameters::getUintParam(const String& paramName, const String& bufferName) const
+uint32 ShaderParameters::getUintParam(const String& paramName, const String& bufferName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<uint32>(paramName, bufferName);
+    return getFieldParam<uint32>(paramName, bufferName, index);
 }
 
-uint32 ShaderParameters::getUintParam(const String& paramName) const
+uint32 ShaderParameters::getUintParam(const String& paramName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<uint32>(paramName);
+    return getFieldParam<uint32>(paramName, index);
 }
 
-float ShaderParameters::getFloatParam(const String& paramName, const String& bufferName) const
+float ShaderParameters::getFloatParam(const String& paramName, const String& bufferName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<float>(paramName, bufferName);
+    return getFieldParam<float>(paramName, bufferName, index);
 }
 
-float ShaderParameters::getFloatParam(const String& paramName) const
+float ShaderParameters::getFloatParam(const String& paramName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<float>(paramName);
+    return getFieldParam<float>(paramName, index);
 }
 
-Vector2D ShaderParameters::getVector2Param(const String& paramName, const String& bufferName) const
+Vector2D ShaderParameters::getVector2Param(const String& paramName, const String& bufferName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<Vector2D>(paramName, bufferName);
+    return getFieldParam<Vector2D>(paramName, bufferName, index);
 }
 
-Vector2D ShaderParameters::getVector2Param(const String& paramName) const
+Vector2D ShaderParameters::getVector2Param(const String& paramName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<Vector2D>(paramName);
+    return getFieldParam<Vector2D>(paramName, index);
 }
 
-Vector4D ShaderParameters::getVector4Param(const String& paramName, const String& bufferName) const
+Vector4D ShaderParameters::getVector4Param(const String& paramName, const String& bufferName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<Vector4D>(paramName, bufferName);
+    return getFieldParam<Vector4D>(paramName, bufferName, index);
 }
 
-Vector4D ShaderParameters::getVector4Param(const String& paramName) const
+Vector4D ShaderParameters::getVector4Param(const String& paramName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<Vector4D>(paramName);
+    return getFieldParam<Vector4D>(paramName, index);
 }
 
-Matrix4 ShaderParameters::getMatrixParam(const String& paramName) const
+Matrix4 ShaderParameters::getMatrixParam(const String& paramName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<Matrix4>(paramName);
+    return getFieldParam<Matrix4>(paramName, index);
 }
 
-Matrix4 ShaderParameters::getMatrixParam(const String& paramName, const String& bufferName) const
+Matrix4 ShaderParameters::getMatrixParam(const String& paramName, const String& bufferName, uint32 index/* = 0 */) const
 {
-    return getFieldParam<Matrix4>(paramName);
+    return getFieldParam<Matrix4>(paramName, index);
 }
 
-BufferResource* ShaderParameters::getTexelParam(const String& paramName) const
+BufferResource* ShaderParameters::getTexelParam(const String& paramName, uint32 index/* = 0 */) const
 {
     auto texelParamItr = shaderTexels.find(paramName);
-    if (texelParamItr != shaderTexels.end())
+    if (texelParamItr != shaderTexels.end() && texelParamItr->second.gpuBuffers.size() > index)
     {
-        return texelParamItr->second.gpuBuffer;
+        return texelParamItr->second.gpuBuffers[index];
     }
     return nullptr;
 }
 
-ImageResource* ShaderParameters::getTextureParam(const String& paramName) const
+ImageResource* ShaderParameters::getTextureParam(const String& paramName, uint32 index/* = 0 */) const
 {
     auto textureParamItr = shaderTextures.find(paramName);
-    if (textureParamItr != shaderTextures.cend())
+    if (textureParamItr != shaderTextures.cend() && textureParamItr->second.textures.size() > index)
     {
-        return textureParamItr->second.texture;
+        return textureParamItr->second.textures[index].texture;
     }
     return nullptr;
 }
 
-ImageResource* ShaderParameters::getTextureParam(SharedPtr<SamplerInterface>& outSampler, const String& paramName) const
+ImageResource* ShaderParameters::getTextureParam(SharedPtr<SamplerInterface>& outSampler, const String& paramName, uint32 index/* = 0 */) const
 {
     auto textureParamItr = shaderTextures.find(paramName);
-    if (textureParamItr != shaderTextures.cend())
+    if (textureParamItr != shaderTextures.cend() && textureParamItr->second.textures.size() > index)
     {
-        outSampler = textureParamItr->second.sampler;
-        return textureParamItr->second.texture;
+        outSampler = textureParamItr->second.textures[index].sampler;
+        return textureParamItr->second.textures[index].texture;
     }
     outSampler = nullptr;
     return nullptr;
 }
 
-SharedPtr<SamplerInterface> ShaderParameters::getSamplerParam(const String& paramName) const
+SharedPtr<SamplerInterface> ShaderParameters::getSamplerParam(const String& paramName, uint32 index/* = 0 */) const
 {
     auto samplerParamItr = shaderSamplers.find(paramName);
-    if (samplerParamItr != shaderSamplers.cend())
+    if (samplerParamItr != shaderSamplers.cend() && samplerParamItr->second.samplers.size() > index)
     {
-        return samplerParamItr->second.sampler;
+        return samplerParamItr->second.samplers[index];
     }
     return nullptr;
 }
