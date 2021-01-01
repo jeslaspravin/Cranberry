@@ -14,7 +14,7 @@ void EngineTime::engineStart()
 void EngineTime::tickStart()
 {
     initEndTick = Time::timeNow();
-    frameTick = initEndTick;
+    frameTick = lastFrameTick = initEndTick;
     deltaTime = 0;
 }
 

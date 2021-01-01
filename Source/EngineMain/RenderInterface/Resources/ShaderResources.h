@@ -89,6 +89,10 @@ public:
     * for eg: DrawMeshShader only binds set 3 using this while others bind all set this way
     */ 
     virtual void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const {}
+    /*
+    * Fills specialization constants for this shader
+    */
+    virtual void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry>& specializationConst) const {}
 
     SharedPtr<ShaderCodeResource> getShaderCode(EShaderStage::Type shaderType) const;
     const std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>>& getShaders() const;

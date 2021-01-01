@@ -2,11 +2,11 @@
 
 KeyToAsciiCharProcessor::KeyToAsciiCharProcessor()
 {
-    keyToCharMap[&Keys::BACKSPACE] = { '\b' };
-    keyToCharMap[&Keys::TAB] = { '\t' };
-    keyToCharMap[&Keys::ENTER] = { '\n' };
-    keyToCharMap[&Keys::SPACE] = { ' ' };
-    keyToCharMap[&Keys::DEL] = { 127 };
+    keyToCharMap[&Keys::BACKSPACE] = { '\b','\b' };
+    keyToCharMap[&Keys::TAB] = { '\t','\t' };
+    keyToCharMap[&Keys::ENTER] = { '\n','\n' };
+    keyToCharMap[&Keys::SPACE] = { ' ',' ' };
+    keyToCharMap[&Keys::DEL] = { 127,127 };
     keyToCharMap[&Keys::ZERO] = { '0',')' };
     keyToCharMap[&Keys::ONE] = { '1','!' };
     keyToCharMap[&Keys::TWO] = { '2','@' };
@@ -40,7 +40,7 @@ KeyToAsciiCharProcessor::KeyToAsciiCharProcessor()
     keyToCharMap[&Keys::U] = { 'u','U',AnalogStates::CapsLock };
     keyToCharMap[&Keys::V] = { 'v','V',AnalogStates::CapsLock };
     keyToCharMap[&Keys::W] = { 'w','W',AnalogStates::CapsLock };
-    keyToCharMap[&Keys::X] = { 'i','I',AnalogStates::CapsLock };
+    keyToCharMap[&Keys::X] = { 'x','X',AnalogStates::CapsLock };
     keyToCharMap[&Keys::Y] = { 'y','Y',AnalogStates::CapsLock };
     keyToCharMap[&Keys::Z] = { 'z','Z',AnalogStates::CapsLock };
     keyToCharMap[&Keys::NUM0] = { 0,'0',AnalogStates::NumLock };
@@ -53,11 +53,11 @@ KeyToAsciiCharProcessor::KeyToAsciiCharProcessor()
     keyToCharMap[&Keys::NUM7] = { 0,'7',AnalogStates::NumLock };
     keyToCharMap[&Keys::NUM8] = { 0,'8',AnalogStates::NumLock };
     keyToCharMap[&Keys::NUM9] = { 0,'9',AnalogStates::NumLock };
-    keyToCharMap[&Keys::ASTERICK] = { '*' };
-    keyToCharMap[&Keys::PLUS] = { '+' };
-    keyToCharMap[&Keys::NUMMINUS] = { '-' };
-    keyToCharMap[&Keys::NUMFULLSTOP] = { '.' };
-    keyToCharMap[&Keys::NUMFWDSLASH] = { '/' };
+    keyToCharMap[&Keys::ASTERICK] = { '*','*' };
+    keyToCharMap[&Keys::PLUS] = { '+','+' };
+    keyToCharMap[&Keys::NUMMINUS] = { '-','-' };
+    keyToCharMap[&Keys::NUMFULLSTOP] = { '.','.' };
+    keyToCharMap[&Keys::NUMFWDSLASH] = { '/','/' };
     keyToCharMap[&Keys::SEMICOLON] = { ';',':' };
     keyToCharMap[&Keys::COMMA] = { ',','<' };
     keyToCharMap[&Keys::FULLSTOP] = { '.','>' };
@@ -69,9 +69,9 @@ KeyToAsciiCharProcessor::KeyToAsciiCharProcessor()
     keyToCharMap[&Keys::BACKSLASH] = { '\\','|' };
     keyToCharMap[&Keys::APOSTROPHE] = { '\'','"' };
     keyToCharMap[&Keys::LEFTBACKSLASH] = { '\\','|' };
-    keyToCharMap[&Keys::NUMENTER] = { '\n' };
+    keyToCharMap[&Keys::NUMENTER] = { '\n','\n' };
     keyToCharMap[&Keys::EQUAL] = { '=','+' };
-    keyToCharMap[&Keys::FWDDEL] = { '\b' };
+    keyToCharMap[&Keys::FWDDEL] = { '\b','\b' };
 }
 
 void KeyToAsciiCharProcessor::updateCharacters(class Keys* keyStates, class AnalogStates* analogStates)

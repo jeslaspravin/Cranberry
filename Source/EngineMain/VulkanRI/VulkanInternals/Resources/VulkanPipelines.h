@@ -35,6 +35,9 @@ private:
     struct VulkanPipelineCreateInfo
     {
         // Ptr for common informations
+        std::vector<VkSpecializationMapEntry>* specializationConstEntries;
+        std::vector<uint8>* specializationConstData;
+        std::vector<VkSpecializationInfo>* specializationInfo;
         std::vector<VkPipelineShaderStageCreateInfo>* shaderStageCIs;
 
         // VertexInputs
@@ -74,6 +77,8 @@ public:
     VkPipelineLayout pipelineLayout;
 private:
     void fillShaderStages(std::vector<VkPipelineShaderStageCreateInfo>& shaderStages) const;
+    void fillSpecializationConsts(std::vector<VkPipelineShaderStageCreateInfo>& shaderStages
+        , std::vector<VkSpecializationMapEntry>& specEntries, std::vector<uint8>& specData, std::vector<VkSpecializationInfo>& specializationInfo) const;
     void fillVertexInputState(VkPipelineVertexInputStateCreateInfo& vertexInputStateCI
         , std::vector<VkVertexInputBindingDescription>& bindings, std::vector<VkVertexInputAttributeDescription>& attributes) const;
     void fillMultisampleState(VkPipelineMultisampleStateCreateInfo& multisampleStateCI) const;

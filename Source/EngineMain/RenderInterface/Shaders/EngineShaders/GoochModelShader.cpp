@@ -20,6 +20,11 @@ ADD_BUFFER_TYPED_FIELD(highlightColorAndPosZ)
 ADD_BUFFER_TYPED_FIELD(lightColorAndRadius)
 END_BUFFER_DEFINITION();
 
+BEGIN_BUFFER_DEFINITION(GoochModelLightArray)
+ADD_BUFFER_STRUCT_FIELD(lights, GoochModelLightData)
+ADD_BUFFER_TYPED_FIELD(count)
+END_BUFFER_DEFINITION();
+
 #define GOOCH_SHADER_NAME "GoochModel"
 
 class GoochModelShader : public UniqueUtilityShader
@@ -33,11 +38,11 @@ public:
     void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
     {
         static GoochModelLightCommonBufferParamInfo LIGHTCOMMON_INFO;
-        static GoochModelLightDataBufferParamInfo LIGHTDATA_INFO;
+        static GoochModelLightArrayBufferParamInfo LIGHTDATA_INFO;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
             { "lightCommon", &LIGHTCOMMON_INFO },
-            { "light", &LIGHTDATA_INFO },
+            { "lightArray", &LIGHTDATA_INFO },
             { "viewData", RenderSceneBase::sceneViewParamInfo().at("viewData") }
         };
 

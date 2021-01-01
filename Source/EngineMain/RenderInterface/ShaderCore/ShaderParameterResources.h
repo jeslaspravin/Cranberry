@@ -173,10 +173,11 @@ protected:
     {
         String bufferName;
         String paramName;
+        uint32 index = 0;
 
         bool operator==(const BufferParameterUpdate& other) const
         {
-            return bufferName == other.bufferName && paramName == other.paramName;
+            return bufferName == other.bufferName && paramName == other.paramName && index == other.index;
         }
         struct Hasher 
         {
@@ -202,17 +203,23 @@ protected:
     struct TexelParameterData
     {
         const ShaderBufferDescriptorType* descriptorInfo;
-        BufferResource* gpuBuffer = nullptr;
+        std::vector<BufferResource*> gpuBuffers;
     };
 
     struct TextureParameterData
     {
+        struct TextureViewAndSampler
+        {
+            ImageResource* texture = nullptr;
+            ImageViewInfo viewInfo;
+            // Optional sampler
+            SharedPtr<class SamplerInterface> sampler;
+        };
         const ShaderTextureDescriptorType* descriptorInfo;
-        ImageResource* texture = nullptr;
+        
         // for future use
         int32 apiDataIndex;
-        // Optional sampler
-        SharedPtr<class SamplerInterface> sampler;
+        std::vector<TextureViewAndSampler> textures;
     };
 
     struct SamplerParameterData
@@ -220,7 +227,7 @@ protected:
         const ShaderSamplerDescriptorType* descriptorInfo;
         // for future use
         int32 apiDataIndex;
-        SharedPtr<class SamplerInterface> sampler;
+        std::vector<SharedPtr<class SamplerInterface>> samplers;
     };
 
     std::map<String, BufferParametersData> shaderBuffers;
@@ -231,25 +238,25 @@ protected:
     std::set<uint32> ignoredSets;
 
     std::vector<BufferParameterUpdate> bufferUpdates;
-    std::set<String> texelUpdates;
-    std::set<String> textureUpdates;
-    std::set<String> samplerUpdates;
+    std::set<std::pair<String, uint32>> texelUpdates;
+    std::set<std::pair<String, uint32>> textureUpdates;
+    std::set<std::pair<String, uint32>> samplerUpdates;
     std::vector<ParamUpdateLambda> genericUpdates;
 
     const GraphicsResource* paramLayout;
     String descriptorSetName;
 private:
-    void initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr) const;
-    void initParamsMaps(const std::map<String, ShaderDescriptorParamType*>& paramsDesc);
+    void initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, bool bIsNested) const;
+    void initParamsMaps(const std::map<String, ShaderDescriptorParamType*>& paramsDesc, const std::vector<std::vector<SpecializationConstantEntry>>& specializationConsts);
     std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> findBufferParam(String& bufferName, const String& paramName) const;
     template<typename FieldType>
-    bool setFieldParam(const String& paramName, const FieldType& value);
+    bool setFieldParam(const String& paramName, const FieldType& value, uint32 index);
     template<typename FieldType>
-    bool setFieldParam(const String& paramName, const String& bufferName, const FieldType& value);
+    bool setFieldParam(const String& paramName, const String& bufferName, const FieldType& value, uint32 index);
     template<typename FieldType>
-    FieldType getFieldParam(const String& paramName) const;
+    FieldType getFieldParam(const String& paramName, uint32 index) const;
     template<typename FieldType>
-    FieldType getFieldParam(const String& paramName, const String& bufferName) const;
+    FieldType getFieldParam(const String& paramName, const String& bufferName, uint32 index) const;
 protected:
     ShaderParameters() = default;
     ShaderParameters(const GraphicsResource* shaderParamLayout, const std::set<uint32>& ignoredSetIds = {});
@@ -264,45 +271,46 @@ public:
     const GraphicsResource* getParamLayout() const { return paramLayout; }
 
     virtual void updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
-    bool setIntParam(const String& paramName, int32 value);
-    bool setIntParam(const String& paramName, uint32 value);
-    bool setFloatParam(const String& paramName, float value);
-    bool setVector2Param(const String& paramName, const Vector2D& value);
-    bool setVector4Param(const String& paramName, const Vector4D& value);
-    bool setMatrixParam(const String& paramName, const Matrix4& value);
-    bool setIntParam(const String& paramName, const String& bufferName, int32 value);
-    bool setIntParam(const String& paramName, const String& bufferName, uint32 value);
-    bool setFloatParam(const String& paramName, const String& bufferName, float value);
-    bool setVector2Param(const String& paramName, const String& bufferName, const Vector2D& value);
-    bool setVector4Param(const String& paramName, const String& bufferName, const Vector4D& value);
-    bool setMatrixParam(const String& paramName, const String& bufferName, const Matrix4& value);
+    bool setIntParam(const String& paramName, int32 value, uint32 index = 0);
+    bool setIntParam(const String& paramName, uint32 value, uint32 index = 0);
+    bool setFloatParam(const String& paramName, float value, uint32 index = 0);
+    bool setVector2Param(const String& paramName, const Vector2D& value, uint32 index = 0);
+    bool setVector4Param(const String& paramName, const Vector4D& value, uint32 index = 0);
+    bool setMatrixParam(const String& paramName, const Matrix4& value, uint32 index = 0);
+    bool setIntParam(const String& paramName, const String& bufferName, int32 value, uint32 index = 0);
+    bool setIntParam(const String& paramName, const String& bufferName, uint32 value, uint32 index = 0);
+    bool setFloatParam(const String& paramName, const String& bufferName, float value, uint32 index = 0);
+    bool setVector2Param(const String& paramName, const String& bufferName, const Vector2D& value, uint32 index = 0);
+    bool setVector4Param(const String& paramName, const String& bufferName, const Vector4D& value, uint32 index = 0);
+    bool setMatrixParam(const String& paramName, const String& bufferName, const Matrix4& value, uint32 index = 0);
     template<typename BufferType>
-    bool setBuffer(const String& paramName, const BufferType& bufferValue);
-    bool setTexelParam(const String& paramName, BufferResource* texelBuffer);
-    bool setTextureParam(const String& paramName, ImageResource* texture);
-    bool setTextureParam(const String& paramName, ImageResource* texture, SharedPtr<SamplerInterface> sampler);
-    bool setSamplerParam(const String& paramName, SharedPtr<SamplerInterface> sampler);
+    bool setBuffer(const String& paramName, const BufferType& bufferValue, uint32 index = 0);
+    bool setTexelParam(const String& paramName, BufferResource* texelBuffer, uint32 index = 0);
+    bool setTextureParam(const String& paramName, ImageResource* texture, uint32 index = 0);
+    bool setTextureParam(const String& paramName, ImageResource* texture, SharedPtr<SamplerInterface> sampler, uint32 index = 0);
+    bool setTextureParamViewInfo(const String& paramName, const ImageViewInfo& textureViewInfo, uint32 index = 0);
+    bool setSamplerParam(const String& paramName, SharedPtr<SamplerInterface> sampler, uint32 index = 0);
 
-    int32 getIntParam(const String& paramName) const;
-    uint32 getUintParam(const String& paramName) const;
-    float getFloatParam(const String& paramName) const;
-    Vector2D getVector2Param(const String& paramName) const;
-    Vector4D getVector4Param(const String& paramName) const;
-    Matrix4 getMatrixParam(const String& paramName) const;
-    int32 getIntParam(const String& paramName, const String& bufferName) const;
-    uint32 getUintParam(const String& paramName, const String& bufferName) const;
-    float getFloatParam(const String& paramName, const String& bufferName) const;
-    Vector2D getVector2Param(const String& paramName, const String& bufferName) const;
-    Vector4D getVector4Param(const String& paramName, const String& bufferName) const;
-    Matrix4 getMatrixParam(const String& paramName, const String& bufferName) const;
-    BufferResource* getTexelParam(const String& paramName) const;
-    ImageResource* getTextureParam(const String& paramName) const;
-    ImageResource* getTextureParam(SharedPtr<SamplerInterface>& outSampler, const String& paramName) const;
-    SharedPtr<SamplerInterface> getSamplerParam(const String& paramName) const;
+    int32 getIntParam(const String& paramName, uint32 index = 0) const;
+    uint32 getUintParam(const String& paramName, uint32 index = 0) const;
+    float getFloatParam(const String& paramName, uint32 index = 0) const;
+    Vector2D getVector2Param(const String& paramName, uint32 index = 0) const;
+    Vector4D getVector4Param(const String& paramName, uint32 index = 0) const;
+    Matrix4 getMatrixParam(const String& paramName, uint32 index = 0) const;
+    int32 getIntParam(const String& paramName, const String& bufferName, uint32 index = 0) const;
+    uint32 getUintParam(const String& paramName, const String& bufferName, uint32 index = 0) const;
+    float getFloatParam(const String& paramName, const String& bufferName, uint32 index = 0) const;
+    Vector2D getVector2Param(const String& paramName, const String& bufferName, uint32 index = 0) const;
+    Vector4D getVector4Param(const String& paramName, const String& bufferName, uint32 index = 0) const;
+    Matrix4 getMatrixParam(const String& paramName, const String& bufferName, uint32 index = 0) const;
+    BufferResource* getTexelParam(const String& paramName, uint32 index = 0) const;
+    ImageResource* getTextureParam(const String& paramName, uint32 index = 0) const;
+    ImageResource* getTextureParam(SharedPtr<SamplerInterface>& outSampler, const String& paramName, uint32 index = 0) const;
+    SharedPtr<SamplerInterface> getSamplerParam(const String& paramName, uint32 index = 0) const;
 };
 
 template<typename BufferType>
-bool ShaderParameters::setBuffer(const String& paramName, const BufferType& bufferValue)
+bool ShaderParameters::setBuffer(const String& paramName, const BufferType& bufferValue, uint32 index/* = 0 */)
 {
     bool bValueSet = false;
     auto bufferDataItr = shaderBuffers.find(paramName);
@@ -313,13 +321,26 @@ bool ShaderParameters::setBuffer(const String& paramName, const BufferType& buff
         std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> foundInfo = findBufferParam(bufferName, paramName);
         if (foundInfo.first && foundInfo.second && foundInfo.second->bufferField->bIsStruct)
         {
-            if (bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue))
+            if (foundInfo.second->bufferField->bIsArray)
+            {
+                if (bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index))
+                {
+                    genericUpdates.emplace_back([foundInfo, index](ParamUpdateLambdaOut& paramOut, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+                        {
+                            BufferType* bufferPtr = reinterpret_cast<BufferType*>(foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr));
+                            cmdList->recordCopyToBuffer<BufferType>(*paramOut.bufferUpdates, foundInfo.first->gpuBuffer
+                                , foundInfo.second->bufferField->offset + (index * foundInfo.second->bufferField->stride)
+                                , bufferPtr + index, foundInfo.second->bufferField->paramInfo);
+                        });
+                }
+            }
+            else if (bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue))
             {
                 genericUpdates.emplace_back([foundInfo](ParamUpdateLambdaOut& paramOut, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
                     {
-                        uint32 typeSize;
                         cmdList->recordCopyToBuffer<BufferType>(*paramOut.bufferUpdates, foundInfo.first->gpuBuffer
-                            , foundInfo.second->bufferField->offset, reinterpret_cast<BufferType*>(foundInfo.second->bufferField->fieldData(typeSize, foundInfo.second->outerPtr))
+                            , foundInfo.second->bufferField->offset
+                            , reinterpret_cast<BufferType*>(foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr))
                             , foundInfo.second->bufferField->paramInfo);
                     });
             }

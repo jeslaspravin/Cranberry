@@ -81,7 +81,8 @@ class ExperimentalEngine : public GameEngine, public IImGuiLayer
 
     // Scene data
     std::vector<SceneEntity> sceneData;
-    std::vector<std::pair<struct GoochModelLightData, SharedPtr<ShaderParameters>>> lightData;
+    std::vector<struct GoochModelLightData> sceneLightData;
+    std::vector<SharedPtr<ShaderParameters>> lightData;
     SharedPtr<ShaderParameters> lightCommon;
     SwapchainBufferedResource<SharedPtr<ShaderParameters>> lightTextures;
     SharedPtr<ShaderParameters> viewParameters;

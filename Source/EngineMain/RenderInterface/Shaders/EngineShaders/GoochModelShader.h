@@ -16,3 +16,9 @@ struct GoochModelLightData
     Vector4D highlightColorAndPosZ;
     Vector4D lightColorAndRadius;
 };
+
+struct GoochModelLightArray
+{
+    GoochModelLightData lights[10];
+    uint32 count;
+};
