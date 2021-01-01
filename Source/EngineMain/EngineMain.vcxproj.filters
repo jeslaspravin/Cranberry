@@ -229,12 +229,6 @@
     <Filter Include="Source Files\Editor">
       <UniqueIdentifier>{04f48652-5597-4452-85a1-1931febf2bd6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Editor\Core">
-      <UniqueIdentifier>{459b9532-7fa6-468f-8efd-d792183fca66}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Editor\Core\ImGui">
-      <UniqueIdentifier>{a7f14aea-75b0-48ef-b5ae-abd7dc5fe591}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Editor">
       <UniqueIdentifier>{790ac5ba-9a7c-45e8-b151-bfd812d8c238}</UniqueIdentifier>
     </Filter>
@@ -244,14 +238,20 @@
     <Filter Include="Header Files\Editor\Core\ImGui">
       <UniqueIdentifier>{33bcce9e-8dc1-42f8-af60-aa4f6f910e60}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Core\Types\Containers">
+      <UniqueIdentifier>{23415db2-d8e8-411e-a12b-c60c613ae3c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor\Core">
+      <UniqueIdentifier>{459b9532-7fa6-468f-8efd-d792183fca66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Editor\Core\ImGui">
+      <UniqueIdentifier>{a7f14aea-75b0-48ef-b5ae-abd7dc5fe591}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\Editor\Core\ImGui\Shaders">
       <UniqueIdentifier>{e9428263-a46a-4376-808b-6f11bc14f8d6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Editor\Core\ImGui\ImGuiLib">
       <UniqueIdentifier>{c77965db-ec8c-4f90-802e-f6f8854e39dd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Core\Types\Containers">
-      <UniqueIdentifier>{23415db2-d8e8-411e-a12b-c60c613ae3c5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

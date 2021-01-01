@@ -290,7 +290,8 @@ struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo \
     ShaderBufferMemberField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { #FieldName, &BufferDataType::##FieldName }; \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
-// NOTE : Right now only supporting inner struct with proper alignment with respect to GPU(Alignment correction on copying to GPU is only done for first level of variables)  
+// NOTE : Right now supporting : Buffer with any alignment
+// but in case of inner struct only with proper alignment with respect to GPU(Alignment correction on copying to GPU is only done for first level of variables)  
 #define ADD_BUFFER_STRUCT_FIELD(FieldName, FieldType) \
     FieldType##BufferParamInfo FieldName##ParamInfo; \
     ShaderBufferStructField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { #FieldName, &BufferDataType::##FieldName##, &##FieldName##ParamInfo }; \

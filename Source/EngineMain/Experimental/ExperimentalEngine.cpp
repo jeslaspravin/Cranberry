@@ -709,7 +709,7 @@ void ExperimentalEngine::onStartUp()
     camera.setClippingPlane(0.1f, 6000.f);
     camera.setFOV(110.f, 90.f);
 
-    cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
+    cameraTranslation = Vector3D(0.f, -1.f, 0.0f).safeNormalize() * (500);
     cameraTranslation.z() += 200;
 
     camera.setTranslation(cameraTranslation);
@@ -879,7 +879,6 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
                     SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLight);
                     cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGoochPipelineContext, { queryParam });
 
-                    // Right now only one set will be there but there is chances more set might get added
                     cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), *lightTextures, light.get() });
                     cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                 }
@@ -999,8 +998,11 @@ int32 ExperimentalEngine::sublayerDepth() const
 
 void ExperimentalEngine::draw(class ImGuiDrawInterface* drawInterface)
 {
-    bool bOpen = true;
-    ImGui::ShowDemoWindow(&bOpen);
+    static bool bOpen = true;
+    if (bOpen)
+    {
+        ImGui::ShowDemoWindow(&bOpen);
+    }
 }
 
 GameEngine* GameEngineWrapper::createEngineInstance()
