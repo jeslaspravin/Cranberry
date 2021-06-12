@@ -11,9 +11,12 @@ class GraphicsResourceType;
 class ShaderResource;
 class DrawMeshShader;
 class UniqueUtilityShader;
+class ComputeShader;
 struct FramebufferFormat;
 
 class GraphicsPipelineBase;
+class ComputePipelineBase;
+class PipelineCacheBase;
 
 class ShaderObjectBase
 {
@@ -28,6 +31,7 @@ public:
     const String& getShaderName() const { return shaderName; }
 
     virtual const GraphicsResourceType* baseShaderType() const = 0;
+    virtual void preparePipelineCache(PipelineCacheBase* pipelineCache) const = 0;
 };
 
 /**
@@ -66,10 +70,10 @@ public:
 
     /* ShaderObjectBase overrides */
     const GraphicsResourceType* baseShaderType() const final;
+    void preparePipelineCache(PipelineCacheBase* pipelineCache) const final;
 
     /* Override ends */
 };
-
 
 /**
 * UniqueUtilityShaderObject - Encapsulates a single permutation shader and all the pipelines that are for this shader
@@ -100,6 +104,29 @@ public:
 
     /* ShaderObjectBase overrides */
     const GraphicsResourceType* baseShaderType() const final;
+    void preparePipelineCache(PipelineCacheBase* pipelineCache) const final;
+
+    /* Override ends */
+};
+
+class ComputeShaderObject final : public ShaderObjectBase
+{
+private:
+    const ComputeShader* computeShader;
+    ComputePipelineBase* computePipeline;
+public:
+    ComputeShaderObject(const String& sName, const ShaderResource* shaderResource);
+    ~ComputeShaderObject();
+
+    const ComputeShader* getShader() const;
+    ComputePipelineBase* getPipeline() const;
+
+    // Internal use functions
+    void setPipeline(ComputePipelineBase* pipeline);
+
+    /* ShaderObjectBase overrides */
+    const GraphicsResourceType* baseShaderType() const final;
+    void preparePipelineCache(PipelineCacheBase* pipelineCache) const final;
 
     /* Override ends */
 };

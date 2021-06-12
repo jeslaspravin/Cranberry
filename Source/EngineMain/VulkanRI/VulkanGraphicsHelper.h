@@ -100,6 +100,8 @@ public:
 
     static std::vector<VkPipeline> createGraphicsPipeline(class IGraphicsInstance* graphicsInstance, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCI
         , VkPipelineCache pipelineCache);
+    static std::vector<VkPipeline> createComputePipeline(class IGraphicsInstance* graphicsInstance, const std::vector<VkComputePipelineCreateInfo>& computePipelineCI
+        , VkPipelineCache pipelineCache);
 
     static void destroyPipeline(class IGraphicsInstance* graphicsInstance, VkPipeline pipeline);
 };

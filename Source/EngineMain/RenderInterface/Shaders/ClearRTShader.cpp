@@ -52,4 +52,4 @@ ClearRT::ClearRT()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-ScreenSpaceQuadShaderPipelineRegister CLEAR_RT_PIPELINE_REGISTER(CLEAR_RT);
+ScreenSpaceQuadShaderPipelineRegistrar CLEAR_RT_PIPELINE_REGISTER(CLEAR_RT);

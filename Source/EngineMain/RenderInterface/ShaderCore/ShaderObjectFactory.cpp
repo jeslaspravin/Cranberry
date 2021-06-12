@@ -14,6 +14,10 @@ ShaderObjectBase* ShaderObjectFactory::create(const String& shaderName, const Sh
     {
         return new UniqueUtilityShaderObject(shaderName, shader);
     }
+    else if (shader->getType()->isChildOf<ComputeShader>())
+    {
+        return new ComputeShaderObject(shaderName, shader);
+    }
     fatalAssert(false, "Not supported shader to wrap with shader object");
     return nullptr;
 }

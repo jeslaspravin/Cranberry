@@ -20,4 +20,4 @@ DrawQuadFromInputAttachment::DrawQuadFromInputAttachment() : BaseType(DRAW_QUAD_
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-ScreenSpaceQuadShaderPipelineRegister QUAD_FROM_INPUT_ATTACHMENT_PIPELINE_REGISTER(DRAW_QUAD_FROM_INPUT_ATTACHMENT);
+ScreenSpaceQuadShaderPipelineRegistrar QUAD_FROM_INPUT_ATTACHMENT_PIPELINE_REGISTER(DRAW_QUAD_FROM_INPUT_ATTACHMENT);

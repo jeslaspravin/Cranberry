@@ -178,13 +178,31 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
 
             GraphicsPipelineBase* graphicsPipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create({ utilityShader }));
             graphicsPipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout);
-            // Can be parents since other child pipelines will be derived from this initial defaults
             graphicsPipeline->setPipelineShader(utilityShader);
             graphicsPipeline->setPipelineCache(pipelinesCache);
+            // Can be parents since other child pipelines will be derived from this initial defaults
             graphicsPipeline->setCanBeParent(true);
 
             static_cast<UniqueUtilityShaderObject*>(shaderCollection.shaderObject)->setPipeline(graphicsPipeline->getRenderpassProperties()
                 , graphicsPipeline);
+        }
+        else if (shader->getType()->isChildOf<ComputeShader>())
+        {
+            ShaderResource* shaderResource = static_cast<ShaderResource*>(shader);
+            ShaderDataCollection& shaderCollection = rawShaderObjects[shader->getResourceName()];
+            debugAssert(shaderCollection.shaderObject == nullptr);
+            debugAssert(shaderCollection.shadersParamLayout == nullptr);
+
+            shaderCollection.shaderObject = shaderObjectFactory->create(shader->getResourceName(), shaderResource);
+            shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(shaderResource, 0/*doesn't matter*/);
+            shaderCollection.shadersParamLayout->init();
+
+            PipelineBase *pipeline = pipelineFactory->create({ shaderResource });
+            pipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout);
+            pipeline->setPipelineShader(shaderResource);
+            pipeline->setPipelineCache(pipelinesCache);
+
+            static_cast<ComputeShaderObject*>(shaderCollection.shaderObject)->setPipeline(static_cast<ComputePipelineBase*>(pipeline));
         }
     }
 }
@@ -225,22 +243,7 @@ void GlobalRenderingContextBase::writeAndDestroyPipelineCache()
     {
         for (const std::pair<const String, ShaderDataCollection>& shaderDataCollection : rawShaderObjects)
         {
-            if (shaderDataCollection.second.shaderObject->baseShaderType() == DrawMeshShader::staticType())
-            {
-                const DrawMeshShaderObject* drawMeshShaderObj = static_cast<const DrawMeshShaderObject*>(shaderDataCollection.second.shaderObject);
-                for (const std::pair<const DrawMeshShader*, GraphicsPipelineBase*>& shaderResourcePair : drawMeshShaderObj->getAllShaders())
-                {
-                    pipelinesCache->addPipelineToCache(shaderResourcePair.second);
-                }
-            }
-            else if (shaderDataCollection.second.shaderObject->baseShaderType() == UniqueUtilityShader::staticType())
-            {
-                const UniqueUtilityShaderObject* uniqUtilShaderObj = static_cast<const UniqueUtilityShaderObject*>(shaderDataCollection.second.shaderObject);
-                for (const GraphicsPipelineBase* pipeline : uniqUtilShaderObj->getAllPipelines())
-                {
-                    pipelinesCache->addPipelineToCache(pipeline);
-                }
-            }
+            shaderDataCollection.second.shaderObject->preparePipelineCache(pipelinesCache);
         }
 
         pipelinesCache->writeCache();
@@ -432,6 +435,11 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         }
         pipelineContext->pipelineUsed = graphicsPipeline;        
         pipelineContext->framebuffer = fb;
+    }
+    else if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == ComputeShader::staticType())
+    {
+        ComputeShaderObject* computeShaderObj = static_cast<ComputeShaderObject*>(shaderDataCollectionItr->second.shaderObject);
+        pipelineContext->pipelineUsed = computeShaderObj->getPipeline();
     }
 }
 

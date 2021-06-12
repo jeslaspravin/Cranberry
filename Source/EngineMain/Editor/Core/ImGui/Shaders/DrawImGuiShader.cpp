@@ -57,4 +57,4 @@ DrawImGui::DrawImGui()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-OverBlendedSSQuadShaderPipelineRegister IMGUI_PIPELINE_REGISTER(DRAW_IMGUI);
+OverBlendedSSQuadShaderPipelineRegistrar IMGUI_PIPELINE_REGISTER(DRAW_IMGUI);

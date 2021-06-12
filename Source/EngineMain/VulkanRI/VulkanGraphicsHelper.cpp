@@ -848,6 +848,19 @@ std::vector<VkPipeline> VulkanGraphicsHelper::createGraphicsPipeline(class IGrap
     return pipelines;
 }
 
+std::vector<VkPipeline> VulkanGraphicsHelper::createComputePipeline(class IGraphicsInstance* graphicsInstance,
+    const std::vector<VkComputePipelineCreateInfo>& computePipelineCI, VkPipelineCache pipelineCache)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    std::vector<VkPipeline> pipelines(computePipelineCI.size());
+    fatalAssert(device->vkCreateComputePipelines(device->logicalDevice, pipelineCache, uint32(computePipelineCI.size())
+        , computePipelineCI.data(), nullptr, pipelines.data()) == VK_SUCCESS, "Compute pipeline creation failed");
+
+    return pipelines;
+}
+
 void VulkanGraphicsHelper::destroyPipeline(class IGraphicsInstance* graphicsInstance, VkPipeline pipeline)
 {
     const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);

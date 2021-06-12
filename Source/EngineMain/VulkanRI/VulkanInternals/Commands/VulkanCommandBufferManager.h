@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../../RenderInterface/Resources/GraphicsResources.h"
+#include "../../../Core/Types/Containers/MinAllocVector.h"
 #include "../../Resources/IVulkanResources.h"
 #include "../../../Core/String/String.h"
 #include "../VulkanMacros.h"
@@ -54,6 +55,16 @@ struct VulkanCmdBufferState
 {
     class VulkanCommandBuffer* cmdBuffer;
     ECmdState cmdState = ECmdState::Idle;
+    // Will be valid after submit
+    int32 cmdSyncInfoIdx = -1;
+};
+
+struct VulkanCmdSubmitSyncInfo
+{
+    bool bIsAdvancedSubmit = false;
+    uint32 refCount = 0;
+    SharedPtr<GraphicsFence> completeFence;
+    std::vector<SharedPtr<GraphicsSemaphore>> signalingSemaphores;
 };
 
 class VulkanCmdBufferManager
@@ -64,6 +75,7 @@ private:
     VulkanCommandPool* genericPool;
     // Map of command buffers to its names that are currently available, Temp buffers wont be stored here as they are freed after usage
     std::map<String, VulkanCmdBufferState> commandBuffers;
+    MinAllocVector<VulkanCmdSubmitSyncInfo> cmdsSyncInfo;
 
     VulkanDevice* vDevice;
 
@@ -99,7 +111,10 @@ public:
     // Parameter: const std::vector<VulkanSubmitInfo> & commands - List of commands to be submitted
     // Parameter: GraphicsFence * cmdsCompleteFence - Fence that gets signalled when all of the commands submitted are complete
     //************************************
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo>& commands, GraphicsFence* cmdsCompleteFence);
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo>& commands, const SharedPtr<GraphicsFence>& cmdsCompleteFence);
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& command, const SharedPtr<GraphicsFence>& cmdsCompleteFence);
 
-    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& command, GraphicsFence* cmdsCompleteFence);
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands);
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& command);
 };
+

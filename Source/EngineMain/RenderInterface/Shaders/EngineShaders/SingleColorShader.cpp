@@ -59,19 +59,20 @@ class SingleColorShaderPipeline : public GraphicsPipeline
 private:
     SingleColorShaderPipeline() = default;
 public:
-    SingleColorShaderPipeline(const ShaderResource* shaderResource, const PipelineBase* parent);
+    SingleColorShaderPipeline(const PipelineBase* parent);
     SingleColorShaderPipeline(const ShaderResource* shaderResource);
 };
 
 DEFINE_GRAPHICS_RESOURCE(SingleColorShaderPipeline)
 
-SingleColorShaderPipeline::SingleColorShaderPipeline(const ShaderResource* shaderResource, const PipelineBase* parent)
+SingleColorShaderPipeline::SingleColorShaderPipeline(const PipelineBase* parent)
     : BaseType(static_cast<const GraphicsPipelineBase*>(parent))
 {}
 
 SingleColorShaderPipeline::SingleColorShaderPipeline(const ShaderResource* shaderResource)
     : BaseType()
 {
+    setPipelineShader(shaderResource);
     supportedCullings.resize(2);
     supportedCullings[0] = ECullingMode::FrontFace;
     supportedCullings[1] = ECullingMode::BackFace;
@@ -103,6 +104,6 @@ SingleColorShaderPipeline::SingleColorShaderPipeline(const ShaderResource* shade
     depthState.bEnableWrite = bHasDepth;
 }
 
-using SingleColorShaderPipelineRegister = GenericGraphicsPipelineRegister<SingleColorShaderPipeline>;
-SingleColorShaderPipelineRegister SINGLECOLOR_SHADER_PIPELINE_REGISTER(SINGLECOLOR_SHADER_NAME);
+using SingleColorShaderPipelineRegistrar = GenericPipelineRegistrar<SingleColorShaderPipeline>;
+SingleColorShaderPipelineRegistrar SINGLECOLOR_SHADER_PIPELINE_REGISTER(SINGLECOLOR_SHADER_NAME);
 

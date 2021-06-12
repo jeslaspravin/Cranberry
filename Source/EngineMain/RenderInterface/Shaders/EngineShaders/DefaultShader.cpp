@@ -31,19 +31,20 @@ class DefaultShaderPipeline : public GraphicsPipeline
 private:
     DefaultShaderPipeline() = default;
 public:
-    DefaultShaderPipeline(const ShaderResource* shaderResource, const PipelineBase* parent);
+    DefaultShaderPipeline(const PipelineBase* parent);
     DefaultShaderPipeline(const ShaderResource* shaderResource);
 };
 
 DEFINE_GRAPHICS_RESOURCE(DefaultShaderPipeline)
 
-DefaultShaderPipeline::DefaultShaderPipeline(const ShaderResource* shaderResource, const PipelineBase* parent)
+DefaultShaderPipeline::DefaultShaderPipeline(const PipelineBase* parent)
     : BaseType(static_cast<const GraphicsPipelineBase*>(parent))
 {}
 
 DefaultShaderPipeline::DefaultShaderPipeline(const ShaderResource* shaderResource)
     : BaseType()
 {
+    setPipelineShader(shaderResource);
     supportedCullings.resize(2);
     supportedCullings[0] = ECullingMode::FrontFace;
     supportedCullings[1] = ECullingMode::BackFace;
@@ -75,6 +76,6 @@ DefaultShaderPipeline::DefaultShaderPipeline(const ShaderResource* shaderResourc
     depthState.bEnableWrite = bHasDepth;
 }
 
-using DefaultShaderPipelineRegister = GenericGraphicsPipelineRegister<DefaultShaderPipeline>;
-DefaultShaderPipelineRegister DEFAULT_SHADER_PIPELINE_REGISTER(DEFAULT_SHADER_NAME);
+using DefaultShaderPipelineRegistrar = GenericPipelineRegistrar<DefaultShaderPipeline>;
+DefaultShaderPipelineRegistrar DEFAULT_SHADER_PIPELINE_REGISTER(DEFAULT_SHADER_NAME);
 

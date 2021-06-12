@@ -11,7 +11,6 @@ class Color
 {
 private:
     Byte4D colorValue;
-    bool bSrgb;
 public:
 
     Color();
@@ -51,7 +50,7 @@ public:
     explicit LinearColor(glm::vec4& value);
     explicit LinearColor(float r, float g, float b, float a = 1.0f);
     // If store the color value as it is bCheckSrgb must be false, if color has to be converted to linear then true
-    LinearColor(const Color& color, bool bCheckSrgb = true);
+    LinearColor(const Color& color);
     LinearColor(const LinearColor& otherColor);
     LinearColor(LinearColor&& otherColor);
     void operator=(const LinearColor& otherColor);

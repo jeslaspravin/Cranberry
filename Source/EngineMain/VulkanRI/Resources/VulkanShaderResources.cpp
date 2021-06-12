@@ -97,7 +97,7 @@ void VulkanShaderResource::init()
     reflectionFile.addSharingFlags(EFileSharing::NoSharing);
     reflectionFile.addAttributes(EFileAdditionalFlags::ReadOnly);
 
-    fatalAssert(shaderFile.exists() && reflectionFile.exists(), "Shader and reflection files are mandatory");
+    fatalAssert(shaderFile.exists() && reflectionFile.exists(), "Shader and reflection files are mandatory in shader %s", getResourceName().getChar());
     shaderFile.openFile();
     reflectionFile.openFile();
 

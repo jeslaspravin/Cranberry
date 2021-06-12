@@ -22,6 +22,7 @@ class VulkanImageResource;
 
 class VulkanShaderResource;
 class VulkanGraphicsPipeline;
+class VulkanComputePipeline;
 class VulkanGlobalRenderingContext;
 
 namespace GraphicsTypes 
@@ -49,6 +50,7 @@ namespace GraphicsTypes
 
     typedef VulkanGlobalRenderingContext GlobalRenderingContext;
     typedef VulkanGraphicsPipeline GraphicsPipeline;
+    typedef VulkanComputePipeline ComputePipeline;
 }
 
 #endif

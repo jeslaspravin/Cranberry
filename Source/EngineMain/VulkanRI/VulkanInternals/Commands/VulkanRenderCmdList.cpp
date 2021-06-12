@@ -96,7 +96,7 @@ void VulkanCommandList::copyBuffer(BufferResource* src, BufferResource* dst, con
 
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.push_back(commandBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence.get());
+    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
 
     tempFence->waitForSignal();
 
@@ -233,7 +233,7 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
     cmdBufferManager->endCmdBuffer(commandBuffer);
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.push_back(commandBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence.get());
+    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
     tempFence->waitForSignal();
     cmdBufferManager->freeCmdBuffer(commandBuffer);
     tempFence->release();
@@ -271,14 +271,14 @@ void VulkanCommandList::freeCmd(const GraphicsResource* cmdBuffer)
 void VulkanCommandList::submitCmd(EQueuePriority::Enum priority
     , const CommandSubmitInfo& submitInfo, const SharedPtr<GraphicsFence>& fence)
 {
-    cmdBufferManager->submitCmd(priority, submitInfo, (bool(fence)? fence.get() : nullptr));
+    cmdBufferManager->submitCmd(priority, submitInfo, fence);
 }
 
 void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority
     , const CommandSubmitInfo& submitInfo)
 {
     SharedPtr<GraphicsFence> fence = GraphicsHelper::createFence(gInstance, "CommandSubmitFence");
-    cmdBufferManager->submitCmd(priority, submitInfo, fence.get());
+    cmdBufferManager->submitCmd(priority, submitInfo, fence);
     fence->waitForSignal();
     for (const GraphicsResource* cmdBuffer : submitInfo.cmdBuffers)
     {
@@ -331,7 +331,7 @@ void VulkanCommandList::setupInitialLayout(ImageResource* image)
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "TempLayoutTransitionFence");
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence.get());
+    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
     tempFence->waitForSignal();
 
     cmdBufferManager->freeCmdBuffer(cmdBuffer);
@@ -790,7 +790,7 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
     cmdBufferManager->endCmdBuffer(cmdBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence.get());
+    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
     tempFence->waitForSignal();
 
     cmdBufferManager->freeCmdBuffer(cmdBuffer);
@@ -934,7 +934,7 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "CopyOrResolveImage");
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence.get());
+    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
 
     tempFence->waitForSignal();
 

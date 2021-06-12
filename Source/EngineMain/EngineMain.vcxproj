@@ -284,6 +284,7 @@
     <ClCompile Include="Editor\Core\ImGui\ImGuiManager.cpp" />
     <ClCompile Include="Editor\Core\ImGui\Shaders\DrawImGuiShader.cpp" />
     <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
+    <ClCompile Include="Experimental\TestCompute.cpp" />
     <ClCompile Include="RenderApi\GBuffersAndTextures.cpp" />
     <ClCompile Include="RenderApi\Material\MaterialCommonUniforms.cpp" />
     <ClCompile Include="RenderApi\RenderApi.cpp" />
@@ -411,6 +412,7 @@
     <ClInclude Include="Core\Types\Camera\Camera.h" />
     <ClInclude Include="Core\Types\Colors.h" />
     <ClInclude Include="Core\Types\Containers\ArrayView.h" />
+    <ClInclude Include="Core\Types\Containers\MinAllocVector.h" />
     <ClInclude Include="Core\Types\CoreDefines.h" />
     <ClInclude Include="Core\Types\Delegates\Delegate.h" />
     <ClInclude Include="Core\Types\Functions.h" />
@@ -466,6 +468,7 @@
     <ClInclude Include="RenderInterface\ShaderCore\ShaderParameters.h" />
     <ClInclude Include="RenderInterface\ShaderCore\ShaderParameterUtility.h" />
     <ClInclude Include="RenderInterface\Shaders\Base\DrawMeshShader.h" />
+    <ClInclude Include="RenderInterface\Shaders\Base\GenericComputePipeline.h" />
     <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h" />
     <ClInclude Include="RenderInterface\Shaders\Base\UtilityShaders.h" />
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.h" />

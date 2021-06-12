@@ -1,6 +1,7 @@
 #include "UtilityShaders.h"
 #include "DrawMeshShader.h"
 #include "ScreenspaceQuadGraphicsPipeline.h"
+#include "GenericComputePipeline.h"
 #include "../../../Core/Logger/Logger.h"
 #include "../../../RenderApi/Scene/RenderScene.h"
 
@@ -62,16 +63,30 @@ EVertexType::Type UniqueUtilityShader::vertexUsage() const
     return EVertexType::Simple2;
 }
 
+DEFINE_GRAPHICS_RESOURCE(ComputeShader)
+
+DEFINE_GRAPHICS_RESOURCE(SimpleComputePipeline)
+
+SimpleComputePipeline::SimpleComputePipeline(const PipelineBase* parent)
+    : BaseType(static_cast<const ComputePipeline*>(parent))
+{}
+
+SimpleComputePipeline::SimpleComputePipeline(const ShaderResource* shaderResource)
+    : BaseType()
+{
+    setPipelineShader(shaderResource);
+}
 
 DEFINE_GRAPHICS_RESOURCE(ScreenSpaceQuadShaderPipeline)
 
-ScreenSpaceQuadShaderPipeline::ScreenSpaceQuadShaderPipeline(const ShaderResource* shaderResource, const PipelineBase* parent)
+ScreenSpaceQuadShaderPipeline::ScreenSpaceQuadShaderPipeline(const PipelineBase* parent)
     : BaseType(static_cast<const GraphicsPipelineBase*>(parent))
 {}
 
 ScreenSpaceQuadShaderPipeline::ScreenSpaceQuadShaderPipeline(const ShaderResource* shaderResource)
     : BaseType()
 {
+    setPipelineShader(shaderResource);
     supportedCullings.emplace_back(ECullingMode::BackFace);
     allowedDrawModes.emplace_back(EPolygonDrawMode::Fill);
 
