@@ -18,7 +18,7 @@ public:
 #define debugAssert(Expr)\
 do{\
 if(!(Expr)){\
-    Logger::error("DebugAssertion", "%s() : Assert expression failed %s",#Expr,__func__);\
+    Logger::error("DebugAssertion", "%s() : Assert expression failed "#Expr,__func__);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(false);}\
     assert((Expr));\
 }while(0)
@@ -28,10 +28,10 @@ if(!(Expr)){\
 #endif// #ifndef debugAssert
 
 #ifndef fatalAssert
-#define fatalAssert(Expr,Message)\
+#define fatalAssert(Expr,Message, ...)\
 do{\
 if(!(Expr)){\
-    Logger::error("DebugAssertion", "%s() : Assert expression failed %s [%s]",__func__, #Expr, Message);\
+    Logger::error("DebugAssertion", "%s() : Assert expression failed ["#Expr"] "#Message,__func__, __VA_ARGS__);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(true);}\
 }while(0)
 #endif

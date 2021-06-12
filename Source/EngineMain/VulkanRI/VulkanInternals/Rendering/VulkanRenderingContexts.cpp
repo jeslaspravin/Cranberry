@@ -92,6 +92,15 @@ void VulkanGlobalRenderingContext::initializeApiContext()
             initializeGenericGraphicsPipeline(shaderObject, shaderObject->getDefaultPipeline());
             pipelineLayouts[shaderObject->getShader()] = graphicsPipeline->pipelineLayout;
         }
+        else if (shaderCollection.second.shaderObject->baseShaderType() == ComputeShader::staticType())
+        {
+            ComputeShaderObject* shaderObject = static_cast<ComputeShaderObject*>(shaderCollection.second.shaderObject);
+            VulkanComputePipeline* computePipeline = static_cast<VulkanComputePipeline*>(shaderObject->getPipeline());
+            computePipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, computePipeline);
+
+            computePipeline->init();
+            pipelineLayouts[shaderObject->getShader()] = computePipeline->pipelineLayout;
+        }
     }
 }
 
@@ -229,7 +238,7 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
             descSetLayouts[reflectDescBody.set] = shaderSetParamsLayout->descriptorLayout;
         }
     }
-    else if (shaderResource->getType()->isChildOf(UniqueUtilityShader::staticType()))
+    else if (shaderResource->getType()->isChildOf(UniqueUtilityShader::staticType()) || shaderResource->getType()->isChildOf(ComputeShader::staticType()))
     {
         const VulkanShaderParametersLayout* shaderParametersLayout = static_cast<const VulkanShaderParametersLayout*>(
             pipeline->getParamLayoutAtSet(0));

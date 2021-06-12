@@ -126,6 +126,8 @@ class ExperimentalEngine : public GameEngine, public IImGuiLayer
 
     SharedPtr<ShaderParameters> clearInfoParams;
     LocalPipelineContext clearQuadPipelineContext;
+
+    LocalPipelineContext testComputePipelineContext;
      
     void getPipelineForSubpass();
 

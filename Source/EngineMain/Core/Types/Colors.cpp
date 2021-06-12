@@ -5,28 +5,27 @@
 
 Color::Color()
     : colorValue(0,0,0,0)
-    , bSrgb(false)
 {}
 
 Color::Color(Byte3D& value)
-    : bSrgb(false)
 {
     colorValue = Byte4D(value,255);
 }
 
 Color::Color(Byte4D& value)
     : colorValue(value)
-    , bSrgb(false)
 {}
 
 Color::Color(uint8 r, uint8 g, uint8 b, uint8 a /*= 255*/, bool bIsSrgb /*= false */)
-    : bSrgb(bIsSrgb)
 {
     colorValue = Byte4D(r, g, b, a);
+    if (bIsSrgb)
+    {
+        colorValue = toLinear().colorValue;
+    }
 }
 
 Color::Color(const LinearColor& linearColor, bool bAsSrgb /*= false*/)
-    : bSrgb(bAsSrgb)
 {
     if (bAsSrgb)
     {
@@ -45,23 +44,19 @@ Color::Color(const LinearColor& linearColor, bool bAsSrgb /*= false*/)
 
 Color::Color(const Color& otherColor)
     : colorValue(otherColor.colorValue)
-    , bSrgb(otherColor.bSrgb)
 {}
 
 Color::Color(Color&& otherColor)
     : colorValue(std::move(otherColor.colorValue))
-    , bSrgb(std::move(otherColor.bSrgb))
 {}
 
 void Color::operator=(Color && otherColor)
 {
-    bSrgb = otherColor.bSrgb;
     colorValue = otherColor.colorValue;
 }
 
 void Color::operator=(const Color & otherColor)
 {
-    bSrgb = std::move(otherColor.bSrgb);
     colorValue = std::move(otherColor.colorValue);
 }
 
@@ -72,11 +67,6 @@ void Color::operator=(const Color & otherColor)
 */
 Color Color::toSrgb() const
 {
-    if (bSrgb)
-    {
-        return *this;
-    }
-
     glm::vec3 value = glm::vec3(colorValue) / 255.f;
 
     return Color(
@@ -89,11 +79,6 @@ Color Color::toSrgb() const
 
 Color Color::toLinear() const
 {
-    if (!bSrgb)
-    {
-        return *this;
-    }
-
     glm::vec3 value = glm::vec3(colorValue) / 255.f;
 
     return Color(
@@ -122,17 +107,9 @@ LinearColor::LinearColor(float r, float g, float b, float a /*= 1.0f*/)
     : colorValue(r,g,b,a)
 {}
 
-LinearColor::LinearColor(const Color& color, bool bCheckSrgb)
-{
-    if (bCheckSrgb)
-    {
-        colorValue = glm::vec4(color.toLinear().getColorValue()) / 255.f;
-    }
-    else
-    {
-        colorValue = glm::vec4(color.getColorValue()) / 255.f;
-    }
-}
+LinearColor::LinearColor(const Color& color)
+    : colorValue(glm::vec4(color.getColorValue()) / 255.f)
+{}
 
 LinearColor::LinearColor(const LinearColor& otherColor)
     :colorValue(otherColor.colorValue)

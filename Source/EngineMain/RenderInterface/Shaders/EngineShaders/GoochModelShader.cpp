@@ -64,4 +64,4 @@ DEFINE_GRAPHICS_RESOURCE(GoochModelShader)
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-ScreenSpaceQuadShaderPipelineRegister GOOCHMODEL_SHADER_PIPELINE_REGISTER(GOOCH_SHADER_NAME);
+ScreenSpaceQuadShaderPipelineRegistrar GOOCHMODEL_SHADER_PIPELINE_REGISTER(GOOCH_SHADER_NAME);

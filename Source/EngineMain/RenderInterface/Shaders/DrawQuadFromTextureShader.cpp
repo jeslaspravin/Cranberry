@@ -21,4 +21,4 @@ DrawQuadFromTexture::DrawQuadFromTexture()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-ScreenSpaceQuadShaderPipelineRegister QUAD_FROM_TEXTURE_PIPELINE_REGISTER(DRAW_QUAD_FROM_TEXTURE);
+ScreenSpaceQuadShaderPipelineRegistrar QUAD_FROM_TEXTURE_PIPELINE_REGISTER(DRAW_QUAD_FROM_TEXTURE);

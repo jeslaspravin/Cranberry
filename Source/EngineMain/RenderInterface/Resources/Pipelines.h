@@ -56,7 +56,7 @@ protected:
 
 protected:
     PipelineBase() = default;
-    PipelineBase(const PipelineBase * parent);
+    PipelineBase(const PipelineBase *parent);
 public:
 
     /* GraphicsResource overrides */
@@ -98,9 +98,6 @@ struct GraphicsPipelineQueryParams
     ECullingMode cullingMode;
 };
 
-/*
-* Right now no specialization constants are supported
-*/
 class GraphicsPipelineBase : public PipelineBase
 {
     DECLARE_GRAPHICS_RESOURCE(GraphicsPipelineBase,, PipelineBase,)
@@ -140,6 +137,21 @@ public:
     const GenericRenderPassProperties& getRenderpassProperties() const { return renderpassProps; }
 };
 
+//////////////////////////////////////////////////////////////////////////
+/// Compute pipeline related types
+//////////////////////////////////////////////////////////////////////////
+
+class ComputePipelineBase : public PipelineBase
+{
+    DECLARE_GRAPHICS_RESOURCE(ComputePipelineBase, , PipelineBase, )
+
+protected:
+    ComputePipelineBase() = default;
+    ComputePipelineBase(const ComputePipelineBase* parent);
+
+public:
+
+};
 
 //////////////////////////////////////////////////////////////////////////
 // PipelineFactory
@@ -151,27 +163,27 @@ struct PipelineFactoryArgs
     const PipelineBase* parentPipeline = nullptr;
 };
 
-struct PipelineFactoryRegister
+struct PipelineFactoryRegistrar
 {
-    PipelineFactoryRegister(const String& shaderName);
+    PipelineFactoryRegistrar(const String& shaderName);
     virtual PipelineBase* operator()(const PipelineFactoryArgs& args) const = 0;
 };
 
 /*
-* Graphics pipeline registration - common case
+* Pipeline registration - common case
 */
 template <typename PipelineType>
-struct GenericGraphicsPipelineRegister final : public PipelineFactoryRegister
+struct GenericPipelineRegistrar final : public PipelineFactoryRegistrar
 {
-    GenericGraphicsPipelineRegister(const String& shaderName)
-        : PipelineFactoryRegister(shaderName)
+    GenericPipelineRegistrar(const String& shaderName)
+        : PipelineFactoryRegistrar(shaderName)
     {}
 
     PipelineBase* operator()(const PipelineFactoryArgs& args) const final
     {
         if (args.parentPipeline != nullptr)
         {
-            return new PipelineType(args.pipelineShader, args.parentPipeline);
+            return new PipelineType(args.parentPipeline);
         }
         else
         {
@@ -183,8 +195,8 @@ struct GenericGraphicsPipelineRegister final : public PipelineFactoryRegister
 class PipelineFactory final : public FactoriesBase<PipelineBase, const PipelineFactoryArgs&>
 {
 private:
-    friend PipelineFactoryRegister;
-    static std::map<String, const PipelineFactoryRegister*>& pipelineFactoriesRegistry();
+    friend PipelineFactoryRegistrar;
+    static std::map<String, const PipelineFactoryRegistrar*>& namedPipelineFactoriesRegistry();
 public:
     PipelineBase* create(const PipelineFactoryArgs& args) const final;
 

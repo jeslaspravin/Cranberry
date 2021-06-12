@@ -109,3 +109,35 @@ public:
 
     VkPipeline getPipeline(const GraphicsPipelineQueryParams& pipelineQuery) const;
 };
+
+class VulkanComputePipeline : public ComputePipelineBase, public IVulkanResources
+{
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanComputePipeline, , ComputePipelineBase, )
+private:
+
+    VkPipeline pipeline;
+public:
+    VkPipelineCache pipelineLocalCache;
+
+    // Just copies original resource handled at GlobalRenderingContext
+    VkPipelineLayout pipelineLayout;
+private:
+    void fillShaderStages(VkPipelineShaderStageCreateInfo& shaderStage) const;
+    void fillSpecializationConsts(VkPipelineShaderStageCreateInfo& shaderStages
+        , std::vector<VkSpecializationMapEntry>& specEntries, std::vector<uint8>& specData, VkSpecializationInfo& specializationInfo) const;
+public:
+    VulkanComputePipeline(const ComputePipelineBase* parent);
+    VulkanComputePipeline() = default;
+
+    /* IVulkanResources overrides */
+    String getObjectName() const final;
+
+    /* ComputeResource overrides */
+    void init() final;
+    void reinitResources() final;
+    void release() final;
+
+    /* Override ends */
+
+    VkPipeline getPipeline() const { return pipeline; }
+};

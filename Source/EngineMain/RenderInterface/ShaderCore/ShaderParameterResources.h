@@ -217,16 +217,13 @@ protected:
         };
         const ShaderTextureDescriptorType* descriptorInfo;
         
-        // for future use
-        int32 apiDataIndex;
         std::vector<TextureViewAndSampler> textures;
     };
 
     struct SamplerParameterData
     {
         const ShaderSamplerDescriptorType* descriptorInfo;
-        // for future use
-        int32 apiDataIndex;
+
         std::vector<SharedPtr<class SamplerInterface>> samplers;
     };
 

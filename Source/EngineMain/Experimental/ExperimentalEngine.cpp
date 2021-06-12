@@ -594,6 +594,9 @@ void ExperimentalEngine::getPipelineForSubpass()
     drawQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawQuadPipelineContext.swapchainIdx = 0;
     vulkanRenderingContext->preparePipelineContext(&drawQuadPipelineContext);
+
+    testComputePipelineContext.materialName = "TestCompute";
+    vulkanRenderingContext->preparePipelineContext(&testComputePipelineContext);
 }
 
 void ExperimentalEngine::createPipelineResources()
@@ -643,8 +646,8 @@ void ExperimentalEngine::updateCameraParams()
 
     if (appInstance().inputSystem()->isKeyPressed(Keys::RMB))
     {
-        cameraRotation.yaw() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.deltaTime * timeData.activeTimeDilation * 15.0f;
-        cameraRotation.pitch() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.deltaTime * timeData.activeTimeDilation * 15.0f;
+        cameraRotation.yaw() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
+        cameraRotation.pitch() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
     }
 
     if (appInstance().inputSystem()->isKeyPressed(Keys::A))
@@ -931,8 +934,8 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
     cmdList->endCmd(cmdBuffer);
 
     CommandSubmitInfo submitInfo;
-    submitInfo.waitOn = { CommandSubmitInfo::WaitInfo{ waitSemaphore.get(), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT } };
-    submitInfo.signalSemaphores = { frameResources[index].usageWaitSemaphore[0].get() };
+    submitInfo.waitOn = { CommandSubmitInfo::WaitInfo{ waitSemaphore, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT } };
+    submitInfo.signalSemaphores = { frameResources[index].usageWaitSemaphore[0] };
     submitInfo.cmdBuffers = { cmdBuffer };
 
     cmdList->submitCmd(EQueuePriority::High, submitInfo, frameResources[index].recordingFence);

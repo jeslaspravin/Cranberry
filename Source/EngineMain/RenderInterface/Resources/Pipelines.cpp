@@ -103,6 +103,10 @@ const GraphicsResource* PipelineBase::getParamLayoutAtSet(int32 setIdx) const
     return shaderParamLayouts[setIdx];
 }
 
+//////////////////////////////////////////////////////////////////////////
+/// Graphics pipeline
+//////////////////////////////////////////////////////////////////////////
+
 DEFINE_GRAPHICS_RESOURCE(GraphicsPipelineBase)
 
 GraphicsPipelineBase::GraphicsPipelineBase(const GraphicsPipelineBase* parent)
@@ -164,24 +168,34 @@ FORCE_INLINE int32 GraphicsPipelineBase::pipelinesCount() const
 }
 
 //////////////////////////////////////////////////////////////////////////
+/// Compute pipeline
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_GRAPHICS_RESOURCE(ComputePipelineBase)
+
+ComputePipelineBase::ComputePipelineBase(const ComputePipelineBase* parent)
+    : BaseType(parent)
+{}
+
+//////////////////////////////////////////////////////////////////////////
 // PipelineFactory
 //////////////////////////////////////////////////////////////////////////
 
-PipelineFactoryRegister::PipelineFactoryRegister(const String& shaderName)
+PipelineFactoryRegistrar::PipelineFactoryRegistrar(const String& shaderName)
 {
-    PipelineFactory::pipelineFactoriesRegistry().insert({ shaderName , this });
+    PipelineFactory::namedPipelineFactoriesRegistry().insert({ shaderName , this });
 }
 
-std::map<String, const PipelineFactoryRegister*>& PipelineFactory::pipelineFactoriesRegistry()
+std::map<String, const PipelineFactoryRegistrar*>& PipelineFactory::namedPipelineFactoriesRegistry()
 {
-    static std::map<String, const PipelineFactoryRegister*> REGISTERED_PIPELINE_FACTORIES;
+    static std::map<String, const PipelineFactoryRegistrar*> REGISTERED_PIPELINE_FACTORIES;
     return REGISTERED_PIPELINE_FACTORIES;
 }
 
 PipelineBase* PipelineFactory::create(const PipelineFactoryArgs& args) const
 {
-    auto factoryItr = pipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
-    fatalAssert(factoryItr != pipelineFactoriesRegistry().end(), "Failed finding factory to create pipeline for shader");
+    auto factoryItr = namedPipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
+    fatalAssert(factoryItr != namedPipelineFactoriesRegistry().end(), "Failed finding factory to create pipeline for shader");
 
     return (*factoryItr->second)(args);
 }

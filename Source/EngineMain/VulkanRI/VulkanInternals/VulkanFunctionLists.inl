@@ -130,6 +130,7 @@ DEVICE_VK_FUNCTIONS(vkCreatePipelineLayout)
 DEVICE_VK_FUNCTIONS(vkDestroyPipelineLayout)
 
 DEVICE_VK_FUNCTIONS(vkCreateGraphicsPipelines)
+DEVICE_VK_FUNCTIONS(vkCreateComputePipelines)
 DEVICE_VK_FUNCTIONS(vkDestroyPipeline)
 
 /* CommandPool Functions */

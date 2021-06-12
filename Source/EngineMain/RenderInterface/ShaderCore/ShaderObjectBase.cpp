@@ -103,6 +103,14 @@ const DrawMeshShaderObject::ShaderResourceList& DrawMeshShaderObject::getAllShad
     return shaderResources;
 }
 
+void DrawMeshShaderObject::preparePipelineCache(PipelineCacheBase* pipelineCache) const
+{
+    for (const std::pair<const DrawMeshShader*, GraphicsPipelineBase*>& shaderResourcePair : getAllShaders())
+    {
+        pipelineCache->addPipelineToCache(shaderResourcePair.second);
+    }
+}
+
 const GraphicsResourceType* DrawMeshShaderObject::baseShaderType() const
 {
     return DrawMeshShader::staticType();
@@ -163,6 +171,14 @@ const GraphicsResourceType* UniqueUtilityShaderObject::baseShaderType() const
     return UniqueUtilityShader::staticType();
 }
 
+void UniqueUtilityShaderObject::preparePipelineCache(PipelineCacheBase* pipelineCache) const
+{
+    for (const std::pair<const GenericRenderPassProperties, GraphicsPipelineBase*>& pipeline : graphicsPipelines)
+    {
+        pipelineCache->addPipelineToCache(pipeline.second);
+    }
+}
+
 std::vector<const GraphicsPipelineBase*> UniqueUtilityShaderObject::getAllPipelines() const
 {
     std::vector<const GraphicsPipelineBase*> pipelines;
@@ -172,4 +188,44 @@ std::vector<const GraphicsPipelineBase*> UniqueUtilityShaderObject::getAllPipeli
         pipelines.emplace_back(pipeline.second);
     }
     return pipelines;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// ComputeShaderObject
+//////////////////////////////////////////////////////////////////////////
+
+ComputeShaderObject::ComputeShaderObject(const String& sName, const ShaderResource* shaderResource)
+    : ShaderObjectBase(sName)
+    , computeShader(static_cast<const ComputeShader*>(shaderResource))
+{}
+
+ComputeShaderObject::~ComputeShaderObject()
+{
+    computePipeline->release();
+    delete computePipeline;
+}
+
+const ComputeShader* ComputeShaderObject::getShader() const
+{
+    return computeShader;
+}
+
+ComputePipelineBase* ComputeShaderObject::getPipeline() const
+{
+    return computePipeline;
+}
+
+void ComputeShaderObject::setPipeline(ComputePipelineBase* pipeline)
+{
+    computePipeline = pipeline;
+}
+
+const GraphicsResourceType* ComputeShaderObject::baseShaderType() const
+{
+    return ComputeShader::staticType();
+}
+
+void ComputeShaderObject::preparePipelineCache(PipelineCacheBase* pipelineCache) const
+{
+    pipelineCache->addPipelineToCache(computePipeline);
 }

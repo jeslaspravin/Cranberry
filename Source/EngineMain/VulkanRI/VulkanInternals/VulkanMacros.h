@@ -374,9 +374,19 @@ VariableName.logicOp = VK_LOGIC_OP_NO_OP
 #ifndef PIPELINE_DYNAMIC_STATE_CREATE_INFO
 #define PIPELINE_DYNAMIC_STATE_CREATE_INFO(VariableName)                        \
 VkPipelineDynamicStateCreateInfo VariableName;                                  \
-VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;  \
+VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;      \
 VariableName.pNext = nullptr;                                                   \
 VariableName.flags = 0
+#endif
+
+#ifndef COMPUTE_PIPELINE_CREATE_INFO
+#define COMPUTE_PIPELINE_CREATE_INFO(VariableName)                      \
+VkComputePipelineCreateInfo VariableName;                               \
+VariableName.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;    \
+VariableName.pNext = nullptr;                                           \
+VariableName.flags = 0;                                                 \
+VariableName.basePipelineIndex = -1;                                    \
+VariableName.basePipelineHandle = VK_NULL_HANDLE
 #endif
 
 #ifndef CREATE_SEMAPHORE_INFO

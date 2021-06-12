@@ -215,7 +215,7 @@ void ImGuiManager::releaseRendering()
         idxBuffer.reset();
     ), this);
 
-    EngineSettings::screenSize.onConfigChanged().unbindLambda(textureResizedHnd);
+    EngineSettings::screenSize.onConfigChanged().unbind(textureResizedHnd);
 }
 
 void ImGuiManager::draw(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const TinyDrawingContext& drawingContext)

@@ -259,7 +259,8 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(std::vector<std:
             std::map<String, SpecializationConstantEntry>::const_iterator specConstVal = namedSpecializationConsts.find(stageSpecConst.attributeName);
             if (specConstVal != namedSpecializationConsts.cend())
             {
-                stageSpecializationConsts[stageIdx].emplace_back(specConstVal->second);
+                SpecializationConstantEntry& entry = stageSpecializationConsts[stageIdx].emplace_back(specConstVal->second);
+                entry.constantId = stageSpecConst.data.constantId;
             }
             else
             {

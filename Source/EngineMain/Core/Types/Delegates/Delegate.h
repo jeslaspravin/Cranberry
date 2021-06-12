@@ -4,7 +4,6 @@
 #include "../../Memory/SmartPointers.h"
 #include "../../Platform/PlatformTypes.h"
 
-#include <list>
 #include <map>
 #include <type_traits>
 
@@ -281,10 +280,6 @@ public:
     // Using this function signature to deduce return and params type to individual delegate
     typedef void FuncType(Params...);
 protected:
-    std::list<SharedPtr<DelegateInterface>> boundStaticDelegates;
-    std::list<SharedPtr<DelegateInterface>> boundLambdaDelegates;
-    std::list<SharedPtr<DelegateInterface>> boundObjectDelegates;
-
     std::map<int32, SharedPtr<DelegateInterface>> allDelegates;
 
 
@@ -317,7 +312,6 @@ public:
         , const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction,Variables ...vars)
     {
         SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction,vars...));
-        boundObjectDelegates.push_back(ptr);
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;
@@ -328,7 +322,6 @@ public:
     DelegateHandle bindObject(const ObjectType* object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
         SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, vars...));
-        boundObjectDelegates.push_back(ptr);
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;
@@ -339,7 +332,6 @@ public:
     DelegateHandle bindStatic(const typename StaticDelegateType<Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
         SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new StaticDelegateType<Variables...>(bindingFunction, vars...));
-        boundStaticDelegates.push_back(ptr);
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;
@@ -350,47 +342,19 @@ public:
     DelegateHandle bindLambda(const typename LambdaDelegateType<Variables...>::FunctionPtr& lambda, Variables ...vars)
     {
         SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(lambda, vars...));
-        boundLambdaDelegates.push_back(ptr);
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;
         return handle;
     }
 
-    void unbindLambda(const DelegateHandle& handle)
+    void unbind(const DelegateHandle& handle)
     {
         if (handle.isValid())
         {
             auto itr = allDelegates.find(handle.value);
             if (itr != allDelegates.end())
             {
-                boundLambdaDelegates.remove(itr->second);
-                allDelegates.erase(itr);
-            }
-        }
-    }
-
-    void unbindStatic(const DelegateHandle& handle)
-    {
-        if (handle.isValid())
-        {
-            auto itr = allDelegates.find(handle.value);
-            if (itr != allDelegates.end())
-            {
-                boundStaticDelegates.remove(itr->second);
-                allDelegates.erase(itr);
-            }
-        }
-    }
-
-    void unbindObject(const DelegateHandle& handle)
-    {
-        if (handle.isValid())
-        {
-            auto itr = allDelegates.find(handle.value);
-            if (itr != allDelegates.end())
-            {
-                boundObjectDelegates.remove(itr->second);
                 allDelegates.erase(itr);
             }
         }
@@ -399,12 +363,6 @@ public:
     template<typename ObjectType>
     void unbindAll(const ObjectType* object)
     {
-        boundObjectDelegates.remove_if([object](const SharedPtr<DelegateInterface>& delegateInterface)
-            {
-                // No need to check null as all object delegates implements this 
-                return delegateInterface->hasSameObject(object);
-            });
-
         for (auto itr = allDelegates.begin(); itr != allDelegates.end();)
         {
             if (itr->second->hasSameObject(object))
@@ -420,20 +378,24 @@ public:
 
     bool isBound() const
     {
-        return boundObjectDelegates.size() > 0 || boundStaticDelegates.size() > 0 || boundLambdaDelegates.size() > 0;
+        return !allDelegates.empty();
     }
 
     void clear();
 };
 
-/* Does not handle life time of object delegates needs to be externally handled */
+template <typename... Params>
+void MultiCastDelegateBase<Params...>::clear()
+{
+    allDelegates.clear();
+}
+
+/* Does not handle life time of object in delegates, needs to be externally handled */
 template <typename... Params>
 class Delegate : public MultiCastDelegateBase<Params...>
 {
 private:
-    using MultiCastDelegateBase<Params...>::boundObjectDelegates;
-    using MultiCastDelegateBase<Params...>::boundLambdaDelegates;
-    using MultiCastDelegateBase<Params...>::boundStaticDelegates;
+    using MultiCastDelegateBase<Params...>::allDelegates;
     using MultiCastDelegateBase<Params...>::DelegateInterface;
 public:
     using MultiCastDelegateBase<Params...>::clear;
@@ -453,17 +415,9 @@ Delegate<Params...>::~Delegate()
 template <typename... Params>
 void Delegate<Params...>::invoke(Params... params) const
 {
-    for (const SharedPtr<DelegateInterface>& delegateInterface : boundStaticDelegates)
+    for (const std::pair<const int32, SharedPtr<DelegateInterface>>& delegateInterface : allDelegates)
     {
-        delegateInterface->invoke(std::forward<Params>(params)...);
-    }
-    for (const SharedPtr<DelegateInterface>& delegateInterface : boundLambdaDelegates)
-    {
-        delegateInterface->invoke(std::forward<Params>(params)...);
-    }
-    for (const SharedPtr<DelegateInterface>& delegateInterface : boundObjectDelegates)
-    {
-        delegateInterface->invoke(std::forward<Params>(params)...);
+        delegateInterface.second->invoke(std::forward<Params>(params)...);
     }
 }
 
@@ -472,9 +426,7 @@ template <typename OwnerType,typename... Params>
 class Event : public MultiCastDelegateBase<Params...>
 {
 private:
-    using MultiCastDelegateBase<Params...>::boundObjectDelegates;
-    using MultiCastDelegateBase<Params...>::boundLambdaDelegates;
-    using MultiCastDelegateBase<Params...>::boundStaticDelegates;
+    using MultiCastDelegateBase<Params...>::allDelegates;
     using MultiCastDelegateBase<Params...>::DelegateInterface;
 
     friend OwnerType;
@@ -483,7 +435,6 @@ private:
 public:
     using MultiCastDelegateBase<Params...>::clear;
     ~Event();
-
 };
 
 template <typename OwnerType, typename... Params>
@@ -495,27 +446,119 @@ Event<OwnerType, Params...>::~Event()
 template <typename OwnerType, typename... Params>
 void Event<OwnerType, Params...>::invoke(Params... params) const
 {
-    for (const SharedPtr<DelegateInterface>& delegateInterface : boundStaticDelegates)
+    for (const std::pair<const int32, SharedPtr<DelegateInterface>>& delegateInterface : allDelegates)
     {
-        delegateInterface->invoke(std::forward<Params>(params)...);
-    }
-    for (const SharedPtr<DelegateInterface>& delegateInterface : boundLambdaDelegates)
-    {
-        delegateInterface->invoke(std::forward<Params>(params)...);
-    }
-    for (const SharedPtr<DelegateInterface>& delegateInterface : boundObjectDelegates)
-    {
-        delegateInterface->invoke(std::forward<Params>(params)...);
+        delegateInterface.second->invoke(std::forward<Params>(params)...);
     }
 }
 
-template <typename... Params>
-void MultiCastDelegateBase<Params...>::clear()
+template <typename ReturnType, typename... Params>
+class SingleCastDelegateBase
 {
-    boundStaticDelegates.clear();
-    boundObjectDelegates.clear();
-    boundLambdaDelegates.clear();
-    allDelegates.clear();
-}
+public:
+    using DelegateInterface = IDelegate<ReturnType, Params...>;
+    // Using this function signature to deduce return and params type to individual delegate
+    typedef ReturnType FuncType(Params...);
+protected:
+    SharedPtr<DelegateInterface> delegatePtr;
+
+    template<typename ObjectType, typename... Variables>
+    using ObjDelegateType = ObjectDelegate<false, ObjectType, FuncType, Variables...>;
+    template<typename ObjectType, typename... Variables>
+    using ConstObjDelegateType = ObjectDelegate<true, ObjectType, FuncType, Variables...>;
+    template<typename... Variables>
+    using StaticDelegateType = StaticDelegate<FuncType, Variables...>;
+    template<typename... Variables>
+    using LambdaDelegateType = LambdaDelegate<FuncType, Variables...>;
+
+public:
+    template<typename ObjectType, typename... Variables>
+    std::enable_if_t<!std::is_const_v<ObjectType>, void> bindObject(ObjectType* object
+        , const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
+    {
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, vars...));
+        delegatePtr.reset(ptr);
+    }
+
+    template<typename ObjectType, typename... Variables>
+    void bindObject(const ObjectType* object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
+    {
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, vars...));
+        delegatePtr.reset(ptr);
+    }
+
+    template<typename... Variables>
+    void bindStatic(const typename StaticDelegateType<Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
+    {
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new StaticDelegateType<Variables...>(bindingFunction, vars...));
+        delegatePtr.reset(ptr);
+    }
+
+    template<typename... Variables>
+    void bindLambda(const typename LambdaDelegateType<Variables...>::FunctionPtr& lambda, Variables ...vars)
+    {
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(lambda, vars...));
+        delegatePtr.reset(ptr);
+    }
+
+    void unbind(const DelegateHandle& handle)
+    {
+        delegatePtr.reset();
+    }
+
+    bool isBound() const
+    {
+        return delegatePtr;
+    }
+
+    template<typename ObjectType>
+    bool isBoundTo(const ObjectType* object) const
+    {
+        return delegatePtr->hasSameObject(object);
+    }
+};
 
 
+/* Does not handle life time of object in delegates, needs to be externally handled */
+template <typename ReturnType, typename... Params>
+class SingleCastDelegate : public SingleCastDelegateBase<ReturnType, Params...>
+{
+private:
+    using SingleCastDelegateBase<ReturnType, Params...>::delegatePtr;
+    using SingleCastDelegateBase<ReturnType, Params...>::DelegateInterface;
+public:
+    using SingleCastDelegateBase<ReturnType, Params...>::unbind;
+    ~SingleCastDelegate()
+    {
+        unbind();
+    }
+
+    ReturnType invoke(Params... params) const
+    {
+        return delegatePtr->invoke(std::forward<Params>(params)...);
+    }
+};
+
+using SimpleSingleCastDelegate = SingleCastDelegate<void>;
+
+/* Does not handle life time of object delegates needs to be externally handled */
+template <typename OwnerType, typename ReturnType, typename... Params>
+class SingleCastEvent : public SingleCastDelegateBase<ReturnType, Params...>
+{
+private:
+    using SingleCastDelegateBase<ReturnType, Params...>::delegatePtr;
+    using SingleCastDelegateBase<ReturnType, Params...>::DelegateInterface;
+
+    friend OwnerType;
+
+    ReturnType invoke(Params... params) const
+    {
+        return delegatePtr->invoke(std::forward<Params>(params)...);
+    }
+public:
+    using SingleCastDelegateBase<ReturnType, Params...>::unbind;
+    ~SingleCastEvent()
+    {
+        unbind();
+    }
+};

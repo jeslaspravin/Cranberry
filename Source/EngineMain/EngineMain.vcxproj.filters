@@ -591,6 +591,9 @@
     <ClCompile Include="Editor\Core\ImGui\ImGuiDrawInterface.cpp">
       <Filter>Source Files\Editor\Core\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="Experimental\TestCompute.cpp">
+      <Filter>Source Files\Experimental</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -1056,6 +1059,12 @@
       <Filter>Header Files\Editor\Core\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="Core\Types\Containers\ArrayView.h">
+      <Filter>Header Files\Core\Types\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\Base\GenericComputePipeline.h">
+      <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Containers\MinAllocVector.h">
       <Filter>Header Files\Core\Types\Containers</Filter>
     </ClInclude>
   </ItemGroup>
