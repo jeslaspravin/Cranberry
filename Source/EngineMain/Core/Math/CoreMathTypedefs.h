@@ -32,12 +32,15 @@
 #define DBL_MIN 2.2250738585072014e-308
 #endif
 
+typedef glm::vec<4, uint32, glm::defaultp> Size4D;
 typedef glm::vec<3, uint32, glm::defaultp> Size3D;
 typedef glm::vec<2, uint32, glm::defaultp> Size2D;
 
+typedef glm::vec<4, int32, glm::defaultp> Int4D;
 typedef glm::vec<3, int32, glm::defaultp> Int3D;
 typedef glm::vec<2, int32, glm::defaultp> Int2D;
 
+typedef glm::vec<3, uint8, glm::defaultp> Byte2D;
 typedef glm::vec<3, uint8, glm::defaultp> Byte3D;
 typedef glm::vec<4, uint8, glm::defaultp> Byte4D;
 

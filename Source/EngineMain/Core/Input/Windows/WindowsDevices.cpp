@@ -102,16 +102,20 @@ void WindowsMouseDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* anal
         auto rawKeyState = buttonRawStates.find(keyCode);
         if (rawKeyState != buttonRawStates.end())
         {
+            // Not checking current pressed or release state before setting key went up/down to allow OS's key press repeat after delay
             switch (rawKeyState->second)
             {
             case UP_STATE:
             {
                 keyState.second.isPressed = 0;
                 keyState.second.keyWentUp = 1;
+                keyState.second.pressedTick = -1;
                 break;
             }
             case DOWN_STATE:
             {
+                keyState.second.pressedTick = keyState.second.isPressed ?
+                    keyState.second.pressedTick : Time::timeNow();
                 keyState.second.isPressed = 1;
                 keyState.second.keyWentDown = 1;
                 break;
@@ -218,16 +222,20 @@ void WindowsKeyboardDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* a
         auto rawKeyState = rawKeyStates.find(keyCode);
         if (rawKeyState != rawKeyStates.end())
         {
+            // Not checking current pressed or release state before setting key went up/down to allow OS's key press repeat after delay
             switch (rawKeyState->second)
             {
             case UP_STATE:
             {
                 keyState.second.isPressed = 0;
                 keyState.second.keyWentUp = 1;
+                keyState.second.pressedTick = -1;
                 break;
             }
             case DOWN_STATE:
             {
+                keyState.second.pressedTick = keyState.second.isPressed ?
+                    keyState.second.pressedTick : Time::timeNow();
                 keyState.second.isPressed = 1;
                 keyState.second.keyWentDown = 1;
                 break;

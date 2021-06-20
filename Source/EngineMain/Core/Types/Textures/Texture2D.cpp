@@ -186,6 +186,7 @@ Texture2DRW* Texture2DRW::createTexture(const Texture2DRWCreateParams& createPar
     // Dependent values
     texture->setSampleCount(EPixelSampleCount::SampleCount1);// MS not possible for read only textures
     texture->setFilteringMode(createParams.filtering);
+    texture->dataFormat = createParams.format;
 
     Texture2DRW::init(texture);
     return texture;

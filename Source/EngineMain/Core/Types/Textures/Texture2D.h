@@ -48,9 +48,13 @@ struct Texture2DRWCreateParams : public TextureBaseCreateParams
     // Color that will be used if any pixel data is not available in color collection
     Color defaultColor = ColorConst::BLACK;
 
+    EPixelDataFormat::Type format;
     bool bIsWriteOnly = false;
 };
 
+/*
+* Read write non atomic texture
+*/
 class Texture2DRW : public TextureBase
 {
 private:

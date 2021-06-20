@@ -98,6 +98,8 @@ public:
     static void getPipelineCacheData(class IGraphicsInstance* graphicsInstance, VkPipelineCache pipelineCache, std::vector<uint8>& cacheData);
     static void getMergedCacheData(class IGraphicsInstance* graphicsInstance, std::vector<uint8>& cacheData, const std::vector<const class PipelineBase*>& pipelines);
 
+    static uint32 shaderToPipelineStageFlags(uint32 shaderStageFlags);
+    static uint32 pipelineToShaderStageFlags(uint32 pipelineStageFlags);
     static std::vector<VkPipeline> createGraphicsPipeline(class IGraphicsInstance* graphicsInstance, const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCI
         , VkPipelineCache pipelineCache);
     static std::vector<VkPipeline> createComputePipeline(class IGraphicsInstance* graphicsInstance, const std::vector<VkComputePipelineCreateInfo>& computePipelineCI

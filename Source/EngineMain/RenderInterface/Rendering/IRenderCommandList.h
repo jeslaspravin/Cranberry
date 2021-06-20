@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <set>
 
 #include "../../Core/Platform/PlatformTypes.h"
 #include "../ShaderCore/ShaderParameters.h"
@@ -17,6 +18,7 @@ class BufferResource;
 class GraphicsResource;
 class GraphicsFence;
 struct CommandSubmitInfo;
+struct CommandSubmitInfo2;
 class ImageResource;
 class LocalPipelineContext;
 struct RenderPassAdditionalProps;
@@ -129,6 +131,7 @@ public:
     static IRenderCommandList* genericInstance();
 
     virtual void setup(IRenderCommandList* commandList) {};
+    virtual void newFrame() = 0;
 
     virtual void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) = 0;
     virtual void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) = 0;
@@ -146,14 +149,22 @@ public:
 
     virtual void setupInitialLayout(ImageResource* image) = 0;
 
+    virtual void presentImage(const std::vector<class GenericWindowCanvas*>& canvases,
+        const std::vector<uint32>& imageIndices, const std::vector<SharedPtr<class GraphicsSemaphore>>& waitOnSemaphores) = 0;
+
     ///////////////////////////////////////////////////////////////////////////////
     //// Command buffer related function access if you know what you are doing ////
     ///////////////////////////////////////////////////////////////////////////////
 
-    virtual void cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor) const = 0;
-    virtual void cmdEndRenderPass(const GraphicsResource* cmdBuffer) const = 0;
+    virtual void cmdBarrierResources(const GraphicsResource* cmdBuffer, const std::set<const ShaderParameters*>& descriptorsSets) = 0;
+
+    virtual void cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor) = 0;
+    virtual void cmdEndRenderPass(const GraphicsResource* cmdBuffer) = 0;
 
     virtual void cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const GraphicsPipelineState& state) const = 0;
+    virtual void cmdBindComputePipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline) const = 0;
+    void cmdPushConstants(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const std::vector<std::pair<String, std::any>>& pushData) const;
+    virtual void cmdPushConstants(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, uint32 stagesUsed, const uint8* data, const std::vector<CopyBufferInfo>& pushConsts) const {};
     void cmdBindDescriptorsSets(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const ShaderParameters* descriptorsSets) const;
     void cmdBindDescriptorsSets(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const;
     virtual void cmdBindDescriptorsSetInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::map<uint32, const ShaderParameters*>& descriptorsSets) const = 0;
@@ -161,6 +172,7 @@ public:
     virtual void cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, uint32 firstBinding, const std::vector<const BufferResource*>& vertexBuffers, const std::vector<uint64>& offsets) const = 0;
     virtual void cmdBindIndexBuffer(const GraphicsResource* cmdBuffer, const BufferResource* indexBuffer, uint64 offset = 0) const = 0;
 
+    virtual void cmdDispatch(const GraphicsResource* cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const = 0;
     virtual void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const = 0;
 
     virtual void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const = 0;
@@ -178,6 +190,10 @@ public:
     virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo
         , const SharedPtr<GraphicsFence>& fence) = 0;
     virtual void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) = 0;
+
+    virtual void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands) = 0;
+    virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& command) = 0;
+
     virtual void finishCmd(const GraphicsResource* cmdBuffer) = 0;
     virtual void finishCmd(const String& uniqueName) = 0;
     virtual const GraphicsResource* getCmdBuffer(const String& uniqueName) const = 0;

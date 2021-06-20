@@ -360,8 +360,12 @@ void ShaderParameters::init()
     BaseType::init();
     for (const std::pair<const String, BufferParametersData>& bufferParameters : shaderBuffers)
     {
-        bufferParameters.second.gpuBuffer->setResourceName(bufferParameters.first);
-        bufferParameters.second.gpuBuffer->init();
+        // Only if not using already set resource externally
+        if(!bufferParameters.second.gpuBuffer->isValid())
+        {
+            bufferParameters.second.gpuBuffer->setResourceName(bufferParameters.first);
+            bufferParameters.second.gpuBuffer->init();
+        }
     }
 }
 
@@ -479,7 +483,7 @@ void ShaderParameters::release()
     for (const std::pair<const String, BufferParametersData>& bufferParam : shaderBuffers)
     {
         delete[] bufferParam.second.cpuBuffer;
-        if (bufferParam.second.gpuBuffer != nullptr)
+        if (bufferParam.second.gpuBuffer && !bufferParam.second.bIsExternal)
         {
             bufferParam.second.gpuBuffer->release();
             delete bufferParam.second.gpuBuffer;
@@ -499,6 +503,96 @@ String ShaderParameters::getResourceName() const
 void ShaderParameters::setResourceName(const String& name)
 {
     descriptorSetName = name;
+}
+
+std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> ShaderParameters::getAllReadOnlyTextures() const
+{
+    std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> textures;
+    for (const std::pair<const String, TextureParameterData>& textuteParam : shaderTextures)
+    {
+        for (const auto& img : textuteParam.second.textures)
+        {
+            if (img.texture->isShaderRead() && !img.texture->isShaderWrite())
+            {
+                textures.emplace_back(std::pair<ImageResource*, const ShaderTextureDescriptorType*>{ img.texture, textuteParam.second.descriptorInfo });
+            }
+        }
+    }
+    return textures;
+}
+
+std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> ShaderParameters::getAllReadOnlyBuffers() const
+{
+    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> buffers;
+    for (const std::pair<const String, BufferParametersData>& bufferParam : shaderBuffers)
+    {
+        if (!bufferParam.second.descriptorInfo->bIsStorage && bufferParam.second.gpuBuffer->isTypeOf<GraphicsRBuffer>())
+        {
+            buffers.emplace_back(std::pair<BufferResource*, const ShaderBufferDescriptorType*>{bufferParam.second.gpuBuffer, bufferParam.second.descriptorInfo });
+        }
+    }
+    return buffers;
+}
+
+std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> ShaderParameters::getAllReadOnlyTexels() const
+{
+    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> buffers;
+    for (const std::pair<const String, TexelParameterData>& bufferParam : shaderTexels)
+    {
+        for (BufferResource* texels : bufferParam.second.gpuBuffers)
+        {
+            if (!bufferParam.second.descriptorInfo->bIsStorage && texels->isTypeOf<GraphicsRTexelBuffer>())
+            {
+                buffers.emplace_back(std::pair<BufferResource*, const ShaderBufferDescriptorType*>{ texels, bufferParam.second.descriptorInfo });
+            }
+        }
+    }
+    return buffers;
+}
+
+std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> ShaderParameters::getAllWriteTextures() const
+{
+    std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> textures;
+    for (const std::pair<const String, TextureParameterData>& textuteParam : shaderTextures)
+    {
+        for (const auto& img : textuteParam.second.textures)
+        {
+            if (img.texture->isShaderWrite())
+            {
+                textures.emplace_back(std::pair<ImageResource*, const ShaderTextureDescriptorType*>{ img.texture, textuteParam.second.descriptorInfo });
+            }
+        }
+    }
+    return textures;
+}
+
+std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> ShaderParameters::getAllWriteBuffers() const
+{
+    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> buffers;
+    for (const std::pair<const String, BufferParametersData>& bufferParam : shaderBuffers)
+    {
+        if (bufferParam.second.descriptorInfo->bIsStorage || bufferParam.second.gpuBuffer->isTypeOf<GraphicsWBuffer>() || bufferParam.second.gpuBuffer->isTypeOf<GraphicsRWBuffer>())
+        {
+            buffers.emplace_back(std::pair<BufferResource*, const ShaderBufferDescriptorType*>{bufferParam.second.gpuBuffer, bufferParam.second.descriptorInfo });
+        }
+    }
+    return buffers;
+}
+
+std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> ShaderParameters::getAllWriteTexels() const
+{
+    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> buffers;
+    for (const std::pair<const String, TexelParameterData>& bufferParam : shaderTexels)
+    {
+        for (BufferResource* texels : bufferParam.second.gpuBuffers)
+        {
+            if (bufferParam.second.descriptorInfo->bIsStorage || texels->isTypeOf<GraphicsWTexelBuffer>() || texels->isTypeOf<GraphicsRWTexelBuffer>())
+            {
+                buffers.emplace_back(std::pair<BufferResource*, const ShaderBufferDescriptorType*>{ texels, bufferParam.second.descriptorInfo });
+            }
+        }
+    }
+    return buffers;
 }
 
 void ShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
@@ -714,6 +808,23 @@ bool ShaderParameters::setMatrixParam(const String& paramName, const Matrix4& va
     return setFieldParam(paramName, value, index);
 }
 
+bool ShaderParameters::setBufferResource(const String& paramName, BufferResource* buffer)
+{
+    auto bufferDataItr = shaderBuffers.find(paramName);
+    if (bufferDataItr != shaderBuffers.end())
+    {
+        if (bufferDataItr->second.gpuBuffer && !bufferDataItr->second.bIsExternal)
+        {
+            bufferDataItr->second.gpuBuffer->release();
+            delete bufferDataItr->second.gpuBuffer;
+        }
+        bufferDataItr->second.bIsExternal = true;
+        bufferDataItr->second.gpuBuffer = buffer;
+        bufferResourceUpdates.insert(paramName);
+    }
+    return false;
+}
+
 bool ShaderParameters::setTexelParam(const String& paramName, BufferResource* texelBuffer, uint32 index/* = 0 */)
 {
     auto texelParamItr = shaderTexels.find(paramName);
@@ -836,6 +947,12 @@ Matrix4 ShaderParameters::getMatrixParam(const String& paramName, uint32 index/*
 Matrix4 ShaderParameters::getMatrixParam(const String& paramName, const String& bufferName, uint32 index/* = 0 */) const
 {
     return getFieldParam<Matrix4>(paramName, index);
+}
+
+BufferResource* ShaderParameters::getBufferResource(const String& paramName)
+{
+    auto bufferDataItr = shaderBuffers.find(paramName);
+    return (bufferDataItr != shaderBuffers.end()) ? bufferDataItr->second.gpuBuffer : nullptr;
 }
 
 BufferResource* ShaderParameters::getTexelParam(const String& paramName, uint32 index/* = 0 */) const

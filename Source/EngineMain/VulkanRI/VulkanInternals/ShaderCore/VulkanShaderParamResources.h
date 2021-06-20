@@ -142,9 +142,10 @@ private:
     struct DescriptorWriteData
     {
         uint32 writeInfoIdx;
-        uint32 arrayIdx;
+        uint32 arrayIdx = 0;
         union
         {
+            const BufferParametersData* buffer;
             const TexelParameterData* texel;
             const TextureParameterData* texture;
             const SamplerParameterData* sampler;
@@ -179,9 +180,10 @@ private:
     {
         uint32 setID;
         uint32 writeInfoIdx;
-        uint32 arrayIdx;
+        uint32 arrayIdx = 0;
         union
         {
+            const BufferParametersData* buffer;
             const TexelParameterData* texel;
             const TextureParameterData* texture;
             const SamplerParameterData* sampler;

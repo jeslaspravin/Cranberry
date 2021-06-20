@@ -234,6 +234,9 @@ public:
     }
 };
 
+template<typename T>
+using ValueRange = Box<T, 1>;
+
 using SizeBox2D = Box<Size2D, 2>;
 using SizeBox3D = Box<Size3D, 3>;
 

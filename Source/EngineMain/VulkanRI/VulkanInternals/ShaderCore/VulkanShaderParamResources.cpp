@@ -581,8 +581,9 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList* cmdList, IGraph
 {
     BaseType::updateParams(cmdList, graphicsInstance);
     std::vector<DescriptorWriteData> writeDescs;
-    writeDescs.reserve(textureUpdates.size() + texelUpdates.size() + samplerUpdates.size());
-    const uint32 textureStartIdx = uint32(texelUpdates.size());
+    writeDescs.reserve(bufferResourceUpdates.size() + textureUpdates.size() + texelUpdates.size() + samplerUpdates.size());
+    const uint32 texelStartIdx = uint32(bufferResourceUpdates.size());
+    const uint32 textureStartIdx = texelStartIdx + uint32(texelUpdates.size());
     const uint32 samplerStartIdx = textureStartIdx + uint32(textureUpdates.size());
 
     if (writeDescs.capacity() == 0)
@@ -590,11 +591,26 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList* cmdList, IGraph
         return;
     }
 
+    std::vector<VkDescriptorBufferInfo> bufferInfos;
+    bufferInfos.reserve(bufferResourceUpdates.size());
     std::vector<VkBufferView> texelViews;
     texelViews.reserve(texelUpdates.size());
     std::vector<VkDescriptorImageInfo> imageAndSamplerInfos;
     imageAndSamplerInfos.reserve(textureUpdates.size() + samplerUpdates.size());
 
+
+    for (const String& bufferParamName : bufferResourceUpdates)
+    {
+        DescriptorWriteData& bufferWriteData = writeDescs.emplace_back();
+        bufferWriteData.ParamData.buffer = &shaderBuffers.at(bufferParamName);
+        bufferWriteData.writeInfoIdx = uint32(bufferInfos.size());
+
+        VkDescriptorBufferInfo bufferInfo;
+        bufferInfo.buffer = static_cast<VulkanBufferResource*>(bufferWriteData.ParamData.buffer->gpuBuffer)->buffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = bufferWriteData.ParamData.buffer->gpuBuffer->getResourceSize();
+        bufferInfos.emplace_back(bufferInfo);
+    }
     for (const std::pair<String, uint32>& texelBufferUpdate : texelUpdates)
     {
         DescriptorWriteData& texelWriteData = writeDescs.emplace_back();
@@ -635,7 +651,18 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList* cmdList, IGraph
     }
 
     std::vector<VkWriteDescriptorSet> vkWrites(writeDescs.size());
-    for (uint32 i = 0; i < textureStartIdx; ++i)
+    for (uint32 i = 0; i < texelStartIdx; ++i)
+    {
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
+        writeDescSet.dstSet = descriptorsSet;
+        writeDescSet.pBufferInfo = &bufferInfos[writeDescs[i].writeInfoIdx];
+        writeDescSet.dstBinding = writeDescs[i].ParamData.buffer->descriptorInfo->bufferEntryPtr->data.binding;
+        writeDescSet.descriptorType = VkDescriptorType(writeDescs[i].ParamData.buffer->descriptorInfo->bufferEntryPtr->data.type);
+        writeDescSet.descriptorCount = 1;
+        writeDescSet.dstArrayElement = writeDescs[i].arrayIdx;
+        vkWrites[i] = writeDescSet;
+    }
+    for (uint32 i = texelStartIdx; i < textureStartIdx; ++i)
     {
         WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
         writeDescSet.dstSet = descriptorsSet;
@@ -700,6 +727,7 @@ void VulkanShaderParameters::init()
     std::vector<VkDescriptorSetLayout> layouts;
     DescriptorsSetQuery query;
 
+    // Compress all descriptors set descriptor type size to common pool sizes to alloc all sets from same pool
     {
         std::map<VkDescriptorType, uint32> descriptorPoolSizes;
 
@@ -798,8 +826,9 @@ void VulkanShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphics
     BaseType::updateParams(cmdList, graphicsInstance);
 
     std::vector<DescriptorWriteData> writeDescs;
-    writeDescs.reserve(textureUpdates.size() + texelUpdates.size() + samplerUpdates.size());
-    const uint32 textureStartIdx = uint32(texelUpdates.size());
+    writeDescs.reserve(bufferResourceUpdates.size() + textureUpdates.size() + texelUpdates.size() + samplerUpdates.size());
+    const uint32 texelStartIdx = uint32(bufferResourceUpdates.size());
+    const uint32 textureStartIdx = texelStartIdx + uint32(texelUpdates.size());
     const uint32 samplerStartIdx = textureStartIdx + uint32(textureUpdates.size());
 
     if (writeDescs.capacity() == 0)
@@ -807,11 +836,26 @@ void VulkanShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphics
         return;
     }
 
+    std::vector<VkDescriptorBufferInfo> bufferInfos;
+    bufferInfos.reserve(bufferResourceUpdates.size());
     std::vector<VkBufferView> texelViews;
     texelViews.reserve(texelUpdates.size());
     std::vector<VkDescriptorImageInfo> imageAndSamplerInfos;
     imageAndSamplerInfos.reserve(textureUpdates.size() + samplerUpdates.size());
 
+    for (const String& bufferParamName : bufferResourceUpdates)
+    {
+        DescriptorWriteData& bufferWriteData = writeDescs.emplace_back();
+        bufferWriteData.ParamData.buffer = &shaderBuffers.at(bufferParamName);
+        bufferWriteData.setID = static_cast<const ShaderParametersLayout*>(paramLayout)->getSetID(bufferParamName);
+        bufferWriteData.writeInfoIdx = uint32(bufferInfos.size());
+
+        VkDescriptorBufferInfo bufferInfo;
+        bufferInfo.buffer = static_cast<VulkanBufferResource*>(bufferWriteData.ParamData.buffer->gpuBuffer)->buffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = bufferWriteData.ParamData.buffer->gpuBuffer->getResourceSize();
+        bufferInfos.emplace_back(bufferInfo);
+    }
     for (const std::pair<String, uint32>& texelBufferUpdate : texelUpdates)
     {
         DescriptorWriteData& texelWriteData = writeDescs.emplace_back();
@@ -855,7 +899,18 @@ void VulkanShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphics
     }
 
     std::vector<VkWriteDescriptorSet> vkWrites(writeDescs.size());
-    for (uint32 i = 0; i < textureStartIdx; ++i)
+    for (uint32 i = 0; i < texelStartIdx; ++i)
+    {
+        WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
+        writeDescSet.dstSet = descriptorsSets[writeDescs[i].setID];
+        writeDescSet.pBufferInfo = &bufferInfos[writeDescs[i].writeInfoIdx];
+        writeDescSet.dstBinding = writeDescs[i].ParamData.buffer->descriptorInfo->bufferEntryPtr->data.binding;
+        writeDescSet.descriptorType = VkDescriptorType(writeDescs[i].ParamData.buffer->descriptorInfo->bufferEntryPtr->data.type);
+        writeDescSet.descriptorCount = 1;
+        writeDescSet.dstArrayElement = writeDescs[i].arrayIdx;
+        vkWrites[i] = writeDescSet;
+    }
+    for (uint32 i = texelStartIdx; i < textureStartIdx; ++i)
     {
         WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
         writeDescSet.dstSet = descriptorsSets[writeDescs[i].setID];

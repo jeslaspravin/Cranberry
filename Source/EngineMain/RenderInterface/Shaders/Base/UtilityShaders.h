@@ -19,16 +19,16 @@ class ComputeShader : public GraphicsShaderResource
 {
     DECLARE_GRAPHICS_RESOURCE(ComputeShader,, GraphicsShaderResource,)
 private:
-    const Byte3D subgrpSize;
+    const Size3D subgrpSize;
 protected:
     ComputeShader() = default;
-    ComputeShader(const Byte3D& subgroupSize, const String& name) 
+    ComputeShader(const Size3D& subgroupSize, const String& name)
         : BaseType(name) 
         , subgrpSize(subgroupSize)
     {}
 public:
 
-    const Byte3D& getSubGroupSize() const { return subgrpSize; }
+    const Size3D& getSubGroupSize() const { return subgrpSize; }
 };
 
 template <uint32 SizeX, uint32 SizeY, uint32 SizeZ>
@@ -42,7 +42,7 @@ private:
 protected:
     ComputeShaderTemplated(const String& name)
         : BaseType(
-            Byte3D(SizeX, SizeY, SizeZ)
+            Size3D(SizeX, SizeY, SizeZ)
             , name + "_" + std::to_string(SizeX) + "x"+ std::to_string(SizeY) + "x" + std::to_string(SizeZ)
             )
         , shaderFileName(name)

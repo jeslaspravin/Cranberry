@@ -5,9 +5,9 @@ layout(location = 1) in vec4 inColor;
 
 layout(location = 0) out vec4 colorAttachment0;
 
-layout(set = 0, binding = 1) uniform sampler2D fontAtlas;
+layout(set = 1, binding = 0) uniform sampler2D textureAtlas;
 
 void mainFS()
 {
-    colorAttachment0 = inColor * texture(fontAtlas, inTextureCoord);
+    colorAttachment0 = inColor * texture(textureAtlas, inTextureCoord);
 }

@@ -76,7 +76,7 @@ struct KeyState
     uint8 keyWentDown : 1;// will be high the frame the key went down
 
     KeyState()
-        : pressedTick(0)
+        : pressedTick(-1)
         , isPressed(0)
         , keyWentUp(0)
         , keyWentDown(0)

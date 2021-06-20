@@ -10,6 +10,7 @@ enum class ECmdState
 {
     Idle, // Not recorded idle state
     Recording, // Between begin and end recording
+    RenderPass,
     Recorded,// Recorded idle state after end recording before submit
     Submitted
 };

@@ -138,7 +138,7 @@
       <ConformanceMode>true</ConformanceMode>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm;%CPP_LIB%\tinyobjloader;%CPP_LIB%\stb;$(SolutionDir)\Source\EngineShaderData;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);%VULKAN_SDK%\Include\vulkan;%CPP_LIB%\glm;%CPP_LIB%\tinyobjloader;%CPP_LIB%\stb;$(SolutionDir)\Source\EngineShaderData</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
@@ -371,6 +371,7 @@
     <ClInclude Include="Core\Logger\Logger.h" />
     <ClInclude Include="Core\Math\Box.h" />
     <ClInclude Include="Core\Math\CoreMathTypedefs.h" />
+    <ClInclude Include="Core\Math\CoreMathTypes.h" />
     <ClInclude Include="Core\Math\Grid.h" />
     <ClInclude Include="Core\Math\Math.h" />
     <ClInclude Include="Core\Math\Matrix2.h" />

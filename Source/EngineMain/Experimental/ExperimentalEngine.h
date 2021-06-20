@@ -22,6 +22,7 @@
 
 class ShaderParameters;
 class IRenderCommandList;
+class Texture2DRW;
 
 struct QueueCommandPool
 {
@@ -127,6 +128,8 @@ class ExperimentalEngine : public GameEngine, public IImGuiLayer
     SharedPtr<ShaderParameters> clearInfoParams;
     LocalPipelineContext clearQuadPipelineContext;
 
+    ImageData writeTexture;
+    SharedPtr<ShaderParameters> testComputeParams;
     LocalPipelineContext testComputePipelineContext;
      
     void getPipelineForSubpass();
@@ -137,9 +140,11 @@ class ExperimentalEngine : public GameEngine, public IImGuiLayer
 
     // End shader pipeline resources
 
-    uint32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
-    bool toggleRes;
-
+    bool bAnimateX;
+    bool bAnimateY;
+    int32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
+    Size2D renderSize{ 1280, 720 };
+    ECameraProjection projection = ECameraProjection::Perspective;
 protected:
     void onStartUp() override;
     void onQuit() override;

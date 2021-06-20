@@ -9,6 +9,7 @@
 #include "../../../Core/Math/Box.h"
 
 #include <array>
+#include <optional>
 
 FORCE_INLINE VkImageAspectFlags VulkanCommandList::determineImageAspect(const ImageResource* image) const
 {
@@ -42,7 +43,7 @@ FORCE_INLINE VkImageLayout VulkanCommandList::determineImageLayout(const ImageRe
             ? VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         imgLayout = image->getType()->isChildOf(GraphicsRenderTargetResource::staticType())
             ? imgLayout : image->isShaderWrite()
-            ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
     return imgLayout;
 }
@@ -52,9 +53,10 @@ FORCE_INLINE VkImageLayout VulkanCommandList::getImageLayout(const ImageResource
     // TODO(Jeslas) : change this to get final layout from some resource tracked layout
     VkImageLayout imgLayout = EPixelDataFormat::isDepthFormat(image->imageFormat())
         ? VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
     imgLayout = image->getType()->isChildOf(GraphicsRenderTargetResource::staticType())
         ? imgLayout : image->isShaderWrite()
-        ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     return imgLayout;
 }
 
@@ -64,44 +66,117 @@ FORCE_INLINE VkPipelineBindPoint VulkanCommandList::getPipelineBindPoint(const P
     {
         return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
     }
+    else if (pipeline->getType()->isChildOf<ComputePipelineBase>())
+    {
+        return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_COMPUTE;
+    }
 
     Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, pipeline->getResourceName().getChar());
     return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_MAX_ENUM;
 }
 
+FORCE_INLINE void cmdPipelineBarrier(VulkanDevice* vDevice, VkCommandBuffer cmdBuffer, const std::vector<VkImageMemoryBarrier2KHR>& imageBarriers, const std::vector<VkBufferMemoryBarrier2KHR>& bufferBarriers)
+{
+    if (vDevice->vkCmdPipelineBarrier2KHR)
+    {
+        BARRIER_DEPENDENCY_INFO_KHR(dependencyInfo);
+        dependencyInfo.dependencyFlags = VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT;
+        dependencyInfo.pImageMemoryBarriers = imageBarriers.data();
+        dependencyInfo.imageMemoryBarrierCount = uint32(imageBarriers.size());
+        dependencyInfo.pBufferMemoryBarriers = bufferBarriers.data();
+        dependencyInfo.bufferMemoryBarrierCount = uint32(bufferBarriers.size());
+        vDevice->vkCmdPipelineBarrier2KHR(cmdBuffer, &dependencyInfo);
+    }
+    else
+    {
+        struct Barriers
+        {
+            std::vector<VkImageMemoryBarrier> imgs;
+            std::vector<VkBufferMemoryBarrier> buffers;
+        };
+        std::map<std::pair<VkPipelineStageFlags, VkPipelineStageFlags>, Barriers> stageToBarriers;
+
+        for (const VkImageMemoryBarrier2KHR& imgBarrier2 : imageBarriers)
+        {
+            Barriers& barrier = stageToBarriers[
+            { 
+                VkPipelineStageFlags(imgBarrier2.srcStageMask)
+                , VkPipelineStageFlags(imgBarrier2.dstStageMask)
+            }];
+
+            IMAGE_MEMORY_BARRIER(imgBarrier);
+            imgBarrier.image = imgBarrier2.image;
+            imgBarrier.subresourceRange = imgBarrier2.subresourceRange;
+            imgBarrier.oldLayout = imgBarrier2.oldLayout;
+            imgBarrier.newLayout = imgBarrier2.newLayout;
+            imgBarrier.srcAccessMask = VkAccessFlags(imgBarrier2.srcAccessMask);
+            imgBarrier.dstAccessMask = VkAccessFlags(imgBarrier2.dstAccessMask);
+            imgBarrier.srcQueueFamilyIndex = imgBarrier2.srcQueueFamilyIndex;
+            imgBarrier.dstQueueFamilyIndex = imgBarrier2.dstQueueFamilyIndex;
+            barrier.imgs.emplace_back(imgBarrier);
+        }
+
+        for (const VkBufferMemoryBarrier2KHR& bufBarrier2 : bufferBarriers)
+        {
+            Barriers& barrier = stageToBarriers[
+            {
+                VkPipelineStageFlags(bufBarrier2.srcStageMask)
+                , VkPipelineStageFlags(bufBarrier2.dstStageMask)
+            }];
+
+            BUFFER_MEMORY_BARRIER(bufBarrier);
+            bufBarrier.size = bufBarrier2.size;
+            bufBarrier.buffer = bufBarrier2.buffer;
+            bufBarrier.offset = bufBarrier2.offset;
+            bufBarrier.srcAccessMask = VkAccessFlags(bufBarrier2.srcAccessMask);
+            bufBarrier.dstAccessMask = VkAccessFlags(bufBarrier2.dstAccessMask);
+            bufBarrier.srcQueueFamilyIndex = bufBarrier2.srcQueueFamilyIndex;
+            bufBarrier.dstQueueFamilyIndex = bufBarrier2.dstQueueFamilyIndex;
+            barrier.buffers.emplace_back(bufBarrier);
+        }
+
+        for (const auto& barriers : stageToBarriers)
+        {
+            vDevice->vkCmdPipelineBarrier(cmdBuffer, barriers.first.first, barriers.first.second, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
+                , 0, nullptr
+                , uint32(barriers.second.buffers.size()), barriers.second.buffers.data()
+                , uint32(barriers.second.imgs.size()), barriers.second.imgs.data());
+        }
+    }
+}
+
 VulkanCommandList::VulkanCommandList(IGraphicsInstance* graphicsInstance, VulkanDevice* vulkanDevice)
     : gInstance(graphicsInstance)
     , vDevice(vulkanDevice)
-{
-    cmdBufferManager = new VulkanCmdBufferManager(vDevice);
-}
-
-VulkanCommandList::~VulkanCommandList()
-{
-    delete cmdBufferManager;
-}
+    , cmdBufferManager(vulkanDevice)
+{}
 
 void VulkanCommandList::copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo)
 {
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "CopyBufferTemp", false);
 
-    const GraphicsResource* commandBuffer = cmdBufferManager->beginTempCmdBuffer("Copy buffer", EQueueFunction::Transfer);
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
+    const GraphicsResource* commandBuffer = cmdBufferManager.beginTempCmdBuffer("Copy buffer", EQueueFunction::Transfer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
 
     VkBufferCopy bufferCopyRegion{ copyInfo.srcOffset, copyInfo.dstOffset, copyInfo.copySize };
     vDevice->vkCmdCopyBuffer(rawCmdBuffer, static_cast<VulkanBufferResource*>(src)->buffer
         , static_cast<VulkanBufferResource*>(dst)->buffer, 1, &bufferCopyRegion);
 
-    cmdBufferManager->endCmdBuffer(commandBuffer);
+    cmdBufferManager.endCmdBuffer(commandBuffer);
 
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.push_back(commandBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
+    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
 
     tempFence->waitForSignal();
 
-    cmdBufferManager->freeCmdBuffer(commandBuffer);
+    cmdBufferManager.freeCmdBuffer(commandBuffer);
     tempFence->release();
+}
+
+void VulkanCommandList::newFrame()
+{
+    resourcesTracker.clearUnwanted();
 }
 
 void VulkanCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size)
@@ -216,8 +291,8 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
 
     // Copying between buffers
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "BatchCopyBufferTemp", false);
-    const GraphicsResource* commandBuffer = cmdBufferManager->beginTempCmdBuffer("Batch copy buffers", EQueueFunction::Transfer);
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
+    const GraphicsResource* commandBuffer = cmdBufferManager.beginTempCmdBuffer("Batch copy buffers", EQueueFunction::Transfer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
 
     for (const auto& dstToStagingPair : dstToStagingBufferMap)
     {
@@ -230,12 +305,12 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
             , dstToStagingPair.first->buffer, uint32(copyRegions.size()), copyRegions.data());
     }
 
-    cmdBufferManager->endCmdBuffer(commandBuffer);
+    cmdBufferManager.endCmdBuffer(commandBuffer);
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.push_back(commandBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
+    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
     tempFence->waitForSignal();
-    cmdBufferManager->freeCmdBuffer(commandBuffer);
+    cmdBufferManager.freeCmdBuffer(commandBuffer);
     tempFence->release();
 
     for (const auto& dstToStagingPair : dstToStagingBufferMap)
@@ -250,56 +325,66 @@ const GraphicsResource* VulkanCommandList::startCmd(const String& uniqueName, EQ
 {
     if (bIsReusable)
     {
-        return cmdBufferManager->beginReuseCmdBuffer(uniqueName, queue);
+        return cmdBufferManager.beginReuseCmdBuffer(uniqueName, queue);
     }
     else
     {
-        return cmdBufferManager->beginRecordOnceCmdBuffer(uniqueName, queue);
+        return cmdBufferManager.beginRecordOnceCmdBuffer(uniqueName, queue);
     }
 }
 
 void VulkanCommandList::endCmd(const GraphicsResource* cmdBuffer)
 {
-    cmdBufferManager->endCmdBuffer(cmdBuffer);
+    cmdBufferManager.endCmdBuffer(cmdBuffer);
 }
 
 void VulkanCommandList::freeCmd(const GraphicsResource* cmdBuffer)
 {
-    cmdBufferManager->freeCmdBuffer(cmdBuffer);
+    cmdBufferManager.freeCmdBuffer(cmdBuffer);
 }
 
 void VulkanCommandList::submitCmd(EQueuePriority::Enum priority
     , const CommandSubmitInfo& submitInfo, const SharedPtr<GraphicsFence>& fence)
 {
-    cmdBufferManager->submitCmd(priority, submitInfo, fence);
+    cmdBufferManager.submitCmd(priority, submitInfo, fence);
 }
 
 void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority
     , const CommandSubmitInfo& submitInfo)
 {
     SharedPtr<GraphicsFence> fence = GraphicsHelper::createFence(gInstance, "CommandSubmitFence");
-    cmdBufferManager->submitCmd(priority, submitInfo, fence);
+    cmdBufferManager.submitCmd(priority, submitInfo, fence);
     fence->waitForSignal();
     for (const GraphicsResource* cmdBuffer : submitInfo.cmdBuffers)
     {
-        cmdBufferManager->cmdFinished(cmdBuffer);
+        cmdBufferManager.cmdFinished(cmdBuffer);
     }
     fence->release();
 }
 
+void VulkanCommandList::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands)
+{
+    cmdBufferManager.submitCmds(priority, commands, &resourcesTracker);
+}
+
+void VulkanCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& command)
+{
+    cmdBufferManager.submitCmd(priority, command, &resourcesTracker);
+}
+
 void VulkanCommandList::finishCmd(const GraphicsResource* cmdBuffer)
 {
-    cmdBufferManager->cmdFinished(cmdBuffer);
+    cmdBufferManager.cmdFinished(cmdBuffer);
 }
 
 void VulkanCommandList::finishCmd(const String& uniqueName)
 {
-    cmdBufferManager->cmdFinished(uniqueName);
+    cmdBufferManager.cmdFinished(uniqueName);
 }
 
 const GraphicsResource* VulkanCommandList::getCmdBuffer(const String& uniqueName) const
 {
-    return cmdBufferManager->getCmdBuffer(uniqueName);
+    return cmdBufferManager.getCmdBuffer(uniqueName);
 }
 
 void VulkanCommandList::waitIdle()
@@ -311,13 +396,13 @@ void VulkanCommandList::setupInitialLayout(ImageResource* image)
 {
     const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(image->imageFormat());
 
-    const GraphicsResource* cmdBuffer = cmdBufferManager->beginTempCmdBuffer("LayoutTransition_" + image->getResourceName(), EQueueFunction::Graphics);
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer("LayoutTransition_" + image->getResourceName(), EQueueFunction::Graphics);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     IMAGE_MEMORY_BARRIER(layoutTransition);
     layoutTransition.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
     layoutTransition.newLayout = determineImageLayout(image);
-    layoutTransition.srcQueueFamilyIndex = layoutTransition.dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(cmdBuffer);
+    layoutTransition.srcQueueFamilyIndex = layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
     layoutTransition.srcAccessMask = layoutTransition.dstAccessMask = determineImageAccessMask(image);
     layoutTransition.image = static_cast<VulkanImageResource*>(image)->image;
     layoutTransition.subresourceRange = { determineImageAspect(image), 0, image->getNumOfMips(), 0, image->getLayerCount() };
@@ -326,19 +411,280 @@ void VulkanCommandList::setupInitialLayout(ImageResource* image)
         , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
         , 0, nullptr, 0, nullptr, 1, &layoutTransition);
 
-    cmdBufferManager->endCmdBuffer(cmdBuffer);
+    cmdBufferManager.endCmdBuffer(cmdBuffer);
 
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "TempLayoutTransitionFence");
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
+    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
     tempFence->waitForSignal();
 
-    cmdBufferManager->freeCmdBuffer(cmdBuffer);
+    cmdBufferManager.freeCmdBuffer(cmdBuffer);
     tempFence->release();
 }
 
-void VulkanCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor) const
+void VulkanCommandList::presentImage(const std::vector<class GenericWindowCanvas*>& canvases
+    , const std::vector<uint32>& imageIndices, const std::vector<SharedPtr<class GraphicsSemaphore>>& waitOnSemaphores)
+{
+    std::vector<SharedPtr<GraphicsSemaphore>> waitSemaphores = waitOnSemaphores;
+    for (const GraphicsResource* cmdBuffer : swapchainFrameWrites)
+    {
+        waitSemaphores.emplace_back(cmdBufferManager.cmdSignalSemaphore(cmdBuffer));
+    }
+
+    GraphicsHelper::presentImage(gInstance, &canvases, &imageIndices, &waitSemaphores);
+    swapchainFrameWrites.clear();
+}
+
+void VulkanCommandList::cmdBarrierResources(const GraphicsResource* cmdBuffer, const std::set<const ShaderParameters*>& descriptorsSets)
+{
+    fatalAssert(!cmdBufferManager.isInRenderPass(cmdBuffer), "%s: %s cmd buffer is inside render pass, it is not supported", __func__, cmdBuffer->getResourceName().getChar());
+
+    std::vector<VkImageMemoryBarrier2KHR> imageBarriers;
+    std::vector<VkBufferMemoryBarrier2KHR> bufferBarriers;
+
+    for (const ShaderParameters* descriptorsSet : descriptorsSets)
+    {
+        // READ only buffers and texels ( might be copied to in transfer queue )
+        {
+            std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> resources = descriptorsSet->getAllReadOnlyBuffers();
+            {
+                std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> tempTexels = descriptorsSet->getAllReadOnlyTexels();
+                resources.insert(resources.end(), tempTexels.cbegin(), tempTexels.cend());
+            }
+            for (const auto& resource : resources)
+            {
+                VkPipelineStageFlags stagesUsed = VkPipelineStageFlags(GraphicsHelper::shaderToPipelineStageFlags(resource.second->bufferEntryPtr->data.stagesUsed));
+                std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
+                    = resourcesTracker.readOnlyBuffers(cmdBuffer, { resource.first, stagesUsed });
+                if (barrierInfo)
+                {
+                    BUFFER_MEMORY_BARRIER2_KHR(memBarrier);
+                    memBarrier.buffer = static_cast<const VulkanBufferResource*>(resource.first)->buffer;
+                    memBarrier.offset = 0;
+                    memBarrier.size = resource.first->getResourceSize();
+
+                    memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+                    memBarrier.dstStageMask = memBarrier.srcStageMask = stagesUsed;
+                    // Since shader binding and read only
+                    memBarrier.dstAccessMask = memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_UNIFORM_READ_BIT;
+
+                    if (barrierInfo->accessors.lastWrite)
+                    {
+                        // If last write, wait for transfer write as read only
+                        memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+                        memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+                        memBarrier.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+                        bufferBarriers.emplace_back(memBarrier);
+                    }
+                }
+            }
+        }
+        // READ only textures ( might be copied to in transfer queue )
+        {
+            // #TODO(Jeslas) : Handle attachment images
+            std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> resources = descriptorsSet->getAllReadOnlyTextures();
+            for (const auto& resource : resources)
+            {
+                VkPipelineStageFlags stagesUsed = VkPipelineStageFlags(GraphicsHelper::shaderToPipelineStageFlags(resource.second->textureEntryPtr->data.stagesUsed));
+                std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
+                    = resourcesTracker.readOnlyImages(cmdBuffer, { resource.first, stagesUsed });
+                if (barrierInfo)
+                {
+                    IMAGE_MEMORY_BARRIER2_KHR(memBarrier);
+                    memBarrier.image = static_cast<const VulkanImageResource*>(resource.first)->image;
+                    memBarrier.subresourceRange = { determineImageAspect(resource.first), 0, resource.first->getNumOfMips()
+                        , 0, resource.first->getLayerCount() };
+
+                    memBarrier.newLayout = memBarrier.oldLayout = determineImageLayout(resource.first);
+                    memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+                    memBarrier.dstStageMask = memBarrier.srcStageMask = stagesUsed;
+                    // Since shader binding and read only
+                    memBarrier.dstAccessMask = memBarrier.srcAccessMask = determineImageAccessMask(resource.first);
+
+                    if (barrierInfo->accessors.lastWrite)
+                    {
+                        // If last write, wait for transfer write as read only
+                        memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                        memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+                        memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+                        memBarrier.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+                        imageBarriers.emplace_back(memBarrier);
+                    }
+                }
+            }
+        }
+        // Write able buffers and texels
+        {
+            std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> resources = descriptorsSet->getAllWriteBuffers();
+            {
+                std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> tempTexels = descriptorsSet->getAllWriteTexels();
+                resources.insert(resources.end(), tempTexels.cbegin(), tempTexels.cend());
+            }
+            for (const auto& resource : resources)
+            {
+                VkPipelineStageFlags stagesUsed = VkPipelineStageFlags(GraphicsHelper::shaderToPipelineStageFlags(resource.second->bufferEntryPtr->data.stagesUsed));
+                std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
+                    = resource.second->bIsStorage
+                    ? resourcesTracker.writeBuffers(cmdBuffer, { resource.first, stagesUsed })
+                    : resourcesTracker.readFromWriteBuffers(cmdBuffer, { resource.first, stagesUsed });
+                if (barrierInfo)
+                {
+                    BUFFER_MEMORY_BARRIER2_KHR(memBarrier);
+                    memBarrier.buffer = static_cast<const VulkanBufferResource*>(resource.first)->buffer;
+                    memBarrier.offset = 0;
+                    memBarrier.size = resource.first->getResourceSize();
+
+                    memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+                    memBarrier.dstStageMask = memBarrier.srcStageMask = stagesUsed;
+                    // Since shader binding and read only
+                    memBarrier.dstAccessMask = memBarrier.srcAccessMask = resource.second->bIsStorage
+                        ? VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT
+                        : VkAccessFlagBits::VK_ACCESS_UNIFORM_READ_BIT;
+
+                    // If there is last write but no read so far then wait for write
+                    if (barrierInfo->accessors.lastWrite)
+                    {
+                        if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite))
+                        {
+                            // If last write, wait for transfer write as read only
+                            memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+                            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+                            memBarrier.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+                        }
+                        // Written in Shader
+                        else
+                        {
+                            memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
+                            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+                            memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
+                        }
+                        bufferBarriers.emplace_back(memBarrier);
+                    }
+                    // If not written but read last in same command buffer then wait, This will not be empty if writing
+                    else if (!barrierInfo->accessors.lastReadsIn.empty())
+                    {
+                        memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_UNIFORM_READ_BIT;
+                        memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+                        if (barrierInfo->accessors.allReadStages != 0)
+                        {
+                            memBarrier.srcStageMask = barrierInfo->accessors.allReadStages;
+                        }
+                        else
+                        {
+                            Logger::error("VulkanRenderCmdList", "%s(): Invalid all read pipeline stages %d when expected before writing to buffer"
+                                , __func__, barrierInfo->accessors.allReadStages);
+                            memBarrier.srcStageMask = cmdBufferManager.isGraphicsCmdBuffer(cmdBuffer)
+                                ? VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+                                : VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                        }
+
+                        bufferBarriers.emplace_back(memBarrier);
+                    }
+                }
+            }
+        }
+        // WRITE textures
+        {
+            std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> resources = descriptorsSet->getAllWriteTextures();
+            for (const auto& resource : resources)
+            {
+                // #TODO(Jeslas) : Handle attachment images
+                VkPipelineStageFlags stagesUsed = VkPipelineStageFlags(GraphicsHelper::shaderToPipelineStageFlags(resource.second->textureEntryPtr->data.stagesUsed));
+                std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
+                    = resource.second->imageUsageFlags == EImageShaderUsage::Writing
+                    ? resourcesTracker.writeImages(cmdBuffer, { resource.first, stagesUsed })
+                    : resourcesTracker.readFromWriteImages(cmdBuffer, { resource.first, stagesUsed });
+                if (barrierInfo)
+                {
+                    IMAGE_MEMORY_BARRIER2_KHR(memBarrier);
+                    memBarrier.image = static_cast<const VulkanImageResource*>(resource.first)->image;
+                    memBarrier.subresourceRange = { determineImageAspect(resource.first), 0, resource.first->getNumOfMips()
+                        , 0, resource.first->getLayerCount() };
+
+                    memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+                    memBarrier.dstStageMask = memBarrier.srcStageMask = stagesUsed;
+
+                    memBarrier.newLayout = memBarrier.oldLayout = determineImageLayout(resource.first);
+                    memBarrier.dstAccessMask = memBarrier.srcAccessMask = resource.second->imageUsageFlags == EImageShaderUsage::Writing
+                        ? VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT : VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+
+                    // If there is last write but no read so far then wait for write within same cmd buffer then just barrier no layout switch
+                    if (barrierInfo->accessors.lastWrite)
+                    {
+                        // We are not writing
+                        if (resource.second->imageUsageFlags != EImageShaderUsage::Writing)
+                        {
+                            memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
+                            if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite))
+                            {
+                                memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+                                memBarrier.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+                            }
+                            else
+                            {
+                                memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
+                            }
+                        }
+                        imageBarriers.emplace_back(memBarrier);
+                    }
+                    // At this point there is no read or write in this resource so if read write resource and we are in incorrect layout then change it
+                    else if (barrierInfo->accessors.lastReadsIn.empty())
+                    {
+                        memBarrier.oldLayout = determineImageLayout(resource.first);
+                        memBarrier.srcAccessMask = determineImageAccessMask(resource.first);
+                        // We Will not be in incorrect layout in write image
+                        // imageBarriers.emplace_back(memBarrier);
+                    }
+                    // If not written but read last in same command buffer then wait
+                    else if (barrierInfo->accessors.lastReadsIn[0] == cmdBuffer)
+                    {
+                        memBarrier.oldLayout = determineImageLayout(resource.first);
+                        memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+
+                        if (barrierInfo->accessors.allReadStages != 0)
+                        {
+                            memBarrier.srcStageMask = barrierInfo->accessors.allReadStages;
+                        }
+                        else
+                        {
+                            Logger::error("VulkanRenderCmdList", "%s(): Invalid all read pipeline stages %d when expected before writing to buffer"
+                                , __func__, barrierInfo->accessors.allReadStages);
+                            memBarrier.srcStageMask = cmdBufferManager.isGraphicsCmdBuffer(cmdBuffer)
+                                ? VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+                                : VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                        }
+                        imageBarriers.emplace_back(memBarrier);
+                    }
+                    // Read after write in some other cmd buffer
+                    else
+                    {
+                        memBarrier.oldLayout = determineImageLayout(resource.first);
+                        memBarrier.srcAccessMask = 0;
+                        memBarrier.srcStageMask = barrierInfo->accessors.allReadStages;
+                        for (const GraphicsResource* readInCmd : barrierInfo->accessors.lastReadsIn)
+                        {
+                            if (cmdBufferManager.isTransferCmdBuffer(readInCmd))
+                            {
+                                memBarrier.srcAccessMask |= VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+                                memBarrier.srcStageMask |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+                            }
+                            else
+                            {
+                                memBarrier.srcAccessMask |= VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+                            }
+                        }
+                        imageBarriers.emplace_back(memBarrier);
+                    }
+                }
+            }
+        }
+    }
+
+    cmdPipelineBarrier(vDevice, cmdBufferManager.getRawBuffer(cmdBuffer), imageBarriers, bufferBarriers);
+}
+
+void VulkanCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor)
 {
     if (!renderArea.isValidAABB())
     {
@@ -375,6 +721,7 @@ void VulkanCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, co
             clearVal.color = lastClearColor;
             clearValues.emplace_back(clearVal);
         }
+        swapchainFrameWrites.emplace_back(cmdBuffer);
     }
     else
     {
@@ -414,19 +761,30 @@ void VulkanCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, co
         { extent.x, extent.y }
     };
 
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     vDevice->vkCmdBeginRenderPass(rawCmdBuffer, &beginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+    cmdBufferManager.startRenderPass(cmdBuffer);
 }
 
-void VulkanCommandList::cmdEndRenderPass(const GraphicsResource* cmdBuffer) const
+void VulkanCommandList::cmdEndRenderPass(const GraphicsResource* cmdBuffer)
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     vDevice->vkCmdEndRenderPass(rawCmdBuffer);
+    cmdBufferManager.endRenderPass(cmdBuffer);
+}
+
+void VulkanCommandList::cmdBindComputePipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+
+    const VulkanComputePipeline* computePipeline = static_cast<const VulkanComputePipeline*>(contextPipeline.getPipeline());
+
+    vDevice->vkCmdBindPipeline(rawCmdBuffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline->getPipeline());
 }
 
 void VulkanCommandList::cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const GraphicsPipelineState& state) const
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     const VulkanGraphicsPipeline* graphicsPipeline = static_cast<const VulkanGraphicsPipeline*>(contextPipeline.getPipeline());
     VkPipeline pipeline = graphicsPipeline->getPipeline(state.pipelineQuery);
@@ -454,6 +812,31 @@ void VulkanCommandList::cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffe
     }
 }
 
+void VulkanCommandList::cmdPushConstants(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline
+    , uint32 stagesUsed, const uint8* data, const std::vector<CopyBufferInfo>& pushConsts) const
+{
+    VkPipelineLayout pipelineLayout = nullptr;
+    if (contextPipeline.getPipeline()->getType()->isChildOf<GraphicsPipelineBase>())
+    {
+        pipelineLayout = static_cast<const VulkanGraphicsPipeline*>(contextPipeline.getPipeline())->pipelineLayout;
+    }
+    else if (contextPipeline.getPipeline()->getType()->isChildOf<ComputePipelineBase>())
+    {
+        pipelineLayout = static_cast<const VulkanComputePipeline*>(contextPipeline.getPipeline())->pipelineLayout;
+    }
+    else
+    {
+        Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline.getPipeline()->getResourceName().getChar());
+        debugAssert(false);
+        return;
+    }
+    for (const CopyBufferInfo& copyInfo : pushConsts)
+    {
+        vDevice->vkCmdPushConstants(cmdBufferManager.getRawBuffer(cmdBuffer), pipelineLayout, stagesUsed
+            , uint32(copyInfo.dstOffset), copyInfo.copySize, data + copyInfo.srcOffset);
+    }
+}
+
 void VulkanCommandList::cmdBindDescriptorsSetInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::map<uint32, const ShaderParameters*>& descriptorsSets) const
 {
     std::map<uint32, std::vector<VkDescriptorSet>> descsSets;
@@ -478,13 +861,18 @@ void VulkanCommandList::cmdBindDescriptorsSetInternal(const GraphicsResource* cm
         pipelineBindPt = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
         pipelineLayout = static_cast<const VulkanGraphicsPipeline*>(contextPipeline)->pipelineLayout;
     }
+    else if (contextPipeline->getType()->isChildOf<ComputePipelineBase>())
+    {
+        pipelineBindPt = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_COMPUTE;
+        pipelineLayout = static_cast<const VulkanComputePipeline*>(contextPipeline)->pipelineLayout;
+    }
     else
     {
         Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline->getResourceName().getChar());
         debugAssert(false);
         return;
     }
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     for (const std::pair<const uint32, std::vector<VkDescriptorSet>>& descsSet : descsSets)
     {
         vDevice->vkCmdBindDescriptorSets(rawCmdBuffer, pipelineBindPt, pipelineLayout, descsSet.first, uint32(descsSet.second.size()), descsSet.second.data(), 0, nullptr);
@@ -523,13 +911,18 @@ void VulkanCommandList::cmdBindDescriptorsSetsInternal(const GraphicsResource* c
         pipelineBindPt = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
         pipelineLayout = static_cast<const VulkanGraphicsPipeline*>(contextPipeline)->pipelineLayout;
     }
+    else if (contextPipeline->getType()->isChildOf<ComputePipelineBase>())
+    {
+        pipelineBindPt = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_COMPUTE;
+        pipelineLayout = static_cast<const VulkanComputePipeline*>(contextPipeline)->pipelineLayout;
+    }
     else
     {
         Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline->getResourceName().getChar());
         debugAssert(false);
         return;
     }
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     for (const std::pair<const uint32, std::vector<VkDescriptorSet>>& descsSet : descsSets)
     {
         vDevice->vkCmdBindDescriptorSets(rawCmdBuffer, pipelineBindPt, pipelineLayout, descsSet.first, uint32(descsSet.second.size()), descsSet.second.data(), 0, nullptr);
@@ -538,7 +931,7 @@ void VulkanCommandList::cmdBindDescriptorsSetsInternal(const GraphicsResource* c
 
 void VulkanCommandList::cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, uint32 firstBinding, const std::vector<const BufferResource*>& vertexBuffers, const std::vector<uint64>& offsets) const
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     fatalAssert(vertexBuffers.size() == offsets.size(), "Offsets must be equivalent to vertex buffers");
     std::vector<VkBuffer> vertBuffers(vertexBuffers.size());
@@ -552,19 +945,24 @@ void VulkanCommandList::cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, 
 
 void VulkanCommandList::cmdBindIndexBuffer(const GraphicsResource* cmdBuffer, const BufferResource* indexBuffer, uint64 offset /*= 0*/) const
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     vDevice->vkCmdBindIndexBuffer(rawCmdBuffer, static_cast<const VulkanBufferResource*>(indexBuffer)->buffer, offset, VkIndexType::VK_INDEX_TYPE_UINT32);
+}
+
+void VulkanCommandList::cmdDispatch(const GraphicsResource* cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ /*= 1*/) const
+{
+    vDevice->vkCmdDispatch(cmdBufferManager.getRawBuffer(cmdBuffer), groupSizeX, groupSizeY, groupSizeZ);
 }
 
 void VulkanCommandList::cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance /*= 0*/, uint32 instanceCount /*= 1*/, int32 vertexOffset /*= 0*/) const
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     vDevice->vkCmdDrawIndexed(rawCmdBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void VulkanCommandList::cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport /*= 0*/) const
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     std::vector<VkViewport> viewports;
     viewports.reserve(viewportAndScissors.size());
@@ -587,7 +985,7 @@ void VulkanCommandList::cmdSetViewportAndScissors(const GraphicsResource* cmdBuf
 
 void VulkanCommandList::cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport /*= 0*/) const
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     Int2D viewportSize = viewport.size();
     VkViewport vulkanViewport{ float(viewport.minBound.x), float(viewport.minBound.y)
@@ -613,25 +1011,25 @@ void VulkanCommandList::cmdSetViewportAndScissor(const GraphicsResource* cmdBuff
 
 void VulkanCommandList::cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
     VulkanGraphicsHelper::debugGraphics(gInstance)->beginCmdBufferMarker(rawCmdBuffer, name, color);
 }
 
 void VulkanCommandList::cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
     VulkanGraphicsHelper::debugGraphics(gInstance)->insertCmdBufferMarker(rawCmdBuffer, name, color);
 }
 
 void VulkanCommandList::cmdEndBufferMarker(const GraphicsResource* commandBuffer) const
 {
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(commandBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
     VulkanGraphicsHelper::debugGraphics(gInstance)->endCmdBufferMarker(rawCmdBuffer);
 }
 
 void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo)
 {
-    fatalAssert(dst->isValid(), "Invalid image resource");
+    fatalAssert(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
     {
         Logger::error("VulkanCommandList", "%s() : Depth/Float format is not supported for copying from Color data", __func__);
@@ -689,16 +1087,16 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
         }
     }
 
-    const GraphicsResource* cmdBuffer = cmdBufferManager->beginTempCmdBuffer("CopyPixelToImage_" + dst->getResourceName()
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer("CopyPixelToImage_" + dst->getResourceName()
         , copyInfo.bGenerateMips ? EQueueFunction::Graphics : EQueueFunction::Transfer);
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     
     // Transitioning all MIPs to Transfer Destination layout
     {
         IMAGE_MEMORY_BARRIER(layoutTransition);
         layoutTransition.oldLayout = currentLayout;
         layoutTransition.newLayout = currentLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        layoutTransition.srcQueueFamilyIndex = layoutTransition.dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(cmdBuffer);
+        layoutTransition.srcQueueFamilyIndex = layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
         layoutTransition.srcAccessMask = postCopyAccessMask;
         layoutTransition.dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
         layoutTransition.image = static_cast<VulkanImageResource*>(dst)->image;
@@ -717,7 +1115,7 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
         IMAGE_MEMORY_BARRIER(transitionToSrc);
         transitionToSrc.oldLayout = currentLayout;
         transitionToSrc.newLayout = currentLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        transitionToSrc.srcQueueFamilyIndex = transitionToSrc.dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Graphics);
+        transitionToSrc.srcQueueFamilyIndex = transitionToSrc.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
         transitionToSrc.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
         transitionToSrc.dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
         transitionToSrc.image = static_cast<VulkanImageResource*>(dst)->image;
@@ -774,9 +1172,9 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
         IMAGE_MEMORY_BARRIER(layoutTransition);
         layoutTransition.oldLayout = currentLayout;
         layoutTransition.newLayout = postCopyLayout;
-        layoutTransition.srcQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(cmdBuffer);
+        layoutTransition.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
         layoutTransition.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
-        layoutTransition.dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Graphics);
+        layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
         layoutTransition.dstAccessMask = postCopyAccessMask;
         layoutTransition.image = static_cast<VulkanImageResource*>(dst)->image;
         layoutTransition.subresourceRange = { imageAspect, copyInfo.subres.baseMip, copyInfo.subres.mipCount, copyInfo.subres.baseLayer, copyInfo.subres.layersCount };
@@ -789,11 +1187,11 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "TempCpyImageFence");
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-    cmdBufferManager->endCmdBuffer(cmdBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
+    cmdBufferManager.endCmdBuffer(cmdBuffer);
+    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
     tempFence->waitForSignal();
 
-    cmdBufferManager->freeCmdBuffer(cmdBuffer);
+    cmdBufferManager.freeCmdBuffer(cmdBuffer);
     stagingBuffer.release();
     tempFence->release();
 }
@@ -833,28 +1231,28 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
         ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 
-    const GraphicsResource* cmdBuffer = cmdBufferManager->beginTempCmdBuffer((bCanSimpleCopy ? "CopyImage_" : "ResolveImage_")
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer((bCanSimpleCopy ? "CopyImage_" : "ResolveImage_")
         + src->getResourceName() + "_to_" + dst->getResourceName(), EQueueFunction::Transfer);
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager->getRawBuffer(cmdBuffer);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     // Transition to transferable layout one for src and dst
     std::array<VkImageMemoryBarrier, 2> transitionInfo;
     transitionInfo[0].oldLayout = srcOriginalLayout;
     transitionInfo[0].srcAccessMask = srcAccessFlags;
-    transitionInfo[0].srcQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Graphics);
+    transitionInfo[0].srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
     transitionInfo[0].newLayout = copySrcLayout;
     transitionInfo[0].dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
-    transitionInfo[0].dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Transfer);
+    transitionInfo[0].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
     transitionInfo[0].subresourceRange = { srcImageAspect, srcInfo.subres.baseMip, srcInfo.subres.mipCount
         , srcInfo.subres.baseLayer, srcInfo.subres.layersCount };
     transitionInfo[0].image = static_cast<VulkanImageResource*>(src)->image;
 
     transitionInfo[1].oldLayout = dstOriginalLayout;
     transitionInfo[1].srcAccessMask = dstAccessFlags;
-    transitionInfo[1].srcQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Graphics);
+    transitionInfo[1].srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
     transitionInfo[1].newLayout = copyDstLayout;
     transitionInfo[1].dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
-    transitionInfo[1].dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Transfer);
+    transitionInfo[1].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
     transitionInfo[1].subresourceRange = { dstImageAspect, dstInfo.subres.baseMip, dstInfo.subres.mipCount
         , dstInfo.subres.baseLayer, dstInfo.subres.layersCount };
     transitionInfo[1].image = static_cast<VulkanImageResource*>(dst)->image;
@@ -914,30 +1312,30 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     // Transition back to original
     transitionInfo[0].oldLayout = copySrcLayout;
     transitionInfo[0].srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
-    transitionInfo[0].srcQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Transfer);
+    transitionInfo[0].srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
     transitionInfo[0].newLayout = srcOriginalLayout;
     transitionInfo[0].dstAccessMask = srcAccessFlags;
-    transitionInfo[0].dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Graphics);
+    transitionInfo[0].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
 
     transitionInfo[1].oldLayout = copyDstLayout;
     transitionInfo[1].srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
-    transitionInfo[1].srcQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Transfer);
+    transitionInfo[1].srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
     transitionInfo[1].newLayout = dstOriginalLayout;
     transitionInfo[1].dstAccessMask = dstAccessFlags;
-    transitionInfo[1].dstQueueFamilyIndex = cmdBufferManager->getQueueFamilyIdx(EQueueFunction::Graphics);
+    transitionInfo[1].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
 
     vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
         , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
         , 0, nullptr, 0, nullptr, uint32(transitionInfo.size()), transitionInfo.data());
 
-    cmdBufferManager->endCmdBuffer(cmdBuffer);
+    cmdBufferManager.endCmdBuffer(cmdBuffer);
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "CopyOrResolveImage");
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-    cmdBufferManager->submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
+    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
 
     tempFence->waitForSignal();
 
-    cmdBufferManager->freeCmdBuffer(cmdBuffer);
+    cmdBufferManager.freeCmdBuffer(cmdBuffer);
     tempFence->release();
 }
