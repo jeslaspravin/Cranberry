@@ -44,7 +44,7 @@ VkSubmitInfo VariableName;                          \
 VariableName.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; \
 VariableName.pNext = nullptr;                       \
 VariableName.pSignalSemaphores = nullptr;           \
-VariableName.pWaitDstStageMask = nullptr;             \
+VariableName.pWaitDstStageMask = nullptr;           \
 VariableName.pWaitSemaphores = nullptr;             \
 VariableName.signalSemaphoreCount = 0;              \
 VariableName.waitSemaphoreCount = 0
@@ -64,6 +64,37 @@ VkImageMemoryBarrier VariableName;                              \
 VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;    \
 VariableName.pNext = nullptr;                                   \
 VariableName.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED
+#endif
+
+#ifndef BUFFER_MEMORY_BARRIER
+#define BUFFER_MEMORY_BARRIER(VariableName)                      \
+VkBufferMemoryBarrier VariableName;                              \
+VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;    \
+VariableName.pNext = nullptr;                                   
+#endif
+
+#ifndef IMAGE_MEMORY_BARRIER2_KHR
+#define IMAGE_MEMORY_BARRIER2_KHR(VariableName)                     \
+VkImageMemoryBarrier2KHR VariableName;                              \
+VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;  \
+VariableName.pNext = nullptr;                                       \
+VariableName.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED
+#endif
+
+#ifndef BUFFER_MEMORY_BARRIER2_KHR
+#define BUFFER_MEMORY_BARRIER2_KHR(VariableName)                    \
+VkBufferMemoryBarrier2KHR VariableName;                             \
+VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR; \
+VariableName.pNext = nullptr;                                   
+#endif
+
+#ifndef BARRIER_DEPENDENCY_INFO_KHR
+#define BARRIER_DEPENDENCY_INFO_KHR(VariableName)           \
+VkDependencyInfoKHR VariableName;                           \
+VariableName.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR; \
+VariableName.pNext = nullptr;                               \
+VariableName.memoryBarrierCount = 0;                        \
+VariableName.pMemoryBarriers = nullptr
 #endif
 
 #ifndef CREATE_DEBUG_UTILS_MESSENGER_INFO

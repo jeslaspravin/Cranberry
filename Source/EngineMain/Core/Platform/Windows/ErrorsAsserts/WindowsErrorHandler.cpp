@@ -142,7 +142,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
             fileName = fileName.length() > 0 ? PlatformFile(fileName).getFileName() : fileName;
 
             stackTrace << moduleName.getChar() << " [0x" << std::hex << frame.AddrPC.Offset << std::dec <<"] : " 
-                << symInfo.undecoratedName() << "(" << symInfo.name() << ") : ("
+                << symInfo.name() << "("
                 << fileName.getChar() << "):" << symInfo.lineNumber();
         }
         else

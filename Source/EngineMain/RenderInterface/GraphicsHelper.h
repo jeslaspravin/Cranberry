@@ -103,4 +103,13 @@ public:
     {
         return HelperType::returnMappedPtr(graphicsInstance, resource);
     }
+
+    static uint32 shaderToPipelineStageFlags(uint32 shaderStageFlags)
+    {
+        return HelperType::shaderToPipelineStageFlags(shaderStageFlags);
+    }
+    static uint32 pipelineToShaderStageFlags(uint32 pipelineStageFlags)
+    {
+        return HelperType::pipelineToShaderStageFlags(pipelineStageFlags);
+    }
 };

@@ -1067,6 +1067,9 @@
     <ClInclude Include="Core\Types\Containers\MinAllocVector.h">
       <Filter>Header Files\Core\Types\Containers</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Math\CoreMathTypes.h">
+      <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="VulkanRI\VulkanInternals\VulkanFunctionLists.inl">

@@ -13,6 +13,7 @@
 #include "../Core/Math/Vector3D.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../Assets/Asset/TextureAsset.h"
+#include "../Core/Types/Textures/Texture2D.h"
 #include "../Core/Types/Textures/TexturesBase.h"
 #include "../RenderApi/GBuffersAndTextures.h"
 #include "../Core/Input/Keys.h"
@@ -34,6 +35,7 @@
 #include "../RenderInterface/Rendering/CommandBuffer.h"
 #include "../Editor/Core/ImGui/ImGuiManager.h"
 #include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
+#include "../RenderInterface/Shaders/Base/UtilityShaders.h"
 
 #include <array>
 #include <random>
@@ -52,17 +54,7 @@ ADD_BUFFER_TYPED_FIELD(c)
 END_BUFFER_DEFINITION();
 
 void ExperimentalEngine::tempTest()
-{
-    TestArraySetFieldBufferParamInfo paramInfo;
-    TestArraySetField testData;
-    std::vector<int32> valB{ 1,2,3,4 };
-    std::vector<float> valC{ 6,5,4,3,2,1 };
-
-    paramInfo.aField.setFieldData(&testData, 10.0f);
-    paramInfo.bField.setFieldDataArray(&testData, ArrayView(valB));
-    paramInfo.cField.setFieldDataArray(&testData, ArrayView(valC));
-    paramInfo.cField.setFieldDataArray(&testData, 10.0f, 5);
-}
+{}
 
 void ExperimentalEngine::tempTestPerFrame()
 {
@@ -180,6 +172,15 @@ void ExperimentalEngine::createImages()
     linearFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "LinearSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
 
+    Texture2DRWCreateParams createParam;
+    createParam.textureSize = Size2D(512, 512);
+    createParam.mipCount = 1;
+    createParam.textureName = "Compute Write";
+    createParam.format = EPixelDataFormat::RGBA_U8_Norm;
+    createParam.bIsWriteOnly = false;
+    createParam.defaultColor = Color(128, 0, 0, 255);
+    writeTexture.image = TextureBase::createTexture<Texture2DRW>(createParam);
+    writeTexture.imageView = static_cast<VulkanImageResource*>(writeTexture.image->getTextureResource())->getImageView({});
     // common shader sampling texture
     {
         texture.image = static_cast<TextureAsset*>(appInstance().assetManager.getOrLoadAsset("TestImageData.png"))->getTexture();
@@ -194,6 +195,8 @@ void ExperimentalEngine::createImages()
 
 void ExperimentalEngine::destroyImages()
 {
+    TextureBase::destroyTexture<Texture2DRW>(writeTexture.image);
+    writeTexture.image = nullptr;
     nearestFiltering->release();
     linearFiltering->release();
 }
@@ -347,6 +350,9 @@ void ExperimentalEngine::createShaderParameters()
 
     clearInfoParams = GraphicsHelper::createShaderParameters(graphicsInstance, clearQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0));
     clearInfoParams->setResourceName("ClearInfo");
+
+    testComputeParams = GraphicsHelper::createShaderParameters(graphicsInstance, testComputePipelineContext.getPipeline()->getParamLayoutAtSet(0));
+    testComputeParams->setResourceName("TestCompute");
 }
 
 void ExperimentalEngine::setupShaderParameterParams()
@@ -420,6 +426,9 @@ void ExperimentalEngine::setupShaderParameterParams()
 
     clearInfoParams->setVector4Param("clearColor", Vector4D(0, 0, 0, 0));
     clearInfoParams->init();
+
+    testComputeParams->setTextureParam("resultImage", writeTexture.image->getTextureResource());
+    testComputeParams->init();
 }
 
 void ExperimentalEngine::updateShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
@@ -500,6 +509,9 @@ void ExperimentalEngine::destroyShaderParameters()
 
     clearInfoParams->release();
     clearInfoParams.reset();
+
+    testComputeParams->release();
+    testComputeParams.reset();
 }
 
 void ExperimentalEngine::resizeLightingRts(const Size2D& size)
@@ -674,9 +686,14 @@ void ExperimentalEngine::updateCameraParams()
     {
         cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (appInstance().inputSystem()->keyState(Keys::P)->keyWentUp)
+    if (appInstance().inputSystem()->keyState(Keys::R)->keyWentUp)
     {
-        camera.cameraProjection = camera.cameraProjection == ECameraProjection::Perspective ? ECameraProjection::Orthographic : ECameraProjection::Perspective;
+        cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
+    }
+
+    if (camera.cameraProjection != projection)
+    {
+        camera.cameraProjection = projection;
         viewDataTemp.projection = camera.projectionMatrix();
         viewDataTemp.invProjection = viewDataTemp.projection.inverse();
 
@@ -684,10 +701,6 @@ void ExperimentalEngine::updateCameraParams()
         viewParameters->setMatrixParam("invProjection", viewDataTemp.invProjection);
         lightCommon->setMatrixParam("projection", viewDataTemp.projection);
         lightCommon->setMatrixParam("invProjection", viewDataTemp.invProjection);
-    }
-    if (appInstance().inputSystem()->keyState(Keys::R)->keyWentUp)
-    {
-        cameraRotation = Rotation();
     }
 
     camera.setRotation(cameraRotation);
@@ -707,7 +720,7 @@ void ExperimentalEngine::onStartUp()
 
     ENQUEUE_COMMAND(EngineStartUp, { startUpRenderInit(); }, this);
 
-    camera.cameraProjection = ECameraProjection::Perspective;
+    camera.cameraProjection = projection;
     camera.setOrthoSize({ 1280,720 });
     camera.setClippingPlane(0.1f, 6000.f);
     camera.setFOV(110.f, 90.f);
@@ -818,10 +831,41 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
 
     String cmdName = "FrameRender" + std::to_string(index);
     cmdList->finishCmd(cmdName);
+
+    //{
+    //    cmdList->finishCmd(cmdName + "_Comp");
+    //    auto temp = cmdList->startCmd(cmdName + "_Comp", EQueueFunction::Compute, true);
+    //    cmdList->cmdBindComputePipeline(temp, testComputePipelineContext);
+    //    cmdList->cmdBindDescriptorsSets(temp, testComputePipelineContext, { testComputeParams.get() });
+    //    cmdList->cmdBarrierResources(temp, { testComputeParams.get() });
+    //    cmdList->cmdDispatch(temp
+    //        , writeTexture.image->getTextureSize().x / static_cast<const ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().x
+    //        , writeTexture.image->getTextureSize().y / static_cast<const ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().y
+    //    );
+    //    cmdList->endCmd(temp);
+
+    //    CommandSubmitInfo2 cs2;
+    //    cs2.cmdBuffers = { temp };
+    //    cmdList->submitCmd(EQueuePriority::High, cs2);
+    //}
     const GraphicsResource* cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
     VkCommandBuffer frameCmdBuffer = VulkanGraphicsHelper::getRawCmdBuffer(graphicsInstance, cmdBuffer);
     {
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEngineFrame);
+        cmdList->cmdBindComputePipeline(cmdBuffer, testComputePipelineContext);
+
+        std::vector<std::pair<String, std::any>> pushConsts = {
+            {"time" , { Time::asSeconds(Time::timeNow())} }
+            , {"flags", { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }}
+        };
+        cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, pushConsts);
+        cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, { testComputeParams.get() });
+        cmdList->cmdBarrierResources(cmdBuffer, { testComputeParams.get() });
+        cmdList->cmdDispatch(cmdBuffer
+            , writeTexture.image->getTextureSize().x / static_cast<const ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().x
+            , writeTexture.image->getTextureSize().y / static_cast<const ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().y
+        );
+
         cmdList->cmdBeginRenderPass(cmdBuffer, drawSmPipelineContext, scissor, {}, clearValues);
         {
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, MainUnlitPass);
@@ -942,7 +986,7 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
 
     std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
     std::vector<uint32> indices = { index };
-    GraphicsHelper::presentImage(getRenderApi()->getGraphicsInstance(), &canvases, &indices, &frameResources[index].usageWaitSemaphore);
+    cmdList->presentImage(canvases, indices, {});
 }
 
 void ExperimentalEngine::tickEngine()
@@ -967,16 +1011,14 @@ void ExperimentalEngine::tickEngine()
         frameVisualizeId = 3;
     }
 
-    if (appInstance().inputSystem()->keyState(Keys::X)->keyWentUp)
+    if (renderSize != EngineSettings::screenSize.get())
     {
-        toggleRes = !toggleRes;
         ENQUEUE_COMMAND(WritingDescs,
             {
-                const Size2D& screenSize = toggleRes ? EngineSettings::surfaceSize.get() : Size2D(1280, 720);
-                GBuffers::onScreenResized(screenSize);
-                resizeLightingRts(screenSize);
+                GBuffers::onScreenResized(renderSize);
+                resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
-                EngineSettings::screenSize.set(screenSize);                
+                EngineSettings::screenSize.set(renderSize);
             }, this);
     }
 
@@ -1001,10 +1043,108 @@ int32 ExperimentalEngine::sublayerDepth() const
 
 void ExperimentalEngine::draw(class ImGuiDrawInterface* drawInterface)
 {
-    static bool bOpen = true;
+    static bool bOpen = false;
     if (bOpen)
     {
         ImGui::ShowDemoWindow(&bOpen);
+    }
+
+    static bool bTestOpen = true;
+
+    if (bTestOpen)
+    {
+        ImGui::SetNextWindowSize(ImVec2(430, 450), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+
+        if (!ImGui::Begin("Test", &bTestOpen, ImGuiWindowFlags_NoMove))
+        {
+            ImGui::End();
+            return;
+        }
+        else
+        {
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+            if (ImGui::CollapsingHeader("Camera"))
+            {
+                ImGui::Columns(2);
+                ImGui::Text("Projection");
+                ImGui::NextColumn();
+                {
+                    const char* proj[] = { "Perspective", "Orthographic" };
+                    static int currVal = 0;
+                    ImGui::Combo("Projection", &currVal, proj, ARRAY_LENGTH(proj));
+                    switch (currVal)
+                    {
+                    case 0:
+                        projection = ECameraProjection::Perspective;
+                        break;
+                    case 1:
+                        projection = ECameraProjection::Orthographic;
+                        break;
+                    }
+                }
+            }
+
+            ImGui::Columns(1);
+            ImGui::NextColumn();
+            if (ImGui::CollapsingHeader("Rendering"))
+            {
+                ImGui::Columns(2);
+                ImGui::Text("Render Size");
+                ImGui::NextColumn();
+                {
+                    const char* resolutions[] = { "1280x720", "1920x1080", "2560x1440", "3840x2160" };
+                    static int currRes = 0;
+                    ImGui::Combo("Size", &currRes, resolutions, ARRAY_LENGTH(resolutions));
+                    switch (currRes)
+                    {
+                    case 0:
+                        renderSize = Size2D(1280, 720);
+                        break;
+                    case 1:
+                        renderSize = Size2D(1920, 1080);
+                        break;
+                    case 2:
+                        renderSize = Size2D(2560, 1440);
+                        break;
+                    case 3:
+                        renderSize = Size2D(3840, 2160);
+                        break;
+                    }
+                }
+
+                ImGui::NextColumn();
+                ImGui::Text("Visualize buffer");
+                ImGui::NextColumn();
+                {
+                    const char* bufferMode[] = { "Lit", "Unlit", "Normal", "Depth" };
+                    ImGui::Combo("Frame", &frameVisualizeId, bufferMode, ARRAY_LENGTH(bufferMode));
+                }
+            };
+
+            ImGui::Columns(1);
+            ImGui::NextColumn();
+            if (ImGui::CollapsingHeader("Compute"))
+            {
+                ImGui::Text("Animate");
+                ImGui::NextColumn();
+                ImGui::Checkbox("X", &bAnimateX); ImGui::SameLine();
+                ImGui::Checkbox("Y", &bAnimateY);
+                ImGui::NextColumn();
+                ImGui::Text("%f", Time::asSeconds(Time::timeNow()));
+
+                ImGui::Separator();
+                ImGui::NextColumn();
+                ImGui::Image(writeTexture.image, ImVec2(
+                    ImGui::GetWindowContentRegionWidth(),
+                    ImGui::GetWindowContentRegionWidth()));
+                ImGui::Separator();
+            }
+            ImGui::PopStyleVar();
+            ImGui::End();
+        }
     }
 }
 

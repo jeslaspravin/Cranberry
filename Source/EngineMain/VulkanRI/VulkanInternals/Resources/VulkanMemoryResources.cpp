@@ -222,8 +222,7 @@ void VulkanImageResource::reinitResources()
         imageUsage |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
         featuresRequired |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT : 0;
         imageUsage |= ((shaderUsage & EImageShaderUsage::Writing) > 0) ? VK_IMAGE_USAGE_STORAGE_BIT : 0;
-        featuresRequired |= ((shaderUsage & EImageShaderUsage::Writing) > 0) ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
-            | VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT : 0;
+        featuresRequired |= ((shaderUsage & EImageShaderUsage::Writing) > 0) ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT : 0;
 
         // TODO(Jeslas) : Revisit for cpu accessible image
         if (tiling == VK_IMAGE_TILING_LINEAR)

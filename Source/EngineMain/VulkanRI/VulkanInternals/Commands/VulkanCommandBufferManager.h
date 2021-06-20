@@ -15,6 +15,15 @@ class VulkanDevice;
 class GraphicsSemaphore;
 class GraphicsFence;
 struct CommandSubmitInfo;
+class MemoryResource;
+class ImageResource;
+class VulkanResourcesTracker;
+
+namespace std
+{
+    template <class _Ty>
+    class optional;
+}
 
 struct VulkanCommandPoolInfo
 {
@@ -64,7 +73,7 @@ struct VulkanCmdSubmitSyncInfo
     bool bIsAdvancedSubmit = false;
     uint32 refCount = 0;
     SharedPtr<GraphicsFence> completeFence;
-    std::vector<SharedPtr<GraphicsSemaphore>> signalingSemaphores;
+    SharedPtr<GraphicsSemaphore> signalingSemaphore;
 };
 
 class VulkanCmdBufferManager
@@ -91,6 +100,10 @@ public:
     const GraphicsResource* beginRecordOnceCmdBuffer(const String& cmdName, EQueueFunction usingQueue);
     const GraphicsResource* beginReuseCmdBuffer(const String& cmdName, EQueueFunction usingQueue);
 
+    void startRenderPass(const GraphicsResource* cmdBuffer);
+    bool isInRenderPass(const GraphicsResource* cmdBuffer) const;
+    void endRenderPass(const GraphicsResource* cmdBuffer);
+
     void endCmdBuffer(const GraphicsResource* cmdBuffer);
     void cmdFinished(const GraphicsResource* cmdBuffer);
     void cmdFinished(const String& cmdName);
@@ -101,7 +114,11 @@ public:
     uint32 getQueueFamilyIdx(const GraphicsResource* cmdBuffer) const;
     uint32 getQueueFamilyIdx(EQueueFunction queue) const;
     ECmdState getState(const GraphicsResource* cmdBuffer) const;
+    SharedPtr<GraphicsSemaphore> cmdSignalSemaphore(const GraphicsResource* cmdBuffer) const;
 
+    bool isComputeCmdBuffer(const GraphicsResource* cmdBuffer) const;
+    bool isGraphicsCmdBuffer(const GraphicsResource* cmdBuffer) const;
+    bool isTransferCmdBuffer(const GraphicsResource* cmdBuffer) const;
     //************************************
     // Method:    submitCmds - Currently all commands being submitted must be from same queue
     // FullName:  VulkanCmdBufferManager::submitCmds
@@ -114,7 +131,76 @@ public:
     void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo>& commands, const SharedPtr<GraphicsFence>& cmdsCompleteFence);
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& command, const SharedPtr<GraphicsFence>& cmdsCompleteFence);
 
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands);
-    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& command);
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands, VulkanResourcesTracker* resourceTracker);
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& command, VulkanResourcesTracker* resourceTracker);
 };
 
+/// <summary>
+/// VulkanResourcesTracker - Tracks resources used in commands
+/// </summary>
+class VulkanResourcesTracker
+{
+private:
+    struct ResourceAccessors
+    {
+        // Last reads after last writes
+        std::vector<const GraphicsResource*> lastReadsIn;
+        VkPipelineStageFlags allReadStages = 0;
+        const GraphicsResource* lastWrite = nullptr;
+        VkPipelineStageFlagBits lastWriteStage;
+    };
+
+public:
+    struct CommandResUsageInfo
+    {
+        const GraphicsResource* cmdBuffer = nullptr;
+        VkPipelineStageFlags usageStages;
+    };
+
+    struct ResourceBarrierInfo
+    {
+        const MemoryResource* resource = nullptr;
+        ResourceAccessors accessors;
+    };
+
+private:
+
+    std::map<const MemoryResource*, ResourceAccessors> resourcesAccessors;
+    std::map<const ImageResource*, ResourceAccessors> renderpassAttachments;
+
+    using CmdWaitInfoMap = std::map<const GraphicsResource*, std::vector<CommandResUsageInfo>>;
+    CmdWaitInfoMap cmdWaitInfo;
+
+public:
+    const std::vector<CommandResUsageInfo>* getCmdBufferDeps(const GraphicsResource* cmdBuffer) const;
+    void clearCmdBufferDeps(const GraphicsResource* cmdBuffer);
+    void clearUnwanted();
+
+    /* Reading resources functions */
+    std::optional<ResourceBarrierInfo> readOnlyBuffers(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> readOnlyImages(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> readOnlyTexels(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> readFromWriteBuffers(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> readFromWriteImages(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> readFromWriteTexels(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+
+    /* Writing resources functions */
+    std::optional<ResourceBarrierInfo> writeReadOnlyBuffers(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> writeReadOnlyImages(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> writeReadOnlyTexels(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> writeBuffers(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> writeImages(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+    std::optional<ResourceBarrierInfo> writeTexels(const GraphicsResource* cmdBuffer
+        , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+};

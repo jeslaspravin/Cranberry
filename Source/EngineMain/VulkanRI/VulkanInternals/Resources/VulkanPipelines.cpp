@@ -599,10 +599,10 @@ void VulkanComputePipeline::fillSpecializationConsts(VkPipelineShaderStageCreate
         }
 
         specData.resize(specData.size() + entry.size);
-        // Since we have work group size spec constant in 0-2
-        if (value.constantId >= 0 && value.constantId < 3)
+        // Since we have work group size spec constant in 1-3
+        if (value.constantId >= 1 && value.constantId < 4)
         {
-            memcpy(&specData[entry.offset], &static_cast<const ComputeShader*>(pipelineShader)->getSubGroupSize()[value.constantId], entry.size);
+            memcpy(&specData[entry.offset], &static_cast<const ComputeShader*>(pipelineShader)->getSubGroupSize()[value.constantId - 1], entry.size);
         }
         else
         {

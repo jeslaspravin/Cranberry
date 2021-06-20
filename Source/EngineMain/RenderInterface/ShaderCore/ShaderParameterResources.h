@@ -193,6 +193,8 @@ protected:
             const ShaderBufferField* bufferField = nullptr;
         };
 
+        // If the buffer resource is set manually, then don't manage it here 
+        bool bIsExternal = false;
         const ShaderBufferDescriptorType* descriptorInfo;
         uint8* cpuBuffer;
         BufferResource* gpuBuffer = nullptr;
@@ -235,6 +237,7 @@ protected:
     std::set<uint32> ignoredSets;
 
     std::vector<BufferParameterUpdate> bufferUpdates;
+    std::set<String> bufferResourceUpdates;
     std::set<std::pair<String, uint32>> texelUpdates;
     std::set<std::pair<String, uint32>> textureUpdates;
     std::set<std::pair<String, uint32>> samplerUpdates;
@@ -267,6 +270,15 @@ public:
 
     const GraphicsResource* getParamLayout() const { return paramLayout; }
 
+    // Read only
+    std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> getAllReadOnlyTextures() const;
+    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllReadOnlyBuffers() const;
+    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllReadOnlyTexels() const;
+    // Read Write and Write
+    std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> getAllWriteTextures() const;
+    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllWriteBuffers() const;
+    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllWriteTexels() const;
+
     virtual void updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
     bool setIntParam(const String& paramName, int32 value, uint32 index = 0);
     bool setIntParam(const String& paramName, uint32 value, uint32 index = 0);
@@ -282,6 +294,7 @@ public:
     bool setMatrixParam(const String& paramName, const String& bufferName, const Matrix4& value, uint32 index = 0);
     template<typename BufferType>
     bool setBuffer(const String& paramName, const BufferType& bufferValue, uint32 index = 0);
+    bool setBufferResource(const String& paramName, BufferResource* buffer);
     bool setTexelParam(const String& paramName, BufferResource* texelBuffer, uint32 index = 0);
     bool setTextureParam(const String& paramName, ImageResource* texture, uint32 index = 0);
     bool setTextureParam(const String& paramName, ImageResource* texture, SharedPtr<SamplerInterface> sampler, uint32 index = 0);
@@ -300,6 +313,7 @@ public:
     Vector2D getVector2Param(const String& paramName, const String& bufferName, uint32 index = 0) const;
     Vector4D getVector4Param(const String& paramName, const String& bufferName, uint32 index = 0) const;
     Matrix4 getMatrixParam(const String& paramName, const String& bufferName, uint32 index = 0) const;
+    BufferResource* getBufferResource(const String& paramName);
     BufferResource* getTexelParam(const String& paramName, uint32 index = 0) const;
     ImageResource* getTextureParam(const String& paramName, uint32 index = 0) const;
     ImageResource* getTextureParam(SharedPtr<SamplerInterface>& outSampler, const String& paramName, uint32 index = 0) const;
