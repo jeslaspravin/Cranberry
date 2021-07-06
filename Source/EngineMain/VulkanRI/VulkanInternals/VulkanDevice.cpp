@@ -5,6 +5,7 @@
 #include "VulkanMacros.h"
 #include "Resources/VulkanQueueResource.h"
 #include "../../Core/Engine/GameEngine.h"
+#include "../../Core/Engine/Config/EngineGlobalConfigs.h"
 #include "Resources/VulkanWindowCanvas.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../RenderInterface/GlobalRenderVariables.h"
@@ -268,8 +269,15 @@ void VulkanDevice::cacheGlobalSurfaceProperties()
         std::vector<VkPresentModeKHR> presentModes(presentModesCount);
         Vk::vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, canvas->surface(), (uint32_t*)&presentModesCount,
             presentModes.data());
-
-        if (std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR)
+        if (EngineSettings::enableVsync.get())
+        {
+            fatalAssert(std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR)
+                != presentModes.cend(), "V-Sync not supported");
+            globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
+            Logger::debug("VulkanDevice", "%s() : Choosen fifo present mode", __func__);
+            choosenImageCount = swapchainCapabilities.minImageCount;
+        }
+        else if (std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR)
             != presentModes.cend())
         {
             globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR;

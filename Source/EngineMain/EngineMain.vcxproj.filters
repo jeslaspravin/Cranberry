@@ -537,7 +537,7 @@
     <ClCompile Include="RenderInterface\Shaders\Base\BaseShaderDefines.cpp">
       <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
     </ClCompile>
-    <ClCompile Include="Experimental\ExperimentalEngine.cpp">
+    <ClCompile Include="Experimental\ExperimentalEngineGoochModel.cpp">
       <Filter>Source Files\Experimental</Filter>
     </ClCompile>
     <ClCompile Include="Core\Input\Windows\WindowsDevices.cpp">
@@ -980,7 +980,7 @@
     <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h">
       <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
     </ClInclude>
-    <ClInclude Include="Experimental\ExperimentalEngine.h">
+    <ClInclude Include="Experimental\ExperimentalEngineGoochModel.h">
       <Filter>Source Files\Experimental</Filter>
     </ClInclude>
     <ClInclude Include="Core\Input\InputDevice.h">

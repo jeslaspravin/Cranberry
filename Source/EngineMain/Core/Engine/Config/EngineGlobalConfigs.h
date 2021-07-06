@@ -10,4 +10,6 @@ namespace EngineSettings
     extern EngineGlobalConfig<Size2D> surfaceSize;
 
     extern EngineGlobalConfig<bool> fullscreenMode;
+
+    extern EngineGlobalConfig<bool> enableVsync;
 }
