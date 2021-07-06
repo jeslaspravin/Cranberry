@@ -61,7 +61,7 @@ void WindowsAppWindow::updateWindow()
     auto peekMsgsLambda = [this](uint32 minFilter, uint32 maxFilter, uint32 removeFlag)
     {
         MSG msg;
-        while (PeekMessage(&msg, nullptr, minFilter, maxFilter, removeFlag) > 0)
+        while (PeekMessage(&msg, windowsHandle, minFilter, maxFilter, removeFlag) > 0)
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);

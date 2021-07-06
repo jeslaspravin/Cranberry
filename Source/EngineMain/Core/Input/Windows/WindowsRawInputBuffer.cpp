@@ -3,7 +3,6 @@
 #include "../InputDevice.h"
 #include "../../Platform/Windows/WindowsCommonHeaders.h"
 
-
 WindowsRawInputBuffer::~WindowsRawInputBuffer()
 {
     clearBuffer();
@@ -15,12 +14,20 @@ void WindowsRawInputBuffer::processInputs(const ProcessInputsParam& params) cons
 
     for (int32 blockIdx = 0; blockIdx < inputBlocksNum; ++blockIdx)
     {
+        bool bProcessed = false;
         for (int32 deviceIdx = 0; deviceIdx < params.devicesNum; ++deviceIdx)
         {
             if (params.inputDevices[deviceIdx]->sendInRaw(rawInput))
             {
+                bProcessed = true;
                 break;
             }
+        }
+
+        if (!bProcessed)
+        {
+            Logger::warn("WindowsRawInputBuffer", "%s: No device found for processing raw input", __func__);
+            DefRawInputProc(&rawInput, 1, sizeof(RAWINPUTHEADER));
         }
         using QWORD = uint64;
         rawInput = NEXTRAWINPUTBLOCK(rawInput);
@@ -34,23 +41,43 @@ void WindowsRawInputBuffer::processInputs(const ProcessInputsParam& params) cons
 
 void WindowsRawInputBuffer::update()
 {
-    uint32 bufferSize;
-    inputBlocksNum = GetRawInputBuffer(nullptr, &bufferSize, sizeof(RAWINPUTHEADER));
-    if (inputBlocksNum == -1)
+    std::vector<uint8> bufferedRawInput;
+    int32 currentBlocksNum = 0, totalBlocksNum = 0;
+
+    while(true)
     {
-        Logger::error("WindowsRawInputBuffer", "%s : Retrieving input buffer size failed", __func__);
-        clearBuffer();
-        return;
+        const uint32 currRawSize = uint32(bufferedRawInput.size());
+
+        uint32 bufferSize;
+        currentBlocksNum = GetRawInputBuffer(nullptr, &bufferSize, sizeof(RAWINPUTHEADER));
+        if (currentBlocksNum == -1)
+        {
+            Logger::error("WindowsRawInputBuffer", "%s : Retrieving input buffer size failed", __func__);
+            clearBuffer();
+            return;
+        }
+        // To support proper alignment
+        bufferSize *= 8;
+        if (bufferSize == 0)
+        {
+            break;
+        }
+
+        bufferedRawInput.resize(currRawSize + bufferSize);
+        RAWINPUT* rawInput = reinterpret_cast<RAWINPUT*>(&bufferedRawInput[currRawSize]);
+        currentBlocksNum = GetRawInputBuffer(rawInput, &bufferSize, sizeof(RAWINPUTHEADER));
+        totalBlocksNum += currentBlocksNum;
+        if (currentBlocksNum == -1)
+        {
+            Logger::error("WindowsRawInputBuffer", "%s : Reading buffered raw input failed", __func__);
+            clearBuffer();
+            return;
+        }
     }
-    bufferSize *= 8;
-    resize(bufferSize);
-    RAWINPUT* rawInput = reinterpret_cast<RAWINPUT*>(rawBuffer);
-    inputBlocksNum = GetRawInputBuffer(rawInput, &bufferSize, sizeof(RAWINPUTHEADER));
-    if (inputBlocksNum == -1)
-    {
-        Logger::error("WindowsRawInputBuffer", "%s : Reading buffered raw input failed", __func__);
-        clearBuffer();
-    }
+
+    resize(uint32(bufferedRawInput.size()));
+    inputBlocksNum = totalBlocksNum;
+    memcpy(rawBuffer, bufferedRawInput.data(), bufferedRawInput.size());
 }
 
 void WindowsRawInputBuffer::clearBuffer()

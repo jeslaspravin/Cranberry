@@ -283,7 +283,7 @@
     <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_widgets.cpp" />
     <ClCompile Include="Editor\Core\ImGui\ImGuiManager.cpp" />
     <ClCompile Include="Editor\Core\ImGui\Shaders\DrawImGuiShader.cpp" />
-    <ClCompile Include="Experimental\ExperimentalEngine.cpp" />
+    <ClCompile Include="Experimental\ExperimentalEngineGoochModel.cpp" />
     <ClCompile Include="Experimental\TestCompute.cpp" />
     <ClCompile Include="RenderApi\GBuffersAndTextures.cpp" />
     <ClCompile Include="RenderApi\Material\MaterialCommonUniforms.cpp" />
@@ -435,7 +435,7 @@
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_textedit.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_truetype.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiManager.h" />
-    <ClInclude Include="Experimental\ExperimentalEngine.h" />
+    <ClInclude Include="Experimental\ExperimentalEngineGoochModel.h" />
     <ClInclude Include="RenderApi\GBuffersAndTextures.h" />
     <ClInclude Include="RenderApi\Material\MaterialCommonUniforms.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />

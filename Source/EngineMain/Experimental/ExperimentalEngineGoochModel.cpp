@@ -1,4 +1,4 @@
-#include "ExperimentalEngine.h"
+#include "ExperimentalEngineGoochModel.h"
 
 #if EXPERIMENTAL
 
@@ -40,21 +40,12 @@
 #include <array>
 #include <random>
 
-struct TestArraySetField
-{
-    float a;
-    int32 b[5];
-    float c[6];
-};
-
-BEGIN_BUFFER_DEFINITION(TestArraySetField)
-ADD_BUFFER_TYPED_FIELD(a)
-ADD_BUFFER_TYPED_FIELD(b)
-ADD_BUFFER_TYPED_FIELD(c)
-END_BUFFER_DEFINITION();
+#include <windows.h>
 
 void ExperimentalEngine::tempTest()
-{}
+{
+
+}
 
 void ExperimentalEngine::tempTestPerFrame()
 {
@@ -793,24 +784,6 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
     queryParam.cullingMode = ECullingMode::BackFace;
     queryParam.drawMode = EPolygonDrawMode::Fill;
 
-    ShaderParameters* drawQuadDescs;
-    switch (frameVisualizeId)
-    {
-    case 1:
-        drawQuadDescs = *drawQuadTextureDescs;
-        break;
-    case 2:
-        drawQuadDescs = *drawQuadNormalDescs;
-        break;
-    case 3:
-        drawQuadDescs = *drawQuadDepthDescs;
-        break;
-    case 0:
-    default:
-        drawQuadDescs = *drawLitColorsDescs;
-        break;
-    }
-
 
     if (!frameResources[index].recordingFence->isSignaled())
     {
@@ -904,19 +877,20 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
         cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { quadVertexBuffer }, { 0 });
         cmdList->cmdBindIndexBuffer(cmdBuffer, quadIndexBuffer);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
-        cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
-        {
-            SCOPED_CMD_MARKER(cmdList, cmdBuffer, ClearLightingRTs);
-
-            // Clear resolve first
-            cmdList->cmdBindGraphicsPipeline(cmdBuffer, clearQuadPipelineContext, { queryParam });
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, clearQuadPipelineContext, clearInfoParams.get());
-            cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
-        }
-        cmdList->cmdEndRenderPass(cmdBuffer);
-
+        if(frameVisualizeId == 0)
         {
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, LightingPass);
+
+            cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
+            {
+                SCOPED_CMD_MARKER(cmdList, cmdBuffer, ClearLightingRTs);
+
+                // Clear resolve first
+                cmdList->cmdBindGraphicsPipeline(cmdBuffer, clearQuadPipelineContext, { queryParam });
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, clearQuadPipelineContext, clearInfoParams.get());
+                cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+            }
+            cmdList->cmdEndRenderPass(cmdBuffer);
 
             int32 lightDataIndex = 0;
             for (const SharedPtr<ShaderParameters>& light : lightData)
@@ -948,6 +922,42 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
                 }                
             }
         }
+        else
+        {
+            ShaderParameters* drawQuadDescs = nullptr;
+            switch (frameVisualizeId)
+            {
+            case 1:
+                drawQuadDescs = *drawQuadTextureDescs;
+                break;
+            case 2:
+                drawQuadDescs = *drawQuadNormalDescs;
+                break;
+            case 3:
+                drawQuadDescs = *drawQuadDepthDescs;
+                break;
+            case 0:
+            default:
+                break;
+            }
+
+            if (drawQuadDescs)
+            {
+                resolveLightRtPipelineContext.rtTextures = drawGoochPipelineContext.rtTextures;
+                getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
+
+                cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
+                {
+                    SCOPED_CMD_MARKER(cmdList, cmdBuffer, ResolveFrame);
+
+                    cmdList->cmdBindGraphicsPipeline(cmdBuffer, resolveLightRtPipelineContext, { queryParam });
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, resolveLightRtPipelineContext, drawQuadDescs);
+
+                    cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+                }
+                cmdList->cmdEndRenderPass(cmdBuffer);
+            }
+        }
 
         // Drawing IMGUI
         TinyDrawingContext drawingContext;
@@ -970,7 +980,7 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
 
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawQuadPipelineContext, { queryParam });
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawQuadPipelineContext, drawQuadDescs);
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawQuadPipelineContext, *drawLitColorsDescs);
             cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
         }
         cmdList->cmdEndRenderPass(cmdBuffer);
@@ -1065,6 +1075,12 @@ void ExperimentalEngine::draw(class ImGuiDrawInterface* drawInterface)
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+            const InputAnalogState* rmxState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::RelMouseX);
+            const InputAnalogState* rmyState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::RelMouseY);
+            const InputAnalogState* amxState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::AbsMouseX);
+            const InputAnalogState* amyState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::AbsMouseY);
+            ImGui::Text("Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue, rmyState->currentValue);
 
             if (ImGui::CollapsingHeader("Camera"))
             {
