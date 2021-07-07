@@ -594,6 +594,9 @@
     <ClCompile Include="Experimental\TestCompute.cpp">
       <Filter>Source Files\Experimental</Filter>
     </ClCompile>
+    <ClCompile Include="Experimental\ExperimentalEnginePBR.cpp">
+      <Filter>Source Files\Experimental</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">

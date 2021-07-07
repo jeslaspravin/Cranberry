@@ -71,7 +71,7 @@ private:
                 currentStartBlock = tempBlock = currentEndBlock;
                 currentEndBlock = currentEndBlock->nextFreeBlock;
                 // TODO(Jeslas) : Ensure if offset alignment is always between min and max value of all min offset alignments.
-                bool blocksOffsetAligned = currentStartBlock->offset % offsetAlignment == 0;
+                blocksOffsetAligned = currentStartBlock->offset % offsetAlignment == 0;
                 currentDiff = 1;
             }
         }
