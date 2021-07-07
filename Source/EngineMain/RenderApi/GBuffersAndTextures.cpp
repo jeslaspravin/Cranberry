@@ -63,7 +63,7 @@ void GBufferRenderTexture::destroyTexture(GBufferRenderTexture* texture)
 std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> GBuffers::gBuffers
 {
     {
-        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::ABGR8_S32_NormPacked, EPixelDataFormat::R_SF32, EPixelDataFormat::D_SF32 }, ERenderPassFormat::Multibuffers), {}
+        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::D_SF32 }, ERenderPassFormat::Multibuffers), {}
     }
 };
 std::vector<Framebuffer*> GBuffers::swapchainFbs;
@@ -122,6 +122,7 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
 
             const Size2D & screenSize = EngineSettings::screenSize.get();
             const EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(newValue);
+            const bool bCanHaveResolves = sampleCount != EPixelSampleCount::SampleCount1;
 
             for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
             {
@@ -137,7 +138,7 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
                     for (const EPixelDataFormat::Type& framebufferFormat : framebufferPair.first.attachments)
                     {
                         GBufferRTCreateParams rtCreateParam;
-                        rtCreateParam.bSameReadWriteTexture = EPixelDataFormat::isDepthFormat(framebufferFormat);
+                        rtCreateParam.bSameReadWriteTexture = !bCanHaveResolves || EPixelDataFormat::isDepthFormat(framebufferFormat);
                         rtCreateParam.filtering = ESamplerFiltering::Type(GlobalRenderVariables::GBUFFER_FILTERING.get());
                         rtCreateParam.format = ERenderTargetFormat::RT_UseDefault;
                         rtCreateParam.dataFormat = framebufferFormat;
@@ -148,14 +149,14 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
                         GBufferRenderTexture* rtTexture = TextureBase::createTexture<GBufferRenderTexture>(rtCreateParam);
 
                         framebufferData.framebuffer->textures.emplace_back(rtTexture->getRtTexture());
-                        if (!EPixelDataFormat::isDepthFormat(framebufferFormat))
+                        if (!rtCreateParam.bSameReadWriteTexture)
                         {
                             framebufferData.framebuffer->textures.emplace_back(rtTexture->getTextureResource());
                         }
 
                         framebufferData.rtTextures.emplace_back(rtTexture);
                     }
-                    framebufferData.framebuffer->bHasResolves = true;
+                    framebufferData.framebuffer->bHasResolves = bCanHaveResolves;
                     initializeFb(framebufferData.framebuffer, screenSize);
                 }
             }
@@ -179,7 +180,7 @@ void GBuffers::onScreenResized(Size2D newSize)
                         rtTexture->setTextureSize({ newSize.x, newSize.y });
                         framebufferData.framebuffer->textures.emplace_back(rtTexture->getRtTexture());
 
-                        if (!EPixelDataFormat::isDepthFormat(rtTexture->getFormat()))
+                        if (!rtTexture->isSameReadWriteTexture())
                         {
                             framebufferData.framebuffer->textures.emplace_back(rtTexture->getTextureResource());
                         }
@@ -219,6 +220,8 @@ void GBuffers::initialize()
     GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);
 
     EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
+    const bool bCanHaveResolves = sampleCount != EPixelSampleCount::SampleCount1;
+
     for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
     {
         framebufferPair.second.clear();
@@ -233,7 +236,7 @@ void GBuffers::initialize()
             for (const EPixelDataFormat::Type& framebufferFormat : framebufferPair.first.attachments)
             {
                 GBufferRTCreateParams rtCreateParam;
-                rtCreateParam.bSameReadWriteTexture = EPixelDataFormat::isDepthFormat(framebufferFormat);
+                rtCreateParam.bSameReadWriteTexture = !bCanHaveResolves || EPixelDataFormat::isDepthFormat(framebufferFormat);
                 rtCreateParam.filtering = ESamplerFiltering::Type(GlobalRenderVariables::GBUFFER_FILTERING.get());
                 rtCreateParam.format = ERenderTargetFormat::RT_UseDefault;
                 rtCreateParam.dataFormat = framebufferFormat;
@@ -245,14 +248,14 @@ void GBuffers::initialize()
 
                 framebufferData.framebuffer->textures.emplace_back(rtTexture->getRtTexture());
                 // Since there cannot be any resolve for depth texture as of Vulkan 1.2.135 we do not have resolve attachment for depth
-                if (!EPixelDataFormat::isDepthFormat(framebufferFormat))
+                if (!rtCreateParam.bSameReadWriteTexture)
                 {
                     framebufferData.framebuffer->textures.emplace_back(rtTexture->getTextureResource());
                 }
 
                 framebufferData.rtTextures.emplace_back(rtTexture);
             }
-            framebufferData.framebuffer->bHasResolves = true;
+            framebufferData.framebuffer->bHasResolves = bCanHaveResolves;
             initializeFb(framebufferData.framebuffer, initialSize);
             framebufferPair.second.emplace_back(framebufferData);
         }

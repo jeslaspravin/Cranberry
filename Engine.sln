@@ -45,9 +45,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GoochModel", "GoochModel", 
 	ProjectSection(SolutionItems) = preProject
 		Source\EngineShaders\GoochModel\GoochModel.frag.glsl = Source\EngineShaders\GoochModel\GoochModel.frag.glsl
 		Source\EngineShaders\GoochModel\GoochModel.vert.glsl = Source\EngineShaders\GoochModel\GoochModel.vert.glsl
-		Source\EngineShaders\GoochModel\GoochModelStageIO.inl.glsl = Source\EngineShaders\GoochModel\GoochModelStageIO.inl.glsl
-		Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.frag.glsl = Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.frag.glsl
-		Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.vert.glsl = Source\EngineShaders\GoochModel\GoochModelStaticMeshMultibuffer.vert.glsl
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SingleColor", "SingleColor", "{81FC9105-8C7A-463F-96C4-1878AB8F02F3}"

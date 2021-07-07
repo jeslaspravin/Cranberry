@@ -284,6 +284,7 @@
     <ClCompile Include="Editor\Core\ImGui\ImGuiManager.cpp" />
     <ClCompile Include="Editor\Core\ImGui\Shaders\DrawImGuiShader.cpp" />
     <ClCompile Include="Experimental\ExperimentalEngineGoochModel.cpp" />
+    <ClCompile Include="Experimental\ExperimentalEnginePBR.cpp" />
     <ClCompile Include="Experimental\TestCompute.cpp" />
     <ClCompile Include="RenderApi\GBuffersAndTextures.cpp" />
     <ClCompile Include="RenderApi\Material\MaterialCommonUniforms.cpp" />

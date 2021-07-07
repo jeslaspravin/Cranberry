@@ -56,7 +56,7 @@ void mainFS()
 {
     const float depth = texture(ssDepth, inTextureCoord).x;
     const vec3 worldPos = getWorldPosition(vec4(inNdcCoord, depth, 1));
-    const vec3 worldNormal = texture(ssNormal, inTextureCoord).xyz;
+    const vec3 worldNormal = (texture(ssNormal, inTextureCoord).xyz - vec3(0.5)) * 2;
     const vec4 unlitColor = texture(ssUnlitColor, inTextureCoord);
 
     vec4 finalColor = texture(ssColor, inTextureCoord);

@@ -15,6 +15,5 @@
 void mainFS()
 {    
     colorAttachment0 = vec4(fract(inTextureCoord.x * 10.f),fract(inTextureCoord.y * 10.f), 0, 1);
-    colorAttachment1 = vec4(normalize(inWorldNormal), 1);
-    colorAttachment2 = inPerspectiveZW.x/inPerspectiveZW.y;
+    colorAttachment1 = vec4((normalize(inWorldNormal) * 0.5) + 0.5, 1);
 }

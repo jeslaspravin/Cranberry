@@ -16,5 +16,4 @@ void mainFS()
 {
     colorAttachment0 = meshData.meshColor;
     colorAttachment1 = vec4(0,0,1,1);
-    colorAttachment2 = 0;
 }

@@ -1,7 +1,19 @@
-#include "ExperimentalEngineGoochModel.h"
-
+#include "../Core/Engine/GameEngine.h"
 #if EXPERIMENTAL
 
+#include "../RenderInterface/Resources/QueueResource.h"
+#include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
+#include "../VulkanRI/VulkanInternals/Resources/VulkanSyncResource.h"
+#include "../RenderInterface/Resources/MemoryResources.h"
+#include "../RenderInterface/ShaderCore/ShaderParameters.h"
+#include "../Core/Platform/LFS/PlatformLFS.h"
+#include "../Core/Types/Transform3D.h"
+#include "../Core/Types/Camera/Camera.h"
+#include "../Core/Types/Colors.h"
+#include "../RenderInterface/Rendering/RenderingContexts.h"
+#include "../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../RenderInterface/Resources/BufferedResources.h"
+#include "../Editor/Core/ImGui/IImGuiLayer.h"
 #include "../RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanQueueResource.h"
 #include "../VulkanRI/VulkanInternals/Debugging.h"
@@ -39,22 +51,165 @@
 
 #include <array>
 #include <random>
+#include <map>
 
 #include <windows.h>
+#include <vulkan_core.h>
 
-void ExperimentalEngine::tempTest()
+struct QueueCommandPool
+{
+    VkCommandPool tempCommandsPool;
+    VkCommandPool resetableCommandPool;
+    VkCommandPool oneTimeRecordPool;
+};
+
+struct TexelBuffer
+{
+    class BufferResource* buffer = nullptr;
+    // Only necessary for texel buffers
+    VkBufferView bufferView = nullptr;
+};
+
+struct ImageData
+{
+    class TextureBase* image = nullptr;
+    VkImageView imageView = nullptr;
+};
+
+struct SceneEntity
+{
+    Transform3D transform;
+    class StaticMeshAsset* meshAsset;
+
+    SharedPtr<ShaderParameters> instanceParameters;
+    std::vector<LinearColor> meshBatchColors;
+    std::vector<SharedPtr<ShaderParameters>> meshBatchParameters;
+};
+
+struct FrameResource
+{
+    std::vector<SharedPtr<GraphicsSemaphore>> usageWaitSemaphore;
+    RenderTargetTexture* lightingPassRt;
+    RenderTargetTexture* lightingPassResolved;
+    SharedPtr<GraphicsFence> recordingFence;
+};
+
+class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
+{
+    class VulkanDevice* vDevice;
+    VkDevice device;
+    const class VulkanDebugGraphics* graphicsDbg;
+
+    std::map<EQueueFunction, QueueCommandPool> pools;
+    void createPools();
+    void destroyPools();
+
+    ImageData texture;
+    SharedPtr<class SamplerInterface> nearestFiltering = nullptr;
+    SharedPtr<class SamplerInterface> linearFiltering = nullptr;
+    // TODO(Jeslas) : Cubic filtering not working check new drivers or log bug in nvidia
+    // SharedPtr<class SamplerInterface> cubicFiltering = nullptr;
+    void createImages();
+    void destroyImages();
+
+    // Scene data
+    std::vector<SceneEntity> sceneData;
+    std::vector<struct GoochModelLightData> sceneLightData;
+    std::vector<SharedPtr<ShaderParameters>> lightData;
+    SharedPtr<ShaderParameters> lightCommon;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> lightTextures;
+    SharedPtr<ShaderParameters> viewParameters;
+    void createScene();
+    void destroyScene();
+
+    // Camera parameters
+    Camera camera;
+    Vector3D cameraTranslation;
+    Rotation cameraRotation;
+    void updateCameraParams();
+
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadTextureDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadNormalDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadDepthDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawLitColorsDescs;
+
+    void createShaderParameters();
+    void setupShaderParameterParams();
+    void updateShaderParameters(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    void destroyShaderParameters();
+
+    void resizeLightingRts(const Size2D& size);
+    void reupdateTextureParamsOnResize();
+
+    // Shader pipeline resources
+    RenderPassClearValue clearValues;
+
+    void createFrameResources();
+    void destroyFrameResources();
+
+    LocalPipelineContext drawSmPipelineContext;
+
+    VkRenderPass lightingRenderPass;
+    LocalPipelineContext drawGoochPipelineContext;
+
+    class BufferResource* quadVertexBuffer = nullptr;
+    class BufferResource* quadIndexBuffer = nullptr;
+    LocalPipelineContext drawQuadPipelineContext;
+    LocalPipelineContext resolveLightRtPipelineContext;
+
+    SharedPtr<ShaderParameters> clearInfoParams;
+    LocalPipelineContext clearQuadPipelineContext;
+
+    ImageData writeTexture;
+    SharedPtr<ShaderParameters> testComputeParams;
+    LocalPipelineContext testComputePipelineContext;
+     
+    void getPipelineForSubpass();
+
+    std::vector<FrameResource> frameResources;
+    void createPipelineResources();
+    void destroyPipelineResources();
+
+    // End shader pipeline resources
+
+    bool bAnimateX;
+    bool bAnimateY;
+    int32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
+    Size2D renderSize{ 1280, 720 };
+    ECameraProjection projection = ECameraProjection::Perspective;
+protected:
+    void onStartUp() override;
+    void onQuit() override;
+    void tickEngine() override;
+
+    void startUpRenderInit();
+    void renderQuit();
+    void frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+
+    void tempTest();
+    void tempTestPerFrame();
+    /* IImGuiLayer Implementation */
+public:
+    int32 layerDepth() const override;
+    int32 sublayerDepth() const override;
+    void draw(class ImGuiDrawInterface* drawInterface) override;
+    /* end overrides */
+};
+
+
+void ExperimentalEnginePBR::tempTest()
 {
 
 }
 
-void ExperimentalEngine::tempTestPerFrame()
+void ExperimentalEnginePBR::tempTestPerFrame()
 {
 
 }
 
 template <EQueueFunction QueueFunction> VulkanQueueResource<QueueFunction>* getQueue(const VulkanDevice* device);
 
-void ExperimentalEngine::createPools()
+void ExperimentalEnginePBR::createPools()
 {
     {
         VulkanQueueResource<EQueueFunction::Compute>* queue = getQueue<EQueueFunction::Compute>(vDevice);
@@ -146,7 +301,7 @@ void ExperimentalEngine::createPools()
     }
 }
 
-void ExperimentalEngine::destroyPools()
+void ExperimentalEnginePBR::destroyPools()
 {
     for (const std::pair<const EQueueFunction, QueueCommandPool>& pool : pools)
     {
@@ -156,7 +311,7 @@ void ExperimentalEngine::destroyPools()
     }
 }
 
-void ExperimentalEngine::createImages()
+void ExperimentalEnginePBR::createImages()
 {
     nearestFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "NearestSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest);
@@ -184,7 +339,7 @@ void ExperimentalEngine::createImages()
     }
 }
 
-void ExperimentalEngine::destroyImages()
+void ExperimentalEnginePBR::destroyImages()
 {
     TextureBase::destroyTexture<Texture2DRW>(writeTexture.image);
     writeTexture.image = nullptr;
@@ -192,7 +347,7 @@ void ExperimentalEngine::destroyImages()
     linearFiltering->release();
 }
 
-void ExperimentalEngine::createScene()
+void ExperimentalEnginePBR::createScene()
 {
     StaticMeshAsset* cube = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cube.obj"));
     StaticMeshAsset* sphere = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Sphere.obj"));
@@ -275,12 +430,12 @@ void ExperimentalEngine::createScene()
     }
 }
 
-void ExperimentalEngine::destroyScene()
+void ExperimentalEnginePBR::destroyScene()
 {
     sceneData.clear();
 }
 
-void ExperimentalEngine::createShaderParameters()
+void ExperimentalEnginePBR::createShaderParameters()
 {
     IGraphicsInstance* graphicsInstance = getRenderApi()->getGraphicsInstance();
     const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
@@ -346,7 +501,7 @@ void ExperimentalEngine::createShaderParameters()
     testComputeParams->setResourceName("TestCompute");
 }
 
-void ExperimentalEngine::setupShaderParameterParams()
+void ExperimentalEnginePBR::setupShaderParameterParams()
 {
     IGraphicsInstance* graphicsInstance = getRenderApi()->getGraphicsInstance();
 
@@ -424,7 +579,7 @@ void ExperimentalEngine::setupShaderParameterParams()
     testComputeParams->init();
 }
 
-void ExperimentalEngine::updateShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+void ExperimentalEnginePBR::updateShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
 {
     //const bool canUpdate = timeData.frameCounter % frameResources.size() == 0;
 
@@ -448,7 +603,7 @@ void ExperimentalEngine::updateShaderParameters(class IRenderCommandList* cmdLis
     }
 }
 
-void ExperimentalEngine::reupdateTextureParamsOnResize()
+void ExperimentalEnginePBR::reupdateTextureParamsOnResize()
 {
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
 
@@ -469,7 +624,7 @@ void ExperimentalEngine::reupdateTextureParamsOnResize()
     }
 }
 
-void ExperimentalEngine::destroyShaderParameters()
+void ExperimentalEnginePBR::destroyShaderParameters()
 {
     viewParameters->release();
     viewParameters.reset();
@@ -509,7 +664,7 @@ void ExperimentalEngine::destroyShaderParameters()
     testComputeParams.reset();
 }
 
-void ExperimentalEngine::resizeLightingRts(const Size2D& size)
+void ExperimentalEnginePBR::resizeLightingRts(const Size2D& size)
 {
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow());
@@ -523,7 +678,7 @@ void ExperimentalEngine::resizeLightingRts(const Size2D& size)
     }
 }
 
-void ExperimentalEngine::createFrameResources()
+void ExperimentalEnginePBR::createFrameResources()
 {
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow());
@@ -550,7 +705,7 @@ void ExperimentalEngine::createFrameResources()
     }
 }
 
-void ExperimentalEngine::destroyFrameResources()
+void ExperimentalEnginePBR::destroyFrameResources()
 {
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow());
@@ -568,7 +723,7 @@ void ExperimentalEngine::destroyFrameResources()
     }
 }
 
-void ExperimentalEngine::getPipelineForSubpass()
+void ExperimentalEnginePBR::getPipelineForSubpass()
 {
     VulkanGlobalRenderingContext* vulkanRenderingContext = static_cast<VulkanGlobalRenderingContext*>(getRenderApi()->getGlobalRenderingContext());
 
@@ -606,7 +761,7 @@ void ExperimentalEngine::getPipelineForSubpass()
     vulkanRenderingContext->preparePipelineContext(&testComputePipelineContext);
 }
 
-void ExperimentalEngine::createPipelineResources()
+void ExperimentalEnginePBR::createPipelineResources()
 {
     clearValues.colors.resize(drawSmPipelineContext.getFb()->textures.size(), LinearColorConst::BLACK);
 
@@ -631,7 +786,7 @@ void ExperimentalEngine::createPipelineResources()
     createShaderParameters();
 }
 
-void ExperimentalEngine::destroyPipelineResources()
+void ExperimentalEnginePBR::destroyPipelineResources()
 {
     ENQUEUE_COMMAND(QuadVerticesRelease,LAMBDA_BODY
         (
@@ -647,7 +802,7 @@ void ExperimentalEngine::destroyPipelineResources()
     destroyShaderParameters();
 }
 
-void ExperimentalEngine::updateCameraParams()
+void ExperimentalEnginePBR::updateCameraParams()
 {
     ViewData viewDataTemp;
 
@@ -709,7 +864,7 @@ void ExperimentalEngine::updateCameraParams()
     lightCommon->setMatrixParam("invView", viewDataTemp.invView);
 }
 
-void ExperimentalEngine::onStartUp()
+void ExperimentalEnginePBR::onStartUp()
 {
     GameEngine::onStartUp();
 
@@ -733,7 +888,7 @@ void ExperimentalEngine::onStartUp()
     tempTest();
 }
 
-void ExperimentalEngine::startUpRenderInit()
+void ExperimentalEnginePBR::startUpRenderInit()
 {
     vDevice = VulkanGraphicsHelper::getVulkanDevice(getRenderApi()->getGraphicsInstance());
     device = VulkanGraphicsHelper::getDevice(vDevice);
@@ -748,7 +903,7 @@ void ExperimentalEngine::startUpRenderInit()
     setupShaderParameterParams();
 }
 
-void ExperimentalEngine::onQuit()
+void ExperimentalEnginePBR::onQuit()
 {
     ENQUEUE_COMMAND(EngineQuit, { renderQuit(); }, this);
 
@@ -756,7 +911,7 @@ void ExperimentalEngine::onQuit()
     GameEngine::onQuit();
 }
 
-void ExperimentalEngine::renderQuit()
+void ExperimentalEnginePBR::renderQuit()
 {
     vDevice->vkDeviceWaitIdle(device);
 
@@ -770,7 +925,7 @@ void ExperimentalEngine::renderQuit()
     destroyPools();
 }
 
-void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
 {
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
@@ -828,7 +983,7 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
     const GraphicsResource* cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
     VkCommandBuffer frameCmdBuffer = VulkanGraphicsHelper::getRawCmdBuffer(graphicsInstance, cmdBuffer);
     {
-        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEngineFrame);
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEnginePBRFrame);
         cmdList->cmdBindComputePipeline(cmdBuffer, testComputePipelineContext);
 
         std::vector<std::pair<String, std::any>> pushConsts = {
@@ -1003,7 +1158,7 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
     cmdList->presentImage(canvases, indices, {});
 }
 
-void ExperimentalEngine::tickEngine()
+void ExperimentalEnginePBR::tickEngine()
 {
     GameEngine::tickEngine();
     updateCameraParams();
@@ -1045,17 +1200,17 @@ void ExperimentalEngine::tickEngine()
     tempTestPerFrame();
 }
 
-int32 ExperimentalEngine::layerDepth() const
+int32 ExperimentalEnginePBR::layerDepth() const
 {
     return 0;
 }
 
-int32 ExperimentalEngine::sublayerDepth() const
+int32 ExperimentalEnginePBR::sublayerDepth() const
 {
     return 0;
 }
 
-void ExperimentalEngine::draw(class ImGuiDrawInterface* drawInterface)
+void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
 {
     static bool bOpen = false;
     if (bOpen)
@@ -1168,9 +1323,9 @@ void ExperimentalEngine::draw(class ImGuiDrawInterface* drawInterface)
     }
 }
 
-//GameEngine* GameEngineWrapper::createEngineInstance()
-//{
-//    static ExperimentalEngine gameEngine;
-//    return &gameEngine;
-//}
+GameEngine* GameEngineWrapper::createEngineInstance()
+{
+    static ExperimentalEnginePBR gameEngine;
+    return &gameEngine;
+}
 #endif

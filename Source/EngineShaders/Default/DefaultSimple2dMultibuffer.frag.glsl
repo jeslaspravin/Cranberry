@@ -14,5 +14,4 @@ void mainFS()
 {
     colorAttachment0 = vec4(1,1,1,1);
     colorAttachment1 = vec4(0,0,1,1);
-    colorAttachment2 = 0;
 }

@@ -17,6 +17,5 @@
 void mainFS()
 {    
     colorAttachment0 = meshData.meshColor;
-    colorAttachment1 = vec4(normalize(inWorldNormal), 1);
-    colorAttachment2 = inPerspectiveZW.x/inPerspectiveZW.y;
+    colorAttachment1 = vec4((normalize(inWorldNormal) * 0.5) + 0.5, 1);
 }
