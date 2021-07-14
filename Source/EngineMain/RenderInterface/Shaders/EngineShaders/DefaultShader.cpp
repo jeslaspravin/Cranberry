@@ -59,7 +59,7 @@ DefaultShaderPipeline::DefaultShaderPipeline(const ShaderResource* shaderResourc
 
     bool bHasDepth = false;
     FramebufferFormat fbFormat(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage());
-    GBuffers::getFramebuffer(fbFormat, 0);
+    GlobalBuffers::getFramebuffer(fbFormat, 0);
     attachmentBlendStates.reserve(fbFormat.attachments.size());
     for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
     {

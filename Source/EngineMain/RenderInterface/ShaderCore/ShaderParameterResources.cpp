@@ -369,16 +369,16 @@ void ShaderParameters::init()
     }
 }
 
-void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, bool bIsNested) const
+void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, const char* outerName) const
 {
     const ShaderBufferFieldNode* currentNode = &bufferParamInfo->startNode;
     while (currentNode->isValid())
     {
-        bufferParamData.bufferParams[currentNode->field->paramName] = { outerPtr, currentNode->field };
+        bufferParamData.bufferParams[currentNode->field->paramName] = { outerPtr, (outerName)? outerName : "", currentNode->field};
         if (currentNode->field->bIsStruct)
         {
             // AoS inside shader base uniform struct is supported, AoSoA... not supported due to parameter indexing limitation being 1 right now
-            if (bIsNested && currentNode->field->bIsArray)
+            if (outerName != nullptr && currentNode->field->bIsArray)
             {
                 fatalAssert(!"We do not support nested array in parameters", "We do not support nested array in parameters");
             }
@@ -386,7 +386,7 @@ void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, c
             {
                 nextOuterPtr = currentNode->field->fieldData(outerPtr, nullptr, nullptr);
             }
-            initBufferParams(bufferParamData, currentNode->field->paramInfo, nextOuterPtr, true);
+            initBufferParams(bufferParamData, currentNode->field->paramInfo, nextOuterPtr, currentNode->field->paramName.getChar());
         }
         currentNode = currentNode->nextNode;
     }
@@ -403,6 +403,7 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
                 BufferParametersData paramData;
                 paramData.descriptorInfo = bufferParamDesc;
                 paramData.cpuBuffer = new uint8[bufferParamDesc->bufferNativeStride];
+                memset(paramData.cpuBuffer, 0, bufferParamDesc->bufferNativeStride);
                 if(bufferParamDesc->bIsStorage)
                 {
                     paramData.gpuBuffer = new GraphicsWBuffer(bufferParamDesc->bufferParamInfo->paramStride());
@@ -412,7 +413,7 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
                     paramData.gpuBuffer = new GraphicsRBuffer(bufferParamDesc->bufferParamInfo->paramStride());
                 }
 
-                initBufferParams(paramData, bufferParamDesc->bufferParamInfo, paramData.cpuBuffer, false);
+                initBufferParams(paramData, bufferParamDesc->bufferParamInfo, paramData.cpuBuffer, nullptr);
                 shaderBuffers[bufferParamDesc->bufferEntryPtr->attributeName] = paramData;
             }
             else
@@ -606,9 +607,29 @@ void ShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphicsInstan
             const BufferParametersData& bufferParamData = shaderBuffers.at(bufferUpdate.bufferName);
             const BufferParametersData::BufferParameter& bufferParamField = bufferParamData.bufferParams.at(bufferUpdate.paramName);
 
+            // Offset of struct when updating field is inside inner struct, 
+            // In which case field offset will always be from its outer struct and we have to add this offset to that for obtaining proper offset
+            uint32 outerOffset = 0;
+            {
+                const BufferParametersData::BufferParameter* outerBufferParamField = bufferParamField.outerName.empty()
+                    ? nullptr : &bufferParamData.bufferParams.at(bufferParamField.outerName);
+                while (outerBufferParamField)
+                {
+                    if (outerBufferParamField->bufferField->bIsArray)
+                    {
+                        Logger::warn("ShaderParameters", "%s(): Setting value of parameter[%s] inside a struct[%s] in AoS[%s] will always set param value at struct index 0", __func__
+                            , bufferUpdate.paramName.getChar(), bufferUpdate.bufferName.getChar(), outerBufferParamField->bufferField->paramName.getChar());
+                    }
+
+                    outerOffset += outerBufferParamField->bufferField->offset;
+                    outerBufferParamField = outerBufferParamField->outerName.empty()
+                        ? nullptr : &bufferParamData.bufferParams.at(outerBufferParamField->outerName);
+                }
+            }
+
             BatchCopyBufferData copyData;
             copyData.dst = bufferParamData.gpuBuffer;
-            copyData.dstOffset = bufferParamField.bufferField->offset + (bufferUpdate.index * bufferParamField.bufferField->stride);
+            copyData.dstOffset = outerOffset + bufferParamField.bufferField->offset + (bufferUpdate.index * bufferParamField.bufferField->stride);
             copyData.dataToCopy = bufferParamField.bufferField->fieldData(bufferParamField.outerPtr, nullptr, &copyData.size);
             copyData.dataToCopy = reinterpret_cast<const uint8*>(copyData.dataToCopy) + (bufferUpdate.index * copyData.size);
 

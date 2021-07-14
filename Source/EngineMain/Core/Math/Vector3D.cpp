@@ -1,6 +1,8 @@
 #include "Vector3D.h"
 #include "Math.h"
 #include "../Platform/PlatformAssertionErrors.h"
+#include "Vector4D.h"
+#include "Vector2D.h"
 
 #include <glm/geometric.hpp>
 
@@ -30,6 +32,14 @@ Vector3D::Vector3D(Vector3D&& other)
 
 Vector3D::Vector3D(const float& x, const float& y, const float& z)
     : value(x,y,z)
+{}
+
+Vector3D::Vector3D(const Vector4D& other)
+    : value(other.x(), other.y(), other.z())
+{}
+
+Vector3D::Vector3D(const Vector2D& xy, const float& z)
+    : value(xy.x(), xy.y(), z)
 {}
 
 void Vector3D::operator=(const Vector3D & other)
@@ -157,6 +167,11 @@ Vector3D Vector3D::operator-(const float& scalar) const
 void Vector3D::operator-=(const float& scalar)
 {
     value -= scalar;
+}
+
+Vector3D Vector3D::operator-() const
+{
+    return Vector3D(-value);
 }
 
 Vector3D Vector3D::operator+(const Vector3D& b) const

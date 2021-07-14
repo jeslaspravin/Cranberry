@@ -113,6 +113,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -143,6 +144,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -175,6 +177,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -209,6 +212,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -265,7 +269,6 @@
     <ClCompile Include="Core\Platform\Windows\WindowsAppInstance.cpp" />
     <ClCompile Include="Core\Platform\Windows\WindowsAppWindow.cpp" />
     <ClCompile Include="Core\Platform\Windows\WindowsPlatformFunctions.cpp" />
-    <ClCompile Include="Core\String\String.cpp" />
     <ClCompile Include="Core\Types\Camera\Camera.cpp" />
     <ClCompile Include="Core\Types\Colors.cpp" />
     <ClCompile Include="Core\Types\Delegates\Delegate.cpp" />
@@ -317,6 +320,7 @@
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTextureShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\DefaultShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\PBRShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.cpp" />
     <ClCompile Include="StartMain.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanBufferResources.cpp" />
@@ -371,6 +375,7 @@
     <ClInclude Include="Core\Input\Windows\WindowsRawInputBuffer.h" />
     <ClInclude Include="Core\Logger\Logger.h" />
     <ClInclude Include="Core\Math\Box.h" />
+    <ClInclude Include="Core\Math\BVH.h" />
     <ClInclude Include="Core\Math\CoreMathTypedefs.h" />
     <ClInclude Include="Core\Math\CoreMathTypes.h" />
     <ClInclude Include="Core\Math\Grid.h" />
@@ -436,7 +441,6 @@
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_textedit.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_truetype.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiManager.h" />
-    <ClInclude Include="Experimental\ExperimentalEngineGoochModel.h" />
     <ClInclude Include="RenderApi\GBuffersAndTextures.h" />
     <ClInclude Include="RenderApi\Material\MaterialCommonUniforms.h" />
     <ClInclude Include="RenderApi\RenderApi.h" />
@@ -474,6 +478,7 @@
     <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h" />
     <ClInclude Include="RenderInterface\Shaders\Base\UtilityShaders.h" />
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.h" />
+    <ClInclude Include="RenderInterface\Shaders\EngineShaders\PBRShader.h" />
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanBufferResources.h" />

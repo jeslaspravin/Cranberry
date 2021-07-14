@@ -72,17 +72,17 @@ void VulkanFrameBuffer::initializeFb(Framebuffer* fb, const Size2D& frameSize)
 // GBuffers
 //////////////////////////////////////////////////////////////////////////
 
-Framebuffer* GBuffers::createFbInstance()
+Framebuffer* GlobalBuffers::createFbInstance()
 {
     return VulkanFrameBuffer::createInstance();
 }
 
-void GBuffers::initializeFb(Framebuffer* fb, const Size2D& frameSize)
+void GlobalBuffers::initializeFb(Framebuffer* fb, const Size2D& frameSize)
 {
     VulkanFrameBuffer::initializeFb(fb, frameSize);
 }
 
-void GBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx)
+void GlobalBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx)
 {
     IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
     const auto* vulkanWindowCanvas = static_cast<const VulkanWindowCanvas*>(canvas);

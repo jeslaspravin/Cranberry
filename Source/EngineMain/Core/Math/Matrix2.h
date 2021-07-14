@@ -51,6 +51,7 @@ public:
     void operator-=(const float& scalar);
     Matrix2 operator+(const float& scalar) const;
     void operator+=(const float& scalar);
+    Matrix2 operator-() const;
 public:
     static const Matrix2 IDENTITY;
 };

@@ -1,0 +1,8 @@
+
+#define M_PI 3.1415926535897932384626433832795
+#define M_INV_PI 0.318309886183790671537767526745
+#define M_PT_LUMEN2CAND 0.25 * M_INV_PI
+#define M_LUMEN2CAND(apexAngle) ((0.5 * M_INV_PI )/(1 - apexAngle))
+#define M_CM2M 0.01
+
+#define SQR(v) ((v)*(v))

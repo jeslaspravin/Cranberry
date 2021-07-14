@@ -5,27 +5,35 @@
 #include <vector>
 #include <unordered_map>
 
+class TextureBase;
+
 struct FramebufferWrapper
 {
     std::vector<class GBufferRenderTexture*> rtTextures;
     Framebuffer* framebuffer;
 };
 
-class GBuffers
+class GlobalBuffers
 {
 private:
     // Frame buffer format to frame buffers swapchain count times
     static std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> gBuffers;
     static std::vector<Framebuffer*> swapchainFbs;
 
+    static TextureBase* dummyBlackTexture;
+    static TextureBase* dummyWhiteTexture;
+
     static void initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx);
     static void onSampleCountChanged(uint32 oldValue, uint32 newValue);
+
+    static void createTexture2Ds();
+    static void destroyTexture2Ds();
 public:
     static void initialize();
     static void destroy();
 
     /**
-    * GBuffers::getFramebuffer - Gets framebuffer and framebuffer format for a renderpass format passed in with framebuffer format
+    * GlobalBuffers::getFramebuffer - Gets framebuffer and framebuffer format for a renderpass format passed in with framebuffer format
     *
     * Access:    public static 
     *
@@ -37,6 +45,9 @@ public:
     static Framebuffer* getFramebuffer(FramebufferFormat& framebufferFormat, uint32 frameIdx);
     static Framebuffer* getFramebuffer(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
     static Framebuffer* getSwapchainFramebuffer(uint32 frameIdx);
+
+    static TextureBase* dummyWhite2D() { return dummyWhiteTexture; }
+    static TextureBase* dummyBlack2D() { return dummyBlackTexture; }
 
     static void onScreenResized(Size2D newSize);
     static void onSurfaceResized(Size2D newSize);

@@ -18,5 +18,5 @@ void mainVS()
     gl_Position = viewData.projection * viewData.invView * worldPos;
     outWorldPosition = worldPos.xyz;
     outWorldNormal = (transpose(instanceData.invModel) * vec4(normal.xyz, 0)).xyz;
-    outPerspectiveZW = vec2(gl_Position.z, gl_Position.w);
+    //outPerspectiveZW = vec2(gl_Position.z, gl_Position.w);
 }

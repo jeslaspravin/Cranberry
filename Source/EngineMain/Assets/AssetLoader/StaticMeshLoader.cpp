@@ -7,6 +7,7 @@
 #include "../../Core/Math/Vector2D.h"
 #include "../../Core/Math/Math.h"
 #include "../../Core/Platform/LFS/PlatformLFS.h"
+#include "../../Core/Math/Box.h"
 
 #include <unordered_map>
 #include <set>
@@ -21,6 +22,7 @@ struct MeshLoaderData
     std::vector<StaticMeshVertex> vertices;
     std::vector<uint32> indices;
     std::vector<MeshVertexView> meshBatches;
+    AABB bound{ Vector3D::ZERO, Vector3D::ZERO };
 };
 
 template <>
@@ -94,11 +96,439 @@ void StaticMeshLoader::normalize(Vector4D& normal) const
     normal.z() = newNormal.z();
 }
 
+void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib)
+{
+    MeshLoaderData& meshLoaderData = loadedMeshes[mesh.name];
+    meshLoaderData.indices.resize(mesh.mesh.indices.size());
+
+    uint32 faceCount = uint32(mesh.mesh.indices.size() / 3);
+
+    std::vector<int32> faceMaterialId(faceCount);
+    std::set<int32> uniqueMatIds;
+    // Vertices pushed to meshLoaderData along with indices
+    {
+        for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
+        {
+            const tinyobj::index_t& idx0 = mesh.mesh.indices[faceIdx * 3 + 0];
+            const tinyobj::index_t& idx1 = mesh.mesh.indices[faceIdx * 3 + 1];
+            const tinyobj::index_t& idx2 = mesh.mesh.indices[faceIdx * 3 + 2];
+            uint32 newVertIdx0;
+            uint32 newVertIdx1;
+            uint32 newVertIdx2;
+
+            faceMaterialId[faceIdx] = mesh.mesh.material_ids[faceIdx];
+            uniqueMatIds.insert(mesh.mesh.material_ids[faceIdx]);
+
+            // Filling vertex data to mesh struct
+            {
+                std::unordered_map<tinyobj::index_t, uint32> indexToNewVert;
+
+                auto idx0NewVertItr = indexToNewVert.find(idx0);
+                auto idx1NewVertItr = indexToNewVert.find(idx1);
+                auto idx2NewVertItr = indexToNewVert.find(idx2);
+
+                if (idx0NewVertItr == indexToNewVert.end())
+                {
+                    uint32& vertexIdx = indexToNewVert[idx0];
+                    vertexIdx = uint32(meshLoaderData.vertices.size());
+
+                    newVertIdx0 = vertexIdx;
+                    meshLoaderData.vertices.push_back(StaticMeshVertex());
+                    fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idx0);
+                    meshLoaderData.bound.grow(Vector3D(meshLoaderData.vertices[vertexIdx].position));
+                }
+                else
+                {
+                    newVertIdx0 = idx0NewVertItr->second;
+                }
+                if (idx1NewVertItr == indexToNewVert.end())
+                {
+                    uint32& vertexIdx = indexToNewVert[idx1];
+                    vertexIdx = uint32(meshLoaderData.vertices.size());
+
+                    newVertIdx1 = vertexIdx;
+                    meshLoaderData.vertices.push_back(StaticMeshVertex());
+                    fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idx1);
+                    meshLoaderData.bound.grow(Vector3D(meshLoaderData.vertices[vertexIdx].position));
+                }
+                else
+                {
+                    newVertIdx1 = idx1NewVertItr->second;
+                }
+                if (idx2NewVertItr == indexToNewVert.end())
+                {
+                    uint32& vertexIdx = indexToNewVert[idx2];
+                    vertexIdx = uint32(meshLoaderData.vertices.size());
+
+                    newVertIdx2 = vertexIdx;
+                    meshLoaderData.vertices.push_back(StaticMeshVertex());
+                    fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idx2);
+                    meshLoaderData.bound.grow(Vector3D(meshLoaderData.vertices[vertexIdx].position));
+                }
+                else
+                {
+                    newVertIdx2 = idx2NewVertItr->second;
+                }
+            }
+
+            //makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
+
+            meshLoaderData.indices[faceIdx * 3 + 0] = newVertIdx0;
+            meshLoaderData.indices[faceIdx * 3 + 1] = newVertIdx1;
+            meshLoaderData.indices[faceIdx * 3 + 2] = newVertIdx2;
+        }
+    }
+
+    splitMeshBatches(meshLoaderData, faceMaterialId, uint32(uniqueMatIds.size()), faceCount);
+
+    // Normalizing all the vertex normals
+    for (StaticMeshVertex& vertex : meshLoaderData.vertices)
+    {
+        normalize(vertex.normal);
+    }
+}
+
+void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib)
+{
+    const float smoothingThreshold = Math::cos(Math::deg2Rad(smoothingAngle));
+    MeshLoaderData& meshLoaderData = loadedMeshes[mesh.name];
+    meshLoaderData.indices.resize(mesh.mesh.indices.size());
+
+    uint32 faceCount = uint32(mesh.mesh.indices.size() / 3);
+
+    std::vector<int32> faceMaterialId(faceCount);
+    std::set<int32> uniqueMatIds;
+    // Vertices pushed to meshLoaderData along with indices
+    {
+        std::unordered_map<tinyobj::index_t, uint32> indexToNewVert;
+        std::vector<std::unordered_map<uint32, std::vector<uint32>>> vertexFaceAdjacency;
+        std::vector<Vector3D> faceNormals(faceCount);
+        std::vector<uint32> faceSmoothingId(faceCount);
+
+        for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
+        {
+            const tinyobj::index_t& idx0 = mesh.mesh.indices[faceIdx * 3 + 0];
+            const tinyobj::index_t& idx1 = mesh.mesh.indices[faceIdx * 3 + 1];
+            const tinyobj::index_t& idx2 = mesh.mesh.indices[faceIdx * 3 + 2];
+            uint32 newVertIdx0;
+            uint32 newVertIdx1;
+            uint32 newVertIdx2;
+
+            faceSmoothingId[faceIdx] = mesh.mesh.smoothing_group_ids[faceIdx];
+            faceMaterialId[faceIdx] = mesh.mesh.material_ids[faceIdx];
+            uniqueMatIds.insert(mesh.mesh.material_ids[faceIdx]);
+
+            // Filling vertex data to mesh struct
+            {
+                auto idx0NewVertItr = indexToNewVert.find(idx0);
+                auto idx1NewVertItr = indexToNewVert.find(idx1);
+                auto idx2NewVertItr = indexToNewVert.find(idx2);
+
+                if (idx0NewVertItr == indexToNewVert.end())
+                {
+                    uint32& vertexIdx = indexToNewVert[idx0];
+                    vertexIdx = uint32(meshLoaderData.vertices.size());
+
+                    newVertIdx0 = vertexIdx;
+                    meshLoaderData.vertices.push_back(StaticMeshVertex());
+                    vertexFaceAdjacency.push_back({});
+                    fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idx0);
+                    meshLoaderData.bound.grow(Vector3D(meshLoaderData.vertices[vertexIdx].position));
+                }
+                else
+                {
+                    newVertIdx0 = idx0NewVertItr->second;
+                }
+                if (idx1NewVertItr == indexToNewVert.end())
+                {
+                    uint32& vertexIdx = indexToNewVert[idx1];
+                    vertexIdx = uint32(meshLoaderData.vertices.size());
+
+                    newVertIdx1 = vertexIdx;
+                    meshLoaderData.vertices.push_back(StaticMeshVertex());
+                    vertexFaceAdjacency.push_back({});
+                    fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idx1);
+                    meshLoaderData.bound.grow(Vector3D(meshLoaderData.vertices[vertexIdx].position));
+                }
+                else
+                {
+                    newVertIdx1 = idx1NewVertItr->second;
+                }
+                if (idx2NewVertItr == indexToNewVert.end())
+                {
+                    uint32& vertexIdx = indexToNewVert[idx2];
+                    vertexIdx = uint32(meshLoaderData.vertices.size());
+
+                    newVertIdx2 = vertexIdx;
+                    meshLoaderData.vertices.push_back(StaticMeshVertex());
+                    vertexFaceAdjacency.push_back({});
+                    fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idx2);
+                    meshLoaderData.bound.grow(Vector3D(meshLoaderData.vertices[vertexIdx].position));
+                }
+                else
+                {
+                    newVertIdx2 = idx2NewVertItr->second;
+                }
+            }
+
+            //makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
+
+            meshLoaderData.indices[faceIdx * 3 + 0] = newVertIdx0;
+            meshLoaderData.indices[faceIdx * 3 + 1] = newVertIdx1;
+            meshLoaderData.indices[faceIdx * 3 + 2] = newVertIdx2;
+
+            faceNormals[faceIdx] = getFaceNormal(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
+
+            // Fill vertex pair's(Edge's) faces adjacency
+            {
+                std::unordered_map<uint32, std::vector<uint32>>::iterator diagonalItr;
+                // Vertex 0
+                {
+                    diagonalItr = vertexFaceAdjacency[newVertIdx0].find(newVertIdx1);
+                    if (diagonalItr != vertexFaceAdjacency[newVertIdx0].end())
+                    {
+                        diagonalItr->second.push_back(faceIdx);
+                    }
+                    else
+                    {
+                        vertexFaceAdjacency[newVertIdx0][newVertIdx1].push_back(faceIdx);
+                    }
+
+                    diagonalItr = vertexFaceAdjacency[newVertIdx0].find(newVertIdx2);
+                    if (diagonalItr != vertexFaceAdjacency[newVertIdx0].end())
+                    {
+                        diagonalItr->second.push_back(faceIdx);
+                    }
+                    else
+                    {
+                        vertexFaceAdjacency[newVertIdx0][newVertIdx2].push_back(faceIdx);
+                    }
+                }
+                // Vertex 1
+                {
+                    diagonalItr = vertexFaceAdjacency[newVertIdx1].find(newVertIdx0);
+                    if (diagonalItr != vertexFaceAdjacency[newVertIdx1].end())
+                    {
+                        diagonalItr->second.push_back(faceIdx);
+                    }
+                    else
+                    {
+                        vertexFaceAdjacency[newVertIdx1][newVertIdx0].push_back(faceIdx);
+                    }
+
+                    diagonalItr = vertexFaceAdjacency[newVertIdx1].find(newVertIdx2);
+                    if (diagonalItr != vertexFaceAdjacency[newVertIdx1].end())
+                    {
+                        diagonalItr->second.push_back(faceIdx);
+                    }
+                    else
+                    {
+                        vertexFaceAdjacency[newVertIdx1][newVertIdx2].push_back(faceIdx);
+                    }
+                }
+                // Vertex 2
+                {
+                    diagonalItr = vertexFaceAdjacency[newVertIdx2].find(newVertIdx1);
+                    if (diagonalItr != vertexFaceAdjacency[newVertIdx2].end())
+                    {
+                        diagonalItr->second.push_back(faceIdx);
+                    }
+                    else
+                    {
+                        vertexFaceAdjacency[newVertIdx2][newVertIdx1].push_back(faceIdx);
+                    }
+
+                    diagonalItr = vertexFaceAdjacency[newVertIdx2].find(newVertIdx0);
+                    if (diagonalItr != vertexFaceAdjacency[newVertIdx2].end())
+                    {
+                        diagonalItr->second.push_back(faceIdx);
+                    }
+                    else
+                    {
+                        vertexFaceAdjacency[newVertIdx2][newVertIdx0].push_back(faceIdx);
+                    }
+                }
+            }
+        }
+
+        uint32 originalVertCount = uint32(meshLoaderData.vertices.size());
+
+        for (uint32 vertIdx = 0; vertIdx < originalVertCount; ++vertIdx)
+        {
+            std::vector<std::set<uint32>> faceGroups;
+
+            for (const std::pair<const uint32, std::vector<uint32>>& adjacentFaces : vertexFaceAdjacency[vertIdx])
+            {
+                float dotVal = 1;
+                bool isSameSmoothing = true;
+                if (adjacentFaces.second.size() == 2)
+                {
+                    dotVal = faceNormals[adjacentFaces.second[0]] | faceNormals[adjacentFaces.second[1]];
+                    isSameSmoothing = faceSmoothingId[adjacentFaces.second[0]] == faceSmoothingId[adjacentFaces.second[1]];
+                }
+
+                if (dotVal >= smoothingThreshold && isSameSmoothing) // Is same face group
+                {
+                    std::set<uint32> faceIndices;
+                    faceIndices.insert(adjacentFaces.second.begin(), adjacentFaces.second.end());
+
+                    std::set<uint32> faceGrpsFound;
+                    for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
+                    {
+                        std::vector<uint32> intersectSet(Math::min(faceIndices.size(), faceGroups[faceGrpIdx].size()));
+                        auto intersectItr = std::set_intersection(faceIndices.cbegin(), faceIndices.cend(), faceGroups[faceGrpIdx].cbegin(), faceGroups[faceGrpIdx].cend()
+                            , intersectSet.begin());
+                        if ((intersectItr - intersectSet.begin()) > 0)// If any face idx is already in group add to that group
+                        {
+                            faceGrpsFound.insert(faceGrpIdx);
+                        }
+                    }
+
+                    if (faceGrpsFound.size() == 0)
+                    {
+                        faceGroups.push_back(faceIndices);
+                    }
+                    else if (faceGrpsFound.size() == 1)
+                    {
+                        faceGroups[*faceGrpsFound.begin()].insert(faceIndices.begin(), faceIndices.end());
+                    }
+                    else
+                    {
+                        auto faceGrpIdxItr = --faceGrpsFound.end();
+                        do
+                        {
+                            faceGroups[*faceGrpsFound.begin()].insert(faceGroups[*faceGrpIdxItr].begin(), faceGroups[*faceGrpIdxItr].end());
+                            faceGroups.erase(faceGroups.begin() + *faceGrpIdxItr);
+                            --faceGrpIdxItr;
+                        } while (faceGrpIdxItr != faceGrpsFound.begin());
+
+                        faceGroups[*faceGrpsFound.begin()].insert(faceIndices.begin(), faceIndices.end());
+                    }
+                }
+                else // Non smoothing cases happen only if there is 2 adjacent faces
+                {
+                    {// For adjacent face at 0
+                        bool bIsInserted = false;
+                        for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
+                        {
+                            auto faceItr = faceGroups[faceGrpIdx].find(adjacentFaces.second[0]);
+                            if (faceItr != faceGroups[faceGrpIdx].end())
+                            {
+                                bIsInserted = true;
+                            }
+                        }
+                        if (!bIsInserted)
+                        {
+                            faceGroups.push_back({ adjacentFaces.second[0] });
+                        }
+                    }
+                    {// For adjacent face at 1
+                        bool bIsInserted = false;
+                        for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
+                        {
+                            auto faceItr = faceGroups[faceGrpIdx].find(adjacentFaces.second[1]);
+                            if (faceItr != faceGroups[faceGrpIdx].end())
+                            {
+                                bIsInserted = true;
+                            }
+                        }
+                        if (!bIsInserted)
+                        {
+                            faceGroups.push_back({ adjacentFaces.second[1] });
+                        }
+                    }
+                }
+            }
+
+            auto faceGrpsItr = faceGroups.begin();
+            for (const uint32& faceIdx : *faceGrpsItr)
+            {
+                uint32 faceStartIndex = faceIdx * 3;
+                for (uint32 i = 0; i < 3; ++i)
+                {
+                    if (vertIdx == meshLoaderData.indices[faceStartIndex + i])
+                    {
+                        addNormal(meshLoaderData.vertices[vertIdx], faceNormals[faceIdx]);
+                        break;
+                    }
+                }
+            }
+            ++faceGrpsItr;
+            while (faceGrpsItr != faceGroups.end())
+            {
+                uint32 newVertIndex = uint32(meshLoaderData.vertices.size());
+                meshLoaderData.vertices.push_back(meshLoaderData.vertices[vertIdx]);
+
+                for (const uint32& faceIdx : *faceGrpsItr)
+                {
+                    uint32 faceStartIndex = faceIdx * 3;
+                    for (uint32 i = 0; i < 3; ++i)
+                    {
+                        if (vertIdx == meshLoaderData.indices[faceStartIndex + i])
+                        {
+                            meshLoaderData.indices[faceStartIndex + i] = newVertIndex;
+                            addNormal(meshLoaderData.vertices[newVertIndex], faceNormals[faceIdx]);
+                            break;
+                        }
+                    }
+                }
+                ++faceGrpsItr;
+            }
+        }
+    }
+
+    splitMeshBatches(meshLoaderData, faceMaterialId, uint32(uniqueMatIds.size()), faceCount);
+
+    // Normalizing all the vertex normals
+    for (StaticMeshVertex& vertex : meshLoaderData.vertices)
+    {
+        normalize(vertex.normal);
+    }
+}
+
+void StaticMeshLoader::splitMeshBatches(MeshLoaderData& meshLoaderData, const std::vector<int32> &faceMaterialId, uint32 uniqueMatCount, uint32 faceCount)
+{
+    // Splitting based on face material IDs
+    if (uniqueMatCount > 1)
+    {
+        std::unordered_map<uint32, std::vector<uint32>> materialIdToIndices;
+
+        for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
+        {
+            std::vector<uint32>& indices = materialIdToIndices[faceMaterialId[faceIdx]];
+
+            uint32 faceStartIndex = faceIdx * 3;
+            for (uint32 i = 0; i < 3; ++i)
+            {
+                indices.push_back(meshLoaderData.indices[faceStartIndex + i]);
+            }
+        }
+
+        meshLoaderData.indices.clear();
+        meshLoaderData.indices.reserve(faceCount * 3);
+        meshLoaderData.meshBatches.clear();
+        meshLoaderData.meshBatches.reserve(materialIdToIndices.size());
+        for (const std::pair<const uint32, std::vector<uint32>>& matIdIndices : materialIdToIndices)
+        {
+            MeshVertexView vertexBatchView;
+            vertexBatchView.startIndex = uint32(meshLoaderData.indices.size());
+            vertexBatchView.numOfIndices = uint32(matIdIndices.second.size());
+            meshLoaderData.indices.insert(meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
+            meshLoaderData.meshBatches.push_back(vertexBatchView);
+        }
+    }
+    else
+    {
+        MeshVertexView vertexBatchView;
+        vertexBatchView.startIndex = 0;
+        vertexBatchView.numOfIndices = uint32(meshLoaderData.indices.size());
+        meshLoaderData.meshBatches.push_back(vertexBatchView);
+    }
+}
+
 StaticMeshLoader::StaticMeshLoader(const String& assetPath)
     : bIsSuccessful(false)
 {
-    float smoothingThreshold = Math::cos(Math::deg2Rad(smoothingAngle));
-
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> meshes;
     std::vector<tinyobj::material_t> materials;
@@ -107,6 +537,8 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
     String error("");
     bIsSuccessful = tinyobj::LoadObj(&attrib, &meshes, &materials, &warning, &error, assetPath.getChar()
         , PlatformFile(assetPath).getHostDirectory().getChar());
+    warning.trim();
+    error.trim();
     if (!warning.empty())
     {
         Logger::warn("StaticMeshLoader", "Tiny obj loader %s", warning.getChar());
@@ -119,330 +551,15 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
 
     for (tinyobj::shape_t& mesh : meshes)
     {
-        MeshLoaderData& meshLoaderData = loadedMeshes[mesh.name];
-        meshLoaderData.indices.resize(mesh.mesh.indices.size());
+        const bool hasSmoothing = hasSmoothedNormals(mesh);
 
-        bool hasSmoothing = hasSmoothedNormals(mesh);
-        uint32 faceCount = uint32(mesh.mesh.indices.size() / 3);
-
-        std::vector<int32> faceMaterialId(faceCount);
-        std::set<int32> uniqueMatIds;
-        // Vertices smoothed and pushed to meshLoaderData along with indices
+        if (bLoadSmoothed && !hasSmoothing)
         {
-            std::unordered_map<tinyobj::index_t, uint32> indexToNewVert;
-            std::vector<std::unordered_map<uint32, std::vector<uint32>>> vertexFaceAdjacency;
-            std::vector<Vector3D> faceNormals(faceCount);
-            std::vector<uint32> faceSmoothingId(faceCount);
-
-            for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
-            {
-                tinyobj::index_t& idx0 = mesh.mesh.indices[faceIdx * 3 + 0];
-                tinyobj::index_t& idx1 = mesh.mesh.indices[faceIdx * 3 + 1];
-                tinyobj::index_t& idx2 = mesh.mesh.indices[faceIdx * 3 + 2];
-                uint32 newVertIdx0;
-                uint32 newVertIdx1;
-                uint32 newVertIdx2;
-
-                faceSmoothingId[faceIdx] = hasSmoothing ? mesh.mesh.smoothing_group_ids[faceIdx] : 0;
-                faceMaterialId[faceIdx] = mesh.mesh.material_ids[faceIdx];
-                uniqueMatIds.insert(mesh.mesh.material_ids[faceIdx]);
-
-                // Filling vertex data to mesh struct
-                {
-                    auto idx0NewVertItr = indexToNewVert.find(idx0);
-                    auto idx1NewVertItr = indexToNewVert.find(idx1);
-                    auto idx2NewVertItr = indexToNewVert.find(idx2);
-
-                    if (idx0NewVertItr == indexToNewVert.end())
-                    {
-                        uint32& vertexIdx = indexToNewVert[idx0];
-                        vertexIdx = uint32(meshLoaderData.vertices.size());
-
-                        newVertIdx0 = vertexIdx;
-                        meshLoaderData.vertices.push_back(StaticMeshVertex());
-                        vertexFaceAdjacency.push_back({});
-                        fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idx0);
-                    }
-                    else
-                    {
-                        newVertIdx0 = idx0NewVertItr->second;
-                    }
-                    if (idx1NewVertItr == indexToNewVert.end())
-                    {
-                        uint32& vertexIdx = indexToNewVert[idx1];
-                        vertexIdx = uint32(meshLoaderData.vertices.size());
-
-                        newVertIdx1 = vertexIdx;
-                        meshLoaderData.vertices.push_back(StaticMeshVertex());
-                        vertexFaceAdjacency.push_back({});
-                        fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idx1);
-                    }
-                    else
-                    {
-                        newVertIdx1 = idx1NewVertItr->second;
-                    }
-                    if (idx2NewVertItr == indexToNewVert.end())
-                    {
-                        uint32& vertexIdx = indexToNewVert[idx2];
-                        vertexIdx = uint32(meshLoaderData.vertices.size());
-
-                        newVertIdx2 = vertexIdx;
-                        meshLoaderData.vertices.push_back(StaticMeshVertex());
-                        vertexFaceAdjacency.push_back({});
-                        fillVertexInfo(meshLoaderData.vertices[vertexIdx], attrib, idx2);
-                    }
-                    else
-                    {
-                        newVertIdx2 = idx2NewVertItr->second;
-                    }
-                }
-
-                //makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
-
-                meshLoaderData.indices[faceIdx * 3 + 0] = newVertIdx0;
-                meshLoaderData.indices[faceIdx * 3 + 1] = newVertIdx1;
-                meshLoaderData.indices[faceIdx * 3 + 2] = newVertIdx2;
-
-                faceNormals[faceIdx] = getFaceNormal(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
-
-                {
-                    std::unordered_map<uint32, std::vector<uint32>>::iterator diagonalItr;
-                    // Vertex 0
-                    {
-                        diagonalItr = vertexFaceAdjacency[newVertIdx0].find(newVertIdx1);
-                        if (diagonalItr != vertexFaceAdjacency[newVertIdx0].end())
-                        {
-                            diagonalItr->second.push_back(faceIdx);
-                        }
-                        else
-                        {
-                            vertexFaceAdjacency[newVertIdx0][newVertIdx1].push_back(faceIdx);
-                        }
-
-                        diagonalItr = vertexFaceAdjacency[newVertIdx0].find(newVertIdx2);
-                        if (diagonalItr != vertexFaceAdjacency[newVertIdx0].end())
-                        {
-                            diagonalItr->second.push_back(faceIdx);
-                        }
-                        else
-                        {
-                            vertexFaceAdjacency[newVertIdx0][newVertIdx2].push_back(faceIdx);
-                        }
-                    }
-                    // Vertex 1
-                    {
-                        diagonalItr = vertexFaceAdjacency[newVertIdx1].find(newVertIdx0);
-                        if (diagonalItr != vertexFaceAdjacency[newVertIdx1].end())
-                        {
-                            diagonalItr->second.push_back(faceIdx);
-                        }
-                        else
-                        {
-                            vertexFaceAdjacency[newVertIdx1][newVertIdx0].push_back(faceIdx);
-                        }
-
-                        diagonalItr = vertexFaceAdjacency[newVertIdx1].find(newVertIdx2);
-                        if (diagonalItr != vertexFaceAdjacency[newVertIdx1].end())
-                        {
-                            diagonalItr->second.push_back(faceIdx);
-                        }
-                        else
-                        {
-                            vertexFaceAdjacency[newVertIdx1][newVertIdx2].push_back(faceIdx);
-                        }
-                    }
-                    // Vertex 2
-                    {
-                        diagonalItr = vertexFaceAdjacency[newVertIdx2].find(newVertIdx1);
-                        if (diagonalItr != vertexFaceAdjacency[newVertIdx2].end())
-                        {
-                            diagonalItr->second.push_back(faceIdx);
-                        }
-                        else
-                        {
-                            vertexFaceAdjacency[newVertIdx2][newVertIdx1].push_back(faceIdx);
-                        }
-
-                        diagonalItr = vertexFaceAdjacency[newVertIdx2].find(newVertIdx0);
-                        if (diagonalItr != vertexFaceAdjacency[newVertIdx2].end())
-                        {
-                            diagonalItr->second.push_back(faceIdx);
-                        }
-                        else
-                        {
-                            vertexFaceAdjacency[newVertIdx2][newVertIdx0].push_back(faceIdx);
-                        }
-                    }
-                }
-            }
-
-            uint32 originalVertCount = uint32(meshLoaderData.vertices.size());
-
-            for (uint32 vertIdx = 0; vertIdx < originalVertCount; ++vertIdx)
-            {
-                std::vector<std::set<uint32>> faceGroups;
-
-                for (const std::pair<const uint32,std::vector<uint32>>& adjacentFaces : vertexFaceAdjacency[vertIdx])
-                {
-                    float dotVal = 1;
-                    bool isSameSmoothing = true;
-                    if (adjacentFaces.second.size() == 2)
-                    {
-                        dotVal = faceNormals[adjacentFaces.second[0]] | faceNormals[adjacentFaces.second[1]];
-                        isSameSmoothing = faceSmoothingId[adjacentFaces.second[0]] == faceSmoothingId[adjacentFaces.second[1]];
-                    }
-
-                    if (dotVal >= smoothingThreshold && isSameSmoothing) // Is same face group
-                    {
-                        std::set<uint32> faceIndices;
-                        faceIndices.insert(adjacentFaces.second.begin(), adjacentFaces.second.end());
-
-                        std::set<uint32> faceGrpsFound;
-                        for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
-                        {
-                            std::vector<uint32> intersectSet(Math::min(faceIndices.size(), faceGroups[faceGrpIdx].size()));
-                            auto intersectItr = std::set_intersection(faceIndices.cbegin(), faceIndices.cend(), faceGroups[faceGrpIdx].cbegin(), faceGroups[faceGrpIdx].cend()
-                                , intersectSet.begin());
-                            if ((intersectItr - intersectSet.begin()) > 0)// If any face idx is already in group add to that group
-                            {
-                                faceGrpsFound.insert(faceGrpIdx);
-                            }
-                        }
-
-                        if (faceGrpsFound.size() == 0)
-                        {
-                            faceGroups.push_back(faceIndices);
-                        }
-                        else if (faceGrpsFound.size() == 1)
-                        {
-                            faceGroups[*faceGrpsFound.begin()].insert(faceIndices.begin(), faceIndices.end());
-                        }
-                        else
-                        {
-                            auto faceGrpIdxItr = --faceGrpsFound.end();
-                            do
-                            {
-                                faceGroups[*faceGrpsFound.begin()].insert(faceGroups[*faceGrpIdxItr].begin(), faceGroups[*faceGrpIdxItr].end());
-                                faceGroups.erase(faceGroups.begin() + *faceGrpIdxItr);
-                                --faceGrpIdxItr;
-                            } while (faceGrpIdxItr != faceGrpsFound.begin());
-
-                            faceGroups[*faceGrpsFound.begin()].insert(faceIndices.begin(), faceIndices.end());
-                        }
-                    }
-                    else // Non smoothing cases happen only if there is 2 adjacent faces
-                    {
-                        {// For adjacent face at 0
-                            bool bIsInserted = false;
-                            for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
-                            {
-                                auto faceItr = faceGroups[faceGrpIdx].find(adjacentFaces.second[0]);
-                                if (faceItr != faceGroups[faceGrpIdx].end())
-                                {
-                                    bIsInserted = true;
-                                }
-                            }
-                            if (!bIsInserted)
-                            {
-                                faceGroups.push_back({ adjacentFaces.second[0] });
-                            }
-                        }
-                        {// For adjacent face at 1
-                            bool bIsInserted = false;
-                            for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
-                            {
-                                auto faceItr = faceGroups[faceGrpIdx].find(adjacentFaces.second[1]);
-                                if (faceItr != faceGroups[faceGrpIdx].end())
-                                {
-                                    bIsInserted = true;
-                                }
-                            }
-                            if (!bIsInserted)
-                            {
-                                faceGroups.push_back({ adjacentFaces.second[1] });
-                            }
-                        }
-                    }
-                }
-
-                auto faceGrpsItr = faceGroups.begin();
-                for (const uint32& faceIdx : *faceGrpsItr)
-                {
-                    uint32 faceStartIndex = faceIdx * 3;
-                    for (uint32 i = 0; i < 3; ++i)
-                    {
-                        if (vertIdx == meshLoaderData.indices[faceStartIndex + i])
-                        {
-                            addNormal(meshLoaderData.vertices[vertIdx], faceNormals[faceIdx]);
-                            break;
-                        }
-                    }
-                }
-                ++faceGrpsItr;
-                while (faceGrpsItr != faceGroups.end())
-                {
-                    uint32 newVertIndex = uint32(meshLoaderData.vertices.size());
-                    meshLoaderData.vertices.push_back(meshLoaderData.vertices[vertIdx]);
-
-                    for (const uint32& faceIdx : *faceGrpsItr)
-                    {
-                        uint32 faceStartIndex = faceIdx * 3;
-                        for (uint32 i = 0; i < 3; ++i)
-                        {
-                            if (vertIdx == meshLoaderData.indices[faceStartIndex + i])
-                            {
-                                meshLoaderData.indices[faceStartIndex + i] = newVertIndex;
-                                addNormal(meshLoaderData.vertices[newVertIndex], faceNormals[faceIdx]);
-                                break;
-                            }
-                        }
-                    }
-                    ++faceGrpsItr;
-                }
-            }
-        }
-
-        // Splitting based on face material IDs
-        if(uniqueMatIds.size() > 1)
-        {
-            std::unordered_map<uint32, std::vector<uint32>> materialIdToIndices;
-
-            for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
-            {
-                std::vector<uint32>& indices = materialIdToIndices[faceMaterialId[faceIdx]];
-
-                uint32 faceStartIndex = faceIdx * 3;
-                for (uint32 i = 0; i < 3; ++i)
-                {
-                    indices.push_back(meshLoaderData.indices[faceStartIndex + i]);
-                }
-            }
-
-            meshLoaderData.indices.clear();
-            meshLoaderData.indices.reserve(faceCount * 3);
-            meshLoaderData.meshBatches.clear();
-            meshLoaderData.meshBatches.reserve(materialIdToIndices.size());
-            for (const std::pair<const uint32, std::vector<uint32>>& matIdIndices : materialIdToIndices)
-            {
-                MeshVertexView vertexBatchView;
-                vertexBatchView.startIndex = uint32(meshLoaderData.indices.size());
-                vertexBatchView.numOfIndices = uint32(matIdIndices.second.size());
-                meshLoaderData.indices.insert(meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
-                meshLoaderData.meshBatches.push_back(vertexBatchView);
-            }
+            smoothAndLoad(mesh, attrib);
         }
         else
         {
-            MeshVertexView vertexBatchView;
-            vertexBatchView.startIndex = 0;
-            vertexBatchView.numOfIndices = uint32(meshLoaderData.indices.size());
-            meshLoaderData.meshBatches.push_back(vertexBatchView);
-        }
-        
-        // Normalizing all the vertex normals
-        for (StaticMeshVertex& vertex : meshLoaderData.vertices)
-        {
-            normalize(vertex.normal);
+            load(mesh, attrib);
         }
     }
 }
@@ -460,6 +577,7 @@ bool StaticMeshLoader::fillAssetInformation(const std::vector<StaticMeshAsset*>&
             staticMesh->vertices = meshDataPair.second.vertices;
             staticMesh->indices = meshDataPair.second.indices;
             staticMesh->meshBatches = meshDataPair.second.meshBatches;
+            staticMesh->bounds = meshDataPair.second.bound;
             ++idx;
         }
     }

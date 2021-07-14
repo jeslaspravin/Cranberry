@@ -5,6 +5,8 @@
 
 #include <glm/ext/vector_float2.hpp>
 
+class Vector3D;
+
 class Vector2D
 {
 private:
@@ -19,6 +21,7 @@ public:
     Vector2D(const float& x, const float& y);
     explicit Vector2D(const float& allValue);
     Vector2D(const Vector2D& other);
+    Vector2D(const Vector3D& other);
     Vector2D(Vector2D&& other);
     void operator=(const Vector2D& other);
     void operator=(Vector2D&& other);
@@ -51,6 +54,7 @@ public:
     void operator-=(const float& scalar);
     Vector2D operator+(const float& scalar) const;
     void operator+=(const float& scalar);
+    Vector2D operator-() const;
 
 
     bool isSame(const Vector2D& b, float epsilon = SMALL_EPSILON) const;

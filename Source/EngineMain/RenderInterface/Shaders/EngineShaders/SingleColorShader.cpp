@@ -9,6 +9,8 @@
 
 BEGIN_BUFFER_DEFINITION(SingleColorMeshData)
 ADD_BUFFER_TYPED_FIELD(meshColor)
+ADD_BUFFER_TYPED_FIELD(roughness)
+ADD_BUFFER_TYPED_FIELD(metallic)
 END_BUFFER_DEFINITION();
 
 template<EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
@@ -87,7 +89,7 @@ SingleColorShaderPipeline::SingleColorShaderPipeline(const ShaderResource* shade
 
     bool bHasDepth = false;
     FramebufferFormat fbFormat(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage());
-    GBuffers::getFramebuffer(fbFormat, 0);
+    GlobalBuffers::getFramebuffer(fbFormat, 0);
     attachmentBlendStates.reserve(fbFormat.attachments.size());
     for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
     {

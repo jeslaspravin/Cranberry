@@ -5,6 +5,7 @@
 #include "../../Math/Math.h"
 #include "../../../RenderInterface/GlobalRenderVariables.h"
 #include "../../Math/Vector2D.h"
+#include "../../Math/Vector4D.h"
 
 const float Camera::MAX_FOV(175.f);
 const float Camera::MIN_NEAR_FAR_DIFF(1.f);
@@ -126,6 +127,21 @@ void Camera::lookAt(const Vector3D& lookAtTarget)
 {
     RotationMatrix rotMatrix = RotationMatrix::fromX(lookAtTarget - camTranslation);
     setRotation(rotMatrix.asRotation());
+}
+
+Vector3D Camera::screenToWorld(const Vector2D& screenPos) const
+{
+    // Fliping y since Quad draw uses vulkan screen coord top left -1,-1 bottom right 1,1. But our view/projection y coordinate is from bottom(-1) to top(1)
+    Vector4D ndcCoord{ ((screenPos.x() - 0.5f) * 2), (-(screenPos.y() - 0.5f) * 2), 1, 1 };
+    Vector4D worldCoord = projectionMatrix().inverse() * ndcCoord;
+    worldCoord /= worldCoord.w();
+    worldCoord = viewMatrix() * worldCoord;
+    return { worldCoord };
+}
+
+Vector3D Camera::screenToWorldFwd(const Vector2D& screenPos) const
+{
+    return (screenToWorld(screenPos) - camTranslation).safeNormalize();
 }
 
 Matrix4 Camera::viewMatrix() const

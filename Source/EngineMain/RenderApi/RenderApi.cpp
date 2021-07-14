@@ -45,7 +45,7 @@ void RenderApi::initialize()
             graphicsInstance->loadSurfaceDependents();
             graphicsInstance->initializeCmds(renderCmds);
             gEngine->appInstance().appWindowManager.postInitGraphicCore();
-            GBuffers::initialize();
+            GlobalBuffers::initialize();
             globalContext->initContext(graphicsInstance);
         }
     , this);
@@ -65,7 +65,7 @@ void RenderApi::destroy()
     ENQUEUE_COMMAND(DestroyRenderApi,
         {
             globalContext->clearContext();
-            GBuffers::destroy();
+            GlobalBuffers::destroy();
             gEngine->appInstance().appWindowManager.destroyMain();
         }
     , this);

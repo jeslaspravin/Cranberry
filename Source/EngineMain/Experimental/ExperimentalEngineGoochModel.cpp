@@ -1,4 +1,4 @@
-#include "ExperimentalEngineGoochModel.h"
+#include "../Core/Engine/GameEngine.h"
 
 #if EXPERIMENTAL
 
@@ -36,11 +36,169 @@
 #include "../Editor/Core/ImGui/ImGuiManager.h"
 #include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
 #include "../RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "../RenderInterface/Resources/QueueResource.h"
+#include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
+#include "../VulkanRI/VulkanInternals/Resources/VulkanSyncResource.h"
+#include "../RenderInterface/Resources/MemoryResources.h"
+#include "../RenderInterface/ShaderCore/ShaderParameters.h"
+#include "../Core/Platform/LFS/PlatformLFS.h"
+#include "../Core/Types/Transform3D.h"
+#include "../Core/Types/Camera/Camera.h"
+#include "../Core/Types/Colors.h"
+#include "../RenderInterface/Rendering/RenderingContexts.h"
+#include "../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../RenderInterface/Resources/BufferedResources.h"
+#include "../Editor/Core/ImGui/IImGuiLayer.h"
 
 #include <array>
 #include <random>
+#include <map>
 
-#include <windows.h>
+#include <vulkan_core.h>
+
+class ShaderParameters;
+class IRenderCommandList;
+class Texture2DRW;
+
+struct QueueCommandPool
+{
+    VkCommandPool tempCommandsPool;
+    VkCommandPool resetableCommandPool;
+    VkCommandPool oneTimeRecordPool;
+};
+
+struct TexelBuffer
+{
+    class BufferResource* buffer = nullptr;
+    // Only necessary for texel buffers
+    VkBufferView bufferView = nullptr;
+};
+
+struct ImageData
+{
+    class TextureBase* image = nullptr;
+    VkImageView imageView = nullptr;
+};
+
+struct SceneEntity
+{
+    Transform3D transform;
+    class StaticMeshAsset* meshAsset;
+
+    SharedPtr<ShaderParameters> instanceParameters;
+    std::vector<LinearColor> meshBatchColors;
+    std::vector<SharedPtr<ShaderParameters>> meshBatchParameters;
+};
+
+struct FrameResource
+{
+    std::vector<SharedPtr<GraphicsSemaphore>> usageWaitSemaphore;
+    RenderTargetTexture* lightingPassRt;
+    RenderTargetTexture* lightingPassResolved;
+    SharedPtr<GraphicsFence> recordingFence;
+};
+
+class ExperimentalEngine : public GameEngine, public IImGuiLayer
+{
+    class VulkanDevice* vDevice;
+    VkDevice device;
+    const class VulkanDebugGraphics* graphicsDbg;
+
+    std::map<EQueueFunction, QueueCommandPool> pools;
+    void createPools();
+    void destroyPools();
+
+    ImageData texture;
+    SharedPtr<class SamplerInterface> nearestFiltering = nullptr;
+    SharedPtr<class SamplerInterface> linearFiltering = nullptr;
+    // TODO(Jeslas) : Cubic filtering not working check new drivers or log bug in nvidia
+    // SharedPtr<class SamplerInterface> cubicFiltering = nullptr;
+    void createImages();
+    void destroyImages();
+
+    // Scene data
+    std::vector<SceneEntity> sceneData;
+    std::vector<struct GoochModelLightData> sceneLightData;
+    std::vector<SharedPtr<ShaderParameters>> lightData;
+    SharedPtr<ShaderParameters> lightCommon;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> lightTextures;
+    SharedPtr<ShaderParameters> viewParameters;
+    void createScene();
+    void destroyScene();
+
+    // Camera parameters
+    Camera camera;
+    Vector3D cameraTranslation;
+    Rotation cameraRotation;
+    void updateCameraParams();
+
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadTextureDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadNormalDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadDepthDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawLitColorsDescs;
+
+    void createShaderParameters();
+    void setupShaderParameterParams();
+    void updateShaderParameters(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    void destroyShaderParameters();
+
+    void resizeLightingRts(const Size2D& size);
+    void reupdateTextureParamsOnResize();
+
+    // Shader pipeline resources
+    RenderPassClearValue clearValues;
+
+    void createFrameResources();
+    void destroyFrameResources();
+
+    LocalPipelineContext drawSmPipelineContext;
+
+    VkRenderPass lightingRenderPass;
+    LocalPipelineContext drawGoochPipelineContext;
+
+    class BufferResource* quadVertexBuffer = nullptr;
+    class BufferResource* quadIndexBuffer = nullptr;
+    LocalPipelineContext drawQuadPipelineContext;
+    LocalPipelineContext resolveLightRtPipelineContext;
+
+    SharedPtr<ShaderParameters> clearInfoParams;
+    LocalPipelineContext clearQuadPipelineContext;
+
+    ImageData writeTexture;
+    SharedPtr<ShaderParameters> testComputeParams;
+    LocalPipelineContext testComputePipelineContext;
+
+    void getPipelineForSubpass();
+
+    std::vector<FrameResource> frameResources;
+    void createPipelineResources();
+    void destroyPipelineResources();
+
+    // End shader pipeline resources
+
+    bool bAnimateX;
+    bool bAnimateY;
+    int32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
+    Size2D renderSize{ 1280, 720 };
+    ECameraProjection projection = ECameraProjection::Perspective;
+protected:
+    void onStartUp() override;
+    void onQuit() override;
+    void tickEngine() override;
+
+    void startUpRenderInit();
+    void renderQuit();
+    void frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+
+    void tempTest();
+    void tempTestPerFrame();
+    /* IImGuiLayer Implementation */
+public:
+    int32 layerDepth() const override;
+    int32 sublayerDepth() const override;
+    void draw(class ImGuiDrawInterface* drawInterface) override;
+    /* end overrides */
+};
 
 void ExperimentalEngine::tempTest()
 {
@@ -396,7 +554,7 @@ void ExperimentalEngine::setupShaderParameterParams()
         = depthImageViewInfo.componentMapping.a = depthImageViewInfo.componentMapping.r = EPixelComponentMapping::R;
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
         const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
@@ -454,7 +612,7 @@ void ExperimentalEngine::reupdateTextureParamsOnResize()
 
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
         const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
@@ -1029,7 +1187,7 @@ void ExperimentalEngine::tickEngine()
     {
         ENQUEUE_COMMAND(WritingDescs,
             {
-                GBuffers::onScreenResized(renderSize);
+                GlobalBuffers::onScreenResized(renderSize);
                 resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
                 EngineSettings::screenSize.set(renderSize);

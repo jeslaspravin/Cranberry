@@ -22,5 +22,4 @@ void mainVS()
     outLocalNormal = normal.xyz;
     outVertexColor = vertexColor;
     outTextureCoord = vec2(position.w, normal.w);
-    outPerspectiveZW = vec2(gl_Position.z, gl_Position.w);
 }

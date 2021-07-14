@@ -16,7 +16,8 @@ public:
 
     Box() = default;
 
-    Box(const T& min, const T& max) {
+    Box(const T& min, const T& max)
+    {
         minBound = min;
         maxBound = max;
     }
@@ -95,6 +96,14 @@ public:
         {
             minBound[i] = minBound[i] > other.minBound[i] ? other.minBound[i] : minBound[i];
             maxBound[i] = maxBound[i] < other.maxBound[i] ? other.maxBound[i] : maxBound[i];
+        }
+    }
+    void grow(const T& point)
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            minBound[i] = minBound[i] > point[i] ? point[i] : minBound[i];
+            maxBound[i] = maxBound[i] < point[i] ? point[i] : maxBound[i];
         }
     }
     
@@ -212,7 +221,9 @@ public:
 
             if (t2 < t1)
             {
-                t1 = (t2 + t1) - (t2 = t1);
+                float t = t2;
+                t2 = t1;
+                t1 = t;
             }
 
             enteringTime = Math::max(t1, enteringTime);

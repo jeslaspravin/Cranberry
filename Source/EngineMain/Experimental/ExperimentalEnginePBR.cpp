@@ -14,7 +14,6 @@
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../RenderInterface/Resources/BufferedResources.h"
 #include "../Editor/Core/ImGui/IImGuiLayer.h"
-#include "../RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanQueueResource.h"
 #include "../VulkanRI/VulkanInternals/Debugging.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
@@ -42,18 +41,21 @@
 #include "../RenderApi/Scene/RenderScene.h"
 #include "../RenderApi/Material/MaterialCommonUniforms.h"
 #include "../Core/Math/RotationMatrix.h"
+#include "../Core/Math/BVH.h"
 #include "../Core/Types/Textures/RenderTargetTextures.h"
 #include "../RenderInterface/GlobalRenderVariables.h"
 #include "../RenderInterface/Rendering/CommandBuffer.h"
 #include "../Editor/Core/ImGui/ImGuiManager.h"
 #include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
+#include "../Core/Engine/WindowManager.h"
+#include "../Core/Platform/GenericAppWindow.h"
 #include "../RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "../RenderInterface/Shaders/EngineShaders/PBRShader.h"
 
 #include <array>
 #include <random>
 #include <map>
 
-#include <windows.h>
 #include <vulkan_core.h>
 
 struct QueueCommandPool
@@ -76,13 +78,20 @@ struct ImageData
     VkImageView imageView = nullptr;
 };
 
-struct SceneEntity
+struct PBRSceneEntity
 {
+    struct BatchProperties
+    {
+        LinearColor color;
+        float roughness;
+        float metallic;
+    };
     Transform3D transform;
     class StaticMeshAsset* meshAsset;
+    String name;
 
     SharedPtr<ShaderParameters> instanceParameters;
-    std::vector<LinearColor> meshBatchColors;
+    std::vector<BatchProperties> meshBatchProps;
     std::vector<SharedPtr<ShaderParameters>> meshBatchParameters;
 };
 
@@ -92,6 +101,69 @@ struct FrameResource
     RenderTargetTexture* lightingPassRt;
     RenderTargetTexture* lightingPassResolved;
     SharedPtr<GraphicsFence> recordingFence;
+};
+
+
+struct PointLight
+{
+    Vector3D lightPos;
+    LinearColor lightcolor;
+    float radius;
+    float lumen;
+
+    SharedPtr<ShaderParameters> paramCollection;
+    uint32 index;
+    String name;
+
+    void update() const;
+};
+
+struct SpotLight
+{
+    Transform3D transform;
+    LinearColor lightcolor;
+    float radius;
+    float lumen;
+    float innerCone;
+    float outerCone;
+
+    SharedPtr<ShaderParameters> paramCollection;
+    uint32 index;
+    String name;
+
+    void update() const;
+};
+
+struct DirectionalLight
+{
+    Rotation direction;
+    LinearColor lightcolor;
+    float lumen;
+
+    SharedPtr<ShaderParameters> paramCollection;
+
+    void update() const;
+};
+
+struct GridEntity
+{
+    enum Type
+    {
+        Invalid,
+        Entity,
+        SpotLight,
+        PointLight,
+    };
+
+    Type type = Invalid;
+    uint32 idx;
+
+    AABB getBounds() const;
+
+    bool operator==(const GridEntity& other) const
+    {
+        return type == other.type && idx == other.idx;
+    }
 };
 
 class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
@@ -113,8 +185,15 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     void destroyImages();
 
     // Scene data
-    std::vector<SceneEntity> sceneData;
-    std::vector<struct GoochModelLightData> sceneLightData;
+    std::vector<PBRSceneEntity> sceneData;
+
+    std::vector<SpotLight> sceneSpotLights;
+    std::vector<PointLight> scenePointLights;
+    DirectionalLight dirLight;
+
+    BoundingVolume<GridEntity> sceneVolume;
+    GridEntity selection;
+
     std::vector<SharedPtr<ShaderParameters>> lightData;
     SharedPtr<ShaderParameters> lightCommon;
     SwapchainBufferedResource<SharedPtr<ShaderParameters>> lightTextures;
@@ -130,6 +209,9 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
 
     SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadTextureDescs;
     SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadNormalDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadAmbientDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadRoughDescs;
+    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadMetalDescs;
     SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadDepthDescs;
     SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawLitColorsDescs;
 
@@ -150,7 +232,7 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     LocalPipelineContext drawSmPipelineContext;
 
     VkRenderPass lightingRenderPass;
-    LocalPipelineContext drawGoochPipelineContext;
+    LocalPipelineContext drawPbrPipelineContext;
 
     class BufferResource* quadVertexBuffer = nullptr;
     class BufferResource* quadIndexBuffer = nullptr;
@@ -163,7 +245,7 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     ImageData writeTexture;
     SharedPtr<ShaderParameters> testComputeParams;
     LocalPipelineContext testComputePipelineContext;
-     
+
     void getPipelineForSubpass();
 
     std::vector<FrameResource> frameResources;
@@ -186,6 +268,8 @@ protected:
     void renderQuit();
     void frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
 
+    void drawSelectionWidget(class ImGuiDrawInterface* drawInterface);
+
     void tempTest();
     void tempTestPerFrame();
     /* IImGuiLayer Implementation */
@@ -194,8 +278,42 @@ public:
     int32 sublayerDepth() const override;
     void draw(class ImGuiDrawInterface* drawInterface) override;
     /* end overrides */
+
+    AABB getBounds(const GridEntity& entity) const
+    {
+        switch (entity.type)
+        {
+        case GridEntity::Entity:
+        {
+            fatalAssert(sceneData.size() > entity.idx, "%s() : Invalid index %d", __func__, entity.idx);
+            AABB bound(sceneData[entity.idx].meshAsset->bounds.minBound * sceneData[entity.idx].transform.getScale() + sceneData[entity.idx].transform.getTranslation(),
+                sceneData[entity.idx].meshAsset->bounds.maxBound * sceneData[entity.idx].transform.getScale() + sceneData[entity.idx].transform.getTranslation());
+            return bound;
+        }
+        case GridEntity::PointLight:
+        {
+            fatalAssert(scenePointLights.size() > entity.idx, "%s() : Invalid index %d", __func__, entity.idx);
+            AABB bound(scenePointLights[entity.idx].lightPos - Vector3D(50), scenePointLights[entity.idx].lightPos + Vector3D(50));
+            return bound;
+        }
+        case GridEntity::SpotLight:
+        {
+            fatalAssert(sceneSpotLights.size() > entity.idx, "%s() : Invalid index %d", __func__, entity.idx);
+            AABB bound(sceneSpotLights[entity.idx].transform.getTranslation() - Vector3D(50), sceneSpotLights[entity.idx].transform.getTranslation() + Vector3D(50));
+            return bound;
+        }
+        default:
+            fatalAssert(false, "%s(): Unsupported type", __func__);
+            break;
+        }
+        return { Vector3D::ZERO, Vector3D::ZERO };
+    }
 };
 
+AABB GridEntity::getBounds() const
+{
+    return static_cast<ExperimentalEnginePBR*>(*gEngine)->getBounds(*this);
+}
 
 void ExperimentalEnginePBR::tempTest()
 {
@@ -353,81 +471,203 @@ void ExperimentalEnginePBR::createScene()
     StaticMeshAsset* sphere = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Sphere.obj"));
     StaticMeshAsset* cylinder = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cylinder.obj"));
     StaticMeshAsset* cone = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cone.obj"));
-    std::array<StaticMeshAsset*, 4> assets{ cube, sphere, cylinder, cone };
+    StaticMeshAsset* gizmo = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Suzanne.obj"));
+    std::array<StaticMeshAsset*, 5> assets{ cube, sphere, cylinder, cone, gizmo };
     std::default_random_engine generator;
     std::uniform_real_distribution<float> distribution(-1.0, 1.0);
-    std::normal_distribution<float> distribution1(0.0, 1.0);
+    std::uniform_real_distribution<float> ud01(0.0, 1.0);
+    std::normal_distribution<float> distribution1(0.5f, 0.15f);
 
-    for (int32 i = 0; i < 3; i++)
+    std::list<GridEntity> entities;
+    auto pushEntity = [&entities, this](const PBRSceneEntity& entity)
     {
-        for (int32 j = 0; j < 3; j++)
+        entities.emplace_back(GridEntity{ GridEntity::Entity, uint32(sceneData.size()) });
+        sceneData.emplace_back(entity);
+    };
+    auto pushSpt = [&entities, this](const SpotLight& spotLight)
+    {
+        entities.emplace_back(GridEntity{ GridEntity::SpotLight, uint32(sceneSpotLights.size()) });
+        sceneSpotLights.emplace_back(spotLight);
+    };
+    auto pushPt = [&entities, this](const PointLight& pointLight)
+    {
+        entities.emplace_back(GridEntity{ GridEntity::PointLight, uint32(scenePointLights.size()) });
+        scenePointLights.emplace_back(pointLight);
+    };
+
+    for (int32 i = -1; i <= 1; i++)
+    {
+        for (int32 j = -1; j <= 1; j++)
         {
+            String roomIdx = std::to_string((i + 1) * 3 + j + 1);
             Vector3D offset = Vector3D(i * 1200.0f, j * 1200.0f, 0);
-            SceneEntity sceneFloor;
+            PBRSceneEntity sceneFloor;
             sceneFloor.meshAsset = cube;
-            sceneFloor.transform.setScale(Vector3D(10, 10, 1));
+            sceneFloor.transform.setScale(Vector3D(11, 11, 1));
             sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, -50));
-            sceneFloor.meshBatchColors.emplace_back(LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1));
+            sceneFloor.name = "floor" + roomIdx;
 
-            sceneData.emplace_back(sceneFloor);
+            sceneFloor.meshBatchProps.push_back(PBRSceneEntity::BatchProperties
+                {
+                    { ud01(generator) * 0.75f, ud01(generator) * 0.75f, ud01(generator) * 0.75f, 1 }
+                    , 0.6f, 0.5f
+                });
+            pushEntity(sceneFloor);
 
-            // Ceiling
-            sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, 550));
-            sceneData.emplace_back(sceneFloor);
+            dirLight.direction.pitch() = 35;
+            dirLight.direction.yaw() = 45;
+            dirLight.lumen = 20;
+            dirLight.lightcolor = LinearColor(1.f, 1.f, 0.8f);
 
-            // Pillars
-            sceneFloor.meshAsset = cylinder;
-            sceneFloor.transform.setScale(Vector3D(1, 1, 5));
-            sceneFloor.transform.setTranslation(offset + Vector3D(450, 450, 250));
-            sceneData.emplace_back(sceneFloor);
-            sceneFloor.transform.setTranslation(offset + Vector3D(-450, 450, 250));
-            sceneData.emplace_back(sceneFloor);
-            sceneFloor.transform.setTranslation(offset + Vector3D(450, -450, 250));
-            sceneData.emplace_back(sceneFloor);
-            sceneFloor.transform.setTranslation(offset + Vector3D(-450, -450, 250));
-            sceneData.emplace_back(sceneFloor);
-
-            for (uint32 i = 0; i < 5; ++i)
+            if (i == 0 && j == 0)
             {
-                SceneEntity entity;
-                entity.meshAsset = assets[std::rand() % assets.size()];
-                entity.transform.setTranslation(offset + Vector3D(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50));
-                entity.transform.setRotation(Rotation(0, 0, distribution(generator) * 45));
+                for (uint32 m = 0; m < 10; m++)
+                {
+                    for (uint32 r = 0; r < 10; r++)
+                    {
+                        float rough = (r * 0.1f) + 0.05f;
+                        float metallic = (m * 0.1f) + 0.05f;
+                        String suffix = "_R_" + std::to_string(r)
+                            + "_M_" + std::to_string(m);
 
-                entity.meshBatchColors.emplace_back(LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1));
-                sceneData.emplace_back(entity);
+                        Vector3D pos = offset + Vector3D(155.f + m * 110.0f, 155.0f + r * 110.f, 25.f) - Vector3D(600, 600, 0);
+
+                        PBRSceneEntity entity;
+                        entity.transform.setTranslation(pos + Vector3D(0, 0, 75));
+                        entity.meshAsset = sphere;
+                        entity.name = sphere->assetName() + suffix;
+                        entity.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
+                            {
+                                { 0.55f, 0.0f, 0.0f }
+                                ,  rough, metallic 
+                            });
+                        pushEntity(entity);
+
+                        entity.meshAsset = cube;
+                        entity.name = cube->assetName() + suffix;
+                        entity.transform.setTranslation(pos);
+                        entity.transform.setScale(Vector3D(1, 1, 0.5));
+                        pushEntity(entity);
+                    }
+                }
+                // Lights
+                {
+                    PointLight light;
+                    light.radius = 700;
+                    light.lumen = 250;
+                    light.lightcolor = LinearColorConst::WHITE;
+
+                    light.lightPos = offset + Vector3D(250, 250, 250);
+                    light.name = "point0_" + roomIdx;
+                    pushPt(light);
+
+                    light.lightPos = offset + Vector3D(250, -250, 250);
+                    light.name = "point1_" + roomIdx;
+                    pushPt(light);
+
+                    light.lightPos = offset + Vector3D(-250, 250, 250);
+                    light.name = "point2_" + roomIdx;
+                    pushPt(light);
+
+                    light.lightPos = offset + Vector3D(-250, -250, 250);
+                    light.name = "point3_" + roomIdx;
+                    pushPt(light);
+                }
             }
+            else
+            {
+                // Ceiling
+                sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, 550));
+                sceneFloor.name = "Ceil" + roomIdx;
+                pushEntity(sceneFloor);
 
-            GoochModelLightData light;
-            light.warmOffsetAndPosX = Vector4D(0.3f, 0.3f, 0.0f, offset.x() + 0);
-            light.coolOffsetAndPosY = Vector4D(0.0f, 0.0f, 0.55f, offset.y() + 0);
+                for (uint32 i = 0; i < 5; ++i)
+                {
+                    PBRSceneEntity entity;
+                    entity.meshAsset = assets[std::rand() % assets.size()];
+                    entity.transform.setTranslation(offset + Vector3D(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50));
+                    entity.transform.setRotation(Rotation(0, 0, distribution(generator) * 45));
+                    entity.name = entity.meshAsset->assetName() + roomIdx + "_" + std::to_string(i);
 
-            // Near floor
-            float height = 150;
+                    entity.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
+                        {
+                            { distribution1(generator), distribution1(generator), distribution1(generator), 1 }
+                            ,  ud01(generator), ud01(generator)
+                        });
+                    pushEntity(entity);
+                }
 
-            // Middle light
-            light.highlightColorAndPosZ = Vector4D(1.f, 1.f, 1.f, offset.z() + height);
-            light.lightColorAndRadius = Vector4D(1.f, 1.f, 1.f, 0);
-            sceneLightData.emplace_back(light);
+                // Near floor
+                float height = 175;
+                if (distribution1(generator) > 0.5f)
+                {
+                    SpotLight light;
+                    light.radius = 700;
+                    light.innerCone = 60;
+                    light.outerCone = 80;
+                    light.lumen = 200;
+                    light.transform.setTranslation(offset + Vector3D(0, 0, height));
 
-            // Light 1
-            light.highlightColorAndPosZ = Vector4D(0.49f, 0.66f, 0.75f, offset.z() + height);
-            light.lightColorAndRadius = Vector4D(0.45f, 0.58f, 0.80f, 0);
+                    Vector3D dir = Vector3D(distribution(generator), distribution(generator), -0.5);
+                    light.name = "spot0_" + roomIdx;
+                    light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
+                    light.transform.setRotation(RotationMatrix::fromX(dir).asRotation());
+                    pushSpt(light);
 
-            light.warmOffsetAndPosX.w() = offset.x() + 400;
-            light.coolOffsetAndPosY.w() = offset.y() + 400;
-            sceneLightData.emplace_back(light);
-            // Light 2
-            light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
-            sceneLightData.emplace_back(light);
-            // Light 3
-            light.warmOffsetAndPosX.w() = -light.warmOffsetAndPosX.w();
-            sceneLightData.emplace_back(light);
-            // Light 4
-            light.coolOffsetAndPosY.w() = -light.coolOffsetAndPosY.w();
-            sceneLightData.emplace_back(light);
+                    dir = dir * Vector3D(-1, -1, 1);
+                    light.name = "spot1_" + roomIdx;
+                    light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
+                    light.transform.setRotation(RotationMatrix::fromX(dir).asRotation());
+                    pushSpt(light);
+                }
+                else
+                {
+                    PointLight light;
+                    light.radius = 800;
+                    light.lumen = 250;
+
+                    light.lightPos = offset + Vector3D(400, 400, 130);
+                    light.name = "point0_" + roomIdx;
+                    light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
+                    pushPt(light);
+
+                    light.lightPos = offset + Vector3D(400, -400, 130);
+                    light.name = "point1_" + roomIdx;
+                    light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
+                    pushPt(light);
+
+                    light.lightPos = offset + Vector3D(-400, 400, 130);
+                    light.name = "point2_" + roomIdx;
+                    light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
+                    pushPt(light);
+
+                    light.lightPos = offset + Vector3D(-400, -400, 130);
+                    light.name = "point3_" + roomIdx;
+                    light.lightcolor = LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1);
+                    pushPt(light);
+                }
+
+
+                // Pillars
+                sceneFloor.meshAsset = cylinder;
+                sceneFloor.transform.setScale(Vector3D(1, 1, 5));
+                sceneFloor.transform.setTranslation(offset + Vector3D(450, 450, 250));
+                sceneFloor.name = "pillar1_" + roomIdx;
+                pushEntity(sceneFloor);
+                sceneFloor.transform.setTranslation(offset + Vector3D(-450, 450, 250));
+                sceneFloor.name = "pillar2_" + roomIdx;
+                pushEntity(sceneFloor);
+                sceneFloor.transform.setTranslation(offset + Vector3D(450, -450, 250));
+                sceneFloor.name = "pillar3_" + roomIdx;
+                pushEntity(sceneFloor);
+                sceneFloor.transform.setTranslation(offset + Vector3D(-450, -450, 250));
+                sceneFloor.name = "pillar4_" + roomIdx;
+                pushEntity(sceneFloor);
+            }
         }
     }
+
+    sceneVolume.reinitialize(entities, Vector3D(50, 50, 50));
 }
 
 void ExperimentalEnginePBR::destroyScene()
@@ -442,16 +682,16 @@ void ExperimentalEnginePBR::createShaderParameters()
     // Since view data and other view related data are at set 0
     viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(0));
     viewParameters->setResourceName("View");
-    for (SceneEntity& entity : sceneData)
+    for (PBRSceneEntity& entity : sceneData)
     {
         entity.instanceParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(1));
-        entity.instanceParameters->setResourceName(entity.meshAsset->assetName());
+        entity.instanceParameters->setResourceName(entity.name);
         entity.meshBatchParameters.resize(entity.meshAsset->meshBatches.size());
         uint32 meshBatchIdx = 0;
         for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
         {
             meshBatchParam = (GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(2)));
-            meshBatchParam->setResourceName(entity.meshAsset->assetName() + "_MeshBatch_" + std::to_string(meshBatchIdx));
+            meshBatchParam->setResourceName(entity.name + "_MeshBatch_" + std::to_string(meshBatchIdx));
             ++meshBatchIdx;
         }
     }
@@ -460,36 +700,48 @@ void ExperimentalEnginePBR::createShaderParameters()
     lightTextures.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
     drawQuadTextureDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
     drawQuadNormalDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
+    drawQuadAmbientDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
+    drawQuadRoughDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
+    drawQuadMetalDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
     drawQuadDepthDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
     drawLitColorsDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
 
     // Light related descriptors
     // as 1 and 2 are textures and light data
-    const GraphicsResource* goochModelDescLayout = drawGoochPipelineContext.getPipeline()->getParamLayoutAtSet(0);
-    lightCommon = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1,2 });
+    const GraphicsResource* pbrModelDescLayout = drawPbrPipelineContext.getPipeline()->getParamLayoutAtSet(0);
+    lightCommon = GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelDescLayout, { 1,2 });
     lightCommon->setResourceName("LightCommon");
-    const uint32 lightDataCount = uint32(Math::ceil(sceneLightData.size() / float(ARRAY_LENGTH(GoochModelLightArray::lights))));
+    uint32 lightDataCount = uint32(Math::max(1u, Math::max(scenePointLights.size(), sceneSpotLights.size())));
+    lightDataCount = uint32(Math::ceil(lightDataCount / float(ARRAY_LENGTH(PBRLightArray::spotLits))));
     lightData.resize(lightDataCount);
     for (uint32 i = 0; i < lightDataCount; ++i)
     {
         // as 0 and 1 are light common and textures
-        lightData[i] = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0, 1 });
-        lightData[i]->setResourceName("Light_" + std::to_string(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + "to"
-            + std::to_string(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights)));
+        lightData[i] = GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelDescLayout, { 0, 1 });
+        lightData[i]->setResourceName("Light_" + std::to_string(i * ARRAY_LENGTH(PBRLightArray::spotLits)) + "to"
+            + std::to_string(i * ARRAY_LENGTH(PBRLightArray::spotLits) + ARRAY_LENGTH(PBRLightArray::spotLits)));
     }
 
     const GraphicsResource* drawQuadDescLayout = drawQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0);
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         const String iString = std::to_string(i);
-        lightTextures.set(GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0,2 }), i);
+        lightTextures.set(GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelDescLayout, { 0,2 }), i);
         lightTextures.getResources()[i]->setResourceName("LightFrameCommon_" + iString);
+
         drawQuadTextureDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
         drawQuadTextureDescs.getResources()[i]->setResourceName("QuadUnlit_" + iString);
         drawQuadNormalDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
         drawQuadNormalDescs.getResources()[i]->setResourceName("QuadNormal_" + iString);
         drawQuadDepthDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
         drawQuadDepthDescs.getResources()[i]->setResourceName("QuadDepth_" + iString);
+        drawQuadAmbientDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawQuadAmbientDescs.getResources()[i]->setResourceName("QuadAmb_" + iString);
+        drawQuadRoughDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawQuadRoughDescs.getResources()[i]->setResourceName("QuadRough_" + iString);
+        drawQuadMetalDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawQuadMetalDescs.getResources()[i]->setResourceName("QuadMetal_" + iString);
+
         drawLitColorsDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
         drawLitColorsDescs.getResources()[i]->setResourceName("QuadLit_" + iString);
     }
@@ -499,6 +751,35 @@ void ExperimentalEnginePBR::createShaderParameters()
 
     testComputeParams = GraphicsHelper::createShaderParameters(graphicsInstance, testComputePipelineContext.getPipeline()->getParamLayoutAtSet(0));
     testComputeParams->setResourceName("TestCompute");
+}
+
+void PointLight::update() const
+{
+    PbrPointLight ptLit;
+    ptLit.ptLightColor_lumen = lightcolor;
+    ptLit.ptLightColor_lumen.w() = lumen;
+    ptLit.ptPos_radius = Vector4D(lightPos.x()
+        , lightPos.y(), lightPos.z(), radius);
+    paramCollection->setBuffer("ptLits", ptLit, index);
+}
+
+void SpotLight::update() const
+{
+    PbrSpotLight spotLit;
+    Vector3D temp = transform.getRotation().fwdVector();
+    spotLit.sptDirection = Vector4D(temp.x(), temp.y(), temp.z(), lumen);
+    spotLit.sptPos_radius = Vector4D(transform.getTranslation().x(), transform.getTranslation().y(), transform.getTranslation().z(), radius);
+    spotLit.sptLightColor_lumen = lightcolor;
+    spotLit.sptLightColor_lumen.w() = lumen;
+    spotLit.sptCone = Vector2D(Math::cos(Math::deg2Rad(innerCone * 0.5f)), Math::cos(Math::deg2Rad(outerCone * 0.5f)));
+    paramCollection->setBuffer("spotLits", spotLit, index);
+}
+
+void DirectionalLight::update() const
+{
+    auto dirLit = PbrDirectionalLight{ Vector4D(lightcolor), direction.fwdVector() };
+    dirLit.lightColor_lumen.w() = lumen;
+    paramCollection->setBuffer("dirLit", dirLit);
 }
 
 void ExperimentalEnginePBR::setupShaderParameterParams()
@@ -512,7 +793,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
     viewData.invProjection = viewData.projection.inverse();
     viewParameters->setBuffer("viewData", viewData);
     viewParameters->init();
-    for (SceneEntity& entity : sceneData)
+    for (PBRSceneEntity& entity : sceneData)
     {
         entity.instanceParameters->setMatrixParam("model", entity.transform.getTransformMatrix());
         entity.instanceParameters->setMatrixParam("invModel", entity.transform.getTransformMatrix().inverse());
@@ -521,54 +802,99 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
         uint32 batchIdx = 0;
         for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
         {
-            meshBatchParam->setVector4Param("meshColor", Vector4D(entity.meshBatchColors[batchIdx].getColorValue()));
+            meshBatchParam->setVector4Param("meshColor", Vector4D(entity.meshBatchProps[batchIdx].color.getColorValue()));
+            meshBatchParam->setFloatParam("roughness", entity.meshBatchProps[batchIdx].roughness);
+            meshBatchParam->setFloatParam("metallic", entity.meshBatchProps[batchIdx].metallic);
             meshBatchParam->init();
             ++batchIdx;
         }
     }
 
     lightCommon->setBuffer("viewData", viewData);
-    lightCommon->setIntParam("lightsCount", uint32(sceneLightData.size()));
-    lightCommon->setFloatParam("invLightsCount", 1.0f / sceneLightData.size());
     lightCommon->init();
     uint32 lightStartIdx = 0;
+
+    // Directional light at last to do Linear -> SRGB and ambient lights
+    dirLight.paramCollection = lightData[lightData.size() - 1];
+    dirLight.update();
+    lightData[lightData.size() - 1]->setIntParam("count", 0x00000100u);
     for (SharedPtr<ShaderParameters>& light : lightData)
     {
+        uint32 count = light->getUintParam("count");
+        // clear 0-5 bits
+        count &= ~0x000000FF;
+
         uint32 rangeIdx = 0;
-        for (; rangeIdx < ARRAY_LENGTH(GoochModelLightArray::lights) && (rangeIdx + lightStartIdx) < sceneLightData.size(); ++rangeIdx)
+        for (; rangeIdx < ARRAY_LENGTH(PBRLightArray::spotLits) && (rangeIdx + lightStartIdx) < sceneSpotLights.size(); ++rangeIdx)
         {
-            light->setBuffer("lights", sceneLightData[rangeIdx + lightStartIdx], rangeIdx);
+            SpotLight& lightData = sceneSpotLights[rangeIdx + lightStartIdx];
+            lightData.paramCollection = light;
+            lightData.index = rangeIdx;
+
+            lightData.update();
         }
-        light->setIntParam("count", uint32(rangeIdx));
+        count |= (0x0000000F & rangeIdx);
+        rangeIdx = 0;
+        for (; rangeIdx < ARRAY_LENGTH(PBRLightArray::ptLits) && (rangeIdx + lightStartIdx) < scenePointLights.size(); ++rangeIdx)
+        {
+            PointLight& lightData = scenePointLights[rangeIdx + lightStartIdx];
+            lightData.paramCollection = light;
+            lightData.index = rangeIdx;
+
+            lightData.update();
+        }
+        count |= ((0x0000000F & rangeIdx) << 4);
+
+        light->setIntParam("count", count);
         light->init();
 
-        lightStartIdx += ARRAY_LENGTH(GoochModelLightArray::lights);
+        lightStartIdx += ARRAY_LENGTH(PBRLightArray::spotLits);
     }
 
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
+    ImageViewInfo ambImageViewInfo;
+    ambImageViewInfo.componentMapping.g = ambImageViewInfo.componentMapping.b
+        = ambImageViewInfo.componentMapping.a = ambImageViewInfo.componentMapping.r = EPixelComponentMapping::R;
+    ImageViewInfo roughImageViewInfo;
+    roughImageViewInfo.componentMapping.g = roughImageViewInfo.componentMapping.b
+        = roughImageViewInfo.componentMapping.a = roughImageViewInfo.componentMapping.r = EPixelComponentMapping::G;
+    ImageViewInfo metalImageViewInfo;
+    metalImageViewInfo.componentMapping.g = metalImageViewInfo.componentMapping.b
+        = metalImageViewInfo.componentMapping.a = metalImageViewInfo.componentMapping.r = EPixelComponentMapping::B;
     ImageViewInfo depthImageViewInfo;
-    depthImageViewInfo.componentMapping.g = depthImageViewInfo.componentMapping.b 
+    depthImageViewInfo.componentMapping.g = depthImageViewInfo.componentMapping.b
         = depthImageViewInfo.componentMapping.a = depthImageViewInfo.componentMapping.r = EPixelComponentMapping::R;
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
         const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(2 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssARM", multibuffer->textures[(2 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParamViewInfo("ssDepth", depthImageViewInfo);
         lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
         drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
         drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
-        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadAmbientDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadRoughDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadMetalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadAmbientDescs.getResources()[i]->setTextureParamViewInfo("quadTexture", ambImageViewInfo);
+        drawQuadRoughDescs.getResources()[i]->setTextureParamViewInfo("quadTexture", roughImageViewInfo);
+        drawQuadMetalDescs.getResources()[i]->setTextureParamViewInfo("quadTexture", metalImageViewInfo);
+        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(3 * fbIncrement)], linearFiltering);
         drawQuadDepthDescs.getResources()[i]->setTextureParamViewInfo("quadTexture", depthImageViewInfo);
+
         drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
     lightTextures.init();
     drawQuadTextureDescs.init();
     drawQuadNormalDescs.init();
+    drawQuadAmbientDescs.init();
+    drawQuadRoughDescs.init();
+    drawQuadMetalDescs.init();
     drawQuadDepthDescs.init();
     drawLitColorsDescs.init();
 
@@ -609,17 +935,21 @@ void ExperimentalEnginePBR::reupdateTextureParamsOnResize()
 
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
         const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(2 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssARM", multibuffer->textures[(2 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
         drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
         drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
-        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadAmbientDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadRoughDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadMetalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(3 * fbIncrement)], linearFiltering);
         drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
 }
@@ -629,7 +959,7 @@ void ExperimentalEnginePBR::destroyShaderParameters()
     viewParameters->release();
     viewParameters.reset();
 
-    for (SceneEntity& entity : sceneData)
+    for (PBRSceneEntity& entity : sceneData)
     {
         entity.instanceParameters->release();
         entity.instanceParameters.reset();
@@ -641,7 +971,7 @@ void ExperimentalEnginePBR::destroyShaderParameters()
     }
 
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
-    
+
     lightCommon->release();
     lightCommon.reset();
 
@@ -654,6 +984,9 @@ void ExperimentalEnginePBR::destroyShaderParameters()
     lightTextures.reset();
     drawQuadTextureDescs.reset();
     drawQuadNormalDescs.reset();
+    drawQuadAmbientDescs.reset();
+    drawQuadRoughDescs.reset();
+    drawQuadMetalDescs.reset();
     drawQuadDepthDescs.reset();
     drawLitColorsDescs.reset();
 
@@ -696,7 +1029,7 @@ void ExperimentalEnginePBR::createFrameResources()
         name.append(std::to_string(i));
 
         frameResources[i].usageWaitSemaphore.push_back(GraphicsHelper::createSemaphore(getRenderApi()->getGraphicsInstance(), (name + "QueueSubmit").c_str()));
-        frameResources[i].recordingFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(), (name + "RecordingGaurd").c_str(),true);
+        frameResources[i].recordingFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(), (name + "RecordingGaurd").c_str(), true);
 
         rtCreateParams.textureName = "LightingRT_" + std::to_string(i);
         frameResources[i].lightingPassRt = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
@@ -734,18 +1067,18 @@ void ExperimentalEnginePBR::getPipelineForSubpass()
     vulkanRenderingContext->preparePipelineContext(&drawSmPipelineContext);
 
     // Gooch model
-    drawGoochPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
-    drawGoochPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
-    drawGoochPipelineContext.materialName = "GoochModel";
-    vulkanRenderingContext->preparePipelineContext(&drawGoochPipelineContext);
+    drawPbrPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    drawPbrPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
+    drawPbrPipelineContext.materialName = "PBR";
+    vulkanRenderingContext->preparePipelineContext(&drawPbrPipelineContext);
     lightingRenderPass = vulkanRenderingContext->getRenderPass(
-        static_cast<const GraphicsPipelineBase*>(drawGoochPipelineContext.getPipeline())->getRenderpassProperties(), {});
+        static_cast<const GraphicsPipelineBase*>(drawPbrPipelineContext.getPipeline())->getRenderpassProperties(), {});
 
     clearQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     clearQuadPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassResolved);
     clearQuadPipelineContext.materialName = "ClearRT";
     vulkanRenderingContext->preparePipelineContext(&clearQuadPipelineContext);
-    
+
     resolveLightRtPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     resolveLightRtPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassResolved);
     resolveLightRtPipelineContext.materialName = "DrawQuadFromTexture";
@@ -765,21 +1098,21 @@ void ExperimentalEnginePBR::createPipelineResources()
 {
     clearValues.colors.resize(drawSmPipelineContext.getFb()->textures.size(), LinearColorConst::BLACK);
 
-    ENQUEUE_COMMAND(QuadVerticesInit,LAMBDA_BODY
-        (
-            const std::array<Vector3D, 3> quadVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
-            const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
+    ENQUEUE_COMMAND(QuadVerticesInit, LAMBDA_BODY
+    (
+        const std::array<Vector3D, 3> quadVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
+    const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
 
-            quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
-            quadVertexBuffer->setResourceName("ScreenQuadVertices");
-            quadVertexBuffer->init();
-            quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
-            quadIndexBuffer->setResourceName("ScreenQuadIndices");
-            quadIndexBuffer->init();
+    quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
+    quadVertexBuffer->setResourceName("ScreenQuadVertices");
+    quadVertexBuffer->init();
+    quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
+    quadIndexBuffer->setResourceName("ScreenQuadIndices");
+    quadIndexBuffer->init();
 
-            cmdList->copyToBuffer(quadVertexBuffer, 0, quadVerts.data(), uint32(quadVertexBuffer->getResourceSize()));
-            cmdList->copyToBuffer(quadIndexBuffer, 0, quadIndices.data(), uint32(quadIndexBuffer->getResourceSize()));
-        )
+    cmdList->copyToBuffer(quadVertexBuffer, 0, quadVerts.data(), uint32(quadVertexBuffer->getResourceSize()));
+    cmdList->copyToBuffer(quadIndexBuffer, 0, quadIndices.data(), uint32(quadIndexBuffer->getResourceSize()));
+    )
         , this);
 
     // Shader pipeline's buffers and image access
@@ -788,16 +1121,16 @@ void ExperimentalEnginePBR::createPipelineResources()
 
 void ExperimentalEnginePBR::destroyPipelineResources()
 {
-    ENQUEUE_COMMAND(QuadVerticesRelease,LAMBDA_BODY
-        (
-            quadVertexBuffer->release();
-            quadIndexBuffer->release();
-            delete quadVertexBuffer;
-            quadVertexBuffer = nullptr;
-            delete quadIndexBuffer;
-            quadIndexBuffer = nullptr;
-        )
-    , this);
+    ENQUEUE_COMMAND(QuadVerticesRelease, LAMBDA_BODY
+    (
+        quadVertexBuffer->release();
+    quadIndexBuffer->release();
+    delete quadVertexBuffer;
+    quadVertexBuffer = nullptr;
+    delete quadIndexBuffer;
+    quadIndexBuffer = nullptr;
+    )
+        , this);
     // Shader pipeline's buffers and image access
     destroyShaderParameters();
 }
@@ -934,8 +1267,8 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawSmPipelineContext);
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawQuadPipelineContext);
 
-    drawGoochPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawGoochPipelineContext);
+    drawPbrPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawPbrPipelineContext);
     resolveLightRtPipelineContext.rtTextures[0] = frameResources[index].lightingPassResolved;
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
 
@@ -1009,7 +1342,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
 
             // View set
             cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, viewParameters.get());
-            for (const SceneEntity& entity : sceneData)
+            for (const PBRSceneEntity& entity : sceneData)
             {
                 // Instance set
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, entity.instanceParameters.get());
@@ -1036,7 +1369,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
         cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { quadVertexBuffer }, { 0 });
         cmdList->cmdBindIndexBuffer(cmdBuffer, quadIndexBuffer);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
-        if(frameVisualizeId == 0)
+        if (frameVisualizeId == 0)
         {
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, LightingPass);
 
@@ -1054,12 +1387,12 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
             int32 lightDataIndex = 0;
             for (const SharedPtr<ShaderParameters>& light : lightData)
             {
-                cmdList->cmdBeginRenderPass(cmdBuffer, drawGoochPipelineContext, scissor, {}, clearValues);
+                cmdList->cmdBeginRenderPass(cmdBuffer, drawPbrPipelineContext, scissor, {}, clearValues);
                 {
                     SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLight);
-                    cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGoochPipelineContext, { queryParam });
+                    cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawPbrPipelineContext, { queryParam });
 
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), *lightTextures, light.get() });
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrPipelineContext, { lightCommon.get(), *lightTextures, light.get() });
                     cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                 }
                 cmdList->cmdEndRenderPass(cmdBuffer);
@@ -1078,7 +1411,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
                         cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                     }
                     cmdList->cmdEndRenderPass(cmdBuffer);
-                }                
+                }
             }
         }
         else
@@ -1093,6 +1426,15 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
                 drawQuadDescs = *drawQuadNormalDescs;
                 break;
             case 3:
+                drawQuadDescs = *drawQuadAmbientDescs;
+                break;
+            case 4:
+                drawQuadDescs = *drawQuadRoughDescs;
+                break;
+            case 5:
+                drawQuadDescs = *drawQuadMetalDescs;
+                break;
+            case 6:
                 drawQuadDescs = *drawQuadDepthDescs;
                 break;
             case 0:
@@ -1102,7 +1444,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
 
             if (drawQuadDescs)
             {
-                resolveLightRtPipelineContext.rtTextures = drawGoochPipelineContext.rtTextures;
+                resolveLightRtPipelineContext.rtTextures = drawPbrPipelineContext.rtTextures;
                 getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
@@ -1121,7 +1463,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
         // Drawing IMGUI
         TinyDrawingContext drawingContext;
         drawingContext.cmdBuffer = cmdBuffer;
-        drawingContext.rtTextures = drawGoochPipelineContext.rtTextures;
+        drawingContext.rtTextures = drawPbrPipelineContext.rtTextures;
         getRenderApi()->getImGuiManager()->draw(cmdList, graphicsInstance, drawingContext);
 
         // Drawing final quad        
@@ -1167,7 +1509,7 @@ void ExperimentalEnginePBR::tickEngine()
     {
         frameVisualizeId = 0;
     }
-    else if(getApplicationInstance()->inputSystem()->isKeyPressed(Keys::TWO))
+    else if (getApplicationInstance()->inputSystem()->isKeyPressed(Keys::TWO))
     {
         frameVisualizeId = 1;
     }
@@ -1180,11 +1522,33 @@ void ExperimentalEnginePBR::tickEngine()
         frameVisualizeId = 3;
     }
 
+    if (getApplicationInstance()->inputSystem()->keyState(Keys::LMB)->keyWentDown && !getRenderApi()->getImGuiManager()->capturedInputs())
+    {
+        Rect windowArea = getApplicationInstance()->appWindowManager.getMainWindow()->windowClientRect();
+        Vector2D mouseCoord = Vector2D(getApplicationInstance()->inputSystem()->analogState(AnalogStates::AbsMouseX)->currentValue
+            , getApplicationInstance()->inputSystem()->analogState(AnalogStates::AbsMouseY)->currentValue) - windowArea.minBound;
+        mouseCoord /= Vector2D(EngineSettings::surfaceSize.get());
+        Logger::debug("ExperimentalEnginePBR", "%s(): mouse coord (%f, %f)", __func__, mouseCoord.x(), mouseCoord.y());
+        if (mouseCoord.x() >= 0 && mouseCoord.x() <= 1.0f && mouseCoord.y() >= 0 && mouseCoord.y() <= 1.0f)
+        {
+            Vector3D worldFwd = camera.screenToWorldFwd(mouseCoord);
+            std::vector<GridEntity> entities;
+            if (sceneVolume.raycast(camera.translation(), worldFwd, 2000, entities))
+            {
+                selection = entities.front();
+            }
+            else
+            {
+                selection.type = GridEntity::Invalid;
+            }
+        }
+    }
+
     if (renderSize != EngineSettings::screenSize.get())
     {
         ENQUEUE_COMMAND(WritingDescs,
             {
-                GBuffers::onScreenResized(renderSize);
+                GlobalBuffers::onScreenResized(renderSize);
                 resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
                 EngineSettings::screenSize.set(renderSize);
@@ -1194,7 +1558,7 @@ void ExperimentalEnginePBR::tickEngine()
     ENQUEUE_COMMAND(TickFrame,
         {
             updateShaderParameters(cmdList, graphicsInstance);
-            frameRender(cmdList, graphicsInstance); 
+            frameRender(cmdList, graphicsInstance);
         }, this);
 
     tempTestPerFrame();
@@ -1294,13 +1658,45 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                 ImGui::Text("Visualize buffer");
                 ImGui::NextColumn();
                 {
-                    const char* bufferMode[] = { "Lit", "Unlit", "Normal", "Depth" };
+                    const char* bufferMode[] = { "Lit", "Unlit", "Normal","AO", "Roughness", "metallic", "Depth" };
                     ImGui::Combo("Frame", &frameVisualizeId, bufferMode, ARRAY_LENGTH(bufferMode));
                 }
             };
 
             ImGui::Columns(1);
             ImGui::NextColumn();
+            if (ImGui::CollapsingHeader("Properties"))
+            {
+                ImGui::TreePush("SelectionNode");
+                if(selection.type != GridEntity::Invalid)
+                    drawSelectionWidget(drawInterface);
+                ImGui::TreePop();
+
+                ImGui::TreePush("DirectionalLightNode");
+                if (ImGui::CollapsingHeader("Directional Light"))
+                {
+                    if (ImGui::DragFloat3("Direction", reinterpret_cast<float*>(&dirLight.direction), 0.5f, -180.f, 180.f, "%.4f"))
+                    {
+                        dirLight.update();
+                    }
+
+                    if (ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&dirLight.lightcolor)))
+                    {
+                        Vector4D param{ dirLight.lightcolor };
+                        param.w() = dirLight.lumen;
+                        dirLight.paramCollection->setVector4Param("lightColor_lumen", param);
+                    }
+
+                    if (ImGui::InputFloat("Lumen", &dirLight.lumen, 1.0f, 10.f, "%.1f"))
+                    {
+                        Vector4D param{ dirLight.lightcolor };
+                        param.w() = dirLight.lumen;
+                        dirLight.paramCollection->setVector4Param("lightColor_lumen", param);
+                    }
+                }
+                ImGui::TreePop();
+            }
+
             if (ImGui::CollapsingHeader("Compute"))
             {
                 ImGui::Text("Animate");
@@ -1319,6 +1715,151 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
             }
             ImGui::PopStyleVar();
             ImGui::End();
+        }
+    }
+}
+
+void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawInterface)
+{
+    if (ImGui::CollapsingHeader("Selection"))
+    {
+        switch (selection.type)
+        {
+        case GridEntity::Entity:
+        {
+            PBRSceneEntity& entity = sceneData[selection.idx];
+            String name = entity.name;
+            ImGui::Text("Selected Entity : %s", name.getChar());
+
+            if(ImGui::CollapsingHeader("Transform"))
+            {
+                AABB currentBound = getBounds(selection);
+                bool bTransformChanged = ImGui::DragFloat3("Translation", reinterpret_cast<float*>(&entity.transform.getTranslation()), 1.f);
+                bTransformChanged = ImGui::DragFloat3("Rotation", reinterpret_cast<float*>(&entity.transform.getRotation()), 0.5f, 0.0f, 360.0f) || bTransformChanged;
+                bTransformChanged = ImGui::DragFloat3("Scale", reinterpret_cast<float*>(&entity.transform.getScale()), 0.5f) || bTransformChanged;
+
+                if (bTransformChanged)
+                {
+                    entity.instanceParameters->setMatrixParam("model", entity.transform.getTransformMatrix());
+                    entity.instanceParameters->setMatrixParam("invModel", entity.transform.getTransformMatrix().inverse());
+
+                    sceneVolume.updateBounds(selection, currentBound, getBounds(selection));
+                }
+            }
+
+            if (ImGui::TreeNode("Materials"))
+            {
+                uint32 i = 0;
+                for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
+                {
+                    if (ImGui::TreeNode(("Material " + std::to_string(i)).c_str()))
+                    {
+                        PBRSceneEntity::BatchProperties& props = entity.meshBatchProps[i];
+                        if (ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&props.color)))
+                        {
+                            meshBatchParam->setVector4Param("meshColor", props.color);
+                        }
+                        if (ImGui::DragFloat("Roughness", &props.roughness, 0.05f, 0.0f, 1.0f))
+                        {
+                            meshBatchParam->setFloatParam("roughness", props.roughness);
+                        }
+                        if (ImGui::DragFloat("Metallic", &props.metallic, 0.05f, 0.0f, 1.0f))
+                        {
+                            meshBatchParam->setFloatParam("metallic", props.metallic);
+                        }
+                        ImGui::TreePop();
+                    }
+                    ++i;
+                }
+                ImGui::TreePop();
+            }
+
+            break;
+        }
+        case GridEntity::SpotLight:
+        {
+            SpotLight& entity = sceneSpotLights[selection.idx];
+            String name = entity.name;
+            ImGui::Text("Selected Spot light : %s", name.getChar());
+
+            bool bNeedsUpdate = false;
+            if (ImGui::CollapsingHeader("Transform"))
+            {
+                AABB currentBound = getBounds(selection);
+                bool bTransformChanged = ImGui::DragFloat3("Translation", reinterpret_cast<float*>(&entity.transform.getTranslation()), 1.0f);
+                bTransformChanged = ImGui::DragFloat3("Direction", reinterpret_cast<float*>(&entity.transform.getRotation()), 0.5f, 0.0f, 360.0f) || bTransformChanged;
+
+                if (bTransformChanged)
+                {
+                    sceneVolume.updateBoundsChecked(selection, currentBound, getBounds(selection));
+                }
+                bNeedsUpdate = bTransformChanged;
+            }
+
+            if (ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&entity.lightcolor)))
+            {
+                bNeedsUpdate = true;
+            }
+            if (ImGui::InputFloat("Lumen", &entity.lumen, 1.0f, 10.f))
+            {
+                bNeedsUpdate = true;
+            }
+            if (ImGui::InputFloat("Radius", &entity.radius, 1.0f, 10.f))
+            {
+                bNeedsUpdate = true;
+            }
+            if (ImGui::DragFloat("Inner Cone", &entity.innerCone, 0.1f, 0.0f, entity.outerCone))
+            {
+                bNeedsUpdate = true;
+            }
+            if (ImGui::DragFloat("Outer Cone", &entity.outerCone, 0.1f, entity.innerCone, 179.0f))
+            {
+                bNeedsUpdate = true;
+            }
+
+            if (bNeedsUpdate)
+            {
+                entity.update();
+            }
+            break;
+        }
+        case GridEntity::PointLight:
+        {
+            PointLight& entity = scenePointLights[selection.idx];
+            String name = entity.name;
+            ImGui::Text("Selected Point light : %s", name.getChar());
+
+            bool bNeedsUpdate = false;
+
+            AABB currentBound = getBounds(selection);
+            if (ImGui::DragFloat3("Translation", reinterpret_cast<float*>(&entity.lightPos), 1.0f))
+            {
+                sceneVolume.updateBoundsChecked(selection, currentBound, getBounds(selection));
+                bNeedsUpdate = true;
+            }
+
+            if (ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&entity.lightcolor)))
+            {
+                bNeedsUpdate = true;
+            }
+            if (ImGui::InputFloat("Lumen", &entity.lumen, 1.0f, 10.f))
+            {
+                bNeedsUpdate = true;
+            }
+            if (ImGui::InputFloat("Radius", &entity.radius, 1.0f, 10.f))
+            {
+                bNeedsUpdate = true;
+            }
+
+            if (bNeedsUpdate)
+            {
+                entity.update();
+            }
+            break;
+        }
+        case GridEntity::Invalid:
+        default:
+            return;
         }
     }
 }

@@ -192,7 +192,7 @@ public:
 
     CellIndex<d> cell(const T& location) const
     {
-        return vectorToCellIdx<T, d>((location - minCorner) / cellDx);
+        return vectorToCellIdx<T, d>(Math::floor((location - minCorner) / cellDx));
     }
 
     CellIndex<d> getNdIndex(const uint32 index) const;
@@ -250,7 +250,7 @@ CellIndex<d> UniformGrid<T, d>::clampCellIndex(const CellIndex<d>& cell)
 {
     CellIndex<d> clampedCell;
     for (uint32 i = 0; i < d; i++) {
-        clampedCell.idx[i] = Math::clamp(cell[i], 0u, (uint32)nCells[i]);
+        clampedCell.idx[i] = Math::clamp(cell[i], 0u, uint32(nCells[i] - 1));
     }
     return clampedCell;
 }
@@ -289,14 +289,9 @@ void UniformGrid<T, d>::InitWithSize(const T& min, const T& max, const T& cellSi
     nCells = Math::floor(temp);
     temp = temp - nCells;
 
-    for (uint32 i = 0; i < d; i++)
-    {
-        if (temp[i] > 0) {
-            nCells += T(1);
-            maxCorner = minCorner + nCells * cellDx;
-            break;
-        }
-    }
+    // Always have 1 extra border
+    nCells += T(1);
+    maxCorner = minCorner + nCells * cellDx;
 }
 
 template<class T, uint32 d>
@@ -305,7 +300,8 @@ void UniformGrid<T, d>::InitWithCount(const T& min, const T& max, const CellInde
     minCorner = min;
     maxCorner = max;
 
-    for (uint32 i = 0; i < d; i++) {
+    for (uint32 i = 0; i < d; i++)
+    {
         nCells[i] = (float)n[i];
     }
 

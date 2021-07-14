@@ -60,13 +60,16 @@ void GBufferRenderTexture::destroyTexture(GBufferRenderTexture* texture)
 // GBuffers
 //////////////////////////////////////////////////////////////////////////
 
-std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> GBuffers::gBuffers
+std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> GlobalBuffers::gBuffers
 {
     {
-        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::D_SF32 }, ERenderPassFormat::Multibuffers), {}
+        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::D_SF32 }, ERenderPassFormat::Multibuffers), {}
     }
 };
-std::vector<Framebuffer*> GBuffers::swapchainFbs;
+std::vector<Framebuffer*> GlobalBuffers::swapchainFbs;
+
+TextureBase* GlobalBuffers::dummyBlackTexture = nullptr;
+TextureBase* GlobalBuffers::dummyWhiteTexture = nullptr;
 
 bool FramebufferFormat::operator==(const FramebufferFormat& otherFormat) const
 {
@@ -114,7 +117,7 @@ FramebufferFormat::FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frame
     , rpFormat(renderpassFormat)
 {}
 
-void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
+void GlobalBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
 {
     ENQUEUE_COMMAND(GBufferSampleCountChange,LAMBDA_BODY
         (
@@ -164,7 +167,7 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
     , newValue);
 }
 
-void GBuffers::onScreenResized(Size2D newSize)
+void GlobalBuffers::onScreenResized(Size2D newSize)
 {
     ENQUEUE_COMMAND(GBufferResize,
         {
@@ -192,7 +195,7 @@ void GBuffers::onScreenResized(Size2D newSize)
     , newSize);
 }
 
-void GBuffers::onSurfaceResized(Size2D newSize)
+void GlobalBuffers::onSurfaceResized(Size2D newSize)
 {
     ENQUEUE_COMMAND(SwapchainResize,
         {
@@ -210,14 +213,14 @@ void GBuffers::onSurfaceResized(Size2D newSize)
     , newSize);
 }
 
-void GBuffers::initialize()
+void GlobalBuffers::initialize()
 {
     const GenericWindowCanvas* windowCanvas = gEngine->getApplicationInstance()->appWindowManager
         .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
 
     const Size2D& initialSize = EngineSettings::screenSize.get();
-    GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);
+    GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GlobalBuffers::onSampleCountChanged);
 
     EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
     const bool bCanHaveResolves = sampleCount != EPixelSampleCount::SampleCount1;
@@ -268,9 +271,11 @@ void GBuffers::initialize()
         initializeSwapchainFb(fb, windowCanvas, EngineSettings::surfaceSize.get(), i);
         swapchainFbs.emplace_back(fb);
     }
+
+    createTexture2Ds();
 }
 
-void GBuffers::destroy()
+void GlobalBuffers::destroy()
 {
     for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
     {
@@ -291,9 +296,11 @@ void GBuffers::destroy()
         destroyFbInstance(fb);
     }
     swapchainFbs.clear();
+
+    destroyTexture2Ds();
 }
 
-Framebuffer* GBuffers::getFramebuffer(FramebufferFormat& framebufferFormat, uint32 frameIdx)
+Framebuffer* GlobalBuffers::getFramebuffer(FramebufferFormat& framebufferFormat, uint32 frameIdx)
 {
     std::unordered_map<FramebufferFormat,std::vector<FramebufferWrapper>>::const_iterator framebufferItr = gBuffers.find(framebufferFormat);
     if (framebufferItr != gBuffers.cend())
@@ -304,7 +311,7 @@ Framebuffer* GBuffers::getFramebuffer(FramebufferFormat& framebufferFormat, uint
     return nullptr;
 }
 
-Framebuffer* GBuffers::getFramebuffer(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx)
+Framebuffer* GlobalBuffers::getFramebuffer(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx)
 {
     std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr = gBuffers.find(FramebufferFormat(renderpassFormat));
     if (framebufferItr != gBuffers.cend())
@@ -314,12 +321,12 @@ Framebuffer* GBuffers::getFramebuffer(ERenderPassFormat::Type renderpassFormat, 
     return nullptr;
 }
 
-Framebuffer* GBuffers::getSwapchainFramebuffer(uint32 frameIdx)
+Framebuffer* GlobalBuffers::getSwapchainFramebuffer(uint32 frameIdx)
 {
     return swapchainFbs[frameIdx];
 }
 
-void GBuffers::destroyFbInstance(const Framebuffer* fb)
+void GlobalBuffers::destroyFbInstance(const Framebuffer* fb)
 {
     delete fb;
 }

@@ -1,6 +1,7 @@
 #include "Vector2D.h"
 #include "../Platform/PlatformAssertionErrors.h"
 #include "Math.h"
+#include "Vector3D.h"
 
 #include <glm/geometric.hpp>
 #include <glm/ext/vector_float3.hpp>
@@ -27,6 +28,10 @@ Vector2D::Vector2D(Vector2D&& other)
 
 Vector2D::Vector2D(const float& allValue)
     : value(allValue)
+{}
+
+Vector2D::Vector2D(const Vector3D& other)
+    : value(other.x(), other.y())
 {}
 
 void Vector2D::operator=(const Vector2D & other)
@@ -144,6 +149,11 @@ Vector2D Vector2D::operator-(const float& scalar) const
 void Vector2D::operator-=(const float& scalar)
 {
     value -= scalar;
+}
+
+Vector2D Vector2D::operator-() const
+{
+    return Vector2D(-value);
 }
 
 Vector2D Vector2D::operator+(const Vector2D& b) const

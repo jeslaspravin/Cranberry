@@ -51,6 +51,14 @@ public:
     Rotation rotation() const { return camRotation; }
 
     void lookAt(const Vector3D& lookAtTarget);
+    // Expected pos input
+    // (0,0) ----------------
+    //      |                |
+    //      |                |
+    //      |                |
+    //       ----------------  (1, 1)
+    Vector3D screenToWorld(const Vector2D& screenPos) const;
+    Vector3D screenToWorldFwd(const Vector2D& screenPos) const;
 
     Matrix4 viewMatrix() const;
     Matrix4 projectionMatrix() const;

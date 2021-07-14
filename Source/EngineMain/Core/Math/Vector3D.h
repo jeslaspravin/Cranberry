@@ -5,6 +5,9 @@
 
 #include <glm/ext/vector_float3.hpp>
 
+class Vector4D;
+class Vector2D;
+
 class Vector3D
 {
 private:
@@ -19,7 +22,10 @@ public:
     Vector3D(const float& x, const float& y, const float& z);
     Vector3D(const float& x, const float& y);
     explicit Vector3D(const float& allValue);
+    Vector3D(const Vector2D& xy, const float& z);
     Vector3D(const Vector3D& other);
+    // Construct from v4d x,y,z
+    Vector3D(const Vector4D& other);
     Vector3D(Vector3D&& other);
     void operator=(const Vector3D& other);
     void operator=(Vector3D&& other);
@@ -54,6 +60,7 @@ public:
     void operator-=(const float& scalar);
     Vector3D operator+(const float& scalar) const;
     void operator+=(const float& scalar);
+    Vector3D operator-() const;
     bool isSame(const Vector3D& b, float epsilon = SMALL_EPSILON) const;
     Vector3D normalized() const;
     Vector3D safeNormalize(float threshold = SMALL_EPSILON) const;

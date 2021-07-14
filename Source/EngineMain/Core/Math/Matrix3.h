@@ -53,6 +53,7 @@ public:
     void operator-=(const float& scalar);
     Matrix3 operator+(const float& scalar) const;
     void operator+=(const float& scalar);
+    Matrix3 operator-() const;
 public:
     static const Matrix3 IDENTITY;
 };

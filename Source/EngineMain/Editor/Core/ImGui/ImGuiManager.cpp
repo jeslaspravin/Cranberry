@@ -184,6 +184,8 @@ void ImGuiManager::setupInputs()
     io.ClipboardUserData = this;
     io.GetClipboardTextFn = &ImGuiManager::getClipboard;
     io.SetClipboardTextFn = &ImGuiManager::setClipboard;
+
+    bCaptureInput = false;
 }
 
 void ImGuiManager::updateInputs()
@@ -223,6 +225,8 @@ void ImGuiManager::updateInputs()
     // Resize to screen render size, If using screen size
     //const Vector2D pos = Vector2D(inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue, inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue) - windowArea.minBound;
     //io.MousePos = pos * (Vector2D(EngineSettings::screenSize.get()) / Vector2D(EngineSettings::surfaceSize.get()));
+
+    bCaptureInput = io.WantCaptureKeyboard | io.WantCaptureMouse;
 }
 
 void ImGuiManager::updateTextureParameters()
