@@ -4,4 +4,6 @@
 struct SingleColorMeshData
 {
     Vector4D meshColor;
+    float roughness;
+    float metallic;
 };

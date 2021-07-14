@@ -1082,7 +1082,7 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
             copies.emplace_back(vkCopyInfo);
 
             mipLinearOffset += mipSize.x * mipSize.y * mipSize.z * copyInfo.subres.layersCount;
-            mipSize = Math::max(mipSize / 2u, { 1, 1, 1 });
+            mipSize = Math::max(mipSize / 2u, Size3D{ 1, 1, 1 });
             mipSizeOffset /= 2u;
         }
     }
@@ -1130,7 +1130,7 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
                 , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
                 , 0, nullptr, 0, nullptr, 1, &transitionToSrc);
 
-            Size3D dstMipSize = Math::max(srcMipSize / 2u, { 1, 1, 1 });
+            Size3D dstMipSize = Math::max(srcMipSize / 2u, Size3D{ 1, 1, 1 });
             Size3D dstMipSizeOffset = srcMipSizeOffset / 2u;
             VkImageBlit blitRegion;
             blitRegion.srcOffsets[0] = { int32(srcMipSizeOffset.x), int32(srcMipSizeOffset.y), int32(srcMipSizeOffset.z) };;
@@ -1278,7 +1278,7 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
 
             srcMipSizeOffset /= 2u;
             dstMipSizeOffset /= 2u;
-            mipSize = Math::max(mipSize / 2u, { 1,1,1 });
+            mipSize = Math::max(mipSize / 2u, Size3D{ 1,1,1 });
         }
 
         vDevice->vkCmdCopyImage(rawCmdBuffer, transitionInfo[0].image, copySrcLayout, transitionInfo[1].image, copyDstLayout
@@ -1302,7 +1302,7 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
 
             srcMipSizeOffset /= 2u;
             dstMipSizeOffset /= 2u;
-            mipSize = Math::max(mipSize / 2u, { 1,1,1 });
+            mipSize = Math::max(mipSize / 2u, Size3D{ 1,1,1 });
         }
 
         vDevice->vkCmdResolveImage(rawCmdBuffer, transitionInfo[0].image, copySrcLayout, transitionInfo[1].image, copyDstLayout

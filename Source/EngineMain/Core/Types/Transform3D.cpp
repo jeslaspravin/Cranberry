@@ -79,18 +79,36 @@ void Transform3D::operator=(const Matrix4& transformMatrix)
     bCachedLatest = true;
 }
 
-Vector3D Transform3D::getTranslation() const
+const Vector3D& Transform3D::getTranslation() const
 {
     return transformTranslation;
 }
 
-Rotation Transform3D::getRotation() const
+Vector3D& Transform3D::getTranslation()
+{
+    bCachedLatest = false;
+    return transformTranslation;
+}
+
+const Rotation& Transform3D::getRotation() const
 {
     return transformRotation;
 }
 
-Vector3D Transform3D::getScale() const
+Rotation& Transform3D::getRotation()
 {
+    bCachedLatest = false;
+    return transformRotation;
+}
+
+const Vector3D& Transform3D::getScale() const
+{
+    return transformScale;
+}
+
+Vector3D& Transform3D::getScale()
+{
+    bCachedLatest = false;
     return transformScale;
 }
 

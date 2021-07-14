@@ -132,7 +132,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                 if(window == appMainWindow)
                 {
                     Size2D newSize{ window->windowWidth, window->windowHeight };
-                    GBuffers::onSurfaceResized(newSize);
+                    GlobalBuffers::onSurfaceResized(newSize);
                     EngineSettings::surfaceSize.set(newSize);
                 }
             ), this, window, width, height);

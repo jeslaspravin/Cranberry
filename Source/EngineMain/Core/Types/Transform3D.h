@@ -27,9 +27,12 @@ public:
     void operator=(Transform3D&& otherTransform);
     void operator=(const Matrix4& transformMatrix);
 
-    Vector3D getTranslation() const;
-    Rotation getRotation() const;
-    Vector3D getScale() const;
+    const Vector3D& getTranslation() const;
+    const Rotation& getRotation() const;
+    const Vector3D& getScale() const;
+    Vector3D& getTranslation();
+    Rotation& getRotation();
+    Vector3D& getScale();
     void setTranslation(const Vector3D& newTranslation);
     void setRotation(const Rotation& newRotation);
     void setScale(const Vector3D& newScale);

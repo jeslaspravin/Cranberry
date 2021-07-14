@@ -34,7 +34,7 @@ void GlobalRenderingContextBase::clearContext()
     {
         for (Framebuffer const* const& fb : framebuffers.second)
         {
-            GBuffers::destroyFbInstance(fb);
+            GlobalBuffers::destroyFbInstance(fb);
         }
     }
     rtFramebuffers.clear();
@@ -342,12 +342,12 @@ const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRende
 const Framebuffer* GlobalRenderingContextBase::createNewFramebuffer(const GenericRenderPassProperties& renderpassProps
     , const std::vector<RenderTargetTexture*>& rtTextures) const
 {
-    Framebuffer* fb = GBuffers::createFbInstance();
+    Framebuffer* fb = GlobalBuffers::createFbInstance();
     fb->bHasResolves = !renderpassProps.bOneRtPerFormat;
 
     if (rtTextures.empty())
     {
-        GBuffers::initializeFb(fb, Size2D());
+        GlobalBuffers::initializeFb(fb, Size2D());
     }
     else
     {
@@ -362,7 +362,7 @@ const Framebuffer* GlobalRenderingContextBase::createNewFramebuffer(const Generi
             }
         }
 
-        GBuffers::initializeFb(fb, rtTextures[0]->getTextureSize());
+        GlobalBuffers::initializeFb(fb, rtTextures[0]->getTextureSize());
     }
 
     return fb;
@@ -398,7 +398,7 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         drawMeshShaderObj->getShader(pipelineContext->forVertexType, FramebufferFormat(pipelineContext->renderpassFormat), &graphicsPipeline);
         pipelineContext->pipelineUsed = graphicsPipeline;
 
-        pipelineContext->framebuffer = GBuffers::getFramebuffer(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx);
+        pipelineContext->framebuffer = GlobalBuffers::getFramebuffer(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx);
     }
     else if(shaderDataCollectionItr->second.shaderObject->baseShaderType() == UniqueUtilityShader::staticType())
     {
@@ -406,7 +406,7 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         const Framebuffer* fb = nullptr;
         if (pipelineContext->bUseSwapchainFb)
         {
-            fb = GBuffers::getSwapchainFramebuffer(pipelineContext->swapchainIdx);
+            fb = GlobalBuffers::getSwapchainFramebuffer(pipelineContext->swapchainIdx);
 
             const GenericWindowCanvas* windowCanvas = gEngine->getApplicationInstance()->appWindowManager
                 .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
@@ -453,7 +453,7 @@ void GlobalRenderingContextBase::clearExternInitRtsFramebuffer(const std::vector
         if (renderpassProps.renderpassAttachmentFormat.attachments.empty())
         {
             // there can be only one render pass without any attachments.
-            GBuffers::destroyFbInstance(renderpassFbs->second[0]);
+            GlobalBuffers::destroyFbInstance(renderpassFbs->second[0]);
             renderpassFbs->second.clear();
             return;
         }
@@ -482,7 +482,7 @@ void GlobalRenderingContextBase::clearExternInitRtsFramebuffer(const std::vector
 
                 if (bSameTextures)
                 {
-                    GBuffers::destroyFbInstance(fb);
+                    GlobalBuffers::destroyFbInstance(fb);
                     renderpassFbs->second.erase(itr);
                     return;
                 }

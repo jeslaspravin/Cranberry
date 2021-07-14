@@ -11,7 +11,7 @@ void AssetManager::loadUnderPath(const String& scanPath)
     for (const String& filePath : foundFiles)
     {
         AssetHeader header;
-        header.assetPath = filePath.replaceAll("\\","/");
+        header.assetPath = filePath.replaceAllCopy("\\","/");
         header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
         loadAsset(header);
     }
@@ -91,7 +91,7 @@ void AssetManager::addPathsToScan(const String& scanPath)
 
 AssetBase* AssetManager::getOrLoadAsset(const String& relAssetPath)
 {
-    String newRelPath = relAssetPath.replaceAll("\\", "/");
+    String newRelPath = relAssetPath.replaceAllCopy("\\", "/");
     String extension;
     AssetHeader header;
     header.assetPath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(extension), "Assets", newRelPath);
@@ -105,7 +105,7 @@ AssetBase* AssetManager::getOrLoadAsset(const String& relAssetPath)
 AssetBase* AssetManager::getOrLoadAsset(const AssetHeader& header)
 {
     AssetHeader newHeader = header;
-    newHeader.assetPath = header.assetPath.replaceAll("\\", "/");
+    newHeader.assetPath = header.assetPath.replaceAllCopy("\\", "/");
 
     auto headerItr = assetsRegistered.find(newHeader);
     if (headerItr != assetsRegistered.end())

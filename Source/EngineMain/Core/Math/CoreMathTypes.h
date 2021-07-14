@@ -8,8 +8,9 @@
 #include "Matrix3.h"
 #include "Matrix4.h"
 
-#include "Grid.h"
-#include "Box.h"
+//#include "Grid.h"
+//#include "Box.h"
+//#include "BVH.h"
 
 #include "Rotation.h"
 #include "RotationMatrix.h"

@@ -15,3 +15,8 @@ BufferResource* MeshAsset::getIndexBuffer()
     return indexBuffer;
 }
 
+const AABB& MeshAsset::getMeshBounds() const
+{
+    return bounds;
+}
+

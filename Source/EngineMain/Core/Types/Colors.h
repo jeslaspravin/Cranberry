@@ -1,9 +1,6 @@
 #pragma once
 #include "../Platform/PlatformTypes.h"
-#include "../Math/CoreMathTypedefs.h"
-
-#include <glm/ext/vector_float4.hpp>
-#include <glm/ext/vector_float3.hpp>
+#include "../Math/CoreMathTypes.h"
 
 class LinearColor;
 
@@ -29,6 +26,7 @@ public:
     inline Color toLinear() const;
 
     const Byte4D& getColorValue() const { return colorValue; }
+    Byte4D getColorValue() { return colorValue; }
     uint8 r() const { return colorValue.r; }
     void setR(uint8 r) { colorValue.r = r; }
     uint8 g() const { return colorValue.g; }
@@ -48,7 +46,7 @@ public:
     LinearColor();
     explicit LinearColor(glm::vec3& value);
     explicit LinearColor(glm::vec4& value);
-    explicit LinearColor(float r, float g, float b, float a = 1.0f);
+    LinearColor(float r, float g, float b, float a = 1.0f);
     // If store the color value as it is bCheckSrgb must be false, if color has to be converted to linear then true
     LinearColor(const Color& color);
     LinearColor(const LinearColor& otherColor);
@@ -57,6 +55,7 @@ public:
     void operator=(LinearColor&& otherColor);
 
     const glm::vec4& getColorValue() const { return colorValue; }
+    operator Vector4D() const { return Vector4D(colorValue); }
     float r() const { return colorValue.r; }
     void setR(float r) { colorValue.r = r; }
     float g() const { return colorValue.g; }

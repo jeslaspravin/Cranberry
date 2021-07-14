@@ -2,6 +2,7 @@
 #include "../../../RenderInterface/PlatformIndependentHeaders.h"
 #include "../../Math/Math.h"
 #include "../../../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../../../RenderApi/GBuffersAndTextures.h"
 
 uint32 Texture2D::getMipCount() const
 {
@@ -221,4 +222,28 @@ void Texture2DRW::setData(const std::vector<class Color>& newData, const Color& 
 uint32 Texture2DRW::getMipCount() const
 {
     return mipCount;
+}
+
+
+void GlobalBuffers::createTexture2Ds()
+{
+    Texture2DCreateParams createParams;
+    createParams.bIsSrgb = false;
+    createParams.defaultColor = ColorConst::BLACK;
+    createParams.mipCount = 1;
+    createParams.textureName = "Dummy_Black";
+    createParams.textureSize = Size2D(1, 1);
+    dummyBlackTexture = TextureBase::createTexture<Texture2D>(createParams);
+
+    createParams.defaultColor = ColorConst::WHITE;
+    createParams.textureName = "Dummy_White";
+    dummyWhiteTexture = TextureBase::createTexture<Texture2D>(createParams);
+}
+
+void GlobalBuffers::destroyTexture2Ds()
+{
+    TextureBase::destroyTexture<Texture2D>(dummyBlackTexture);
+    dummyBlackTexture = nullptr;
+    TextureBase::destroyTexture<Texture2D>(dummyWhiteTexture);
+    dummyWhiteTexture = nullptr;
 }

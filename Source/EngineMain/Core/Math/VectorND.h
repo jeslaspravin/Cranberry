@@ -53,7 +53,7 @@ public:
     {
         uint32 idx = 0;
         uint32 count = 1;
-        for (uint32 i = d - 1; i >= 0; --i)
+        for (int32 i = d - 1; i >= 0; --i)
         {
             idx += count * cell[i];
             count *= cellsCount[i];
@@ -65,5 +65,11 @@ public:
     {
         cellsCount = CellIndex<d>();
         data.clear();
+    }
+
+    void resize(const CellIndex<d>& count)
+    {
+        cellsCount = count;
+        data.resize(cellsCount.size());
     }
 };

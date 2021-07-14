@@ -35,6 +35,7 @@ private:
 
     // Unique per GUI manager
     String clipboard;
+    bool bCaptureInput;
 
     ImGuiManager* parentGuiManager;
     ImGuiContext* context;
@@ -88,4 +89,6 @@ public:
     void addFont(const String& fontAssetPath, float fontSize);
     void addLayer(IImGuiLayer* layer);
     void removeLayer(IImGuiLayer* layer);
+
+    bool capturedInputs() const { return bCaptureInput; }
 };

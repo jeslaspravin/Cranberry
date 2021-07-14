@@ -1,5 +1,7 @@
 #pragma once
 #include "AssetObject.h"
+#include "../../Core/Math/CoreMathTypes.h"
+#include "../../Core/Math/Box.h"
 
 class BufferResource;
 
@@ -14,11 +16,15 @@ class MeshAsset : public AssetBase, public ICleanupAsset
 /*protected*/public:// TODO: change this back to protected once proper abstraction is added
     BufferResource* vertexBuffer = nullptr;
     BufferResource* indexBuffer = nullptr;
+
+    AABB bounds;
 public:
     MeshAsset() = default;
     ICleanupAsset* cleanableAsset() override;
 
     BufferResource* getVertexBuffer();
     BufferResource* getIndexBuffer();
+
+    const AABB& getMeshBounds() const;
 };
 

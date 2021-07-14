@@ -138,7 +138,7 @@ VkRenderPass VulkanGlobalRenderingContext::createGbufferRenderpass(ERenderPassFo
     GenericRenderPassProperties renderpassProps;
     renderpassProps.multisampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
     renderpassProps.renderpassAttachmentFormat.rpFormat = rpUsageFormat;
-    Framebuffer* fb = GBuffers::getFramebuffer(renderpassProps.renderpassAttachmentFormat, 0);
+    Framebuffer* fb = GlobalBuffers::getFramebuffer(renderpassProps.renderpassAttachmentFormat, 0);
     renderpassProps.bOneRtPerFormat = !fb->bHasResolves;
 
     return VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderpassProps, additionalProps);

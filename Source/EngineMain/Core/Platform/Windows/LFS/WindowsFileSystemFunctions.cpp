@@ -31,7 +31,7 @@ std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& direc
             do {
                 String path = combinePath(currentDir, data.cFileName);
                 String fileName = data.cFileName;
-                fileName.replaceAllInline(".", "");
+                fileName.replaceAll(".", "");
                 if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
                 {
                     fileList.push_back(path);

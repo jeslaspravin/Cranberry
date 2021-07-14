@@ -34,9 +34,6 @@
     <Filter Include="Source Files\Core\Platform\Windows">
       <UniqueIdentifier>{987bc79b-4c72-475a-a49d-47e1f4181493}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Core\String">
-      <UniqueIdentifier>{89339160-03e2-4ff5-b57e-91c2b09ee482}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\VulkanRI\VulkanInternals">
       <UniqueIdentifier>{a289b78c-6eb2-41bd-8110-c28afd5be6bb}</UniqueIdentifier>
     </Filter>
@@ -269,9 +266,6 @@
     </ClCompile>
     <ClCompile Include="Core\Engine\GameEngine.cpp">
       <Filter>Source Files\Core\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\String\String.cpp">
-      <Filter>Source Files\Core\String</Filter>
     </ClCompile>
     <ClCompile Include="Core\Platform\Windows\WindowsPlatformFunctions.cpp">
       <Filter>Source Files\Core\Platform\Windows</Filter>
@@ -596,6 +590,9 @@
     </ClCompile>
     <ClCompile Include="Experimental\ExperimentalEnginePBR.cpp">
       <Filter>Source Files\Experimental</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\PBRShader.cpp">
+      <Filter>Source Files\RenderInterface\Shaders\EngineShaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -983,9 +980,6 @@
     <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h">
       <Filter>Source Files\RenderInterface\Shaders\Base</Filter>
     </ClInclude>
-    <ClInclude Include="Experimental\ExperimentalEngineGoochModel.h">
-      <Filter>Source Files\Experimental</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Input\InputDevice.h">
       <Filter>Source Files\Core\Input</Filter>
     </ClInclude>
@@ -1071,6 +1065,12 @@
       <Filter>Header Files\Core\Types\Containers</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\CoreMathTypes.h">
+      <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\EngineShaders\PBRShader.h">
+      <Filter>Header Files\RenderInterface\Shaders\EngineShaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\BVH.h">
       <Filter>Header Files\Core\Math</Filter>
     </ClInclude>
   </ItemGroup>

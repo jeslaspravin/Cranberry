@@ -5,6 +5,8 @@
 
 #include <glm/ext/vector_float4.hpp>
 
+class Vector3D;
+
 class Vector4D
 {
 private:
@@ -18,6 +20,7 @@ public:
     Vector4D(const float& x, const float& y, const float& z, const float& w);
     explicit Vector4D(const Matrix4Col& vector4d);
     explicit Vector4D(const float& allValue);
+    Vector4D(const Vector3D& xyz, const float& w);
     Vector4D(const Vector4D& other);
     Vector4D(Vector4D&& other);
     void operator=(const Vector4D& other);
@@ -54,6 +57,7 @@ public:
     void operator-=(const float& scalar);
     Vector4D operator+(const float& scalar) const;
     void operator+=(const float& scalar);
+    Vector4D operator-() const;
     bool isSame(const Vector4D& b, float epsilon = SMALL_EPSILON) const;
     Vector4D normalized() const;
     Vector4D safeNormalize(float threshold = SMALL_EPSILON) const;

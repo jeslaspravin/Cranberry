@@ -84,7 +84,8 @@
         operator MyVec4() const { return MyVec4(x,y,z,w); }
 */
 #define IM_VEC2_CLASS_EXTRA                                                 \
-        ImVec2(const Vector2D& f) { x = f.x(); y = f.y(); }                       \
+        ImVec2(const Vector2D& f) { x = f.x(); y = f.y(); }                 \
+        explicit ImVec2(const Size2D& f) { x = float(f.x); y = float(f.y); }                       \
         operator Vector2D() const { return Vector2D(x,y); }
 
 #define IM_VEC4_CLASS_EXTRA                                                 \

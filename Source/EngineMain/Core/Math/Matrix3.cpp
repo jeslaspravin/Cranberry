@@ -149,6 +149,11 @@ void Matrix3::operator-=(const float& scalar)
     value -= scalar;
 }
 
+Matrix3 Matrix3::operator-() const
+{
+    return -value;
+}
+
 Matrix3 Matrix3::operator+(const Matrix3& b) const
 {
     return (value + b.value);

@@ -18,22 +18,25 @@ private:
     Math() = default;
 
 public:
-    template <typename ClampType>
-    FORCE_INLINE static ClampType clamp(const ClampType& value, const ClampType& min, const ClampType& max)
+    template <typename ClampType, typename ClampType1, typename ClampType2>
+    FORCE_INLINE static std::enable_if_t<
+        std::conjunction_v<std::is_convertible<ClampType1, ClampType>, std::is_convertible<ClampType2, ClampType>>
+        , ClampType>
+        clamp(const ClampType& value, const ClampType1& min, const ClampType2& max)
     {
-        return glm::clamp(value, min, max);
+        return glm::clamp(value, ClampType(min), ClampType(max));
     }
 
-    template <typename Type>
-    FORCE_INLINE static Type min(const Type& a, const Type& b)
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T min(const Type1& a, const Type2& b)
     {
-        return glm::min(a,b);
+        return glm::min(T(a), T(b));
     }
 
-    template <typename Type>
-    FORCE_INLINE static Type max(const Type& a, const Type& b)
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T max(const Type1& a, const Type2& b)
     {
-        return glm::max(a, b);
+        return glm::max(T(a), T(b));
     }
 
     template <typename Type>
@@ -157,10 +160,10 @@ public:
         return glm::atan(value);
     }
 
-    template <typename Type>
-    FORCE_INLINE static Type atan(const Type& numerator, const Type& denominator)
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T atan(const Type1& numerator, const Type2& denominator)
     {
-        return glm::atan(numerator,denominator);
+        return glm::atan(T(numerator), T(denominator));
     }
 
     // Rotation specializations
