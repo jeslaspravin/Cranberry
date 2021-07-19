@@ -90,6 +90,24 @@ namespace EPrimitiveTopology
     };
 
     uint32 apiInputAssemblyState(EPrimitiveTopology::Type inputAssembly);
+
+    template<Type PrimType>
+    constexpr const AChar* getChar()
+    {
+        switch (PrimType)
+        {
+        case EPrimitiveTopology::Triangle:
+            return "Triangle";
+        case EPrimitiveTopology::Line:
+            return "Line";
+            break;
+        case EPrimitiveTopology::Point:
+            return "Point";
+        default:
+            break;
+        }
+        return "";
+    }
 }
 
 struct GraphicsPipelineQueryParams

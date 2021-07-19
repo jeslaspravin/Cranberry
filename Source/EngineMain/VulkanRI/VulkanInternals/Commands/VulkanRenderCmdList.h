@@ -23,6 +23,9 @@ private:
     FORCE_INLINE VkImageLayout determineImageLayout(const ImageResource* image) const;
     FORCE_INLINE VkImageLayout getImageLayout(const ImageResource* image) const;
     FORCE_INLINE VkPipelineBindPoint getPipelineBindPoint(const PipelineBase* pipeline) const;
+
+    void copyToImage_Internal(ImageResource* dst, const BufferResource* pixelData, const CopyPixelsToImageInfo& copyInfo);
+    void copyToBuffer_Internal(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size, bool bFlushMemory = false);
 public:
 
     VulkanCommandList(IGraphicsInstance* graphicsInstance, VulkanDevice* vulkanDevice);
@@ -35,6 +38,8 @@ public:
     void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) override;
 
     void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
+    void copyToImage(ImageResource* dst, const std::vector<class LinearColor>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
+    void copyToImageLinearMapped(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
     void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) override;
 
     void setupInitialLayout(ImageResource* image) override;
@@ -57,6 +62,7 @@ public:
 
     void cmdDispatch(const GraphicsResource* cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const override;
     void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const override;
+    void cmdDrawVertices(const GraphicsResource* cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance = 0, uint32 instanceCount = 1) const override;
 
     void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const override;
     void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const override;

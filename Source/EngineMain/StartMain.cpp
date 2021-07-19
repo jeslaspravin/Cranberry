@@ -13,11 +13,13 @@ int appMain(GenericAppInstance* appInstance)
     Logger::log("Engine", "%s() : Engine start", __func__);
     gEngine->startup(appInstance);
 
+    Logger::flushStream();
     gEngine->engineLoop();
 
     gEngine->quit();
     Logger::log("Engine", "%s() : Engine quit", __func__);
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
+    Logger::flushStream();
     
     return 0;
 }

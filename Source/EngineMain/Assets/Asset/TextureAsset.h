@@ -10,6 +10,8 @@ class TextureAsset : public AssetBase, public ICleanupAsset
 private:
     std::vector<Color> tempPixelData;
     Size2D textureDimension;
+    uint8 componentsCount;
+    bool bIsNormalMap;
     TextureBase* texture;
 public:
 
@@ -22,5 +24,7 @@ public:
 
     void setTempPixelData(const std::vector<Color>& pixelData);
     void setTextureSize(const Size2D& dimension);
+    void setNormalMap(bool bIsNormal);
+    void setChannelCount(uint8 count);
     TextureBase* getTexture() const;
 };

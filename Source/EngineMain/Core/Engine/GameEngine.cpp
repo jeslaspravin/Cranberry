@@ -76,6 +76,8 @@ void GameEngine::engineLoop()
         timeData.progressFrame();
         tickEngine();
         renderingApi.renderFrame(timeData.deltaTime);
+
+        Logger::flushStream();
     }
 }
 

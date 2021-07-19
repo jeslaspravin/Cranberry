@@ -594,6 +594,12 @@
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\PBRShader.cpp">
       <Filter>Source Files\RenderInterface\Shaders\EngineShaders</Filter>
     </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\DrawingSimple3D.cpp">
+      <Filter>Source Files\RenderInterface\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\TexturedShader.cpp">
+      <Filter>Source Files\RenderInterface\Shaders\EngineShaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
@@ -1072,6 +1078,9 @@
     </ClInclude>
     <ClInclude Include="Core\Math\BVH.h">
       <Filter>Header Files\Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderInterface\Shaders\EngineShaders\TexturedShader.h">
+      <Filter>Header Files\RenderInterface\Shaders\EngineShaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -24,6 +24,7 @@ public:
 
     void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const override;
     void write(const std::vector<uint8>& writeBytes) const override;
+    void write(const uint8* writeBytes, uint64 count) const override;
 
     bool deleteFile() override;
     bool renameFile(String newName) override;

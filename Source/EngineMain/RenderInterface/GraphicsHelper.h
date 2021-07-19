@@ -103,6 +103,10 @@ public:
     {
         return HelperType::returnMappedPtr(graphicsInstance, resource);
     }
+    static void flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<class GraphicsResource*>& resources)
+    {
+        return HelperType::flushMappedPtr(graphicsInstance, resources);
+    }
 
     static uint32 shaderToPipelineStageFlags(uint32 shaderStageFlags)
     {

@@ -12,6 +12,8 @@ private:
 
     String textureName;
     Size2D textureDimension;
+    int32 channelsCount;
+    bool bIsNormal;
     std::vector<Color> texturePixelData;
 
     bool bLoaded;

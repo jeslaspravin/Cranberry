@@ -32,6 +32,11 @@ ADD_BUFFER_STRUCT_FIELD(ptLits, PbrPointLight)
 ADD_BUFFER_STRUCT_FIELD(dirLit, PbrDirectionalLight)
 END_BUFFER_DEFINITION();
 
+BEGIN_BUFFER_DEFINITION(ColorCorrection)
+ADD_BUFFER_TYPED_FIELD(exposure)
+ADD_BUFFER_TYPED_FIELD(gamma)
+END_BUFFER_DEFINITION();
+
 #define PBR_SHADER_NAME "PBR"
 
 class PBRShader : public UniqueUtilityShader
@@ -45,12 +50,21 @@ public:
     void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
     {
         static PBRLightArrayBufferParamInfo LIGHTDATA_INFO;
+        static ColorCorrectionBufferParamInfo COLOR_CORRECTION;
+        auto ShaderParamInfoInit = []
+        {
+            std::map<String, ShaderBufferParamInfo*> paramInfo
+            {
+                { "lightArray", &LIGHTDATA_INFO },
+                { "colorCorrection", &COLOR_CORRECTION}
+            };
+            paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
+            return paramInfo;
+        };
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "lightArray", &LIGHTDATA_INFO },
-            { "viewData", RenderSceneBase::sceneViewParamInfo().at("viewData") }
+            ShaderParamInfoInit()
         };
-
 
         for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : SHADER_PARAMS_INFO)
         {

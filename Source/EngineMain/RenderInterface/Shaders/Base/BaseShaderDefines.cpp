@@ -23,6 +23,12 @@ DEFINE_GRAPHICS_RESOURCE(UniqueUtilityShader)
 
 EVertexType::Type UniqueUtilityShader::vertexUsage() const
 {
+    EVertexType::Type overridenType = vertexUsed();
+    if (overridenType != EVertexType::MaxVertexType)
+    {
+        return overridenType;
+    }
+
     // Since at the moment only planning to have either simple or basic vertices only
     if (getReflection()->inputs.size() == 1)
     {
@@ -32,12 +38,25 @@ EVertexType::Type UniqueUtilityShader::vertexUsage() const
             return EVertexType::Simple2;
         case 3:
             return EVertexType::Simple3;
-        case 4:
-            return EVertexType::Simple4;
         }
     }
     else if (getReflection()->inputs.size() == 2)
     {
+        auto is3DColor = [this]()->bool
+        {
+            bool retVal = true;
+            const EShaderInputAttribFormat::Type vertexAttribCheck[] = { EShaderInputAttribFormat::Float3, EShaderInputAttribFormat::Float4 };
+            for (const ReflectInputOutput& refInput : getReflection()->inputs)
+            {
+                retVal = retVal && EShaderInputAttribFormat::getInputFormat(refInput.data.type) == vertexAttribCheck[refInput.data.location];
+            }
+            return retVal;
+        };
+
+        if (is3DColor())
+        {
+            return EVertexType::Simple3DColor;
+        }
         return EVertexType::BasicMesh;
     }
     else if (getReflection()->inputs.size() == 3)

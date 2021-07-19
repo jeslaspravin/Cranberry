@@ -3,6 +3,11 @@
 #include <sstream>
 #include <cstdarg>
 
+std::ostringstream& loggerBuffer()
+{
+    static std::ostringstream buffer;
+    return buffer;
+}
 
 GenericFile* Logger::getLogFile()
 {
@@ -27,59 +32,54 @@ GenericFile* Logger::getLogFile()
         logFile->setFileFlags(EFileFlags::CreateAlways | EFileFlags::Write);
         logFile->setSharingMode(EFileSharing::ReadOnly);
         logFile->setAttributes(EFileAdditionalFlags::Normal);
-        logFile->openOrCreate();
     }
 
     return &(*logFile);
 }
 
-void Logger::writeString(const String& message)
-{
-    std::vector<uint8> data;
-    data.resize(message.length());
-    memcpy(data.data(), message.getChar(), message.length());
-    if(getLogFile())
-        getLogFile()->write(data);
-}
-
-void Logger::debugInternal(const String& category, const String& message)
+void Logger::debugInternal(const AChar* category, const String& message)
 {
 #if _DEBUG
     static const String CATEGORY = "[DEBUG]";
 
-    std::stringstream stream;
+    std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << "\r\n";
-
-    writeString(stream.str());
 #endif
 }
 
-void Logger::logInternal(const String& category, const String& message)
+void Logger::logInternal(const AChar* category, const String& message)
 {
     static const String CATEGORY = "[LOG]";
 
-    std::stringstream stream;
+    std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << "\r\n";
-
-    writeString(stream.str());
 }
 
-void Logger::warnInternal(const String& category, const String& message)
+void Logger::warnInternal(const AChar* category, const String& message)
 {
     static const String CATEGORY = "[WARN]";
 
-    std::stringstream stream;
+    std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << "\r\n";
-
-    writeString(stream.str());
 }
 
-void Logger::errorInternal(const String& category, const String& message)
+void Logger::errorInternal(const AChar* category, const String& message)
 {
     static const String CATEGORY = "[ERROR]";
 
-    std::stringstream stream;
+    std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << "\r\n";
+}
 
-    writeString(stream.str());
+void Logger::flushStream()
+{
+    GenericFile* logFile = getLogFile();
+    auto str = loggerBuffer().str();
+    if (!str.empty() && logFile && logFile->openOrCreate())
+    {
+        logFile->seekEnd();
+        logFile->write(reinterpret_cast<const uint8*>(str.data()), str.length());
+        loggerBuffer().flush();
+        logFile->closeFile();
+    }
 }

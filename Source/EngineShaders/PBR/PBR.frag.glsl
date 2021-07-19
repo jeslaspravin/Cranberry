@@ -9,6 +9,7 @@ layout(location = 0) out vec4 colorAttachment0;
 
 #include "../Common/ViewDescriptors.inl.glsl"
 #include "../Common/CommonDefines.inl.glsl"
+#include "../Common/ToneMapping.inl.glsl"
 
 layout(set = 1, binding = 1) uniform sampler2D ssUnlitColor;
 layout(set = 1, binding = 2) uniform sampler2D ssNormal;
@@ -44,6 +45,14 @@ layout(set = 2, binding = 0) uniform ArrayOfLight
     PointLight ptLits[8];
     DirectionalLight dirLit;
 } lightArray;
+
+layout(set = 2, binding = 1) uniform ColorCorrection 
+{
+    float exposure;
+    float gamma;
+} colorCorrection;
+
+
 
 #define SPOT_COUNT (lightArray.count & 0x0000000F)
 #define POINT_COUNT ((lightArray.count & 0x000000F0) >> 4)
@@ -185,9 +194,10 @@ void mainFS()
         // Doing ambient light here
         outColor += (lightArray.dirLit.lightColor_lumen.xyz * arm.x * 0.04);
 
-        // Linear -> SRGB
-        outColor = outColor / (outColor + vec3(1.0));
-        finalColor = vec4(pow(outColor, vec3(1.0/2.2)), finalColor.w);
+        // Tonemap
+        outColor = Uncharted2Tonemap(outColor, colorCorrection.exposure);
+        // Gamma correction
+        finalColor = vec4(GAMMA_CORRECT(outColor, colorCorrection.gamma), finalColor.w);
         // finalColor = vec4(outColor, finalColor.w);
     }
 

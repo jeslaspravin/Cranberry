@@ -77,17 +77,18 @@ FORCE_INLINE VkPipelineBindPoint VulkanCommandList::getPipelineBindPoint(const P
 
 FORCE_INLINE void cmdPipelineBarrier(VulkanDevice* vDevice, VkCommandBuffer cmdBuffer, const std::vector<VkImageMemoryBarrier2KHR>& imageBarriers, const std::vector<VkBufferMemoryBarrier2KHR>& bufferBarriers)
 {
-    if (vDevice->vkCmdPipelineBarrier2KHR)
-    {
-        BARRIER_DEPENDENCY_INFO_KHR(dependencyInfo);
-        dependencyInfo.dependencyFlags = VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT;
-        dependencyInfo.pImageMemoryBarriers = imageBarriers.data();
-        dependencyInfo.imageMemoryBarrierCount = uint32(imageBarriers.size());
-        dependencyInfo.pBufferMemoryBarriers = bufferBarriers.data();
-        dependencyInfo.bufferMemoryBarrierCount = uint32(bufferBarriers.size());
-        vDevice->vkCmdPipelineBarrier2KHR(cmdBuffer, &dependencyInfo);
-    }
-    else
+    // #TODO(Jeslas) : check if this fixes BSOD
+    //if (vDevice->vkCmdPipelineBarrier2KHR)
+    //{
+    //    BARRIER_DEPENDENCY_INFO_KHR(dependencyInfo);
+    //    dependencyInfo.dependencyFlags = VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT;
+    //    dependencyInfo.pImageMemoryBarriers = imageBarriers.data();
+    //    dependencyInfo.imageMemoryBarrierCount = uint32(imageBarriers.size());
+    //    dependencyInfo.pBufferMemoryBarriers = bufferBarriers.data();
+    //    dependencyInfo.bufferMemoryBarrierCount = uint32(bufferBarriers.size());
+    //    vDevice->vkCmdPipelineBarrier2KHR(cmdBuffer, &dependencyInfo);
+    //}
+    //else
     {
         struct Barriers
         {
@@ -181,72 +182,23 @@ void VulkanCommandList::newFrame()
 
 void VulkanCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size)
 {
-    if (dst->getType()->isChildOf<GraphicsWBuffer>() || dst->getType()->isChildOf<GraphicsWTexelBuffer>())
-    {
-        Logger::error("VulkanCommandList", "%s() : Cannot copy to buffer(%s) that is write only", __func__, dst->getResourceName().getChar());
-        return;
-    }
-    debugAssert((dst->getResourceSize() - dstOffset) >= size);
-
-    if (dst->isStagingResource())
-    {
-        auto* vulkanDst = static_cast<VulkanBufferResource*>(dst);
-        void* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, dst)) + dstOffset;
-        memcpy(stagingPtr, dataToCopy, size);
-        GraphicsHelper::returnMappedPtr(gInstance, dst);
-    }
-    else
-    {
-        uint64 stagingSize = dst->getResourceSize() - dstOffset;
-
-        CopyBufferInfo copyInfo{ 0, dstOffset, size};
-
-        if (dst->getType()->isChildOf<GraphicsRBuffer>() || dst->getType()->isChildOf<GraphicsRWBuffer>()
-            || dst->getType()->isChildOf<GraphicsVertexBuffer>() || dst->getType()->isChildOf<GraphicsIndexBuffer>())
-        {
-            // In case of buffer larger than 4GB using UINT32 will create issue
-            auto stagingBuffer = GraphicsRBuffer(uint32(stagingSize));
-            stagingBuffer.setAsStagingResource(true);
-            stagingBuffer.init();
-
-            fatalAssert(stagingBuffer.isValid(), "Initializing staging buffer failed");
-            copyToBuffer(&stagingBuffer, 0, dataToCopy, size);
-            copyBuffer(&stagingBuffer, dst, copyInfo);
-
-            stagingBuffer.release();
-        }
-        else if(dst->getType()->isChildOf<GraphicsRTexelBuffer>() || dst->getType()->isChildOf<GraphicsRWTexelBuffer>())
-        {
-            // In case of buffer larger than 4GB using UINT32 will create issue
-            auto stagingBuffer = GraphicsRTexelBuffer(dst->texelFormat(), uint32(stagingSize / EPixelDataFormat::getFormatInfo(dst->texelFormat())->pixelDataSize));
-            stagingBuffer.setAsStagingResource(true);
-            stagingBuffer.init();
-
-            fatalAssert(stagingBuffer.isValid(), "Initializing staging buffer failed");
-            copyToBuffer(&stagingBuffer, 0, dataToCopy, size);
-            copyBuffer(&stagingBuffer, dst, copyInfo);
-
-            stagingBuffer.release();
-        }
-        else
-        {
-            Logger::error("VulkanCommandList", "%s() : Copying buffer type is invalid", __func__);
-        }
-    }
+    copyToBuffer_Internal(dst, dstOffset, dataToCopy, size, true);
 }
 
 void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies)
 {
     // For each buffer there will be bunch of copies associated to it
     std::map<VulkanBufferResource*, std::pair<VulkanBufferResource*, std::vector<const BatchCopyBufferData*>>> dstToStagingBufferMap;
-    
+    std::vector<GraphicsResource*> flushBuffers;
+
     // Filling per buffer copy region data and staging data
     for (const BatchCopyBufferData& copyData : batchCopies)
     {
         auto* vulkanDst = static_cast<VulkanBufferResource*>(copyData.dst);
         if (vulkanDst->isStagingResource())
         {
-            copyToBuffer(vulkanDst, copyData.dstOffset, copyData.dataToCopy, copyData.size);
+            copyToBuffer_Internal(vulkanDst, copyData.dstOffset, copyData.dataToCopy, copyData.size, false);
+            flushBuffers.emplace_back(copyData.dst);
         }
         else
         {
@@ -274,16 +226,25 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
                 dstToStagingBufferMap[vulkanDst] = { stagingBuffer, { &copyData } };
                 stagingBuffer->setAsStagingResource(true);
                 stagingBuffer->init();
+
+                // We don't want to flush same buffer again
+                flushBuffers.emplace_back(stagingBuffer);
             }
             else
             {
                 stagingBuffer = stagingBufferItr->second.first;
                 stagingBufferItr->second.second.push_back(&copyData);
             }
-            copyToBuffer(stagingBuffer, copyData.dstOffset, copyData.dataToCopy, copyData.size);
+            copyToBuffer_Internal(stagingBuffer, copyData.dstOffset, copyData.dataToCopy, copyData.size, false);
         }
     }
+    GraphicsHelper::flushMappedPtr(gInstance, flushBuffers);
+    for (GraphicsResource* buffer : flushBuffers)
+    {
+        GraphicsHelper::returnMappedPtr(gInstance, buffer);
+    }
 
+    // Going to copy from staging to GPU buffers if any such copy exists
     if (dstToStagingBufferMap.empty())
     {
         return;
@@ -319,6 +280,66 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
         delete dstToStagingPair.second.first;
     }
     dstToStagingBufferMap.clear();
+}
+
+void VulkanCommandList::copyToBuffer_Internal(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size, bool bFlushMemory /*= false*/)
+{
+    if (dst->getType()->isChildOf<GraphicsWBuffer>() || dst->getType()->isChildOf<GraphicsWTexelBuffer>())
+    {
+        Logger::error("VulkanCommandList", "%s() : Copy to buffer(%s) that is write only is not allowed", __func__, dst->getResourceName().getChar());
+        return;
+    }
+    debugAssert((dst->getResourceSize() - dstOffset) >= size);
+
+    if (dst->isStagingResource())
+    {
+        auto* vulkanDst = static_cast<VulkanBufferResource*>(dst);
+        void* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, dst)) + dstOffset;
+        memcpy(stagingPtr, dataToCopy, size);
+        if (bFlushMemory)
+        {
+            GraphicsHelper::flushMappedPtr(gInstance, { dst });
+            GraphicsHelper::returnMappedPtr(gInstance, dst);
+        }
+    }
+    else
+    {
+        uint64 stagingSize = dst->getResourceSize() - dstOffset;
+
+        CopyBufferInfo copyInfo{ 0, dstOffset, size };
+
+        if (dst->getType()->isChildOf<GraphicsRBuffer>() || dst->getType()->isChildOf<GraphicsRWBuffer>()
+            || dst->getType()->isChildOf<GraphicsVertexBuffer>() || dst->getType()->isChildOf<GraphicsIndexBuffer>())
+        {
+            // In case of buffer larger than 4GB using UINT32 will create issue
+            auto stagingBuffer = GraphicsRBuffer(uint32(stagingSize));
+            stagingBuffer.setAsStagingResource(true);
+            stagingBuffer.init();
+
+            fatalAssert(stagingBuffer.isValid(), "Initializing staging buffer failed");
+            copyToBuffer_Internal(&stagingBuffer, 0, dataToCopy, size, true);
+            copyBuffer(&stagingBuffer, dst, copyInfo);
+
+            stagingBuffer.release();
+        }
+        else if (dst->getType()->isChildOf<GraphicsRTexelBuffer>() || dst->getType()->isChildOf<GraphicsRWTexelBuffer>())
+        {
+            // In case of buffer larger than 4GB using UINT32 will create issue
+            auto stagingBuffer = GraphicsRTexelBuffer(dst->texelFormat(), uint32(stagingSize / EPixelDataFormat::getFormatInfo(dst->texelFormat())->pixelDataSize));
+            stagingBuffer.setAsStagingResource(true);
+            stagingBuffer.init();
+
+            fatalAssert(stagingBuffer.isValid(), "Initializing staging buffer failed");
+            copyToBuffer_Internal(&stagingBuffer, 0, dataToCopy, size, true);
+            copyBuffer(&stagingBuffer, dst, copyInfo);
+
+            stagingBuffer.release();
+        }
+        else
+        {
+            Logger::error("VulkanCommandList", "%s() : Copying buffer type is invalid", __func__);
+        }
+    }
 }
 
 const GraphicsResource* VulkanCommandList::startCmd(const String& uniqueName, EQueueFunction queue, bool bIsReusable)
@@ -960,6 +981,12 @@ void VulkanCommandList::cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32
     vDevice->vkCmdDrawIndexed(rawCmdBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
+void VulkanCommandList::cmdDrawVertices(const GraphicsResource* cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance /*= 0*/, uint32 instanceCount /*= 1*/) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+    vDevice->vkCmdDraw(rawCmdBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
 void VulkanCommandList::cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport /*= 0*/) const
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
@@ -1036,6 +1063,74 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
         return;
     }
     const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dst->imageFormat());
+
+    // Add 32 bit extra space to staging to compensate 32 mask out of range when copying data
+    uint32 dataMargin = uint32(Math::ceil(float(sizeof(uint32)) / formatInfo->pixelDataSize));
+    GraphicsRBuffer stagingBuffer = GraphicsRBuffer(formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin);
+    stagingBuffer.setAsStagingResource(true);
+    stagingBuffer.init();
+
+    uint8* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, &stagingBuffer));
+    copyPixelsTo(&stagingBuffer, stagingPtr, pixelData, formatInfo);
+    GraphicsHelper::returnMappedPtr(gInstance, &stagingBuffer);
+
+    copyToImage_Internal(dst, &stagingBuffer, copyInfo);
+    stagingBuffer.release();
+}
+
+void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class LinearColor>& pixelData, const CopyPixelsToImageInfo& copyInfo)
+{
+    fatalAssert(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
+    const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dst->imageFormat());
+    if (EPixelDataFormat::isDepthFormat(dst->imageFormat())
+        && (formatInfo->componentSize[0] != sizeof(32) || EPixelDataFormat::isStencilFormat(dst->imageFormat())))
+    {
+        Logger::error("VulkanCommandList", "%s() : Depth/Float format with size other than 32bit is not supported for copying from Color data", __func__);
+        return;
+    }
+
+    // Add 32 bit extra space to staging to compensate 32 mask out of range when copying data
+    uint32 dataMargin = uint32(Math::ceil(float(sizeof(uint32)) / formatInfo->pixelDataSize));
+    GraphicsRBuffer stagingBuffer = GraphicsRBuffer(formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin);
+    stagingBuffer.setAsStagingResource(true);
+    stagingBuffer.init();
+
+    uint8* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, &stagingBuffer));
+    copyPixelsTo(&stagingBuffer, stagingPtr, pixelData, formatInfo
+        , EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()));
+    GraphicsHelper::returnMappedPtr(gInstance, &stagingBuffer);
+
+    copyToImage_Internal(dst, &stagingBuffer, copyInfo);
+    stagingBuffer.release();
+}
+
+void VulkanCommandList::copyToImageLinearMapped(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo)
+{
+    fatalAssert(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
+    if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
+    {
+        Logger::error("VulkanCommandList", "%s() : Depth/Float format is not supported for copying from Color data", __func__);
+        return;
+    }
+
+    const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dst->imageFormat());
+
+    // Add 32 bit extra space to staging to compensate 32 mask out of range when copying data
+    uint32 dataMargin = uint32(Math::ceil(float(sizeof(uint32)) / formatInfo->pixelDataSize));
+    GraphicsRBuffer stagingBuffer = GraphicsRBuffer(formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin);
+    stagingBuffer.setAsStagingResource(true);
+    stagingBuffer.init();
+
+    uint8* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, &stagingBuffer));
+    copyPixelsLinearMappedTo(&stagingBuffer, stagingPtr, pixelData, formatInfo);
+    GraphicsHelper::returnMappedPtr(gInstance, &stagingBuffer);
+
+    copyToImage_Internal(dst, &stagingBuffer, copyInfo);
+    stagingBuffer.release();
+}
+
+void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferResource* pixelData, const CopyPixelsToImageInfo& copyInfo)
+{
     const VkFilter filtering = VkFilter(ESamplerFiltering::getFilterInfo(GraphicsHelper::getClampedFiltering(gInstance
         , copyInfo.mipFiltering, dst->imageFormat()))->filterTypeValue);
 
@@ -1047,12 +1142,6 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
 
     // TODO(Jeslas) : change this to get current layout from some resource tracked layout
     VkImageLayout currentLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
-
-    GraphicsRBuffer stagingBuffer = GraphicsRBuffer(formatInfo->pixelDataSize, uint32(pixelData.size()));
-    stagingBuffer.setAsStagingResource(true);
-    stagingBuffer.init();
-    uint8* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, &stagingBuffer));
-    copyPixelsTo(&stagingBuffer, stagingPtr, pixelData, formatInfo);
 
     std::vector<VkBufferImageCopy> copies;
     if (copyInfo.bGenerateMips)
@@ -1090,7 +1179,7 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
     const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer("CopyPixelToImage_" + dst->getResourceName()
         , copyInfo.bGenerateMips ? EQueueFunction::Graphics : EQueueFunction::Transfer);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
-    
+
     // Transitioning all MIPs to Transfer Destination layout
     {
         IMAGE_MEMORY_BARRIER(layoutTransition);
@@ -1107,7 +1196,7 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
             , 0, nullptr, 0, nullptr, 1, &layoutTransition);
     }
 
-    vDevice->vkCmdCopyBufferToImage(rawCmdBuffer, static_cast<VulkanBufferResource*>(&stagingBuffer)->buffer
+    vDevice->vkCmdCopyBufferToImage(rawCmdBuffer, static_cast<const VulkanBufferResource*>(pixelData)->buffer
         , static_cast<VulkanImageResource*>(dst)->image, currentLayout, uint32(copies.size()), copies.data());
 
     if (copyInfo.bGenerateMips && copyInfo.subres.mipCount > 1)
@@ -1192,7 +1281,6 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
     tempFence->waitForSignal();
 
     cmdBufferManager.freeCmdBuffer(cmdBuffer);
-    stagingBuffer.release();
     tempFence->release();
 }
 

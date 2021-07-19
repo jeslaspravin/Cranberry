@@ -32,3 +32,9 @@ struct PBRLightArray
     PbrPointLight ptLits[8];
     PbrDirectionalLight dirLit;
 };
+
+struct ColorCorrection
+{
+    float exposure;
+    float gamma;
+};

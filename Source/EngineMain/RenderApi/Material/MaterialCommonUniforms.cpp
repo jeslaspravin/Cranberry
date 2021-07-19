@@ -32,7 +32,7 @@ namespace MaterialVertexUniforms
         return bufferParamInfo<EVertexType::Simple2>();
     }
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple4>()
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3DColor>()
     {
         return bufferParamInfo<EVertexType::Simple2>();
     }

@@ -25,11 +25,18 @@ namespace MaterialVertexUniforms
     template<>
     const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple4>();
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3DColor>();
     template<>
     const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::BasicMesh>();
     template<>
     const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::StaticMesh>();
+
+    template<EVertexType::Type VertexType>
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo()
+    {
+        static const std::map<String, ShaderBufferParamInfo*> NoInstanceDataForThisVertex;
+        return NoInstanceDataForThisVertex;
+    }
 
     constexpr const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo(EVertexType::Type vertexType)
     {
@@ -41,13 +48,15 @@ namespace MaterialVertexUniforms
             return bufferParamInfo<EVertexType::UI>();
         case EVertexType::Simple3:
             return bufferParamInfo<EVertexType::Simple3>();
-        case EVertexType::Simple4:
-            return bufferParamInfo<EVertexType::Simple4>();
-        default:
+        case EVertexType::Simple3DColor:
+            return bufferParamInfo<EVertexType::Simple3DColor>();
         case EVertexType::BasicMesh:
             return bufferParamInfo<EVertexType::BasicMesh>();
         case EVertexType::StaticMesh:
             return bufferParamInfo<EVertexType::StaticMesh>();
+        case EVertexType::InstancedSimple3DColor:
+        default:
+            return bufferParamInfo<EVertexType::InstancedSimple3DColor>();
         }
     }
 }

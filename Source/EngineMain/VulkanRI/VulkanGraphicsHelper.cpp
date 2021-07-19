@@ -659,6 +659,47 @@ void VulkanGraphicsHelper::returnMappedPtr(class IGraphicsInstance* graphicsInst
     }
 }
 
+void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<class GraphicsResource*>& resources)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const VulkanDevice* device = &gInstance->selectedDevice;
+
+    std::vector<VkMappedMemoryRange> memRanges;
+    memRanges.reserve(resources.size());
+    for (GraphicsResource* resource : resources)
+    {
+        if (resource->getType()->isChildOf(VulkanImageResource::staticType()))
+        {
+            IVulkanMemoryResources* memRes = static_cast<VulkanImageResource*>(resource);
+
+            MAPPED_MEMORY_RANGE(memRange);
+            memRange.memory = memRes->getDeviceMemory();
+            memRange.size = memRes->allocatedSize();
+            memRange.offset = memRes->allocationOffset();
+            memRanges.emplace_back(memRange);
+        }
+        else if (resource->getType()->isChildOf(VulkanBufferResource::staticType()))
+        {
+            IVulkanMemoryResources* memRes = static_cast<VulkanBufferResource*>(resource);
+
+            MAPPED_MEMORY_RANGE(memRange);
+            memRange.memory = memRes->getDeviceMemory();
+            memRange.size = memRes->allocatedSize();
+            memRange.offset = memRes->allocationOffset();
+            memRanges.emplace_back(memRange);
+        }
+    }
+
+    if (!memRanges.empty())
+    {
+        VkResult result = device->vkFlushMappedMemoryRanges(device->logicalDevice, uint32(memRanges.size()), memRanges.data());
+        if (result != VK_SUCCESS)
+        {
+            Logger::error("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
+        }
+    }
+}
+
 VkShaderModule VulkanGraphicsHelper::createShaderModule(class IGraphicsInstance* graphicsInstance, const uint8* code, uint32 size)
 {
     const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);

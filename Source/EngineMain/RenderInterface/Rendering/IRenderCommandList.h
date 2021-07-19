@@ -124,8 +124,10 @@ struct GraphicsPipelineState
 class IRenderCommandList
 {
 protected:
-    // raw copies the pixels to staging buffer
+    // raw copies the pixels to staging buffer, Only accepts non floating point textures
     void copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class Color>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo) const;
+    void copyPixelsLinearMappedTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class Color>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo) const;
+    void copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class LinearColor>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo, bool bIsFloatingFormat) const;
 public:
     virtual ~IRenderCommandList() = default;
     static IRenderCommandList* genericInstance();
@@ -142,9 +144,14 @@ public:
     template<typename BufferDataType>
     void recordCopyToBuffer(std::vector<BatchCopyBufferData>& recordTo, BufferResource* dst, uint32 dstOffset, const BufferDataType* dataToCopy, const ShaderBufferParamInfo* bufferFields);
 
-    // Copy pixel data to only first MIP level of all layers.
+    // Copy pixel data to only first MIP level of all layers and generate the rest of MIP
     void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData);
+    void copyToImageLinearMapped(ImageResource* dst, const std::vector<class Color>& pixelData);
+
     virtual void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) = 0;
+    // Linear maps each pixel to component byte range
+    virtual void copyToImageLinearMapped(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) = 0;
+    virtual void copyToImage(ImageResource* dst, const std::vector<class LinearColor>& pixelData, const CopyPixelsToImageInfo& copyInfo) = 0;
     virtual void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) = 0;
 
     virtual void setupInitialLayout(ImageResource* image) = 0;
@@ -174,6 +181,7 @@ public:
 
     virtual void cmdDispatch(const GraphicsResource* cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const = 0;
     virtual void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const = 0;
+    virtual void cmdDrawVertices(const GraphicsResource* cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance = 0, uint32 instanceCount = 1) const = 0;
 
     virtual void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const = 0;
     virtual void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const = 0;

@@ -85,6 +85,9 @@ struct PBRSceneEntity
         LinearColor color;
         float roughness;
         float metallic;
+        Vector2D uvScale{ Vector2D::ONE };
+        String textureName;
+        LocalPipelineContext* pipeline;
     };
     Transform3D transform;
     class StaticMeshAsset* meshAsset;
@@ -176,7 +179,6 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     void createPools();
     void destroyPools();
 
-    ImageData texture;
     SharedPtr<class SamplerInterface> nearestFiltering = nullptr;
     SharedPtr<class SamplerInterface> linearFiltering = nullptr;
     // TODO(Jeslas) : Cubic filtering not working check new drivers or log bug in nvidia
@@ -229,7 +231,8 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     void createFrameResources();
     void destroyFrameResources();
 
-    LocalPipelineContext drawSmPipelineContext;
+    LocalPipelineContext singleColorPipelineContext;
+    LocalPipelineContext texturedPipelineContext;
 
     VkRenderPass lightingRenderPass;
     LocalPipelineContext drawPbrPipelineContext;
@@ -242,9 +245,9 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     SharedPtr<ShaderParameters> clearInfoParams;
     LocalPipelineContext clearQuadPipelineContext;
 
-    ImageData writeTexture;
-    SharedPtr<ShaderParameters> testComputeParams;
-    LocalPipelineContext testComputePipelineContext;
+    RenderPassAdditionalProps debugDrawAdditionalProps;
+    VkRenderPass debugDrawRenderPass;
+    LocalPipelineContext drawDebugPipelineContext;
 
     void getPipelineForSubpass();
 
@@ -254,8 +257,9 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
 
     // End shader pipeline resources
 
-    bool bAnimateX;
-    bool bAnimateY;
+    float exposure = 4.2f;
+    float gamma = 2.2f;
+    bool bDrawTbn = false;
     int32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
     Size2D renderSize{ 1280, 720 };
     ECameraProjection projection = ECameraProjection::Perspective;
@@ -435,32 +439,10 @@ void ExperimentalEnginePBR::createImages()
         ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest);
     linearFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "LinearSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
-
-    Texture2DRWCreateParams createParam;
-    createParam.textureSize = Size2D(512, 512);
-    createParam.mipCount = 1;
-    createParam.textureName = "Compute Write";
-    createParam.format = EPixelDataFormat::RGBA_U8_Norm;
-    createParam.bIsWriteOnly = false;
-    createParam.defaultColor = Color(128, 0, 0, 255);
-    writeTexture.image = TextureBase::createTexture<Texture2DRW>(createParam);
-    writeTexture.imageView = static_cast<VulkanImageResource*>(writeTexture.image->getTextureResource())->getImageView({});
-    // common shader sampling texture
-    {
-        texture.image = static_cast<TextureAsset*>(appInstance().assetManager.getOrLoadAsset("TestImageData.png"))->getTexture();
-        texture.imageView = static_cast<VulkanImageResource*>(texture.image->getTextureResource())->getImageView({});
-
-        if (texture.imageView != nullptr)
-        {
-            graphicsDbg->markObject((uint64)texture.imageView, "DiffuseTextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
-        }
-    }
 }
 
 void ExperimentalEnginePBR::destroyImages()
 {
-    TextureBase::destroyTexture<Texture2DRW>(writeTexture.image);
-    writeTexture.image = nullptr;
     nearestFiltering->release();
     linearFiltering->release();
 }
@@ -468,15 +450,34 @@ void ExperimentalEnginePBR::destroyImages()
 void ExperimentalEnginePBR::createScene()
 {
     StaticMeshAsset* cube = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cube.obj"));
+    //StaticMeshAsset* plane = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Plane.obj"));
     StaticMeshAsset* sphere = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Sphere.obj"));
     StaticMeshAsset* cylinder = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cylinder.obj"));
     StaticMeshAsset* cone = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cone.obj"));
-    StaticMeshAsset* gizmo = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Suzanne.obj"));
-    std::array<StaticMeshAsset*, 5> assets{ cube, sphere, cylinder, cone, gizmo };
+    StaticMeshAsset* gizmo = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Gizmo.obj"));
+    StaticMeshAsset* suzanne = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Suzanne.obj"));
+    std::array<StaticMeshAsset*, 6> assets{ cube, sphere, cylinder, cone, gizmo, suzanne };
+#if NDEBUG
+    std::array<String, 8> floorTypes{ "WoodFloor043", "Tiles086", "Tiles074", "MetalPlates006", "Marble006", "Ground042", "Ground037", "Gravel022" };
+    std::array<String, 6> ceilTypes{ "WoodFloor043", "Tiles108", "Tiles074", "MetalPlates006", "Marble006", "Wood051" };
+    std::array<String, 9> pillarTypes{ "WoodFloor043", "Tiles108", "Tiles074", "MetalPlates006", "Marble006", "Marble006", "Rock035", "Ground037", "PaintedPlaster016"};
+    std::array<String, 15> textures{ "Bricks065", "Gravel022", "Ground037", "Ground042", "Leather028", "Marble006", "Metal034", "Metal038", "MetalPlates006"
+        , "PaintedPlaster016", "Rock035","Tiles086", "Tiles074" , "Tiles108", "Wood051" };
+#else
+    std::array<String, 1> floorTypes{ "Tiles074" };
+    std::array<String, 1> ceilTypes{ "Tiles074" };
+    std::array<String, 1> pillarTypes{ "Tiles074" };
+    std::array<String, 1> textures{ "Tiles074" };
+#endif
+
     std::default_random_engine generator;
     std::uniform_real_distribution<float> distribution(-1.0, 1.0);
     std::uniform_real_distribution<float> ud01(0.0, 1.0);
     std::normal_distribution<float> distribution1(0.5f, 0.15f);
+
+    const Vector2D floorTextureScale(1 / 16.0f);
+    const Vector2D pillarTextureScale(1 / 3.0f, 1 / 6.0f);
+    const Vector2D textureScale(1 / 3.0f);
 
     std::list<GridEntity> entities;
     auto pushEntity = [&entities, this](const PBRSceneEntity& entity)
@@ -500,18 +501,25 @@ void ExperimentalEnginePBR::createScene()
         for (int32 j = -1; j <= 1; j++)
         {
             String roomIdx = std::to_string((i + 1) * 3 + j + 1);
-            Vector3D offset = Vector3D(i * 1200.0f, j * 1200.0f, 0);
+            Vector3D offset = Vector3D(i * 1400.0f, j * 1400.0f, 0);
             PBRSceneEntity sceneFloor;
             sceneFloor.meshAsset = cube;
-            sceneFloor.transform.setScale(Vector3D(11, 11, 1));
+            sceneFloor.transform.setScale(Vector3D(13, 13, 1));
             sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, -50));
             sceneFloor.name = "floor" + roomIdx;
 
-            sceneFloor.meshBatchProps.push_back(PBRSceneEntity::BatchProperties
-                {
-                    { ud01(generator) * 0.75f, ud01(generator) * 0.75f, ud01(generator) * 0.75f, 1 }
-                    , 0.6f, 0.5f
-                });
+            for (uint32 batchIdx = 0; batchIdx < sceneFloor.meshAsset->meshBatches.size(); ++batchIdx)
+            {
+                sceneFloor.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
+                    {
+                        //{ ud01(generator) * 0.75f, ud01(generator) * 0.75f, ud01(generator) * 0.75f, 1 }
+                        LinearColorConst::WHITE
+                        , 1.f, 1.f
+                        , floorTextureScale
+                        , floorTypes[uint32(floorTypes.size() * ud01(generator))]
+                        , &texturedPipelineContext
+                    });
+            }
             pushEntity(sceneFloor);
 
             dirLight.direction.pitch() = 35;
@@ -530,21 +538,40 @@ void ExperimentalEnginePBR::createScene()
                         String suffix = "_R_" + std::to_string(r)
                             + "_M_" + std::to_string(m);
 
-                        Vector3D pos = offset + Vector3D(155.f + m * 110.0f, 155.0f + r * 110.f, 25.f) - Vector3D(600, 600, 0);
+                        Vector3D pos = offset + Vector3D(65.f + m * 130.0f, 65.f + r * 130.f, 25.f) - Vector3D(650, 650, 0);
 
                         PBRSceneEntity entity;
                         entity.transform.setTranslation(pos + Vector3D(0, 0, 75));
                         entity.meshAsset = sphere;
                         entity.name = sphere->assetName() + suffix;
-                        entity.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
-                            {
-                                { 0.55f, 0.0f, 0.0f }
-                                ,  rough, metallic 
-                            });
+
+                        for (uint32 batchIdx = 0; batchIdx < entity.meshAsset->meshBatches.size(); ++batchIdx)
+                        {
+                            entity.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
+                                {
+                                    { 0.5f, 0.0f, 0.0f }
+                                    ,  rough, metallic
+                                    , textureScale
+                                    , textures[uint32(textures.size() * ud01(generator))]
+                                    , &singleColorPipelineContext
+                                });
+                        }
                         pushEntity(entity);
 
                         entity.meshAsset = cube;
                         entity.name = cube->assetName() + suffix;
+                        entity.meshBatchProps.clear();
+                        for (uint32 batchIdx = 0; batchIdx < entity.meshAsset->meshBatches.size(); ++batchIdx)
+                        {
+                            entity.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
+                                {
+                                    { 0.5f, 0.0f, 0.0f }
+                                    ,  rough, metallic
+                                    , textureScale
+                                    , textures[uint32(textures.size() * ud01(generator))]
+                                    , &singleColorPipelineContext
+                                });
+                        }
                         entity.transform.setTranslation(pos);
                         entity.transform.setScale(Vector3D(1, 1, 0.5));
                         pushEntity(entity);
@@ -577,8 +604,12 @@ void ExperimentalEnginePBR::createScene()
             else
             {
                 // Ceiling
+                for (auto& batchProp : sceneFloor.meshBatchProps)
+                {
+                    batchProp.textureName = ceilTypes[uint32(ceilTypes.size() * ud01(generator))];
+                }
                 sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, 550));
-                sceneFloor.name = "Ceil" + roomIdx;
+                sceneFloor.name = "ceil" + roomIdx;
                 pushEntity(sceneFloor);
 
                 for (uint32 i = 0; i < 5; ++i)
@@ -589,11 +620,19 @@ void ExperimentalEnginePBR::createScene()
                     entity.transform.setRotation(Rotation(0, 0, distribution(generator) * 45));
                     entity.name = entity.meshAsset->assetName() + roomIdx + "_" + std::to_string(i);
 
-                    entity.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
-                        {
-                            { distribution1(generator), distribution1(generator), distribution1(generator), 1 }
-                            ,  ud01(generator), ud01(generator)
-                        });
+                    for (uint32 batchIdx = 0; batchIdx < entity.meshAsset->meshBatches.size(); ++batchIdx)
+                    {
+                        entity.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
+                            {
+                                //{ distribution1(generator), distribution1(generator), distribution1(generator), 1 }
+                                //, ud01(generator), ud01(generator)
+                                LinearColorConst::WHITE
+                                , 1.0f, 1.0f
+                                , textureScale
+                                , textures[uint32(textures.size() * ud01(generator))]
+                                , &texturedPipelineContext
+                            });
+                    }
                     pushEntity(entity);
                 }
 
@@ -649,17 +688,37 @@ void ExperimentalEnginePBR::createScene()
 
 
                 // Pillars
+                for (auto& batchProp : sceneFloor.meshBatchProps)
+                {
+                    batchProp.uvScale = pillarTextureScale;
+                    batchProp.textureName = pillarTypes[uint32(pillarTypes.size() * ud01(generator))];
+                }
                 sceneFloor.meshAsset = cylinder;
                 sceneFloor.transform.setScale(Vector3D(1, 1, 5));
                 sceneFloor.transform.setTranslation(offset + Vector3D(450, 450, 250));
                 sceneFloor.name = "pillar1_" + roomIdx;
                 pushEntity(sceneFloor);
+
+                for (auto& batchProp : sceneFloor.meshBatchProps)
+                {
+                    batchProp.textureName = pillarTypes[uint32(pillarTypes.size() * ud01(generator))];
+                }
                 sceneFloor.transform.setTranslation(offset + Vector3D(-450, 450, 250));
                 sceneFloor.name = "pillar2_" + roomIdx;
                 pushEntity(sceneFloor);
+
+                for (auto& batchProp : sceneFloor.meshBatchProps)
+                {
+                    batchProp.textureName = pillarTypes[uint32(pillarTypes.size() * ud01(generator))];
+                }
                 sceneFloor.transform.setTranslation(offset + Vector3D(450, -450, 250));
                 sceneFloor.name = "pillar3_" + roomIdx;
                 pushEntity(sceneFloor);
+
+                for (auto& batchProp : sceneFloor.meshBatchProps)
+                {
+                    batchProp.textureName = pillarTypes[uint32(pillarTypes.size() * ud01(generator))];
+                }
                 sceneFloor.transform.setTranslation(offset + Vector3D(-450, -450, 250));
                 sceneFloor.name = "pillar4_" + roomIdx;
                 pushEntity(sceneFloor);
@@ -678,19 +737,20 @@ void ExperimentalEnginePBR::destroyScene()
 void ExperimentalEnginePBR::createShaderParameters()
 {
     IGraphicsInstance* graphicsInstance = getRenderApi()->getGraphicsInstance();
-    const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
+    const PipelineBase* singleColPipeline = static_cast<const GraphicsPipelineBase*>(singleColorPipelineContext.getPipeline());
     // Since view data and other view related data are at set 0
-    viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(0));
+    viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, singleColPipeline->getParamLayoutAtSet(0));
     viewParameters->setResourceName("View");
     for (PBRSceneEntity& entity : sceneData)
     {
-        entity.instanceParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(1));
+        entity.instanceParameters = GraphicsHelper::createShaderParameters(graphicsInstance, singleColPipeline->getParamLayoutAtSet(1));
         entity.instanceParameters->setResourceName(entity.name);
         entity.meshBatchParameters.resize(entity.meshAsset->meshBatches.size());
         uint32 meshBatchIdx = 0;
         for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
         {
-            meshBatchParam = (GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(2)));
+            const PipelineBase* pipeline = static_cast<const GraphicsPipelineBase*>(entity.meshBatchProps[meshBatchIdx].pipeline->getPipeline());
+            meshBatchParam = (GraphicsHelper::createShaderParameters(graphicsInstance, pipeline->getParamLayoutAtSet(2)));
             meshBatchParam->setResourceName(entity.name + "_MeshBatch_" + std::to_string(meshBatchIdx));
             ++meshBatchIdx;
         }
@@ -748,9 +808,6 @@ void ExperimentalEnginePBR::createShaderParameters()
 
     clearInfoParams = GraphicsHelper::createShaderParameters(graphicsInstance, clearQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0));
     clearInfoParams->setResourceName("ClearInfo");
-
-    testComputeParams = GraphicsHelper::createShaderParameters(graphicsInstance, testComputePipelineContext.getPipeline()->getParamLayoutAtSet(0));
-    testComputeParams->setResourceName("TestCompute");
 }
 
 void PointLight::update() const
@@ -802,9 +859,21 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
         uint32 batchIdx = 0;
         for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
         {
-            meshBatchParam->setVector4Param("meshColor", Vector4D(entity.meshBatchProps[batchIdx].color.getColorValue()));
+            meshBatchParam->setVector4Param("meshColor", Vector4D(entity.meshBatchProps[batchIdx].color));
             meshBatchParam->setFloatParam("roughness", entity.meshBatchProps[batchIdx].roughness);
             meshBatchParam->setFloatParam("metallic", entity.meshBatchProps[batchIdx].metallic);
+            meshBatchParam->setVector4Param("rm_uvScale"
+                , Vector4D(entity.meshBatchProps[batchIdx].roughness
+                    , entity.meshBatchProps[batchIdx].metallic
+                    , entity.meshBatchProps[batchIdx].uvScale.x(), entity.meshBatchProps[batchIdx].uvScale.y()));
+
+            meshBatchParam->setTextureParam("diffuseMap", static_cast<TextureAsset*>(
+                appInstance().assetManager.getAsset(entity.meshBatchProps[batchIdx].textureName + "_D"))->getTexture()->getTextureResource(), linearFiltering);
+            meshBatchParam->setTextureParam("normalMap", static_cast<TextureAsset*>(
+                appInstance().assetManager.getAsset(entity.meshBatchProps[batchIdx].textureName + "_N"))->getTexture()->getTextureResource(), linearFiltering);
+            meshBatchParam->setTextureParam("armMap", static_cast<TextureAsset*>(
+                appInstance().assetManager.getAsset(entity.meshBatchProps[batchIdx].textureName + "_ARM"))->getTexture()->getTextureResource(), linearFiltering);
+
             meshBatchParam->init();
             ++batchIdx;
         }
@@ -817,6 +886,8 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
     // Directional light at last to do Linear -> SRGB and ambient lights
     dirLight.paramCollection = lightData[lightData.size() - 1];
     dirLight.update();
+    lightData[lightData.size() - 1]->setFloatParam("gamma", gamma);
+    lightData[lightData.size() - 1]->setFloatParam("exposure", exposure);
     lightData[lightData.size() - 1]->setIntParam("count", 0x00000100u);
     for (SharedPtr<ShaderParameters>& light : lightData)
     {
@@ -900,9 +971,6 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
 
     clearInfoParams->setVector4Param("clearColor", Vector4D(0, 0, 0, 0));
     clearInfoParams->init();
-
-    testComputeParams->setTextureParam("resultImage", writeTexture.image->getTextureResource());
-    testComputeParams->init();
 }
 
 void ExperimentalEnginePBR::updateShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
@@ -992,9 +1060,6 @@ void ExperimentalEnginePBR::destroyShaderParameters()
 
     clearInfoParams->release();
     clearInfoParams.reset();
-
-    testComputeParams->release();
-    testComputeParams.reset();
 }
 
 void ExperimentalEnginePBR::resizeLightingRts(const Size2D& size)
@@ -1008,6 +1073,9 @@ void ExperimentalEnginePBR::resizeLightingRts(const Size2D& size)
         frameResources[i].lightingPassResolved->setTextureSize(size);
         getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
         getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
+
+        // Used in debug rendering using depth map as read only target
+        getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt, GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, i)[3] });
     }
 }
 
@@ -1060,11 +1128,17 @@ void ExperimentalEnginePBR::getPipelineForSubpass()
 {
     VulkanGlobalRenderingContext* vulkanRenderingContext = static_cast<VulkanGlobalRenderingContext*>(getRenderApi()->getGlobalRenderingContext());
 
-    drawSmPipelineContext.forVertexType = EVertexType::StaticMesh;
-    drawSmPipelineContext.materialName = "SingleColor";
-    drawSmPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
-    drawSmPipelineContext.swapchainIdx = 0;
-    vulkanRenderingContext->preparePipelineContext(&drawSmPipelineContext);
+    singleColorPipelineContext.forVertexType = EVertexType::StaticMesh;
+    singleColorPipelineContext.materialName = "SingleColor";
+    singleColorPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
+    singleColorPipelineContext.swapchainIdx = 0;
+    vulkanRenderingContext->preparePipelineContext(&singleColorPipelineContext);
+
+    texturedPipelineContext.forVertexType = EVertexType::StaticMesh;
+    texturedPipelineContext.materialName = "Textured";
+    texturedPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
+    texturedPipelineContext.swapchainIdx = 0;
+    vulkanRenderingContext->preparePipelineContext(&texturedPipelineContext);
 
     // Gooch model
     drawPbrPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
@@ -1073,6 +1147,18 @@ void ExperimentalEnginePBR::getPipelineForSubpass()
     vulkanRenderingContext->preparePipelineContext(&drawPbrPipelineContext);
     lightingRenderPass = vulkanRenderingContext->getRenderPass(
         static_cast<const GraphicsPipelineBase*>(drawPbrPipelineContext.getPipeline())->getRenderpassProperties(), {});
+
+    debugDrawAdditionalProps.depthLoadOp = EAttachmentOp::LoadOp::Load;
+    debugDrawAdditionalProps.depthStoreOp = EAttachmentOp::StoreOp::DontCare;
+    debugDrawAdditionalProps.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
+    drawDebugPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    drawDebugPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
+    // Using depth map as read only target
+    drawDebugPipelineContext.rtTextures.emplace_back(GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, 0)[3]);
+    drawDebugPipelineContext.materialName = "Draw3DColoredPerVertexLine";
+    vulkanRenderingContext->preparePipelineContext(&drawDebugPipelineContext);
+    debugDrawRenderPass = vulkanRenderingContext->getRenderPass(
+        static_cast<const GraphicsPipelineBase*>(drawDebugPipelineContext.getPipeline())->getRenderpassProperties(), debugDrawAdditionalProps);
 
     clearQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     clearQuadPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassResolved);
@@ -1089,29 +1175,26 @@ void ExperimentalEnginePBR::getPipelineForSubpass()
     drawQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawQuadPipelineContext.swapchainIdx = 0;
     vulkanRenderingContext->preparePipelineContext(&drawQuadPipelineContext);
-
-    testComputePipelineContext.materialName = "TestCompute";
-    vulkanRenderingContext->preparePipelineContext(&testComputePipelineContext);
 }
 
 void ExperimentalEnginePBR::createPipelineResources()
 {
-    clearValues.colors.resize(drawSmPipelineContext.getFb()->textures.size(), LinearColorConst::BLACK);
+    clearValues.colors.resize(singleColorPipelineContext.getFb()->textures.size(), LinearColorConst::BLACK);
 
     ENQUEUE_COMMAND(QuadVerticesInit, LAMBDA_BODY
     (
         const std::array<Vector3D, 3> quadVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
-    const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
+        const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
 
-    quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
-    quadVertexBuffer->setResourceName("ScreenQuadVertices");
-    quadVertexBuffer->init();
-    quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
-    quadIndexBuffer->setResourceName("ScreenQuadIndices");
-    quadIndexBuffer->init();
+        quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
+        quadVertexBuffer->setResourceName("ScreenQuadVertices");
+        quadVertexBuffer->init();
+        quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
+        quadIndexBuffer->setResourceName("ScreenQuadIndices");
+        quadIndexBuffer->init();
 
-    cmdList->copyToBuffer(quadVertexBuffer, 0, quadVerts.data(), uint32(quadVertexBuffer->getResourceSize()));
-    cmdList->copyToBuffer(quadIndexBuffer, 0, quadIndices.data(), uint32(quadIndexBuffer->getResourceSize()));
+        cmdList->copyToBuffer(quadVertexBuffer, 0, quadVerts.data(), uint32(quadVertexBuffer->getResourceSize()));
+        cmdList->copyToBuffer(quadIndexBuffer, 0, quadIndices.data(), uint32(quadIndexBuffer->getResourceSize()));
     )
         , this);
 
@@ -1124,11 +1207,11 @@ void ExperimentalEnginePBR::destroyPipelineResources()
     ENQUEUE_COMMAND(QuadVerticesRelease, LAMBDA_BODY
     (
         quadVertexBuffer->release();
-    quadIndexBuffer->release();
-    delete quadVertexBuffer;
-    quadVertexBuffer = nullptr;
-    delete quadIndexBuffer;
-    quadIndexBuffer = nullptr;
+        quadIndexBuffer->release();
+        delete quadVertexBuffer;
+        quadVertexBuffer = nullptr;
+        delete quadIndexBuffer;
+        quadIndexBuffer = nullptr;
     )
         , this);
     // Shader pipeline's buffers and image access
@@ -1144,30 +1227,34 @@ void ExperimentalEnginePBR::updateCameraParams()
         cameraRotation.yaw() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
         cameraRotation.pitch() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
     }
-
+    float camSpeedModifier = 1;
+    if (appInstance().inputSystem()->isKeyPressed(Keys::LSHIFT))
+    {
+        camSpeedModifier = 2;
+    }
     if (appInstance().inputSystem()->isKeyPressed(Keys::A))
     {
-        cameraTranslation -= cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation -= cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
     if (appInstance().inputSystem()->isKeyPressed(Keys::D))
     {
-        cameraTranslation += cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation += cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
     if (appInstance().inputSystem()->isKeyPressed(Keys::W))
     {
-        cameraTranslation += cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation += cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
     if (appInstance().inputSystem()->isKeyPressed(Keys::S))
     {
-        cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
     if (appInstance().inputSystem()->isKeyPressed(Keys::Q))
     {
-        cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
     if (appInstance().inputSystem()->isKeyPressed(Keys::E))
     {
-        cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
+        cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
     if (appInstance().inputSystem()->keyState(Keys::R)->keyWentUp)
     {
@@ -1208,7 +1295,7 @@ void ExperimentalEnginePBR::onStartUp()
     camera.setClippingPlane(0.1f, 6000.f);
     camera.setFOV(110.f, 90.f);
 
-    cameraTranslation = Vector3D(0.f, -1.f, 0.0f).safeNormalize() * (500);
+    cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
     cameraTranslation.z() += 200;
 
     camera.setTranslation(cameraTranslation);
@@ -1263,14 +1350,29 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
-    drawSmPipelineContext.swapchainIdx = drawQuadPipelineContext.swapchainIdx = index;
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawSmPipelineContext);
+    singleColorPipelineContext.swapchainIdx = drawQuadPipelineContext.swapchainIdx = index;
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&singleColorPipelineContext);
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawQuadPipelineContext);
 
     drawPbrPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawPbrPipelineContext);
     resolveLightRtPipelineContext.rtTextures[0] = frameResources[index].lightingPassResolved;
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
+
+    drawDebugPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
+    drawDebugPipelineContext.rtTextures[1] = GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, index)[3];
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawDebugPipelineContext);
+
+    std::map<LocalPipelineContext*, std::map<const PBRSceneEntity*, std::vector<uint32>>> drawingPipelineToEntities;
+    for (const PBRSceneEntity& entity : sceneData)
+    {
+        uint32 meshBatchIdx = 0;
+        for (const PBRSceneEntity::BatchProperties& meshBatchProp : entity.meshBatchProps)
+        {
+            drawingPipelineToEntities[meshBatchProp.pipeline][&entity].emplace_back(meshBatchIdx);
+            ++meshBatchIdx;
+        }
+    }
 
     GraphicsPipelineQueryParams queryParam;
     queryParam.cullingMode = ECullingMode::BackFace;
@@ -1297,66 +1399,38 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
     String cmdName = "FrameRender" + std::to_string(index);
     cmdList->finishCmd(cmdName);
 
-    //{
-    //    cmdList->finishCmd(cmdName + "_Comp");
-    //    auto temp = cmdList->startCmd(cmdName + "_Comp", EQueueFunction::Compute, true);
-    //    cmdList->cmdBindComputePipeline(temp, testComputePipelineContext);
-    //    cmdList->cmdBindDescriptorsSets(temp, testComputePipelineContext, { testComputeParams.get() });
-    //    cmdList->cmdBarrierResources(temp, { testComputeParams.get() });
-    //    cmdList->cmdDispatch(temp
-    //        , writeTexture.image->getTextureSize().x / static_cast<const ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().x
-    //        , writeTexture.image->getTextureSize().y / static_cast<const ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().y
-    //    );
-    //    cmdList->endCmd(temp);
-
-    //    CommandSubmitInfo2 cs2;
-    //    cs2.cmdBuffers = { temp };
-    //    cmdList->submitCmd(EQueuePriority::High, cs2);
-    //}
     const GraphicsResource* cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
     VkCommandBuffer frameCmdBuffer = VulkanGraphicsHelper::getRawCmdBuffer(graphicsInstance, cmdBuffer);
     {
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEnginePBRFrame);
-        cmdList->cmdBindComputePipeline(cmdBuffer, testComputePipelineContext);
 
-        std::vector<std::pair<String, std::any>> pushConsts = {
-            {"time" , { Time::asSeconds(Time::timeNow())} }
-            , {"flags", { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }}
-        };
-        cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, pushConsts);
-        cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, { testComputeParams.get() });
-        cmdList->cmdBarrierResources(cmdBuffer, { testComputeParams.get() });
-        cmdList->cmdDispatch(cmdBuffer
-            , writeTexture.image->getTextureSize().x / static_cast<const ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().x
-            , writeTexture.image->getTextureSize().y / static_cast<const ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().y
-        );
-
-        cmdList->cmdBeginRenderPass(cmdBuffer, drawSmPipelineContext, scissor, {}, clearValues);
+        cmdList->cmdBeginRenderPass(cmdBuffer, singleColorPipelineContext, scissor, {}, clearValues);
+        cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
         {
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, MainUnlitPass);
 
-            cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
-
-            //vDevice->vkCmdPushConstants(frameResources[index].perFrameCommands, tempPipeline->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &useVertexColor);
-            cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawSmPipelineContext, { queryParam });
-
             // View set
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, viewParameters.get());
-            for (const PBRSceneEntity& entity : sceneData)
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, singleColorPipelineContext, viewParameters.get());
+            for (const std::pair<const LocalPipelineContext*, std::map<const PBRSceneEntity*, std::vector<uint32>>>& pipelineEntities : drawingPipelineToEntities)
             {
-                // Instance set
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, entity.instanceParameters.get());
-
-                cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { entity.meshAsset->vertexBuffer }, { 0 });
-                cmdList->cmdBindIndexBuffer(cmdBuffer, entity.meshAsset->indexBuffer);
-
-                uint32 meshBatchIdx = 0;
-                for (const MeshVertexView& meshBatch : entity.meshAsset->meshBatches)
+                cmdList->cmdBindGraphicsPipeline(cmdBuffer, *pipelineEntities.first, { queryParam });
+                
+                for (const std::pair<const PBRSceneEntity* const, std::vector<uint32>>& entity : pipelineEntities.second)
                 {
-                    // Batch set
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, entity.meshBatchParameters[meshBatchIdx].get());
-                    cmdList->cmdDrawIndexed(cmdBuffer, meshBatch.startIndex, meshBatch.numOfIndices);
-                    ++meshBatchIdx;
+                    // Instance set
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, *pipelineEntities.first, entity.first->instanceParameters.get());
+
+                    cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { entity.first->meshAsset->vertexBuffer }, { 0 });
+                    cmdList->cmdBindIndexBuffer(cmdBuffer, entity.first->meshAsset->indexBuffer);
+
+                    for (const uint32& entityBatch : entity.second)
+                    {
+                        // Material set
+                        cmdList->cmdBindDescriptorsSets(cmdBuffer, *pipelineEntities.first, entity.first->meshBatchParameters[entityBatch].get());
+                        cmdList->cmdDrawIndexed(cmdBuffer
+                            , entity.first->meshAsset->meshBatches[entityBatch].startIndex
+                            , entity.first->meshAsset->meshBatches[entityBatch].numOfIndices);
+                    }
                 }
             }
         }
@@ -1459,6 +1533,30 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
                 cmdList->cmdEndRenderPass(cmdBuffer);
             }
         }
+#if _DEBUG
+        if (bDrawTbn && selection.type == GridEntity::Entity)
+        {
+            PBRSceneEntity& sceneEntity = sceneData[selection.idx];
+            // Resetting viewport as we use mvp again
+            viewport.minBound.x = 0;
+            viewport.minBound.y = EngineSettings::screenSize.get().y;
+            viewport.maxBound.x = EngineSettings::screenSize.get().x;
+            viewport.maxBound.y = 0;
+
+            SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawTBN);
+            cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
+            cmdList->cmdBeginRenderPass(cmdBuffer, drawDebugPipelineContext, scissor, debugDrawAdditionalProps, clearValues);
+            {
+                cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawDebugPipelineContext, { queryParam });
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, drawDebugPipelineContext, { viewParameters.get(), sceneEntity.instanceParameters.get() });
+                cmdList->cmdPushConstants(cmdBuffer, drawDebugPipelineContext, { {"ptSize", 1.0f} });
+                cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneEntity.meshAsset->getTbnVertexBuffer() }, { 0 });
+
+                cmdList->cmdDrawVertices(cmdBuffer, 0, uint32(sceneEntity.meshAsset->tbnVerts.size()));
+            }
+            cmdList->cmdEndRenderPass(cmdBuffer);
+        }
+#endif
 
         // Drawing IMGUI
         TinyDrawingContext drawingContext;
@@ -1466,7 +1564,8 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
         drawingContext.rtTextures = drawPbrPipelineContext.rtTextures;
         getRenderApi()->getImGuiManager()->draw(cmdList, graphicsInstance, drawingContext);
 
-        // Drawing final quad        
+        // Drawing final quad
+        viewport.minBound = Int2D(0, 0);
         viewport.maxBound = scissor.maxBound = EngineSettings::surfaceSize.get();
 
         cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { quadVertexBuffer }, { 0 });
@@ -1661,6 +1760,29 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                     const char* bufferMode[] = { "Lit", "Unlit", "Normal","AO", "Roughness", "metallic", "Depth" };
                     ImGui::Combo("Frame", &frameVisualizeId, bufferMode, ARRAY_LENGTH(bufferMode));
                 }
+
+                ImGui::Separator();
+                ImGui::NextColumn();
+                ImGui::Text("Exposure");
+                ImGui::NextColumn();
+                if (ImGui::InputFloat("Exp", &exposure, 1.0f, 10.f, "%.1f"))
+                {
+                    dirLight.paramCollection->setFloatParam("exposure", exposure);
+                }
+
+                ImGui::NextColumn();
+                ImGui::Text("Gamma");
+                ImGui::NextColumn();
+                if (ImGui::InputFloat("Gamma", &gamma, 1.0f, 4.f, "%.1f"))
+                {
+                    dirLight.paramCollection->setFloatParam("gamma", gamma);
+                }
+#if _DEBUG
+                ImGui::NextColumn();
+                ImGui::Text("Draw TBN");
+                ImGui::NextColumn();
+                ImGui::Checkbox("TBN Debug", &bDrawTbn);
+#endif
             };
 
             ImGui::Columns(1);
@@ -1668,10 +1790,11 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
             if (ImGui::CollapsingHeader("Properties"))
             {
                 ImGui::TreePush("SelectionNode");
-                if(selection.type != GridEntity::Invalid)
+                if (selection.type != GridEntity::Invalid)
                     drawSelectionWidget(drawInterface);
                 ImGui::TreePop();
 
+                ImGui::Separator();
                 ImGui::TreePush("DirectionalLightNode");
                 if (ImGui::CollapsingHeader("Directional Light"))
                 {
@@ -1697,22 +1820,12 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                 ImGui::TreePop();
             }
 
-            if (ImGui::CollapsingHeader("Compute"))
-            {
-                ImGui::Text("Animate");
-                ImGui::NextColumn();
-                ImGui::Checkbox("X", &bAnimateX); ImGui::SameLine();
-                ImGui::Checkbox("Y", &bAnimateY);
-                ImGui::NextColumn();
-                ImGui::Text("%f", Time::asSeconds(Time::timeNow()));
-
-                ImGui::Separator();
-                ImGui::NextColumn();
-                ImGui::Image(writeTexture.image, ImVec2(
-                    ImGui::GetWindowContentRegionWidth(),
-                    ImGui::GetWindowContentRegionWidth()));
-                ImGui::Separator();
-            }
+            //if (ImGui::CollapsingHeader("Textures"))
+            //{
+            //    ImGui::Image(static_cast<TextureAsset*>(appInstance().assetManager.getAsset("ten_N"))->getTexture(), ImVec2(
+            //        ImGui::GetWindowContentRegionWidth(),
+            //        ImGui::GetWindowContentRegionWidth()));
+            //}
             ImGui::PopStyleVar();
             ImGui::End();
         }
@@ -1731,12 +1844,12 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
             String name = entity.name;
             ImGui::Text("Selected Entity : %s", name.getChar());
 
-            if(ImGui::CollapsingHeader("Transform"))
+            if (ImGui::CollapsingHeader("Transform"))
             {
                 AABB currentBound = getBounds(selection);
                 bool bTransformChanged = ImGui::DragFloat3("Translation", reinterpret_cast<float*>(&entity.transform.getTranslation()), 1.f);
-                bTransformChanged = ImGui::DragFloat3("Rotation", reinterpret_cast<float*>(&entity.transform.getRotation()), 0.5f, 0.0f, 360.0f) || bTransformChanged;
-                bTransformChanged = ImGui::DragFloat3("Scale", reinterpret_cast<float*>(&entity.transform.getScale()), 0.5f) || bTransformChanged;
+                bTransformChanged = ImGui::DragFloat3("Rotation", reinterpret_cast<float*>(&entity.transform.getRotation()), 1.f, 0.0f, 360.0f) || bTransformChanged;
+                bTransformChanged = ImGui::DragFloat3("Scale", reinterpret_cast<float*>(&entity.transform.getScale()), 0.05f) || bTransformChanged;
 
                 if (bTransformChanged)
                 {
@@ -1762,10 +1875,16 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
                         if (ImGui::DragFloat("Roughness", &props.roughness, 0.05f, 0.0f, 1.0f))
                         {
                             meshBatchParam->setFloatParam("roughness", props.roughness);
+                            meshBatchParam->setVector4Param("rm_uvScale", Vector4D(props.roughness, props.metallic, props.uvScale.x(), props.uvScale.y()));
                         }
                         if (ImGui::DragFloat("Metallic", &props.metallic, 0.05f, 0.0f, 1.0f))
                         {
                             meshBatchParam->setFloatParam("metallic", props.metallic);
+                            meshBatchParam->setVector4Param("rm_uvScale", Vector4D(props.roughness, props.metallic, props.uvScale.x(), props.uvScale.y()));
+                        }
+                        if (ImGui::DragFloat2("UV scaling", reinterpret_cast<float*>(&props.uvScale), 0.5f, 0.01f))
+                        {
+                            meshBatchParam->setVector4Param("rm_uvScale", Vector4D(props.roughness, props.metallic, props.uvScale.x(), props.uvScale.y()));
                         }
                         ImGui::TreePop();
                     }
@@ -1787,7 +1906,7 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
             {
                 AABB currentBound = getBounds(selection);
                 bool bTransformChanged = ImGui::DragFloat3("Translation", reinterpret_cast<float*>(&entity.transform.getTranslation()), 1.0f);
-                bTransformChanged = ImGui::DragFloat3("Direction", reinterpret_cast<float*>(&entity.transform.getRotation()), 0.5f, 0.0f, 360.0f) || bTransformChanged;
+                bTransformChanged = ImGui::DragFloat3("Direction", reinterpret_cast<float*>(&entity.transform.getRotation()), 1.0f, 0.0f, 360.0f) || bTransformChanged;
 
                 if (bTransformChanged)
                 {
@@ -1808,11 +1927,11 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
             {
                 bNeedsUpdate = true;
             }
-            if (ImGui::DragFloat("Inner Cone", &entity.innerCone, 0.1f, 0.0f, entity.outerCone))
+            if (ImGui::DragFloat("Inner Cone", &entity.innerCone, 0.5f, 0.0f, entity.outerCone))
             {
                 bNeedsUpdate = true;
             }
-            if (ImGui::DragFloat("Outer Cone", &entity.outerCone, 0.1f, entity.innerCone, 179.0f))
+            if (ImGui::DragFloat("Outer Cone", &entity.outerCone, 0.5f, entity.innerCone, 179.0f))
             {
                 bNeedsUpdate = true;
             }

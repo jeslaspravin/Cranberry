@@ -13,9 +13,11 @@ namespace EVertexType
         Simple2,// position only vertices(vec2)
         UI,// Currently ImGui vertices
         Simple3,// Position only vertices(vec3)
-        Simple4,// position only vertices(vec4)
+        Simple3DColor,// position vertices & color(vec4)
         BasicMesh, // Basic mesh with position, texture coordinates
-        StaticMesh
+        StaticMesh,
+        InstancedSimple3DColor,
+        MaxVertexType,
     };
 
     String toString(Type vertexType);
@@ -30,11 +32,13 @@ namespace EVertexType
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3>();
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple4>();
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3DColor>();
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<BasicMesh>();
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<StaticMesh>();
+    template<>
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<InstancedSimple3DColor>();
 
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType);
 
@@ -47,11 +51,15 @@ namespace EVertexType
     template<>
     void vertexSpecConsts<Simple3>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<Simple4>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    void vertexSpecConsts<Simple3DColor>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
     void vertexSpecConsts<BasicMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
     void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    template<>
+    void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    template<>
+    void vertexSpecConsts<InstancedSimple3DColor>(std::map<String, SpecializationConstantEntry>& specializationConst);
 
     void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry>& specializationConst);
 }

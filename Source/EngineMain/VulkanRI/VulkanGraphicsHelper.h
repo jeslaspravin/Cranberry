@@ -69,6 +69,7 @@ public:
 
     static void* borrowMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource);
     static void returnMappedPtr(class IGraphicsInstance* graphicsInstance, class GraphicsResource* resource);
+    static void flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<class GraphicsResource*>& resources);
 
     // Size in bytes not 4bytes
     static VkShaderModule createShaderModule(class IGraphicsInstance* graphicsInstance, const uint8* code, uint32 size);

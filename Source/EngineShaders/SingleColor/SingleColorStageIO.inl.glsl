@@ -12,7 +12,6 @@
 #if STATIC_MESH
 layout(location = 0) PREFIX vec3 VAR(WorldPosition);
 layout(location = 1) PREFIX vec3 VAR(WorldNormal);
-layout(location = 2) PREFIX vec2 VAR(PerspectiveZW);
 #endif
 
 #undef PREFIX
