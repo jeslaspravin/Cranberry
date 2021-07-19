@@ -86,8 +86,8 @@ void VulkanShaderResource::init()
 {
     String filePath;
     filePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), "Shaders", getShaderFileName());
-    shaderFilePath = filePath + "." + SHADER_EXTENSION;
-    reflectionsFilePath = filePath + "." + REFLECTION_EXTENSION;
+    String shaderFilePath = filePath + "." + SHADER_EXTENSION;
+    String reflectionsFilePath = filePath + "." + REFLECTION_EXTENSION;
     PlatformFile shaderFile(shaderFilePath);
     shaderFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
     shaderFile.addSharingFlags(EFileSharing::NoSharing);
@@ -100,6 +100,7 @@ void VulkanShaderResource::init()
     fatalAssert(shaderFile.exists() && reflectionFile.exists(), "Shader and reflection files are mandatory in shader %s", getResourceName().getChar());
     shaderFile.openFile();
     reflectionFile.openFile();
+    Logger::debug("VulkanShaderResource", "%s() : Loading from shader file %s and reflection file %s", __func__, shaderFile.getFileName().getChar(), reflectionFile.getFileName().getChar());
 
     std::vector<uint8> reflectionData;
     shaderFile.read(shaderCode);

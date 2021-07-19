@@ -44,6 +44,7 @@ public:
     */
     static Framebuffer* getFramebuffer(FramebufferFormat& framebufferFormat, uint32 frameIdx);
     static Framebuffer* getFramebuffer(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
+    static std::vector<class RenderTargetTexture*> getFramebufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
     static Framebuffer* getSwapchainFramebuffer(uint32 frameIdx);
 
     static TextureBase* dummyWhite2D() { return dummyWhiteTexture; }

@@ -15,6 +15,13 @@ BufferResource* MeshAsset::getIndexBuffer()
     return indexBuffer;
 }
 
+#if _DEBUG
+BufferResource* MeshAsset::getTbnVertexBuffer()
+{
+    return tbnVertexBuffer;
+}
+#endif
+
 const AABB& MeshAsset::getMeshBounds() const
 {
     return bounds;

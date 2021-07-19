@@ -484,6 +484,13 @@ VariableName.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;    \
 VariableName.pNext = nullptr
 #endif
 
+#ifndef MAPPED_MEMORY_RANGE
+#define MAPPED_MEMORY_RANGE(VariableName)                      \
+VkMappedMemoryRange VariableName;                              \
+VariableName.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;    \
+VariableName.pNext = nullptr
+#endif
+
 #ifndef CREATE_COMMAND_POOL_INFO
 #define CREATE_COMMAND_POOL_INFO(VariableName)                      \
 VkCommandPoolCreateInfo VariableName;                               \

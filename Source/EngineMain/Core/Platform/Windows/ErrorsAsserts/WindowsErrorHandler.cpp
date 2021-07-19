@@ -161,9 +161,11 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
     
     Logger::error("WindowsUnexpectedErrorHandler", "Error call trace : \r\n%s", stackTrace.str().c_str());
 
+    Logger::flushStream();
     if (bCloseEngine && gEngine && !gEngine->isExiting())
     {
         gEngine->quit();
+        Logger::flushStream();
     }
 }
 

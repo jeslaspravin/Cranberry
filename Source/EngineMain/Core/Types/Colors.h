@@ -69,12 +69,20 @@ public:
 
 namespace ColorConst
 {
+    const Color Transparent(255, 255, 255, 0);
     const Color WHITE(255, 255, 255, 255);
     const Color BLACK(0, 0, 0, 255);
+    const Color RED(255, 0, 0, 255);
+    const Color BLUE(0, 0, 255, 255);
+    const Color GREEN(0, 255, 0, 255);
 }
 
 namespace LinearColorConst
 {
+    const LinearColor Transparent(1, 1, 1, 0);
     const LinearColor WHITE(1, 1, 1, 1);
     const LinearColor BLACK(0, 0, 0, 1);
+    const LinearColor RED(1, 0, 0, 1);
+    const LinearColor BLUE(0, 0, 1, 1);
+    const LinearColor GREEN(0, 1, 0, 1);
 }

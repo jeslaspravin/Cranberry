@@ -11,6 +11,8 @@ private:
     UniqueUtilityShader() = default;
 protected:
     UniqueUtilityShader(const String& name) : BaseType(name) {}
+
+    virtual EVertexType::Type vertexUsed() const { return EVertexType::MaxVertexType; }
 public:
     EVertexType::Type vertexUsage() const;
 };

@@ -37,6 +37,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{160411
 		Source\EngineShaders\Common\CommonDefines.inl.glsl = Source\EngineShaders\Common\CommonDefines.inl.glsl
 		Source\EngineShaders\Common\ComputeCommon.inl.glsl = Source\EngineShaders\Common\ComputeCommon.inl.glsl
 		Source\EngineShaders\Common\ShaderOutputs.inl.glsl = Source\EngineShaders\Common\ShaderOutputs.inl.glsl
+		Source\EngineShaders\Common\ToneMapping.inl.glsl = Source\EngineShaders\Common\ToneMapping.inl.glsl
 		Source\EngineShaders\Common\VertexInputs.inl.glsl = Source\EngineShaders\Common\VertexInputs.inl.glsl
 		Source\EngineShaders\Common\VertexInstanceDescriptors.inl.glsl = Source\EngineShaders\Common\VertexInstanceDescriptors.inl.glsl
 		Source\EngineShaders\Common\ViewDescriptors.inl.glsl = Source\EngineShaders\Common\ViewDescriptors.inl.glsl
@@ -46,6 +47,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GoochModel", "GoochModel", 
 	ProjectSection(SolutionItems) = preProject
 		Source\EngineShaders\GoochModel\GoochModel.frag.glsl = Source\EngineShaders\GoochModel\GoochModel.frag.glsl
 		Source\EngineShaders\GoochModel\GoochModel.vert.glsl = Source\EngineShaders\GoochModel\GoochModel.vert.glsl
+		Source\EngineShaders\GoochModel\GoochModelStageIO.inl.glsl = Source\EngineShaders\GoochModel\GoochModelStageIO.inl.glsl
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SingleColor", "SingleColor", "{81FC9105-8C7A-463F-96C4-1878AB8F02F3}"
@@ -69,6 +71,26 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PBR", "PBR", "{A47C9719-D2A
 		Source\EngineShaders\PBR\PBR.frag.glsl = Source\EngineShaders\PBR\PBR.frag.glsl
 		Source\EngineShaders\PBR\PBR.vert.glsl = Source\EngineShaders\PBR\PBR.vert.glsl
 		Source\EngineShaders\PBR\PBRStageIO.inl.glsl = Source\EngineShaders\PBR\PBRStageIO.inl.glsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Textured", "Textured", "{65CA28E9-881B-423D-8FF1-FBFD02C9BE8E}"
+	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\Textured\TexturedDescriptors.inl.glsl = Source\EngineShaders\Textured\TexturedDescriptors.inl.glsl
+		Source\EngineShaders\Textured\TexturedStageIO.inl.glsl = Source\EngineShaders\Textured\TexturedStageIO.inl.glsl
+		Source\EngineShaders\Textured\TexturedStaticMeshMultibuffer.frag.glsl = Source\EngineShaders\Textured\TexturedStaticMeshMultibuffer.frag.glsl
+		Source\EngineShaders\Textured\TexturedStaticMeshMultibuffer.vert.glsl = Source\EngineShaders\Textured\TexturedStaticMeshMultibuffer.vert.glsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Drawing", "Drawing", "{967F3DE2-EBC5-4357-AA40-C411E1B21738}"
+	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\Utilities\Drawing\DirectDraw3DColoredPerInstance.frag.glsl = Source\EngineShaders\Utilities\Drawing\DirectDraw3DColoredPerInstance.frag.glsl
+		Source\EngineShaders\Utilities\Drawing\DirectDraw3DColoredPerInstance.vert.glsl = Source\EngineShaders\Utilities\Drawing\DirectDraw3DColoredPerInstance.vert.glsl
+		Source\EngineShaders\Utilities\Drawing\DirectDraw3DColoredPerVertex.frag.glsl = Source\EngineShaders\Utilities\Drawing\DirectDraw3DColoredPerVertex.frag.glsl
+		Source\EngineShaders\Utilities\Drawing\DirectDraw3DColoredPerVertex.vert.glsl = Source\EngineShaders\Utilities\Drawing\DirectDraw3DColoredPerVertex.vert.glsl
+		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerInstance.frag.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerInstance.frag.glsl
+		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerInstance.vert.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerInstance.vert.glsl
+		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.frag.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.frag.glsl
+		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.vert.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.vert.glsl
 	EndProjectSection
 EndProject
 Global
@@ -134,6 +156,8 @@ Global
 		{81FC9105-8C7A-463F-96C4-1878AB8F02F3} = {61CB758C-20C2-4897-9454-061721EF2C89}
 		{62B768BF-FF87-469F-8DC6-6CA3D1A6AE3C} = {61CB758C-20C2-4897-9454-061721EF2C89}
 		{A47C9719-D2A9-4830-8907-41FC9EFD2BA9} = {61CB758C-20C2-4897-9454-061721EF2C89}
+		{65CA28E9-881B-423D-8FF1-FBFD02C9BE8E} = {61CB758C-20C2-4897-9454-061721EF2C89}
+		{967F3DE2-EBC5-4357-AA40-C411E1B21738} = {F6883E7B-0E8B-4459-AD80-F28864E92906}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D05BB706-1F92-4580-853D-B271284B97FA}

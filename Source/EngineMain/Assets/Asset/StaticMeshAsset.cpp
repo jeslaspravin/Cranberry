@@ -7,8 +7,8 @@
 
 void StaticMeshAsset::initAsset()
 {
-    ENQUEUE_COMMAND(InitializeSMVertices,
-        {
+    ENQUEUE_COMMAND(InitializeSMVertices, LAMBDA_BODY
+        (
             vertexBuffer = new GraphicsVertexBuffer(EVertexType::vertexParamInfo<EVertexType::StaticMesh>()[0]->paramStride()
                 , uint32(vertices.size()));
             vertexBuffer->setResourceName(assetHeader.assetName + "_VertexBuffer");
@@ -19,8 +19,19 @@ void StaticMeshAsset::initAsset()
             indexBuffer->setResourceName(assetHeader.assetName + "_IndexBuffer");
             indexBuffer->init();
             cmdList->copyToBuffer(indexBuffer, 0, indices.data(), uint32(indexBuffer->getResourceSize()));
-        }
+        )
         , this);
+
+#if _DEBUG
+    ENQUEUE_COMMAND(InitializeSMTbnVertices, LAMBDA_BODY
+    (
+        tbnVertexBuffer = new GraphicsVertexBuffer(sizeof(TbnLinePoint), uint32(tbnVerts.size()));
+        tbnVertexBuffer->setResourceName(assetHeader.assetName + "_TbnVertexBuffer");
+        tbnVertexBuffer->init();
+        cmdList->copyToBuffer(tbnVertexBuffer, 0, tbnVerts.data(), uint32(tbnVertexBuffer->getResourceSize()));
+    )
+        , this);
+#endif
 }
 
 void StaticMeshAsset::clearAsset()
@@ -33,4 +44,12 @@ void StaticMeshAsset::clearAsset()
             delete indexBuffer;
         }
     , this);
+
+#if _DEBUG
+    ENQUEUE_COMMAND(InitializeSMTbnVertices, LAMBDA_BODY
+    (
+        tbnVertexBuffer->release();
+        delete tbnVertexBuffer;
+    ), this);
+#endif
 }

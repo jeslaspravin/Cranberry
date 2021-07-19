@@ -15,7 +15,9 @@ void TextureAsset::initAsset()
     createParams.textureName = assetHeader.assetName;
     createParams.textureSize = textureDimension;
     createParams.colorData = tempPixelData;
-    createParams.bIsSrgb = true;
+    createParams.bIsSrgb = false;
+    createParams.componentsCount = componentsCount;
+    createParams.bIsNormalMap = bIsNormalMap;
     createParams.defaultColor = ColorConst::BLACK;
 
     texture = TextureBase::createTexture<Texture2D>(createParams);
@@ -35,6 +37,16 @@ void TextureAsset::setTempPixelData(const std::vector<Color>& pixelData)
 void TextureAsset::setTextureSize(const Size2D& dimension)
 {
     textureDimension = dimension;
+}
+
+void TextureAsset::setNormalMap(bool bIsNormal)
+{
+    bIsNormalMap = bIsNormal;
+}
+
+void TextureAsset::setChannelCount(uint8 count)
+{
+    componentsCount = count;
 }
 
 TextureBase* TextureAsset::getTexture() const

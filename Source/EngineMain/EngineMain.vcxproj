@@ -113,7 +113,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <LanguageStandard_C>Default</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -144,7 +144,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <LanguageStandard_C>Default</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -177,7 +177,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <LanguageStandard_C>Default</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -212,7 +212,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <LanguageStandard_C>Default</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -316,12 +316,14 @@
     <ClCompile Include="RenderInterface\ShaderCore\ShaderParameterUtility.cpp" />
     <ClCompile Include="RenderInterface\Shaders\Base\BaseShaderDefines.cpp" />
     <ClCompile Include="RenderInterface\Shaders\ClearRTShader.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\DrawingSimple3D.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachmentShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTextureShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\DefaultShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\PBRShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\TexturedShader.cpp" />
     <ClCompile Include="StartMain.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanBufferResources.cpp" />
     <ClCompile Include="VulkanRI\Resources\VulkanImageResources.cpp" />
@@ -480,6 +482,7 @@
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.h" />
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\PBRShader.h" />
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.h" />
+    <ClInclude Include="RenderInterface\Shaders\EngineShaders\TexturedShader.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanBufferResources.h" />
     <ClInclude Include="VulkanRI\Resources\VulkanImageResources.h" />

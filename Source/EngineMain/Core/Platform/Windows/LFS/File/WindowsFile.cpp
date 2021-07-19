@@ -213,6 +213,30 @@ void WindowsFile::write(const std::vector<uint8>& writeBytes) const
     }
 }
 
+void WindowsFile::write(const uint8* writeBytes, uint64 count) const
+{
+    if (!getFileHandleRaw() || (fileFlags & EFileFlags::Write) == 0) {
+        return;
+    }
+
+    uint64 sizeLeft = count;
+
+    uint32 writeBufferSize = 5 * 1024 * 1024;// 5MB
+    dword bytesWritten = 0;
+    uint64 writeFrom = 0;
+
+    uint32 writeSize = writeBufferSize;
+    while (sizeLeft > 0)
+    {
+        writeSize = writeBufferSize > sizeLeft ? (uint32)sizeLeft : writeBufferSize;
+        WriteFile(getFileHandleRaw(), writeBytes + writeFrom, writeSize, &bytesWritten, nullptr);
+
+        writeFrom += bytesWritten;
+        sizeLeft -= bytesWritten;
+        bytesWritten = 0;
+    }
+}
+
 bool WindowsFile::deleteFile()
 {
     if (getFileHandle() && getFileHandleRaw()) {

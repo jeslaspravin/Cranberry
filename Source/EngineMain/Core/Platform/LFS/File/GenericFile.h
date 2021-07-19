@@ -89,6 +89,7 @@ public:
 
     virtual void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const = 0;
     virtual void write(const std::vector<uint8>& writeBytes) const = 0;
+    virtual void write(const uint8* writeBytes, uint64 count) const = 0;
 
     virtual bool deleteFile() = 0;
     virtual bool renameFile(String newName) = 0;
@@ -116,7 +117,8 @@ namespace std {
     template<>
     struct default_delete<GenericFile>
     {
-        void operator()(GenericFile* _Ptr) const noexcept {
+        void operator()(GenericFile* _Ptr) const noexcept
+        {
             _Ptr->closeFile();
             delete _Ptr;
         }

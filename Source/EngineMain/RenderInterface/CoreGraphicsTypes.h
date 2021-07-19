@@ -223,12 +223,12 @@ namespace EPixelDataFormat
         const uint32 format;
         const uint32 pixelDataSize;
         const String formatName;
-
+        // In bits
         const uint8 componentSize[MAX_PIXEL_COMP_COUNT] = { 0,0,0,0 };
         const EPixelComponent componentOrder[MAX_PIXEL_COMP_COUNT] = { EPixelComponent::R,EPixelComponent::G
             ,EPixelComponent::B,EPixelComponent::A };
         const uint32 componentCount = calcCompCount();
-        // Packed offsets 0b-7b R comp, 8b-15b G, 16b-23b B, 24b-31b A
+        // Packed offsets in bits 0b-7b R comp, 8b-15b G, 16b-23b B, 24b-31b A
         const uint32 componentOffsets = calcOffsets();
 
         inline constexpr uint8 getOffset(EPixelComponent component) const
@@ -251,23 +251,17 @@ namespace EPixelDataFormat
         {
             uint32 offsets = 0;
 
-            uint32 index = 0;
-            for (const EPixelComponent& comp : componentOrder)
+            for (uint8 idx = 0; idx < componentCount; ++idx)
             {
-                if (componentSize[uint32(comp)] <= 0)// Components end reached
-                {
-                    break;
-                }
-                uint32 shift = uint32(comp) * 8;
+                uint32 shift = uint32(componentOrder[idx]) * 8;
 
                 uint8 offsetValue = 0;
-                for (int32 i = index - 1; i >= 0; --i)
+                for (int32 i = idx - 1; i >= 0; --i)
                 {
                     offsetValue += componentSize[uint32(componentOrder[i])];
                 }
 
                 offsets |= (offsetValue << shift);
-                index += 1;
             }
 
             return offsets;

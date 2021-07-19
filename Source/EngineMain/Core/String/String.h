@@ -6,6 +6,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <algorithm>
 
 #define STRINGIFY(...) #__VA_ARGS__
 
@@ -29,6 +30,9 @@ public:
 
     FORCE_INLINE String replaceAllCopy(const String& from, const String& to) const;
     FORCE_INLINE void replaceAll(const String& from, const String& to);
+
+    FORCE_INLINE bool startsWith(const String& match, bool bMatchCase = true) const;
+    FORCE_INLINE bool endsWith(const String& match, bool bMatchCase = true) const;
 
     FORCE_INLINE void trimL();
     FORCE_INLINE void trimR();
@@ -124,6 +128,45 @@ FORCE_INLINE void String::replaceAll(const String& from, const String& to)
         replace(replaceAtPos, from.size(), to);
         replaceAtPos += to.size();
     }
+}
+
+FORCE_INLINE bool String::startsWith(const String& match, bool bMatchCase /*= true*/) const
+{
+    if (length() < match.length())
+        return false;
+
+    if (bMatchCase)
+    {
+        return match == String(*this, 0, match.length());
+    }
+
+    const_iterator it = std::search(cbegin(), cbegin() + match.length(),match.cbegin(), match.cend()
+        , [](auto c1, auto c2)
+        {
+            return std::toupper(c1) == std::toupper(c2);
+        });
+
+    return cbegin() == it;
+}
+
+FORCE_INLINE bool String::endsWith(const String& match, bool bMatchCase /*= true*/) const
+{
+    if (length() < match.length())
+        return false;
+
+    if (bMatchCase)
+    {
+        return match == String(*this, length() - match.length(), match.length());
+    }
+
+    const_iterator searchFrom = cbegin() + (length() - match.length());
+    const_iterator it = std::search(searchFrom, cend(), match.cbegin(), match.cend()
+        , [](auto c1, auto c2)
+        {
+            return std::toupper(c1) == std::toupper(c2);
+        });
+
+    return it == searchFrom;
 }
 
 FORCE_INLINE void String::trimL()

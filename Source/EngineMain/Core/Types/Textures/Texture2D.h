@@ -11,6 +11,9 @@ struct Texture2DCreateParams : public TextureBaseCreateParams
     std::vector<Color> colorData;
     // whether colorData is encoded in sRGB or needs to be stored in sRGB
     bool bIsSrgb = false;
+    bool bIsNormalMap = false;
+    // Useful incase of non normal textures
+    uint8 componentsCount = 4;
     // Color that will be used if any pixel data is not available in color collection
     Color defaultColor = ColorConst::BLACK;
 };
@@ -22,7 +25,8 @@ public:
     std::vector<class Color> rawData;
 public:
     uint32 getMipCount() const;
-    void setData(const std::vector<class Color>& newData, const Color& defaultColor,bool bIsSrgb);
+    void setData(const std::vector<class Color>& newData, const Color& defaultColor);
+    bool isSrgb() const;
 
     static Texture2D* createTexture(const Texture2DCreateParams& createParams);
     static void destroyTexture(Texture2D* texture2D);
@@ -33,8 +37,9 @@ protected:
     void reinitResources() override;
 
 private:
-    static void init(Texture2D* texture);
+    static void init(Texture2D* texture, bool bIsNormalMap, bool bIsSrgb, uint8 componentCount);
     static void destroy(Texture2D* texture);
+    static EPixelDataFormat::Type determineDataFormat(bool bIsSrgb, bool bIsNormalMap, uint8 componentCount);
 };
 
 

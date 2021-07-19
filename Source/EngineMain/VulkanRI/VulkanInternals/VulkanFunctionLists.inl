@@ -84,6 +84,7 @@ DEVICE_VK_FUNCTIONS(vkAllocateMemory)
 DEVICE_VK_FUNCTIONS(vkFreeMemory)
 DEVICE_VK_FUNCTIONS(vkMapMemory)
 DEVICE_VK_FUNCTIONS(vkUnmapMemory)
+DEVICE_VK_FUNCTIONS(vkFlushMappedMemoryRanges)
 
 DEVICE_VK_FUNCTIONS(vkCreateBuffer)
 DEVICE_VK_FUNCTIONS(vkGetBufferMemoryRequirements)

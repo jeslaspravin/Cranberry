@@ -33,8 +33,6 @@ class VulkanShaderResource : public ShaderResource, public IVulkanResources
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanShaderResource,,ShaderResource,)
 private:
-    String reflectionsFilePath;
-    String shaderFilePath;
 
     std::vector<uint8> shaderCode;
     ShaderReflected reflectedData;

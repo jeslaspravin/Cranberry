@@ -23,6 +23,10 @@ struct MeshLoaderData
     std::vector<uint32> indices;
     std::vector<MeshVertexView> meshBatches;
     AABB bound{ Vector3D::ZERO, Vector3D::ZERO };
+
+#if _DEBUG
+    std::vector<TbnLinePoint> tbnVerts;
+#endif
 };
 
 template <>
@@ -55,17 +59,114 @@ bool hasSmoothedNormals(const tinyobj::shape_t& mesh)
     return false;
 }
 
+//
+//  Bi-tangent
+//  ^
+//  |
+//  v        v1__________ v2
+//  |         /         /
+//  |        /         /
+//  |     v0/_________/
+//  |
+//   ------------ u --> Tangent
+//  
+//  v0 to v1 (v1 - v0) = (u1 - u0) * T + (v1 - v0) * B
+//  Solve the same for other pair v0, v2
+//
+void calcTangent(MeshLoaderData& loaderData, StaticMeshVertex& vertexData, const StaticMeshVertex& other1, const StaticMeshVertex& other2)
+{
+    const Vector2D uv10{ other1.position.w() - vertexData.position.w(), other1.normal.w() - vertexData.normal.w() };
+    const Vector2D uv20{ other2.position.w() - vertexData.position.w(), other2.normal.w() - vertexData.normal.w() };
+
+    const Vector3D p10 = Vector3D(other1.position) - Vector3D(vertexData.position);
+    const Vector3D p20 = Vector3D(other2.position) - Vector3D(vertexData.position);
+
+    const Vector3D normal{ vertexData.normal };
+    Vector3D tangent;
+    Vector3D bitangent;
+
+    float invDet = uv10.x() * uv20.y() - uv20.x() * uv10.y();
+    if (invDet == 0.0f)
+    {
+        Logger::error("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents", __func__);
+
+        Rotation tbnFrame = RotationMatrix::fromZ(normal).asRotation();
+        tangent = tbnFrame.fwdVector();
+        bitangent = tbnFrame.rightVector();
+    }
+    else
+    {
+        invDet = 1 / invDet;
+
+        tangent = invDet * (uv20.y() * p10 - uv10.y() * p20);
+        // Gram-Schmidt orthogonalize
+        tangent = (tangent - (tangent | normal) * normal).normalized();
+
+        bitangent = invDet * (uv10.x() * p20 - uv20.x() * p10);
+        // Gram-Schmidt orthogonalize
+        bitangent = (bitangent - (bitangent | normal) * normal - (bitangent | tangent) * tangent).normalized();
+
+        //
+        // Handedness - dot(cross(normal(z) ^ tangent(x)), bitangent) must be positive
+        //
+        if (((normal ^ tangent) | bitangent) < 0)
+        {
+            tangent = -tangent;
+        }
+    }
+
+    //vertexData.bitangent = Vector4D(bitangent, 0);
+    vertexData.tangent = Vector4D(tangent, 0);
+
+#if _DEBUG
+    const float drawLen = 10;
+    TbnLinePoint pt1;
+    pt1.position = Vector3D(vertexData.position);
+    TbnLinePoint pt2;
+
+    // Normal
+    pt2.position = pt1.position + (normal * drawLen); // 10 cm
+    pt1.color = ColorConst::BLUE;
+    pt2.color = ColorConst::BLUE;
+    loaderData.tbnVerts.emplace_back(pt1);
+    loaderData.tbnVerts.emplace_back(pt2);
+
+    // Tangent
+    pt2.position = pt1.position + (tangent * drawLen); // 10 cm
+    pt1.color = ColorConst::RED;
+    pt2.color = ColorConst::RED;
+    loaderData.tbnVerts.emplace_back(pt1);
+    loaderData.tbnVerts.emplace_back(pt2);
+
+    // Bi-Tangent
+    pt2.position = pt1.position + (bitangent * drawLen); // 10 cm
+    pt1.color = ColorConst::GREEN;
+    pt2.color = ColorConst::GREEN;
+    loaderData.tbnVerts.emplace_back(pt1);
+    loaderData.tbnVerts.emplace_back(pt2);
+#endif
+}
+
 void fillVertexInfo(StaticMeshVertex& vertexData, const tinyobj::attrib_t& attrib, const tinyobj::index_t& index)
 {
     // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
-    Vector2D uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - Math::frac(attrib.texcoords[index.texcoord_index * 2 + 1])) };
+    Vector2D uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
+    uvCoord = Math::clamp(uvCoord, Vector2D::ZERO, Vector2D::ONE);
 
-    vertexData.position = Vector4D(attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1]
-        , attrib.vertices[index.vertex_index * 3 + 2], uvCoord.x());
-    vertexData.normal = Vector4D(attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1]
-        , attrib.normals[index.normal_index * 3 + 2], uvCoord.y());
-    vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1]
-        , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
+    vertexData.position = Vector4D(
+        attrib.vertices[index.vertex_index * 3]
+        , attrib.vertices[index.vertex_index * 3 + 1]
+        , attrib.vertices[index.vertex_index * 3 + 2]
+        , uvCoord.x());
+    Vector3D normal { 
+        attrib.normals[index.normal_index * 3]
+        , attrib.normals[index.normal_index * 3 + 1]
+        , attrib.normals[index.normal_index * 3 + 2]
+    };
+
+    vertexData.normal = Vector4D(normal.normalized(), uvCoord.y());
+    //vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1]
+    //    , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
 }
 
 Vector3D StaticMeshLoader::getFaceNormal(const uint32& index0, const uint32& index1, const uint32& index2, const std::vector<StaticMeshVertex>& verticesData) const
@@ -89,7 +190,7 @@ void StaticMeshLoader::addNormal(StaticMeshVertex& vertex, Vector3D& normal) con
 
 void StaticMeshLoader::normalize(Vector4D& normal) const
 {
-    Vector3D newNormal(normal.x(), normal.y(), normal.z());
+    Vector3D newNormal(normal);
     newNormal = newNormal.normalized();
     normal.x() = newNormal.x();
     normal.y() = newNormal.y();
@@ -107,6 +208,7 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
     std::set<int32> uniqueMatIds;
     // Vertices pushed to meshLoaderData along with indices
     {
+        std::unordered_map<tinyobj::index_t, uint32> indexToNewVert;
         for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
         {
             const tinyobj::index_t& idx0 = mesh.mesh.indices[faceIdx * 3 + 0];
@@ -121,8 +223,6 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
 
             // Filling vertex data to mesh struct
             {
-                std::unordered_map<tinyobj::index_t, uint32> indexToNewVert;
-
                 auto idx0NewVertItr = indexToNewVert.find(idx0);
                 auto idx1NewVertItr = indexToNewVert.find(idx1);
                 auto idx2NewVertItr = indexToNewVert.find(idx2);
@@ -168,6 +268,26 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
                 else
                 {
                     newVertIdx2 = idx2NewVertItr->second;
+                }
+
+                // Since we need all three vertex for tangent and bi-tangent calculations
+                if (idx0NewVertItr == indexToNewVert.end())
+                {
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx0]
+                        , meshLoaderData.vertices[newVertIdx1]
+                        , meshLoaderData.vertices[newVertIdx2]);
+                }
+                if (idx1NewVertItr == indexToNewVert.end())
+                {
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx1]
+                        , meshLoaderData.vertices[newVertIdx2]
+                        , meshLoaderData.vertices[newVertIdx0]);
+                }
+                if (idx2NewVertItr == indexToNewVert.end())
+                {
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx2]
+                        , meshLoaderData.vertices[newVertIdx0]
+                        , meshLoaderData.vertices[newVertIdx1]);
                 }
             }
 
@@ -268,6 +388,26 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
                 else
                 {
                     newVertIdx2 = idx2NewVertItr->second;
+                }
+
+                // Since we need all three vertex for tangent and bi-tangent calculations
+                if (idx0NewVertItr == indexToNewVert.end())
+                {
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx0]
+                        , meshLoaderData.vertices[newVertIdx1]
+                        , meshLoaderData.vertices[newVertIdx2]);
+                }
+                if (idx1NewVertItr == indexToNewVert.end())
+                {
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx1]
+                        , meshLoaderData.vertices[newVertIdx2]
+                        , meshLoaderData.vertices[newVertIdx0]);
+                }
+                if (idx2NewVertItr == indexToNewVert.end())
+                {
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx2]
+                        , meshLoaderData.vertices[newVertIdx0]
+                        , meshLoaderData.vertices[newVertIdx1]);
                 }
             }
 
@@ -578,6 +718,10 @@ bool StaticMeshLoader::fillAssetInformation(const std::vector<StaticMeshAsset*>&
             staticMesh->indices = meshDataPair.second.indices;
             staticMesh->meshBatches = meshDataPair.second.meshBatches;
             staticMesh->bounds = meshDataPair.second.bound;
+
+#if _DEBUG
+            staticMesh->tbnVerts = meshDataPair.second.tbnVerts;
+#endif
             ++idx;
         }
     }

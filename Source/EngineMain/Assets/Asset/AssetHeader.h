@@ -8,7 +8,8 @@ namespace EAssetType
     {
         InvalidType,
         StaticMesh,
-        Texture2D
+        Texture2D,
+        CubeMap
     };
 }
 

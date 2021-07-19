@@ -20,6 +20,5 @@ void mainVS()
     outLocalPosition = position.xyz;
     outWorldNormal = (transpose(instanceData.invModel) * vec4(normal.xyz, 0)).xyz;
     outLocalNormal = normal.xyz;
-    outVertexColor = vertexColor;
     outTextureCoord = vec2(position.w, normal.w);
 }

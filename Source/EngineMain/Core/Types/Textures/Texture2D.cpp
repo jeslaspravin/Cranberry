@@ -9,30 +9,52 @@ uint32 Texture2D::getMipCount() const
     return mipCount;
 }
 
-void Texture2D::setData(const std::vector<class Color>& newData, const Color& defaultColor, bool bIsSrgb)
+void Texture2D::setData(const std::vector<class Color>& newData, const Color& defaultColor)
 {
     rawData.resize(Math::max((uint32)newData.size(), textureSize.x * textureSize.y));
 
-    int32 copyIndex = 0;
-    if (bIsSrgb)
-    {
-        dataFormat = EPixelDataFormat::RGBA_U8_SRGB;
-        for (; copyIndex < static_cast<int32>(newData.size()); ++copyIndex)
-        {
-            rawData[copyIndex] = newData[copyIndex].toSrgb();
-        }
-    }
-    else
-    {
-        dataFormat = EPixelDataFormat::RGBA_U8_Norm;
-        memcpy(rawData.data(), newData.data(), newData.size() * sizeof(Color));
-    }
-    for (; copyIndex < static_cast<int32>(rawData.size()); ++copyIndex)
+    dataFormat = EPixelDataFormat::BGRA_U8_Norm;
+    memcpy(rawData.data(), newData.data(), newData.size() * sizeof(Color));
+    for (uint32 copyIndex = uint32(newData.size()); copyIndex < static_cast<uint32>(rawData.size()); ++copyIndex)
     {
         rawData[copyIndex] = defaultColor;
     }
 
     markResourceDirty();
+}
+
+bool Texture2D::isSrgb() const
+{
+    return dataFormat == EPixelDataFormat::BGRA_U8_SRGB
+        || dataFormat == EPixelDataFormat::RG_U8_SRGB 
+        || dataFormat == EPixelDataFormat::R_U8_SRGB;
+}
+
+EPixelDataFormat::Type Texture2D::determineDataFormat(bool bIsSrgb, bool bIsNormalMap, uint8 componentCount)
+{
+    EPixelDataFormat::Type dataFormat;
+    if (bIsNormalMap)
+    {
+        dataFormat = EPixelDataFormat::A2BGR10_U32_NormPacked;
+    }
+    else
+    {
+        switch (componentCount)
+        {
+        case 1:
+            dataFormat = bIsSrgb ? EPixelDataFormat::R_U8_SRGB : EPixelDataFormat::R_U8_Norm;
+            break;
+        case 2:
+            dataFormat = bIsSrgb ? EPixelDataFormat::RG_U8_SRGB : EPixelDataFormat::RG_U8_Norm;
+            break;
+        case 3:
+        case 4:
+        default:
+            dataFormat = bIsSrgb ? EPixelDataFormat::BGRA_U8_SRGB : EPixelDataFormat::BGRA_U8_Norm;
+            break;
+        }
+    }
+    return dataFormat;
 }
 
 Texture2D* Texture2D::createTexture(const Texture2DCreateParams& createParams)
@@ -47,12 +69,12 @@ Texture2D* Texture2D::createTexture(const Texture2DCreateParams& createParams)
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
-    texture->setData(createParams.colorData, createParams.defaultColor, createParams.bIsSrgb);
+    texture->setData(createParams.colorData, createParams.defaultColor);
     // Dependent values
     texture->setSampleCount(EPixelSampleCount::SampleCount1);// MS not possible for read only textures
     texture->setFilteringMode(createParams.filtering);
 
-    Texture2D::init(texture);
+    Texture2D::init(texture, createParams.bIsNormalMap, createParams.bIsSrgb, createParams.componentsCount);
     return texture;
 }
 
@@ -69,21 +91,32 @@ void Texture2D::reinitResources()
 
     ENQUEUE_COMMAND(ReinitTexture2D, 
         {
+            const EPixelDataFormat::PixelFormatInfo * formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
+            bool bIsNormalMap = (formatInfo->componentSize[uint8(EPixelComponent::R)] > 8);
             if (textureResource->isValid())
             {
                 textureResource->reinitResources();
-                cmdList->copyToImage(textureResource, rawData);
+                if (bIsNormalMap)
+                {
+                    cmdList->copyToImageLinearMapped(textureResource, rawData);
+                }
+                else
+                {
+                    cmdList->copyToImage(textureResource, rawData);
+                }
             }
             else
             {
-                Texture2D::init(this);
+                Texture2D::init(this, bIsNormalMap, isSrgb(), formatInfo->componentCount);
             }
         }, this);
 }
 
-void Texture2D::init(Texture2D* texture)
+void Texture2D::init(Texture2D* texture, bool bIsNormalMap, bool bIsSrgb, uint8 componentCount)
 {
-    texture->textureResource = new GraphicsImageResource(texture->dataFormat);
+    EPixelDataFormat::Type dataFormat = Texture2D::determineDataFormat(bIsSrgb, bIsNormalMap, componentCount);    
+
+    texture->textureResource = new GraphicsImageResource(dataFormat);
     texture->textureResource->setResourceName(texture->textureName);
     texture->textureResource->setShaderUsage(EImageShaderUsage::Sampling);
     texture->textureResource->setSampleCounts(texture->getSampleCount());
@@ -94,9 +127,16 @@ void Texture2D::init(Texture2D* texture)
     ENQUEUE_COMMAND(InitTexture2D,
         {
             texture->textureResource->init();
-            cmdList->copyToImage(texture->textureResource, texture->rawData);
+            if (bIsNormalMap)
+            {
+                cmdList->copyToImageLinearMapped(texture->textureResource, texture->rawData);
+            }
+            else
+            {
+                cmdList->copyToImage(texture->textureResource, texture->rawData);
+            }
         }
-        , texture);
+        , texture, bIsNormalMap);
 }
 
 void Texture2D::destroy(Texture2D* texture)

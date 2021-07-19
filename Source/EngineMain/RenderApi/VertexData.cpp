@@ -9,7 +9,7 @@
 BEGIN_VERTEX_DEFINITION(StaticMeshVertex, EShaderInputFrequency::PerVertex)
 ADD_VERTEX_FIELD(position)
 ADD_VERTEX_FIELD(normal)
-ADD_VERTEX_FIELD(vertexColor)
+ADD_VERTEX_FIELD(tangent)
 END_VERTEX_DEFINITION();
 
 // Just for using vertex info to fill all pipeline input information from reflection, Real data will be plain VectorND
@@ -30,9 +30,18 @@ struct VertexSimple3D
     Vector3D position;
 };
 
-struct VertexSimple4D
+struct VertexSimple3DColor
 {
-    Vector4D position;
+    Vector3D position;
+    uint32 color;
+};
+
+struct VertexInstancedSimple3DColor
+{
+    uint32 color;
+    Vector3D x;
+    Vector3D y;
+    Vector3D translation;
 };
 
 BEGIN_VERTEX_DEFINITION(VertexSimple2D, EShaderInputFrequency::PerVertex)
@@ -49,12 +58,22 @@ BEGIN_VERTEX_DEFINITION(VertexSimple3D, EShaderInputFrequency::PerVertex)
 ADD_VERTEX_FIELD(position)
 END_VERTEX_DEFINITION();
 
-BEGIN_VERTEX_DEFINITION(VertexSimple4D, EShaderInputFrequency::PerVertex)
+BEGIN_VERTEX_DEFINITION(VertexSimple3DColor, EShaderInputFrequency::PerVertex)
 ADD_VERTEX_FIELD(position)
+ADD_VERTEX_FIELD_AND_FORMAT(color, EShaderInputAttribFormat::UInt4Norm)
+END_VERTEX_DEFINITION();
+
+BEGIN_VERTEX_DEFINITION(VertexInstancedSimple3DColor, EShaderInputFrequency::PerInstance)
+ADD_VERTEX_FIELD_AND_FORMAT(color, EShaderInputAttribFormat::UInt4Norm)
+ADD_VERTEX_FIELD(x)
+ADD_VERTEX_FIELD(y)
+ADD_VERTEX_FIELD(translation)
 END_VERTEX_DEFINITION();
 
 namespace EVertexType
 {
+    VertexSimple3DVertexParamInfo SIMPLE3D_PARAM_INFO;
+
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple2>()
     {
@@ -74,14 +93,13 @@ namespace EVertexType
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3>()
     {
-        static VertexSimple3DVertexParamInfo STATIC_VERTEX_PARAM_INFO;
-        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &STATIC_VERTEX_PARAM_INFO };
+        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &SIMPLE3D_PARAM_INFO };
         return VERTEX_PARAMS;
     }
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple4>()
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3DColor>()
     {
-        static VertexSimple4DVertexParamInfo STATIC_VERTEX_PARAM_INFO;
+        static VertexSimple3DColorVertexParamInfo STATIC_VERTEX_PARAM_INFO;
         static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &STATIC_VERTEX_PARAM_INFO };
         return VERTEX_PARAMS;
     }
@@ -100,6 +118,14 @@ namespace EVertexType
         return VERTEX_PARAMS;
     }
 
+    template<>
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<InstancedSimple3DColor>()
+    {
+        static VertexInstancedSimple3DColorVertexParamInfo STATIC_VERTEX_PARAM_INFO;
+        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &SIMPLE3D_PARAM_INFO, &STATIC_VERTEX_PARAM_INFO };
+        return VERTEX_PARAMS;
+    }
+
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType)
     {
         switch (vertexType)
@@ -110,13 +136,15 @@ namespace EVertexType
             return vertexParamInfo<UI>();
         case EVertexType::Simple3:
             return vertexParamInfo<Simple3>();
-        case EVertexType::Simple4:
-            return vertexParamInfo<Simple4>();
-        default:
-        case EVertexType::BasicMesh:
-            return vertexParamInfo<BasicMesh>();
+        case EVertexType::Simple3DColor:
+            return vertexParamInfo<Simple3DColor>();
         case EVertexType::StaticMesh:
             return vertexParamInfo<StaticMesh>();
+        case EVertexType::InstancedSimple3DColor:
+            return vertexParamInfo<InstancedSimple3DColor>();
+        case EVertexType::BasicMesh:
+        default:
+            return vertexParamInfo<BasicMesh>();
         }
     }
 
@@ -129,8 +157,8 @@ namespace EVertexType
         case EVertexType::Simple3:
             return "Simple3d";
             break;
-        case EVertexType::Simple4:
-            return "Simple";
+        case EVertexType::Simple3DColor:
+            return "Simple3dColor";
             break;
         case EVertexType::BasicMesh:
             return "BasicMesh";
@@ -138,6 +166,8 @@ namespace EVertexType
         case EVertexType::StaticMesh:
             return "StaticMesh";
             break;
+        case EVertexType::InstancedSimple3DColor:
+            return "InstSimple3dColor";
         }
         return "";
     }
@@ -157,7 +187,7 @@ namespace EVertexType
     {
     }
     template<>
-    void vertexSpecConsts<Simple4>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
+    void vertexSpecConsts<Simple3DColor>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
     {
     }
     template<>
@@ -166,6 +196,10 @@ namespace EVertexType
     }
     template<>
     void vertexSpecConsts<StaticMesh>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
+    {
+    }
+    template<>
+    void vertexSpecConsts<InstancedSimple3DColor>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
     {
     }
 
@@ -179,13 +213,15 @@ namespace EVertexType
             return vertexSpecConsts<UI>(specializationConst);
         case EVertexType::Simple3:
             return vertexSpecConsts<Simple3>(specializationConst);
-        case EVertexType::Simple4:
-            return vertexSpecConsts<Simple4>(specializationConst);
+        case EVertexType::Simple3DColor:
+            return vertexSpecConsts<Simple3DColor>(specializationConst);
         default:
         case EVertexType::BasicMesh:
             return vertexSpecConsts<BasicMesh>(specializationConst);
         case EVertexType::StaticMesh:
             return vertexSpecConsts<StaticMesh>(specializationConst);
+        case EVertexType::InstancedSimple3DColor:
+            return vertexSpecConsts<InstancedSimple3DColor>(specializationConst);
         }
     }
 

@@ -108,4 +108,3 @@ SingleColorShaderPipeline::SingleColorShaderPipeline(const ShaderResource* shade
 
 using SingleColorShaderPipelineRegistrar = GenericPipelineRegistrar<SingleColorShaderPipeline>;
 SingleColorShaderPipelineRegistrar SINGLECOLOR_SHADER_PIPELINE_REGISTER(SINGLECOLOR_SHADER_NAME);
-

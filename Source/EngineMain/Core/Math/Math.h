@@ -65,16 +65,16 @@ public:
 
     //////////////////////////////////////////////////////////////////////////
 
-    template <typename Type>
-    FORCE_INLINE static float pow2(const Type& base)
+    template <typename Type, typename T = std::common_type_t<Type, uint32>>
+    FORCE_INLINE static T pow2(const Type& base)
     {
-        return float(glm::pow(base,2));
+        return T(glm::pow(base,2u));
     }
 
-    template <typename BaseType, typename PowType>
-    FORCE_INLINE static float pow(const BaseType& base,const PowType& power)
+    template <typename BaseType, typename PowType, typename T = std::common_type_t<BaseType, PowType>>
+    FORCE_INLINE static T pow(const BaseType& base,const PowType& power)
     {
-        return float(glm::pow(base, power));
+        return T(glm::pow(base, power));
     }
 
     template <typename Type>

@@ -31,4 +31,18 @@ public:
     AssetBase* getOrLoadAsset(const String& relAssetPath);
     AssetBase* getOrLoadAsset(const AssetHeader& header);
     AssetBase* getAsset(const String& assetName) const;
+
+    template<EAssetType::Type AssetType>
+    std::vector<AssetBase*> getAssetsOfType()
+    {
+        std::vector<AssetBase*> assets;
+        for (const std::pair<const AssetHeader, AssetBase*>& asset : assetsRegistered)
+        {
+            if (asset.first.type == AssetType)
+            {
+                assets.emplace_back(asset.second);
+            }
+        }
+        return assets;
+    }
 };

@@ -37,6 +37,9 @@ public:
     void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) override;
 
     void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
+    void copyToImage(ImageResource* dst, const std::vector<class LinearColor>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
+    void copyToImageLinearMapped(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
+
     void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) override;
 
     void setupInitialLayout(ImageResource* image) override;
@@ -59,6 +62,7 @@ public:
 
     void cmdDispatch(const GraphicsResource* cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const override;
     void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const override;
+    void cmdDrawVertices(const GraphicsResource* cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance = 0, uint32 instanceCount = 1) const override;
 
     void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const override;
     void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const override;
@@ -115,6 +119,11 @@ void RenderCommandList::cmdDispatch(const GraphicsResource* cmdBuffer, uint32 gr
 void RenderCommandList::cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance /*= 0*/, uint32 instanceCount /*= 1*/, int32 vertexOffset /*= 0*/) const
 {
     cmdList->cmdDrawIndexed(cmdBuffer, firstIndex, indexCount, firstInstance, instanceCount, vertexOffset);
+}
+
+void RenderCommandList::cmdDrawVertices(const GraphicsResource* cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance /*= 0*/, uint32 instanceCount /*= 1*/) const
+{
+    cmdList->cmdDrawVertices(cmdBuffer, firstVertex, vertexCount, firstInstance, instanceCount);
 }
 
 void RenderCommandList::setup(IRenderCommandList* commandList)
@@ -207,6 +216,16 @@ void RenderCommandList::copyToImage(ImageResource* dst, const std::vector<class 
     cmdList->copyToImage(dst, pixelData, copyInfo);
 }
 
+void RenderCommandList::copyToImage(ImageResource* dst, const std::vector<class LinearColor>& pixelData, const CopyPixelsToImageInfo& copyInfo)
+{
+    cmdList->copyToImage(dst, pixelData, copyInfo);
+}
+
+void RenderCommandList::copyToImageLinearMapped(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo)
+{
+    cmdList->copyToImageLinearMapped(dst, pixelData, copyInfo);
+}
+
 void RenderCommandList::copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo)
 {
     cmdList->copyOrResolveImage(src, dst, srcInfo, dstInfo);
@@ -278,6 +297,29 @@ void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stag
     constexpr uint32 colorCompBits = sizeof(decltype(std::declval<Color>().r())) * 8;
     debugAssert(colorCompBits == 8);
 
+    // Mask from component's first byte
+    uint32 perCompMask[MAX_PIXEL_COMP_COUNT];
+    for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
+    {
+        const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+
+        uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
+        fatalAssert(((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx], "%s(): Component %d of pixel format %s is going beyond 32bits mask after offset"
+            , __func__, compIdx, formatInfo->formatName.getChar());
+
+        uint32 end = 1 << (formatInfo->componentSize[compIdx] - 1);
+        uint32 mask = 1;
+        perCompMask[compIdx] = 1;
+        while ((mask & end) != end)
+        {
+            mask <<= 1;
+            mask |= 1;
+        }
+
+        mask <<= offset;
+        perCompMask[compIdx] = mask;
+    }
+
     memset(stagingPtr, 0, stagingBuffer->getResourceSize());
 
     if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
@@ -286,21 +328,171 @@ void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stag
         for (uint32 i = 0; i < pixelData.size(); ++i)
         {
             uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
-            for (uint8 compIdx = 0; compIdx < formatInfo->componentCount; ++compIdx)
+            for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
             {
+                const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+
                 const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
+                const uint8 compSizeBits = formatInfo->componentSize[compIdx];
+
+                // We are never going to go above 32 bits per channel
+                const uint32 compValue = pixelData[i].getColorValue()[compIdx];
+
                 uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
 
                 // Left shift
                 const uint32 byte1Shift = compOffset % colorCompBits;
-                const uint8 byte1Mask = 0xFF << byte1Shift;
-                *offsetStagingPtr |= (byte1Mask & (pixelData[i].getColorValue()[compIdx] << byte1Shift));
 
-                if (byte1Shift > 0)
+                (*reinterpret_cast<uint32*>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
+            }
+        }
+    }
+    else
+    {
+        fatalAssert(false, "Big endian platform not supported yet");
+    }
+}
+
+void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class LinearColor>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo, bool bIsFloatingFormat) const
+{
+    constexpr uint32 colorCompBits = sizeof(decltype(std::declval<Color>().r())) * 8;
+    debugAssert(colorCompBits == 8);
+
+    memset(stagingPtr, 0, stagingBuffer->getResourceSize());
+    if (bIsFloatingFormat)
+    {
+        for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
+        {
+            debugAssert(formatInfo->componentSize[uint32(formatInfo->componentOrder[idx])] == sizeof(float));
+        }
+
+        // Copying data
+        for (uint32 i = 0; i < pixelData.size(); ++i)
+        {
+            uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+            for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
+            {
+                const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+                const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
+
+                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
+
+                memcpy(offsetStagingPtr, &pixelData[i].getColorValue()[compIdx], sizeof(float));
+            }
+        }
+    }
+    else
+    {
+        // Mask from component's first byte
+        uint32 perCompMask[MAX_PIXEL_COMP_COUNT];
+        for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
+        {
+            const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+
+            uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
+            fatalAssert(((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx], "%s(): Component %d of pixel format %s is going beyond 32bits mask after offset"
+                , __func__, compIdx, formatInfo->formatName.getChar());
+
+            uint32 end = 1 << (formatInfo->componentSize[compIdx] - 1);
+            uint32 mask = 1;
+            perCompMask[compIdx] = 1;
+            while ((mask & end) != end)
+            {
+                mask <<= 1;
+                mask |= 1;
+            }
+
+            mask <<= offset;
+            perCompMask[compIdx] = mask;
+        }
+
+        if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
+        {
+            // Copying data
+            for (uint32 i = 0; i < pixelData.size(); ++i)
+            {
+                uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+                for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
                 {
-                    const uint8 byte2Mask = ~byte1Mask;
-                    *(offsetStagingPtr + 1) |= (byte2Mask & (pixelData[i].getColorValue()[compIdx] >> (colorCompBits - byte1Shift)));
+                    const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+
+                    const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
+                    const uint8 compSizeBits = formatInfo->componentSize[compIdx];
+
+                    // We are never going to go above 32 bits per channel
+                    const uint32 maxVal = (Math::pow(2u, compSizeBits) - 1);
+                    const uint32 compValue = uint32(pixelData[i].getColorValue()[compIdx] * maxVal);
+
+                    uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
+
+                    // Left shift
+                    const uint32 byte1Shift = compOffset % colorCompBits;
+
+                    (*reinterpret_cast<uint32*>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
                 }
+            }
+        }
+        else
+        {
+            fatalAssert(false, "Big endian platform not supported yet");
+        }
+    }
+}
+
+void IRenderCommandList::copyPixelsLinearMappedTo(BufferResource* stagingBuffer, uint8* stagingPtr
+    , const std::vector<class Color>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo) const
+{
+    constexpr uint32 colorCompBits = sizeof(decltype(std::declval<Color>().r())) * 8;
+    debugAssert(colorCompBits == 8);
+
+    // Mask from component's first byte
+    uint32 perCompMask[MAX_PIXEL_COMP_COUNT];
+    for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
+    {
+        const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+
+        uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
+        fatalAssert(((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx], "%s(): Component %d of pixel format %s is going beyond 32bits mask after offset"
+            , __func__, compIdx, formatInfo->formatName.getChar());
+
+        uint32 end = 1 << (formatInfo->componentSize[compIdx] - 1);
+        uint32 mask = 1;
+        perCompMask[compIdx] = 1;
+        while ((mask & end) != end)
+        {
+            mask <<= 1;
+            mask |= 1;
+        }
+
+        mask <<= offset;
+        perCompMask[compIdx] = mask;
+    }
+
+    memset(stagingPtr, 0, stagingBuffer->getResourceSize());
+
+    if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
+    {
+        // Copying data
+        for (uint32 i = 0; i < pixelData.size(); ++i)
+        {
+            uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+            for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
+            {
+                const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+
+                const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
+                const uint8 compSizeBits = formatInfo->componentSize[compIdx];
+
+                // We are never going to go above 32 bits per channel
+                const uint32 maxVal = (Math::pow(2u, compSizeBits) - 1);
+                const uint32 compValue = uint32((pixelData[i].getColorValue()[compIdx] / 255.0f) * maxVal);
+
+                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
+
+                // Left shift
+                const uint32 byte1Shift = compOffset % colorCompBits;
+
+                (*reinterpret_cast<uint32*>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
             }
         }
     }
@@ -330,6 +522,25 @@ void IRenderCommandList::copyToImage(ImageResource* dst, const std::vector<class
     copyToImage(dst, pixelData, copyInfo);
 }
 
+void IRenderCommandList::copyToImageLinearMapped(ImageResource* dst, const std::vector<class Color>& pixelData)
+{
+    if (pixelData.size() < (dst->getImageSize().z * dst->getImageSize().y * dst->getImageSize().x) * dst->getLayerCount())
+    {
+        Logger::error("RenderCommandList", "%s() : Texel data count is not sufficient to fill all texels of %s", __func__
+            , dst->getResourceName().getChar());
+        return;
+    }
+    CopyPixelsToImageInfo copyInfo;
+    copyInfo.dstOffset = { 0,0,0 };
+    copyInfo.extent = dst->getImageSize();
+    copyInfo.subres.baseLayer = 0;
+    copyInfo.subres.layersCount = dst->getLayerCount();
+    copyInfo.subres.baseMip = 0;
+    copyInfo.subres.mipCount = dst->getNumOfMips();
+    copyInfo.bGenerateMips = true;
+    copyInfo.mipFiltering = ESamplerFiltering::Nearest;
+    copyToImageLinearMapped(dst, pixelData, copyInfo);
+}
 
 template <typename T>
 struct PushConstCopier
