@@ -32,15 +32,15 @@ public:
     AssetBase* getOrLoadAsset(const AssetHeader& header);
     AssetBase* getAsset(const String& assetName) const;
 
-    template<EAssetType::Type AssetType>
-    std::vector<AssetBase*> getAssetsOfType()
+    template<EAssetType::Type AssetObjectType, typename AssetType>
+    std::vector<AssetType*> getAssetsOfType() const
     {
-        std::vector<AssetBase*> assets;
+        std::vector<AssetType*> assets;
         for (const std::pair<const AssetHeader, AssetBase*>& asset : assetsRegistered)
         {
-            if (asset.first.type == AssetType)
+            if (asset.first.type == AssetObjectType)
             {
-                assets.emplace_back(asset.second);
+                assets.emplace_back(static_cast<AssetType*>(asset.second));
             }
         }
         return assets;

@@ -20,6 +20,8 @@ private:
     bool bIsInsideRenderCommand = false;
 
     void createSingletons();
+
+    void enqueueCommand(class IRenderCommand* renderCommand);
     void executeAllCmds();
 public:
 
@@ -32,6 +34,21 @@ public:
     GlobalRenderingContextBase* getGlobalRenderingContext() const;
     class ImGuiManager* getImGuiManager() const;
 
-    void enqueueCommand(class IRenderCommand* renderCommand);
     void waitOnCommands();
+
+    template <typename RenderCmdClass>
+    static void issueRenderCommand(RenderApi* renderApi, typename RenderCmdClass::RenderCmdFunc renderCommandFn);
 };
+
+template <typename RenderCmdClass>
+void RenderApi::issueRenderCommand(RenderApi* renderApi, typename RenderCmdClass::RenderCmdFunc renderCommandFn)
+{
+    if (renderApi->bIsInsideRenderCommand)
+    {
+        renderCommandFn(renderApi->renderCmds, renderApi->graphicsInstance);
+    }
+    else
+    {
+        renderApi->enqueueCommand(new RenderCmdClass(renderCommandFn));
+    }
+}

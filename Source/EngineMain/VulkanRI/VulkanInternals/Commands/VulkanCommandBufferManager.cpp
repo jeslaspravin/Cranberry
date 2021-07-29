@@ -226,7 +226,7 @@ VulkanCmdBufferManager::~VulkanCmdBufferManager()
         {
             Logger::error("VulkanCmdBufferManager", "%s: Command buffer %s is not finished, trying to finish it"
                 , __func__, cmdBuffer.second.cmdBuffer->getResourceName().getChar());
-            cmdFinished(cmdBuffer.second.cmdBuffer->getResourceName());
+            cmdFinished(cmdBuffer.second.cmdBuffer->getResourceName(), nullptr);
         }
         cmdBuffer.second.cmdBuffer->release();
         delete cmdBuffer.second.cmdBuffer;
@@ -423,14 +423,14 @@ void VulkanCmdBufferManager::endCmdBuffer(const GraphicsResource* cmdBuffer)
     vDevice->vkEndCommandBuffer(vCmdBuffer->cmdBuffer);
 }
 
-void VulkanCmdBufferManager::cmdFinished(const GraphicsResource* cmdBuffer)
+void VulkanCmdBufferManager::cmdFinished(const GraphicsResource* cmdBuffer, VulkanResourcesTracker* resourceTracker)
 {
     const auto* vCmdBuffer = static_cast<const VulkanCommandBuffer*>(cmdBuffer);
 
-    cmdFinished(cmdBuffer->getResourceName());
+    cmdFinished(cmdBuffer->getResourceName(), resourceTracker);
 }
 
-void VulkanCmdBufferManager::cmdFinished(const String& cmdName)
+void VulkanCmdBufferManager::cmdFinished(const String& cmdName, VulkanResourcesTracker* resourceTracker)
 {
     auto cmdBufferItr = commandBuffers.find(cmdName);
     if (cmdBufferItr != commandBuffers.end())
@@ -458,7 +458,10 @@ void VulkanCmdBufferManager::cmdFinished(const String& cmdName)
             }
             cmdsSyncInfo.reset(cmdBufferItr->second.cmdSyncInfoIdx);
         }
-
+        if (resourceTracker)
+        {
+            resourceTracker->clearFinishedCmd(cmdBufferItr->second.cmdBuffer);
+        }
         cmdBufferItr->second.cmdSyncInfoIdx = -1;
         cmdBufferItr->second.cmdState = ECmdState::Recorded;
     }
@@ -1047,6 +1050,44 @@ void VulkanResourcesTracker::clearCmdBufferDeps(const GraphicsResource* cmdBuffe
     cmdWaitInfo.erase(cmdBuffer);
 }
 
+void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource* cmdBuffer)
+{
+    cmdWaitInfo.erase(cmdBuffer);
+
+    for (auto& resAccessor : resourcesAccessors)
+    {
+        if (resAccessor.second.lastWrite == cmdBuffer)
+        {
+            resAccessor.second.lastWrite = nullptr;
+        }
+
+        auto newEnd = std::remove_if(resAccessor.second.lastReadsIn.begin(), resAccessor.second.lastReadsIn.end()
+            ,[cmdBuffer](const GraphicsResource* cmd)
+            {
+                return cmd == cmdBuffer;
+            }
+        );
+        resAccessor.second.lastReadsIn.erase(newEnd, resAccessor.second.lastReadsIn.end());
+    }
+
+
+    for (auto& attachment : renderpassAttachments)
+    {
+        if (attachment.second.lastWrite == cmdBuffer)
+        {
+            attachment.second.lastWrite = nullptr;
+        }
+
+        auto newEnd = std::remove_if(attachment.second.lastReadsIn.begin(), attachment.second.lastReadsIn.end()
+            , [cmdBuffer](const GraphicsResource* cmd)
+            {
+                return cmd == cmdBuffer;
+            }
+        );
+        attachment.second.lastReadsIn.erase(newEnd, attachment.second.lastReadsIn.end());
+    }
+}
+
 void VulkanResourcesTracker::clearUnwanted()
 {
     std::unordered_set<const GraphicsResource*> memResources;
@@ -1125,6 +1166,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     {
         accessors.lastReadsIn.emplace_back(cmdBuffer);
         accessors.allReadStages |= resource.second;
+        accessors.lastReadStages = resource.second;
         return outBarrierInfo;
     }
 
@@ -1147,6 +1189,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     }
     accessors.lastReadsIn.emplace_back(cmdBuffer);
     accessors.allReadStages |= resource.second;
+    accessors.lastReadStages = resource.second;
     return outBarrierInfo;
 }
 
@@ -1159,6 +1202,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     {
         accessors.lastReadsIn.emplace_back(cmdBuffer);
         accessors.allReadStages |= resource.second;
+        accessors.lastReadStages = resource.second;
         return outBarrierInfo;
     }
 
@@ -1183,6 +1227,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     }
     accessors.lastReadsIn.emplace_back(cmdBuffer);
     accessors.allReadStages |= resource.second;
+    accessors.lastReadStages = resource.second;
     return outBarrierInfo;
 }
 
@@ -1234,10 +1279,12 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
         barrier.accessors.lastReadsIn.emplace_back(cmdBuffer);
         barrier.resource = resource.first;
         barrier.accessors.allReadStages = accessors.allReadStages;
+        barrier.accessors.lastReadStages = accessors.lastReadStages;
 
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
         accessors.lastReadsIn.clear();
+        accessors.lastReadStages = 0;
         accessors.allReadStages = 0;
 
         outBarrierInfo = barrier;
@@ -1252,6 +1299,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
         accessors.lastReadsIn.clear();
+        accessors.lastReadStages = 0;
         accessors.allReadStages = 0;
         // we do not have to wait for last write as reads already do that
         return outBarrierInfo;
@@ -1299,7 +1347,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
         return outBarrierInfo;
     }
 
-    // If we are already reading in this cmd buffer then all other steps are already done so wait from just read to finish
+    // If we are already reading in this cmd buffer then all other steps are already done so wait for just read to finish
     if (std::find(accessors.lastReadsIn.cbegin(), accessors.lastReadsIn.cend(), cmdBuffer) != accessors.lastReadsIn.cend())
     {
         // Since same command buffer we need to write after waiting for read
@@ -1307,10 +1355,12 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
         barrier.accessors.lastReadsIn.emplace_back(cmdBuffer);
         barrier.resource = resource.first;
         barrier.accessors.allReadStages = accessors.allReadStages;
+        barrier.accessors.lastReadStages = accessors.lastReadStages;
 
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
         accessors.lastReadsIn.clear();
+        accessors.allReadStages = accessors.lastReadStages = 0;
 
         outBarrierInfo = barrier;
         return outBarrierInfo;
@@ -1321,18 +1371,18 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
         for (const GraphicsResource* cmdBuffer : accessors.lastReadsIn)
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ cmdBuffer, resource.second });
 
-        // If read write image no need to switch layout as all will be in general layout
-        //ResourceBarrierInfo barrier;
-        //barrier.accessors.lastReadsIn = accessors.lastReadsIn;
-        //barrier.resource = resource.first;
-        //barrier.accessors.allReadStages = accessors.allReadStages;
-        //// we do not have to wait for last write as reads already do that
-        //outBarrierInfo = barrier;
+        ResourceBarrierInfo barrier;
+        barrier.accessors.lastReadsIn = accessors.lastReadsIn;
+        barrier.resource = resource.first;
+        barrier.accessors.allReadStages = accessors.allReadStages;
+        barrier.accessors.lastReadStages = accessors.lastReadStages;
+        // we do not have to wait for last write as reads already do that
+        outBarrierInfo = barrier;
 
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
         accessors.lastReadsIn.clear();
-        accessors.allReadStages = 0;
+        accessors.allReadStages = accessors.lastReadStages = 0;
 
         return outBarrierInfo;
     }

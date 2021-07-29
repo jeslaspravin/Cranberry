@@ -5,6 +5,7 @@
 #include "../../Core/Platform/LFS/PlatformLFS.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../Core/Math/Math.h"
+#include "../../Core/Types/Textures/ImageUtils.h"
 
 #if _DEBUG
 #define STBI_FAILURE_USERMSG
@@ -14,6 +15,82 @@
 #define STBI_ASSERT(x) debugAssert(x);
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <array>
+
+bool TextureLoader::isNormalTexture(const uint8* texels) const
+{
+    bool isNormal = false;
+    const uint32 pixelsCount = textureDimension.x * textureDimension.y;
+
+    // New way based on histogram
+    std::array<float, 32> histogram[3];
+    ImageUtils::calcHistogramRGB(histogram[0].data(), histogram[1].data(), histogram[2].data(), uint32(histogram[0].size())
+        , texels, textureDimension.x, textureDimension.y, CHANNEL_NUM);
+
+    float rgMaxWeight = 0;
+    uint32 rgMaxLum = 0;
+    float blueMaxWeight = 0;
+    uint32 blueMaxLum = 0;
+    for (uint32 i = 0; i < uint32(histogram[0].size()); ++i)
+    {
+        const float rgWeight = histogram[0][i] * histogram[1][i];
+        if (rgMaxWeight < rgWeight)
+        {
+            rgMaxLum = i;
+            rgMaxWeight = rgWeight;
+        }
+
+        if (blueMaxWeight < histogram[2][i])
+        {
+            blueMaxLum = i;
+            blueMaxWeight = histogram[2][i];
+        }
+    }
+    rgMaxLum = uint32((rgMaxLum * 256 / histogram->size()) + (128 / histogram->size()));
+    blueMaxLum = uint32((blueMaxLum * 256 / histogram->size()) + (128 / histogram->size()));
+
+    // If RG is in the middle of histogram as normal map must have balanced normal shifts
+    // and
+    // B is in end of spectrum
+    if (Math::abs(rgMaxLum - 127.5f) < 17.5f && blueMaxLum > 200)
+    {
+        isNormal = true;
+        Logger::log("Texture Loader", "%s() : Texture %s with Max Red Green lum %u Max RG weight %0.3f, Max Blue lum %u Max B weight %0.3f is determined as normal texture"
+            , __func__ , textureName.getChar()
+            , rgMaxLum, rgMaxWeight, blueMaxLum, blueMaxWeight);
+    }
+
+    // Old way - Based on normalized pixels
+#if 0
+    int32 normalizedPixs = 0;
+    // Determine if normal map
+    for (uint32 i = 0; i < pixelsCount; ++i)
+    {
+        const uint32 texelStart = i * CHANNEL_NUM;
+
+        auto texel = Vector3D(texels[texelStart], texels[texelStart + 1], texels[texelStart + 2]) * 2 / 255.0f;
+        texel -= 1.f;
+        const float pixelLen = texel.length();
+        // for normal map the pixels must always have value greater than zero for Zs
+        normalizedPixs += (channelsCount >= 3 && Math::isEqual(1.0f, pixelLen, 0.1f) && texel.z() > 0.0f) ? 1 : 0;
+    }
+    const float normalizedPixFrac = float(normalizedPixs) / pixelsCount;
+    Logger::debug("Texture Loader", "%s() : Normalization ratio %0.2f for texture %s", __func__, normalizedPixFrac, textureName.getChar());
+    if (normalizedPixFrac > 0.25f)
+    {
+        Logger::log("Texture Loader", "%s() : Texture %s is marked as normal map, Normalization ratio %0.2f", __func__, textureName.getChar(), normalizedPixFrac);
+        isNormal = true;
+    }
+#endif
+
+    
+    if (!isNormal && textureName.endsWith("_N", false))
+    {
+        isNormal = true;
+        Logger::debug("Texture Loader", "%s() : Texture %s is determined as normal texture based on suffix _N, Please rename texture if not intended", __func__, textureName.getChar());
+    }
+    return isNormal;
+}
 
 TextureLoader::TextureLoader(const String& texturePath)
     : bIsNormal(false)
@@ -29,9 +106,9 @@ TextureLoader::TextureLoader(const String& texturePath)
 
         int32 dimX;
         int32 dimY;
-        uint8* pixelData = stbi_load_from_memory(fileData.data(), int32(fileData.size()), &dimX, &dimY, &channelsCount, CHANNEL_NUM);
+        uint8* texelData = stbi_load_from_memory(fileData.data(), int32(fileData.size()), &dimX, &dimY, &channelsCount, CHANNEL_NUM);
 
-        if (pixelData == nullptr)
+        if (texelData == nullptr)
         {
             Logger::error("Texture Loader", "%s() : Failed loading image - %s", __func__, stbi_failure_reason());
             bLoaded = false;
@@ -43,42 +120,16 @@ TextureLoader::TextureLoader(const String& texturePath)
 
             int32 pixelsCount = dimY * dimX;
 
-            bIsNormal = textureName.endsWith("_N", false);
-            if (bIsNormal)
-            {
-                Logger::debug("Texture Loader", "%s() : Texture %s is determined as normal texture based on suffix _N, Please rename texture if not intended", __func__, textureFile.getFileName().getChar());
-            }
-            else
-            {
-                int32 normalizedPixs = 0;
-                // Determine if normal map
-                for (int32 i = 0; i < pixelsCount; ++i)
-                {
-                    int32 pixelStart = i * CHANNEL_NUM;
+            bIsNormal = isNormalTexture(texelData);
 
-                    auto pixel = Vector3D(pixelData[pixelStart], pixelData[pixelStart + 1], pixelData[pixelStart + 2]) * 2 / 255.0f;
-                    pixel -= 1.f;
-                    const float pixelLen = pixel.length();
-                    // for normal map the pixels must always have value greater than zero for Zs
-                    normalizedPixs += (channelsCount >= 3 && Math::isEqual(1.0f, pixelLen, 0.1f) && pixel.z() > 0.0f) ? 1 : 0;
-                }
-                const float normalizedPixFrac = float(normalizedPixs) / pixelsCount;
-                Logger::debug("Texture Loader", "%s() : Normalization ratio %0.2f for texture %s", __func__, normalizedPixFrac, textureFile.getFileName().getChar());
-                if (normalizedPixFrac > 0.25f)
-                {
-                    Logger::log("Texture Loader", "%s() : Texture %s is marked as normal map", __func__, textureFile.getFileName().getChar());
-                    bIsNormal = true;
-                }
-            }
-
-            texturePixelData.resize(pixelsCount);
+            textureTexelData.resize(pixelsCount);
             // If normal we are inverting x value to account for flip of texture in u channel along tangent axis
             if (bIsNormal)
             {
                 for (int32 i = 0; i < pixelsCount; ++i)
                 {
                     int32 pixelStart = i * CHANNEL_NUM;
-                    texturePixelData[i] = Color(uint8(Math::clamp(255 - pixelData[pixelStart], 0, 255)), pixelData[pixelStart + 1], pixelData[pixelStart + 2], pixelData[pixelStart + 3]);
+                    textureTexelData[i] = Color(uint8(Math::clamp(255 - texelData[pixelStart], 0, 255)), texelData[pixelStart + 1], texelData[pixelStart + 2], texelData[pixelStart + 3]);
                 }
             }
             else
@@ -86,12 +137,12 @@ TextureLoader::TextureLoader(const String& texturePath)
                 for (int32 i = 0; i < pixelsCount; ++i)
                 {
                     int32 pixelStart = i * CHANNEL_NUM;
-                    texturePixelData[i] = Color(pixelData[pixelStart], pixelData[pixelStart + 1], pixelData[pixelStart + 2], pixelData[pixelStart + 3]);
+                    textureTexelData[i] = Color(texelData[pixelStart], texelData[pixelStart + 1], texelData[pixelStart + 2], texelData[pixelStart + 3]);
                 }
             }
             bLoaded = true;
 
-            stbi_image_free(pixelData);
+            stbi_image_free(texelData);
         }
     }
     else
@@ -109,7 +160,7 @@ void TextureLoader::fillTextureAsset(TextureAsset* textureAsset) const
 {
     textureAsset->setAssetName(textureName);
     textureAsset->setTextureSize(textureDimension);
-    textureAsset->setTempPixelData(texturePixelData);
+    textureAsset->setTempPixelData(textureTexelData);
     textureAsset->setChannelCount(uint8(channelsCount));
     textureAsset->setNormalMap(bIsNormal);
 }

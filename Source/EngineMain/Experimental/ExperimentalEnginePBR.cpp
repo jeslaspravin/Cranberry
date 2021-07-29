@@ -47,10 +47,12 @@
 #include "../RenderInterface/Rendering/CommandBuffer.h"
 #include "../Editor/Core/ImGui/ImGuiManager.h"
 #include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
+#include "../Editor/Core/ImGui/ImGuiLib/implot.h"
 #include "../Core/Engine/WindowManager.h"
 #include "../Core/Platform/GenericAppWindow.h"
 #include "../RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "../RenderInterface/Shaders/EngineShaders/PBRShader.h"
+#include "../Core/Types/Textures/ImageUtils.h"
 
 #include <array>
 #include <random>
@@ -63,19 +65,6 @@ struct QueueCommandPool
     VkCommandPool tempCommandsPool;
     VkCommandPool resetableCommandPool;
     VkCommandPool oneTimeRecordPool;
-};
-
-struct TexelBuffer
-{
-    class BufferResource* buffer = nullptr;
-    // Only necessary for texel buffers
-    VkBufferView bufferView = nullptr;
-};
-
-struct ImageData
-{
-    class TextureBase* image = nullptr;
-    VkImageView imageView = nullptr;
 };
 
 struct PBRSceneEntity
@@ -234,20 +223,24 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     LocalPipelineContext singleColorPipelineContext;
     LocalPipelineContext texturedPipelineContext;
 
-    VkRenderPass lightingRenderPass;
     LocalPipelineContext drawPbrPipelineContext;
 
-    class BufferResource* quadVertexBuffer = nullptr;
-    class BufferResource* quadIndexBuffer = nullptr;
-    LocalPipelineContext drawQuadPipelineContext;
+    LocalPipelineContext resolveToPresentPipelineContext;
+    LocalPipelineContext overBlendedQuadPipelineContext;
     LocalPipelineContext resolveLightRtPipelineContext;
 
     SharedPtr<ShaderParameters> clearInfoParams;
     LocalPipelineContext clearQuadPipelineContext;
 
-    RenderPassAdditionalProps debugDrawAdditionalProps;
-    VkRenderPass debugDrawRenderPass;
-    LocalPipelineContext drawDebugPipelineContext;
+    LocalPipelineContext sceneDebugLinesPipelineContext;
+
+    LocalPipelineContext drawLinesDWritePipelineCntxt;
+    // Gizmo drawing
+    RenderTargetTexture* camGizmoColorTexture;
+    RenderTargetTexture* camGizmoDepthTarget;
+    void updateCamGizmoViewParams();
+    SharedPtr<ShaderParameters> camViewAndInstanceParams;
+    SharedPtr<ShaderParameters> camRTParams;
 
     void getPipelineForSubpass();
 
@@ -263,6 +256,16 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     int32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
     Size2D renderSize{ 1280, 720 };
     ECameraProjection projection = ECameraProjection::Perspective;
+
+    // Textures
+    std::vector<TextureAsset*> textures;
+
+    // Histogram data
+    std::vector<const AChar*> textureNames;
+    int32 selectedTexture = 0;
+    std::array<float, 32> histogram[3];
+
+    String noneString{ "None" };
 protected:
     void onStartUp() override;
     void onQuit() override;
@@ -270,7 +273,9 @@ protected:
 
     void startUpRenderInit();
     void renderQuit();
+    void updateCamGizmoCapture(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
     void frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    void debugFrameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsResource* cmdBuffer, uint32 swapchainIdx);
 
     void drawSelectionWidget(class ImGuiDrawInterface* drawInterface);
 
@@ -439,12 +444,25 @@ void ExperimentalEnginePBR::createImages()
         ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest);
     linearFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "LinearSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
+
+    RenderTextureCreateParams rtCreateParams;
+    rtCreateParams.bSameReadWriteTexture = true;
+    rtCreateParams.bIsSrgb = false;
+    rtCreateParams.format = ERenderTargetFormat::RT_U8Packed;
+    rtCreateParams.textureSize = Size2D(256, 256);
+    camGizmoColorTexture = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
+
+    rtCreateParams.format = ERenderTargetFormat::RT_Depth;
+    camGizmoDepthTarget = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
 }
 
 void ExperimentalEnginePBR::destroyImages()
 {
     nearestFiltering->release();
     linearFiltering->release();
+
+    TextureBase::destroyTexture<RenderTargetTexture>(camGizmoColorTexture);
+    TextureBase::destroyTexture<RenderTargetTexture>(camGizmoDepthTarget);
 }
 
 void ExperimentalEnginePBR::createScene()
@@ -782,7 +800,7 @@ void ExperimentalEnginePBR::createShaderParameters()
             + std::to_string(i * ARRAY_LENGTH(PBRLightArray::spotLits) + ARRAY_LENGTH(PBRLightArray::spotLits)));
     }
 
-    const GraphicsResource* drawQuadDescLayout = drawQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0);
+    const GraphicsResource* drawQuadDescLayout = resolveToPresentPipelineContext.getPipeline()->getParamLayoutAtSet(0);
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         const String iString = std::to_string(i);
@@ -808,6 +826,12 @@ void ExperimentalEnginePBR::createShaderParameters()
 
     clearInfoParams = GraphicsHelper::createShaderParameters(graphicsInstance, clearQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0));
     clearInfoParams->setResourceName("ClearInfo");
+
+    camViewAndInstanceParams = GraphicsHelper::createShaderParameters(graphicsInstance, drawLinesDWritePipelineCntxt.getPipeline()->getParamLayoutAtSet(0));
+    camViewAndInstanceParams->setResourceName("CameraGizmo");
+
+    camRTParams = GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout);
+    camRTParams->setResourceName("CameraGizmoToScreenQuad");
 }
 
 void PointLight::update() const
@@ -971,6 +995,18 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
 
     clearInfoParams->setVector4Param("clearColor", Vector4D(0, 0, 0, 0));
     clearInfoParams->init();
+    
+    Camera gizmoCamera;
+    gizmoCamera.setClippingPlane(5.f, 305.f);
+    gizmoCamera.setOrthoSize({ 290, 290 });
+    gizmoCamera.cameraProjection = ECameraProjection::Orthographic;
+    updateCamGizmoViewParams();
+    camViewAndInstanceParams->setMatrixParam("projection", gizmoCamera.projectionMatrix());
+    camViewAndInstanceParams->setMatrixParam("model", Matrix4::IDENTITY);
+    camViewAndInstanceParams->init();
+
+    camRTParams->setTextureParam("quadTexture", camGizmoColorTexture->getTextureResource(), linearFiltering);
+    camRTParams->init();
 }
 
 void ExperimentalEnginePBR::updateShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
@@ -1060,6 +1096,12 @@ void ExperimentalEnginePBR::destroyShaderParameters()
 
     clearInfoParams->release();
     clearInfoParams.reset();
+
+    camViewAndInstanceParams->release();
+    camViewAndInstanceParams.reset();
+
+    camRTParams->release();
+    camRTParams.reset();
 }
 
 void ExperimentalEnginePBR::resizeLightingRts(const Size2D& size)
@@ -1145,20 +1187,19 @@ void ExperimentalEnginePBR::getPipelineForSubpass()
     drawPbrPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
     drawPbrPipelineContext.materialName = "PBR";
     vulkanRenderingContext->preparePipelineContext(&drawPbrPipelineContext);
-    lightingRenderPass = vulkanRenderingContext->getRenderPass(
-        static_cast<const GraphicsPipelineBase*>(drawPbrPipelineContext.getPipeline())->getRenderpassProperties(), {});
 
-    debugDrawAdditionalProps.depthLoadOp = EAttachmentOp::LoadOp::Load;
-    debugDrawAdditionalProps.depthStoreOp = EAttachmentOp::StoreOp::DontCare;
-    debugDrawAdditionalProps.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
-    drawDebugPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
-    drawDebugPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
+    sceneDebugLinesPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    sceneDebugLinesPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
     // Using depth map as read only target
-    drawDebugPipelineContext.rtTextures.emplace_back(GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, 0)[3]);
-    drawDebugPipelineContext.materialName = "Draw3DColoredPerVertexLine";
-    vulkanRenderingContext->preparePipelineContext(&drawDebugPipelineContext);
-    debugDrawRenderPass = vulkanRenderingContext->getRenderPass(
-        static_cast<const GraphicsPipelineBase*>(drawDebugPipelineContext.getPipeline())->getRenderpassProperties(), debugDrawAdditionalProps);
+    sceneDebugLinesPipelineContext.rtTextures.emplace_back(GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, 0)[3]);
+    sceneDebugLinesPipelineContext.materialName = "Draw3DColoredPerVertexLine";
+    vulkanRenderingContext->preparePipelineContext(&sceneDebugLinesPipelineContext);
+
+    drawLinesDWritePipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
+    drawLinesDWritePipelineCntxt.rtTextures.emplace_back(camGizmoColorTexture);
+    drawLinesDWritePipelineCntxt.rtTextures.emplace_back(camGizmoDepthTarget);
+    drawLinesDWritePipelineCntxt.materialName = "Draw3DColoredPerVertexLineDWrite";
+    vulkanRenderingContext->preparePipelineContext(&drawLinesDWritePipelineCntxt);
 
     clearQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     clearQuadPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassResolved);
@@ -1170,33 +1211,21 @@ void ExperimentalEnginePBR::getPipelineForSubpass()
     resolveLightRtPipelineContext.materialName = "DrawQuadFromTexture";
     vulkanRenderingContext->preparePipelineContext(&resolveLightRtPipelineContext);
 
-    drawQuadPipelineContext.bUseSwapchainFb = true;
-    drawQuadPipelineContext.materialName = "DrawQuadFromTexture";
-    drawQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
-    drawQuadPipelineContext.swapchainIdx = 0;
-    vulkanRenderingContext->preparePipelineContext(&drawQuadPipelineContext);
+    resolveToPresentPipelineContext.bUseSwapchainFb = true;
+    resolveToPresentPipelineContext.materialName = "DrawQuadFromTexture";
+    resolveToPresentPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    resolveToPresentPipelineContext.swapchainIdx = 0;
+    vulkanRenderingContext->preparePipelineContext(&resolveToPresentPipelineContext);
+
+    overBlendedQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    overBlendedQuadPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
+    overBlendedQuadPipelineContext.materialName = "DrawOverBlendedQuadFromTexture";
+    vulkanRenderingContext->preparePipelineContext(&overBlendedQuadPipelineContext);
 }
 
 void ExperimentalEnginePBR::createPipelineResources()
 {
     clearValues.colors.resize(singleColorPipelineContext.getFb()->textures.size(), LinearColorConst::BLACK);
-
-    ENQUEUE_COMMAND(QuadVerticesInit, LAMBDA_BODY
-    (
-        const std::array<Vector3D, 3> quadVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
-        const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
-
-        quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
-        quadVertexBuffer->setResourceName("ScreenQuadVertices");
-        quadVertexBuffer->init();
-        quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
-        quadIndexBuffer->setResourceName("ScreenQuadIndices");
-        quadIndexBuffer->init();
-
-        cmdList->copyToBuffer(quadVertexBuffer, 0, quadVerts.data(), uint32(quadVertexBuffer->getResourceSize()));
-        cmdList->copyToBuffer(quadIndexBuffer, 0, quadIndices.data(), uint32(quadIndexBuffer->getResourceSize()));
-    )
-        , this);
 
     // Shader pipeline's buffers and image access
     createShaderParameters();
@@ -1204,16 +1233,6 @@ void ExperimentalEnginePBR::createPipelineResources()
 
 void ExperimentalEnginePBR::destroyPipelineResources()
 {
-    ENQUEUE_COMMAND(QuadVerticesRelease, LAMBDA_BODY
-    (
-        quadVertexBuffer->release();
-        quadIndexBuffer->release();
-        delete quadVertexBuffer;
-        quadVertexBuffer = nullptr;
-        delete quadIndexBuffer;
-        quadIndexBuffer = nullptr;
-    )
-        , this);
     // Shader pipeline's buffers and image access
     destroyShaderParameters();
 }
@@ -1221,11 +1240,12 @@ void ExperimentalEnginePBR::destroyPipelineResources()
 void ExperimentalEnginePBR::updateCameraParams()
 {
     ViewData viewDataTemp;
-
+    bool bCamRotated = false;
     if (appInstance().inputSystem()->isKeyPressed(Keys::RMB))
     {
         cameraRotation.yaw() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
         cameraRotation.pitch() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
+        bCamRotated = true;
     }
     float camSpeedModifier = 1;
     if (appInstance().inputSystem()->isKeyPressed(Keys::LSHIFT))
@@ -1259,6 +1279,7 @@ void ExperimentalEnginePBR::updateCameraParams()
     if (appInstance().inputSystem()->keyState(Keys::R)->keyWentUp)
     {
         cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
+        bCamRotated = true;
     }
 
     if (camera.cameraProjection != projection)
@@ -1282,13 +1303,26 @@ void ExperimentalEnginePBR::updateCameraParams()
     viewParameters->setMatrixParam("invView", viewDataTemp.invView);
     lightCommon->setMatrixParam("view", viewDataTemp.view);
     lightCommon->setMatrixParam("invView", viewDataTemp.invView);
+
+    if (bCamRotated)
+    {
+        updateCamGizmoViewParams();
+        ENQUEUE_COMMAND(CameraGizmoUpdate,
+        {
+            updateCamGizmoCapture(cmdList, graphicsInstance);
+        }, this);
+    }
 }
 
 void ExperimentalEnginePBR::onStartUp()
 {
     GameEngine::onStartUp();
 
-    ENQUEUE_COMMAND(EngineStartUp, { startUpRenderInit(); }, this);
+    ENQUEUE_COMMAND(EngineStartUp, 
+    { 
+        startUpRenderInit();
+        updateCamGizmoCapture(cmdList, graphicsInstance);
+    }, this);
 
     camera.cameraProjection = projection;
     camera.setOrthoSize({ 1280,720 });
@@ -1305,6 +1339,20 @@ void ExperimentalEnginePBR::onStartUp()
     getRenderApi()->getImGuiManager()->addLayer(this);
     createScene();
 
+    textures = getApplicationInstance()->assetManager.getAssetsOfType<EAssetType::Texture2D, TextureAsset>();
+    std::sort(textures.begin(), textures.end(), [](const TextureAsset* lhs, const TextureAsset* rhs)
+        {
+            return lhs->assetName() < rhs->assetName();
+        });
+    textureNames.reserve(textures.size() + 1);
+    textureNames.emplace_back(noneString.getChar());
+    for (const TextureAsset* texture : textures)
+    {
+        textureNames.emplace_back(texture->assetName().getChar());
+    }
+
+    selectedTexture = 0;
+
     tempTest();
 }
 
@@ -1317,8 +1365,8 @@ void ExperimentalEnginePBR::startUpRenderInit()
     frameResources.resize(getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount());
 
     createFrameResources();
-    getPipelineForSubpass();
     createImages();
+    getPipelineForSubpass();
     createPipelineResources();
     setupShaderParameterParams();
 }
@@ -1336,9 +1384,8 @@ void ExperimentalEnginePBR::renderQuit()
     vDevice->vkDeviceWaitIdle(device);
 
     destroyPipelineResources();
-    destroyFrameResources();
-
     destroyImages();
+    destroyFrameResources();
 
     destroyScene();
 
@@ -1350,18 +1397,14 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
-    singleColorPipelineContext.swapchainIdx = drawQuadPipelineContext.swapchainIdx = index;
+    singleColorPipelineContext.swapchainIdx = resolveToPresentPipelineContext.swapchainIdx = index;
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&singleColorPipelineContext);
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawQuadPipelineContext);
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveToPresentPipelineContext);
 
     drawPbrPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawPbrPipelineContext);
     resolveLightRtPipelineContext.rtTextures[0] = frameResources[index].lightingPassResolved;
     getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
-
-    drawDebugPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
-    drawDebugPipelineContext.rtTextures[1] = GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, index)[3];
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawDebugPipelineContext);
 
     std::map<LocalPipelineContext*, std::map<const PBRSceneEntity*, std::vector<uint32>>> drawingPipelineToEntities;
     for (const PBRSceneEntity& entity : sceneData)
@@ -1440,8 +1483,8 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = EngineSettings::screenSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { quadVertexBuffer }, { 0 });
-        cmdList->cmdBindIndexBuffer(cmdBuffer, quadIndexBuffer);
+        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadVertexIndexBuffers().first }, { 0 });
+        cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadVertexIndexBuffers().second);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
         if (frameVisualizeId == 0)
         {
@@ -1533,30 +1576,9 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
                 cmdList->cmdEndRenderPass(cmdBuffer);
             }
         }
-#if _DEBUG
-        if (bDrawTbn && selection.type == GridEntity::Entity)
-        {
-            PBRSceneEntity& sceneEntity = sceneData[selection.idx];
-            // Resetting viewport as we use mvp again
-            viewport.minBound.x = 0;
-            viewport.minBound.y = EngineSettings::screenSize.get().y;
-            viewport.maxBound.x = EngineSettings::screenSize.get().x;
-            viewport.maxBound.y = 0;
 
-            SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawTBN);
-            cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
-            cmdList->cmdBeginRenderPass(cmdBuffer, drawDebugPipelineContext, scissor, debugDrawAdditionalProps, clearValues);
-            {
-                cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawDebugPipelineContext, { queryParam });
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, drawDebugPipelineContext, { viewParameters.get(), sceneEntity.instanceParameters.get() });
-                cmdList->cmdPushConstants(cmdBuffer, drawDebugPipelineContext, { {"ptSize", 1.0f} });
-                cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneEntity.meshAsset->getTbnVertexBuffer() }, { 0 });
-
-                cmdList->cmdDrawVertices(cmdBuffer, 0, uint32(sceneEntity.meshAsset->tbnVerts.size()));
-            }
-            cmdList->cmdEndRenderPass(cmdBuffer);
-        }
-#endif
+        // Debug Draw
+        debugFrameRender(cmdList, graphicsInstance, cmdBuffer, index);
 
         // Drawing IMGUI
         TinyDrawingContext drawingContext;
@@ -1568,19 +1590,20 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = scissor.maxBound = EngineSettings::surfaceSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { quadVertexBuffer }, { 0 });
-        cmdList->cmdBindIndexBuffer(cmdBuffer, quadIndexBuffer);
+        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadVertexIndexBuffers().first }, { 0 });
+        cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadVertexIndexBuffers().second);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
         RenderPassAdditionalProps renderPassAdditionalProps;
         renderPassAdditionalProps.bUsedAsPresentSource = true;
-        cmdList->cmdBeginRenderPass(cmdBuffer, drawQuadPipelineContext, scissor, renderPassAdditionalProps, clearValues);
+        cmdList->cmdBeginRenderPass(cmdBuffer, resolveToPresentPipelineContext, scissor, renderPassAdditionalProps, clearValues);
+
         {
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, ResolveToSwapchain);
 
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
-            cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawQuadPipelineContext, { queryParam });
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawQuadPipelineContext, *drawLitColorsDescs);
+            cmdList->cmdBindGraphicsPipeline(cmdBuffer, resolveToPresentPipelineContext, { queryParam });
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, resolveToPresentPipelineContext, *drawLitColorsDescs);
             cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
         }
         cmdList->cmdEndRenderPass(cmdBuffer);
@@ -1597,6 +1620,149 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
     std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
     std::vector<uint32> indices = { index };
     cmdList->presentImage(canvases, indices, {});
+}
+
+void ExperimentalEnginePBR::updateCamGizmoViewParams()
+{
+    Camera gizmoCam;
+    gizmoCam.setTranslation(-camera.rotation().fwdVector() * 150);
+    gizmoCam.lookAt(Vector3D::ZERO);
+
+    camViewAndInstanceParams->setMatrixParam("invView", gizmoCam.viewMatrix().inverse());
+}
+
+void ExperimentalEnginePBR::updateCamGizmoCapture(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+{
+    String cmdName = "UpdateCameraGizmo";
+    cmdList->finishCmd(cmdName);
+
+    const GraphicsResource* cmdBuffer = cmdList->getCmdBuffer(cmdName);
+    if (cmdBuffer == nullptr)
+    {
+        GraphicsPipelineState pipelineState;
+        pipelineState.pipelineQuery = { EPolygonDrawMode::Fill, ECullingMode::BackFace };
+        pipelineState.lineWidth = 3.0f;
+
+        QuantizedBox2D viewport;
+        // Since view matrix positive y is along up while vulkan positive y in view is down
+        viewport.minBound.x = 0;
+        viewport.minBound.y = camGizmoColorTexture->getTextureSize().y;
+        viewport.maxBound.x = camGizmoColorTexture->getTextureSize().x;
+        viewport.maxBound.y = 0;
+
+        QuantizedBox2D scissor;
+        scissor.minBound = { 0, 0 };
+        scissor.maxBound = camGizmoColorTexture->getTextureSize();
+
+        RenderPassClearValue clearVal;
+        clearVal.colors.emplace_back(Color());
+        // Record once
+        cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, false);
+        cmdList->cmdBeginRenderPass(cmdBuffer, drawLinesDWritePipelineCntxt, scissor, {}, clearVal);
+        {
+            SCOPED_CMD_MARKER(cmdList, cmdBuffer, UpdateCameraGizmo);
+
+            cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
+            cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawLinesDWritePipelineCntxt, pipelineState);
+
+            cmdList->cmdPushConstants(cmdBuffer, sceneDebugLinesPipelineContext, { {"ptSize", 1.0f} });
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawLinesDWritePipelineCntxt, camViewAndInstanceParams.get());
+            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getLineGizmoVertexIndexBuffers().first }, { 0 });
+            cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getLineGizmoVertexIndexBuffers().second);
+
+            cmdList->cmdDrawIndexed(cmdBuffer, 0, GlobalBuffers::getLineGizmoVertexIndexBuffers().second->bufferCount());
+        }
+        cmdList->cmdEndRenderPass(cmdBuffer);
+        cmdList->endCmd(cmdBuffer);
+    }
+
+    CommandSubmitInfo2 cmdSubmit;
+    cmdSubmit.cmdBuffers.emplace_back(cmdBuffer);
+    cmdList->submitCmd(EQueuePriority::High, cmdSubmit);
+}
+
+void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsResource* cmdBuffer, uint32 swapchainIdx)
+{
+    GraphicsPipelineQueryParams backfaceFillQueryParam;
+    backfaceFillQueryParam.cullingMode = ECullingMode::BackFace;
+    backfaceFillQueryParam.drawMode = EPolygonDrawMode::Fill;
+
+    // Drawing in scene first
+    QuantizedBox2D viewport;
+    // Since view matrix positive y is along up while vulkan positive y in view is down
+    viewport.minBound.x = 0;
+    viewport.minBound.y = EngineSettings::screenSize.get().y;
+    viewport.maxBound.x = EngineSettings::screenSize.get().x;
+    viewport.maxBound.y = 0;
+
+    QuantizedBox2D scissor;
+    scissor.minBound = { 0, 0 };
+    scissor.maxBound = EngineSettings::screenSize.get();
+
+#if _DEBUG
+    sceneDebugLinesPipelineContext.rtTextures[0] = frameResources[swapchainIdx].lightingPassRt;
+    sceneDebugLinesPipelineContext.rtTextures[1] = GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, swapchainIdx)[3];
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&sceneDebugLinesPipelineContext);
+
+    if (bDrawTbn && selection.type == GridEntity::Entity)
+    {
+        PBRSceneEntity& sceneEntity = sceneData[selection.idx];
+        // Resetting viewport as we use mvp again
+        viewport.minBound.x = 0;
+        viewport.minBound.y = EngineSettings::screenSize.get().y;
+        viewport.maxBound.x = EngineSettings::screenSize.get().x;
+        viewport.maxBound.y = 0;
+
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawTBN);
+        cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
+
+        RenderPassAdditionalProps debugSceneDrawAdditionalProps;
+        debugSceneDrawAdditionalProps.depthLoadOp = EAttachmentOp::LoadOp::Load;
+        debugSceneDrawAdditionalProps.depthStoreOp = EAttachmentOp::StoreOp::DontCare;
+        debugSceneDrawAdditionalProps.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
+        cmdList->cmdBeginRenderPass(cmdBuffer, sceneDebugLinesPipelineContext, scissor, debugSceneDrawAdditionalProps, clearValues);
+        {
+            GraphicsPipelineState pipelineState;
+            pipelineState.pipelineQuery = backfaceFillQueryParam;
+            pipelineState.lineWidth = 1.0f;
+            cmdList->cmdBindGraphicsPipeline(cmdBuffer, sceneDebugLinesPipelineContext, pipelineState);
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, sceneDebugLinesPipelineContext, { viewParameters.get(), sceneEntity.instanceParameters.get() });
+            cmdList->cmdPushConstants(cmdBuffer, sceneDebugLinesPipelineContext, { {"ptSize", 1.0f} });
+            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneEntity.meshAsset->getTbnVertexBuffer() }, { 0 });
+
+            cmdList->cmdDrawVertices(cmdBuffer, 0, uint32(sceneEntity.meshAsset->tbnVerts.size()));
+        }
+        cmdList->cmdEndRenderPass(cmdBuffer);
+    }
+#endif
+    overBlendedQuadPipelineContext.rtTextures[0] = frameResources[swapchainIdx].lightingPassRt;
+    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&overBlendedQuadPipelineContext);
+    {
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawCameraGizmoRT);
+
+        RenderPassAdditionalProps drawOverlay;
+        drawOverlay.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
+
+        const Int2D margin(10, 10);
+
+        Vector2D viewportSize = (Vector2D(camGizmoColorTexture->getTextureSize()) / Vector2D(3840, 2160)) * Vector2D(EngineSettings::screenSize.get());
+        viewport.minBound = Int2D(0 + margin.x, EngineSettings::screenSize.get().y - int32(viewportSize.y()) - margin.y);
+        viewport.maxBound = viewport.minBound + Int2D(viewportSize.x(), viewportSize.y());
+
+        scissor = viewport;
+
+        cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
+        cmdList->cmdBeginRenderPass(cmdBuffer, overBlendedQuadPipelineContext, viewport, drawOverlay, clearValues);
+        {
+            cmdList->cmdBindGraphicsPipeline(cmdBuffer, overBlendedQuadPipelineContext, { backfaceFillQueryParam });
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, overBlendedQuadPipelineContext, { camRTParams.get() });
+            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadVertexIndexBuffers().first }, { 0 });
+            cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadVertexIndexBuffers().second);
+
+            cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+        }
+        cmdList->cmdEndRenderPass(cmdBuffer);
+    }
 }
 
 void ExperimentalEnginePBR::tickEngine()
@@ -1675,10 +1841,15 @@ int32 ExperimentalEnginePBR::sublayerDepth() const
 
 void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
 {
-    static bool bOpen = false;
-    if (bOpen)
+    static bool bOpenImguiDemo = false;
+    static bool bOpenImPlotDemo = false;
+    if (bOpenImguiDemo)
     {
-        ImGui::ShowDemoWindow(&bOpen);
+        ImGui::ShowDemoWindow(&bOpenImguiDemo);
+    }
+    if (bOpenImPlotDemo)
+    {
+        ImPlot::ShowDemoWindow(&bOpenImPlotDemo);
     }
 
     static bool bTestOpen = true;
@@ -1826,6 +1997,41 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
             //        ImGui::GetWindowContentRegionWidth(),
             //        ImGui::GetWindowContentRegionWidth()));
             //}
+            if (ImGui::CollapsingHeader("Texture Histogram"))
+            {
+                if (selectedTexture != 0)
+                {
+                    ImGui::Image(textures[selectedTexture - 1]->getTexture(), ImVec2(64, 64));
+                    ImGui::SameLine();
+                }
+                if (ImGui::Combo("Textures", &selectedTexture, textureNames.data(), int32(textureNames.size())))
+                {
+                    if(selectedTexture != 0)
+                    {
+                        ImageUtils::calcHistogramRGB(histogram[0].data(), histogram[1].data(), histogram[2].data(), 32
+                            , reinterpret_cast<const uint8*>(textures[selectedTexture - 1]->getPixelData().data())
+                            , textures[selectedTexture - 1]->getTexture()->getTextureSize().x
+                            , textures[selectedTexture - 1]->getTexture()->getTextureSize().y, 4);
+                    }
+                }
+
+                if (selectedTexture != 0)
+                {
+                    ImPlot::SetNextPlotLimits(0, 255, 0, 1.0, ImGuiCond_::ImGuiCond_Once);
+                    if (ImPlot::BeginPlot("Texture Histogram", 0, 0, ImVec2(-1,0), 0, ImPlotAxisFlags_::ImPlotAxisFlags_Lock, ImPlotAxisFlags_::ImPlotAxisFlags_Lock))
+                    {
+                        ImPlot::SetNextFillStyle(LinearColorConst::RED, 1.0f);
+                        ImPlot::PlotShaded("Red", histogram[0].data(), int32(histogram[0].size()), 0.0f, 8);
+
+                        ImPlot::SetNextFillStyle(LinearColorConst::GREEN, 0.5f);
+                        ImPlot::PlotShaded("Green", histogram[1].data(), int32(histogram[1].size()), 0.0f, 8);
+
+                        ImPlot::SetNextFillStyle(LinearColorConst::BLUE, 0.5f);
+                        ImPlot::PlotShaded("Blue", histogram[2].data(), int32(histogram[2].size()), 0.0f, 8);
+                        ImPlot::EndPlot();
+                    }
+                }
+            }
             ImGui::PopStyleVar();
             ImGui::End();
         }

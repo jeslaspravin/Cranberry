@@ -237,6 +237,7 @@
     <ClCompile Include="Assets\AssetLoader\TextureLoader.cpp" />
     <ClCompile Include="Assets\AssetsManager.cpp" />
     <ClCompile Include="Assets\Asset\AssetObject.cpp" />
+    <ClCompile Include="Assets\Asset\EnvironmentMapAsset.cpp" />
     <ClCompile Include="Assets\Asset\MeshAsset.cpp" />
     <ClCompile Include="Assets\Asset\StaticMeshAsset.cpp" />
     <ClCompile Include="Assets\Asset\TextureAsset.cpp" />
@@ -272,6 +273,8 @@
     <ClCompile Include="Core\Types\Camera\Camera.cpp" />
     <ClCompile Include="Core\Types\Colors.cpp" />
     <ClCompile Include="Core\Types\Delegates\Delegate.cpp" />
+    <ClCompile Include="Core\Types\Textures\CubeTextures.cpp" />
+    <ClCompile Include="Core\Types\Textures\ImageUtils.cpp" />
     <ClCompile Include="Core\Types\Textures\RenderTargetTextures.cpp" />
     <ClCompile Include="Core\Types\Textures\Texture2D.cpp" />
     <ClCompile Include="Core\Types\Textures\TexturesBase.cpp" />
@@ -283,7 +286,11 @@
     <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_demo.cpp" />
     <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_draw.cpp" />
     <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_stdlib.cpp" />
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_tables.cpp" />
     <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_widgets.cpp" />
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\implot.cpp" />
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\implot_demo.cpp" />
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\implot_items.cpp" />
     <ClCompile Include="Editor\Core\ImGui\ImGuiManager.cpp" />
     <ClCompile Include="Editor\Core\ImGui\Shaders\DrawImGuiShader.cpp" />
     <ClCompile Include="Experimental\ExperimentalEngineGoochModel.cpp" />
@@ -356,6 +363,7 @@
     <ClInclude Include="Assets\AssetsManager.h" />
     <ClInclude Include="Assets\Asset\AssetHeader.h" />
     <ClInclude Include="Assets\Asset\AssetObject.h" />
+    <ClInclude Include="Assets\Asset\EnvironmentMapAsset.h" />
     <ClInclude Include="Assets\Asset\MeshAsset.h" />
     <ClInclude Include="Assets\Asset\StaticMeshAsset.h" />
     <ClInclude Include="Assets\Asset\TextureAsset.h" />
@@ -427,6 +435,8 @@
     <ClInclude Include="Core\Types\Functions.h" />
     <ClInclude Include="Core\Types\HashTypes.h" />
     <ClInclude Include="Core\Types\Patterns\FactoriesBase.h" />
+    <ClInclude Include="Core\Types\Textures\CubeTextures.h" />
+    <ClInclude Include="Core\Types\Textures\ImageUtils.h" />
     <ClInclude Include="Core\Types\Textures\RenderTargetTextures.h" />
     <ClInclude Include="Core\Types\Textures\Texture2D.h" />
     <ClInclude Include="Core\Types\Textures\TexturesBase.h" />
@@ -439,6 +449,8 @@
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imgui.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imgui_internal.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imgui_stdlib.h" />
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\implot.h" />
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\implot_internal.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_rectpack.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_textedit.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\imstb_truetype.h" />
@@ -513,6 +525,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="VulkanRI\VulkanInternals\VulkanFunctionLists.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\..\..\CppLibs\glm\util\glm.natvis" />
+    <Natvis Include="..\..\..\CppLibs\imgui\misc\debuggers\imgui.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

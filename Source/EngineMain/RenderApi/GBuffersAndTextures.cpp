@@ -70,6 +70,10 @@ std::vector<Framebuffer*> GlobalBuffers::swapchainFbs;
 
 TextureBase* GlobalBuffers::dummyBlackTexture = nullptr;
 TextureBase* GlobalBuffers::dummyWhiteTexture = nullptr;
+TextureBase* GlobalBuffers::dummyNormalTexture = nullptr;
+
+std::pair<BufferResource*, BufferResource*> GlobalBuffers::quadVertsInds{ nullptr,nullptr };
+std::pair<BufferResource*, BufferResource*> GlobalBuffers::lineGizmoVertxInds{ nullptr,nullptr };
 
 bool FramebufferFormat::operator==(const FramebufferFormat& otherFormat) const
 {
@@ -274,6 +278,10 @@ void GlobalBuffers::initialize()
     }
 
     createTexture2Ds();
+    ENQUEUE_COMMAND(InitializeGlobalBuffers,
+        { 
+            createVertIndBuffers(cmdList, graphicsInstance);
+        });
 }
 
 void GlobalBuffers::destroy()
@@ -299,6 +307,10 @@ void GlobalBuffers::destroy()
     swapchainFbs.clear();
 
     destroyTexture2Ds();
+    ENQUEUE_COMMAND(DestroyGlobalBuffers,
+        {
+            destroyVertIndBuffers(cmdList, graphicsInstance);
+        });
 }
 
 Framebuffer* GlobalBuffers::getFramebuffer(FramebufferFormat& framebufferFormat, uint32 frameIdx)

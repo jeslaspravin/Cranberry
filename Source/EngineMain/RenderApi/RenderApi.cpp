@@ -132,8 +132,3 @@ void RenderApi::waitOnCommands()
 {
     executeAllCmds();
 }
-
-void GameEngine::issueRenderCommand(class IRenderCommand* renderCommand)
-{
-    renderingApi.enqueueCommand(renderCommand);
-}

@@ -1,5 +1,6 @@
 #include "ImGuiManager.h"
 #include "ImGuiLib/imgui.h"
+#include "ImGuiLib/implot.h"
 #include "ImGuiFontTextureAtlas.h"
 #include "IImGuiLayer.h"
 #include "../../../Core/String/String.h"
@@ -32,14 +33,15 @@ void ImGuiManager::initialize()
     IMGUI_CHECKVERSION();
     if (parentGuiManager)
     {
-        SetCurrentContext(parentGuiManager->context);
+        parentGuiManager->setCurrentContexts();
         context = CreateContext(GetIO().Fonts);
     }
     else
     {
         context = CreateContext();
     }
-    SetCurrentContext(context);
+    implotContext = ImPlot::CreateContext();
+    setCurrentContexts();
 
     ImGuiIO& io = GetIO();
     io.BackendPlatformName = "CranberryEngine";
@@ -61,6 +63,7 @@ void ImGuiManager::initialize()
 void ImGuiManager::release()
 {
     releaseRendering();
+    ImPlot::DestroyContext(implotContext);
     DestroyContext(context);
 }
 
@@ -85,6 +88,12 @@ void ImGuiManager::setShaderData()
         imguiTransformParams->setVector2Param("scale", scale);
         imguiTransformParams->setVector2Param("translate", translate);
     }
+}
+
+void ImGuiManager::setCurrentContexts()
+{
+    SetCurrentContext(context);
+    ImPlot::SetCurrentContext(implotContext);
 }
 
 TextureBase* ImGuiManager::getFontTextureAtlas() const
@@ -460,7 +469,7 @@ void ImGuiManager::releaseRendering()
 
 void ImGuiManager::draw(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const TinyDrawingContext& drawingContext)
 {
-    SetCurrentContext(context);
+    setCurrentContexts();
     ImDrawData* drawData = ImGui::GetDrawData();
     if (!drawData || drawingContext.rtTextures.empty() || drawData->CmdListsCount == 0 || drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f)
     {
@@ -555,7 +564,7 @@ void ImGuiManager::draw(class IRenderCommandList* cmdList, IGraphicsInstance* gr
 
 void ImGuiManager::updateFrame(const float& deltaTime)
 {
-    SetCurrentContext(context);
+    setCurrentContexts();
     GetIO().DeltaTime = deltaTime;
     updateInputs();
 
@@ -584,7 +593,7 @@ void ImGuiManager::addFont(const String& fontAssetPath, float fontSize)
     }
     else
     {
-        SetCurrentContext(context);
+        setCurrentContexts();
 
         // TODO(Jeslas) : Load from asset manager
         std::vector<uint8> fontData;

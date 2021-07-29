@@ -19,8 +19,8 @@ namespace ERenderTargetFormat
             return EPixelDataFormat::BGR_U8_SRGB;
         case ERenderTargetFormat::RT_NormalMap:
             return EPixelDataFormat::ABGR8_S32_NormPacked;
-        case ERenderTargetFormat::RT_SF32:
-            return EPixelDataFormat::R_SF32;
+        case ERenderTargetFormat::RT_Depth:
+            return EPixelDataFormat::D24X8_U32_NormPacked;
         case ERenderTargetFormat::RT_UseDefault:
             return defaultFormat;
         default:
@@ -42,8 +42,8 @@ namespace ERenderTargetFormat
             return EPixelDataFormat::BGR_U8_Norm;
         case ERenderTargetFormat::RT_NormalMap:
             return EPixelDataFormat::ABGR8_S32_NormPacked;
-        case ERenderTargetFormat::RT_SF32:
-            return EPixelDataFormat::R_SF32;
+        case ERenderTargetFormat::RT_Depth:
+            return EPixelDataFormat::D24X8_U32_NormPacked;
         case ERenderTargetFormat::RT_UseDefault:
             return defaultFormat;
         default:
@@ -91,7 +91,7 @@ RenderTargetTexture* RenderTargetTexture::createTexture(const RenderTextureCreat
     RenderTargetTexture* texture = new RenderTargetTexture();
 
     texture->mipCount = createParams.mipCount;
-    if (createParams.mipCount != 0)
+    if (createParams.mipCount == 0)
     {
         texture->mipCount = Math::min((uint32)(1 + Math::floor(Math::log2(
             (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))), createParams.mipCount);

@@ -11,7 +11,7 @@ namespace ERenderTargetFormat
         RT_U8Packed,
         RT_U8_NoAlpha,
         RT_NormalMap,
-        RT_SF32, // signed float
+        RT_Depth, // signed float
     };
 
     template<bool bIsSrgb>

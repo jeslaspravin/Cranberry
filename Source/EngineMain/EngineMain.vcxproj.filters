@@ -85,9 +85,6 @@
     <Filter Include="Header Files\Core\Platform\LFS">
       <UniqueIdentifier>{8409fa63-81cc-4dfb-8b1f-5bfabf9fb72c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Core\String">
-      <UniqueIdentifier>{6ef06f09-eb7c-4a4f-857a-9a435f31c491}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Core\Types">
       <UniqueIdentifier>{8fed21e1-ca99-4fc9-b1a7-775c64ae5d11}</UniqueIdentifier>
     </Filter>
@@ -169,9 +166,6 @@
     <Filter Include="Source Files\Assets\AssetLoader">
       <UniqueIdentifier>{fb112db9-4812-4f0e-a6cb-9d22d50c5010}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\RenderInterface\Rendering">
-      <UniqueIdentifier>{084665af-fa8a-4349-b003-6111643e160e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\RenderInterface\Rendering">
       <UniqueIdentifier>{2772513f-6fdf-471e-9eb4-6a9426428b95}</UniqueIdentifier>
     </Filter>
@@ -249,6 +243,15 @@
     </Filter>
     <Filter Include="Source Files\Editor\Core\ImGui\ImGuiLib">
       <UniqueIdentifier>{c77965db-ec8c-4f90-802e-f6f8854e39dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\String">
+      <UniqueIdentifier>{6ef06f09-eb7c-4a4f-857a-9a435f31c491}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderInterface\Rendering">
+      <UniqueIdentifier>{084665af-fa8a-4349-b003-6111643e160e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Visualizers">
+      <UniqueIdentifier>{a10a371c-bd96-45f0-81ec-699ff2fdedef}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -599,6 +602,27 @@
     </ClCompile>
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\TexturedShader.cpp">
       <Filter>Source Files\RenderInterface\Shaders\EngineShaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Textures\CubeTextures.cpp">
+      <Filter>Source Files\Core\Types\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\Asset\EnvironmentMapAsset.cpp">
+      <Filter>Source Files\Assets\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Textures\ImageUtils.cpp">
+      <Filter>Source Files\Core\Types\Textures</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\imgui_tables.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\implot.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\implot_demo.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Core\ImGui\ImGuiLib\implot_items.cpp">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1082,10 +1106,33 @@
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\TexturedShader.h">
       <Filter>Header Files\RenderInterface\Shaders\EngineShaders</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Types\Textures\CubeTextures.h">
+      <Filter>Header Files\Core\Types\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\Asset\EnvironmentMapAsset.h">
+      <Filter>Header Files\Assets\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Textures\ImageUtils.h">
+      <Filter>Header Files\Core\Types\Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\implot.h">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Core\ImGui\ImGuiLib\implot_internal.h">
+      <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="VulkanRI\VulkanInternals\VulkanFunctionLists.inl">
       <Filter>Source Files\VulkanRI\VulkanInternals</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\..\..\CppLibs\glm\util\glm.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
+    <Natvis Include="..\..\..\CppLibs\imgui\misc\debuggers\imgui.natvis">
+      <Filter>Visualizers</Filter>
+    </Natvis>
   </ItemGroup>
 </Project>

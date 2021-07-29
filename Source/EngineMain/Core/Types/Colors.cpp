@@ -89,6 +89,16 @@ Color Color::toLinear() const
     );
 }
 
+uint8 Color::operator[](uint32 idx) const
+{
+    return colorValue[idx];
+}
+
+Color::operator uint32() const
+{
+    return *reinterpret_cast<const uint32*>(this);
+}
+
 /* Linear Color implementations */
 
 LinearColor::LinearColor()
@@ -116,8 +126,17 @@ LinearColor::LinearColor(const LinearColor& otherColor)
 {}
 
 LinearColor::LinearColor(LinearColor&& otherColor)
-    :colorValue(std::move(otherColor.colorValue))
+    : colorValue(std::move(otherColor.colorValue))
 {}
+
+LinearColor::LinearColor(const Vector4D& value)
+    : colorValue(value.x(), value.y(), value.z(), value.w())
+{}
+
+float LinearColor::operator[](uint32 idx) const
+{
+    return colorValue[idx];
+}
 
 void LinearColor::operator=(LinearColor&& otherColor)
 {

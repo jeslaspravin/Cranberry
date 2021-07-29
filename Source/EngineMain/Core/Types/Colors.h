@@ -36,6 +36,10 @@ public:
     uint8 a() const { return colorValue.a; }
     void setA(uint8 a) { colorValue.a = a; }
     Byte3D rgb() const { return Byte3D(colorValue.r, colorValue.g, colorValue.b); }
+
+    uint8 operator[](uint32 idx) const;
+    // As RGBA packed
+    operator uint32() const;
 };
 
 class LinearColor
@@ -46,6 +50,7 @@ public:
     LinearColor();
     explicit LinearColor(glm::vec3& value);
     explicit LinearColor(glm::vec4& value);
+    explicit LinearColor(const Vector4D& value);
     LinearColor(float r, float g, float b, float a = 1.0f);
     // If store the color value as it is bCheckSrgb must be false, if color has to be converted to linear then true
     LinearColor(const Color& color);
@@ -65,6 +70,8 @@ public:
     float a() const { return colorValue.a; }
     void setA(float a) { colorValue.a = a; }
     glm::vec3 rgb() const { return glm::vec3(colorValue.r, colorValue.g, colorValue.b); }
+
+    float operator[](uint32 idx) const;
 };
 
 namespace ColorConst

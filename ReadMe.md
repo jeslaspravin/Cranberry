@@ -5,4 +5,4 @@ Current dependencies:
 * tinyObjloader
 * SPIRVCross(Few necessary files are copied directly rather than using as include)
 * stb
-* ImGui(Embedded into the project)
+* ImGui and ImPlot(Embedded into the project)

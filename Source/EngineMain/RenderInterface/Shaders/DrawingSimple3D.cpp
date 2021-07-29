@@ -15,25 +15,25 @@
 /// Pipeline start
 //////////////////////////////////////////////////////////////////////////
 
-template <EPrimitiveTopology::Type Topology>
+template <EPrimitiveTopology::Type Topology, bool DepthWrite>
 class DrawSimple3DShaderPipeline : public GraphicsPipeline
 {
-    DECLARE_GRAPHICS_RESOURCE(DrawSimple3DShaderPipeline, <Topology>, GraphicsPipeline, )
+    DECLARE_GRAPHICS_RESOURCE(DrawSimple3DShaderPipeline, <ExpandArgs(Topology, DepthWrite)>, GraphicsPipeline, )
 protected:
     DrawSimple3DShaderPipeline() = default;
 public:
     DrawSimple3DShaderPipeline(const PipelineBase* parent);
     DrawSimple3DShaderPipeline(const ShaderResource* shaderResource);
 };
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DrawSimple3DShaderPipeline, <EPrimitiveTopology::Type Topology>, <Topology>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DrawSimple3DShaderPipeline, <ExpandArgs(EPrimitiveTopology::Type Topology, bool DepthWrite)>, <ExpandArgs(Topology, DepthWrite)>)
 
-template <EPrimitiveTopology::Type Topology>
-DrawSimple3DShaderPipeline<Topology>::DrawSimple3DShaderPipeline(const PipelineBase* parent)
+template <EPrimitiveTopology::Type Topology, bool DepthWrite>
+DrawSimple3DShaderPipeline<Topology, DepthWrite>::DrawSimple3DShaderPipeline(const PipelineBase* parent)
     : BaseType(static_cast<const GraphicsPipelineBase*>(parent))
 {}
 
-template <EPrimitiveTopology::Type Topology>
-DrawSimple3DShaderPipeline<Topology>::DrawSimple3DShaderPipeline(const ShaderResource* shaderResource)
+template <EPrimitiveTopology::Type Topology, bool DepthWrite>
+DrawSimple3DShaderPipeline<Topology, DepthWrite>::DrawSimple3DShaderPipeline(const ShaderResource* shaderResource)
     : BaseType()
 {
     setPipelineShader(shaderResource);
@@ -50,7 +50,7 @@ DrawSimple3DShaderPipeline<Topology>::DrawSimple3DShaderPipeline(const ShaderRes
     renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::D24S8_U32_DNorm_SInt);
     renderpassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
 
-    depthState.bEnableWrite = false;
+    depthState.bEnableWrite = DepthWrite;
 
     AttachmentBlendState blendState;
     blendState.bBlendEnable = true;
@@ -65,30 +65,30 @@ DrawSimple3DShaderPipeline<Topology>::DrawSimple3DShaderPipeline(const ShaderRes
 //////////////////////////////////////////////////////////////////////////
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
-template <EPrimitiveTopology::Type Topology>
-using DrawSimple3DShaderPipelineRegistrar = GenericPipelineRegistrar<DrawSimple3DShaderPipeline<Topology>>;
+template <EPrimitiveTopology::Type Topology, bool DepthWrite>
+using DrawSimple3DShaderPipelineRegistrar = GenericPipelineRegistrar<DrawSimple3DShaderPipeline<Topology, DepthWrite>>;
 
 //////////////////////////////////////////////////////////////////////////
 /// Shaders
 //////////////////////////////////////////////////////////////////////////
 
 
-// 
 //
 // Draws Simple3D colored per vertex and uses view and instance data to transform vertices
+// Shader name + Topology + (DWrite if depth writing)
 //
-template <EPrimitiveTopology::Type Topology>
+template <EPrimitiveTopology::Type Topology, bool DepthWrite>
 class Draw3DColoredPerVertex : public UniqueUtilityShader
 {
-    DECLARE_GRAPHICS_RESOURCE(Draw3DColoredPerVertex, <Topology>, UniqueUtilityShader, );
+    DECLARE_GRAPHICS_RESOURCE(Draw3DColoredPerVertex, <ExpandArgs(Topology, DepthWrite)>, UniqueUtilityShader, );
 private:
     String shaderFileName;
 
     Draw3DColoredPerVertex()
-        : BaseType(String(DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>())
+        : BaseType(String(DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite? "DWrite" : ""))
         , shaderFileName(DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
-        static DrawSimple3DShaderPipelineRegistrar<Topology> DRAW_3D_COLORED_PER_VERTEX_REGISTER(getResourceName());
+        static DrawSimple3DShaderPipelineRegistrar<Topology, DepthWrite> DRAW_3D_COLORED_PER_VERTEX_REGISTER(getResourceName());
     }
 
 protected:
@@ -125,10 +125,13 @@ public:
         }
     }
 };
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(Draw3DColoredPerVertex, <EPrimitiveTopology::Type Topology>, <Topology>)
-template Draw3DColoredPerVertex<EPrimitiveTopology::Triangle>;
-template Draw3DColoredPerVertex<EPrimitiveTopology::Line>;
-template Draw3DColoredPerVertex<EPrimitiveTopology::Point>;
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(Draw3DColoredPerVertex, <ExpandArgs(EPrimitiveTopology::Type Topology, bool DepthWrite)>, <ExpandArgs(Topology, DepthWrite)>)
+template Draw3DColoredPerVertex<EPrimitiveTopology::Triangle, false>;
+template Draw3DColoredPerVertex<EPrimitiveTopology::Line, false>;
+template Draw3DColoredPerVertex<EPrimitiveTopology::Point, false>;
+
+template Draw3DColoredPerVertex<EPrimitiveTopology::Triangle, true>;
+template Draw3DColoredPerVertex<EPrimitiveTopology::Line, true>;
 
 //
 // Draws Simple3D colored per instance and uses view and model data from vertex per instance to transform vertices
@@ -174,19 +177,20 @@ DEFINE_GRAPHICS_RESOURCE(Draw3DColoredPerInstance)
 
 //
 // Draws Simple3D colored per vertex, vertices are already transformed to world space and uses view data to transform vertices
+// Shader name + Topology + (DWrite if depth writing)
 //
-template <EPrimitiveTopology::Type Topology>
+template <EPrimitiveTopology::Type Topology, bool DepthWrite>
 class DirectDraw3DColoredPerVertex : public UniqueUtilityShader
 {
-    DECLARE_GRAPHICS_RESOURCE(DirectDraw3DColoredPerVertex, <Topology>, UniqueUtilityShader, );
+    DECLARE_GRAPHICS_RESOURCE(DirectDraw3DColoredPerVertex, <ExpandArgs(Topology, DepthWrite)>, UniqueUtilityShader, );
 private:
     String shaderFileName;
 
     DirectDraw3DColoredPerVertex()
-        : BaseType(String(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>())
+        : BaseType(String(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite ? "DWrite" : ""))
         , shaderFileName(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
-        static DrawSimple3DShaderPipelineRegistrar<Topology> DRAW_3D_COLORED_PER_VERTEX_REGISTER(getResourceName());
+        static DrawSimple3DShaderPipelineRegistrar<Topology, DepthWrite> DRAW_3D_COLORED_PER_VERTEX_REGISTER(getResourceName());
     }
 
 protected:
@@ -213,10 +217,13 @@ public:
         }
     }
 };
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DirectDraw3DColoredPerVertex, <EPrimitiveTopology::Type Topology>, <Topology>)
-template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Triangle>;
-template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Line>;
-template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Point>;
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DirectDraw3DColoredPerVertex, <ExpandArgs(EPrimitiveTopology::Type Topology, bool DepthWrite)>, <ExpandArgs(Topology, DepthWrite)>)
+template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Triangle, false>;
+template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Line, false>;
+template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Point, false>;
+
+template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Triangle, true>;
+template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Line, true>;
 
 //
 // Draws Simple3D colored per instance, vertices are already transformed to world space and uses view data to transform vertices and Push constant to determine color per instance
@@ -252,5 +259,5 @@ public:
 DEFINE_GRAPHICS_RESOURCE(DirectDraw3DColoredPerInstance)
 
 // Registrar
-DrawSimple3DShaderPipelineRegistrar<EPrimitiveTopology::Triangle> DRAW_3D_COLORED_PER_INSTANCE_REGISTER(DRAW_3D_COLORED_PER_INSTANCE_NAME);
-DrawSimple3DShaderPipelineRegistrar<EPrimitiveTopology::Triangle> DIRECT_DRAW_3D_COLORED_PER_INSTANCE_REGISTER(DIRECT_DRAW_3D_COLORED_PER_INSTANCE_NAME);
+DrawSimple3DShaderPipelineRegistrar<EPrimitiveTopology::Triangle, false> DRAW_3D_COLORED_PER_INSTANCE_REGISTER(DRAW_3D_COLORED_PER_INSTANCE_NAME);
+DrawSimple3DShaderPipelineRegistrar<EPrimitiveTopology::Triangle, false> DIRECT_DRAW_3D_COLORED_PER_INSTANCE_REGISTER(DIRECT_DRAW_3D_COLORED_PER_INSTANCE_NAME);

@@ -25,3 +25,25 @@ namespace Time
     TickRep timeNow();
     TickRep clockTimeNow();
 }
+
+struct StopWatch
+{
+private:
+    TickRep startTime = 0;
+    TickRep lastLapTime = 0;
+    TickRep stopTime = 0;
+public:
+    StopWatch(bool bStart = true);
+    ~StopWatch() = default;
+
+    TickRep start();
+    TickRep stop();
+    TickRep lap();
+
+    // In seconds
+    TimeConvType lapTime() const;
+    // Time since last lap and now, if no last lap then start
+    TimeConvType thisLap() const;
+    // Returns duration btw stop time and start time if stopped else btw current time and start
+    TimeConvType duration() const;
+};
