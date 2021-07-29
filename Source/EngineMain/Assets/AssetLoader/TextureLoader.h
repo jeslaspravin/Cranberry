@@ -14,9 +14,11 @@ private:
     Size2D textureDimension;
     int32 channelsCount;
     bool bIsNormal;
-    std::vector<Color> texturePixelData;
+    std::vector<Color> textureTexelData;
 
     bool bLoaded;
+private:
+    bool isNormalTexture(const uint8* texels) const;
 public:
     TextureLoader(const String& texturePath);
 

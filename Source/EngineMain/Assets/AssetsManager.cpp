@@ -4,9 +4,12 @@
 #include "AssetLoaderLibrary.h"
 #include "../Core/Logger/Logger.h"
 #include "../Core/Platform/LFS/PlatformLFS.h"
+#include "../Core/Types/Time.h"
 
 void AssetManager::loadUnderPath(const String& scanPath)
 {
+    Logger::debug("AssetManager", "%s(): Initial asset loaded started", __func__);
+    StopWatch loadTime;
     std::vector<String> foundFiles = FileSystemFunctions::listAllFiles(scanPath,true);
     for (const String& filePath : foundFiles)
     {
@@ -14,7 +17,11 @@ void AssetManager::loadUnderPath(const String& scanPath)
         header.assetPath = filePath.replaceAllCopy("\\","/");
         header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
         loadAsset(header);
+        Logger::debug("AssetManager", "%s(): Loaded asset %s in %0.3f Seconds(not including gpu copy)", __func__, header.assetPath.getChar(), loadTime.thisLap());
+        loadTime.lap();
     }
+    loadTime.stop();
+    Logger::debug("AssetManager", "%s(): Loaded all assets in %0.3f Seconds(not including gpu copy)", __func__, loadTime.duration());
 }
 
 std::vector<AssetBase*> AssetManager::loadAsset(const AssetHeader& header)

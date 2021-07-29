@@ -105,8 +105,8 @@ public:
     void endRenderPass(const GraphicsResource* cmdBuffer);
 
     void endCmdBuffer(const GraphicsResource* cmdBuffer);
-    void cmdFinished(const GraphicsResource* cmdBuffer);
-    void cmdFinished(const String& cmdName);
+    void cmdFinished(const GraphicsResource* cmdBuffer, VulkanResourcesTracker* resourceTracker);
+    void cmdFinished(const String& cmdName, VulkanResourcesTracker* resourceTracker);
     void freeCmdBuffer(const GraphicsResource* cmdBuffer);
 
     VkCommandBuffer getRawBuffer(const GraphicsResource* cmdBuffer) const;
@@ -146,6 +146,8 @@ private:
         // Last reads after last writes
         std::vector<const GraphicsResource*> lastReadsIn;
         VkPipelineStageFlags allReadStages = 0;
+        // Useful to resolve image old layout in case of multiple reads
+        VkPipelineStageFlags lastReadStages = 0;
         const GraphicsResource* lastWrite = nullptr;
         VkPipelineStageFlagBits lastWriteStage;
     };
@@ -174,6 +176,7 @@ private:
 public:
     const std::vector<CommandResUsageInfo>* getCmdBufferDeps(const GraphicsResource* cmdBuffer) const;
     void clearCmdBufferDeps(const GraphicsResource* cmdBuffer);
+    void clearFinishedCmd(const GraphicsResource* cmdBuffer);
     void clearUnwanted();
 
     /* Reading resources functions */

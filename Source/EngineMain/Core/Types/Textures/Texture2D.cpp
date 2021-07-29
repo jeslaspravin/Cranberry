@@ -35,7 +35,10 @@ EPixelDataFormat::Type Texture2D::determineDataFormat(bool bIsSrgb, bool bIsNorm
     EPixelDataFormat::Type dataFormat;
     if (bIsNormalMap)
     {
-        dataFormat = EPixelDataFormat::A2BGR10_U32_NormPacked;
+        // EPixelDataFormat::A2BGR10_U32_NormPacked is taking too long to be copied due to bit manipulations
+        // Change this to EPixelDataFormat::A2BGR10_U32_NormPacked after custom serialized assets are added to engine
+        dataFormat = EPixelDataFormat::BGRA_U8_Norm;
+        //dataFormat = EPixelDataFormat::A2BGR10_U32_NormPacked;
     }
     else
     {
@@ -215,7 +218,7 @@ Texture2DRW* Texture2DRW::createTexture(const Texture2DRWCreateParams& createPar
     Texture2DRW* texture = new Texture2DRW();
 
     texture->mipCount = createParams.mipCount;
-    if (createParams.mipCount != 0)
+    if (createParams.mipCount == 0)
     {
         texture->mipCount = Math::min((uint32)(1 + Math::floor(Math::log2(
             (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))), createParams.mipCount);
@@ -278,6 +281,10 @@ void GlobalBuffers::createTexture2Ds()
     createParams.defaultColor = ColorConst::WHITE;
     createParams.textureName = "Dummy_White";
     dummyWhiteTexture = TextureBase::createTexture<Texture2D>(createParams);
+
+    createParams.defaultColor = ColorConst::BLUE;
+    createParams.textureName = "Dummy_Normal";
+    dummyNormalTexture = TextureBase::createTexture<Texture2D>(createParams);
 }
 
 void GlobalBuffers::destroyTexture2Ds()
@@ -286,4 +293,6 @@ void GlobalBuffers::destroyTexture2Ds()
     dummyBlackTexture = nullptr;
     TextureBase::destroyTexture<Texture2D>(dummyWhiteTexture);
     dummyWhiteTexture = nullptr;
+    TextureBase::destroyTexture<Texture2D>(dummyNormalTexture);
+    dummyNormalTexture = nullptr;
 }

@@ -27,4 +27,5 @@ public:
     void setNormalMap(bool bIsNormal);
     void setChannelCount(uint8 count);
     TextureBase* getTexture() const;
+    const std::vector<Color>& getPixelData() const { return tempPixelData; }
 };

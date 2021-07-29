@@ -1,4 +1,5 @@
 #include "VulkanRenderCmdList.h"
+#include "../../../RenderInterface/GlobalRenderVariables.h"
 #include "../../../RenderInterface/Resources/GraphicsSyncResource.h"
 #include "../../../RenderInterface/PlatformIndependentHeaders.h"
 #include "../../../RenderInterface/PlatformIndependentHelper.h"
@@ -73,6 +74,28 @@ FORCE_INLINE VkPipelineBindPoint VulkanCommandList::getPipelineBindPoint(const P
 
     Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, pipeline->getResourceName().getChar());
     return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_MAX_ENUM;
+}
+
+FORCE_INLINE void VulkanCommandList::fillClearValue(EPixelDataFormat::Type format, VkClearColorValue& clearValue, const LinearColor& color) const
+{
+    const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(format);
+
+    clearValue.float32[0] = color.r();
+    clearValue.float32[1] = color.g();
+    clearValue.float32[2] = color.b();
+    clearValue.float32[3] = color.a();
+
+    LinearColor clamped(Math::clamp(Vector4D(color), Vector4D(-1), Vector4D::ONE));
+    clearValue.int32[0] = int32(Math::pow(2, formatInfo->componentSize[0]) * clamped[0]);
+    clearValue.int32[1] = int32(Math::pow(2, formatInfo->componentSize[1]) * clamped[1]);
+    clearValue.int32[2] = int32(Math::pow(2, formatInfo->componentSize[2]) * clamped[2]);
+    clearValue.int32[3] = int32(Math::pow(2, formatInfo->componentSize[3]) * clamped[3]);
+
+    clamped = LinearColor(Math::clamp(Vector4D(color), Vector4D::ZERO, Vector4D::ONE));
+    clearValue.uint32[0] = uint32(Math::pow(2, formatInfo->componentSize[0]) * clamped[0]);
+    clearValue.uint32[1] = uint32(Math::pow(2, formatInfo->componentSize[1]) * clamped[1]);
+    clearValue.uint32[2] = uint32(Math::pow(2, formatInfo->componentSize[2]) * clamped[2]);
+    clearValue.uint32[3] = uint32(Math::pow(2, formatInfo->componentSize[3]) * clamped[3]);
 }
 
 FORCE_INLINE void cmdPipelineBarrier(VulkanDevice* vDevice, VkCommandBuffer cmdBuffer, const std::vector<VkImageMemoryBarrier2KHR>& imageBarriers, const std::vector<VkBufferMemoryBarrier2KHR>& bufferBarriers)
@@ -371,16 +394,13 @@ void VulkanCommandList::submitCmd(EQueuePriority::Enum priority
 }
 
 void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority
-    , const CommandSubmitInfo& submitInfo)
+    , const CommandSubmitInfo2& submitInfo)
 {
-    SharedPtr<GraphicsFence> fence = GraphicsHelper::createFence(gInstance, "CommandSubmitFence");
-    cmdBufferManager.submitCmd(priority, submitInfo, fence);
-    fence->waitForSignal();
+    cmdBufferManager.submitCmd(priority, submitInfo, &resourcesTracker);
     for (const GraphicsResource* cmdBuffer : submitInfo.cmdBuffers)
     {
-        cmdBufferManager.cmdFinished(cmdBuffer);
+        cmdBufferManager.cmdFinished(cmdBuffer, &resourcesTracker);
     }
-    fence->release();
 }
 
 void VulkanCommandList::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands)
@@ -395,12 +415,12 @@ void VulkanCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSu
 
 void VulkanCommandList::finishCmd(const GraphicsResource* cmdBuffer)
 {
-    cmdBufferManager.cmdFinished(cmdBuffer);
+    cmdBufferManager.cmdFinished(cmdBuffer, &resourcesTracker);
 }
 
 void VulkanCommandList::finishCmd(const String& uniqueName)
 {
-    cmdBufferManager.cmdFinished(uniqueName);
+    cmdBufferManager.cmdFinished(uniqueName, &resourcesTracker);
 }
 
 const GraphicsResource* VulkanCommandList::getCmdBuffer(const String& uniqueName) const
@@ -455,6 +475,276 @@ void VulkanCommandList::presentImage(const std::vector<class GenericWindowCanvas
 
     GraphicsHelper::presentImage(gInstance, &canvases, &imageIndices, &waitSemaphores);
     swapchainFrameWrites.clear();
+}
+
+void VulkanCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer, ImageResource* src
+    , ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo)
+{
+    bool bCanSimpleCopy = src->getImageSize() == dst->getImageSize() && src->imageFormat() == dst->imageFormat()
+        && srcInfo.isCopyCompatible(dstInfo);
+    if (srcInfo.subres.mipCount != dstInfo.subres.mipCount || srcInfo.extent != dstInfo.extent)
+    {
+        Logger::error("VulkanCommandList", "%s : MIP counts && extent must be same between source and destination regions", __func__);
+        return;
+    }
+    {
+        SizeBox3D srcBound(srcInfo.offset, Size3D(srcInfo.offset + srcInfo.extent));
+        SizeBox3D dstBound(dstInfo.offset, Size3D(dstInfo.offset + dstInfo.extent));
+        if (src == dst && srcBound.intersect(dstBound))
+        {
+            Logger::error("VulkanCommandList", "%s : Cannot copy to same image with intersecting region", __func__);
+            return;
+        }
+    }
+
+    std::vector<VkImageMemoryBarrier2KHR> imageBarriers;
+    // TODO(Jeslas) : Is right?
+    const VkPipelineStageFlags stagesUsed = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    VkImageAspectFlags srcImageAspect = determineImageAspect(src);
+    VkImageAspectFlags dstImageAspect = determineImageAspect(dst);
+
+    VkAccessFlags srcAccessFlags = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+    VkAccessFlags dstAccessFlags = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    VkImageLayout srcOriginalLayout = getImageLayout(src);
+    VkImageLayout dstOriginalLayout = getImageLayout(dst);
+
+    IMAGE_MEMORY_BARRIER2_KHR(memBarrier);
+    // Source barrier
+    memBarrier.image = static_cast<const VulkanImageResource*>(src)->image;
+    memBarrier.subresourceRange = { srcImageAspect, 0, src->getNumOfMips(), 0, src->getLayerCount() };
+
+    memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+    memBarrier.dstStageMask = stagesUsed;
+
+    memBarrier.newLayout = memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    memBarrier.dstAccessMask = srcAccessFlags;
+    memBarrier.srcAccessMask = determineImageAccessMask(src);
+    // Source barriers
+    {
+        if (src->getType()->isChildOf<GraphicsRenderTargetResource>())
+        {
+            // TODO(Jeslas) : Not handled 
+            debugAssert(false);
+        }
+        else
+        {
+            std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo = src->isShaderWrite()
+                ? resourcesTracker.readFromWriteImages(cmdBuffer, { src, stagesUsed })
+                : resourcesTracker.readOnlyImages(cmdBuffer, { src, stagesUsed });
+
+            // If write texture
+            // If written last, and written in transfer or others
+            // If read only
+            // There is no write in graphics
+            if (barrierInfo && barrierInfo->accessors.lastWrite)
+            {
+                memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+                memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
+
+                if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
+                    || (barrierInfo->accessors.lastWriteStage & VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT) == VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
+                {
+                    memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+                    memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                }
+                else
+                {
+                    memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
+                    memBarrier.oldLayout = srcOriginalLayout;
+                }
+                imageBarriers.emplace_back(memBarrier);
+                // else only read so no issues
+            }
+        }
+    }
+    memBarrier.image = static_cast<const VulkanImageResource*>(dst)->image;
+    memBarrier.subresourceRange = { dstImageAspect, 0, dst->getNumOfMips(), 0, dst->getLayerCount() };
+
+    memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+    memBarrier.dstStageMask = stagesUsed;
+
+    memBarrier.newLayout = memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    memBarrier.dstAccessMask = dstAccessFlags;
+    memBarrier.srcAccessMask = determineImageAccessMask(dst);
+    // Dst barriers
+    {
+        if (dst->getType()->isChildOf<GraphicsRenderTargetResource>())
+        {
+            // TODO(Jeslas) : Not handled 
+            debugAssert(false);
+        }
+        else
+        {
+            std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo = dst->isShaderWrite()
+                ? resourcesTracker.writeImages(cmdBuffer, { dst, stagesUsed })
+                : resourcesTracker.writeReadOnlyImages(cmdBuffer, { dst, stagesUsed });
+
+            // If written last, and written in transfer or others
+            if (barrierInfo && barrierInfo->accessors.lastWrite)
+            {
+                memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+                memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
+
+                if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
+                    || (barrierInfo->accessors.lastWriteStage & VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT) == VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
+                {
+                    memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+                    memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                }
+                else
+                {
+                    memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
+                    memBarrier.oldLayout = dstOriginalLayout;
+                }
+            }
+            else if (barrierInfo->accessors.lastReadsIn.empty())
+            {
+                // No read write happened so far
+                memBarrier.srcStageMask = memBarrier.dstStageMask;
+                memBarrier.oldLayout = dstOriginalLayout;
+            }
+            // only reads happened
+            else
+            {
+                // If read in any command buffer
+                memBarrier.srcStageMask = barrierInfo->accessors.allReadStages; 
+                memBarrier.srcAccessMask = 0;
+                // If transfer read and shader read in same command
+                if ((barrierInfo->accessors.lastReadStages & VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT) == VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
+                {
+                    memBarrier.srcAccessMask |= VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+                    memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                }
+                else
+                {
+                    memBarrier.srcAccessMask |= VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+                    memBarrier.oldLayout = dstOriginalLayout;
+                }
+            }
+
+            imageBarriers.emplace_back(memBarrier);
+        }
+    }
+
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+    cmdPipelineBarrier(vDevice, rawCmdBuffer, imageBarriers, {});
+
+    if (bCanSimpleCopy)
+    {
+        std::vector<VkImageCopy> imageCopyRegions(srcInfo.subres.mipCount);
+
+        Size3D mipSize = srcInfo.extent;
+        Size3D srcMipSizeOffset = srcInfo.offset;
+        Size3D dstMipSizeOffset = dstInfo.offset;
+        for (uint32 mipLevel = 0; mipLevel < srcInfo.subres.mipCount; ++mipLevel)
+        {
+            imageCopyRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x),int32(srcMipSizeOffset.y),int32(srcMipSizeOffset.z) };
+            imageCopyRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfo.subres.baseMip + mipLevel, srcInfo.subres.baseLayer, srcInfo.subres.layersCount };
+            imageCopyRegions[mipLevel].dstOffset = { int32(dstMipSizeOffset.x),int32(dstMipSizeOffset.y),int32(dstMipSizeOffset.z) };
+            imageCopyRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfo.subres.baseMip + mipLevel, dstInfo.subres.baseLayer, dstInfo.subres.layersCount };
+            imageCopyRegions[mipLevel].extent = { mipSize.x, mipSize.y, mipSize.z };
+
+            srcMipSizeOffset /= 2u;
+            dstMipSizeOffset /= 2u;
+            mipSize = Math::max(mipSize / 2u, Size3D{ 1,1,1 });
+        }
+
+        vDevice->vkCmdCopyImage(rawCmdBuffer
+            , static_cast<const VulkanImageResource*>(src)->image
+            , VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+            , static_cast<const VulkanImageResource*>(dst)->image
+            , VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+            , uint32(imageCopyRegions.size()), imageCopyRegions.data());
+    }
+    else
+    {
+        std::vector<VkImageResolve> imageResolveRegions;
+        imageResolveRegions.reserve(srcInfo.subres.mipCount);
+
+        Size3D mipSize = srcInfo.extent;
+        Size3D srcMipSizeOffset = srcInfo.offset;
+        Size3D dstMipSizeOffset = dstInfo.offset;
+        for (uint32 mipLevel = 0; mipLevel < srcInfo.subres.mipCount; ++mipLevel)
+        {
+            imageResolveRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x),int32(srcMipSizeOffset.y),int32(srcMipSizeOffset.z) };
+            imageResolveRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfo.subres.baseMip + mipLevel, srcInfo.subres.baseLayer, srcInfo.subres.layersCount };
+            imageResolveRegions[mipLevel].dstOffset = { int32(dstMipSizeOffset.x),int32(dstMipSizeOffset.y),int32(dstMipSizeOffset.z) };
+            imageResolveRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfo.subres.baseMip + mipLevel, dstInfo.subres.baseLayer, dstInfo.subres.layersCount };
+            imageResolveRegions[mipLevel].extent = { mipSize.x, mipSize.y, mipSize.z };
+
+            srcMipSizeOffset /= 2u;
+            dstMipSizeOffset /= 2u;
+            mipSize = Math::max(mipSize / 2u, Size3D{ 1,1,1 });
+        }
+
+        vDevice->vkCmdResolveImage(rawCmdBuffer
+            , static_cast<const VulkanImageResource*>(src)->image
+            , VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+            , static_cast<const VulkanImageResource*>(dst)->image
+            , VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+            , uint32(imageResolveRegions.size()), imageResolveRegions.data());
+    }
+}
+
+void VulkanCommandList::cmdClearImage(const GraphicsResource* cmdBuffer, ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources)
+{
+    if (EPixelDataFormat::isDepthFormat(image->imageFormat()))
+    {
+        Logger::error("VulkanCommandList", " %s() : Depth image clear cannot be done in color clear", __func__);
+        return;
+    }
+
+    Logger::warn("VulkanCommandList", "%s : Synchronization not handled", __func__);
+
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+
+    std::vector<VkImageSubresourceRange> ranges;
+    for (const ImageSubresource& subres : subresources)
+    {
+        VkImageSubresourceRange range;
+        range.aspectMask = determineImageAspect(image);
+        range.baseMipLevel = subres.baseMip;
+        range.levelCount = subres.mipCount;
+        range.baseArrayLayer = subres.baseLayer;
+        range.layerCount = subres.layersCount;
+
+        ranges.emplace_back(range);
+    }
+
+    VkClearColorValue clearVals;
+    fillClearValue(image->imageFormat(), clearVals, clearColor);
+    vDevice->vkCmdClearColorImage(rawCmdBuffer, static_cast<const VulkanImageResource*>(image)->image, determineImageLayout(image), &clearVals, uint32(ranges.size()), ranges.data());
+}
+
+void VulkanCommandList::cmdClearDepth(const GraphicsResource* cmdBuffer, ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources)
+{
+    if (!EPixelDataFormat::isDepthFormat(image->imageFormat()))
+    {
+        Logger::error("VulkanCommandList", " %s() : Color image clear cannot be done in depth clear", __func__);
+        return;
+    }
+
+    Logger::warn("VulkanCommandList", "%s : Synchronization not handled", __func__);
+
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+
+    std::vector<VkImageSubresourceRange> ranges;
+    for (const ImageSubresource& subres : subresources)
+    {
+        VkImageSubresourceRange range;
+        range.aspectMask = determineImageAspect(image);
+        range.baseMipLevel = subres.baseMip;
+        range.levelCount = subres.mipCount;
+        range.baseArrayLayer = subres.baseLayer;
+        range.layerCount = subres.layersCount;
+
+        ranges.emplace_back(range);
+    }
+
+    VkClearDepthStencilValue clearVals{ depth, stencil };
+    vDevice->vkCmdClearDepthStencilImage(rawCmdBuffer, static_cast<const VulkanImageResource*>(image)->image, determineImageLayout(image), &clearVals, uint32(ranges.size()), ranges.data());
 }
 
 void VulkanCommandList::cmdBarrierResources(const GraphicsResource* cmdBuffer, const std::set<const ShaderParameters*>& descriptorsSets)
@@ -532,6 +822,7 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource* cmdBuffer, c
                         memBarrier.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
                         imageBarriers.emplace_back(memBarrier);
                     }
+                    // We do not handle transfer read here as it is unlikely that a read only texture needs to be copied without finished
                 }
             }
         }
@@ -566,7 +857,8 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource* cmdBuffer, c
                     // If there is last write but no read so far then wait for write
                     if (barrierInfo->accessors.lastWrite)
                     {
-                        if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite))
+                        if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite) 
+                            || (barrierInfo->accessors.lastWriteStage & VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT) == VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
                         {
                             // If last write, wait for transfer write as read only
                             memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -633,19 +925,18 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource* cmdBuffer, c
                     // If there is last write but no read so far then wait for write within same cmd buffer then just barrier no layout switch
                     if (barrierInfo->accessors.lastWrite)
                     {
-                        // We are not writing
-                        if (resource.second->imageUsageFlags != EImageShaderUsage::Writing)
+                        // If written in transfer before
+                        if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
+                            || (barrierInfo->accessors.lastWriteStage & VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT) == VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
+                        {
+                            memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+                            memBarrier.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+                            memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                        }
+                        else if (resource.second->imageUsageFlags != EImageShaderUsage::Writing) // We are not writing
                         {
                             memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
-                            if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite))
-                            {
-                                memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
-                                memBarrier.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
-                            }
-                            else
-                            {
-                                memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
-                            }
+                            memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
                         }
                         imageBarriers.emplace_back(memBarrier);
                     }
@@ -657,31 +948,21 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource* cmdBuffer, c
                         // We Will not be in incorrect layout in write image
                         // imageBarriers.emplace_back(memBarrier);
                     }
-                    // If not written but read last in same command buffer then wait
-                    else if (barrierInfo->accessors.lastReadsIn[0] == cmdBuffer)
+                    // If not written but read last in same command buffer then wait or if only read remains
+                    else
                     {
-                        memBarrier.oldLayout = determineImageLayout(resource.first);
-                        memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
-
-                        if (barrierInfo->accessors.allReadStages != 0)
+                        // If transfer read at last then use transfer src layout
+                        if ((barrierInfo->accessors.lastReadStages & VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT) == VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
                         {
-                            memBarrier.srcStageMask = barrierInfo->accessors.allReadStages;
+                            memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                            memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
                         }
                         else
                         {
-                            Logger::error("VulkanRenderCmdList", "%s(): Invalid all read pipeline stages %d when expected before writing to buffer"
-                                , __func__, barrierInfo->accessors.allReadStages);
-                            memBarrier.srcStageMask = cmdBufferManager.isGraphicsCmdBuffer(cmdBuffer)
-                                ? VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-                                : VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                            memBarrier.oldLayout = determineImageLayout(resource.first);
+                            memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
                         }
-                        imageBarriers.emplace_back(memBarrier);
-                    }
-                    // Read after write in some other cmd buffer
-                    else
-                    {
-                        memBarrier.oldLayout = determineImageLayout(resource.first);
-                        memBarrier.srcAccessMask = 0;
+
                         memBarrier.srcStageMask = barrierInfo->accessors.allReadStages;
                         for (const GraphicsResource* readInCmd : barrierInfo->accessors.lastReadsIn)
                         {
@@ -729,19 +1010,29 @@ void VulkanCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, co
     lastClearColor.float32[1] = LinearColorConst::BLACK.g();
     lastClearColor.float32[2] = LinearColorConst::BLACK.b();
     lastClearColor.float32[3] = LinearColorConst::BLACK.a();
+    // If swapchain there will be only one attachment as we are using it for drawing before present
     if (contextPipeline.bUseSwapchainFb)
     {
-        for (const LinearColor& clearCol : clearColor.colors)
+        if (!clearColor.colors.empty())
         {
-            lastClearColor.float32[0] = clearCol.r();
-            lastClearColor.float32[1] = clearCol.g();
-            lastClearColor.float32[2] = clearCol.b();
-            lastClearColor.float32[3] = clearCol.a();
-
-            VkClearValue clearVal;
-            clearVal.color = lastClearColor;
-            clearValues.emplace_back(clearVal);
+            if (static_cast<const GraphicsPipelineBase*>(contextPipeline.getPipeline())
+                ->getRenderpassProperties().renderpassAttachmentFormat.attachments.empty())
+            {
+                fillClearValue(static_cast<const GraphicsPipelineBase*>(contextPipeline.getPipeline())
+                    ->getRenderpassProperties().renderpassAttachmentFormat.attachments[0], lastClearColor, clearColor.colors[0]);
+            }
+            else
+            {
+                lastClearColor.float32[0] = clearColor.colors[0].r();
+                lastClearColor.float32[1] = clearColor.colors[0].g();
+                lastClearColor.float32[2] = clearColor.colors[0].b();
+                lastClearColor.float32[3] = clearColor.colors[0].a();
+            }
         }
+        VkClearValue clearVal;
+        clearVal.color = lastClearColor;
+        clearValues.emplace_back(clearVal);
+
         swapchainFrameWrites.emplace_back(cmdBuffer);
     }
     else
@@ -759,10 +1050,7 @@ void VulkanCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, co
             {
                 if (colorIdx < clearColor.colors.size())
                 {
-                    lastClearColor.float32[0] = clearColor.colors[colorIdx].r();
-                    lastClearColor.float32[1] = clearColor.colors[colorIdx].g();
-                    lastClearColor.float32[2] = clearColor.colors[colorIdx].b();
-                    lastClearColor.float32[3] = clearColor.colors[colorIdx].a();
+                    fillClearValue(frameTexture->imageFormat(), lastClearColor, clearColor.colors[colorIdx]);
                 }
                 VkClearValue clearVal;
                 clearVal.color = lastClearColor;
@@ -1036,6 +1324,15 @@ void VulkanCommandList::cmdSetViewportAndScissor(const GraphicsResource* cmdBuff
     }
 }
 
+void VulkanCommandList::cmdSetLineWidth(const GraphicsResource* cmdBuffer, float lineWidth) const
+{
+    if (GlobalRenderVariables::ENABLE_WIDE_LINES)
+    {
+        VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+        vDevice->vkCmdSetLineWidth(rawCmdBuffer, lineWidth);
+    }
+}
+
 void VulkanCommandList::cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
@@ -1071,7 +1368,10 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
     stagingBuffer.init();
 
     uint8* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, &stagingBuffer));
-    copyPixelsTo(&stagingBuffer, stagingPtr, pixelData, formatInfo);
+    if (!simpleCopyPixelsTo(&stagingBuffer, stagingPtr, pixelData, dst->imageFormat(), formatInfo))
+    {
+        copyPixelsTo(&stagingBuffer, stagingPtr, pixelData, formatInfo);
+    }
     GraphicsHelper::returnMappedPtr(gInstance, &stagingBuffer);
 
     copyToImage_Internal(dst, &stagingBuffer, copyInfo);
@@ -1122,7 +1422,10 @@ void VulkanCommandList::copyToImageLinearMapped(ImageResource* dst, const std::v
     stagingBuffer.init();
 
     uint8* stagingPtr = reinterpret_cast<uint8*>(GraphicsHelper::borrowMappedPtr(gInstance, &stagingBuffer));
-    copyPixelsLinearMappedTo(&stagingBuffer, stagingPtr, pixelData, formatInfo);
+    if (!simpleCopyPixelsTo(&stagingBuffer, stagingPtr, pixelData, dst->imageFormat(), formatInfo))
+    {
+        copyPixelsLinearMappedTo(&stagingBuffer, stagingPtr, pixelData, formatInfo);
+    }
     GraphicsHelper::returnMappedPtr(gInstance, &stagingBuffer);
 
     copyToImage_Internal(dst, &stagingBuffer, copyInfo);
@@ -1418,6 +1721,85 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
 
     cmdBufferManager.endCmdBuffer(cmdBuffer);
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "CopyOrResolveImage");
+    CommandSubmitInfo submitInfo;
+    submitInfo.cmdBuffers.emplace_back(cmdBuffer);
+    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
+
+    tempFence->waitForSignal();
+
+    cmdBufferManager.freeCmdBuffer(cmdBuffer);
+    tempFence->release();
+}
+
+void VulkanCommandList::clearImage(ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources)
+{
+    if (EPixelDataFormat::isDepthFormat(image->imageFormat()))
+    {
+        Logger::error("VulkanCommandList", " %s() : Depth image clear cannot be done in color clear", __func__);
+        return;
+    }
+
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer("ClearImage_" + image->getResourceName(), EQueueFunction::Graphics);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+
+    std::vector<VkImageSubresourceRange> ranges;
+    for (const ImageSubresource& subres : subresources)
+    {
+        VkImageSubresourceRange range;
+        range.aspectMask = determineImageAspect(image);
+        range.baseMipLevel = subres.baseMip;
+        range.levelCount = subres.mipCount;
+        range.baseArrayLayer = subres.baseLayer;
+        range.layerCount = subres.layersCount;
+
+        ranges.emplace_back(range);
+    }
+
+    VkClearColorValue clearVals;
+    fillClearValue(image->imageFormat(), clearVals, clearColor);
+    vDevice->vkCmdClearColorImage(rawCmdBuffer, static_cast<const VulkanImageResource*>(image)->image, determineImageLayout(image), &clearVals, uint32(ranges.size()), ranges.data());
+
+    cmdBufferManager.endCmdBuffer(cmdBuffer);
+    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "ClearImageFence");
+    CommandSubmitInfo submitInfo;
+    submitInfo.cmdBuffers.emplace_back(cmdBuffer);
+    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
+
+    tempFence->waitForSignal();
+
+    cmdBufferManager.freeCmdBuffer(cmdBuffer);
+    tempFence->release();
+}
+
+void VulkanCommandList::clearDepth(ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources)
+{
+    if (!EPixelDataFormat::isDepthFormat(image->imageFormat()))
+    {
+        Logger::error("VulkanCommandList", " %s() : Color image clear cannot be done in depth clear", __func__);
+        return;
+    }
+
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer("ClearDepth_" + image->getResourceName(), EQueueFunction::Graphics);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+
+    std::vector<VkImageSubresourceRange> ranges;
+    for (const ImageSubresource& subres : subresources)
+    {
+        VkImageSubresourceRange range;
+        range.aspectMask = determineImageAspect(image);
+        range.baseMipLevel = subres.baseMip;
+        range.levelCount = subres.mipCount;
+        range.baseArrayLayer = subres.baseLayer;
+        range.layerCount = subres.layersCount;
+
+        ranges.emplace_back(range);
+    }
+
+    VkClearDepthStencilValue clearVals{ depth, stencil };
+    vDevice->vkCmdClearDepthStencilImage(rawCmdBuffer, static_cast<const VulkanImageResource*>(image)->image, determineImageLayout(image), &clearVals, uint32(ranges.size()), ranges.data());
+
+    cmdBufferManager.endCmdBuffer(cmdBuffer);
+    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "ClearDepthFence");
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
     cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);

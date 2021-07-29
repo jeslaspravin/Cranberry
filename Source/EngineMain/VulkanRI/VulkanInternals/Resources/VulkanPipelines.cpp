@@ -100,6 +100,11 @@ void VulkanGraphicsPipeline::fillPipelineStates(VulkanGraphicsPipeline::VulkanPi
 
     // Input assembly
     createInfo.inputAsmStateCI->topology = VkPrimitiveTopology(EPrimitiveTopology::apiInputAssemblyState(primitiveTopology));
+    // If line then allow dynamic width 
+    if (primitiveTopology == EPrimitiveTopology::Line)
+    {
+        createInfo.dynamicStates.emplace_back(VkDynamicState::VK_DYNAMIC_STATE_LINE_WIDTH);
+    }
     // Tessellation
     createInfo.tessStateCI->patchControlPoints = cntrlPts;
     // Viewport
@@ -355,6 +360,14 @@ void VulkanGraphicsPipeline::fillDynamicPermutedStates(VulkanGraphicsPipeline::V
     }
 }
 
+void VulkanGraphicsPipeline::validateCreateInfo(VulkanPipelineCreateInfo& createInfo) const
+{
+    // Unique Dynamic states
+    std::sort(createInfo.dynamicStates.begin(), createInfo.dynamicStates.end());
+    auto newEnd = std::unique(createInfo.dynamicStates.begin(), createInfo.dynamicStates.end());
+    createInfo.dynamicStates.erase(newEnd, createInfo.dynamicStates.end());
+}
+
 void VulkanGraphicsPipeline::createPipelines(const std::vector<VulkanGraphicsPipeline::VulkanPipelineCreateInfo>& createInfos)
 {
     IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
@@ -479,8 +492,10 @@ void VulkanGraphicsPipeline::reinitResources()
         graphicsPipelineCI.colorBlendAttachmentStates = &vulkanAttachmentBlendStates;
         graphicsPipelineCI.colorBlendStateCI = &colorBlendStateCI;
 
-    fillDynamicPermutedStates(graphicsPipelineCI, paramForIdx(0));
+        fillDynamicPermutedStates(graphicsPipelineCI, paramForIdx(0));
         fillPipelineStates(graphicsPipelineCI);
+
+        validateCreateInfo(graphicsPipelineCI);
     }
     for (int32 pipelineIdx = 1; pipelineIdx < totalPipelinesCount; ++pipelineIdx)
     {
@@ -492,6 +507,8 @@ void VulkanGraphicsPipeline::reinitResources()
         graphicsPipelineCI.basePipelineIdx = 0;
 
         fillDynamicPermutedStates(graphicsPipelineCI, paramForIdx(pipelineIdx));
+
+        validateCreateInfo(graphicsPipelineCI);
     }
 
     createPipelines(tempPipelineCIs);

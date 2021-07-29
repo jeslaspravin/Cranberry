@@ -90,6 +90,8 @@ private:
     void fillDynamicPermutedStates(VulkanPipelineCreateInfo& createInfo
         , const GraphicsPipelineQueryParams& params) const;
 
+    void validateCreateInfo(VulkanPipelineCreateInfo& createInfo) const;
+
     void createPipelines(const std::vector<VulkanPipelineCreateInfo>& createInfos);
 public:
     VulkanGraphicsPipeline(const GraphicsPipelineBase* parent);

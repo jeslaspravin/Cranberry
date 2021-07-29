@@ -16,6 +16,11 @@ class IImGuiLayer;
 class BufferResource;
 class ShaderParameters;
 
+class IGraphicsInstance;
+struct TinyDrawingContext;
+struct ImGuiContext;
+struct ImPlotContext;
+
 
 class ImGuiManager
 {
@@ -39,6 +44,7 @@ private:
 
     ImGuiManager* parentGuiManager;
     ImGuiContext* context;
+    ImPlotContext* implotContext;
     ImGuiDrawInterface drawInterface;
     // Per display size
     SharedPtr<class ShaderParameters> imguiTransformParams;
@@ -58,6 +64,7 @@ private:
 
     static void setClipboard(void* userData, const char* text);
     static const char* getClipboard(void* userData);
+
     void setupInputs();
     void updateInputs();
     void updateTextureParameters();
@@ -68,6 +75,7 @@ private:
     void setupRendering();
     void releaseRendering();
     void setShaderData();
+    void setCurrentContexts();
 protected:
     TextureBase* getFontTextureAtlas() const;
     SharedPtr<class SamplerInterface> getTextureSampler() const;

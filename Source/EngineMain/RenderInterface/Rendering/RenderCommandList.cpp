@@ -29,60 +29,69 @@ private:
     IRenderCommandList* cmdList;
 
 public:
-    void setup(IRenderCommandList* commandList) override;
-    void newFrame() override;
+    void setup(IRenderCommandList* commandList) final;
+    void newFrame() final;
 
-    void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) override;
-    void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) override;
-    void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) override;
+    void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) final;
+    void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) final;
+    void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) final;
 
-    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
-    void copyToImage(ImageResource* dst, const std::vector<class LinearColor>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
-    void copyToImageLinearMapped(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) override;
+    void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) final;
+    void copyToImage(ImageResource* dst, const std::vector<class LinearColor>& pixelData, const CopyPixelsToImageInfo& copyInfo) final;
+    void copyToImageLinearMapped(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) final;
 
-    void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) override;
+    void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) final;
 
-    void setupInitialLayout(ImageResource* image) override;
+    void clearImage(ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources) final;
+    void clearDepth(ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources) final;
+
+    void setupInitialLayout(ImageResource* image) final;
 
     void presentImage(const std::vector<class GenericWindowCanvas*>& canvases,
-        const std::vector<uint32>& imageIndices, const std::vector<SharedPtr<class GraphicsSemaphore>>& waitOnSemaphores) override;
+        const std::vector<uint32>& imageIndices, const std::vector<SharedPtr<class GraphicsSemaphore>>& waitOnSemaphores) final;
 
-    void cmdBarrierResources(const GraphicsResource* cmdBuffer, const std::set<const ShaderParameters*>& descriptorsSets) override;
+    void cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer, ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) final;
 
-    void cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor) override;
-    void cmdEndRenderPass(const GraphicsResource* cmdBuffer) override;
+    void cmdClearImage(const GraphicsResource* cmdBuffer, ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources) final;
+    void cmdClearDepth(const GraphicsResource* cmdBuffer, ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources) final;
 
-    void cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const GraphicsPipelineState& state) const override;
-    void cmdBindComputePipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline) const override;
-    void cmdPushConstants(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, uint32 stagesUsed, const uint8* data, const std::vector<CopyBufferInfo>& pushConsts) const override;
-    void cmdBindDescriptorsSetInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::map<uint32, const ShaderParameters*>& descriptorsSets) const override;
-    void cmdBindDescriptorsSetsInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const override;
-    void cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, uint32 firstBinding, const std::vector<const BufferResource*>& vertexBuffers, const std::vector<uint64>& offsets) const override;
-    void cmdBindIndexBuffer(const GraphicsResource* cmdBuffer, const BufferResource* indexBuffer, uint64 offset = 0) const override;
+    void cmdBarrierResources(const GraphicsResource* cmdBuffer, const std::set<const ShaderParameters*>& descriptorsSets) final;
 
-    void cmdDispatch(const GraphicsResource* cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const override;
-    void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const override;
-    void cmdDrawVertices(const GraphicsResource* cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance = 0, uint32 instanceCount = 1) const override;
+    void cmdBeginRenderPass(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const QuantizedBox2D& renderArea, const RenderPassAdditionalProps& renderpassAdditionalProps, const RenderPassClearValue& clearColor) final;
+    void cmdEndRenderPass(const GraphicsResource* cmdBuffer) final;
 
-    void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const override;
-    void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const override;
+    void cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const GraphicsPipelineState& state) const final;
+    void cmdBindComputePipeline(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline) const final;
+    void cmdPushConstants(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, uint32 stagesUsed, const uint8* data, const std::vector<CopyBufferInfo>& pushConsts) const final;
+    void cmdBindDescriptorsSetInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::map<uint32, const ShaderParameters*>& descriptorsSets) const final;
+    void cmdBindDescriptorsSetsInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const final;
+    void cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, uint32 firstBinding, const std::vector<const BufferResource*>& vertexBuffers, const std::vector<uint64>& offsets) const final;
+    void cmdBindIndexBuffer(const GraphicsResource* cmdBuffer, const BufferResource* indexBuffer, uint64 offset = 0) const final;
 
-    void cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const override;
-    void cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const override;
-    void cmdEndBufferMarker(const GraphicsResource* commandBuffer) const override;
+    void cmdDispatch(const GraphicsResource* cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const final;
+    void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const final;
+    void cmdDrawVertices(const GraphicsResource* cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance = 0, uint32 instanceCount = 1) const final;
 
-    const GraphicsResource* startCmd(const String& uniqueName, EQueueFunction queue, bool bIsReusable) override;
-    void endCmd(const GraphicsResource* cmdBuffer) override;
-    void freeCmd(const GraphicsResource* cmdBuffer) override;
+    void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const final;
+    void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const final;
+    void cmdSetLineWidth(const GraphicsResource* cmdBuffer, float lineWidth) const final;
+
+    void cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const final;
+    void cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const final;
+    void cmdEndBufferMarker(const GraphicsResource* commandBuffer) const final;
+
+    const GraphicsResource* startCmd(const String& uniqueName, EQueueFunction queue, bool bIsReusable) final;
+    void endCmd(const GraphicsResource* cmdBuffer) final;
+    void freeCmd(const GraphicsResource* cmdBuffer) final;
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo
-        , const SharedPtr<GraphicsFence>& fence) override;
-    void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) override;
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands) override;
-    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& command) override;
-    void finishCmd(const GraphicsResource* cmdBuffer) override;
-    void finishCmd(const String& uniqueName) override;
-    const GraphicsResource* getCmdBuffer(const String& uniqueName) const override;
-    void waitIdle() override;
+        , const SharedPtr<GraphicsFence>& fence) final;
+    void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& submitInfo);
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands) final;
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& command) final;
+    void finishCmd(const GraphicsResource* cmdBuffer) final;
+    void finishCmd(const String& uniqueName) final;
+    const GraphicsResource* getCmdBuffer(const String& uniqueName) const final;
+    void waitIdle() final;
 };
 
 
@@ -176,7 +185,7 @@ void RenderCommandList::submitCmd(EQueuePriority::Enum priority
 }
 
 void RenderCommandList::submitWaitCmd(EQueuePriority::Enum priority
-    , const CommandSubmitInfo& submitInfo)
+    , const CommandSubmitInfo2& submitInfo)
 {
     cmdList->submitWaitCmd(priority, submitInfo);
 }
@@ -231,6 +240,16 @@ void RenderCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     cmdList->copyOrResolveImage(src, dst, srcInfo, dstInfo);
 }
 
+void RenderCommandList::clearImage(ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources)
+{
+    cmdList->clearImage(image, clearColor, subresources);
+}
+
+void RenderCommandList::clearDepth(ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources)
+{
+    cmdList->clearDepth(image, depth, stencil, subresources);
+}
+
 void RenderCommandList::setupInitialLayout(ImageResource* image)
 {
     cmdList->setupInitialLayout(image);
@@ -239,6 +258,21 @@ void RenderCommandList::setupInitialLayout(ImageResource* image)
 void RenderCommandList::presentImage(const std::vector<class GenericWindowCanvas*>& canvases, const std::vector<uint32>& imageIndices, const std::vector<SharedPtr<class GraphicsSemaphore>>& waitOnSemaphores)
 {
     cmdList->presentImage(canvases, imageIndices, waitOnSemaphores);
+}
+
+void RenderCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer, ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo)
+{
+    cmdList->cmdCopyOrResolveImage(cmdBuffer, src, dst, srcInfo, dstInfo);
+}
+
+void RenderCommandList::cmdClearImage(const GraphicsResource* cmdBuffer, ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources)
+{
+    cmdList->cmdClearImage(cmdBuffer, image, clearColor, subresources);
+}
+
+void RenderCommandList::cmdClearDepth(const GraphicsResource* cmdBuffer, ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources)
+{
+    cmdList->cmdClearDepth(cmdBuffer, image, depth, stencil, subresources);
 }
 
 void RenderCommandList::cmdBarrierResources(const GraphicsResource* cmdBuffer, const std::set<const ShaderParameters*>& descriptorsSets)
@@ -276,6 +310,11 @@ void RenderCommandList::cmdSetViewportAndScissor(const GraphicsResource* cmdBuff
     cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor, atViewport);
 }
 
+void RenderCommandList::cmdSetLineWidth(const GraphicsResource* cmdBuffer, float lineWidth) const
+{
+    cmdList->cmdSetLineWidth(cmdBuffer, lineWidth);
+}
+
 void RenderCommandList::cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
 {
     cmdList->cmdBeginBufferMarker(commandBuffer, name, color);
@@ -289,6 +328,51 @@ void RenderCommandList::cmdInsertBufferMarker(const GraphicsResource* commandBuf
 void RenderCommandList::cmdEndBufferMarker(const GraphicsResource* commandBuffer) const
 {
     cmdList->cmdEndBufferMarker(commandBuffer);
+}
+
+bool IRenderCommandList::simpleCopyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr
+    , const std::vector<class Color>& pixelData, EPixelDataFormat::Type dataFormat, const EPixelDataFormat::PixelFormatInfo* formatInfo) const
+{
+    if (dataFormat == EPixelDataFormat::BGRA_U8_Norm || dataFormat == EPixelDataFormat::BGRA_U8_SRGB || dataFormat == EPixelDataFormat::BGRA_U8_Scaled)
+    {
+        // Do I need memset here?
+        //memset(stagingPtr, 0, stagingBuffer->getResourceSize());
+
+        // Copying data
+        for (uint32 i = 0; i < pixelData.size(); ++i)
+        {
+            uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+            pixelStagingPtr[0] = pixelData[i].b();
+            pixelStagingPtr[1] = pixelData[i].g();
+            pixelStagingPtr[2] = pixelData[i].r();
+            pixelStagingPtr[3] = pixelData[i].a();
+        }
+        return true;
+    }
+
+    if (dataFormat == EPixelDataFormat::RGBA_U8_Norm || dataFormat == EPixelDataFormat::RGBA_U8_SRGB || dataFormat == EPixelDataFormat::RGBA_U8_Scaled)
+    {
+        memcpy(stagingPtr, pixelData.data(), pixelData.size() * formatInfo->pixelDataSize);
+    }
+
+    // If components are in order(R,G,B) and 8bit per component the do memcpy
+    bool bInOrder = true;
+    for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
+    {
+        bInOrder = bInOrder 
+            && EPixelComponent(idx) == formatInfo->componentOrder[idx] // Is in same order
+            && formatInfo->componentSize[uint8(formatInfo->componentOrder[idx])] == 8;// 8 bit
+    }
+    if (bInOrder)
+    {
+        for (uint32 i = 0; i < pixelData.size(); ++i)
+        {
+            uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+            memcpy(pixelStagingPtr, &pixelData[i], formatInfo->pixelDataSize);
+        }
+        return true;
+    }
+    return false;
 }
 
 void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<Color>& pixelData

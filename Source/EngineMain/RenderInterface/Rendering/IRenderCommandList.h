@@ -37,7 +37,9 @@ public:
 #define ENQUEUE_COMMAND(CommandName, LambdaBody, ...) \
 class CommandName##_RenderCommand final : public IRenderCommand \
 { \
+public: \
     using RenderCmdFunc = LambdaFunction<void, class IRenderCommandList*, IGraphicsInstance*>; \
+private: \
     RenderCmdFunc renderCmd; \
 public: \
     CommandName##_RenderCommand(RenderCmdFunc lambdaFunc) \
@@ -49,7 +51,7 @@ public: \
         renderCmd(cmdList, graphicsInstance); \
     } \
 }; \
-gEngine->issueRenderCommand(new CommandName##_RenderCommand ({ [ ##__VA_ARGS__## ](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)##LambdaBody }))
+GameEngine::issueRenderCommand<CommandName##_RenderCommand>({ [ ##__VA_ARGS__## ](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)##LambdaBody })
 
 #define SCOPED_CMD_MARKER(CmdList,CommandBuffer,Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, #Name)
 #define SCOPED_CMD_COLORMARKER(CmdList,CommandBuffer,Name,Color) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, #Name, Color)
@@ -124,7 +126,10 @@ struct GraphicsPipelineState
 class IRenderCommandList
 {
 protected:
-    // raw copies the pixels to staging buffer, Only accepts non floating point textures
+    // Copies to known format from color, returns true if copied
+    bool simpleCopyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class Color>& pixelData, EPixelDataFormat::Type dataFormat, const EPixelDataFormat::PixelFormatInfo* formatInfo) const;
+
+    // raw copies the pixels to staging buffer, Only accepts non floating point or 32bit floating point textures
     void copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class Color>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo) const;
     void copyPixelsLinearMappedTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class Color>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo) const;
     void copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class LinearColor>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo, bool bIsFloatingFormat) const;
@@ -154,6 +159,9 @@ public:
     virtual void copyToImage(ImageResource* dst, const std::vector<class LinearColor>& pixelData, const CopyPixelsToImageInfo& copyInfo) = 0;
     virtual void copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) = 0;
 
+    virtual void clearImage(ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources) = 0;
+    virtual void clearDepth(ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources) = 0;
+
     virtual void setupInitialLayout(ImageResource* image) = 0;
 
     virtual void presentImage(const std::vector<class GenericWindowCanvas*>& canvases,
@@ -162,6 +170,11 @@ public:
     ///////////////////////////////////////////////////////////////////////////////
     //// Command buffer related function access if you know what you are doing ////
     ///////////////////////////////////////////////////////////////////////////////
+
+    virtual void cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer, ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) = 0;
+
+    virtual void cmdClearImage(const GraphicsResource* cmdBuffer, ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources) = 0;
+    virtual void cmdClearDepth(const GraphicsResource* cmdBuffer, ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources) = 0;
 
     virtual void cmdBarrierResources(const GraphicsResource* cmdBuffer, const std::set<const ShaderParameters*>& descriptorsSets) = 0;
 
@@ -185,6 +198,7 @@ public:
 
     virtual void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const = 0;
     virtual void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const = 0;
+    virtual void cmdSetLineWidth(const GraphicsResource* cmdBuffer, float lineWidth) const = 0;
 
     virtual void cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const = 0;
     virtual void cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const = 0;
@@ -197,8 +211,8 @@ public:
     virtual void freeCmd(const GraphicsResource* cmdBuffer) = 0;
     virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo
         , const SharedPtr<GraphicsFence>& fence) = 0;
-    virtual void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo& submitInfo) = 0;
 
+    virtual void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& submitInfo) = 0;
     virtual void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands) = 0;
     virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& command) = 0;
 

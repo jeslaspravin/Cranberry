@@ -5,6 +5,11 @@
 #include "../Core/Math/Vector3D.h"
 #include "../Core/Math/Vector4D.h"
 #include "ShaderDataTypes.h"
+#include "GBuffersAndTextures.h"
+#include "../RenderInterface/Rendering/IRenderCommandList.h"
+#include "../RenderInterface/PlatformIndependentHeaders.h"
+
+#include <array>
 
 BEGIN_VERTEX_DEFINITION(StaticMeshVertex, EShaderInputFrequency::PerVertex)
 ADD_VERTEX_FIELD(position)
@@ -225,4 +230,171 @@ namespace EVertexType
         }
     }
 
+}
+
+
+void GlobalBuffers::destroyVertIndBuffers(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+{
+    lineGizmoVertxInds.first->release();
+    delete lineGizmoVertxInds.first;
+    lineGizmoVertxInds.first = nullptr;
+    lineGizmoVertxInds.second->release();
+    delete lineGizmoVertxInds.second;
+    lineGizmoVertxInds.second = nullptr;
+
+    quadVertsInds.first->release();
+    delete quadVertsInds.first;
+    quadVertsInds.first = nullptr;
+    quadVertsInds.second->release();
+    delete quadVertsInds.second;
+    quadVertsInds.second = nullptr;
+}
+
+void GlobalBuffers::createVertIndBuffers(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+{
+    const std::array<Vector3D, 3> quadVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
+    const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
+
+    // 0-17(18) for axis arrows 18-29(12) for letters
+    std::array<VertexSimple3DColor, 30> gizmoVerts;
+    // 0-29(30) for axis arrows 30-45(16) for letters
+    std::array<uint32, 46> gizmoIndices;
+    const uint32 idxPerAxis = 6;
+    const uint32 vertPerAxis = 10;
+    for (uint32 axis = 0; axis < 3; ++axis)
+    {
+        Vector3D axisVector;
+        Vector3D otheAxis1;
+        Vector3D otheAxis2;
+        Color color;
+        switch (axis)
+        {
+        case 0:
+        {
+            axisVector = Vector3D::FWD;
+            otheAxis1 = Vector3D::RIGHT;
+            otheAxis2 = Vector3D::UP;
+            color = ColorConst::RED;
+
+            // Letter X
+            const uint32 startVert = 18;
+            const uint32 startIdx = 30;
+            gizmoVerts[startVert + 0] = { (axisVector * 120) + (Vector3D::UP * 10) + (Vector3D::RIGHT * 8), color };
+            gizmoVerts[startVert + 1] = { (axisVector * 120) - (Vector3D::UP * 10) - (Vector3D::RIGHT * 8), color };
+            gizmoIndices[startIdx + 0] = startVert;
+            gizmoIndices[startIdx + 1] = startVert + 1;
+
+            gizmoVerts[startVert + 2] = { (axisVector * 120) + (Vector3D::UP * 10) - (Vector3D::RIGHT * 8), color };
+            gizmoVerts[startVert + 3] = { (axisVector * 120) - (Vector3D::UP * 10) + (Vector3D::RIGHT * 8), color };
+            gizmoIndices[startIdx + 2] = startVert + 2;
+            gizmoIndices[startIdx + 3] = startVert + 3;
+            break;
+        }
+        case 1:
+        {
+            axisVector = Vector3D::RIGHT;
+            otheAxis1 = Vector3D::UP;
+            otheAxis2 = Vector3D::FWD;
+            color = ColorConst::GREEN;
+
+            // Letter Y
+            const uint32 startVert = 22;
+            const uint32 startIdx = 34;
+            gizmoVerts[startVert] = { (axisVector * 120), color };
+
+            gizmoVerts[startVert + 1] = { (axisVector * 120) + (Vector3D::UP * 10) + (Vector3D::FWD * 8), color };
+            gizmoVerts[startVert + 2] = { (axisVector * 120) + (Vector3D::UP * 10) - (Vector3D::FWD * 8), color };
+            gizmoVerts[startVert + 3] = { (axisVector * 120) - (Vector3D::UP * 8), color };
+
+            gizmoIndices[startIdx + 0] = startVert;
+            gizmoIndices[startIdx + 1] = startVert + 1;
+            gizmoIndices[startIdx + 2] = startVert;
+            gizmoIndices[startIdx + 3] = startVert + 2;
+            gizmoIndices[startIdx + 4] = startVert;
+            gizmoIndices[startIdx + 5] = startVert + 3;
+            break;
+        }
+        case 2:
+        {
+            axisVector = Vector3D::UP;
+            otheAxis1 = Vector3D::FWD;
+            otheAxis2 = Vector3D::RIGHT;
+            color = ColorConst::BLUE;
+
+            // Letter Z
+            const uint32 startVert = 26;
+            const uint32 startIdx = 40;
+
+            gizmoVerts[startVert + 0] = { (axisVector * 130) + (Vector3D::UP * 9) + (Vector3D::RIGHT * 7), color };
+            gizmoVerts[startVert + 1] = { (axisVector * 130) + (Vector3D::UP * 9) - (Vector3D::RIGHT * 7), color };
+            gizmoVerts[startVert + 2] = { (axisVector * 130) - (Vector3D::UP * 9) + (Vector3D::RIGHT * 7), color };
+            gizmoVerts[startVert + 3] = { (axisVector * 130) - (Vector3D::UP * 9) - (Vector3D::RIGHT * 7), color };
+
+            gizmoIndices[startIdx + 0] = startVert;
+            gizmoIndices[startIdx + 1] = startVert + 1;
+            gizmoIndices[startIdx + 2] = startVert + 1;
+            gizmoIndices[startIdx + 3] = startVert + 2;
+            gizmoIndices[startIdx + 4] = startVert + 2;
+            gizmoIndices[startIdx + 5] = startVert + 3;
+            break;
+        }
+        }
+
+        // Axis line
+        uint32 idx = axis * idxPerAxis + 0;
+        gizmoVerts[idx] = { Vector3D::ZERO, color };
+        gizmoIndices[axis * vertPerAxis + 0] = idx;
+
+        idx = axis * idxPerAxis + 1;
+        gizmoVerts[idx] = { axisVector * 100, color };
+        gizmoIndices[axis * vertPerAxis + 1] = idx;
+
+        // Arrow along plane
+        // All mid points of arrow
+        gizmoIndices[axis * vertPerAxis + 2] = gizmoIndices[axis * vertPerAxis + 4] = gizmoIndices[axis * vertPerAxis + 6] = gizmoIndices[axis * vertPerAxis + 8] = idx;
+
+        const Vector3D& startPos = gizmoVerts[idx].position;
+        idx = axis * idxPerAxis + 2;
+        gizmoVerts[idx] = { startPos + (otheAxis1 + otheAxis2 - axisVector).normalized() * 10, color };
+        gizmoIndices[axis * vertPerAxis + 3] = idx;
+        idx = axis * idxPerAxis + 3;
+        gizmoVerts[idx] = { startPos + (otheAxis1 - otheAxis2 - axisVector).normalized() * 10, color };
+        gizmoIndices[axis * vertPerAxis + 5] = idx;
+        idx = axis * idxPerAxis + 4;
+        gizmoVerts[idx] = { startPos - (otheAxis1 - otheAxis2 + axisVector).normalized() * 10, color };
+        gizmoIndices[axis * vertPerAxis + 7] = idx;
+        idx = axis * idxPerAxis + 5;
+        gizmoVerts[idx] = { startPos - (otheAxis1 + otheAxis2 + axisVector).normalized() * 10, color };
+        gizmoIndices[axis * vertPerAxis + 9] = idx;
+    }
+
+    BufferResource* lineGizmoVertsBuffer = new GraphicsVertexBuffer(sizeof(VertexSimple3DColor), static_cast<uint32>(gizmoVerts.size()));
+    lineGizmoVertsBuffer->setResourceName("LineGizmosVertices");
+    lineGizmoVertsBuffer->init();
+
+    BufferResource* lineGizmoIndicesBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(gizmoIndices.size()));
+    lineGizmoIndicesBuffer->setResourceName("LineGizmosIndices");
+    lineGizmoIndicesBuffer->init();
+
+    GlobalBuffers::lineGizmoVertxInds.first = lineGizmoVertsBuffer;
+    GlobalBuffers::lineGizmoVertxInds.second = lineGizmoIndicesBuffer;
+
+    BufferResource* quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
+    quadVertexBuffer->setResourceName("ScreenQuadVertices");
+    quadVertexBuffer->init();
+
+    BufferResource* quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
+    quadIndexBuffer->setResourceName("ScreenQuadIndices");
+    quadIndexBuffer->init();
+
+    GlobalBuffers::quadVertsInds.first = quadVertexBuffer;
+    GlobalBuffers::quadVertsInds.second = quadIndexBuffer;
+
+    std::vector<BatchCopyBufferData> copies{
+        { quadVertexBuffer, 0, quadVerts.data(), uint32(quadVertexBuffer->getResourceSize()) },
+        { quadIndexBuffer, 0, quadIndices.data(), uint32(quadIndexBuffer->getResourceSize()) },
+        { lineGizmoVertsBuffer, 0, gizmoVerts.data(), uint32(lineGizmoVertsBuffer->getResourceSize()) },
+        { lineGizmoIndicesBuffer, 0, gizmoIndices.data(), uint32(lineGizmoIndicesBuffer->getResourceSize()) }
+    };
+    cmdList->copyToBuffer(copies);
 }

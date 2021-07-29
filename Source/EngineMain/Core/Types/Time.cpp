@@ -77,3 +77,41 @@ TickRep Time::addDays(const TickRep& tickValue, TimeConvType days)
     tickDur += daysToAdd;
     return duration_cast<TimeResolution>(tickDur).count();
 }
+
+StopWatch::StopWatch(bool bStart /*= true*/)
+{
+    if (bStart)
+    {
+        startTime = Time::timeNow();
+    }
+}
+
+TickRep StopWatch::start()
+{
+    return (startTime = Time::timeNow());
+}
+
+TickRep StopWatch::stop()
+{
+    return (stopTime = Time::timeNow());
+}
+
+TickRep StopWatch::lap()
+{
+    return (lastLapTime = Time::timeNow());
+}
+
+TimeConvType StopWatch::lapTime() const
+{
+    return lastLapTime > startTime ? Time::asSeconds(lastLapTime - startTime) : 0;
+}
+
+TimeConvType StopWatch::thisLap() const
+{
+    return lastLapTime > startTime? Time::asSeconds(Time::timeNow() - lastLapTime) : Time::asSeconds(Time::timeNow() - startTime);
+}
+
+TimeConvType StopWatch::duration() const
+{
+    return stopTime > startTime ? Time::asSeconds(lastLapTime - startTime) : Time::asSeconds(Time::timeNow() - startTime);
+}

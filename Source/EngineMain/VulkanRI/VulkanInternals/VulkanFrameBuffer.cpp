@@ -224,7 +224,10 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance* gra
     std::vector<VkAttachmentReference> resolveAttachmentRefs;
     std::vector<VkAttachmentReference> depthAttachmentRef;
 
-    bool bCanInitialLayoutBeUndef = additionalProps.bAllowUndefinedLayout && additionalProps.depthLoadOp != EAttachmentOp::LoadOp::Load;
+    bool bCanInitialLayoutBeUndef = additionalProps.bAllowUndefinedLayout
+        && additionalProps.depthLoadOp != EAttachmentOp::LoadOp::Load
+        && additionalProps.stencilLoadOp != EAttachmentOp::LoadOp::Load
+        && additionalProps.colorAttachmentLoadOp != EAttachmentOp::LoadOp::Load;
 
     for (EPixelDataFormat::Type attachmentFormat : renderpassProps.renderpassAttachmentFormat.attachments)
     {

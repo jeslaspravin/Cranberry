@@ -6,6 +6,9 @@
 #include <unordered_map>
 
 class TextureBase;
+class BufferResource;
+class IGraphicsInstance;
+class IRenderCommandList;
 
 struct FramebufferWrapper
 {
@@ -22,12 +25,19 @@ private:
 
     static TextureBase* dummyBlackTexture;
     static TextureBase* dummyWhiteTexture;
+    static TextureBase* dummyNormalTexture;
+
+    static std::pair<BufferResource*, BufferResource*> quadVertsInds;
+    static std::pair<BufferResource*, BufferResource*> lineGizmoVertxInds;
 
     static void initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx);
     static void onSampleCountChanged(uint32 oldValue, uint32 newValue);
 
     static void createTexture2Ds();
     static void destroyTexture2Ds();
+
+    static void createVertIndBuffers(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    static void destroyVertIndBuffers(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
 public:
     static void initialize();
     static void destroy();
@@ -57,4 +67,7 @@ public:
     static void destroyFbInstance(const Framebuffer* fb);
     // Destroy if any already existing raw framebuffer resource
     static void initializeFb(Framebuffer* fb, const Size2D& frameSize);
+
+    static std::pair<const BufferResource*, const BufferResource*> getQuadVertexIndexBuffers() { return quadVertsInds; }
+    static std::pair<const BufferResource*, const BufferResource*> getLineGizmoVertexIndexBuffers() { return lineGizmoVertxInds; }
 };

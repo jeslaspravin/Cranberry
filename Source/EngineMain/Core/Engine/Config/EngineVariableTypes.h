@@ -27,6 +27,11 @@ public:
     {
         return variable;
     }
+
+    operator VarType() const
+    {
+        return variable;
+    }
 };
 
 template <typename Type>

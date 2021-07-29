@@ -1,9 +1,5 @@
 #pragma once
 
-class IGraphicsInstance;
-struct TinyDrawingContext;
-struct ImGuiContext;
-
 class ImGuiDrawInterface
 {
 private:
