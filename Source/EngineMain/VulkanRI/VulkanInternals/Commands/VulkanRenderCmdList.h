@@ -26,7 +26,7 @@ private:
 
     FORCE_INLINE void fillClearValue(EPixelDataFormat::Type format, VkClearColorValue& clearValue, const LinearColor& color) const;
 
-    void copyToImage_Internal(ImageResource* dst, const BufferResource* pixelData, const CopyPixelsToImageInfo& copyInfo);
+    void copyToImage_Internal(ImageResource* dst, const BufferResource* pixelData, CopyPixelsToImageInfo copyInfo);
     void copyToBuffer_Internal(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size, bool bFlushMemory = false);
 public:
 
@@ -53,6 +53,8 @@ public:
         const std::vector<uint32>& imageIndices, const std::vector<SharedPtr<class GraphicsSemaphore>>& waitOnSemaphores) final;
 
     void cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer, ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) final;
+
+    void cmdTransitionLayouts(const GraphicsResource* cmdBuffer, const std::vector<ImageResource*>& images) final;
 
     void cmdClearImage(const GraphicsResource* cmdBuffer, ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources) final;
     void cmdClearDepth(const GraphicsResource* cmdBuffer, ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources) final;
@@ -95,4 +97,6 @@ public:
     void finishCmd(const String& uniqueName) final;
     const GraphicsResource* getCmdBuffer(const String& uniqueName) const final;
     void waitIdle() final;
+    void flushAllcommands() final;
+
 };

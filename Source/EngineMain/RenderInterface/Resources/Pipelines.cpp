@@ -42,7 +42,8 @@ void PipelineCacheBase::writeCache() const
     cacheFile.setFileFlags(EFileFlags::Write | EFileFlags::CreateAlways);
 
     cacheFile.openOrCreate();
-    cacheFile.write(getRawToWrite());
+    std::vector<uint8> pipelineCacheData = getRawToWrite();
+    cacheFile.write({ pipelineCacheData });
     cacheFile.closeFile();
 }
 
@@ -194,8 +195,9 @@ std::map<String, const PipelineFactoryRegistrar*>& PipelineFactory::namedPipelin
 
 PipelineBase* PipelineFactory::create(const PipelineFactoryArgs& args) const
 {
+    fatalAssert(args.pipelineShader, "Pipeline shader cannot be null");
     auto factoryItr = namedPipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
-    fatalAssert(factoryItr != namedPipelineFactoriesRegistry().end(), "Failed finding factory to create pipeline for shader");
+    fatalAssert(factoryItr != namedPipelineFactoriesRegistry().end(), "Failed finding factory to create pipeline for shader %s", args.pipelineShader->getResourceName().getChar());
 
     return (*factoryItr->second)(args);
 }

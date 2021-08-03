@@ -28,7 +28,7 @@ void WindowManager::initMain()
     appMainWindow->createWindow(::gEngine->getApplicationInstance());
     inputSystem->registerWindow(appMainWindow);
 
-    ENQUEUE_COMMAND(MainWindowInit,
+    ENQUEUE_COMMAND_NODEBUG(MainWindowInit,
         {
             ManagerData & data = windowsOpened[appMainWindow];
             data.windowCanvas = new WindowCanvas();
@@ -44,7 +44,7 @@ void WindowManager::destroyMain()
     for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
     {
         GenericWindowCanvas* windowCanvas = windowData.second.windowCanvas;
-        ENQUEUE_COMMAND(MainWindowDestroy,
+        ENQUEUE_COMMAND_NODEBUG(MainWindowDestroy,
             {
                 windowCanvas->release();
                 delete windowCanvas;
@@ -74,7 +74,7 @@ GenericWindowCanvas* WindowManager::getWindowCanvas(GenericAppWindow* window) co
 
 void WindowManager::postInitGraphicCore()
 {
-    ENQUEUE_COMMAND(InitWindowCanvas,
+    ENQUEUE_COMMAND_NODEBUG(InitWindowCanvas,
         {
             for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
             {
@@ -125,7 +125,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
 {
     if(window->windowHeight != height || window->windowWidth != width)
     {
-        ENQUEUE_COMMAND(WindowResize, LAMBDA_BODY
+        ENQUEUE_COMMAND_NODEBUG(WindowResize, LAMBDA_BODY
             (
                 cmdList->waitIdle();
                 window->setWindowSize(width, height, true);

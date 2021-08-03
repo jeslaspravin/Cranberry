@@ -49,7 +49,7 @@ void ImGuiFontTextureAtlas::reinitResources()
     TextureBase::reinitResources();
     generateImGuiTexture();
 
-    ENQUEUE_COMMAND(ReinitImGuiFontTextureAtlas,
+    ENQUEUE_COMMAND_NODEBUG(ReinitImGuiFontTextureAtlas,
         {
             if (textureResource->isValid())
             {
@@ -72,7 +72,7 @@ void ImGuiFontTextureAtlas::init(ImGuiFontTextureAtlas* texture)
     texture->textureResource->setImageSize(texture->textureSize);
     texture->textureResource->setLayerCount(1);
     texture->textureResource->setNumOfMips(texture->mipCount);
-    ENQUEUE_COMMAND(InitImGuiFontTextureAtlas,
+    ENQUEUE_COMMAND_NODEBUG(InitImGuiFontTextureAtlas,
         {
             texture->textureResource->init();
             cmdList->copyToImage(texture->textureResource, texture->rawData);
@@ -84,7 +84,7 @@ void ImGuiFontTextureAtlas::init(ImGuiFontTextureAtlas* texture)
 void ImGuiFontTextureAtlas::destroy(ImGuiFontTextureAtlas* texture)
 {
     ImageResource* textureResource = texture->textureResource;
-    ENQUEUE_COMMAND(DestroyImGuiFontTextureAtlas,
+    ENQUEUE_COMMAND_NODEBUG(DestroyImGuiFontTextureAtlas,
         {
             textureResource->release();
             delete textureResource;

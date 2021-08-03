@@ -253,6 +253,9 @@
     <Filter Include="Visualizers">
       <UniqueIdentifier>{a10a371c-bd96-45f0-81ec-699ff2fdedef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\RenderInterface\Shaders\EngineShaders\IBL">
+      <UniqueIdentifier>{293c4175-9e2a-4191-b534-bac72895bcfa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -623,6 +626,15 @@
     </ClCompile>
     <ClCompile Include="Editor\Core\ImGui\ImGuiLib\implot_items.cpp">
       <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\HDRIToCube.cpp">
+      <Filter>Source Files\RenderInterface\Shaders\EngineShaders\IBL</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\AssetLoader\CubeMapLoader.cpp">
+      <Filter>Source Files\Assets\AssetLoader</Filter>
+    </ClCompile>
+    <ClCompile Include="Assets\AssetLoader\StbWrapper.cpp">
+      <Filter>Source Files\Assets\AssetLoader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1120,6 +1132,9 @@
     </ClInclude>
     <ClInclude Include="Editor\Core\ImGui\ImGuiLib\implot_internal.h">
       <Filter>Source Files\Editor\Core\ImGui\ImGuiLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\AssetLoader\StbWrapper.h">
+      <Filter>Source Files\Assets\AssetLoader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -57,7 +57,7 @@ public:
     const RenderApi* getRenderApi() const { return &renderingApi; }
 
     template <typename RenderCmdClass>
-    static void issueRenderCommand(typename RenderCmdClass::RenderCmdFunc renderCommandFn);
+    static void issueRenderCommand(typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
 };
 
 class GameEngineWrapper final
@@ -101,7 +101,7 @@ public:
 inline GameEngineWrapper gEngine;
 
 template <typename RenderCmdClass>
-void GameEngine::issueRenderCommand(typename RenderCmdClass::RenderCmdFunc renderCommandFn)
+void GameEngine::issueRenderCommand(typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
 {
-    RenderApi::issueRenderCommand<RenderCmdClass>(&gEngine->renderingApi, renderCommandFn);
+    RenderApi::issueRenderCommand<RenderCmdClass>(&gEngine->renderingApi, std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn));
 }

@@ -166,7 +166,7 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*=
         return;
     }
 
-    dword readBufferSize = 10 * 1024 * 1024;// 10MB
+    const dword readBufferSize = 10 * 1024 * 1024;// 10MB
 
     uint64 filePointerCache = filePointer();
     uint64 availableSizeCanRead = (fileSize() - filePointerCache);
@@ -176,8 +176,10 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*=
 
     uint64 filePointerOffset = 0;
     dword bytesLastRead = 0;
-    while (bytesLeftToRead > 0) {
-        ReadFile(getFileHandleRaw(), readTo.data(), bytesLeftToRead > readBufferSize ? readBufferSize : bytesLeftToRead
+    while (bytesLeftToRead > 0) 
+    {
+        ReadFile(getFileHandleRaw(), readTo.data() + filePointerOffset, (bytesLeftToRead > readBufferSize)
+            ? readBufferSize : bytesLeftToRead
             , &bytesLastRead, nullptr);
 
         bytesLeftToRead -= bytesLastRead;
@@ -188,7 +190,7 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*=
     seek(filePointerCache);
 }
 
-void WindowsFile::write(const std::vector<uint8>& writeBytes) const
+void WindowsFile::write(const ArrayView<uint8>& writeBytes) const
 {
     if (!getFileHandleRaw() || (fileFlags & EFileFlags::Write) == 0) {
         return;
@@ -197,7 +199,7 @@ void WindowsFile::write(const std::vector<uint8>& writeBytes) const
     std::vector<uint8>::size_type sizeLeft = writeBytes.size();
     const uint8* pData = writeBytes.data();
 
-    uint32 writeBufferSize = 5 * 1024 * 1024;// 5MB
+    const uint32 writeBufferSize = 5 * 1024 * 1024;// 5MB
     dword bytesWritten = 0;
     uint64 writeFrom = 0;
 
@@ -206,30 +208,6 @@ void WindowsFile::write(const std::vector<uint8>& writeBytes) const
     {
         writeSize = writeBufferSize > sizeLeft ? (uint32)sizeLeft : writeBufferSize;
         WriteFile(getFileHandleRaw(), pData + writeFrom, writeSize, &bytesWritten, nullptr);
-
-        writeFrom += bytesWritten;
-        sizeLeft -= bytesWritten;
-        bytesWritten = 0;
-    }
-}
-
-void WindowsFile::write(const uint8* writeBytes, uint64 count) const
-{
-    if (!getFileHandleRaw() || (fileFlags & EFileFlags::Write) == 0) {
-        return;
-    }
-
-    uint64 sizeLeft = count;
-
-    uint32 writeBufferSize = 5 * 1024 * 1024;// 5MB
-    dword bytesWritten = 0;
-    uint64 writeFrom = 0;
-
-    uint32 writeSize = writeBufferSize;
-    while (sizeLeft > 0)
-    {
-        writeSize = writeBufferSize > sizeLeft ? (uint32)sizeLeft : writeBufferSize;
-        WriteFile(getFileHandleRaw(), writeBytes + writeFrom, writeSize, &bytesWritten, nullptr);
 
         writeFrom += bytesWritten;
         sizeLeft -= bytesWritten;

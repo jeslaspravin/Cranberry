@@ -390,10 +390,11 @@ void ImGuiManager::setupRendering()
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
     // Using surface size
     io.DisplaySize = Vector2D(float(EngineSettings::surfaceSize.get().x), float(EngineSettings::surfaceSize.get().y));
-    textureResizedHnd = EngineSettings::surfaceSize.onConfigChanged().bindLambda(LambdaFunction<void, Size2D, Size2D>([&io](Size2D oldSize, Size2D newSize)
+    textureResizedHnd = EngineSettings::surfaceSize.onConfigChanged().bindLambda({ 
+        [&io](Size2D oldSize, Size2D newSize)
         {
             io.DisplaySize = Vector2D(float(newSize.x), float(newSize.y));
-        }));
+        }});
     // Using screen size
     //io.DisplaySize = Vector2D(float(EngineSettings::screenSize.get().x), float(EngineSettings::screenSize.get().y));
     //textureResizedHnd = EngineSettings::screenSize.onConfigChanged().bindLambda(LambdaFunction<void, Size2D, Size2D>([&io](Size2D oldSize, Size2D newSize)
@@ -415,7 +416,7 @@ void ImGuiManager::setupRendering()
         textureParams.owningContext = context;
         textureAtlas = TextureBase::createTexture<ImGuiFontTextureAtlas>(textureParams);
 
-        ENQUEUE_COMMAND(CreateSampler, LAMBDA_BODY(
+        ENQUEUE_COMMAND_NODEBUG(CreateSampler, LAMBDA_BODY(
             textureSampler = GraphicsHelper::createSampler(graphicsInstance, "ImGuiFontAtlasSampler", ESamplerTilingMode::EdgeClamp, ESamplerFiltering::Linear);
         ), this);
     }
@@ -423,7 +424,7 @@ void ImGuiManager::setupRendering()
 
 void ImGuiManager::releaseRendering()
 {
-    ENQUEUE_COMMAND(ReleaseImGui, LAMBDA_BODY(
+    ENQUEUE_COMMAND_NODEBUG(ReleaseImGui, LAMBDA_BODY(
         if (textureAtlas)
         {
             TextureBase::destroyTexture<ImGuiFontTextureAtlas>(textureAtlas);

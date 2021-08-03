@@ -31,10 +31,17 @@ public:
     virtual void execute(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance) = 0;
 };
 
+
+template<typename CommandType, typename LambdaType>
+void issueRenderCommand(LambdaType&& lambdaFunc)
+{
+    GameEngine::issueRenderCommand<CommandType>(typename CommandType::RenderCmdFunc(lambdaFunc));
+};
+
 // LambdaBody must be followed by all capture arguments
 #define LAMBDA_BODY(...) { __VA_ARGS__ }
 
-#define ENQUEUE_COMMAND(CommandName, LambdaBody, ...) \
+#define ENQUEUE_COMMAND(CommandName) \
 class CommandName##_RenderCommand final : public IRenderCommand \
 { \
 public: \
@@ -42,8 +49,8 @@ public: \
 private: \
     RenderCmdFunc renderCmd; \
 public: \
-    CommandName##_RenderCommand(RenderCmdFunc lambdaFunc) \
-        : renderCmd(lambdaFunc) \
+    CommandName##_RenderCommand(RenderCmdFunc &&lambdaFunc) \
+        : renderCmd(std::forward<RenderCmdFunc>(lambdaFunc)) \
     {} \
     \
     void execute(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance) override \
@@ -51,7 +58,12 @@ public: \
         renderCmd(cmdList, graphicsInstance); \
     } \
 }; \
-GameEngine::issueRenderCommand<CommandName##_RenderCommand>({ [ ##__VA_ARGS__## ](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)##LambdaBody })
+::issueRenderCommand<CommandName##_RenderCommand>
+
+
+#define ENQUEUE_COMMAND_NODEBUG(CommandName, LambdaBody, ...) \
+    ENQUEUE_COMMAND(CommandName) \
+    ([ ##__VA_ARGS__## ](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)##LambdaBody )
 
 #define SCOPED_CMD_MARKER(CmdList,CommandBuffer,Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, #Name)
 #define SCOPED_CMD_COLORMARKER(CmdList,CommandBuffer,Name,Color) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, #Name, Color)
@@ -96,7 +108,7 @@ struct CopyPixelsToImageInfo
 struct CopyImageInfo
 {
     // Offset and extent for MIP base rest will be calculated automatically
-    Size3D offset;
+    Size3D offset{ 0 };
     Size3D extent;
 
     ImageSubresource subres;
@@ -172,6 +184,8 @@ public:
     ///////////////////////////////////////////////////////////////////////////////
 
     virtual void cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer, ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) = 0;
+    // Transitions the layout of image to general identified usage, for color/depth attachments sample read will be after transition layout
+    virtual void cmdTransitionLayouts(const GraphicsResource* cmdBuffer, const std::vector<ImageResource*>& images) = 0;
 
     virtual void cmdClearImage(const GraphicsResource* cmdBuffer, ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources) = 0;
     virtual void cmdClearDepth(const GraphicsResource* cmdBuffer, ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources) = 0;
@@ -222,6 +236,7 @@ public:
 
     // Waits until GPU is idle
     virtual void waitIdle() = 0;
+    virtual void flushAllcommands() = 0;
 };
 
 template<typename BufferDataType>

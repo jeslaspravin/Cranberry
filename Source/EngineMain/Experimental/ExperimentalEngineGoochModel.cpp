@@ -768,7 +768,7 @@ void ExperimentalEngine::createPipelineResources()
 {
     clearValues.colors.resize(drawSmPipelineContext.getFb()->textures.size(), LinearColorConst::BLACK);
 
-    ENQUEUE_COMMAND(QuadVerticesInit,LAMBDA_BODY
+    ENQUEUE_COMMAND_NODEBUG(QuadVerticesInit,LAMBDA_BODY
         (
             const std::array<Vector3D, 3> quadVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
             const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
@@ -791,7 +791,7 @@ void ExperimentalEngine::createPipelineResources()
 
 void ExperimentalEngine::destroyPipelineResources()
 {
-    ENQUEUE_COMMAND(QuadVerticesRelease,LAMBDA_BODY
+    ENQUEUE_COMMAND_NODEBUG(QuadVerticesRelease,LAMBDA_BODY
         (
             quadVertexBuffer->release();
             quadIndexBuffer->release();
@@ -871,7 +871,7 @@ void ExperimentalEngine::onStartUp()
 {
     GameEngine::onStartUp();
 
-    ENQUEUE_COMMAND(EngineStartUp, { startUpRenderInit(); }, this);
+    ENQUEUE_COMMAND_NODEBUG(EngineStartUp, { startUpRenderInit(); }, this);
 
     camera.cameraProjection = projection;
     camera.setOrthoSize({ 1280,720 });
@@ -908,7 +908,7 @@ void ExperimentalEngine::startUpRenderInit()
 
 void ExperimentalEngine::onQuit()
 {
-    ENQUEUE_COMMAND(EngineQuit, { renderQuit(); }, this);
+    ENQUEUE_COMMAND_NODEBUG(EngineQuit, { renderQuit(); }, this);
 
     getRenderApi()->getImGuiManager()->removeLayer(this);
     GameEngine::onQuit();
@@ -1185,7 +1185,7 @@ void ExperimentalEngine::tickEngine()
 
     if (renderSize != EngineSettings::screenSize.get())
     {
-        ENQUEUE_COMMAND(WritingDescs,
+        ENQUEUE_COMMAND_NODEBUG(WritingDescs,
             {
                 GlobalBuffers::onScreenResized(renderSize);
                 resizeLightingRts(renderSize);
@@ -1194,7 +1194,7 @@ void ExperimentalEngine::tickEngine()
             }, this);
     }
 
-    ENQUEUE_COMMAND(TickFrame,
+    ENQUEUE_COMMAND_NODEBUG(TickFrame,
         {
             updateShaderParameters(cmdList, graphicsInstance);
             frameRender(cmdList, graphicsInstance); 

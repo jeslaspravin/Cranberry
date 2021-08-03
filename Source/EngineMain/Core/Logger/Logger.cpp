@@ -1,5 +1,6 @@
 #include "Logger.h"
 #include "../Platform/LFS/PlatformLFS.h"
+
 #include <sstream>
 #include <cstdarg>
 
@@ -78,7 +79,7 @@ void Logger::flushStream()
     if (!str.empty() && logFile && logFile->openOrCreate())
     {
         logFile->seekEnd();
-        logFile->write(reinterpret_cast<const uint8*>(str.data()), str.length());
+        logFile->write(ArrayView<uint8>(reinterpret_cast<uint8*>(str.data()), uint32(str.length())));
         loggerBuffer().flush();
         logFile->closeFile();
     }

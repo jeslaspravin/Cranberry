@@ -172,7 +172,8 @@ struct ClassFunction<true, ClassType, ReturnType, Parameters...> {
 
 
 template <typename ReturnType, typename... Parameters>
-struct LambdaFunction {
+struct LambdaFunction
+{
 
     typedef std::function<ReturnType(Parameters...)> LambdaDelegate;
 
@@ -180,23 +181,25 @@ struct LambdaFunction {
 
     // Class default constructors and operators
     LambdaFunction() = default;
-    LambdaFunction(const LambdaFunction & otherFuncPtr)
+    LambdaFunction(const LambdaFunction &otherFuncPtr)
         : lambdaDelegate(otherFuncPtr.lambdaDelegate)
     {}
-    void operator=(const LambdaFunction & otherFuncPtr)
-    {
-        lambdaDelegate = otherFuncPtr.lambdaDelegate;
-    }
-    LambdaFunction(LambdaFunction && otherFuncPtr)
+    LambdaFunction(LambdaFunction &&otherFuncPtr)
         : lambdaDelegate(std::move(otherFuncPtr.lambdaDelegate))
     {
         otherFuncPtr.lambdaDelegate = nullptr;
     }
-    void operator=(LambdaFunction && otherFuncPtr)
+
+    void operator=(const LambdaFunction& otherFuncPtr)
+    {
+        lambdaDelegate = otherFuncPtr.lambdaDelegate;
+    }
+    void operator=(LambdaFunction &&otherFuncPtr)
     {
         lambdaDelegate = std::move(otherFuncPtr.lambdaDelegate);
         otherFuncPtr.lambdaDelegate = nullptr;
     }
+
     bool operator==(const LambdaFunction& otherFuncPtr)
     {
         return lambdaDelegate == otherFuncPtr.lambdaDelegate;
@@ -207,9 +210,18 @@ struct LambdaFunction {
         : lambdaDelegate(functionPointer)
     {}
 
+    LambdaFunction(LambdaDelegate &&functionPointer)
+        : lambdaDelegate(std::forward<LambdaDelegate>(functionPointer))
+    {}
+
     void operator=(const LambdaDelegate& functionPointer)
     {
         lambdaDelegate = functionPointer;
+    }
+
+    void operator=(LambdaDelegate &&functionPointer)
+    {
+        lambdaDelegate = std::forward<LambdaDelegate>(functionPointer);
     }
 
     ReturnType operator()(Parameters... params) const

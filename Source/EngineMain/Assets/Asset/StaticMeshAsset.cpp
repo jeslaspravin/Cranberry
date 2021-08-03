@@ -7,7 +7,7 @@
 
 void StaticMeshAsset::initAsset()
 {
-    ENQUEUE_COMMAND(InitializeSMVertices, LAMBDA_BODY
+    ENQUEUE_COMMAND_NODEBUG(InitializeSMVertices, LAMBDA_BODY
         (
             vertexBuffer = new GraphicsVertexBuffer(EVertexType::vertexParamInfo<EVertexType::StaticMesh>()[0]->paramStride()
                 , uint32(vertices.size()));
@@ -23,7 +23,7 @@ void StaticMeshAsset::initAsset()
         , this);
 
 #if _DEBUG
-    ENQUEUE_COMMAND(InitializeSMTbnVertices, LAMBDA_BODY
+    ENQUEUE_COMMAND_NODEBUG(InitializeSMTbnVertices, LAMBDA_BODY
     (
         tbnVertexBuffer = new GraphicsVertexBuffer(sizeof(TbnLinePoint), uint32(tbnVerts.size()));
         tbnVertexBuffer->setResourceName(assetHeader.assetName + "_TbnVertexBuffer");
@@ -36,7 +36,7 @@ void StaticMeshAsset::initAsset()
 
 void StaticMeshAsset::clearAsset()
 {
-    ENQUEUE_COMMAND(ClearSMVertices,
+    ENQUEUE_COMMAND_NODEBUG(ClearSMVertices,
         { 
             vertexBuffer->release();
             delete vertexBuffer;
@@ -46,7 +46,7 @@ void StaticMeshAsset::clearAsset()
     , this);
 
 #if _DEBUG
-    ENQUEUE_COMMAND(InitializeSMTbnVertices, LAMBDA_BODY
+    ENQUEUE_COMMAND_NODEBUG(InitializeSMTbnVertices, LAMBDA_BODY
     (
         tbnVertexBuffer->release();
         delete tbnVertexBuffer;

@@ -107,6 +107,7 @@ public:
     void endCmdBuffer(const GraphicsResource* cmdBuffer);
     void cmdFinished(const GraphicsResource* cmdBuffer, VulkanResourcesTracker* resourceTracker);
     void cmdFinished(const String& cmdName, VulkanResourcesTracker* resourceTracker);
+    void finishAllSubmited(VulkanResourcesTracker* resourceTracker);
     void freeCmdBuffer(const GraphicsResource* cmdBuffer);
 
     VkCommandBuffer getRawBuffer(const GraphicsResource* cmdBuffer) const;
@@ -168,6 +169,7 @@ public:
 private:
 
     std::map<const MemoryResource*, ResourceAccessors> resourcesAccessors;
+    // Render pass attachments auto transfer layouts so it will need to put barrier only after transfer
     std::map<const ImageResource*, ResourceAccessors> renderpassAttachments;
 
     using CmdWaitInfoMap = std::map<const GraphicsResource*, std::vector<CommandResUsageInfo>>;
@@ -206,4 +208,6 @@ public:
         , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
     std::optional<ResourceBarrierInfo> writeTexels(const GraphicsResource* cmdBuffer
         , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource);
+
+    std::optional<ResourceBarrierInfo> imageToGeneralLayout(const GraphicsResource* cmdBuffer, const ImageResource* resource);
 };

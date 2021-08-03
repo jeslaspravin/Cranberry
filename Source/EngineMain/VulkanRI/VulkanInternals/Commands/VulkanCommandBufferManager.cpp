@@ -433,7 +433,8 @@ void VulkanCmdBufferManager::cmdFinished(const GraphicsResource* cmdBuffer, Vulk
 void VulkanCmdBufferManager::cmdFinished(const String& cmdName, VulkanResourcesTracker* resourceTracker)
 {
     auto cmdBufferItr = commandBuffers.find(cmdName);
-    if (cmdBufferItr != commandBuffers.end())
+    // If submitted then only it can be finished in queue
+    if (cmdBufferItr != commandBuffers.end() && cmdBufferItr->second.cmdState == ECmdState::Submitted)
     {
         VulkanCmdSubmitSyncInfo& syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
         if (!syncInfo.bIsAdvancedSubmit && syncInfo.completeFence)
@@ -464,6 +465,23 @@ void VulkanCmdBufferManager::cmdFinished(const String& cmdName, VulkanResourcesT
         }
         cmdBufferItr->second.cmdSyncInfoIdx = -1;
         cmdBufferItr->second.cmdState = ECmdState::Recorded;
+    }
+}
+
+void VulkanCmdBufferManager::finishAllSubmited(VulkanResourcesTracker* resourceTracker)
+{
+    for (const std::pair<const String, VulkanCmdBufferState>& cmd : commandBuffers)
+    {
+        if (cmd.second.cmdState == ECmdState::Submitted)
+        {
+            VulkanCmdSubmitSyncInfo& syncInfo = cmdsSyncInfo[cmd.second.cmdSyncInfoIdx];
+            // If advanced submit then finishing won't wait so wait here
+            if (syncInfo.bIsAdvancedSubmit && !syncInfo.completeFence->isSignaled())
+            {
+                syncInfo.completeFence->waitForSignal();
+            }
+            cmdFinished(cmd.second.cmdBuffer->getResourceName(), resourceTracker);
+        }
     }
 }
 
@@ -1430,4 +1448,22 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     , const std::pair<const MemoryResource*, VkPipelineStageFlags>& resource)
 {
     return writeReadOnlyBuffers(cmdBuffer, resource);
+}
+
+std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource* cmdBuffer, const ImageResource* resource)
+{
+    std::optional<ResourceBarrierInfo> outBarrierInfo;
+
+    auto accessorsItr = resourcesAccessors.find(resource);
+    if (accessorsItr->second.lastWrite || !accessorsItr->second.lastReadsIn.empty())
+    {
+        outBarrierInfo = ResourceBarrierInfo();
+        outBarrierInfo->accessors = accessorsItr->second;
+        outBarrierInfo->resource = resource;
+    }
+    accessorsItr->second.allReadStages = accessorsItr->second.lastReadStages = 0;
+    accessorsItr->second.lastReadsIn.clear();
+    accessorsItr->second.lastWrite = nullptr;
+
+    return outBarrierInfo;
 }

@@ -49,9 +49,51 @@ bool DescriptorsSetQueryLessThan::operator()(const DescriptorsSetQuery& lhs, con
     auto lhsEnd = lhs.supportedTypes.cend();
     auto rhsItr = rhs.supportedTypes.cbegin();
     auto rhsEnd = rhs.supportedTypes.cend();
-    return lhs.supportedTypes.size() < rhs.supportedTypes.size() || recursivelyCompare(lhsItr, lhsEnd, rhsItr, rhsEnd);
+    // If lhs is small in count then its largest must be smaller than rhs largest to be considered to be smaller than rhs
+    if (lhs.supportedTypes.size() < rhs.supportedTypes.size())
+    {
+        return (--lhsEnd)->type < (--rhsEnd)->type;
+    }
+    return recursivelyCompare(lhsItr, lhsEnd, rhsItr, rhsEnd);
 }
 
+std::vector<VulkanDescriptorsSetAllocatorInfo*> VulkanDescriptorsSetAllocator::findInAvailablePool(const DescriptorsSetQuery& query)
+{
+    std::vector<VulkanDescriptorsSetAllocatorInfo*> allocationPools;
+
+    auto allocationPoolsItr = availablePools.find(query);
+    if (allocationPoolsItr != availablePools.end())
+    {
+        std::vector<VkDescriptorPoolSize> outSet;
+        outSet.resize(Math::min(query.supportedTypes.size(), allocationPoolsItr->first.supportedTypes.size()));
+        auto outEndItr = std::set_intersection(
+            query.supportedTypes.cbegin(), query.supportedTypes.cend()
+            , allocationPoolsItr->first.supportedTypes.cbegin(), allocationPoolsItr->first.supportedTypes.cend()
+            , outSet.begin(),
+            [](const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs)
+            {
+                return lhs.type < rhs.type;
+            });
+
+        if ((outEndItr - outSet.begin()) == query.supportedTypes.size())
+        {
+            for (VulkanDescriptorsSetAllocatorInfo& allocationPool : allocationPoolsItr->second)
+            {
+                bool bSatisfiesQuery = true;
+                for (const VkDescriptorPoolSize& reqDescriptor : query.supportedTypes)
+                {
+                    bSatisfiesQuery = bSatisfiesQuery && (allocationPool.typeCountMap.find(reqDescriptor.type) != allocationPool.typeCountMap.cend());
+                }
+
+                if (bSatisfiesQuery)
+                {
+                    allocationPools.emplace_back(&allocationPool);
+                }
+            }
+        }
+    }
+    return allocationPools;
+}
 
 bool VulkanDescriptorsSetAllocator::isSupportedPool(std::vector<VkDescriptorSet>& availableSets, const VulkanDescriptorsSetAllocatorInfo& allocationPool, const DescriptorsSetQuery& query
     , const uint32& setsCount) const
@@ -149,7 +191,7 @@ VulkanDescriptorsSetAllocatorInfo& VulkanDescriptorsSetAllocator::createNewPool(
     descsSetPoolCreateInfo.maxSets = allocationPool.maxSets = Math::max(DESCRIPTORS_SET_POOL_MAX_SETS,setsCount);
     descsSetPoolCreateInfo.poolSizeCount = uint32(descriptorsSetPoolSizes.size());
     descsSetPoolCreateInfo.pPoolSizes = descriptorsSetPoolSizes.data();
-
+    
     auto queryDescPoolSizeItr = query.supportedTypes.cbegin();
     for (uint32 i = 0; i < descsSetPoolCreateInfo.poolSizeCount; ++i, ++queryDescPoolSizeItr)
     {
@@ -170,16 +212,16 @@ VulkanDescriptorsSetAllocatorInfo& VulkanDescriptorsSetAllocator::findOrCreateAl
     size_t setsRequiredCount = setsCount;
 
     VulkanDescriptorsSetAllocatorInfo* allocationPool = nullptr;
-    auto allocationPoolsItr = availablePools.find(query);
-    if (allocationPoolsItr != availablePools.end())
+    std::vector<VulkanDescriptorsSetAllocatorInfo*> allocationPoolsFound = findInAvailablePool(query);
+    if (!allocationPoolsFound.empty())
     {
-        for (VulkanDescriptorsSetAllocatorInfo& availableAllocationInfo : allocationPoolsItr->second)
+        for (VulkanDescriptorsSetAllocatorInfo* availableAllocationInfo : allocationPoolsFound)
         {
             std::vector<VkDescriptorSet> tempSets;
-            if (isSupportedPool(tempSets, availableAllocationInfo, query, uint32(setsRequiredCount)))
+            if (isSupportedPool(tempSets, *availableAllocationInfo, query, uint32(setsRequiredCount)))
             {
                 Logger::debug("DescriptorsSetAllocator", "%s() : Found existing pool that supports query, obtained %d Descriptors set",__func__, uint32(tempSets.size()));
-                allocationPool = &availableAllocationInfo;
+                allocationPool = availableAllocationInfo;
                 // If pool has enough capacity to allocate then support will be true and sets returned will be 0
                 if (tempSets.empty())
                 {
@@ -193,12 +235,12 @@ VulkanDescriptorsSetAllocatorInfo& VulkanDescriptorsSetAllocator::findOrCreateAl
                 // Clearing the sets from available descriptors sets set
                 for (VkDescriptorSet& availableSet : tempSets)
                 {
-                    availableAllocationInfo.availableSets.erase(availableSet);
+                    availableAllocationInfo->availableSets.erase(availableSet);
                 }
             }
             if (setsRequiredCount <= 0)
             {
-                allocationPool = &availableAllocationInfo;
+                allocationPool = availableAllocationInfo;
                 setsRequiredCount = 0;
                 break;
             }
@@ -217,17 +259,17 @@ VulkanDescriptorsSetAllocatorInfo& VulkanDescriptorsSetAllocator::findOrCreateAl
 VulkanDescriptorsSetAllocatorInfo& VulkanDescriptorsSetAllocator::findOrCreateAllocPool(const DescriptorsSetQuery& query, const uint32& setsCount)
 {
     VulkanDescriptorsSetAllocatorInfo* allocationPool = nullptr;
-    auto allocationPoolsItr = availablePools.find(query);
-    if (allocationPoolsItr != availablePools.end())
+    std::vector<VulkanDescriptorsSetAllocatorInfo*> allocationPoolsFound = findInAvailablePool(query);
+    if (!allocationPoolsFound.empty())
     {
-        for (VulkanDescriptorsSetAllocatorInfo& availableAllocationInfo : allocationPoolsItr->second)
+        for (VulkanDescriptorsSetAllocatorInfo* availableAllocationInfo : allocationPoolsFound)
         {
             std::vector<VkDescriptorSet> tempSets;
             // If pool has enough capacity to allocate then support will be true
-            if (isSupportedPool(tempSets, availableAllocationInfo, query, setsCount) && tempSets.empty())
+            if (isSupportedPool(tempSets, *availableAllocationInfo, query, setsCount) && tempSets.empty())
             {
                 Logger::debug("DescriptorsSetAllocator", "%s() : Found existing pool that supports query", __func__);
-                allocationPool = &availableAllocationInfo;
+                allocationPool = availableAllocationInfo;
                 break;
             }
         }

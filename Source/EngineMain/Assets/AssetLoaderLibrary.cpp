@@ -17,5 +17,9 @@ EAssetType::Type AssetLoaderLibrary::typeFromAssetPath(const String& assetPath)
     {
         return EAssetType::Texture2D;
     }
+    else if (std::strcmp(extensionChar, "hdr") == 0)
+    {
+        return EAssetType::CubeMap;
+    }
     return EAssetType::InvalidType;
 }
