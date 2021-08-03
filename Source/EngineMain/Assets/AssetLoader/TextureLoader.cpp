@@ -1,21 +1,66 @@
 #include "TextureLoader.h"
+#include "StbWrapper.h"
 #include "../AssetLoaderLibrary.h"
 #include "../Asset/TextureAsset.h"
 #include "../../Core/Types/Colors.h"
 #include "../../Core/Platform/LFS/PlatformLFS.h"
-#include "../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../Core/Math/Math.h"
 #include "../../Core/Types/Textures/ImageUtils.h"
+#include "../../Core/Logger/Logger.h"
 
-#if _DEBUG
-#define STBI_FAILURE_USERMSG
-#elif _NDEBUG
-#define STBI_NO_FAILURE_STRINGS
-#endif
-#define STBI_ASSERT(x) debugAssert(x);
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
 #include <array>
+TextureLoader::TextureLoader(const String& texturePath)
+    : bIsNormal(false)
+{
+    PlatformFile textureFile(texturePath);
+    textureFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
+    textureName = FileSystemFunctions::stripExtension(textureFile.getFileName(), textureName);// Extension is passed in as dummy(same textureName)
+    if (textureFile.exists() && textureFile.openFile())
+    {
+        std::vector<uint8> fileData;
+        textureFile.read(fileData);
+        textureFile.closeFile();
+
+        int32 dimX;
+        int32 dimY;
+        uint8* texelData = STB::loadFromMemory(fileData.data(), int32(fileData.size()), &dimX, &dimY, &channelsCount, CHANNEL_NUM);
+
+        if (texelData == nullptr)
+        {
+            Logger::error("Texture Loader", "%s() : Failed loading image[%s] - %s", __func__, textureName.getChar(), STB::lastFailure());
+            bLoaded = false;
+        }
+        else
+        {
+            textureDimension.x = uint32(dimX);
+            textureDimension.y = uint32(dimY);
+
+            int32 pixelsCount = dimY * dimX;
+
+            bIsNormal = isNormalTexture(texelData);
+
+            textureTexelData.resize(pixelsCount);
+            memcpy(textureTexelData.data(), texelData, pixelsCount * CHANNEL_NUM);
+
+            // If normal we are inverting x value to account for flip of texture in u channel along tangent axis
+            if (bIsNormal)
+            {
+                for (int32 i = 0; i < pixelsCount; ++i)
+                {
+                    textureTexelData[i].setR(uint8(Math::clamp(255 - textureTexelData[i].r(), 0, 255)));
+                }
+            }
+            bLoaded = true;
+
+            STB::deallocStbBuffer(texelData);
+        }
+    }
+    else
+    {
+        Logger::error("Texture Loader", "%s() : Failed opening texture file - %s", __func__, textureFile.getFileName().getChar());
+        bLoaded = false;
+    }
+}
 
 bool TextureLoader::isNormalTexture(const uint8* texels) const
 {
@@ -56,7 +101,7 @@ bool TextureLoader::isNormalTexture(const uint8* texels) const
     {
         isNormal = true;
         Logger::log("Texture Loader", "%s() : Texture %s with Max Red Green lum %u Max RG weight %0.3f, Max Blue lum %u Max B weight %0.3f is determined as normal texture"
-            , __func__ , textureName.getChar()
+            , __func__, textureName.getChar()
             , rgMaxLum, rgMaxWeight, blueMaxLum, blueMaxWeight);
     }
 
@@ -83,7 +128,7 @@ bool TextureLoader::isNormalTexture(const uint8* texels) const
     }
 #endif
 
-    
+
     if (!isNormal && textureName.endsWith("_N", false))
     {
         isNormal = true;
@@ -91,70 +136,6 @@ bool TextureLoader::isNormalTexture(const uint8* texels) const
     }
     return isNormal;
 }
-
-TextureLoader::TextureLoader(const String& texturePath)
-    : bIsNormal(false)
-{
-    PlatformFile textureFile(texturePath);
-    textureFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
-    textureName = FileSystemFunctions::stripExtension(textureFile.getFileName(), textureName);// Extension is passed in as dummy(same textureName)
-    if (textureFile.exists() && textureFile.openFile())
-    {
-        std::vector<uint8> fileData;
-        textureFile.read(fileData);
-        textureFile.closeFile();
-
-        int32 dimX;
-        int32 dimY;
-        uint8* texelData = stbi_load_from_memory(fileData.data(), int32(fileData.size()), &dimX, &dimY, &channelsCount, CHANNEL_NUM);
-
-        if (texelData == nullptr)
-        {
-            Logger::error("Texture Loader", "%s() : Failed loading image - %s", __func__, stbi_failure_reason());
-            bLoaded = false;
-        }
-        else
-        {
-            textureDimension.x = uint32(dimX);
-            textureDimension.y = uint32(dimY);
-
-            int32 pixelsCount = dimY * dimX;
-
-            bIsNormal = isNormalTexture(texelData);
-
-            textureTexelData.resize(pixelsCount);
-            // If normal we are inverting x value to account for flip of texture in u channel along tangent axis
-            if (bIsNormal)
-            {
-                for (int32 i = 0; i < pixelsCount; ++i)
-                {
-                    int32 pixelStart = i * CHANNEL_NUM;
-                    textureTexelData[i] = Color(uint8(Math::clamp(255 - texelData[pixelStart], 0, 255)), texelData[pixelStart + 1], texelData[pixelStart + 2], texelData[pixelStart + 3]);
-                }
-            }
-            else
-            {
-                for (int32 i = 0; i < pixelsCount; ++i)
-                {
-                    int32 pixelStart = i * CHANNEL_NUM;
-                    textureTexelData[i] = Color(texelData[pixelStart], texelData[pixelStart + 1], texelData[pixelStart + 2], texelData[pixelStart + 3]);
-                }
-            }
-            bLoaded = true;
-
-            stbi_image_free(texelData);
-        }
-    }
-    else
-    {
-        Logger::error("Texture Loader", "%s() : Failed opening texture file - %s", __func__, textureFile.getFileName().getChar());
-        bLoaded = false;
-    }
-}
-#undef STBI_NO_FAILURE_STRINGS
-#undef STBI_FAILURE_USERMSG
-#undef STB_IMAGE_IMPLEMENTATION
-#undef STBI_ASSERT
 
 void TextureLoader::fillTextureAsset(TextureAsset* textureAsset) const
 {

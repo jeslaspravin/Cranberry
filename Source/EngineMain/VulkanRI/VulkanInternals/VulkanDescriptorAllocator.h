@@ -52,6 +52,7 @@ private:
     VulkanDescriptorsSetAllocatorInfo globalPool;
 
     std::map<DescriptorsSetQuery, std::vector<VulkanDescriptorsSetAllocatorInfo>, DescriptorsSetQueryLessThan> availablePools;
+    std::vector<VulkanDescriptorsSetAllocatorInfo*> findInAvailablePool(const DescriptorsSetQuery& query);
 
     bool isSupportedPool(std::vector<VkDescriptorSet>& availableSets, const VulkanDescriptorsSetAllocatorInfo& allocationPool, const DescriptorsSetQuery& query, const uint32& setsCount) const;
     VkDescriptorSet allocateSetFromPool(VulkanDescriptorsSetAllocatorInfo& allocationPool, const VkDescriptorSetLayout& descriptorsSetLayout) const;

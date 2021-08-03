@@ -24,3 +24,19 @@ public:
     void setAssetName(const String& name);
     const String& assetName() const;
 };
+
+template <bool bAscending>
+struct SortAssetByName
+{
+    constexpr bool operator()(const AssetBase* lhs, const AssetBase* rhs) const
+    {
+        if constexpr (bAscending)
+        {
+            return lhs->assetName() < rhs->assetName();
+        }
+        else
+        {
+            return lhs->assetName() > rhs->assetName();
+        }
+    }
+};

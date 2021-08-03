@@ -67,7 +67,7 @@ void RenderTargetTexture::reinitResources()
         textureResource->setImageSize(textureSize);
         textureResource->setNumOfMips(mipCount);
         textureResource->setResourceName(textureName);
-        ENQUEUE_COMMAND(RtReinitTexture,
+        ENQUEUE_COMMAND_NODEBUG(RtReinitTexture,
             {
                 rtResource->reinitResources();
                 cmdList->setupInitialLayout(rtResource);
@@ -146,7 +146,7 @@ void RenderTargetTexture::init(RenderTargetTexture* texture)
         texture->textureResource->setNumOfMips(texture->mipCount);
     }
 
-    ENQUEUE_COMMAND(RtInitTexture,
+    ENQUEUE_COMMAND_NODEBUG(RtInitTexture,
         {
             texture->rtResource->init();
             cmdList->setupInitialLayout(texture->rtResource);
@@ -162,7 +162,7 @@ void RenderTargetTexture::release(RenderTargetTexture* texture)
 {
     ImageResource* rtResource = texture->rtResource;
     ImageResource* textureResource = texture->textureResource;
-    ENQUEUE_COMMAND(RtDestroyTexture,
+    ENQUEUE_COMMAND_NODEBUG(RtDestroyTexture,
         {
             textureResource->release();
             rtResource->release();

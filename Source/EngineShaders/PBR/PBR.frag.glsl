@@ -16,6 +16,7 @@ layout(set = 1, binding = 2) uniform sampler2D ssNormal;
 layout(set = 1, binding = 3) uniform sampler2D ssDepth;
 layout(set = 1, binding = 4) uniform sampler2D ssARM;
 layout(set = 1, binding = 5) uniform sampler2D ssColor;
+layout(set = 1, binding = 6) uniform samplerCube envMap;
 
 struct SpotLight
 {
@@ -114,6 +115,7 @@ void mainFS()
     f0 = mix(f0, unlitColor.xyz, arm.z);
 
     vec4 finalColor = texture(ssColor, inTextureCoord);
+    vec4 prevResolveColor = finalColor;
     // Spot light
     for(int i = 0; i < SPOT_COUNT; ++i)
     {
@@ -191,6 +193,13 @@ void mainFS()
 
         vec3 outColor = finalColor.xyz + (brdf * inLight);
 
+        // Env map
+        vec3 sampleDir = getWorldPosition(vec4(inNdcCoord, 1, 1)) - viewPos();
+        vec3 envColor = texture(envMap, ENGINE_WORLD_TO_CUBE_DIR(sampleDir)).xyz;
+        // Tonemap and Gamma correct
+        envColor = Uncharted2Tonemap(envColor, colorCorrection.exposure);
+        prevResolveColor = vec4(GAMMA_CORRECT(envColor, colorCorrection.gamma), 1);
+
         // Doing ambient light here
         outColor += (lightArray.dirLit.lightColor_lumen.xyz * arm.x * 0.04);
 
@@ -201,5 +210,5 @@ void mainFS()
         // finalColor = vec4(outColor, finalColor.w);
     }
 
-    colorAttachment0 = mix( texture(ssColor, inTextureCoord), finalColor, ceil(depth));
+    colorAttachment0 = depth == 0? prevResolveColor : finalColor;
 }

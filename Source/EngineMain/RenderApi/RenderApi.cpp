@@ -39,7 +39,7 @@ void RenderApi::initialize()
     renderCmds = IRenderCommandList::genericInstance();
     graphicsInstance->load();
 
-    ENQUEUE_COMMAND(InitRenderApi,
+    ENQUEUE_COMMAND_NODEBUG(InitRenderApi,
         {
             gEngine->appInstance().appWindowManager.initMain();
             graphicsInstance->loadSurfaceDependents();
@@ -62,7 +62,7 @@ void RenderApi::postInit()
 void RenderApi::destroy()
 {
     imGuiManager->release();
-    ENQUEUE_COMMAND(DestroyRenderApi,
+    ENQUEUE_COMMAND_NODEBUG(DestroyRenderApi,
         {
             globalContext->clearContext();
             GlobalBuffers::destroy();

@@ -1,5 +1,6 @@
 #pragma once
 #include "../../../String/String.h"
+#include "../../../Types/Containers/ArrayView.h"
 
 #include <memory>
 
@@ -88,8 +89,7 @@ public:
     virtual void offsetCursor(const int64& offset) const = 0;
 
     virtual void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const = 0;
-    virtual void write(const std::vector<uint8>& writeBytes) const = 0;
-    virtual void write(const uint8* writeBytes, uint64 count) const = 0;
+    virtual void write(const ArrayView<uint8>& writeBytes) const = 0;
 
     virtual bool deleteFile() = 0;
     virtual bool renameFile(String newName) = 0;

@@ -16,6 +16,13 @@ vec3 getWorldPosition(vec4 screenPos)
     return world.xyz;
 }
 
+vec3 getViewSpacePosition(vec4 screenPos)
+{
+    vec4 viewSpace = viewData.invProjection * screenPos;
+    viewSpace = viewSpace/viewSpace.w;
+    return viewSpace.xyz;
+}
+
 vec3 viewFwd()
 {
     return viewData.view[2].xyz;

@@ -35,6 +35,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{160411F8-2D91-49C9-AF1D-80E9E33AC675}"
 	ProjectSection(SolutionItems) = preProject
 		Source\EngineShaders\Common\CommonDefines.inl.glsl = Source\EngineShaders\Common\CommonDefines.inl.glsl
+		Source\EngineShaders\Common\CommonFunctions.inl.glsl = Source\EngineShaders\Common\CommonFunctions.inl.glsl
 		Source\EngineShaders\Common\ComputeCommon.inl.glsl = Source\EngineShaders\Common\ComputeCommon.inl.glsl
 		Source\EngineShaders\Common\ShaderOutputs.inl.glsl = Source\EngineShaders\Common\ShaderOutputs.inl.glsl
 		Source\EngineShaders\Common\ToneMapping.inl.glsl = Source\EngineShaders\Common\ToneMapping.inl.glsl
@@ -91,6 +92,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Drawing", "Drawing", "{967F
 		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerInstance.vert.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerInstance.vert.glsl
 		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.frag.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.frag.glsl
 		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.vert.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.vert.glsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IBL", "IBL", "{734BC010-258E-45A4-B3A1-27C025B6B892}"
+	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\PBR\IBL\HDRIToCube.comp.glsl = Source\EngineShaders\PBR\IBL\HDRIToCube.comp.glsl
 	EndProjectSection
 EndProject
 Global
@@ -158,6 +164,7 @@ Global
 		{A47C9719-D2A9-4830-8907-41FC9EFD2BA9} = {61CB758C-20C2-4897-9454-061721EF2C89}
 		{65CA28E9-881B-423D-8FF1-FBFD02C9BE8E} = {61CB758C-20C2-4897-9454-061721EF2C89}
 		{967F3DE2-EBC5-4357-AA40-C411E1B21738} = {F6883E7B-0E8B-4459-AD80-F28864E92906}
+		{734BC010-258E-45A4-B3A1-27C025B6B892} = {A47C9719-D2A9-4830-8907-41FC9EFD2BA9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D05BB706-1F92-4580-853D-B271284B97FA}

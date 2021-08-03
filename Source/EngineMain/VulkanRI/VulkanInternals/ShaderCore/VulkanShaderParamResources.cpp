@@ -563,7 +563,7 @@ void VulkanShaderSetParameters::init()
     }
 
     VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, bufferDescWrites, {});
-    ENQUEUE_COMMAND(FinalizeShaderParams, LAMBDA_BODY
+    ENQUEUE_COMMAND_NODEBUG(FinalizeShaderParams, LAMBDA_BODY
     (
         updateParams(cmdList, graphicsInstance);
     ), this);
@@ -803,7 +803,7 @@ void VulkanShaderParameters::init()
     }
 
     VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, bufferDescWrites, {});
-    ENQUEUE_COMMAND(FinalizeShaderParams, LAMBDA_BODY
+    ENQUEUE_COMMAND_NODEBUG(FinalizeShaderParams, LAMBDA_BODY
     (
         updateParams(cmdList, graphicsInstance);
     ), this);

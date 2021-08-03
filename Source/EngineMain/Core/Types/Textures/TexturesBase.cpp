@@ -26,7 +26,7 @@ void TextureBase::markResourceDirty()
     if (!bNeedsUpdate && textureResource)
     {
         bNeedsUpdate = true;
-        ENQUEUE_COMMAND(UpdateTexture,
+        ENQUEUE_COMMAND_NODEBUG(UpdateTexture,
             {
                 reinitResources();
                 bNeedsUpdate = false;

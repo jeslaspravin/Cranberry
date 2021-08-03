@@ -37,6 +37,13 @@ std::vector<AssetBase*> AssetManager::loadAsset(const AssetHeader& header)
         {
             loadedAssets.emplace_back(loadedTextureAsset);
         }
+        break;
+    case EAssetType::CubeMap:
+        if (AssetBase* loadedCubeMapAsset = AssetLoaderLibrary::loadCubeMap(header.assetPath))
+        {
+            loadedAssets.emplace_back(loadedCubeMapAsset);
+        }
+        break;
     case EAssetType::InvalidType:
     default:
         break;

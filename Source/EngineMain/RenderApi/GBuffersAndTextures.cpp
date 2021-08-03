@@ -123,11 +123,12 @@ FramebufferFormat::FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frame
 
 void GlobalBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
 {
-    ENQUEUE_COMMAND(GBufferSampleCountChange,LAMBDA_BODY
-        (
-            cmdList->waitIdle();
+    ENQUEUE_COMMAND(GBufferSampleCountChange)(
+        [newValue](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        {
+            cmdList->flushAllcommands();
 
-            const Size2D & screenSize = EngineSettings::screenSize.get();
+            const Size2D& screenSize = EngineSettings::screenSize.get();
             const EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(newValue);
             const bool bCanHaveResolves = sampleCount != EPixelSampleCount::SampleCount1;
 
@@ -167,15 +168,16 @@ void GlobalBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
                     initializeFb(framebufferData.framebuffer, screenSize);
                 }
             }
-        )
-    , newValue);
+        }
+    );
 }
 
 void GlobalBuffers::onScreenResized(Size2D newSize)
 {
-    ENQUEUE_COMMAND(GBufferResize,
+    ENQUEUE_COMMAND(GBufferResize)(
+        [newSize](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
-            cmdList->waitIdle();
+            cmdList->flushAllcommands();
 
             for (const std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
             {
@@ -196,14 +198,15 @@ void GlobalBuffers::onScreenResized(Size2D newSize)
                 }
             }
         }
-    , newSize);
+    );
 }
 
 void GlobalBuffers::onSurfaceResized(Size2D newSize)
 {
-    ENQUEUE_COMMAND(SwapchainResize,
+    ENQUEUE_COMMAND(SwapchainResize)(
+        [newSize](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
-            cmdList->waitIdle();
+            cmdList->flushAllcommands();
             const GenericWindowCanvas * windowCanvas = gEngine->getApplicationInstance()->appWindowManager
                 .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
 
@@ -214,7 +217,7 @@ void GlobalBuffers::onSurfaceResized(Size2D newSize)
                 ++swapchainIdx;
             }
         }
-    , newSize);
+    );
 }
 
 void GlobalBuffers::initialize()
@@ -278,7 +281,8 @@ void GlobalBuffers::initialize()
     }
 
     createTexture2Ds();
-    ENQUEUE_COMMAND(InitializeGlobalBuffers,
+    ENQUEUE_COMMAND(InitializeGlobalBuffers)(
+        [](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         { 
             createVertIndBuffers(cmdList, graphicsInstance);
         });
@@ -307,7 +311,8 @@ void GlobalBuffers::destroy()
     swapchainFbs.clear();
 
     destroyTexture2Ds();
-    ENQUEUE_COMMAND(DestroyGlobalBuffers,
+    ENQUEUE_COMMAND(DestroyGlobalBuffers)(
+        [](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             destroyVertIndBuffers(cmdList, graphicsInstance);
         });

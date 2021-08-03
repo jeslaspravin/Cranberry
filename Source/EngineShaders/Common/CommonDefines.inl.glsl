@@ -11,3 +11,5 @@
 #define UINT_BGRA_2_COLOR(packed) (vec4(((packed >> 16) & 0xFF) / 255.0f, ((packed >> 8) & 0xFF) / 255.0f, ((packed >> 0) & 0xFF) / 255.0f, ((packed >> 24) & 0xFF) / 255.0f))
 #define COLOR_2_UINT_RGBA(color) ((uint)((uint(color.a * 255) << 24) | (uint(color.b * 255) << 16) | (uint(color.g * 255) << 8)  | (uint(color.r * 255) << 0)))
 #define UINT_RGBA_2_COLOR(packed) (vec4(((packed >> 0) & 0xFF) / 255.0f, ((packed >> 8) & 0xFF) / 255.0f, ((packed >> 16) & 0xFF) / 255.0f, ((packed >> 24) & 0xFF) / 255.0f))
+
+#define ENGINE_WORLD_TO_CUBE_DIR(worldDir) ((worldDir).yzx)

@@ -23,8 +23,7 @@ public:
     void offsetCursor(const int64& offset) const override;
 
     void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const override;
-    void write(const std::vector<uint8>& writeBytes) const override;
-    void write(const uint8* writeBytes, uint64 count) const override;
+    void write(const ArrayView<uint8>& writeBytes) const override;
 
     bool deleteFile() override;
     bool renameFile(String newName) override;

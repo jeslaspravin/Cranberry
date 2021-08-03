@@ -233,7 +233,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Assets\AssetLoaderLibrary.cpp" />
+    <ClCompile Include="Assets\AssetLoader\CubeMapLoader.cpp" />
     <ClCompile Include="Assets\AssetLoader\StaticMeshLoader.cpp" />
+    <ClCompile Include="Assets\AssetLoader\StbWrapper.cpp" />
     <ClCompile Include="Assets\AssetLoader\TextureLoader.cpp" />
     <ClCompile Include="Assets\AssetsManager.cpp" />
     <ClCompile Include="Assets\Asset\AssetObject.cpp" />
@@ -328,6 +330,7 @@
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTextureShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\DefaultShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\HDRIToCube.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\PBRShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\TexturedShader.cpp" />
@@ -359,6 +362,7 @@
   <ItemGroup>
     <ClInclude Include="Assets\AssetLoaderLibrary.h" />
     <ClInclude Include="Assets\AssetLoader\StaticMeshLoader.h" />
+    <ClInclude Include="Assets\AssetLoader\StbWrapper.h" />
     <ClInclude Include="Assets\AssetLoader\TextureLoader.h" />
     <ClInclude Include="Assets\AssetsManager.h" />
     <ClInclude Include="Assets\Asset\AssetHeader.h" />

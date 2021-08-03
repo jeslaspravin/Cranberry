@@ -433,6 +433,11 @@ void VulkanCommandList::waitIdle()
     vDevice->vkDeviceWaitIdle(VulkanGraphicsHelper::getDevice(vDevice));
 }
 
+void VulkanCommandList::flushAllcommands()
+{
+    cmdBufferManager.finishAllSubmited(&resourcesTracker);
+}
+
 void VulkanCommandList::setupInitialLayout(ImageResource* image)
 {
     const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(image->imageFormat());
@@ -480,16 +485,24 @@ void VulkanCommandList::presentImage(const std::vector<class GenericWindowCanvas
 void VulkanCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer, ImageResource* src
     , ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo)
 {
+    CopyImageInfo srcInfoCpy = srcInfo;
+    CopyImageInfo dstInfoCpy = dstInfo;
+    // Make sure mips and layers never exceeds above max
+    srcInfoCpy.subres.mipCount = Math::min(srcInfoCpy.subres.mipCount, src->getNumOfMips());
+    srcInfoCpy.subres.layersCount = Math::min(srcInfoCpy.subres.layersCount, src->getLayerCount());
+    dstInfoCpy.subres.mipCount = Math::min(dstInfoCpy.subres.mipCount, dst->getNumOfMips());
+    dstInfoCpy.subres.layersCount = Math::min(dstInfoCpy.subres.layersCount, dst->getLayerCount());
+
     bool bCanSimpleCopy = src->getImageSize() == dst->getImageSize() && src->imageFormat() == dst->imageFormat()
-        && srcInfo.isCopyCompatible(dstInfo);
-    if (srcInfo.subres.mipCount != dstInfo.subres.mipCount || srcInfo.extent != dstInfo.extent)
+        && srcInfoCpy.isCopyCompatible(dstInfoCpy);
+    if (srcInfoCpy.subres.mipCount != dstInfoCpy.subres.mipCount || srcInfoCpy.extent != dstInfoCpy.extent)
     {
         Logger::error("VulkanCommandList", "%s : MIP counts && extent must be same between source and destination regions", __func__);
         return;
     }
     {
-        SizeBox3D srcBound(srcInfo.offset, Size3D(srcInfo.offset + srcInfo.extent));
-        SizeBox3D dstBound(dstInfo.offset, Size3D(dstInfo.offset + dstInfo.extent));
+        SizeBox3D srcBound(srcInfoCpy.offset, Size3D(srcInfoCpy.offset + srcInfoCpy.extent));
+        SizeBox3D dstBound(dstInfoCpy.offset, Size3D(dstInfoCpy.offset + dstInfoCpy.extent));
         if (src == dst && srcBound.intersect(dstBound))
         {
             Logger::error("VulkanCommandList", "%s : Cannot copy to same image with intersecting region", __func__);
@@ -602,7 +615,9 @@ void VulkanCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer,
             else if (barrierInfo->accessors.lastReadsIn.empty())
             {
                 // No read write happened so far
-                memBarrier.srcStageMask = memBarrier.dstStageMask;
+                memBarrier.srcStageMask = cmdBufferManager.isGraphicsCmdBuffer(cmdBuffer) 
+                    ? VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+                    : memBarrier.dstStageMask;
                 memBarrier.oldLayout = dstOriginalLayout;
             }
             // only reads happened
@@ -633,17 +648,17 @@ void VulkanCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer,
 
     if (bCanSimpleCopy)
     {
-        std::vector<VkImageCopy> imageCopyRegions(srcInfo.subres.mipCount);
+        std::vector<VkImageCopy> imageCopyRegions(srcInfoCpy.subres.mipCount);
 
-        Size3D mipSize = srcInfo.extent;
-        Size3D srcMipSizeOffset = srcInfo.offset;
-        Size3D dstMipSizeOffset = dstInfo.offset;
-        for (uint32 mipLevel = 0; mipLevel < srcInfo.subres.mipCount; ++mipLevel)
+        Size3D mipSize = srcInfoCpy.extent;
+        Size3D srcMipSizeOffset = srcInfoCpy.offset;
+        Size3D dstMipSizeOffset = dstInfoCpy.offset;
+        for (uint32 mipLevel = 0; mipLevel < srcInfoCpy.subres.mipCount; ++mipLevel)
         {
             imageCopyRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x),int32(srcMipSizeOffset.y),int32(srcMipSizeOffset.z) };
-            imageCopyRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfo.subres.baseMip + mipLevel, srcInfo.subres.baseLayer, srcInfo.subres.layersCount };
+            imageCopyRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfoCpy.subres.baseMip + mipLevel, srcInfoCpy.subres.baseLayer, srcInfoCpy.subres.layersCount };
             imageCopyRegions[mipLevel].dstOffset = { int32(dstMipSizeOffset.x),int32(dstMipSizeOffset.y),int32(dstMipSizeOffset.z) };
-            imageCopyRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfo.subres.baseMip + mipLevel, dstInfo.subres.baseLayer, dstInfo.subres.layersCount };
+            imageCopyRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfoCpy.subres.baseMip + mipLevel, dstInfoCpy.subres.baseLayer, dstInfoCpy.subres.layersCount };
             imageCopyRegions[mipLevel].extent = { mipSize.x, mipSize.y, mipSize.z };
 
             srcMipSizeOffset /= 2u;
@@ -661,17 +676,17 @@ void VulkanCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer,
     else
     {
         std::vector<VkImageResolve> imageResolveRegions;
-        imageResolveRegions.reserve(srcInfo.subres.mipCount);
+        imageResolveRegions.reserve(srcInfoCpy.subres.mipCount);
 
-        Size3D mipSize = srcInfo.extent;
-        Size3D srcMipSizeOffset = srcInfo.offset;
-        Size3D dstMipSizeOffset = dstInfo.offset;
-        for (uint32 mipLevel = 0; mipLevel < srcInfo.subres.mipCount; ++mipLevel)
+        Size3D mipSize = srcInfoCpy.extent;
+        Size3D srcMipSizeOffset = srcInfoCpy.offset;
+        Size3D dstMipSizeOffset = dstInfoCpy.offset;
+        for (uint32 mipLevel = 0; mipLevel < srcInfoCpy.subres.mipCount; ++mipLevel)
         {
             imageResolveRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x),int32(srcMipSizeOffset.y),int32(srcMipSizeOffset.z) };
-            imageResolveRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfo.subres.baseMip + mipLevel, srcInfo.subres.baseLayer, srcInfo.subres.layersCount };
+            imageResolveRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfoCpy.subres.baseMip + mipLevel, srcInfoCpy.subres.baseLayer, srcInfoCpy.subres.layersCount };
             imageResolveRegions[mipLevel].dstOffset = { int32(dstMipSizeOffset.x),int32(dstMipSizeOffset.y),int32(dstMipSizeOffset.z) };
-            imageResolveRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfo.subres.baseMip + mipLevel, dstInfo.subres.baseLayer, dstInfo.subres.layersCount };
+            imageResolveRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfoCpy.subres.baseMip + mipLevel, dstInfoCpy.subres.baseLayer, dstInfoCpy.subres.layersCount };
             imageResolveRegions[mipLevel].extent = { mipSize.x, mipSize.y, mipSize.z };
 
             srcMipSizeOffset /= 2u;
@@ -686,6 +701,85 @@ void VulkanCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer,
             , VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
             , uint32(imageResolveRegions.size()), imageResolveRegions.data());
     }
+}
+
+void VulkanCommandList::cmdTransitionLayouts(const GraphicsResource* cmdBuffer, const std::vector<ImageResource*>& images)
+{
+    std::vector<VkImageMemoryBarrier2KHR> imageBarriers;
+    imageBarriers.reserve(images.size());
+
+    for (ImageResource* image : images)
+    {
+        IMAGE_MEMORY_BARRIER2_KHR(imageBarrier);
+        imageBarrier.srcStageMask = imageBarrier.dstStageMask 
+            = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        imageBarrier.srcAccessMask = imageBarrier.dstAccessMask = determineImageAccessMask(image);
+        imageBarrier.oldLayout = imageBarrier.newLayout = determineImageLayout(image);
+        imageBarrier.srcQueueFamilyIndex = imageBarrier.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+        imageBarrier.subresourceRange = { determineImageAspect(image), 0, image->getNumOfMips()
+                , 0, image->getLayerCount() };
+        imageBarrier.image = static_cast<VulkanImageResource*>(image)->image;
+
+        if (cmdBufferManager.isTransferCmdBuffer(cmdBuffer))
+        {
+            imageBarrier.srcStageMask = imageBarrier.dstStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+            imageBarrier.srcAccessMask = imageBarrier.dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT | VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+        }
+
+
+        if (image->getType()->isChildOf<GraphicsRenderTargetResource>())
+        {
+            // No need to transition to attachment optimal layout as they are handled in render pass, So just transition to shader read if used in transfer 
+            imageBarrier.oldLayout = imageBarrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageBarrier.srcAccessMask = imageBarrier.dstAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+        }
+
+        std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo = resourcesTracker.imageToGeneralLayout(cmdBuffer, image);
+        if (!barrierInfo)
+        {
+            continue;
+        }
+
+        if (barrierInfo->accessors.lastWrite && barrierInfo->accessors.lastReadsIn.empty())
+        {
+            imageBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+            imageBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
+
+            // If shader read only then it can be written only in transfer
+            if (!image->isShaderWrite() || (barrierInfo->accessors.lastWriteStage & VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
+                == VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
+            {
+                imageBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+                imageBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            }
+            else
+            {
+                imageBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
+                //imageBarrier.oldLayout = determineImageLayout(image);
+            }
+        }
+        // Read in is not empty as if both last write and reads are empty optional barrier info will be empty as well
+        else
+        {
+            imageBarrier.srcStageMask = barrierInfo->accessors.allReadStages;
+
+            if ((barrierInfo->accessors.lastReadStages & VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
+                == VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT)
+            {
+                imageBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastReadsIn.back());
+                imageBarrier.srcAccessMask |= VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+                imageBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            }
+            else
+            {
+                Logger::error("VulkanCommandList", "%s() : Barrier is applied on image(%s) that is only read so far", __func__, image->getResourceName().getChar());
+            }
+        }
+
+        imageBarriers.emplace_back(imageBarrier);
+    }
+
+    cmdPipelineBarrier(vDevice, cmdBufferManager.getRawBuffer(cmdBuffer), imageBarriers, {});
 }
 
 void VulkanCommandList::cmdClearImage(const GraphicsResource* cmdBuffer, ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources)
@@ -1383,7 +1477,7 @@ void VulkanCommandList::copyToImage(ImageResource* dst, const std::vector<class 
     fatalAssert(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
     const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dst->imageFormat());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat())
-        && (formatInfo->componentSize[0] != sizeof(32) || EPixelDataFormat::isStencilFormat(dst->imageFormat())))
+        && (formatInfo->componentSize[0] != 32 || EPixelDataFormat::isStencilFormat(dst->imageFormat())))
     {
         Logger::error("VulkanCommandList", "%s() : Depth/Float format with size other than 32bit is not supported for copying from Color data", __func__);
         return;
@@ -1432,8 +1526,12 @@ void VulkanCommandList::copyToImageLinearMapped(ImageResource* dst, const std::v
     stagingBuffer.release();
 }
 
-void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferResource* pixelData, const CopyPixelsToImageInfo& copyInfo)
+void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferResource* pixelData, CopyPixelsToImageInfo copyInfo)
 {
+    // Make sure mips and layers never exceeds above max
+    copyInfo.subres.mipCount = Math::min(copyInfo.subres.mipCount, dst->getNumOfMips());
+    copyInfo.subres.layersCount = Math::min(copyInfo.subres.layersCount, dst->getLayerCount());
+
     const VkFilter filtering = VkFilter(ESamplerFiltering::getFilterInfo(GraphicsHelper::getClampedFiltering(gInstance
         , copyInfo.mipFiltering, dst->imageFormat()))->filterTypeValue);
 
@@ -1442,6 +1540,7 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
     // Layout that is acceptable for this image
     VkImageLayout postCopyLayout = determineImageLayout(dst);
     VkAccessFlags postCopyAccessMask = determineImageAccessMask(dst);
+    VkPipelineStageFlags postCopyStages = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
     // TODO(Jeslas) : change this to get current layout from some resource tracked layout
     VkImageLayout currentLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
@@ -1483,6 +1582,12 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
         , copyInfo.bGenerateMips ? EQueueFunction::Graphics : EQueueFunction::Transfer);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
+    if (cmdBufferManager.isTransferCmdBuffer(cmdBuffer))
+    {
+        postCopyStages = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+        postCopyAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;// Do I need transfer write?
+    }
+
     // Transitioning all MIPs to Transfer Destination layout
     {
         IMAGE_MEMORY_BARRIER(layoutTransition);
@@ -1494,7 +1599,7 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
         layoutTransition.image = static_cast<VulkanImageResource*>(dst)->image;
         layoutTransition.subresourceRange = { imageAspect, copyInfo.subres.baseMip, copyInfo.subres.mipCount, copyInfo.subres.baseLayer, copyInfo.subres.layersCount };
 
-        vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT
+        vDevice->vkCmdPipelineBarrier(rawCmdBuffer, postCopyStages
             , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
             , 0, nullptr, 0, nullptr, 1, &layoutTransition);
     }
@@ -1556,7 +1661,7 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
 
         currentLayout = transitionToSrc.newLayout;
         vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
-            , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
+            , postCopyStages, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
             , 0, nullptr, 0, nullptr, uint32(toFinalLayout.size()), toFinalLayout.data());
     }
     else
@@ -1575,11 +1680,11 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
             , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
             , 0, nullptr, 0, nullptr, 1, &layoutTransition);
     }
+    cmdBufferManager.endCmdBuffer(cmdBuffer);
 
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "TempCpyImageFence");
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-    cmdBufferManager.endCmdBuffer(cmdBuffer);
     cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
     tempFence->waitForSignal();
 
@@ -1589,15 +1694,23 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
 
 void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo)
 {
+    CopyImageInfo srcInfoCpy = srcInfo;
+    CopyImageInfo dstInfoCpy = dstInfo;
+    // Make sure mips and layers never exceeds above max
+    srcInfoCpy.subres.mipCount = Math::min(srcInfoCpy.subres.mipCount, src->getNumOfMips());
+    srcInfoCpy.subres.layersCount = Math::min(srcInfoCpy.subres.layersCount, src->getLayerCount());
+    dstInfoCpy.subres.mipCount = Math::min(dstInfoCpy.subres.mipCount, dst->getNumOfMips());
+    dstInfoCpy.subres.layersCount = Math::min(dstInfoCpy.subres.layersCount, dst->getLayerCount());
+
     bool bCanSimpleCopy = src->getImageSize() == dst->getImageSize() && src->imageFormat() == dst->imageFormat()
-        && srcInfo.isCopyCompatible(dstInfo);
-    if (srcInfo.subres.mipCount != dstInfo.subres.mipCount || srcInfo.extent != dstInfo.extent)
+        && srcInfoCpy.isCopyCompatible(dstInfo);
+    if (srcInfoCpy.subres.mipCount != dstInfo.subres.mipCount || srcInfoCpy.extent != dstInfo.extent)
     {
         Logger::error("VulkanCommandList", "%s : MIP counts && extent must be same between source and destination regions", __func__);
         return;
     }
     {
-        SizeBox3D srcBound(srcInfo.offset, Size3D(srcInfo.offset + srcInfo.extent));
+        SizeBox3D srcBound(srcInfoCpy.offset, Size3D(srcInfoCpy.offset + srcInfoCpy.extent));
         SizeBox3D dstBound(dstInfo.offset, Size3D(dstInfo.offset + dstInfo.extent));
         if (src == dst && srcBound.intersect(dstBound))
         {
@@ -1616,9 +1729,9 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     VkImageLayout dstOriginalLayout = getImageLayout(dst);
 
     // If copying from to same MIP within same image then subresource layout has to be both src and dst
-    VkImageLayout copySrcLayout = src == dst && srcInfo.subres.baseMip == dstInfo.subres.baseMip
+    VkImageLayout copySrcLayout = src == dst && srcInfoCpy.subres.baseMip == dstInfoCpy.subres.baseMip
         ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    VkImageLayout copyDstLayout = src == dst && srcInfo.subres.baseMip == dstInfo.subres.baseMip
+    VkImageLayout copyDstLayout = src == dst && srcInfoCpy.subres.baseMip == dstInfoCpy.subres.baseMip
         ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 
@@ -1627,44 +1740,48 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     // Transition to transferable layout one for src and dst
-    std::array<VkImageMemoryBarrier, 2> transitionInfo;
-    transitionInfo[0].oldLayout = srcOriginalLayout;
-    transitionInfo[0].srcAccessMask = srcAccessFlags;
-    transitionInfo[0].srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
-    transitionInfo[0].newLayout = copySrcLayout;
-    transitionInfo[0].dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
-    transitionInfo[0].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
-    transitionInfo[0].subresourceRange = { srcImageAspect, srcInfo.subres.baseMip, srcInfo.subres.mipCount
-        , srcInfo.subres.baseLayer, srcInfo.subres.layersCount };
-    transitionInfo[0].image = static_cast<VulkanImageResource*>(src)->image;
+    std::vector<VkImageMemoryBarrier2KHR> transitionInfo(2);
 
-    transitionInfo[1].oldLayout = dstOriginalLayout;
-    transitionInfo[1].srcAccessMask = dstAccessFlags;
-    transitionInfo[1].srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
-    transitionInfo[1].newLayout = copyDstLayout;
-    transitionInfo[1].dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
-    transitionInfo[1].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
-    transitionInfo[1].subresourceRange = { dstImageAspect, dstInfo.subres.baseMip, dstInfo.subres.mipCount
-        , dstInfo.subres.baseLayer, dstInfo.subres.layersCount };
-    transitionInfo[1].image = static_cast<VulkanImageResource*>(dst)->image;
+    IMAGE_MEMORY_BARRIER2_KHR(tempTransition);
+    tempTransition.oldLayout = srcOriginalLayout;
+    tempTransition.srcAccessMask = srcAccessFlags;
+    tempTransition.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
+    tempTransition.newLayout = copySrcLayout;
+    tempTransition.dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+    tempTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
+    tempTransition.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+    tempTransition.dstStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+    tempTransition.subresourceRange = { srcImageAspect, srcInfoCpy.subres.baseMip, srcInfoCpy.subres.mipCount
+        , srcInfoCpy.subres.baseLayer, srcInfoCpy.subres.layersCount };
+    tempTransition.image = static_cast<VulkanImageResource*>(src)->image;
+    transitionInfo[0] = tempTransition;
 
-    vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT
-        , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
-        , 0, nullptr, 0, nullptr, uint32(transitionInfo.size()), transitionInfo.data());
+    tempTransition.oldLayout = dstOriginalLayout;
+    tempTransition.srcAccessMask = dstAccessFlags;
+    tempTransition.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
+    tempTransition.newLayout = copyDstLayout;
+    tempTransition.dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+    tempTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
+    tempTransition.subresourceRange = { dstImageAspect, dstInfoCpy.subres.baseMip, dstInfoCpy.subres.mipCount
+        , dstInfoCpy.subres.baseLayer, dstInfoCpy.subres.layersCount };
+    tempTransition.image = static_cast<VulkanImageResource*>(dst)->image;
+    transitionInfo[1] = tempTransition;
+
+    cmdPipelineBarrier(vDevice, rawCmdBuffer, transitionInfo, {});
 
     if (bCanSimpleCopy)
     {
-        std::vector<VkImageCopy> imageCopyRegions(srcInfo.subres.mipCount);
+        std::vector<VkImageCopy> imageCopyRegions(srcInfoCpy.subres.mipCount);
 
-        Size3D mipSize = srcInfo.extent;
-        Size3D srcMipSizeOffset = srcInfo.offset;
-        Size3D dstMipSizeOffset = dstInfo.offset;
-        for (uint32 mipLevel = 0; mipLevel < srcInfo.subres.mipCount; ++mipLevel)
+        Size3D mipSize = srcInfoCpy.extent;
+        Size3D srcMipSizeOffset = srcInfoCpy.offset;
+        Size3D dstMipSizeOffset = dstInfoCpy.offset;
+        for (uint32 mipLevel = 0; mipLevel < srcInfoCpy.subres.mipCount; ++mipLevel)
         {
             imageCopyRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x),int32(srcMipSizeOffset.y),int32(srcMipSizeOffset.z) };
-            imageCopyRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfo.subres.baseMip + mipLevel, srcInfo.subres.baseLayer, srcInfo.subres.layersCount };
+            imageCopyRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfoCpy.subres.baseMip + mipLevel, srcInfoCpy.subres.baseLayer, srcInfoCpy.subres.layersCount };
             imageCopyRegions[mipLevel].dstOffset = { int32(dstMipSizeOffset.x),int32(dstMipSizeOffset.y),int32(dstMipSizeOffset.z) };
-            imageCopyRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfo.subres.baseMip + mipLevel, dstInfo.subres.baseLayer, dstInfo.subres.layersCount };
+            imageCopyRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfoCpy.subres.baseMip + mipLevel, dstInfoCpy.subres.baseLayer, dstInfoCpy.subres.layersCount };
             imageCopyRegions[mipLevel].extent = { mipSize.x, mipSize.y, mipSize.z };
 
             srcMipSizeOffset /= 2u;
@@ -1678,17 +1795,17 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     else
     {
         std::vector<VkImageResolve> imageResolveRegions;
-        imageResolveRegions.reserve(srcInfo.subres.mipCount);
+        imageResolveRegions.reserve(srcInfoCpy.subres.mipCount);
 
-        Size3D mipSize = srcInfo.extent;
-        Size3D srcMipSizeOffset = srcInfo.offset;
-        Size3D dstMipSizeOffset = dstInfo.offset;
-        for (uint32 mipLevel = 0; mipLevel < srcInfo.subres.mipCount; ++mipLevel)
+        Size3D mipSize = srcInfoCpy.extent;
+        Size3D srcMipSizeOffset = srcInfoCpy.offset;
+        Size3D dstMipSizeOffset = dstInfoCpy.offset;
+        for (uint32 mipLevel = 0; mipLevel < srcInfoCpy.subres.mipCount; ++mipLevel)
         {
             imageResolveRegions[mipLevel].srcOffset = { int32(srcMipSizeOffset.x),int32(srcMipSizeOffset.y),int32(srcMipSizeOffset.z) };
-            imageResolveRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfo.subres.baseMip + mipLevel, srcInfo.subres.baseLayer, srcInfo.subres.layersCount };
+            imageResolveRegions[mipLevel].srcSubresource = { srcImageAspect, srcInfoCpy.subres.baseMip + mipLevel, srcInfoCpy.subres.baseLayer, srcInfoCpy.subres.layersCount };
             imageResolveRegions[mipLevel].dstOffset = { int32(dstMipSizeOffset.x),int32(dstMipSizeOffset.y),int32(dstMipSizeOffset.z) };
-            imageResolveRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfo.subres.baseMip + mipLevel, dstInfo.subres.baseLayer, dstInfo.subres.layersCount };
+            imageResolveRegions[mipLevel].dstSubresource = { dstImageAspect, dstInfoCpy.subres.baseMip + mipLevel, dstInfoCpy.subres.baseLayer, dstInfoCpy.subres.layersCount };
             imageResolveRegions[mipLevel].extent = { mipSize.x, mipSize.y, mipSize.z };
 
             srcMipSizeOffset /= 2u;
@@ -1715,9 +1832,11 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     transitionInfo[1].dstAccessMask = dstAccessFlags;
     transitionInfo[1].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
 
-    vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
-        , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
-        , 0, nullptr, 0, nullptr, uint32(transitionInfo.size()), transitionInfo.data());
+    // Stages
+    transitionInfo[0].dstStageMask = transitionInfo[1].dstStageMask = transitionInfo[0].srcStageMask;
+    transitionInfo[0].srcStageMask = transitionInfo[1].srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    cmdPipelineBarrier(vDevice, rawCmdBuffer, transitionInfo, {});
 
     cmdBufferManager.endCmdBuffer(cmdBuffer);
     SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "CopyOrResolveImage");

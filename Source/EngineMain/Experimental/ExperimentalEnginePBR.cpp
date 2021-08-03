@@ -53,6 +53,7 @@
 #include "../RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "../RenderInterface/Shaders/EngineShaders/PBRShader.h"
 #include "../Core/Types/Textures/ImageUtils.h"
+#include "../Assets/Asset/EnvironmentMapAsset.h"
 
 #include <array>
 #include <random>
@@ -213,6 +214,7 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
 
     void resizeLightingRts(const Size2D& size);
     void reupdateTextureParamsOnResize();
+    void reupdateEnvMap();
 
     // Shader pipeline resources
     RenderPassClearValue clearValues;
@@ -259,11 +261,16 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
 
     // Textures
     std::vector<TextureAsset*> textures;
+    std::vector<EnvironmentMapAsset*> envMaps;
 
     // Histogram data
     std::vector<const AChar*> textureNames;
     int32 selectedTexture = 0;
     std::array<float, 32> histogram[3];
+
+    // Env texture
+    std::vector<const AChar*> envMapNames;
+    int32 selectedEnv = 0;
 
     String noneString{ "None" };
 protected:
@@ -970,6 +977,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
         lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParamViewInfo("ssDepth", depthImageViewInfo);
         lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("envMap", envMaps[selectedEnv]->getEnvironmentMap()->getTextureResource(), linearFiltering);
 
         drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
         drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
@@ -1056,6 +1064,21 @@ void ExperimentalEnginePBR::reupdateTextureParamsOnResize()
         drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(3 * fbIncrement)], linearFiltering);
         drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
+}
+
+void ExperimentalEnginePBR::reupdateEnvMap()
+{
+    ENQUEUE_COMMAND(WaitEnvMapUpdate)(
+        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        {
+            cmdList->flushAllcommands();
+            const uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
+            for (uint32 i = 0; i < swapchainCount; ++i)
+            {
+                lightTextures.getResources()[i]->setTextureParam("envMap", envMaps[selectedEnv]->getEnvironmentMap()->getTextureResource(), linearFiltering);
+            }
+        }
+    );
 }
 
 void ExperimentalEnginePBR::destroyShaderParameters()
@@ -1307,7 +1330,7 @@ void ExperimentalEnginePBR::updateCameraParams()
     if (bCamRotated)
     {
         updateCamGizmoViewParams();
-        ENQUEUE_COMMAND(CameraGizmoUpdate,
+        ENQUEUE_COMMAND_NODEBUG(CameraGizmoUpdate,
         {
             updateCamGizmoCapture(cmdList, graphicsInstance);
         }, this);
@@ -1318,7 +1341,7 @@ void ExperimentalEnginePBR::onStartUp()
 {
     GameEngine::onStartUp();
 
-    ENQUEUE_COMMAND(EngineStartUp, 
+    ENQUEUE_COMMAND_NODEBUG(EngineStartUp, 
     { 
         startUpRenderInit();
         updateCamGizmoCapture(cmdList, graphicsInstance);
@@ -1340,18 +1363,23 @@ void ExperimentalEnginePBR::onStartUp()
     createScene();
 
     textures = getApplicationInstance()->assetManager.getAssetsOfType<EAssetType::Texture2D, TextureAsset>();
-    std::sort(textures.begin(), textures.end(), [](const TextureAsset* lhs, const TextureAsset* rhs)
-        {
-            return lhs->assetName() < rhs->assetName();
-        });
+    std::sort(textures.begin(), textures.end(), SortAssetByName<true>());
     textureNames.reserve(textures.size() + 1);
     textureNames.emplace_back(noneString.getChar());
     for (const TextureAsset* texture : textures)
     {
         textureNames.emplace_back(texture->assetName().getChar());
     }
-
     selectedTexture = 0;
+
+    envMaps = getApplicationInstance()->assetManager.getAssetsOfType<EAssetType::CubeMap, EnvironmentMapAsset>();
+    std::sort(envMaps.begin(), envMaps.end(), SortAssetByName<true>());
+    envMapNames.reserve(envMaps.size());
+    for (const EnvironmentMapAsset* envMap : envMaps)
+    {
+        envMapNames.emplace_back(envMap->assetName().getChar());
+    }
+    selectedEnv = 0;
 
     tempTest();
 }
@@ -1373,7 +1401,7 @@ void ExperimentalEnginePBR::startUpRenderInit()
 
 void ExperimentalEnginePBR::onQuit()
 {
-    ENQUEUE_COMMAND(EngineQuit, { renderQuit(); }, this);
+    ENQUEUE_COMMAND_NODEBUG(EngineQuit, { renderQuit(); }, this);
 
     getRenderApi()->getImGuiManager()->removeLayer(this);
     GameEngine::onQuit();
@@ -1811,7 +1839,7 @@ void ExperimentalEnginePBR::tickEngine()
 
     if (renderSize != EngineSettings::screenSize.get())
     {
-        ENQUEUE_COMMAND(WritingDescs,
+        ENQUEUE_COMMAND_NODEBUG(WritingDescs,
             {
                 GlobalBuffers::onScreenResized(renderSize);
                 resizeLightingRts(renderSize);
@@ -1820,7 +1848,7 @@ void ExperimentalEnginePBR::tickEngine()
             }, this);
     }
 
-    ENQUEUE_COMMAND(TickFrame,
+    ENQUEUE_COMMAND_NODEBUG(TickFrame,
         {
             updateShaderParameters(cmdList, graphicsInstance);
             frameRender(cmdList, graphicsInstance);
@@ -1859,7 +1887,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
         ImGui::SetNextWindowSize(ImVec2(430, 450), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
 
-        if (!ImGui::Begin("Test", &bTestOpen, ImGuiWindowFlags_NoMove))
+        if (!ImGui::Begin("Settings", &bTestOpen, ImGuiWindowFlags_NoMove))
         {
             ImGui::End();
             return;
@@ -1947,6 +1975,14 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                 if (ImGui::InputFloat("Gamma", &gamma, 1.0f, 4.f, "%.1f"))
                 {
                     dirLight.paramCollection->setFloatParam("gamma", gamma);
+                }
+
+                ImGui::NextColumn();
+                ImGui::Text("Env Map");
+                ImGui::NextColumn();
+                if (ImGui::Combo("maps", &selectedEnv, envMapNames.data(), int32(envMapNames.size())))
+                {
+                    reupdateEnvMap();
                 }
 #if _DEBUG
                 ImGui::NextColumn();

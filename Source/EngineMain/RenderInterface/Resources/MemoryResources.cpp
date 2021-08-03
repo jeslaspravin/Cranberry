@@ -65,5 +65,5 @@ bool EPixelDataFormat::isStencilFormat(Type dataFormat)
 
 bool EPixelDataFormat::isFloatingFormat(Type dataFormat)
 {
-    return EPixelDataFormat::FloatFormatEnd <= dataFormat && EPixelDataFormat::FloatFormatBegin >= dataFormat;
+    return EPixelDataFormat::FloatFormatBegin <= dataFormat && EPixelDataFormat::FloatFormatEnd >= dataFormat;
 }

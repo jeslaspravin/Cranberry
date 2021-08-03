@@ -92,7 +92,7 @@ void Texture2D::reinitResources()
 {
     TextureBase::reinitResources();
 
-    ENQUEUE_COMMAND(ReinitTexture2D, 
+    ENQUEUE_COMMAND_NODEBUG(ReinitTexture2D, 
         {
             const EPixelDataFormat::PixelFormatInfo * formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
             bool bIsNormalMap = (formatInfo->componentSize[uint8(EPixelComponent::R)] > 8);
@@ -127,7 +127,7 @@ void Texture2D::init(Texture2D* texture, bool bIsNormalMap, bool bIsSrgb, uint8 
     texture->textureResource->setLayerCount(1);
     texture->textureResource->setNumOfMips(texture->mipCount);
 
-    ENQUEUE_COMMAND(InitTexture2D,
+    ENQUEUE_COMMAND_NODEBUG(InitTexture2D,
         {
             texture->textureResource->init();
             if (bIsNormalMap)
@@ -145,7 +145,7 @@ void Texture2D::init(Texture2D* texture, bool bIsNormalMap, bool bIsSrgb, uint8 
 void Texture2D::destroy(Texture2D* texture)
 {
     ImageResource* textureResource = texture->textureResource;
-    ENQUEUE_COMMAND(DestroyTexture2D,
+    ENQUEUE_COMMAND_NODEBUG(DestroyTexture2D,
         {
             textureResource->release();
             delete textureResource;
@@ -161,7 +161,7 @@ void Texture2D::destroy(Texture2D* texture)
 void Texture2DRW::destroy(Texture2DRW* texture)
 {
     ImageResource* textureResource = texture->textureResource;
-    ENQUEUE_COMMAND(DestroyTexture2D,
+    ENQUEUE_COMMAND_NODEBUG(DestroyTexture2D,
         {
             textureResource->release();
             delete textureResource;
@@ -180,7 +180,7 @@ void Texture2DRW::init(Texture2DRW* texture)
     texture->textureResource->setLayerCount(1);
     texture->textureResource->setNumOfMips(texture->mipCount);
 
-    ENQUEUE_COMMAND(InitTexture2D,
+    ENQUEUE_COMMAND_NODEBUG(InitTexture2D,
         {
             texture->textureResource->init();
             cmdList->copyToImage(texture->textureResource, texture->rawData);
@@ -192,7 +192,7 @@ void Texture2DRW::reinitResources()
 {
     TextureBase::reinitResources();
 
-    ENQUEUE_COMMAND(ReinitTexture2D,
+    ENQUEUE_COMMAND_NODEBUG(ReinitTexture2D,
         {
             if (textureResource->isValid())
             {

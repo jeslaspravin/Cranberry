@@ -52,6 +52,8 @@ public:
 
     void cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer, ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo) final;
 
+    void cmdTransitionLayouts(const GraphicsResource* cmdBuffer, const std::vector<ImageResource*>& images) final;
+
     void cmdClearImage(const GraphicsResource* cmdBuffer, ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources) final;
     void cmdClearDepth(const GraphicsResource* cmdBuffer, ImageResource* image, float depth, uint32 stencil, const std::vector<ImageSubresource>& subresources) final;
 
@@ -92,6 +94,7 @@ public:
     void finishCmd(const String& uniqueName) final;
     const GraphicsResource* getCmdBuffer(const String& uniqueName) const final;
     void waitIdle() final;
+    void flushAllcommands() final;
 };
 
 
@@ -220,6 +223,11 @@ void RenderCommandList::waitIdle()
     cmdList->waitIdle();
 }
 
+void RenderCommandList::flushAllcommands()
+{
+    cmdList->flushAllcommands();
+}
+
 void RenderCommandList::copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo)
 {
     cmdList->copyToImage(dst, pixelData, copyInfo);
@@ -263,6 +271,11 @@ void RenderCommandList::presentImage(const std::vector<class GenericWindowCanvas
 void RenderCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer, ImageResource* src, ImageResource* dst, const CopyImageInfo& srcInfo, const CopyImageInfo& dstInfo)
 {
     cmdList->cmdCopyOrResolveImage(cmdBuffer, src, dst, srcInfo, dstInfo);
+}
+
+void RenderCommandList::cmdTransitionLayouts(const GraphicsResource* cmdBuffer, const std::vector<ImageResource*>& images)
+{
+    cmdList->cmdTransitionLayouts(cmdBuffer, images);
 }
 
 void RenderCommandList::cmdClearImage(const GraphicsResource* cmdBuffer, ImageResource* image, const LinearColor& clearColor, const std::vector<ImageSubresource>& subresources)
@@ -422,10 +435,10 @@ void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stag
                 // We are never going to go above 32 bits per channel
                 const uint32 compValue = pixelData[i].getColorValue()[compIdx];
 
-                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
+                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
 
                 // Left shift
-                const uint32 byte1Shift = compOffset % colorCompBits;
+                const uint32 byte1Shift = compOffset % 8;
 
                 (*reinterpret_cast<uint32*>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
             }
@@ -439,15 +452,15 @@ void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stag
 
 void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stagingPtr, const std::vector<class LinearColor>& pixelData, const EPixelDataFormat::PixelFormatInfo* formatInfo, bool bIsFloatingFormat) const
 {
-    constexpr uint32 colorCompBits = sizeof(decltype(std::declval<Color>().r())) * 8;
-    debugAssert(colorCompBits == 8);
+    constexpr uint32 colorCompBits = sizeof(decltype(std::declval<LinearColor>().r())) * 8;
+    debugAssert(colorCompBits == 32);
 
     memset(stagingPtr, 0, stagingBuffer->getResourceSize());
     if (bIsFloatingFormat)
     {
         for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
         {
-            debugAssert(formatInfo->componentSize[uint32(formatInfo->componentOrder[idx])] == sizeof(float));
+            debugAssert(formatInfo->componentSize[uint32(formatInfo->componentOrder[idx])] == colorCompBits);
         }
 
         // Copying data
@@ -459,7 +472,7 @@ void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stag
                 const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
                 const uint32 compOffset = formatInfo->getOffset(EPixelComponent(compIdx));
 
-                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
+                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
 
                 memcpy(offsetStagingPtr, &pixelData[i].getColorValue()[compIdx], sizeof(float));
             }
@@ -507,10 +520,10 @@ void IRenderCommandList::copyPixelsTo(BufferResource* stagingBuffer, uint8* stag
                     const uint32 maxVal = (Math::pow(2u, compSizeBits) - 1);
                     const uint32 compValue = uint32(pixelData[i].getColorValue()[compIdx] * maxVal);
 
-                    uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
+                    uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
 
                     // Left shift
-                    const uint32 byte1Shift = compOffset % colorCompBits;
+                    const uint32 byte1Shift = compOffset % 8;
 
                     (*reinterpret_cast<uint32*>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
                 }
@@ -571,10 +584,10 @@ void IRenderCommandList::copyPixelsLinearMappedTo(BufferResource* stagingBuffer,
                 const uint32 maxVal = (Math::pow(2u, compSizeBits) - 1);
                 const uint32 compValue = uint32((pixelData[i].getColorValue()[compIdx] / 255.0f) * maxVal);
 
-                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / colorCompBits);
+                uint8* offsetStagingPtr = pixelStagingPtr + (compOffset / 8);
 
                 // Left shift
-                const uint32 byte1Shift = compOffset % colorCompBits;
+                const uint32 byte1Shift = compOffset % 8;
 
                 (*reinterpret_cast<uint32*>(offsetStagingPtr)) |= (perCompMask[compIdx] & (compValue << byte1Shift));
             }

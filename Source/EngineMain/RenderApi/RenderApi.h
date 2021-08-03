@@ -37,11 +37,11 @@ public:
     void waitOnCommands();
 
     template <typename RenderCmdClass>
-    static void issueRenderCommand(RenderApi* renderApi, typename RenderCmdClass::RenderCmdFunc renderCommandFn);
+    static void issueRenderCommand(RenderApi* renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
 };
 
 template <typename RenderCmdClass>
-void RenderApi::issueRenderCommand(RenderApi* renderApi, typename RenderCmdClass::RenderCmdFunc renderCommandFn)
+void RenderApi::issueRenderCommand(RenderApi* renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
 {
     if (renderApi->bIsInsideRenderCommand)
     {
@@ -49,6 +49,6 @@ void RenderApi::issueRenderCommand(RenderApi* renderApi, typename RenderCmdClass
     }
     else
     {
-        renderApi->enqueueCommand(new RenderCmdClass(renderCommandFn));
+        renderApi->enqueueCommand(new RenderCmdClass(std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn)));
     }
 }

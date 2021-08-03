@@ -24,6 +24,9 @@ private:
     std::vector<VkImageView> swapchainImageViews;
     std::vector<SharedPtr<GraphicsSemaphore>> semaphores;
     std::vector<SharedPtr<GraphicsFence>> fences;
+
+    WeakPtr<GraphicsSemaphore> currentSemaphore;
+    WeakPtr<GraphicsFence> currentFence;
     
     SwapchainInfo swapchainInfo;
     int32 currentSyncIdx = -1;
