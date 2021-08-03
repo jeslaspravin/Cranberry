@@ -96,6 +96,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Drawing", "Drawing", "{967F
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IBL", "IBL", "{734BC010-258E-45A4-B3A1-27C025B6B892}"
 	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\PBR\IBL\EnvToIrradiance.comp.glsl = Source\EngineShaders\PBR\IBL\EnvToIrradiance.comp.glsl
 		Source\EngineShaders\PBR\IBL\HDRIToCube.comp.glsl = Source\EngineShaders\PBR\IBL\HDRIToCube.comp.glsl
 	EndProjectSection
 EndProject
