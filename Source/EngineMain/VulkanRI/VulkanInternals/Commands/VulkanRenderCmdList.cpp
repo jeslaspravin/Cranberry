@@ -1584,8 +1584,8 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
 
     if (cmdBufferManager.isTransferCmdBuffer(cmdBuffer))
     {
-        postCopyStages = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
-        postCopyAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;// Do I need transfer write?
+        postCopyStages = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT | VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        postCopyAccessMask = VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT;// Do I need transfer write?
     }
 
     // Transitioning all MIPs to Transfer Destination layout
@@ -1607,6 +1607,7 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
     vDevice->vkCmdCopyBufferToImage(rawCmdBuffer, static_cast<const VulkanBufferResource*>(pixelData)->buffer
         , static_cast<VulkanImageResource*>(dst)->image, currentLayout, uint32(copies.size()), copies.data());
 
+    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "TempCpyImageFence");
     if (copyInfo.bGenerateMips && copyInfo.subres.mipCount > 1)
     {
         IMAGE_MEMORY_BARRIER(transitionToSrc);
@@ -1663,6 +1664,7 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
         vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
             , postCopyStages, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
             , 0, nullptr, 0, nullptr, uint32(toFinalLayout.size()), toFinalLayout.data());
+
     }
     else
     {
@@ -1671,18 +1673,19 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
         layoutTransition.newLayout = postCopyLayout;
         layoutTransition.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
         layoutTransition.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
-        layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
+        // We choose to not release ownership(which causes need to acquire in dst queue) but just to transfer layout as we wait for this to finish making queue transfer unnecessary
+        layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+        //layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
         layoutTransition.dstAccessMask = postCopyAccessMask;
         layoutTransition.image = static_cast<VulkanImageResource*>(dst)->image;
         layoutTransition.subresourceRange = { imageAspect, copyInfo.subres.baseMip, copyInfo.subres.mipCount, copyInfo.subres.baseLayer, copyInfo.subres.layersCount };
 
         vDevice->vkCmdPipelineBarrier(rawCmdBuffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
-            , VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
+            , postCopyStages, VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT
             , 0, nullptr, 0, nullptr, 1, &layoutTransition);
     }
     cmdBufferManager.endCmdBuffer(cmdBuffer);
 
-    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "TempCpyImageFence");
     CommandSubmitInfo submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
     cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
@@ -1823,14 +1826,16 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     transitionInfo[0].srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
     transitionInfo[0].newLayout = srcOriginalLayout;
     transitionInfo[0].dstAccessMask = srcAccessFlags;
-    transitionInfo[0].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
+    // We choose to not release ownership(which causes need to acquire in dst queue) but just to transfer layout as we wait for this to finish making queue transfer unnecessary
+    transitionInfo[0].dstQueueFamilyIndex = transitionInfo[0].srcQueueFamilyIndex;
 
     transitionInfo[1].oldLayout = copyDstLayout;
     transitionInfo[1].srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
     transitionInfo[1].srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Transfer);
     transitionInfo[1].newLayout = dstOriginalLayout;
     transitionInfo[1].dstAccessMask = dstAccessFlags;
-    transitionInfo[1].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
+    // We choose to not release ownership(which causes need to acquire in dst queue) but just to transfer layout as we wait for this to finish making queue transfer unnecessary
+    transitionInfo[1].dstQueueFamilyIndex = transitionInfo[0].srcQueueFamilyIndex;
 
     // Stages
     transitionInfo[0].dstStageMask = transitionInfo[1].dstStageMask = transitionInfo[0].srcStageMask;

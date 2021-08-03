@@ -17,6 +17,7 @@ layout(set = 1, binding = 3) uniform sampler2D ssDepth;
 layout(set = 1, binding = 4) uniform sampler2D ssARM;
 layout(set = 1, binding = 5) uniform sampler2D ssColor;
 layout(set = 1, binding = 6) uniform samplerCube envMap;
+layout(set = 1, binding = 7) uniform samplerCube diffuseIrradMap;
 
 struct SpotLight
 {
@@ -84,6 +85,10 @@ float geoMaskSmith(vec3 normal, vec3 pt2ViewDir, vec3 pt2LightDir, float k)
 vec3 fresnelSchlick(vec3 halfVec, vec3 viewDir, vec3 f0)
 {
     return f0 + (1 - f0) * pow((1 - max(dot(halfVec, viewDir), 0.0)), 5);
+}
+vec3 fresnelSchlickRoughness(vec3 halfVec, vec3 viewDir, vec3 f0, float roughness)
+{
+    return f0 + (max(vec3(1 - roughness), f0) - f0) * pow((1 - max(dot(halfVec, viewDir), 0.0)), 5);
 }
 
 // Epic games fall off
@@ -201,13 +206,17 @@ void mainFS()
         prevResolveColor = vec4(GAMMA_CORRECT(envColor, colorCorrection.gamma), 1);
 
         // Doing ambient light here
-        outColor += (lightArray.dirLit.lightColor_lumen.xyz * arm.x * 0.04);
+        vec3 ambSpecTerm = fresnelSchlickRoughness(worldNormal, pt2ViewDir, f0, arm.y);
+        vec3 ambDiffuse = (1 - ambSpecTerm) * texture(diffuseIrradMap, ENGINE_WORLD_TO_CUBE_DIR(worldNormal)).xyz * unlitColor.xyz;
+        // outColor += (ambDiffuse + (ambSpecTerm * lightArray.dirLit.lightColor_lumen.xyz * 0.04)) * arm.x;
+        outColor += ambDiffuse * arm.x;
 
         // Tonemap
         outColor = Uncharted2Tonemap(outColor, colorCorrection.exposure);
         // Gamma correction
-        finalColor = vec4(GAMMA_CORRECT(outColor, colorCorrection.gamma), finalColor.w);
-        // finalColor = vec4(outColor, finalColor.w);
+        outColor = GAMMA_CORRECT(outColor, colorCorrection.gamma);
+
+        finalColor = vec4(outColor, finalColor.w);
     }
 
     colorAttachment0 = depth == 0? prevResolveColor : finalColor;

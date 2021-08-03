@@ -37,7 +37,7 @@ void mainComp()
 // All X's in Z faces 4, 5
 // Face along +x
 	vec3 direction = normalize(vec3(CUBE_COORDS[2].x, mix(CUBE_COORDS[2].yz, CUBE_COORDS[1].yz, outUV)));
-	vec2 textureUV = cartesianToSpherical(direction);
+	vec2 textureUV = cartesianToSphericalUV(direction);
 	imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 4), texture(hdri, textureUV));
 	// Debug face UV
 	//imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 4), vec4(outUV, 0, 1));	
@@ -48,7 +48,7 @@ void mainComp()
 	
 // Face along -x
 	direction = normalize(vec3(CUBE_COORDS[4].x, mix(CUBE_COORDS[4].yz, CUBE_COORDS[7].yz, outUV)));
-	textureUV = cartesianToSpherical(direction);
+	textureUV = cartesianToSphericalUV(direction);
 	imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 5), texture(hdri, textureUV));
 	//imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 5), vec4(outUV, 0, 1));
 	//imageStore(outCubeMap, ivec3(outSize * textureUV, 5), vec4(outUV, 0, 1));
@@ -58,7 +58,7 @@ void mainComp()
 // Face along +y
 	textureUV = mix(CUBE_COORDS[0].xz, CUBE_COORDS[5].xz, outUV);
 	direction = normalize(vec3(textureUV.x, CUBE_COORDS[0].y, textureUV.y));
-	textureUV = cartesianToSpherical(direction);
+	textureUV = cartesianToSphericalUV(direction);
 	imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 0), texture(hdri, textureUV));	
 	//imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 0), vec4(outUV, 0, 1));
 	//imageStore(outCubeMap, ivec3(outSize * textureUV, 0), vec4(outUV, 0, 1));
@@ -67,7 +67,7 @@ void mainComp()
 // Face along -y
 	textureUV = mix(CUBE_COORDS[6].xz, CUBE_COORDS[3].xz, outUV);
 	direction = normalize(vec3(textureUV.x, CUBE_COORDS[6].y, textureUV.y));
-	textureUV = cartesianToSpherical(direction);
+	textureUV = cartesianToSphericalUV(direction);
 	imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 1), texture(hdri, textureUV));
 	//imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 1), vec4(outUV, 0, 1));
 	//imageStore(outCubeMap, ivec3(outSize * textureUV, 1), vec4(outUV, 0, 1));
@@ -76,7 +76,7 @@ void mainComp()
 // All Z's in Y faces 2, 3
 // Face along +z, flipped uv because U goes from - Y to + Y and V goes from -X to +X
 	direction = normalize(vec3(mix(CUBE_COORDS[6].xy, CUBE_COORDS[0].xy, outUV.yx), CUBE_COORDS[6].z));
-	textureUV = cartesianToSpherical(direction);
+	textureUV = cartesianToSphericalUV(direction);
 	imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 2), texture(hdri, textureUV));
 	//imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 2), vec4(outUV, 0, 1));
 	//imageStore(outCubeMap, ivec3(outSize * textureUV, 2), vec4(outUV, 0, 1));
@@ -84,7 +84,7 @@ void mainComp()
 	
 // Face along -z, flipped uv because U goes from - Y to + Y and V goes from +X to -X
 	direction = normalize(vec3(mix(CUBE_COORDS[3].xy, CUBE_COORDS[5].xy, outUV.yx), CUBE_COORDS[3].z));
-	textureUV = cartesianToSpherical(direction);
+	textureUV = cartesianToSphericalUV(direction);
 	imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 3), texture(hdri, textureUV));
 	//imageStore(outCubeMap, ivec3(gl_GlobalInvocationID.xy, 3), vec4(outUV, 0, 1));
 	//imageStore(outCubeMap, ivec3(outSize * textureUV, 3), vec4(outUV, 0, 1));
