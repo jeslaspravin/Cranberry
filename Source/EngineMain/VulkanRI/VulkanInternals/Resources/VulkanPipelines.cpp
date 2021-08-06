@@ -297,8 +297,16 @@ void VulkanGraphicsPipeline::fillSpecializationConsts(std::vector<VkPipelineShad
         VkSpecializationInfo& specInfo = specializationInfo[shaderStageIdx];
         specInfo.dataSize = uint32(specData.size());
         specInfo.pData = specData.data();
-        specInfo.pMapEntries = &specEntries[specEntryIdx];
-        specInfo.mapEntryCount = uint32(specConsts.size());
+        if (specConsts.empty())
+        {
+            specInfo.pMapEntries = nullptr;
+            specInfo.mapEntryCount = 0;
+        }
+        else
+        {
+            specInfo.pMapEntries = &specEntries[specEntryIdx];
+            specInfo.mapEntryCount = uint32(specConsts.size());
+        }
 
         VkPipelineShaderStageCreateInfo& stageCI = shaderStages[shaderStageIdx];
         stageCI.pSpecializationInfo = &specializationInfo[shaderStageIdx];

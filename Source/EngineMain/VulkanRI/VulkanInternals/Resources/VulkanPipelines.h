@@ -35,8 +35,10 @@ private:
     struct VulkanPipelineCreateInfo
     {
         // Ptr for common informations
+        // All stage spec const entries and data
         std::vector<VkSpecializationMapEntry>* specializationConstEntries;
         std::vector<uint8>* specializationConstData;
+        // Per stage specialization info
         std::vector<VkSpecializationInfo>* specializationInfo;
         std::vector<VkPipelineShaderStageCreateInfo>* shaderStageCIs;
 

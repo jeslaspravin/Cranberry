@@ -448,9 +448,9 @@ void ExperimentalEnginePBR::destroyPools()
 void ExperimentalEnginePBR::createImages()
 {
     nearestFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "NearestSampler",
-        ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest);
+        ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest, float(EngineSettings::minSamplingMipLevel.get()));
     linearFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "LinearSampler",
-        ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
+        ESamplerTilingMode::Repeat, ESamplerFiltering::Linear, float(EngineSettings::minSamplingMipLevel.get()));
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
@@ -977,8 +977,10 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
         lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParamViewInfo("ssDepth", depthImageViewInfo);
         lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("brdfLUT", GlobalBuffers::integratedBrdfLUT()->getTextureResource(), nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("envMap", envMaps[selectedEnv]->getEnvironmentMap()->getTextureResource(), linearFiltering);
         lightTextures.getResources()[i]->setTextureParam("diffuseIrradMap", envMaps[selectedEnv]->getDiffuseIrradianceMap()->getTextureResource(), linearFiltering);
+        lightTextures.getResources()[i]->setTextureParam("specEnvMap", envMaps[selectedEnv]->getSpecularIrradianceMap()->getTextureResource(), linearFiltering);
 
         drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
         drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
@@ -1078,6 +1080,7 @@ void ExperimentalEnginePBR::reupdateEnvMap()
             {
                 lightTextures.getResources()[i]->setTextureParam("envMap", envMaps[selectedEnv]->getEnvironmentMap()->getTextureResource(), linearFiltering);
                 lightTextures.getResources()[i]->setTextureParam("diffuseIrradMap", envMaps[selectedEnv]->getDiffuseIrradianceMap()->getTextureResource(), linearFiltering);
+                lightTextures.getResources()[i]->setTextureParam("specEnvMap", envMaps[selectedEnv]->getSpecularIrradianceMap()->getTextureResource(), linearFiltering);
             }
         }
     );

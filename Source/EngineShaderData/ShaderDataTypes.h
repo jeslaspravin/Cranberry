@@ -122,6 +122,30 @@ struct SpecializationConstantDefaultValue
         float f32Val;
         double f64Val;
     };
+    SpecializationConstantDefaultValue()
+    {
+        memset(&defaultValue, 0, sizeof(defaultValue));
+    }
+    SpecializationConstantDefaultValue(bool value)
+    {
+        defaultValue.boolVal = value;
+    }
+    SpecializationConstantDefaultValue(int value)
+    {
+        defaultValue.i32Val = value;
+    }
+    SpecializationConstantDefaultValue(uint32_t value)
+    {
+        defaultValue.u32Val = value;
+    }
+    SpecializationConstantDefaultValue(float value)
+    {
+        defaultValue.f32Val = value;
+    }
+    SpecializationConstantDefaultValue(double value)
+    {
+        defaultValue.f64Val = value;
+    }
 
     Value defaultValue;
 };

@@ -332,6 +332,7 @@
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\EnvMapToIrradiance.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\HDRIToCube.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\IntegrateBRDF.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\PBRShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\TexturedShader.cpp" />

@@ -1,3 +1,6 @@
+#ifndef SINGLECOLORSTAGEIO_INCLUDE
+#define SINGLECOLORSTAGEIO_INCLUDE
+
 #if INPUT
 #define PREFIX in
 #define VAR(name) in##name
@@ -16,3 +19,5 @@ layout(location = 1) PREFIX vec3 VAR(WorldNormal);
 
 #undef PREFIX
 #undef VAR
+
+#endif // SINGLECOLORSTAGEIO_INCLUDE

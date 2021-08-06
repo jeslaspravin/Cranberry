@@ -10,6 +10,7 @@ layout(location = 0) out vec4 colorAttachment0;
 #include "../Common/ViewDescriptors.inl.glsl"
 #include "../Common/CommonDefines.inl.glsl"
 #include "../Common/ToneMapping.inl.glsl"
+#include "PBRCommon.inl.glsl"
 
 layout(set = 1, binding = 1) uniform sampler2D ssUnlitColor;
 layout(set = 1, binding = 2) uniform sampler2D ssNormal;
@@ -18,6 +19,8 @@ layout(set = 1, binding = 4) uniform sampler2D ssARM;
 layout(set = 1, binding = 5) uniform sampler2D ssColor;
 layout(set = 1, binding = 6) uniform samplerCube envMap;
 layout(set = 1, binding = 7) uniform samplerCube diffuseIrradMap;
+layout(set = 1, binding = 8) uniform samplerCube specEnvMap;
+layout(set = 1, binding = 9) uniform sampler2D brdfLUT;
 
 struct SpotLight
 {
@@ -55,54 +58,21 @@ layout(set = 2, binding = 1) uniform ColorCorrection
 } colorCorrection;
 
 
+vec3 prefilteredReflection(vec3 reflectDir, float roughness)
+{
+    const float maxSpecEnvLod = textureQueryLevels(specEnvMap) - 1;
+//	float lod = roughness * maxSpecEnvLod;
+//	float lodf = floor(lod);
+//	float lodc = ceil(lod);
+//	vec3 a = textureLod(specEnvMap, reflectDir, lodf).xyz;
+//	vec3 b = textureLod(specEnvMap, reflectDir, lodc).xyz;
+//	return mix(a, b, lod - lodf);
+    return textureLod(specEnvMap, reflectDir, roughness * maxSpecEnvLod).xyz;
+}
 
 #define SPOT_COUNT (lightArray.count & 0x0000000F)
 #define POINT_COUNT ((lightArray.count & 0x000000F0) >> 4)
 #define DIRECTIONAL ((lightArray.count & 0x00000100) > 0)
-
-float ggxtrNDF(vec3 normal, vec3 halfVector, float roughness)
-{
-    float alpha = SQR(roughness);
-    float alpha2 = SQR(alpha);
-    float temp = max(dot(normal, halfVector), 0);
-    temp = (SQR(temp) * (alpha2 - 1)) + 1;
-    return alpha2 / (M_PI * SQR(temp));
-}
-
-// For lights k = ((rough + 1) ^ 2) / 8
-// IBL k = (rough ^ 2)/2
-float geoMaskSchlickGGX(vec3 normal, vec3 maskedDir, float k)
-{
-    float nDotD = max(dot(normal, maskedDir), 0.0);
-    return nDotD/(nDotD * (1 - k) + k);
-}
-
-float geoMaskSmith(vec3 normal, vec3 pt2ViewDir, vec3 pt2LightDir, float k)
-{
-    return geoMaskSchlickGGX(normal, pt2ViewDir, k) * geoMaskSchlickGGX(normal, pt2LightDir, k);
-}
-
-vec3 fresnelSchlick(vec3 halfVec, vec3 viewDir, vec3 f0)
-{
-    return f0 + (1 - f0) * pow((1 - max(dot(halfVec, viewDir), 0.0)), 5);
-}
-vec3 fresnelSchlickRoughness(vec3 halfVec, vec3 viewDir, vec3 f0, float roughness)
-{
-    return f0 + (max(vec3(1 - roughness), f0) - f0) * pow((1 - max(dot(halfVec, viewDir), 0.0)), 5);
-}
-
-// Epic games fall off
-float falloff(float falloffDistance, float maxRadius ) 
-{
-	float falloff = 0;
-	float distOverRadius = falloffDistance / maxRadius;
-	float distOverRadius4 = SQR(SQR(distOverRadius));
-	falloff = clamp(1.0 - distOverRadius4, 0.0, 1.0);
-    falloff = SQR(falloff);
-// Scaling to meters
-	falloff /= SQR(falloffDistance * M_CM2M) + 1.0;
-	return falloff;
-}
 
 // Lo(p,o)= (C * ambient * ao) + integrate over sphere(kd * (lambert diffuse / pi)+ ((NDF * BRDF * N-Mask) / (4 * (o | n) * (i | n))) * Li(p,i) * (n | i)
 void mainFS()
@@ -145,8 +115,9 @@ void mainFS()
         vec3 diffuse = (vec3(1.0) - specTerm) * (1 - arm.z) * (unlitColor.xyz / M_PI);
 
         // F * D * G
+        // Ks * F = SQR(specTerm) is made specTerm for artistic reasons
         vec3 specNum = specTerm * ggxtrNDF(worldNormal, halfVec, arm.y) * geoMaskSmith(worldNormal, pt2ViewDir, pt2LightDir, SQR(arm.y + 1) * 0.125);
-        vec3 specular = specNum / max((4 * nDotPtV * nDotL), 0.01);
+        vec3 specular = specNum / max((4 * nDotPtV * nDotL), MIN_N_DOT_V);
         
         vec3 brdf = diffuse + specular;
         finalColor += vec4(brdf * inLight, 0); 
@@ -169,8 +140,9 @@ void mainFS()
         vec3 diffuse = (vec3(1.0) - specTerm) * (1 - arm.z) * (unlitColor.xyz / M_PI);
 
         // F * D * G
+        // Ks * F = SQR(specTerm) is made specTerm for artistic reasons
         vec3 specNum = specTerm * ggxtrNDF(worldNormal, halfVec, arm.y) * geoMaskSmith(worldNormal, pt2ViewDir, pt2LightDir, SQR(arm.y + 1) * 0.125);
-        vec3 specular = specNum / max((4 * nDotPtV * nDotL), 0.01);
+        vec3 specular = specNum / max((4 * nDotPtV * nDotL), MIN_N_DOT_V);
         
         vec3 brdf = diffuse + specular;
         finalColor += vec4(brdf * inLight, 0);
@@ -191,8 +163,9 @@ void mainFS()
         vec3 diffuse = (vec3(1.0) - specTerm) * (1 - arm.z) * (unlitColor.xyz / M_PI);
 
         // F * D * G
+        // Ks * F = SQR(specTerm) is made specTerm for artistic reasons
         vec3 specNum = specTerm * ggxtrNDF(worldNormal, halfVec, arm.y) * geoMaskSmith(worldNormal, pt2ViewDir, pt2LightDir, SQR(arm.y + 1) * 0.125);
-        vec3 specular = specNum / max((4 * nDotPtV * nDotL), 0.01);
+        vec3 specular = specNum / max((4 * nDotPtV * nDotL), MIN_N_DOT_V);
         
         vec3 brdf = diffuse + specular;
 
@@ -207,9 +180,14 @@ void mainFS()
 
         // Doing ambient light here
         vec3 ambSpecTerm = fresnelSchlickRoughness(worldNormal, pt2ViewDir, f0, arm.y);
-        vec3 ambDiffuse = (1 - ambSpecTerm) * texture(diffuseIrradMap, ENGINE_WORLD_TO_CUBE_DIR(worldNormal)).xyz * unlitColor.xyz;
-        // outColor += (ambDiffuse + (ambSpecTerm * lightArray.dirLit.lightColor_lumen.xyz * 0.04)) * arm.x;
-        outColor += ambDiffuse * arm.x;
+        // Diffuse
+        vec3 ambDiffuse = (1 - ambSpecTerm) * (1 - arm.z) * texture(diffuseIrradMap, ENGINE_WORLD_TO_CUBE_DIR(worldNormal)).xyz * unlitColor.xyz;
+        // Specular
+        vec3 reflectDir = reflect(-pt2ViewDir, worldNormal);
+        vec3 prefilteredColor = prefilteredReflection(ENGINE_WORLD_TO_CUBE_DIR(reflectDir), arm.y);
+        vec2 ambSpecBrdf = texture(brdfLUT, vec2(nDotPtV, arm.y)).xy; 
+        vec3 ambSpec = prefilteredColor * (ambSpecTerm * ambSpecBrdf.x + ambSpecBrdf.y);
+        outColor += (ambDiffuse + ambSpec) * arm.x;
 
         // Tonemap
         outColor = Uncharted2Tonemap(outColor, colorCorrection.exposure);
@@ -217,6 +195,7 @@ void mainFS()
         outColor = GAMMA_CORRECT(outColor, colorCorrection.gamma);
 
         finalColor = vec4(outColor, finalColor.w);
+        //finalColor = vec4(vec2(nDotPtV, arm.y), 0.0 , 1.0);
     }
 
     colorAttachment0 = depth == 0? prevResolveColor : finalColor;

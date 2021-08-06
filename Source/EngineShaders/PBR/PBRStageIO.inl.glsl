@@ -1,3 +1,6 @@
+#ifndef PBRSTAGEIO_INCLUDE
+#define PBRSTAGEIO_INCLUDE
+
 #if INPUT
 #define PREFIX in
 #define VAR(name) in##name
@@ -20,3 +23,5 @@ layout(location = 1) PREFIX vec2 VAR(NdcCoord);
 
 #undef PREFIX
 #undef VAR
+
+#endif // PBRSTAGEIO_INCLUDE

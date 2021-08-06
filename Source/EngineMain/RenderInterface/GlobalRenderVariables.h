@@ -10,6 +10,8 @@ namespace GlobalRenderVariables
     extern GraphicsDeviceConstant<bool> ENABLE_ANISOTROPY;
     extern GraphicsDeviceConstant<float> MAX_ANISOTROPY;
 
+    extern GraphicsDeviceConstant<bool> ENABLE_EXTENDED_STORAGES;
+
     //extern GraphicsDeviceConstant<bool> ENABLED_TESSELLATION;
     extern GraphicsDeviceConstant<bool> ENABLE_NON_FILL_DRAWS;
     extern GraphicsDeviceConstant<bool> ENABLE_WIDE_LINES;

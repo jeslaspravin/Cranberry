@@ -117,6 +117,7 @@ void CubeTextureRW::reinitResources()
         if (textureResource->isValid())
         {
             textureResource->reinitResources();
+            cmdList->setupInitialLayout(textureResource);
         }
         else
         {

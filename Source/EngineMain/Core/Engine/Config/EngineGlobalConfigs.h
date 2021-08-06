@@ -12,4 +12,8 @@ namespace EngineSettings
     extern EngineGlobalConfig<bool> fullscreenMode;
 
     extern EngineGlobalConfig<bool> enableVsync;
+
+    extern EngineGlobalConfig<uint32> minSamplingMipLevel;
+    extern EngineGlobalConfig<uint32> maxPrefilteredCubeMiplevels;
+    extern EngineGlobalConfig<uint32> maxEnvMapSize;
 }

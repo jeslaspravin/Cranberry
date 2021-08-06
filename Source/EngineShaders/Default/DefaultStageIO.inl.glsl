@@ -1,3 +1,6 @@
+#ifndef DEFAULTSTAGEIO_INCLUDE
+#define DEFAULTSTAGEIO_INCLUDE
+
 #if INPUT
 #define PREFIX in
 #define VAR(name) in##name
@@ -19,3 +22,5 @@ layout(location = 4) PREFIX vec2 VAR(TextureCoord);
 
 #undef PREFIX
 #undef VAR
+
+#endif // DEFAULTSTAGEIO_INCLUDE

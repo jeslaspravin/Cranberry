@@ -437,6 +437,7 @@ void VulkanCmdBufferManager::cmdFinished(const String& cmdName, VulkanResourcesT
     if (cmdBufferItr != commandBuffers.end() && cmdBufferItr->second.cmdState == ECmdState::Submitted)
     {
         VulkanCmdSubmitSyncInfo& syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
+        syncInfo.refCount--;
         if (!syncInfo.bIsAdvancedSubmit && syncInfo.completeFence)
         {
             if (!syncInfo.completeFence->isSignaled())
@@ -444,13 +445,12 @@ void VulkanCmdBufferManager::cmdFinished(const String& cmdName, VulkanResourcesT
                 syncInfo.completeFence->waitForSignal();
             }
 
-            if (syncInfo.completeFence.use_count() == 1)
+            if (syncInfo.refCount == 0)
             {
                 syncInfo.completeFence->resetSignal();
                 syncInfo.completeFence->release();
             }
         }
-        syncInfo.refCount--;
         if (syncInfo.refCount == 0)
         {
             if (!syncInfo.bIsAdvancedSubmit)
@@ -1232,6 +1232,12 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
         barrier.accessors.lastWriteStage = accessors.lastWriteStage;
         barrier.resource = resource.first;
 
+        // Last write if not same cmd then wait on that command
+        if (accessors.lastWrite && accessors.lastWrite != cmdBuffer)
+        {
+            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
+        }
+
         outBarrierInfo = barrier;
     }
     else
@@ -1455,15 +1461,18 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     std::optional<ResourceBarrierInfo> outBarrierInfo;
 
     auto accessorsItr = resourcesAccessors.find(resource);
-    if (accessorsItr->second.lastWrite || !accessorsItr->second.lastReadsIn.empty())
+    if(accessorsItr != resourcesAccessors.end())
     {
-        outBarrierInfo = ResourceBarrierInfo();
-        outBarrierInfo->accessors = accessorsItr->second;
-        outBarrierInfo->resource = resource;
+        if (accessorsItr->second.lastWrite || !accessorsItr->second.lastReadsIn.empty())
+        {
+            outBarrierInfo = ResourceBarrierInfo();
+            outBarrierInfo->accessors = accessorsItr->second;
+            outBarrierInfo->resource = resource;
+        }
+        accessorsItr->second.allReadStages = accessorsItr->second.lastReadStages = 0;
+        accessorsItr->second.lastReadsIn.clear();
+        accessorsItr->second.lastWrite = nullptr;
     }
-    accessorsItr->second.allReadStages = accessorsItr->second.lastReadStages = 0;
-    accessorsItr->second.lastReadsIn.clear();
-    accessorsItr->second.lastWrite = nullptr;
 
     return outBarrierInfo;
 }
