@@ -71,6 +71,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PBR", "PBR", "{A47C9719-D2A
 	ProjectSection(SolutionItems) = preProject
 		Source\EngineShaders\PBR\PBR.frag.glsl = Source\EngineShaders\PBR\PBR.frag.glsl
 		Source\EngineShaders\PBR\PBR.vert.glsl = Source\EngineShaders\PBR\PBR.vert.glsl
+		Source\EngineShaders\PBR\PBRCommon.inl.glsl = Source\EngineShaders\PBR\PBRCommon.inl.glsl
 		Source\EngineShaders\PBR\PBRStageIO.inl.glsl = Source\EngineShaders\PBR\PBRStageIO.inl.glsl
 	EndProjectSection
 EndProject
@@ -96,8 +97,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Drawing", "Drawing", "{967F
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IBL", "IBL", "{734BC010-258E-45A4-B3A1-27C025B6B892}"
 	ProjectSection(SolutionItems) = preProject
-		Source\EngineShaders\PBR\IBL\EnvToIrradiance.comp.glsl = Source\EngineShaders\PBR\IBL\EnvToIrradiance.comp.glsl
+		Source\EngineShaders\PBR\IBL\DrawIntegrateBRDF.frag.glsl = Source\EngineShaders\PBR\IBL\DrawIntegrateBRDF.frag.glsl
+		Source\EngineShaders\PBR\IBL\DrawIntegrateBRDF.vert.glsl = Source\EngineShaders\PBR\IBL\DrawIntegrateBRDF.vert.glsl
+		Source\EngineShaders\PBR\IBL\EnvToDiffuseIrradiance.comp.glsl = Source\EngineShaders\PBR\IBL\EnvToDiffuseIrradiance.comp.glsl
 		Source\EngineShaders\PBR\IBL\HDRIToCube.comp.glsl = Source\EngineShaders\PBR\IBL\HDRIToCube.comp.glsl
+		Source\EngineShaders\PBR\IBL\HDRIToPrefilteredSpecMap.comp.glsl = Source\EngineShaders\PBR\IBL\HDRIToPrefilteredSpecMap.comp.glsl
+		Source\EngineShaders\PBR\IBL\IntegrateBRDF.comp.glsl = Source\EngineShaders\PBR\IBL\IntegrateBRDF.comp.glsl
 	EndProjectSection
 EndProject
 Global

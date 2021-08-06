@@ -20,6 +20,8 @@ namespace GlobalRenderVariables
     GraphicsDeviceConstant<bool> ENABLE_ANISOTROPY;
     GraphicsDeviceConstant<float> MAX_ANISOTROPY(0);
 
+    GraphicsDeviceConstant<bool> ENABLE_EXTENDED_STORAGES;
+
     //extern GraphicsDeviceConstant<bool> ENABLED_TESSELLATION;
     GraphicsDeviceConstant<bool> ENABLE_NON_FILL_DRAWS;
     GraphicsDeviceConstant<bool> ENABLE_WIDE_LINES;
@@ -37,6 +39,7 @@ void VulkanDevice::markEnabledFeatures()
     enabledFeatures.samplerAnisotropy = features.samplerAnisotropy;
     enabledFeatures.fillModeNonSolid = features.fillModeNonSolid;
     enabledFeatures.wideLines = features.wideLines;
+    enabledFeatures.shaderStorageImageExtendedFormats = features.shaderStorageImageExtendedFormats;
 }
 
 void VulkanDevice::markGlobalConstants()
@@ -61,6 +64,9 @@ void VulkanDevice::markGlobalConstants()
     GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.set(timelineSemaphoreFeatures.timelineSemaphore == VK_TRUE ? true : false);
 
     // Sampling texture
+
+    // Storing resources
+    GlobalRenderVariables::ENABLE_EXTENDED_STORAGES.set(enabledFeatures.shaderStorageImageExtendedFormats);
 }
 
 bool VulkanDevice::createQueueResources()

@@ -639,6 +639,9 @@
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\EnvMapToIrradiance.cpp">
       <Filter>Source Files\RenderInterface\Shaders\EngineShaders\IBL</Filter>
     </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\IntegrateBRDF.cpp">
+      <Filter>Source Files\RenderInterface\Shaders\EngineShaders\IBL</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">

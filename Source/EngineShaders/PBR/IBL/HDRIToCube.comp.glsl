@@ -32,7 +32,10 @@ const vec3 CUBE_COORDS[8] =
 void mainComp()
 {
 	ivec2 outSize = imageSize(outCubeMap);
-	vec2 outUV = vec2(gl_GlobalInvocationID.xy) / vec2(outSize);
+	vec2 texelUvSize = 1 / vec2(outSize);
+	// Sample at center of texel
+	vec2 outUV = vec2(gl_GlobalInvocationID.xy) * texelUvSize;
+	outUV += texelUvSize * 0.5;
 
 // All X's in Z faces 4, 5
 // Face along +x

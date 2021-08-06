@@ -508,12 +508,14 @@ void ShaderParameters::setResourceName(const String& name)
 
 std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> ShaderParameters::getAllReadOnlyTextures() const
 {
+    // #TODO(Jeslas) : Support image view
+    std::unordered_set<ImageResource*> uniqueness;
     std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> textures;
     for (const std::pair<const String, TextureParameterData>& textuteParam : shaderTextures)
     {
         for (const auto& img : textuteParam.second.textures)
         {
-            if (img.texture->isShaderRead() && !img.texture->isShaderWrite())
+            if (img.texture->isShaderRead() && !img.texture->isShaderWrite() && uniqueness.emplace(img.texture).second)
             {
                 textures.emplace_back(std::pair<ImageResource*, const ShaderTextureDescriptorType*>{ img.texture, textuteParam.second.descriptorInfo });
             }
@@ -553,12 +555,14 @@ std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> Shade
 
 std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> ShaderParameters::getAllWriteTextures() const
 {
+    // #TODO(Jeslas) : Support image view
+    std::unordered_set<ImageResource*> uniqueness;
     std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> textures;
     for (const std::pair<const String, TextureParameterData>& textuteParam : shaderTextures)
     {
         for (const auto& img : textuteParam.second.textures)
         {
-            if (img.texture->isShaderWrite())
+            if (img.texture->isShaderWrite() && uniqueness.emplace(img.texture).second)
             {
                 textures.emplace_back(std::pair<ImageResource*, const ShaderTextureDescriptorType*>{ img.texture, textuteParam.second.descriptorInfo });
             }

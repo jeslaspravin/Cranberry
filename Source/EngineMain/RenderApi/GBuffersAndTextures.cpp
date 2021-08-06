@@ -71,6 +71,7 @@ std::vector<Framebuffer*> GlobalBuffers::swapchainFbs;
 TextureBase* GlobalBuffers::dummyBlackTexture = nullptr;
 TextureBase* GlobalBuffers::dummyWhiteTexture = nullptr;
 TextureBase* GlobalBuffers::dummyNormalTexture = nullptr;
+TextureBase* GlobalBuffers::integratedBRDF = nullptr;
 
 std::pair<BufferResource*, BufferResource*> GlobalBuffers::quadVertsInds{ nullptr,nullptr };
 std::pair<BufferResource*, BufferResource*> GlobalBuffers::lineGizmoVertxInds{ nullptr,nullptr };
@@ -124,7 +125,7 @@ FramebufferFormat::FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frame
 void GlobalBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
 {
     ENQUEUE_COMMAND(GBufferSampleCountChange)(
-        [newValue](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+    [newValue](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             cmdList->flushAllcommands();
 
@@ -283,9 +284,15 @@ void GlobalBuffers::initialize()
     createTexture2Ds();
     ENQUEUE_COMMAND(InitializeGlobalBuffers)(
         [](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
-        { 
+        {
             createVertIndBuffers(cmdList, graphicsInstance);
-        });
+        }
+    );
+}
+
+void GlobalBuffers::postInitGraphics()
+{
+    generateTexture2Ds();
 }
 
 void GlobalBuffers::destroy()

@@ -1,5 +1,6 @@
 #pragma once
 #include "../../Core/Platform/PlatformTypes.h"
+#include "../../Core/Memory/SmartPointers.h"
 
 #include <vector>
 

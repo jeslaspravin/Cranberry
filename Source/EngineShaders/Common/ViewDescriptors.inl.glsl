@@ -1,3 +1,5 @@
+#ifndef VIEWDESCRIPTORS_INCLUDE
+#define VIEWDESCRIPTORS_INCLUDE
 
 layout(set = 0, binding = 0) uniform ViewData
 {
@@ -32,3 +34,5 @@ vec3 viewPos()
 {
     return viewData.view[3].xyz;
 }
+
+#endif // VIEWDESCRIPTORS_INCLUDE

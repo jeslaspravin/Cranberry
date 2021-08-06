@@ -1,3 +1,6 @@
+#ifndef TEXTUREDSTAGEIO_INCLUDE
+#define TEXTUREDSTAGEIO_INCLUDE
+
 #if INPUT
 #define PREFIX in
 #define VAR(name) in##name
@@ -18,3 +21,5 @@ layout(location = 3) PREFIX vec2 VAR(TextureCoord);
 
 #undef PREFIX
 #undef VAR
+
+#endif // TEXTUREDSTAGEIO_INCLUDE

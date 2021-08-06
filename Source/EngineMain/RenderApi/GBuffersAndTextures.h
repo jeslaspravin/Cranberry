@@ -27,6 +27,8 @@ private:
     static TextureBase* dummyWhiteTexture;
     static TextureBase* dummyNormalTexture;
 
+    static TextureBase* integratedBRDF;
+
     static std::pair<BufferResource*, BufferResource*> quadVertsInds;
     static std::pair<BufferResource*, BufferResource*> lineGizmoVertxInds;
 
@@ -34,12 +36,15 @@ private:
     static void onSampleCountChanged(uint32 oldValue, uint32 newValue);
 
     static void createTexture2Ds();
+    static void generateTexture2Ds();
     static void destroyTexture2Ds();
 
     static void createVertIndBuffers(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
     static void destroyVertIndBuffers(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
 public:
     static void initialize();
+    // Called once all shader resources and pipelines are initialized best place to create shader generated globals
+    static void postInitGraphics();
     static void destroy();
 
     /**
@@ -59,6 +64,7 @@ public:
 
     static TextureBase* dummyWhite2D() { return dummyWhiteTexture; }
     static TextureBase* dummyBlack2D() { return dummyBlackTexture; }
+    static TextureBase* integratedBrdfLUT() { return integratedBRDF; }
 
     static void onScreenResized(Size2D newSize);
     static void onSurfaceResized(Size2D newSize);

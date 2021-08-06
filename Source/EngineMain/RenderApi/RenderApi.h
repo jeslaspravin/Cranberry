@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Core/Types/Delegates/Delegate.h"
+
 #include <queue>
 
 class IGraphicsInstance;
@@ -7,6 +9,9 @@ class GlobalRenderingContextBase;
 
 class RenderApi
 {
+public:
+    using PostInitEvent = Event<RenderApi>;
+
 private:
     IGraphicsInstance* graphicsInstance;
     GlobalRenderingContextBase* globalContext;
@@ -19,6 +24,9 @@ private:
     // TODO(Jeslas) : Once multi threaded rendering is added this should be changed to some TLS value
     bool bIsInsideRenderCommand = false;
 
+    static PostInitEvent postInitEvent;
+
+private:
     void createSingletons();
 
     void enqueueCommand(class IRenderCommand* renderCommand);
@@ -33,6 +41,7 @@ public:
     IGraphicsInstance* getGraphicsInstance() const;
     GlobalRenderingContextBase* getGlobalRenderingContext() const;
     class ImGuiManager* getImGuiManager() const;
+    static PostInitEvent& onPostInit() { return postInitEvent; }
 
     void waitOnCommands();
 

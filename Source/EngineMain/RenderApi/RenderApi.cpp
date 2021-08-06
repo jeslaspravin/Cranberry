@@ -7,6 +7,8 @@
 #include "../Core/Platform/PlatformAssertionErrors.h"
 #include "../Editor/Core/ImGui/ImGuiManager.h"
 
+RenderApi::PostInitEvent RenderApi::postInitEvent;
+
 void RenderApi::createSingletons()
 {
     static GraphicInstance gGraphicsInstance;
@@ -50,11 +52,13 @@ void RenderApi::initialize()
         }
     , this);
 
+    GlobalBuffers::postInitGraphics();
     imGuiManager->initialize();
 }
 
 void RenderApi::postInit()
 {
+    postInitEvent.invoke();
     // Process post init pre-frame render commands
     waitOnCommands();
 }

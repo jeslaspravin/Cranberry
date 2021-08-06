@@ -1,3 +1,6 @@
+#ifndef TONEMAPPING_INCLUDE
+#define TONEMAPPING_INCLUDE
+
 #define GAMMA_CORRECT(color, gamma) pow((color), vec3(1.0/(gamma))) 
 
 // reinhard tone mapping
@@ -25,3 +28,5 @@ vec3 Uncharted2Tonemap(vec3 inColor, float inExposure)
 	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
     return color;
 }
+
+#endif // TONEMAPPING_INCLUDE

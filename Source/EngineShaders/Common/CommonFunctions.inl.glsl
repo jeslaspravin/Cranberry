@@ -1,3 +1,5 @@
+#ifndef COMMONFUNCTIONS_INCLUDE
+#define COMMONFUNCTIONS_INCLUDE
 
 const vec2 inv2PiPi = vec2(0.1591, 0.3183);
 
@@ -17,3 +19,4 @@ vec3 sphericalToCartesian(float phi, float theta)
     return vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
 }
 
+#endif // COMMONFUNCTIONS_INCLUDE

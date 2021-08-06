@@ -1,8 +1,15 @@
 #include "Texture2D.h"
+#include "../../Logger/Logger.h"
+#include "../../Engine/Config/EngineGlobalConfigs.h"
+#include "../../../RenderInterface/Rendering/CommandBuffer.h"
+#include "../../../RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "../../../RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "../../../RenderInterface/PlatformIndependentHelper.h"
 #include "../../../RenderInterface/PlatformIndependentHeaders.h"
 #include "../../Math/Math.h"
 #include "../../../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../../../RenderApi/GBuffersAndTextures.h"
+#include "../../../RenderInterface/GlobalRenderVariables.h"
 
 uint32 Texture2D::getMipCount() const
 {
@@ -92,7 +99,8 @@ void Texture2D::reinitResources()
 {
     TextureBase::reinitResources();
 
-    ENQUEUE_COMMAND_NODEBUG(ReinitTexture2D, 
+    ENQUEUE_COMMAND(ReinitTexture2D)(
+        [this](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             const EPixelDataFormat::PixelFormatInfo * formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
             bool bIsNormalMap = (formatInfo->componentSize[uint8(EPixelComponent::R)] > 8);
@@ -112,7 +120,8 @@ void Texture2D::reinitResources()
             {
                 Texture2D::init(this, bIsNormalMap, isSrgb(), formatInfo->componentCount);
             }
-        }, this);
+        }
+    );
 }
 
 void Texture2D::init(Texture2D* texture, bool bIsNormalMap, bool bIsSrgb, uint8 componentCount)
@@ -127,7 +136,8 @@ void Texture2D::init(Texture2D* texture, bool bIsNormalMap, bool bIsSrgb, uint8 
     texture->textureResource->setLayerCount(1);
     texture->textureResource->setNumOfMips(texture->mipCount);
 
-    ENQUEUE_COMMAND_NODEBUG(InitTexture2D,
+    ENQUEUE_COMMAND(InitTexture2D)(
+        [texture, bIsNormalMap](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             texture->textureResource->init();
             if (bIsNormalMap)
@@ -139,17 +149,19 @@ void Texture2D::init(Texture2D* texture, bool bIsNormalMap, bool bIsSrgb, uint8 
                 cmdList->copyToImage(texture->textureResource, texture->rawData);
             }
         }
-        , texture, bIsNormalMap);
+    );
 }
 
 void Texture2D::destroy(Texture2D* texture)
 {
     ImageResource* textureResource = texture->textureResource;
-    ENQUEUE_COMMAND_NODEBUG(DestroyTexture2D,
+    ENQUEUE_COMMAND(DestroyTexture2D)(
+        [textureResource](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             textureResource->release();
             delete textureResource;
-        }, textureResource);
+        }
+    );
 
     texture->textureResource = nullptr;
 }
@@ -161,11 +173,12 @@ void Texture2D::destroy(Texture2D* texture)
 void Texture2DRW::destroy(Texture2DRW* texture)
 {
     ImageResource* textureResource = texture->textureResource;
-    ENQUEUE_COMMAND_NODEBUG(DestroyTexture2D,
+    ENQUEUE_COMMAND(DestroyTexture2D)(
+        [textureResource](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             textureResource->release();
             delete textureResource;
-        }, textureResource);
+        });
 
     texture->textureResource = nullptr;
 }
@@ -180,37 +193,51 @@ void Texture2DRW::init(Texture2DRW* texture)
     texture->textureResource->setLayerCount(1);
     texture->textureResource->setNumOfMips(texture->mipCount);
 
-    ENQUEUE_COMMAND_NODEBUG(InitTexture2D,
+    ENQUEUE_COMMAND(InitTexture2D)(
+        [texture](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             texture->textureResource->init();
-            cmdList->copyToImage(texture->textureResource, texture->rawData);
+            cmdList->setupInitialLayout(texture->textureResource);
+            if (!texture->bIsWriteOnly)
+            {
+                cmdList->copyToImage(texture->textureResource, texture->rawData);
+            }
         }
-    , texture);
+    );
 }
 
 void Texture2DRW::reinitResources()
 {
     TextureBase::reinitResources();
 
-    ENQUEUE_COMMAND_NODEBUG(ReinitTexture2D,
+    ENQUEUE_COMMAND(ReinitTexture2D)(
+        [this](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             if (textureResource->isValid())
             {
                 textureResource->reinitResources();
-                cmdList->copyToImage(textureResource, rawData);
+                cmdList->setupInitialLayout(textureResource);
+                if (!bIsWriteOnly)
+                {
+                    cmdList->copyToImage(textureResource, rawData);
+                }
             }
             else
             {
                 Texture2DRW::init(this);
             }
-        }, this);
+        }
+    );
 }
 
 void Texture2DRW::destroyTexture(Texture2DRW* texture2D)
 {
-    Texture2DRW::destroy(texture2D);
-    delete texture2D;
-    texture2D = nullptr;
+    if(texture2D)
+    {
+        Texture2DRW::destroy(texture2D);
+        delete texture2D;
+        texture2D = nullptr;
+    }
 }
 
 Texture2DRW* Texture2DRW::createTexture(const Texture2DRWCreateParams& createParams)
@@ -285,6 +312,57 @@ void GlobalBuffers::createTexture2Ds()
     createParams.defaultColor = ColorConst::BLUE;
     createParams.textureName = "Dummy_Normal";
     dummyNormalTexture = TextureBase::createTexture<Texture2D>(createParams);
+
+    if(GlobalRenderVariables::ENABLE_EXTENDED_STORAGES)
+    {
+        // #TODO(Jeslas) : Create better read only LUT
+        Texture2DRWCreateParams rwCreateParams;
+        rwCreateParams.defaultColor = ColorConst::BLACK;
+        rwCreateParams.mipCount = 1;
+        rwCreateParams.textureName = "LUT_IntegratedBRDF";
+        rwCreateParams.textureSize = Size2D(EngineSettings::maxEnvMapSize / 2u);
+        rwCreateParams.format = EPixelDataFormat::RG_SF16;
+        integratedBRDF = TextureBase::createTexture<Texture2DRW>(rwCreateParams);
+    }
+    else
+    {
+        Logger::error("GlobalBuffers", "%s(): Cannot create integrated BRDF LUT, RG_SF16 is not supported format", __func__);
+        integratedBRDF = nullptr;
+    }
+}
+
+void GlobalBuffers::generateTexture2Ds()
+{
+    ENQUEUE_COMMAND(IntegrateBRDF)(
+        [](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        {
+            LocalPipelineContext integrateBrdfContext;
+            integrateBrdfContext.materialName = "IntegrateBRDF_16x16x1";
+            gEngine->getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&integrateBrdfContext);
+            SharedPtr<ShaderParameters> integrateBrdfParams = GraphicsHelper::createShaderParameters(graphicsInstance, integrateBrdfContext.getPipeline()->getParamLayoutAtSet(0), {});
+            integrateBrdfParams->setTextureParam("outIntegratedBrdf", integratedBRDF->getTextureResource());
+            integrateBrdfParams->init();
+
+            const GraphicsResource* cmdBuffer = cmdList->startCmd("IntegrateBRDF", EQueueFunction::Graphics, false);
+            cmdList->cmdBindComputePipeline(cmdBuffer, integrateBrdfContext);
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, integrateBrdfContext, { integrateBrdfParams.get() });
+            Size3D subgrpSize = static_cast<const ComputeShader*>(integrateBrdfContext.getPipeline()->getShaderResource())->getSubGroupSize();
+            cmdList->cmdDispatch(cmdBuffer, integratedBRDF->getTextureSize().x / subgrpSize.x, integratedBRDF->getTextureSize().y / subgrpSize.y);
+            cmdList->cmdTransitionLayouts(cmdBuffer, { integratedBRDF->getTextureResource() });
+
+            cmdList->endCmd(cmdBuffer);
+
+
+            CommandSubmitInfo2 submitInfo;
+            submitInfo.cmdBuffers.emplace_back(cmdBuffer);
+            cmdList->submitWaitCmd(EQueuePriority::High, submitInfo);
+
+            cmdList->freeCmd(cmdBuffer);
+
+            integrateBrdfParams->release();
+            integrateBrdfParams.reset();
+        }
+    );
 }
 
 void GlobalBuffers::destroyTexture2Ds()
@@ -295,4 +373,6 @@ void GlobalBuffers::destroyTexture2Ds()
     dummyWhiteTexture = nullptr;
     TextureBase::destroyTexture<Texture2D>(dummyNormalTexture);
     dummyNormalTexture = nullptr;
+
+    TextureBase::destroyTexture<Texture2DRW>(integratedBRDF);
 }
