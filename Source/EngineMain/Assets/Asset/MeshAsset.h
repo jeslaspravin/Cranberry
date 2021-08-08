@@ -10,6 +10,7 @@ struct MeshVertexView
 {
     uint32 startIndex;
     uint32 numOfIndices;
+    String name;
 };
 
 #if _DEBUG

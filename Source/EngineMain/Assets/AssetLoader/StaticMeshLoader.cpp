@@ -88,7 +88,7 @@ void calcTangent(MeshLoaderData& loaderData, StaticMeshVertex& vertexData, const
     float invDet = uv10.x() * uv20.y() - uv20.x() * uv10.y();
     if (invDet == 0.0f)
     {
-        Logger::error("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents", __func__);
+        Logger::debug("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents", __func__);
 
         Rotation tbnFrame = RotationMatrix::fromZ(normal).asRotation();
         tangent = tbnFrame.fwdVector();
@@ -197,7 +197,7 @@ void StaticMeshLoader::normalize(Vector4D& normal) const
     normal.z() = newNormal.z();
 }
 
-void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib)
+void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials)
 {
     MeshLoaderData& meshLoaderData = loadedMeshes[mesh.name];
     meshLoaderData.indices.resize(mesh.mesh.indices.size());
@@ -299,7 +299,7 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
         }
     }
 
-    splitMeshBatches(meshLoaderData, faceMaterialId, uint32(uniqueMatIds.size()), faceCount);
+    splitMeshBatches(meshLoaderData, faceMaterialId, materials, uint32(uniqueMatIds.size()), faceCount);
 
     // Normalizing all the vertex normals
     for (StaticMeshVertex& vertex : meshLoaderData.vertices)
@@ -308,7 +308,7 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
     }
 }
 
-void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib)
+void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials)
 {
     const float smoothingThreshold = Math::cos(Math::deg2Rad(smoothingAngle));
     MeshLoaderData& meshLoaderData = loadedMeshes[mesh.name];
@@ -617,7 +617,7 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
         }
     }
 
-    splitMeshBatches(meshLoaderData, faceMaterialId, uint32(uniqueMatIds.size()), faceCount);
+    splitMeshBatches(meshLoaderData, faceMaterialId, materials, uint32(uniqueMatIds.size()), faceCount);
 
     // Normalizing all the vertex normals
     for (StaticMeshVertex& vertex : meshLoaderData.vertices)
@@ -626,7 +626,8 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
     }
 }
 
-void StaticMeshLoader::splitMeshBatches(MeshLoaderData& meshLoaderData, const std::vector<int32> &faceMaterialId, uint32 uniqueMatCount, uint32 faceCount)
+void StaticMeshLoader::splitMeshBatches(MeshLoaderData& meshLoaderData, const std::vector<int32> &faceMaterialId
+    , const std::vector<tinyobj::material_t>& materials, uint32 uniqueMatCount, uint32 faceCount)
 {
     // Splitting based on face material IDs
     if (uniqueMatCount > 1)
@@ -653,6 +654,7 @@ void StaticMeshLoader::splitMeshBatches(MeshLoaderData& meshLoaderData, const st
             MeshVertexView vertexBatchView;
             vertexBatchView.startIndex = uint32(meshLoaderData.indices.size());
             vertexBatchView.numOfIndices = uint32(matIdIndices.second.size());
+            vertexBatchView.name = String(materials[matIdIndices.first].name).trimCopy();
             meshLoaderData.indices.insert(meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
             meshLoaderData.meshBatches.push_back(vertexBatchView);
         }
@@ -695,11 +697,11 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
 
         if (bLoadSmoothed && !hasSmoothing)
         {
-            smoothAndLoad(mesh, attrib);
+            smoothAndLoad(mesh, attrib, materials);
         }
         else
         {
-            load(mesh, attrib);
+            load(mesh, attrib, materials);
         }
     }
 }
