@@ -78,6 +78,7 @@ namespace ColorConst
 {
     const Color Transparent(255, 255, 255, 0);
     const Color WHITE(255, 255, 255, 255);
+    const Color GRAY(128, 128, 128, 255);
     const Color BLACK(0, 0, 0, 255);
     const Color RED(255, 0, 0, 255);
     const Color BLUE(0, 0, 255, 255);
@@ -88,6 +89,7 @@ namespace LinearColorConst
 {
     const LinearColor Transparent(1, 1, 1, 0);
     const LinearColor WHITE(1, 1, 1, 1);
+    const LinearColor GRAY(0.5, 0.5, 0.5, 1);
     const LinearColor BLACK(0, 0, 0, 1);
     const LinearColor RED(1, 0, 0, 1);
     const LinearColor BLUE(0, 0, 1, 1);

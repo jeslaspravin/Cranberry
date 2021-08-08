@@ -11,6 +11,7 @@ class Vector3D;
 class Vector4D;
 struct StaticMeshVertex;
 
+namespace tinyobj { struct material_t; }
 namespace tinyobj { struct attrib_t; }
 namespace tinyobj { struct shape_t; }
 
@@ -31,10 +32,10 @@ private:
     void addNormal(StaticMeshVertex& vertex, Vector3D& normal) const;
     void normalize(Vector4D& normal) const;
 
-    void load(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib);
-    void smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib);
+    void load(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials);
+    void smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials);
     // Splits loaded mesh into batches based on material IDs
-    void splitMeshBatches(MeshLoaderData& meshLoaderData, const std::vector<int32> &faceMaterialId, uint32 uniqueMatCount, uint32 faceCount);
+    void splitMeshBatches(MeshLoaderData& meshLoaderData, const std::vector<int32> &faceMaterialId, const std::vector<tinyobj::material_t>& materials, uint32 uniqueMatCount, uint32 faceCount);
 public:
     StaticMeshLoader(const String& assetPath);
 

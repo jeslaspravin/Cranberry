@@ -82,9 +82,10 @@ struct PBRSceneEntity
     Transform3D transform;
     class StaticMeshAsset* meshAsset;
     String name;
-
-    SharedPtr<ShaderParameters> instanceParameters;
     std::vector<BatchProperties> meshBatchProps;
+
+    // Generated
+    SharedPtr<ShaderParameters> instanceParameters;
     std::vector<SharedPtr<ShaderParameters>> meshBatchParameters;
 };
 
@@ -103,10 +104,10 @@ struct PointLight
     LinearColor lightcolor;
     float radius;
     float lumen;
+    String name;
 
     SharedPtr<ShaderParameters> paramCollection;
     uint32 index;
-    String name;
 
     void update() const;
 };
@@ -119,10 +120,10 @@ struct SpotLight
     float lumen;
     float innerCone;
     float outerCone;
+    String name;
 
     SharedPtr<ShaderParameters> paramCollection;
     uint32 index;
-    String name;
 
     void update() const;
 };
@@ -479,13 +480,12 @@ void ExperimentalEnginePBR::createScene()
     StaticMeshAsset* sphere = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Sphere.obj"));
     StaticMeshAsset* cylinder = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cylinder.obj"));
     StaticMeshAsset* cone = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cone.obj"));
-    StaticMeshAsset* gizmo = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Gizmo.obj"));
     StaticMeshAsset* suzanne = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Suzanne.obj"));
-    std::array<StaticMeshAsset*, 6> assets{ cube, sphere, cylinder, cone, gizmo, suzanne };
+    std::array<StaticMeshAsset*, 5> assets{ cube, sphere, cylinder, cone, suzanne };
 #if NDEBUG
     std::array<String, 8> floorTypes{ "WoodFloor043", "Tiles086", "Tiles074", "MetalPlates006", "Marble006", "Ground042", "Ground037", "Gravel022" };
     std::array<String, 6> ceilTypes{ "WoodFloor043", "Tiles108", "Tiles074", "MetalPlates006", "Marble006", "Wood051" };
-    std::array<String, 9> pillarTypes{ "WoodFloor043", "Tiles108", "Tiles074", "MetalPlates006", "Marble006", "Marble006", "Rock035", "Ground037", "PaintedPlaster016"};
+    std::array<String, 9> pillarTypes{ "WoodFloor043", "Tiles108", "Tiles074", "MetalPlates006", "Marble006", "Marble006", "Rock035", "Ground037", "PaintedPlaster016" };
     std::array<String, 15> textures{ "Bricks065", "Gravel022", "Ground037", "Ground042", "Leather028", "Marble006", "Metal034", "Metal038", "MetalPlates006"
         , "PaintedPlaster016", "Rock035","Tiles086", "Tiles074" , "Tiles108", "Wood051" };
 #else
@@ -536,14 +536,14 @@ void ExperimentalEnginePBR::createScene()
             for (uint32 batchIdx = 0; batchIdx < sceneFloor.meshAsset->meshBatches.size(); ++batchIdx)
             {
                 sceneFloor.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
-                    {
-                        //{ ud01(generator) * 0.75f, ud01(generator) * 0.75f, ud01(generator) * 0.75f, 1 }
-                        LinearColorConst::WHITE
-                        , 1.f, 1.f
-                        , floorTextureScale
-                        , floorTypes[uint32(floorTypes.size() * ud01(generator))]
-                        , &texturedPipelineContext
-                    });
+                {
+                    //{ ud01(generator) * 0.75f, ud01(generator) * 0.75f, ud01(generator) * 0.75f, 1 }
+                    LinearColorConst::WHITE
+                    , 1.f, 1.f
+                    , floorTextureScale
+                    , floorTypes[uint32(floorTypes.size() * ud01(generator))]
+                    , &texturedPipelineContext
+                });
             }
             pushEntity(sceneFloor);
 
@@ -573,13 +573,13 @@ void ExperimentalEnginePBR::createScene()
                         for (uint32 batchIdx = 0; batchIdx < entity.meshAsset->meshBatches.size(); ++batchIdx)
                         {
                             entity.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
-                                {
-                                    { 0.5f, 0.0f, 0.0f }
-                                    ,  rough, metallic
-                                    , textureScale
-                                    , textures[uint32(textures.size() * ud01(generator))]
-                                    , &singleColorPipelineContext
-                                });
+                            {
+                                { 0.5f, 0.0f, 0.0f }
+                                ,  rough, metallic
+                                , textureScale
+                                , textures[uint32(textures.size() * ud01(generator))]
+                                , &singleColorPipelineContext
+                            });
                         }
                         pushEntity(entity);
 
@@ -648,15 +648,13 @@ void ExperimentalEnginePBR::createScene()
                     for (uint32 batchIdx = 0; batchIdx < entity.meshAsset->meshBatches.size(); ++batchIdx)
                     {
                         entity.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
-                            {
-                                //{ distribution1(generator), distribution1(generator), distribution1(generator), 1 }
-                                //, ud01(generator), ud01(generator)
-                                LinearColorConst::WHITE
-                                , 1.0f, 1.0f
-                                , textureScale
-                                , textures[uint32(textures.size() * ud01(generator))]
-                                , &texturedPipelineContext
-                            });
+                        {
+                            LinearColorConst::WHITE
+                            , 1.0f, 1.0f
+                            , textureScale
+                            , textures[uint32(textures.size() * ud01(generator))]
+                            , &texturedPipelineContext
+                        });
                     }
                     pushEntity(entity);
                 }
@@ -749,6 +747,55 @@ void ExperimentalEnginePBR::createScene()
                 pushEntity(sceneFloor);
             }
         }
+    }
+    // Special scene
+    {
+        PBRSceneEntity carsFloor;
+        carsFloor.name = "ShowroomFloor";
+        carsFloor.meshAsset = cylinder;
+        carsFloor.transform.setScale(Vector3D(13, 13, 1));
+        carsFloor.transform.setTranslation(Vector3D(0, 2800, -50));
+        for (uint32 batchIdx = 0; batchIdx < carsFloor.meshAsset->meshBatches.size(); ++batchIdx)
+        {
+            carsFloor.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
+            {
+                LinearColorConst::WHITE
+                , 1.f, 1.f
+                , floorTextureScale
+                , "Tiles074"
+                , &texturedPipelineContext
+            });
+        }
+        pushEntity(carsFloor);
+
+        PBRSceneEntity car;
+        car.name = "DodgeChallenger";
+        car.meshAsset = static_cast<StaticMeshAsset*>(appInstance().assetManager.getAsset(car.name));
+        fatalAssert(car.meshAsset, "%s() : Failed finding car mesh %s", __func__, car.name.getChar());
+        car.transform.setTranslation(Vector3D(0, 2800, 0));
+        for (uint32 batchIdx = 0; batchIdx < car.meshAsset->meshBatches.size(); ++batchIdx)
+        {
+            car.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
+            {
+                LinearColorConst::WHITE
+                , 1.f, 1.f
+                , Vector2D::ONE
+                , car.name + car.meshAsset->meshBatches[batchIdx].name
+                , &texturedPipelineContext
+            });
+        }
+        pushEntity(car);
+
+        SpotLight heroLight;
+        heroLight.name = "HeroLight";
+        heroLight.transform.setTranslation(car.transform.getTranslation() + Vector3D(0, 0, 400));
+        heroLight.transform.setRotation(Rotation(0, 90, 0));
+        heroLight.radius = 600;
+        heroLight.innerCone = 72;
+        heroLight.outerCone = 76;
+        heroLight.lightcolor = LinearColorConst::WHITE;
+        heroLight.lumen = 500;
+        pushSpt(heroLight);
     }
 
     sceneVolume.reinitialize(entities, Vector3D(50, 50, 50));
@@ -1006,7 +1053,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
 
     clearInfoParams->setVector4Param("clearColor", Vector4D(0, 0, 0, 0));
     clearInfoParams->init();
-    
+
     Camera gizmoCamera;
     gizmoCamera.setClippingPlane(5.f, 305.f);
     gizmoCamera.setOrthoSize({ 290, 290 });
@@ -1336,9 +1383,9 @@ void ExperimentalEnginePBR::updateCameraParams()
     {
         updateCamGizmoViewParams();
         ENQUEUE_COMMAND_NODEBUG(CameraGizmoUpdate,
-        {
-            updateCamGizmoCapture(cmdList, graphicsInstance);
-        }, this);
+            {
+                updateCamGizmoCapture(cmdList, graphicsInstance);
+            }, this);
     }
 }
 
@@ -1346,11 +1393,11 @@ void ExperimentalEnginePBR::onStartUp()
 {
     GameEngine::onStartUp();
 
-    ENQUEUE_COMMAND_NODEBUG(EngineStartUp, 
-    { 
-        startUpRenderInit();
-        updateCamGizmoCapture(cmdList, graphicsInstance);
-    }, this);
+    ENQUEUE_COMMAND_NODEBUG(EngineStartUp,
+        {
+            startUpRenderInit();
+            updateCamGizmoCapture(cmdList, graphicsInstance);
+        }, this);
 
     camera.cameraProjection = projection;
     camera.setOrthoSize({ 1280,720 });
@@ -1490,7 +1537,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
             for (const std::pair<const LocalPipelineContext*, std::map<const PBRSceneEntity*, std::vector<uint32>>>& pipelineEntities : drawingPipelineToEntities)
             {
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, *pipelineEntities.first, { queryParam });
-                
+
                 for (const std::pair<const PBRSceneEntity* const, std::vector<uint32>>& entity : pipelineEntities.second)
                 {
                     // Instance set
@@ -1885,22 +1932,20 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
         ImPlot::ShowDemoWindow(&bOpenImPlotDemo);
     }
 
-    static bool bTestOpen = true;
+    static bool bSettingOpen = true;
 
-    if (bTestOpen)
+    if (bSettingOpen)
     {
         ImGui::SetNextWindowSize(ImVec2(430, 450), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
 
-        if (!ImGui::Begin("Settings", &bTestOpen, ImGuiWindowFlags_NoMove))
+        if (!ImGui::Begin("Settings", &bSettingOpen, ImGuiWindowFlags_NoMove))
         {
             ImGui::End();
-            return;
         }
         else
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
             const InputAnalogState* rmxState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::RelMouseX);
             const InputAnalogState* rmyState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::RelMouseY);
@@ -2047,7 +2092,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                 }
                 if (ImGui::Combo("Textures", &selectedTexture, textureNames.data(), int32(textureNames.size())))
                 {
-                    if(selectedTexture != 0)
+                    if (selectedTexture != 0)
                     {
                         ImageUtils::calcHistogramRGB(histogram[0].data(), histogram[1].data(), histogram[2].data(), 32
                             , reinterpret_cast<const uint8*>(textures[selectedTexture - 1]->getPixelData().data())
@@ -2059,7 +2104,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                 if (selectedTexture != 0)
                 {
                     ImPlot::SetNextPlotLimits(0, 255, 0, 1.0, ImGuiCond_::ImGuiCond_Once);
-                    if (ImPlot::BeginPlot("Texture Histogram", 0, 0, ImVec2(-1,0), 0, ImPlotAxisFlags_::ImPlotAxisFlags_Lock, ImPlotAxisFlags_::ImPlotAxisFlags_Lock))
+                    if (ImPlot::BeginPlot("Texture Histogram", 0, 0, ImVec2(-1, 0), 0, ImPlotAxisFlags_::ImPlotAxisFlags_Lock, ImPlotAxisFlags_::ImPlotAxisFlags_Lock))
                     {
                         ImPlot::SetNextFillStyle(LinearColorConst::RED, 1.0f);
                         ImPlot::PlotShaded("Red", histogram[0].data(), int32(histogram[0].size()), 0.0f, 8);
@@ -2077,6 +2122,16 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
             ImGui::End();
         }
     }
+
+    // FPS
+    ImGui::SetNextWindowSize(ImVec2(145, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 145, 0), ImGuiCond_FirstUseEver);
+
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, LinearColor(0, 0, 0, 0.6f));
+    ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
+    ImGui::Text("%.3f ms(%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::End();
+    ImGui::PopStyleColor();
 }
 
 void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawInterface)
@@ -2112,7 +2167,9 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
                 uint32 i = 0;
                 for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
                 {
-                    if (ImGui::TreeNode(("Material " + std::to_string(i)).c_str()))
+                    String materialName = entity.meshAsset->meshBatches[i].name.empty()
+                        ? ("Material " + std::to_string(i)) : entity.meshAsset->meshBatches[i].name;
+                    if (ImGui::TreeNode(materialName.getChar()))
                     {
                         PBRSceneEntity::BatchProperties& props = entity.meshBatchProps[i];
                         if (ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&props.color)))
