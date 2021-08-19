@@ -6,7 +6,7 @@
 
 std::ostringstream& loggerBuffer()
 {
-    static std::ostringstream buffer;
+    static std::ostringstream buffer(std::ios_base::trunc);
     return buffer;
 }
 
@@ -30,7 +30,7 @@ GenericFile* Logger::getLogFile()
         }
 
         logFile = UniquePtr<GenericFile>(new PlatformFile(logFilePath));
-        logFile->setFileFlags(EFileFlags::CreateAlways | EFileFlags::Write);
+        logFile->setFileFlags(EFileFlags::OpenAlways | EFileFlags::Write);
         logFile->setSharingMode(EFileSharing::ReadOnly);
         logFile->setAttributes(EFileAdditionalFlags::Normal);
     }
@@ -80,7 +80,7 @@ void Logger::flushStream()
     {
         logFile->seekEnd();
         logFile->write(ArrayView<uint8>(reinterpret_cast<uint8*>(str.data()), uint32(str.length())));
-        loggerBuffer().flush();
+        loggerBuffer().str({});
         logFile->closeFile();
     }
 }
