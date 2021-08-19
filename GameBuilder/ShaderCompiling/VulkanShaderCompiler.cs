@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace GameBuilder.ShaderCompiling
 {
@@ -30,6 +28,8 @@ namespace GameBuilder.ShaderCompiling
     }
     public class VulkanShaderCompiler : ShaderCompiler
     {
+        private FileChangesTracker compiledFilesManifest;
+
         private string spirvReflectorDir;
 
         private string shaderSrcFolder;
@@ -60,12 +60,12 @@ namespace GameBuilder.ShaderCompiling
         private const string COMPILE_COMMAND = "@\"{0}\" -{1} {2} -{3} {4} --source-entrypoint main -H -o \"{5}\" \"{6}\"";
         private const string SPIRV_REFLECTION_EXE = "SpirvShaderReflection.exe";
 
-        public VulkanShaderCompiler(string compilerPath, string intermediatePath, string targetPath) :
-            base(compilerPath, intermediatePath)
+        public VulkanShaderCompiler(string compilerPath, string intermediatePath, string targetPath) 
+            : base(compilerPath, intermediatePath)
         {
-            if(compilerDir == null)
+            if (compilerDir == null)
             {
-                compilerDir = Path.Combine(System.Environment.GetEnvironmentVariable("VULKAN_SDK"),"bin");
+                compilerDir = Path.Combine(System.Environment.GetEnvironmentVariable("VULKAN_SDK"), "bin");
             }
 #if DEBUG
             spirvReflectorDir = Path.Combine(Directories.BINARIES_ROOT, "SpirvShaderReflection/x64/Debug");
@@ -76,6 +76,8 @@ namespace GameBuilder.ShaderCompiling
             shaderTargetDir = Path.Combine(targetPath, "Shaders");
             FileUtils.GetOrCreateDir(shaderTargetDir);
 
+            compiledFilesManifest = new FileChangesTracker("ShaderIntmdt", shaderSrcFolder, intermediatePath);
+
             shaders = new Dictionary<string, List<Tuple<string, IntermediateTargetFile>>>();
             shaders.Add("frag", new List<Tuple<string, IntermediateTargetFile>>());
             shaders.Add("vert", new List<Tuple<string, IntermediateTargetFile>>());
@@ -84,12 +86,12 @@ namespace GameBuilder.ShaderCompiling
             shaders.Add("geom", new List<Tuple<string, IntermediateTargetFile>>());
             shaders.Add("comp", new List<Tuple<string, IntermediateTargetFile>>());
 
-            shaderTargets = new Dictionary<string ,TargetFile>();
+            shaderTargets = new Dictionary<string, TargetFile>();
 
-            foreach (KeyValuePair<string,List<Tuple<string,IntermediateTargetFile>>> shaderType in shaders)
+            foreach (KeyValuePair<string, List<Tuple<string, IntermediateTargetFile>>> shaderType in shaders)
             {
-                string expr = string.Format("*.{0}.glsl",shaderType.Key);
-                foreach (string shader in Directory.GetFiles(shaderSrcFolder,expr,
+                string expr = string.Format("*.{0}.glsl", shaderType.Key);
+                foreach (string shader in Directory.GetFiles(shaderSrcFolder, expr,
                                                 SearchOption.AllDirectories))
                 {
                     IntermediateTargetFile intermediateFileDesc = new IntermediateTargetFile();
@@ -100,10 +102,10 @@ namespace GameBuilder.ShaderCompiling
 
                     // To remove both extension and shader type from shader file name
                     string shaderName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(shader));
-                    if(!shaderTargets.ContainsKey(shaderName))
+                    if (!shaderTargets.ContainsKey(shaderName))
                     {
                         string targetBase = Path.Combine(shaderTargetDir, shaderName);
-                        TargetFile targetFileDesc = new TargetFile(targetBase + ".shader",targetBase + ".ref");
+                        TargetFile targetFileDesc = new TargetFile(targetBase + ".shader", targetBase + ".ref");
 
                         shaderTargets.Add(shaderName, targetFileDesc);
                     }
@@ -115,7 +117,7 @@ namespace GameBuilder.ShaderCompiling
                     FileUtils.GetOrCreateDir(intermediateFileDesc.targetOutputFile);
                     FileUtils.GetOrCreateDir(intermediateFileDesc.logFile);
 
-                    shaderType.Value.Add(new Tuple<string, IntermediateTargetFile>(shader,intermediateFileDesc));
+                    shaderType.Value.Add(new Tuple<string, IntermediateTargetFile>(shader, intermediateFileDesc));
                 }
             }
         }
@@ -130,11 +132,41 @@ namespace GameBuilder.ShaderCompiling
                 return false;
             }
 
+            HashSet<string> compiledShaders = new HashSet<string>();
+            bSuccess = compileAllShadersToSpirV(compiler, ref compiledShaders);
+
+            if (compiledShaders.Count != 0)
+            {
+                bSuccess = reflectCompiledShaders(spirvReflector, compiledShaders) && bSuccess;
+            }
+            return bSuccess;
+        }
+
+        bool compileAllShadersToSpirV(in string compiler, ref HashSet<string> outCompiledShaders)
+        {
+            bool bSuccess = true;
             foreach (KeyValuePair<string, List<Tuple<string, IntermediateTargetFile>>> shaderType in shaders)
             {
                 VulkanShaderArg shaderArg = SHADER_ARGS[shaderType.Key];
-                foreach(Tuple<string,IntermediateTargetFile> shaderFile in shaderType.Value)
+                foreach (Tuple<string, IntermediateTargetFile> shaderFile in shaderType.Value)
                 {
+                    // To remove both extension and shader type from shader file name
+                    string shaderName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(shaderFile.Item1));
+
+                    // Check if needs recompile
+                    List<string> targetFiles = new List<string>();
+                    targetFiles.Add(shaderFile.Item2.targetOutputFile);
+                    // Check target from intermediate as well
+                    if(shaderTargets.ContainsKey(shaderName))
+                    {
+                        targetFiles.Add(shaderTargets[shaderName].targetReflectionFile);
+                        targetFiles.Add(shaderTargets[shaderName].targetShaderFile);
+                    }
+                    if (!compiledFilesManifest.updateNewerFile(shaderFile.Item1, targetFiles))
+                    {
+                        continue;
+                    }
+
                     string cmd = string.Format(COMPILE_COMMAND
                         , compiler
                         , shaderArg.stageType.argKey, shaderArg.stageType.argValue
@@ -153,40 +185,52 @@ namespace GameBuilder.ShaderCompiling
                         LoggerUtils.Log(executionResult);
                         bSuccess = false;
                     }
-                    File.WriteAllText(shaderFile.Item2.logFile, executionResult,Encoding.UTF8);
+                    else
+                    {
+                        outCompiledShaders.Add(shaderName);
+                    }
+                    File.WriteAllText(shaderFile.Item2.logFile, executionResult, Encoding.UTF8);
                 }
             }
+            return bSuccess;
+        }
 
-            if(bSuccess)
+        bool reflectCompiledShaders(in string spirvReflector, in HashSet<string> compiledShaders)
+        {
+            bool bSuccess = true;
+            foreach (string shaderName in compiledShaders)
             {
-                foreach(KeyValuePair<string,TargetFile> pipelinePair in  shaderTargets)
+                if (!shaderTargets.ContainsKey(shaderName))
                 {
-                    LoggerUtils.Log("Reflecting shader pipeline {0}", pipelinePair.Key);
+                    LoggerUtils.Error("Targets not found for shader {0}", shaderName);
+                }
 
-                    StringBuilder cmdBuilder = new StringBuilder($"@\"{spirvReflector}\"");
-                    foreach(TargetFile.IntermediateReference intermediateTargetRef in pipelinePair.Value.intermediateTargetsRef)
-                    {
-                        IntermediateTargetFile intermediateShaderTarget = shaders[intermediateTargetRef.shaderType][intermediateTargetRef.intermediateIdx].Item2;
-                        cmdBuilder.Append($" \"{intermediateShaderTarget.targetOutputFile}\"");
-                    }
-                    // at n-2th arg reflection file
-                    cmdBuilder.Append($" \"{pipelinePair.Value.targetReflectionFile}\"");
-                    // at n-1st arg combined shader file
-                    cmdBuilder.Append($" \"{pipelinePair.Value.targetShaderFile}\"");
+                TargetFile targetInfo = shaderTargets[shaderName];
+                LoggerUtils.Log("Reflecting shader pipeline {0}", shaderName);
 
-                    string cmd = cmdBuilder.ToString();
-                    string executionResult;                    
-                    if(!ProcessUtils.ExecuteCommand(out executionResult, cmd))
-                    {
-                        LoggerUtils.Error("Failed executing command {0}", cmd);
-                        bSuccess = false;
-                    }
-                    LoggerUtils.Log("Execution log : \n{0}", executionResult);
+                StringBuilder cmdBuilder = new StringBuilder($"@\"{spirvReflector}\"");
+                foreach (TargetFile.IntermediateReference intermediateTargetRef in targetInfo.intermediateTargetsRef)
+                {
+                    IntermediateTargetFile intermediateShaderTarget = shaders[intermediateTargetRef.shaderType][intermediateTargetRef.intermediateIdx].Item2;
+                    cmdBuilder.Append($" \"{intermediateShaderTarget.targetOutputFile}\"");
+                }
+                // at n-2th arg reflection file
+                cmdBuilder.Append($" \"{targetInfo.targetReflectionFile}\"");
+                // at n-1st arg combined shader file
+                cmdBuilder.Append($" \"{targetInfo.targetShaderFile}\"");
 
-                    if(executionResult.Contains("ERROR:"))
-                    {
-                        bSuccess = false;
-                    }
+                string cmd = cmdBuilder.ToString();
+                string executionResult;
+                if (!ProcessUtils.ExecuteCommand(out executionResult, cmd))
+                {
+                    LoggerUtils.Error("Failed executing command {0}", cmd);
+                    bSuccess = false;
+                }
+                LoggerUtils.Log("Execution log : \n{0}", executionResult);
+
+                if (executionResult.Contains("ERROR:"))
+                {
+                    bSuccess = false;
                 }
             }
             return bSuccess;

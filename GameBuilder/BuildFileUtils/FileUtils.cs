@@ -20,7 +20,37 @@ namespace GameBuilder.BuildFileUtils
             Uri relativeUri = baseUri.MakeRelativeUri(fullUri);
 
             return relativeUri.ToString().Replace("/", "\\");
+        }
+        // c:/xyz/abc/../../file.txt
+        // gives c:/file.txt
+        public static string RemoveParentRedirector(string absPath)
+        {
+            string outPath = absPath.Replace("/", "\\");
+            string[] pathFolders = outPath.Split('\\');
+            int parentDirNum = 0;
+            StringBuilder sanitizedPath = new StringBuilder();
+            for(int i = pathFolders.Length - 1; i >= 0; --i)
+            {
+                if(pathFolders[i].Equals(".."))
+                {
+                    ++parentDirNum;
+                }
+                else 
+                {
+                    if(parentDirNum == 0)
+                    {
+                        sanitizedPath.Insert(0, $"{pathFolders[i]}{Path.DirectorySeparatorChar}");
+                    }
+                    else
+                    {
+                        --parentDirNum;
+                    }
+                }
+            }
+            sanitizedPath.Remove(sanitizedPath.Length - 1, 1);
 
+            outPath = sanitizedPath.ToString();
+            return outPath;
         }
 
         public static string GetOrCreateDir(string path)
