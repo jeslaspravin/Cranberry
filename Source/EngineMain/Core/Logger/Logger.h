@@ -6,8 +6,8 @@
 class GenericFile;
 
 
-class Logger {
-
+class Logger 
+{
 private:
     Logger() = default;
 
@@ -33,7 +33,7 @@ private:
     template<typename StrType>
     static std::enable_if_t<
                 std::conjunction_v<
-                    std::is_convertible<decltype(std::declval<StrType>().getChar()), const AChar*>, std::negation<std::is_function<decltype(StrType::getChar)>>>, const AChar*>
+                    std::is_convertible<decltype(std::declval<StrType>().getChar()), const AChar*>, std::negation<std::is_function<decltype(StrType::c_str)>>>, const AChar*>
         getChar(const StrType& value)
     {
         return static_cast<const AChar*>(value.getChar());

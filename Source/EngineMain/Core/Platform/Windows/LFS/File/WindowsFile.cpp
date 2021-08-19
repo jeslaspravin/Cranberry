@@ -4,6 +4,7 @@
 #include "../../../PlatformFunctions.h"
 #include "../../../LFS/PlatformLFS.h"
 #include "../../../../Logger/Logger.h"
+#include "../../../PlatformAssertionErrors.h"
 
 WindowsFile::WindowsFile(WindowsFile&& otherFile) : GenericFile()
 {
@@ -130,13 +131,16 @@ void WindowsFile::seekEnd() const
     if (getFileHandleRaw())
     {
         SetFilePointer(getFileHandleRaw(), 0, nullptr, FILE_END);
+        debugAssert(filePointer() == fileSize());
     }
 }
 
 void WindowsFile::seekBegin() const
 {
-    if (getFileHandleRaw()) {
+    if (getFileHandleRaw()) 
+    {
         SetFilePointer(getFileHandleRaw(), 0, nullptr, FILE_BEGIN);
+        debugAssert(filePointer() == 0);
     }
 }
 
