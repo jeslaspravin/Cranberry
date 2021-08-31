@@ -84,6 +84,10 @@ public:
     static Vector2D abs(const Vector2D& value);
     static Vector2D floor(const Vector2D& value);
     static Vector2D ceil(const Vector2D& value);
+    static Vector2D round(const Vector2D& value);
+    static Vector2D mod(const Vector2D& a, const Vector2D& b);
+    static Vector2D mod(const Vector2D& a, const float& b);
+    static Vector2D modf(Vector2D& wholePart, const Vector2D& value);
 };
 
 Vector2D operator/(float n, const Vector2D& d);

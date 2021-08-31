@@ -235,6 +235,26 @@ Vector3D Vector3D::rejectFrom(const Vector3D& b) const
     return *this - projectTo(b);
 }
 
+Vector3D operator/(float n, const Vector3D& d)
+{
+    return Vector3D(n / d.value);
+}
+
+Vector3D operator-(float n, const Vector3D& d)
+{
+    return Vector3D(n - d.value);
+}
+
+Vector3D operator*(float n, const Vector3D& d)
+{
+    return d * n;
+}
+
+Vector3D operator+(float n, const Vector3D& d)
+{
+    return d + n;
+}
+
 const Vector3D Vector3D::RIGHT(0, 1);
 
 const Vector3D Vector3D::FWD(1, 0);
@@ -285,61 +305,22 @@ Vector3D Vector3D::ceil(const Vector3D& value)
     return Vector3D(glm::ceil(value.value));
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Math functions
-//////////////////////////////////////////////////////////////////////////
-
-bool Math::isEqual(const Vector3D& a, const Vector3D& b, float epsilon /*= SMALL_EPSILON*/)
+Vector3D Vector3D::round(const Vector3D& value)
 {
-    return a.isSame(b, epsilon);
+    return Vector3D(glm::round(value.value));
 }
 
-Vector3D Math::clamp(const Vector3D& value, const Vector3D& min, const Vector3D& max)
+Vector3D Vector3D::mod(const Vector3D& a, const Vector3D& b)
 {
-    return Vector3D::clamp(value, min, max);
+    return Vector3D(glm::mod(a.value, b.value));
 }
 
-Vector3D Math::min(const Vector3D& a, const Vector3D& b)
+Vector3D Vector3D::mod(const Vector3D& a, const float& b)
 {
-    return Vector3D::min(a, b);
+    return Vector3D(glm::mod(a.value, b));
 }
 
-Vector3D Math::max(const Vector3D& a, const Vector3D& b)
+Vector3D Vector3D::modf(Vector3D& wholePart, const Vector3D& value)
 {
-    return Vector3D::max(a, b);
-}
-
-Vector3D Math::abs(const Vector3D& value)
-{
-    return Vector3D::abs(value);
-}
-
-Vector3D Math::floor(const Vector3D& value)
-{
-    return Vector3D::floor(value);
-}
-
-Vector3D Math::ceil(const Vector3D& value)
-{
-    return Vector3D::ceil(value);
-}
-
-Vector3D operator/(float n, const Vector3D& d)
-{
-    return Vector3D(n / d.value);
-}
-
-Vector3D operator-(float n, const Vector3D& d)
-{
-    return Vector3D(n - d.value);
-}
-
-Vector3D operator*(float n, const Vector3D& d)
-{
-    return d * n;
-}
-
-Vector3D operator+(float n, const Vector3D& d)
-{
-    return d + n;
+    return Vector3D(glm::modf(value.value, wholePart.value));
 }

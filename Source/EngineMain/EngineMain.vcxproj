@@ -252,6 +252,7 @@
     <ClCompile Include="Core\Input\Windows\WindowsDevices.cpp" />
     <ClCompile Include="Core\Input\Windows\WindowsRawInputBuffer.cpp" />
     <ClCompile Include="Core\Logger\Logger.cpp" />
+    <ClCompile Include="Core\Math\MathInternal.cpp" />
     <ClCompile Include="Core\Math\Matrix2.cpp" />
     <ClCompile Include="Core\Math\Matrix3.cpp" />
     <ClCompile Include="Core\Math\Matrix4.cpp" />
@@ -281,6 +282,7 @@
     <ClCompile Include="Core\Types\Textures\Texture2D.cpp" />
     <ClCompile Include="Core\Types\Textures\TexturesBase.cpp" />
     <ClCompile Include="Core\Types\Time.cpp" />
+    <ClCompile Include="Core\Types\Traits\ValueTraits.cpp" />
     <ClCompile Include="Core\Types\Transform3D.cpp" />
     <ClCompile Include="Editor\Core\ImGui\ImGuiDrawInterface.cpp" />
     <ClCompile Include="Editor\Core\ImGui\ImGuiFontTextureAtlas.cpp" />

@@ -216,6 +216,26 @@ Vector2D Vector2D::rejectFrom(const Vector2D& b) const
     return *this - projectTo(b);
 }
 
+Vector2D operator/(float n, const Vector2D& d)
+{
+    return Vector2D(n / d.value);
+}
+
+Vector2D operator-(float n, const Vector2D& d)
+{
+    return Vector2D(n - d.value);
+}
+
+Vector2D operator*(float n, const Vector2D& d)
+{
+    return d * n;
+}
+
+Vector2D operator+(float n, const Vector2D& d)
+{
+    return d + n;
+}
+
 const Vector2D Vector2D::RIGHT(0,1);
 
 const Vector2D Vector2D::FWD(1,0);
@@ -264,61 +284,22 @@ Vector2D Vector2D::ceil(const Vector2D& value)
     return Vector2D(glm::ceil(value.value));
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Math functions
-//////////////////////////////////////////////////////////////////////////
-
-bool Math::isEqual(const Vector2D& a, const Vector2D& b, float epsilon /*= SMALL_EPSILON*/)
+Vector2D Vector2D::round(const Vector2D& value)
 {
-    return a.isSame(b,epsilon);
+    return Vector2D(glm::round(value.value));
 }
 
-Vector2D Math::clamp(const Vector2D& value, const Vector2D& min, const Vector2D& max)
+Vector2D Vector2D::mod(const Vector2D& a, const Vector2D& b)
 {
-    return Vector2D::clamp(value, min, max);
+    return Vector2D(glm::mod(a.value, b.value));
 }
 
-Vector2D Math::min(const Vector2D& a, const Vector2D& b)
+Vector2D Vector2D::mod(const Vector2D& a, const float& b)
 {
-    return Vector2D::min(a, b);
+    return Vector2D(glm::mod(a.value, b));
 }
 
-Vector2D Math::max(const Vector2D& a, const Vector2D& b)
+Vector2D Vector2D::modf(Vector2D& wholePart, const Vector2D& value)
 {
-    return Vector2D::max(a, b);
-}
-
-Vector2D Math::abs(const Vector2D& value)
-{
-    return Vector2D::abs(value);
-}
-
-Vector2D Math::floor(const Vector2D& value)
-{
-    return Vector2D::floor(value);
-}
-
-Vector2D Math::ceil(const Vector2D& value)
-{
-    return Vector2D::ceil(value);
-}
-
-Vector2D operator/(float n, const Vector2D& d)
-{
-    return Vector2D(n / d.value);
-}
-
-Vector2D operator-(float n, const Vector2D& d)
-{
-    return Vector2D(n - d.value);
-}
-
-Vector2D operator*(float n, const Vector2D& d)
-{
-    return d * n;
-}
-
-Vector2D operator+(float n, const Vector2D& d)
-{
-    return d + n;
+    return Vector2D(glm::modf(value.value, wholePart.value));
 }

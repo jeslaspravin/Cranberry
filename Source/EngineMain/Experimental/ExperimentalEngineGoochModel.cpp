@@ -35,6 +35,7 @@
 #include "../RenderInterface/Rendering/CommandBuffer.h"
 #include "../Editor/Core/ImGui/ImGuiManager.h"
 #include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
+#include "../Editor/Core/ImGui/ImGuiLib/implot.h"
 #include "../RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "../RenderInterface/Resources/QueueResource.h"
 #include "../RenderInterface/Resources/Samplers/SamplerInterface.h"
@@ -59,6 +60,80 @@
 class ShaderParameters;
 class IRenderCommandList;
 class Texture2DRW;
+
+struct TestBitonicSortIndices
+{
+    struct LineSegment
+    {
+        std::array<float, 2> step;
+        std::array<float, 2> indices;
+    };
+
+    int32 count;
+    int32 stepsCount = 0;
+    std::vector<std::pair<std::vector<LineSegment>, Color>> perThreadIndices;
+    std::vector<std::pair<std::vector<LineSegment>, Color>> perGroup;
+
+    TestBitonicSortIndices(int32 n)
+        : count(n)
+    {
+        int32 flipsNum = int32(Math::ceil(Math::log2(count)));
+        count = Math::pow(2, flipsNum);
+        stepsCount = (flipsNum * (2 + (flipsNum - 1))) / 2;
+
+        perGroup.resize(count);
+        for (std::pair<std::vector<LineSegment>, Color>& color : perGroup)
+        {
+            color.second = ColorConst::random();
+        }
+
+        int32 threadNum = count / 2;
+        for (int32 t = 0; t < threadNum; t++)
+        {
+            std::pair<std::vector<LineSegment>, Color>& threadIndices = perThreadIndices.emplace_back();
+            threadIndices.second = ColorConst::random();
+
+            float step = 0;
+            for (int32 h = 2; h <= count; h *= 2)
+            {
+                step++;
+
+                int32 flipStartIdx = (t / (h / 2)) * h;
+                int32 flipOffset = (t % (h / 2));
+
+                int32 flipLhsIdx = flipStartIdx + flipOffset;
+                int32 flipRhsIdx = flipStartIdx + h - flipOffset - 1;
+
+                LineSegment* segment = &threadIndices.first.emplace_back();
+                segment->step[0] = segment->step[1] = step + (flipOffset / (h * 0.5f));
+                segment->indices[0] = float(flipLhsIdx);
+                segment->indices[1] = float(flipRhsIdx);
+
+                perGroup[flipStartIdx].first.emplace_back(*segment);
+
+                for (int32 d = h / 2; d >= 2; d /= 2)
+                {
+                    step++;
+
+                    int32 disperseStartIdx = (t / (d / 2)) * d;
+                    int32 disperseOffset = (t % (d / 2));
+
+                    int32 dLhsIdx = disperseStartIdx + disperseOffset;
+                    int32 dRhsIdx = dLhsIdx + (d / 2);
+
+                    segment = &threadIndices.first.emplace_back();
+                    segment->step[0] = segment->step[1] = step + (disperseOffset / (d * 0.5f));
+                    segment->indices[0] = float(dLhsIdx);
+                    segment->indices[1] = float(dRhsIdx);
+
+                    perGroup[flipStartIdx].first.emplace_back(*segment);  
+                }
+            }
+
+            stepsCount = Math::max(stepsCount, int32(Math::ceil(step)));
+        }
+    }
+};
 
 struct QueueCommandPool
 {
@@ -108,7 +183,6 @@ class ExperimentalEngine : public GameEngine, public IImGuiLayer
     void createPools();
     void destroyPools();
 
-    ImageData texture;
     SharedPtr<class SamplerInterface> nearestFiltering = nullptr;
     SharedPtr<class SamplerInterface> linearFiltering = nullptr;
     // TODO(Jeslas) : Cubic filtering not working check new drivers or log bug in nvidia
@@ -327,19 +401,8 @@ void ExperimentalEngine::createImages()
     createParam.textureName = "Compute Write";
     createParam.format = EPixelDataFormat::RGBA_U8_Norm;
     createParam.bIsWriteOnly = false;
-    createParam.defaultColor = Color(128, 0, 0, 255);
     writeTexture.image = TextureBase::createTexture<Texture2DRW>(createParam);
     writeTexture.imageView = static_cast<VulkanImageResource*>(writeTexture.image->getTextureResource())->getImageView({});
-    // common shader sampling texture
-    {
-        texture.image = static_cast<TextureAsset*>(appInstance().assetManager.getOrLoadAsset("TestImageData.png"))->getTexture();
-        texture.imageView = static_cast<VulkanImageResource*>(texture.image->getTextureResource())->getImageView({});
-
-        if (texture.imageView != nullptr)
-        {
-            graphicsDbg->markObject((uint64)texture.imageView, "DiffuseTextureView", VK_OBJECT_TYPE_IMAGE_VIEW);
-        }
-    }
 }
 
 void ExperimentalEngine::destroyImages()
@@ -370,7 +433,7 @@ void ExperimentalEngine::createScene()
             sceneFloor.meshAsset = cube;
             sceneFloor.transform.setScale(Vector3D(10, 10, 1));
             sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, -50));
-            sceneFloor.meshBatchColors.emplace_back(LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1));
+            sceneFloor.meshBatchColors.emplace_back(LinearColorConst::random());
 
             sceneData.emplace_back(sceneFloor);
 
@@ -397,7 +460,7 @@ void ExperimentalEngine::createScene()
                 entity.transform.setTranslation(offset + Vector3D(distribution(generator) * 400, distribution(generator) * 400, distribution1(generator) * 100 + 50));
                 entity.transform.setRotation(Rotation(0, 0, distribution(generator) * 45));
 
-                entity.meshBatchColors.emplace_back(LinearColor(distribution1(generator), distribution1(generator), distribution1(generator), 1));
+                entity.meshBatchColors.emplace_back(LinearColorConst::random());
                 sceneData.emplace_back(entity);
             }
 
@@ -559,13 +622,13 @@ void ExperimentalEngine::setupShaderParameterParams()
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(2 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParamViewInfo("ssDepth", depthImageViewInfo);
         lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
         drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
         drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
-        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(3 * fbIncrement)], linearFiltering);
         drawQuadDepthDescs.getResources()[i]->setTextureParamViewInfo("quadTexture", depthImageViewInfo);
         drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
@@ -617,12 +680,12 @@ void ExperimentalEngine::reupdateTextureParamsOnResize()
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(2 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
         drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
         drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
-        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(2 * fbIncrement)], linearFiltering);
+        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(3 * fbIncrement)], linearFiltering);
         drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
 }
@@ -1320,6 +1383,63 @@ void ExperimentalEngine::draw(class ImGuiDrawInterface* drawInterface)
                     ImGui::GetWindowContentRegionWidth()));
                 ImGui::Separator();
             }
+
+            if (ImGui::CollapsingHeader("Bitonic Sort"))
+            {
+                static TestBitonicSortIndices bitonic(16);
+                if (ImGui::InputInt("Count", &bitonic.count))
+                {
+                    bitonic = TestBitonicSortIndices(bitonic.count);
+                }
+
+                ImPlot::SetNextPlotLimits(0, bitonic.stepsCount + 1, -1, bitonic.count, ImGuiCond_::ImGuiCond_Always);
+                if (ImPlot::BeginPlot("Bitonic Threads", 0, 0, ImVec2(-1, 0), ImPlotFlags_::ImPlotFlags_CanvasOnly
+                    , ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_NoGridLines
+                    , ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_Invert))
+                {
+                    int32 idx = 0;
+                    for (const auto& threadInds : bitonic.perThreadIndices)
+                    {
+                        String labelId = "Thread: " + std::to_string(idx);
+                        ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_Line, LinearColor(threadInds.second));
+                        int32 segIdx = 0;
+                        for (const TestBitonicSortIndices::LineSegment& seg : threadInds.first)
+                        {
+                            String segId = labelId + "Segment : " + std::to_string(segIdx);
+                            ImPlot::PlotLine(segId.getChar(), seg.step.data(), seg.indices.data(), int32(seg.indices.size()));
+                            segIdx++;
+                        }
+                        ImPlot::PopStyleColor();
+                        idx++;
+                    }
+                    ImPlot::EndPlot();
+                }
+
+                ImPlot::SetNextPlotLimits(0, bitonic.stepsCount + 1, -1, bitonic.count, ImGuiCond_::ImGuiCond_Always);
+                if (ImPlot::BeginPlot("Bitonic Groups", 0, 0, ImVec2(-1, 0), ImPlotFlags_::ImPlotFlags_CanvasOnly
+                    , ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_NoGridLines
+                    , ImPlotAxisFlags_::ImPlotAxisFlags_Lock | ImPlotAxisFlags_::ImPlotAxisFlags_Invert))
+                {
+                    int32 idx = 0;
+                    for (const auto& grpInds : bitonic.perGroup)
+                    {
+                        String labelId = "Group: " + std::to_string(idx);
+                        ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_Line, LinearColor(grpInds.second));
+                        int32 segIdx = 0;
+                        for (const TestBitonicSortIndices::LineSegment& seg : grpInds.first)
+                        {
+                            String segId = labelId + "Segment : " + std::to_string(segIdx);
+                            ImPlot::PlotLine(segId.getChar(), seg.step.data(), seg.indices.data(), int32(seg.indices.size()));
+                            segIdx++;
+                        }
+                        ImPlot::PopStyleColor();
+                        idx++;
+                    }
+
+                    ImPlot::EndPlot();
+                }
+            }
+
             ImGui::PopStyleVar();
             ImGui::End();
         }

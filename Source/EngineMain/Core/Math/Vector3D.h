@@ -89,6 +89,10 @@ public:
     static Vector3D abs(const Vector3D& value);
     static Vector3D floor(const Vector3D& value);
     static Vector3D ceil(const Vector3D& value);
+    static Vector3D round(const Vector3D& value);
+    static Vector3D mod(const Vector3D& a, const Vector3D& b);
+    static Vector3D mod(const Vector3D& a, const float& b);
+    static Vector3D modf(Vector3D& wholePart, const Vector3D& value);
 };
 
 Vector3D operator/(float n, const Vector3D& d);

@@ -11,56 +11,221 @@ class Vector3D;
 class Vector2D;
 class Vector4D;
 class Rotation;
+namespace std { class random_device; }
 
-class Math
+template <typename Type>
+using IsCustomMathTypes = std::disjunction<
+    std::is_same<Type, Vector2D>
+    , std::is_same<Type, Vector3D>
+    , std::is_same<Type, Vector4D>
+    , std::is_same<Type, Rotation>
+>;
+
+template <typename Type, typename Enable = void>
+class MathHelper;
+
+template <typename Type>
+class MathHelper<Type, std::enable_if_t<std::negation_v<IsCustomMathTypes<typename Type>>>>
 {
+    friend class Math;
 private:
-    Math() = default;
-
-public:
-    template <typename ClampType, typename ClampType1, typename ClampType2>
-    FORCE_INLINE static std::enable_if_t<
-        std::conjunction_v<std::is_convertible<ClampType1, ClampType>, std::is_convertible<ClampType2, ClampType>>
-        , ClampType>
-        clamp(const ClampType& value, const ClampType1& min, const ClampType2& max)
+    FORCE_INLINE static Type clamp(const Type& value, const Type& min, const Type& max)
     {
-        return glm::clamp(value, ClampType(min), ClampType(max));
+        return glm::clamp(value, min, max);
     }
 
-    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
-    FORCE_INLINE static T min(const Type1& a, const Type2& b)
+    FORCE_INLINE static Type min(const Type& a, const Type& b)
     {
-        return glm::min(T(a), T(b));
+        return glm::min(a, b);
     }
 
-    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
-    FORCE_INLINE static T max(const Type1& a, const Type2& b)
+    FORCE_INLINE static Type max(const Type& a, const Type& b)
     {
-        return glm::max(T(a), T(b));
+        return glm::max(a, b);
     }
 
-    template <typename Type>
     FORCE_INLINE static Type abs(const Type& value)
     {
         return glm::abs(value);
     }
 
-    template <typename Type>
     FORCE_INLINE static Type frac(const Type& value)
     {
         return glm::fract(value);
     }
 
-    template <typename Type>
     FORCE_INLINE static Type floor(const Type& value)
     {
         return glm::floor(value);
     }
 
-    template <typename Type>
     FORCE_INLINE static Type ceil(const Type& value)
     {
         return glm::ceil(value);
+    }
+
+    FORCE_INLINE static Type round(const Type& value)
+    {
+        return glm::round(value);
+    }
+
+    template <typename T>
+    FORCE_INLINE static Type mod(const Type& a, const T& b)
+    {
+        return glm::mod(a, b);
+    }
+
+    FORCE_INLINE static Type modf(Type& wholePart, const Type& value)
+    {
+        return glm::modf(value, wholePart);
+    }
+
+    // Non math helpers
+
+    template <typename Type>
+    FORCE_INLINE static bool isEqual(const Type& a, const Type& b, Type epsilon)
+    {
+        return abs(a - b) <= epsilon;
+    }
+};
+
+template <typename Type>
+class MathHelper<Type, std::enable_if_t<IsCustomMathTypes<typename Type>::value>>
+{
+    friend class Math;
+private:
+    FORCE_INLINE static Type clamp(const Type& value, const Type& min, const Type& max)
+    {
+        return Type::clamp(value, min, max);
+    }
+
+    FORCE_INLINE static Type min(const Type& a, const Type& b)
+    {
+        return Type::min(a, b);
+    }
+
+    FORCE_INLINE static Type max(const Type& a, const Type& b)
+    {
+        return Type::max(a, b);
+    }
+
+    FORCE_INLINE static Type abs(const Type& value)
+    {
+        return Type::abs(value);
+    }
+
+    FORCE_INLINE static Type frac(const Type& value)
+    {
+        return Type::fract(value);
+    }
+
+    FORCE_INLINE static Type floor(const Type& value)
+    {
+        return Type::floor(value);
+    }
+
+    FORCE_INLINE static Type ceil(const Type& value)
+    {
+        return Type::ceil(value);
+    }
+
+    FORCE_INLINE static Type round(const Type& value)
+    {
+        return Type::round(value);
+    }
+
+    template <typename T>
+    FORCE_INLINE static Type mod(const Type& a, const T& b)
+    {
+        return Type::mod(a, b);
+    }
+
+    FORCE_INLINE static Type modf(Type& wholePart, const Type& value)
+    {
+        return Type::modf(value, wholePart);
+    }
+
+    // Non math helpers
+
+    static bool isEqual(const Type& a, const Type& b, float epsilon)
+    {
+        a.isSame(b, epsilon);
+    }
+};
+
+class Math
+{
+public:
+    template <typename ClampType, typename ClampType1, typename ClampType2>
+    FORCE_INLINE static ClampType clamp(const ClampType& value, const ClampType1& min, const ClampType2& max)
+    {
+        return clampInternal<ClampType, ClampType1, ClampType2>(value, min, max);
+    }
+
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T min(const Type1& a, const Type2& b)
+    {
+        return minInternal<Type1, Type2>(a, b);
+    }
+
+    template <typename Type1, typename Type2, typename Type3, typename T = std::common_type_t<Type1, Type2, Type3>>
+    FORCE_INLINE static T min(const Type1& a, const Type2& b, const Type3& c)
+    {
+        return min(min(a, b), c);
+    }
+
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T max(const Type1& a, const Type2& b)
+    {
+        return maxInternal<Type1, Type2>(a, b);
+    }
+
+    template <typename Type1, typename Type2, typename Type3, typename T = std::common_type_t<Type1, Type2, Type3>>
+    FORCE_INLINE static T max(const Type1& a, const Type2& b, const Type3& c)
+    {
+        return max(max(a, b), c);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static Type abs(const Type& value)
+    {
+        return absInternal<Type>(value);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static Type frac(const Type& value)
+    {
+        return fracInternal<Type>(value);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static Type floor(const Type& value)
+    {
+        return floorInternal<Type>(value);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static Type ceil(const Type& value)
+    {
+        return ceilInternal<Type>(value);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static Type round(const Type& value)
+    {
+        return roundInternal<Type>(value);
+    }
+
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T mod(const Type1& a, const Type2& b)
+    {
+        return modInternal<Type1, Type2>(a, b);
+    }
+
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T modf(Type1& wholePart, const Type2& value)
+    {
+        return modfInternal<Type1, Type2>(value, wholePart);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -83,16 +248,16 @@ public:
         return glm::exp2(value);
     }
 
-    template <typename Type>
-    FORCE_INLINE static Type log2(const Type& value)
+    template <typename Type, typename T = std::conditional_t<std::is_floating_point_v<Type>, Type, float>>
+    FORCE_INLINE static T log2(const Type& value)
     {
-        return glm::log2(value);
+        return glm::log2(T(value));
     }
 
-    template <typename Type>
-    FORCE_INLINE static Type log(const Type& value)
+    template <typename Type, typename T = std::conditional_t<std::is_floating_point_v<Type>, Type, float>>
+    FORCE_INLINE static T log(const Type& value)
     {
-        return glm::log(value);
+        return glm::log(T(value));
     }
 
     template <typename Type>
@@ -166,6 +331,21 @@ public:
         return glm::atan(T(numerator), T(denominator));
     }
 
+    /* Uniform between 0 to 1 */
+    static float random();
+
+    template <typename Type>
+    FORCE_INLINE static std::enable_if_t<std::is_integral_v<Type>, bool> isEqual(const Type& a, const Type& b, Type epsilon = 0)
+    {
+        return MathHelper<Type>::isEqual(a, b, epsilon);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static std::enable_if_t<std::negation_v<std::is_integral<Type>>, bool> isEqual(const Type& a, const Type& b, Type epsilon = SMALL_EPSILON)
+    {
+        return MathHelper<Type>::isEqual(a, b, epsilon);
+    }
+
     // Rotation specializations
     static Rotation deg2Rad(const Rotation& value);
     static Rotation rad2Deg(const Rotation& value);
@@ -175,45 +355,72 @@ public:
     static Rotation asin(const Rotation& value);
     static Rotation acos(const Rotation& value);
     static Rotation atan(const Rotation& value);
+private:
+    Math() = default;
+    static std::random_device rDevice;
 
-    // Vector2D specializations
-    static Vector2D clamp(const Vector2D& value, const Vector2D& min, const Vector2D& max);
-    static Vector2D min(const Vector2D& a, const Vector2D& b);
-    static Vector2D max(const Vector2D& a, const Vector2D& b);
-    static Vector2D abs(const Vector2D& value);
-    static Vector2D floor(const Vector2D& value);
-    static Vector2D ceil(const Vector2D& value);
-    // Vector3D specializations
-    static Vector3D clamp(const Vector3D& value, const Vector3D& min, const Vector3D& max);
-    static Vector3D min(const Vector3D& a, const Vector3D& b);
-    static Vector3D max(const Vector3D& a, const Vector3D& b);
-    static Vector3D abs(const Vector3D& value);
-    static Vector3D floor(const Vector3D& value);
-    static Vector3D ceil(const Vector3D& value);
-    // Vector4D specializations
-    static Vector4D clamp(const Vector4D& value, const Vector4D& min, const Vector4D& max);
-    static Vector4D min(const Vector4D& a, const Vector4D& b);
-    static Vector4D max(const Vector4D& a, const Vector4D& b);
-    static Vector4D abs(const Vector4D& value);
-    static Vector4D floor(const Vector4D& value);
-    static Vector4D ceil(const Vector4D& value);
-
-    //////////////////////////////////////////////////////////////////////////
-
-    template <typename Type>
-    FORCE_INLINE static std::enable_if_t<std::is_integral_v<Type>, bool> isEqual(const Type& a, const Type& b, Type epsilon = 0)
+    template <typename ClampType, typename ClampType1, typename ClampType2>
+    FORCE_INLINE static std::enable_if_t<
+        std::conjunction_v<
+            std::is_convertible<ClampType1, ClampType>, std::is_convertible<ClampType2, ClampType>
+        >
+        , ClampType>
+        clampInternal(const ClampType & value, const ClampType1 & min, const ClampType2 & max)
     {
-        return abs(a - b) <= epsilon;
+        return MathHelper<ClampType>::clamp(value, ClampType(min), ClampType(max));
+    }
+
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T minInternal(const Type1& a, const Type2& b)
+    {
+        return MathHelper<T>::min(T(a), T(b));
+    }
+
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T maxInternal(const Type1& a, const Type2& b)
+    {
+        return MathHelper<T>::max(T(a), T(b));
     }
 
     template <typename Type>
-    FORCE_INLINE static std::enable_if_t<std::is_floating_point_v<Type>, bool> isEqual(const Type& a, const Type& b, Type epsilon = SMALL_EPSILON)
+    FORCE_INLINE static Type absInternal(const Type& value)
     {
-        return abs(a - b) <= epsilon;
+        return MathHelper<Type>::abs(value);
     }
 
-    static bool isEqual(const Vector2D& a, const Vector2D& b, float epsilon = SMALL_EPSILON);
-    static bool isEqual(const Vector3D& a, const Vector3D& b, float epsilon = SMALL_EPSILON);
-    static bool isEqual(const Vector4D& a, const Vector4D& b, float epsilon = SMALL_EPSILON);
-    static bool isEqual(const Rotation& a, const Rotation& b, float epsilon = SMALL_EPSILON);
+    template <typename Type>
+    FORCE_INLINE static Type fracInternal(const Type& value)
+    {
+        return MathHelper<Type>::frac(value);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static Type floorInternal(const Type& value)
+    {
+        return MathHelper<Type>::floor(value);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static Type ceilInternal(const Type& value)
+    {
+        return MathHelper<Type>::ceil(value);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static Type roundInternal(const Type& value)
+    {
+        return MathHelper<Type>::round(value);
+    }
+
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static Type1 modInternal(const Type1& a, const Type2& b)
+    {
+        return MathHelper<T>::mod(T(a), T(b));
+    }
+
+    template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
+    FORCE_INLINE static T modfInternal(Type1& wholePart, const Type2& value)
+    {
+        return MathHelper<T>::modf(T(value), T(wholePart));
+    }
 };
