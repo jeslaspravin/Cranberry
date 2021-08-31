@@ -156,11 +156,6 @@ bool Rotation::isSame(const Rotation& b, float epsilon /*= SMALL_EPSILON*/) cons
         && Math::isEqual(value.z, b.value.z, epsilon);
 }
 
-bool Math::isEqual(const Rotation& a, const Rotation& b, float epsilon /*= SMALL_EPSILON*/)
-{
-    return a.isSame(b, epsilon);
-}
-
 Rotation Math::deg2Rad(const Rotation& value)
 {
     glm::vec3 rotVal(value.roll(), value.pitch(), value.yaw());
@@ -215,4 +210,54 @@ Rotation Math::atan(const Rotation& value)
     glm::vec3 rotVal(value.roll(), value.pitch(), value.yaw());
     rotVal = Math::rad2Deg(Math::atan(Math::deg2Rad(rotVal)));
     return Rotation(rotVal.x, rotVal.y, rotVal.z);
+}
+
+Rotation Rotation::clamp(const Rotation& value, const Rotation& min, const Rotation& max)
+{
+    return Rotation(glm::clamp(value.value, min.value, max.value));
+}
+
+Rotation Rotation::min(const Rotation& a, const Rotation& b)
+{
+    return Rotation(glm::min(a.value, b.value));
+}
+
+Rotation Rotation::max(const Rotation& a, const Rotation& b)
+{
+    return Rotation(glm::max(a.value, b.value));
+}
+
+Rotation Rotation::abs(const Rotation& value)
+{
+    return Rotation(glm::abs(value.value));
+}
+
+Rotation Rotation::floor(const Rotation& value)
+{
+    return Rotation(glm::floor(value.value));
+}
+
+Rotation Rotation::ceil(const Rotation& value)
+{
+    return Rotation(glm::ceil(value.value));
+}
+
+Rotation Rotation::round(const Rotation& value)
+{
+    return Rotation(glm::round(value.value));
+}
+
+Rotation Rotation::mod(const Rotation& a, const Rotation& b)
+{
+    return Rotation(glm::mod(a.value, b.value));
+}
+
+Rotation Rotation::mod(const Rotation& a, const float& b)
+{
+    return Rotation(glm::mod(a.value, b));
+}
+
+Rotation Rotation::modf(Rotation& wholePart, const Rotation& value)
+{
+    return Rotation(glm::modf(value.value, wholePart.value));
 }

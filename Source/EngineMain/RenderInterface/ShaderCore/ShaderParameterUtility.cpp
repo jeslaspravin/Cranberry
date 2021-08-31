@@ -264,8 +264,11 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(std::vector<std:
             }
             else
             {
-                Logger::warn("ShaderSetParametersLayout", "%s() : No specialization const value found for %s, using default", __func__,
-                    stageSpecConst.attributeName.c_str());
+                if(!stageSpecConst.attributeName.empty())
+                {
+                    Logger::warn("ShaderSetParametersLayout", "%s() : No specialization const value found for %s, using default", __func__,
+                        stageSpecConst.attributeName.c_str());
+                }
                 stageSpecializationConsts[stageIdx].emplace_back(stageSpecConst.data);
             }
             ++specConstsCount;

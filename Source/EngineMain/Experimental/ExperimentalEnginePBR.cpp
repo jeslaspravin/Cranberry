@@ -2107,7 +2107,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                     if (ImPlot::BeginPlot("Texture Histogram", 0, 0, ImVec2(-1, 0), 0, ImPlotAxisFlags_::ImPlotAxisFlags_Lock, ImPlotAxisFlags_::ImPlotAxisFlags_Lock))
                     {
                         ImPlot::SetNextFillStyle(LinearColorConst::RED, 1.0f);
-                        ImPlot::PlotShaded("Red", histogram[0].data(), int32(histogram[0].size()), 0.0f, 8);
+                        ImPlot::PlotShaded("Red", histogram[0].data(), int32(histogram[0].size()), 0.0f, 8);// 256/ binCount(32)
 
                         ImPlot::SetNextFillStyle(LinearColorConst::GREEN, 0.5f);
                         ImPlot::PlotShaded("Green", histogram[1].data(), int32(histogram[1].size()), 0.0f, 8);
@@ -2125,7 +2125,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
 
     // FPS
     ImGui::SetNextWindowSize(ImVec2(145, 10), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 145, 0), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 145, 0), ImGuiCond_Always);
 
     ImGui::PushStyleColor(ImGuiCol_WindowBg, LinearColor(0, 0, 0, 0.6f));
     ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);

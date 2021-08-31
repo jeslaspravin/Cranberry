@@ -9,6 +9,7 @@
 
 #undef PI
 #define PI (3.1415926535897932f)
+#define GOLDEN_RATIO (1.618033f)
 #define SMALL_EPSILON (1.e-8f)
 #define SLIGHTLY_SMALL_EPSILON (1.e-4f)
 

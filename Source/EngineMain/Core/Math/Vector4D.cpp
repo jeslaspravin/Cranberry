@@ -231,6 +231,26 @@ Vector4D Vector4D::rejectFrom(const Vector4D& b) const
     return *this - projectTo(b);
 }
 
+Vector4D operator/(float n, const Vector4D& d)
+{
+    return Vector4D(n / d.value);
+}
+
+Vector4D operator-(float n, const Vector4D& d)
+{
+    return Vector4D(n - d.value);
+}
+
+Vector4D operator*(float n, const Vector4D& d)
+{
+    return d * n;
+}
+
+Vector4D operator+(float n, const Vector4D& d)
+{
+    return d + n;
+}
+
 const Vector4D Vector4D::ZERO(0);
 const Vector4D Vector4D::ONE(1);
 
@@ -269,61 +289,22 @@ Vector4D Vector4D::ceil(const Vector4D& value)
     return Vector4D(glm::ceil(value.value));
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Math functions
-//////////////////////////////////////////////////////////////////////////
-
-bool Math::isEqual(const Vector4D& a, const Vector4D& b, float epsilon /*= SMALL_EPSILON*/)
+Vector4D Vector4D::round(const Vector4D& value)
 {
-    return a.isSame(b, epsilon);
+    return Vector4D(glm::round(value.value));
 }
 
-Vector4D Math::clamp(const Vector4D& value, const Vector4D& min, const Vector4D& max)
+Vector4D Vector4D::mod(const Vector4D& a, const Vector4D& b)
 {
-    return Vector4D::clamp(value, min, max);
+    return Vector4D(glm::mod(a.value, b.value));
 }
 
-Vector4D Math::min(const Vector4D& a, const Vector4D& b)
+Vector4D Vector4D::mod(const Vector4D& a, const float& b)
 {
-    return Vector4D::min(a, b);
+    return Vector4D(glm::mod(a.value, b));
 }
 
-Vector4D Math::max(const Vector4D& a, const Vector4D& b)
+Vector4D Vector4D::modf(Vector4D& wholePart, const Vector4D& value)
 {
-    return Vector4D::max(a, b);
-}
-
-Vector4D Math::abs(const Vector4D& value)
-{
-    return Vector4D::abs(value);
-}
-
-Vector4D Math::floor(const Vector4D& value)
-{
-    return Vector4D::floor(value);
-}
-
-Vector4D Math::ceil(const Vector4D& value)
-{
-    return Vector4D::ceil(value);
-}
-
-Vector4D operator/(float n, const Vector4D& d)
-{
-    return Vector4D(n / d.value);
-}
-
-Vector4D operator-(float n, const Vector4D& d)
-{
-    return Vector4D(n - d.value);
-}
-
-Vector4D operator*(float n, const Vector4D& d)
-{
-    return d * n;
-}
-
-Vector4D operator+(float n, const Vector4D& d)
-{
-    return d + n;
+    return Vector4D(glm::modf(value.value, wholePart.value));
 }

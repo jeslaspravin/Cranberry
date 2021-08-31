@@ -22,8 +22,10 @@ public:
     void operator=(const Color& otherColor);
     void operator=(Color&& otherColor);
 
-    inline Color toSrgb() const;
-    inline Color toLinear() const;
+    Color toSrgb() const;
+    Color toLinear() const;
+    Vector3D toHsl() const;
+    Vector3D toHsv() const;
 
     const Byte4D& getColorValue() const { return colorValue; }
     Byte4D getColorValue() { return colorValue; }
@@ -40,6 +42,9 @@ public:
     uint8 operator[](uint32 idx) const;
     // As RGBA packed
     operator uint32() const;
+
+    static Color fromHsl(const Vector3D& hsl);
+    static LinearColor fromHsv(const Vector3D& hsv);
 };
 
 class LinearColor
@@ -59,6 +64,9 @@ public:
     void operator=(const LinearColor& otherColor);
     void operator=(LinearColor&& otherColor);
 
+    Vector3D toHsl() const;
+    Vector3D toHsv() const;
+
     const glm::vec4& getColorValue() const { return colorValue; }
     operator Vector4D() const { return Vector4D(colorValue); }
     float r() const { return colorValue.r; }
@@ -72,10 +80,14 @@ public:
     glm::vec3 rgb() const { return glm::vec3(colorValue.r, colorValue.g, colorValue.b); }
 
     float operator[](uint32 idx) const;
+    static LinearColor fromHsl(const Vector3D& hsl);
+    static LinearColor fromHsv(const Vector3D& hsv);
 };
 
 namespace ColorConst
 {
+    Color random();
+
     const Color Transparent(255, 255, 255, 0);
     const Color WHITE(255, 255, 255, 255);
     const Color GRAY(128, 128, 128, 255);
@@ -87,6 +99,8 @@ namespace ColorConst
 
 namespace LinearColorConst
 {
+    LinearColor random();
+
     const LinearColor Transparent(1, 1, 1, 0);
     const LinearColor WHITE(1, 1, 1, 1);
     const LinearColor GRAY(0.5, 0.5, 0.5, 1);

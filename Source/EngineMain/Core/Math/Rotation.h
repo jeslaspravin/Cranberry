@@ -52,4 +52,15 @@ public:
     Rotation operator+(const float& scalar) const;
     void operator+=(const float& scalar);
     bool isSame(const Rotation& b, float epsilon = SMALL_EPSILON) const;
+
+    static Rotation clamp(const Rotation& value, const Rotation& min, const Rotation& max);
+    static Rotation min(const Rotation& a, const Rotation& b);
+    static Rotation max(const Rotation& a, const Rotation& b);
+    static Rotation abs(const Rotation& value);
+    static Rotation floor(const Rotation& value);
+    static Rotation ceil(const Rotation& value);
+    static Rotation round(const Rotation& value);
+    static Rotation mod(const Rotation& a, const Rotation& b);
+    static Rotation mod(const Rotation& a, const float& b);
+    static Rotation modf(Rotation& wholePart, const Rotation& value);
 };

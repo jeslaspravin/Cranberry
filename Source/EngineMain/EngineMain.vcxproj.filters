@@ -642,6 +642,12 @@
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\IntegrateBRDF.cpp">
       <Filter>Source Files\RenderInterface\Shaders\EngineShaders\IBL</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Types\Traits\ValueTraits.cpp">
+      <Filter>Header Files\Core\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Math\MathInternal.cpp">
+      <Filter>Source Files\Core\Math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">
