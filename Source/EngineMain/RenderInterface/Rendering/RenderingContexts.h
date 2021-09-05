@@ -77,10 +77,14 @@ protected:
     GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const;
     // Get generic render pass properties from framebuffer
     GenericRenderPassProperties renderpassPropsFromFb(const Framebuffer* fb) const;
+    // Get generic render pass properties from render pass format, Useful in case of using custom RTs with predefined render passes 
+    GenericRenderPassProperties renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx) const;
     const Framebuffer* getFramebuffer(const GenericRenderPassProperties& renderpassProps
         , const std::vector<RenderTargetTexture*>& rtTextures) const;
     const Framebuffer* createNewFramebuffer(const GenericRenderPassProperties& renderpassProps
         , const std::vector<RenderTargetTexture*>& rtTextures) const;
+    const Framebuffer* getOrCreateFramebuffer(const GenericRenderPassProperties& renderpassProps
+        , const std::vector<RenderTargetTexture*>& rtTextures);
     // Creates new pipeline based on default pipeline of shader object but with new render pass or different render pass and returns it
     PipelineBase* createNewPipeline(UniqueUtilityShaderObject* shaderObject, const GenericRenderPassProperties& renderpassProps);
 

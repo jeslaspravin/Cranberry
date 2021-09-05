@@ -194,6 +194,8 @@ void VulkanGraphicsPipeline::fillDepthStencilState(VkPipelineDepthStencilStateCr
     depthStencilStateCI.depthTestEnable = depthState.compareOp != CoreGraphicsTypes::ECompareOp::Always ? VK_TRUE : VK_FALSE;
     depthStencilStateCI.depthWriteEnable = depthState.bEnableWrite ? VK_TRUE : VK_FALSE;
     depthStencilStateCI.depthCompareOp = VkCompareOp(CoreGraphicsTypes::getEnumTypeInfo(depthState.compareOp)->value);
+    depthStencilStateCI.minDepthBounds = 0.0f;
+    depthStencilStateCI.maxDepthBounds = 1.0f;
 
 
     depthStencilStateCI.front.compareMask = 0xFFFFFFFF;

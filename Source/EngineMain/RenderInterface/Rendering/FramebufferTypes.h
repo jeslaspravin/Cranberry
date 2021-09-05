@@ -30,11 +30,20 @@ class ImageResource;
 
 struct FramebufferFormat
 {
+public:
+    using AttachmentsFormatList = std::vector<EPixelDataFormat::Type>;
     // One format per RT and resolve pair
-    std::vector<EPixelDataFormat::Type> attachments;
+     AttachmentsFormatList attachments;
     ERenderPassFormat::Type rpFormat;
 
-    explicit FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frameBuffers, ERenderPassFormat::Type renderpassFormat);
+    explicit FramebufferFormat(AttachmentsFormatList&& frameBuffers, ERenderPassFormat::Type renderpassFormat)
+        : attachments(std::move(frameBuffers))
+        , rpFormat(renderpassFormat)
+    {}
+    explicit FramebufferFormat(const AttachmentsFormatList& frameBuffers, ERenderPassFormat::Type renderpassFormat)
+        : attachments(frameBuffers)
+        , rpFormat(renderpassFormat)
+    {}
     explicit FramebufferFormat(ERenderPassFormat::Type renderpassFormat) : rpFormat(renderpassFormat){}
 
     bool operator==(const FramebufferFormat& otherFormat) const;
