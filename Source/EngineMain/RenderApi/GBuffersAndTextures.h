@@ -19,6 +19,8 @@ struct FramebufferWrapper
 class GlobalBuffers
 {
 private:
+    // Attachment formats for GBuffers render pass types
+    static std::unordered_map<ERenderPassFormat::Type, FramebufferFormat::AttachmentsFormatList> GBUFFERS_ATTACHMENT_FORMATS;
     // Frame buffer format to frame buffers swapchain count times
     static std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> gBuffers;
     static std::vector<Framebuffer*> swapchainFbs;
@@ -60,6 +62,7 @@ public:
     static Framebuffer* getFramebuffer(FramebufferFormat& framebufferFormat, uint32 frameIdx);
     static Framebuffer* getFramebuffer(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
     static std::vector<class RenderTargetTexture*> getFramebufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
+    static GenericRenderPassProperties getFramebufferRenderpassProps(ERenderPassFormat::Type renderpassFormat);
     static Framebuffer* getSwapchainFramebuffer(uint32 frameIdx);
 
     static TextureBase* dummyWhite2D() { return dummyWhiteTexture; }

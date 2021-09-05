@@ -295,6 +295,17 @@ GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromFb(co
     return renderpassProperties;
 }
 
+GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx) const
+{
+    const Framebuffer* fb = GlobalBuffers::getFramebuffer(renderpassFormat, frameIdx);
+    if (fb)
+    {
+        return renderpassPropsFromFb(fb);
+    }
+
+    return GlobalBuffers::getFramebufferRenderpassProps(renderpassFormat);
+}
+
 const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRenderPassProperties& renderpassProps, const std::vector<RenderTargetTexture*>& rtTextures) const
 {
     auto renderpassFbs = rtFramebuffers.find(renderpassProps);
@@ -368,6 +379,17 @@ const Framebuffer* GlobalRenderingContextBase::createNewFramebuffer(const Generi
     return fb;
 }
 
+const Framebuffer* GlobalRenderingContextBase::getOrCreateFramebuffer(const GenericRenderPassProperties& renderpassProps, const std::vector<RenderTargetTexture*>& rtTextures)
+{
+    const Framebuffer* fb = getFramebuffer(renderpassProps, rtTextures);
+    if (fb == nullptr)
+    {
+        fb = createNewFramebuffer(renderpassProps, rtTextures);
+        rtFramebuffers[renderpassProps].emplace_back(fb);
+    }
+    return fb;
+}
+
 PipelineBase* GlobalRenderingContextBase::createNewPipeline(UniqueUtilityShaderObject* shaderObject
     , const GenericRenderPassProperties& renderpassProps)
 {
@@ -398,7 +420,24 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         drawMeshShaderObj->getShader(pipelineContext->forVertexType, FramebufferFormat(pipelineContext->renderpassFormat), &graphicsPipeline);
         pipelineContext->pipelineUsed = graphicsPipeline;
 
-        pipelineContext->framebuffer = GlobalBuffers::getFramebuffer(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx);
+        // If empty RTs then get framebuffer from global buffers
+        const Framebuffer* fb = nullptr;
+        if (pipelineContext->rtTextures.empty())
+        {
+            fb = GlobalBuffers::getFramebuffer(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx);
+        }
+        else
+        {
+            GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(pipelineContext->rtTextures);
+            // To make sure that RTs created framebuffer is compatible with GlobalBuffers created FBs and its render pass and pipelines
+            fatalAssert(renderpassProps == renderpassPropsFromRpFormat(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx)
+                , "%s() : Incompatible RTs for Mesh Draw shaders", __func__);
+
+            fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->rtTextures);
+        }
+        fatalAssert(fb != nullptr, "%s() : Framebuffer is invalid[Shader : %s, Render pass format : %s]", __func__, pipelineContext->materialName.getChar()
+            , ERenderPassFormat::toString(pipelineContext->renderpassFormat));
+        pipelineContext->framebuffer = fb;
     }
     else if(shaderDataCollectionItr->second.shaderObject->baseShaderType() == UniqueUtilityShader::staticType())
     {
@@ -419,12 +458,7 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         else
         {
             renderpassProps = renderpassPropsFromRTs(pipelineContext->rtTextures);
-            fb = getFramebuffer(renderpassProps, pipelineContext->rtTextures);
-            if (fb == nullptr)
-            {
-                fb = createNewFramebuffer(renderpassProps, pipelineContext->rtTextures);
-                rtFramebuffers[renderpassProps].emplace_back(fb);
-            }
+            fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->rtTextures);
         }
         UniqueUtilityShaderObject* uniqUtilShaderObj = static_cast<UniqueUtilityShaderObject*>(shaderDataCollectionItr->second.shaderObject);
         GraphicsPipelineBase* graphicsPipeline = uniqUtilShaderObj->getPipeline(renderpassProps);

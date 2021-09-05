@@ -1,12 +1,13 @@
 #include "GBuffersAndTextures.h"
 #include "../RenderInterface/GlobalRenderVariables.h"
+#include "../Core/Platform/PlatformAssertionErrors.h"
 #include "../Core/Engine/Config/EngineGlobalConfigs.h"
+#include "../Core/Math/Math.h"
 #include "../Core/Engine/GameEngine.h"
 #include "../RenderInterface/Resources/GenericWindowCanvas.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../Core/Types/Textures/RenderTargetTextures.h"
-#include "../Core/Math/Math.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Custom Render target texture for GBuffers
@@ -60,12 +61,17 @@ void GBufferRenderTexture::destroyTexture(GBufferRenderTexture* texture)
 // GBuffers
 //////////////////////////////////////////////////////////////////////////
 
+std::unordered_map<ERenderPassFormat::Type, FramebufferFormat::AttachmentsFormatList> GlobalBuffers::GBUFFERS_ATTACHMENT_FORMATS
+{
+    { ERenderPassFormat::Multibuffers, { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::D24S8_U32_DNorm_SInt }}
+    , { ERenderPassFormat::Depth, { EPixelDataFormat::D24S8_U32_DNorm_SInt }}
+};
+
 std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> GlobalBuffers::gBuffers
 {
-    {
-        FramebufferFormat({ EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::D24S8_U32_DNorm_SInt }, ERenderPassFormat::Multibuffers), {}
-    }
+    { FramebufferFormat(GBUFFERS_ATTACHMENT_FORMATS[ERenderPassFormat::Multibuffers], ERenderPassFormat::Multibuffers), {}}
 };
+
 std::vector<Framebuffer*> GlobalBuffers::swapchainFbs;
 
 TextureBase* GlobalBuffers::dummyBlackTexture = nullptr;
@@ -116,11 +122,6 @@ bool FramebufferFormat::operator<(const FramebufferFormat& otherFormat) const
 
     return rpFormat < otherFormat.rpFormat;
 }
-
-FramebufferFormat::FramebufferFormat(std::vector<EPixelDataFormat::Type>&& frameBuffers, ERenderPassFormat::Type renderpassFormat)
-    : attachments(std::move(frameBuffers))
-    , rpFormat(renderpassFormat)
-{}
 
 void GlobalBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
 {
@@ -327,7 +328,8 @@ void GlobalBuffers::destroy()
 
 Framebuffer* GlobalBuffers::getFramebuffer(FramebufferFormat& framebufferFormat, uint32 frameIdx)
 {
-    std::unordered_map<FramebufferFormat,std::vector<FramebufferWrapper>>::const_iterator framebufferItr = gBuffers.find(framebufferFormat);
+    std::unordered_map<FramebufferFormat,std::vector<FramebufferWrapper>>::const_iterator framebufferItr
+        = gBuffers.find(framebufferFormat);
     if (framebufferItr != gBuffers.cend())
     {
         framebufferFormat = framebufferItr->first;
@@ -338,7 +340,8 @@ Framebuffer* GlobalBuffers::getFramebuffer(FramebufferFormat& framebufferFormat,
 
 Framebuffer* GlobalBuffers::getFramebuffer(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx)
 {
-    std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr = gBuffers.find(FramebufferFormat(renderpassFormat));
+    std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr
+        = gBuffers.find(FramebufferFormat(renderpassFormat));
     if (framebufferItr != gBuffers.cend())
     {
         return framebufferItr->second[frameIdx].framebuffer;
@@ -349,7 +352,8 @@ Framebuffer* GlobalBuffers::getFramebuffer(ERenderPassFormat::Type renderpassFor
 std::vector<RenderTargetTexture*> GlobalBuffers::getFramebufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx)
 {
     std::vector<RenderTargetTexture*> rts;
-    std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr = gBuffers.find(FramebufferFormat(renderpassFormat));
+    std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr
+        = gBuffers.find(FramebufferFormat(renderpassFormat));
     if (framebufferItr != gBuffers.cend())
     {
         for (auto* rt : framebufferItr->second[frameIdx].rtTextures)
@@ -358,6 +362,29 @@ std::vector<RenderTargetTexture*> GlobalBuffers::getFramebufferRts(ERenderPassFo
         }
     }
     return rts;
+}
+
+GenericRenderPassProperties GlobalBuffers::getFramebufferRenderpassProps(ERenderPassFormat::Type renderpassFormat)
+{
+    GenericRenderPassProperties renderpassProps;
+    renderpassProps.multisampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
+    renderpassProps.bOneRtPerFormat = renderpassProps.multisampleCount == EPixelSampleCount::SampleCount1;
+
+    std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr
+        = gBuffers.find(FramebufferFormat(renderpassFormat));
+    if (framebufferItr != gBuffers.cend())
+    {
+        renderpassProps.renderpassAttachmentFormat = framebufferItr->first;
+    }
+    else
+    {
+        std::unordered_map<ERenderPassFormat::Type, FramebufferFormat::AttachmentsFormatList>::const_iterator attachmentFormatsItr
+            = GBUFFERS_ATTACHMENT_FORMATS.find(renderpassFormat);
+        debugAssert(attachmentFormatsItr != GBUFFERS_ATTACHMENT_FORMATS.cend());
+        renderpassProps.renderpassAttachmentFormat.attachments = attachmentFormatsItr->second;
+        renderpassProps.renderpassAttachmentFormat.rpFormat = attachmentFormatsItr->first;
+    }
+    return renderpassProps;
 }
 
 Framebuffer* GlobalBuffers::getSwapchainFramebuffer(uint32 frameIdx)
