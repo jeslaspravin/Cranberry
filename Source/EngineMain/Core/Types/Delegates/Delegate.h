@@ -39,7 +39,7 @@ struct FunctionExecutor
         }
 
         template <typename ObjectType, size_t... Indices>
-        ReturnType execute(const FunctionType& function, ObjectType* object, const Tuple& varStore, Params ...params, std::index_sequence<Indices...>)
+        ReturnType execute(ObjectType* object, const FunctionType& function, Params ...params, const Tuple& varStore, std::index_sequence<Indices...>)
         {
             return function(object, std::forward<Params>(params)..., std::get<Indices>(varStore)...);
         }
@@ -56,12 +56,12 @@ struct FunctionExecutor
     template<typename ReturnType, typename FunctionType, typename... Params> 
     ReturnType execute(const FunctionType& function, Params ...params) const 
     { 
-        return ExeHelper<FunctionType, ReturnType, Params...>{}.execute(function, varStore, std::forward<Params>(params)..., IndexSeq{});
+        return ExeHelper<FunctionType, ReturnType, Params...>{}.execute(function, std::forward<Params>(params)..., varStore, IndexSeq{});
     }
     template<typename ReturnType, typename FunctionType, typename ObjectType, typename... Params> 
     ReturnType execute(const FunctionType& function, ObjectType* object, Params ...params) const 
     {
-        return ExeHelper<FunctionType, ReturnType, Params...>{}.execute<ObjectType>(function, object, varStore, std::forward<Params>(params)..., IndexSeq{});
+        return ExeHelper<FunctionType, ReturnType, Params...>{}.execute<ObjectType>(object, function, std::forward<Params>(params)..., varStore, IndexSeq{});
     }
 };
 
