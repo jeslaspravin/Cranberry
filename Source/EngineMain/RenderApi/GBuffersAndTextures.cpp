@@ -5,6 +5,7 @@
 #include "../Core/Math/Math.h"
 #include "../Core/Engine/GameEngine.h"
 #include "../RenderInterface/Resources/GenericWindowCanvas.h"
+#include "../Core/Platform/GenericAppWindow.h"
 #include "../RenderInterface/PlatformIndependentHeaders.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../Core/Types/Textures/RenderTargetTextures.h"
@@ -203,14 +204,16 @@ void GlobalBuffers::onScreenResized(Size2D newSize)
     );
 }
 
-void GlobalBuffers::onSurfaceResized(Size2D newSize)
+void GlobalBuffers::onSurfaceUpdated()
 {
     ENQUEUE_COMMAND(SwapchainResize)(
-        [newSize](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        [](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             cmdList->flushAllcommands();
             const GenericWindowCanvas * windowCanvas = gEngine->getApplicationInstance()->appWindowManager
                 .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
+            Size2D newSize;
+            gEngine->getApplicationInstance()->appWindowManager.getMainWindow()->windowSize(newSize.x, newSize.y);
 
             uint32 swapchainIdx = 0;
             for (Framebuffer* fb : swapchainFbs)
@@ -289,10 +292,7 @@ void GlobalBuffers::initialize()
             createVertIndBuffers(cmdList, graphicsInstance);
         }
     );
-}
-
-void GlobalBuffers::postInitGraphics()
-{
+    
     generateTexture2Ds();
 }
 
@@ -333,7 +333,7 @@ Framebuffer* GlobalBuffers::getFramebuffer(FramebufferFormat& framebufferFormat,
     if (framebufferItr != gBuffers.cend())
     {
         framebufferFormat = framebufferItr->first;
-        return framebufferItr->second[frameIdx].framebuffer;
+        return (framebufferItr->second.size() > frameIdx)? framebufferItr->second[frameIdx].framebuffer : nullptr;
     }
     return nullptr;
 }
@@ -344,6 +344,7 @@ Framebuffer* GlobalBuffers::getFramebuffer(ERenderPassFormat::Type renderpassFor
         = gBuffers.find(FramebufferFormat(renderpassFormat));
     if (framebufferItr != gBuffers.cend())
     {
+        fatalAssert(swapchainFbs.size() > frameIdx, "%s() : Invalid frame idx", __func__);
         return framebufferItr->second[frameIdx].framebuffer;
     }
     return nullptr;
@@ -354,7 +355,7 @@ std::vector<RenderTargetTexture*> GlobalBuffers::getFramebufferRts(ERenderPassFo
     std::vector<RenderTargetTexture*> rts;
     std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr
         = gBuffers.find(FramebufferFormat(renderpassFormat));
-    if (framebufferItr != gBuffers.cend())
+    if (framebufferItr != gBuffers.cend() && (framebufferItr->second.size() > frameIdx))
     {
         for (auto* rt : framebufferItr->second[frameIdx].rtTextures)
         {
@@ -389,6 +390,7 @@ GenericRenderPassProperties GlobalBuffers::getFramebufferRenderpassProps(ERender
 
 Framebuffer* GlobalBuffers::getSwapchainFramebuffer(uint32 frameIdx)
 {
+    fatalAssert(swapchainFbs.size() > frameIdx, "%s() : Invalid swapchain idx", __func__);
     return swapchainFbs[frameIdx];
 }
 

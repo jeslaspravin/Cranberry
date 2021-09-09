@@ -326,7 +326,7 @@ void VulkanDevice::cacheGlobalSurfaceProperties()
 
         debugAssert(formatCount > 0);
         swapchainFormat = formatsSupported[0];
-    }    
+    }
 }
 
 int32 VulkanDevice::compareSurfaceCompatibility(const class GenericWindowCanvas* surfaceCanvas,
@@ -581,7 +581,8 @@ struct CacheQueues {
 void VulkanDevice::createLogicDevice()
 {
     Logger::debug("VulkanDevice", "%s() : Creating logical device", __func__);
-    fatalAssert(createQueueResources(), "Without vulkan queues application cannot proceed running");
+    const bool bQueueResCreated = createQueueResources();
+    fatalAssert(bQueueResCreated, "Without vulkan queues application cannot proceed running");
     markGlobalConstants();
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -606,7 +607,8 @@ void VulkanDevice::createLogicDevice()
     deviceCreateInfo.enabledLayerCount = (uint32_t)registeredLayers.size();
     deviceCreateInfo.ppEnabledLayerNames = registeredLayers.data();
 #endif
-    fatalAssert(collectDeviceExtensions(registeredExtensions),"Failed collecting extensions");
+    const bool bExtsSupported = collectDeviceExtensions(registeredExtensions);
+    fatalAssert(bExtsSupported,"Failed collecting extensions");
 
     deviceCreateInfo.enabledExtensionCount = (uint32_t)registeredExtensions.size();
     deviceCreateInfo.ppEnabledExtensionNames = registeredExtensions.data();
@@ -617,7 +619,7 @@ void VulkanDevice::createLogicDevice()
     // Additional features
     deviceCreateInfo.pNext = &timelineSemaphoreFeatures;
 
-    VkResult vulkanDeviceCreationResult = Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
+    const VkResult vulkanDeviceCreationResult = Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
     fatalAssert(vulkanDeviceCreationResult == VK_SUCCESS,"Failed creating logical device");
 
     loadDeviceFunctions();
@@ -627,8 +629,6 @@ void VulkanDevice::createLogicDevice()
         queue->init();
         VulkanQueueResourceInvoker::invoke<void, CacheQueues>(queue,logicalDevice,vkGetDeviceQueue);
     }
-
-    cacheGlobalSurfaceProperties();
 }
 
 void VulkanDevice::freeLogicDevice()

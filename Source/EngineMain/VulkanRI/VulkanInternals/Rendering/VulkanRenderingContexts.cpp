@@ -24,7 +24,7 @@ void VulkanGlobalRenderingContext::initApiInstances()
 
 void VulkanGlobalRenderingContext::initializeApiContext()
 {
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
 
     ShaderDataCollection& defaultShaderCollection = rawShaderObjects[DEFAULT_SHADER_NAME];
     {
@@ -106,7 +106,7 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
 void VulkanGlobalRenderingContext::clearApiContext()
 {
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     for (const std::pair<ShaderResource const* const, VkPipelineLayout>& pipelineLayout : pipelineLayouts)
     {
         VulkanGraphicsHelper::destroyPipelineLayout(graphicsInstance, pipelineLayout.second);
@@ -135,13 +135,8 @@ void VulkanGlobalRenderingContext::clearApiContext()
 VkRenderPass VulkanGlobalRenderingContext::createGbufferRenderpass(ERenderPassFormat::Type rpUsageFormat
     , const RenderPassAdditionalProps& additionalProps) const
 {
-    GenericRenderPassProperties renderpassProps;
-    renderpassProps.multisampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
-    renderpassProps.renderpassAttachmentFormat.rpFormat = rpUsageFormat;
-    Framebuffer* fb = GlobalBuffers::getFramebuffer(renderpassProps.renderpassAttachmentFormat, 0);
-    renderpassProps.bOneRtPerFormat = !fb->bHasResolves;
-
-    return VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderpassProps, additionalProps);
+    GenericRenderPassProperties renderpassProps = GlobalBuffers::getFramebufferRenderpassProps(rpUsageFormat);
+    return VulkanGraphicsHelper::createRenderPass(gEngine->getRenderManager()->getGraphicsInstance(), renderpassProps, additionalProps);
 }
 
 void VulkanGlobalRenderingContext::initializeGenericGraphicsPipeline(UniqueUtilityShaderObject* shaderObject, PipelineBase* pipeline)
@@ -153,7 +148,7 @@ void VulkanGlobalRenderingContext::initializeGenericGraphicsPipeline(UniqueUtili
     auto renderpassItr = genericRenderPasses.find(renderPassProps);
     if (renderpassItr == genericRenderPasses.end())
     {
-        renderPass = VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderPassProps, {});
+        renderPass = VulkanGraphicsHelper::createRenderPass(gEngine->getRenderManager()->getGraphicsInstance(), renderPassProps, {});
         genericRenderPasses[renderPassProps].emplace_back(RenderpassPropsPair({}, renderPass));
     }
     else
@@ -211,7 +206,7 @@ VkRenderPass VulkanGlobalRenderingContext::getRenderPass(const GenericRenderPass
 
         if (renderpass == nullptr)
         {
-            renderpass = VulkanGraphicsHelper::createRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), renderpassProps, additionalProps);
+            renderpass = VulkanGraphicsHelper::createRenderPass(gEngine->getRenderManager()->getGraphicsInstance(), renderpassProps, additionalProps);
             renderpassItr->second.emplace_back(RenderpassPropsPair(additionalProps, renderpass));
         }
         return renderpass;

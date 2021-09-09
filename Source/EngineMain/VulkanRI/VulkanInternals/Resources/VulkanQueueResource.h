@@ -264,7 +264,7 @@ public:
                 Logger::error("VulkanQueueResource", "%s() : [%s] Get queue failed for queue family %d at queue index %d"
                     , __func__, getSupportedQueueName().getChar(), queueFamilyPropIndex, index);
             }
-            VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance())->markObject(
+            VulkanGraphicsHelper::debugGraphics(gEngine->getRenderManager()->getGraphicsInstance())->markObject(
                 (uint64)queues[index], getObjectName().append("Queue_").append(std::to_string(priorities[index])),
                 getObjectType());
         }

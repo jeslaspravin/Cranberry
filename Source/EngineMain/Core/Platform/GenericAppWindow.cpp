@@ -1,4 +1,17 @@
 #include "GenericAppWindow.h"
+#include "../../RenderInterface/Resources/GenericWindowCanvas.h"
+#include "../Logger/Logger.h"
+#include "../Engine/GameEngine.h"
+
+void GenericAppWindow::resizeWindowResources()
+{
+    GenericWindowCanvas* windowCanvas = gEngine->getApplicationInstance()->appWindowManager.getWindowCanvas(this);
+    if (windowCanvas)
+    {
+        Logger::debug("WindowsAppWindow", "%s() : Reiniting window canvas", __func__);
+        windowCanvas->reinitResources();
+    }
+}
 
 void GenericAppWindow::windowSize(uint32& width, uint32& height) const
 {
@@ -12,7 +25,7 @@ void GenericAppWindow::setWindowSize(const uint32& width, const uint32& height, 
     windowHeight = height;
     if (updateResources)
     {
-        resizeWindow();
+        resizeWindowResources();
     }
 }
 

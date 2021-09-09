@@ -267,7 +267,7 @@
     <ClCompile Include="VulkanRI\VulkanGraphicsInstance.cpp">
       <Filter>Source Files\VulkanRI</Filter>
     </ClCompile>
-    <ClCompile Include="RenderApi\RenderApi.cpp">
+    <ClCompile Include="RenderApi\RenderManager.cpp">
       <Filter>Source Files\RenderApi</Filter>
     </ClCompile>
     <ClCompile Include="Core\Engine\GameEngine.cpp">
@@ -938,7 +938,7 @@
     <ClInclude Include="Assets\Asset\MeshAsset.h">
       <Filter>Header Files\Assets\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="RenderApi\RenderApi.h">
+    <ClInclude Include="RenderApi\RenderManager.h">
       <Filter>Header Files\RenderApi</Filter>
     </ClInclude>
     <ClInclude Include="RenderInterface\Rendering\IRenderCommandList.h">
@@ -1148,6 +1148,9 @@
     <ClInclude Include="Assets\AssetLoader\StbWrapper.h">
       <Filter>Source Files\Assets\AssetLoader</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Types\Containers\ReferenceCountPtr.h">
+      <Filter>Header Files\Core\Types\Containers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="VulkanRI\VulkanInternals\VulkanFunctionLists.inl">
@@ -1155,10 +1158,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\..\..\CppLibs\glm\util\glm.natvis">
+    <Natvis Include="..\..\Scripts\Visualizers\glm.natvis">
       <Filter>Visualizers</Filter>
     </Natvis>
-    <Natvis Include="..\..\..\CppLibs\imgui\misc\debuggers\imgui.natvis">
+    <Natvis Include="..\..\Scripts\Visualizers\imgui.natvis">
       <Filter>Visualizers</Filter>
     </Natvis>
   </ItemGroup>

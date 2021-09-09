@@ -5,7 +5,7 @@
 #include <vector>
 #include <forward_list>
 
-template <typename ElementType, typename Enable = std::enable_if_t<std::is_default_constructible_v<ElementType>>>
+template <typename ElementType/*, typename Enable = std::enable_if_t<std::is_default_constructible_v<ElementType>>*/>
 class MinAllocVector
 {
 private:
@@ -15,43 +15,46 @@ private:
     std::forward_list<SizeType> freeSlots;
 
 public:
-    SizeType get()
+
+    template <class... ConstructArgs>
+    SizeType get(ConstructArgs&&... args)
     {
         SizeType index;
         if (freeSlots.empty())
         {
             index = elements.size();
-            elements.emplace_back();
+            elements.emplace_back(std::forward<ConstructArgs>(args)...);
         }
         else
         {
             index = freeSlots.front();
             freeSlots.pop_front();
+            new(&elements[index]) ElementType(std::forward<ConstructArgs>(args)...);
         }
         return index;
     }
 
     ElementType& operator[](const SizeType& index)
     {
-        fatalAssert(elements.size() > index, "Index %d is invalid", index);
+        fatalAssert(isValid(index), "Index %d is invalid", index);
         return elements[index];
     }
 
     const ElementType& operator[](const SizeType& index) const
     {
-        fatalAssert(elements.size() > index, "Index %d is invalid", index);
+        fatalAssert(isValid(index), "Index %d is invalid", index);
         return elements[index];
     }
 
     bool isValid(const SizeType& index) const
     {
-        return elements.size() > index && std::find(freeSlots.cbegin(), freeSlots.cend(), index) != freeSlots.cend();
+        return elements.size() > index && std::find(freeSlots.cbegin(), freeSlots.cend(), index) == freeSlots.cend();
     }
 
     void reset(const SizeType& index)
     {
-        fatalAssert(elements.size() > index, "Index %d is invalid", index);
-        new (&elements[index])ElementType();
+        fatalAssert(isValid(index), "Index %d is invalid", index);
+        elements[index].~ElementType();
 
         if (freeSlots.empty() || index >= freeSlots.front())
         {

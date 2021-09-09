@@ -1,7 +1,7 @@
 
 #include <type_traits>
 
-template <typename T1, typename T2, typename Condition, T1 Value1, T2 Value2, typename ValType = void>
+template <typename T1, typename T2, typename Condition, T1 Value1, T2 Value2, typename ValType>
 struct ConditionalValue;
 
 

@@ -26,7 +26,7 @@ void VulkanShaderCodeResource::reinitResources()
     release();
     BaseType::reinitResources();
 
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     // Multiplying by sizeof(uint32) as reflection creates every calculation in uint32
     shaderModule = VulkanGraphicsHelper::createShaderModule(graphicsInstance,shaderCode + getStageDesc().codeView.startIdx * sizeof(uint32)
         , getStageDesc().codeView.size*sizeof(uint32));
@@ -40,7 +40,7 @@ void VulkanShaderCodeResource::release()
 {
     if (shaderModule)
     {
-        VulkanGraphicsHelper::destroyShaderModule(gEngine->getRenderApi()->getGraphicsInstance(), shaderModule);
+        VulkanGraphicsHelper::destroyShaderModule(gEngine->getRenderManager()->getGraphicsInstance(), shaderModule);
         shaderModule = nullptr;
     }
     BaseType::release();

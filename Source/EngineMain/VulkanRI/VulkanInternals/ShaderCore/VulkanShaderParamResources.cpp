@@ -288,7 +288,7 @@ void VulkanShaderSetParamsLayout::init()
 
 
     //reinitResources();
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
 
     DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
     descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
@@ -301,7 +301,7 @@ void VulkanShaderSetParamsLayout::release()
 {
     if (descriptorLayout != nullptr)
     {
-        IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+        IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
         VulkanGraphicsHelper::destroyDescriptorsSetLayout(graphicsInstance, descriptorLayout);
         descriptorLayout = nullptr;
     }
@@ -469,7 +469,7 @@ void VulkanShaderParametersLayout::init()
     }
 
     //reinitResources();
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     for (std::pair<const uint32, SetParametersLayoutInfo>& setParamsLayout : setToLayoutInfo)
     {
         DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
@@ -488,7 +488,7 @@ void VulkanShaderParametersLayout::release()
     {
         if (setParamsLayout.second.descriptorLayout != nullptr)
         {
-            IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+            IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
             VulkanGraphicsHelper::destroyDescriptorsSetLayout(graphicsInstance, setParamsLayout.second.descriptorLayout);
             setParamsLayout.second.descriptorLayout = nullptr;
         }
@@ -531,7 +531,7 @@ void VulkanShaderSetParameters::init()
     ignoredSets.clear();
     BaseType::init();
 
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstance);
     DescriptorsSetQuery query;
     query.supportedTypes.insert(static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->getDescPoolAllocInfo().cbegin()
@@ -571,7 +571,7 @@ void VulkanShaderSetParameters::init()
 
 void VulkanShaderSetParameters::release()
 {
-    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderApi()->getGraphicsInstance());
+    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderManager()->getGraphicsInstance());
     descsSetAllocator->releaseDescriptorsSet(descriptorsSet);
     descriptorsSet = VK_NULL_HANDLE;
     BaseType::release();
@@ -766,7 +766,7 @@ void VulkanShaderParameters::init()
 
     std::vector<VkDescriptorSet> descsSets;
 
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstance);
     if (!descsSetAllocator->allocDescriptorsSets(descsSets, query, layouts))
     {
@@ -811,7 +811,7 @@ void VulkanShaderParameters::init()
 
 void VulkanShaderParameters::release()
 {
-    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderApi()->getGraphicsInstance());
+    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(gEngine->getRenderManager()->getGraphicsInstance());
     for (const std::pair<const uint32, VkDescriptorSet>& setIdToSet : descriptorsSets)
     {
         descsSetAllocator->releaseDescriptorsSet(setIdToSet.second);

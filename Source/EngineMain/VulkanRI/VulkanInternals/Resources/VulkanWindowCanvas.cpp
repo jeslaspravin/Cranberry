@@ -21,7 +21,7 @@ void VulkanWindowCanvas::init()
     }
 
     BaseType::init();
-    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* gInstance = gEngine->getRenderManager()->getGraphicsInstance();
 
     Vk::vkCreatePlatformSurfaceKHR.setInstanceWindow(gEngine->getApplicationInstance(), ownerWindow);
     Vk::vkCreatePlatformSurfaceKHR(VulkanGraphicsHelper::getInstance(gInstance), 
@@ -34,9 +34,9 @@ void VulkanWindowCanvas::reinitResources()
     BaseType::reinitResources();
     SwapchainInfo currentInfo = swapchainInfo;
 
-    VkSwapchainKHR nextSwapchain = VulkanGraphicsHelper::createSwapchain(gEngine->getRenderApi()->getGraphicsInstance(),
+    VkSwapchainKHR nextSwapchain = VulkanGraphicsHelper::createSwapchain(gEngine->getRenderManager()->getGraphicsInstance(),
         ownerWindow, &swapchainInfo);
-    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* gInstance = gEngine->getRenderManager()->getGraphicsInstance();
 
     if (!nextSwapchain || nextSwapchain == VK_NULL_HANDLE)
     {
@@ -86,7 +86,7 @@ void VulkanWindowCanvas::reinitResources()
 void VulkanWindowCanvas::release()
 {
     BaseType::release();
-    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* gInstance = gEngine->getRenderManager()->getGraphicsInstance();
     for (int32 i = 0; i < swapchainImages.size(); ++i)
     {
         semaphores[i]->release();
@@ -120,7 +120,7 @@ uint32 VulkanWindowCanvas::requestNextImage(SharedPtr<GraphicsSemaphore>* waitOn
 
     SharedPtr<GraphicsSemaphore>* semaphorePtr = waitOnSemaphore ? &semaphores[currentSyncIdx] : nullptr;
     SharedPtr<GraphicsFence>* fencePtr = waitOnFence || !waitOnSemaphore ? &fences[currentSyncIdx] : nullptr;
-    nextSwapchainIdx = VulkanGraphicsHelper::getNextSwapchainImage(gEngine->getRenderApi()->getGraphicsInstance(),
+    nextSwapchainIdx = VulkanGraphicsHelper::getNextSwapchainImage(gEngine->getRenderManager()->getGraphicsInstance(),
         swapchainPtr, semaphorePtr, fencePtr);
 
     if (waitOnSemaphore || waitOnFence)

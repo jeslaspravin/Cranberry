@@ -734,7 +734,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
 
 void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2>& commands, VulkanResourcesTracker* resourceTracker)
 {
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     QueueResourceBase* queueRes = nullptr;
 
     std::vector<std::vector<VkCommandBuffer>> allCmdBuffers(commands.size());
@@ -857,7 +857,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
 
 void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2& command, VulkanResourcesTracker* resourceTracker)
 {
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     QueueResourceBase* queueRes = nullptr;
 
     std::vector<VkCommandBuffer> cmdBuffers(command.cmdBuffers.size());

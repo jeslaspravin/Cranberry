@@ -7,11 +7,8 @@
 class IGraphicsInstance;
 class GlobalRenderingContextBase;
 
-class RenderApi
+class RenderManager
 {
-public:
-    using PostInitEvent = Event<RenderApi>;
-
 private:
     IGraphicsInstance* graphicsInstance;
     GlobalRenderingContextBase* globalContext;
@@ -24,7 +21,8 @@ private:
     // TODO(Jeslas) : Once multi threaded rendering is added this should be changed to some TLS value
     bool bIsInsideRenderCommand = false;
 
-    static PostInitEvent postInitEvent;
+    DelegateHandle onVsyncChangeHandle;
+public:
 
 private:
     void createSingletons();
@@ -41,16 +39,15 @@ public:
     IGraphicsInstance* getGraphicsInstance() const;
     GlobalRenderingContextBase* getGlobalRenderingContext() const;
     class ImGuiManager* getImGuiManager() const;
-    static PostInitEvent& onPostInit() { return postInitEvent; }
 
     void waitOnCommands();
 
     template <typename RenderCmdClass>
-    static void issueRenderCommand(RenderApi* renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
+    static void issueRenderCommand(RenderManager* renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
 };
 
 template <typename RenderCmdClass>
-void RenderApi::issueRenderCommand(RenderApi* renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
+void RenderManager::issueRenderCommand(RenderManager* renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
 {
     if (renderApi->bIsInsideRenderCommand)
     {

@@ -39,7 +39,7 @@ public:
 
     void load() override;
     void unload() override;
-    void loadSurfaceDependents() override;
+    void updateSurfaceDependents() override;
     void initializeCmds(class IRenderCommandList* commandList) override;
 
     /* Override ends */

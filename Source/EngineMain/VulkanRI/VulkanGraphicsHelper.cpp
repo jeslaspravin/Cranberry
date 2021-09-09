@@ -69,6 +69,12 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
         return nullptr;
     }
 
+    if (device->swapchainFormat.format == VkFormat::VK_FORMAT_UNDEFINED)
+    {
+        Logger::error("VulkanSwapchain", "%s() : Surface properties are invalid", __func__);
+        return nullptr;
+    }
+
     CREATE_SWAPCHAIN_INFO(swapchainCreateInfo);
     swapchainCreateInfo.surface = static_cast<VulkanWindowCanvas*>(gEngine->getApplicationInstance()
         ->appWindowManager.getWindowCanvas(appWindow))->surface();

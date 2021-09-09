@@ -92,7 +92,7 @@ void EnvironmentMapAsset::initAsset()
             // Create Env map from HDRI
             LocalPipelineContext hdriToCubeContext;
             hdriToCubeContext.materialName = "HDRIToCube_16x16x1";
-            gEngine->getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&hdriToCubeContext);
+            gEngine->getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&hdriToCubeContext);
             SharedPtr<ShaderParameters> hdriToCubeParams = GraphicsHelper::createShaderParameters(graphicsInstance, hdriToCubeContext.getPipeline()->getParamLayoutAtSet(0), {});
             hdriToCubeParams->setTextureParam("outCubeMap", writeIntermediate->getTextureResource());
             hdriToCubeParams->setTextureParam("hdri", &hdrImage, sampler);
@@ -101,7 +101,7 @@ void EnvironmentMapAsset::initAsset()
             // Env to Diffuse Irradiance
             LocalPipelineContext envToDiffIrradContext;
             envToDiffIrradContext.materialName = "EnvToDiffuseIrradiance_4x4x1";
-            gEngine->getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&envToDiffIrradContext);
+            gEngine->getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&envToDiffIrradContext);
             SharedPtr<ShaderParameters> envToDiffIrradParams = GraphicsHelper::createShaderParameters(graphicsInstance, envToDiffIrradContext.getPipeline()->getParamLayoutAtSet(0), {});
             envToDiffIrradParams->setTextureParam("outDiffuseIrradiance", diffIrradIntermediate->getTextureResource());
             envToDiffIrradParams->setTextureParam("envMap", envMap->getTextureResource(), sampler);
@@ -110,7 +110,7 @@ void EnvironmentMapAsset::initAsset()
             // HDRI to pre-filtered specular map
             LocalPipelineContext hdriToPrefilteredSpecContext;
             hdriToPrefilteredSpecContext.materialName = "HDRIToPrefilteredSpecMap_16x16x1";
-            gEngine->getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&hdriToPrefilteredSpecContext);
+            gEngine->getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&hdriToPrefilteredSpecContext);
             SharedPtr<ShaderParameters> hdriToPrefilteredSpecParams = GraphicsHelper::createShaderParameters(graphicsInstance, hdriToPrefilteredSpecContext.getPipeline()->getParamLayoutAtSet(0), {});
             for (uint32 i = 0; i < specIrradIntermediate->getMipCount(); ++i)
             {

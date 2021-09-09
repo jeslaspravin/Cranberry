@@ -6,7 +6,8 @@
 
 class GenericFileHandle;
 
-class GenericFile {
+class GenericFile 
+{
     
 protected:
 
@@ -113,7 +114,8 @@ public:
     virtual bool createDirectory() const =0;
 };
 
-namespace std {
+namespace std 
+{
     template<>
     struct default_delete<GenericFile>
     {

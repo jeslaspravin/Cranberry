@@ -28,7 +28,7 @@ struct VulkanFrameBuffer final : public Framebuffer
 
 VulkanFrameBuffer::~VulkanFrameBuffer()
 {
-    VulkanGraphicsHelper::destroyFramebuffer(gEngine->getRenderApi()->getGraphicsInstance(), frameBuffer);
+    VulkanGraphicsHelper::destroyFramebuffer(gEngine->getRenderManager()->getGraphicsInstance(), frameBuffer);
 }
 
 VulkanFrameBuffer* VulkanFrameBuffer::createInstance()
@@ -38,9 +38,9 @@ VulkanFrameBuffer* VulkanFrameBuffer::createInstance()
 
 void VulkanFrameBuffer::initializeFb(Framebuffer* fb, const Size2D& frameSize)
 {
-    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* gInstance = gEngine->getRenderManager()->getGraphicsInstance();
     auto* vulkanFb = static_cast<VulkanFrameBuffer*>(fb);
-    VkRenderPass dummyRenderPass = VulkanGraphicsHelper::createDummyRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), fb);
+    VkRenderPass dummyRenderPass = VulkanGraphicsHelper::createDummyRenderPass(gEngine->getRenderManager()->getGraphicsInstance(), fb);
 
     std::vector<VkImageView> imageViews;
     imageViews.reserve(fb->textures.size());
@@ -84,7 +84,7 @@ void GlobalBuffers::initializeFb(Framebuffer* fb, const Size2D& frameSize)
 
 void GlobalBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx)
 {
-    IGraphicsInstance* gInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* gInstance = gEngine->getRenderManager()->getGraphicsInstance();
     const auto* vulkanWindowCanvas = static_cast<const VulkanWindowCanvas*>(canvas);
     ImageResource dummyImageResource(vulkanWindowCanvas->windowCanvasFormat());
 
@@ -93,7 +93,7 @@ void GlobalBuffers::initializeSwapchainFb(Framebuffer* fb, const class GenericWi
 
     VkImageView swapchainImgView = vulkanWindowCanvas->swapchainImageView(swapchainIdx);
 
-    VkRenderPass dummyRenderPass = VulkanGraphicsHelper::createDummyRenderPass(gEngine->getRenderApi()->getGraphicsInstance(), fb);
+    VkRenderPass dummyRenderPass = VulkanGraphicsHelper::createDummyRenderPass(gEngine->getRenderManager()->getGraphicsInstance(), fb);
     FRAMEBUFFER_CREATE_INFO(fbCreateInfo);
     fbCreateInfo.attachmentCount = 1;
     fbCreateInfo.pAttachments = &swapchainImgView;

@@ -231,17 +231,21 @@ void VulkanGraphicsInstance::createVulkanDevice()
     Logger::debug("Vulkan", "%s() : Selected device %s", __func__, selectedDevice.getDeviceName().getChar());
 }
 
-void VulkanGraphicsInstance::loadSurfaceDependents()
-{    
-    createVulkanDevice();
+void VulkanGraphicsInstance::updateSurfaceDependents()
+{
+    // We have to create device after surface creation since device queue needs surface to select present queue
+    // Once we have none present application support we can redo this order based on presenting or not
+    if (!selectedDevice.isValidDevice())
+    {
+        createVulkanDevice();
+        fatalAssert(selectedDevice.isValidDevice(), "Graphics device creation failed");
 
-    if (selectedDevice.isValidDevice())
-    {        
         selectedDevice.createLogicDevice();
         memoryAllocator = IVulkanMemoryAllocator::createAllocator(&selectedDevice);
         descriptorsSetAllocator = SharedPtr<VulkanDescriptorsSetAllocator>(new VulkanDescriptorsSetAllocator(&selectedDevice));
         vulkanCmdList = SharedPtr<VulkanCommandList>(new VulkanCommandList(this, &selectedDevice));
     }
+    selectedDevice.cacheGlobalSurfaceProperties();
 }
 
 void VulkanGraphicsInstance::initializeCmds(class IRenderCommandList* commandList)

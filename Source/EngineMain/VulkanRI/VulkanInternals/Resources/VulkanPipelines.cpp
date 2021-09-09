@@ -22,8 +22,8 @@ void VulkanPipelineCache::reinitResources()
     release();
     BaseType::reinitResources();
 
-    pipelineCacheRead = VulkanGraphicsHelper::createPipelineCache(gEngine->getRenderApi()->getGraphicsInstance(), getRawFromFile());
-    VulkanGraphicsHelper::debugGraphics(gEngine->getRenderApi()->getGraphicsInstance())->markObject(this);
+    pipelineCacheRead = VulkanGraphicsHelper::createPipelineCache(gEngine->getRenderManager()->getGraphicsInstance(), getRawFromFile());
+    VulkanGraphicsHelper::debugGraphics(gEngine->getRenderManager()->getGraphicsInstance())->markObject(this);
 }
 
 void VulkanPipelineCache::release()
@@ -32,7 +32,7 @@ void VulkanPipelineCache::release()
 
     if (pipelineCacheRead != nullptr)
     {
-        VulkanGraphicsHelper::destroyPipelineCache(gEngine->getRenderApi()->getGraphicsInstance(), pipelineCacheRead);
+        VulkanGraphicsHelper::destroyPipelineCache(gEngine->getRenderManager()->getGraphicsInstance(), pipelineCacheRead);
         pipelineCacheRead = nullptr;
     }
 }
@@ -50,7 +50,7 @@ uint64 VulkanPipelineCache::getDispatchableHandle() const
 std::vector<uint8> VulkanPipelineCache::getRawToWrite() const
 {
     std::vector<uint8> dataToWriteOut;
-    VulkanGraphicsHelper::getMergedCacheData(gEngine->getRenderApi()->getGraphicsInstance(), dataToWriteOut, pipelinesToCache);
+    VulkanGraphicsHelper::getMergedCacheData(gEngine->getRenderManager()->getGraphicsInstance(), dataToWriteOut, pipelinesToCache);
     return dataToWriteOut;
 }
 
@@ -380,7 +380,7 @@ void VulkanGraphicsPipeline::validateCreateInfo(VulkanPipelineCreateInfo& create
 
 void VulkanGraphicsPipeline::createPipelines(const std::vector<VulkanGraphicsPipeline::VulkanPipelineCreateInfo>& createInfos)
 {
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
 
     std::vector<VkPipelineDynamicStateCreateInfo> dynamicStateCIs(createInfos.size());
     std::vector<VkGraphicsPipelineCreateInfo> pipelineCIs(createInfos.size());    
@@ -434,7 +434,7 @@ void VulkanGraphicsPipeline::init()
         , "Not supported shader for graphics pipeline");
 
     BaseType::init();
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     pipelineLocalCache = VulkanGraphicsHelper::createPipelineCache(graphicsInstance);
     if (parentCache)
     {
@@ -449,7 +449,7 @@ void VulkanGraphicsPipeline::reinitResources()
 {
     BaseType::reinitResources();
     // Release reinitializing resources
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     for (VkPipeline& graphicsPipeline : pipelines)
     {
         VulkanGraphicsHelper::destroyPipeline(graphicsInstance, graphicsPipeline);
@@ -527,7 +527,7 @@ void VulkanGraphicsPipeline::reinitResources()
 void VulkanGraphicsPipeline::release()
 {
     BaseType::release();
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
 
     if (pipelineLocalCache != nullptr)
     {
@@ -654,7 +654,7 @@ String VulkanComputePipeline::getObjectName() const
 void VulkanComputePipeline::init()
 {
     BaseType::init();
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     pipelineLocalCache = VulkanGraphicsHelper::createPipelineCache(graphicsInstance);
     if (parentCache)
     {
@@ -668,7 +668,7 @@ void VulkanComputePipeline::init()
 void VulkanComputePipeline::reinitResources()
 {
     BaseType::reinitResources();
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     if(pipeline)
     {
         VulkanGraphicsHelper::destroyPipeline(graphicsInstance, pipeline);
@@ -697,7 +697,7 @@ void VulkanComputePipeline::reinitResources()
 void VulkanComputePipeline::release()
 {
     BaseType::release();
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
 
     if (pipelineLocalCache != nullptr)
     {

@@ -33,8 +33,9 @@ public:
     GenericWindowCanvas* getWindowCanvas(GenericAppWindow* window) const;
     const InputSystem* getInputSystem() const;
 
-    void initMain();
-    void destroyMain();
+    void init();
+    void destroy();
+    void updateWindowCanvas();
     /*
     * Polls all windows for all events, Only events that are not handled in global event handler. 
     * Returns true if any active windows are there else false
