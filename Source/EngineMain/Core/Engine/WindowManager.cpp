@@ -14,7 +14,7 @@ GenericAppWindow* WindowManager::getMainWindow() const
     return appMainWindow;
 }
 
-void WindowManager::initMain()
+void WindowManager::init()
 {
     inputSystem = new InputSystem();
     appMainWindow = new PlatformAppWindow();
@@ -30,7 +30,7 @@ void WindowManager::initMain()
 
     ENQUEUE_COMMAND_NODEBUG(MainWindowInit,
         {
-            ManagerData & data = windowsOpened[appMainWindow];
+            ManagerData& data = windowsOpened[appMainWindow];
             data.windowCanvas = new WindowCanvas();
             data.windowCanvas->setWindow(appMainWindow);
             data.windowCanvas->init();
@@ -39,7 +39,7 @@ void WindowManager::initMain()
 
 }
 
-void WindowManager::destroyMain()
+void WindowManager::destroy()
 {
     for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
     {
@@ -74,7 +74,8 @@ GenericWindowCanvas* WindowManager::getWindowCanvas(GenericAppWindow* window) co
 
 void WindowManager::postInitGraphicCore()
 {
-    ENQUEUE_COMMAND_NODEBUG(InitWindowCanvas,
+    ENQUEUE_COMMAND(InitWindowCanvas)(
+        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
             {
@@ -82,7 +83,21 @@ void WindowManager::postInitGraphicCore()
                 windowData.second.windowCanvas->reinitResources();
             }
             EngineSettings::surfaceSize.set(Size2D(appMainWindow->windowWidth, appMainWindow->windowHeight));
-        }, this);
+        });
+}
+
+void WindowManager::updateWindowCanvas()
+{
+    ENQUEUE_COMMAND(UpdateWindowCanvas)(
+        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        {
+            cmdList->waitIdle();
+            for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
+            {
+                windowData.second.windowCanvas->reinitResources();
+            }
+            GlobalBuffers::onSurfaceUpdated();
+        });
 }
 
 void WindowManager::activateWindow(GenericAppWindow* window)
@@ -132,7 +147,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                 if(window == appMainWindow)
                 {
                     Size2D newSize{ window->windowWidth, window->windowHeight };
-                    GlobalBuffers::onSurfaceResized(newSize);
+                    GlobalBuffers::onSurfaceUpdated();
                     EngineSettings::surfaceSize.set(newSize);
                 }
             ), this, window, width, height);

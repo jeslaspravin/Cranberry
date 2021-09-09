@@ -28,7 +28,7 @@ struct Framebuffer;
 class GlobalRenderingContextBase
 {
 private:
-    friend class RenderApi;
+    friend class RenderManager;
 
 protected:
 

@@ -340,7 +340,7 @@ void GlobalBuffers::generateTexture2Ds()
         {
             LocalPipelineContext integrateBrdfContext;
             integrateBrdfContext.materialName = "IntegrateBRDF_16x16x1";
-            gEngine->getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&integrateBrdfContext);
+            gEngine->getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&integrateBrdfContext);
             SharedPtr<ShaderParameters> integrateBrdfParams = GraphicsHelper::createShaderParameters(graphicsInstance, integrateBrdfContext.getPipeline()->getParamLayoutAtSet(0), {});
             integrateBrdfParams->setTextureParam("outIntegratedBrdf", integratedBRDF->getTextureResource());
             integrateBrdfParams->init();

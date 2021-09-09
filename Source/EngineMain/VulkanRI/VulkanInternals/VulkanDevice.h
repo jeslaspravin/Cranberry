@@ -8,7 +8,8 @@
 class String;
 class QueueResourceBase;
 
-class VulkanDevice {
+class VulkanDevice
+{
 
 private:
     using QueueResourceBasePtr = QueueResourceBase*;
@@ -63,11 +64,10 @@ private:
 
     // Swap chain and surface    
     VkPresentModeKHR globalPresentMode;
-    VkSurfaceFormatKHR swapchainFormat;
+    VkSurfaceFormatKHR swapchainFormat{ VkFormat::VK_FORMAT_UNDEFINED };
     uint32 choosenImageCount = 1;
     VkImageUsageFlags swapchainImgUsage;
 
-    void cacheGlobalSurfaceProperties();
     int32 compareSurfaceCompatibility(const class GenericWindowCanvas* surfaceCanvas,const VulkanDevice& otherDevice) const;
     int32 compareMemoryCompatibility(const VulkanDevice& otherDevice) const;
     // Swap chain and surface
@@ -83,6 +83,7 @@ public:
 
 
     void createLogicDevice();
+    void cacheGlobalSurfaceProperties();
     void freeLogicDevice();
 
     String getDeviceName() const;

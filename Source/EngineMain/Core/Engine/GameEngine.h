@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../RenderApi/RenderApi.h"
+#include "../../RenderApi/RenderManager.h"
 #include "../Platform/GenericAppInstance.h"
 
 struct EngineTime
@@ -12,6 +12,7 @@ struct EngineTime
     int64 frameTick;
     // In Seconds
     // Start with 100FPS
+    float averageDeltaTime = 0.01f;
     float lastDeltaTime = 0.01f;
     float deltaTime = 0.01f;
 
@@ -26,19 +27,21 @@ struct EngineTime
     float getDeltaTime();
 };
 
+using EngineEvents = Event<class GameEngine>;
+
 class GameEngine
 {
 private:
     GenericAppInstance* applicationInstance;
     bool bExitNextFrame = false;
 protected:
-    RenderApi renderingApi;
+    RenderManager renderManager;
     EngineTime timeData;
 
+protected:
     virtual void onStartUp();
     virtual void onQuit();
     virtual void tickEngine();
-
 public:
     virtual ~GameEngine() = default;
 
@@ -54,10 +57,16 @@ public:
     const GenericAppInstance* getApplicationInstance() const;
     GenericAppInstance& appInstance() const;
 
-    const RenderApi* getRenderApi() const { return &renderingApi; }
+    const RenderManager* getRenderManager() const { return &renderManager; }
 
     template <typename RenderCmdClass>
     static void issueRenderCommand(typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
+
+    // Events
+public:
+    EngineEvents renderPostInitEvent;
+
+    void broadcastPostInitRenderEvent();
 };
 
 class GameEngineWrapper final
@@ -103,5 +112,5 @@ inline GameEngineWrapper gEngine;
 template <typename RenderCmdClass>
 void GameEngine::issueRenderCommand(typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
 {
-    RenderApi::issueRenderCommand<RenderCmdClass>(&gEngine->renderingApi, std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn));
+    RenderManager::issueRenderCommand<RenderCmdClass>(&gEngine->renderManager, std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn));
 }

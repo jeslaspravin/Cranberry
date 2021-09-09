@@ -174,8 +174,13 @@ struct ClassFunction<true, ClassType, ReturnType, Parameters...> {
 template <typename ReturnType, typename... Parameters>
 struct LambdaFunction
 {
-
     typedef std::function<ReturnType(Parameters...)> LambdaDelegate;
+
+    template <typename Callable, typename Type = void>
+    using IsCallable = std::enable_if_t<std::conjunction_v<
+        std::negation<std::is_same<std::decay_t<Callable>, LambdaFunction>>
+        , std::negation<std::is_same<std::decay_t<Callable>, LambdaDelegate>>
+        , std::is_invocable_r<ReturnType, Callable, Parameters...>>, Type>;
 
     LambdaDelegate lambdaDelegate = nullptr;
 
@@ -206,7 +211,13 @@ struct LambdaFunction
     }
     // End class default constructors and operators
 
-    LambdaFunction(const LambdaDelegate& functionPointer)
+    // Compiler bug? using int as it is working SFINAE within function template, void is always returning false
+    template <typename Callable, typename IsCallable<Callable, int> = 0>
+    LambdaFunction(Callable &&lambda)
+        : lambdaDelegate(std::forward<Callable>(lambda))
+    {}
+
+    LambdaFunction(const LambdaDelegate &functionPointer)
         : lambdaDelegate(functionPointer)
     {}
 

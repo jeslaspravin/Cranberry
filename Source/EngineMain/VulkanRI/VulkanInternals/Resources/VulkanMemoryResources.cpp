@@ -24,7 +24,7 @@ void VulkanBufferResource::reinitResources()
         return;
     }
 
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(graphicsInstance);
 
     BUFFER_CREATE_INFO(bufferCreateInfo);
@@ -50,7 +50,7 @@ void VulkanBufferResource::release()
 {
     if (buffer)
     {
-        IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+        IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
         for (const std::pair<const BufferViewInfo, VkBufferView>& bufferView : createdBufferViews)
         {
             VulkanGraphicsHelper::destroyBufferView(graphicsInstance, bufferView.second);
@@ -96,7 +96,7 @@ VkBufferView VulkanBufferResource::createBufferView(const BufferViewInfo& viewIn
     bufferViewCreateInfo.offset = viewInfo.startOffset;
     bufferViewCreateInfo.range = viewInfo.size;
 
-    return VulkanGraphicsHelper::createBufferView(gEngine->getRenderApi()->getGraphicsInstance(), bufferViewCreateInfo);
+    return VulkanGraphicsHelper::createBufferView(gEngine->getRenderManager()->getGraphicsInstance(), bufferViewCreateInfo);
 }
 
 VkBufferView VulkanBufferResource::getBufferView(const BufferViewInfo& viewInfo)
@@ -242,7 +242,7 @@ void VulkanImageResource::reinitResources()
         return;
     }
 
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     const VulkanDebugGraphics* graphicsDebugger = VulkanGraphicsHelper::debugGraphics(graphicsInstance);
 
     IMAGE_CREATE_INFO(imgCreateInfo);
@@ -278,7 +278,7 @@ void VulkanImageResource::release()
 {
     if (image)
     {
-        IGraphicsInstance* graphicsInstance = gEngine->getRenderApi()->getGraphicsInstance();
+        IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
         for (const std::pair<const ImageViewInfo, VkImageView>& imageView : createdImageViews)
         {
             VulkanGraphicsHelper::destroyImageView(graphicsInstance, imageView.second);
@@ -359,7 +359,7 @@ VkImageView VulkanImageResource::createImageView(const ImageViewInfo& viewInfo)
         (VkComponentSwizzle)EPixelComponentMapping::getComponentMapping(viewInfo.componentMapping.a)->mapping,
     };
 
-    return VulkanGraphicsHelper::createImageView(gEngine->getRenderApi()->getGraphicsInstance(), imageViewCreateInfo);
+    return VulkanGraphicsHelper::createImageView(gEngine->getRenderManager()->getGraphicsInstance(), imageViewCreateInfo);
 }
 
 VkImageView VulkanImageResource::getImageView(const ImageViewInfo& viewInfo)

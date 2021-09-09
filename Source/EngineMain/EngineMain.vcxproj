@@ -114,6 +114,7 @@
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
       <LanguageStandard_C>Default</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,6 +146,7 @@
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
       <LanguageStandard_C>Default</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -178,6 +180,7 @@
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
       <LanguageStandard_C>Default</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -213,6 +216,7 @@
       <PrecompiledHeaderOutputFile>$(SolutionDir)\Binaries\$(ProjectName)\$(Platform)\$(Configuration)\Intermediate\PCH\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <ShowIncludes>false</ShowIncludes>
       <LanguageStandard_C>Default</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -302,7 +306,7 @@
     <ClCompile Include="Experimental\TestCompute.cpp" />
     <ClCompile Include="RenderApi\GBuffersAndTextures.cpp" />
     <ClCompile Include="RenderApi\Material\MaterialCommonUniforms.cpp" />
-    <ClCompile Include="RenderApi\RenderApi.cpp" />
+    <ClCompile Include="RenderApi\RenderManager.cpp" />
     <ClCompile Include="RenderApi\Scene\RenderScene.cpp" />
     <ClCompile Include="RenderApi\VertexData.cpp" />
     <ClCompile Include="RenderInterface\GlobalRenderVariables.cpp" />
@@ -438,6 +442,7 @@
     <ClInclude Include="Core\Types\Colors.h" />
     <ClInclude Include="Core\Types\Containers\ArrayView.h" />
     <ClInclude Include="Core\Types\Containers\MinAllocVector.h" />
+    <ClInclude Include="Core\Types\Containers\ReferenceCountPtr.h" />
     <ClInclude Include="Core\Types\CoreDefines.h" />
     <ClInclude Include="Core\Types\Delegates\Delegate.h" />
     <ClInclude Include="Core\Types\Functions.h" />
@@ -465,7 +470,7 @@
     <ClInclude Include="Editor\Core\ImGui\ImGuiManager.h" />
     <ClInclude Include="RenderApi\GBuffersAndTextures.h" />
     <ClInclude Include="RenderApi\Material\MaterialCommonUniforms.h" />
-    <ClInclude Include="RenderApi\RenderApi.h" />
+    <ClInclude Include="RenderApi\RenderManager.h" />
     <ClInclude Include="RenderApi\Scene\Renderer\Renderer.h" />
     <ClInclude Include="RenderApi\Scene\RenderScene.h" />
     <ClInclude Include="RenderApi\VertexData.h" />
@@ -535,8 +540,8 @@
     <None Include="VulkanRI\VulkanInternals\VulkanFunctionLists.inl" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\..\..\CppLibs\glm\util\glm.natvis" />
-    <Natvis Include="..\..\..\CppLibs\imgui\misc\debuggers\imgui.natvis" />
+    <Natvis Include="..\..\Scripts\Visualizers\glm.natvis" />
+    <Natvis Include="..\..\Scripts\Visualizers\imgui.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

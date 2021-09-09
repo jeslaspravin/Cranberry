@@ -1,5 +1,5 @@
 #include "GameEngine.h"
-#include "../../RenderApi/RenderApi.h"
+#include "../../RenderApi/RenderManager.h"
 #include "../Logger/Logger.h"
 #include "../Platform/GenericAppWindow.h"
 #include "../Platform/PlatformAssertionErrors.h"
@@ -16,6 +16,7 @@ void EngineTime::tickStart()
     initEndTick = Time::timeNow();
     frameTick = lastFrameTick = initEndTick;
     deltaTime = 0;
+    frameCounter = 0;
 }
 
 void EngineTime::progressFrame()
@@ -23,6 +24,7 @@ void EngineTime::progressFrame()
     frameCounter++;
     lastFrameTick = frameTick;
     frameTick = Time::timeNow();
+    averageDeltaTime = Time::asSeconds(frameTick - initEndTick) / frameCounter;
     lastDeltaTime = deltaTime;
     deltaTime = Time::asSeconds(frameTick - lastFrameTick);
 }
@@ -41,12 +43,14 @@ void GameEngine::startup(GenericAppInstance* appInstance)
     timeData.engineStart();
 
     applicationInstance = appInstance;
-    renderingApi.initialize();
+
+    renderManager.initialize();
+
     applicationInstance->assetManager.load();
     onStartUp();
 
     // Has to be done at last after all the other rendering related systems init
-    renderingApi.postInit();
+    renderManager.postInit();
 }
 
 void GameEngine::quit()
@@ -54,8 +58,7 @@ void GameEngine::quit()
     bExitNextFrame = true;
     onQuit();
     applicationInstance->assetManager.unload();
-
-    renderingApi.destroy();
+    renderManager.destroy();
 
     applicationInstance->assetManager.clearToDestroy();
     applicationInstance = nullptr;
@@ -75,9 +78,17 @@ void GameEngine::engineLoop()
         timeData.activeTimeDilation = applicationInstance->appWindowManager.pollWindows()? 1.0f : 0.0f;
         timeData.progressFrame();
         tickEngine();
-        renderingApi.renderFrame(timeData.deltaTime);
+        renderManager.renderFrame(timeData.deltaTime);
 
         Logger::flushStream();
+    }
+}
+
+void GameEngine::broadcastPostInitRenderEvent()
+{
+    if (renderPostInitEvent.isBound())
+    {
+        renderPostInitEvent.invoke();
     }
 }
 

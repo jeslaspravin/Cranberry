@@ -43,6 +43,7 @@ private:
     using base::variable;
 
 public:
+    // void *(old, new)
     using GlobalConfigChanged = Event<EngineGlobalConfig<VarType>, VarType, VarType>;
 
 private:

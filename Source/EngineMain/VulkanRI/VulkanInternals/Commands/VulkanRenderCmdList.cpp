@@ -1093,7 +1093,7 @@ void VulkanCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, co
         debugAssert(false);
         return;
     }
-    VulkanGlobalRenderingContext* renderingContext = static_cast<VulkanGlobalRenderingContext*>(gEngine->getRenderApi()->getGlobalRenderingContext());
+    VulkanGlobalRenderingContext* renderingContext = static_cast<VulkanGlobalRenderingContext*>(gEngine->getRenderManager()->getGlobalRenderingContext());
     const VulkanGraphicsPipeline* graphicsPipeline = static_cast<const VulkanGraphicsPipeline*>(contextPipeline.getPipeline());
 
     Size2D extent = renderArea.size();

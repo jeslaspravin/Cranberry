@@ -483,7 +483,7 @@ void ImGuiManager::draw(class IRenderCommandList* cmdList, IGraphicsInstance* gr
     pipelineContext.forVertexType = EVertexType::UI;
     pipelineContext.rtTextures = drawingContext.rtTextures;
     pipelineContext.swapchainIdx = drawingContext.swapchainIdx;
-    gEngine->getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&pipelineContext);
+    gEngine->getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&pipelineContext);
 
     updateRenderResources(cmdList, graphicsInstance, drawingContext, pipelineContext);
 

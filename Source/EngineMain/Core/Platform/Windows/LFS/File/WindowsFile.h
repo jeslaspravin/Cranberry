@@ -1,7 +1,8 @@
 #pragma once
 #include "../../../LFS/File/GenericFile.h"
 
-class WindowsFile final : public GenericFile {
+class WindowsFile final : public GenericFile
+{
 
 public:
     WindowsFile(const String& path = ""):GenericFile(path){}

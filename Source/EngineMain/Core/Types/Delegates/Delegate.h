@@ -2,15 +2,13 @@
 
 #include "../Functions.h"
 #include "../../Memory/SmartPointers.h"
+#include "../CoreDefines.h"
 #include "../../Platform/PlatformTypes.h"
 
+#include <tuple>
 #include <map>
 #include <type_traits>
-
-// TODO(Jeslas) revisit all these later
-
-template <typename... Params>
-class MultiCastDelegateBase;
+#include <memory_resource>
 
 template<typename ReturnType, typename... Params>
 class IDelegate
@@ -26,56 +24,53 @@ public:
 };
 
 template<typename... Variables>
-struct FunctionExecutor;
+struct FunctionExecutor
+{ 
+    using Tuple = std::tuple<Variables...>;
+    using IndexSeq = std::make_index_sequence<std::tuple_size_v<Tuple>>;
+
+    template<typename FunctionType, typename ReturnType, typename... Params>
+    struct ExeHelper
+    {
+        template <size_t... Indices>
+        ReturnType execute(const FunctionType& function, Params ...params, const Tuple& varStore, std::index_sequence<Indices...>) const
+        {
+            return function(std::forward<Params>(params)..., std::get<Indices>(varStore)...);
+        }
+
+        template <typename ObjectType, size_t... Indices>
+        ReturnType execute(const FunctionType& function, ObjectType* object, const Tuple& varStore, Params ...params, std::index_sequence<Indices...>)
+        {
+            return function(object, std::forward<Params>(params)..., std::get<Indices>(varStore)...);
+        }
+    };
+
+    Tuple varStore;
+
+    FunctionExecutor() = default;
+    FunctionExecutor(FunctionExecutor&& other) = default;
+    FunctionExecutor(Variables ...vars)
+        : varStore(std::forward<Variables>(vars)...)
+    {}
+
+    template<typename ReturnType, typename FunctionType, typename... Params> 
+    ReturnType execute(const FunctionType& function, Params ...params) const 
+    { 
+        return ExeHelper<FunctionType, ReturnType, Params...>{}.execute(function, varStore, std::forward<Params>(params)..., IndexSeq{});
+    }
+    template<typename ReturnType, typename FunctionType, typename ObjectType, typename... Params> 
+    ReturnType execute(const FunctionType& function, ObjectType* object, Params ...params) const 
+    {
+        return ExeHelper<FunctionType, ReturnType, Params...>{}.execute<ObjectType>(function, object, varStore, std::forward<Params>(params)..., IndexSeq{});
+    }
+};
+
 template<> struct FunctionExecutor<>
 {
     FunctionExecutor() = default;
     FunctionExecutor(FunctionExecutor&& other) = default;
-    bool operator==(const FunctionExecutor& other) { return true; }
     template<typename ReturnType, typename FunctionType, typename... Params> ReturnType execute(const FunctionType& function, Params ...params) const { return function(std::forward<Params>(params)...); }
     template<typename ReturnType, typename FunctionType, typename ObjectType, typename... Params> ReturnType execute(const FunctionType& function, ObjectType* object, Params ...params) const { return function(object, std::forward<Params>(params)...); }
-};
-template<typename Var1> struct FunctionExecutor<Var1>
-{
-    Var1 var1;
-    FunctionExecutor(Var1 variable1) : var1(variable1){}
-    FunctionExecutor(FunctionExecutor&& other) : var1(std::move(other.var1)) {}
-    //bool operator==(const FunctionExecutor& other) { return var1 == other.var1; }
-    template<typename ReturnType, typename FunctionType, typename... Params> ReturnType execute(const FunctionType& function, Params ...params) const { return function(std::forward<Params>(params)..., var1); }
-    template<typename ReturnType, typename FunctionType, typename ObjectType, typename... Params> ReturnType execute(const FunctionType& function, ObjectType* object, Params ...params) const { return function(object, std::forward<Params>(params)..., var1); }
-};
-template<typename Var1, typename Var2> struct FunctionExecutor<Var1,Var2>
-{
-    Var1 var1;
-    Var2 var2;
-    FunctionExecutor(Var1 variable1, Var2 variable2) : var1(variable1), var2(variable2) {}
-    FunctionExecutor(FunctionExecutor&& other) : var1(std::move(other.var1)), var2(std::move(other.var2)) {}
-    //bool operator==(const FunctionExecutor& other) { return var1 == other.var1 && var2 == other.var2; }
-    template<typename ReturnType, typename FunctionType, typename... Params> ReturnType execute(const FunctionType& function, Params ...params) const { return function(std::forward<Params>(params)..., var1, var2); }
-    template<typename ReturnType, typename FunctionType, typename ObjectType, typename... Params> ReturnType execute(const FunctionType& function, ObjectType* object, Params ...params) const { return function(object, std::forward<Params>(params)..., var1, var2); }
-};
-template<typename Var1, typename Var2, typename Var3> struct FunctionExecutor<Var1,Var2,Var3>
-{
-    Var1 var1;
-    Var2 var2;
-    Var3 var3;
-    FunctionExecutor(Var1 variable1, Var2 variable2, Var3 variable3) : var1(variable1), var2(variable2), var3(variable3) {}
-    FunctionExecutor(FunctionExecutor&& other) : var1(std::move(other.var1)), var2(std::move(other.var2)), var3(std::move(other.var3)) {}
-    //bool operator==(const FunctionExecutor& other) { return var1 == other.var1 && var2 == other.var2 && var3 == other.var3; }
-    template<typename ReturnType, typename FunctionType, typename... Params> ReturnType execute(const FunctionType& function, Params ...params) const { return function(std::forward<Params>(params)..., var1, var2, var3); }
-    template<typename ReturnType, typename FunctionType, typename ObjectType, typename... Params> ReturnType execute(const FunctionType& function, ObjectType* object, Params ...params) const { return function(object, std::forward<Params>(params)..., var1, var2, var3); }
-};
-template<typename Var1, typename Var2, typename Var3, typename Var4> struct FunctionExecutor<Var1, Var2, Var3, Var4>
-{
-    Var1 var1;
-    Var2 var2;
-    Var3 var3;
-    Var4 var4;
-    FunctionExecutor(Var1 variable1, Var2 variable2, Var3 variable3, Var4 variable4) : var1(variable1), var2(variable2), var3(variable3), var4(variable4) {}
-    FunctionExecutor(FunctionExecutor&& other) : var1(std::move(other.var1)), var2(std::move(other.var2)), var3(std::move(other.var3)), var4(std::move(other.var4)) {}
-    //bool operator==(const FunctionExecutor& other) { return var1 == other.var1 && var2 == other.var2 && var3 == other.var3 && var4 == other.var4; }
-    template<typename ReturnType, typename FunctionType, typename... Params> ReturnType execute(const FunctionType& function, Params ...params) const { return function(std::forward<Params>(params)..., var1, var2, var3, var4); }
-    template<typename ReturnType, typename FunctionType, typename ObjectType, typename... Params> ReturnType execute(const FunctionType& function, ObjectType* object, Params ...params) const { return function(object, std::forward<Params>(params)..., var1, var2, var3, var4); }
 };
 
 template <bool IsConst,typename ObjectType,typename FuncSignature, typename... Variables>
@@ -243,6 +238,11 @@ public:
         , executor(vars...)
     {}
 
+    explicit LambdaDelegate(FunctionPtr&& functionPtr, Variables ...vars)
+        : fPtr(std::forward<FunctionPtr>(functionPtr))
+        , executor(vars...)
+    {}
+
     LambdaDelegate(LambdaDelegate&& other)
         : fPtr(std::move(other.fPtr))
         , executor(std::move(other.executor))
@@ -308,10 +308,10 @@ protected:
 
 public:
     template<typename ObjectType, typename... Variables>
-    std::enable_if_t<!std::is_const_v<ObjectType>, DelegateHandle> bindObject(ObjectType* object
+    std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, DelegateHandle> bindObject(ObjectType* object
         , const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction,Variables ...vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction,vars...));
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...));
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;
@@ -321,7 +321,7 @@ public:
     template<typename ObjectType, typename... Variables>
     DelegateHandle bindObject(const ObjectType* object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, vars...));
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...));
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;
@@ -331,7 +331,7 @@ public:
     template<typename... Variables>
     DelegateHandle bindStatic(const typename StaticDelegateType<Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new StaticDelegateType<Variables...>(bindingFunction, vars...));
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new StaticDelegateType<Variables...>(bindingFunction, std::forward<Variables>(vars)...));
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;
@@ -341,7 +341,19 @@ public:
     template<typename... Variables>
     DelegateHandle bindLambda(const typename LambdaDelegateType<Variables...>::FunctionPtr& lambda, Variables ...vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(lambda, vars...));
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(lambda, std::forward<Variables>(vars)...));
+        DelegateHandle handle;
+        handle.value = getNextId();
+        allDelegates[handle.value] = ptr;
+        return handle;
+    }
+
+    template<typename LambdaType, typename... Variables>
+    DelegateHandle bindLambda(LambdaType&& lambda, Variables ...vars)
+    {
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(
+            new LambdaDelegateType<Variables...>(LambdaDelegateType<Variables...>::FunctionPtr(std::forward<LambdaType>(lambda))
+            , std::forward<Variables>(vars)...));
         DelegateHandle handle;
         handle.value = getNextId();
         allDelegates[handle.value] = ptr;
@@ -395,8 +407,8 @@ template <typename... Params>
 class Delegate : public MultiCastDelegateBase<Params...>
 {
 private:
-    using MultiCastDelegateBase<Params...>::allDelegates;
     using MultiCastDelegateBase<Params...>::DelegateInterface;
+    using MultiCastDelegateBase<Params...>::allDelegates;
 public:
     using MultiCastDelegateBase<Params...>::clear;
     ~Delegate();
@@ -415,19 +427,35 @@ Delegate<Params...>::~Delegate()
 template <typename... Params>
 void Delegate<Params...>::invoke(Params... params) const
 {
+    if (allDelegates.empty())
+        return;
+
+    uint32 buffer[128];
+    std::pmr::monotonic_buffer_resource bufferRes(buffer, ARRAY_LENGTH(buffer) * sizeof(uint32));
+    std::pmr::vector<int32> delegateIndices(&bufferRes);
+
     for (const std::pair<const int32, SharedPtr<DelegateInterface>>& delegateInterface : allDelegates)
     {
-        delegateInterface.second->invoke(std::forward<Params>(params)...);
+        delegateIndices.emplace_back(delegateInterface.first);
+    }
+
+    for (const int32& delegateIdx : delegateIndices)
+    {
+        auto itr = allDelegates.find(delegateIdx);
+        if (itr != allDelegates.cend())
+        {
+            itr->second->invoke(std::forward<Params>(params)...);
+        }
     }
 }
 
 /* Does not handle life time of object delegates needs to be externally handled */
-template <typename OwnerType,typename... Params>
+template <typename OwnerType, typename... Params>
 class Event : public MultiCastDelegateBase<Params...>
 {
 private:
-    using MultiCastDelegateBase<Params...>::allDelegates;
     using MultiCastDelegateBase<Params...>::DelegateInterface;
+    using MultiCastDelegateBase<Params...>::allDelegates;
 
     friend OwnerType;
 
@@ -446,9 +474,25 @@ Event<OwnerType, Params...>::~Event()
 template <typename OwnerType, typename... Params>
 void Event<OwnerType, Params...>::invoke(Params... params) const
 {
+    if (allDelegates.empty())
+        return;
+
+    uint32 buffer[128];
+    std::pmr::monotonic_buffer_resource bufferRes(buffer, ARRAY_LENGTH(buffer) * sizeof(uint32));
+    std::pmr::vector<int32> delegateIndices(&bufferRes);
+
     for (const std::pair<const int32, SharedPtr<DelegateInterface>>& delegateInterface : allDelegates)
     {
-        delegateInterface.second->invoke(std::forward<Params>(params)...);
+        delegateIndices.emplace_back(delegateInterface.first);
+    }
+
+    for (const int32& delegateIdx : delegateIndices)
+    {
+        auto itr = allDelegates.find(delegateIdx);
+        if (itr != allDelegates.cend())
+        {
+            itr->second->invoke(std::forward<Params>(params)...);
+        }
     }
 }
 
@@ -473,35 +517,38 @@ protected:
 
 public:
     template<typename ObjectType, typename... Variables>
-    std::enable_if_t<!std::is_const_v<ObjectType>, void> bindObject(ObjectType* object
+    std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, void> bindObject(ObjectType* object
         , const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, vars...));
-        delegatePtr.reset(ptr);
+        delegatePtr.reset(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, vars...));
     }
 
     template<typename ObjectType, typename... Variables>
     void bindObject(const ObjectType* object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, vars...));
-        delegatePtr.reset(ptr);
+        delegatePtr.reset(new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, vars...));
     }
 
     template<typename... Variables>
     void bindStatic(const typename StaticDelegateType<Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new StaticDelegateType<Variables...>(bindingFunction, vars...));
-        delegatePtr.reset(ptr);
+        delegatePtr.reset(new StaticDelegateType<Variables...>(bindingFunction, vars...));
     }
 
     template<typename... Variables>
     void bindLambda(const typename LambdaDelegateType<Variables...>::FunctionPtr& lambda, Variables ...vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(lambda, vars...));
-        delegatePtr.reset(ptr);
+        delegatePtr.reset(new LambdaDelegateType<Variables...>(lambda, vars...));
     }
 
-    void unbind(const DelegateHandle& handle)
+    template<typename LambdaType, typename... Variables>
+    void bindLambda(LambdaType&& lambda, Variables ...vars)
+    {
+        delegatePtr.reset(new LambdaDelegateType<Variables...>(LambdaDelegateType<Variables...>::FunctionPtr(std::forward<LambdaType>(lambda))
+            , std::forward<Variables>(vars)...));
+    }
+
+    void unbind()
     {
         delegatePtr.reset();
     }
@@ -524,8 +571,8 @@ template <typename ReturnType, typename... Params>
 class SingleCastDelegate : public SingleCastDelegateBase<ReturnType, Params...>
 {
 private:
-    using SingleCastDelegateBase<ReturnType, Params...>::delegatePtr;
     using SingleCastDelegateBase<ReturnType, Params...>::DelegateInterface;
+    using SingleCastDelegateBase<ReturnType, Params...>::delegatePtr;
 public:
     using SingleCastDelegateBase<ReturnType, Params...>::unbind;
     ~SingleCastDelegate()
@@ -546,8 +593,8 @@ template <typename OwnerType, typename ReturnType, typename... Params>
 class SingleCastEvent : public SingleCastDelegateBase<ReturnType, Params...>
 {
 private:
-    using SingleCastDelegateBase<ReturnType, Params...>::delegatePtr;
     using SingleCastDelegateBase<ReturnType, Params...>::DelegateInterface;
+    using SingleCastDelegateBase<ReturnType, Params...>::delegatePtr;
 
     friend OwnerType;
 

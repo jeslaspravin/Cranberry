@@ -35,7 +35,7 @@ public:
 template<typename CommandType, typename LambdaType>
 void issueRenderCommand(LambdaType&& lambdaFunc)
 {
-    GameEngine::issueRenderCommand<CommandType>(typename CommandType::RenderCmdFunc(lambdaFunc));
+    GameEngine::issueRenderCommand<CommandType>(typename CommandType::RenderCmdFunc(std::forward<LambdaType>(lambdaFunc)));
 };
 
 // LambdaBody must be followed by all capture arguments

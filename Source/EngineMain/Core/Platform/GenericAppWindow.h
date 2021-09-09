@@ -29,7 +29,7 @@ protected:
     SimpleDelegate onWindowDeactived;
     ScreenDimDelegate onResize;
 protected:
-    virtual void resizeWindow() = 0;
+    virtual void resizeWindowResources();
 public:
     void windowSize(uint32& width, uint32& height) const;
     void setWindowSize(const uint32& width, const uint32& height, bool updateResources);

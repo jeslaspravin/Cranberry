@@ -9,7 +9,7 @@ private:
     HWND windowsHandle;
 
 protected:
-    void resizeWindow() override;
+    // void resizeWindow() override;
 
 public:
     void createWindow(const GenericAppInstance* appInstance) override;

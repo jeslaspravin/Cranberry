@@ -31,7 +31,7 @@
 #include "../Core/Engine/Config/EngineGlobalConfigs.h"
 #include "../Assets/Asset/StaticMeshAsset.h"
 #include "../VulkanRI/VulkanGraphicsHelper.h"
-#include "../RenderApi/RenderApi.h"
+#include "../RenderApi/RenderManager.h"
 #include "../Core/Platform/GenericAppInstance.h"
 #include "../Core/Input/InputSystem.h"
 #include "../Core/Math/Math.h"
@@ -448,9 +448,9 @@ void ExperimentalEnginePBR::destroyPools()
 
 void ExperimentalEnginePBR::createImages()
 {
-    nearestFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "NearestSampler",
+    nearestFiltering = GraphicsHelper::createSampler(gEngine->getRenderManager()->getGraphicsInstance(), "NearestSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest, float(EngineSettings::minSamplingMipLevel.get()));
-    linearFiltering = GraphicsHelper::createSampler(gEngine->getRenderApi()->getGraphicsInstance(), "LinearSampler",
+    linearFiltering = GraphicsHelper::createSampler(gEngine->getRenderManager()->getGraphicsInstance(), "LinearSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Linear, float(EngineSettings::minSamplingMipLevel.get()));
 
     RenderTextureCreateParams rtCreateParams;
@@ -808,7 +808,7 @@ void ExperimentalEnginePBR::destroyScene()
 
 void ExperimentalEnginePBR::createShaderParameters()
 {
-    IGraphicsInstance* graphicsInstance = getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = getRenderManager()->getGraphicsInstance();
     const PipelineBase* singleColPipeline = static_cast<const GraphicsPipelineBase*>(singleColorPipelineContext.getPipeline());
     // Since view data and other view related data are at set 0
     viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, singleColPipeline->getParamLayoutAtSet(0));
@@ -919,7 +919,7 @@ void DirectionalLight::update() const
 
 void ExperimentalEnginePBR::setupShaderParameterParams()
 {
-    IGraphicsInstance* graphicsInstance = getRenderApi()->getGraphicsInstance();
+    IGraphicsInstance* graphicsInstance = getRenderManager()->getGraphicsInstance();
 
     ViewData viewData;
     viewData.view = camera.viewMatrix();
@@ -1188,11 +1188,11 @@ void ExperimentalEnginePBR::resizeLightingRts(const Size2D& size)
     {
         frameResources[i].lightingPassRt->setTextureSize(size);
         frameResources[i].lightingPassResolved->setTextureSize(size);
-        getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
-        getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
+        getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
 
         // Used in debug rendering using depth map as read only target
-        getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt, GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, i)[3] });
+        getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt, GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, i)[3] });
     }
 }
 
@@ -1213,8 +1213,8 @@ void ExperimentalEnginePBR::createFrameResources()
         String name = "Frame";
         name.append(std::to_string(i));
 
-        frameResources[i].usageWaitSemaphore.push_back(GraphicsHelper::createSemaphore(getRenderApi()->getGraphicsInstance(), (name + "QueueSubmit").c_str()));
-        frameResources[i].recordingFence = GraphicsHelper::createFence(getRenderApi()->getGraphicsInstance(), (name + "RecordingGaurd").c_str(), true);
+        frameResources[i].usageWaitSemaphore.push_back(GraphicsHelper::createSemaphore(getRenderManager()->getGraphicsInstance(), (name + "QueueSubmit").c_str()));
+        frameResources[i].recordingFence = GraphicsHelper::createFence(getRenderManager()->getGraphicsInstance(), (name + "RecordingGaurd").c_str(), true);
 
         rtCreateParams.textureName = "LightingRT_" + std::to_string(i);
         frameResources[i].lightingPassRt = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
@@ -1235,7 +1235,7 @@ void ExperimentalEnginePBR::destroyFrameResources()
         frameResources[i].usageWaitSemaphore[0].reset();
         frameResources[i].recordingFence.reset();
 
-        getRenderApi()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassRt);
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassResolved);
     }
@@ -1243,7 +1243,7 @@ void ExperimentalEnginePBR::destroyFrameResources()
 
 void ExperimentalEnginePBR::getPipelineForSubpass()
 {
-    VulkanGlobalRenderingContext* vulkanRenderingContext = static_cast<VulkanGlobalRenderingContext*>(getRenderApi()->getGlobalRenderingContext());
+    VulkanGlobalRenderingContext* vulkanRenderingContext = static_cast<VulkanGlobalRenderingContext*>(getRenderManager()->getGlobalRenderingContext());
 
     singleColorPipelineContext.forVertexType = EVertexType::StaticMesh;
     singleColorPipelineContext.materialName = "SingleColor";
@@ -1411,7 +1411,7 @@ void ExperimentalEnginePBR::onStartUp()
     camera.lookAt(Vector3D::ZERO);
     cameraRotation = camera.rotation();
 
-    getRenderApi()->getImGuiManager()->addLayer(this);
+    getRenderManager()->getImGuiManager()->addLayer(this);
     createScene();
 
     textures = getApplicationInstance()->assetManager.getAssetsOfType<EAssetType::Texture2D, TextureAsset>();
@@ -1438,9 +1438,9 @@ void ExperimentalEnginePBR::onStartUp()
 
 void ExperimentalEnginePBR::startUpRenderInit()
 {
-    vDevice = VulkanGraphicsHelper::getVulkanDevice(getRenderApi()->getGraphicsInstance());
+    vDevice = VulkanGraphicsHelper::getVulkanDevice(getRenderManager()->getGraphicsInstance());
     device = VulkanGraphicsHelper::getDevice(vDevice);
-    graphicsDbg = VulkanGraphicsHelper::debugGraphics(getRenderApi()->getGraphicsInstance());
+    graphicsDbg = VulkanGraphicsHelper::debugGraphics(getRenderManager()->getGraphicsInstance());
     createPools();
     frameResources.resize(getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount());
 
@@ -1455,7 +1455,7 @@ void ExperimentalEnginePBR::onQuit()
 {
     ENQUEUE_COMMAND_NODEBUG(EngineQuit, { renderQuit(); }, this);
 
-    getRenderApi()->getImGuiManager()->removeLayer(this);
+    getRenderManager()->getImGuiManager()->removeLayer(this);
     GameEngine::onQuit();
 }
 
@@ -1478,13 +1478,13 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
     singleColorPipelineContext.swapchainIdx = resolveToPresentPipelineContext.swapchainIdx = index;
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&singleColorPipelineContext);
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveToPresentPipelineContext);
+    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&singleColorPipelineContext);
+    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&resolveToPresentPipelineContext);
 
     drawPbrPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&drawPbrPipelineContext);
+    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&drawPbrPipelineContext);
     resolveLightRtPipelineContext.rtTextures[0] = frameResources[index].lightingPassResolved;
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
+    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
 
     std::map<LocalPipelineContext*, std::map<const PBRSceneEntity*, std::vector<uint32>>> drawingPipelineToEntities;
     for (const PBRSceneEntity& entity : sceneData)
@@ -1642,7 +1642,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
             if (drawQuadDescs)
             {
                 resolveLightRtPipelineContext.rtTextures = drawPbrPipelineContext.rtTextures;
-                getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
+                getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
                 {
@@ -1664,7 +1664,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
         TinyDrawingContext drawingContext;
         drawingContext.cmdBuffer = cmdBuffer;
         drawingContext.rtTextures = drawPbrPipelineContext.rtTextures;
-        getRenderApi()->getImGuiManager()->draw(cmdList, graphicsInstance, drawingContext);
+        getRenderManager()->getImGuiManager()->draw(cmdList, graphicsInstance, drawingContext);
 
         // Drawing final quad
         viewport.minBound = Int2D(0, 0);
@@ -1782,7 +1782,7 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
 #if _DEBUG
     sceneDebugLinesPipelineContext.rtTextures[0] = frameResources[swapchainIdx].lightingPassRt;
     sceneDebugLinesPipelineContext.rtTextures[1] = GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, swapchainIdx)[3];
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&sceneDebugLinesPipelineContext);
+    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&sceneDebugLinesPipelineContext);
 
     if (bDrawTbn && selection.type == GridEntity::Entity)
     {
@@ -1816,7 +1816,7 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
     }
 #endif
     overBlendedQuadPipelineContext.rtTextures[0] = frameResources[swapchainIdx].lightingPassRt;
-    getRenderApi()->getGlobalRenderingContext()->preparePipelineContext(&overBlendedQuadPipelineContext);
+    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&overBlendedQuadPipelineContext);
     {
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawCameraGizmoRT);
 
@@ -1867,7 +1867,7 @@ void ExperimentalEnginePBR::tickEngine()
         frameVisualizeId = 3;
     }
 
-    if (getApplicationInstance()->inputSystem()->keyState(Keys::LMB)->keyWentDown && !getRenderApi()->getImGuiManager()->capturedInputs())
+    if (getApplicationInstance()->inputSystem()->keyState(Keys::LMB)->keyWentDown && !getRenderManager()->getImGuiManager()->capturedInputs())
     {
         Rect windowArea = getApplicationInstance()->appWindowManager.getMainWindow()->windowClientRect();
         Vector2D mouseCoord = Vector2D(getApplicationInstance()->inputSystem()->analogState(AnalogStates::AbsMouseX)->currentValue
@@ -1891,13 +1891,14 @@ void ExperimentalEnginePBR::tickEngine()
 
     if (renderSize != EngineSettings::screenSize.get())
     {
-        ENQUEUE_COMMAND_NODEBUG(WritingDescs,
+        ENQUEUE_COMMAND(WritingDescs)(
+            [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
             {
                 GlobalBuffers::onScreenResized(renderSize);
                 resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
                 EngineSettings::screenSize.set(renderSize);
-            }, this);
+            });
     }
 
     ENQUEUE_COMMAND_NODEBUG(TickFrame,

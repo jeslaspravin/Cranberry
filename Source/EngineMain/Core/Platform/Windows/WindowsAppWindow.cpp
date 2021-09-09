@@ -7,16 +7,6 @@
 
 #include <set>
 
-void WindowsAppWindow::resizeWindow()
-{
-    GenericWindowCanvas* windowCanvas = gEngine->getApplicationInstance()->appWindowManager.getWindowCanvas(this);
-    if (windowCanvas)
-    {
-        Logger::debug("WindowsAppWindow", "%s() : Reiniting window canvas", __func__);
-        windowCanvas->reinitResources();
-    }
-}
-
 LRESULT CALLBACK WindowProc(HWND   hwnd,UINT   uMsg,WPARAM wParam,LPARAM lParam);
 
 void WindowsAppWindow::createWindow(const GenericAppInstance* appInstance)
