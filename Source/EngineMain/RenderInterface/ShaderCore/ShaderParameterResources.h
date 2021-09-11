@@ -331,9 +331,9 @@ bool ShaderParameters::setBuffer(const String& paramName, const BufferType& buff
     {
         String bufferName;
         std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> foundInfo = findBufferParam(bufferName, paramName);
-        if (foundInfo.first && foundInfo.second && foundInfo.second->bufferField->bIsStruct)
+        if (foundInfo.first && foundInfo.second && BIT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct))
         {
-            if (foundInfo.second->bufferField->bIsArray)
+            if (foundInfo.second->bufferField->isIndexAccessible())
             {
                 if (bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index))
                 {

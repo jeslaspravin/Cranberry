@@ -11,7 +11,10 @@
 
 #define ARRAY_LENGTH(ArrayVar) sizeof(ArrayVar)/sizeof(ArrayVar[0])
 
-#define ONE_BIT_SET(FlagStatement) (FlagStatement) && !((FlagStatement) & ((FlagStatement) - 1))
+#define ONE_BIT_SET(FlagStatement) ((FlagStatement) && !((FlagStatement) & ((FlagStatement) - 1)))
+#define BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == CheckFlags)
+#define BIT_NOT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) != CheckFlags)
+#define ANY_BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) > 0)
 
 #define MAKE_INITIALIZER(...) { __VA_ARGS__ }
 

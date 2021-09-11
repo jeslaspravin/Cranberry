@@ -29,6 +29,7 @@ ShaderReflectionProcessor::ShaderReflectionProcessor(std::string shaderFilePath)
     else
     {
         printf("Cannot open file %s\n", shaderPath.c_str());
+        exit(1);
         return;
     }
 
@@ -96,6 +97,7 @@ uint32_t ShaderReflectionProcessor::engineStage(spv::ExecutionModel spirvStage)
     default:
         assert(!"Unsupported shader stage");
         printf("ERROR: [%s]  Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
+        exit(1);
         break;
     }
     return 0;
@@ -116,6 +118,7 @@ uint32_t ShaderReflectionProcessor::pipelineBindPoint(spv::ExecutionModel spirvS
     default:
         assert(!"Unsupported shader stage");
         printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
+        exit(1);
         break;
     }
     return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_MAX_ENUM;
@@ -141,6 +144,7 @@ uint32_t ShaderReflectionProcessor::pipelineStageFlag(spv::ExecutionModel spirvS
     default:
         assert(!"Unsupported pipeline stage");
         printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
+        exit(1);
         break;
     }
     return 0;
@@ -165,6 +169,7 @@ uint32_t ShaderReflectionProcessor::shaderStageFlag(spv::ExecutionModel spirvSta
     default:
         assert(!"Unsupported shader stage");
         printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
+        exit(1);
         break;
     }
     return 0;
@@ -282,6 +287,7 @@ TexelComponentFormat ShaderReflectionProcessor::texelFormat(spv::ImageFormat for
     default:
         assert(!"Unsupported texel format");
         printf("ERROR: [%s] spv::ImageFormat %d supported\n", __func__, format);
+        exit(1);
         break;
     }
     return { EReflectBufferPrimitiveType::RelectPrimitive_invalid, 4, {0,0,0,0}, false, false };
@@ -404,6 +410,7 @@ void fillBufferFieldArrayInfo(std::vector<ArrayDefinition>& arrayDefs, const SPI
                 {
                     assert(!"Failed to find specialization const ID in map");
                     printf("ERROR: Failed to find specialization const ID in map for ID %d", type.array[i]);
+                    exit(1);
                     continue;
                 }
                 def.dimension = itr->second;
@@ -427,6 +434,7 @@ void fillBufferFields(ReflectBufferShaderField& shaderBufferField, const SPIRV_C
         {
             ReflectBufferStructEntry innerStruct;
             innerStruct.attributeName = compiledData->get_member_name(structType.self, index);
+            // Returns 0 in runtime array
             innerStruct.data.totalSize = uint32_t(compiledData->get_declared_struct_member_size(structType, index));
             if (memberType.array.empty())
             {
@@ -446,6 +454,7 @@ void fillBufferFields(ReflectBufferShaderField& shaderBufferField, const SPIRV_C
         {
             ReflectBufferEntry memberField;
             memberField.attributeName = compiledData->get_member_name(structType.self, index).c_str();
+            // Returns 0 in runtime array
             memberField.data.totalSize = memberField.data.stride = uint32_t(compiledData->get_declared_struct_member_size(structType, index));
 
             if (memberType.columns > 1)
@@ -464,6 +473,41 @@ void fillBufferFields(ReflectBufferShaderField& shaderBufferField, const SPIRV_C
         }
         index++;
     }
+}
+
+// Ret false if invalid runtime array
+bool markRuntimeArray(ReflectBufferShaderField& shaderBufferField, bool bInner = false)
+{
+    bool bIsValid = true;
+    for (ReflectBufferEntry& memField : shaderBufferField.bufferFields)
+    {
+        if (memField.data.totalSize == 0)
+        {
+            if (bInner)
+            {
+                printf("ERROR: [%s] Buffer field %s is not SoA and cannot be runtime array", __func__, memField.attributeName.c_str());
+                bIsValid = false;
+                continue;
+            }
+            shaderBufferField.stride = 0;
+        }
+    }
+
+    for (ReflectBufferStructEntry& structField : shaderBufferField.bufferStructFields)
+    {
+        bIsValid = bIsValid && markRuntimeArray(structField.data.data, true);
+        if (structField.data.totalSize == 0)
+        {
+            if (bInner)
+            {
+                printf("ERROR: [%s] Buffer struct field %s is not SoA and cannot be runtime array", __func__, structField.attributeName.c_str());
+                bIsValid = false;
+                continue;
+            }
+            shaderBufferField.stride = 0;
+        }
+    }
+    return bIsValid;
 }
 
 template<typename Type>
@@ -1216,7 +1260,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
             descriptorsSets[set].uniforms.push_back(bufferDesc);
         }
 
-        // Storage buffers
+        // Storage buffers, Can be used as runtime array with 0 array size
         for (const Resource& resource : resources.storage_buffers)
         {
             const SPIRType& baseType = shaderStage->compiledData->get_type(resource.base_type_id);
@@ -1230,6 +1274,11 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
             bufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
             bufferDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             fillBufferFields(bufferDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i], i);
+            // if Runtime buffer? Then make sure SoA is only Runtime array buffer and mark outer Structure stride 0
+            if (!markRuntimeArray(bufferDesc.data.data))
+            {
+                exit(1);
+            }
 
             descriptorsSets[set].buffers.push_back(bufferDesc);
         }

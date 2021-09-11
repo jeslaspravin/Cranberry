@@ -27,7 +27,7 @@ void STB::deallocStbBuffer(void* data)
     stbi_image_free(data);
 }
 
-void STB::setLoadVerticaltFlipped(bool bFlip)
+void STB::setLoadVerticalFlipped(bool bFlip)
 {
     stbi_set_flip_vertically_on_load(bFlip);
 }

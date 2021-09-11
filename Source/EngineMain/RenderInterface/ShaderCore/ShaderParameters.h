@@ -2,6 +2,8 @@
 #include "ShaderInputOutput.h"
 #include "../../Core/Reflections/MemberField.h"
 #include "../../Core/Types/Containers/ArrayView.h"
+#include "../../Core/Types/Traits/ValueTraits.h"
+#include "../../Core/Types/Traits/TypeTraits.h"
 
 #include <any>
 
@@ -59,14 +61,20 @@ struct ShaderVertexMemberField : public ShaderVertexField
 
 struct ShaderBufferField
 {
+    enum ShaderBufferFieldDecorations : uint8
+    {
+        IsStruct = 1,
+        IsArray = 2,
+        IsPointer = 4
+    };
+
     EShaderInputAttribFormat::Type fieldType = EShaderInputAttribFormat::Undefined;
     uint32 offset = 0;
     uint32 stride;
     uint32 size;
     String paramName;
 
-    bool bIsStruct = false;
-    bool bIsArray = false;
+    uint8 fieldDecorations = 0;
     ShaderBufferParamInfo* paramInfo = nullptr;
 
     ShaderBufferField(const String& pName);
@@ -76,6 +84,14 @@ struct ShaderBufferField
     virtual bool setFieldDataArray(void* outerPtr, const std::any& newValue, uint32 arrayIndex) const = 0;
     // Element size individual element size in array and will be same as type size in non array
     virtual void* fieldData(void* outerPtr, uint32* typeSize, uint32* elementSize) const = 0;
+    FORCE_INLINE bool isIndexAccessible() const
+    {
+        return ANY_BIT_SET(fieldDecorations, ShaderBufferField::IsArray | ShaderBufferField::IsPointer);
+    }
+    FORCE_INLINE bool isPointer() const
+    {
+        return BIT_SET(fieldDecorations, ShaderBufferField::IsPointer);
+    }
 };
 
 template<typename OuterType>
@@ -90,12 +106,12 @@ struct ShaderBufferTypedField : public ShaderBufferField
 template<typename OuterType, typename MemberType>
 struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
 {
-    using ShaderBufferTypedField<OuterType>::bIsArray;
-    using ShaderBufferTypedField<OuterType>::bIsStruct;
+    using ShaderBufferTypedField<OuterType>::ShaderBufferFieldDecorations;
+    using ShaderBufferTypedField<OuterType>::fieldDecorations;
     using ShaderBufferTypedField<OuterType>::paramInfo;
     using ShaderBufferTypedField<OuterType>::size;
     using ShaderBufferTypedField<OuterType>::stride;
-    using ArrayType = std::remove_all_extents_t<MemberType>;
+    using ArrayType = IndexableType<MemberType>;
 
     using FieldPtr = ClassMemberField<false, OuterType, MemberType>;
     FieldPtr memberPtr;
@@ -104,12 +120,11 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         : ShaderBufferTypedField<OuterType>(pName)
         , memberPtr(fieldPtr)
     {
-        bIsArray = std::is_array_v<MemberType>;
-        size = stride = sizeof(MemberType);
-        if (bIsArray)
-        {
-            stride = sizeof(ArrayType);
-        }
+        fieldDecorations |= std::is_array_v<MemberType> ? ShaderBufferFieldDecorations::IsArray : 0
+            | std::is_pointer_v<MemberType> ? (ShaderBufferFieldDecorations::IsArray | ShaderBufferFieldDecorations::IsPointer) : 0;
+
+        size = ConditionalValue_v<uint32, uint32, std::is_pointer<MemberType>, 0u, sizeof(MemberType)>;
+        stride = sizeof(ArrayType);
     }
 
     constexpr static uint32 totalArrayElements()
@@ -118,13 +133,13 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     }
 
     template <typename DataType>
-    constexpr static std::enable_if_t<std::is_array_v<DataType>, std::remove_all_extents_t<DataType>>* memberDataPtr(DataType& data)
+    constexpr static std::enable_if_t<IsIndexable<DataType>::value, IndexableType<DataType>>* memberDataPtr(DataType& data)
     {
         return &data[0];
     }
 
     template <typename DataType>
-    constexpr static std::enable_if_t<std::negation_v<std::is_array<DataType>>, DataType>* memberDataPtr(DataType& data)
+    constexpr static std::enable_if_t<std::negation_v<IsIndexable<DataType>>, DataType>* memberDataPtr(DataType& data)
     {
         return &data;
     }
@@ -147,7 +162,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
         ArrayView<ArrayType> const*newValuesViewPtr = std::any_cast<ArrayView<ArrayType>>(&newValuesPtr);
 
-        if (bIsArray && newValuesViewPtr != nullptr && newValuesViewPtr->data() != nullptr)
+        if (ShaderBufferTypedField<OuterType>::isIndexAccessible() && newValuesViewPtr != nullptr && newValuesViewPtr->data() != nullptr)
         {
             const ArrayType* newValues = newValuesViewPtr->data();
             ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
@@ -163,7 +178,9 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
         const ArrayType* newValuePtr = std::any_cast<ArrayType>(&newValue);
 
-        if (bIsArray && arrayIndex < totalArrayElements() && newValuePtr != nullptr)
+        if (ShaderBufferTypedField<OuterType>::isIndexAccessible()
+            && (ShaderBufferTypedField<OuterType>::isPointer() || arrayIndex < totalArrayElements())
+            && newValuePtr != nullptr)
         {
             ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
 
@@ -203,7 +220,8 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
 template<typename OuterType, typename MemberType>
 struct ShaderBufferStructField : public ShaderBufferMemberField<OuterType, MemberType>
 {
-    using ShaderBufferMemberField<OuterType, MemberType>::bIsStruct;
+    using ShaderBufferMemberField<OuterType, MemberType>::ShaderBufferFieldDecorations;
+    using ShaderBufferMemberField<OuterType, MemberType>::fieldDecorations;
     using ShaderBufferMemberField<OuterType, MemberType>::paramInfo;
     using typename ShaderBufferMemberField<OuterType, MemberType>::FieldPtr;
 
@@ -211,7 +229,7 @@ struct ShaderBufferStructField : public ShaderBufferMemberField<OuterType, Membe
         : ShaderBufferMemberField<OuterType, MemberType>(pName, fieldPtr)
     {
         paramInfo = pInfo;
-        bIsStruct = true;
+        fieldDecorations |= ShaderBufferFieldDecorations::IsStruct;
     }
 };
 

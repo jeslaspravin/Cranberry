@@ -61,6 +61,11 @@ namespace GameBuilder.BuildFileUtils
                 proc.WaitForExit();
                 output = sb.ToString();
                 output.Trim();
+                if (proc.ExitCode != 0)
+                {
+                    output += ($"\nExit code {proc.ExitCode}");
+                    return false;
+                }
                 return true;
             }
             catch (Exception objException)

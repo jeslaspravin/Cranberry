@@ -145,6 +145,7 @@ namespace GameBuilder.ShaderCompiling
         bool compileAllShadersToSpirV(in string compiler, ref HashSet<string> outCompiledShaders)
         {
             bool bSuccess = true;
+            StringBuilder errors = new StringBuilder();
             foreach (KeyValuePair<string, List<Tuple<string, IntermediateTargetFile>>> shaderType in shaders)
             {
                 VulkanShaderArg shaderArg = SHADER_ARGS[shaderType.Key];
@@ -176,14 +177,16 @@ namespace GameBuilder.ShaderCompiling
                     );
 
                     LoggerUtils.Log("Compiling shader {0}", shaderFile.Item1);
+                    LoggerUtils.Log("Root : {0}\nCompile cmd : {1}", Directories.BUILDER_ROOT, cmd);
 
                     string executionResult;
-                    ProcessUtils.ExecuteCommand(out executionResult, cmd, Directories.BUILDER_ROOT);
 
-                    if (executionResult.Length > 0 && executionResult.Contains("ERROR:"))
+                    if (!ProcessUtils.ExecuteCommand(out executionResult, cmd, Directories.BUILDER_ROOT)
+                        || (executionResult.Length > 0 && executionResult.Contains("ERROR:")))
                     {
                         LoggerUtils.Log(executionResult);
                         bSuccess = false;
+                        errors.Append(executionResult);
                     }
                     else
                     {
@@ -191,6 +194,10 @@ namespace GameBuilder.ShaderCompiling
                     }
                     File.WriteAllText(shaderFile.Item2.logFile, executionResult, Encoding.UTF8);
                 }
+            }
+            if(!bSuccess)
+            {
+                compileErrors = errors.ToString();
             }
             return bSuccess;
         }
@@ -221,6 +228,7 @@ namespace GameBuilder.ShaderCompiling
 
                 string cmd = cmdBuilder.ToString();
                 string executionResult;
+                LoggerUtils.Log("Reflecting cmd : {0}", cmd);
                 if (!ProcessUtils.ExecuteCommand(out executionResult, cmd))
                 {
                     LoggerUtils.Error("Failed executing command {0}", cmd);

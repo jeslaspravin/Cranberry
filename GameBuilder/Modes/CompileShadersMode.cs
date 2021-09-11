@@ -1,4 +1,5 @@
 ﻿using GameBuilder.ShaderCompiling;
+using GameBuilder.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,6 +44,11 @@ namespace GameBuilder.Modes
                 if(compiler.compile(consoleArgs))
                 {
                     return ModeExecutionResult.Success;
+                }
+                
+                if(compiler.getError() != null)
+                {
+                    LoggerUtils.Error(compiler.getError());
                 }
             }
             return ModeExecutionResult.Failure;

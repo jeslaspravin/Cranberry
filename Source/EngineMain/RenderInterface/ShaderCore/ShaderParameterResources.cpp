@@ -375,10 +375,10 @@ void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, c
     while (currentNode->isValid())
     {
         bufferParamData.bufferParams[currentNode->field->paramName] = { outerPtr, (outerName)? outerName : "", currentNode->field};
-        if (currentNode->field->bIsStruct)
+        if (BIT_SET(currentNode->field->fieldDecorations, ShaderBufferField::IsStruct))
         {
             // AoS inside shader base uniform struct is supported, AoSoA... not supported due to parameter indexing limitation being 1 right now
-            if (outerName != nullptr && currentNode->field->bIsArray)
+            if (outerName != nullptr && currentNode->field->isIndexAccessible())
             {
                 fatalAssert(!"We do not support nested array in parameters", "We do not support nested array in parameters");
             }
@@ -619,7 +619,7 @@ void ShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphicsInstan
                     ? nullptr : &bufferParamData.bufferParams.at(bufferParamField.outerName);
                 while (outerBufferParamField)
                 {
-                    if (outerBufferParamField->bufferField->bIsArray)
+                    if (outerBufferParamField->bufferField->isIndexAccessible())
                     {
                         Logger::warn("ShaderParameters", "%s(): Setting value of parameter[%s] inside a struct[%s] in AoS[%s] will always set param value at struct index 0", __func__
                             , bufferUpdate.paramName.getChar(), bufferUpdate.bufferName.getChar(), outerBufferParamField->bufferField->paramName.getChar());
@@ -683,9 +683,9 @@ bool ShaderParameters::setFieldParam(const String& paramName, const FieldType& v
 
     BufferParameterUpdate updateVal{ bufferName, paramName, 0 };
 
-    if (foundInfo.first && foundInfo.second && !foundInfo.second->bufferField->bIsStruct)
+    if (foundInfo.first && foundInfo.second && BIT_NOT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct))
     {
-        if (foundInfo.second->bufferField->bIsArray)
+        if (foundInfo.second->bufferField->isIndexAccessible())
         {
             bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, value, index);
             updateVal.index = index;
@@ -712,9 +712,9 @@ bool ShaderParameters::setFieldParam(const String& paramName, const String& buff
     if (bufferParamsItr != shaderBuffers.end())
     {
         auto bufferParamItr = bufferParamsItr->second.bufferParams.find(paramName);
-        if (bufferParamItr != bufferParamsItr->second.bufferParams.end() && !bufferParamItr->second.bufferField->bIsStruct)
+        if (bufferParamItr != bufferParamsItr->second.bufferParams.end() && BIT_NOT_SET(bufferParamItr->second.bufferField->fieldDecorations, ShaderBufferField::IsStruct))
         {
-            if (bufferParamItr->second.bufferField->bIsArray)
+            if (bufferParamItr->second.bufferField->isIndexAccessible())
             {
                 bValueSet = bufferParamItr->second.bufferField->setFieldDataArray(bufferParamItr->second.outerPtr, value, index);
                 updateVal.index = index;
@@ -739,13 +739,13 @@ FieldType ShaderParameters::getFieldParam(const String& paramName, uint32 index)
     std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> foundInfo =
         findBufferParam(bufferName, paramName);
 
-    if (foundInfo.first && foundInfo.second && !foundInfo.second->bufferField->bIsStruct)
+    if (foundInfo.first && foundInfo.second && BIT_NOT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct))
     {
         uint32 fieldTypeSize;
         void* dataPtr = foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, &fieldTypeSize);
         if (sizeof(FieldType) == fieldTypeSize)
         {
-            uint32 idx = foundInfo.second->bufferField->bIsArray ? index : 0;
+            uint32 idx = foundInfo.second->bufferField->isIndexAccessible() ? index : 0;
             return reinterpret_cast<FieldType*>(dataPtr)[idx];
         }
     }
@@ -759,13 +759,13 @@ FieldType ShaderParameters::getFieldParam(const String& paramName, const String&
     if (bufferParamsItr != shaderBuffers.end())
     {
         auto bufferParamItr = bufferParamsItr->second.bufferParams.find(paramName);
-        if (bufferParamItr != bufferParamsItr->second.bufferParams.end() && !bufferParamItr->second.bufferField->bIsStruct)
+        if (bufferParamItr != bufferParamsItr->second.bufferParams.end() && BIT_NOT_SET(bufferParamItr->second.bufferField->fieldDecorations, ShaderBufferField::IsStruct))
         {
             uint32 fieldTypeSize;
             void* dataPtr = bufferParamItr->second.bufferField->fieldData(bufferParamItr->second.outerPtr, nullptr, &fieldTypeSize);
             if (sizeof(FieldType) == fieldTypeSize)
             {
-                uint32 idx = bufferParamItr->second.bufferField->bIsArray ? index : 0;
+                uint32 idx = bufferParamItr->second.bufferField->isIndexAccessible() ? index : 0;
                 return reinterpret_cast<FieldType*>(dataPtr)[idx];
             }
         }

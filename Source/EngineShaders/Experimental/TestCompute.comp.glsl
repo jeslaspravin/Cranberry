@@ -5,6 +5,19 @@
 
 layout (set = 0, binding = 0, rgba8) uniform image2D resultImage;	
 
+struct AOS
+{
+    vec4 a;
+    vec2 b;
+    vec2 c[4];
+};
+
+layout (set = 0, binding = 1) readonly buffer TestAOS
+{
+    vec4 test1;
+    AOS data[];
+} inData;
+
 layout(push_constant) uniform Constants
 {
 	float time;

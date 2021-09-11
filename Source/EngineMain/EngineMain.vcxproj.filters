@@ -256,6 +256,9 @@
     <Filter Include="Source Files\RenderInterface\Shaders\EngineShaders\IBL">
       <UniqueIdentifier>{293c4175-9e2a-4191-b534-bac72895bcfa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Core\Types\Traits">
+      <UniqueIdentifier>{64b592cd-6bc8-4155-8819-c429cbab6baf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StartMain.cpp">
@@ -642,11 +645,11 @@
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\IntegrateBRDF.cpp">
       <Filter>Source Files\RenderInterface\Shaders\EngineShaders\IBL</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Types\Traits\ValueTraits.cpp">
-      <Filter>Header Files\Core\Types</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Math\MathInternal.cpp">
       <Filter>Source Files\Core\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Types\Traits\ValueTraits.h">
+      <Filter>Header Files\Core\Types\Traits</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1150,6 +1153,9 @@
     </ClInclude>
     <ClInclude Include="Core\Types\Containers\ReferenceCountPtr.h">
       <Filter>Header Files\Core\Types\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\Traits\TypeTraits.h">
+      <Filter>Header Files\Core\Types\Traits</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

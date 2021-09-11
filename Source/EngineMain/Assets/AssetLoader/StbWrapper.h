@@ -7,6 +7,6 @@ namespace STB
     float* loadFloatFromMemory(uint8 const* buffer, int32 bufferLen, int32* x, int32* y, int32* channelsInFile, int desiredChannels);
 
     void deallocStbBuffer(void* data);
-    void setLoadVerticaltFlipped(bool bFlip);
+    void setLoadVerticalFlipped(bool bFlip);
     const AChar* lastFailure();
 }
