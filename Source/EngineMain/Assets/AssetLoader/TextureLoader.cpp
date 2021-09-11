@@ -9,6 +9,7 @@
 #include "../../Core/Logger/Logger.h"
 
 #include <array>
+
 TextureLoader::TextureLoader(const String& texturePath)
     : bIsNormal(false)
 {

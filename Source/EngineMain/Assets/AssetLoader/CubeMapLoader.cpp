@@ -46,9 +46,9 @@ HDRLoader::HDRLoader(const String& assetPath)
         int32 dimX;
         int32 dimY;
         // Since Cartesian to spherical creates coordinates from bottom left to top right
-        STB::setLoadVerticaltFlipped(true);
+        STB::setLoadVerticalFlipped(true);
         float* texelData = STB::loadFloatFromMemory(fileData.data(), int32(fileData.size()), &dimX, &dimY, nullptr, CHANNEL_NUM);
-        STB::setLoadVerticaltFlipped(false);
+        STB::setLoadVerticalFlipped(false);
 
         if (texelData == nullptr)
         {

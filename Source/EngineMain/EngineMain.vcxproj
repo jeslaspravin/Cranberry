@@ -286,7 +286,7 @@
     <ClCompile Include="Core\Types\Textures\Texture2D.cpp" />
     <ClCompile Include="Core\Types\Textures\TexturesBase.cpp" />
     <ClCompile Include="Core\Types\Time.cpp" />
-    <ClCompile Include="Core\Types\Traits\ValueTraits.cpp" />
+    <ClCompile Include="Core\Types\Traits\ValueTraits.h" />
     <ClCompile Include="Core\Types\Transform3D.cpp" />
     <ClCompile Include="Editor\Core\ImGui\ImGuiDrawInterface.cpp" />
     <ClCompile Include="Editor\Core\ImGui\ImGuiFontTextureAtlas.cpp" />
@@ -454,6 +454,7 @@
     <ClInclude Include="Core\Types\Textures\Texture2D.h" />
     <ClInclude Include="Core\Types\Textures\TexturesBase.h" />
     <ClInclude Include="Core\Types\Time.h" />
+    <ClInclude Include="Core\Types\Traits\TypeTraits.h" />
     <ClInclude Include="Core\Types\Transform3D.h" />
     <ClInclude Include="Editor\Core\ImGui\IImGuiLayer.h" />
     <ClInclude Include="Editor\Core\ImGui\ImGuiDrawInterface.h" />
