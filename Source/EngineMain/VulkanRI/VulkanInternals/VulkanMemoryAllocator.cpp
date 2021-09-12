@@ -42,7 +42,7 @@ private:
         if (!freeBlockHead)
             return nullptr;
 
-        if (!((offsetAlignment - 1) & offsetAlignment) == 0)
+        if (!Math::isPowOf2(offsetAlignment))
         {
             Logger::warn("VulkanMemoryAllocator", "%s() : Offset alignment %d is not an exponent of 2, \
                  Memory allocator is not developed with that into consideration", __func__, offsetAlignment);
@@ -149,8 +149,8 @@ public:
     void alignSize(const uint64& size, uint64& alignedSize) const
     {
         // Ensure if it is power of 2
-        debugAssert(((alignment - 1) & alignment) == 0);
-        alignedSize = (size + alignment - 1) & ~(alignment - 1);
+        debugAssert(Math::isPowOf2(alignment));
+        alignedSize = Math::alignBy(size, alignment);
     }
     
     VulkanMemoryBlock* allocateBlock(const uint64& size, const uint64& offsetAlignment)

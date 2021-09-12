@@ -334,6 +334,36 @@ public:
     /* Uniform between 0 to 1 */
     static float random();
 
+    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    static bool isPowOf2(Type value)
+    {
+        return ((value - 1) & value) == 0;
+    }
+    // Converts to higher power of two, in 3 gets converted to 4
+    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    static Type toHigherPowOf2(Type value)
+    {
+        return Math::pow(2u, Type(Math::ceil(Math::log2(value))));
+    }
+    // Converts to higher power of two, in 3 gets converted to 4
+    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    static Type toLowerPowOf2(Type value)
+    {
+        return Math::pow(2u, Type(Math::floor(Math::log2(value))));
+    }
+    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    static Type alignBy2(Type value)
+    {
+        return (value + 1u) & ~1u;
+    }
+    // AlignVal has to be a power of 2
+    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    static Type alignBy(Type value, Type alignVal)
+    {
+        Type roundedToPow2 = toHigherPowOf2(alignVal);
+        return (value + roundedToPow2 - 1) & ~(roundedToPow2 - 1);
+    }
+
     template <typename Type>
     FORCE_INLINE static std::enable_if_t<std::is_integral_v<Type>, bool> isEqual(const Type& a, const Type& b, Type epsilon = 0)
     {

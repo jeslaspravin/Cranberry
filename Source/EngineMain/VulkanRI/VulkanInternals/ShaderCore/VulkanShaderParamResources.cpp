@@ -945,6 +945,7 @@ void VulkanShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphics
         vkWrites[i] = writeDescSet;
     }
     VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, vkWrites, {});
+    bufferResourceUpdates.clear();
     texelUpdates.clear();
     textureUpdates.clear();
     samplerUpdates.clear();

@@ -195,6 +195,7 @@ void operator<<(ShaderArchive& archive, StructInnerFields<Type>& typeData)
 template<typename Type>
 void operator<<(ShaderArchive& archive, DescriptorSetEntry<Type>& typeData)
 {
+    archive << typeData.readWriteState;
     archive << typeData.binding;
     archive << typeData.stagesUsed;
     archive << typeData.type;

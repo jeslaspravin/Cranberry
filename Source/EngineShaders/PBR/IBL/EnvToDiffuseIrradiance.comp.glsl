@@ -7,7 +7,7 @@
 
 layout(constant_id = 4) const uint SAMPLE_COUNT = 128;
 
-layout (set = 0, binding = 0, rgba32f) uniform imageCube outDiffuseIrradiance;
+layout (set = 0, binding = 0, rgba32f) writeonly uniform imageCube outDiffuseIrradiance;
 
 layout (set = 1, binding = 0) uniform samplerCube envMap;
 

@@ -4,7 +4,7 @@
 #include "../../Common/ComputeCommon.inl.glsl"
 #include "../../Common/CommonFunctions.inl.glsl"
 
-layout (set = 0, binding = 0, rgba16f) uniform imageCube outCubeMap;
+layout (set = 0, binding = 0, rgba16f) writeonly uniform imageCube outCubeMap;
 
 layout (set = 1, binding = 0) uniform sampler2D hdri;	
 

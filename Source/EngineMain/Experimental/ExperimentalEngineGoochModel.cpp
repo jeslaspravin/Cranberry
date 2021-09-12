@@ -642,6 +642,7 @@ void ExperimentalEngine::setupShaderParameterParams()
     clearInfoParams->init();
 
     testComputeParams->setTextureParam("resultImage", writeTexture.image->getTextureResource());
+    testComputeParams->resizeRuntimeBuffer("inData", 1);
     testComputeParams->init();
 }
 

@@ -2,6 +2,7 @@
 #include "../Resources/GraphicsResources.h"
 #include "ShaderDataTypes.h"
 #include "ShaderParameters.h"
+#include "../../Core/Logger/Logger.h"
 #include "../../Core/Types/Functions.h"
 #include "../Rendering/IRenderCommandList.h"
 
@@ -57,6 +58,7 @@ public:
 
     const DescEntryTexture* textureEntryPtr;
 
+    // This usage is just to show that this is image and not texture, For actual usage in shader whether read or write use readWriteState inside textureEntryPtr
     // If sampling or storing
     EImageShaderUsage::Type imageUsageFlags;
     bool bIsAttachedSampler;
@@ -77,6 +79,7 @@ public:
 
     // C++ size of buffer as this gets lost when bufferParamInfo gets filled with GPU stride and offsets
     uint32 bufferNativeStride;
+    // This storage is just to show that this is buffer and not uniform, For actual usage in shader whether read or write use readWriteState inside bufferEntryPtr
     bool bIsStorage;
 };
 
@@ -193,6 +196,14 @@ protected:
             String outerName;
             const ShaderBufferField* bufferField = nullptr;
         };
+        struct RuntimeArrayParameter
+        {
+            String paramName;
+            uint32 offset;
+            // Current number of supported elements
+            uint32 currentSize;
+            std::vector<uint8> runtimeArrayCpuBuffer;
+        };
 
         // If the buffer resource is set manually, then don't manage it here 
         bool bIsExternal = false;
@@ -201,6 +212,7 @@ protected:
         BufferResource* gpuBuffer = nullptr;
 
         std::map<String, BufferParameter> bufferParams;
+        std::optional<RuntimeArrayParameter> runtimeArray;
     };
 
     struct TexelParameterData
@@ -248,6 +260,10 @@ protected:
     String descriptorSetName;
 private:
     void initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, const char* outerName) const;
+    // Runtime array related, returns true if runtime array is setup
+    bool initRuntimeArrayData(BufferParametersData& bufferParamData) const;
+
+    // Init entire param maps uniforms, textures, samplers, images, buffers
     void initParamsMaps(const std::map<String, ShaderDescriptorParamType*>& paramsDesc, const std::vector<std::vector<SpecializationConstantEntry>>& specializationConsts);
     std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> findBufferParam(String& bufferName, const String& paramName) const;
     template<typename FieldType>
@@ -281,6 +297,8 @@ public:
     std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllWriteTexels() const;
 
     virtual void updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+
+    void resizeRuntimeBuffer(const String& bufferName, uint32 minSize);
     bool setIntParam(const String& paramName, int32 value, uint32 index = 0);
     bool setIntParam(const String& paramName, uint32 value, uint32 index = 0);
     bool setFloatParam(const String& paramName, float value, uint32 index = 0);
@@ -295,7 +313,7 @@ public:
     bool setMatrixParam(const String& paramName, const String& bufferName, const Matrix4& value, uint32 index = 0);
     template<typename BufferType>
     bool setBuffer(const String& paramName, const BufferType& bufferValue, uint32 index = 0);
-    bool setBufferResource(const String& paramName, BufferResource* buffer);
+    bool setBufferResource(const String& bufferName, BufferResource* buffer);
     bool setTexelParam(const String& paramName, BufferResource* texelBuffer, uint32 index = 0);
     bool setTextureParam(const String& paramName, ImageResource* texture, uint32 index = 0);
     bool setTextureParam(const String& paramName, ImageResource* texture, SharedPtr<SamplerInterface> sampler, uint32 index = 0);
@@ -331,7 +349,8 @@ bool ShaderParameters::setBuffer(const String& paramName, const BufferType& buff
     {
         String bufferName;
         std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> foundInfo = findBufferParam(bufferName, paramName);
-        if (foundInfo.first && foundInfo.second && BIT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct))
+        if (foundInfo.first && foundInfo.second && BIT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct)
+            && (!foundInfo.second->bufferField->isPointer() || foundInfo.first->runtimeArray->currentSize > index))
         {
             if (foundInfo.second->bufferField->isIndexAccessible())
             {
@@ -357,11 +376,16 @@ bool ShaderParameters::setBuffer(const String& paramName, const BufferType& buff
                     });
             }
         }
+        else
+        {
+            Logger::error("ShaderParameters", "%s() : Cannot set %s[%d] of %s", __func__, paramName.getChar(), index, bufferName.getChar());
+        }
     }
     else
     {
         BufferParametersData* bufferDataPtr = &bufferDataItr->second;
-        if (bValueSet = (bufferDataPtr->descriptorInfo->bufferNativeStride == sizeof(BufferType)))
+        bValueSet = (bufferDataPtr->descriptorInfo->bufferNativeStride == sizeof(BufferType)) && !bufferDataPtr->runtimeArray.has_value();
+        if (bValueSet)
         {
             (*reinterpret_cast<BufferType*>(bufferDataPtr->cpuBuffer)) = bufferValue;
             genericUpdates.emplace_back([bufferDataPtr](ParamUpdateLambdaOut& paramOut, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
@@ -369,6 +393,11 @@ bool ShaderParameters::setBuffer(const String& paramName, const BufferType& buff
                     cmdList->recordCopyToBuffer<BufferType>(*paramOut.bufferUpdates, bufferDataPtr->gpuBuffer
                         , 0, reinterpret_cast<BufferType*>(bufferDataPtr->cpuBuffer), bufferDataPtr->descriptorInfo->bufferParamInfo);
                 });
+        }
+        else
+        {
+            Logger::error("ShaderParameters", "%s() : Cannot set stride %d to stride %d or cannot set buffer with runtime array as single struct, Set runtime array separately"
+                , __func__, sizeof(BufferType), bufferDataPtr->descriptorInfo->bufferNativeStride);
         }
     }
     return bValueSet;

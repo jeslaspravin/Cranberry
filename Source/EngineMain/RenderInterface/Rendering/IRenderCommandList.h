@@ -244,19 +244,15 @@ void IRenderCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, con
     , const ShaderBufferParamInfo* bufferFields)
 {
     std::vector<BatchCopyBufferData> batchedCopies;
-
-    const ShaderBufferFieldNode* fieldNode = &bufferFields->startNode;
-    while (fieldNode->isValid())
+    for (const ShaderBufferField* bufferField : *bufferFields)
     {
-        auto* bufferMemberField = static_cast<ShaderBufferTypedField<BufferDataType>*>(fieldNode->field);
+        auto* bufferMemberField = static_cast<const ShaderBufferTypedField<BufferDataType>*>(bufferField);
 
         BatchCopyBufferData copyData;
         copyData.dst = dst;
         copyData.dstOffset = dstOffset + bufferMemberField->offset;
         copyData.dataToCopy = bufferMemberField->fieldData(dataToCopy, &copyData.size, nullptr);
         batchedCopies.push_back(copyData);
-
-        fieldNode = fieldNode->nextNode;
     }
     copyToBuffer(batchedCopies);
 }
@@ -265,17 +261,14 @@ template<typename BufferDataType>
 void IRenderCommandList::recordCopyToBuffer(std::vector<BatchCopyBufferData>& recordTo, BufferResource* dst
     , uint32 dstOffset, const BufferDataType* dataToCopy, const ShaderBufferParamInfo* bufferFields)
 {
-    const ShaderBufferFieldNode* fieldNode = &bufferFields->startNode;
-    while (fieldNode->isValid())
+    for (const ShaderBufferField* bufferField : *bufferFields)
     {
-        auto* bufferMemberField = static_cast<ShaderBufferTypedField<BufferDataType>*>(fieldNode->field);
+        auto* bufferMemberField = static_cast<const ShaderBufferTypedField<BufferDataType>*>(bufferField);
 
         BatchCopyBufferData copyData;
         copyData.dst = dst;
         copyData.dstOffset = dstOffset + bufferMemberField->offset;
         copyData.dataToCopy = bufferMemberField->fieldData(dataToCopy, &copyData.size, nullptr);
         recordTo.push_back(copyData);
-
-        fieldNode = fieldNode->nextNode;
     }
 }
