@@ -15,7 +15,7 @@ layout(push_constant) uniform Constants
 	uint sourceSize;
 } constants;
 
-layout (set = 0, binding = 0, rgba16f) uniform imageCube outPrefilteredSpecMap[MIP_COUNT];
+layout (set = 0, binding = 0, rgba16f) writeonly uniform imageCube outPrefilteredSpecMap[MIP_COUNT];
 
 layout (set = 1, binding = 0) uniform sampler2D hdri;
 

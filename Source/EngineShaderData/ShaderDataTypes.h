@@ -41,10 +41,20 @@ typedef std::vector<ArrayDefinition> ReflectSampler;
 ///// Descriptors set related data
 //////////////////////////////////////////////////////////////////////////
 
+namespace EDescriptorEntryState
+{
+    enum Flags
+    {
+        ReadOnly = 1,
+        WriteOnly = 2
+    };
+}
+
 // Descriptor reflection
 template <typename DescriptorDataType>
 struct DescriptorSetEntry
 {
+    uint8_t readWriteState;
     uint32_t binding;
     uint32_t stagesUsed;
     uint32_t type;

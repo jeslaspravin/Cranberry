@@ -82,8 +82,11 @@ struct ShaderBufferField
     virtual bool setFieldData(void* outerPtr, const std::any& newValue) const = 0;
     virtual bool setFieldDataArray(void* outerPtr, const std::any& newValuesPtr) const = 0;
     virtual bool setFieldDataArray(void* outerPtr, const std::any& newValue, uint32 arrayIndex) const = 0;
+    // returns Pointer to start of element data, if array then pointer to 1st element, If pointer then the pointer itself(not the pointer to pointer)
     // Element size individual element size in array and will be same as type size in non array
     virtual void* fieldData(void* outerPtr, uint32* typeSize, uint32* elementSize) const = 0;
+    // returns Pointer to field, if array then pointer to 1st element, If pointer then pointer to pointer
+    virtual void* fieldPtr(void* outerPtr) const = 0;
     FORCE_INLINE bool isIndexAccessible() const
     {
         return ANY_BIT_SET(fieldDecorations, ShaderBufferField::IsArray | ShaderBufferField::IsPointer);
@@ -99,6 +102,7 @@ struct ShaderBufferTypedField : public ShaderBufferField
 {
     ShaderBufferTypedField(const String& pName) : ShaderBufferField(pName) {}
 
+    // returns Pointer to start of element data, if array then pointer to 1st element, If pointer then the pointer itself(not the pointer to pointer)
     // Element size individual element size in array and will be same as type size in non array
     virtual const void* fieldData(const OuterType* outerPtr, uint32* typeSize, uint32* elementSize) const = 0;
 };
@@ -165,10 +169,21 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         if (ShaderBufferTypedField<OuterType>::isIndexAccessible() && newValuesViewPtr != nullptr && newValuesViewPtr->data() != nullptr)
         {
             const ArrayType* newValues = newValuesViewPtr->data();
-            ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
-
-            memcpy(toValues, newValues, Math::min(sizeof(MemberType), sizeof(ArrayType) * newValuesViewPtr->size()));
-            return true;
+            if constexpr (std::is_pointer_v<MemberType>)
+            {
+                if (memberPtr.get(castOuterPtr) != nullptr)
+                {
+                    ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+                    memcpy(toValues, newValues, sizeof(ArrayType) * newValuesViewPtr->size());
+                    return true;
+                }
+            }
+            else
+            {
+                ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+                memcpy(toValues, newValues, Math::min(sizeof(MemberType), sizeof(ArrayType) * newValuesViewPtr->size()));
+                return true;
+            }
         }
         return false;
     }
@@ -178,12 +193,21 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
         const ArrayType* newValuePtr = std::any_cast<ArrayType>(&newValue);
 
-        if (ShaderBufferTypedField<OuterType>::isIndexAccessible()
-            && (ShaderBufferTypedField<OuterType>::isPointer() || arrayIndex < totalArrayElements())
-            && newValuePtr != nullptr)
+        bool bCanSet = false;
+        if constexpr (IsIndexable<MemberType>::value)
+        {
+            if constexpr (std::is_pointer_v<MemberType>)
+            {
+                bCanSet = memberPtr.get(castOuterPtr) != nullptr && newValuePtr != nullptr;
+            }
+            else
+            {
+                bCanSet = arrayIndex < totalArrayElements() && newValuePtr != nullptr;
+            }
+        }
+        if (bCanSet)
         {
             ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
-
             (toValues)[arrayIndex] = *newValuePtr;
             return true;
         }
@@ -201,6 +225,11 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
             (*elementSize) = sizeof(ArrayType);
         }
         return memberDataPtr(memberPtr.get(reinterpret_cast<OuterType*>(outerPtr)));
+    }
+    
+    void* fieldPtr(void* outerPtr) const override
+    {
+        return &memberPtr.get(reinterpret_cast<OuterType*>(outerPtr));
     }
 
     const void* fieldData(const OuterType* outerPtr, uint32* typeSize, uint32* elementSize) const override
@@ -271,20 +300,156 @@ struct ShaderParamInfo
 {
 public:
     FieldNodeType startNode;
-    // TODO(Jeslas) : change param info to use ranged for loop rather than manual while based iteration
-    //FieldNodeType* endNode;
-    //ShaderParamInfo()
-    //{
-    //    FieldNodeType* node = &startNode;
-    //    while (node->isValid())
-    //    {
-    //        node = node->nextNode;
-    //    }
-    //    endNode = node;
-    //}
 
     virtual uint32 paramStride() const = 0;
     virtual void setStride(uint32 newStride) = 0;
+
+private:
+    class IteratorBase
+    {
+    protected:
+        const FieldNodeType* node;
+    public:
+        using FieldType = decltype(std::declval<FieldNodeType>().field);
+        static_assert(std::is_pointer_v<FieldType>, "Field type must be pointer type");
+
+        // End constructor, We assume it null rather than iterating through until end
+        IteratorBase() : node(nullptr) {}
+        IteratorBase(const ShaderParamInfo* paramInfo)
+            : node(&paramInfo->startNode)
+        {}
+        IteratorBase(const IteratorBase& itr)
+            : node(itr.node)
+        {}
+        IteratorBase(IteratorBase&& itr)
+            : node(std::move(itr.node))
+        {}
+    };
+public:
+    class ConstIterator : public IteratorBase
+    {
+    private:
+        using IteratorBase::node;
+    public:
+        using IteratorBase::FieldType;
+
+        ConstIterator() = default;
+        ConstIterator(const ShaderParamInfo* paramInfo)
+            : IteratorBase(paramInfo)
+        {}
+        ConstIterator(const ConstIterator& itr)
+            : IteratorBase(itr)
+        {}
+        ConstIterator(ConstIterator&& itr)
+            : IteratorBase(std::forward(itr))
+        {}
+
+        const FieldType operator->() const
+        {
+            // Okay as FieldType is ptr
+            return node ? node->field : nullptr;
+        }
+
+        const FieldType operator*() const
+        {
+            return node ? node->field : nullptr;
+        }
+
+        bool operator!=(const ConstIterator& other) const
+        {
+            const bool thisValid = node != nullptr && node->isValid();
+            const bool otherValid = other.node != nullptr && other.node->isValid();
+            return thisValid != otherValid || **this != *other;
+        }
+
+        ConstIterator& operator++()
+        {
+            if (node)
+            {
+                node = node->nextNode;
+            }
+            return *this;
+        }
+
+        ConstIterator operator++(int)
+        {
+            ConstIterator retVal(*this);
+            this->operator++();
+            return retVal;
+        }
+    };
+
+    class Iterator : public IteratorBase
+    {
+    private:
+        using IteratorBase::node;
+    public:
+        using IteratorBase::FieldType;
+
+        Iterator() = default;
+        Iterator(const ShaderParamInfo* paramInfo)
+            : IteratorBase(paramInfo)
+        {}
+        Iterator(const Iterator& itr)
+            : IteratorBase(itr)
+        {}
+        Iterator(Iterator&& itr)
+            : IteratorBase(std::forward(itr))
+        {}
+
+        FieldType operator->() const
+        {
+            // Okay as FieldType is ptr
+            return node ? node->field : nullptr;
+        }
+
+        FieldType operator*() const
+        {
+            return node ? node->field : nullptr;
+        }
+
+        bool operator!=(const Iterator& other) const
+        {
+            const bool thisValid = node != nullptr && node->isValid();
+            const bool otherValid = other.node != nullptr && other.node->isValid();
+            return thisValid != otherValid || **this != *other;
+        }
+
+        Iterator& operator++()
+        {
+            if (node)
+            {
+                node = node->nextNode;
+            }
+            return *this;
+        }
+
+        Iterator operator++(int)
+        {
+            Iterator retVal(*this);
+            this->operator++();
+            return retVal;
+        }
+    };
+
+    ConstIterator begin() const
+    {
+        return ConstIterator(this);
+    }
+
+    ConstIterator end() const
+    {
+        return ConstIterator();
+    }
+    Iterator begin()
+    {
+        return Iterator(this);
+    }
+
+    Iterator end()
+    {
+        return Iterator();
+    }
 };
 
 struct ShaderVertexParamInfo : public ShaderParamInfo<ShaderVertexFieldNode>

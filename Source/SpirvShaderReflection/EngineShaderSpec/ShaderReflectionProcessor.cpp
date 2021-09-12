@@ -175,6 +175,11 @@ uint32_t ShaderReflectionProcessor::shaderStageFlag(spv::ExecutionModel spirvSta
     return 0;
 }
 
+uint8_t ShaderReflectionProcessor::readWriteQualifier(bool read, bool write)
+{
+    return (read ? EDescriptorEntryState::ReadOnly : 0) | (write ? EDescriptorEntryState::WriteOnly : 0);
+}
+
 uint32_t ShaderReflectionProcessor::imageViewType(spv::Dim spirvDim, bool bIsArray)
 {
     switch (spirvDim)
@@ -772,9 +777,10 @@ template <typename Type>
 void printDescriptorDesc(const NamedAttribute<DescriptorSetEntry<Type>>& descriptor,std::string indent)
 {
     const char* indentChar = indent.c_str();
-    printf("  Binding = %d\n%sName : %s\n%sDescriptor Type : %d\n%sPipeline stages used : %d\n"
+    printf("  Binding = %d\n%sName : %s\n%sDescriptor Type : %d\n%sPipeline stages used : %d\n%sRead Write qualifier : %d\n"
         , descriptor.data.binding, indentChar, descriptor.attributeName.c_str(), indentChar
-        , descriptor.data.type, indentChar, descriptor.data.stagesUsed);
+        , descriptor.data.type, indentChar, descriptor.data.stagesUsed
+        , indentChar, descriptor.data.readWriteState);
 }
 
 void printTexelCompFormat(const TexelComponentFormat& componentFormat, std::string indent)
@@ -1100,35 +1106,37 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
         {
             const SPIRType& baseType = shaderStage->compiledData->get_type(resource.base_type_id);
             const SPIRType& type = shaderStage->compiledData->get_type(resource.type_id);
-            uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
             if (baseType.image.dim == spv::Dim::DimBuffer)
             {
-                DescEntryTexelBuffer samplerBufferDesc;
-                samplerBufferDesc.attributeName = resource.name;
-                samplerBufferDesc.data.binding = binding;
-                samplerBufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-                samplerBufferDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-                fillBufferFieldArrayInfo(samplerBufferDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                fillSampledImageFormats(samplerBufferDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
+                DescEntryTexelBuffer resDesc;
+                resDesc.attributeName = resource.name;
+                resDesc.data.binding = binding;
+                resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+                fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
+                fillSampledImageFormats(resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
 
-                descriptorsSets[set].samplerBuffers.push_back(samplerBufferDesc);
+                descriptorsSets[set].samplerBuffers.push_back(resDesc);
             }
             else
             {
-                DescEntryTexture sampledImageDesc;
-                sampledImageDesc.attributeName = resource.name;
-                sampledImageDesc.data.binding = binding;
-                sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-                sampledImageDesc.data.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                fillBufferFieldArrayInfo(sampledImageDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                sampledImageDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
-                fillSampledImageFormats(sampledImageDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
-                sampledImageDesc.data.data.bIsMultiSampled = baseType.image.ms;
+                DescEntryTexture resDesc;
+                resDesc.attributeName = resource.name;
+                resDesc.data.binding = binding;
+                resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
+                resDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
+                fillSampledImageFormats(resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
+                resDesc.data.data.bIsMultiSampled = baseType.image.ms;
 
-                descriptorsSets[set].sampledTexAndArrays.push_back(sampledImageDesc);
+                descriptorsSets[set].sampledTexAndArrays.push_back(resDesc);
             }
         }
 
@@ -1137,35 +1145,37 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
         {
             const SPIRType& baseType = shaderStage->compiledData->get_type(resource.base_type_id);
             const SPIRType& type = shaderStage->compiledData->get_type(resource.type_id);
-            uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
             if (baseType.image.dim == spv::Dim::DimBuffer)
             {
-                DescEntryTexelBuffer samplerBufferDesc;
-                samplerBufferDesc.attributeName = resource.name;
-                samplerBufferDesc.data.binding = binding;
-                samplerBufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-                samplerBufferDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-                fillBufferFieldArrayInfo(samplerBufferDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                fillSampledImageFormats(samplerBufferDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
+                DescEntryTexelBuffer resDesc;
+                resDesc.attributeName = resource.name;
+                resDesc.data.binding = binding;
+                resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+                fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
+                fillSampledImageFormats(resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
 
-                descriptorsSets[set].samplerBuffers.push_back(samplerBufferDesc);
+                descriptorsSets[set].samplerBuffers.push_back(resDesc);
             }
             else
             {
-                DescEntryTexture sampledImageDesc;
-                sampledImageDesc.attributeName = resource.name;
-                sampledImageDesc.data.binding = binding;
-                sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-                sampledImageDesc.data.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-                fillBufferFieldArrayInfo(sampledImageDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                sampledImageDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
-                fillSampledImageFormats(sampledImageDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
-                sampledImageDesc.data.data.bIsMultiSampled = baseType.image.ms;
+                DescEntryTexture resDesc;
+                resDesc.attributeName = resource.name;
+                resDesc.data.binding = binding;
+                resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
+                resDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
+                fillSampledImageFormats(resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
+                resDesc.data.data.bIsMultiSampled = baseType.image.ms;
 
-                descriptorsSets[set].textureAndArrays.push_back(sampledImageDesc);
+                descriptorsSets[set].textureAndArrays.push_back(resDesc);
             }
         }
 
@@ -1174,35 +1184,40 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
         {
             const SPIRType& baseType = shaderStage->compiledData->get_type(resource.base_type_id);
             const SPIRType& type = shaderStage->compiledData->get_type(resource.type_id);
-            uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint8_t rwState = ShaderReflectionProcessor::readWriteQualifier(
+                !shaderStage->compiledData->has_decoration(resource.id, spv::DecorationNonReadable)
+                , !shaderStage->compiledData->has_decoration(resource.id, spv::DecorationNonWritable));
             descriptorSetsBinding[set].insert(binding);
 
             if (baseType.image.dim == spv::Dim::DimBuffer)
             {
-                DescEntryTexelBuffer samplerBufferDesc;
-                samplerBufferDesc.attributeName = resource.name;
-                samplerBufferDesc.data.binding = binding;
-                samplerBufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-                samplerBufferDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-                fillBufferFieldArrayInfo(samplerBufferDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                samplerBufferDesc.data.data.format = ShaderReflectionProcessor::texelFormat(baseType.image.format);
+                DescEntryTexelBuffer resDesc;
+                resDesc.attributeName = resource.name;
+                resDesc.data.binding = binding;
+                resDesc.data.readWriteState = rwState;
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+                fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
+                resDesc.data.data.format = ShaderReflectionProcessor::texelFormat(baseType.image.format);
 
-                descriptorsSets[set].imageBuffers.push_back(samplerBufferDesc);
+                descriptorsSets[set].imageBuffers.push_back(resDesc);
             }
             else
             {
-                DescEntryTexture sampledImageDesc;
-                sampledImageDesc.attributeName = resource.name;
-                sampledImageDesc.data.binding = binding;
-                sampledImageDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-                sampledImageDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-                fillBufferFieldArrayInfo(sampledImageDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                sampledImageDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
-                sampledImageDesc.data.data.format = ShaderReflectionProcessor::texelFormat(baseType.image.format);
-                sampledImageDesc.data.data.bIsMultiSampled = baseType.image.ms;
+                DescEntryTexture resDesc;
+                resDesc.attributeName = resource.name;
+                resDesc.data.binding = binding;
+                resDesc.data.readWriteState = rwState;
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+                fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
+                resDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
+                resDesc.data.data.format = ShaderReflectionProcessor::texelFormat(baseType.image.format);
+                resDesc.data.data.bIsMultiSampled = baseType.image.ms;
 
-                descriptorsSets[set].imagesAndImgArrays.push_back(sampledImageDesc);
+                descriptorsSets[set].imagesAndImgArrays.push_back(resDesc);
             }
         }
 
@@ -1210,77 +1225,86 @@ void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std:
         for (const Resource& resource : resources.subpass_inputs)
         {
             const SPIRType& type = shaderStage->compiledData->get_type(resource.type_id);
-            uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
-            DescEntrySubpassInput samplerDesc;
-            samplerDesc.attributeName = resource.name;
-            samplerDesc.data.binding = binding;
-            samplerDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-            samplerDesc.data.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-            samplerDesc.data.data = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationInputAttachmentIndex);
+            DescEntrySubpassInput resDesc;
+            resDesc.attributeName = resource.name;
+            resDesc.data.binding = binding;
+            resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
+            resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+            resDesc.data.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            resDesc.data.data = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationInputAttachmentIndex);
 
-            descriptorsSets[set].subpassInputs.push_back(samplerDesc);
+            descriptorsSets[set].subpassInputs.push_back(resDesc);
         }
 
         // Samplers
         for (const Resource& resource : resources.separate_samplers)
         {
             const SPIRType& type = shaderStage->compiledData->get_type(resource.type_id);
-            uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
-            DescEntrySampler samplerDesc;
-            samplerDesc.attributeName = resource.name;
-            samplerDesc.data.binding = binding;
-            samplerDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-            samplerDesc.data.type = VK_DESCRIPTOR_TYPE_SAMPLER;
-            fillBufferFieldArrayInfo(samplerDesc.data.data, type, specConstsMaps[i], i);
+            DescEntrySampler resDesc;
+            resDesc.attributeName = resource.name;
+            resDesc.data.binding = binding;
+            resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
+            resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+            resDesc.data.type = VK_DESCRIPTOR_TYPE_SAMPLER;
+            fillBufferFieldArrayInfo(resDesc.data.data, type, specConstsMaps[i], i);
 
-            descriptorsSets[set].samplers.push_back(samplerDesc);
+            descriptorsSets[set].samplers.push_back(resDesc);
         }
 
         // Uniform buffers
         for (const Resource& resource : resources.uniform_buffers)
         {
             const SPIRType& baseType = shaderStage->compiledData->get_type(resource.base_type_id);
-            uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
-            DescEntryBuffer bufferDesc;
-            bufferDesc.attributeName = shaderStage->compiledData->get_name(resource.id);
-            bufferDesc.data.binding = binding;
-            bufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-            bufferDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            fillBufferFields(bufferDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i], i);
+            DescEntryBuffer resDesc;
+            resDesc.attributeName = shaderStage->compiledData->get_name(resource.id);
+            resDesc.data.binding = binding;
+            resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
+            resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+            resDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            fillBufferFields(resDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i], i);
 
-            descriptorsSets[set].uniforms.push_back(bufferDesc);
+            descriptorsSets[set].uniforms.push_back(resDesc);
         }
 
         // Storage buffers, Can be used as runtime array with 0 array size
         for (const Resource& resource : resources.storage_buffers)
         {
             const SPIRType& baseType = shaderStage->compiledData->get_type(resource.base_type_id);
-            uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint8_t rwState = ShaderReflectionProcessor::readWriteQualifier(
+                !(shaderStage->compiledData->has_decoration(resource.id, spv::DecorationNonReadable) 
+                    || shaderStage->compiledData->get_buffer_block_flags(resource.id).get(spv::DecorationNonReadable))
+                , !(shaderStage->compiledData->has_decoration(resource.id, spv::DecorationNonWritable)
+                    || shaderStage->compiledData->get_buffer_block_flags(resource.id).get(spv::DecorationNonWritable)));
             descriptorSetsBinding[set].insert(binding);
 
-            DescEntryBuffer bufferDesc;
-            bufferDesc.attributeName = shaderStage->compiledData->get_name(resource.id);
-            bufferDesc.data.binding = binding;
-            bufferDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
-            bufferDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            fillBufferFields(bufferDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i], i);
+            DescEntryBuffer resDesc;
+            resDesc.attributeName = shaderStage->compiledData->get_name(resource.id);
+            resDesc.data.binding = binding;
+            resDesc.data.readWriteState = rwState;
+            resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+            resDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            fillBufferFields(resDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i], i);
             // if Runtime buffer? Then make sure SoA is only Runtime array buffer and mark outer Structure stride 0
-            if (!markRuntimeArray(bufferDesc.data.data))
+            if (!markRuntimeArray(resDesc.data.data))
             {
                 exit(1);
             }
 
-            descriptorsSets[set].buffers.push_back(bufferDesc);
+            descriptorsSets[set].buffers.push_back(resDesc);
         }
     }
 

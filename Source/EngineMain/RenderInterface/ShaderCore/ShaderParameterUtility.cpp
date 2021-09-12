@@ -55,7 +55,7 @@ uint32 getAlignment(const ReflectFieldType& fieldType)
     }
 
     // Aligned by 2 for vec3,vec4 both take 4x scalar
-    alignment *= fieldType.vecSize > 2 ? (fieldType.vecSize + 1u) & ~1u : fieldType.vecSize;
+    alignment *= fieldType.vecSize > 2 ? Math::alignBy2(fieldType.vecSize) : fieldType.vecSize;
     return alignment;
 }
 
@@ -80,7 +80,7 @@ uint32 getAlignment(const ReflectBufferShaderField& bufferField)
         }
     }
     // Align 16
-    alignment = (alignment + 15u) & ~15u;
+    alignment = Math::alignBy(alignment, 16u);
     return alignment;
 }
 
@@ -90,13 +90,11 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
     uint32 runtimeArrayOffset = 0;
     if (shaderBufferHasAnySpecializationConst(bufferField))
     {
-        std::map<String, ShaderBufferFieldNode*> attribNameToNode;
+        std::map<String, ShaderBufferField*> attribNameToNode;
         {
-            ShaderBufferFieldNode* currentFieldNode = &bufferParamInfo.startNode;
-            while (currentFieldNode->isValid())
+            for (ShaderBufferField* currentField : bufferParamInfo)
             {
-                attribNameToNode[currentFieldNode->field->paramName] = currentFieldNode;
-                currentFieldNode = currentFieldNode->nextNode;
+                attribNameToNode[currentField->paramName] = currentField;
             }
         }
 
@@ -111,92 +109,92 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
             {
                 const ReflectBufferStructEntry& bufferStructField = bufferField.bufferStructFields[structIdx];
 
-                auto currFieldNodeItr = attribNameToNode.find(bufferStructField.attributeName);
-                debugAssert(currFieldNodeItr != attribNameToNode.end() && BIT_SET(currFieldNodeItr->second->field->fieldDecorations, ShaderBufferField::IsStruct));
-                ShaderBufferFieldNode* currentFieldNode = currFieldNodeItr->second;
+                auto currFieldItr = attribNameToNode.find(bufferStructField.attributeName);
+                debugAssert(currFieldItr != attribNameToNode.end() && BIT_SET(currFieldItr->second->fieldDecorations, ShaderBufferField::IsStruct));
+                ShaderBufferField* currentField = currFieldItr->second;
 
                 // If there is runtime array already at earlier offset then fail as we allow runtime to be always last entry in buffer
                 debugAssert(!bHasRuntimeArray);
                 // We don't have to do offset check here as we already go member by member sequentially
-                bHasRuntimeArray = (bufferStructField.data.totalSize == 0 && currentFieldNode->field->isPointer());
-                // Make sure we do not intended miss runtime array
-                debugAssert(bufferStructField.data.totalSize != 0 && !currentFieldNode->field->isPointer());
+                bHasRuntimeArray = (bufferStructField.data.totalSize == 0 && currentField->isPointer());
+                // Make sure we do not miss intended runtime array
+                debugAssert(bufferStructField.data.totalSize != 0 && !currentField->isPointer());
 
                 // Not array dimension greater than 1 or if runtime array
                 debugAssert(bufferStructField.data.arraySize.size() == 1);
-                debugAssert(!currentFieldNode->field->isIndexAccessible()
+                debugAssert(!currentField->isIndexAccessible()
                     || bHasRuntimeArray
                     || (bufferStructField.data.arraySize[0].dimension > 1) || bufferStructField.data.arraySize[0].isSpecializationConst                    
                 );
 
                 // default C++ length
-                const uint32 arrayLength = currentFieldNode->field->isIndexAccessible() && !currentFieldNode->field->isPointer()
-                    ? (currentFieldNode->field->size / currentFieldNode->field->stride) : 1;
+                const uint32 arrayLength = currentField->isIndexAccessible() && !currentField->isPointer()
+                    ? (currentField->size / currentField->stride) : 1;
                 const uint32 alignment = getAlignment(bufferStructField.data.data);
-                bufferSize = (bufferSize + (alignment - 1)) & ~(alignment - 1);
+                bufferSize = Math::alignBy(bufferSize, alignment);
 
-                fillRefToBufParamInfo(*currentFieldNode->field->paramInfo, bufferStructField.data.data, stageSpecializationConsts);
-                currentFieldNode->field->offset = bufferSize;
-                currentFieldNode->field->stride = currentFieldNode->field->paramInfo->paramStride();
+                fillRefToBufParamInfo(*currentField->paramInfo, bufferStructField.data.data, stageSpecializationConsts);
+                currentField->offset = bufferSize;
+                currentField->stride = currentField->paramInfo->paramStride();
                 if (bufferStructField.data.arraySize[0].isSpecializationConst)
                 {
                     uint32 specializedLength = 0;
                     SpecializationConstUtility::asValue(specializedLength
                         , stageSpecializationConsts[bufferStructField.data.arraySize[0].stageIdx][bufferStructField.data.arraySize[0].dimension]);
                     debugAssert(arrayLength == specializedLength);
-                    currentFieldNode->field->size = currentFieldNode->field->stride * specializedLength;
+                    currentField->size = currentField->stride * specializedLength;
                 }
                 else
                 {
-                    currentFieldNode->field->size = currentFieldNode->field->stride * arrayLength;
+                    currentField->size = currentField->stride * arrayLength;
                 }
 
-                bufferSize += currentFieldNode->field->size;
+                bufferSize += currentField->size;
                 ++structIdx;
             }
             else
             {
                 const ReflectBufferEntry& bufferInnerField = bufferField.bufferFields[innerFieldIdx];
 
-                auto currFieldNodeItr = attribNameToNode.find(bufferInnerField.attributeName);
-                debugAssert(currFieldNodeItr != attribNameToNode.end() && BIT_SET(currFieldNodeItr->second->field->fieldDecorations, ShaderBufferField::IsStruct));
-                ShaderBufferFieldNode* currentFieldNode = currFieldNodeItr->second;
+                auto currFieldItr = attribNameToNode.find(bufferInnerField.attributeName);
+                debugAssert(currFieldItr != attribNameToNode.end() && BIT_SET(currFieldItr->second->fieldDecorations, ShaderBufferField::IsStruct));
+                ShaderBufferField* currentField = currFieldItr->second;
 
                 // If there is runtime array already at earlier offset then fail as we allow runtime to be always last entry in buffer
                 debugAssert(!bHasRuntimeArray);
                 // We don't have to do offset check here as we already go member by member sequentially
-                bHasRuntimeArray = (bufferInnerField.data.totalSize == 0 && currentFieldNode->field->isPointer());
-                // Make sure we do not intended miss runtime array
-                debugAssert(bufferInnerField.data.totalSize != 0 && !currentFieldNode->field->isPointer());
+                bHasRuntimeArray = (bufferInnerField.data.totalSize == 0 && currentField->isPointer());
+                // Make sure we do not miss intended runtime array
+                debugAssert(bufferInnerField.data.totalSize != 0 && !currentField->isPointer());
 
                 // Not array dimension greater than 1
                 debugAssert(bufferInnerField.data.arraySize.size() == 1);
-                debugAssert(!currentFieldNode->field->isIndexAccessible()
+                debugAssert(!currentField->isIndexAccessible()
                     || bHasRuntimeArray
                     || (bufferInnerField.data.arraySize[0].dimension > 1) || bufferInnerField.data.arraySize[0].isSpecializationConst
                 );
 
                 // default C++ length
-                uint32 arrayLength = currentFieldNode->field->isIndexAccessible() && !currentFieldNode->field->isPointer() ? (currentFieldNode->field->size / currentFieldNode->field->stride) : 0;
+                uint32 arrayLength = currentField->isIndexAccessible() && !currentField->isPointer() ? (currentField->size / currentField->stride) : 0;
                 const uint32 alignment = getAlignment(bufferInnerField.data.data.type);
-                bufferSize = (bufferSize + (alignment - 1)) & ~(alignment - 1);
+                bufferSize = Math::alignBy(bufferSize, alignment);
 
-                currentFieldNode->field->offset = bufferSize;
-                currentFieldNode->field->stride = bufferInnerField.data.stride;
+                currentField->offset = bufferSize;
+                currentField->stride = bufferInnerField.data.stride;
                 // Since in case of runtime array total size will be 0
-                currentFieldNode->field->size = currentFieldNode->field->isPointer() 
-                    ? currentFieldNode->field->size : bufferInnerField.data.totalSize;
-                currentFieldNode->field->fieldType = EShaderInputAttribFormat::getInputFormat(bufferInnerField.data.data.type);
+                currentField->size = currentField->isPointer() 
+                    ? currentField->size : bufferInnerField.data.totalSize;
+                currentField->fieldType = EShaderInputAttribFormat::getInputFormat(bufferInnerField.data.data.type);
                 if (bufferInnerField.data.arraySize[0].isSpecializationConst)
                 {
                     uint32 specializedLength = 0;
                     SpecializationConstUtility::asValue(specializedLength
                         , stageSpecializationConsts[bufferInnerField.data.arraySize[0].stageIdx][bufferInnerField.data.arraySize[0].dimension]);
                     debugAssert(arrayLength == specializedLength);
-                    currentFieldNode->field->size = currentFieldNode->field->stride * specializedLength;
+                    currentField->size = currentField->stride * specializedLength;
                 }
 
-                bufferSize += currentFieldNode->field->size;
+                bufferSize += currentField->size;
                 ++innerFieldIdx;
             }
         }
@@ -205,26 +203,24 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
     else
     {
         bufferParamInfo.setStride(bufferField.stride);
-
-        ShaderBufferFieldNode* currentFieldNode = &bufferParamInfo.startNode;
-        while (currentFieldNode->isValid())
+        for (ShaderBufferField* currentField : bufferParamInfo)
         {
-            if (BIT_SET(currentFieldNode->field->fieldDecorations, ShaderBufferField::IsStruct))
+            if (BIT_SET(currentField->fieldDecorations, ShaderBufferField::IsStruct))
             {
                 for (const ReflectBufferStructEntry& bufferStructField : bufferField.bufferStructFields)
                 {
-                    if (bufferStructField.attributeName == currentFieldNode->field->paramName)
+                    if (bufferStructField.attributeName == currentField->paramName)
                     {
                         // If runtime array then update offset, else check offset to be sure that runtime array is last member
-                        if ((bufferStructField.data.totalSize == 0 && currentFieldNode->field->isPointer()))
+                        if ((bufferStructField.data.totalSize == 0 && currentField->isPointer()))
                         {
                             bHasRuntimeArray = true;
                             runtimeArrayOffset = bufferStructField.data.offset;
                         }
                         else
                         {
-                            // Make sure we do not intended miss runtime array
-                            debugAssert(bufferStructField.data.totalSize != 0 && !currentFieldNode->field->isPointer());
+                            // Make sure we do not miss intended runtime array
+                            debugAssert(bufferStructField.data.totalSize != 0 && !currentField->isPointer());
                             fatalAssert(!bHasRuntimeArray || (runtimeArrayOffset >= bufferStructField.data.offset)
                                 , "%s() : Runtime array(offset : %d) must be the last member of SoA. Member %s offset %d"
                                 , __func__, runtimeArrayOffset, bufferStructField.attributeName.c_str(), bufferStructField.data.offset);
@@ -232,14 +228,14 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
 
                         // Not array dimension greater than 1
                         debugAssert(bufferStructField.data.arraySize.size() == 1);
-                        debugAssert(!currentFieldNode->field->isIndexAccessible()
+                        debugAssert(!currentField->isIndexAccessible()
                             || bHasRuntimeArray
                             || (bufferStructField.data.arraySize[0].dimension > 1));
 
-                        currentFieldNode->field->offset = bufferStructField.data.offset;
-                        currentFieldNode->field->stride = bufferStructField.data.stride;
-                        currentFieldNode->field->size = bufferStructField.data.totalSize;
-                        fillRefToBufParamInfo(*currentFieldNode->field->paramInfo, bufferStructField.data.data, stageSpecializationConsts);
+                        currentField->offset = bufferStructField.data.offset;
+                        currentField->stride = bufferStructField.data.stride;
+                        currentField->size = bufferStructField.data.totalSize;
+                        fillRefToBufParamInfo(*currentField->paramInfo, bufferStructField.data.data, stageSpecializationConsts);
                     }
                 }
             }
@@ -247,18 +243,18 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
             {
                 for (const ReflectBufferEntry& bufferInnerField : bufferField.bufferFields)
                 {
-                    if (bufferInnerField.attributeName == currentFieldNode->field->paramName)
+                    if (bufferInnerField.attributeName == currentField->paramName)
                     {
                         // If runtime array then update offset, else check offset to be sure that runtime array is last member
-                        if ((bufferInnerField.data.totalSize == 0 && currentFieldNode->field->isPointer()))
+                        if ((bufferInnerField.data.totalSize == 0 && currentField->isPointer()))
                         {
                             bHasRuntimeArray = true;
                             runtimeArrayOffset = bufferInnerField.data.offset;
                         }
                         else
                         {
-                            // Make sure we do not intended miss runtime array
-                            debugAssert(bufferInnerField.data.totalSize != 0 && !currentFieldNode->field->isPointer());
+                            // Make sure we do not miss intended runtime array
+                            debugAssert(bufferInnerField.data.totalSize != 0 && !currentField->isPointer());
                             fatalAssert(!bHasRuntimeArray || (runtimeArrayOffset >= bufferInnerField.data.offset)
                                 , "%s() : Runtime array(offset : %d) must be the last member of SoA. Member %s offset %d"
                                 , __func__, runtimeArrayOffset, bufferInnerField.attributeName.c_str(), bufferInnerField.data.offset);
@@ -266,19 +262,17 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
 
                         // Not array dimension greater than 1
                         debugAssert(bufferInnerField.data.arraySize.size() == 1);
-                        debugAssert(!currentFieldNode->field->isIndexAccessible()
+                        debugAssert(!currentField->isIndexAccessible()
                             || bHasRuntimeArray 
                             || (bufferInnerField.data.arraySize[0].dimension > 1));
 
-                        currentFieldNode->field->offset = bufferInnerField.data.offset;
-                        currentFieldNode->field->stride = bufferInnerField.data.stride;
-                        currentFieldNode->field->size = bufferInnerField.data.totalSize;
-                        currentFieldNode->field->fieldType = EShaderInputAttribFormat::getInputFormat(bufferInnerField.data.data.type);
+                        currentField->offset = bufferInnerField.data.offset;
+                        currentField->stride = bufferInnerField.data.stride;
+                        currentField->size = bufferInnerField.data.totalSize;
+                        currentField->fieldType = EShaderInputAttribFormat::getInputFormat(bufferInnerField.data.data.type);
                     }
                 }
             }
-
-            currentFieldNode = currentFieldNode->nextNode;
         }
     }
 
@@ -292,21 +286,19 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
 
 bool ShaderParameterUtility::fillRefToVertexParamInfo(ShaderVertexParamInfo& vertexParamInfo, const std::vector<ReflectInputOutput>& inputEntries)
 {
-    ShaderVertexFieldNode* currentFieldNode = &vertexParamInfo.startNode;
-    while (currentFieldNode->isValid())
+    for (ShaderVertexField* currentField : vertexParamInfo)
     {
         for (const ReflectInputOutput& vertexAttribute : inputEntries)
         {
-            if (vertexAttribute.attributeName == currentFieldNode->field->attributeName)
+            if (vertexAttribute.attributeName == currentField->attributeName)
             {
-                currentFieldNode->field->location = vertexAttribute.data.location;
-                if (currentFieldNode->field->format == EShaderInputAttribFormat::Undefined)
+                currentField->location = vertexAttribute.data.location;
+                if (currentField->format == EShaderInputAttribFormat::Undefined)
                 {
-                    currentFieldNode->field->format = EShaderInputAttribFormat::getInputFormat(vertexAttribute.data.type);
+                    currentField->format = EShaderInputAttribFormat::getInputFormat(vertexAttribute.data.type);
                 }
             }
         }
-        currentFieldNode = currentFieldNode->nextNode;
     }
     return true;
 }

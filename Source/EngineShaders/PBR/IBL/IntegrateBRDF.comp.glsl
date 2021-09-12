@@ -6,7 +6,7 @@
 
 layout(constant_id = 5) const uint SAMPLE_COUNT = 1024;
 
-layout (set = 0, binding = 0, rg16f) uniform image2D outIntegratedBrdf;
+layout (set = 0, binding = 0, rg16f) uniform writeonly image2D outIntegratedBrdf;
 
 //layout(push_constant) uniform Constants
 //{

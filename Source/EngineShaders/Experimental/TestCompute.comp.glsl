@@ -3,7 +3,7 @@
 
 #include "../Common/ComputeCommon.inl.glsl"
 
-layout (set = 0, binding = 0, rgba8) uniform image2D resultImage;	
+layout (set = 0, binding = 0, rgba8) writeonly uniform image2D resultImage;	
 
 struct AOS
 {

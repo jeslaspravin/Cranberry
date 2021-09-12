@@ -33,6 +33,7 @@ public:
     static uint32_t pipelineBindPoint(spv::ExecutionModel spirvStage);
     static uint32_t pipelineStageFlag(spv::ExecutionModel spirvStage);
     static uint32_t shaderStageFlag(spv::ExecutionModel spirvStage);
+    static uint8_t readWriteQualifier(bool read, bool write);
     static uint32_t imageViewType(spv::Dim spirvDim, bool bIsArray);
     static TexelComponentFormat texelFormat(spv::ImageFormat format);
 

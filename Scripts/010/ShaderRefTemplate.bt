@@ -156,6 +156,7 @@ struct ReflectInputOutput
 // DESCRIPTORS
 struct DescriptorSetEntry
 {
+    uchar ReadWriteState<read = DescriptorReadWriteState>;
     uint32 binding;
     uint32 stagesUsed<read = StagesBitFlagDisplay>;
     uint32 type<read = DescriptorTypeDisplay>;
@@ -481,6 +482,29 @@ string StageBitFlagToStr(uint32 stages)
 #undef COMPUTE_BIT
 
 // DESCRIPTOR DISPLAYS
+
+#define READ_BIT 0x00000001
+#define WRITE_BIT 0x00000002
+string DescriptorReadWriteState(uchar state)
+{
+    string retStr;
+    if((state & READ_BIT) != 0)
+    {
+        Strcat(retStr, "Read | ");
+    }
+    if((state & WRITE_BIT) != 0)
+    {
+        Strcat(retStr, "Write | ");
+    }
+    int32 fmtStrLen = Strlen(retStr);
+    if(fmtStrLen > 0)
+    {
+        retStr = StrDel(retStr, fmtStrLen - 3, 3);         
+    }    
+    return retStr;
+}
+#undef READ_BIT
+#undef WRITE_BIT
 
 string DescriptorsSetDisplay(ReflectDescriptorBody& descsSetBody)
 {

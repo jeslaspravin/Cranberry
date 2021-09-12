@@ -142,18 +142,15 @@ void VulkanGraphicsPipeline::fillVertexInputState(VkPipelineVertexInputStateCrea
                 ? VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX : VkVertexInputRate::VK_VERTEX_INPUT_RATE_INSTANCE;
             bindingDesc.stride = paramInfo->paramStride();
 
-            const ShaderVertexFieldNode* attributeNode = &paramInfo->startNode;
-
-            while (attributeNode->isValid())
+            for (const ShaderVertexField* attributeField : *paramInfo)
             {
                 VkVertexInputAttributeDescription attributeDesc;
                 attributeDesc.binding = bindingIdx;
-                attributeDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::Type(attributeNode->field->format))->format);
-                attributeDesc.location = attributeNode->field->location;
-                attributeDesc.offset = attributeNode->field->offset;
+                attributeDesc.format = VkFormat(EPixelDataFormat::getFormatInfo(EPixelDataFormat::Type(attributeField->format))->format);
+                attributeDesc.location = attributeField->location;
+                attributeDesc.offset = attributeField->offset;
 
                 attributes.emplace_back(attributeDesc);
-                attributeNode = attributeNode->nextNode;
             }
         }
         else// This case mostly will not occur and if there is need for this case check if Vulkan allowing this.
