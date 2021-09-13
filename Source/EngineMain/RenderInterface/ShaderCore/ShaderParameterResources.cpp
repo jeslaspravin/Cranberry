@@ -715,6 +715,7 @@ void ShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphicsInstan
 void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minSize)
 {
     auto bufferDataItr = shaderBuffers.find(bufferName);
+    BufferParametersData& bufferData = bufferDataItr->second;
     if (bufferDataItr == shaderBuffers.end())
     {
         Logger::error("ShaderParameters", "%s() : Buffer %s not found", __func__, bufferName.getChar());
@@ -726,35 +727,32 @@ void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minS
         return;
     }
 
-    ENQUEUE_COMMAND(ResizeRuntimeBuffer)(
-        [this, bufferName, minSize](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
-        {
-            auto bufferDataItr = shaderBuffers.find(bufferName);
-            BufferParametersData& bufferData = bufferDataItr->second;
-            if (bufferData.runtimeArray.has_value())
-            {
-                auto paramFieldItr = bufferData.bufferParams.find(bufferData.runtimeArray->paramName);
-                BufferParametersData::BufferParameter& paramField = paramFieldItr->second;
+    if (bufferData.runtimeArray.has_value())
+    {
+        auto paramFieldItr = bufferData.bufferParams.find(bufferData.runtimeArray->paramName);
+        BufferParametersData::BufferParameter& paramField = paramFieldItr->second;
 
-                if (bufferData.runtimeArray->currentSize < minSize)
+        if (bufferData.runtimeArray->currentSize < minSize)
+        {
+            const uint32& dataStride = paramField.bufferField->stride;
+            const uint32 newArraySize = Math::toHigherPowOf2(minSize * dataStride);
+            bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(newArraySize);
+            bufferData.runtimeArray->currentSize = uint32(Math::floor(newArraySize / float(dataStride)));
+
+            // Set buffer ptr and regenerate buffer param maps
+            (*reinterpret_cast<void**>(paramField.bufferField->fieldPtr(paramField.outerPtr)))
+                = bufferData.runtimeArray->runtimeArrayCpuBuffer.data();
+            bufferData.bufferParams.clear();
+            initBufferParams(bufferData, bufferData.descriptorInfo->bufferParamInfo
+                , bufferData.cpuBuffer, nullptr);
+
+            ENQUEUE_COMMAND(ResizeRuntimeBuffer)(
+                [this, bufferName, newArraySize, &bufferData](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
                 {
-                    const uint32 oldSize = uint32(bufferData.runtimeArray->runtimeArrayCpuBuffer.size());
                     BufferResource* oldBuffer = bufferData.gpuBuffer;
 
-                    const uint32& dataStride = paramField.bufferField->stride;
-                    const uint32 newSize = Math::toHigherPowOf2(minSize * dataStride);
-                    bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(newSize);
-                    bufferData.runtimeArray->currentSize = uint32(Math::floor(newSize / float(dataStride)));
-
-                    // Set buffer ptr and regenerate buffer param maps
-                    (*reinterpret_cast<void**>(paramField.bufferField->fieldPtr(paramField.outerPtr)))
-                        = bufferData.runtimeArray->runtimeArrayCpuBuffer.data();
-                    bufferData.bufferParams.clear();
-                    initBufferParams(bufferData, bufferData.descriptorInfo->bufferParamInfo
-                        , bufferData.cpuBuffer, nullptr);
-
                     // Since only storage can be runtime array
-                    bufferData.gpuBuffer = new GraphicsWBuffer(bufferData.runtimeArray->offset + newSize);
+                    bufferData.gpuBuffer = new GraphicsWBuffer(bufferData.runtimeArray->offset + newArraySize);
                     bufferData.gpuBuffer->setResourceName(bufferName + "_" + bufferData.runtimeArray->paramName + "_RuntimeSoA");
                     bufferData.gpuBuffer->init();
 
@@ -762,20 +760,23 @@ void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minS
                     bufferResourceUpdates.insert(bufferName);
 
                     fatalAssert(bufferData.gpuBuffer->isValid(), "%s() : Runtime array initialization failed", __func__);
-                    if (oldBuffer != nullptr && oldBuffer->isValid())
+                    if (oldBuffer != nullptr)
                     {
-                        CopyBufferInfo copyRange
+                        if (oldBuffer->isValid())
                         {
-                            0,0
-                            , oldSize
-                        };
-                        cmdList->copyBuffer(oldBuffer, bufferData.gpuBuffer, copyRange);
-                        oldBuffer->release();
+                            CopyBufferInfo copyRange
+                            {
+                                0,0
+                                , uint32(oldBuffer->getResourceSize())
+                            };
+                            cmdList->copyBuffer(oldBuffer, bufferData.gpuBuffer, copyRange);
+                            oldBuffer->release();
+                        }
                         delete oldBuffer;
                     }
-                }
-            }
-        });
+                });
+        }
+    }    
 }
 
 std::pair<const ShaderParameters::BufferParametersData*, const ShaderParameters::BufferParametersData::BufferParameter*> 

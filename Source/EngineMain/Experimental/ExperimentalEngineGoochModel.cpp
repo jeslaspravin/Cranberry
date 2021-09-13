@@ -57,6 +57,13 @@
 
 #include <vulkan_core.h>
 
+struct AOS
+{
+    Vector4D a;
+    Vector2D b;
+    Vector2D c[4];
+};
+
 class ShaderParameters;
 class IRenderCommandList;
 class Texture2DRW;
@@ -642,7 +649,17 @@ void ExperimentalEngine::setupShaderParameterParams()
     clearInfoParams->init();
 
     testComputeParams->setTextureParam("resultImage", writeTexture.image->getTextureResource());
-    testComputeParams->resizeRuntimeBuffer("inData", 1);
+    testComputeParams->resizeRuntimeBuffer("inData", 2);
+    AOS testRuntime;
+    testRuntime.a = Vector4D(1, 0, 1, 0);
+    testRuntime.b = Vector2D::FWD;
+    testRuntime.c[0] = Vector2D::RIGHT;
+    testRuntime.c[1] = Vector2D::FWD;
+    testRuntime.c[2] = Vector2D::RIGHT;
+    testRuntime.c[3] = Vector2D::FWD;
+    testComputeParams->setVector4Param("test1", testRuntime.a);
+    testComputeParams->setBuffer("data", testRuntime, 0);
+    testComputeParams->setBuffer("data", testRuntime, 1);
     testComputeParams->init();
 }
 
