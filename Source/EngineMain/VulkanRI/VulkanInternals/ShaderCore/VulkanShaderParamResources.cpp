@@ -746,15 +746,15 @@ void VulkanShaderParameters::init()
             for (const VkDescriptorPoolSize& descriptorPoolSize : static_cast<const VulkanShaderParametersLayout*>(paramLayout)
                 ->getDescPoolAllocInfo(descriptorsBody.set))
             {
-                 auto poolSizeItr = descriptorPoolSizes.find(descriptorPoolSize.type);
-                 if (poolSizeItr == descriptorPoolSizes.end())
-                 {
-                     descriptorPoolSizes[descriptorPoolSize.type] = descriptorPoolSize.descriptorCount;
-                 }
-                 else
-                 {
-                     poolSizeItr->second = Math::max(poolSizeItr->second, descriptorPoolSize.descriptorCount);
-                 }
+                auto poolSizeItr = descriptorPoolSizes.find(descriptorPoolSize.type);
+                if (poolSizeItr == descriptorPoolSizes.end())
+                {
+                    descriptorPoolSizes[descriptorPoolSize.type] = descriptorPoolSize.descriptorCount;
+                }
+                else
+                {
+                    poolSizeItr->second = Math::max(poolSizeItr->second, descriptorPoolSize.descriptorCount);
+                }
             }
         }
 
@@ -780,7 +780,7 @@ void VulkanShaderParameters::init()
         VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(descsSets[descSetToIdx.second])
             , getObjectName() + std::to_string(descSetToIdx.second), getObjectType());
     }
-    
+
     std::vector<VkWriteDescriptorSet> bufferDescWrites;
     bufferDescWrites.reserve(shaderBuffers.size());
     std::vector<VkDescriptorBufferInfo> bufferInfos(shaderBuffers.size());
@@ -803,10 +803,11 @@ void VulkanShaderParameters::init()
     }
 
     VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, bufferDescWrites, {});
-    ENQUEUE_COMMAND_NODEBUG(FinalizeShaderParams, LAMBDA_BODY
-    (
-        updateParams(cmdList, graphicsInstance);
-    ), this);
+    ENQUEUE_COMMAND(FinalizeShaderParams)(
+        [this](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        {
+            updateParams(cmdList, graphicsInstance);
+        });
 }
 
 void VulkanShaderParameters::release()

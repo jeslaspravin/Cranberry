@@ -23,6 +23,8 @@ private:
     FORCE_INLINE VkImageLayout determineImageLayout(const ImageResource* image) const;
     FORCE_INLINE VkImageLayout getImageLayout(const ImageResource* image) const;
     FORCE_INLINE VkPipelineBindPoint getPipelineBindPoint(const PipelineBase* pipeline) const;
+    // Shader stage in which buffer/image maybe possibly written to/Read from in shader
+    FORCE_INLINE VkPipelineStageFlags resourceShaderStageFlags() const;
 
     FORCE_INLINE void fillClearValue(EPixelDataFormat::Type format, VkClearColorValue& clearValue, const LinearColor& color) const;
 
