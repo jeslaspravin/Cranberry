@@ -19,7 +19,7 @@ using ScreenSpaceQuadShaderPipelineRegistrar = GenericPipelineRegistrar<ScreenSp
 class OverBlendedSSQuadShaderPipeline : public ScreenSpaceQuadShaderPipeline
 {
     DECLARE_GRAPHICS_RESOURCE(OverBlendedSSQuadShaderPipeline, , ScreenSpaceQuadShaderPipeline, )
-private:
+protected:
     OverBlendedSSQuadShaderPipeline() = default;
 public:
     OverBlendedSSQuadShaderPipeline(const PipelineBase* parent)
@@ -27,6 +27,18 @@ public:
     {}
     OverBlendedSSQuadShaderPipeline(const ShaderResource* shaderResource);
 };
+class OverBlendedSSQuadWithDepthTestPipeline : public OverBlendedSSQuadShaderPipeline
+{
+    DECLARE_GRAPHICS_RESOURCE(OverBlendedSSQuadWithDepthTestPipeline, , OverBlendedSSQuadShaderPipeline, )
+protected:
+    OverBlendedSSQuadWithDepthTestPipeline() = default;
+public:
+    OverBlendedSSQuadWithDepthTestPipeline(const PipelineBase* parent)
+        : BaseType(parent)
+    {}
+    OverBlendedSSQuadWithDepthTestPipeline(const ShaderResource* shaderResource);
+};
 
 // Registrar
 using OverBlendedSSQuadShaderPipelineRegistrar = GenericPipelineRegistrar<OverBlendedSSQuadShaderPipeline>;
+using OverBlendedSSQuadDepthTestPipelineRegistrar = GenericPipelineRegistrar<OverBlendedSSQuadWithDepthTestPipeline>;

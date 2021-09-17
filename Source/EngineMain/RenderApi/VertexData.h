@@ -8,6 +8,7 @@ struct SpecializationConstantEntry;
 
 namespace EVertexType
 {
+    // Also update in "MaterialCommonUniforms.h" MaterialVertexUniforms
     enum Type
     {
         Simple2,// position only vertices(vec2)
@@ -17,6 +18,7 @@ namespace EVertexType
         BasicMesh, // Basic mesh with position, texture coordinates
         StaticMesh,
         InstancedSimple3DColor,
+        NoVertex,
         MaxVertexType,
     };
 
@@ -39,6 +41,8 @@ namespace EVertexType
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<StaticMesh>();
     template<>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<InstancedSimple3DColor>();
+    template<>
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<NoVertex>();
 
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType);
 
@@ -60,6 +64,8 @@ namespace EVertexType
     void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
     void vertexSpecConsts<InstancedSimple3DColor>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    template<>
+    void vertexSpecConsts<NoVertex>(std::map<String, SpecializationConstantEntry>& specializationConst);
 
     void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry>& specializationConst);
 }

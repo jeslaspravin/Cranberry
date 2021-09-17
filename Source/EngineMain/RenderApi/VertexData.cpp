@@ -130,6 +130,12 @@ namespace EVertexType
         static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS{ &SIMPLE3D_PARAM_INFO, &STATIC_VERTEX_PARAM_INFO };
         return VERTEX_PARAMS;
     }
+    template<>
+    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<NoVertex>()
+    {
+        static std::vector<ShaderVertexParamInfo*> VERTEX_PARAMS;
+        return VERTEX_PARAMS;
+    }
 
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType)
     {
@@ -148,8 +154,10 @@ namespace EVertexType
         case EVertexType::InstancedSimple3DColor:
             return vertexParamInfo<InstancedSimple3DColor>();
         case EVertexType::BasicMesh:
-        default:
             return vertexParamInfo<BasicMesh>();
+        case EVertexType::NoVertex:
+        default:
+            return vertexParamInfo<NoVertex>();
         }
     }
 
@@ -173,6 +181,8 @@ namespace EVertexType
             break;
         case EVertexType::InstancedSimple3DColor:
             return "InstSimple3dColor";
+        case EVertexType::NoVertex:
+            return "NoVertex";
         }
         return "";
     }
@@ -207,6 +217,9 @@ namespace EVertexType
     void vertexSpecConsts<InstancedSimple3DColor>(std::map<String, struct SpecializationConstantEntry>& specializationConst)
     {
     }
+    template<>
+    void vertexSpecConsts<NoVertex>(std::map<String, SpecializationConstantEntry>& specializationConst)
+    {}
 
     void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry>& specializationConst)
     {
@@ -220,13 +233,15 @@ namespace EVertexType
             return vertexSpecConsts<Simple3>(specializationConst);
         case EVertexType::Simple3DColor:
             return vertexSpecConsts<Simple3DColor>(specializationConst);
-        default:
         case EVertexType::BasicMesh:
             return vertexSpecConsts<BasicMesh>(specializationConst);
         case EVertexType::StaticMesh:
             return vertexSpecConsts<StaticMesh>(specializationConst);
         case EVertexType::InstancedSimple3DColor:
             return vertexSpecConsts<InstancedSimple3DColor>(specializationConst);
+        case EVertexType::NoVertex:
+        default:
+            return vertexSpecConsts<NoVertex>(specializationConst);
         }
     }
 
@@ -242,18 +257,25 @@ void GlobalBuffers::destroyVertIndBuffers(class IRenderCommandList* cmdList, IGr
     delete lineGizmoVertxInds.second;
     lineGizmoVertxInds.second = nullptr;
 
-    quadVertsInds.first->release();
-    delete quadVertsInds.first;
-    quadVertsInds.first = nullptr;
-    quadVertsInds.second->release();
-    delete quadVertsInds.second;
-    quadVertsInds.second = nullptr;
+    quadTriVerts->release();
+    delete quadTriVerts;
+    quadTriVerts = nullptr;
+
+    quadRectVertsInds.first->release();
+    delete quadRectVertsInds.first;
+    quadRectVertsInds.first = nullptr;
+    quadRectVertsInds.second->release();
+    delete quadRectVertsInds.second;
+    quadRectVertsInds.second = nullptr;
 }
 
 void GlobalBuffers::createVertIndBuffers(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
 {
-    const std::array<Vector3D, 3> quadVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
-    const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
+    const std::array<Vector3D, 3> quadTriVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
+    // const std::array<uint32, 3> quadTriIndices = { 0,1,2 };// 3 Per tri of quad
+
+    const std::array<Vector3D, 4> quadRectVerts = { Vector3D(-1,-1,0),Vector3D(1,-1,0),Vector3D(-1,1,0), Vector3D(1,1,0) };
+    const std::array<uint32, 6> quadRectIndices = { 0, 1, 2, 2, 1, 3 };
 
     // 0-17(18) for axis arrows 18-29(12) for letters
     std::array<VertexSimple3DColor, 30> gizmoVerts;
@@ -379,20 +401,27 @@ void GlobalBuffers::createVertIndBuffers(class IRenderCommandList* cmdList, IGra
     GlobalBuffers::lineGizmoVertxInds.first = lineGizmoVertsBuffer;
     GlobalBuffers::lineGizmoVertxInds.second = lineGizmoIndicesBuffer;
 
-    BufferResource* quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
-    quadVertexBuffer->setResourceName("ScreenQuadVertices");
-    quadVertexBuffer->init();
+    BufferResource* quadTriVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadTriVerts.size()));
+    quadTriVertexBuffer->setResourceName("ScreenQuadTriVertices");
+    quadTriVertexBuffer->init();
 
-    BufferResource* quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
-    quadIndexBuffer->setResourceName("ScreenQuadIndices");
-    quadIndexBuffer->init();
+    GlobalBuffers::quadTriVerts = quadTriVertexBuffer;
 
-    GlobalBuffers::quadVertsInds.first = quadVertexBuffer;
-    GlobalBuffers::quadVertsInds.second = quadIndexBuffer;
+    BufferResource* quadRectVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadRectVerts.size()));
+    quadRectVertexBuffer->setResourceName("ScreenQuadRectVertices");
+    quadRectVertexBuffer->init();
+
+    BufferResource* quadRectIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadRectIndices.size()));
+    quadRectIndexBuffer->setResourceName("ScreenQuadRectIndices");
+    quadRectIndexBuffer->init();
+
+    GlobalBuffers::quadRectVertsInds.first = quadRectVertexBuffer;
+    GlobalBuffers::quadRectVertsInds.second = quadRectIndexBuffer;
 
     std::vector<BatchCopyBufferData> copies{
-        { quadVertexBuffer, 0, quadVerts.data(), uint32(quadVertexBuffer->getResourceSize()) },
-        { quadIndexBuffer, 0, quadIndices.data(), uint32(quadIndexBuffer->getResourceSize()) },
+        { quadTriVertexBuffer, 0, quadTriVerts.data(), uint32(quadTriVertexBuffer->getResourceSize()) },
+        { quadRectVertexBuffer, 0, quadRectVerts.data(), uint32(quadRectVertexBuffer->getResourceSize()) },
+        { quadRectIndexBuffer, 0, quadRectIndices.data(), uint32(quadRectIndexBuffer->getResourceSize()) },
         { lineGizmoVertsBuffer, 0, gizmoVerts.data(), uint32(lineGizmoVertsBuffer->getResourceSize()) },
         { lineGizmoIndicesBuffer, 0, gizmoIndices.data(), uint32(lineGizmoIndicesBuffer->getResourceSize()) }
     };

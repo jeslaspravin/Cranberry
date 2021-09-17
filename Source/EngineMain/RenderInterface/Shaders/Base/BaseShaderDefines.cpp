@@ -29,8 +29,11 @@ EVertexType::Type UniqueUtilityShader::vertexUsage() const
         return overridenType;
     }
 
-    // Since at the moment only planning to have either simple or basic vertices only
-    if (getReflection()->inputs.size() == 1)
+    if (getReflection()->inputs.empty())
+    {
+        return EVertexType::NoVertex;
+    }
+    else if (getReflection()->inputs.size() == 1)
     {
         switch (getReflection()->inputs[0].data.type.vecSize)
         {
@@ -133,4 +136,15 @@ OverBlendedSSQuadShaderPipeline::OverBlendedSSQuadShaderPipeline(const ShaderRes
     attachmentBlendStates[0].dstColorFactor = EBlendFactor::OneMinusSrcAlpha;
     attachmentBlendStates[0].alphaBlendOp = EBlendOp::Add;
     attachmentBlendStates[0].srcAlphaFactor = attachmentBlendStates[0].dstAlphaFactor = EBlendFactor::One;
+}
+
+DEFINE_GRAPHICS_RESOURCE(OverBlendedSSQuadWithDepthTestPipeline)
+OverBlendedSSQuadWithDepthTestPipeline::OverBlendedSSQuadWithDepthTestPipeline(const ShaderResource* shaderResource)
+    : BaseType(shaderResource)
+{
+    // Just add depth attachment and disable depth write
+    renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::D24S8_U32_DNorm_SInt);
+
+    depthState.bEnableWrite = false;
+    depthState.compareOp = CoreGraphicsTypes::ECompareOp::Greater;
 }

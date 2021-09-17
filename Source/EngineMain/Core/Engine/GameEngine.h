@@ -5,14 +5,16 @@
 
 struct EngineTime
 {
-    uint64 frameCounter = 0;
+    // Global
     int64 startTick;
     int64 initEndTick;
+    uint64 frameCounter = 0;
+
+    // Per frame data
     int64 lastFrameTick;
     int64 frameTick;
     // In Seconds
     // Start with 100FPS
-    float averageDeltaTime = 0.01f;
     float lastDeltaTime = 0.01f;
     float deltaTime = 0.01f;
 

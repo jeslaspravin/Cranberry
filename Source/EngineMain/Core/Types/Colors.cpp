@@ -143,7 +143,7 @@ LinearColor::LinearColor(const Color& color)
 {}
 
 LinearColor::LinearColor(const LinearColor& otherColor)
-    :colorValue(otherColor.colorValue)
+    : colorValue(otherColor.colorValue)
 {}
 
 LinearColor::LinearColor(LinearColor&& otherColor)

@@ -80,7 +80,8 @@ TextureBase* GlobalBuffers::dummyWhiteTexture = nullptr;
 TextureBase* GlobalBuffers::dummyNormalTexture = nullptr;
 TextureBase* GlobalBuffers::integratedBRDF = nullptr;
 
-std::pair<BufferResource*, BufferResource*> GlobalBuffers::quadVertsInds{ nullptr,nullptr };
+BufferResource* GlobalBuffers::quadTriVerts = nullptr;
+std::pair<BufferResource*, BufferResource*> GlobalBuffers::quadRectVertsInds{ nullptr, nullptr };
 std::pair<BufferResource*, BufferResource*> GlobalBuffers::lineGizmoVertxInds{ nullptr,nullptr };
 
 bool FramebufferFormat::operator==(const FramebufferFormat& otherFormat) const

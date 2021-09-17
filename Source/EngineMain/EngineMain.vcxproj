@@ -331,6 +331,7 @@
     <ClCompile Include="RenderInterface\ShaderCore\ShaderParameterUtility.cpp" />
     <ClCompile Include="RenderInterface\Shaders\Base\BaseShaderDefines.cpp" />
     <ClCompile Include="RenderInterface\Shaders\ClearRTShader.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\DrawGrid.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawingSimple3D.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromInputAttachmentShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\DrawQuadFromTextureShader.cpp" />

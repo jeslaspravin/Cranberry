@@ -46,4 +46,9 @@ namespace MaterialVertexUniforms
     {
         return bufferParamInfo<EVertexType::Simple2>();
     }
+    template<>
+    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::NoVertex>()
+    {
+        return bufferParamInfo<EVertexType::Simple2>();
+    }
 }

@@ -31,7 +31,8 @@ private:
 
     static TextureBase* integratedBRDF;
 
-    static std::pair<BufferResource*, BufferResource*> quadVertsInds;
+    static BufferResource* quadTriVerts;
+    static std::pair<BufferResource*, BufferResource*> quadRectVertsInds;
     static std::pair<BufferResource*, BufferResource*> lineGizmoVertxInds;
 
     static void initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx);
@@ -77,6 +78,7 @@ public:
     // Destroy if any already existing raw framebuffer resource
     static void initializeFb(Framebuffer* fb, const Size2D& frameSize);
 
-    static std::pair<const BufferResource*, const BufferResource*> getQuadVertexIndexBuffers() { return quadVertsInds; }
+    static const BufferResource* getQuadTriVertexBuffer() { return quadTriVerts; }
+    static std::pair<const BufferResource*, const BufferResource*> getQuadRectVertexIndexBuffers() { return quadRectVertsInds; }
     static std::pair<const BufferResource*, const BufferResource*> getLineGizmoVertexIndexBuffers() { return lineGizmoVertxInds; }
 };

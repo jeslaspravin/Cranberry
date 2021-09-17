@@ -10,6 +10,10 @@
 #define MIN_N_DOT_V 0.01
 
 #define SQR(v) ((v)*(v))
+#define LOGBASE(b, v) (log(v) / log(b))
+#define SATURATE_F(v) (clamp((v), 0.0, 1.0))
+#define SATURATE_V2(v) (clamp((v), vec2(0.0), vec2(1.0)))
+#define MAX_V2(v) (max((v).x, (v).y))
 
 #define COLOR_2_UINT_BGRA(color) ((uint)((uint(color.a * 255) << 24) | (uint(color.r * 255) << 16) | (uint(color.g * 255) << 8)  | (uint(color.b * 255) << 0)))
 #define UINT_BGRA_2_COLOR(packed) (vec4(((packed >> 16) & 0xFF) / 255.0f, ((packed >> 8) & 0xFF) / 255.0f, ((packed >> 0) & 0xFF) / 255.0f, ((packed >> 24) & 0xFF) / 255.0f))

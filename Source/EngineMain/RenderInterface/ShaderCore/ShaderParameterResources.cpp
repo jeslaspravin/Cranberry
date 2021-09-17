@@ -734,7 +734,8 @@ void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minS
 
         if (bufferData.runtimeArray->currentSize < minSize)
         {
-            const uint32& dataStride = paramField.bufferField->stride;
+            const uint32& dataStride = BIT_SET(paramField.bufferField->fieldDecorations, ShaderBufferField::IsStruct)
+                ? paramField.bufferField->paramInfo->paramNativeStride() : paramField.bufferField->stride;
             const uint32 newArraySize = Math::toHigherPowOf2(minSize * dataStride);
             bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(newArraySize);
             bufferData.runtimeArray->currentSize = uint32(Math::floor(newArraySize / float(dataStride)));

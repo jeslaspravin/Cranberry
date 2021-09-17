@@ -93,6 +93,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Drawing", "Drawing", "{967F
 		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerInstance.vert.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerInstance.vert.glsl
 		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.frag.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.frag.glsl
 		Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.vert.glsl = Source\EngineShaders\Utilities\Drawing\Draw3DColoredPerVertex.vert.glsl
+		Source\EngineShaders\Utilities\Drawing\DrawGrid.frag.glsl = Source\EngineShaders\Utilities\Drawing\DrawGrid.frag.glsl
+		Source\EngineShaders\Utilities\Drawing\DrawGrid.vert.glsl = Source\EngineShaders\Utilities\Drawing\DrawGrid.vert.glsl
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IBL", "IBL", "{734BC010-258E-45A4-B3A1-27C025B6B892}"
