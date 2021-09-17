@@ -23,10 +23,14 @@ void EngineTime::progressFrame()
 {
     frameCounter++;
     lastFrameTick = frameTick;
-    frameTick = Time::timeNow();
-    averageDeltaTime = Time::asSeconds(frameTick - initEndTick) / frameCounter;
     lastDeltaTime = deltaTime;
+
+    frameTick = Time::timeNow();
     deltaTime = Time::asSeconds(frameTick - lastFrameTick);
+    if (deltaTime > 2) // if Delta time is greater than 2 seconds we might have been in break so reset to old delta
+    {
+        deltaTime = lastDeltaTime;
+    }
 }
 
 float EngineTime::getDeltaTime()

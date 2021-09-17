@@ -238,6 +238,7 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     LocalPipelineContext sceneDebugLinesPipelineContext;
 
     LocalPipelineContext drawLinesDWritePipelineCntxt;
+    LocalPipelineContext drawGridDTestPipelineCntxt;
     // Gizmo drawing
     RenderTargetTexture* camGizmoColorTexture;
     RenderTargetTexture* camGizmoDepthTarget;
@@ -256,6 +257,14 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     float exposure = 4.2f;
     float gamma = 2.2f;
     bool bDrawTbn = false;
+
+    bool bDrawGrid = false;
+    float gridExtendSize = 500;
+    float gridCellSize = 10;
+    float cellMinPixelCoverage = 2;
+    LinearColor thinColor = LinearColorConst::GRAY;
+    LinearColor thickColor = LinearColorConst::WHITE;
+
     int32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
     Size2D renderSize{ 1280, 720 };
     ECameraProjection projection = ECameraProjection::Perspective;
@@ -530,7 +539,7 @@ void ExperimentalEnginePBR::createScene()
             PBRSceneEntity sceneFloor;
             sceneFloor.meshAsset = cube;
             sceneFloor.transform.setScale(Vector3D(13, 13, 1));
-            sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, -50));
+            sceneFloor.transform.setTranslation(offset + Vector3D(0, 0, -45));
             sceneFloor.name = "floor" + roomIdx;
 
             for (uint32 batchIdx = 0; batchIdx < sceneFloor.meshAsset->meshBatches.size(); ++batchIdx)
@@ -754,7 +763,7 @@ void ExperimentalEnginePBR::createScene()
         carsFloor.name = "ShowroomFloor";
         carsFloor.meshAsset = cylinder;
         carsFloor.transform.setScale(Vector3D(13, 13, 1));
-        carsFloor.transform.setTranslation(Vector3D(0, 2800, -50));
+        carsFloor.transform.setTranslation(Vector3D(0, 2800, -45));
         for (uint32 batchIdx = 0; batchIdx < carsFloor.meshAsset->meshBatches.size(); ++batchIdx)
         {
             carsFloor.meshBatchProps.emplace_back(PBRSceneEntity::BatchProperties
@@ -1276,6 +1285,13 @@ void ExperimentalEnginePBR::getPipelineForSubpass()
     drawLinesDWritePipelineCntxt.materialName = "Draw3DColoredPerVertexLineDWrite";
     vulkanRenderingContext->preparePipelineContext(&drawLinesDWritePipelineCntxt);
 
+    drawGridDTestPipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
+    drawGridDTestPipelineCntxt.rtTextures.emplace_back(frameResources[0].lightingPassRt);
+    // Using depth map as read only target
+    drawGridDTestPipelineCntxt.rtTextures.emplace_back(GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, 0)[3]);
+    drawGridDTestPipelineCntxt.materialName = "DrawGridDTest";
+    vulkanRenderingContext->preparePipelineContext(&drawGridDTestPipelineCntxt);
+
     clearQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     clearQuadPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassResolved);
     clearQuadPipelineContext.materialName = "ClearRT";
@@ -1410,6 +1426,9 @@ void ExperimentalEnginePBR::onStartUp()
     camera.setTranslation(cameraTranslation);
     camera.lookAt(Vector3D::ZERO);
     cameraRotation = camera.rotation();
+
+    thinColor = LinearColorConst::GRAY;
+    thickColor = LinearColorConst::WHITE;
 
     getRenderManager()->getImGuiManager()->addLayer(this);
     createScene();
@@ -1563,8 +1582,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = EngineSettings::screenSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadVertexIndexBuffers().first }, { 0 });
-        cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadVertexIndexBuffers().second);
+        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
         if (frameVisualizeId == 0)
         {
@@ -1577,7 +1595,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
                 // Clear resolve first
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, clearQuadPipelineContext, { queryParam });
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, clearQuadPipelineContext, clearInfoParams.get());
-                cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+                cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
             }
             cmdList->cmdEndRenderPass(cmdBuffer);
 
@@ -1670,8 +1688,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = scissor.maxBound = EngineSettings::surfaceSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadVertexIndexBuffers().first }, { 0 });
-        cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadVertexIndexBuffers().second);
+        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
         RenderPassAdditionalProps renderPassAdditionalProps;
@@ -1684,7 +1701,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, resolveToPresentPipelineContext, { queryParam });
             cmdList->cmdBindDescriptorsSets(cmdBuffer, resolveToPresentPipelineContext, *drawLitColorsDescs);
-            cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+            cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
         }
         cmdList->cmdEndRenderPass(cmdBuffer);
     }
@@ -1767,6 +1784,11 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
     backfaceFillQueryParam.cullingMode = ECullingMode::BackFace;
     backfaceFillQueryParam.drawMode = EPolygonDrawMode::Fill;
 
+    RenderPassAdditionalProps debugSceneDrawAdditionalProps;
+    debugSceneDrawAdditionalProps.depthLoadOp = EAttachmentOp::LoadOp::Load;
+    debugSceneDrawAdditionalProps.depthStoreOp = EAttachmentOp::StoreOp::DontCare;
+    debugSceneDrawAdditionalProps.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
+
     // Drawing in scene first
     QuantizedBox2D viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
@@ -1796,10 +1818,6 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawTBN);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
-        RenderPassAdditionalProps debugSceneDrawAdditionalProps;
-        debugSceneDrawAdditionalProps.depthLoadOp = EAttachmentOp::LoadOp::Load;
-        debugSceneDrawAdditionalProps.depthStoreOp = EAttachmentOp::StoreOp::DontCare;
-        debugSceneDrawAdditionalProps.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
         cmdList->cmdBeginRenderPass(cmdBuffer, sceneDebugLinesPipelineContext, scissor, debugSceneDrawAdditionalProps, clearValues);
         {
             GraphicsPipelineState pipelineState;
@@ -1815,6 +1833,42 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
         cmdList->cmdEndRenderPass(cmdBuffer);
     }
 #endif
+    drawGridDTestPipelineCntxt.rtTextures[0] = frameResources[swapchainIdx].lightingPassRt;
+    drawGridDTestPipelineCntxt.rtTextures[1] = GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, swapchainIdx)[3];
+    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&drawGridDTestPipelineCntxt);
+    if (bDrawGrid)
+    {
+        // Resetting viewport as we use mvp again
+        viewport.minBound.x = 0;
+        viewport.minBound.y = EngineSettings::screenSize.get().y;
+        viewport.maxBound.x = EngineSettings::screenSize.get().x;
+        viewport.maxBound.y = 0;
+
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawGrid);
+        cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
+        cmdList->cmdBeginRenderPass(cmdBuffer, drawGridDTestPipelineCntxt, scissor, debugSceneDrawAdditionalProps, clearValues);
+        {
+            std::vector<std::pair<String, std::any>> pushCnsts{
+                { "gridCellSize", gridCellSize }
+                , { "gridExtendSize", gridExtendSize }
+                , { "cellMinPixelCoverage", cellMinPixelCoverage }
+                , { "thinColor", Vector4D(thinColor) }
+                , { "thickColor", Vector4D(thickColor) }
+            };
+            GraphicsPipelineState pipelineState;
+            pipelineState.pipelineQuery = backfaceFillQueryParam;
+            cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGridDTestPipelineCntxt, pipelineState);
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGridDTestPipelineCntxt, { lightCommon.get() });
+            cmdList->cmdPushConstants(cmdBuffer, drawGridDTestPipelineCntxt, pushCnsts);
+            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadRectVertexIndexBuffers().first }, { 0 });
+            cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadRectVertexIndexBuffers().second);
+
+            cmdList->cmdDrawIndexed(cmdBuffer, 0, 6);
+        }
+        cmdList->cmdEndRenderPass(cmdBuffer);
+    }
+
+
     overBlendedQuadPipelineContext.rtTextures[0] = frameResources[swapchainIdx].lightingPassRt;
     getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&overBlendedQuadPipelineContext);
     {
@@ -1836,10 +1890,9 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
         {
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, overBlendedQuadPipelineContext, { backfaceFillQueryParam });
             cmdList->cmdBindDescriptorsSets(cmdBuffer, overBlendedQuadPipelineContext, { camRTParams.get() });
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadVertexIndexBuffers().first }, { 0 });
-            cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadVertexIndexBuffers().second);
+            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
 
-            cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+            cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
         }
         cmdList->cmdEndRenderPass(cmdBuffer);
     }
@@ -2041,6 +2094,32 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                 ImGui::NextColumn();
                 ImGui::Checkbox("TBN Debug", &bDrawTbn);
 #endif
+
+                ImGui::Separator();
+                ImGui::NextColumn();
+                ImGui::Text("Show Grid");
+                ImGui::NextColumn();
+                ImGui::Checkbox("Grid", &bDrawGrid);
+
+                ImGui::NextColumn();
+                ImGui::Text("Grid Extent");
+                ImGui::NextColumn();
+                ImGui::InputFloat("Extent in cm", &gridExtendSize, 10, 100);
+
+                ImGui::NextColumn();
+                ImGui::Text("Cell Size");
+                ImGui::NextColumn();
+                ImGui::InputFloat("In cm", &gridCellSize, 5, 20);
+
+                ImGui::NextColumn();
+                ImGui::Text("Grid Color");
+                ImGui::NextColumn();
+                ImGui::ColorEdit4("Thin", reinterpret_cast<float*>(&thinColor));
+
+                ImGui::NextColumn();
+                ImGui::Text("Grid Color");
+                ImGui::NextColumn();
+                ImGui::ColorEdit4("Thick", reinterpret_cast<float*>(&thickColor));
             };
 
             ImGui::Columns(1);

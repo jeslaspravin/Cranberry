@@ -651,6 +651,9 @@
     <ClCompile Include="Core\Types\Traits\ValueTraits.h">
       <Filter>Header Files\Core\Types\Traits</Filter>
     </ClCompile>
+    <ClCompile Include="RenderInterface\Shaders\DrawGrid.cpp">
+      <Filter>Source Files\RenderInterface\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RenderInterface\GraphicsIntance.h">

@@ -302,6 +302,7 @@ public:
     FieldNodeType startNode;
 
     virtual uint32 paramStride() const = 0;
+    virtual uint32 paramNativeStride() const = 0;
     virtual void setStride(uint32 newStride) = 0;
 
 private:
@@ -464,6 +465,7 @@ struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo \
     typedef BufferType BufferDataType; \
     uint32 stride = sizeof(BufferDataType); \
     uint32 paramStride() const { return stride; } \
+    uint32 paramNativeStride() const { return sizeof(BufferDataType); } \
     void setStride(uint32 newStride) { stride = newStride; }
 
 #define END_BUFFER_DEFINITION() \
@@ -485,9 +487,9 @@ struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo \
 struct VertexType##VertexParamInfo final : public ShaderVertexParamInfo \
 { \
     typedef VertexType VertexDataType; \
-    const uint32 stride = sizeof(VertexDataType); \
     const EShaderInputFrequency::Type vertexInputFreq =  InputFrequency; \
-    uint32 paramStride() const final { return stride; } \
+    uint32 paramStride() const final { return sizeof(VertexDataType); } \
+    uint32 paramNativeStride() const final { return sizeof(VertexDataType); } \
     void setStride(uint32 newStride) final {} \
     EShaderInputFrequency::Type inputFrequency() const final { return  vertexInputFreq; }
 

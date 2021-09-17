@@ -180,7 +180,7 @@ struct FrameResource
     SharedPtr<GraphicsFence> recordingFence;
 };
 
-class ExperimentalEngine : public GameEngine, public IImGuiLayer
+class ExperimentalEngineGoochModel : public GameEngine, public IImGuiLayer
 {
     class VulkanDevice* vDevice;
     VkDevice device;
@@ -281,19 +281,19 @@ public:
     /* end overrides */
 };
 
-void ExperimentalEngine::tempTest()
+void ExperimentalEngineGoochModel::tempTest()
 {
 
 }
 
-void ExperimentalEngine::tempTestPerFrame()
+void ExperimentalEngineGoochModel::tempTestPerFrame()
 {
 
 }
 
 template <EQueueFunction QueueFunction> VulkanQueueResource<QueueFunction>* getQueue(const VulkanDevice* device);
 
-void ExperimentalEngine::createPools()
+void ExperimentalEngineGoochModel::createPools()
 {
     {
         VulkanQueueResource<EQueueFunction::Compute>* queue = getQueue<EQueueFunction::Compute>(vDevice);
@@ -385,7 +385,7 @@ void ExperimentalEngine::createPools()
     }
 }
 
-void ExperimentalEngine::destroyPools()
+void ExperimentalEngineGoochModel::destroyPools()
 {
     for (const std::pair<const EQueueFunction, QueueCommandPool>& pool : pools)
     {
@@ -395,7 +395,7 @@ void ExperimentalEngine::destroyPools()
     }
 }
 
-void ExperimentalEngine::createImages()
+void ExperimentalEngineGoochModel::createImages()
 {
     nearestFiltering = GraphicsHelper::createSampler(gEngine->getRenderManager()->getGraphicsInstance(), "NearestSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest);
@@ -412,7 +412,7 @@ void ExperimentalEngine::createImages()
     writeTexture.imageView = static_cast<VulkanImageResource*>(writeTexture.image->getTextureResource())->getImageView({});
 }
 
-void ExperimentalEngine::destroyImages()
+void ExperimentalEngineGoochModel::destroyImages()
 {
     TextureBase::destroyTexture<Texture2DRW>(writeTexture.image);
     writeTexture.image = nullptr;
@@ -420,7 +420,7 @@ void ExperimentalEngine::destroyImages()
     linearFiltering->release();
 }
 
-void ExperimentalEngine::createScene()
+void ExperimentalEngineGoochModel::createScene()
 {
     StaticMeshAsset* cube = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cube.obj"));
     StaticMeshAsset* sphere = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Sphere.obj"));
@@ -503,12 +503,12 @@ void ExperimentalEngine::createScene()
     }
 }
 
-void ExperimentalEngine::destroyScene()
+void ExperimentalEngineGoochModel::destroyScene()
 {
     sceneData.clear();
 }
 
-void ExperimentalEngine::createShaderParameters()
+void ExperimentalEngineGoochModel::createShaderParameters()
 {
     IGraphicsInstance* graphicsInstance = getRenderManager()->getGraphicsInstance();
     const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
@@ -574,7 +574,7 @@ void ExperimentalEngine::createShaderParameters()
     testComputeParams->setResourceName("TestCompute");
 }
 
-void ExperimentalEngine::setupShaderParameterParams()
+void ExperimentalEngineGoochModel::setupShaderParameterParams()
 {
     IGraphicsInstance* graphicsInstance = getRenderManager()->getGraphicsInstance();
 
@@ -663,7 +663,7 @@ void ExperimentalEngine::setupShaderParameterParams()
     testComputeParams->init();
 }
 
-void ExperimentalEngine::updateShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+void ExperimentalEngineGoochModel::updateShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
 {
     //const bool canUpdate = timeData.frameCounter % frameResources.size() == 0;
 
@@ -687,7 +687,7 @@ void ExperimentalEngine::updateShaderParameters(class IRenderCommandList* cmdLis
     }
 }
 
-void ExperimentalEngine::reupdateTextureParamsOnResize()
+void ExperimentalEngineGoochModel::reupdateTextureParamsOnResize()
 {
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
 
@@ -708,7 +708,7 @@ void ExperimentalEngine::reupdateTextureParamsOnResize()
     }
 }
 
-void ExperimentalEngine::destroyShaderParameters()
+void ExperimentalEngineGoochModel::destroyShaderParameters()
 {
     viewParameters->release();
     viewParameters.reset();
@@ -748,7 +748,7 @@ void ExperimentalEngine::destroyShaderParameters()
     testComputeParams.reset();
 }
 
-void ExperimentalEngine::resizeLightingRts(const Size2D& size)
+void ExperimentalEngineGoochModel::resizeLightingRts(const Size2D& size)
 {
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow());
@@ -762,7 +762,7 @@ void ExperimentalEngine::resizeLightingRts(const Size2D& size)
     }
 }
 
-void ExperimentalEngine::createFrameResources()
+void ExperimentalEngineGoochModel::createFrameResources()
 {
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow());
@@ -789,7 +789,7 @@ void ExperimentalEngine::createFrameResources()
     }
 }
 
-void ExperimentalEngine::destroyFrameResources()
+void ExperimentalEngineGoochModel::destroyFrameResources()
 {
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
         ->appWindowManager.getMainWindow());
@@ -807,7 +807,7 @@ void ExperimentalEngine::destroyFrameResources()
     }
 }
 
-void ExperimentalEngine::getPipelineForSubpass()
+void ExperimentalEngineGoochModel::getPipelineForSubpass()
 {
     VulkanGlobalRenderingContext* vulkanRenderingContext = static_cast<VulkanGlobalRenderingContext*>(getRenderManager()->getGlobalRenderingContext());
 
@@ -845,7 +845,7 @@ void ExperimentalEngine::getPipelineForSubpass()
     vulkanRenderingContext->preparePipelineContext(&testComputePipelineContext);
 }
 
-void ExperimentalEngine::createPipelineResources()
+void ExperimentalEngineGoochModel::createPipelineResources()
 {
     clearValues.colors.resize(drawSmPipelineContext.getFb()->textures.size(), LinearColorConst::BLACK);
 
@@ -870,7 +870,7 @@ void ExperimentalEngine::createPipelineResources()
     createShaderParameters();
 }
 
-void ExperimentalEngine::destroyPipelineResources()
+void ExperimentalEngineGoochModel::destroyPipelineResources()
 {
     ENQUEUE_COMMAND_NODEBUG(QuadVerticesRelease,LAMBDA_BODY
         (
@@ -886,7 +886,7 @@ void ExperimentalEngine::destroyPipelineResources()
     destroyShaderParameters();
 }
 
-void ExperimentalEngine::updateCameraParams()
+void ExperimentalEngineGoochModel::updateCameraParams()
 {
     ViewData viewDataTemp;
 
@@ -948,7 +948,7 @@ void ExperimentalEngine::updateCameraParams()
     lightCommon->setMatrixParam("invView", viewDataTemp.invView);
 }
 
-void ExperimentalEngine::onStartUp()
+void ExperimentalEngineGoochModel::onStartUp()
 {
     GameEngine::onStartUp();
 
@@ -972,7 +972,7 @@ void ExperimentalEngine::onStartUp()
     tempTest();
 }
 
-void ExperimentalEngine::startUpRenderInit()
+void ExperimentalEngineGoochModel::startUpRenderInit()
 {
     vDevice = VulkanGraphicsHelper::getVulkanDevice(getRenderManager()->getGraphicsInstance());
     device = VulkanGraphicsHelper::getDevice(vDevice);
@@ -987,7 +987,7 @@ void ExperimentalEngine::startUpRenderInit()
     setupShaderParameterParams();
 }
 
-void ExperimentalEngine::onQuit()
+void ExperimentalEngineGoochModel::onQuit()
 {
     ENQUEUE_COMMAND_NODEBUG(EngineQuit, { renderQuit(); }, this);
 
@@ -995,7 +995,7 @@ void ExperimentalEngine::onQuit()
     GameEngine::onQuit();
 }
 
-void ExperimentalEngine::renderQuit()
+void ExperimentalEngineGoochModel::renderQuit()
 {
     vDevice->vkDeviceWaitIdle(device);
 
@@ -1009,7 +1009,7 @@ void ExperimentalEngine::renderQuit()
     destroyPools();
 }
 
-void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
 {
     SharedPtr<GraphicsSemaphore> waitSemaphore;
     uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
@@ -1242,7 +1242,7 @@ void ExperimentalEngine::frameRender(class IRenderCommandList* cmdList, IGraphic
     cmdList->presentImage(canvases, indices, {});
 }
 
-void ExperimentalEngine::tickEngine()
+void ExperimentalEngineGoochModel::tickEngine()
 {
     GameEngine::tickEngine();
     updateCameraParams();
@@ -1284,17 +1284,17 @@ void ExperimentalEngine::tickEngine()
     tempTestPerFrame();
 }
 
-int32 ExperimentalEngine::layerDepth() const
+int32 ExperimentalEngineGoochModel::layerDepth() const
 {
     return 0;
 }
 
-int32 ExperimentalEngine::sublayerDepth() const
+int32 ExperimentalEngineGoochModel::sublayerDepth() const
 {
     return 0;
 }
 
-void ExperimentalEngine::draw(class ImGuiDrawInterface* drawInterface)
+void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
 {
     static bool bOpen = false;
     if (bOpen)
