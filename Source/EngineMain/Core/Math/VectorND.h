@@ -19,13 +19,13 @@ public:
         data.resize(0);
     }
 
-    VectorND(const CellIndex<d>& count)
+    explicit VectorND(const CellIndex<d>& count)
     {
         cellsCount = count;
         data.resize(cellsCount.size());
     }
 
-    VectorND(const VectorND<T, d>& other)
+    explicit VectorND(const VectorND<T, d>& other)
     {
         cellsCount = other.cellsCount;
         data = other.data;

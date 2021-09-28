@@ -7,9 +7,8 @@ class UniqueUtilityShader : public GraphicsShaderResource
 {
     DECLARE_GRAPHICS_RESOURCE(UniqueUtilityShader,, GraphicsShaderResource,)
 
-private:
-    UniqueUtilityShader() = default;
 protected:
+    UniqueUtilityShader() = default;
     UniqueUtilityShader(const String& name) : BaseType(name) {}
 
     virtual EVertexType::Type vertexUsed() const { return EVertexType::MaxVertexType; }

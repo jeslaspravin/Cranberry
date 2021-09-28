@@ -1457,6 +1457,12 @@ void VulkanCommandList::cmdSetLineWidth(const GraphicsResource* cmdBuffer, float
     }
 }
 
+void VulkanCommandList::cmdSetDepthBias(const GraphicsResource* cmdBuffer, float constantBias, float slopeFactor, float clampValue) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+    vDevice->vkCmdSetDepthBias(rawCmdBuffer, constantBias, clampValue, slopeFactor);
+}
+
 void VulkanCommandList::cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);

@@ -131,10 +131,16 @@ GraphicsPipelineQueryParams GraphicsPipelineBase::paramForIdx(int32 idx) const
     int32 denominator = pipelinesCount();
     int32 numerator = idx;
 
+    // Highest degree to lowest. For each degree we divide max number of elements at/below that degree 
+    // with max elements at that degree to get multiplier. The multiplier is then used to divide the 
+    // remaining total elements to find the index in current option. After that the multiplier is used to 
+    // find remaining encoded element by doing modulo
+     
     // Draw mode
     denominator /= int32(allowedDrawModes.size());
     queryParam.drawMode = allowedDrawModes[numerator / denominator];
     numerator %= denominator;
+
     // Culling mode
     denominator /= int32(supportedCullings.size());
     queryParam.cullingMode = supportedCullings[numerator / denominator];
@@ -150,14 +156,29 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     int32 polyDeg = pipelinesCount();
     int32 tempIdx = 0;
 
+    // Highest degree to lowest. For each degree we divide max number of elements at/below that degree 
+    // with max elements at that degree to get multiplier. The multiplier is then multiplied to current option's index
+    // to find value at this degree and added to final index.
+
     // Draw mode
     polyDeg /= int32(allowedDrawModes.size());
     while (tempIdx < allowedDrawModes.size() && allowedDrawModes[tempIdx] != queryParam.drawMode) ++tempIdx;
+    if (tempIdx >= allowedDrawModes.size())
+    {
+        Logger::warn("GraphicsPipeline", "%s() : Not supported draw mode %d for pipeline of shader %s"
+            , __func__, tempIdx, pipelineShader->getResourceName().getChar());
+    }
     idx += (tempIdx % allowedDrawModes.size()) * polyDeg;
+
     // Culling mode
     polyDeg /= int32(supportedCullings.size());
     tempIdx = 0;
     while (tempIdx < supportedCullings.size() && supportedCullings[tempIdx] != queryParam.cullingMode) ++tempIdx;
+    if (tempIdx >= supportedCullings.size())
+    {
+        Logger::warn("GraphicsPipeline", "%s() : Not supported culling mode %d for pipeline of shader %s"
+            , __func__, tempIdx, pipelineShader->getResourceName().getChar());
+    }
     idx += (tempIdx % supportedCullings.size()) * polyDeg;
 
     return idx;

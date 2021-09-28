@@ -7,14 +7,12 @@ namespace ERenderPassFormat
 {
     String toString(Type renderpassFormat)
     {
+#define CASE_MACRO(Format) case ERenderPassFormat::##Format: \
+    return #Format;
+
         switch (renderpassFormat)
         {
-        case ERenderPassFormat::Generic:
-            return "Generic";
-        case ERenderPassFormat::Multibuffers:
-            return "Multibuffer";
-        case ERenderPassFormat::Depth:
-            return "Depth";
+            FOR_EACH_RENDERPASS_FORMAT(CASE_MACRO)
         }
         return "";
     }

@@ -168,6 +168,30 @@ void VulkanImageResource::reinitResources()
     BaseType::reinitResources();
     VkImageUsageFlags imageUsage = defaultImageUsage;
     VkFormatFeatureFlags featuresRequired = defaultFeaturesRequired;
+    // If dimension.z is greater than 1 or layer larger than 1, it must be either cube/cube array or 3D or 2D array
+    if (dimensions.z > 1 || layerCount > 1)
+    {
+        if (BIT_SET(createFlags, VkImageCreateFlagBits::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT))
+        {
+            debugAssert(dimensions.z == 1);
+            // Then must be cube array 
+            if (layerCount > 6 && (layerCount % 6 != 0))
+            {
+                Logger::warn("VulkanImageResource", "%s() : Cube map image %s should have 6 multiple layers, current layer count %d", __func__, getResourceName().getChar(), layerCount);
+                layerCount = ((layerCount / 6) + 1) * 6;
+            }
+        }
+        else 
+        {
+            if (dimensions.z > 1)
+            {
+                type = VkImageType::VK_IMAGE_TYPE_3D;
+                viewType = VK_IMAGE_VIEW_TYPE_3D;
+            }            
+            // https://khronos.org/registry/vulkan/specs/1.2-extensions/html/chap12.html#VUID-VkImageViewCreateInfo-image-04970
+            createFlags |= (layerCount == 1) ? VkImageCreateFlagBits::VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT : 0;
+        }
+    }
 
     if (isRenderTarget)
     {
@@ -212,11 +236,6 @@ void VulkanImageResource::reinitResources()
         if(sampleCounts != EPixelSampleCount::SampleCount1)
         {
             numOfMips = 1;
-        }
-        if ((createFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) > 0 && layerCount < 6)
-        {
-            Logger::warn("VulkanImageResource", "%s() : Cube map image should have at least 6 layers, current layer count %d", __func__, layerCount);
-            layerCount = 6;
         }
 
         imageUsage |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
@@ -279,7 +298,7 @@ void VulkanImageResource::release()
     if (image)
     {
         IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
-        for (const std::pair<const ImageViewInfo, VkImageView>& imageView : createdImageViews)
+        for (const std::pair<const ImageViewTypeAndInfo, VkImageView>& imageView : createdImageViews)
         {
             VulkanGraphicsHelper::destroyImageView(graphicsInstance, imageView.second);
         }
@@ -328,7 +347,7 @@ bool VulkanImageResource::canAllocateMemory() const
     return image && requiredSize() > 0;
 }
 
-VkImageView VulkanImageResource::createImageView(const ImageViewInfo& viewInfo)
+VkImageView VulkanImageResource::createImageView(const ImageViewInfo& viewInfo, VkImageViewType imgViewType)
 {
     VkImageAspectFlags viewAspects = 0;
     if (EPixelDataFormat::isDepthFormat(dataFormat))
@@ -344,7 +363,7 @@ VkImageView VulkanImageResource::createImageView(const ImageViewInfo& viewInfo)
     IMAGE_VIEW_CREATE_INFO(imageViewCreateInfo);
     imageViewCreateInfo.image = image;
     imageViewCreateInfo.format = (VkFormat)EPixelDataFormat::getFormatInfo(dataFormat)->format;
-    imageViewCreateInfo.viewType = viewType;
+    imageViewCreateInfo.viewType = imgViewType;
     imageViewCreateInfo.subresourceRange = {
         viewAspects,
         viewInfo.viewSubresource.baseMip,
@@ -362,21 +381,41 @@ VkImageView VulkanImageResource::createImageView(const ImageViewInfo& viewInfo)
     return VulkanGraphicsHelper::createImageView(gEngine->getRenderManager()->getGraphicsInstance(), imageViewCreateInfo);
 }
 
-VkImageView VulkanImageResource::getImageView(const ImageViewInfo& viewInfo)
+VkImageView VulkanImageResource::getImageView(const ImageViewInfo& viewInfo, int32 imageViewType /*= -1*/)
 {
     if (!isValid())
     {
         return nullptr;
     }
+    VkImageViewType imgViewType = viewType;
+    // we are not validating the entire view info just view types
+    if (imageViewType > 0 && imageViewType != viewType && viewType != VK_IMAGE_VIEW_TYPE_1D)
+    {
+        // if layer count is 1 then possibilities are Any D can be same D or lower D array, Same D is already checked in outer if
+        if (layerCount == 1)
+        {
+            debugAssert(viewType != VK_IMAGE_VIEW_TYPE_2D || imageViewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY || imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+            debugAssert(viewType != VK_IMAGE_VIEW_TYPE_3D || imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+        }
+        // else cube can be cube array or 3D cannot be 2D array if levels are not 1
+        else
+        {
+            debugAssert(!(imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY && viewType == VK_IMAGE_VIEW_TYPE_3D));
+            debugAssert(viewType != VK_IMAGE_VIEW_TYPE_CUBE || imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY || imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY);
+        }
+        imgViewType = VkImageViewType(imageViewType);
+    }
+
+    const ImageViewTypeAndInfo viewTypeAndInfo{ imgViewType, viewInfo };
 
     VkImageView imageView = nullptr;
-    const auto& foundItr = createdImageViews.find(viewInfo);
+    const auto& foundItr = createdImageViews.find(viewTypeAndInfo);
     if (foundItr == createdImageViews.cend())
     {
-        imageView = createImageView(viewInfo);
+        imageView = createImageView(viewInfo, imgViewType);
         if (imageView != nullptr)
         {
-            createdImageViews[viewInfo] = imageView;
+            createdImageViews[viewTypeAndInfo] = imageView;
         }
     }
     else

@@ -77,6 +77,7 @@ public:
     void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const final;
     void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const final;
     void cmdSetLineWidth(const GraphicsResource* cmdBuffer, float lineWidth) const final;
+    void cmdSetDepthBias(const GraphicsResource* cmdBuffer, float constantBias, float slopeFactor, float clampValue) const final;
 
     void cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const final;
     void cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const final;
@@ -326,6 +327,11 @@ void RenderCommandList::cmdSetViewportAndScissor(const GraphicsResource* cmdBuff
 void RenderCommandList::cmdSetLineWidth(const GraphicsResource* cmdBuffer, float lineWidth) const
 {
     cmdList->cmdSetLineWidth(cmdBuffer, lineWidth);
+}
+
+void RenderCommandList::cmdSetDepthBias(const GraphicsResource* cmdBuffer, float constantBias, float slopeFactor, float clampValue) const
+{
+    cmdList->cmdSetDepthBias(cmdBuffer, constantBias, slopeFactor, clampValue);
 }
 
 void RenderCommandList::cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color /*= LinearColorConst::WHITE*/) const

@@ -87,6 +87,8 @@ struct ImageViewInfo
             && viewSubresource == otherViewInfo.viewSubresource;
     }
 };
+using ImageViewTypeAndInfo = std::pair<int32, ImageViewInfo>;
+
 template <>
 struct std::hash<ImageViewInfo::ImageComponentMapping>
 {
@@ -120,6 +122,16 @@ struct std::hash<ImageViewInfo>
         size_t seed = hash<bool>{}(keyval.bUseStencil);
         HashUtility::hashCombine(seed, keyval.componentMapping);
         HashUtility::hashCombine(seed, keyval.viewSubresource);
+        return seed;
+    }
+};
+
+template <>
+struct std::hash<ImageViewTypeAndInfo>
+{
+    _NODISCARD size_t operator()(const ImageViewTypeAndInfo& keyval) const noexcept {
+        size_t seed = hash<int32>{}(keyval.first);
+        HashUtility::hashCombine(seed, keyval.second);
         return seed;
     }
 };

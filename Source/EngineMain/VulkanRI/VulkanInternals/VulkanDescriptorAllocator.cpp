@@ -294,6 +294,7 @@ void VulkanDescriptorsSetAllocator::resetAllocationPool(VulkanDescriptorsSetAllo
 
 VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice* device)
     : ownerDevice(device)
+    , emptyDescriptor(nullptr)
 {
     std::array<VkDescriptorPoolSize, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1> globalDescriptorsSetPoolSizes;
     for (uint32 i = VK_DESCRIPTOR_TYPE_SAMPLER; i <= VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT; ++i)
@@ -313,6 +314,31 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice* devic
 
     fatalAssert(ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice), &globalPoolCreateInfo
         , nullptr, &globalPool.pool) == VK_SUCCESS, "Global pool creation failed");
+
+    // Empty descriptor set creation
+    {
+        DESCRIPTOR_SET_LAYOUT_CREATE_INFO(emptyLayoutCI);
+        emptyLayoutCI.pBindings = nullptr;
+        emptyLayoutCI.bindingCount = 0;
+        fatalAssert(ownerDevice->vkCreateDescriptorSetLayout(VulkanGraphicsHelper::getDevice(ownerDevice)
+            , &emptyLayoutCI, nullptr, &emptyLayout) == VK_SUCCESS, "%s() : Failed creating empty descriptors set layout", __func__);
+
+        VkDescriptorPoolSize poolSize;
+        poolSize.descriptorCount = 1;
+        poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        DESCRIPTOR_POOL_CREATE_INFO(emptyPoolCreateInfo);
+        emptyPoolCreateInfo.poolSizeCount = 1;
+        emptyPoolCreateInfo.pPoolSizes = &poolSize;
+        emptyPoolCreateInfo.maxSets = 1;
+        fatalAssert(ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice), &emptyPoolCreateInfo
+            , nullptr, &emptyPool) == VK_SUCCESS, "Empty pool creation failed");
+        DESCRIPTOR_SET_ALLOCATE_INFO(emptySetAI);
+        emptySetAI.descriptorPool = emptyPool;
+        emptySetAI.descriptorSetCount = 1;
+        emptySetAI.pSetLayouts = &emptyLayout;
+        fatalAssert(ownerDevice->vkAllocateDescriptorSets(VulkanGraphicsHelper::getDevice(ownerDevice), &emptySetAI, &emptyDescriptor)
+            == VK_SUCCESS, "%s() : Failed to allocate empty descriptors set", __func__);
+    }
 }
 
 VulkanDescriptorsSetAllocator::~VulkanDescriptorsSetAllocator()
@@ -332,10 +358,20 @@ VulkanDescriptorsSetAllocator::~VulkanDescriptorsSetAllocator()
         }
     }
     availablePools.clear();
+
+    ownerDevice->vkDestroyDescriptorPool(device, emptyPool, nullptr);
+    ownerDevice->vkDestroyDescriptorSetLayout(device, emptyLayout, nullptr);
+    emptyLayout = nullptr;
 }
 
 VkDescriptorSet VulkanDescriptorsSetAllocator::allocDescriptorsSet(const DescriptorsSetQuery& query, const VkDescriptorSetLayout& descriptorsSetLayout)
 {
+    // Empty
+    if (query.supportedTypes.empty())
+    {
+        return emptyDescriptor;
+    }
+
     std::vector<VkDescriptorSet> chooseSets;
     if (isSupportedPool(chooseSets, globalPool, query, 1))
     {
@@ -370,6 +406,11 @@ bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(std::vector<VkDescripto
     , const std::vector<VkDescriptorSetLayout>& layouts)
 {
     sets.clear();
+    if (query.supportedTypes.empty())
+    {
+        sets.insert(sets.begin(), layouts.size(), emptyDescriptor);
+        return true;
+    }
     VulkanDescriptorsSetAllocatorInfo& allocationPool = findOrCreateAllocPool(query, uint32(layouts.size()));
 
     if (!allocateSetsFromPool(sets, allocationPool, layouts))
@@ -388,6 +429,11 @@ bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(std::vector<VkDescripto
     , const VkDescriptorSetLayout& layout, const uint32& setsCount)
 {
     sets.clear();
+    if (query.supportedTypes.empty())
+    {
+        sets.insert(sets.begin(), setsCount, emptyDescriptor);
+        return true;
+    }
     {
         std::vector<VkDescriptorSet> chooseSets;
         VulkanDescriptorsSetAllocatorInfo& allocationPool = findOrCreateAllocPool(chooseSets, query, setsCount);
@@ -433,7 +479,7 @@ void VulkanDescriptorsSetAllocator::releaseDescriptorsSet(VkDescriptorSet descri
             }
         }
     }
-    else
+    else if(descriptorSet != emptyDescriptor)
     {
         globalPool.availableSets.insert(descriptorSet);
     }

@@ -16,6 +16,7 @@
 #include "VulkanInternals/VulkanFunctions.h"
 #include "VulkanInternals/Resources/VulkanSampler.h"
 #include "VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
+#include "VulkanInternals/VulkanDescriptorAllocator.h"
 #include "../Core/Platform/PlatformAssertionErrors.h"
 #include "../Core/Engine/Config/EngineGlobalConfigs.h"
 #include "../Core/Math/Math.h"
@@ -581,10 +582,10 @@ void VulkanGraphicsHelper::destroyImageView(class IGraphicsInstance* graphicsIns
 }
 
 SharedPtr<class SamplerInterface> VulkanGraphicsHelper::createSampler(class IGraphicsInstance* graphicsInstance,
-    const char* name, ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod)
+    const char* name, ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod /*= 0*/, uint8 samplerBorderColFlags /*= 0*/)
 {
     auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    VulkanSampler* sampler = new VulkanSampler(&gInstance->selectedDevice, samplerTiling, samplerFiltering, poorMipLod);
+    VulkanSampler* sampler = new VulkanSampler(&gInstance->selectedDevice, samplerTiling, samplerFiltering, poorMipLod, samplerBorderColFlags);
     sampler->setResourceName(name);
     sampler->init();
 
@@ -767,6 +768,18 @@ VkDescriptorSetLayout VulkanGraphicsHelper::createDescriptorsSetLayout(class IGr
     {
         Logger::error("VulkanGraphicsHelper", "%s : Failed creating descriptor set layout", __func__);
         layout = nullptr;
+    }
+    return layout;
+}
+
+VkDescriptorSetLayout VulkanGraphicsHelper::getEmptyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance)
+{
+    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+
+    static VkDescriptorSetLayout layout = nullptr;
+    if (!layout)
+    {
+        layout = gInstance->descriptorsSetAllocator->getEmptyLayout();
     }
     return layout;
 }

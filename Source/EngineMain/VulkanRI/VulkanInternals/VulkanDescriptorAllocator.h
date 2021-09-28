@@ -51,6 +51,10 @@ private:
     // Pool that accommodates all the descriptors type and considerable amount of set counts.
     VulkanDescriptorsSetAllocatorInfo globalPool;
 
+    VkDescriptorSetLayout emptyLayout;
+    VkDescriptorPool emptyPool;
+    VkDescriptorSet emptyDescriptor;
+
     std::map<DescriptorsSetQuery, std::vector<VulkanDescriptorsSetAllocatorInfo>, DescriptorsSetQueryLessThan> availablePools;
     std::vector<VulkanDescriptorsSetAllocatorInfo*> findInAvailablePool(const DescriptorsSetQuery& query);
 
@@ -75,6 +79,7 @@ public:
     VulkanDescriptorsSetAllocator(VulkanDevice* device);
     ~VulkanDescriptorsSetAllocator();
 
+    VkDescriptorSetLayout getEmptyLayout() const { return emptyLayout; }
     VkDescriptorSet allocDescriptorsSet(const DescriptorsSetQuery& query, const VkDescriptorSetLayout& descriptorsSetLayout);
     // Batch allocate descriptor sets from same pool or from different pool but with same layout, does not allocate from global pool(sets will be resized before allocating)
     bool allocDescriptorsSets(std::vector<VkDescriptorSet>& sets, const DescriptorsSetQuery& query, const std::vector<VkDescriptorSetLayout>& layouts);

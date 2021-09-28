@@ -46,7 +46,7 @@ public:
 
     Matrix4 inverse() const;
     float determinant() const;
-    Matrix4 transpost() const;
+    Matrix4 transpose() const;
 
     // Component wise operations
     Matrix4 operator|(const Matrix4& b) const;

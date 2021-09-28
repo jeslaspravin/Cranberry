@@ -48,8 +48,8 @@ protected:
 DEFINE_TEMPLATED_GRAPHICS_RESOURCE(SingleColorShader, <ExpandArgs(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
     , <ExpandArgs(VertexUsage, RenderpassFormat)>)
 
-template class SingleColorShader<EVertexType::Simple2, ERenderPassFormat::Multibuffers>;
-template class SingleColorShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffers>;
+template class SingleColorShader<EVertexType::Simple2, ERenderPassFormat::Multibuffer>;
+template class SingleColorShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffer>;
 
 //////////////////////////////////////////////////////////////////////////
 /// Pipeline registration
@@ -88,8 +88,8 @@ SingleColorShaderPipeline::SingleColorShaderPipeline(const ShaderResource* shade
     blendState.bBlendEnable = false;
 
     bool bHasDepth = false;
-    FramebufferFormat fbFormat(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage());
-    GlobalBuffers::getFramebuffer(fbFormat, 0);
+    FramebufferFormat fbFormat = GlobalBuffers
+        ::getFramebufferRenderpassProps(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage()).renderpassAttachmentFormat;
     attachmentBlendStates.reserve(fbFormat.attachments.size());
     for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
     {

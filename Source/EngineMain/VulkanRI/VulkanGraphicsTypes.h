@@ -18,6 +18,7 @@ class VulkanIndexBuffer;
 
 class VulkanRenderTargetResource;
 class VulkanCubeImageResource;
+class VulkanCubeRTImageResource;
 class VulkanImageResource;
 
 class VulkanShaderResource;
@@ -41,6 +42,7 @@ namespace GraphicsTypes
 
     typedef VulkanRenderTargetResource GraphicsRenderTargetResource;
     typedef VulkanCubeImageResource GraphicsCubeImageResource;
+    typedef VulkanCubeRTImageResource GraphicsCubeRTImageResource;
     typedef VulkanImageResource GraphicsImageResource;
 
     template <typename Type>

@@ -35,9 +35,27 @@ const DrawMeshShader* DrawMeshShaderObject::getShader(EVertexType::Type inputVer
         {
             if (outGraphicsPipeline)
             {
-                *outGraphicsPipeline = shaderResources[shaderResIndices[0]].second;
+                *outGraphicsPipeline = shaderResources[shaderResIndices[0]].pipeline;
             }
-            return shaderResources[shaderResIndices[0]].first;
+            return shaderResources[shaderResIndices[0]].shader;
+        }
+    }
+    return nullptr;
+}
+
+GraphicsResource* DrawMeshShaderObject::getVariantUniqueParamsLayout(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat) const
+{
+    auto shadersForFormatItr = shadersForRenderPass.find(outputBufferFormat);
+    auto shadersForVertex = shadersForVertexType.find(inputVertexType);
+    if (shadersForFormatItr != shadersForRenderPass.cend() && shadersForVertex != shadersForVertexType.cend())
+    {
+        std::vector<int32> shaderResIndices(Math::min(shadersForFormatItr->second.size(), shadersForVertex->second.size()));
+        std::vector<int32>::iterator shaderResIndicesEnd = std::set_intersection(shadersForFormatItr->second.cbegin()
+            , shadersForFormatItr->second.cend(), shadersForVertex->second.cbegin(), shadersForVertex->second.cend(), shaderResIndices.begin());
+
+        if ((shaderResIndicesEnd - shaderResIndices.begin()) > 0)
+        {
+            return shaderResources[shaderResIndices[0]].perVariantParamsLayout;
         }
     }
     return nullptr;
@@ -48,12 +66,11 @@ void DrawMeshShaderObject::addShader(const ShaderResource* shaderResource)
     const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
     FramebufferFormat usageFormats(drawMeshShader->renderpassUsage());
     ShaderResourcesConstIterator itr = std::find_if(shaderResources.cbegin(), shaderResources.cend()
-        , [drawMeshShader](const ShaderResourcePair& shaderPipelinePair) { return shaderPipelinePair.first == drawMeshShader; });
+        , [drawMeshShader](const ShaderResourceInfo& shaderPipelineInfo) { return shaderPipelineInfo.shader == drawMeshShader; });
     if (itr == shaderResources.cend())
     {
         int32 shaderResIndex = int32(shaderResources.size());
-        shaderResources.emplace_back(ShaderResourcePair(drawMeshShader, nullptr));
-
+        shaderResources.emplace_back(ShaderResourceInfo{ drawMeshShader, nullptr, nullptr });
 
         auto shadersForFormatItr = shadersForRenderPass.find(usageFormats);
         if (shadersForFormatItr == shadersForRenderPass.end())
@@ -81,19 +98,36 @@ void DrawMeshShaderObject::setPipeline(const ShaderResource* shaderResource, Gra
 {
     const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
     ShaderResourcesIterator itr = std::find_if(shaderResources.begin(), shaderResources.end()
-        , [drawMeshShader](const ShaderResourcePair& shaderPipelinePair) { return shaderPipelinePair.first == drawMeshShader; });
+        , [drawMeshShader](const ShaderResourceInfo& shaderPipelinePair) { return shaderPipelinePair.shader == drawMeshShader; });
 
     debugAssert(itr != shaderResources.end());
 
-    itr->second = graphicsPipeline;
+    itr->pipeline = graphicsPipeline;
+}
+
+void DrawMeshShaderObject::setVariantParamsLayout(const ShaderResource* shaderResource, GraphicsResource* perVariantParamsLayout)
+{
+    const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
+    ShaderResourcesIterator itr = std::find_if(shaderResources.begin(), shaderResources.end()
+        , [drawMeshShader](const ShaderResourceInfo& shaderPipelinePair) { return shaderPipelinePair.shader == drawMeshShader; });
+
+    debugAssert(itr != shaderResources.end());
+
+    itr->perVariantParamsLayout = perVariantParamsLayout;
 }
 
 DrawMeshShaderObject::~DrawMeshShaderObject()
 {
-    for (const ShaderResourcePair& shaderPipelinePair : shaderResources)
+    for (const ShaderResourceInfo& shaderPipelinePair : shaderResources)
     {
-        shaderPipelinePair.second->release();
-        delete shaderPipelinePair.second;
+        shaderPipelinePair.pipeline->release();
+        delete shaderPipelinePair.pipeline;
+
+        if(shaderPipelinePair.perVariantParamsLayout)
+        {
+            shaderPipelinePair.perVariantParamsLayout->release();
+            delete shaderPipelinePair.perVariantParamsLayout;
+        }
     }
     shaderResources.clear();
 }
@@ -105,9 +139,9 @@ const DrawMeshShaderObject::ShaderResourceList& DrawMeshShaderObject::getAllShad
 
 void DrawMeshShaderObject::preparePipelineCache(PipelineCacheBase* pipelineCache) const
 {
-    for (const std::pair<const DrawMeshShader*, GraphicsPipelineBase*>& shaderResourcePair : getAllShaders())
+    for (const ShaderResourceInfo& shaderResourcePair : getAllShaders())
     {
-        pipelineCache->addPipelineToCache(shaderResourcePair.second);
+        pipelineCache->addPipelineToCache(shaderResourcePair.pipeline);
     }
 }
 

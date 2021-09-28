@@ -21,16 +21,14 @@ protected:
     CoreGraphicsTypes::ECompareOp::Type compareOp;
     uint8 useCompareOp : 1;
 
-    uint8 transparentBorder : 1;
-    uint8 intBorder : 1;
-    uint8 whiteBorder : 1;
+    uint8 borderColorFlags : 1;
 
     String resourceName;
 
 protected:
     SamplerInterface();
 public:
-    SamplerInterface(ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod = 0);
+    SamplerInterface(ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod = 0, uint8 samplerBorderColFlags = 0);
 
     void setMipLod(const float& fineMipLod, const float& poorMipLod);
     void getMipLod(float& fineMipLod, float& poorMipLod);
@@ -42,8 +40,8 @@ public:
     void setCompareOp(bool enable, CoreGraphicsTypes::ECompareOp::Type compareOpValue);
     bool getCompareOp(CoreGraphicsTypes::ECompareOp::Type& compareOpValue);
 
-    void setBorderColor(bool transparent, bool intValue, bool useWhiteColor);
-    void getBorderColor(bool& transparent, bool& intValue, bool& useWhiteColor);
+    void setBorderColor(uint8 samplerBorderColFlags);
+    uint8 getBorderColorFlags(bool& transparent, bool& intValue, bool& useWhiteColor) { return borderColorFlags; }
 
     void setTilingMode(ESamplerTilingMode::Type u, ESamplerTilingMode::Type v, ESamplerTilingMode::Type w);
     void getTilingMode(ESamplerTilingMode::Type& u, ESamplerTilingMode::Type& v, ESamplerTilingMode::Type& w);

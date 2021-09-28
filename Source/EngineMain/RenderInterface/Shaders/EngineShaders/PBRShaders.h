@@ -2,6 +2,7 @@
 #include "../../../Core/Math/Vector4D.h"
 #include "../../../Core/Math/Vector3D.h"
 #include "../../../Core/Math/Vector2D.h"
+#include "../../../Core/Math/Matrix4.h"
 
 struct PbrSpotLight
 {
@@ -37,4 +38,23 @@ struct ColorCorrection
 {
     float exposure;
     float gamma;
+};
+
+namespace PBRShadowFlags
+{
+    enum Flags
+    {
+        DrawingBackface = 1,
+    };
+}
+
+struct ShadowData
+{
+    // World to clip
+    Matrix4 sptLitsW2C[8];
+    // Max 8 cascades
+    Matrix4 dirLitCascadesW2C[8];
+    // Far distance for each cascade
+    float cascadeFarPlane[8];
+    uint32 shadowFlags;
 };

@@ -373,7 +373,7 @@ VariableName.rasterizerDiscardEnable = VK_FALSE;                                
 VariableName.depthClampEnable = VK_FALSE;                                       \
 VariableName.lineWidth = 1.0f;                                                  \
 VariableName.depthBiasEnable = VK_FALSE;                                        \
-VariableName.depthBiasClamp = VariableName.depthBiasConstantFactor = 0
+VariableName.depthBiasClamp = VariableName.depthBiasConstantFactor = rasterizationStateCI.depthBiasSlopeFactor = 0
 #endif
 
 #ifndef PIPELINE_MULTISAMPLE_STATE_CREATE_INFO

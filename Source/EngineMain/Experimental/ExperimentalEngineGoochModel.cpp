@@ -624,7 +624,7 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams()
         = depthImageViewInfo.componentMapping.a = depthImageViewInfo.componentMapping.r = EPixelComponentMapping::R;
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffer, i);
         const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
@@ -693,7 +693,7 @@ void ExperimentalEngineGoochModel::reupdateTextureParamsOnResize()
 
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffer, i);
         const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
@@ -813,7 +813,7 @@ void ExperimentalEngineGoochModel::getPipelineForSubpass()
 
     drawSmPipelineContext.forVertexType = EVertexType::StaticMesh;
     drawSmPipelineContext.materialName = "SingleColor";
-    drawSmPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
+    drawSmPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffer;
     drawSmPipelineContext.swapchainIdx = 0;
     vulkanRenderingContext->preparePipelineContext(&drawSmPipelineContext);
 

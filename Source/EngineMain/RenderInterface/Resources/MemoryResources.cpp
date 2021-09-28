@@ -25,7 +25,7 @@ ImageResource::ImageResource(EPixelDataFormat::Type imageFormat)
 
 uint32 ImageResource::mipCountFromDim()
 {
-    return (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y))));
+    return (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y, dimensions.z))));
 }
 
 void ImageResource::setLayerCount(uint32 count)

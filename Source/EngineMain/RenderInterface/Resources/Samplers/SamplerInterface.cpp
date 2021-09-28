@@ -12,13 +12,11 @@ SamplerInterface::SamplerInterface()
     , mipLodRange(0,0)
     , compareOp(CoreGraphicsTypes::ECompareOp::Greater)
     , useCompareOp(0)
-    , transparentBorder(0)
-    , intBorder(0)
-    , whiteBorder(0)
+    , borderColorFlags(0)
 {}
 
 SamplerInterface::SamplerInterface(ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering,
-    float poorMipLod /*= 0*/)
+    float poorMipLod /*= 0*/, uint8 samplerBorderColFlags /*= 0*/)
     : BaseType()
     , filtering(samplerFiltering)
     , mipFiltering(samplerFiltering)
@@ -26,9 +24,7 @@ SamplerInterface::SamplerInterface(ESamplerTilingMode::Type samplerTiling, ESamp
     , mipLodRange(0, poorMipLod)
     , compareOp(CoreGraphicsTypes::ECompareOp::Greater)
     , useCompareOp(0)
-    , transparentBorder(0)
-    , intBorder(0)
-    , whiteBorder(0)
+    , borderColorFlags(samplerBorderColFlags)
 {
     std::stringstream nameStream("Sampler_");
     nameStream << ESamplerFiltering::getFilterInfo(samplerFiltering)->filterName.getChar() << "_";
@@ -75,18 +71,9 @@ bool SamplerInterface::getCompareOp(CoreGraphicsTypes::ECompareOp::Type& compare
     return useCompareOp;
 }
 
-void SamplerInterface::setBorderColor(bool transparent, bool intValue, bool useWhiteColor)
+void SamplerInterface::setBorderColor(uint8 samplerBorderColFlags)
 {
-    transparentBorder = transparent ? 1 : 0;
-    intBorder = intValue ? 1 : 0;
-    whiteBorder = useWhiteColor ? 1 : 0;
-}
-
-void SamplerInterface::getBorderColor(bool& transparent, bool& intValue, bool& useWhiteColor)
-{
-    transparent = transparentBorder;
-    intValue = intBorder;
-    useWhiteColor = whiteBorder;
+    borderColorFlags = samplerBorderColFlags;
 }
 
 void SamplerInterface::setTilingMode(ESamplerTilingMode::Type u, ESamplerTilingMode::Type v, ESamplerTilingMode::Type w)

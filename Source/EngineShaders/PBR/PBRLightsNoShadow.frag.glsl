@@ -44,7 +44,7 @@ struct DirectionalLight
 
 layout(set = 2, binding = 0) uniform ArrayOfLight 
 {
-    uint count;// 0-2 bits Spotlight, 3-5 bits Point light, 6th bit directional light
+    uint count;// 0-3 bits Spotlight, 4-7 bits Point light, 8-11 bits directional light cascade count
 
     SpotLight spotLits[8];
     PointLight ptLits[8];
@@ -72,7 +72,7 @@ vec3 prefilteredReflection(vec3 reflectDir, float roughness)
 
 #define SPOT_COUNT (lightArray.count & 0x0000000F)
 #define POINT_COUNT ((lightArray.count & 0x000000F0) >> 4)
-#define DIRECTIONAL ((lightArray.count & 0x00000100) > 0)
+#define DIRECTIONAL ((lightArray.count & 0x00000F00) > 0)
 
 // Lo(p,o)= (C * ambient * ao) + integrate over sphere(kd * (lambert diffuse / pi)+ ((NDF * BRDF * N-Mask) / (4 * (o | n) * (i | n))) * Li(p,i) * (n | i)
 void mainFS()
@@ -92,7 +92,8 @@ void mainFS()
     vec4 finalColor = texture(ssColor, inTextureCoord);
     vec4 prevResolveColor = finalColor;
     // Spot light
-    for(int i = 0; i < SPOT_COUNT; ++i)
+    uint lightCount = SPOT_COUNT;
+    for(int i = 0; i < lightCount; ++i)
     {
         const vec3 pt2LightDir = normalize(lightArray.spotLits[i].sptPos_radius.xyz - worldPos);
         const float nDotL = max(dot(worldNormal, pt2LightDir), 0.0);
@@ -124,7 +125,8 @@ void mainFS()
     }
 
     // Point light
-    for(int i = 0; i < POINT_COUNT; ++i)
+    lightCount = POINT_COUNT;
+    for(int i = 0; i < lightCount; ++i)
     {
         float attn = falloff(length(lightArray.ptLits[i].ptPos_radius.xyz - worldPos), lightArray.ptLits[i].ptPos_radius.w);
 

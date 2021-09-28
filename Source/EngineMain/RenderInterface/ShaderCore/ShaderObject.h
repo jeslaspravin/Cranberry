@@ -17,6 +17,7 @@ struct FramebufferFormat;
 class GraphicsPipelineBase;
 class ComputePipelineBase;
 class PipelineCacheBase;
+class GraphicsResource;
 
 class ShaderObjectBase
 {
@@ -44,9 +45,16 @@ public:
 */
 class DrawMeshShaderObject final : public ShaderObjectBase
 {
+public:
+    struct ShaderResourceInfo
+    {
+        const DrawMeshShader* shader;
+        GraphicsPipelineBase* pipeline;
+        // In set 3
+        GraphicsResource* perVariantParamsLayout;
+    };
+    using ShaderResourceList = std::vector<ShaderResourceInfo>;
 private:
-    using ShaderResourcePair = std::pair<const DrawMeshShader*, GraphicsPipelineBase*>;
-    using ShaderResourceList = std::vector<ShaderResourcePair>;
     using ShaderResourcesIterator = ShaderResourceList::iterator;
     using ShaderResourcesConstIterator = ShaderResourceList::const_iterator;
 
@@ -61,12 +69,14 @@ public:
     ~DrawMeshShaderObject();
 
     const DrawMeshShader* getShader(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat
-        ,  GraphicsPipelineBase** outGraphicsPipeline = nullptr) const;
+        , GraphicsPipelineBase** outGraphicsPipeline = nullptr) const;
+    GraphicsResource* getVariantUniqueParamsLayout(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat) const;
     const ShaderResourceList& getAllShaders() const;
 
     // Internal use functions
     void addShader(const ShaderResource* shaderResource);
     void setPipeline(const ShaderResource* shaderResource, GraphicsPipelineBase* graphicsPipeline);
+    void setVariantParamsLayout(const ShaderResource* shaderResource, GraphicsResource* perVariantParamsLayout);
 
     /* ShaderObjectBase overrides */
     const GraphicsResourceType* baseShaderType() const final;

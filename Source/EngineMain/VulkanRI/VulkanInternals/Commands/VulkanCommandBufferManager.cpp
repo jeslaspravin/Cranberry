@@ -224,7 +224,7 @@ VulkanCmdBufferManager::~VulkanCmdBufferManager()
     {
         if (cmdBuffer.second.cmdSyncInfoIdx != -1)
         {
-            Logger::error("VulkanCmdBufferManager", "%s: Command buffer %s is not finished, trying to finish it"
+            Logger::warn("VulkanCmdBufferManager", "%s: Command buffer %s is not finished, trying to finish it"
                 , __func__, cmdBuffer.second.cmdBuffer->getResourceName().getChar());
             cmdFinished(cmdBuffer.second.cmdBuffer->getResourceName(), nullptr);
         }

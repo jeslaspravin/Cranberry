@@ -2,6 +2,7 @@
 #include "../../Math/Math.h"
 #include "../../../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../../../RenderInterface/PlatformIndependentHeaders.h"
+#include "../../../RenderApi/GBuffersAndTextures.h"
 
 uint32 CubeTexture::getMipCount() const
 {
@@ -36,6 +37,9 @@ EPixelDataFormat::Type CubeTexture::determineDataFormat(ECubeTextureFormat dataF
     case ECubeTextureFormat::CT_F16:
         return EPixelDataFormat::RGBA_SF16;
 		break;
+    case ECubeTextureFormat::CT_NormalizedUI8:
+        return EPixelDataFormat::RGBA_U8_Norm;
+        break;
 	default:
 		break;
     }
@@ -171,4 +175,23 @@ CubeTextureRW* CubeTextureRW::createTexture(const CubeTextureRWCreateParams& cre
 void CubeTextureRW::destroyTexture(CubeTextureRW* cubeTexture)
 {
     CubeTexture::destroyTexture(cubeTexture);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Global buffers
+//////////////////////////////////////////////////////////////////////////
+
+void GlobalBuffers::createTextureCubes()
+{
+    CubeTextureCreateParams createParams;
+    createParams.dataFormat = ECubeTextureFormat::CT_NormalizedUI8;
+    createParams.mipCount = 1;
+    createParams.textureSize = Size2D(1);
+    createParams.textureName = "DummyCubeMap";
+    dummyCubeTexture = TextureBase::createTexture<CubeTexture>(createParams);
+}
+
+void GlobalBuffers::destroyTextureCubes()
+{
+    TextureBase::destroyTexture<CubeTexture>(dummyCubeTexture);
 }

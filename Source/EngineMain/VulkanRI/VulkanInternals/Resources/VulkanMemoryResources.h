@@ -57,7 +57,7 @@ protected:
     VkImageTiling tiling;
     VkImageType type;
 
-    std::unordered_map<ImageViewInfo, VkImageView> createdImageViews;
+    std::unordered_map<ImageViewTypeAndInfo, VkImageView> createdImageViews;
     VkImageViewType viewType;
 
     VulkanImageResource();
@@ -65,7 +65,7 @@ public:
     VkImage image;
 
 protected:
-    VkImageView createImageView(const ImageViewInfo& viewInfo);
+    VkImageView createImageView(const ImageViewInfo& viewInfo, VkImageViewType imgViewType);
 public:
     VulkanImageResource(EPixelDataFormat::Type imageFormat,bool cpuAccessible = false);
 
@@ -87,5 +87,6 @@ public:
     bool canAllocateMemory() const override;
     /* End - IVulkanResources implementations */
 
-    VkImageView getImageView(const ImageViewInfo& viewInfo);
+    // View type will be from reflection most often
+    VkImageView getImageView(const ImageViewInfo& viewInfo, int32 imageViewType = -1);
 };

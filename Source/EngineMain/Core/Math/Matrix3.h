@@ -34,7 +34,7 @@ public:
 
     Matrix3 inverse() const;
     float determinant() const;
-    Matrix3 transpost() const;
+    Matrix3 transpose() const;
 
     // Component wise operations
     Matrix3 operator|(const Matrix3& b) const;

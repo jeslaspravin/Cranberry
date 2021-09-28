@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../Math/Math.h"
+#include "../../Platform/PlatformAssertionErrors.h"
 
 #include <vector>
 
@@ -54,5 +55,17 @@ public:
     const ElementType* data() const
     {
         return dataPtr + offset;
+    }
+
+    ElementType& operator[](uint32 idx)
+    {
+        fatalAssert(idx < length, "Invalid index %d", idx);
+        return dataPtr[offset + idx];
+    }
+
+    const ElementType& operator[](uint32 idx) const
+    {
+        fatalAssert(idx < length, "Invalid index %d", idx);
+        return dataPtr[offset + idx];
     }
 };

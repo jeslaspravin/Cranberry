@@ -5,6 +5,7 @@
 struct WindowsAppInstance : public GenericAppInstance {
     HINSTANCE windowsInstance;
     
+    WindowsAppInstance();
 };
 
 

@@ -5,6 +5,7 @@
 
 enum class ECubeTextureFormat
 {
+    CT_NormalizedUI8,
     CT_F32,
     CT_F16
 };

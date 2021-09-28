@@ -16,6 +16,7 @@ private:
 
     std::list<StorageType> allObjects;
 
+    bool isWithinBounds(const CellIndex<3>& minBoundIdx, const CellIndex<3>& maxBoundIdx, const AABB& box) const;
 public:
 
     BoundingVolume() = default;
@@ -29,20 +30,18 @@ public:
     void addedNewObject(const StorageType& object);
     void removeAnObject(const StorageType& object);
 
-    template<typename PRIMITIVE>
-    std::vector<StorageType> findIntersection(const PRIMITIVE& primitive)
+    template<typename IntersectionSet = std::set<StorageType>>
+    IntersectionSet findIntersection(const AABB& box, bool bSkipObjChecks)
     {
-        fatalAssert(false, "%s() : invalid typee to check intersection against", __func__);
-        return {};
-    }
-
-    template<>
-    std::vector<StorageType> findIntersection(const AABB& box)
-    {
-        std::vector<StorageType> intersection;
+        IntersectionSet intersection;
 
         CellIndex<3> minBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(box.minBound));
         CellIndex<3> maxBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(box.maxBound));
+
+        if (!isWithinBounds(minBoundIdx, maxBoundIdx, box))
+        {
+            return intersection;
+        }
 
         CellIndex<3> currentIdx;
         for (uint32 x = minBoundIdx.idx[0]; x <= maxBoundIdx[0]; x++)
@@ -52,13 +51,20 @@ public:
                 for (uint32 z = minBoundIdx.idx[2]; z <= maxBoundIdx[2]; z++)
                 {
                     vectorToCellIdx(Size3D(x, y, z), currentIdx);
-                    std::list<StorageType>& objs = grid[currentIdx];
-                    for (const StorageType& obj : objs)
+                    const std::list<StorageType>& objs = grid[currentIdx];
+                    if (bSkipObjChecks)
                     {
-                        const AABB& bound = obj.getBounds();
-                        if (box.intersect(bound))
+                        intersection.insert(objs.cbegin(), objs.cend());
+                    }
+                    else
+                    {
+                        for (const StorageType& obj : objs)
                         {
-                            intersection.emplace_back(obj);
+                            const AABB& bound = obj.getBounds();
+                            if (box.intersect(bound))
+                            {
+                                intersection.insert(obj);
+                            }
                         }
                     }
                 }
@@ -72,7 +78,33 @@ public:
     bool updateBoundsChecked(const StorageType& object, const AABB& oldBox, const AABB& newBox);
     void updateBounds(const StorageType& object, const AABB& oldBox, const AABB& newBox);
     bool isSameBounds(const AABB& boxOne, const AABB& boxTwo);
+    AABB getBounds() const;
 };
+
+template <typename StorageType>
+bool BoundingVolume<StorageType>::isWithinBounds(const CellIndex<3>& minBoundIdx, const CellIndex<3>& maxBoundIdx, const AABB& box) const
+{
+    // if any dimension is clamped because of being outside the volume bound
+    //bool bIsAnyDimensionClamped = false;
+    //Vector3D boxExtend = box.size();
+    //for (int32 i = 0; i < 3; ++i)
+    //{
+    //    uint32 cellExtend = maxBoundIdx[i] - minBoundIdx[i];
+    //    // Invalid cell extend in volume bound while box is not thin plane
+    //    bIsAnyDimensionClamped = bIsAnyDimensionClamped || (cellExtend == 0 && !Math::isEqual(boxExtend[i], 0.0f));
+    //}
+    //return !bIsAnyDimensionClamped;
+
+    return getBounds().intersect(box);
+}
+
+template <typename StorageType>
+AABB BoundingVolume<StorageType>::getBounds() const
+{
+    AABB retVal;
+    volumeGrid.getBound(retVal.minBound, retVal.maxBound);
+    return retVal;
+}
 
 template <typename StorageType>
 BoundingVolume<StorageType>::BoundingVolume(std::list<StorageType>&& objectList, const Vector3D& cellSize)
@@ -189,7 +221,7 @@ void BoundingVolume<StorageType>::addedNewObject(const StorageType& object)
             for (uint32 i = 0; i < volumeGrid.cellCount().size(); ++i)
             {
                 CellIndex<3> gridIndex = newGrid.cell(volumeGrid.center(i));
-                newElements[gridIndex] = grid[i];
+                newElements[gridIndex] = grid[volumeGrid.getNdIndex(i)];
             }
             volumeGrid.InitWithCount(newMinCorner, newMaxCorner, newCellCount);
             grid = std::move(newElements);
@@ -369,15 +401,18 @@ void BoundingVolume<StorageType>::updateBounds(const StorageType& object, const 
     minBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(newBox.minBound));
     maxBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(newBox.maxBound));
 
-    for (uint32 x = minBoundIdx.idx[0]; x <= maxBoundIdx[0]; x++)
+    if (isWithinBounds(minBoundIdx, maxBoundIdx, newBox))
     {
-        for (uint32 y = minBoundIdx.idx[1]; y <= maxBoundIdx[1]; y++)
+        for (uint32 x = minBoundIdx.idx[0]; x <= maxBoundIdx[0]; x++)
         {
-            for (uint32 z = minBoundIdx.idx[2]; z <= maxBoundIdx[2]; z++)
+            for (uint32 y = minBoundIdx.idx[1]; y <= maxBoundIdx[1]; y++)
             {
-                vectorToCellIdx(Size3D(x, y, z), currentIdx);
-                std::list<StorageType>& objectIndices = grid[currentIdx];
-                objectIndices.push_back(object);
+                for (uint32 z = minBoundIdx.idx[2]; z <= maxBoundIdx[2]; z++)
+                {
+                    vectorToCellIdx(Size3D(x, y, z), currentIdx);
+                    std::list<StorageType>& objectIndices = grid[currentIdx];
+                    objectIndices.push_back(object);
+                }
             }
         }
     }

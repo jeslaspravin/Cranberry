@@ -32,7 +32,7 @@ public:
 
     Matrix2 inverse() const;
     float determinant() const;
-    Matrix2 transpost() const;
+    Matrix2 transpose() const;
 
     // Component wise operations
     Matrix2 operator|(const Matrix2& b) const;

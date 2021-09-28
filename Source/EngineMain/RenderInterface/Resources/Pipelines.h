@@ -128,7 +128,8 @@ protected:
     // Tessellation control points per patch, If zero ignored
     uint32 cntrlPts = 0;
 
-    //bool bEnableDepthBias = false;
+    bool bEnableDepthBias = false;
+    bool bEnableDepthClamp = false;
 
     DepthState depthState;
     StencilState stencilStateFront;

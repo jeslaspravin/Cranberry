@@ -40,3 +40,17 @@ VulkanCubeImageResource::VulkanCubeImageResource(EPixelDataFormat::Type imageFor
     layerCount = 6;
     viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_CUBE;
 }
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanCubeRTImageResource, VK_OBJECT_TYPE_IMAGE)
+
+VulkanCubeRTImageResource::VulkanCubeRTImageResource()
+    : BaseType()
+{
+    isRenderTarget = true;
+}
+
+VulkanCubeRTImageResource::VulkanCubeRTImageResource(EPixelDataFormat::Type imageFormat)
+    : BaseType(imageFormat)
+{
+    isRenderTarget = true;
+}

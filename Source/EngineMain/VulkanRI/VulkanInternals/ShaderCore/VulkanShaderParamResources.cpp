@@ -290,11 +290,18 @@ void VulkanShaderSetParamsLayout::init()
     //reinitResources();
     IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
 
-    DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
-    descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
-    descLayoutCreateInfo.pBindings = layoutBindings.data();
-    descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
-    VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(this);
+    if (layoutBindings.empty())
+    {
+        descriptorLayout = nullptr;
+    }
+    else
+    {
+        DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
+        descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
+        descLayoutCreateInfo.pBindings = layoutBindings.data();
+        descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
+        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(this);
+    }
 }
 
 void VulkanShaderSetParamsLayout::release()
@@ -324,8 +331,8 @@ const std::vector<VkDescriptorPoolSize>& VulkanShaderSetParamsLayout::getDescPoo
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderUniqDescLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT)
 
-VulkanShaderUniqDescLayout::VulkanShaderUniqDescLayout(const ShaderResource* shaderResource)
-    : BaseType(shaderResource, DESC_SET_ID)
+VulkanShaderUniqDescLayout::VulkanShaderUniqDescLayout(const ShaderResource* shaderResource, uint32 descSetIdx)
+    : BaseType(shaderResource, descSetIdx)
 {}
 
 void VulkanShaderUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const
@@ -635,7 +642,8 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList* cmdList, IGraph
             ? static_cast<VulkanSampler*>(texWriteData.ParamData.texture->textures[textureUpdate.second].sampler.get())->sampler : nullptr;
 
         imageInfo.imageView = static_cast<VulkanImageResource*>(texWriteData.ParamData.texture->textures[textureUpdate.second].texture)
-            ->getImageView(texWriteData.ParamData.texture->textures[textureUpdate.second].viewInfo);
+            ->getImageView(texWriteData.ParamData.texture->textures[textureUpdate.second].viewInfo
+                , texWriteData.ParamData.texture->descriptorInfo->textureEntryPtr->data.data.imageViewType);
     }
     for (const std::pair<String, uint32>& samplerUpdate : samplerUpdates)
     {
@@ -883,7 +891,8 @@ void VulkanShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphics
             ? static_cast<VulkanSampler*>(texWriteData.ParamData.texture->textures[textureUpdate.second].sampler.get())->sampler : nullptr;
 
         imageInfo.imageView = static_cast<VulkanImageResource*>(texWriteData.ParamData.texture->textures[textureUpdate.second].texture)
-            ->getImageView(texWriteData.ParamData.texture->textures[textureUpdate.second].viewInfo);
+            ->getImageView(texWriteData.ParamData.texture->textures[textureUpdate.second].viewInfo
+                , texWriteData.ParamData.texture->descriptorInfo->textureEntryPtr->data.data.imageViewType);
     }
     for (const std::pair<String, uint32>& samplerUpdate : samplerUpdates)
     {

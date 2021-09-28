@@ -27,6 +27,7 @@ private:
 
     static TextureBase* dummyBlackTexture;
     static TextureBase* dummyWhiteTexture;
+    static TextureBase* dummyCubeTexture;
     static TextureBase* dummyNormalTexture;
 
     static TextureBase* integratedBRDF;
@@ -37,6 +38,9 @@ private:
 
     static void initializeSwapchainFb(Framebuffer* fb, const class GenericWindowCanvas* canvas, const Size2D& frameSize, uint32 swapchainIdx);
     static void onSampleCountChanged(uint32 oldValue, uint32 newValue);
+
+    static void createTextureCubes();
+    static void destroyTextureCubes();
 
     static void createTexture2Ds();
     // Generates using shaders or some other pipeline based technics
@@ -67,6 +71,7 @@ public:
 
     static TextureBase* dummyWhite2D() { return dummyWhiteTexture; }
     static TextureBase* dummyBlack2D() { return dummyBlackTexture; }
+    static TextureBase* dummyCube() { return dummyCubeTexture; }
     static TextureBase* dummyNormal() { return dummyNormalTexture; }
     static TextureBase* integratedBrdfLUT() { return integratedBRDF; }
 

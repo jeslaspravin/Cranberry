@@ -31,10 +31,10 @@ struct RenderTextureCreateParams : public TextureBaseCreateParams
 
 class RenderTargetTexture : public TextureBase
 {
-private:
+protected:
+    uint32 layerCount = 1;
     ERenderTargetFormat::Type rtFormat;
     ImageResource* rtResource = nullptr;
-protected:
     bool bIsSrgb;
     // If using same texture for both reading from shader and writing to shader
     bool bSameReadWriteTexture;
@@ -56,4 +56,36 @@ public:
 
     static RenderTargetTexture* createTexture(const RenderTextureCreateParams& createParams);
     static void destroyTexture(RenderTargetTexture* texture);
+};
+
+class RenderTargetTextureCube : public RenderTargetTexture
+{
+private:
+protected:
+    RenderTargetTextureCube() = default;
+    ~RenderTargetTextureCube() = default;
+
+    void reinitResources() override;
+    static void init(RenderTargetTextureCube* texture);
+public:
+    static RenderTargetTextureCube* createTexture(const RenderTextureCreateParams& createParams);
+    static void destroyTexture(RenderTargetTextureCube* texture);
+};
+
+struct RenderTextureArrayCreateParams : public RenderTextureCreateParams
+{
+    uint32 layerCount = 1;
+};
+
+class RenderTargetTextureArray : public RenderTargetTexture
+{
+private:
+protected:
+    RenderTargetTextureArray() = default;
+    ~RenderTargetTextureArray() = default;
+public:
+    void setLayerCount(uint32 count);
+
+    static RenderTargetTextureArray* createTexture(const RenderTextureArrayCreateParams& createParams);
+    static void destroyTexture(RenderTargetTextureArray* texture);
 };

@@ -340,7 +340,8 @@
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\EnvMapToIrradiance.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\HDRIToCube.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\IBL\IntegrateBRDF.cpp" />
-    <ClCompile Include="RenderInterface\Shaders\EngineShaders\PBRShader.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\PBRShaders.cpp" />
+    <ClCompile Include="RenderInterface\Shaders\EngineShaders\ShadowDepthDraw.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.cpp" />
     <ClCompile Include="RenderInterface\Shaders\EngineShaders\TexturedShader.cpp" />
     <ClCompile Include="StartMain.cpp" />
@@ -507,7 +508,8 @@
     <ClInclude Include="RenderInterface\Shaders\Base\ScreenspaceQuadGraphicsPipeline.h" />
     <ClInclude Include="RenderInterface\Shaders\Base\UtilityShaders.h" />
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\GoochModelShader.h" />
-    <ClInclude Include="RenderInterface\Shaders\EngineShaders\PBRShader.h" />
+    <ClInclude Include="RenderInterface\Shaders\EngineShaders\PBRShaders.h" />
+    <ClInclude Include="RenderInterface\Shaders\EngineShaders\ShadowDepthDraw.h" />
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\SingleColorShader.h" />
     <ClInclude Include="RenderInterface\Shaders\EngineShaders\TexturedShader.h" />
     <ClInclude Include="VulkanRI\Resources\IVulkanResources.h" />

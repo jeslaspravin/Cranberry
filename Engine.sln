@@ -28,8 +28,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Default", "Default", "{F568
 		Source\EngineShaders\Default\DefaultSimple2dMultibuffer.frag.glsl = Source\EngineShaders\Default\DefaultSimple2dMultibuffer.frag.glsl
 		Source\EngineShaders\Default\DefaultSimple2dMultibuffer.vert.glsl = Source\EngineShaders\Default\DefaultSimple2dMultibuffer.vert.glsl
 		Source\EngineShaders\Default\DefaultStageIO.inl.glsl = Source\EngineShaders\Default\DefaultStageIO.inl.glsl
+		Source\EngineShaders\Default\DefaultStaticMeshDepth.vert.glsl = Source\EngineShaders\Default\DefaultStaticMeshDepth.vert.glsl
+		Source\EngineShaders\Default\DefaultStaticMeshDirectionalLightDepth.geom.glsl = Source\EngineShaders\Default\DefaultStaticMeshDirectionalLightDepth.geom.glsl
+		Source\EngineShaders\Default\DefaultStaticMeshDirectionalLightDepth.vert.glsl = Source\EngineShaders\Default\DefaultStaticMeshDirectionalLightDepth.vert.glsl
 		Source\EngineShaders\Default\DefaultStaticMeshMultibuffer.frag.glsl = Source\EngineShaders\Default\DefaultStaticMeshMultibuffer.frag.glsl
 		Source\EngineShaders\Default\DefaultStaticMeshMultibuffer.vert.glsl = Source\EngineShaders\Default\DefaultStaticMeshMultibuffer.vert.glsl
+		Source\EngineShaders\Default\DefaultStaticMeshPointLightDepth.frag.glsl = Source\EngineShaders\Default\DefaultStaticMeshPointLightDepth.frag.glsl
+		Source\EngineShaders\Default\DefaultStaticMeshPointLightDepth.geom.glsl = Source\EngineShaders\Default\DefaultStaticMeshPointLightDepth.geom.glsl
+		Source\EngineShaders\Default\DefaultStaticMeshPointLightDepth.vert.glsl = Source\EngineShaders\Default\DefaultStaticMeshPointLightDepth.vert.glsl
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{160411F8-2D91-49C9-AF1D-80E9E33AC675}"
@@ -69,9 +75,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{62B768BF-FF87-
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PBR", "PBR", "{A47C9719-D2A9-4830-8907-41FC9EFD2BA9}"
 	ProjectSection(SolutionItems) = preProject
-		Source\EngineShaders\PBR\PBR.frag.glsl = Source\EngineShaders\PBR\PBR.frag.glsl
-		Source\EngineShaders\PBR\PBR.vert.glsl = Source\EngineShaders\PBR\PBR.vert.glsl
 		Source\EngineShaders\PBR\PBRCommon.inl.glsl = Source\EngineShaders\PBR\PBRCommon.inl.glsl
+		Source\EngineShaders\PBR\PBRLightsNoShadow.frag.glsl = Source\EngineShaders\PBR\PBRLightsNoShadow.frag.glsl
+		Source\EngineShaders\PBR\PBRLightsNoShadow.vert.glsl = Source\EngineShaders\PBR\PBRLightsNoShadow.vert.glsl
+		Source\EngineShaders\PBR\PBRLightsWithShadow.frag.glsl = Source\EngineShaders\PBR\PBRLightsWithShadow.frag.glsl
+		Source\EngineShaders\PBR\PBRLightsWithShadow.vert.glsl = Source\EngineShaders\PBR\PBRLightsWithShadow.vert.glsl
 		Source\EngineShaders\PBR\PBRStageIO.inl.glsl = Source\EngineShaders\PBR\PBRStageIO.inl.glsl
 	EndProjectSection
 EndProject

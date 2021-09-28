@@ -8,6 +8,7 @@
 #include "../RenderInterface/ShaderCore/ShaderParameters.h"
 #include "../Core/Platform/LFS/PlatformLFS.h"
 #include "../Core/Types/Transform3D.h"
+#include "../Core/Math/CoreMathTypes.h"
 #include "../Core/Types/Camera/Camera.h"
 #include "../Core/Types/Colors.h"
 #include "../RenderInterface/Rendering/RenderingContexts.h"
@@ -21,7 +22,6 @@
 #include "../Core/Platform/PlatformAssertionErrors.h"
 #include "../VulkanRI/VulkanInternals/VulkanDescriptorAllocator.h"
 #include "../VulkanRI/VulkanInternals/Resources/VulkanSampler.h"
-#include "../Core/Math/Vector3D.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../Assets/Asset/TextureAsset.h"
 #include "../Core/Types/Textures/Texture2D.h"
@@ -51,13 +51,15 @@
 #include "../Core/Engine/WindowManager.h"
 #include "../Core/Platform/GenericAppWindow.h"
 #include "../RenderInterface/Shaders/Base/UtilityShaders.h"
-#include "../RenderInterface/Shaders/EngineShaders/PBRShader.h"
+#include "../RenderInterface/Shaders/EngineShaders/PBRShaders.h"
+#include "../RenderInterface/Shaders/EngineShaders/ShadowDepthDraw.h"
 #include "../Core/Types/Textures/ImageUtils.h"
 #include "../Assets/Asset/EnvironmentMapAsset.h"
 
 #include <array>
 #include <random>
 #include <map>
+#include <unordered_set>
 
 #include <vulkan_core.h>
 
@@ -105,8 +107,11 @@ struct PointLight
     float radius;
     float lumen;
     String name;
+    std::array<Camera, 6> views;
 
     SharedPtr<ShaderParameters> paramCollection;
+    SharedPtr<ShaderParameters> shadowViewParams;
+    RenderTargetTexture* shadowMap;
     uint32 index;
 
     void update() const;
@@ -121,11 +126,21 @@ struct SpotLight
     float innerCone;
     float outerCone;
     String name;
+    Camera view;
 
     SharedPtr<ShaderParameters> paramCollection;
+    SharedPtr<ShaderParameters> shadowViewParams;
+    RenderTargetTexture* shadowMap;
     uint32 index;
 
     void update() const;
+};
+
+struct CascadeData
+{
+    Camera cascadeView;
+    float frustumFarDistance;
+    float frustumFract = 1.f;
 };
 
 struct DirectionalLight
@@ -134,9 +149,15 @@ struct DirectionalLight
     LinearColor lightcolor;
     float lumen;
 
+    uint32 cascadeCount = 4;
+    std::vector<CascadeData> cascades;
+
     SharedPtr<ShaderParameters> paramCollection;
+    SharedPtr<ShaderParameters> shadowViewParams;
+    RenderTargetTexture* cascadeShadowMaps;
 
     void update() const;
+    void normalizeCascadeCoverage();
 };
 
 struct GridEntity
@@ -158,6 +179,21 @@ struct GridEntity
     {
         return type == other.type && idx == other.idx;
     }
+
+    bool operator<(const GridEntity& other) const
+    {
+        return type < other.type || (type == other.type && idx < other.idx);
+    }
+};
+template <>
+struct std::hash<GridEntity> 
+{
+    _NODISCARD size_t operator()(const GridEntity& keyval) const noexcept 
+    {
+        size_t outHash = HashUtility::hash(keyval.type);
+        HashUtility::hashCombine<decltype(keyval.idx)>(outHash, keyval.idx);
+        return outHash;
+    }
 };
 
 class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
@@ -172,6 +208,7 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
 
     SharedPtr<class SamplerInterface> nearestFiltering = nullptr;
     SharedPtr<class SamplerInterface> linearFiltering = nullptr;
+    SharedPtr<class SamplerInterface> depthFiltering = nullptr;
     // TODO(Jeslas) : Cubic filtering not working check new drivers or log bug in nvidia
     // SharedPtr<class SamplerInterface> cubicFiltering = nullptr;
     void createImages();
@@ -183,11 +220,27 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     std::vector<SpotLight> sceneSpotLights;
     std::vector<PointLight> scenePointLights;
     DirectionalLight dirLight;
+    void sortSpotFromView(std::vector<uint32>& indices);
+    void sortPointsFromView(std::vector<uint32>& indices);
 
     BoundingVolume<GridEntity> sceneVolume;
     GridEntity selection;
 
+    // Now we support only 8 shadowed lights per type
+    // Drawing light view
+    std::array<SharedPtr<ShaderParameters>, 8> spotViewParams;
+    std::array<SharedPtr<ShaderParameters>, 8> pointViewParams;
+    SharedPtr<ShaderParameters> directionalViewParam;
+    std::array<RenderTargetTexture*, 8> spotShadowRTs;
+    std::array<RenderTargetTextureCube*, 8> pointShadowRTs;
+    RenderTargetTextureArray* directionalShadowRT;
+    uint32 shadowFlags;
+    const float SHADOW_NEAR_PLANE = 0.05f;
+    const float SHADOW_PLANE_MARGIN = 200.f;
+
+    SharedPtr<ShaderParameters> lightDataShadowed;
     std::vector<SharedPtr<ShaderParameters>> lightData;
+    void setupLightShadowViews();
     SharedPtr<ShaderParameters> lightCommon;
     SwapchainBufferedResource<SharedPtr<ShaderParameters>> lightTextures;
     SharedPtr<ShaderParameters> viewParameters;
@@ -213,6 +266,7 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     void updateShaderParameters(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
     void destroyShaderParameters();
 
+    void setupLightShaderData();
     void resizeLightingRts(const Size2D& size);
     void reupdateTextureParamsOnResize();
     void reupdateEnvMap();
@@ -226,7 +280,12 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     LocalPipelineContext singleColorPipelineContext;
     LocalPipelineContext texturedPipelineContext;
 
-    LocalPipelineContext drawPbrPipelineContext;
+    LocalPipelineContext spotShadowPipelineContext;
+    LocalPipelineContext directionalShadowPipelineContext;
+    LocalPipelineContext pointShadowPipelineContext;
+
+    LocalPipelineContext drawPbrWithShadowPipelineContext;
+    LocalPipelineContext drawPbrNoShadowPipelineContext;
 
     LocalPipelineContext resolveToPresentPipelineContext;
     LocalPipelineContext overBlendedQuadPipelineContext;
@@ -239,6 +298,7 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
 
     LocalPipelineContext drawLinesDWritePipelineCntxt;
     LocalPipelineContext drawGridDTestPipelineCntxt;
+
     // Gizmo drawing
     RenderTargetTexture* camGizmoColorTexture;
     RenderTargetTexture* camGizmoDepthTarget;
@@ -258,6 +318,15 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     float gamma = 2.2f;
     bool bDrawTbn = false;
 
+    enum RenderFlags
+    {
+        DisableEnvAmbient = 1,
+        DisableDirectional,
+        DisableAmbNDir,
+        DisableShadows,
+        DrawCascade
+    };
+    int32 renderFlags = 0;
     bool bDrawGrid = false;
     float gridExtendSize = 500;
     float gridCellSize = 10;
@@ -291,6 +360,7 @@ protected:
     void startUpRenderInit();
     void renderQuit();
     void updateCamGizmoCapture(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    void renderShadows(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsResource* cmdBuffer, uint32 swapchainIdx);
     void frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
     void debugFrameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsResource* cmdBuffer, uint32 swapchainIdx);
 
@@ -461,25 +531,191 @@ void ExperimentalEnginePBR::createImages()
         ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest, float(EngineSettings::minSamplingMipLevel.get()));
     linearFiltering = GraphicsHelper::createSampler(gEngine->getRenderManager()->getGraphicsInstance(), "LinearSampler",
         ESamplerTilingMode::Repeat, ESamplerFiltering::Linear, float(EngineSettings::minSamplingMipLevel.get()));
+    // Depth sampling must be nearest however there is better filtering when using linear filtering
+    depthFiltering = GraphicsHelper::createSampler(gEngine->getRenderManager()->getGraphicsInstance(), "DepthSampler",
+        ESamplerTilingMode::BorderClamp, ESamplerFiltering::Linear, float(EngineSettings::minSamplingMipLevel.get()));
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
     rtCreateParams.bIsSrgb = false;
     rtCreateParams.format = ERenderTargetFormat::RT_U8Packed;
     rtCreateParams.textureSize = Size2D(256, 256);
+    rtCreateParams.textureName = "CameraGizmosRT";
     camGizmoColorTexture = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
 
     rtCreateParams.format = ERenderTargetFormat::RT_Depth;
     camGizmoDepthTarget = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
+
+    // Shadow RTs
+    Size2D baseDirRes(1024);
+    RenderTextureArrayCreateParams directionalShadowRTCI;
+    directionalShadowRTCI.bSameReadWriteTexture = true;
+    directionalShadowRTCI.bIsSrgb = false;
+    directionalShadowRTCI.format = ERenderTargetFormat::RT_Depth;
+    directionalShadowRTCI.textureSize = baseDirRes;
+    directionalShadowRTCI.layerCount = dirLight.cascadeCount;
+    directionalShadowRTCI.textureName = "CascadesRT";
+    directionalShadowRT = TextureBase::createTexture<RenderTargetTextureArray>(directionalShadowRTCI);
+
+    RenderTextureCreateParams lightShadowRtsCreateParam;
+    lightShadowRtsCreateParam.bIsSrgb = false;
+    lightShadowRtsCreateParam.format = ERenderTargetFormat::RT_Depth;
+    lightShadowRtsCreateParam.bSameReadWriteTexture = true;
+    lightShadowRtsCreateParam.textureSize = baseDirRes / Size2D(2);
+
+    uint32 shadowRTCount = uint32(Math::min(spotShadowRTs.size(), sceneSpotLights.size()));
+    for (uint32 i = 0; i < shadowRTCount; ++i)
+    {
+        lightShadowRtsCreateParam.textureName = "SpotShadowRT_" + std::to_string(i);
+        spotShadowRTs[i] = TextureBase::createTexture<RenderTargetTexture>(lightShadowRtsCreateParam);
+    }
+
+    lightShadowRtsCreateParam.textureSize = baseDirRes / Size2D(4);
+    shadowRTCount = uint32(Math::min(pointShadowRTs.size(), scenePointLights.size()));
+    for (uint32 i = 0; i < shadowRTCount; ++i)
+    {
+        lightShadowRtsCreateParam.textureName = "PointShadowRT_" + std::to_string(i);
+        pointShadowRTs[i] = TextureBase::createTexture<RenderTargetTextureCube>(lightShadowRtsCreateParam);
+    }
 }
 
 void ExperimentalEnginePBR::destroyImages()
 {
     nearestFiltering->release();
     linearFiltering->release();
+    depthFiltering->release();
 
     TextureBase::destroyTexture<RenderTargetTexture>(camGizmoColorTexture);
     TextureBase::destroyTexture<RenderTargetTexture>(camGizmoDepthTarget);
+
+    TextureBase::destroyTexture<RenderTargetTextureArray>(directionalShadowRT);
+    for (RenderTargetTexture* rt : spotShadowRTs)
+    {
+        if (rt)
+        {
+            TextureBase::destroyTexture<RenderTargetTexture>(rt);
+        }
+    }
+    for (RenderTargetTextureCube* rt : pointShadowRTs)
+    {
+        if (rt)
+        {
+            TextureBase::destroyTexture<RenderTargetTextureCube>(rt);
+        }
+    }
+}
+
+void ExperimentalEnginePBR::sortSpotFromView(std::vector<uint32>& indices)
+{
+    indices.resize(sceneSpotLights.size());
+
+    for (int32 i = 0; i < indices.size(); ++i) { indices[i] = i; }
+
+    std::sort(indices.begin(), indices.end(), [this](uint32 lhs, uint32 rhs)
+        {
+            const Vector3D lhsLen = (sceneSpotLights[lhs].transform.getTranslation() - camera.translation());
+            const Vector3D rhsLen = (sceneSpotLights[rhs].transform.getTranslation() - camera.translation());
+
+            return (lhsLen | lhsLen) < (rhsLen | rhsLen);
+        });
+}
+
+void ExperimentalEnginePBR::sortPointsFromView(std::vector<uint32>& indices)
+{
+    indices.resize(scenePointLights.size());
+
+    for (int32 i = 0; i < indices.size(); ++i) { indices[i] = i; }
+
+    std::sort(indices.begin(), indices.end(), [this](uint32 lhs, uint32 rhs)
+        {
+            const Vector3D lhsLen = (scenePointLights[lhs].lightPos - camera.translation());
+            const Vector3D rhsLen = (scenePointLights[rhs].lightPos - camera.translation());
+
+            return (lhsLen | lhsLen) < (rhsLen | rhsLen);
+        });
+}
+
+void ExperimentalEnginePBR::setupLightShadowViews()
+{
+    for (SpotLight& spotL : sceneSpotLights)
+    {
+        spotL.view.setRotation(spotL.transform.getRotation());
+        spotL.view.setTranslation(spotL.transform.getTranslation());
+        spotL.view.cameraProjection = ECameraProjection::Perspective;        
+        spotL.view.setFOV(spotL.outerCone, spotL.outerCone);
+        spotL.view.setClippingPlane(SHADOW_NEAR_PLANE, spotL.radius + SHADOW_PLANE_MARGIN);
+    }
+    for (PointLight& ptL : scenePointLights)
+    {
+        uint32 idx = 0;
+        for (Camera& view : ptL.views)
+        {
+            view.setTranslation(ptL.lightPos);
+            view.setRotation(PointShadowDepthViews::VIEW_DIRECTIONS[idx]);
+            view.cameraProjection = ECameraProjection::Perspective;
+            view.setFOV(90, 90);
+            view.setClippingPlane(SHADOW_NEAR_PLANE, ptL.radius + SHADOW_PLANE_MARGIN);
+
+            idx++;
+        }
+    }
+
+    // Directional light cascades
+    const AABB sceneBounds = sceneVolume.getBounds();
+    Vector3D sceneBoundPts[8];
+    {
+        int32 boundPtIdx = 0;
+        const Vector3D boundCenter = sceneBounds.center();
+        const Vector3D boundHalfExtend = sceneBounds.size() * 0.5f;
+        for (float z = -1; z < 2; z += 2)
+        {
+            for (float y = -1; y < 2; y += 2)
+            {
+                for (float x = -1; x < 2; x += 2)
+                {
+                    sceneBoundPts[boundPtIdx] = boundCenter + boundHalfExtend * Vector3D(x, y, z);
+                    boundPtIdx++;
+                }
+            }
+        }
+    }
+    // We unrotated the frustum to calculate directional light view frustum(box) but still keeping world translation to find camera center
+    const Matrix3 dirLightToWorld = RotationMatrix::fromX(dirLight.direction.fwdVector()).matrix();
+    const Matrix3 worldToDirLight = dirLightToWorld.transpose();// Since it is orthogonal matrix
+    const Vector3D dirLightFwd = dirLight.direction.fwdVector();
+
+    Camera tempCamera = camera;
+    tempCamera.setClippingPlane(camera.nearPlane(), camera.farPlane() * dirLight.cascades[0].frustumFract);
+    for (uint32 i = 0; i < dirLight.cascadeCount; ++i)
+    {
+        // Finding view orthographic size
+        AABB box(Vector3D(FLT_MAX), Vector3D(FLT_MIN));
+        std::array<Vector3D, 8> corners;
+        tempCamera.frustumCorners(corners.data());
+        for (const Vector3D& corner : corners)
+        {
+            box.grow(worldToDirLight * corner);
+        }
+        Vector3D extend = box.size();
+        Vector3D center = dirLightToWorld * box.center();
+
+        // To determine the near and far plane so that they would cover all level objects
+        ValueRange<float> nearFarValues(FLT_MAX, FLT_MIN);
+        for (int32 boundIdx = 0; boundIdx < ARRAY_LENGTH(sceneBoundPts); ++boundIdx)
+        {
+            nearFarValues.grow((sceneBoundPts[boundIdx] - center) | dirLightFwd);
+        }
+
+        dirLight.cascades[i].cascadeView.cameraProjection = ECameraProjection::Orthographic;
+        dirLight.cascades[i].cascadeView.setRotation(RotationMatrix::fromX(dirLightFwd).asRotation());
+        dirLight.cascades[i].cascadeView.setTranslation(center + dirLightFwd * (nearFarValues.minBound - SHADOW_NEAR_PLANE - SHADOW_PLANE_MARGIN));
+        // Since Y, Z will be X, Y of surface
+        dirLight.cascades[i].cascadeView.setOrthoSize({ extend.y(), extend.z() });
+        dirLight.cascades[i].cascadeView.setClippingPlane(SHADOW_NEAR_PLANE, nearFarValues.size() + SHADOW_NEAR_PLANE + SHADOW_PLANE_MARGIN);
+        dirLight.cascades[i].frustumFarDistance = tempCamera.farPlane();
+
+        tempCamera.setClippingPlane(tempCamera.farPlane(), tempCamera.farPlane() + camera.farPlane() * dirLight.cascades[i].frustumFract + SHADOW_PLANE_MARGIN);
+    }
 }
 
 void ExperimentalEnginePBR::createScene()
@@ -558,7 +794,7 @@ void ExperimentalEnginePBR::createScene()
 
             dirLight.direction.pitch() = 35;
             dirLight.direction.yaw() = 45;
-            dirLight.lumen = 20;
+            dirLight.lumen = 100;
             dirLight.lightcolor = LinearColor(1.f, 1.f, 0.8f);
 
             if (i == 0 && j == 0)
@@ -612,28 +848,28 @@ void ExperimentalEnginePBR::createScene()
                     }
                 }
                 // Lights
-                {
-                    PointLight light;
-                    light.radius = 700;
-                    light.lumen = 250;
-                    light.lightcolor = LinearColorConst::WHITE;
+                //{
+                //    PointLight light;
+                //    light.radius = 700;
+                //    light.lumen = 250;
+                //    light.lightcolor = LinearColorConst::WHITE;
 
-                    light.lightPos = offset + Vector3D(250, 250, 250);
-                    light.name = "point0_" + roomIdx;
-                    pushPt(light);
+                //    light.lightPos = offset + Vector3D(250, 250, 250);
+                //    light.name = "point0_" + roomIdx;
+                //    pushPt(light);
 
-                    light.lightPos = offset + Vector3D(250, -250, 250);
-                    light.name = "point1_" + roomIdx;
-                    pushPt(light);
+                //    light.lightPos = offset + Vector3D(250, -250, 250);
+                //    light.name = "point1_" + roomIdx;
+                //    pushPt(light);
 
-                    light.lightPos = offset + Vector3D(-250, 250, 250);
-                    light.name = "point2_" + roomIdx;
-                    pushPt(light);
+                //    light.lightPos = offset + Vector3D(-250, 250, 250);
+                //    light.name = "point2_" + roomIdx;
+                //    pushPt(light);
 
-                    light.lightPos = offset + Vector3D(-250, -250, 250);
-                    light.name = "point3_" + roomIdx;
-                    pushPt(light);
-                }
+                //    light.lightPos = offset + Vector3D(-250, -250, 250);
+                //    light.name = "point3_" + roomIdx;
+                //    pushPt(light);
+                //}
             }
             else
             {
@@ -670,7 +906,7 @@ void ExperimentalEnginePBR::createScene()
 
                 // Near floor
                 float height = 175;
-                if (distribution1(generator) > 0.5f)
+                if (ud01(generator) > 0.5f)
                 {
                     SpotLight light;
                     light.radius = 700;
@@ -795,16 +1031,16 @@ void ExperimentalEnginePBR::createScene()
         }
         pushEntity(car);
 
-        SpotLight heroLight;
-        heroLight.name = "HeroLight";
-        heroLight.transform.setTranslation(car.transform.getTranslation() + Vector3D(0, 0, 400));
-        heroLight.transform.setRotation(Rotation(0, 90, 0));
-        heroLight.radius = 600;
-        heroLight.innerCone = 72;
-        heroLight.outerCone = 76;
-        heroLight.lightcolor = LinearColorConst::WHITE;
-        heroLight.lumen = 500;
-        pushSpt(heroLight);
+        //SpotLight heroLight;
+        //heroLight.name = "HeroLight";
+        //heroLight.transform.setTranslation(car.transform.getTranslation() + Vector3D(0, 0, 400));
+        //heroLight.transform.setRotation(Rotation(0, 90, 0));
+        //heroLight.radius = 600;
+        //heroLight.innerCone = 72;
+        //heroLight.outerCone = 76;
+        //heroLight.lightcolor = LinearColorConst::WHITE;
+        //heroLight.lumen = 500;
+        //pushSpt(heroLight);
     }
 
     sceneVolume.reinitialize(entities, Vector3D(50, 50, 50));
@@ -849,25 +1085,49 @@ void ExperimentalEnginePBR::createShaderParameters()
 
     // Light related descriptors
     // as 1 and 2 are textures and light data
-    const GraphicsResource* pbrModelDescLayout = drawPbrPipelineContext.getPipeline()->getParamLayoutAtSet(0);
-    lightCommon = GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelDescLayout, { 1,2 });
+    const GraphicsResource* pbrModelNoShadowDescLayout = drawPbrNoShadowPipelineContext.getPipeline()->getParamLayoutAtSet(0);
+    const GraphicsResource* pbrModelWithShadowDescLayout = drawPbrWithShadowPipelineContext.getPipeline()->getParamLayoutAtSet(0);
+    lightCommon = GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelNoShadowDescLayout, { 1,2 });
     lightCommon->setResourceName("LightCommon");
+
     uint32 lightDataCount = uint32(Math::max(1u, Math::max(scenePointLights.size(), sceneSpotLights.size())));
-    lightDataCount = uint32(Math::ceil(lightDataCount / float(ARRAY_LENGTH(PBRLightArray::spotLits))));
+    // -1 as we have 1 shadowed
+    lightDataCount = uint32(Math::ceil(lightDataCount / float(ARRAY_LENGTH(PBRLightArray::spotLits)))) - 1;
     lightData.resize(lightDataCount);
     for (uint32 i = 0; i < lightDataCount; ++i)
     {
         // as 0 and 1 are light common and textures
-        lightData[i] = GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelDescLayout, { 0, 1 });
+        lightData[i] = GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelNoShadowDescLayout, { 0, 1 });
         lightData[i]->setResourceName("Light_" + std::to_string(i * ARRAY_LENGTH(PBRLightArray::spotLits)) + "to"
             + std::to_string(i * ARRAY_LENGTH(PBRLightArray::spotLits) + ARRAY_LENGTH(PBRLightArray::spotLits)));
+    }
+    // as 0 and 1 are light common and textures
+    lightDataShadowed = GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelWithShadowDescLayout, { 0, 1 });
+    lightDataShadowed->setResourceName("ShadowedLights");
+    // Light shadow depth drawing related, Views from 3rd descriptors set
+    const GraphicsResource* drawLightDepth = directionalShadowPipelineContext.getPipeline()->getParamLayoutAtSet(3);
+    directionalViewParam = GraphicsHelper::createShaderParameters(graphicsInstance, drawLightDepth);
+    directionalViewParam->setResourceName("DirectionalLightViewParams");
+
+    drawLightDepth = pointShadowPipelineContext.getPipeline()->getParamLayoutAtSet(3);
+    for (uint32 i = 0; i < pointShadowRTs.size() && pointShadowRTs[i]; ++i)
+    {
+        pointViewParams[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawLightDepth);
+        pointViewParams[i]->setResourceName("PointDepthViewParams_" + std::to_string(i));
+    }
+     // Since spot need no additional views so no 2nd set
+    drawLightDepth = spotShadowPipelineContext.getPipeline()->getParamLayoutAtSet(0);
+    for (uint32 i = 0; i < spotShadowRTs.size() && spotShadowRTs[i]; ++i)
+    {
+        spotViewParams[i] = GraphicsHelper::createShaderParameters(graphicsInstance, drawLightDepth);
+        spotViewParams[i]->setResourceName("SpotDepthViewParams_" + std::to_string(i));
     }
 
     const GraphicsResource* drawQuadDescLayout = resolveToPresentPipelineContext.getPipeline()->getParamLayoutAtSet(0);
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         const String iString = std::to_string(i);
-        lightTextures.set(GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelDescLayout, { 0,2 }), i);
+        lightTextures.set(GraphicsHelper::createShaderParameters(graphicsInstance, pbrModelNoShadowDescLayout, { 0,2 }), i);
         lightTextures.getResources()[i]->setResourceName("LightFrameCommon_" + iString);
 
         drawQuadTextureDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
@@ -905,6 +1165,16 @@ void PointLight::update() const
     ptLit.ptPos_radius = Vector4D(lightPos.x()
         , lightPos.y(), lightPos.z(), radius);
     paramCollection->setBuffer("ptLits", ptLit, index);
+
+    if (shadowMap != nullptr && shadowViewParams)
+    {
+        for (uint32 i = 0; i < views.size(); ++i)
+        {
+            Matrix4 w2Clip = views[i].projectionMatrix() * views[i].viewMatrix().inverse();
+            shadowViewParams->setMatrixParam("w2Clip", w2Clip, i);
+            shadowViewParams->setVector4Param("lightPosFarPlane", Vector4D(lightPos, radius));
+        }
+    }
 }
 
 void SpotLight::update() const
@@ -917,6 +1187,24 @@ void SpotLight::update() const
     spotLit.sptLightColor_lumen.w() = lumen;
     spotLit.sptCone = Vector2D(Math::cos(Math::deg2Rad(innerCone * 0.5f)), Math::cos(Math::deg2Rad(outerCone * 0.5f)));
     paramCollection->setBuffer("spotLits", spotLit, index);
+
+    if (shadowMap != nullptr && shadowViewParams)
+    {
+        ViewData viewData;
+        viewData.projection = view.projectionMatrix();
+        viewData.view = view.viewMatrix();
+        viewData.invProjection = viewData.projection.inverse();
+        viewData.invView = viewData.view.inverse();
+        Matrix4 ndcToTextureSpace(
+            Vector4D(0.5f, 0.0f, 0.0f, 0.0f)
+            , Vector4D(0.0f, 0.5f, 0.0f, 0.0f)
+            , Vector4D(0.0f, 0.0f, 1.0f, 0.0f)
+            , Vector4D(0.5f, 0.5f, 0.0f, 1.0f)
+        );
+
+        paramCollection->setMatrixParam("sptLitsW2C", ndcToTextureSpace * viewData.projection * viewData.invView, index);
+        shadowViewParams->setBuffer("viewData", viewData);
+    }
 }
 
 void DirectionalLight::update() const
@@ -924,6 +1212,45 @@ void DirectionalLight::update() const
     auto dirLit = PbrDirectionalLight{ Vector4D(lightcolor), direction.fwdVector() };
     dirLit.lightColor_lumen.w() = lumen;
     paramCollection->setBuffer("dirLit", dirLit);
+
+    uint32 count = paramCollection->getUintParam("count");
+    // clear 8-11 bits
+    count &= ~0x00000F00;
+    count |= ((0x0000000F & cascadeCount) << 8);
+    paramCollection->setIntParam("count", count);
+
+    if (cascadeShadowMaps != nullptr && shadowViewParams)
+    {
+        shadowViewParams->setIntParam("cascadeCount", cascadeCount);
+        for (uint32 i = 0; i < cascadeCount; ++i)
+        {
+            Matrix4 w2Clip = cascades[i].cascadeView.projectionMatrix() * cascades[i].cascadeView.viewMatrix().inverse();
+            Matrix4 ndcToTextureSpace(
+                Vector4D(0.5f, 0.0f, 0.0f, 0.0f)
+                , Vector4D(0.0f, 0.5f, 0.0f, 0.0f)
+                , Vector4D(0.0f, 0.0f, 1.0f, 0.0f)
+                , Vector4D(0.5f, 0.5f, 0.0f, 1.0f)
+            );
+
+            paramCollection->setFloatParam("cascadeFarPlane", cascades[i].frustumFarDistance, i);
+            paramCollection->setMatrixParam("dirLitCascadesW2C", ndcToTextureSpace * w2Clip, i);
+            shadowViewParams->setMatrixParam("cascadeW2Clip", w2Clip, i);
+        }
+    }
+}
+
+void DirectionalLight::normalizeCascadeCoverage()
+{
+    float total = 0;
+    for (const CascadeData& cascade : cascades)
+    {
+        total += cascade.frustumFract;
+    }
+
+    for (CascadeData& cascade : cascades)
+    {
+        cascade.frustumFract /= total;
+    }
 }
 
 void ExperimentalEnginePBR::setupShaderParameterParams()
@@ -968,45 +1295,62 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
 
     lightCommon->setBuffer("viewData", viewData);
     lightCommon->init();
-    uint32 lightStartIdx = 0;
+
 
     // Directional light at last to do Linear -> SRGB and ambient lights
-    dirLight.paramCollection = lightData[lightData.size() - 1];
-    dirLight.update();
-    lightData[lightData.size() - 1]->setFloatParam("gamma", gamma);
-    lightData[lightData.size() - 1]->setFloatParam("exposure", exposure);
-    lightData[lightData.size() - 1]->setIntParam("count", 0x00000100u);
+    dirLight.paramCollection = lightDataShadowed;
+    dirLight.shadowViewParams = directionalViewParam;
+    dirLight.cascadeShadowMaps = directionalShadowRT;
+    dirLight.cascades.resize(dirLight.cascadeCount);
+    dirLight.cascades[0].frustumFract = 0.1f;
+    dirLight.cascades[1].frustumFract = 0.25f;
+    dirLight.cascades[2].frustumFract = 0.30f;
+    dirLight.cascades[3].frustumFract = 0.35f;
+    dirLight.normalizeCascadeCoverage();
+    lightDataShadowed->setFloatParam("gamma", gamma);
+    lightDataShadowed->setFloatParam("exposure", exposure);
+    lightDataShadowed->setTextureParam("directionalLightCascades", dirLight.cascadeShadowMaps->getTextureResource(), depthFiltering);
+    for (uint32 i = 0; i < pointShadowRTs.size(); ++i)
+    {
+        ImageResource* texture = pointShadowRTs[i] 
+            ? pointShadowRTs[i]->getTextureResource() 
+            : GlobalBuffers::dummyCube()->getTextureResource();
+        lightDataShadowed->setTextureParam("pointShadowMaps", texture, depthFiltering, i);
+    }
+    for (uint32 i = 0; i < spotShadowRTs.size(); ++i)
+    {
+        ImageResource* texture = spotShadowRTs[i]
+            ? spotShadowRTs[i]->getTextureResource()
+            : GlobalBuffers::dummyBlack2D()->getTextureResource();
+        lightDataShadowed->setTextureParam("spotLightShadowMaps", texture,depthFiltering, i);
+    }
+    // count will be min up to 8
+    uint32 shadowedCount = lightDataShadowed->getUintParam("count");
+    // clear 0-7 bits
+    shadowedCount &= ~0x000000FF;
+    shadowedCount |= (Math::min(sceneSpotLights.size(), 8) & 0x0000000F)
+        | ((Math::min(scenePointLights.size(), 8) & 0x0000000F) << 4);
+    lightDataShadowed->setIntParam("count", shadowedCount);
+    setupLightShaderData();
+    lightDataShadowed->init();
     for (SharedPtr<ShaderParameters>& light : lightData)
     {
-        uint32 count = light->getUintParam("count");
-        // clear 0-5 bits
-        count &= ~0x000000FF;
-
-        uint32 rangeIdx = 0;
-        for (; rangeIdx < ARRAY_LENGTH(PBRLightArray::spotLits) && (rangeIdx + lightStartIdx) < sceneSpotLights.size(); ++rangeIdx)
-        {
-            SpotLight& lightData = sceneSpotLights[rangeIdx + lightStartIdx];
-            lightData.paramCollection = light;
-            lightData.index = rangeIdx;
-
-            lightData.update();
-        }
-        count |= (0x0000000F & rangeIdx);
-        rangeIdx = 0;
-        for (; rangeIdx < ARRAY_LENGTH(PBRLightArray::ptLits) && (rangeIdx + lightStartIdx) < scenePointLights.size(); ++rangeIdx)
-        {
-            PointLight& lightData = scenePointLights[rangeIdx + lightStartIdx];
-            lightData.paramCollection = light;
-            lightData.index = rangeIdx;
-
-            lightData.update();
-        }
-        count |= ((0x0000000F & rangeIdx) << 4);
-
-        light->setIntParam("count", count);
         light->init();
-
-        lightStartIdx += ARRAY_LENGTH(PBRLightArray::spotLits);
+    }
+    directionalViewParam->init();
+    for (SharedPtr<ShaderParameters>& shadowView : pointViewParams)
+    {
+        if (shadowView)
+        {
+            shadowView->init();
+        }
+    }
+    for (SharedPtr<ShaderParameters>& shadowView : spotViewParams)
+    {
+        if (shadowView)
+        {
+            shadowView->init();
+        }
     }
 
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
@@ -1024,13 +1368,13 @@ void ExperimentalEnginePBR::setupShaderParameterParams()
         = depthImageViewInfo.componentMapping.a = depthImageViewInfo.componentMapping.r = EPixelComponentMapping::R;
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffer, i);
         const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssARM", multibuffer->textures[(2 * fbIncrement)], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], depthFiltering);
         lightTextures.getResources()[i]->setTextureParamViewInfo("ssDepth", depthImageViewInfo);
         lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("brdfLUT", GlobalBuffers::integratedBrdfLUT()->getTextureResource(), nearestFiltering);
@@ -1106,13 +1450,13 @@ void ExperimentalEnginePBR::reupdateTextureParamsOnResize()
 
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffers, i);
+        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffer, i);
         const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
         const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
         lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssARM", multibuffer->textures[(2 * fbIncrement)], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], depthFiltering);
         lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
         drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
@@ -1168,6 +1512,26 @@ void ExperimentalEnginePBR::destroyShaderParameters()
         light->release();
         light.reset();
     }
+    lightDataShadowed->release();
+    lightDataShadowed.reset();
+    for (SharedPtr<ShaderParameters>& ptShadowView : pointViewParams)
+    {
+        if(ptShadowView)
+        {
+            ptShadowView->release();
+            ptShadowView.reset();
+        }
+    }
+    for (SharedPtr<ShaderParameters>& sptShadowView : spotViewParams)
+    {
+        if(sptShadowView)
+        {
+            sptShadowView->release();
+            sptShadowView.reset();
+        }
+    }
+    directionalViewParam->release();
+    directionalViewParam.reset();
 
     lightTextures.reset();
     drawQuadTextureDescs.reset();
@@ -1188,6 +1552,79 @@ void ExperimentalEnginePBR::destroyShaderParameters()
     camRTParams.reset();
 }
 
+void ExperimentalEnginePBR::setupLightShaderData()
+{
+    lightDataShadowed->setIntParam("shadowFlags", shadowFlags);
+
+    setupLightShadowViews();
+
+    std::vector<uint32> spotLightIdxs;
+    std::vector<uint32> ptLightIdxs;
+    sortSpotFromView(spotLightIdxs);
+    sortPointsFromView(ptLightIdxs);
+
+    dirLight.update();
+    // Setup parameters to each lights
+    for (int32 i = 0; i < 8; ++i)
+    {
+        if (i < spotLightIdxs.size())
+        {
+            sceneSpotLights[spotLightIdxs[i]].shadowViewParams = spotViewParams[i];
+            sceneSpotLights[spotLightIdxs[i]].shadowMap = spotShadowRTs[i];
+            sceneSpotLights[spotLightIdxs[i]].paramCollection = lightDataShadowed;
+            sceneSpotLights[spotLightIdxs[i]].index = i;
+
+            sceneSpotLights[spotLightIdxs[i]].update();
+        }
+        if (i < ptLightIdxs.size())
+        {
+            scenePointLights[ptLightIdxs[i]].shadowViewParams = pointViewParams[i];
+            scenePointLights[ptLightIdxs[i]].shadowMap = pointShadowRTs[i];
+            scenePointLights[ptLightIdxs[i]].paramCollection = lightDataShadowed;
+            scenePointLights[ptLightIdxs[i]].index = i;
+
+            scenePointLights[ptLightIdxs[i]].update();
+        }
+    }
+
+    uint32 lightStartIdx = 8;
+    for (SharedPtr<ShaderParameters>& light : lightData)
+    {
+        uint32 count = light->getUintParam("count");
+        // clear 0-7 bits
+        count &= ~0x000000FF;
+
+        uint32 rangeIdx = 0;
+        for (; rangeIdx < ARRAY_LENGTH(PBRLightArray::spotLits) && (rangeIdx + lightStartIdx) < spotLightIdxs.size(); ++rangeIdx)
+        {
+            SpotLight& lightData = sceneSpotLights[spotLightIdxs[rangeIdx + lightStartIdx]];
+            lightData.shadowMap = nullptr;
+            lightData.shadowViewParams = nullptr;
+            lightData.paramCollection = light;
+            lightData.index = rangeIdx;
+
+            lightData.update();
+        }
+        count |= (0x0000000F & rangeIdx);
+        rangeIdx = 0;
+        for (; rangeIdx < ARRAY_LENGTH(PBRLightArray::ptLits) && (rangeIdx + lightStartIdx) < ptLightIdxs.size(); ++rangeIdx)
+        {
+            PointLight& lightData = scenePointLights[ptLightIdxs[rangeIdx + lightStartIdx]];
+            lightData.shadowMap = nullptr;
+            lightData.shadowViewParams = nullptr;
+            lightData.paramCollection = light;
+            lightData.index = rangeIdx;
+
+            lightData.update();
+        }
+        count |= ((0x0000000F & rangeIdx) << 4);
+
+        light->setIntParam("count", count);
+
+        lightStartIdx += ARRAY_LENGTH(PBRLightArray::spotLits);
+    }
+}
+
 void ExperimentalEnginePBR::resizeLightingRts(const Size2D& size)
 {
     GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
@@ -1201,7 +1638,7 @@ void ExperimentalEnginePBR::resizeLightingRts(const Size2D& size)
         getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
 
         // Used in debug rendering using depth map as read only target
-        getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt, GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, i)[3] });
+        getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt, GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, i)[3] });
     }
 }
 
@@ -1256,26 +1693,51 @@ void ExperimentalEnginePBR::getPipelineForSubpass()
 
     singleColorPipelineContext.forVertexType = EVertexType::StaticMesh;
     singleColorPipelineContext.materialName = "SingleColor";
-    singleColorPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
+    singleColorPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffer;
     singleColorPipelineContext.swapchainIdx = 0;
     vulkanRenderingContext->preparePipelineContext(&singleColorPipelineContext);
 
     texturedPipelineContext.forVertexType = EVertexType::StaticMesh;
     texturedPipelineContext.materialName = "Textured";
-    texturedPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffers;
+    texturedPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffer;
     texturedPipelineContext.swapchainIdx = 0;
     vulkanRenderingContext->preparePipelineContext(&texturedPipelineContext);
 
-    // Gooch model
-    drawPbrPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
-    drawPbrPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
-    drawPbrPipelineContext.materialName = "PBR";
-    vulkanRenderingContext->preparePipelineContext(&drawPbrPipelineContext);
+    fatalAssert(GlobalRenderVariables::ENABLE_GEOMETRY_SHADERS, "Geometry shader feature not supported in this device, so cannot use shadows");
+    spotShadowPipelineContext.forVertexType = pointShadowPipelineContext.forVertexType = directionalShadowPipelineContext.forVertexType = EVertexType::StaticMesh;
+    spotShadowPipelineContext.materialName = pointShadowPipelineContext.materialName = directionalShadowPipelineContext.materialName = "Default";
+    spotShadowPipelineContext.swapchainIdx = pointShadowPipelineContext.swapchainIdx = directionalShadowPipelineContext.swapchainIdx = 0;
+    spotShadowPipelineContext.renderpassFormat = ERenderPassFormat::Depth;
+    pointShadowPipelineContext.renderpassFormat = ERenderPassFormat::PointLightDepth;
+
+    directionalShadowPipelineContext.renderpassFormat = ERenderPassFormat::DirectionalLightDepth;
+    directionalShadowPipelineContext.rtTextures.emplace_back(directionalShadowRT);
+    vulkanRenderingContext->preparePipelineContext(&directionalShadowPipelineContext);
+    if (spotShadowRTs[0])
+    {
+        spotShadowPipelineContext.rtTextures.emplace_back(spotShadowRTs[0]);
+        vulkanRenderingContext->preparePipelineContext(&spotShadowPipelineContext);
+    }
+    if (pointShadowRTs[0])
+    {
+        pointShadowPipelineContext.rtTextures.emplace_back(pointShadowRTs[0]);
+        vulkanRenderingContext->preparePipelineContext(&pointShadowPipelineContext);
+    }
+
+    // PBR model
+    drawPbrWithShadowPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    drawPbrWithShadowPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
+    drawPbrWithShadowPipelineContext.materialName = "PBRLightsWithShadow";
+    vulkanRenderingContext->preparePipelineContext(&drawPbrWithShadowPipelineContext);
+    drawPbrNoShadowPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
+    drawPbrNoShadowPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
+    drawPbrNoShadowPipelineContext.materialName = "PBRLightsNoShadow";
+    vulkanRenderingContext->preparePipelineContext(&drawPbrNoShadowPipelineContext);
 
     sceneDebugLinesPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     sceneDebugLinesPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
     // Using depth map as read only target
-    sceneDebugLinesPipelineContext.rtTextures.emplace_back(GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, 0)[3]);
+    sceneDebugLinesPipelineContext.rtTextures.emplace_back(GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, 0)[3]);
     sceneDebugLinesPipelineContext.materialName = "Draw3DColoredPerVertexLine";
     vulkanRenderingContext->preparePipelineContext(&sceneDebugLinesPipelineContext);
 
@@ -1288,7 +1750,7 @@ void ExperimentalEnginePBR::getPipelineForSubpass()
     drawGridDTestPipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
     drawGridDTestPipelineCntxt.rtTextures.emplace_back(frameResources[0].lightingPassRt);
     // Using depth map as read only target
-    drawGridDTestPipelineCntxt.rtTextures.emplace_back(GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, 0)[3]);
+    drawGridDTestPipelineCntxt.rtTextures.emplace_back(GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, 0)[3]);
     drawGridDTestPipelineCntxt.materialName = "DrawGridDTest";
     vulkanRenderingContext->preparePipelineContext(&drawGridDTestPipelineCntxt);
 
@@ -1500,8 +1962,9 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
     getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&singleColorPipelineContext);
     getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&resolveToPresentPipelineContext);
 
-    drawPbrPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
-    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&drawPbrPipelineContext);
+    drawPbrWithShadowPipelineContext.rtTextures[0] = drawPbrNoShadowPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
+    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&drawPbrWithShadowPipelineContext);
+    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&drawPbrNoShadowPipelineContext);
     resolveLightRtPipelineContext.rtTextures[0] = frameResources[index].lightingPassResolved;
     getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
 
@@ -1542,9 +2005,11 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
     cmdList->finishCmd(cmdName);
 
     const GraphicsResource* cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
-    VkCommandBuffer frameCmdBuffer = VulkanGraphicsHelper::getRawCmdBuffer(graphicsInstance, cmdBuffer);
+    // VkCommandBuffer frameCmdBuffer = VulkanGraphicsHelper::getRawCmdBuffer(graphicsInstance, cmdBuffer);
     {
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEnginePBRFrame);
+
+        renderShadows(cmdList, graphicsInstance, cmdBuffer, index);
 
         cmdList->cmdBeginRenderPass(cmdBuffer, singleColorPipelineContext, scissor, {}, clearValues);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
@@ -1599,35 +2064,42 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
             }
             cmdList->cmdEndRenderPass(cmdBuffer);
 
-            int32 lightDataIndex = 0;
             for (const SharedPtr<ShaderParameters>& light : lightData)
             {
-                cmdList->cmdBeginRenderPass(cmdBuffer, drawPbrPipelineContext, scissor, {}, clearValues);
+                cmdList->cmdBeginRenderPass(cmdBuffer, drawPbrNoShadowPipelineContext, scissor, {}, clearValues);
                 {
                     SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLight);
-                    cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawPbrPipelineContext, { queryParam });
+                    cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawPbrNoShadowPipelineContext, { queryParam });
 
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrPipelineContext, { lightCommon.get(), *lightTextures, light.get() });
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrNoShadowPipelineContext, { lightCommon.get(), *lightTextures, light.get() });
                     cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                 }
                 cmdList->cmdEndRenderPass(cmdBuffer);
-
-                lightDataIndex++;
-
-                if (lightDataIndex < lightData.size())
+                // Resolve drawn lights
+                cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
                 {
-                    cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
-                    {
-                        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ResolveLightRT);
+                    SCOPED_CMD_MARKER(cmdList, cmdBuffer, ResolveLightRT);
 
-                        cmdList->cmdBindGraphicsPipeline(cmdBuffer, resolveLightRtPipelineContext, { queryParam });
-                        cmdList->cmdBindDescriptorsSets(cmdBuffer, resolveLightRtPipelineContext, *drawLitColorsDescs);
+                    cmdList->cmdBindGraphicsPipeline(cmdBuffer, resolveLightRtPipelineContext, { queryParam });
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, resolveLightRtPipelineContext, *drawLitColorsDescs);
 
-                        cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
-                    }
-                    cmdList->cmdEndRenderPass(cmdBuffer);
+                    cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                 }
+                cmdList->cmdEndRenderPass(cmdBuffer);
             }
+            // Light with shadows, Final pass
+            cmdList->cmdBeginRenderPass(cmdBuffer, drawPbrWithShadowPipelineContext, scissor, {}, clearValues);
+            {
+                SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLightWithShadow);
+
+                cmdList->cmdPushConstants(cmdBuffer, drawPbrWithShadowPipelineContext, { { "debugDrawFlags", uint32(renderFlags) } });
+                cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawPbrWithShadowPipelineContext, { queryParam });
+
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrWithShadowPipelineContext, { lightCommon.get(), *lightTextures, lightDataShadowed.get() });
+                cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+            }
+            cmdList->cmdEndRenderPass(cmdBuffer);
+
         }
         else
         {
@@ -1659,7 +2131,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
 
             if (drawQuadDescs)
             {
-                resolveLightRtPipelineContext.rtTextures = drawPbrPipelineContext.rtTextures;
+                resolveLightRtPipelineContext.rtTextures = drawPbrWithShadowPipelineContext.rtTextures;
                 getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
@@ -1681,10 +2153,10 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
         // Drawing IMGUI
         TinyDrawingContext drawingContext;
         drawingContext.cmdBuffer = cmdBuffer;
-        drawingContext.rtTextures = drawPbrPipelineContext.rtTextures;
+        drawingContext.rtTextures = drawPbrWithShadowPipelineContext.rtTextures;
         getRenderManager()->getImGuiManager()->draw(cmdList, graphicsInstance, drawingContext);
 
-        // Drawing final quad
+        // Drawing final resolve to presenting surface quad
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = scissor.maxBound = EngineSettings::surfaceSize.get();
 
@@ -1778,6 +2250,142 @@ void ExperimentalEnginePBR::updateCamGizmoCapture(class IRenderCommandList* cmdL
     cmdList->submitCmd(EQueuePriority::High, cmdSubmit);
 }
 
+void ExperimentalEnginePBR::renderShadows(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsResource* cmdBuffer, uint32 swapchainIdx)
+{
+    std::unordered_map<MeshAsset*, std::vector<SharedPtr<ShaderParameters>>> meshToInstances;
+    for (const PBRSceneEntity& entity : sceneData)
+    {
+        meshToInstances[entity.meshAsset].emplace_back(entity.instanceParameters);
+    }
+    auto drawMeshes = [cmdList, graphicsInstance, cmdBuffer, &meshToInstances](LocalPipelineContext& pipelineCntxt)
+    {
+        for (const std::pair<MeshAsset* const, std::vector<SharedPtr<ShaderParameters>>>& meshAndInstances : meshToInstances)
+        {
+            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { meshAndInstances.first->getVertexBuffer() }, { 0 });
+            cmdList->cmdBindIndexBuffer(cmdBuffer, meshAndInstances.first->getIndexBuffer());
+
+            for (const SharedPtr<ShaderParameters>& instance : meshAndInstances.second)
+            {
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, { instance.get() });
+                cmdList->cmdDrawIndexed(cmdBuffer, 0, meshAndInstances.first->getIndexBuffer()->bufferCount());
+            }
+        }
+    };
+
+    GraphicsPipelineQueryParams faceFillQueryParam;
+    // Since we are drawing inverted backfaces are front face and vice versa for spot and directional lights
+    faceFillQueryParam.cullingMode = BIT_SET(shadowFlags, PBRShadowFlags::DrawingBackface) 
+        ? ECullingMode::BackFace : ECullingMode::FrontFace;
+    faceFillQueryParam.drawMode = EPolygonDrawMode::Fill;
+
+    // This will render shadows inverted y(1, -1) but we are fine with that
+    QuantizedBox2D viewport(Int2D(0, 0), Int2D(directionalShadowRT->getTextureSize()));
+    QuantizedBox2D scissor = viewport;
+
+    SCOPED_CMD_MARKER(cmdList, cmdBuffer, RenderShadows);
+    // Draw cascade first
+    {
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, DirectionalShadowCascade);
+        cmdList->cmdBeginRenderPass(cmdBuffer, directionalShadowPipelineContext, scissor, {}, clearValues);
+        cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor); 
+
+        // Bind and draw
+        cmdList->cmdBindGraphicsPipeline(cmdBuffer, directionalShadowPipelineContext, { faceFillQueryParam });
+        cmdList->cmdBindDescriptorsSets(cmdBuffer, directionalShadowPipelineContext, { viewParameters.get(), directionalViewParam.get() });
+        drawMeshes(directionalShadowPipelineContext);
+
+        cmdList->cmdEndRenderPass(cmdBuffer);
+    }
+
+    // Draw spot lights
+    {
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, SpotLightShadows);
+        for (const SpotLight& sptlit : sceneSpotLights)
+        {
+            if (sptlit.shadowViewParams && sptlit.shadowMap)
+            {
+                Vector3D corners[8];
+                sptlit.view.frustumCorners(corners);
+                ArrayView<Vector3D> cornersView(corners, ARRAY_LENGTH(corners));
+                AABB sptRegion(cornersView);
+
+                std::set<GridEntity> entities = sceneVolume.findIntersection(sptRegion, true);
+                meshToInstances.clear();
+                for (const GridEntity& entity : entities)
+                {
+                    if (entity.type == GridEntity::Entity)
+                    {
+                        meshToInstances[sceneData[entity.idx].meshAsset].emplace_back(sceneData[entity.idx].instanceParameters);
+                    }
+                }
+
+                viewport = { Int2D(0, 0), Int2D(sptlit.shadowMap->getTextureSize()) };
+                scissor = viewport;
+                spotShadowPipelineContext.rtTextures[0] = sptlit.shadowMap;
+                getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&spotShadowPipelineContext);
+
+                cmdList->cmdBeginRenderPass(cmdBuffer, spotShadowPipelineContext, scissor, {}, clearValues);
+                cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
+
+                // Bind and draw
+                // Since we are drawing inverted backfaces are front face and vice versa for spot and directional lights
+                faceFillQueryParam.cullingMode = BIT_SET(shadowFlags, PBRShadowFlags::DrawingBackface)
+                    ? ECullingMode::BackFace : ECullingMode::FrontFace;
+                cmdList->cmdBindGraphicsPipeline(cmdBuffer, spotShadowPipelineContext, { faceFillQueryParam });
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, spotShadowPipelineContext, { sptlit.shadowViewParams.get() });
+                drawMeshes(spotShadowPipelineContext);
+
+                cmdList->cmdEndRenderPass(cmdBuffer);
+            }
+        }
+    }
+
+    // Draw point lights
+    {
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, PointLightShadows);
+        for (const PointLight& ptlit : scenePointLights)
+        {
+            if (ptlit.shadowViewParams && ptlit.shadowMap)
+            {
+                Vector3D corners[8];
+                AABB ptRegion(ptlit.lightPos + Vector3D(ptlit.radius, 0, 0));
+                ptRegion.grow(ptlit.lightPos + Vector3D(-ptlit.radius, 0, 0));
+                ptRegion.grow(ptlit.lightPos + Vector3D(0, ptlit.radius, 0));
+                ptRegion.grow(ptlit.lightPos + Vector3D(0, -ptlit.radius, 0));
+                ptRegion.grow(ptlit.lightPos + Vector3D(0, 0, ptlit.radius));
+                ptRegion.grow(ptlit.lightPos + Vector3D(0, 0, -ptlit.radius));
+
+                std::set<GridEntity> entities = sceneVolume.findIntersection(ptRegion, true);
+                meshToInstances.clear();
+                for (const GridEntity& entity : entities)
+                {
+                    if (entity.type == GridEntity::Entity)
+                    {
+                        meshToInstances[sceneData[entity.idx].meshAsset].emplace_back(sceneData[entity.idx].instanceParameters);
+                    }
+                }
+
+                viewport = { Int2D(0, ptlit.shadowMap->getTextureSize().y), Int2D(ptlit.shadowMap->getTextureSize().x, 0) };
+                scissor = { Int2D(0, 0), Int2D(ptlit.shadowMap->getTextureSize()) };
+                pointShadowPipelineContext.rtTextures[0] = ptlit.shadowMap;
+                getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&pointShadowPipelineContext);
+
+                cmdList->cmdBeginRenderPass(cmdBuffer, pointShadowPipelineContext, scissor, {}, clearValues);
+                cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
+
+                // Bind and draw
+                faceFillQueryParam.cullingMode = BIT_SET(shadowFlags, PBRShadowFlags::DrawingBackface)
+                    ? ECullingMode::FrontFace : ECullingMode::BackFace;
+                cmdList->cmdBindGraphicsPipeline(cmdBuffer, pointShadowPipelineContext, { faceFillQueryParam });
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, { ptlit.shadowViewParams.get() });
+                drawMeshes(pointShadowPipelineContext);
+
+                cmdList->cmdEndRenderPass(cmdBuffer);
+            }
+        }
+    }
+}
+
 void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsResource* cmdBuffer, uint32 swapchainIdx)
 {
     GraphicsPipelineQueryParams backfaceFillQueryParam;
@@ -1803,7 +2411,7 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
 
 #if _DEBUG
     sceneDebugLinesPipelineContext.rtTextures[0] = frameResources[swapchainIdx].lightingPassRt;
-    sceneDebugLinesPipelineContext.rtTextures[1] = GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, swapchainIdx)[3];
+    sceneDebugLinesPipelineContext.rtTextures[1] = GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3];
     getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&sceneDebugLinesPipelineContext);
 
     if (bDrawTbn && selection.type == GridEntity::Entity)
@@ -1834,7 +2442,7 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
     }
 #endif
     drawGridDTestPipelineCntxt.rtTextures[0] = frameResources[swapchainIdx].lightingPassRt;
-    drawGridDTestPipelineCntxt.rtTextures[1] = GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffers, swapchainIdx)[3];
+    drawGridDTestPipelineCntxt.rtTextures[1] = GlobalBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3];
     getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&drawGridDTestPipelineCntxt);
     if (bDrawGrid)
     {
@@ -1856,9 +2464,9 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
                 , { "thickColor", Vector4D(thickColor) }
             };
             GraphicsPipelineState pipelineState;
-            pipelineState.pipelineQuery = backfaceFillQueryParam;
+            pipelineState.pipelineQuery = { EPolygonDrawMode::Fill, ECullingMode::None };
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGridDTestPipelineCntxt, pipelineState);
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGridDTestPipelineCntxt, { lightCommon.get() });
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGridDTestPipelineCntxt, { viewParameters.get() });
             cmdList->cmdPushConstants(cmdBuffer, drawGridDTestPipelineCntxt, pushCnsts);
             cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadRectVertexIndexBuffers().first }, { 0 });
             cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadRectVertexIndexBuffers().second);
@@ -1902,6 +2510,7 @@ void ExperimentalEnginePBR::tickEngine()
 {
     GameEngine::tickEngine();
     updateCameraParams();
+    setupLightShaderData();
 
     if (getApplicationInstance()->inputSystem()->isKeyPressed(Keys::ONE))
     {
@@ -2009,9 +2618,6 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
 
             if (ImGui::CollapsingHeader("Camera"))
             {
-                ImGui::Columns(2);
-                ImGui::Text("Projection");
-                ImGui::NextColumn();
                 {
                     const char* proj[] = { "Perspective", "Orthographic" };
                     static int currVal = 0;
@@ -2026,19 +2632,25 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                         break;
                     }
                 }
+
+                ImGui::DragFloat3("Translation", &cameraTranslation[0], 1.f);
+
+                if (ImGui::DragFloat3("Rotation", reinterpret_cast<float*>(&cameraRotation), 1.f, 0.0f, 360.0f))
+                {
+                    updateCamGizmoViewParams();
+                    ENQUEUE_COMMAND_NODEBUG(CameraGizmoUpdate,
+                        {
+                            updateCamGizmoCapture(cmdList, graphicsInstance);
+                        }, this);
+                }
             }
 
-            ImGui::Columns(1);
-            ImGui::NextColumn();
             if (ImGui::CollapsingHeader("Rendering"))
             {
-                ImGui::Columns(2);
-                ImGui::Text("Render Size");
-                ImGui::NextColumn();
                 {
                     const char* resolutions[] = { "1280x720", "1920x1080", "2560x1440", "3840x2160" };
                     static int currRes = 0;
-                    ImGui::Combo("Size", &currRes, resolutions, ARRAY_LENGTH(resolutions));
+                    ImGui::Combo("RenderSize", &currRes, resolutions, ARRAY_LENGTH(resolutions));
                     switch (currRes)
                     {
                     case 0:
@@ -2056,70 +2668,63 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                     }
                 }
 
-                ImGui::NextColumn();
-                ImGui::Text("Visualize buffer");
-                ImGui::NextColumn();
                 {
                     const char* bufferMode[] = { "Lit", "Unlit", "Normal","AO", "Roughness", "metallic", "Depth" };
-                    ImGui::Combo("Frame", &frameVisualizeId, bufferMode, ARRAY_LENGTH(bufferMode));
+                    ImGui::Combo("Visualize buffer", &frameVisualizeId, bufferMode, ARRAY_LENGTH(bufferMode));
                 }
 
                 ImGui::Separator();
-                ImGui::NextColumn();
-                ImGui::Text("Exposure");
-                ImGui::NextColumn();
-                if (ImGui::InputFloat("Exp", &exposure, 1.0f, 10.f, "%.1f"))
+                if (ImGui::InputFloat("Exposure", &exposure, 1.0f, 10.f, "%.1f"))
                 {
                     dirLight.paramCollection->setFloatParam("exposure", exposure);
                 }
 
-                ImGui::NextColumn();
-                ImGui::Text("Gamma");
-                ImGui::NextColumn();
                 if (ImGui::InputFloat("Gamma", &gamma, 1.0f, 4.f, "%.1f"))
                 {
                     dirLight.paramCollection->setFloatParam("gamma", gamma);
                 }
 
-                ImGui::NextColumn();
-                ImGui::Text("Env Map");
-                ImGui::NextColumn();
-                if (ImGui::Combo("maps", &selectedEnv, envMapNames.data(), int32(envMapNames.size())))
+                if (ImGui::Combo("Env Map", &selectedEnv, envMapNames.data(), int32(envMapNames.size())))
                 {
                     reupdateEnvMap();
                 }
+
+                if (ImGui::CollapsingHeader("Cascades"))
+                {
+                    bool bAnyChanged = false;
+                    int32 idx = 0;
+                    for (CascadeData& cascade : dirLight.cascades)
+                    {
+                        String label = "Cascade " + std::to_string(idx);
+                        bAnyChanged = bAnyChanged || ImGui::DragFloat(label.getChar(), &cascade.frustumFract, 0.005f, 0.0f, 1.0f);
+                        ++idx;
+                    }
+
+                    if (bAnyChanged)
+                    {
+                        dirLight.normalizeCascadeCoverage();
+                    }
+                }
+                if (ImGui::TreeNode("Shadow flags"))
+                {
+                    ImGui::CheckboxFlags("Draw back face", &shadowFlags, PBRShadowFlags::DrawingBackface);
+                    ImGui::TreePop();
+                    ImGui::Separator();
+                }
 #if _DEBUG
-                ImGui::NextColumn();
-                ImGui::Text("Draw TBN");
-                ImGui::NextColumn();
-                ImGui::Checkbox("TBN Debug", &bDrawTbn);
+                ImGui::Checkbox("Draw TBN", &bDrawTbn);
 #endif
+                {
+                    const char* renderFlagTexts[] = { "None", "Disable Ambient Light", "Disable Directional Light", "Disable Ambient and Directional", "Disable Shadows", "Draw cascades"};
+                    ImGui::Combo("Render option", &renderFlags, renderFlagTexts, ARRAY_LENGTH(renderFlagTexts));
+                }
 
                 ImGui::Separator();
-                ImGui::NextColumn();
-                ImGui::Text("Show Grid");
-                ImGui::NextColumn();
-                ImGui::Checkbox("Grid", &bDrawGrid);
-
-                ImGui::NextColumn();
-                ImGui::Text("Grid Extent");
-                ImGui::NextColumn();
-                ImGui::InputFloat("Extent in cm", &gridExtendSize, 10, 100);
-
-                ImGui::NextColumn();
-                ImGui::Text("Cell Size");
-                ImGui::NextColumn();
-                ImGui::InputFloat("In cm", &gridCellSize, 5, 20);
-
-                ImGui::NextColumn();
-                ImGui::Text("Grid Color");
-                ImGui::NextColumn();
-                ImGui::ColorEdit4("Thin", reinterpret_cast<float*>(&thinColor));
-
-                ImGui::NextColumn();
-                ImGui::Text("Grid Color");
-                ImGui::NextColumn();
-                ImGui::ColorEdit4("Thick", reinterpret_cast<float*>(&thickColor));
+                ImGui::Checkbox("Show Grid", &bDrawGrid);
+                ImGui::InputFloat("Extent", &gridExtendSize, 10, 100);
+                ImGui::InputFloat("Cell Size", &gridCellSize, 5, 20);
+                ImGui::ColorEdit4("Minor grid color", reinterpret_cast<float*>(&thinColor));
+                ImGui::ColorEdit4("Major grid color", reinterpret_cast<float*>(&thickColor));
             };
 
             ImGui::Columns(1);
@@ -2238,7 +2843,12 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
                     entity.instanceParameters->setMatrixParam("model", entity.transform.getTransformMatrix());
                     entity.instanceParameters->setMatrixParam("invModel", entity.transform.getTransformMatrix().inverse());
 
-                    sceneVolume.updateBounds(selection, currentBound, getBounds(selection));
+                    AABB newBound = getBounds(selection);
+                    sceneVolume.updateBounds(selection, currentBound, newBound);
+                    if (sceneVolume.findIntersection(newBound, true).empty())
+                    {
+                        sceneVolume.addedNewObject(selection);
+                    }
                 }
             }
 
@@ -2294,7 +2904,12 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
 
                 if (bTransformChanged)
                 {
-                    sceneVolume.updateBoundsChecked(selection, currentBound, getBounds(selection));
+                    AABB newBound = getBounds(selection);
+                    sceneVolume.updateBounds(selection, currentBound, newBound);
+                    if (sceneVolume.findIntersection(newBound, true).empty())
+                    {
+                        sceneVolume.addedNewObject(selection);
+                    }
                 }
                 bNeedsUpdate = bTransformChanged;
             }
@@ -2337,7 +2952,12 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
             AABB currentBound = getBounds(selection);
             if (ImGui::DragFloat3("Translation", reinterpret_cast<float*>(&entity.lightPos), 1.0f))
             {
-                sceneVolume.updateBoundsChecked(selection, currentBound, getBounds(selection));
+                AABB newBound = getBounds(selection);
+                sceneVolume.updateBounds(selection, currentBound, newBound);
+                if (sceneVolume.findIntersection(newBound, true).empty())
+                {
+                    sceneVolume.addedNewObject(selection);
+                }
                 bNeedsUpdate = true;
             }
 
