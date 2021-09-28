@@ -1,4 +1,4 @@
-#include "PBRShader.h"
+#include "PBRShaders.h"
 #include "../../../Core/Types/CoreDefines.h"
 #include "../../../RenderApi/GBuffersAndTextures.h"
 #include "../../../Core/Platform/PlatformAssertionErrors.h"
@@ -37,26 +37,38 @@ ADD_BUFFER_TYPED_FIELD(exposure)
 ADD_BUFFER_TYPED_FIELD(gamma)
 END_BUFFER_DEFINITION();
 
-#define PBR_SHADER_NAME "PBR"
+BEGIN_BUFFER_DEFINITION(ShadowData)
+ADD_BUFFER_TYPED_FIELD(sptLitsW2C)
+ADD_BUFFER_TYPED_FIELD(dirLitCascadesW2C)
+ADD_BUFFER_TYPED_FIELD(cascadeFarPlane)
+ADD_BUFFER_TYPED_FIELD(shadowFlags)
+END_BUFFER_DEFINITION();
 
-class PBRShader : public UniqueUtilityShader
+#define PBRLIGHTSNOSHADOW_SHADER_NAME "PBRLightsNoShadow"
+#define PBRLIGHTSWITHSHADOW_SHADER_NAME "PBRLightsWithShadow"
+
+class PBRShaders : public UniqueUtilityShader
 {
-    DECLARE_GRAPHICS_RESOURCE(PBRShader, , UniqueUtilityShader, )
+    DECLARE_GRAPHICS_RESOURCE(PBRShaders, , UniqueUtilityShader, )
+private:
+    PBRShaders() = default;
 protected:
-    PBRShader()
-        : BaseType(PBR_SHADER_NAME)
+    PBRShaders(const String& name)
+        : BaseType(name)
     {}
 public:
     void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
     {
         static PBRLightArrayBufferParamInfo LIGHTDATA_INFO;
-        static ColorCorrectionBufferParamInfo COLOR_CORRECTION;
+        static ColorCorrectionBufferParamInfo COLOR_CORRECTION_INFO;
+        static ShadowDataBufferParamInfo SHADOW_DATA_INFO;
         auto ShaderParamInfoInit = []
         {
             std::map<String, ShaderBufferParamInfo*> paramInfo
             {
                 { "lightArray", &LIGHTDATA_INFO },
-                { "colorCorrection", &COLOR_CORRECTION}
+                { "colorCorrection", &COLOR_CORRECTION_INFO },
+                { "shadowData", &SHADOW_DATA_INFO }
             };
             paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
             return paramInfo;
@@ -70,17 +82,43 @@ public:
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
-            debugAssert(foundDescBinding != bindingBuffers.end());
-
-            foundDescBinding->second->bufferParamInfo = bufferInfo.second;
+            if (foundDescBinding != bindingBuffers.end())
+            {
+                foundDescBinding->second->bufferParamInfo = bufferInfo.second;
+            }
         }
     }
 };
 
-DEFINE_GRAPHICS_RESOURCE(PBRShader)
+DEFINE_GRAPHICS_RESOURCE(PBRShaders)
+
+class PBRLightsNoShadowShader : public PBRShaders
+{
+    DECLARE_GRAPHICS_RESOURCE(PBRLightsNoShadowShader, , PBRShaders, )
+protected:
+    PBRLightsNoShadowShader()
+        : BaseType(PBRLIGHTSNOSHADOW_SHADER_NAME)
+    {}
+public:
+};
+
+DEFINE_GRAPHICS_RESOURCE(PBRLightsNoShadowShader)
+
+class PBRLightsWithShadowShader : public PBRShaders
+{
+    DECLARE_GRAPHICS_RESOURCE(PBRLightsWithShadowShader, , PBRShaders, )
+protected:
+    PBRLightsWithShadowShader()
+        : BaseType(PBRLIGHTSWITHSHADOW_SHADER_NAME)
+    {}
+public:
+};
+
+DEFINE_GRAPHICS_RESOURCE(PBRLightsWithShadowShader)
 
 //////////////////////////////////////////////////////////////////////////
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-ScreenSpaceQuadShaderPipelineRegistrar PBR_SHADER_PIPELINE_REGISTER(PBR_SHADER_NAME);
+ScreenSpaceQuadShaderPipelineRegistrar PBRNOSHADOW_SHADER_PIPELINE_REGISTER(PBRLIGHTSNOSHADOW_SHADER_NAME);
+ScreenSpaceQuadShaderPipelineRegistrar PBRWITHSHADOW_SHADER_PIPELINE_REGISTER(PBRLIGHTSWITHSHADOW_SHADER_NAME);

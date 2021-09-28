@@ -8,9 +8,6 @@
 #include "PBRStageIO.inl.glsl"
 #undef OUTPUT
 
-// Including here to use this decriptors set created view shader params to be usable with any other shader that uses view params
-#include "../Common/ViewDescriptors.inl.glsl"
-
 void mainVS()
 {
     gl_Position = vec4(position,1);

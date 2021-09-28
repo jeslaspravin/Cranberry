@@ -15,7 +15,7 @@ struct CellIndex
         }
     }
 
-    CellIndex(uint32 cmnIdx) 
+    explicit CellIndex(uint32 cmnIdx)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -147,7 +147,7 @@ void vectorToCellIdx(T vec, CellIndex<d>& cellIdx)
 {
     for (uint32 i = 0; i < d; i++)
     {
-        cellIdx.idx[i] = (uint32)vec[i];
+        cellIdx.idx[i] = (uint32)Math::max(vec[i], 0);
     }
 }
 
@@ -157,7 +157,7 @@ CellIndex<d> vectorToCellIdx(T vec)
     CellIndex<d> cellIdx;
     for (uint32 i = 0; i < d; i++)
     {
-        cellIdx.idx[i] = (uint32)vec[i];
+        cellIdx.idx[i] = (uint32)Math::max(vec[i], 0);
     }
     return cellIdx;
 }
@@ -192,7 +192,7 @@ public:
 
     CellIndex<d> cell(const T& location) const
     {
-        return vectorToCellIdx<T, d>(Math::floor((location - minCorner) / cellDx));
+        return vectorToCellIdx<T, d>(Math::floor((clampLocation(location) - minCorner) / cellDx));
     }
 
     CellIndex<d> getNdIndex(const uint32 index) const;
@@ -202,25 +202,26 @@ public:
         return location(getNdIndex(index));
     }
 
-    CellIndex<d> cellCount()
+    CellIndex<d> cellCount() const
     {
         return vectorToCellIdx<T, d>(nCells);
     }
 
-    void cellCount(CellIndex<d>& cellCnt)
+    void cellCount(CellIndex<d>& cellCnt) const
     {
         vectorToCellIdx<T,d>(nCells, cellCnt);
     }
 
-    CellIndex<d> clampCellIndex(const CellIndex<d>& cell);
-    T clampLocation(const T& location);
-    bool isInside(const CellIndex<d> cell);
+    CellIndex<d> clampCellIndex(const CellIndex<d>& cell) const;
+    T clampLocation(const T& location) const;
+    bool isInside(const CellIndex<d> cell) const;
 
-    T cellSize() {
+    T cellSize() const
+    {
         return cellDx;
     }
 
-    void getBound(T& minB, T& maxB)
+    void getBound(T& minB, T& maxB) const
     {
         minB = minCorner;
         maxB = maxCorner;
@@ -246,7 +247,7 @@ CellIndex<d> UniformGrid<T, d>::getNdIndex(const uint32 index) const
 }
 
 template<class T, uint32 d>
-CellIndex<d> UniformGrid<T, d>::clampCellIndex(const CellIndex<d>& cell)
+CellIndex<d> UniformGrid<T, d>::clampCellIndex(const CellIndex<d>& cell) const
 {
     CellIndex<d> clampedCell;
     for (uint32 i = 0; i < d; i++) {
@@ -256,7 +257,7 @@ CellIndex<d> UniformGrid<T, d>::clampCellIndex(const CellIndex<d>& cell)
 }
 
 template<class T, uint32 d>
-T UniformGrid<T, d>::clampLocation(const T& location)
+T UniformGrid<T, d>::clampLocation(const T& location) const
 {
     T clampedLocation;
     for (uint32 i = 0; i < d; i++) {
@@ -266,7 +267,7 @@ T UniformGrid<T, d>::clampLocation(const T& location)
 }
 
 template<class T, uint32 d>
-bool UniformGrid<T, d>::isInside(const CellIndex<d> cell)
+bool UniformGrid<T, d>::isInside(const CellIndex<d> cell) const
 {
     for (uint32 i = 0; i < d; i++) {
         if (cell[i] >= (uint32)nCells[i] || cell[i] < 0)

@@ -1,7 +1,9 @@
 #pragma once
 
 #include "CoreMathTypedefs.h"
+#include "../Types/Containers/ArrayView.h"
 #include "Math.h"
+#include "../Platform/PlatformAssertionErrors.h"
 
 class Vector2D;
 class Vector3D;
@@ -17,22 +19,37 @@ public:
     Box() = default;
 
     Box(const T& min, const T& max)
+        : minBound(min)
+        , maxBound(max)
+    {}
+
+    Box(const T& value)
+        : minBound(value)
+        , maxBound(value)
+    {}
+
+    Box(const ArrayView<T>& points)
+        : minBound(0)
+        , maxBound(0)
     {
-        minBound = min;
-        maxBound = max;
+        fatalAssert(points.size() > 0, "Points must have atleast one point");
+        offset(points[0]);
+        for (uint32 i = 1; i < points.size(); ++i)
+        {
+            grow(points[i]);
+        }
+        fixAABB();
     }
 
     Box(const Box<T, d>& other)
-    {
-        minBound = other.minBound;
-        maxBound = other.maxBound;
-    }
+        : minBound(other.minBound)
+        , maxBound(other.maxBound)
+    {}
 
     Box(Box<T, d>&& other)
-    {
-        minBound = std::move(other.minBound);
-        maxBound = std::move(other.maxBound);
-    }
+        : minBound(std::move(other.minBound))
+        , maxBound(std::move(other.maxBound))
+    {}
 
     Box<T, d>& operator=(const Box<T, d>& other)
     {
@@ -112,7 +129,7 @@ public:
         for (uint32 i = 0; i < d; i++)
         {
             // If min point of one is larger than max point of another or vice versa then box never intersects
-            if (other.maxBound[i]<minBound[i] || other.minBound[i] > maxBound[i])
+            if (other.maxBound[i] < minBound[i] || other.minBound[i] > maxBound[i])
                 return false;
         }
         return true;
@@ -152,7 +169,7 @@ public:
             if (minBound[i] > maxBound[i])
             {
                 // Swap in case of swapped axis
-                minBound[i] = (minBound[i] + maxBound[i]) - (maxBound[i] = minBound[i]);
+                std::swap(minBound[i], maxBound[i]);
             }
         }
     }
@@ -172,6 +189,11 @@ public:
     T size() const
     {
         return maxBound - minBound;
+    }
+
+    T center() const
+    {
+        return (maxBound + minBound) * 0.5f;
     }
 
     // Ensure start point is outside the box
@@ -242,6 +264,139 @@ public:
         outExitPoint = startPoint + dir * exitTime;
 
         return true;
+    }
+};
+
+template<class T>
+class Box<T, 1>
+{
+public:
+    T minBound;
+    T maxBound;
+
+    Box() = default;
+
+    Box(const T& min, const T& max)
+    {
+        minBound = min;
+        maxBound = max;
+    }
+
+    Box(const Box<T, 1>& other)
+    {
+        minBound = other.minBound;
+        maxBound = other.maxBound;
+    }
+
+    Box(Box<T, 1>&& other)
+    {
+        minBound = std::move(other.minBound);
+        maxBound = std::move(other.maxBound);
+    }
+
+    Box<T, 1>& operator=(const Box<T, 1>& other)
+    {
+        minBound = other.minBound;
+        maxBound = other.maxBound;
+        return *this;
+    }
+
+    Box<T, 1> operator+(const Box<T, 1>& other)
+    {
+        Box<T, 1> newBox;
+        newBox.minBound = minBound > other.minBound ? other.minBound : minBound;
+        newBox.maxBound = maxBound < other.maxBound ? other.maxBound : maxBound;
+        return newBox;
+    }
+
+    Box<T, 1> operator+(const T& offset)
+    {
+        Box<T, 1> newBox;
+        newBox.minBound = minBound + offset;
+        newBox.maxBound = maxBound + offset;
+        return newBox;
+    }
+
+    void operator+=(const Box<T, 1>& other)
+    {
+        grow(other);
+    }
+
+    void operator+=(const T& dx)
+    {
+        offset(dx);
+    }
+
+
+    Box<T, 1>& operator=(Box<T, 1>&& other)
+    {
+        minBound = std::move(other.minBound);
+        maxBound = std::move(other.maxBound);
+        return *this;
+    }
+
+    void offset(const T& offset)
+    {
+        minBound += offset;
+        maxBound += offset;
+    }
+
+    void grow(const Box<T, 1>& other)
+    {
+        minBound = minBound > other.minBound ? other.minBound : minBound;
+        maxBound = maxBound < other.maxBound ? other.maxBound : maxBound;
+    }
+    void grow(const T& point)
+    {
+        minBound = minBound > point ? point : minBound;
+        maxBound = maxBound < point ? point : maxBound;
+    }
+
+    bool intersect(const Box<T, 1>& other) const
+    {
+        return !(other.maxBound < minBound || other.minBound > maxBound);
+    }
+
+    Box<T, 1> getIntersectionBox(const Box<T, 1>& other, bool checkAA = true) const
+    {
+        Box<T, 1> regionBox;
+        regionBox.minBound = minBound > other.minBound ? minBound : other.minBound;
+        regionBox.maxBound = maxBound < other.maxBound ? maxBound : other.maxBound;
+
+        if (checkAA) 
+        {
+            regionBox.fixAABB();
+        }
+        return regionBox;
+    }
+
+    bool isValidAABB() const
+    {
+        return minBound <= maxBound;
+    }
+
+    void fixAABB()
+    {
+        if (minBound > maxBound)
+        {
+            // Swap in case of swapped axis
+            std::swap(minBound, maxBound);
+        }
+    }
+
+    bool contains(const T& point) const
+    {
+        return point >= minBound && point <= maxBound;
+    }
+
+    T size() const
+    {
+        return maxBound - minBound;
+    }
+
+    T center() const
+    {
+        return (maxBound + minBound) * 0.5f;
     }
 };
 

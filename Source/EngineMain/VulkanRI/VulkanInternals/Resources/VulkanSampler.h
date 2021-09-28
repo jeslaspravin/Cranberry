@@ -16,7 +16,7 @@ private:
     VulkanSampler();
 public:
     VulkanSampler(class VulkanDevice* device, ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering,
-        float poorMipLod);
+        float poorMipLod = 0, uint8 samplerBorderColFlags = 0);
 
     /* IVulkanResources Overrides */
     String getObjectName() const override;

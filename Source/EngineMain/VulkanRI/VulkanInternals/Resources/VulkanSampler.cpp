@@ -26,8 +26,8 @@ VulkanSampler::VulkanSampler()
 {}
 
 VulkanSampler::VulkanSampler(class VulkanDevice* device, ESamplerTilingMode::Type samplerTiling,
-    ESamplerFiltering::Type samplerFiltering, float poorMipLod)
-    : BaseType(samplerTiling,samplerFiltering, poorMipLod)
+    ESamplerFiltering::Type samplerFiltering, float poorMipLod /*= 0*/, uint8 samplerBorderColFlags /*= 0*/)
+    : BaseType(samplerTiling,samplerFiltering, poorMipLod, samplerBorderColFlags)
     , ownerDevice(device)
     , sampler(nullptr)
 {}
@@ -59,9 +59,9 @@ void VulkanSampler::reinitResources()
     createInfo.minLod = mipLodRange.x;
     createInfo.maxLod = mipLodRange.y;
 
-    uint32 borderCol = transparentBorder ? 0 : 2;
-    borderCol += intBorder ? 1 : 0;
-    borderCol += whiteBorder ? 2 : 0;
+    uint32 borderCol = BIT_SET(borderColorFlags, ESamplerBorderColors::Transparent) ? 0 : 2;
+    borderCol += BIT_SET(borderColorFlags, ESamplerBorderColors::Integer) ? 1 : 0;
+    borderCol += BIT_SET(borderColorFlags, ESamplerBorderColors::White) ? 2 : 0;
     createInfo.borderColor = (VkBorderColor)borderCol;
 
     VkSampler nextSampler;

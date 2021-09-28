@@ -47,7 +47,7 @@ protected:
 DEFINE_TEMPLATED_GRAPHICS_RESOURCE(TexturedShader, <ExpandArgs(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
     , <ExpandArgs(VertexUsage, RenderpassFormat)>)
 
-template class TexturedShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffers>;
+template class TexturedShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffer>;
 
 //////////////////////////////////////////////////////////////////////////
 /// Pipeline registration
@@ -86,8 +86,8 @@ TexturedShaderPipeline::TexturedShaderPipeline(const ShaderResource* shaderResou
     blendState.bBlendEnable = false;
 
     bool bHasDepth = false;
-    FramebufferFormat fbFormat(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage());
-    GlobalBuffers::getFramebuffer(fbFormat, 0);
+    FramebufferFormat fbFormat = GlobalBuffers
+        ::getFramebufferRenderpassProps(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage()).renderpassAttachmentFormat;
     attachmentBlendStates.reserve(fbFormat.attachments.size());
     for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
     {

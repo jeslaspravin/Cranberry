@@ -45,16 +45,21 @@ void VulkanFrameBuffer::initializeFb(Framebuffer* fb, const Size2D& frameSize)
     std::vector<VkImageView> imageViews;
     imageViews.reserve(fb->textures.size());
     ImageViewInfo imageViewInfo;
+
+    uint32 layers = (fb->textures.empty() || (fb->textures[0]->getImageSize().z == 1 && fb->textures[0]->getLayerCount() == 1)) 
+        ? 1 : fb->textures[0]->getLayerCount();
+    // if texture is having more layers or 3D then we need view types
+    int32 imgViewType = (layers == 1) ? -1 : VkImageViewType::VK_IMAGE_VIEW_TYPE_2D_ARRAY;
     for (ImageResource* imgRes : fb->textures)
     {
-        imageViews.push_back(static_cast<VulkanImageResource*>(imgRes)->getImageView(imageViewInfo));
+        imageViews.push_back(static_cast<VulkanImageResource*>(imgRes)->getImageView(imageViewInfo, imgViewType));
     }
 
     FRAMEBUFFER_CREATE_INFO(fbCreateInfo);
     fbCreateInfo.renderPass = dummyRenderPass;
     fbCreateInfo.width = frameSize.x;
     fbCreateInfo.height = frameSize.y;
-    fbCreateInfo.layers = 1;
+    fbCreateInfo.layers = layers;
     fbCreateInfo.attachmentCount = uint32(imageViews.size());
     fbCreateInfo.pAttachments = imageViews.data();
 

@@ -123,6 +123,26 @@ void Camera::setRotation(const Rotation& newRotation)
     camRotation = newRotation;
 }
 
+void Camera::frustumCorners(Vector3D* corners) const
+{
+    Matrix4 ndcToWorld = viewMatrix() * projectionMatrix().inverse();
+    int32 cornerIdx = 0;
+    for (float z = 0; z < 2; ++z)
+    {
+        for (float y = -1; y < 2; y += 2)
+        {
+            for (float x = -1; x < 2; x += 2)
+            {
+                Vector4D worldPos(ndcToWorld * Vector4D(x, y, z, 1));
+                worldPos /= worldPos.w();
+
+                corners[cornerIdx] = Vector3D(worldPos);
+                cornerIdx++;
+            }
+        }
+    }
+}
+
 void Camera::lookAt(const Vector3D& lookAtTarget)
 {
     RotationMatrix rotMatrix = RotationMatrix::fromX(lookAtTarget - camTranslation);

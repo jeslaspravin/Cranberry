@@ -39,12 +39,10 @@ public:
 class VulkanShaderUniqDescLayout final : public VulkanShaderSetParamsLayout
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanShaderUniqDescLayout, , VulkanShaderSetParamsLayout, )
-public:
-    constexpr static uint32 DESC_SET_ID = 2;
 private:
     VulkanShaderUniqDescLayout() = default;
 public:
-    VulkanShaderUniqDescLayout(const ShaderResource* shaderResource);
+    VulkanShaderUniqDescLayout(const ShaderResource* shaderResource, uint32 descSetIdx);
 
     /* VulkanShaderParamsLayout overrides */
     String getObjectName() const final;

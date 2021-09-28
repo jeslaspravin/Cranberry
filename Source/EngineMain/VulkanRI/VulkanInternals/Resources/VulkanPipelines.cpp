@@ -351,6 +351,8 @@ void VulkanGraphicsPipeline::fillDynamicPermutedStates(VulkanGraphicsPipeline::V
     PIPELINE_RASTERIZATION_STATE_CREATE_INFO(rasterizationStateCI);
     rasterizationStateCI.cullMode = VkCullModeFlagBits(params.cullingMode);
     rasterizationStateCI.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizationStateCI.depthBiasEnable = bEnableDepthBias ? VK_TRUE : VK_FALSE;
+    rasterizationStateCI.depthClampEnable = bEnableDepthClamp ? VK_TRUE : VK_FALSE;
     if (GlobalRenderVariables::ENABLE_NON_FILL_DRAWS.get())
     {
         rasterizationStateCI.polygonMode = VkPolygonMode(params.drawMode);
@@ -361,6 +363,10 @@ void VulkanGraphicsPipeline::fillDynamicPermutedStates(VulkanGraphicsPipeline::V
     }
 
     createInfo.rasterizationStateCI = rasterizationStateCI;
+    if (bEnableDepthBias)
+    {
+        createInfo.dynamicStates.emplace_back(VkDynamicState::VK_DYNAMIC_STATE_DEPTH_BIAS);
+    }
     if (params.drawMode != EPolygonDrawMode::Fill)
     {
         createInfo.dynamicStates.emplace_back(VkDynamicState::VK_DYNAMIC_STATE_LINE_WIDTH);

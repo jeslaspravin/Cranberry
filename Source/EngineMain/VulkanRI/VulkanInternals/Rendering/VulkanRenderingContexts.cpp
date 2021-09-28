@@ -28,22 +28,22 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
     ShaderDataCollection& defaultShaderCollection = rawShaderObjects[DEFAULT_SHADER_NAME];
     {
-        const std::vector<std::pair<const DrawMeshShader*, GraphicsPipelineBase*>>& defaultShaders
+        const DrawMeshShaderObject::ShaderResourceList& defaultShaders
             = static_cast<DrawMeshShaderObject*>(defaultShaderCollection.shaderObject)->getAllShaders();
-        for (const std::pair<const DrawMeshShader*, GraphicsPipelineBase*>& defaultShader : defaultShaders)
+        for (const DrawMeshShaderObject::ShaderResourceInfo& defaultShader : defaultShaders)
         {
-            VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(defaultShader.second);
-            VkRenderPass renderpass = createGbufferRenderpass(defaultShader.first->renderpassUsage(), {});
+            VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(defaultShader.pipeline);
+            VkRenderPass renderpass = createGbufferRenderpass(defaultShader.shader->renderpassUsage(), {});
 
             // Since default alone will be used as parent
             graphicsPipeline->setCanBeParent(true);
             graphicsPipeline->setCompatibleRenderpass(renderpass);
             graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, graphicsPipeline);
 
-            defaultShader.second->init();
+            defaultShader.pipeline->init();
 
-            gbufferRenderPasses[defaultShader.first->renderpassUsage()].emplace_back(RenderpassPropsPair({}, renderpass));
-            pipelineLayouts[defaultShader.first] = graphicsPipeline->pipelineLayout;
+            gbufferRenderPasses[defaultShader.shader->renderpassUsage()].emplace_back(RenderpassPropsPair({}, renderpass));
+            pipelineLayouts[defaultShader.shader] = graphicsPipeline->pipelineLayout;
         }
     }
 
@@ -56,31 +56,31 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
         if (shaderCollection.second.shaderObject->baseShaderType() == DrawMeshShader::staticType())
         {
-            const std::vector<std::pair<const DrawMeshShader*, GraphicsPipelineBase*>>& allShaders
+            const DrawMeshShaderObject::ShaderResourceList& allShaders
                 = static_cast<DrawMeshShaderObject*>(shaderCollection.second.shaderObject)->getAllShaders();
 
-            for (const std::pair<const DrawMeshShader*, GraphicsPipelineBase*>& shaderPair : allShaders)
+            for (const DrawMeshShaderObject::ShaderResourceInfo& shaderPair : allShaders)
             {
-                FramebufferFormat fbFormat(shaderPair.first->renderpassUsage());
+                FramebufferFormat fbFormat(shaderPair.shader->renderpassUsage());
                 GraphicsPipelineBase* defaultGraphicsPipeline;
                 const DrawMeshShader* defaultShader = static_cast<DrawMeshShaderObject*>(defaultShaderCollection.shaderObject)
-                    ->getShader(shaderPair.first->vertexUsage(), fbFormat, &defaultGraphicsPipeline);
+                    ->getShader(shaderPair.shader->vertexUsage(), fbFormat, &defaultGraphicsPipeline);
 
                 if (defaultShader == nullptr)
                 {
                     Logger::error("VulkanGlobalRenderingContext", "%s : Default shader must contain all the permutations, Missing for [%s %s]"
-                        , __func__, EVertexType::toString(shaderPair.first->vertexUsage()).getChar()
-                        , ERenderPassFormat::toString(shaderPair.first->renderpassUsage()).getChar());
+                        , __func__, EVertexType::toString(shaderPair.shader->vertexUsage()).getChar()
+                        , ERenderPassFormat::toString(shaderPair.shader->renderpassUsage()).getChar());
                     fatalAssert(defaultShader, "Default shader missing!");
                 }
 
-                shaderPair.second->setParentPipeline(defaultGraphicsPipeline);
-                VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(shaderPair.second);
-                graphicsPipeline->setCompatibleRenderpass(getRenderPass(shaderPair.first->renderpassUsage(), {}));
-                graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, shaderPair.second);
+                shaderPair.pipeline->setParentPipeline(defaultGraphicsPipeline);
+                VulkanGraphicsPipeline* graphicsPipeline = static_cast<VulkanGraphicsPipeline*>(shaderPair.pipeline);
+                graphicsPipeline->setCompatibleRenderpass(getRenderPass(shaderPair.shader->renderpassUsage(), {}));
+                graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, shaderPair.pipeline);
                 graphicsPipeline->init();
 
-                pipelineLayouts[shaderPair.first] = graphicsPipeline->pipelineLayout;
+                pipelineLayouts[shaderPair.shader] = graphicsPipeline->pipelineLayout;
             }
         }
         else if (shaderCollection.second.shaderObject->baseShaderType() == UniqueUtilityShader::staticType())
@@ -219,7 +219,6 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
     std::vector<VkDescriptorSetLayout> descSetLayouts;
     const ShaderResource* shaderResource = pipeline->getShaderResource();
 
-
     if (shaderResource->getType()->isChildOf(DrawMeshShader::staticType()))
     {
         for (const ReflectDescriptorBody& reflectDescBody : shaderResource->getReflection()->descriptorsSets)
@@ -245,6 +244,14 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
                 descSetLayouts.resize(reflectDescBody.set + 1);
             }
             descSetLayouts[reflectDescBody.set] = shaderParametersLayout->getDescSetLayout(reflectDescBody.set);
+        }
+    }
+    // Ensure nothing is null
+    for (VkDescriptorSetLayout& layout : descSetLayouts)
+    {
+        if (layout == nullptr)
+        {
+            layout = VulkanGraphicsHelper::getEmptyDescriptorsSetLayout(graphicsInstance);
         }
     }
 

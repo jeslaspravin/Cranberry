@@ -21,6 +21,7 @@ namespace GlobalRenderVariables
     GraphicsDeviceConstant<float> MAX_ANISOTROPY(0);
 
     GraphicsDeviceConstant<bool> ENABLE_EXTENDED_STORAGES;
+    GraphicsDeviceConstant<bool> ENABLE_GEOMETRY_SHADERS;
 
     //extern GraphicsDeviceConstant<bool> ENABLED_TESSELLATION;
     GraphicsDeviceConstant<bool> ENABLE_NON_FILL_DRAWS;
@@ -40,6 +41,7 @@ void VulkanDevice::markEnabledFeatures()
     enabledFeatures.fillModeNonSolid = features.fillModeNonSolid;
     enabledFeatures.wideLines = features.wideLines;
     enabledFeatures.shaderStorageImageExtendedFormats = features.shaderStorageImageExtendedFormats;
+    enabledFeatures.geometryShader = features.geometryShader;
 }
 
 void VulkanDevice::markGlobalConstants()
@@ -67,6 +69,8 @@ void VulkanDevice::markGlobalConstants()
 
     // Storing resources
     GlobalRenderVariables::ENABLE_EXTENDED_STORAGES.set(enabledFeatures.shaderStorageImageExtendedFormats);
+
+    GlobalRenderVariables::ENABLE_GEOMETRY_SHADERS.set(enabledFeatures.geometryShader);
 }
 
 bool VulkanDevice::createQueueResources()

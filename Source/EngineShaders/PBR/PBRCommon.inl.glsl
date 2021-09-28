@@ -111,12 +111,11 @@ vec2 integrateBRDF(float nDotV, float roughness, uint sampleCount)
         if(nDotL > 0.0)
         {
             float geomMask = geoMaskSmith(normal, pt2View, pt2Light, SQR(roughness) * 0.5);
-            // #TODO: Understand and rename below
-            float G_Vis = (geomMask * pt2vDotH) / (nDotH * nDotV);
-            float Fc = pow(1.0 - pt2vDotH, 5.0);
+            float geomVis = (geomMask * pt2vDotH) / (nDotH * nDotV);
+            float fresnelConst = pow(1.0 - pt2vDotH, 5.0);
 
-            brdf += (1.0 - Fc) * G_Vis;
-            bias += Fc * G_Vis;
+            brdf += (1.0 - fresnelConst) * geomVis;
+            bias += fresnelConst * geomVis;
         }
     }
     return vec2(brdf, bias) / vec2(sampleCount);

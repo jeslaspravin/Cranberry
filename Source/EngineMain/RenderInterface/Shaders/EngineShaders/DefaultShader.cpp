@@ -1,6 +1,9 @@
 #include "../Base/DrawMeshShader.h"
 #include "../../../Core/Types/CoreDefines.h"
 #include "../../../RenderApi/GBuffersAndTextures.h"
+#include "ShadowDepthDraw.h"
+#include "../../../Core/Platform/PlatformAssertionErrors.h"
+#include "../../ShaderCore/ShaderParameterResources.h"
 
 template<EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
 class DefaultShader : public DrawMeshShader
@@ -13,13 +16,57 @@ protected:
         compatibleRenderpassFormat = RenderpassFormat;
         compatibleVertex = VertexUsage;
     }
+public:
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
+    {
+        if constexpr (RenderpassFormat != ERenderPassFormat::DirectionalLightDepth && RenderpassFormat != ERenderPassFormat::PointLightDepth)
+        {
+            return;
+        }
+
+        const std::map<String, ShaderBufferParamInfo*>* paramInfo = nullptr;
+        if constexpr(RenderpassFormat == ERenderPassFormat::DirectionalLightDepth)
+        {
+            static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
+            {
+                { "lightViews",  DirectionalShadowCascadeViews::paramInfo() }
+            };
+
+            paramInfo = &SHADER_PARAMS_INFO;
+        }
+        else if constexpr (RenderpassFormat == ERenderPassFormat::PointLightDepth)
+        {
+            static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
+            {
+                { "lightViews",  PointShadowDepthViews::paramInfo() }
+            };
+
+            paramInfo = &SHADER_PARAMS_INFO;
+        }
+
+        if (paramInfo != nullptr)
+        {
+            for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : *paramInfo)
+            {
+                auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
+
+                debugAssert(foundDescBinding != bindingBuffers.end());
+
+                foundDescBinding->second->bufferParamInfo = bufferInfo.second;
+            }
+        }
+    }
 };
 
 DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DefaultShader, <ExpandArgs(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
     , <ExpandArgs(VertexUsage, RenderpassFormat)>)
 
-template class DefaultShader<EVertexType::Simple2, ERenderPassFormat::Multibuffers>;
-template class DefaultShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffers>;
+template class DefaultShader<EVertexType::Simple2, ERenderPassFormat::Multibuffer>;
+
+template class DefaultShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffer>;
+template class DefaultShader<EVertexType::StaticMesh, ERenderPassFormat::Depth>;
+template class DefaultShader<EVertexType::StaticMesh, ERenderPassFormat::PointLightDepth>;
+template class DefaultShader<EVertexType::StaticMesh, ERenderPassFormat::DirectionalLightDepth>;
 
 //////////////////////////////////////////////////////////////////////////
 /// Pipeline registration
@@ -58,8 +105,8 @@ DefaultShaderPipeline::DefaultShaderPipeline(const ShaderResource* shaderResourc
     blendState.bBlendEnable = false;
 
     bool bHasDepth = false;
-    FramebufferFormat fbFormat(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage());
-    GlobalBuffers::getFramebuffer(fbFormat, 0);
+    FramebufferFormat fbFormat = GlobalBuffers
+        ::getFramebufferRenderpassProps(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage()).renderpassAttachmentFormat;
     attachmentBlendStates.reserve(fbFormat.attachments.size());
     for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
     {

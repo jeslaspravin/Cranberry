@@ -62,9 +62,9 @@ public:
     }
 
     static SharedPtr<class SamplerInterface> createSampler(class IGraphicsInstance* graphicsInstance, const char* name,
-        ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod = 0)
+        ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod = 0, uint8 samplerBorderColFlags = 0)
     {
-        return HelperType::createSampler(graphicsInstance, name, samplerTiling, samplerFiltering, poorMipLod);
+        return HelperType::createSampler(graphicsInstance, name, samplerTiling, samplerFiltering, poorMipLod, samplerBorderColFlags);
     }
 
     static SharedPtr<class ShaderParameters> createShaderParameters(class IGraphicsInstance* graphicsInstance

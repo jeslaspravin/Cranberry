@@ -9,16 +9,20 @@ namespace ERenderPassFormat
     enum Type
     {
         Generic,
-        Multibuffers,
-        Depth
+        Multibuffer,
+        Depth,
+        PointLightDepth,
+        DirectionalLightDepth
     };
 
     String toString(ERenderPassFormat::Type renderpassFormat);
 
 #define FOR_EACH_RENDERPASS_FORMAT(OpMacro) \
-    OpMacro(Generic),                       \
-    OpMacro(Multibuffers),                  \
-    OpMacro(Depth)
+    OpMacro(Generic)                        \
+    OpMacro(Multibuffer)                   \
+    OpMacro(Depth)                          \
+    OpMacro(PointLightDepth)                \
+    OpMacro(DirectionalLightDepth)
 }
 
 

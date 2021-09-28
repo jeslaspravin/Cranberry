@@ -112,7 +112,7 @@ float Matrix4::determinant() const
     return glm::determinant(value);
 }
 
-Matrix4 Matrix4::transpost() const
+Matrix4 Matrix4::transpose() const
 {
     return glm::transpose(value);
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Types/CoreDefines.h"
+
 template <bool IsConst, typename MemberType>
 class MemberField;
 

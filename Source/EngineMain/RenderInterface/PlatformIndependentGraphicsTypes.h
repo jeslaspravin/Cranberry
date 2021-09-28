@@ -23,6 +23,7 @@ using GraphicsIndexBuffer = GraphicsTypes::GraphicsIndexBuffer;
 
 using GraphicsRenderTargetResource = GraphicsTypes::GraphicsRenderTargetResource;
 using GraphicsCubeImageResource = GraphicsTypes::GraphicsCubeImageResource;
+using GraphicsCubeRTImageResource = GraphicsTypes::GraphicsCubeRTImageResource;
 using GraphicsImageResource = GraphicsTypes::GraphicsImageResource;
 
 template <typename Type>

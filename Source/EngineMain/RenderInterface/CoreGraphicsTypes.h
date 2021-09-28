@@ -327,6 +327,16 @@ namespace ESamplerTilingMode
     uint32 getSamplerTiling(ESamplerTilingMode::Type tilingMode);
 }
 
+namespace ESamplerBorderColors
+{
+    enum Type : uint8
+    {
+        Transparent = 1,
+        White = 2,
+        Integer = 4
+    };
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Pipeline types
 //////////////////////////////////////////////////////////////////////////

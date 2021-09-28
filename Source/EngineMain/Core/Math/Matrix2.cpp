@@ -78,7 +78,7 @@ float Matrix2::determinant() const
     return glm::determinant(value);
 }
 
-Matrix2 Matrix2::transpost() const
+Matrix2 Matrix2::transpose() const
 {
     return glm::transpose(value);
 }

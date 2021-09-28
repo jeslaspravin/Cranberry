@@ -462,11 +462,13 @@ void fillBufferFields(ReflectBufferShaderField& shaderBufferField, const SPIRV_C
             // Returns 0 in runtime array
             memberField.data.totalSize = memberField.data.stride = uint32_t(compiledData->get_declared_struct_member_size(structType, index));
 
-            if (memberType.columns > 1)
-            {
-                memberField.data.stride = compiledData->type_struct_member_matrix_stride(structType, index);
-            }
-            else if (!memberType.array.empty())
+            // We don't need matrix check here as array stride returns correct value and type_struct_member_matrix_stride returns matrix row/column stride
+            //if (memberType.columns > 1)
+            //{
+            //    memberField.data.stride = compiledData->type_struct_member_matrix_stride(structType, index);
+            //}
+            //else 
+            if (!memberType.array.empty())
             {
                 memberField.data.stride = compiledData->type_struct_member_array_stride(structType, index);
             }

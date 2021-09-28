@@ -213,6 +213,7 @@ public:
     virtual void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const = 0;
     virtual void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const = 0;
     virtual void cmdSetLineWidth(const GraphicsResource* cmdBuffer, float lineWidth) const = 0;
+    virtual void cmdSetDepthBias(const GraphicsResource* cmdBuffer, float constantBias, float slopeFactor, float clampValue) const = 0;
 
     virtual void cmdBeginBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const = 0;
     virtual void cmdInsertBufferMarker(const GraphicsResource* commandBuffer, const String& name, const LinearColor& color = LinearColorConst::WHITE) const = 0;

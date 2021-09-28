@@ -63,7 +63,7 @@ public:
     static void destroyImageView(class IGraphicsInstance* graphicsInstance, VkImageView view);
 
     static SharedPtr<class SamplerInterface> createSampler(class IGraphicsInstance* graphicsInstance, const char* name,
-        ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod);
+        ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering, float poorMipLod = 0, uint8 samplerBorderColFlags = 0);
     static ESamplerFiltering::Type getClampedFiltering(class IGraphicsInstance* graphicsInstance, ESamplerFiltering::Type sampleFiltering
         , EPixelDataFormat::Type imageFormat);
 
@@ -84,6 +84,7 @@ public:
     static VkFramebuffer getFramebuffer(const struct Framebuffer* appFrameBuffer);
 
     static VkDescriptorSetLayout createDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, const VkDescriptorSetLayoutCreateInfo& layoutCreateInfo);
+    static VkDescriptorSetLayout getEmptyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance);
     static void destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance, VkDescriptorSetLayout descriptorsSetLayout);
     static void updateDescriptorsSet(class IGraphicsInstance* graphicsInstance, const std::vector<VkWriteDescriptorSet>& writingDescriptors
         , const std::vector<VkCopyDescriptorSet>& copyingDescsSets);

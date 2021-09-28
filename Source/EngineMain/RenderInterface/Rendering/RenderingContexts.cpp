@@ -50,6 +50,7 @@ void GlobalRenderingContextBase::initShaderResources()
         pipelinesCache->init();
     }
 
+    std::map<String, std::pair<uint32, ShaderResource*>> shaderUniqParamUsageMaxBitCount;
     std::vector<GraphicsResource*> allShaderResources;
     GraphicsShaderResource::staticType()->allChildDefaultResources(allShaderResources, true, true);
     // Initialize all shaders
@@ -83,7 +84,19 @@ void GlobalRenderingContextBase::initShaderResources()
                             itr->second.first = setBitCount;
                             itr->second.second = drawMeshShader;
                         }
-                        continue;
+                    }
+                    else if (descriptorsSetMeta.set == 2)
+                    {
+                        auto itr = shaderUniqParamUsageMaxBitCount.find(drawMeshShader->getResourceName());
+                        if (itr == shaderUniqParamUsageMaxBitCount.end())
+                        {
+                            shaderUniqParamUsageMaxBitCount[drawMeshShader->getResourceName()] = { setBitCount, drawMeshShader };
+                        }
+                        else if (itr->second.first < setBitCount)
+                        {
+                            itr->second.first = setBitCount;
+                            itr->second.second = drawMeshShader;
+                        }
                     }
 
                     if(descriptorsSetMeta.set == 0 && viewParamUsageMaxBitCount < setBitCount)// View param
@@ -112,10 +125,11 @@ void GlobalRenderingContextBase::initShaderResources()
             perVertexTypeLayouts[static_cast<DrawMeshShader*>(vertexParamLayoutInfo.second.second)->vertexUsage()] = paramLayout;
         }
     }
-    initShaderPipelines(allShaderResources);
+    initShaderPipelines(allShaderResources, shaderUniqParamUsageMaxBitCount);
 }
 
-void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsResource*>& allShaderResources)
+void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsResource*>& allShaderResources
+    , const std::map<String, std::pair<uint32, ShaderResource*>>& shaderUniqParamShader)
 {
     std::set<EVertexType::Type> filledVertexInfo;
     auto vertexAttribFillLambda = [&filledVertexInfo](EVertexType::Type vertexUsed, const std::vector<ReflectInputOutput>& vertexShaderInputs)
@@ -142,7 +156,13 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
             ShaderDataCollection& shaderCollection = rawShaderObjects[shader->getResourceName()];
             if (shaderCollection.shadersParamLayout == nullptr)
             {
-                shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(drawMeshShader, 2);
+                ShaderResource* shaderToUse = drawMeshShader;
+                auto shaderToUseItr = shaderUniqParamShader.find(drawMeshShader->getResourceName());
+                if (shaderToUseItr != shaderUniqParamShader.cend())
+                {
+                    shaderToUse = shaderToUseItr->second.second;
+                }
+                shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(shaderToUse, 2);
                 shaderCollection.shadersParamLayout->init();
             }
             if (shaderCollection.shaderObject == nullptr)
@@ -150,6 +170,18 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
                 shaderCollection.shaderObject = shaderObjectFactory->create(shader->getResourceName(), drawMeshShader);
             }
             GraphicsPipelineBase* graphicsPipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create({ drawMeshShader }));
+
+            // Check if there is set 3(Per variant shader parameters)
+            GraphicsResource* perVariantLayout = nullptr;
+            for (const ReflectDescriptorBody& reflectDescBody : drawMeshShader->getReflection()->descriptorsSets)
+            {
+                if (reflectDescBody.set == 3)
+                {
+                    perVariantLayout = shaderParamLayoutsFactory->create(drawMeshShader, reflectDescBody.set);
+                    perVariantLayout->init();
+                    graphicsPipeline->setParamLayoutAtSet(perVariantLayout, reflectDescBody.set);
+                }
+            }
             graphicsPipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout, 2);
             graphicsPipeline->setParamLayoutAtSet(perVertexTypeLayouts[drawMeshShader->vertexUsage()], 1);
             graphicsPipeline->setParamLayoutAtSet(sceneViewParamLayout, 0);
@@ -162,6 +194,7 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
             DrawMeshShaderObject* drawMeshShaderObj = static_cast<DrawMeshShaderObject*>(shaderCollection.shaderObject);
             drawMeshShaderObj->addShader(drawMeshShader);
             drawMeshShaderObj->setPipeline(drawMeshShader, graphicsPipeline);
+            drawMeshShaderObj->setVariantParamsLayout(drawMeshShader, perVariantLayout);
         }
         else if (shader->getType()->isChildOf(UniqueUtilityShader::staticType()))
         {
@@ -429,6 +462,7 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         else
         {
             GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(pipelineContext->rtTextures);
+            renderpassProps.renderpassAttachmentFormat.rpFormat = pipelineContext->renderpassFormat;
             // To make sure that RTs created framebuffer is compatible with GlobalBuffers created FBs and its render pass and pipelines
             fatalAssert(renderpassProps == renderpassPropsFromRpFormat(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx)
                 , "%s() : Incompatible RTs for Mesh Draw shaders", __func__);

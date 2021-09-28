@@ -49,6 +49,9 @@ public:
     Vector3D translation() const { return camTranslation; }
     void setRotation(const Rotation& newRotation);
     Rotation rotation() const { return camRotation; }
+    float farPlane() const { return farClip; }
+    float nearPlane() const { return nearClip; }
+    void frustumCorners(Vector3D* corners) const;
 
     void lookAt(const Vector3D& lookAtTarget);
     // Expected pos input

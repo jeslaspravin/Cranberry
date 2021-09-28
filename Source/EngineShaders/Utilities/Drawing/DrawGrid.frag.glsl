@@ -2,9 +2,11 @@
 #extension GL_GOOGLE_include_directive:enable
 
 #include "../../Common/CommonDefines.inl.glsl"
-#include "../../Common/ViewDescriptors.inl.glsl"
 
 layout(location = 0) in vec2 inGrid;
+layout(location = 1) in vec3 inViewDir;
+layout(location = 2) flat in vec2 inViewPos;
+
 layout(location = 0) out vec4 colorAttachment0;
 
 layout(push_constant) uniform Constants
@@ -45,7 +47,12 @@ void mainFS()
                         ? constants.thickColor : (lod1Alpha > 0.0)
                             ? mix(constants.thickColor, constants.thinColor, lodFade) : constants.thinColor;
     // Grid global opacity fall off
-    float opacityFalloff = 1.0 - SATURATE_F(length(inGrid - viewPos().xy) / constants.gridExtendSize);
+    float distOpacityFallOff = 1.0 - SATURATE_F(length(inGrid - inViewPos) / constants.gridExtendSize);
+    // View fall off does not do much apart from hide some distant, which appear and flicker at grazing angles
+    // Against plane normal, opacity increases rapidly towards 1 when not viewing at grazing angle
+    // Change if model transformation is allowed, now -  dot(normalize(inViewDir), vec3(0, 0, 1))
+    float viewOpacityFallOff = 1.0 - pow(1.0 - abs(normalize(inViewDir).z), 16);
+    float opacityFalloff = distOpacityFallOff * viewOpacityFallOff;
 
     outColor.a *= (lod2Alpha > 0.0) ? lod2Alpha : (lod1Alpha > 0.0) 
                                         ? lod1Alpha : lod0Alpha * (1.0 - lodFade);
