@@ -37,23 +37,31 @@ public:
         cellsCount = std::move(other.cellsCount);
     }
 
-    void operator=(const VectorND<T, d>& other)
+    FORCE_INLINE void operator=(const VectorND<T, d>& other)
     {
         cellsCount = other.cellsCount;
         data = other.data;
     }
 
-    void operator=(VectorND<T, d>&& other)
+    FORCE_INLINE void operator=(VectorND<T, d>&& other)
     {
         data = std::move(other.data);
         cellsCount = std::move(other.cellsCount);
     }
 
-    T& operator[](const CellIndex<d>& cell)
+    FORCE_INLINE T& operator[](const CellIndex<d>& cell)
     {
         uint32 idx = 0;
         uint32 count = 1;
-        for (int32 i = d - 1; i >= 0; --i)
+        // If we are considering x as highest degree such that each x has Y * Z ys and zs
+        // Below need iterating for each x { for each y { for each z }}
+        //for (int32 i = d - 1; i >= 0; --i)
+        //{
+        //    idx += count * cell[i];
+        //    count *= cellsCount[i];
+        //}
+        // Usually we iterate like for each z { for each y { for each x }}
+        for (int32 i = 0; i < d; ++i)
         {
             idx += count * cell[i];
             count *= cellsCount[i];
@@ -61,13 +69,13 @@ public:
         return data[idx];
     }
 
-    void clear()
+    FORCE_INLINE void clear()
     {
         cellsCount = CellIndex<d>();
         data.clear();
     }
 
-    void resize(const CellIndex<d>& count)
+    FORCE_INLINE void resize(const CellIndex<d>& count)
     {
         cellsCount = count;
         data.resize(cellsCount.size());

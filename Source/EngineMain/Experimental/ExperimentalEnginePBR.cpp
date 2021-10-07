@@ -174,17 +174,18 @@ struct GridEntity
     uint32 idx;
 
     AABB getBounds() const;
-
-    bool operator==(const GridEntity& other) const
-    {
-        return type == other.type && idx == other.idx;
-    }
-
-    bool operator<(const GridEntity& other) const
-    {
-        return type < other.type || (type == other.type && idx < other.idx);
-    }
 };
+
+FORCE_INLINE bool operator==(const GridEntity& lhs, const GridEntity& rhs)
+{
+    return lhs.type == rhs.type && lhs.idx == rhs.idx;
+}
+
+FORCE_INLINE bool operator<(const GridEntity& lhs, const GridEntity& rhs)
+{
+    return lhs.type < rhs.type || (lhs.type == rhs.type && lhs.idx < rhs.idx);
+}
+
 template <>
 struct std::hash<GridEntity> 
 {
@@ -214,6 +215,8 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     void createImages();
     void destroyImages();
 
+    // Memory to find intersection with scene volume
+    std::vector<GridEntity> setIxMemory;
     // Scene data
     std::vector<PBRSceneEntity> sceneData;
 
@@ -413,7 +416,7 @@ AABB GridEntity::getBounds() const
 
 void ExperimentalEnginePBR::tempTest()
 {
-    
+
 }
 
 void ExperimentalEnginePBR::tempTestPerFrame()
@@ -2252,6 +2255,11 @@ void ExperimentalEnginePBR::updateCamGizmoCapture(class IRenderCommandList* cmdL
 
 void ExperimentalEnginePBR::renderShadows(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsResource* cmdBuffer, uint32 swapchainIdx)
 {
+    setIxMemory.resize(sceneData.size() + scenePointLights.size() + sceneSpotLights.size());
+    std::pmr::monotonic_buffer_resource memRes(setIxMemory.data(), setIxMemory.size() * sizeof(GridEntity));
+    std::pmr::polymorphic_allocator<GridEntity> setIxAlloc(&memRes);
+    std::pmr::unordered_set<GridEntity> setIntersections(setIxAlloc);
+
     std::unordered_map<MeshAsset*, std::vector<SharedPtr<ShaderParameters>>> meshToInstances;
     for (const PBRSceneEntity& entity : sceneData)
     {
@@ -2266,9 +2274,22 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList* cmdList, IGr
 
             for (const SharedPtr<ShaderParameters>& instance : meshAndInstances.second)
             {
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, { instance.get() });
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, instance.get());
                 cmdList->cmdDrawIndexed(cmdBuffer, 0, meshAndInstances.first->getIndexBuffer()->bufferCount());
             }
+        }
+    };
+    auto drawMeshesFromSet = [this, cmdList, graphicsInstance, cmdBuffer, &setIntersections](LocalPipelineContext& pipelineCntxt)
+    {
+        for (const GridEntity& entity : setIntersections)
+        {
+            if(entity.type != GridEntity::Entity)
+                continue;
+
+            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneData[entity.idx].meshAsset->getVertexBuffer() }, { 0 });
+            cmdList->cmdBindIndexBuffer(cmdBuffer, sceneData[entity.idx].meshAsset->getIndexBuffer());
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, sceneData[entity.idx].instanceParameters.get());
+            cmdList->cmdDrawIndexed(cmdBuffer, 0, sceneData[entity.idx].meshAsset->getIndexBuffer()->bufferCount());
         }
     };
 
@@ -2309,15 +2330,9 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList* cmdList, IGr
                 ArrayView<Vector3D> cornersView(corners, ARRAY_LENGTH(corners));
                 AABB sptRegion(cornersView);
 
-                std::set<GridEntity> entities = sceneVolume.findIntersection(sptRegion, true);
+                setIntersections.clear();
                 meshToInstances.clear();
-                for (const GridEntity& entity : entities)
-                {
-                    if (entity.type == GridEntity::Entity)
-                    {
-                        meshToInstances[sceneData[entity.idx].meshAsset].emplace_back(sceneData[entity.idx].instanceParameters);
-                    }
-                }
+                sceneVolume.findIntersection(setIntersections, sptRegion, true);
 
                 viewport = { Int2D(0, 0), Int2D(sptlit.shadowMap->getTextureSize()) };
                 scissor = viewport;
@@ -2332,8 +2347,8 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList* cmdList, IGr
                 faceFillQueryParam.cullingMode = BIT_SET(shadowFlags, PBRShadowFlags::DrawingBackface)
                     ? ECullingMode::BackFace : ECullingMode::FrontFace;
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, spotShadowPipelineContext, { faceFillQueryParam });
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, spotShadowPipelineContext, { sptlit.shadowViewParams.get() });
-                drawMeshes(spotShadowPipelineContext);
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, spotShadowPipelineContext, sptlit.shadowViewParams.get());
+                drawMeshesFromSet(spotShadowPipelineContext);
 
                 cmdList->cmdEndRenderPass(cmdBuffer);
             }
@@ -2355,15 +2370,9 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList* cmdList, IGr
                 ptRegion.grow(ptlit.lightPos + Vector3D(0, 0, ptlit.radius));
                 ptRegion.grow(ptlit.lightPos + Vector3D(0, 0, -ptlit.radius));
 
-                std::set<GridEntity> entities = sceneVolume.findIntersection(ptRegion, true);
+                setIntersections.clear();
                 meshToInstances.clear();
-                for (const GridEntity& entity : entities)
-                {
-                    if (entity.type == GridEntity::Entity)
-                    {
-                        meshToInstances[sceneData[entity.idx].meshAsset].emplace_back(sceneData[entity.idx].instanceParameters);
-                    }
-                }
+                sceneVolume.findIntersection(setIntersections, ptRegion, true);
 
                 viewport = { Int2D(0, ptlit.shadowMap->getTextureSize().y), Int2D(ptlit.shadowMap->getTextureSize().x, 0) };
                 scissor = { Int2D(0, 0), Int2D(ptlit.shadowMap->getTextureSize()) };
@@ -2377,8 +2386,8 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList* cmdList, IGr
                 faceFillQueryParam.cullingMode = BIT_SET(shadowFlags, PBRShadowFlags::DrawingBackface)
                     ? ECullingMode::FrontFace : ECullingMode::BackFace;
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, pointShadowPipelineContext, { faceFillQueryParam });
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, { ptlit.shadowViewParams.get() });
-                drawMeshes(pointShadowPipelineContext);
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, ptlit.shadowViewParams.get());
+                drawMeshesFromSet(pointShadowPipelineContext);
 
                 cmdList->cmdEndRenderPass(cmdBuffer);
             }
