@@ -26,6 +26,8 @@ struct DescriptorsSetQueryLessThan {
 
 struct DescriptorsSetQuery
 {
+    // If used for runtime then pool will be created with Update after bind enabled
+    bool bHasBindless = false;
     std::set<VkDescriptorPoolSize,DescriptorPoolSizeLessThan> supportedTypes;
 };
 

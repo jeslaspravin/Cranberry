@@ -54,7 +54,7 @@ bool DescriptorsSetQueryLessThan::operator()(const DescriptorsSetQuery& lhs, con
     {
         return (--lhsEnd)->type < (--rhsEnd)->type;
     }
-    return recursivelyCompare(lhsItr, lhsEnd, rhsItr, rhsEnd);
+    return (lhs.bHasBindless < rhs.bHasBindless) || recursivelyCompare(lhsItr, lhsEnd, rhsItr, rhsEnd);
 }
 
 std::vector<VulkanDescriptorsSetAllocatorInfo*> VulkanDescriptorsSetAllocator::findInAvailablePool(const DescriptorsSetQuery& query)
@@ -186,8 +186,9 @@ VulkanDescriptorsSetAllocatorInfo& VulkanDescriptorsSetAllocator::createNewPool(
     allocationPool.idlingDuration = 0;
 
     std::vector<VkDescriptorPoolSize> descriptorsSetPoolSizes(query.supportedTypes.size());
-
     DESCRIPTOR_POOL_CREATE_INFO(descsSetPoolCreateInfo);
+    descsSetPoolCreateInfo.flags |= query.bHasBindless 
+        ? VkDescriptorPoolCreateFlagBits::VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT : 0;
     descsSetPoolCreateInfo.maxSets = allocationPool.maxSets = Math::max(DESCRIPTORS_SET_POOL_MAX_SETS,setsCount);
     descsSetPoolCreateInfo.poolSizeCount = uint32(descriptorsSetPoolSizes.size());
     descsSetPoolCreateInfo.pPoolSizes = descriptorsSetPoolSizes.data();
@@ -373,7 +374,7 @@ VkDescriptorSet VulkanDescriptorsSetAllocator::allocDescriptorsSet(const Descrip
     }
 
     std::vector<VkDescriptorSet> chooseSets;
-    if (isSupportedPool(chooseSets, globalPool, query, 1))
+    if (!query.bHasBindless && isSupportedPool(chooseSets, globalPool, query, 1))
     {
         if (chooseSets.empty())
         {

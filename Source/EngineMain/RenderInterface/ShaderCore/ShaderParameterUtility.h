@@ -49,4 +49,6 @@ public:
     */
     static uint32 convertNamedSpecConstsToPerStage(std::vector<std::vector<SpecializationConstantEntry>>& stageSpecializationConsts
         , const std::map<String, SpecializationConstantEntry>& namedSpecializationConsts, const struct ShaderReflected* shaderReflection);
+
+    static std::map<String, uint32>& unboundArrayResourcesCount();
 };

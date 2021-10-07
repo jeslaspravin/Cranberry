@@ -27,6 +27,9 @@ namespace GlobalRenderVariables
     GraphicsDeviceConstant<bool> ENABLE_NON_FILL_DRAWS;
     GraphicsDeviceConstant<bool> ENABLE_WIDE_LINES;
 
+    GraphicsDeviceConstant<bool> ENABLED_RESOURCE_RUNTIME_ARRAY;
+    GraphicsDeviceConstant<uint32> MAX_UPDATE_AFTER_BIND_DESCRIPTORS;
+
     GraphicsDeviceConstant<bool> ENABLED_TIMELINE_SEMAPHORE;
     GraphicsDeviceConstant<uint64> MAX_TIMELINE_OFFSET(0);
 
@@ -42,6 +45,28 @@ void VulkanDevice::markEnabledFeatures()
     enabledFeatures.wideLines = features.wideLines;
     enabledFeatures.shaderStorageImageExtendedFormats = features.shaderStorageImageExtendedFormats;
     enabledFeatures.geometryShader = features.geometryShader;
+
+    // Dynamic resource array
+    enabledFeatures.shaderSampledImageArrayDynamicIndexing = features.shaderSampledImageArrayDynamicIndexing;
+    enabledFeatures.shaderStorageImageArrayDynamicIndexing = features.shaderStorageImageArrayDynamicIndexing;
+    PHYSICAL_DEVICE_DESC_INDEXING_FEATURES(descIdxFeatures);
+    descIdxFeatures.shaderStorageTexelBufferArrayDynamicIndexing = descIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing;
+    descIdxFeatures.shaderUniformTexelBufferArrayDynamicIndexing = descIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing;
+    // Partial bindings
+    descIdxFeatures.descriptorBindingPartiallyBound = descIndexingFeatures.descriptorBindingPartiallyBound;
+    // Update after binding
+    descIdxFeatures.descriptorBindingSampledImageUpdateAfterBind = descIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind;
+    descIdxFeatures.descriptorBindingStorageImageUpdateAfterBind = descIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind;
+    descIdxFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind = descIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind;
+    descIdxFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind = descIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind;
+    // Non uniform access to resource array
+    descIdxFeatures.shaderSampledImageArrayNonUniformIndexing = descIndexingFeatures.shaderSampledImageArrayNonUniformIndexing;
+    descIdxFeatures.shaderStorageImageArrayNonUniformIndexing = descIndexingFeatures.shaderStorageImageArrayNonUniformIndexing;
+    descIdxFeatures.shaderUniformTexelBufferArrayNonUniformIndexing = descIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing;
+    descIdxFeatures.shaderStorageTexelBufferArrayNonUniformIndexing = descIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing;
+    // Runtime arrays
+    descIdxFeatures.runtimeDescriptorArray = descIndexingFeatures.runtimeDescriptorArray;
+    enabledDescIndexingFeatures = std::move(descIdxFeatures);
 }
 
 void VulkanDevice::markGlobalConstants()
@@ -60,6 +85,9 @@ void VulkanDevice::markGlobalConstants()
 
     GlobalRenderVariables::ENABLE_NON_FILL_DRAWS.set(enabledFeatures.fillModeNonSolid);
     GlobalRenderVariables::ENABLE_WIDE_LINES.set(enabledFeatures.wideLines);
+
+    GlobalRenderVariables::ENABLED_RESOURCE_RUNTIME_ARRAY.set(enabledDescIndexingFeatures.runtimeDescriptorArray);
+    GlobalRenderVariables::MAX_UPDATE_AFTER_BIND_DESCRIPTORS.set(descIndexingProps.maxUpdateAfterBindDescriptorsInAllPools);
 
     // Sync resources
     GlobalRenderVariables::MAX_TIMELINE_OFFSET.set(timelineSemaphoreProps.maxTimelineSemaphoreValueDifference);
@@ -462,9 +490,13 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice&& device) : graphicsDebug(this)
         advancedFeatures.features = features;
         PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES(tSemaphoreFeatures);
         advancedFeatures.pNext = &tSemaphoreFeatures;
+        PHYSICAL_DEVICE_DESC_INDEXING_FEATURES(descIdxFeatures);
+        tSemaphoreFeatures.pNext = &descIdxFeatures;
         Vk::vkGetPhysicalDeviceFeatures2KHR(physicalDevice, &advancedFeatures);
-        features = advancedFeatures.features;
-        timelineSemaphoreFeatures = tSemaphoreFeatures;
+
+        features = std::move(advancedFeatures.features);
+        timelineSemaphoreFeatures = std::move(tSemaphoreFeatures);
+        descIndexingFeatures = std::move(descIdxFeatures);
         markEnabledFeatures();
     }
 
@@ -472,9 +504,13 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice&& device) : graphicsDebug(this)
         PHYSICAL_DEVICE_PROPERTIES_2(advancedProperties);
         PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES(tSemaphoreProperties);
         advancedProperties.pNext = &tSemaphoreProperties;
+        PHYSICAL_DEVICE_DESC_INDEXING_PROPERTIES(descIdxProps);
+        tSemaphoreProperties.pNext = &descIdxProps;
         Vk::vkGetPhysicalDeviceProperties2KHR(physicalDevice, &advancedProperties);
-        properties = advancedProperties.properties;
-        timelineSemaphoreProps = tSemaphoreProperties;
+
+        properties = std::move(advancedProperties.properties);
+        timelineSemaphoreProps = std::move(tSemaphoreProperties);
+        descIndexingProps = std::move(descIdxProps);
 
         Vk::vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
         Logger::debug("VulkanDevice", "%s() : Found %d memory types and %d heaps in device %s", __func__,
@@ -511,6 +547,9 @@ logicalDevice = std::move(rVulkanDevice.logicalDevice); \
 timelineSemaphoreProps = std::move(rVulkanDevice.timelineSemaphoreProps); \
 timelineSemaphoreFeatures = std::move(rVulkanDevice.timelineSemaphoreFeatures); \
 memoryProperties = std::move(rVulkanDevice.memoryProperties); \
+enabledDescIndexingFeatures = std::move(rVulkanDevice.enabledDescIndexingFeatures); \
+descIndexingFeatures = std::move(rVulkanDevice.descIndexingFeatures); \
+descIndexingProps = std::move(rVulkanDevice.descIndexingProps); \
 graphicsDebug = { this }; \
 
 VulkanDevice::VulkanDevice(VulkanDevice&& rVulkanDevice)
@@ -541,6 +580,9 @@ logicalDevice = otherDevice.logicalDevice; \
 timelineSemaphoreProps = otherDevice.timelineSemaphoreProps; \
 timelineSemaphoreFeatures = otherDevice.timelineSemaphoreFeatures; \
 memoryProperties = otherDevice.memoryProperties; \
+enabledDescIndexingFeatures = otherDevice.enabledDescIndexingFeatures; \
+descIndexingFeatures = otherDevice.descIndexingFeatures; \
+descIndexingProps = otherDevice.descIndexingProps; \
 graphicsDebug = { this }; \
 
 VulkanDevice::VulkanDevice(const VulkanDevice& otherDevice)
@@ -622,6 +664,7 @@ void VulkanDevice::createLogicDevice()
     
     // Additional features
     deviceCreateInfo.pNext = &timelineSemaphoreFeatures;
+    timelineSemaphoreFeatures.pNext = &enabledDescIndexingFeatures;
 
     const VkResult vulkanDeviceCreationResult = Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
     fatalAssert(vulkanDeviceCreationResult == VK_SUCCESS,"Failed creating logical device");

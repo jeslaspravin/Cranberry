@@ -126,6 +126,7 @@ DEFINE_GRAPHICS_RESOURCE(ShaderSetParametersLayout)
 ShaderSetParametersLayout::ShaderSetParametersLayout(const ShaderResource* shaderResource, uint32 setID)
     : respectiveShaderRes(shaderResource)
     , shaderSetID(setID)
+    , bHasBindless(false)
 {}
 
 void ShaderSetParametersLayout::init()
@@ -153,7 +154,6 @@ void ShaderSetParametersLayout::init()
     // Fill those bound buffer info with GPU reflect data
     for (const std::pair<const String, ShaderBufferDescriptorType*>& bufferDescWrapper : bufferDescriptors)
     {
-        bufferDescWrapper.second->bufferNativeStride = bufferDescWrapper.second->bufferParamInfo->paramStride();
         ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data, specializationConsts);
     }
 }
@@ -229,7 +229,6 @@ void ShaderParametersLayout::init()
 
     for (const std::pair<const String, ShaderBufferDescriptorType*>& bufferDescWrapper : bufferDescriptors)
     {
-        bufferDescWrapper.second->bufferNativeStride = bufferDescWrapper.second->bufferParamInfo->paramStride();
         ShaderParameterUtility::fillRefToBufParamInfo(*bufferDescWrapper.second->bufferParamInfo, bufferDescWrapper.second->bufferEntryPtr->data.data, specializationConsts);
     }
 
@@ -402,8 +401,8 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
             {
                 BufferParametersData paramData;
                 paramData.descriptorInfo = bufferParamDesc;
-                paramData.cpuBuffer = new uint8[bufferParamDesc->bufferNativeStride];
-                memset(paramData.cpuBuffer, 0, bufferParamDesc->bufferNativeStride);
+                paramData.cpuBuffer = new uint8[bufferParamDesc->bufferParamInfo->paramNativeStride()];
+                memset(paramData.cpuBuffer, 0, bufferParamDesc->bufferParamInfo->paramNativeStride());
                 initBufferParams(paramData, bufferParamDesc->bufferParamInfo, paramData.cpuBuffer, nullptr);
 
                 uint32 bufferInitStride = initRuntimeArrayData(paramData)
