@@ -26,12 +26,15 @@ private:
     // Physical Device
     VkPhysicalDevice physicalDevice = nullptr;
     VkPhysicalDeviceProperties properties;
-    VkPhysicalDeviceTimelineSemaphorePropertiesKHR timelineSemaphoreProps;
+    VkPhysicalDeviceTimelineSemaphoreProperties timelineSemaphoreProps;
+    VkPhysicalDeviceDescriptorIndexingProperties descIndexingProps;
     VkPhysicalDeviceMemoryProperties memoryProperties;
 
     VkPhysicalDeviceFeatures features;
+    VkPhysicalDeviceDescriptorIndexingFeatures descIndexingFeatures;
     VkPhysicalDeviceFeatures enabledFeatures;
-    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeatures;
+    VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures;
+    VkPhysicalDeviceDescriptorIndexingFeatures enabledDescIndexingFeatures;
     void markEnabledFeatures();
     void markGlobalConstants();
     // Physical Device

@@ -104,6 +104,7 @@ private:
     {
         std::vector<VkDescriptorPoolSize> poolAllocation;
         std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+        bool bHasBindless = false;
 
         VkDescriptorSetLayout descriptorLayout = nullptr;
     };
@@ -122,6 +123,7 @@ public:
     void init() final;
     void release() final;
     String getResourceName() const final;
+    bool hasBindless(uint32 setIdx) const final;
 
     /* GraphicsResource overrides */
     //void reinitResources() final;

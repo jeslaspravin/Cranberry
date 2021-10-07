@@ -15,7 +15,7 @@
 #include "../../../RenderInterface/ShaderCore/ShaderParameterUtility.h"
 
 void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std::vector<VkDescriptorSetLayoutBinding>& descLayoutBindings
-    , const ReflectDescriptorBody& descReflected, const std::vector<std::vector<SpecializationConstantEntry>>& stageSpecializationConsts)
+    , std::vector<bool>& runtimeArray, const ReflectDescriptorBody& descReflected, const std::vector<std::vector<SpecializationConstantEntry>>& stageSpecializationConsts)
 {
     for (const DescEntryBuffer& descriptorInfo : descReflected.uniforms)
     {
@@ -56,6 +56,16 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
                 descCount *= arrayDimInfo.dimension;
             }
         }
+        // 0 means unbound array 
+        if (descCount == 0)
+        {
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
+                , "Unbound image(texel) buffer array is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+            descCount = itr->second;
+            runtimeArray[descriptorInfo.data.binding] = true;
+        }
+
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
 
@@ -83,6 +93,16 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
                 descCount *= arrayDimInfo.dimension;
             }
         }
+        // 0 means unbound array 
+        if (descCount == 0)
+        {
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
+                , "Unbound sampled(texel) buffer array is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+            descCount = itr->second;
+            runtimeArray[descriptorInfo.data.binding] = true;
+        }
+
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
 
@@ -110,6 +130,16 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
                 descCount *= arrayDimInfo.dimension;
             }
         }
+        // 0 means unbound array 
+        if (descCount == 0)
+        {
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
+                , "Unbound array of images or imageArray is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+            descCount = itr->second;
+            runtimeArray[descriptorInfo.data.binding] = true;
+        }
+
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
 
@@ -137,6 +167,16 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
                 descCount *= arrayDimInfo.dimension;
             }
         }
+        // 0 means unbound array 
+        if (descCount == 0)
+        {
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
+                , "Unbound array of textures or textureArray is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+            descCount = itr->second;
+            runtimeArray[descriptorInfo.data.binding] = true;
+        }
+
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
 
@@ -164,6 +204,16 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
                 descCount *= arrayDimInfo.dimension;
             }
         }
+        // 0 means unbound array 
+        if (descCount == 0)
+        {
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
+                , "Unbound array of sampled textures or sampled textureArray is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+            descCount = itr->second;
+            runtimeArray[descriptorInfo.data.binding] = true;
+        }
+
         poolAllocateInfo[descriptorInfo.data.binding].type = VkDescriptorType(descriptorInfo.data.type);
         poolAllocateInfo[descriptorInfo.data.binding].descriptorCount = descCount;
 
@@ -241,6 +291,7 @@ void VulkanShaderSetParamsLayout::init()
         respectiveShaderRes->getSpecializationConsts(specConsts);
         ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, respectiveShaderRes->getReflection());
     }
+    std::vector<bool> runtimeArray;
     for (const ReflectDescriptorBody& descriptorsSet : respectiveShaderRes->getReflection()->descriptorsSets)
     {
         if (descriptorsSet.set == shaderSetID)
@@ -249,13 +300,15 @@ void VulkanShaderSetParamsLayout::init()
             uint32 maxBinding = descriptorsSet.usedBindings.back() + 1;
             poolAllocation.resize(maxBinding);
             layoutBindings.resize(maxBinding);
-            fillDescriptorsSet(poolAllocation, layoutBindings, descriptorsSet, specializationConsts);
+            runtimeArray.resize(maxBinding, false);
+            fillDescriptorsSet(poolAllocation, layoutBindings, runtimeArray, descriptorsSet, specializationConsts);
         }
     }
 
     // Remove unnecessary descriptors set info
     for (int32 i = 0; i < poolAllocation.size();)
     {
+        bHasBindless = bHasBindless || runtimeArray[i];
         if (poolAllocation[i].descriptorCount == 0)
         {
             std::iter_swap(poolAllocation.begin() + i, poolAllocation.end() - 1);
@@ -263,6 +316,9 @@ void VulkanShaderSetParamsLayout::init()
 
             std::iter_swap(layoutBindings.begin() + i, layoutBindings.end() - 1);
             layoutBindings.pop_back();
+
+            std::iter_swap(runtimeArray.begin() + i, runtimeArray.end() - 1);
+            runtimeArray.pop_back();
         }
         else
         {
@@ -296,9 +352,28 @@ void VulkanShaderSetParamsLayout::init()
     }
     else
     {
+        std::vector<VkDescriptorBindingFlags> bindingFlags;
+        DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO(descLayoutBindingFlagsCI);
         DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
         descLayoutCreateInfo.bindingCount = uint32(layoutBindings.size());
         descLayoutCreateInfo.pBindings = layoutBindings.data();
+        if (bHasBindless)
+        {
+            bindingFlags.resize(runtimeArray.size());
+            for (int32 i = 0; i < bindingFlags.size(); ++i)
+            {
+                bindingFlags[i] = runtimeArray[i]
+                    ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
+                    | VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
+                    | VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT
+                    : 0;
+            }
+            descLayoutBindingFlagsCI.bindingCount = uint32(bindingFlags.size());
+            descLayoutBindingFlagsCI.pBindingFlags = bindingFlags.data();
+            descLayoutCreateInfo.flags |= VkDescriptorSetLayoutCreateFlagBits::VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+            descLayoutCreateInfo.pNext = &descLayoutBindingFlagsCI;
+        }
+
         descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
         VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(this);
     }
@@ -422,6 +497,8 @@ String VulkanShaderParametersLayout::getObjectName() const
 void VulkanShaderParametersLayout::init()
 {
     BaseType::init();
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
+
     std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
     {
         std::map<String, SpecializationConstantEntry> specConsts;
@@ -429,19 +506,22 @@ void VulkanShaderParametersLayout::init()
         ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, respectiveShaderRes->getReflection());
     }
 
+    std::vector<bool> runtimeArray;
     for (const ReflectDescriptorBody& descriptorsSet : respectiveShaderRes->getReflection()->descriptorsSets)
     {
         SetParametersLayoutInfo& descSetLayoutInfo = setToLayoutInfo[descriptorsSet.set];
 
         // Since bindings are sorted ascending
         uint32 maxBinding = descriptorsSet.usedBindings.back() + 1;
+        runtimeArray.resize(maxBinding);
         descSetLayoutInfo.poolAllocation.resize(maxBinding);
         descSetLayoutInfo.layoutBindings.resize(maxBinding);
-        fillDescriptorsSet(descSetLayoutInfo.poolAllocation, descSetLayoutInfo.layoutBindings, descriptorsSet, specializationConsts);
+        fillDescriptorsSet(descSetLayoutInfo.poolAllocation, descSetLayoutInfo.layoutBindings, runtimeArray, descriptorsSet, specializationConsts);
 
         // Remove unnecessary descriptors set info
         for (int32 i = 0; i < descSetLayoutInfo.poolAllocation.size();)
         {
+            descSetLayoutInfo.bHasBindless = descSetLayoutInfo.bHasBindless || runtimeArray[i];
             if (descSetLayoutInfo.poolAllocation[i].descriptorCount == 0)
             {
                 std::iter_swap(descSetLayoutInfo.poolAllocation.begin() + i, descSetLayoutInfo.poolAllocation.end() - 1);
@@ -449,6 +529,9 @@ void VulkanShaderParametersLayout::init()
 
                 std::iter_swap(descSetLayoutInfo.layoutBindings.begin() + i, descSetLayoutInfo.layoutBindings.end() - 1);
                 descSetLayoutInfo.layoutBindings.pop_back();
+
+                std::iter_swap(runtimeArray.begin() + i, runtimeArray.end() - 1);
+                runtimeArray.pop_back();
             }
             else
             {
@@ -473,19 +556,31 @@ void VulkanShaderParametersLayout::init()
             }
             itr = descSetLayoutInfo.poolAllocation.erase(itr + 1, endItr);
         }
-    }
 
-    //reinitResources();
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
-    for (std::pair<const uint32, SetParametersLayoutInfo>& setParamsLayout : setToLayoutInfo)
-    {
+        // Create descriptors set
+        std::vector<VkDescriptorBindingFlags> bindingFlags;
+        DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO(descLayoutBindingFlagsCI);
         DESCRIPTOR_SET_LAYOUT_CREATE_INFO(descLayoutCreateInfo);
-        descLayoutCreateInfo.bindingCount = uint32(setParamsLayout.second.layoutBindings.size());
-        descLayoutCreateInfo.pBindings = setParamsLayout.second.layoutBindings.data();
-        setParamsLayout.second.descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
-
-        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(setParamsLayout.second.descriptorLayout)
-            , getResourceName() + std::to_string(setParamsLayout.first), getObjectType());
+        descLayoutCreateInfo.bindingCount = uint32(descSetLayoutInfo.layoutBindings.size());
+        descLayoutCreateInfo.pBindings = descSetLayoutInfo.layoutBindings.data();
+        if (descSetLayoutInfo.bHasBindless)
+        {
+            bindingFlags.resize(runtimeArray.size());
+            for (int32 i = 0; i < bindingFlags.size(); ++i)
+            {
+                bindingFlags[i] = runtimeArray[i]
+                    ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
+                    | VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
+                    | VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT
+                    : 0;
+            }
+            descLayoutBindingFlagsCI.bindingCount = uint32(bindingFlags.size());
+            descLayoutBindingFlagsCI.pBindingFlags = bindingFlags.data();
+            descLayoutCreateInfo.pNext = &descLayoutBindingFlagsCI;
+        }
+        descSetLayoutInfo.descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
+        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(descSetLayoutInfo.descriptorLayout)
+            , getResourceName() + std::to_string(descriptorsSet.set), getObjectType());
     }
 }
 
@@ -506,6 +601,13 @@ void VulkanShaderParametersLayout::release()
 String VulkanShaderParametersLayout::getResourceName() const
 {
     return respectiveShaderRes->getResourceName() + "_DescSetLayout";
+}
+
+bool VulkanShaderParametersLayout::hasBindless(uint32 setIdx) const
+{
+    auto foundItr = setToLayoutInfo.find(setIdx);
+    debugAssert(foundItr != setToLayoutInfo.cend());
+    return foundItr->second.bHasBindless;
 }
 
 const std::vector<VkDescriptorPoolSize>& VulkanShaderParametersLayout::getDescPoolAllocInfo(uint32 setIdx) const
@@ -541,6 +643,7 @@ void VulkanShaderSetParameters::init()
     IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
     VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstance);
     DescriptorsSetQuery query;
+    query.bHasBindless = static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->hasBindless();
     query.supportedTypes.insert(static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->getDescPoolAllocInfo().cbegin()
         , static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->getDescPoolAllocInfo().cend());
     descriptorsSet = descsSetAllocator->allocDescriptorsSet(query, static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->descriptorLayout);
@@ -730,15 +833,11 @@ String VulkanShaderParameters::getObjectName() const
 void VulkanShaderParameters::init()
 {
     BaseType::init();
-
-    std::map<uint32, int32> setIdToVectorIdx;
-    std::vector<VkDescriptorSetLayout> layouts;
-    DescriptorsSetQuery query;
+    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
+    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstance);
 
     // Compress all descriptors set descriptor type size to common pool sizes to alloc all sets from same pool
     {
-        std::map<VkDescriptorType, uint32> descriptorPoolSizes;
-
         const ShaderReflected* reflectedData = static_cast<const ShaderParametersLayout*>(paramLayout)->getShaderResource()->getReflection();
         for (const ReflectDescriptorBody& descriptorsBody : reflectedData->descriptorsSets)
         {
@@ -747,46 +846,27 @@ void VulkanShaderParameters::init()
                 continue;
             }
 
-            setIdToVectorIdx[descriptorsBody.set] = int32(layouts.size());
-            layouts.emplace_back(static_cast<const VulkanShaderParametersLayout*>(paramLayout)
-                ->getDescSetLayout(descriptorsBody.set));
+            VkDescriptorSetLayout layout = static_cast<const VulkanShaderParametersLayout*>(paramLayout)
+                ->getDescSetLayout(descriptorsBody.set);
+            const auto& setPoolSizes = static_cast<const VulkanShaderParametersLayout*>(paramLayout)
+                ->getDescPoolAllocInfo(descriptorsBody.set);
 
-            for (const VkDescriptorPoolSize& descriptorPoolSize : static_cast<const VulkanShaderParametersLayout*>(paramLayout)
-                ->getDescPoolAllocInfo(descriptorsBody.set))
+            DescriptorsSetQuery query;
+            query.supportedTypes.insert(setPoolSizes.cbegin(), setPoolSizes.cend());
+            query.bHasBindless = static_cast<const VulkanShaderParametersLayout*>(paramLayout)
+                ->hasBindless(descriptorsBody.set);
+            if (VkDescriptorSet descSet = descsSetAllocator->allocDescriptorsSet(query, layout))
             {
-                auto poolSizeItr = descriptorPoolSizes.find(descriptorPoolSize.type);
-                if (poolSizeItr == descriptorPoolSizes.end())
-                {
-                    descriptorPoolSizes[descriptorPoolSize.type] = descriptorPoolSize.descriptorCount;
-                }
-                else
-                {
-                    poolSizeItr->second = Math::max(poolSizeItr->second, descriptorPoolSize.descriptorCount);
-                }
+                descriptorsSets[descriptorsBody.set] = descSet;
+                VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(descSet)
+                    , getObjectName() + std::to_string(descriptorsBody.set), getObjectType());
+            }
+            else
+            {
+                Logger::error("VulkanShaderParameters", "%s() : Allocation of descriptors set %d failed %s", __func__, descriptorsBody.set, getResourceName().getChar());
+                return;
             }
         }
-
-        for (const std::pair<const VkDescriptorType, uint32>& descPoolSize : descriptorPoolSizes)
-        {
-            query.supportedTypes.insert({ descPoolSize.first, descPoolSize.second });
-        }
-    }
-
-    std::vector<VkDescriptorSet> descsSets;
-
-    IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
-    VulkanDescriptorsSetAllocator* descsSetAllocator = VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstance);
-    if (!descsSetAllocator->allocDescriptorsSets(descsSets, query, layouts))
-    {
-        Logger::error("VulkanShaderParameters", "%s() : Allocation of descriptors set failed %s", __func__, getResourceName().getChar());
-        return;
-    }
-
-    for (const std::pair<const uint32, int32>& descSetToIdx : setIdToVectorIdx)
-    {
-        descriptorsSets[descSetToIdx.first] = descsSets[descSetToIdx.second];
-        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(descsSets[descSetToIdx.second])
-            , getObjectName() + std::to_string(descSetToIdx.second), getObjectType());
     }
 
     std::vector<VkWriteDescriptorSet> bufferDescWrites;

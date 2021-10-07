@@ -335,3 +335,9 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(std::vector<std:
     }
     return specConstsCount;
 }
+
+std::map<String, uint32>& ShaderParameterUtility::unboundArrayResourcesCount()
+{
+    static std::map<String, uint32> RUNTIME_BOUND_RESOURCES;
+    return RUNTIME_BOUND_RESOURCES;
+}

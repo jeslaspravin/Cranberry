@@ -5,14 +5,14 @@
 
 #ifndef CREATE_APP_INFO
 #define CREATE_APP_INFO(VariableName)                       \
-VkApplicationInfo VariableName;                             \
+VkApplicationInfo VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;    \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef CREATE_INSTANCE_INFO
 #define CREATE_INSTANCE_INFO(VariableName)                      \
-VkInstanceCreateInfo VariableName;                              \
+VkInstanceCreateInfo VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;    \
 VariableName.pNext = nullptr;                                   \
 VariableName.flags = 0;                                         \
@@ -22,7 +22,7 @@ VariableName.enabledLayerCount = 0
 
 #ifndef CREATE_DEVICE_INFO
 #define CREATE_DEVICE_INFO(VariableName)                    \
-VkDeviceCreateInfo VariableName;                            \
+VkDeviceCreateInfo VariableName{};                          \
 VariableName.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;  \
 VariableName.pNext = nullptr;                               \
 VariableName.flags = 0;                                     \
@@ -32,7 +32,7 @@ VariableName.ppEnabledLayerNames = nullptr
 
 #ifndef CREATE_QUEUE_INFO
 #define CREATE_QUEUE_INFO(VariableName)                         \
-VkDeviceQueueCreateInfo VariableName;                           \
+VkDeviceQueueCreateInfo VariableName{};                         \
 VariableName.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;\
 VariableName.pNext = nullptr;                                   \
 VariableName.flags = 0
@@ -40,7 +40,7 @@ VariableName.flags = 0
 
 #ifndef SUBMIT_INFO
 #define SUBMIT_INFO(VariableName)                   \
-VkSubmitInfo VariableName;                          \
+VkSubmitInfo VariableName{};                        \
 VariableName.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; \
 VariableName.pNext = nullptr;                       \
 VariableName.pSignalSemaphores = nullptr;           \
@@ -52,7 +52,7 @@ VariableName.waitSemaphoreCount = 0
 
 #ifndef CREATE_SWAPCHAIN_INFO
 #define CREATE_SWAPCHAIN_INFO(VariableName)                         \
-VkSwapchainCreateInfoKHR VariableName;                              \
+VkSwapchainCreateInfoKHR VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;   \
 VariableName.pNext = nullptr;                                       \
 VariableName.flags = 0
@@ -60,7 +60,7 @@ VariableName.flags = 0
 
 #ifndef IMAGE_MEMORY_BARRIER
 #define IMAGE_MEMORY_BARRIER(VariableName)                      \
-VkImageMemoryBarrier VariableName;                              \
+VkImageMemoryBarrier VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;    \
 VariableName.pNext = nullptr;                                   \
 VariableName.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED
@@ -68,14 +68,14 @@ VariableName.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED
 
 #ifndef BUFFER_MEMORY_BARRIER
 #define BUFFER_MEMORY_BARRIER(VariableName)                      \
-VkBufferMemoryBarrier VariableName;                              \
+VkBufferMemoryBarrier VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;    \
 VariableName.pNext = nullptr;                                   
 #endif
 
 #ifndef IMAGE_MEMORY_BARRIER2_KHR
 #define IMAGE_MEMORY_BARRIER2_KHR(VariableName)                     \
-VkImageMemoryBarrier2KHR VariableName;                              \
+VkImageMemoryBarrier2KHR VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;  \
 VariableName.pNext = nullptr;                                       \
 VariableName.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED
@@ -83,14 +83,14 @@ VariableName.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED
 
 #ifndef BUFFER_MEMORY_BARRIER2_KHR
 #define BUFFER_MEMORY_BARRIER2_KHR(VariableName)                    \
-VkBufferMemoryBarrier2KHR VariableName;                             \
+VkBufferMemoryBarrier2KHR VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR; \
 VariableName.pNext = nullptr;                                   
 #endif
 
 #ifndef BARRIER_DEPENDENCY_INFO_KHR
 #define BARRIER_DEPENDENCY_INFO_KHR(VariableName)           \
-VkDependencyInfoKHR VariableName;                           \
+VkDependencyInfoKHR VariableName{};                         \
 VariableName.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR; \
 VariableName.pNext = nullptr;                               \
 VariableName.memoryBarrierCount = 0;                        \
@@ -99,7 +99,7 @@ VariableName.pMemoryBarriers = nullptr
 
 #ifndef CREATE_DEBUG_UTILS_MESSENGER_INFO
 #define CREATE_DEBUG_UTILS_MESSENGER_INFO(VariableName)                         \
-VkDebugUtilsMessengerCreateInfoEXT VariableName;                                \
+VkDebugUtilsMessengerCreateInfoEXT VariableName{};                              \
 VariableName.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;   \
 VariableName.pNext = nullptr;                                                   \
 VariableName.flags = 0;                                                         \
@@ -108,63 +108,77 @@ VariableName.pUserData = nullptr
 
 #ifndef DEBUG_UTILS_OBJECT_NAME_INFO
 #define DEBUG_UTILS_OBJECT_NAME_INFO(VariableName)                          \
-VkDebugUtilsObjectNameInfoEXT VariableName;                                 \
+VkDebugUtilsObjectNameInfoEXT VariableName{};                               \
 VariableName.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;    \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef DEBUG_UTILS_LABEL
 #define DEBUG_UTILS_LABEL(VariableName)                         \
-VkDebugUtilsLabelEXT VariableName;                              \
+VkDebugUtilsLabelEXT VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;   \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef PHYSICAL_DEVICE_FEATURES_2
 #define PHYSICAL_DEVICE_FEATURES_2(VariableName)                        \
-VkPhysicalDeviceFeatures2KHR VariableName;                              \
+VkPhysicalDeviceFeatures2KHR VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;  \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES
-#define PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES(VariableName)                       \
-VkPhysicalDeviceTimelineSemaphoreFeaturesKHR VariableName;                              \
-VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR; \
+#define PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES(VariableName)                   \
+VkPhysicalDeviceTimelineSemaphoreFeatures VariableName{};                           \
+VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES; \
+VariableName.pNext = nullptr
+#endif
+
+#ifndef PHYSICAL_DEVICE_DESC_INDEXING_FEATURES
+#define PHYSICAL_DEVICE_DESC_INDEXING_FEATURES(VariableName)                            \
+VkPhysicalDeviceDescriptorIndexingFeatures VariableName{};                              \
+VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;    \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef PHYSICAL_DEVICE_PROPERTIES_2
 #define PHYSICAL_DEVICE_PROPERTIES_2(VariableName)                          \
-VkPhysicalDeviceProperties2KHR VariableName;                                \
+VkPhysicalDeviceProperties2KHR VariableName{};                              \
 VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;    \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES
 #define PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES(VariableName)                         \
-VkPhysicalDeviceTimelineSemaphorePropertiesKHR VariableName;                                \
-VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR;   \
+VkPhysicalDeviceTimelineSemaphoreProperties VariableName{};                                 \
+VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES;       \
+VariableName.pNext = nullptr
+#endif
+
+#ifndef PHYSICAL_DEVICE_DESC_INDEXING_PROPERTIES
+#define PHYSICAL_DEVICE_DESC_INDEXING_PROPERTIES(VariableName)                          \
+VkPhysicalDeviceDescriptorIndexingProperties VariableName{};                            \
+VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;  \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef PHYSICAL_DEVICE_MEMORY_PROPERTIES_2
 #define PHYSICAL_DEVICE_MEMORY_PROPERTIES_2(VariableName)                       \
-VkPhysicalDeviceMemoryProperties2KHR VariableName;                              \
+VkPhysicalDeviceMemoryProperties2KHR VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR; \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES
 #define PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES(VariableName)                      \
-VkPhysicalDeviceMemoryBudgetPropertiesEXT VariableName;                             \
+VkPhysicalDeviceMemoryBudgetPropertiesEXT VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;\
 VariableName.pNext = nullptr
 #endif
 
 #ifndef BUFFER_CREATE_INFO
 #define BUFFER_CREATE_INFO(VariableName)                    \
-VkBufferCreateInfo VariableName;                            \
+VkBufferCreateInfo VariableName{};                          \
 VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;  \
 VariableName.flags = 0;                                     \
 VariableName.pNext = nullptr;                               \
@@ -175,7 +189,7 @@ VariableName.pQueueFamilyIndices = nullptr
 
 #ifndef BUFFER_VIEW_CREATE_INFO
 #define BUFFER_VIEW_CREATE_INFO(VariableName)                   \
-VkBufferViewCreateInfo VariableName;                            \
+VkBufferViewCreateInfo VariableName{};                          \
 VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO; \
 VariableName.pNext = nullptr;                                   \
 VariableName.flags = 0;                                         \
@@ -185,7 +199,7 @@ VariableName.range = VK_WHOLE_SIZE
 
 #ifndef IMAGE_CREATE_INFO
 #define IMAGE_CREATE_INFO(VariableName)                     \
-VkImageCreateInfo VariableName;                             \
+VkImageCreateInfo VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;   \
 VariableName.pNext = 0;                                     \
 VariableName.sharingMode = VK_SHARING_MODE_EXCLUSIVE;       \
@@ -195,7 +209,7 @@ VariableName.pQueueFamilyIndices = nullptr
 
 #ifndef IMAGE_VIEW_CREATE_INFO
 #define IMAGE_VIEW_CREATE_INFO(VariableName)                    \
-VkImageViewCreateInfo VariableName;                             \
+VkImageViewCreateInfo VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;  \
 VariableName.pNext = nullptr;                                   \
 VariableName.flags = 0;                                         \
@@ -209,7 +223,7 @@ VariableName.components = {                                     \
 
 #ifndef SAMPLER_CREATE_INFO
 #define SAMPLER_CREATE_INFO(VariableName)                   \
-VkSamplerCreateInfo VariableName;                           \
+VkSamplerCreateInfo VariableName{};                         \
 VariableName.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO; \
 VariableName.pNext = nullptr;                               \
 VariableName.flags = 0;                                     \
@@ -218,15 +232,23 @@ VariableName.unnormalizedCoordinates = VK_FALSE
 
 #ifndef DESCRIPTOR_SET_LAYOUT_CREATE_INFO
 #define DESCRIPTOR_SET_LAYOUT_CREATE_INFO(VariableName)                     \
-VkDescriptorSetLayoutCreateInfo VariableName;                               \
+VkDescriptorSetLayoutCreateInfo VariableName{};                             \
 VariableName.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;   \
 VariableName.pNext = nullptr;                                               \
 VariableName.flags = 0
 #endif
+#ifndef DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO
+#define DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO(VariableName)                   \
+VkDescriptorSetLayoutBindingFlagsCreateInfo VariableName{};                             \
+VariableName.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO; \
+VariableName.pNext = nullptr;                                                           \
+VariableName.bindingCount = 0;                                                          \
+VariableName.pBindingFlags = nullptr;
+#endif
 
 #ifndef DESCRIPTOR_POOL_CREATE_INFO
 #define DESCRIPTOR_POOL_CREATE_INFO(VariableName)                   \
-VkDescriptorPoolCreateInfo VariableName;                            \
+VkDescriptorPoolCreateInfo VariableName{};                          \
 VariableName.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO; \
 VariableName.pNext = nullptr;                                       \
 VariableName.flags = 0
@@ -234,14 +256,14 @@ VariableName.flags = 0
 
 #ifndef DESCRIPTOR_SET_ALLOCATE_INFO
 #define DESCRIPTOR_SET_ALLOCATE_INFO(VariableName)                  \
-VkDescriptorSetAllocateInfo VariableName;                           \
+VkDescriptorSetAllocateInfo VariableName{};                         \
 VariableName.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;\
 VariableName.pNext = nullptr
 #endif
 
 #ifndef WRITE_RESOURCE_TO_DESCRIPTORS_SET
 #define WRITE_RESOURCE_TO_DESCRIPTORS_SET(VariableName)                  \
-VkWriteDescriptorSet VariableName;                              \
+VkWriteDescriptorSet VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;    \
 VariableName.pNext = nullptr;                                   \
 VariableName.dstArrayElement = 0;                               \
@@ -253,7 +275,7 @@ VariableName.pImageInfo = nullptr
 
 #ifndef COPY_DESCRIPTORS_SET_TO_SET
 #define COPY_DESCRIPTORS_SET_TO_SET(VariableName)           \
-VkCopyDescriptorSet VariableName;                           \
+VkCopyDescriptorSet VariableName{};                         \
 VariableName.sType = VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET; \
 VariableName.pNext = nullptr;                               \
 VariableName.descriptorCount = 1;                           \
@@ -263,7 +285,7 @@ VariableName.dstArrayElement = 0
 
 #ifndef RENDERPASS_CREATE_INFO
 #define RENDERPASS_CREATE_INFO(VariableName)                    \
-VkRenderPassCreateInfo VariableName;                            \
+VkRenderPassCreateInfo VariableName{};                          \
 VariableName.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO; \
 VariableName.flags = 0;                                         \
 VariableName.pNext = nullptr
@@ -271,7 +293,7 @@ VariableName.pNext = nullptr
 
 #ifndef FRAMEBUFFER_CREATE_INFO
 #define FRAMEBUFFER_CREATE_INFO(VariableName)                   \
-VkFramebufferCreateInfo VariableName;                           \
+VkFramebufferCreateInfo VariableName{};                         \
 VariableName.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO; \
 VariableName.flags = 0;                                         \
 VariableName.pNext = nullptr
@@ -279,14 +301,14 @@ VariableName.pNext = nullptr
 
 #ifndef RENDERPASS_BEGIN_INFO
 #define RENDERPASS_BEGIN_INFO(VariableName)                     \
-VkRenderPassBeginInfo VariableName;                             \
+VkRenderPassBeginInfo VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;  \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef SHADER_MODULE_CREATE_INFO
 #define SHADER_MODULE_CREATE_INFO(VariableName)                     \
-VkShaderModuleCreateInfo VariableName;                              \
+VkShaderModuleCreateInfo VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;   \
 VariableName.pNext = nullptr;                                       \
 VariableName.flags = 0
@@ -294,7 +316,7 @@ VariableName.flags = 0
 
 #ifndef PIPELINE_CACHE_CREATE_INFO
 #define PIPELINE_CACHE_CREATE_INFO(VariableName)                    \
-VkPipelineCacheCreateInfo VariableName;                             \
+VkPipelineCacheCreateInfo VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;  \
 VariableName.pNext = nullptr;                                       \
 VariableName.flags = 0;                                             \
@@ -304,7 +326,7 @@ VariableName.pInitialData = nullptr
 
 #ifndef PIPELINE_LAYOUT_CREATE_INFO
 #define PIPELINE_LAYOUT_CREATE_INFO(VariableName)                   \
-VkPipelineLayoutCreateInfo VariableName;                            \
+VkPipelineLayoutCreateInfo VariableName{};                          \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO; \
 VariableName.pNext = nullptr;                                       \
 VariableName.flags = 0
@@ -312,7 +334,7 @@ VariableName.flags = 0
 
 #ifndef GRAPHICS_PIPELINE_CREATE_INFO
 #define GRAPHICS_PIPELINE_CREATE_INFO(VariableName)                     \
-VkGraphicsPipelineCreateInfo VariableName;                              \
+VkGraphicsPipelineCreateInfo VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;   \
 VariableName.pNext = nullptr;                                           \
 VariableName.flags = 0;                                                 \
@@ -322,7 +344,7 @@ VariableName.basePipelineHandle = VK_NULL_HANDLE
 
 #ifndef PIPELINE_SHADER_STAGE_CREATE_INFO
 #define PIPELINE_SHADER_STAGE_CREATE_INFO(VariableName)                     \
-VkPipelineShaderStageCreateInfo VariableName;                               \
+VkPipelineShaderStageCreateInfo VariableName{};                             \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;   \
 VariableName.pNext = nullptr;                                               \
 VariableName.flags = 0;                                                     \
@@ -331,7 +353,7 @@ VariableName.pSpecializationInfo = VK_NULL_HANDLE
 
 #ifndef PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO
 #define PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO(VariableName)                   \
-VkPipelineVertexInputStateCreateInfo VariableName;                              \
+VkPipelineVertexInputStateCreateInfo VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO; \
 VariableName.pNext = nullptr;                                                   \
 VariableName.flags = 0
@@ -339,7 +361,7 @@ VariableName.flags = 0
 
 #ifndef PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO
 #define PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO(VariableName)                     \
-VkPipelineInputAssemblyStateCreateInfo VariableName;                                \
+VkPipelineInputAssemblyStateCreateInfo VariableName{};                              \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;   \
 VariableName.pNext = nullptr;                                                       \
 VariableName.flags = 0;                                                             \
@@ -349,7 +371,7 @@ VariableName.primitiveRestartEnable = VK_FALSE
 
 #ifndef PIPELINE_TESSELLATION_STATE_CREATE_INFO
 #define PIPELINE_TESSELLATION_STATE_CREATE_INFO(VariableName)                   \
-VkPipelineTessellationStateCreateInfo VariableName;                             \
+VkPipelineTessellationStateCreateInfo VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO; \
 VariableName.pNext = nullptr;                                                   \
 VariableName.flags = 0
@@ -357,7 +379,7 @@ VariableName.flags = 0
 
 #ifndef PIPELINE_VIEWPORT_STATE_CREATE_INFO
 #define PIPELINE_VIEWPORT_STATE_CREATE_INFO(VariableName)                   \
-VkPipelineViewportStateCreateInfo VariableName;                             \
+VkPipelineViewportStateCreateInfo VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO; \
 VariableName.pNext = nullptr;                                               \
 VariableName.flags = 0
@@ -365,7 +387,7 @@ VariableName.flags = 0
 
 #ifndef PIPELINE_RASTERIZATION_STATE_CREATE_INFO
 #define PIPELINE_RASTERIZATION_STATE_CREATE_INFO(VariableName)                  \
-VkPipelineRasterizationStateCreateInfo VariableName;                            \
+VkPipelineRasterizationStateCreateInfo VariableName{};                          \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;\
 VariableName.pNext = nullptr;                                                   \
 VariableName.flags = 0;                                                         \
@@ -378,7 +400,7 @@ VariableName.depthBiasClamp = VariableName.depthBiasConstantFactor = rasterizati
 
 #ifndef PIPELINE_MULTISAMPLE_STATE_CREATE_INFO
 #define PIPELINE_MULTISAMPLE_STATE_CREATE_INFO(VariableName)                    \
-VkPipelineMultisampleStateCreateInfo VariableName;                              \
+VkPipelineMultisampleStateCreateInfo VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;  \
 VariableName.pNext = nullptr;                                                   \
 VariableName.flags = 0
@@ -386,7 +408,7 @@ VariableName.flags = 0
 
 #ifndef PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO
 #define PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO(VariableName)                  \
-VkPipelineDepthStencilStateCreateInfo VariableName;                             \
+VkPipelineDepthStencilStateCreateInfo VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;\
 VariableName.pNext = nullptr;                                                   \
 VariableName.flags = 0
@@ -394,7 +416,7 @@ VariableName.flags = 0
 
 #ifndef PIPELINE_COLOR_BLEND_STATE_CREATE_INFO
 #define PIPELINE_COLOR_BLEND_STATE_CREATE_INFO(VariableName)                    \
-VkPipelineColorBlendStateCreateInfo VariableName;                               \
+VkPipelineColorBlendStateCreateInfo VariableName{};                             \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;  \
 VariableName.pNext = nullptr;                                                   \
 VariableName.flags = 0;                                                         \
@@ -404,7 +426,7 @@ VariableName.logicOp = VK_LOGIC_OP_NO_OP
 
 #ifndef PIPELINE_DYNAMIC_STATE_CREATE_INFO
 #define PIPELINE_DYNAMIC_STATE_CREATE_INFO(VariableName)                        \
-VkPipelineDynamicStateCreateInfo VariableName;                                  \
+VkPipelineDynamicStateCreateInfo VariableName{};                                \
 VariableName.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;      \
 VariableName.pNext = nullptr;                                                   \
 VariableName.flags = 0
@@ -412,7 +434,7 @@ VariableName.flags = 0
 
 #ifndef COMPUTE_PIPELINE_CREATE_INFO
 #define COMPUTE_PIPELINE_CREATE_INFO(VariableName)                      \
-VkComputePipelineCreateInfo VariableName;                               \
+VkComputePipelineCreateInfo VariableName{};                             \
 VariableName.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;    \
 VariableName.pNext = nullptr;                                           \
 VariableName.flags = 0;                                                 \
@@ -422,7 +444,7 @@ VariableName.basePipelineHandle = VK_NULL_HANDLE
 
 #ifndef CREATE_SEMAPHORE_INFO
 #define CREATE_SEMAPHORE_INFO(VariableName)                     \
-VkSemaphoreCreateInfo  VariableName;                            \
+VkSemaphoreCreateInfo  VariableName{};                          \
 VariableName.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;   \
 VariableName.pNext = nullptr;                                   \
 VariableName.flags = 0
@@ -447,8 +469,8 @@ VariableName.flags = 0
 
 #ifndef CREATE_TYPED_SEMAPHORE_INFO
 #define CREATE_TYPED_SEMAPHORE_INFO(VariableName)                                           \
-TIMELINE_SEMAPHORE_TYPE(VkSemaphoreTypeCreateInfo) VariableName;                            \
-VariableName.sType = TIMELINE_SEMAPHORE_DEF(VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO); \
+TIMELINE_SEMAPHORE_TYPE(VkSemaphoreTypeCreateInfo) VariableName{};                          \
+VariableName.sType = TIMELINE_SEMAPHORE_DEF(VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO);  \
 VariableName.pNext = nullptr;                                                               \
 VariableName.initialValue = 0;                                                              \
 VariableName.semaphoreType = TIMELINE_SEMAPHORE_DEF(VK_SEMAPHORE_TYPE_TIMELINE)
@@ -456,22 +478,22 @@ VariableName.semaphoreType = TIMELINE_SEMAPHORE_DEF(VK_SEMAPHORE_TYPE_TIMELINE)
 
 #ifndef SEMAPHORE_SIGNAL_INFO
 #define SEMAPHORE_SIGNAL_INFO(VariableName)                                             \
-TIMELINE_SEMAPHORE_TYPE(VkSemaphoreSignalInfo) VariableName;                            \
-VariableName.sType = TIMELINE_SEMAPHORE_DEF(VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO);  \
+TIMELINE_SEMAPHORE_TYPE(VkSemaphoreSignalInfo) VariableName{};                          \
+VariableName.sType = TIMELINE_SEMAPHORE_DEF(VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO);   \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef SEMAPHORE_WAIT_INFO
 #define SEMAPHORE_WAIT_INFO(VariableName)                                           \
-TIMELINE_SEMAPHORE_TYPE(VkSemaphoreWaitInfo) VariableName;                          \
-VariableName.sType = TIMELINE_SEMAPHORE_DEF(VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO);\
+TIMELINE_SEMAPHORE_TYPE(VkSemaphoreWaitInfo) VariableName{};                        \
+VariableName.sType = TIMELINE_SEMAPHORE_DEF(VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO); \
 VariableName.pNext = nullptr;                                                       \
 VariableName.flags = TIMELINE_SEMAPHORE_DEF(VK_SEMAPHORE_WAIT_ANY_BIT)
 #endif
 
 #ifndef CREATE_FENCE_INFO
 #define CREATE_FENCE_INFO(VariableName)                     \
-VkFenceCreateInfo VariableName;                             \
+VkFenceCreateInfo VariableName{};                           \
 VariableName.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;   \
 VariableName.flags = 0;                                     \
 VariableName.pNext = nullptr
@@ -479,28 +501,28 @@ VariableName.pNext = nullptr
 
 #ifndef MEMORY_ALLOCATE_INFO
 #define MEMORY_ALLOCATE_INFO(VariableName)                      \
-VkMemoryAllocateInfo VariableName;                              \
+VkMemoryAllocateInfo VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;    \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef MAPPED_MEMORY_RANGE
 #define MAPPED_MEMORY_RANGE(VariableName)                      \
-VkMappedMemoryRange VariableName;                              \
+VkMappedMemoryRange VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;    \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef CREATE_COMMAND_POOL_INFO
 #define CREATE_COMMAND_POOL_INFO(VariableName)                      \
-VkCommandPoolCreateInfo VariableName;                               \
+VkCommandPoolCreateInfo VariableName{};                             \
 VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;    \
 VariableName.pNext = nullptr
 #endif
 
 #ifndef CMD_BUFFER_ALLOC_INFO
 #define CMD_BUFFER_ALLOC_INFO(VariableName)                         \
-VkCommandBufferAllocateInfo VariableName;                           \
+VkCommandBufferAllocateInfo VariableName{};                         \
 VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;\
 VariableName.pNext = nullptr;                                       \
 VariableName.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY
@@ -508,7 +530,7 @@ VariableName.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY
 
 #ifndef CMD_BUFFER_BEGIN_INFO
 #define CMD_BUFFER_BEGIN_INFO(VariableName)                         \
-VkCommandBufferBeginInfo VariableName;                              \
+VkCommandBufferBeginInfo VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;   \
 VariableName.pNext = nullptr;                                       \
 VariableName.pInheritanceInfo = nullptr
@@ -516,7 +538,7 @@ VariableName.pInheritanceInfo = nullptr
 
 #ifndef PRESENT_INFO
 #define PRESENT_INFO(VariableName)                          \
-VkPresentInfoKHR VariableName;                              \
+VkPresentInfoKHR VariableName{};                            \
 VariableName.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;    \
 VariableName.pNext = nullptr
 #endif

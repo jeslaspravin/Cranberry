@@ -77,8 +77,6 @@ public:
 
     const DescEntryTexelBuffer* texelBufferEntryPtr = nullptr;
 
-    // C++ size of buffer as this gets lost when bufferParamInfo gets filled with GPU stride and offsets
-    uint32 bufferNativeStride;
     // This storage is just to show that this is buffer and not uniform, For actual usage in shader whether read or write use readWriteState inside bufferEntryPtr
     bool bIsStorage;
 };
@@ -108,7 +106,7 @@ protected:
 
     const ShaderResource* respectiveShaderRes;
     std::map<String, ShaderDescriptorParamType*> paramsLayout;
-
+    bool bHasBindless;
 protected:
     ShaderSetParametersLayout() = default;
     ShaderSetParametersLayout(const ShaderResource* shaderResource, uint32 setID);
@@ -126,6 +124,7 @@ public:
     const ShaderDescriptorParamType* parameterDescription(const String& paramName) const;
     const std::map<String, ShaderDescriptorParamType*>& allParameterDescriptions() const;
     uint32 getSetID() const { return shaderSetID; }
+    bool hasBindless() const { return bHasBindless; }
     const ShaderResource* getShaderResource() const { return respectiveShaderRes; }
 };
 
@@ -152,6 +151,8 @@ public:
     virtual void init() override;
     virtual void release() override;
     /* Override ends */
+
+    virtual bool hasBindless(uint32 setIdx) const { return false; }
 
     const ShaderDescriptorParamType* parameterDescription(uint32& outSetIdx, const String& paramName) const;
     const ShaderDescriptorParamType* parameterDescription(const String& paramName) const;
@@ -384,7 +385,7 @@ bool ShaderParameters::setBuffer(const String& paramName, const BufferType& buff
     else
     {
         BufferParametersData* bufferDataPtr = &bufferDataItr->second;
-        bValueSet = (bufferDataPtr->descriptorInfo->bufferNativeStride == sizeof(BufferType)) && !bufferDataPtr->runtimeArray.has_value();
+        bValueSet = (bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride() == sizeof(BufferType)) && !bufferDataPtr->runtimeArray.has_value();
         if (bValueSet)
         {
             (*reinterpret_cast<BufferType*>(bufferDataPtr->cpuBuffer)) = bufferValue;
@@ -397,7 +398,7 @@ bool ShaderParameters::setBuffer(const String& paramName, const BufferType& buff
         else
         {
             Logger::error("ShaderParameters", "%s() : Cannot set stride %d to stride %d or cannot set buffer with runtime array as single struct, Set runtime array separately"
-                , __func__, sizeof(BufferType), bufferDataPtr->descriptorInfo->bufferNativeStride);
+                , __func__, sizeof(BufferType), bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride());
         }
     }
     return bValueSet;
