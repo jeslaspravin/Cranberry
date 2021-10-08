@@ -5,6 +5,7 @@
 #include "../../../RenderInterface/PlatformIndependentHelper.h"
 #include "../../../Core/Platform/PlatformAssertionErrors.h"
 #include "VulkanCommandBufferManager.h"
+#include "../VulkanDescriptorAllocator.h"
 #include "../ShaderCore/VulkanShaderParamResources.h"
 #include "../../../Core/Math/Math.h"
 #include "../../../Core/Math/Box.h"
@@ -203,9 +204,10 @@ void VulkanCommandList::copyBuffer(BufferResource* src, BufferResource* dst, con
     tempFence->release();
 }
 
-void VulkanCommandList::newFrame()
+void VulkanCommandList::newFrame(const float& tiimeDelta)
 {
     resourcesTracker.clearUnwanted();
+    VulkanGraphicsHelper::getDescriptorsSetAllocator(gInstance)->tick(tiimeDelta);
 }
 
 void VulkanCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size)

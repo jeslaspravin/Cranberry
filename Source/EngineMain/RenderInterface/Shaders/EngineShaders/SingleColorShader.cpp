@@ -75,6 +75,7 @@ SingleColorShaderPipeline::SingleColorShaderPipeline(const ShaderResource* shade
     : BaseType()
 {
     setPipelineShader(shaderResource);
+    setResourceName(shaderResource->getResourceName());
     supportedCullings.resize(2);
     supportedCullings[0] = ECullingMode::FrontFace;
     supportedCullings[1] = ECullingMode::BackFace;

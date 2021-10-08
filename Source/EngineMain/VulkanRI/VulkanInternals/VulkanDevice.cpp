@@ -28,6 +28,8 @@ namespace GlobalRenderVariables
     GraphicsDeviceConstant<bool> ENABLE_WIDE_LINES;
 
     GraphicsDeviceConstant<bool> ENABLED_RESOURCE_RUNTIME_ARRAY;
+    GraphicsDeviceConstant<bool> ENABLED_RESOURCE_UPDATE_AFTER_BIND;
+    GraphicsDeviceConstant<bool> ENABLED_RESOURCE_UPDATE_UNUSED;
     GraphicsDeviceConstant<uint32> MAX_UPDATE_AFTER_BIND_DESCRIPTORS;
 
     GraphicsDeviceConstant<bool> ENABLED_TIMELINE_SEMAPHORE;
@@ -59,6 +61,8 @@ void VulkanDevice::markEnabledFeatures()
     descIdxFeatures.descriptorBindingStorageImageUpdateAfterBind = descIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind;
     descIdxFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind = descIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind;
     descIdxFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind = descIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind;
+    // Update unused
+    descIdxFeatures.descriptorBindingUpdateUnusedWhilePending = descIndexingFeatures.descriptorBindingUpdateUnusedWhilePending;
     // Non uniform access to resource array
     descIdxFeatures.shaderSampledImageArrayNonUniformIndexing = descIndexingFeatures.shaderSampledImageArrayNonUniformIndexing;
     descIdxFeatures.shaderStorageImageArrayNonUniformIndexing = descIndexingFeatures.shaderStorageImageArrayNonUniformIndexing;
@@ -87,6 +91,12 @@ void VulkanDevice::markGlobalConstants()
     GlobalRenderVariables::ENABLE_WIDE_LINES.set(enabledFeatures.wideLines);
 
     GlobalRenderVariables::ENABLED_RESOURCE_RUNTIME_ARRAY.set(enabledDescIndexingFeatures.runtimeDescriptorArray);
+    GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_AFTER_BIND.set(enabledDescIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind
+        && enabledDescIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind
+        && enabledDescIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind
+        && enabledDescIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind
+    );
+    GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_UNUSED.set(enabledDescIndexingFeatures.descriptorBindingUpdateUnusedWhilePending);
     GlobalRenderVariables::MAX_UPDATE_AFTER_BIND_DESCRIPTORS.set(descIndexingProps.maxUpdateAfterBindDescriptorsInAllPools);
 
     // Sync resources

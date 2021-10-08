@@ -33,6 +33,7 @@ public:
     /* Override ends */
 
     const std::vector<VkDescriptorPoolSize>& getDescPoolAllocInfo() const;
+    const std::vector<VkDescriptorSetLayoutBinding>& getDescSetBindings() const;
 };
 
 // descriptor set layout and its info unique to each shader
@@ -131,6 +132,7 @@ public:
     /* Override ends */
 
     const std::vector<VkDescriptorPoolSize>& getDescPoolAllocInfo(uint32 setIdx) const;
+    const std::vector<VkDescriptorSetLayoutBinding>& getDescSetBindings(uint32 setIdx) const;
     VkDescriptorSetLayout getDescSetLayout(uint32 setIdx) const;
 };
 

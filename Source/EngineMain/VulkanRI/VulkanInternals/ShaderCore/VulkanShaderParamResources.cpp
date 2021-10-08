@@ -13,6 +13,7 @@
 #include "../VulkanDescriptorAllocator.h"
 #include "../../../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../../../RenderInterface/ShaderCore/ShaderParameterUtility.h"
+#include "../../../RenderInterface/GlobalRenderVariables.h"
 
 void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std::vector<VkDescriptorSetLayoutBinding>& descLayoutBindings
     , std::vector<bool>& runtimeArray, const ReflectDescriptorBody& descReflected, const std::vector<std::vector<SpecializationConstantEntry>>& stageSpecializationConsts)
@@ -342,6 +343,13 @@ void VulkanShaderSetParamsLayout::init()
         itr = poolAllocation.erase(itr + 1, endItr);
     }
 
+    // Sort bindings so that it will be easier when querying for descriptors
+    std::sort(layoutBindings.begin(), layoutBindings.end(),
+        [](const VkDescriptorSetLayoutBinding& lhs, const VkDescriptorSetLayoutBinding& rhs)
+        {
+            return lhs.binding < rhs.binding;
+        }
+    );
 
     //reinitResources();
     IGraphicsInstance* graphicsInstance = gEngine->getRenderManager()->getGraphicsInstance();
@@ -364,13 +372,14 @@ void VulkanShaderSetParamsLayout::init()
             {
                 bindingFlags[i] = runtimeArray[i]
                     ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
-                    | VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
-                    | VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT
+                    | ((GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_AFTER_BIND) ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT : 0)
+                    | ((GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_UNUSED) ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT : 0)
                     : 0;
             }
             descLayoutBindingFlagsCI.bindingCount = uint32(bindingFlags.size());
             descLayoutBindingFlagsCI.pBindingFlags = bindingFlags.data();
-            descLayoutCreateInfo.flags |= VkDescriptorSetLayoutCreateFlagBits::VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+            descLayoutCreateInfo.flags |= (GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_AFTER_BIND)
+                ? VkDescriptorSetLayoutCreateFlagBits::VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT : 0;
             descLayoutCreateInfo.pNext = &descLayoutBindingFlagsCI;
         }
 
@@ -398,6 +407,11 @@ String VulkanShaderSetParamsLayout::getResourceName() const
 const std::vector<VkDescriptorPoolSize>& VulkanShaderSetParamsLayout::getDescPoolAllocInfo() const
 {
     return poolAllocation;
+}
+
+const std::vector<VkDescriptorSetLayoutBinding>& VulkanShaderSetParamsLayout::getDescSetBindings() const
+{
+    return layoutBindings;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -539,8 +553,8 @@ void VulkanShaderParametersLayout::init()
             }
         }
         // sort and merge type duplicate descriptor pool size
-        std::sort(descSetLayoutInfo.poolAllocation.begin(), descSetLayoutInfo.poolAllocation.end()
-            , [](const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs)
+        std::sort(descSetLayoutInfo.poolAllocation.begin(), descSetLayoutInfo.poolAllocation.end(),
+            [](const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs)
             {
                 return lhs.type < rhs.type;
             }
@@ -557,6 +571,14 @@ void VulkanShaderParametersLayout::init()
             itr = descSetLayoutInfo.poolAllocation.erase(itr + 1, endItr);
         }
 
+        // Sort bindings so that it will be easier when querying for descriptors
+        std::sort(descSetLayoutInfo.layoutBindings.begin(), descSetLayoutInfo.layoutBindings.end(), 
+            [](const VkDescriptorSetLayoutBinding& lhs, const VkDescriptorSetLayoutBinding& rhs)
+            {
+                return lhs.binding < rhs.binding;
+            }
+        );
+
         // Create descriptors set
         std::vector<VkDescriptorBindingFlags> bindingFlags;
         DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO(descLayoutBindingFlagsCI);
@@ -570,12 +592,14 @@ void VulkanShaderParametersLayout::init()
             {
                 bindingFlags[i] = runtimeArray[i]
                     ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
-                    | VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
-                    | VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT
+                    | ((GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_AFTER_BIND) ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT : 0)
+                    | ((GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_UNUSED) ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT : 0)
                     : 0;
             }
             descLayoutBindingFlagsCI.bindingCount = uint32(bindingFlags.size());
             descLayoutBindingFlagsCI.pBindingFlags = bindingFlags.data();
+            descLayoutCreateInfo.flags |= (GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_AFTER_BIND)
+                ? VkDescriptorSetLayoutCreateFlagBits::VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT : 0;
             descLayoutCreateInfo.pNext = &descLayoutBindingFlagsCI;
         }
         descSetLayoutInfo.descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
@@ -617,6 +641,13 @@ const std::vector<VkDescriptorPoolSize>& VulkanShaderParametersLayout::getDescPo
     return foundItr->second.poolAllocation;
 }
 
+const std::vector<VkDescriptorSetLayoutBinding>& VulkanShaderParametersLayout::getDescSetBindings(uint32 setIdx) const
+{
+    auto foundItr = setToLayoutInfo.find(setIdx);
+    debugAssert(foundItr != setToLayoutInfo.cend());
+    return foundItr->second.layoutBindings;
+}
+
 VkDescriptorSetLayout VulkanShaderParametersLayout::getDescSetLayout(uint32 setIdx) const
 {
     auto foundItr = setToLayoutInfo.find(setIdx);
@@ -646,6 +677,7 @@ void VulkanShaderSetParameters::init()
     query.bHasBindless = static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->hasBindless();
     query.supportedTypes.insert(static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->getDescPoolAllocInfo().cbegin()
         , static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->getDescPoolAllocInfo().cend());
+    query.allocatedBindings = &static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->getDescSetBindings();
     descriptorsSet = descsSetAllocator->allocDescriptorsSet(query, static_cast<const VulkanShaderSetParamsLayout*>(paramLayout)->descriptorLayout);
     debugAssert(descriptorsSet != VK_NULL_HANDLE);
 
@@ -855,6 +887,7 @@ void VulkanShaderParameters::init()
             query.supportedTypes.insert(setPoolSizes.cbegin(), setPoolSizes.cend());
             query.bHasBindless = static_cast<const VulkanShaderParametersLayout*>(paramLayout)
                 ->hasBindless(descriptorsBody.set);
+            query.allocatedBindings = &static_cast<const VulkanShaderParametersLayout*>(paramLayout)->getDescSetBindings(descriptorsBody.set);
             if (VkDescriptorSet descSet = descsSetAllocator->allocDescriptorsSet(query, layout))
             {
                 descriptorsSets[descriptorsBody.set] = descSet;

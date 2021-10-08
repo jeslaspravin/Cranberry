@@ -73,6 +73,7 @@ TexturedShaderPipeline::TexturedShaderPipeline(const ShaderResource* shaderResou
     : BaseType()
 {
     setPipelineShader(shaderResource);
+    setResourceName(shaderResource->getResourceName());
     supportedCullings.resize(2);
     supportedCullings[0] = ECullingMode::FrontFace;
     supportedCullings[1] = ECullingMode::BackFace;

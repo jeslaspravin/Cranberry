@@ -51,4 +51,51 @@ public:
         , const std::map<String, SpecializationConstantEntry>& namedSpecializationConsts, const struct ShaderReflected* shaderReflection);
 
     static std::map<String, uint32>& unboundArrayResourcesCount();
+
+    /**
+    * ShaderParameterUtility::getArrayElementCount - converts the array dimension into linear count, subtitutes unbound array length if needed
+    *   MaxDimension is to specify whether Array is 1D or nD
+    *
+    * Access: public static  
+    *
+    * @param const std::vector<ArrayDefinition>& arraySize 
+    *
+    * @return uint32
+    */
+    template <uint32 MaxDimension> 
+    static constexpr uint32 getArrayElementCount(const String& paramName, const std::vector<ArrayDefinition>& arraySize
+        , const std::vector<std::vector<SpecializationConstantEntry>>& specializationConsts);
 };
+
+template <uint32 MaxDimension>  
+uint32 constexpr ShaderParameterUtility::getArrayElementCount(const String& paramName, const std::vector<ArrayDefinition>& arraySize
+    , const std::vector<std::vector<SpecializationConstantEntry>>& specializationConsts)
+{
+    if (arraySize.empty())
+        return 0;
+
+    uint32 linearCount = 1;
+    for (uint32 i = 0; i < MaxDimension && i < arraySize.size(); ++i)
+    {
+        uint32 count;
+        if (!arraySize[i].isSpecializationConst)
+        {
+            count = arraySize[i].dimension;
+        }
+        else if (!SpecializationConstUtility::asValue(count, specializationConsts[arraySize[i].stageIdx][arraySize[i].dimension]))
+        {
+            Logger::error("ShaderParameters", "%s() : Specialized %s array count is invalid", __func__, paramName.getChar());
+        }
+
+        linearCount *= count;
+    }
+
+    // if 0 means runtime so check from global constants
+    if (linearCount == 0)
+    {
+        auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(paramName);
+        linearCount = (itr == ShaderParameterUtility::unboundArrayResourcesCount().cend())
+            ? 0 : itr->second;
+    }
+    return linearCount;
+}

@@ -284,6 +284,10 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
         Logger::error("VulkanGraphicsHelper", "%s : Pipeline layout creation failed for shader %s", __func__, shaderResource->getResourceName().getChar());
         pipelineLayout = nullptr;
     }
+    else
+    {
+        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(pipelineLayout), pipeline->getResourceName() + "_PipelineLayout", VkObjectType::VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+    }
 
     return pipelineLayout;
 }

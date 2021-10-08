@@ -21,6 +21,8 @@ namespace GlobalRenderVariables
     extern GraphicsDeviceConstant<uint64> MAX_TIMELINE_OFFSET;
 
     extern GraphicsDeviceConstant<bool> ENABLED_RESOURCE_RUNTIME_ARRAY;
+    extern GraphicsDeviceConstant<bool> ENABLED_RESOURCE_UPDATE_AFTER_BIND;
+    extern GraphicsDeviceConstant<bool> ENABLED_RESOURCE_UPDATE_UNUSED;
     extern GraphicsDeviceConstant<uint32> MAX_UPDATE_AFTER_BIND_DESCRIPTORS;
 
     //in nanoseconds
