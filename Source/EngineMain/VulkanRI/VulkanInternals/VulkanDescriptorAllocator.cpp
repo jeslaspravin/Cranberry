@@ -1,6 +1,7 @@
 #include "VulkanDescriptorAllocator.h"
 #include "VulkanMacros.h"
 #include "VulkanDevice.h"
+#include "../../RenderInterface/GlobalRenderVariables.h"
 #include "../VulkanGraphicsHelper.h"
 #include "../../Core/Platform/PlatformAssertionErrors.h"
 #include "../../Core/Logger/Logger.h"
@@ -70,10 +71,7 @@ std::vector<VulkanDescriptorsSetAllocatorInfo*> VulkanDescriptorsSetAllocator::f
             query.supportedTypes.cbegin(), query.supportedTypes.cend()
             , allocationPoolsItr->first.supportedTypes.cbegin(), allocationPoolsItr->first.supportedTypes.cend()
             , outSet.begin(),
-            [](const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs)
-            {
-                return lhs.type < rhs.type;
-            });
+            DescriptorPoolSizeLessThan{});
 
         if ((outEndItr - outSet.begin()) == query.supportedTypes.size())
         {
@@ -116,24 +114,62 @@ bool VulkanDescriptorsSetAllocator::isSupportedPool(std::vector<VkDescriptorSet>
             availableSets.reserve(setsCount);
             for (const VkDescriptorSet& descriptorsSet : allocationPool.availableSets)
             {
-                const auto& descriptorsPoolSizes = allocationPool.allocatedSets.at(descriptorsSet).supportedTypes;
-                if (descriptorsPoolSizes.size() != query.supportedTypes.size())
+                const DescriptorsSetQuery& allocatedSetQuery = allocationPool.allocatedSets.at(descriptorsSet);
+                // If requested type count is more that allocated size then no useful
+                if (allocatedSetQuery.supportedTypes.size() > query.supportedTypes.size())
                 {
                     continue;
                 }
 
                 bool bIsSuitableDescsSet = true;
                 // Check if set 100% intersection
-                for (auto descPoolSizeItr = descriptorsPoolSizes.cbegin()
-                    , queryPoolSizeItr = query.supportedTypes.cbegin(); descPoolSizeItr != descriptorsPoolSizes.cend()
-                    ; ++descPoolSizeItr, ++queryPoolSizeItr)
+                
+                // Below check using descriptor's total pool size won't provide proper value when binding level count varies
+                // or if stage used varies
+                //for (auto descPoolSizeItr = descriptorsPoolSizes.cbegin()
+                //    , queryPoolSizeItr = query.supportedTypes.cbegin(); descPoolSizeItr != descriptorsPoolSizes.cend()
+                //    ; ++descPoolSizeItr, ++queryPoolSizeItr)
+                //{
+                //    if (descPoolSizeItr->descriptorCount != queryPoolSizeItr->descriptorCount
+                //        || descPoolSizeItr->type != queryPoolSizeItr->type)
+                //    {
+                //        bIsSuitableDescsSet = false;
+                //        break;
+                //    }
+                //}
+                if(query.allocatedBindings != allocatedSetQuery.allocatedBindings)
                 {
-                    if (descPoolSizeItr->descriptorCount != queryPoolSizeItr->descriptorCount
-                        || descPoolSizeItr->type != queryPoolSizeItr->type)
+                    auto queryBindingItr = query.allocatedBindings->cbegin();
+                    auto allocBindingItr = allocatedSetQuery.allocatedBindings->cbegin();
+                    while(queryBindingItr != query.allocatedBindings->cend() && allocBindingItr != allocatedSetQuery.allocatedBindings->cend())
                     {
-                        bIsSuitableDescsSet = false;
-                        break;
+                        // If allocated binding is already larger than query binding then allocated do not support that binding index
+                        if (queryBindingItr->binding < allocBindingItr->binding)
+                        {
+                            bIsSuitableDescsSet = false;
+                            break;
+                        }
+                        // If allocated binding has binding at lower indices skip them
+                        else if (queryBindingItr->binding > allocBindingItr->binding)
+                        {
+                            ++allocBindingItr;
+                        }
+                        // Same binding case, if Descriptors do not match then fail this set
+                        else if(queryBindingItr->descriptorType != allocBindingItr->descriptorType
+                            || queryBindingItr->descriptorCount > allocBindingItr->descriptorCount // If required descriptors count is greater than allocated set's
+                            || BIT_NOT_SET(allocBindingItr->stageFlags, queryBindingItr->stageFlags)) // If all queried shader stages are not supported
+                        {
+                            bIsSuitableDescsSet = false;
+                            break;                                
+                        }
+                        else
+                        {
+                            ++allocBindingItr;
+                            ++queryBindingItr;
+                        }
                     }
+                    // Query iterator must have ended for it to be suitable
+                    bIsSuitableDescsSet = bIsSuitableDescsSet && (queryBindingItr == query.allocatedBindings->cend());
                 }
 
                 if (bIsSuitableDescsSet)
@@ -187,7 +223,7 @@ VulkanDescriptorsSetAllocatorInfo& VulkanDescriptorsSetAllocator::createNewPool(
 
     std::vector<VkDescriptorPoolSize> descriptorsSetPoolSizes(query.supportedTypes.size());
     DESCRIPTOR_POOL_CREATE_INFO(descsSetPoolCreateInfo);
-    descsSetPoolCreateInfo.flags |= query.bHasBindless 
+    descsSetPoolCreateInfo.flags |= query.bHasBindless && (GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_AFTER_BIND)
         ? VkDescriptorPoolCreateFlagBits::VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT : 0;
     descsSetPoolCreateInfo.maxSets = allocationPool.maxSets = Math::max(DESCRIPTORS_SET_POOL_MAX_SETS,setsCount);
     descsSetPoolCreateInfo.poolSizeCount = uint32(descriptorsSetPoolSizes.size());
@@ -221,7 +257,7 @@ VulkanDescriptorsSetAllocatorInfo& VulkanDescriptorsSetAllocator::findOrCreateAl
             std::vector<VkDescriptorSet> tempSets;
             if (isSupportedPool(tempSets, *availableAllocationInfo, query, uint32(setsRequiredCount)))
             {
-                Logger::debug("DescriptorsSetAllocator", "%s() : Found existing pool that supports query, obtained %d Descriptors set",__func__, uint32(tempSets.size()));
+                Logger::debug("DescriptorsSetAllocator", "%s() : Found existing pool that supports query, obtained %d existing Descriptors set",__func__, uint32(tempSets.size()));
                 allocationPool = availableAllocationInfo;
                 // If pool has enough capacity to allocate then support will be true and sets returned will be 0
                 if (tempSets.empty())
@@ -297,24 +333,24 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice* devic
     : ownerDevice(device)
     , emptyDescriptor(nullptr)
 {
-    std::array<VkDescriptorPoolSize, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1> globalDescriptorsSetPoolSizes;
-    for (uint32 i = VK_DESCRIPTOR_TYPE_SAMPLER; i <= VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT; ++i)
-    {
-        globalDescriptorsSetPoolSizes[i].type = VkDescriptorType(i);
-        globalDescriptorsSetPoolSizes[i].descriptorCount = DESCRIPTORS_COUNT_PER_SET;
-        globalPool.typeCountMap[globalDescriptorsSetPoolSizes[i].type] = globalDescriptorsSetPoolSizes[i].descriptorCount;
-    }
-    // Since currently we are not supporting array of structures
-    globalDescriptorsSetPoolSizes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER].descriptorCount = 1;
-    globalDescriptorsSetPoolSizes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER].descriptorCount = 1;
+    //std::array<VkDescriptorPoolSize, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1> globalDescriptorsSetPoolSizes;
+    //for (uint32 i = VK_DESCRIPTOR_TYPE_SAMPLER; i <= VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT; ++i)
+    //{
+    //    globalDescriptorsSetPoolSizes[i].type = VkDescriptorType(i);
+    //    globalDescriptorsSetPoolSizes[i].descriptorCount = DESCRIPTORS_COUNT_PER_SET;
+    //    globalPool.typeCountMap[globalDescriptorsSetPoolSizes[i].type] = globalDescriptorsSetPoolSizes[i].descriptorCount;
+    //}
+    //// Since currently we are not supporting array of structures
+    //globalDescriptorsSetPoolSizes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER].descriptorCount = 1;
+    //globalDescriptorsSetPoolSizes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER].descriptorCount = 1;
 
-    DESCRIPTOR_POOL_CREATE_INFO(globalPoolCreateInfo);
-    globalPoolCreateInfo.poolSizeCount = uint32(globalDescriptorsSetPoolSizes.size());
-    globalPoolCreateInfo.pPoolSizes = globalDescriptorsSetPoolSizes.data();
-    globalPoolCreateInfo.maxSets = globalPool.maxSets = DESCRIPTORS_SET_POOL_MAX_SETS;
+    //DESCRIPTOR_POOL_CREATE_INFO(globalPoolCreateInfo);
+    //globalPoolCreateInfo.poolSizeCount = uint32(globalDescriptorsSetPoolSizes.size());
+    //globalPoolCreateInfo.pPoolSizes = globalDescriptorsSetPoolSizes.data();
+    //globalPoolCreateInfo.maxSets = globalPool.maxSets = DESCRIPTORS_SET_POOL_MAX_SETS;
 
-    fatalAssert(ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice), &globalPoolCreateInfo
-        , nullptr, &globalPool.pool) == VK_SUCCESS, "Global pool creation failed");
+    //fatalAssert(ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice), &globalPoolCreateInfo
+    //    , nullptr, &globalPool.pool) == VK_SUCCESS, "Global pool creation failed");
 
     // Empty descriptor set creation
     {
@@ -345,11 +381,11 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice* devic
 VulkanDescriptorsSetAllocator::~VulkanDescriptorsSetAllocator()
 {
     VkDevice device = VulkanGraphicsHelper::getDevice(ownerDevice);
-    ownerDevice->vkDestroyDescriptorPool(device, globalPool.pool, nullptr);
-    globalPool.allocatedSets.clear();
-    globalPool.availableSets.clear();
-    globalPool.pool = nullptr;
-    globalPool.typeCountMap.clear();
+    //ownerDevice->vkDestroyDescriptorPool(device, globalPool.pool, nullptr);
+    //globalPool.allocatedSets.clear();
+    //globalPool.availableSets.clear();
+    //globalPool.pool = nullptr;
+    //globalPool.typeCountMap.clear();
 
     for (auto allocationPoolsItr = availablePools.begin(); allocationPoolsItr != availablePools.end(); ++allocationPoolsItr)
     {
@@ -374,20 +410,20 @@ VkDescriptorSet VulkanDescriptorsSetAllocator::allocDescriptorsSet(const Descrip
     }
 
     std::vector<VkDescriptorSet> chooseSets;
-    if (!query.bHasBindless && isSupportedPool(chooseSets, globalPool, query, 1))
-    {
-        if (chooseSets.empty())
-        {
-            Logger::debug("DescriptorsSetAllocator", "Allocating set from global descriptors set pool");
-            chooseSets.push_back(allocateSetFromPool(globalPool, descriptorsSetLayout));
-            globalPool.allocatedSets[chooseSets[0]] = query;
-        }
-        else
-        {
-            Logger::debug("DescriptorsSetAllocator", "Fetching from available sets of global descriptors set pool");
-            globalPool.availableSets.erase(chooseSets[0]);
-        }
-    }
+    //if (!query.bHasBindless && isSupportedPool(chooseSets, globalPool, query, 1))
+    //{
+    //    if (chooseSets.empty())
+    //    {
+    //        Logger::debug("DescriptorsSetAllocator", "Allocating set from global descriptors set pool");
+    //        chooseSets.push_back(allocateSetFromPool(globalPool, descriptorsSetLayout));
+    //        globalPool.allocatedSets[chooseSets[0]] = query;
+    //    }
+    //    else
+    //    {
+    //        Logger::debug("DescriptorsSetAllocator", "Fetching from available sets of global descriptors set pool");
+    //        globalPool.availableSets.erase(chooseSets[0]);
+    //    }
+    //}
 
     if (chooseSets.empty())
     {
@@ -395,7 +431,6 @@ VkDescriptorSet VulkanDescriptorsSetAllocator::allocDescriptorsSet(const Descrip
 
         if (chooseSets.empty())
         {
-            Logger::debug("DescriptorsSetAllocator", "Allocating set from non global pool");
             chooseSets.push_back(allocateSetFromPool(allocationPool, descriptorsSetLayout));
             allocationPool.allocatedSets[chooseSets[0]] = query;
         }
@@ -463,26 +498,27 @@ bool VulkanDescriptorsSetAllocator::allocDescriptorsSets(std::vector<VkDescripto
 
 void VulkanDescriptorsSetAllocator::releaseDescriptorsSet(VkDescriptorSet descriptorSet)
 {
-    auto descriptorSetItr = globalPool.allocatedSets.find(descriptorSet);
+    //auto descriptorSetItr = globalPool.allocatedSets.find(descriptorSet);
 
-    if (descriptorSetItr == globalPool.allocatedSets.end())
+    //if (descriptorSetItr != globalPool.allocatedSets.end())
+    //{
+    //    globalPool.availableSets.insert(descriptorSet);
+    //}
+    //else 
+    if(descriptorSet != emptyDescriptor)
     {
         for (auto allocationPoolsItr = availablePools.begin(); allocationPoolsItr != availablePools.end(); ++allocationPoolsItr)
         {
             for (VulkanDescriptorsSetAllocatorInfo& allocationPool : allocationPoolsItr->second)
             {
-                descriptorSetItr = allocationPool.allocatedSets.find(descriptorSet);
-                if (descriptorSetItr != allocationPool.allocatedSets.end())
+                auto allocPoolDescSetItr = allocationPool.allocatedSets.find(descriptorSet);
+                if (allocPoolDescSetItr != allocationPool.allocatedSets.end())
                 {
                     allocationPool.availableSets.insert(descriptorSet);
                     return;
                 }
             }
         }
-    }
-    else if(descriptorSet != emptyDescriptor)
-    {
-        globalPool.availableSets.insert(descriptorSet);
     }
 }
 

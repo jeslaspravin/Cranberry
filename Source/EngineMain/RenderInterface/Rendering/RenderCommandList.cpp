@@ -30,7 +30,7 @@ private:
 
 public:
     void setup(IRenderCommandList* commandList) final;
-    void newFrame() final;
+    void newFrame(const float& tiimeDelta);
 
     void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) final;
     void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) final;
@@ -147,9 +147,9 @@ void RenderCommandList::setup(IRenderCommandList* commandList)
     }
 }
 
-void RenderCommandList::newFrame()
+void RenderCommandList::newFrame(const float& tiimeDelta)
 {
-    cmdList->newFrame();
+    cmdList->newFrame(tiimeDelta);
 }
 
 void RenderCommandList::copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo)

@@ -16,7 +16,7 @@ void GlobalRenderingContextBase::initContext(IGraphicsInstance* graphicsInstance
 {
     std::map<String, uint32>& runtimeResCount = ShaderParameterUtility::unboundArrayResourcesCount();
     // Fill Runtime indexed resources max count over here
-
+    runtimeResCount["srcImages"] = 16u;
 
     initApiInstances();
 

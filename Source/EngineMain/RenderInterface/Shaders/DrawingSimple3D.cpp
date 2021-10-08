@@ -37,6 +37,7 @@ DrawSimple3DShaderPipeline<Topology, DepthWrite>::DrawSimple3DShaderPipeline(con
     : BaseType()
 {
     setPipelineShader(shaderResource);
+    setResourceName("DrawSimple3D_" + shaderResource->getResourceName());
     supportedCullings.emplace_back(ECullingMode::BackFace);
 
     allowedDrawModes.emplace_back(EPolygonDrawMode::Fill);

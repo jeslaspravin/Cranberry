@@ -11,13 +11,13 @@
 class VulkanDevice;
 struct DescriptorsSetQuery;
 
-struct DescriptorPoolSizeLessThan {
-
+struct DescriptorPoolSizeLessThan 
+{
     bool operator()(const VkDescriptorPoolSize& lhs, const VkDescriptorPoolSize& rhs) const;
 };
 
-struct DescriptorsSetQueryLessThan {
-
+struct DescriptorsSetQueryLessThan 
+{
     bool recursivelyCompare(std::set<VkDescriptorPoolSize>::const_iterator& lhsItr, std::set<VkDescriptorPoolSize>::const_iterator& lhsEnd
         , std::set<VkDescriptorPoolSize>::const_iterator& rhsItr, std::set<VkDescriptorPoolSize>::const_iterator& rhsEnd) const;
 
@@ -29,6 +29,11 @@ struct DescriptorsSetQuery
     // If used for runtime then pool will be created with Update after bind enabled
     bool bHasBindless = false;
     std::set<VkDescriptorPoolSize,DescriptorPoolSizeLessThan> supportedTypes;
+    // Since we are not going to use custom comparator or anything 
+    // and also since ShaderParamSetLayout/ShaderParamLayout will not be destroyed the whole application lifetime
+    // We hold this as pointer. Change if necessary, but update the isSupportedPool method accordingly
+    // and allocatedBindings is sorted by binding index as well
+    const std::vector<VkDescriptorSetLayoutBinding>* allocatedBindings;
 };
 
 struct VulkanDescriptorsSetAllocatorInfo
@@ -50,8 +55,8 @@ private:
     constexpr static uint32 DESCRIPTORS_COUNT_PER_SET = 8;
     const float MAX_IDLING_DURATION = 30;// Duration in seconds after which the descriptor set will be reset(not destroyed)
     VulkanDevice* ownerDevice;
-    // Pool that accommodates all the descriptors type and considerable amount of set counts.
-    VulkanDescriptorsSetAllocatorInfo globalPool;
+    //// Pool that accommodates all the descriptors type and considerable amount of set counts.
+    //VulkanDescriptorsSetAllocatorInfo globalPool;
 
     VkDescriptorSetLayout emptyLayout;
     VkDescriptorPool emptyPool;
@@ -87,6 +92,6 @@ public:
     bool allocDescriptorsSets(std::vector<VkDescriptorSet>& sets, const DescriptorsSetQuery& query, const std::vector<VkDescriptorSetLayout>& layouts);
     bool allocDescriptorsSets(std::vector<VkDescriptorSet>& sets, const DescriptorsSetQuery& query, const VkDescriptorSetLayout& layout, const uint32& setsCount);
     void releaseDescriptorsSet(VkDescriptorSet descriptorSet);
-    // #TODO(Jeslas) : Register for tick 
+
     void tick(const float& deltaTime);
 };

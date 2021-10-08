@@ -97,6 +97,7 @@ SimpleComputePipeline::SimpleComputePipeline(const ShaderResource* shaderResourc
     : BaseType()
 {
     setPipelineShader(shaderResource);
+    setResourceName("SimpleComp_" + shaderResource->getResourceName());
 }
 
 DEFINE_GRAPHICS_RESOURCE(ScreenSpaceQuadShaderPipeline)
@@ -109,6 +110,7 @@ ScreenSpaceQuadShaderPipeline::ScreenSpaceQuadShaderPipeline(const ShaderResourc
     : BaseType()
 {
     setPipelineShader(shaderResource);
+    setResourceName("ScreenSpaceQuad_" + shaderResource->getResourceName());
     supportedCullings.emplace_back(ECullingMode::BackFace);
     allowedDrawModes.emplace_back(EPolygonDrawMode::Fill);
 
@@ -130,6 +132,8 @@ DEFINE_GRAPHICS_RESOURCE(OverBlendedSSQuadShaderPipeline)
 OverBlendedSSQuadShaderPipeline::OverBlendedSSQuadShaderPipeline(const ShaderResource* shaderResource)
     : BaseType(shaderResource)
 {
+    setResourceName("OverBlendedSSQuad_" + shaderResource->getResourceName());
+
     attachmentBlendStates[0].bBlendEnable = true;
     attachmentBlendStates[0].colorBlendOp = EBlendOp::Add;
     attachmentBlendStates[0].srcColorFactor = EBlendFactor::SrcAlpha;
@@ -142,6 +146,7 @@ DEFINE_GRAPHICS_RESOURCE(OverBlendedSSQuadWithDepthTestPipeline)
 OverBlendedSSQuadWithDepthTestPipeline::OverBlendedSSQuadWithDepthTestPipeline(const ShaderResource* shaderResource)
     : BaseType(shaderResource)
 {
+    setResourceName("OverBlendedSSQuadDepthTested_" + shaderResource->getResourceName());
     // Just add depth attachment and disable depth write
     renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::D24S8_U32_DNorm_SInt);
 

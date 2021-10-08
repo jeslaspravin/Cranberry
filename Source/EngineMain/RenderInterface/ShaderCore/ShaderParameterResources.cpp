@@ -421,17 +421,7 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
             else
             {
                 debugAssert(bufferParamDesc->texelBufferEntryPtr->data.data.arraySize.size() == 1);
-                uint32 count = 0;
-                const ArrayDefinition& arrayDef = bufferParamDesc->texelBufferEntryPtr->data.data.arraySize[0];
-                if (!arrayDef.isSpecializationConst)
-                {
-                    count = arrayDef.dimension;
-                }
-                else if (!SpecializationConstUtility::asValue(count, specializationConsts[arrayDef.stageIdx][arrayDef.dimension]))
-                {
-                    Logger::error("ShaderParameters", "%s() : Texel buffer %s array count specialization invalid"
-                        , __func__, bufferParamDesc->texelBufferEntryPtr->attributeName.c_str());
-                }
+                uint32 count = ShaderParameterUtility::getArrayElementCount<1>(paramDesc.first, bufferParamDesc->texelBufferEntryPtr->data.data.arraySize, specializationConsts);
 
                 TexelParameterData& paramData = shaderTexels[bufferParamDesc->texelBufferEntryPtr->attributeName];
                 paramData.descriptorInfo = bufferParamDesc;
@@ -441,17 +431,7 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
         else if (const ShaderTextureDescriptorType* textureParamDesc = Cast<ShaderTextureDescriptorType>(paramDesc.second))
         {
             debugAssert(textureParamDesc->textureEntryPtr->data.data.arraySize.size() == 1);
-            uint32 count = 0;
-            const ArrayDefinition& arrayDef = textureParamDesc->textureEntryPtr->data.data.arraySize[0];
-            if (!arrayDef.isSpecializationConst)
-            {
-                count = arrayDef.dimension;
-            }
-            else if (!SpecializationConstUtility::asValue(count, specializationConsts[arrayDef.stageIdx][arrayDef.dimension]))
-            {
-                Logger::error("ShaderParameters", "%s() : Texture %s array count specialization invalid"
-                    , __func__, textureParamDesc->textureEntryPtr->attributeName.c_str());
-            }
+            uint32 count = ShaderParameterUtility::getArrayElementCount<1>(paramDesc.first, textureParamDesc->textureEntryPtr->data.data.arraySize, specializationConsts);
 
             TextureParameterData& paramData = shaderTextures[textureParamDesc->textureEntryPtr->attributeName];
             paramData.textures.resize(count);
@@ -460,17 +440,7 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
         else if (const ShaderSamplerDescriptorType* samplerParamDesc = Cast<ShaderSamplerDescriptorType>(paramDesc.second))
         {
             debugAssert(samplerParamDesc->samplerEntryPtr->data.data.size() == 1);
-            uint32 count = 0;
-            const ArrayDefinition& arrayDef = samplerParamDesc->samplerEntryPtr->data.data[0];
-            if (!arrayDef.isSpecializationConst)
-            {
-                count = arrayDef.dimension;
-            }
-            else if (!SpecializationConstUtility::asValue(count, specializationConsts[arrayDef.stageIdx][arrayDef.dimension]))
-            {
-                Logger::error("ShaderParameters", "%s() : Sampler %s array count specialization invalid"
-                    , __func__, samplerParamDesc->samplerEntryPtr->attributeName.c_str());
-            }
+            uint32 count = ShaderParameterUtility::getArrayElementCount<1>(paramDesc.first, samplerParamDesc->samplerEntryPtr->data.data, specializationConsts);
 
             SamplerParameterData& paramData = shaderSamplers[samplerParamDesc->samplerEntryPtr->attributeName];
             paramData.samplers.resize(count);
@@ -550,7 +520,7 @@ std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> Shade
     {
         for (const auto& img : textuteParam.second.textures)
         {
-            if(!uniqueness.emplace(img.texture).second)
+            if(img.texture == nullptr || !uniqueness.emplace(img.texture).second)
                 continue;
 
             if (img.texture->isShaderRead() 
@@ -586,7 +556,7 @@ std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> Shade
     {
         for (BufferResource* texels : bufferParam.second.gpuBuffers)
         {
-            if(!uniqueness.emplace(texels).second)
+            if(texels == nullptr || !uniqueness.emplace(texels).second)
                 continue;
 
             if (!bufferParam.second.descriptorInfo->bIsStorage || BIT_NOT_SET(bufferParam.second.descriptorInfo->texelBufferEntryPtr->data.readWriteState, EDescriptorEntryState::WriteOnly))
@@ -608,7 +578,7 @@ std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> Shade
     {
         for (const auto& img : textuteParam.second.textures)
         {
-            if (!uniqueness.emplace(img.texture).second)
+            if (img.texture == nullptr || !uniqueness.emplace(img.texture).second)
                 continue;
 
             if (img.texture->isShaderWrite() && BIT_SET(textuteParam.second.descriptorInfo->textureEntryPtr->data.readWriteState, EDescriptorEntryState::WriteOnly))
@@ -644,7 +614,7 @@ std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> Shade
     {
         for (BufferResource* texels : bufferParam.second.gpuBuffers)
         {
-            if (!uniqueness.emplace(texels).second)
+            if (texels == nullptr || !uniqueness.emplace(texels).second)
                 continue;
 
             if ((bufferParam.second.descriptorInfo->bIsStorage || texels->isTypeOf<GraphicsWTexelBuffer>() || texels->isTypeOf<GraphicsRWTexelBuffer>())

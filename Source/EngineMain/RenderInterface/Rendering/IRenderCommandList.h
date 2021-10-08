@@ -150,7 +150,7 @@ public:
     static IRenderCommandList* genericInstance();
 
     virtual void setup(IRenderCommandList* commandList) {};
-    virtual void newFrame() = 0;
+    virtual void newFrame(const float& tiimeDelta) = 0;
 
     virtual void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) = 0;
     virtual void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) = 0;

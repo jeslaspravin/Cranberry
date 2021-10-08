@@ -257,8 +257,13 @@ class ExperimentalEngineGoochModel : public GameEngine, public IImGuiLayer
 
     // End shader pipeline resources
 
+    // Test compute
     bool bAnimateX;
     bool bAnimateY;
+    float timeAccum = 0;
+    uint32 texturesCount;
+    uint32 testBindlessTextureIdx;
+
     int32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
     Size2D renderSize{ 1280, 720 };
     ECameraProjection projection = ECameraProjection::Perspective;
@@ -403,7 +408,7 @@ void ExperimentalEngineGoochModel::createImages()
         ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
 
     Texture2DRWCreateParams createParam;
-    createParam.textureSize = Size2D(512, 512);
+    createParam.textureSize = Size2D(512);
     createParam.mipCount = 1;
     createParam.textureName = "Compute Write";
     createParam.format = EPixelDataFormat::RGBA_U8_Norm;
@@ -649,7 +654,14 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams()
     clearInfoParams->init();
 
     testComputeParams->setTextureParam("resultImage", writeTexture.image->getTextureResource());
+
     testComputeParams->resizeRuntimeBuffer("inData", 2);
+    auto textures = appInstance().assetManager.getAssetsOfType<EAssetType::Texture2D, TextureAsset>();
+    texturesCount = uint32(textures.size());
+    for (uint32 i = 0; i < textures.size(); ++i)
+    {
+        testComputeParams->setTextureParam("srcImages", textures[i]->getTexture()->getTextureResource(), linearFiltering, i);
+    }
     AOS testRuntime;
     testRuntime.a = Vector4D(1, 0, 1, 0);
     testRuntime.b = Vector2D::FWD;
@@ -1070,9 +1082,17 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEngineFrame);
         cmdList->cmdBindComputePipeline(cmdBuffer, testComputePipelineContext);
 
+        if (bAnimateX || bAnimateY)
+        {
+            timeAccum += timeData.deltaTime;
+            testBindlessTextureIdx += uint32(Math::floor(timeAccum / 2.0f));
+            testBindlessTextureIdx %= texturesCount;
+            timeAccum = Math::mod(timeAccum, 2.0f);
+        }
         std::vector<std::pair<String, std::any>> pushConsts = {
-            {"time" , { Time::asSeconds(Time::timeNow())} }
-            , {"flags", { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }}
+            { "time" , { Time::asSeconds(Time::timeNow())} }
+            , { "flags", { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }}
+            , { "srcIndex", { testBindlessTextureIdx }}
         };
         cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, pushConsts);
         cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, { testComputeParams.get() });
@@ -1466,7 +1486,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
 
 //GameEngine* GameEngineWrapper::createEngineInstance()
 //{
-//    static ExperimentalEngine gameEngine;
+//    static ExperimentalEngineGoochModel gameEngine;
 //    return &gameEngine;
 //}
 #endif
