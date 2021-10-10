@@ -1,7 +1,9 @@
 #ifndef VIEWDESCRIPTORS_INCLUDE
 #define VIEWDESCRIPTORS_INCLUDE
 
-layout(set = 0, binding = 0) uniform ViewData
+#include "CommonDefines.inl.glsl"
+
+layout(set = VIEW_UNIQ_SET, binding = 0) uniform ViewData
 {
     mat4 view;
     mat4 invView;

@@ -82,7 +82,15 @@ struct CopyBufferInfo
     uint64 dstOffset;
     uint32 copySize;
 };
+// Single copy from src to dst
+struct BatchCopyBufferInfo
+{
+    BufferResource* src;
+    BufferResource* dst; 
+    CopyBufferInfo copyInfo;
+};
 
+// Single copy struct, Used to copy cpu visible data to a gpu(can be cpu visible) buffer
 struct BatchCopyBufferData
 {
     BufferResource* dst;
@@ -135,6 +143,24 @@ struct GraphicsPipelineState
     std::optional<float> lineWidth;
 };
 
+struct DrawIndirectCommand
+{
+    uint32 vertexCount;
+    uint32 instanceCount;
+    uint32 firstVertex;
+    uint32 firstInstance;
+};
+
+struct DrawIndexedIndirectCommand
+{
+    uint32 indexCount;
+    uint32 instanceCount;
+    uint32 firstIndex;
+    // vertexOffset is vertex to add before indexing that vertex in vertex buffer 
+    int32 vertexOffset;
+    uint32 firstInstance;
+};
+
 class IRenderCommandList
 {
 protected:
@@ -155,6 +181,7 @@ public:
     virtual void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) = 0;
     virtual void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) = 0;
     virtual void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) = 0;
+    virtual void copyBuffer(const std::vector<BatchCopyBufferInfo>& batchCopies) = 0;
     // Below copies does not take inner structure alignment and offset into account so do not use this to copy structures that has inner structure which is not tightly packed
     template<typename BufferDataType>
     void copyToBuffer(BufferResource* dst, uint32 dstOffset, const BufferDataType* dataToCopy, const ShaderBufferParamInfo* bufferFields);
@@ -203,12 +230,17 @@ public:
     void cmdBindDescriptorsSets(const GraphicsResource* cmdBuffer, const LocalPipelineContext& contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const;
     virtual void cmdBindDescriptorsSetInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::map<uint32, const ShaderParameters*>& descriptorsSets) const = 0;
     virtual void cmdBindDescriptorsSetsInternal(const GraphicsResource* cmdBuffer, const PipelineBase* contextPipeline, const std::vector<const ShaderParameters*>& descriptorsSets) const = 0;
+    // Offset in bytes
     virtual void cmdBindVertexBuffers(const GraphicsResource* cmdBuffer, uint32 firstBinding, const std::vector<const BufferResource*>& vertexBuffers, const std::vector<uint64>& offsets) const = 0;
     virtual void cmdBindIndexBuffer(const GraphicsResource* cmdBuffer, const BufferResource* indexBuffer, uint64 offset = 0) const = 0;
 
     virtual void cmdDispatch(const GraphicsResource* cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const = 0;
+    // vertexOffset is vertex to add before indexing that vertex in vertex buffer 
     virtual void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const = 0;
     virtual void cmdDrawVertices(const GraphicsResource* cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance = 0, uint32 instanceCount = 1) const = 0;
+    // bufferOffset - Offset in bytes, stride - useful when draw struct is part of some complex AoS
+    virtual void cmdDrawIndexedIndirect(const GraphicsResource* cmdBuffer, const BufferResource* drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride) const = 0;
+    virtual void cmdDrawIndirect(const GraphicsResource* cmdBuffer, const BufferResource* drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride) const = 0;
 
     virtual void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const = 0;
     virtual void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const = 0;

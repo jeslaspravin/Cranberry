@@ -162,6 +162,8 @@ DEVICE_VK_FUNCTIONS(vkCmdClearAttachments)
 DEVICE_VK_FUNCTIONS(vkCmdDispatch)
 DEVICE_VK_FUNCTIONS(vkCmdDraw)
 DEVICE_VK_FUNCTIONS(vkCmdDrawIndexed)
+DEVICE_VK_FUNCTIONS(vkCmdDrawIndirect)
+DEVICE_VK_FUNCTIONS(vkCmdDrawIndexedIndirect)
 
 DEVICE_VK_FUNCTIONS(vkCmdBeginRenderPass)
 DEVICE_VK_FUNCTIONS(vkCmdNextSubpass)

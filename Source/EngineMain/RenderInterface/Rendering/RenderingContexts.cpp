@@ -17,6 +17,7 @@ void GlobalRenderingContextBase::initContext(IGraphicsInstance* graphicsInstance
     std::map<String, uint32>& runtimeResCount = ShaderParameterUtility::unboundArrayResourcesCount();
     // Fill Runtime indexed resources max count over here
     runtimeResCount["srcImages"] = 16u;
+    runtimeResCount["globalSampledTexs"] = 128u;
 
     initApiInstances();
 
@@ -59,8 +60,11 @@ void GlobalRenderingContextBase::initShaderResources()
     GraphicsShaderResource::staticType()->allChildDefaultResources(allShaderResources, true, true);
     // Initialize all shaders
     {
+        uint32 bindlessUsageMaxBitCount = 0;
+        ShaderResource* bindlessParamUsedInShader = nullptr;
+
         uint32 viewParamUsageMaxBitCount = 0;
-        ShaderResource* usedInShader = nullptr;
+        ShaderResource* viewParamUsedInShader = nullptr;
 
         std::map<EVertexType::Type, std::pair<uint32, ShaderResource*>> vertexParamUsageMaxBitCount;
 
@@ -76,7 +80,7 @@ void GlobalRenderingContextBase::initShaderResources()
                 {
                     uint32 setBitCount = PlatformFunctions::getSetBitCount(descriptorsSetMeta.combinedSetUsage);
 
-                    if (descriptorsSetMeta.set == 1) // Vertex param
+                    if (descriptorsSetMeta.set == ShaderParameterUtility::INSTANCE_UNIQ_SET) // Vertex param
                     {
                         auto itr = vertexParamUsageMaxBitCount.find(drawMeshShader->vertexUsage());
                         if (itr == vertexParamUsageMaxBitCount.end())
@@ -89,7 +93,7 @@ void GlobalRenderingContextBase::initShaderResources()
                             itr->second.second = drawMeshShader;
                         }
                     }
-                    else if (descriptorsSetMeta.set == 2)
+                    else if (descriptorsSetMeta.set == ShaderParameterUtility::SHADER_UNIQ_SET)
                     {
                         auto itr = shaderUniqParamUsageMaxBitCount.find(drawMeshShader->getResourceName());
                         if (itr == shaderUniqParamUsageMaxBitCount.end())
@@ -102,28 +106,37 @@ void GlobalRenderingContextBase::initShaderResources()
                             itr->second.second = drawMeshShader;
                         }
                     }
-
-                    if(descriptorsSetMeta.set == 0 && viewParamUsageMaxBitCount < setBitCount)// View param
+                    else if(descriptorsSetMeta.set == ShaderParameterUtility::VIEW_UNIQ_SET && viewParamUsageMaxBitCount < setBitCount) // View param
                     {
                         viewParamUsageMaxBitCount = setBitCount;
-                        usedInShader = drawMeshShader;
-                    } 
+                        viewParamUsedInShader = drawMeshShader;
+                    }
+                    else if (descriptorsSetMeta.set == ShaderParameterUtility::BINDLESS_SET && bindlessUsageMaxBitCount < setBitCount) // bind less
+                    {
+                        bindlessUsageMaxBitCount = setBitCount;
+                        bindlessParamUsedInShader = drawMeshShader;
+                    }
                 }
             }
         }
 
         // View unique param layout
-        debugAssert(usedInShader != nullptr && sceneViewParamLayout == nullptr);
-        sceneViewParamLayout = shaderParamLayoutsFactory->create(usedInShader, 0);
+        debugAssert(viewParamUsedInShader != nullptr && sceneViewParamLayout == nullptr);
+        sceneViewParamLayout = shaderParamLayoutsFactory->create(viewParamUsedInShader, ShaderParameterUtility::VIEW_UNIQ_SET);
         debugAssert(sceneViewParamLayout != nullptr);
         sceneViewParamLayout->init();
+        // Bind less
+        debugAssert(bindlessParamUsedInShader != nullptr && bindlessParamLayout == nullptr);
+        bindlessParamLayout = shaderParamLayoutsFactory->create(bindlessParamUsedInShader, ShaderParameterUtility::BINDLESS_SET);
+        debugAssert(bindlessParamLayout != nullptr);
+        bindlessParamLayout->init();
 
         for (const std::pair<const EVertexType::Type, std::pair<uint32, ShaderResource*>>& vertexParamLayoutInfo : vertexParamUsageMaxBitCount)
         {
             // Vertex unique param layout
             auto perVertParamLayoutItr = perVertexTypeLayouts.find(static_cast<DrawMeshShader*>(vertexParamLayoutInfo.second.second)->vertexUsage());
             debugAssert(perVertParamLayoutItr == perVertexTypeLayouts.end());
-            GraphicsResource* paramLayout = shaderParamLayoutsFactory->create(vertexParamLayoutInfo.second.second, 1);
+            GraphicsResource* paramLayout = shaderParamLayoutsFactory->create(vertexParamLayoutInfo.second.second, ShaderParameterUtility::INSTANCE_UNIQ_SET);
             debugAssert(paramLayout != nullptr);
             paramLayout->init();
             perVertexTypeLayouts[static_cast<DrawMeshShader*>(vertexParamLayoutInfo.second.second)->vertexUsage()] = paramLayout;
@@ -166,7 +179,7 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
                 {
                     shaderToUse = shaderToUseItr->second.second;
                 }
-                shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(shaderToUse, 2);
+                shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(shaderToUse, ShaderParameterUtility::SHADER_UNIQ_SET);
                 shaderCollection.shadersParamLayout->init();
             }
             if (shaderCollection.shaderObject == nullptr)
@@ -179,16 +192,17 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
             GraphicsResource* perVariantLayout = nullptr;
             for (const ReflectDescriptorBody& reflectDescBody : drawMeshShader->getReflection()->descriptorsSets)
             {
-                if (reflectDescBody.set == 3)
+                if (reflectDescBody.set == ShaderParameterUtility::SHADER_VARIANT_UNIQ_SET)
                 {
                     perVariantLayout = shaderParamLayoutsFactory->create(drawMeshShader, reflectDescBody.set);
                     perVariantLayout->init();
                     graphicsPipeline->setParamLayoutAtSet(perVariantLayout, reflectDescBody.set);
                 }
             }
-            graphicsPipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout, 2);
-            graphicsPipeline->setParamLayoutAtSet(perVertexTypeLayouts[drawMeshShader->vertexUsage()], 1);
-            graphicsPipeline->setParamLayoutAtSet(sceneViewParamLayout, 0);
+            graphicsPipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout, ShaderParameterUtility::SHADER_UNIQ_SET);
+            graphicsPipeline->setParamLayoutAtSet(perVertexTypeLayouts[drawMeshShader->vertexUsage()], ShaderParameterUtility::INSTANCE_UNIQ_SET);
+            graphicsPipeline->setParamLayoutAtSet(sceneViewParamLayout, ShaderParameterUtility::VIEW_UNIQ_SET);
+            graphicsPipeline->setParamLayoutAtSet(bindlessParamLayout, ShaderParameterUtility::BINDLESS_SET);
             graphicsPipeline->setPipelineShader(drawMeshShader);
             graphicsPipeline->setPipelineCache(pipelinesCache);
             GenericRenderPassProperties renderpassProp;
@@ -256,6 +270,9 @@ void GlobalRenderingContextBase::destroyShaderResources()
     sceneViewParamLayout->release();
     delete sceneViewParamLayout;
     sceneViewParamLayout = nullptr;
+    bindlessParamLayout->release();
+    delete bindlessParamLayout;
+    bindlessParamLayout = nullptr;
 
     for (std::pair<const EVertexType::Type, GraphicsResource*>& shaderVertexParamLayout : perVertexTypeLayouts)
     {

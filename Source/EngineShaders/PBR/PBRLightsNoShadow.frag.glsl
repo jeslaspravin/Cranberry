@@ -12,15 +12,15 @@ layout(location = 0) out vec4 colorAttachment0;
 #include "../Common/ToneMapping.inl.glsl"
 #include "PBRCommon.inl.glsl"
 
-layout(set = 1, binding = 1) uniform sampler2D ssUnlitColor;
-layout(set = 1, binding = 2) uniform sampler2D ssNormal;
-layout(set = 1, binding = 3) uniform sampler2D ssDepth;
-layout(set = 1, binding = 4) uniform sampler2D ssARM;
-layout(set = 1, binding = 5) uniform sampler2D ssColor;
-layout(set = 1, binding = 6) uniform samplerCube envMap;
-layout(set = 1, binding = 7) uniform samplerCube diffuseIrradMap;
-layout(set = 1, binding = 8) uniform samplerCube specEnvMap;
-layout(set = 1, binding = 9) uniform sampler2D brdfLUT;
+layout(set = 2, binding = 0) uniform sampler2D ssUnlitColor;
+layout(set = 2, binding = 1) uniform sampler2D ssNormal;
+layout(set = 2, binding = 2) uniform sampler2D ssDepth;
+layout(set = 2, binding = 3) uniform sampler2D ssARM;
+layout(set = 2, binding = 4) uniform sampler2D ssColor;
+layout(set = 2, binding = 5) uniform samplerCube envMap;
+layout(set = 2, binding = 6) uniform samplerCube diffuseIrradMap;
+layout(set = 2, binding = 7) uniform samplerCube specEnvMap;
+layout(set = 2, binding = 8) uniform sampler2D brdfLUT;
 
 struct SpotLight
 {
@@ -42,7 +42,7 @@ struct DirectionalLight
     vec3 direction;
 };
 
-layout(set = 2, binding = 0) uniform ArrayOfLight 
+layout(set = 3, binding = 0) uniform ArrayOfLight 
 {
     uint count;// 0-3 bits Spotlight, 4-7 bits Point light, 8-11 bits directional light cascade count
 
@@ -51,7 +51,7 @@ layout(set = 2, binding = 0) uniform ArrayOfLight
     DirectionalLight dirLit;
 } lightArray;
 
-layout(set = 2, binding = 1) uniform ColorCorrection 
+layout(set = 3, binding = 1) uniform ColorCorrection 
 {
     float exposure;
     float gamma;

@@ -32,6 +32,8 @@ namespace GlobalRenderVariables
     GraphicsDeviceConstant<bool> ENABLED_RESOURCE_UPDATE_UNUSED;
     GraphicsDeviceConstant<uint32> MAX_UPDATE_AFTER_BIND_DESCRIPTORS;
 
+    GraphicsDeviceConstant<uint32> MAX_INDIRECT_DRAW_COUNT;
+
     GraphicsDeviceConstant<bool> ENABLED_TIMELINE_SEMAPHORE;
     GraphicsDeviceConstant<uint64> MAX_TIMELINE_OFFSET(0);
 
@@ -71,6 +73,9 @@ void VulkanDevice::markEnabledFeatures()
     // Runtime arrays
     descIdxFeatures.runtimeDescriptorArray = descIndexingFeatures.runtimeDescriptorArray;
     enabledDescIndexingFeatures = std::move(descIdxFeatures);
+
+    // Multi draw
+    enabledFeatures.multiDrawIndirect = features.multiDrawIndirect;
 }
 
 void VulkanDevice::markGlobalConstants()
@@ -99,9 +104,11 @@ void VulkanDevice::markGlobalConstants()
     GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_UNUSED.set(enabledDescIndexingFeatures.descriptorBindingUpdateUnusedWhilePending);
     GlobalRenderVariables::MAX_UPDATE_AFTER_BIND_DESCRIPTORS.set(descIndexingProps.maxUpdateAfterBindDescriptorsInAllPools);
 
+    GlobalRenderVariables::MAX_INDIRECT_DRAW_COUNT.set(properties.limits.maxDrawIndirectCount);
+
     // Sync resources
     GlobalRenderVariables::MAX_TIMELINE_OFFSET.set(timelineSemaphoreProps.maxTimelineSemaphoreValueDifference);
-    GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.set(timelineSemaphoreFeatures.timelineSemaphore == VK_TRUE ? true : false);
+    GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.set(timelineSemaphoreFeatures.timelineSemaphore);
 
     // Sampling texture
 

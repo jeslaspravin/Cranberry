@@ -49,6 +49,7 @@
 #include "../RenderInterface/Rendering/RenderingContexts.h"
 #include "../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../RenderInterface/Resources/BufferedResources.h"
+#include "../RenderInterface/ShaderCore/ShaderParameterUtility.h"
 #include "../Editor/Core/ImGui/IImGuiLayer.h"
 
 #include <array>
@@ -518,17 +519,17 @@ void ExperimentalEngineGoochModel::createShaderParameters()
     IGraphicsInstance* graphicsInstance = getRenderManager()->getGraphicsInstance();
     const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
     // Since view data and other view related data are at set 0
-    viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(0));
+    viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::VIEW_UNIQ_SET));
     viewParameters->setResourceName("View");
     for (SceneEntity& entity : sceneData)
     {
-        entity.instanceParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(1));
+        entity.instanceParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::INSTANCE_UNIQ_SET));
         entity.instanceParameters->setResourceName(entity.meshAsset->assetName());
         entity.meshBatchParameters.resize(entity.meshAsset->meshBatches.size());
         uint32 meshBatchIdx = 0;
         for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
         {
-            meshBatchParam = (GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(2)));
+            meshBatchParam = (GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::SHADER_UNIQ_SET)));
             meshBatchParam->setResourceName(entity.meshAsset->assetName() + "_MeshBatch_" + std::to_string(meshBatchIdx));
             ++meshBatchIdx;
         }
@@ -542,16 +543,16 @@ void ExperimentalEngineGoochModel::createShaderParameters()
     drawLitColorsDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
 
     // Light related descriptors
-    // as 1 and 2 are textures and light data
+    // as 2 and 3 are textures and light data
     const GraphicsResource* goochModelDescLayout = drawGoochPipelineContext.getPipeline()->getParamLayoutAtSet(0);
-    lightCommon = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1,2 });
+    lightCommon = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 2,3 });
     lightCommon->setResourceName("LightCommon");
     const uint32 lightDataCount = uint32(Math::ceil(sceneLightData.size() / float(ARRAY_LENGTH(GoochModelLightArray::lights))));
     lightData.resize(lightDataCount);
     for (uint32 i = 0; i < lightDataCount; ++i)
     {
-        // as 0 and 1 are light common and textures
-        lightData[i] = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0, 1 });
+        // as 1 and 2 are light common and textures
+        lightData[i] = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 2 });
         lightData[i]->setResourceName("Light_" + std::to_string(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + "to"
             + std::to_string(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights)));
     }
@@ -560,7 +561,7 @@ void ExperimentalEngineGoochModel::createShaderParameters()
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         const String iString = std::to_string(i);
-        lightTextures.set(GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 0,2 }), i);
+        lightTextures.set(GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 3 }), i);
         lightTextures.getResources()[i]->setResourceName("LightFrameCommon_" + iString);
         drawQuadTextureDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
         drawQuadTextureDescs.getResources()[i]->setResourceName("QuadUnlit_" + iString);
@@ -577,6 +578,8 @@ void ExperimentalEngineGoochModel::createShaderParameters()
 
     testComputeParams = GraphicsHelper::createShaderParameters(graphicsInstance, testComputePipelineContext.getPipeline()->getParamLayoutAtSet(0));
     testComputeParams->setResourceName("TestCompute");
+
+    setupShaderParameterParams();
 }
 
 void ExperimentalEngineGoochModel::setupShaderParameterParams()
@@ -996,7 +999,6 @@ void ExperimentalEngineGoochModel::startUpRenderInit()
     getPipelineForSubpass();
     createImages();
     createPipelineResources();
-    setupShaderParameterParams();
 }
 
 void ExperimentalEngineGoochModel::onQuit()

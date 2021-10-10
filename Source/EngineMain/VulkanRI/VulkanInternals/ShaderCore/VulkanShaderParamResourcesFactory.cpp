@@ -1,4 +1,5 @@
 #include "VulkanShaderParamResourcesFactory.h"
+#include "../../../RenderInterface/ShaderCore/ShaderParameterUtility.h"
 #include "../../../RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "VulkanShaderParamResources.h"
 #include "../../../Core/Logger/Logger.h"
@@ -9,12 +10,14 @@ GraphicsResource* VulkanShaderParametersLayoutFactory::create(const ShaderResour
     {
         switch (descriptorsSetIdx)
         {
-        case VulkanVertexUniqDescLayout::DESC_SET_ID:
+        case ShaderParameterUtility::INSTANCE_UNIQ_SET:
             return new VulkanVertexUniqDescLayout(forShader);
-        case VulkanViewUniqDescLayout::DESC_SET_ID:
+        case ShaderParameterUtility::VIEW_UNIQ_SET:
             return new VulkanViewUniqDescLayout(forShader);
-        case 2:
-        case 3:
+        case ShaderParameterUtility::BINDLESS_SET:
+            return new VulkanBindlessDescLayout(forShader);
+        case ShaderParameterUtility::SHADER_UNIQ_SET:
+        case ShaderParameterUtility::SHADER_VARIANT_UNIQ_SET:
             return new VulkanShaderUniqDescLayout(forShader, descriptorsSetIdx);
         default:
             Logger::error("VulkanShaderParametersLayoutFactory", "%s : Not support descriptor index %d for shader %s"

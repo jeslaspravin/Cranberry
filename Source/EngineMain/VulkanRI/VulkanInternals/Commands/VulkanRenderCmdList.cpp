@@ -204,6 +204,39 @@ void VulkanCommandList::copyBuffer(BufferResource* src, BufferResource* dst, con
     tempFence->release();
 }
 
+void VulkanCommandList::copyBuffer(const std::vector<BatchCopyBufferInfo>& batchCopies)
+{
+    SharedPtr<GraphicsFence> tempFence = GraphicsHelper::createFence(gInstance, "BatchCopyBufferTemp", false);
+
+    const GraphicsResource* commandBuffer = cmdBufferManager.beginTempCmdBuffer("Batch Copy buffer", EQueueFunction::Transfer);
+
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
+    std::map<std::pair<BufferResource*, BufferResource*>, std::vector<VkBufferCopy>> srcDstToCopies;
+    for (const BatchCopyBufferInfo& aCopy : batchCopies)
+    {
+        std::vector<VkBufferCopy>& srcDstCopies = srcDstToCopies[{aCopy.src, aCopy.dst}];
+        srcDstCopies.emplace_back(VkBufferCopy{ aCopy.copyInfo.srcOffset, aCopy.copyInfo.dstOffset, aCopy.copyInfo.copySize });
+    }
+    for (const auto& srcDstCopies : srcDstToCopies)
+    {
+        vDevice->vkCmdCopyBuffer(rawCmdBuffer
+            , static_cast<VulkanBufferResource*>(srcDstCopies.first.first)->buffer
+            , static_cast<VulkanBufferResource*>(srcDstCopies.first.second)->buffer
+            , uint32(srcDstCopies.second.size()), srcDstCopies.second.data());
+    }
+
+    cmdBufferManager.endCmdBuffer(commandBuffer);
+
+    CommandSubmitInfo submitInfo;
+    submitInfo.cmdBuffers.push_back(commandBuffer);
+    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
+
+    tempFence->waitForSignal();
+
+    cmdBufferManager.freeCmdBuffer(commandBuffer);
+    tempFence->release();
+}
+
 void VulkanCommandList::newFrame(const float& tiimeDelta)
 {
     resourcesTracker.clearUnwanted();
@@ -238,7 +271,8 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
             {
                 if (vulkanDst->getType()->isChildOf<GraphicsRBuffer>() 
                     || vulkanDst->getType()->isChildOf<GraphicsRWBuffer>() || vulkanDst->getType()->isChildOf<GraphicsWBuffer>()
-                    || vulkanDst->getType()->isChildOf<GraphicsVertexBuffer>() || vulkanDst->getType()->isChildOf<GraphicsIndexBuffer>())
+                    || vulkanDst->getType()->isChildOf<GraphicsVertexBuffer>() || vulkanDst->getType()->isChildOf<GraphicsIndexBuffer>()
+                    || vulkanDst->getType()->isChildOf<GraphicsRIndirectBuffer>() || vulkanDst->getType()->isChildOf<GraphicsWIndirectBuffer>())
                 {
                     // In case of buffer larger than 4GB using UINT32 will create issue
                     stagingBuffer = new GraphicsRBuffer(uint32(vulkanDst->getResourceSize()));
@@ -337,35 +371,33 @@ void VulkanCommandList::copyToBuffer_Internal(BufferResource* dst, uint32 dstOff
     else
     {
         uint64 stagingSize = dst->getResourceSize() - dstOffset;
-
         CopyBufferInfo copyInfo{ 0, dstOffset, size };
 
+        auto copyFromStaging = [&](BufferResource* stagingBuffer)
+        {
+            stagingBuffer->setAsStagingResource(true);
+            stagingBuffer->init();
+
+            fatalAssert(stagingBuffer->isValid(), "Initializing staging buffer failed");
+            copyToBuffer_Internal(stagingBuffer, 0, dataToCopy, size, true);
+            copyBuffer(stagingBuffer, dst, copyInfo);
+
+            stagingBuffer->release();
+        };
+
         if (dst->getType()->isChildOf<GraphicsRBuffer>() || dst->getType()->isChildOf<GraphicsRWBuffer>()
-            || dst->getType()->isChildOf<GraphicsVertexBuffer>() || dst->getType()->isChildOf<GraphicsIndexBuffer>())
+            || dst->getType()->isChildOf<GraphicsVertexBuffer>() || dst->getType()->isChildOf<GraphicsIndexBuffer>()
+            || dst->getType()->isChildOf<GraphicsRIndirectBuffer>() || dst->getType()->isChildOf<GraphicsWIndirectBuffer>())
         {
             // In case of buffer larger than 4GB using UINT32 will create issue
             auto stagingBuffer = GraphicsRBuffer(uint32(stagingSize));
-            stagingBuffer.setAsStagingResource(true);
-            stagingBuffer.init();
-
-            fatalAssert(stagingBuffer.isValid(), "Initializing staging buffer failed");
-            copyToBuffer_Internal(&stagingBuffer, 0, dataToCopy, size, true);
-            copyBuffer(&stagingBuffer, dst, copyInfo);
-
-            stagingBuffer.release();
+            copyFromStaging(&stagingBuffer);
         }
         else if (dst->getType()->isChildOf<GraphicsRTexelBuffer>() || dst->getType()->isChildOf<GraphicsRWTexelBuffer>())
         {
             // In case of buffer larger than 4GB using UINT32 will create issue
             auto stagingBuffer = GraphicsRTexelBuffer(dst->texelFormat(), uint32(stagingSize / EPixelDataFormat::getFormatInfo(dst->texelFormat())->pixelDataSize));
-            stagingBuffer.setAsStagingResource(true);
-            stagingBuffer.init();
-
-            fatalAssert(stagingBuffer.isValid(), "Initializing staging buffer failed");
-            copyToBuffer_Internal(&stagingBuffer, 0, dataToCopy, size, true);
-            copyBuffer(&stagingBuffer, dst, copyInfo);
-
-            stagingBuffer.release();
+            copyFromStaging(&stagingBuffer);
         }
         else
         {
@@ -1399,6 +1431,30 @@ void VulkanCommandList::cmdDrawVertices(const GraphicsResource* cmdBuffer, uint3
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     vDevice->vkCmdDraw(rawCmdBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void VulkanCommandList::cmdDrawIndexedIndirect(const GraphicsResource* cmdBuffer, const BufferResource* drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+
+    for (uint32 drawnCount = 0; drawnCount < drawCount; )
+    {
+        uint32 currDrawCount = Math::min(GlobalRenderVariables::MAX_INDIRECT_DRAW_COUNT.get(), drawCount - drawnCount);
+        vDevice->vkCmdDrawIndexedIndirect(rawCmdBuffer, static_cast<const VulkanBufferResource*>(drawCmdsBuffer)->buffer, bufferOffset + drawnCount * stride, drawCount, stride);
+        drawnCount += currDrawCount;
+    }
+}
+
+void VulkanCommandList::cmdDrawIndirect(const GraphicsResource* cmdBuffer, const BufferResource* drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+
+    for (uint32 drawnCount = 0; drawnCount < drawCount; )
+    {
+        uint32 currDrawCount = Math::min(GlobalRenderVariables::MAX_INDIRECT_DRAW_COUNT.get(), drawCount - drawnCount);
+        vDevice->vkCmdDrawIndirect(rawCmdBuffer, static_cast<const VulkanBufferResource*>(drawCmdsBuffer)->buffer, bufferOffset + drawnCount * stride, drawCount, stride);
+        drawnCount += currDrawCount;
+    }
 }
 
 void VulkanCommandList::cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport /*= 0*/) const

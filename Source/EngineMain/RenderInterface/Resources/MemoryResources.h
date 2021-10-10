@@ -176,10 +176,10 @@ public:
     // Valid value only in case of texel buffer, ordinary buffer gives EPixelDataFormat::Undefined
     EPixelDataFormat::Type texelFormat() const { return dataFormat; }
     virtual void setTexelFormat(EPixelDataFormat::Type format) {}
-    virtual int32 bufferStride() const { return 0; }
-    virtual void setBufferStride(int32 newStride) {}
-    virtual int32 bufferCount() const { return 0; }
-    virtual void setBufferCount(int32 newCount) {}
+    virtual uint32 bufferStride() const { return 0; }
+    virtual void setBufferStride(uint32 newStride) {}
+    virtual uint32 bufferCount() const { return 0; }
+    virtual void setBufferCount(uint32 newCount) {}
 };
 
 class ImageResource : public MemoryResource

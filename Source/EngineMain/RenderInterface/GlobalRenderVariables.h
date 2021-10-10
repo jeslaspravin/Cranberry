@@ -25,6 +25,8 @@ namespace GlobalRenderVariables
     extern GraphicsDeviceConstant<bool> ENABLED_RESOURCE_UPDATE_UNUSED;
     extern GraphicsDeviceConstant<uint32> MAX_UPDATE_AFTER_BIND_DESCRIPTORS;
 
+    extern GraphicsDeviceConstant<uint32> MAX_INDIRECT_DRAW_COUNT;
+
     //in nanoseconds
     extern GraphicsDeviceConstant<uint64> MAX_SYNC_RES_WAIT_TIME;
 

@@ -50,12 +50,15 @@ bool DescriptorsSetQueryLessThan::operator()(const DescriptorsSetQuery& lhs, con
     auto lhsEnd = lhs.supportedTypes.cend();
     auto rhsItr = rhs.supportedTypes.cbegin();
     auto rhsEnd = rhs.supportedTypes.cend();
-    // If lhs is small in count then its largest must be smaller than rhs largest to be considered to be smaller than rhs
-    if (lhs.supportedTypes.size() < rhs.supportedTypes.size())
+    bool bIsLhsSmall = lhs.bHasBindless < rhs.bHasBindless;
+    if (lhs.bHasBindless == rhs.bHasBindless)
     {
-        return (--lhsEnd)->type < (--rhsEnd)->type;
+        // If lhs is small in count then its largest must be smaller than rhs largest to be considered to be smaller than rhs
+        bIsLhsSmall = (lhs.supportedTypes.size() < rhs.supportedTypes.size()
+            ? ((--lhsEnd)->type < (--rhsEnd)->type)
+            : recursivelyCompare(lhsItr, lhsEnd, rhsItr, rhsEnd));
     }
-    return (lhs.bHasBindless < rhs.bHasBindless) || recursivelyCompare(lhsItr, lhsEnd, rhsItr, rhsEnd);
+    return bIsLhsSmall;
 }
 
 std::vector<VulkanDescriptorsSetAllocatorInfo*> VulkanDescriptorsSetAllocator::findInAvailablePool(const DescriptorsSetQuery& query)
@@ -116,7 +119,7 @@ bool VulkanDescriptorsSetAllocator::isSupportedPool(std::vector<VkDescriptorSet>
             {
                 const DescriptorsSetQuery& allocatedSetQuery = allocationPool.allocatedSets.at(descriptorsSet);
                 // If requested type count is more that allocated size then no useful
-                if (allocatedSetQuery.supportedTypes.size() > query.supportedTypes.size())
+                if (allocatedSetQuery.supportedTypes.size() < query.supportedTypes.size())
                 {
                     continue;
                 }

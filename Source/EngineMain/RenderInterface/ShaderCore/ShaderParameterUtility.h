@@ -6,6 +6,13 @@
 
 class ShaderParameterUtility
 {
+public:
+    // Some common descriptor set indexes
+    constexpr static uint32 BINDLESS_SET = 0;
+    constexpr static uint32 VIEW_UNIQ_SET = 1;
+    constexpr static uint32 INSTANCE_UNIQ_SET = 2;
+    constexpr static uint32 SHADER_UNIQ_SET = 3;
+    constexpr static uint32 SHADER_VARIANT_UNIQ_SET = 4;
 private:
     ShaderParameterUtility() = default;
 public:

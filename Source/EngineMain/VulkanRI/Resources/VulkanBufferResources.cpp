@@ -27,22 +27,22 @@ uint64 VulkanRBuffer::getResourceSize() const
     return count * stride;
 }
 
-int32 VulkanRBuffer::bufferStride() const 
+uint32 VulkanRBuffer::bufferStride() const
 {
     return stride;
 }
 
-void VulkanRBuffer::setBufferStride(int32 newStride)
+void VulkanRBuffer::setBufferStride(uint32 newStride)
 {
     stride = newStride;
 }
 
-int32 VulkanRBuffer::bufferCount() const
+uint32 VulkanRBuffer::bufferCount() const
 {
     return count;
 }
 
-void VulkanRBuffer::setBufferCount(int32 newCount)
+void VulkanRBuffer::setBufferCount(uint32 newCount)
 {
     count = newCount;
 }
@@ -74,22 +74,22 @@ uint64 VulkanWBuffer::getResourceSize() const
     return count * stride;
 }
 
-int32 VulkanWBuffer::bufferStride() const
+uint32 VulkanWBuffer::bufferStride() const
 {
     return stride;
 }
 
-void VulkanWBuffer::setBufferStride(int32 newStride)
+void VulkanWBuffer::setBufferStride(uint32 newStride)
 {
     stride = newStride;
 }
 
-int32 VulkanWBuffer::bufferCount() const
+uint32 VulkanWBuffer::bufferCount() const
 {
     return count;
 }
 
-void VulkanWBuffer::setBufferCount(int32 newCount)
+void VulkanWBuffer::setBufferCount(uint32 newCount)
 {
     count = newCount;
 }
@@ -121,22 +121,22 @@ uint64 VulkanRWBuffer::getResourceSize() const
     return count * stride;
 }
 
-int32 VulkanRWBuffer::bufferStride() const
+uint32 VulkanRWBuffer::bufferStride() const
 {
     return stride;
 }
 
-void VulkanRWBuffer::setBufferStride(int32 newStride)
+void VulkanRWBuffer::setBufferStride(uint32 newStride)
 {
     stride = newStride;
 }
 
-int32 VulkanRWBuffer::bufferCount() const
+uint32 VulkanRWBuffer::bufferCount() const
 {
     return count;
 }
 
-void VulkanRWBuffer::setBufferCount(int32 newCount)
+void VulkanRWBuffer::setBufferCount(uint32 newCount)
 {
     count = newCount;
 }
@@ -178,18 +178,18 @@ void VulkanRTexelBuffer::setTexelFormat(EPixelDataFormat::Type newFormat)
     dataFormat = newFormat;
 }
 
-int32 VulkanRTexelBuffer::bufferStride() const
+uint32 VulkanRTexelBuffer::bufferStride() const
 {
     const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
     return formatInfo ? formatInfo->pixelDataSize : 0;
 }
 
-int32 VulkanRTexelBuffer::bufferCount() const
+uint32 VulkanRTexelBuffer::bufferCount() const
 {
     return count;
 }
 
-void VulkanRTexelBuffer::setBufferCount(int32 newCount)
+void VulkanRTexelBuffer::setBufferCount(uint32 newCount)
 {
     count = newCount;
 }
@@ -232,18 +232,18 @@ void VulkanWTexelBuffer::setTexelFormat(EPixelDataFormat::Type newFormat)
     dataFormat = newFormat;
 }
 
-int32 VulkanWTexelBuffer::bufferStride() const
+uint32 VulkanWTexelBuffer::bufferStride() const
 {
     const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
     return formatInfo ? formatInfo->pixelDataSize : 0;
 }
 
-int32 VulkanWTexelBuffer::bufferCount() const
+uint32 VulkanWTexelBuffer::bufferCount() const
 {
     return count;
 }
 
-void VulkanWTexelBuffer::setBufferCount(int32 newCount)
+void VulkanWTexelBuffer::setBufferCount(uint32 newCount)
 {
     count = newCount;
 }
@@ -286,18 +286,18 @@ void VulkanRWTexelBuffer::setTexelFormat(EPixelDataFormat::Type newFormat)
     dataFormat = newFormat;
 }
 
-int32 VulkanRWTexelBuffer::bufferStride() const
+uint32 VulkanRWTexelBuffer::bufferStride() const
 {
     const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
     return formatInfo ? formatInfo->pixelDataSize : 0;
 }
 
-int32 VulkanRWTexelBuffer::bufferCount() const
+uint32 VulkanRWTexelBuffer::bufferCount() const
 {
     return count;
 }
 
-void VulkanRWTexelBuffer::setBufferCount(int32 newCount)
+void VulkanRWTexelBuffer::setBufferCount(uint32 newCount)
 {
     count = newCount;
 }
@@ -329,22 +329,22 @@ uint64 VulkanVertexBuffer::getResourceSize() const
     return count * stride;
 }
 
-int32 VulkanVertexBuffer::bufferStride() const
+uint32 VulkanVertexBuffer::bufferStride() const
 {
     return stride;
 }
 
-void VulkanVertexBuffer::setBufferStride(int32 newStride)
+void VulkanVertexBuffer::setBufferStride(uint32 newStride)
 {
     stride = newStride;
 }
 
-int32 VulkanVertexBuffer::bufferCount() const
+uint32 VulkanVertexBuffer::bufferCount() const
 {
     return count;
 }
 
-void VulkanVertexBuffer::setBufferCount(int32 newCount)
+void VulkanVertexBuffer::setBufferCount(uint32 newCount)
 {
     count = newCount;
 }
@@ -376,22 +376,116 @@ uint64 VulkanIndexBuffer::getResourceSize() const
     return count * stride;
 }
 
-int32 VulkanIndexBuffer::bufferStride() const
+uint32 VulkanIndexBuffer::bufferStride() const
 {
     return stride;
 }
 
-void VulkanIndexBuffer::setBufferStride(int32 newStride)
+void VulkanIndexBuffer::setBufferStride(uint32 newStride)
 {
     stride = newStride;
 }
 
-int32 VulkanIndexBuffer::bufferCount() const
+uint32 VulkanIndexBuffer::bufferCount() const
 {
     return count;
 }
 
-void VulkanIndexBuffer::setBufferCount(int32 newCount)
+void VulkanIndexBuffer::setBufferCount(uint32 newCount)
+{
+    count = newCount;
+}
+
+//////////////////////////////////////////////////////////////////////////
+//// Shader read indirect buffer
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanRIndirectBuffer, VK_OBJECT_TYPE_BUFFER)
+
+VulkanRIndirectBuffer::VulkanRIndirectBuffer(uint32 bufferStride, uint32 bufferCount /*= 1*/)
+    : BaseType()
+    , count(bufferCount)
+    , stride(bufferStride)
+{
+    bufferUsage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+}
+
+VulkanRIndirectBuffer::VulkanRIndirectBuffer()
+    : BaseType()
+    , count(1)
+    , stride(0)
+{
+    bufferUsage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+}
+
+uint64 VulkanRIndirectBuffer::getResourceSize() const
+{
+    return count * stride;
+}
+
+uint32 VulkanRIndirectBuffer::bufferStride() const
+{
+    return stride;
+}
+
+void VulkanRIndirectBuffer::setBufferStride(uint32 newStride)
+{
+    stride = newStride;
+}
+
+uint32 VulkanRIndirectBuffer::bufferCount() const
+{
+    return count;
+}
+
+void VulkanRIndirectBuffer::setBufferCount(uint32 newCount)
+{
+    count = newCount;
+}
+
+//////////////////////////////////////////////////////////////////////////
+//// Shader write indirect buffer
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanWIndirectBuffer, VK_OBJECT_TYPE_BUFFER)
+
+VulkanWIndirectBuffer::VulkanWIndirectBuffer()
+    : BaseType()
+    , count(1)
+    , stride(0)
+{
+    bufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+}
+
+VulkanWIndirectBuffer::VulkanWIndirectBuffer(uint32 bufferStride, uint32 bufferCount /*= 1*/)
+    : BaseType()
+    , count(bufferCount)
+    , stride(bufferStride)
+{
+    bufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+}
+
+uint64 VulkanWIndirectBuffer::getResourceSize() const
+{
+    return count * stride;
+}
+
+uint32 VulkanWIndirectBuffer::bufferStride() const
+{
+    return stride;
+}
+
+void VulkanWIndirectBuffer::setBufferStride(uint32 newStride)
+{
+    stride = newStride;
+}
+
+uint32 VulkanWIndirectBuffer::bufferCount() const
+{
+    return count;
+}
+
+void VulkanWIndirectBuffer::setBufferCount(uint32 newCount)
 {
     count = newCount;
 }

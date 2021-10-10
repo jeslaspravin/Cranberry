@@ -58,8 +58,6 @@ protected:
 class VulkanVertexUniqDescLayout final : public VulkanShaderSetParamsLayout
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanVertexUniqDescLayout, , VulkanShaderSetParamsLayout, )
-public:
-    constexpr static uint32 DESC_SET_ID = 1;
 private:
     VulkanVertexUniqDescLayout() = default;
 public:
@@ -78,8 +76,6 @@ protected:
 class VulkanViewUniqDescLayout final : public VulkanShaderSetParamsLayout
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanViewUniqDescLayout, , VulkanShaderSetParamsLayout, )
-public:
-    constexpr static uint32 DESC_SET_ID = 0;
 private:
     VulkanViewUniqDescLayout() = default;
 public:
@@ -91,6 +87,24 @@ public:
     /* ShaderParametersLayout overrides */
 protected:
     void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const final;
+    /* Override ends */
+};
+
+// Bindless global descriptor set, Right now this does not have any buffers so not need to bind any buffer param info
+class VulkanBindlessDescLayout final : public VulkanShaderSetParamsLayout
+{
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanBindlessDescLayout, , VulkanShaderSetParamsLayout, )
+private:
+    VulkanBindlessDescLayout() = default;
+public:
+    VulkanBindlessDescLayout(const ShaderResource* shaderResource);
+
+    /* VulkanShaderParamsLayout overrides */
+    String getObjectName() const final;
+
+    /* ShaderParametersLayout overrides */
+protected:
+    // void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const final;
     /* Override ends */
 };
 
