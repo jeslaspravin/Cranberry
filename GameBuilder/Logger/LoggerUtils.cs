@@ -117,9 +117,11 @@ namespace GameBuilder.Logger
         public static void Log(string message, params object[] args)
         {
             StringBuilder sb = new StringBuilder(message);
-
-            string finalMessage = string.Format(sb.ToString(), args);
-
+            string finalMessage = message;
+            if (args.Length != 0)
+            {
+                finalMessage = string.Format(sb.ToString(), args);
+            }
             logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
 
         }
@@ -136,8 +138,15 @@ namespace GameBuilder.Logger
             sb.Append(string.Format("-- {0}({1}::{2} Line:{3})", frameOfInterest.GetFileName(), frameOfInterest.GetType().ToString()
                 , frameOfInterest.GetMethod().ToString(), frameOfInterest.GetFileLineNumber()));
 
-            string finalMessage = string.Format(sb.ToString(), args);
-            logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
+            if(args.Length != 0)
+            {
+                string finalMessage = string.Format(sb.ToString(), args);
+                logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
+            }
+            else
+            {
+                logsToWrite[queueToWrite].Enqueue(() => WriteLog(sb.ToString()));
+            }
         }
 
         public static void Error(string message, params object[] args)
@@ -149,9 +158,15 @@ namespace GameBuilder.Logger
             sb.Append(string.Format("\n -- {0}({1}::{2} Line:{3})", frameOfInterest.GetFileName(), frameOfInterest.GetType().ToString()
                 , frameOfInterest.GetMethod().ToString(), frameOfInterest.GetFileLineNumber()));
 
-            string finalMessage = string.Format(sb.ToString(), args);
-            logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
-
+            if (args.Length != 0)
+            {
+                string finalMessage = string.Format(sb.ToString(), args);
+                logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
+            }
+            else
+            {
+                logsToWrite[queueToWrite].Enqueue(() => WriteLog(sb.ToString()));
+            }
         }
 
         public static void Error(Exception e, string message, params object[] args)
@@ -166,9 +181,15 @@ namespace GameBuilder.Logger
             sb.Append("\nException : ");
             sb.Append(e.ToString());
 
-
-            string finalMessage = string.Format(sb.ToString(), args);
-            logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
+            if (args.Length != 0)
+            {
+                string finalMessage = string.Format(sb.ToString(), args);
+                logsToWrite[queueToWrite].Enqueue(() => WriteLog(finalMessage));
+            }
+            else
+            {
+                logsToWrite[queueToWrite].Enqueue(() => WriteLog(sb.ToString()));
+            }
         }
 
         public static void waitUntilTasksFinished()

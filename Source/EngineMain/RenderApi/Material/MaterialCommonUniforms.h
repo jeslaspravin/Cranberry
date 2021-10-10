@@ -9,6 +9,8 @@ struct InstanceData
 {
     Matrix4 model;
     Matrix4 invModel;
+    // Index to shader unique param index
+    uint32 shaderUniqIdx;
 };
 
 

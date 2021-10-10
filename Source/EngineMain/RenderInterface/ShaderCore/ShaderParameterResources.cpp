@@ -405,9 +405,16 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
                 memset(paramData.cpuBuffer, 0, bufferParamDesc->bufferParamInfo->paramNativeStride());
                 initBufferParams(paramData, bufferParamDesc->bufferParamInfo, paramData.cpuBuffer, nullptr);
 
-                uint32 bufferInitStride = initRuntimeArrayData(paramData)
-                    ? paramData.runtimeArray->offset
-                    : bufferParamDesc->bufferParamInfo->paramStride();
+                uint32 bufferInitStride = bufferParamDesc->bufferParamInfo->paramStride();
+                if (initRuntimeArrayData(paramData))
+                {
+                    bufferInitStride = paramData.runtimeArray->offset;
+                    // If 0 runtime offset then it must be resized
+                    if (bufferInitStride == 0)
+                    {
+                        Logger::warn("ShaderParameters", "%s() : Runtime array \"%s\" struct has 0 size and must be resized before init", __func__, paramData.runtimeArray->paramName.getChar());
+                    }
+                }
 
                 if (bufferInitStride > 0)
                 {
@@ -630,43 +637,51 @@ std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> Shade
 void ShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
 {
     std::vector<BatchCopyBufferData> copies;
+    pullBufferParamUpdates(copies, cmdList, graphicsInstance);
+    if (!copies.empty())
     {
-        std::unordered_set<BufferParameterUpdate, BufferParameterUpdate::Hasher> uniqueBufferUpdates(bufferUpdates.cbegin(), bufferUpdates.cend());
-
-        for (const BufferParameterUpdate& bufferUpdate : uniqueBufferUpdates)
-        {
-            const BufferParametersData& bufferParamData = shaderBuffers.at(bufferUpdate.bufferName);
-            const BufferParametersData::BufferParameter& bufferParamField = bufferParamData.bufferParams.at(bufferUpdate.paramName);
-
-            // Offset of struct when updating field is inside inner struct, 
-            // In which case field offset will always be from its outer struct and we have to add this offset to that for obtaining proper offset
-            uint32 outerOffset = 0;
-            {
-                const BufferParametersData::BufferParameter* outerBufferParamField = bufferParamField.outerName.empty()
-                    ? nullptr : &bufferParamData.bufferParams.at(bufferParamField.outerName);
-                while (outerBufferParamField)
-                {
-                    if (outerBufferParamField->bufferField->isIndexAccessible())
-                    {
-                        Logger::warn("ShaderParameters", "%s(): Setting value of parameter[%s] inside a struct[%s] in AoS[%s] will always set param value at struct index 0", __func__
-                            , bufferUpdate.paramName.getChar(), bufferUpdate.bufferName.getChar(), outerBufferParamField->bufferField->paramName.getChar());
-                    }
-
-                    outerOffset += outerBufferParamField->bufferField->offset;
-                    outerBufferParamField = outerBufferParamField->outerName.empty()
-                        ? nullptr : &bufferParamData.bufferParams.at(outerBufferParamField->outerName);
-                }
-            }
-
-            BatchCopyBufferData copyData;
-            copyData.dst = bufferParamData.gpuBuffer;
-            copyData.dstOffset = outerOffset + bufferParamField.bufferField->offset + (bufferUpdate.index * bufferParamField.bufferField->stride);
-            copyData.dataToCopy = bufferParamField.bufferField->fieldData(bufferParamField.outerPtr, nullptr, &copyData.size);
-            copyData.dataToCopy = reinterpret_cast<const uint8*>(copyData.dataToCopy) + (bufferUpdate.index * copyData.size);
-
-            copies.emplace_back(copyData);
-        }
+        cmdList->copyToBuffer(copies);
     }
+}
+
+void ShaderParameters::pullBufferParamUpdates(std::vector<BatchCopyBufferData>& copies, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+{
+    std::unordered_set<BufferParameterUpdate, BufferParameterUpdate::Hasher> uniqueBufferUpdates(bufferUpdates.cbegin(), bufferUpdates.cend());
+
+    for (const BufferParameterUpdate& bufferUpdate : uniqueBufferUpdates)
+    {
+        const BufferParametersData& bufferParamData = shaderBuffers.at(bufferUpdate.bufferName);
+        const BufferParametersData::BufferParameter& bufferParamField = bufferParamData.bufferParams.at(bufferUpdate.paramName);
+
+        // Offset of struct when updating field is inside inner struct, 
+        // In which case field offset will always be from its outer struct and we have to add this offset to that for obtaining proper offset
+        uint32 outerOffset = 0;
+        {
+            const BufferParametersData::BufferParameter* outerBufferParamField = bufferParamField.outerName.empty()
+                ? nullptr : &bufferParamData.bufferParams.at(bufferParamField.outerName);
+            while (outerBufferParamField)
+            {
+                if (outerBufferParamField->bufferField->isIndexAccessible())
+                {
+                    Logger::warn("ShaderParameters", "%s(): Setting value of parameter[%s] inside a struct[%s] in AoS[%s] will always set param value at struct index 0", __func__
+                        , bufferUpdate.paramName.getChar(), bufferUpdate.bufferName.getChar(), outerBufferParamField->bufferField->paramName.getChar());
+                }
+
+                outerOffset += outerBufferParamField->bufferField->offset;
+                outerBufferParamField = outerBufferParamField->outerName.empty()
+                    ? nullptr : &bufferParamData.bufferParams.at(outerBufferParamField->outerName);
+            }
+        }
+
+        BatchCopyBufferData copyData;
+        copyData.dst = bufferParamData.gpuBuffer;
+        copyData.dstOffset = outerOffset + bufferParamField.bufferField->offset + (bufferUpdate.index * bufferParamField.bufferField->stride);
+        copyData.dataToCopy = bufferParamField.bufferField->fieldData(bufferParamField.outerPtr, nullptr, &copyData.size);
+        copyData.dataToCopy = reinterpret_cast<const uint8*>(copyData.dataToCopy) + (bufferUpdate.index * copyData.size);
+
+        copies.emplace_back(copyData);
+    }
+
     ParamUpdateLambdaOut genericUpdateOut{ &copies };
     for (const ParamUpdateLambda& lambda : genericUpdates)
     {
@@ -674,11 +689,6 @@ void ShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphicsInstan
     }
     bufferUpdates.clear();
     genericUpdates.clear();
-
-    if (!copies.empty())
-    {
-        cmdList->copyToBuffer(copies);
-    }
 }
 
 void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minSize)
@@ -705,6 +715,7 @@ void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minS
         {
             const uint32& dataStride = BIT_SET(paramField.bufferField->fieldDecorations, ShaderBufferField::IsStruct)
                 ? paramField.bufferField->paramInfo->paramNativeStride() : paramField.bufferField->stride;
+            uint32 gpuDataStride = paramField.bufferField->paramInfo->paramStride();
             const uint32 newArraySize = Math::toHigherPowOf2(minSize * dataStride);
             bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(newArraySize);
             bufferData.runtimeArray->currentSize = uint32(Math::floor(newArraySize / float(dataStride)));
@@ -717,12 +728,12 @@ void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minS
                 , bufferData.cpuBuffer, nullptr);
 
             ENQUEUE_COMMAND(ResizeRuntimeBuffer)(
-                [this, bufferName, newArraySize, &bufferData](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+                [this, bufferName, gpuDataStride, &bufferData](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
                 {
                     BufferResource* oldBuffer = bufferData.gpuBuffer;
 
                     // Since only storage can be runtime array
-                    bufferData.gpuBuffer = new GraphicsWBuffer(bufferData.runtimeArray->offset + newArraySize);
+                    bufferData.gpuBuffer = new GraphicsWBuffer(bufferData.runtimeArray->offset + bufferData.runtimeArray->currentSize * gpuDataStride);
                     bufferData.gpuBuffer->setResourceName(bufferName + "_" + bufferData.runtimeArray->paramName + "_RuntimeSoA");
                     bufferData.gpuBuffer->init();
 

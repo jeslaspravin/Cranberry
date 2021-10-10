@@ -37,11 +37,11 @@ public:
     MeshAsset() = default;
     ICleanupAsset* cleanableAsset() override;
 
-    BufferResource* getVertexBuffer();
-    BufferResource* getIndexBuffer();
+    BufferResource* getVertexBuffer() const;
+    BufferResource* getIndexBuffer() const;
 
 #if _DEBUG
-    BufferResource* getTbnVertexBuffer();
+    BufferResource* getTbnVertexBuffer() const;
 #endif
 
     const AABB& getMeshBounds() const;

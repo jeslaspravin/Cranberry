@@ -1,12 +1,14 @@
 #version 450
 #extension GL_GOOGLE_include_directive:enable
 
+#include "../Common/CommonDefines.inl.glsl"
+
 layout(triangles, invocations = 6) in;
 layout(triangle_strip, max_vertices = 3) out;
 
 layout(location = 0) out vec3 outWorldPos;
 
-layout(set = 3, binding = 0) uniform PointShadowDepthViews
+layout(set = SHADER_VARIANT_UNIQ_SET, binding = 0) uniform PointShadowDepthViews
 {
     mat4 w2Clip[6];
 } lightViews;

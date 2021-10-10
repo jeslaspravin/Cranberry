@@ -1,10 +1,20 @@
+#ifndef TEXTURED_DESCRIPTORS_INCLUDE
+#define TEXTURED_DESCRIPTORS_INCLUDE
 
-layout( set = 2, binding = 0) uniform MeshData
+#include "../Common/CommonDefines.inl.glsl"
+
+struct MeshData
 {
     vec4 meshColor;
     vec4 rm_uvScale;
-} meshData;
+    uint diffuseMapIdx;
+    uint normalMapIdx;
+    uint armMapIdx;
+};
 
-layout( set = 2, binding = 1) uniform sampler2D diffuseMap;
-layout( set = 2, binding = 2) uniform sampler2D normalMap;
-layout( set = 2, binding = 3) uniform sampler2D armMap; 
+layout(set = SHADER_UNIQ_SET, binding = 0) readonly buffer TexturedMaterials
+{
+    MeshData meshData[];
+} materials;
+
+#endif

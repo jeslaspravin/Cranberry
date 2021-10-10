@@ -7,18 +7,19 @@
 
 layout(location = 0) out vec4 colorAttachment0;
 
+#include "../Common/CommonDefines.inl.glsl"
 #include "../Common/ViewDescriptors.inl.glsl"
 
-layout(set = 0, binding = 1) uniform LightCommon 
+layout(set = VIEW_UNIQ_SET, binding = 1) uniform LightCommon 
 {
     uint lightsCount;
     float invLightsCount;
 } lightCommon;
 
-layout(set = 1, binding = 0) uniform sampler2D ssUnlitColor;
-layout(set = 1, binding = 1) uniform sampler2D ssNormal;
-layout(set = 1, binding = 2) uniform sampler2D ssDepth;
-layout(set = 1, binding = 3) uniform sampler2D ssColor;
+layout(set = 2, binding = 0) uniform sampler2D ssUnlitColor;
+layout(set = 2, binding = 1) uniform sampler2D ssNormal;
+layout(set = 2, binding = 2) uniform sampler2D ssDepth;
+layout(set = 2, binding = 3) uniform sampler2D ssColor;
 
 struct  LightData
 {
@@ -28,7 +29,7 @@ struct  LightData
     vec4 lightColorAndRadius;
 };
 
-layout(set = 2, binding = 0) uniform ArrayOfLight 
+layout(set = 3, binding = 0) uniform ArrayOfLight 
 {
     LightData lights[10];
     uint count;

@@ -7,10 +7,19 @@
 
 #define SINGLECOLOR_SHADER_NAME "SingleColor"
 
+struct SingleColorMeshMaterials
+{
+    SingleColorMeshData* meshData;
+};
+
 BEGIN_BUFFER_DEFINITION(SingleColorMeshData)
 ADD_BUFFER_TYPED_FIELD(meshColor)
 ADD_BUFFER_TYPED_FIELD(roughness)
 ADD_BUFFER_TYPED_FIELD(metallic)
+END_BUFFER_DEFINITION();
+
+BEGIN_BUFFER_DEFINITION(SingleColorMeshMaterials)
+ADD_BUFFER_STRUCT_FIELD(meshData, SingleColorMeshData)
 END_BUFFER_DEFINITION();
 
 template<EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
@@ -27,10 +36,10 @@ protected:
 
     void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
     {
-        static SingleColorMeshDataBufferParamInfo MESH_DATA;
+        static SingleColorMeshMaterialsBufferParamInfo MESH_DATA_MATERIALS;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "meshData", &MESH_DATA }
+            { "materials", &MESH_DATA_MATERIALS }
         };
 
 

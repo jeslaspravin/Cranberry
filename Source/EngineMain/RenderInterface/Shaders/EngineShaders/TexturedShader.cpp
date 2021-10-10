@@ -7,9 +7,21 @@
 
 #define TEXTURED_SHADER_NAME "Textured"
 
+struct TexturedMeshMaterials
+{
+    TexturedMeshData* meshData;
+};
+
 BEGIN_BUFFER_DEFINITION(TexturedMeshData)
 ADD_BUFFER_TYPED_FIELD(meshColor)
 ADD_BUFFER_TYPED_FIELD(rm_uvScale)
+ADD_BUFFER_TYPED_FIELD(diffuseMapIdx)
+ADD_BUFFER_TYPED_FIELD(normalMapIdx)
+ADD_BUFFER_TYPED_FIELD(armMapIdx)
+END_BUFFER_DEFINITION();
+
+BEGIN_BUFFER_DEFINITION(TexturedMeshMaterials)
+ADD_BUFFER_STRUCT_FIELD(meshData, TexturedMeshData)
 END_BUFFER_DEFINITION();
 
 template<EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
@@ -26,10 +38,10 @@ protected:
 
     void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
     {
-        static TexturedMeshDataBufferParamInfo MESH_DATA;
+        static TexturedMeshMaterialsBufferParamInfo MESH_MATERIALS_DATA;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "meshData", &MESH_DATA }
+            { "materials", &MESH_MATERIALS_DATA }
         };
 
 

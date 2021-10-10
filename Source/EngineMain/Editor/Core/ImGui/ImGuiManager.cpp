@@ -313,7 +313,7 @@ void ImGuiManager::updateRenderResources(class IRenderCommandList* cmdList, IGra
             }
         }
 
-        if (vertexBuffer->bufferCount() < drawData->TotalVtxCount)
+        if (vertexBuffer->bufferCount() < uint32(drawData->TotalVtxCount))
         {
             vertexBuffer->setBufferCount(drawData->TotalVtxCount);
             if (vertexBuffer->isValid())
@@ -325,7 +325,7 @@ void ImGuiManager::updateRenderResources(class IRenderCommandList* cmdList, IGra
                 vertexBuffer->init();
             }
         }
-        if (idxBuffer->bufferCount() < drawData->TotalIdxCount)
+        if (idxBuffer->bufferCount() < uint32(drawData->TotalIdxCount))
         {
             idxBuffer->setBufferCount(drawData->TotalIdxCount);
             if (idxBuffer->isValid())

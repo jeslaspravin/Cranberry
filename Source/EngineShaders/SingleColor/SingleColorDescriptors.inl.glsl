@@ -1,7 +1,17 @@
+#ifndef SINGLE_COLOR_DESCRIPTORS_INCLUDE
+#define SINGLE_COLOR_DESCRIPTORS_INCLUDE
 
-layout( set = 2, binding = 0) uniform MeshData
+#include "../Common/CommonDefines.inl.glsl"
+
+struct MeshData
 {
     vec4 meshColor;
     float roughness;
     float metallic;
-} meshData;
+};
+layout(set = SHADER_UNIQ_SET, binding = 0) readonly buffer SingleColorMaterials
+{
+    MeshData meshData[];
+} materials;
+
+#endif

@@ -3,7 +3,6 @@
 
 #define STATIC_MESH 1
 #include "../Common/VertexInputs.inl.glsl"
-#include "../Common/ViewDescriptors.inl.glsl"
 #include "../Common/VertexInstanceDescriptors.inl.glsl"
 
 
@@ -12,5 +11,5 @@
 
 void mainVS()
 {
-    gl_Position = instanceData.model * vec4(position.xyz, 1);
+    gl_Position = instancesWrapper.instances[gl_InstanceIndex].model * vec4(position.xyz, 1);
 }

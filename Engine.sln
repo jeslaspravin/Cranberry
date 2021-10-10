@@ -40,6 +40,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Default", "Default", "{F568
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{160411F8-2D91-49C9-AF1D-80E9E33AC675}"
 	ProjectSection(SolutionItems) = preProject
+		Source\EngineShaders\Common\BindlessDescriptors.inl.glsl = Source\EngineShaders\Common\BindlessDescriptors.inl.glsl
 		Source\EngineShaders\Common\CommonDefines.inl.glsl = Source\EngineShaders\Common\CommonDefines.inl.glsl
 		Source\EngineShaders\Common\CommonFunctions.inl.glsl = Source\EngineShaders\Common\CommonFunctions.inl.glsl
 		Source\EngineShaders\Common\ComputeCommon.inl.glsl = Source\EngineShaders\Common\ComputeCommon.inl.glsl

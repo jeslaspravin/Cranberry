@@ -12,5 +12,6 @@
 
 void mainVS()
 {
-    gl_Position = viewData.projection * viewData.invView * instanceData.model * vec4(position.xyz, 1);
+    gl_Position = viewData.projection * viewData.invView 
+        * instancesWrapper.instances[gl_InstanceIndex].model * vec4(position.xyz, 1);
 }

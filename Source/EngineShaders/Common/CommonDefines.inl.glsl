@@ -22,4 +22,11 @@
 
 #define ENGINE_WORLD_TO_CUBE_DIR(worldDir) ((worldDir).yzx)
 
+// Shader defines
+#define BINDLESS_SET 0
+#define VIEW_UNIQ_SET 1
+#define INSTANCE_UNIQ_SET 2
+#define SHADER_UNIQ_SET 3
+#define SHADER_VARIANT_UNIQ_SET 4
+
 #endif // COMMONDEFINES_INCLUDE

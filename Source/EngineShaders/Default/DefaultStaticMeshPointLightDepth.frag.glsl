@@ -1,7 +1,9 @@
 #version 450
 #extension GL_GOOGLE_include_directive:enable
 
-layout(set = 3, binding = 0) uniform PointShadowDepthViews
+#include "../Common/CommonDefines.inl.glsl"
+
+layout(set = SHADER_VARIANT_UNIQ_SET, binding = 0) uniform PointShadowDepthViews
 {
     layout(offset = 384) vec4 lightPosFarPlane;
 } lightViews;

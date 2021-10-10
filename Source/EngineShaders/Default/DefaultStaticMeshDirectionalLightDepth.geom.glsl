@@ -1,10 +1,12 @@
 #version 450
 #extension GL_GOOGLE_include_directive:enable
 
+#include "../Common/CommonDefines.inl.glsl"
+
 layout(triangles, invocations = 8) in;
 layout(triangle_strip, max_vertices = 3) out; 
 
-layout(set = 3, binding = 0) uniform DirectionalShadowCascadeViews
+layout(set = SHADER_VARIANT_UNIQ_SET, binding = 0) uniform DirectionalShadowCascadeViews
 {
     mat4 cascadeW2Clip[8];
     uint cascadeCount;

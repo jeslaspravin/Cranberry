@@ -375,6 +375,10 @@ void VulkanShaderSetParamsLayout::init()
                     | ((GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_AFTER_BIND) ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT : 0)
                     | ((GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_UNUSED) ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT : 0)
                     : 0;
+                // We set all flags for bindless/runtime array
+                layoutBindings[i].stageFlags = runtimeArray[i] 
+                    ? VkShaderStageFlagBits::VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM 
+                    : layoutBindings[i].stageFlags;
             }
             descLayoutBindingFlagsCI.bindingCount = uint32(bindingFlags.size());
             descLayoutBindingFlagsCI.pBindingFlags = bindingFlags.data();
@@ -431,7 +435,7 @@ void VulkanShaderUniqDescLayout::bindBufferParamInfo(std::map<String, struct Sha
 
 String VulkanShaderUniqDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + "_DescriptorsSetLayout2";
+    return respectiveShaderRes->getResourceName() + "_DescriptorsSetLayout" + std::to_string(getSetID());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -441,12 +445,12 @@ String VulkanShaderUniqDescLayout::getObjectName() const
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanVertexUniqDescLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT)
 
 VulkanVertexUniqDescLayout::VulkanVertexUniqDescLayout(const ShaderResource* shaderResource)
-    : BaseType(shaderResource, DESC_SET_ID)
+    : BaseType(shaderResource, ShaderParameterUtility::INSTANCE_UNIQ_SET)
 {}
 
 String VulkanVertexUniqDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + "_DescriptorsSetLayout1";
+    return respectiveShaderRes->getResourceName() + "_DescriptorsSetLayout" + std::to_string(ShaderParameterUtility::INSTANCE_UNIQ_SET);
 }
 
 void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const
@@ -471,12 +475,12 @@ void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<String, struct Sha
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanViewUniqDescLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT)
 
 VulkanViewUniqDescLayout::VulkanViewUniqDescLayout(const ShaderResource* shaderResource)
-    : BaseType(shaderResource, DESC_SET_ID)
+    : BaseType(shaderResource, ShaderParameterUtility::VIEW_UNIQ_SET)
 {}
 
 String VulkanViewUniqDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + "_DescriptorsSetLayout0";
+    return respectiveShaderRes->getResourceName() + "_DescriptorsSetLayout" + std::to_string(ShaderParameterUtility::VIEW_UNIQ_SET);
 }
 
 void VulkanViewUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const
@@ -491,6 +495,21 @@ void VulkanViewUniqDescLayout::bindBufferParamInfo(std::map<String, struct Shade
 
         foundDescBinding->second->bufferParamInfo = bufferInfo.second;
     }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// VulkanBindlessDescLayout
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanBindlessDescLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT)
+
+VulkanBindlessDescLayout::VulkanBindlessDescLayout(const ShaderResource* shaderResource)
+    : BaseType(shaderResource, ShaderParameterUtility::BINDLESS_SET)
+{}
+
+String VulkanBindlessDescLayout::getObjectName() const
+{
+    return respectiveShaderRes->getResourceName() + "_BindlessDescriptorsSetLayout" + std::to_string(ShaderParameterUtility::BINDLESS_SET);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -595,6 +614,10 @@ void VulkanShaderParametersLayout::init()
                     | ((GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_AFTER_BIND) ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT : 0)
                     | ((GlobalRenderVariables::ENABLED_RESOURCE_UPDATE_UNUSED) ? VkDescriptorBindingFlagBits::VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT : 0)
                     : 0;
+                // We set all flags for bindless/runtime array
+                descSetLayoutInfo.layoutBindings[i].stageFlags = runtimeArray[i] 
+                    ? VkShaderStageFlagBits::VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM 
+                    : descSetLayoutInfo.layoutBindings[i].stageFlags;
             }
             descLayoutBindingFlagsCI.bindingCount = uint32(bindingFlags.size());
             descLayoutBindingFlagsCI.pBindingFlags = bindingFlags.data();
@@ -841,6 +864,7 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList* cmdList, IGraph
     }
 
     VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, vkWrites, {});
+    bufferResourceUpdates.clear();
     texelUpdates.clear();
     textureUpdates.clear();
     samplerUpdates.clear();
@@ -1073,4 +1097,3 @@ void VulkanShaderParameters::updateParams(IRenderCommandList* cmdList, IGraphics
     textureUpdates.clear();
     samplerUpdates.clear();
 }
-

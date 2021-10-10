@@ -47,6 +47,7 @@ protected:
     std::unordered_map<EVertexType::Type, GraphicsResource*> perVertexTypeLayouts;
     // Scene's common layout(Descriptors set layout)
     GraphicsResource* sceneViewParamLayout = nullptr;
+    GraphicsResource* bindlessParamLayout = nullptr;
 
     std::unordered_map<GenericRenderPassProperties, std::vector<const Framebuffer*>> rtFramebuffers;
     PipelineCacheBase* pipelinesCache;

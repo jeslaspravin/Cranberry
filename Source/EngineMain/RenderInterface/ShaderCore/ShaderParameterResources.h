@@ -298,7 +298,8 @@ public:
     std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllWriteTexels() const;
 
     virtual void updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
-
+    void pullBufferParamUpdates(std::vector<BatchCopyBufferData>& copies, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    // Resizing must be done at external wrapper buffer name
     void resizeRuntimeBuffer(const String& bufferName, uint32 minSize);
     bool setIntParam(const String& paramName, int32 value, uint32 index = 0);
     bool setIntParam(const String& paramName, uint32 value, uint32 index = 0);

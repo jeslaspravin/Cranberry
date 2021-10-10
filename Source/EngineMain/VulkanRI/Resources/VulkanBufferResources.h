@@ -16,10 +16,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
-    int32 bufferStride() const override;
-    void setBufferStride(int32 newStride) override;
-    int32 bufferCount() const override;
-    void setBufferCount(int32 newCount) override;
+    uint32 bufferStride() const override;
+    void setBufferStride(uint32 newStride) override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
 
     /* Overrides ends */
 };
@@ -38,10 +38,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
-    int32 bufferStride() const override;
-    void setBufferStride(int32 newStride) override;
-    int32 bufferCount() const override;
-    void setBufferCount(int32 newCount) override;
+    uint32 bufferStride() const override;
+    void setBufferStride(uint32 newStride) override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
 
     /* Overrides ends */
 };
@@ -60,10 +60,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
-    int32 bufferStride() const override;
-    void setBufferStride(int32 newStride) override;
-    int32 bufferCount() const override;
-    void setBufferCount(int32 newCount) override;
+    uint32 bufferStride() const override;
+    void setBufferStride(uint32 newStride) override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
 
     /* Overrides ends */
 };
@@ -82,9 +82,9 @@ public:
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
     void setTexelFormat(EPixelDataFormat::Type newFormat) override;
-    int32 bufferStride() const override;
-    int32 bufferCount() const override;
-    void setBufferCount(int32 newCount) override;
+    uint32 bufferStride() const override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
 
     /* Overrides ends */
 };
@@ -103,9 +103,9 @@ public:
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
     void setTexelFormat(EPixelDataFormat::Type newFormat) override;
-    int32 bufferStride() const override;
-    int32 bufferCount() const override;
-    void setBufferCount(int32 newCount) override;
+    uint32 bufferStride() const override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
 
     /* Overrides ends */
 };
@@ -124,9 +124,9 @@ public:
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
     void setTexelFormat(EPixelDataFormat::Type newFormat) override;
-    int32 bufferStride() const override;
-    int32 bufferCount() const override;
-    void setBufferCount(int32 newCount) override;
+    uint32 bufferStride() const override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
 
     /* Overrides ends */
 };
@@ -145,10 +145,10 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
-    int32 bufferStride() const override;
-    void setBufferStride(int32 newStride) override;
-    int32 bufferCount() const override;
-    void setBufferCount(int32 newCount) override;
+    uint32 bufferStride() const override;
+    void setBufferStride(uint32 newStride) override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
 
     /* Overrides ends */
 };
@@ -167,10 +167,54 @@ public:
 
     /* MemoryResource overrides */
     uint64 getResourceSize() const override;
-    int32 bufferStride() const override;
-    void setBufferStride(int32 newStride) override;
-    int32 bufferCount() const override;
-    void setBufferCount(int32 newCount) override;
+    uint32 bufferStride() const override;
+    void setBufferStride(uint32 newStride) override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
+
+    /* Overrides ends */
+};
+
+class VulkanRIndirectBuffer final : public VulkanBufferResource
+{
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanRIndirectBuffer, , VulkanBufferResource, )
+
+private:
+    uint32 count;
+    uint32 stride;
+
+    VulkanRIndirectBuffer();
+public:
+    VulkanRIndirectBuffer(uint32 bufferStride, uint32 bufferCount = 1);
+
+    /* MemoryResource overrides */
+    uint64 getResourceSize() const override;
+    uint32 bufferStride() const override;
+    void setBufferStride(uint32 newStride) override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
+
+    /* Overrides ends */
+};
+
+class VulkanWIndirectBuffer final : public VulkanBufferResource
+{
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanWIndirectBuffer, , VulkanBufferResource, )
+
+private:
+    uint32 count;
+    uint32 stride;
+
+    VulkanWIndirectBuffer();
+public:
+    VulkanWIndirectBuffer(uint32 bufferStride, uint32 bufferCount = 1);
+
+    /* MemoryResource overrides */
+    uint64 getResourceSize() const override;
+    uint32 bufferStride() const override;
+    void setBufferStride(uint32 newStride) override;
+    uint32 bufferCount() const override;
+    void setBufferCount(uint32 newCount) override;
 
     /* Overrides ends */
 };
@@ -187,4 +231,7 @@ namespace GraphicsTypes {
 
     typedef VulkanVertexBuffer GraphicsVertexBuffer;
     typedef VulkanIndexBuffer GraphicsIndexBuffer;
+
+    typedef VulkanRIndirectBuffer GraphicsRIndirectBuffer;
+    typedef VulkanWIndirectBuffer GraphicsWIndirectBuffer;
 }

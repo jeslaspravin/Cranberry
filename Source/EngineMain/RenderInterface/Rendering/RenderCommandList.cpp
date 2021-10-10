@@ -35,6 +35,7 @@ public:
     void copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size) final;
     void copyToBuffer(const std::vector<BatchCopyBufferData>& batchCopies) final;
     void copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo) final;
+    void copyBuffer(const std::vector<BatchCopyBufferInfo>& batchCopies) final;
 
     void copyToImage(ImageResource* dst, const std::vector<class Color>& pixelData, const CopyPixelsToImageInfo& copyInfo) final;
     void copyToImage(ImageResource* dst, const std::vector<class LinearColor>& pixelData, const CopyPixelsToImageInfo& copyInfo) final;
@@ -73,6 +74,8 @@ public:
     void cmdDispatch(const GraphicsResource* cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const final;
     void cmdDrawIndexed(const GraphicsResource* cmdBuffer, uint32 firstIndex, uint32 indexCount, uint32 firstInstance = 0, uint32 instanceCount = 1, int32 vertexOffset = 0) const final;
     void cmdDrawVertices(const GraphicsResource* cmdBuffer, uint32 firstVertex, uint32 vertexCount, uint32 firstInstance = 0, uint32 instanceCount = 1) const final;
+    void cmdDrawIndexedIndirect(const GraphicsResource* cmdBuffer, const BufferResource* drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride) const final;
+    void cmdDrawIndirect(const GraphicsResource* cmdBuffer, const BufferResource* drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride) const final;
 
     void cmdSetViewportAndScissors(const GraphicsResource* cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>>& viewportAndScissors, uint32 firstViewport = 0) const final;
     void cmdSetViewportAndScissor(const GraphicsResource* cmdBuffer, const QuantizedBox2D& viewport, const QuantizedBox2D& scissor, uint32 atViewport = 0) const final;
@@ -139,6 +142,16 @@ void RenderCommandList::cmdDrawVertices(const GraphicsResource* cmdBuffer, uint3
     cmdList->cmdDrawVertices(cmdBuffer, firstVertex, vertexCount, firstInstance, instanceCount);
 }
 
+void RenderCommandList::cmdDrawIndexedIndirect(const GraphicsResource* cmdBuffer, const BufferResource* drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride) const
+{
+    cmdList->cmdDrawIndexedIndirect(cmdBuffer, drawCmdsBuffer, bufferOffset, drawCount, stride);
+}
+
+void RenderCommandList::cmdDrawIndirect(const GraphicsResource* cmdBuffer, const BufferResource* drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride) const
+{
+    cmdList->cmdDrawIndirect(cmdBuffer, drawCmdsBuffer, bufferOffset, drawCount, stride);
+}
+
 void RenderCommandList::setup(IRenderCommandList* commandList)
 {
     if (commandList != cmdList)
@@ -155,6 +168,11 @@ void RenderCommandList::newFrame(const float& tiimeDelta)
 void RenderCommandList::copyBuffer(BufferResource* src, BufferResource* dst, const CopyBufferInfo& copyInfo)
 {
     cmdList->copyBuffer(src, dst, copyInfo);
+}
+
+void RenderCommandList::copyBuffer(const std::vector<BatchCopyBufferInfo>& batchCopies)
+{
+    cmdList->copyBuffer(batchCopies);
 }
 
 void RenderCommandList::copyToBuffer(BufferResource* dst, uint32 dstOffset, const void* dataToCopy, uint32 size)

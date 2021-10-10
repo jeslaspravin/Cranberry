@@ -5,18 +5,18 @@ ICleanupAsset* MeshAsset::cleanableAsset()
     return this;
 }
 
-BufferResource* MeshAsset::getVertexBuffer()
+BufferResource* MeshAsset::getVertexBuffer() const
 {
     return vertexBuffer;
 }
 
-BufferResource* MeshAsset::getIndexBuffer()
+BufferResource* MeshAsset::getIndexBuffer() const
 {
     return indexBuffer;
 }
 
 #if _DEBUG
-BufferResource* MeshAsset::getTbnVertexBuffer()
+BufferResource* MeshAsset::getTbnVertexBuffer() const
 {
     return tbnVertexBuffer;
 }

@@ -15,6 +15,8 @@ class VulkanWTexelBuffer;
 class VulkanRWTexelBuffer;
 class VulkanVertexBuffer;
 class VulkanIndexBuffer;
+class VulkanRIndirectBuffer;
+class VulkanWIndirectBuffer;
 
 class VulkanRenderTargetResource;
 class VulkanCubeImageResource;
@@ -39,6 +41,8 @@ namespace GraphicsTypes
     typedef VulkanRWTexelBuffer GraphicsRWTexelBuffer;
     typedef VulkanVertexBuffer GraphicsVertexBuffer;
     typedef VulkanIndexBuffer GraphicsIndexBuffer;
+    typedef VulkanRIndirectBuffer GraphicsRIndirectBuffer;
+    typedef VulkanWIndirectBuffer GraphicsWIndirectBuffer;
 
     typedef VulkanRenderTargetResource GraphicsRenderTargetResource;
     typedef VulkanCubeImageResource GraphicsCubeImageResource;
