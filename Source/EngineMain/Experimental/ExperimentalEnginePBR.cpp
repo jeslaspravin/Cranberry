@@ -113,7 +113,7 @@ struct FrameResource
     SharedPtr<GraphicsFence> recordingFence;
 };
 
-
+#define SHADOWS_USE_CULLED_DRAW_CMDS 0
 struct PointLight
 {
     Vector3D lightPos;
@@ -764,21 +764,27 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer()
         pointDrawCmds[i] = new GraphicsRIndirectBuffer(sizeof(DrawIndexedIndirectCommand));
         pointDrawCmds[i]->setAsStagingResource(true);
         pointDrawCmds[i]->setResourceName("PointDepthDrawCmds_" + std::to_string(i));
-        //pointDrawCmds[i]->init();
+#if SHADOWS_USE_CULLED_DRAW_CMDS
+        pointDrawCmds[i]->init();
+#endif
     }
     for (uint32 i = 0; i < spotShadowRTs.size() && spotShadowRTs[i]; ++i)
     {
         spotDrawCmds[i] = new GraphicsRIndirectBuffer(sizeof(DrawIndexedIndirectCommand));
         spotDrawCmds[i]->setAsStagingResource(true);
         spotDrawCmds[i]->setResourceName("SpotDepthDrawCmds_" + std::to_string(i));
-        //spotDrawCmds[i]->init();
+#if SHADOWS_USE_CULLED_DRAW_CMDS
+        spotDrawCmds[i]->init();
+#endif
     }
     ENQUEUE_COMMAND(CreateAllEntityDrawCmds)(
         [drawCmds, this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize()));
             // #TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding gpu/compute culling
-            //setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
+#if SHADOWS_USE_CULLED_DRAW_CMDS
+            setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
+#endif
         });
 }
 
@@ -2658,8 +2664,11 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList* cmdList, IGr
                     ? ECullingMode::BackFace : ECullingMode::FrontFace;
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, spotShadowPipelineContext, { faceFillQueryParam });
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, spotShadowPipelineContext, sptlit.shadowViewParams.get());
-                //cmdList->cmdDrawIndexedIndirect(cmdBuffer, sptlit.drawCmdsBuffer, 0, sptlit.drawCmdCount, sptlit.drawCmdsBuffer->bufferStride());
+#if SHADOWS_USE_CULLED_DRAW_CMDS
+                cmdList->cmdDrawIndexedIndirect(cmdBuffer, sptlit.drawCmdsBuffer, 0, sptlit.drawCmdCount, sptlit.drawCmdsBuffer->bufferStride());
+#else
                 cmdList->cmdDrawIndexedIndirect(cmdBuffer, allEntityDrawCmds, 0, allEntityDrawCmds->bufferCount(), allEntityDrawCmds->bufferStride());
+#endif
 
                 cmdList->cmdEndRenderPass(cmdBuffer);
             }
@@ -2686,8 +2695,11 @@ void ExperimentalEnginePBR::renderShadows(class IRenderCommandList* cmdList, IGr
                     ? ECullingMode::FrontFace : ECullingMode::BackFace;
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, pointShadowPipelineContext, { faceFillQueryParam });
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, { ptlit.shadowViewParams.get(), instanceParameters.get() });
-                //cmdList->cmdDrawIndexedIndirect(cmdBuffer, ptlit.drawCmdsBuffer, 0, ptlit.drawCmdCount, ptlit.drawCmdsBuffer->bufferStride());
+#if SHADOWS_USE_CULLED_DRAW_CMDS
+                cmdList->cmdDrawIndexedIndirect(cmdBuffer, ptlit.drawCmdsBuffer, 0, ptlit.drawCmdCount, ptlit.drawCmdsBuffer->bufferStride());
+#else
                 cmdList->cmdDrawIndexedIndirect(cmdBuffer, allEntityDrawCmds, 0, allEntityDrawCmds->bufferCount(), allEntityDrawCmds->bufferStride());
+#endif
 
                 cmdList->cmdEndRenderPass(cmdBuffer);
             }
@@ -2876,8 +2888,9 @@ void ExperimentalEnginePBR::tickEngine()
         [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
         {
             updateShaderParameters(cmdList, graphicsInstance);
-            // #TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding gpu/compute culling
-            //setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
+#if SHADOWS_USE_CULLED_DRAW_CMDS
+            setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
+#endif
             frameRender(cmdList, graphicsInstance);
         });
 
@@ -3183,7 +3196,6 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
                         }
                         ImGui::TreePop();
                     }
-                    ++i;
                 }
                 ImGui::TreePop();
             }

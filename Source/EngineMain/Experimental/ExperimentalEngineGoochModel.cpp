@@ -27,6 +27,7 @@
 #include "../RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "../RenderInterface/CoreGraphicsTypes.h"
 #include "../VulkanRI/VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
+#include "../RenderInterface/Shaders/EngineShaders/SingleColorShader.h"
 #include "../RenderApi/Scene/RenderScene.h"
 #include "../RenderApi/Material/MaterialCommonUniforms.h"
 #include "../Core/Math/RotationMatrix.h"
@@ -168,10 +169,43 @@ struct SceneEntity
     Transform3D transform;
     class StaticMeshAsset* meshAsset;
 
-    SharedPtr<ShaderParameters> instanceParameters;
     std::vector<LinearColor> meshBatchColors;
-    std::vector<SharedPtr<ShaderParameters>> meshBatchParameters;
+
+    // Generated
+    // Per mesh batch instance and shader param index
+    // since material index is within the instance data
+    std::vector<uint32> instanceParamIdx;
+    std::vector<uint32> batchShaderParamIdx;
+
+    void updateInstanceParams(SharedPtr<ShaderParameters>& shaderParams, uint32 batchIdx);
+    void updateInstanceParams(SharedPtr<ShaderParameters>& shaderParams)
+    {
+        for (uint32 i = 0; i < meshBatchColors.size(); ++i)
+        {
+            updateInstanceParams(shaderParams, i);
+        }
+    }
+    void updateMaterialParams(SharedPtr<ShaderParameters>& shaderParams, const std::unordered_map<const ImageResource*, uint32>& tex2dToBindlessIdx, uint32 batchIdx) const;
 };
+
+void SceneEntity::updateInstanceParams(SharedPtr<ShaderParameters>& shaderParams, uint32 batchIdx)
+{
+    InstanceData gpuInstance;
+    gpuInstance.model = transform.getTransformMatrix();
+    gpuInstance.invModel = transform.getTransformMatrix().inverse();
+    gpuInstance.shaderUniqIdx = batchShaderParamIdx[batchIdx];
+
+    shaderParams->setBuffer("instances", gpuInstance, instanceParamIdx[batchIdx]);
+}
+
+void SceneEntity::updateMaterialParams(SharedPtr<ShaderParameters>& shaderParams, const std::unordered_map<const ImageResource*, uint32>& tex2dToBindlessIdx, uint32 batchIdx) const
+{
+    SingleColorMeshData singleColorMeshData;
+    singleColorMeshData.meshColor = meshBatchColors[batchIdx];
+    singleColorMeshData.metallic = 0;
+    singleColorMeshData.roughness = 0;
+    shaderParams->setBuffer("meshData", singleColorMeshData, batchShaderParamIdx[batchIdx]);
+}
 
 struct FrameResource
 {
@@ -197,15 +231,31 @@ class ExperimentalEngineGoochModel : public GameEngine, public IImGuiLayer
     // SharedPtr<class SamplerInterface> cubicFiltering = nullptr;
     void createImages();
     void destroyImages();
+    // Global parameters
+    // Asset's data
+    std::unordered_map<const ImageResource*, uint32> tex2dToBindlessIdx;
+    // offset in count, in scene
+    std::unordered_map<const MeshAsset*, std::pair<uint32, uint32>> meshVertIdxOffset;
 
     // Scene data
     std::vector<SceneEntity> sceneData;
+    BufferResource* sceneVertexBuffer;
+    BufferResource* sceneIndexBuffer;
+    BufferResource* allEntityDrawCmds;
+    // Offset in bytes, Count in size
+    std::unordered_map<const LocalPipelineContext*, std::pair<uint32, uint32>> pipelineToDrawCmdOffsetCount;
+    void createDrawCmdsBuffer();
+    void destroyDrawCmdsBuffer();
+
     std::vector<struct GoochModelLightData> sceneLightData;
     std::vector<SharedPtr<ShaderParameters>> lightData;
     SharedPtr<ShaderParameters> lightCommon;
     SwapchainBufferedResource<SharedPtr<ShaderParameters>> lightTextures;
     SharedPtr<ShaderParameters> viewParameters;
+    SharedPtr<ShaderParameters> instanceParameters;
+    std::unordered_map<const LocalPipelineContext*, SharedPtr<ShaderParameters>> sceneShaderUniqParams;
     void createScene();
+    void createSceneRenderData(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
     void destroyScene();
 
     // Camera parameters
@@ -426,6 +476,120 @@ void ExperimentalEngineGoochModel::destroyImages()
     linearFiltering->release();
 }
 
+void ExperimentalEngineGoochModel::createDrawCmdsBuffer()
+{
+    // Setup all draw commands, Instance idx for each batch and its material idx
+    std::vector<DrawIndexedIndirectCommand> drawCmds;
+    {
+        // Using set to sort by batch to use instanced draw
+        std::unordered_map<LocalPipelineContext*
+            , std::map<const MeshAsset*
+            , std::set<std::pair<uint32, uint32>>>> pipelineToMeshToBatchEntityIdx;
+        uint32 entityIdx = 0;
+        for (SceneEntity& entity : sceneData)
+        {
+            entity.instanceParamIdx.resize(entity.meshBatchColors.size());
+            entity.batchShaderParamIdx.resize(entity.meshBatchColors.size());
+
+            for (uint32 meshBatchIdx = 0; meshBatchIdx < entity.meshBatchColors.size(); ++meshBatchIdx)
+            {
+                pipelineToMeshToBatchEntityIdx[&drawSmPipelineContext][entity.meshAsset]
+                    .insert(std::pair<uint32, uint32>{ meshBatchIdx, entityIdx });
+            }
+            entityIdx++;
+        }
+
+        uint32 totalDrawCalls = 0;
+        uint32 instanceCount = 0; // For batch's instance idx
+        // Insert draw calls and setup indices for both instances and materials
+        for (const auto& pipeMeshPairToBatchEntity : pipelineToMeshToBatchEntityIdx)
+        {
+            uint32 pipelineDrawCalls = 0;
+            uint32 materialCount = 0; // For batch's material idx
+            for (const auto& meshAssetToBatchEntityIdx : pipeMeshPairToBatchEntity.second)
+            {
+                for (auto setItr = meshAssetToBatchEntityIdx.second.cbegin(); setItr != meshAssetToBatchEntityIdx.second.cend();)
+                {
+                    // set material and instance index for a batch
+                    sceneData[setItr->second].instanceParamIdx[setItr->first] = instanceCount;
+                    sceneData[setItr->second].batchShaderParamIdx[setItr->first] = materialCount;
+                    instanceCount++;
+                    materialCount++;
+
+                    auto nextItr = setItr;
+                    nextItr++;
+                    // Go fwd until different batch or end is reached
+                    while (nextItr != meshAssetToBatchEntityIdx.second.cend() && nextItr->first == setItr->first)
+                    {
+                        // set material and instance index for a batch
+                        sceneData[nextItr->second].instanceParamIdx[nextItr->first] = instanceCount;
+                        sceneData[nextItr->second].batchShaderParamIdx[nextItr->first] = materialCount;
+                        instanceCount++;
+                        materialCount++;
+
+                        nextItr++;
+                    }
+                    const MeshVertexView& meshBatch = static_cast<const StaticMeshAsset*>(meshAssetToBatchEntityIdx.first)->meshBatches[setItr->first];
+                    // fill draw command for this batch
+                    DrawIndexedIndirectCommand& drawCmd = drawCmds.emplace_back();
+                    drawCmd.firstInstance = sceneData[setItr->second].instanceParamIdx[setItr->first];
+                    drawCmd.firstIndex = meshVertIdxOffset[meshAssetToBatchEntityIdx.first].second // Mesh's scene index buffer offset
+                        + meshBatch.startIndex;// Local index buffer offset
+                    drawCmd.indexCount = meshBatch.numOfIndices;
+                    drawCmd.instanceCount = instanceCount - drawCmd.firstInstance;
+                    drawCmd.vertexOffset = meshVertIdxOffset[meshAssetToBatchEntityIdx.first].first;
+
+                    setItr = nextItr;
+                    pipelineDrawCalls++;
+                }
+            }
+            // Setting draw cmd buffer offsets for this pipeline
+            pipelineToDrawCmdOffsetCount[pipeMeshPairToBatchEntity.first] = std::pair<uint32, uint32>
+            {
+                uint32(totalDrawCalls * sizeof(DrawIndexedIndirectCommand))
+                , pipelineDrawCalls
+            };
+            // Resizing material parameters
+            sceneShaderUniqParams[pipeMeshPairToBatchEntity.first]->resizeRuntimeBuffer("materials", materialCount);
+            totalDrawCalls += pipelineDrawCalls;
+            Logger::log("ExperimentalEnginePBR", "%s() : %s Pipeline's Material's count %d", __func__, pipeMeshPairToBatchEntity.first->materialName.getChar(), materialCount);
+            Logger::log("ExperimentalEnginePBR", "%s() : %s Pipeline's instanced draw calls %d", __func__, pipeMeshPairToBatchEntity.first->materialName.getChar(), pipelineDrawCalls);
+        }
+        Logger::log("ExperimentalEnginePBR", "%s() : Total instanced draw calls %d", __func__, totalDrawCalls);
+
+        // Resize instance parameters
+        instanceParameters->resizeRuntimeBuffer("instancesWrapper", instanceCount);
+
+        // Create buffer with draw calls and copy draw cmds
+        allEntityDrawCmds = new GraphicsRIndirectBuffer(sizeof(DrawIndexedIndirectCommand), totalDrawCalls);
+        allEntityDrawCmds->setResourceName("AllEntityDrawCmds");
+        allEntityDrawCmds->init();
+
+        // Now setup instance and material parameters
+        for (SceneEntity& entity : sceneData)
+        {
+            for (uint32 meshBatchIdx = 0; meshBatchIdx < entity.meshBatchColors.size(); ++meshBatchIdx)
+            {
+                entity.updateInstanceParams(instanceParameters, meshBatchIdx);
+                entity.updateMaterialParams(sceneShaderUniqParams[&drawSmPipelineContext], tex2dToBindlessIdx, meshBatchIdx);
+            }
+            entityIdx++;
+        }
+    }
+
+    ENQUEUE_COMMAND(CreateAllEntityDrawCmds)(
+        [drawCmds, this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        {
+            cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize()));
+        });
+}
+
+void ExperimentalEngineGoochModel::destroyDrawCmdsBuffer()
+{
+    allEntityDrawCmds->release();
+    delete allEntityDrawCmds;
+}
+
 void ExperimentalEngineGoochModel::createScene()
 {
     StaticMeshAsset* cube = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cube.obj"));
@@ -509,8 +673,59 @@ void ExperimentalEngineGoochModel::createScene()
     }
 }
 
+void ExperimentalEngineGoochModel::createSceneRenderData(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+{
+    uint32 totalVertexLen = 0;
+    uint32 totalIdxLen = 0;
+
+    for (const SceneEntity& entity : sceneData)
+    {
+        if (meshVertIdxOffset.emplace(entity.meshAsset, std::pair<uint32, uint32>{}).second)
+        {
+            totalVertexLen += uint32(entity.meshAsset->getVertexBuffer()->getResourceSize());
+            totalIdxLen += uint32(entity.meshAsset->getIndexBuffer()->getResourceSize());
+        }
+    }
+
+    // Initialize scene vertex and index buffer
+    sceneVertexBuffer = new GraphicsVertexBuffer(sizeof(StaticMeshVertex), totalVertexLen / sizeof(StaticMeshVertex));
+    sceneIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), totalIdxLen / sizeof(uint32));
+    sceneVertexBuffer->init();
+    sceneIndexBuffer->init();
+
+    std::vector<BatchCopyBufferInfo> batchedCopies;
+    uint32 vertOffset = 0;
+    uint32 idxOffset = 0;
+    for (auto& meshToVertIdx : meshVertIdxOffset)
+    {
+        meshToVertIdx.second = { vertOffset / sceneVertexBuffer->bufferStride(), idxOffset / sceneIndexBuffer->bufferStride() };
+
+        BatchCopyBufferInfo& vertCopyInfo = batchedCopies.emplace_back();
+        vertCopyInfo.dst = sceneVertexBuffer;
+        vertCopyInfo.src = meshToVertIdx.first->getVertexBuffer();
+        vertCopyInfo.copyInfo = CopyBufferInfo{ 0, vertOffset, uint32(meshToVertIdx.first->getVertexBuffer()->getResourceSize()) };
+
+        BatchCopyBufferInfo& idxCopyInfo = batchedCopies.emplace_back();
+        idxCopyInfo.dst = sceneIndexBuffer;
+        idxCopyInfo.src = meshToVertIdx.first->getIndexBuffer();
+        idxCopyInfo.copyInfo = CopyBufferInfo{ 0, idxOffset, uint32(meshToVertIdx.first->getIndexBuffer()->getResourceSize()) };
+
+        vertOffset += uint32(meshToVertIdx.first->getVertexBuffer()->getResourceSize());
+        idxOffset += uint32(meshToVertIdx.first->getIndexBuffer()->getResourceSize());
+    }
+    cmdList->copyBuffer(batchedCopies);
+}
+
 void ExperimentalEngineGoochModel::destroyScene()
 {
+    ENQUEUE_COMMAND(DestroyScene)(
+        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        {
+            sceneVertexBuffer->release();
+            delete sceneVertexBuffer;
+            sceneIndexBuffer->release();
+            delete sceneIndexBuffer;
+        });
     sceneData.clear();
 }
 
@@ -521,19 +736,12 @@ void ExperimentalEngineGoochModel::createShaderParameters()
     // Since view data and other view related data are at set 0
     viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::VIEW_UNIQ_SET));
     viewParameters->setResourceName("View");
-    for (SceneEntity& entity : sceneData)
-    {
-        entity.instanceParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::INSTANCE_UNIQ_SET));
-        entity.instanceParameters->setResourceName(entity.meshAsset->assetName());
-        entity.meshBatchParameters.resize(entity.meshAsset->meshBatches.size());
-        uint32 meshBatchIdx = 0;
-        for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
-        {
-            meshBatchParam = (GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::SHADER_UNIQ_SET)));
-            meshBatchParam->setResourceName(entity.meshAsset->assetName() + "_MeshBatch_" + std::to_string(meshBatchIdx));
-            ++meshBatchIdx;
-        }
-    }
+    // All vertex type's instance data(we have only static)
+    instanceParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::INSTANCE_UNIQ_SET));
+    instanceParameters->setResourceName("StaticVertexInstances");
+    SharedPtr<ShaderParameters> singleColShaderParams = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::SHADER_UNIQ_SET));
+    singleColShaderParams->setResourceName("SingleColorShaderParams");
+    sceneShaderUniqParams[&drawSmPipelineContext] = singleColShaderParams;
 
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
     lightTextures.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
@@ -593,19 +801,17 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams()
     viewData.invProjection = viewData.projection.inverse();
     viewParameters->setBuffer("viewData", viewData);
     viewParameters->init();
-    for (SceneEntity& entity : sceneData)
-    {
-        entity.instanceParameters->setMatrixParam("model", entity.transform.getTransformMatrix());
-        entity.instanceParameters->setMatrixParam("invModel", entity.transform.getTransformMatrix().inverse());
-        entity.instanceParameters->init();
 
-        uint32 batchIdx = 0;
-        for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
-        {
-            meshBatchParam->setVector4Param("meshColor", Vector4D(entity.meshBatchColors[batchIdx].getColorValue()));
-            meshBatchParam->init();
-            ++batchIdx;
-        }
+    // Setting values to instance params and material shader params happens along with global draw command data buffer setup
+    // Dummy resize
+    instanceParameters->resizeRuntimeBuffer("instancesWrapper", 1);
+    instanceParameters->init();
+
+    for (auto& shaderUniqParams : sceneShaderUniqParams)
+    {
+        // Dummy resize
+        shaderUniqParams.second->resizeRuntimeBuffer("materials", 1);
+        shaderUniqParams.second->init();
     }
 
     lightCommon->setBuffer("viewData", viewData);
@@ -728,16 +934,14 @@ void ExperimentalEngineGoochModel::destroyShaderParameters()
     viewParameters->release();
     viewParameters.reset();
 
-    for (SceneEntity& entity : sceneData)
+    instanceParameters->release();
+    instanceParameters.reset();
+
+    for (auto& shaderUniqParams : sceneShaderUniqParams)
     {
-        entity.instanceParameters->release();
-        entity.instanceParameters.reset();
-        for (SharedPtr<ShaderParameters>& meshBatchParam : entity.meshBatchParameters)
-        {
-            meshBatchParam->release();
-        }
-        entity.meshBatchParameters.clear();
+        shaderUniqParams.second->release();
     }
+    sceneShaderUniqParams.clear();
 
     uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
     
@@ -967,7 +1171,12 @@ void ExperimentalEngineGoochModel::onStartUp()
 {
     GameEngine::onStartUp();
 
-    ENQUEUE_COMMAND_NODEBUG(EngineStartUp, { startUpRenderInit(); }, this);
+    ENQUEUE_COMMAND(EngineStartUp)(
+        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        {
+            createSceneRenderData(cmdList, graphicsInstance);
+            startUpRenderInit();
+        });
 
     camera.cameraProjection = projection;
     camera.setOrthoSize({ 1280,720 });
@@ -999,6 +1208,7 @@ void ExperimentalEngineGoochModel::startUpRenderInit()
     getPipelineForSubpass();
     createImages();
     createPipelineResources();
+    createDrawCmdsBuffer();
 }
 
 void ExperimentalEngineGoochModel::onQuit()
@@ -1013,6 +1223,7 @@ void ExperimentalEngineGoochModel::renderQuit()
 {
     vDevice->vkDeviceWaitIdle(device);
 
+    destroyDrawCmdsBuffer();
     destroyPipelineResources();
     destroyFrameResources();
 
@@ -1109,28 +1320,16 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, MainUnlitPass);
 
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
-
-            //vDevice->vkCmdPushConstants(frameResources[index].perFrameCommands, tempPipeline->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &useVertexColor);
-            cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawSmPipelineContext, { queryParam });
-
-            // View set
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, viewParameters.get());
-            for (const SceneEntity& entity : sceneData)
+            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneVertexBuffer }, { 0 });
+            cmdList->cmdBindIndexBuffer(cmdBuffer, sceneIndexBuffer);
+            for (const auto& pipelineToOffsetCount : pipelineToDrawCmdOffsetCount)
             {
-                // Instance set
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, entity.instanceParameters.get());
+                cmdList->cmdBindGraphicsPipeline(cmdBuffer, *pipelineToOffsetCount.first, { queryParam });
+                // Shader material params set
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, *pipelineToOffsetCount.first
+                    , { viewParameters.get(), instanceParameters.get(), sceneShaderUniqParams[pipelineToOffsetCount.first].get() });
 
-                cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { entity.meshAsset->vertexBuffer }, { 0 });
-                cmdList->cmdBindIndexBuffer(cmdBuffer, entity.meshAsset->indexBuffer);
-
-                uint32 meshBatchIdx = 0;
-                for (const MeshVertexView& meshBatch : entity.meshAsset->meshBatches)
-                {
-                    // Batch set
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawSmPipelineContext, entity.meshBatchParameters[meshBatchIdx].get());
-                    cmdList->cmdDrawIndexed(cmdBuffer, meshBatch.startIndex, meshBatch.numOfIndices);
-                    ++meshBatchIdx;
-                }
+                cmdList->cmdDrawIndexedIndirect(cmdBuffer, allEntityDrawCmds, pipelineToOffsetCount.second.first, pipelineToOffsetCount.second.second, allEntityDrawCmds->bufferStride());
             }
         }
         cmdList->cmdEndRenderPass(cmdBuffer);
