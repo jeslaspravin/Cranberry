@@ -10,4 +10,6 @@ namespace EngineSettings
     EngineGlobalConfig<uint32> minSamplingMipLevel(10u);
     EngineGlobalConfig<uint32> maxPrefilteredCubeMiplevels(8u);
     EngineGlobalConfig<uint32> maxEnvMapSize(1024u);
+
+    EngineGlobalConfig<uint32> globalSampledTexsSize(128u);
 }

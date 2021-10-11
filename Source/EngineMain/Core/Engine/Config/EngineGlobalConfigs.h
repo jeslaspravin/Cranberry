@@ -16,4 +16,6 @@ namespace EngineSettings
     extern EngineGlobalConfig<uint32> minSamplingMipLevel;
     extern EngineGlobalConfig<uint32> maxPrefilteredCubeMiplevels;
     extern EngineGlobalConfig<uint32> maxEnvMapSize;
+
+    extern EngineGlobalConfig<uint32> globalSampledTexsSize;
 }

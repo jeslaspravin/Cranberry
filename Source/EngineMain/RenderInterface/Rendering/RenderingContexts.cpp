@@ -11,13 +11,14 @@
 #include "../Resources/Pipelines.h"
 #include "../../RenderApi/GBuffersAndTextures.h"
 #include "../../Core/Engine/GameEngine.h"
+#include "../../Core/Engine/Config/EngineGlobalConfigs.h"
 
 void GlobalRenderingContextBase::initContext(IGraphicsInstance* graphicsInstance)
 {
     std::map<String, uint32>& runtimeResCount = ShaderParameterUtility::unboundArrayResourcesCount();
     // Fill Runtime indexed resources max count over here
     runtimeResCount["srcImages"] = 16u;
-    runtimeResCount["globalSampledTexs"] = 128u;
+    runtimeResCount["globalSampledTexs"] = EngineSettings::globalSampledTexsSize.get();
 
     initApiInstances();
 
