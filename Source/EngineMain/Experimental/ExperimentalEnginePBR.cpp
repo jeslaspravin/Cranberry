@@ -277,6 +277,8 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     SharedPtr<ShaderParameters> lightDataShadowed;
     std::vector<SharedPtr<ShaderParameters>> lightData;
     void setupLightShadowViews();
+    void setupCascadeShadowViews();
+    void setupCascadeShadowViewsShimmerFix();
     SharedPtr<ShaderParameters> lightCommon;
     SwapchainBufferedResource<SharedPtr<ShaderParameters>> lightTextures;
     SharedPtr<ShaderParameters> viewParameters;
@@ -985,27 +987,17 @@ void ExperimentalEnginePBR::setupLightShadowViews()
             idx++;
         }
     }
+    setupCascadeShadowViewsShimmerFix();
+}
 
+void ExperimentalEnginePBR::setupCascadeShadowViews()
+{
     // Directional light cascades
     const AABB sceneBounds = sceneVolume.getBounds();
     Vector3D sceneBoundPts[8];
-    {
-        int32 boundPtIdx = 0;
-        const Vector3D boundCenter = sceneBounds.center();
-        const Vector3D boundHalfExtend = sceneBounds.size() * 0.5f;
-        for (float z = -1; z < 2; z += 2)
-        {
-            for (float y = -1; y < 2; y += 2)
-            {
-                for (float x = -1; x < 2; x += 2)
-                {
-                    sceneBoundPts[boundPtIdx] = boundCenter + boundHalfExtend * Vector3D(x, y, z);
-                    boundPtIdx++;
-                }
-            }
-        }
-    }
-    // We unrotated the frustum to calculate directional light view frustum(box) but still keeping world translation to find camera center
+    ArrayView<Vector3D> sceneBoundPtsView(sceneBoundPts, ARRAY_LENGTH(sceneBoundPts));
+    sceneBounds.boundCorners(sceneBoundPtsView);
+
     const Matrix3 dirLightToWorld = RotationMatrix::fromX(dirLight.direction.fwdVector()).matrix();
     const Matrix3 worldToDirLight = dirLightToWorld.transpose();// Since it is orthogonal matrix
     const Vector3D dirLightFwd = dirLight.direction.fwdVector();
@@ -1039,6 +1031,64 @@ void ExperimentalEnginePBR::setupLightShadowViews()
         dirLight.cascades[i].cascadeView.setOrthoSize({ extend.y(), extend.z() });
         dirLight.cascades[i].cascadeView.setClippingPlane(SHADOW_NEAR_PLANE, nearFarValues.size() + SHADOW_NEAR_PLANE + SHADOW_PLANE_MARGIN);
         dirLight.cascades[i].frustumFarDistance = tempCamera.farPlane();
+
+        tempCamera.setClippingPlane(tempCamera.farPlane(), tempCamera.farPlane() + camera.farPlane() * dirLight.cascades[i].frustumFract + SHADOW_PLANE_MARGIN);
+    }
+}
+
+void ExperimentalEnginePBR::setupCascadeShadowViewsShimmerFix()
+{
+    // Directional light cascades
+    const AABB sceneBounds = sceneVolume.getBounds();
+    Vector3D sceneBoundPts[8];
+    ArrayView<Vector3D> sceneBoundPtsView(sceneBoundPts, ARRAY_LENGTH(sceneBoundPts));
+    sceneBounds.boundCorners(sceneBoundPtsView);
+
+    const Vector3D dirLightFwd = dirLight.direction.fwdVector();
+    Camera tempCamera = camera;
+    tempCamera.setClippingPlane(camera.nearPlane(), camera.farPlane() * dirLight.cascades[0].frustumFract);
+    for (uint32 i = 0; i < dirLight.cascadeCount; ++i)
+    {
+        // Finding view orthographic size
+        std::array<Vector3D, 8> corners;
+        Vector3D center;
+        tempCamera.frustumCorners(corners.data(), &center);
+        // Using sphere bounds to fix rotational shimmering
+        float frustumMaxRadius = 0;
+        for (const Vector3D& corner : corners)
+        {
+            frustumMaxRadius = Math::max(frustumMaxRadius, (corner - center).length());
+        }
+        frustumMaxRadius = Math::ceil(frustumMaxRadius * 16.0f) / 16.0f;
+
+        // To determine the near and far plane so that they would cover all level objects
+        ValueRange<float> nearFarValues(FLT_MAX, FLT_MIN);
+        for (int32 boundIdx = 0; boundIdx < ARRAY_LENGTH(sceneBoundPts); ++boundIdx)
+        {
+            nearFarValues.grow((sceneBoundPts[boundIdx] - center) | dirLightFwd);
+        }
+
+        dirLight.cascades[i].cascadeView.cameraProjection = ECameraProjection::Orthographic;
+        dirLight.cascades[i].cascadeView.setRotation(RotationMatrix::fromX(dirLightFwd).asRotation());
+        dirLight.cascades[i].cascadeView.setTranslation(center + dirLightFwd * (nearFarValues.minBound - SHADOW_NEAR_PLANE - SHADOW_PLANE_MARGIN));
+        // Since Y, Z will be X, Y of surface
+        dirLight.cascades[i].cascadeView.setOrthoSize({ 2 * frustumMaxRadius, 2 * frustumMaxRadius });
+        dirLight.cascades[i].cascadeView.setClippingPlane(SHADOW_NEAR_PLANE, nearFarValues.size() + SHADOW_NEAR_PLANE + SHADOW_PLANE_MARGIN);
+        dirLight.cascades[i].frustumFarDistance = tempCamera.farPlane();
+
+        // From https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps - Does not make sense
+        // Shimmering issue - fix from https://jcoluna.wordpress.com/2011/07/06/xna-light-pre-pass-cascade-shadow-maps/ - Did not fix
+        // Shimmering issue - fix from https://johanmedestrom.wordpress.com/2016/03/18/opengl-cascaded-shadow-maps/ or https://therealmjp.github.io/posts/shadow-maps/
+        Matrix4 projMatrix = dirLight.cascades[i].cascadeView.projectionMatrix();
+        Matrix4 shadowMatrix = projMatrix * dirLight.cascades[i].cascadeView.viewMatrix().inverse();
+        Vector3D shadowOrigin(shadowMatrix * Vector4D(Vector3D::ZERO, 1.0f));
+        shadowOrigin *= directionalShadowRT->getTextureSize().x / 2.0f;
+        Vector3D roundedOrigin = Math::round(shadowOrigin);
+        Vector3D roundedOffset = roundedOrigin - shadowOrigin;
+        roundedOffset *= 2.0f / directionalShadowRT->getTextureSize().x;
+        projMatrix[3].x += roundedOffset.x();
+        projMatrix[3].y += roundedOffset.y();
+        dirLight.cascades[i].cascadeView.setCustomProjection(projMatrix);
 
         tempCamera.setClippingPlane(tempCamera.farPlane(), tempCamera.farPlane() + camera.farPlane() * dirLight.cascades[i].frustumFract + SHADOW_PLANE_MARGIN);
     }

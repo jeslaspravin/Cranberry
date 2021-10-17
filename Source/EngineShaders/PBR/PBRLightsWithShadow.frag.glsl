@@ -5,11 +5,16 @@
 #include "PBRStageIO.inl.glsl"
 #undef INPUT
 
+#define USE_RANDOM_SAMPLES 1
+
 layout(location = 0) out vec4 colorAttachment0;
 
 #include "../Common/ViewDescriptors.inl.glsl"
 #include "../Common/CommonDefines.inl.glsl"
 #include "../Common/ToneMapping.inl.glsl"
+#if USE_RANDOM_SAMPLES
+#include "../Common/RandomFunctions.inl.glsl"
+#endif
 #include "PBRCommon.inl.glsl"
 
 layout(set = 2, binding = 0) uniform sampler2D ssUnlitColor;
@@ -75,6 +80,10 @@ layout(push_constant) uniform Constants
 {
     uint debugDrawFlags;
 } constants;
+
+layout(constant_id = 1) const int PCF_KERNEL_SIZE = 3;
+layout(constant_id = 2) const int POINT_PCF_SAMPLES = 4;
+layout(constant_id = 3) const float POINT_PCF_KERNEL_EXTEND = 0.2;
 
 #define SPOT_COUNT (lightArray.count & 0x0000000F)
 #define POINT_COUNT ((lightArray.count & 0x000000F0) >> 4)
@@ -171,9 +180,22 @@ float directionalLightShadow(vec3 worldPos, vec3 worldNormal, vec3 pt2LightDir, 
     vec2 shadowTexelSize = 1.0 / vec2(textureSize(directionalLightCascades, 0));
     // PCF
     float pcfShadow = 0;
-    for(int x = -1; x < 2; ++x)
+#if USE_RANDOM_SAMPLES
+    for(int i = 0; i < SQR(PCF_KERNEL_SIZE); ++i)
     {
-        for(int y = -1; y < 2; ++y)
+        // The position is rounded to the millimeter to avoid too much aliasing
+        int index = int(16.0 * vec4Random(vec4(floor(worldPos * 10.0), i))) % 16;
+        
+        vec2 textureCoord = projPos.xy + (poissonDisk[index] * shadowTexelSize);
+        float sampleDepth = texture(directionalLightCascades, vec3(textureCoord, cascadeIdx)).x;
+
+        pcfShadow += (depthBiased < sampleDepth)? 1.0 : 0.0;
+    }
+#else // USE_RANDOM_SAMPLES
+    int halfKernelSize = PCF_KERNEL_SIZE / 2;
+    for(int x = -halfKernelSize; x <= halfKernelSize; ++x)
+    {
+        for(int y = -halfKernelSize; y <= halfKernelSize; ++y)
         {
             vec2 textureCoord = projPos.xy + (vec2(x, y) * shadowTexelSize);
             float sampleDepth = texture(directionalLightCascades, vec3(textureCoord, cascadeIdx)).x;
@@ -181,7 +203,8 @@ float directionalLightShadow(vec3 worldPos, vec3 worldNormal, vec3 pt2LightDir, 
             pcfShadow += (depthBiased < sampleDepth)? 1.0 : 0.0;
         }
     }
-    pcfShadow /= 9.0;
+#endif // USE_RANDOM_SAMPLES
+    pcfShadow /= SQR(PCF_KERNEL_SIZE);
 
     return pcfShadow;
 }
@@ -204,15 +227,36 @@ float pointLightShadow(vec3 worldPos, vec3 worldNormal, vec3 pt2LightDirNorm, in
     // Reducing bias on distance is causing acne at far distance, right now constant bias with respect to distance is fine
     // bias *= sqrt(1 - (p2LDist / lightArray.ptLits[pointIdx].ptPos_radius.w));// reduce bias as distance increases
     bias = DRAWING_BACKFACE? 0.0 : bias;
-    float samples = 4.0;
-    float offset = 0.1;
+
     // PCF
     float pcfShadow = 0;
-    for(float x = -offset; x < offset; x += (2 * offset / samples))
+//#if USE_RANDOM_SAMPLES
+//    for(int i = 0; i < (POINT_PCF_SAMPLES * POINT_PCF_SAMPLES * POINT_PCF_SAMPLES); ++i)
+//    {
+//        // The position is rounded to the millimeter to avoid too much aliasing
+//        int index = int(16.0 * vec4Random(vec4(floor(worldPos * 10.0), i))) % 16;        
+//        vec3 bitan   = normalize(cross(pt2LightDir, (abs(pt2LightDir.x) < 0.999 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.0, 1.0))));
+//        vec3 tangent = cross(bitan, pt2LightDir);
+//        vec3 textureCoord = tangent * poissonDisk[index].x * POINT_PCF_KERNEL_EXTEND 
+//            + bitan * poissonDisk[index].y * POINT_PCF_KERNEL_EXTEND 
+//            + pt2LightDir;
+//        textureCoord = -textureCoord;
+//
+//        // Since 1.0 is near plane
+//        float sampleDepth = 1.0 - texture(pointShadowMaps[pointIdx], ENGINE_WORLD_TO_CUBE_DIR(textureCoord)).x;
+//        // + bias as now greater distance means further away
+//        sampleDepth = (sampleDepth + bias) * lightArray.ptLits[pointIdx].ptPos_radius.w;
+//        // sampleDepth = (sampleDepth * lightArray.ptLits[pointIdx].ptPos_radius.w) + bias;
+//                
+//        pcfShadow += (p2LDist > sampleDepth)? 1.0 : 0.0;
+//    }
+//#else // USE_RANDOM_SAMPLES
+    int halfKernelSize = PCF_KERNEL_SIZE / 2;
+    for(float x = -POINT_PCF_KERNEL_EXTEND; x < POINT_PCF_KERNEL_EXTEND; x += (2 * POINT_PCF_KERNEL_EXTEND / POINT_PCF_SAMPLES))
     {
-        for(float y = -offset; y < offset; y += (2 * offset / samples))
+        for(float y = -POINT_PCF_KERNEL_EXTEND; y < POINT_PCF_KERNEL_EXTEND; y += (2 * POINT_PCF_KERNEL_EXTEND / POINT_PCF_SAMPLES))
         {
-            for(float z = -offset; z < offset; z += (2 * offset / samples))
+            for(float z = -POINT_PCF_KERNEL_EXTEND; z < POINT_PCF_KERNEL_EXTEND; z += (2 * POINT_PCF_KERNEL_EXTEND / POINT_PCF_SAMPLES))
             {
                 vec3 textureCoord = -pt2LightDir + vec3(x, y, z);
                 // Since 1.0 is near plane
@@ -225,7 +269,8 @@ float pointLightShadow(vec3 worldPos, vec3 worldNormal, vec3 pt2LightDirNorm, in
             }
         }
     }
-    pcfShadow /= (samples * samples * samples);
+//#endif
+    pcfShadow /= (POINT_PCF_SAMPLES * POINT_PCF_SAMPLES * POINT_PCF_SAMPLES);
 
     return pcfShadow;
 }
@@ -253,9 +298,22 @@ float spotLightShadow(vec3 worldPos, vec3 worldNormal, vec3 pt2LightDir, int spo
     vec2 shadowTexelSize = 1.0 / vec2(textureSize(spotLightShadowMaps[spotIdx], 0));
     // PCF
     float pcfShadow = 0;
-    for(int x = -1; x < 2; ++x)
+#if USE_RANDOM_SAMPLES
+    for(int i = 0; i < SQR(PCF_KERNEL_SIZE); ++i)
     {
-        for(int y = -1; y < 2; ++y)
+        // The position is rounded to the millimeter to avoid too much aliasing
+        int index = int(16.0 * vec4Random(vec4(floor(worldPos * 10.0), i))) % 16;
+        
+        vec2 textureCoord = projPos.xy + (poissonDisk[index] * shadowTexelSize);
+        float sampleDepth = texture(spotLightShadowMaps[spotIdx], textureCoord).x;
+
+        pcfShadow += (depthBiased < sampleDepth)? 1.0 : 0.0;
+    }
+#else // USE_RANDOM_SAMPLES
+    int halfKernelSize = PCF_KERNEL_SIZE / 2;
+    for(int x = -halfKernelSize; x <= halfKernelSize; ++x)
+    {
+        for(int y = -halfKernelSize; y <= halfKernelSize; ++y)
         {
             vec2 textureCoord = projPos.xy + (vec2(x, y) * shadowTexelSize);
             float sampleDepth = texture(spotLightShadowMaps[spotIdx], textureCoord).x;
@@ -263,7 +321,8 @@ float spotLightShadow(vec3 worldPos, vec3 worldNormal, vec3 pt2LightDir, int spo
             pcfShadow += (depthBiased < sampleDepth)? 1.0 : 0.0;
         }
     }
-    pcfShadow /= 9.0;
+#endif
+    pcfShadow /= SQR(PCF_KERNEL_SIZE);
 
     return pcfShadow;
 }

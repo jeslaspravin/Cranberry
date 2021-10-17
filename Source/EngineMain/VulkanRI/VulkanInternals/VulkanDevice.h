@@ -35,6 +35,9 @@ private:
     VkPhysicalDeviceFeatures enabledFeatures;
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures;
     VkPhysicalDeviceDescriptorIndexingFeatures enabledDescIndexingFeatures;
+    // KHRs
+    VkPhysicalDeviceSynchronization2FeaturesKHR sync2Features;
+
     void markEnabledFeatures();
     void markGlobalConstants();
     // Physical Device

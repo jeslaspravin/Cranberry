@@ -134,7 +134,8 @@ struct CellIndex
         return bIsNotSame;
     }
 
-    FORCE_INLINE uint32 size() {
+    FORCE_INLINE uint32 size() const
+    {
         uint32 s = 1;
         for (uint32 i = 0; i < d; i++)
         {
@@ -145,11 +146,13 @@ struct CellIndex
 };
 
 template<uint32 d>
-struct CellIndexHash{
+struct CellIndexHash
+{
     using TYPE = CellIndex<d>;
     using RESULT = std::size_t;
 
-    RESULT operator ()(const TYPE& cellIndex) const {
+    RESULT operator()(const TYPE& cellIndex) const 
+    {
         RESULT hashVal = 0;
         for (uint32 i = 0; i < d; i++)
         {
@@ -363,7 +366,8 @@ FORCE_INLINE CellIndex<d> UniformGrid<T, d>::getNdIndex(const uint32 index) cons
     {
         product *= (uint32)nCells[i];
     }
-    for (uint32 i = 0; i < d; ++i)
+    // Usually we iterate like for each z { for each y { for each x }}
+    for (int32 i = d - 1; i >= 0; --i)
     {
         product /= (uint32)nCells[i];
         ndIndex.idx[i] = remainder / product;

@@ -44,6 +44,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{160411
 		Source\EngineShaders\Common\CommonDefines.inl.glsl = Source\EngineShaders\Common\CommonDefines.inl.glsl
 		Source\EngineShaders\Common\CommonFunctions.inl.glsl = Source\EngineShaders\Common\CommonFunctions.inl.glsl
 		Source\EngineShaders\Common\ComputeCommon.inl.glsl = Source\EngineShaders\Common\ComputeCommon.inl.glsl
+		Source\EngineShaders\Common\RandomFunctions.inl.glsl = Source\EngineShaders\Common\RandomFunctions.inl.glsl
 		Source\EngineShaders\Common\ShaderOutputs.inl.glsl = Source\EngineShaders\Common\ShaderOutputs.inl.glsl
 		Source\EngineShaders\Common\ToneMapping.inl.glsl = Source\EngineShaders\Common\ToneMapping.inl.glsl
 		Source\EngineShaders\Common\VertexInputs.inl.glsl = Source\EngineShaders\Common\VertexInputs.inl.glsl

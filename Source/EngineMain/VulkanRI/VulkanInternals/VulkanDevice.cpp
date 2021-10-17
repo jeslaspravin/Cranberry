@@ -507,13 +507,16 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice&& device) : graphicsDebug(this)
         advancedFeatures.features = features;
         PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES(tSemaphoreFeatures);
         advancedFeatures.pNext = &tSemaphoreFeatures;
-        PHYSICAL_DEVICE_DESC_INDEXING_FEATURES(descIdxFeatures);
-        tSemaphoreFeatures.pNext = &descIdxFeatures;
+        PHYSICAL_DEVICE_DESC_INDEXING_FEATURES(tDescIdxFeatures);
+        tSemaphoreFeatures.pNext = &tDescIdxFeatures;
+        PHYSICAL_DEVICE_SYNC_2_FEATURES_KHR(tSync2Features);
+        tDescIdxFeatures.pNext = &tSync2Features;
         Vk::vkGetPhysicalDeviceFeatures2KHR(physicalDevice, &advancedFeatures);
 
         features = std::move(advancedFeatures.features);
         timelineSemaphoreFeatures = std::move(tSemaphoreFeatures);
-        descIndexingFeatures = std::move(descIdxFeatures);
+        descIndexingFeatures = std::move(tDescIdxFeatures);
+        sync2Features = std::move(tSync2Features);
         markEnabledFeatures();
     }
 
@@ -567,6 +570,7 @@ memoryProperties = std::move(rVulkanDevice.memoryProperties); \
 enabledDescIndexingFeatures = std::move(rVulkanDevice.enabledDescIndexingFeatures); \
 descIndexingFeatures = std::move(rVulkanDevice.descIndexingFeatures); \
 descIndexingProps = std::move(rVulkanDevice.descIndexingProps); \
+sync2Features = std::move(rVulkanDevice.sync2Features); \
 graphicsDebug = { this }; \
 
 VulkanDevice::VulkanDevice(VulkanDevice&& rVulkanDevice)
@@ -600,6 +604,7 @@ memoryProperties = otherDevice.memoryProperties; \
 enabledDescIndexingFeatures = otherDevice.enabledDescIndexingFeatures; \
 descIndexingFeatures = otherDevice.descIndexingFeatures; \
 descIndexingProps = otherDevice.descIndexingProps; \
+sync2Features = otherDevice.sync2Features; \
 graphicsDebug = { this }; \
 
 VulkanDevice::VulkanDevice(const VulkanDevice& otherDevice)
@@ -682,6 +687,7 @@ void VulkanDevice::createLogicDevice()
     // Additional features
     deviceCreateInfo.pNext = &timelineSemaphoreFeatures;
     timelineSemaphoreFeatures.pNext = &enabledDescIndexingFeatures;
+    enabledDescIndexingFeatures.pNext = &sync2Features;
 
     const VkResult vulkanDeviceCreationResult = Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
     fatalAssert(vulkanDeviceCreationResult == VK_SUCCESS,"Failed creating logical device");

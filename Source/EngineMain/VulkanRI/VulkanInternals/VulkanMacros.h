@@ -73,6 +73,13 @@ VariableName.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;    \
 VariableName.pNext = nullptr;                                   
 #endif
 
+#ifndef PHYSICAL_DEVICE_SYNC_2_FEATURES_KHR
+#define PHYSICAL_DEVICE_SYNC_2_FEATURES_KHR(VariableName)                               \
+VkPhysicalDeviceSynchronization2FeaturesKHR VariableName{};                             \
+VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;  \
+VariableName.pNext = nullptr;
+#endif
+
 #ifndef IMAGE_MEMORY_BARRIER2_KHR
 #define IMAGE_MEMORY_BARRIER2_KHR(VariableName)                     \
 VkImageMemoryBarrier2KHR VariableName{};                            \

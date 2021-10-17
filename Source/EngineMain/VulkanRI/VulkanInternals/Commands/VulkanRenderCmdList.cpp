@@ -106,18 +106,17 @@ FORCE_INLINE void VulkanCommandList::fillClearValue(EPixelDataFormat::Type forma
 
 FORCE_INLINE void cmdPipelineBarrier(VulkanDevice* vDevice, VkCommandBuffer cmdBuffer, const std::vector<VkImageMemoryBarrier2KHR>& imageBarriers, const std::vector<VkBufferMemoryBarrier2KHR>& bufferBarriers)
 {
-    // #TODO(Jeslas) : check if this fixes BSOD
-    //if (vDevice->vkCmdPipelineBarrier2KHR)
-    //{
-    //    BARRIER_DEPENDENCY_INFO_KHR(dependencyInfo);
-    //    dependencyInfo.dependencyFlags = VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT;
-    //    dependencyInfo.pImageMemoryBarriers = imageBarriers.data();
-    //    dependencyInfo.imageMemoryBarrierCount = uint32(imageBarriers.size());
-    //    dependencyInfo.pBufferMemoryBarriers = bufferBarriers.data();
-    //    dependencyInfo.bufferMemoryBarrierCount = uint32(bufferBarriers.size());
-    //    vDevice->vkCmdPipelineBarrier2KHR(cmdBuffer, &dependencyInfo);
-    //}
-    //else
+    if (vDevice->vkCmdPipelineBarrier2KHR)
+    {
+        BARRIER_DEPENDENCY_INFO_KHR(dependencyInfo);
+        dependencyInfo.dependencyFlags = VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT;
+        dependencyInfo.pImageMemoryBarriers = imageBarriers.data();
+        dependencyInfo.imageMemoryBarrierCount = uint32(imageBarriers.size());
+        dependencyInfo.pBufferMemoryBarriers = bufferBarriers.data();
+        dependencyInfo.bufferMemoryBarrierCount = uint32(bufferBarriers.size());
+        vDevice->vkCmdPipelineBarrier2KHR(cmdBuffer, &dependencyInfo);
+    }
+    else
     {
         struct Barriers
         {
@@ -1768,8 +1767,9 @@ void VulkanCommandList::copyToImage_Internal(ImageResource* dst, const BufferRes
         layoutTransition.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
         layoutTransition.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
         // We choose to not release ownership(which causes need to acquire in dst queue) but just to transfer layout as we wait for this to finish making queue transfer unnecessary
-        layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
-        //layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
+        //layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+        // Above validation error seems to be fixed/not showing so we now transfer resource to graphics queue
+        layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
         layoutTransition.dstAccessMask = postCopyAccessMask;
         layoutTransition.image = static_cast<VulkanImageResource*>(dst)->image;
         layoutTransition.subresourceRange = { imageAspect, copyInfo.subres.baseMip, copyInfo.subres.mipCount, copyInfo.subres.baseLayer, copyInfo.subres.layersCount };
@@ -1921,7 +1921,9 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     transitionInfo[0].newLayout = srcOriginalLayout;
     transitionInfo[0].dstAccessMask = srcAccessFlags;
     // We choose to not release ownership(which causes need to acquire in dst queue) but just to transfer layout as we wait for this to finish making queue transfer unnecessary
-    transitionInfo[0].dstQueueFamilyIndex = transitionInfo[0].srcQueueFamilyIndex;
+    //transitionInfo[0].dstQueueFamilyIndex = transitionInfo[0].srcQueueFamilyIndex;
+    // Above validation error seems to be fixed/not showing so we now transfer resource to graphics queue
+    transitionInfo[0].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
 
     transitionInfo[1].oldLayout = copyDstLayout;
     transitionInfo[1].srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -1929,7 +1931,9 @@ void VulkanCommandList::copyOrResolveImage(ImageResource* src, ImageResource* ds
     transitionInfo[1].newLayout = dstOriginalLayout;
     transitionInfo[1].dstAccessMask = dstAccessFlags;
     // We choose to not release ownership(which causes need to acquire in dst queue) but just to transfer layout as we wait for this to finish making queue transfer unnecessary
-    transitionInfo[1].dstQueueFamilyIndex = transitionInfo[0].srcQueueFamilyIndex;
+    //transitionInfo[1].dstQueueFamilyIndex = transitionInfo[0].srcQueueFamilyIndex;
+    // Above validation error seems to be fixed/not showing so we now transfer resource to graphics queue
+    transitionInfo[1].dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(EQueueFunction::Graphics);
 
     // Stages
     transitionInfo[0].dstStageMask = transitionInfo[1].dstStageMask = transitionInfo[0].srcStageMask;

@@ -1,5 +1,4 @@
 #include "Camera.h"
-#include "../../Math/Matrix4.h"
 #include "../Transform3D.h"
 #include "../../Math/RotationMatrix.h"
 #include "../../Math/Math.h"
@@ -9,7 +8,7 @@
 
 const float Camera::MAX_FOV(175.f);
 const float Camera::MIN_NEAR_FAR_DIFF(1.f);
-const float Camera::MIN_NEAR(1.f);
+const float Camera::MIN_NEAR(0.1f);
 
 void Camera::orthographicMatrix(Matrix4& matrix, float halfWidth, float halfHeight) const
 {
@@ -113,6 +112,16 @@ void Camera::setClippingPlane(float near, float far)
     farClip = Math::max(far, nearClip + MIN_NEAR_FAR_DIFF);
 }
 
+void Camera::setCustomProjection(Matrix4 projMatrix)
+{
+    customProjMatrix = projMatrix;
+}
+
+void Camera::clearCustomProjection()
+{
+    customProjMatrix.reset();
+}
+
 void Camera::setTranslation(const Vector3D& newLocation)
 {
     camTranslation = newLocation;
@@ -123,9 +132,10 @@ void Camera::setRotation(const Rotation& newRotation)
     camRotation = newRotation;
 }
 
-void Camera::frustumCorners(Vector3D* corners) const
+void Camera::frustumCorners(Vector3D* corners, Vector3D* center /*= nullptr*/) const
 {
     Matrix4 ndcToWorld = viewMatrix() * projectionMatrix().inverse();
+    Vector3D frustumMid(0);
     int32 cornerIdx = 0;
     for (float z = 0; z < 2; ++z)
     {
@@ -137,9 +147,14 @@ void Camera::frustumCorners(Vector3D* corners) const
                 worldPos /= worldPos.w();
 
                 corners[cornerIdx] = Vector3D(worldPos);
+                frustumMid += corners[cornerIdx];
                 cornerIdx++;
             }
         }
+    }
+    if (center)
+    {
+        *center = frustumMid / float(cornerIdx);
     }
 }
 
@@ -182,6 +197,11 @@ Matrix4 Camera::viewMatrix() const
 
 Matrix4 Camera::projectionMatrix() const
 {
+    if (customProjMatrix)
+    {
+        return *customProjMatrix;
+    }
+
     Matrix4 projectionMat = Matrix4::IDENTITY;
 
     switch (cameraProjection)

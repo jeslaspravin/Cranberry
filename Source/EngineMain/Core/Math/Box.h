@@ -196,6 +196,37 @@ public:
         return (maxBound + minBound) * 0.5f;
     }
 
+    void boundCorners(ArrayView<T>& corners) const
+    {
+        uint32 totalCorners = Math::pow(2, d);
+        fatalAssert(corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
+
+        const T boundCenter = center();
+        const T boundHalfExtend = size() * 0.5f;
+
+        for (uint32 index = 0; index < totalCorners; ++index)
+        {
+            T offsetMul;
+            // finding offsetMul for this corner
+            {
+                uint32 product = totalCorners;
+                uint32 remainder = index;
+                // Usually we iterate like for each z { for each y { for each x }}
+                for (int32 i = d - 1; i >= 0; --i)
+                {
+                    product /= 2;
+                    int32 gridIdx = remainder / product;
+                    remainder -= gridIdx * product;
+
+                    offsetMul[i] = float(gridIdx);
+                }
+                // 0 - 1 to -0.5 to 0.5 then to -1 to 1
+                offsetMul = (offsetMul - T(0.5f)) * T(2);
+            }
+            corners[index] = boundCenter + boundHalfExtend * offsetMul;
+        }
+    }
+
     // Ensure start point is outside the box
     // Out Lengths are portion of ray segment to reach the point
     bool raycast(const T& startPoint, const T& dir, const float& length, float& invLength, float& outEnterLength,
