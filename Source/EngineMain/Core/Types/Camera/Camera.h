@@ -1,8 +1,9 @@
 #pragma once
 #include "../../Math/Vector3D.h"
 #include "../../Math/Rotation.h"
+#include "../../Math/Matrix4.h"
 
-class Matrix4;
+#include <optional>
 
 enum class ECameraProjection
 {
@@ -20,6 +21,7 @@ private:
     Size2D orthoSize;
     float nearClip;
     float farClip;
+    std::optional<Matrix4> customProjMatrix;
 
     Vector3D camTranslation;
     Rotation camRotation;
@@ -45,13 +47,16 @@ public:
     void setOrthoSize(const Size2D& orthographicSize);
     void setClippingPlane(float near, float far);
 
+    void setCustomProjection(Matrix4 projMatrix);
+    void clearCustomProjection();
+
     void setTranslation(const Vector3D& newLocation);
     Vector3D translation() const { return camTranslation; }
     void setRotation(const Rotation& newRotation);
     Rotation rotation() const { return camRotation; }
     float farPlane() const { return farClip; }
     float nearPlane() const { return nearClip; }
-    void frustumCorners(Vector3D* corners) const;
+    void frustumCorners(Vector3D* corners, Vector3D* center = nullptr) const;
 
     void lookAt(const Vector3D& lookAtTarget);
     // Expected pos input

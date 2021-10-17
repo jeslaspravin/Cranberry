@@ -11,5 +11,8 @@ namespace EngineSettings
     EngineGlobalConfig<uint32> maxPrefilteredCubeMiplevels(8u);
     EngineGlobalConfig<uint32> maxEnvMapSize(1024u);
 
+    EngineGlobalConfig<int32> pcfKernelSize(3);
+    EngineGlobalConfig<int32> pointPcfKernelSize(4);
+
     EngineGlobalConfig<uint32> globalSampledTexsSize(128u);
 }

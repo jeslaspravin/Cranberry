@@ -3,19 +3,6 @@
 
 #include "../Common/CommonDefines.inl.glsl"
 
-// Sampling - Random
-
-// http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
-float random(vec2 co)
-{
-	float a = 12.9898;
-	float b = 78.233;
-	float c = 43758.5453;
-	float dt= dot(co.xy ,vec2(a,b));
-	float sn= mod(dt,3.14);
-	return fract(sin(sn) * c);
-}
-
 // Low discrepancy sequence generators(Quasi-Monte carlo)
 // Van Der Corput
 // http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html

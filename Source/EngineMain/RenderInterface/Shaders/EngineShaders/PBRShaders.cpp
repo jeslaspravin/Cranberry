@@ -7,6 +7,7 @@
 #include "../Base/UtilityShaders.h"
 #include "../../../RenderApi/Scene/RenderScene.h"
 #include "../Base/ScreenspaceQuadGraphicsPipeline.h"
+#include "../../../Core/Engine/Config/EngineGlobalConfigs.h"
 
 BEGIN_BUFFER_DEFINITION(PbrSpotLight)
 ADD_BUFFER_TYPED_FIELD(sptLightColor_lumen)
@@ -112,6 +113,12 @@ protected:
         : BaseType(PBRLIGHTSWITHSHADOW_SHADER_NAME)
     {}
 public:
+    void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry>& specializationConst) const override
+    {
+        specializationConst["PCF_KERNEL_SIZE"] = SpecializationConstUtility::fromValue(EngineSettings::pcfKernelSize.get());
+        specializationConst["POINT_PCF_SAMPLES"] = SpecializationConstUtility::fromValue(EngineSettings::pointPcfKernelSize.get());
+        specializationConst["POINT_PCF_KERNEL_EXTEND"] = SpecializationConstUtility::fromValue(0.2f);
+    }
 };
 
 DEFINE_GRAPHICS_RESOURCE(PBRLightsWithShadowShader)
