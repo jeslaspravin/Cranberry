@@ -79,7 +79,7 @@ Vector3D Matrix4::operator*(const Vector3D& transformingVector) const
 {
     Vector4D vector4D(transformingVector.x(),transformingVector.y(),transformingVector.z(), 1.0f);
     vector4D = (*this) * vector4D;
-    return Vector3D(vector4D.x(),vector4D.y(),vector4D.z());
+    return Vector3D(vector4D.x(),vector4D.y(),vector4D.z()) / vector4D.w();
 }
 
 Matrix4 Matrix4::operator*(const Matrix4& b) const
