@@ -1071,24 +1071,31 @@ void ExperimentalEnginePBR::setupCascadeShadowViewsShimmerFix()
         dirLight.cascades[i].cascadeView.cameraProjection = ECameraProjection::Orthographic;
         dirLight.cascades[i].cascadeView.setRotation(RotationMatrix::fromX(dirLightFwd).asRotation());
         dirLight.cascades[i].cascadeView.setTranslation(center + dirLightFwd * (nearFarValues.minBound - SHADOW_NEAR_PLANE - SHADOW_PLANE_MARGIN));
-        // Since Y, Z will be X, Y of surface
         dirLight.cascades[i].cascadeView.setOrthoSize({ 2 * frustumMaxRadius, 2 * frustumMaxRadius });
         dirLight.cascades[i].cascadeView.setClippingPlane(SHADOW_NEAR_PLANE, nearFarValues.size() + SHADOW_NEAR_PLANE + SHADOW_PLANE_MARGIN);
         dirLight.cascades[i].frustumFarDistance = tempCamera.farPlane();
 
         // From https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps - Does not make sense
-        // Shimmering issue - fix from https://jcoluna.wordpress.com/2011/07/06/xna-light-pre-pass-cascade-shadow-maps/ - Did not fix
-        // Shimmering issue - fix from https://johanmedestrom.wordpress.com/2016/03/18/opengl-cascaded-shadow-maps/ or https://therealmjp.github.io/posts/shadow-maps/
+        // Shimmering issue - fix from https://jcoluna.wordpress.com/2011/07/06/xna-light-pre-pass-cascade-shadow-maps/ - Did not fix, try exposing l,r,b,t ortho constructor to check further
+        // Shimmering issue - fix from https://johanmedestrom.wordpress.com/2016/03/18/opengl-cascaded-shadow-maps/ or https://therealmjp.github.io/posts/shadow-maps/ or https://stackoverflow.com/questions/33499053/cascaded-shadow-map-shimmering
         Matrix4 projMatrix = dirLight.cascades[i].cascadeView.projectionMatrix();
         Matrix4 shadowMatrix = projMatrix * dirLight.cascades[i].cascadeView.viewMatrix().inverse();
+        // No divide by W as this is orthographic projection
         Vector3D shadowOrigin(shadowMatrix * Vector4D(Vector3D::ZERO, 1.0f));
         shadowOrigin *= directionalShadowRT->getTextureSize().x / 2.0f;
         Vector3D roundedOrigin = Math::round(shadowOrigin);
+        // In projected clip space
         Vector3D roundedOffset = roundedOrigin - shadowOrigin;
         roundedOffset *= 2.0f / directionalShadowRT->getTextureSize().x;
         projMatrix[3].x += roundedOffset.x();
         projMatrix[3].y += roundedOffset.y();
         dirLight.cascades[i].cascadeView.setCustomProjection(projMatrix);
+        // In World space
+        //roundedOrigin.z() = shadowOrigin.z();
+        //roundedOrigin *= 2.0f / directionalShadowRT->getTextureSize().x;   
+        //Matrix4 shadowClipToWorld = dirLight.cascades[i].cascadeView.viewMatrix() * projMatrix.inverse();
+        //roundedOrigin = shadowClipToWorld * Vector4D(roundedOrigin, 1.0f);
+        //dirLight.cascades[i].cascadeView.setTranslation(dirLight.cascades[i].cascadeView.translation() + roundedOrigin);
 
         tempCamera.setClippingPlane(tempCamera.farPlane(), tempCamera.farPlane() + camera.farPlane() * dirLight.cascades[i].frustumFract + SHADOW_PLANE_MARGIN);
     }
