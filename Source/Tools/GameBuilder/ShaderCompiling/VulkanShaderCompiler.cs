@@ -67,12 +67,8 @@ namespace GameBuilder.ShaderCompiling
             {
                 compilerDir = Path.Combine(System.Environment.GetEnvironmentVariable("VULKAN_SDK"), "bin");
             }
-#if DEBUG
-            spirvReflectorDir = Path.Combine(Directories.BINARIES_ROOT, "SpirvShaderReflection/x64/Debug");
-#else
-            spirvReflectorDir = Path.Combine(Directories.BINARIES_ROOT, "SpirvShaderReflection/x64/Release");
-#endif
-            shaderSrcFolder = Path.Combine(Directories.ENGINE_ROOT, "Source/EngineShaders");
+            spirvReflectorDir = Directories.TOOLS_BINARIES_ROOT;
+            shaderSrcFolder = Path.Combine(Directories.ENGINE_ROOT, "Source/Runtime/EngineShaders");
             shaderTargetDir = Path.Combine(targetPath, "Shaders");
             FileUtils.GetOrCreateDir(shaderTargetDir);
 
@@ -177,11 +173,11 @@ namespace GameBuilder.ShaderCompiling
                     );
 
                     LoggerUtils.Log("Compiling shader {0}", shaderFile.Item1);
-                    LoggerUtils.Log("Root : {0}\nCompile cmd : {1}", Directories.BUILDER_ROOT, cmd);
+                    LoggerUtils.Log("Root : {0}\nCompile cmd : {1}", Directories.TOOLS_BINARIES_ROOT, cmd);
 
                     string executionResult;
 
-                    if (!ProcessUtils.ExecuteCommand(out executionResult, cmd, Directories.BUILDER_ROOT)
+                    if (!ProcessUtils.ExecuteCommand(out executionResult, cmd, Directories.TOOLS_BINARIES_ROOT)
                         || (executionResult.Length > 0 && executionResult.Contains("ERROR:")))
                     {
                         LoggerUtils.Log(executionResult);

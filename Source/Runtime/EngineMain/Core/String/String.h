@@ -41,8 +41,6 @@ public:
     FORCE_INLINE String trimRCopy() const;
     FORCE_INLINE String trimCopy() const;
 
-    bool operator==(const String& rhs) const;
-
 };
 
 
@@ -226,9 +224,4 @@ FORCE_INLINE String String::trimCopy() const
     String s(*this);
     s.trim();
     return s;
-}
-
-FORCE_INLINE bool String::operator==(const String& rhs) const
-{
-    return compare(rhs) == 0;
 }
