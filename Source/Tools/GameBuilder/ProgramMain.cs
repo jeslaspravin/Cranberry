@@ -9,6 +9,12 @@ using System.Threading;
 
 namespace GameBuilder
 {
+    enum ExitCode : int
+    {
+        Success = 0,
+        MinorError = 1
+    }
+
     class ProgramMain
     {
         private const string MODE = "mode";
@@ -61,7 +67,7 @@ namespace GameBuilder
             }
         }
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             LoggerUtils.Log("{0} using {1}",Directories.APP_NAME,Directories.BUILDER_EXE);
             LoggerUtils.Log("Engine root {0}", Directories.ENGINE_ROOT);
@@ -87,6 +93,7 @@ namespace GameBuilder
                 if (mode.execute(consoleArgs) != ModeExecutionResult.Success)
                 {
                     LoggerUtils.Error("{0} failed", consoleArgs[MODE][0]);
+                    return (int)ExitCode.MinorError;
                 }
                 else
                 {
@@ -99,8 +106,8 @@ namespace GameBuilder
                 LoggerUtils.Error("No mode selected exiting, expected -{0} with mode [{1}]",MODE,COMPILE_SHADER);
             }
 
-
             LoggerUtils.waitUntilTasksFinished();
+            return (int)ExitCode.Success;
         }
     }
 }

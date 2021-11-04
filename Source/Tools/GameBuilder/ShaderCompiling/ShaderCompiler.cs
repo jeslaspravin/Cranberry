@@ -32,7 +32,7 @@ namespace GameBuilder.ShaderCompiling
 
         public string getError()
         {
-            return compileErrors.ToString();
+            return compileErrors;
         }
     }
 }

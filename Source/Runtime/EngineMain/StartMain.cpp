@@ -43,7 +43,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 
     appInstance.headVersion = 0;
     appInstance.majorVersion = ENGINE_VERSION;
-    appInstance.subVersion = ENGINE_SUBVERSION;
+    appInstance.subVersion = ENGINE_MINOR_VERSION;
     appInstance.windowsInstance = hInstance;
 
     PlatformFunctions::wcharToStr(appInstance.cmdLine, pCmdLine);

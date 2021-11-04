@@ -14,7 +14,7 @@ namespace GameBuilder.Logger
     {
         static LoggerUtils()
         {
-            string logDirectory = Path.Combine(Directories.BINARIES_ROOT, "Generated\\BuildLogs\\");
+            string logDirectory = Path.Combine(Directories.TOOLS_BINARIES_ROOT, "Saved\\Logs\\");
 
             if (!Directory.Exists(logDirectory))
             {
