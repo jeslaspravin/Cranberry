@@ -76,7 +76,6 @@ void printMembers(const SPIRV_CROSS_NAMESPACE::SPIRType& structType, const SPIRV
 }
 
 #endif
-
 /*
 * Arguments must be in order, so that at index 1 to n-3 the file list of all shaders used for this particular processing and graphics pipeline
 * argument at n-2 should be file where the reflected data should be written to

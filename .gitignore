@@ -32,9 +32,14 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+[Ll]ibraries/
+[Ii]nstalled/
 
 # Generated
 [Gg]enerated/
+
+# External dependencies
+[Ee]xternal
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

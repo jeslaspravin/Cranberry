@@ -17,10 +17,9 @@ add_custom_command(OUTPUT ${compiled_outputs}
     COMMAND GameBuilder -mode shaderCompile -targetPath "\"${PROJECT_BINARY_DIR}/$<CONFIG>\"" -intermediatePath "\"${PROJECT_BINARY_DIR}/Intermediate/$<CONFIG>\"" -api vulkan
     WORKING_DIRECTORY ${builder_dir}/$<CONFIG>
     USES_TERMINAL
+    COMMAND_EXPAND_LISTS
     )
 add_custom_target(${target_name} ALL
-        DEPENDS ${compiled_outputs}
-        COMMENT "Compiling shaders..."
-    )
-
-target_sources(${target_name} PRIVATE ${src_files})
+    SOURCES ${src_files}
+    DEPENDS ${compiled_outputs}
+)

@@ -474,11 +474,6 @@ int32 VulkanDevice::compareMemoryCompatibility(const VulkanDevice& otherDevice) 
     return 0;
 }
 
-VulkanDevice::VulkanDevice()
-{
-
-}
-
 VulkanDevice::VulkanDevice(VkPhysicalDevice&& device) : graphicsDebug(this)
 {
     physicalDevice = device;
@@ -504,7 +499,6 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice&& device) : graphicsDebug(this)
 
     { // Features
         PHYSICAL_DEVICE_FEATURES_2(advancedFeatures);
-        advancedFeatures.features = features;
         PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES(tSemaphoreFeatures);
         advancedFeatures.pNext = &tSemaphoreFeatures;
         PHYSICAL_DEVICE_DESC_INDEXING_FEATURES(tDescIdxFeatures);

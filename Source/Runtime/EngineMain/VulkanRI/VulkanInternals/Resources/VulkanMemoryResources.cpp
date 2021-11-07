@@ -138,6 +138,7 @@ VulkanImageResource::VulkanImageResource(EPixelDataFormat::Type imageFormat, boo
     , tiling(VK_IMAGE_TILING_OPTIMAL)
     , type(VK_IMAGE_TYPE_2D)
     , viewType(VkImageViewType::VK_IMAGE_VIEW_TYPE_2D)
+    , image(nullptr)
 {
     if (cpuAccessible)
     {

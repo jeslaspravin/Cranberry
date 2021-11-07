@@ -15,7 +15,6 @@ class VulkanSemaphore final : public GraphicsSemaphore,public IVulkanResources
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanSemaphore,,GraphicsSemaphore,)
 
 private:
-
     const VulkanDevice* vulkanDevice;
     VkDevice ownerDevice;    
     VulkanSemaphore() = default;

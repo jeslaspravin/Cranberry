@@ -8,7 +8,10 @@
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanSemaphore,VK_OBJECT_TYPE_SEMAPHORE)
 
 VulkanSemaphore::VulkanSemaphore(const VulkanDevice* deviceInstance)
-    :BaseType(),ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance)),vulkanDevice(deviceInstance)
+    : BaseType()
+    , ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance))
+    , vulkanDevice(deviceInstance)
+    , semaphore(nullptr)
 {}
 
 void VulkanSemaphore::waitForSignal() const
@@ -79,7 +82,10 @@ uint64 VulkanSemaphore::getDispatchableHandle() const
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanTimelineSemaphore, VK_OBJECT_TYPE_SEMAPHORE)
 
 VulkanTimelineSemaphore::VulkanTimelineSemaphore(const VulkanDevice* deviceInstance)
-    :BaseType(), ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance)), vulkanDevice(deviceInstance)
+    : BaseType()
+    , ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance))
+    , vulkanDevice(deviceInstance)
+    , semaphore(nullptr)
 {}
 
 void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
@@ -191,6 +197,7 @@ VulkanFence::VulkanFence(const VulkanDevice* deviceInstance, bool bIsSignaled)
     , vulkanDevice(deviceInstance)
     , ownerDevice(VulkanGraphicsHelper::getDevice(deviceInstance))
     , bCreateSignaled(bIsSignaled)
+    , fence(nullptr)
 {}
 
 void VulkanFence::waitForSignal() const
