@@ -30,8 +30,8 @@ macro (cpp_common_variables)
         )
     endif()
 
-    # without /sdl POD is never getting default initialized to 0 with doing Type{} or Type{Type()}
-    target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/sdl>)
+    # POD/Variables in class has to initialized with {} to zero initialize if calling constructors that are not compiler generated
+    # target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/sdl>)
 endmacro ()
 
 macro (generate_cpp_console_project)

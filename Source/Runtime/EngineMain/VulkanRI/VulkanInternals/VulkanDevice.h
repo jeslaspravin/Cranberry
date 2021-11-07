@@ -28,15 +28,17 @@ private:
     VkPhysicalDeviceProperties properties;
     VkPhysicalDeviceTimelineSemaphoreProperties timelineSemaphoreProps;
     VkPhysicalDeviceDescriptorIndexingProperties descIndexingProps;
-    VkPhysicalDeviceMemoryProperties memoryProperties;
+    // Zero initialization required here, Since values will be overridden by vkGetPhysicalDeviceMemoryProperties which is external code
+    VkPhysicalDeviceMemoryProperties memoryProperties{};
 
     VkPhysicalDeviceFeatures features;
     VkPhysicalDeviceDescriptorIndexingFeatures descIndexingFeatures;
-    VkPhysicalDeviceFeatures enabledFeatures;
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures;
-    VkPhysicalDeviceDescriptorIndexingFeatures enabledDescIndexingFeatures;
     // KHRs
     VkPhysicalDeviceSynchronization2FeaturesKHR sync2Features;
+    // Enabled features will only be partially initialized manually, So zero initialize it
+    VkPhysicalDeviceFeatures enabledFeatures{};
+    VkPhysicalDeviceDescriptorIndexingFeatures enabledDescIndexingFeatures{};
 
     void markEnabledFeatures();
     void markGlobalConstants();
@@ -78,7 +80,7 @@ private:
     int32 compareMemoryCompatibility(const VulkanDevice& otherDevice) const;
     // Swap chain and surface
 public:
-    VulkanDevice();
+    VulkanDevice() = default;
     VulkanDevice(VkPhysicalDevice&& device);
     VulkanDevice(const VulkanDevice& otherDevice);
     VulkanDevice(VulkanDevice&& rVulkanDevice);

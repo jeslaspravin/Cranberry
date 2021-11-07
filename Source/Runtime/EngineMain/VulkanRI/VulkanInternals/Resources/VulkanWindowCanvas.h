@@ -17,7 +17,6 @@ class VulkanWindowCanvas final : public GenericWindowCanvas,public IVulkanResour
 {
     DECLARE_VK_GRAPHICS_RESOURCE(VulkanWindowCanvas,,GenericWindowCanvas,)
 private:
-
     VkSurfaceKHR surfacePtr;
     VkSwapchainKHR swapchainPtr;
     std::vector<VkImage> swapchainImages;
