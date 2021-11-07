@@ -1,0 +1,67 @@
+#include "RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
+#include "Types/CoreDefines.h"
+#include "RenderApi/GBuffersAndTextures.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
+#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderInterface/GlobalRenderVariables.h"
+#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Scene/RenderScene.h"
+#include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
+
+BEGIN_BUFFER_DEFINITION(GoochModelLightCommon)
+ADD_BUFFER_TYPED_FIELD(lightsCount)
+ADD_BUFFER_TYPED_FIELD(invLightsCount)
+END_BUFFER_DEFINITION();
+
+BEGIN_BUFFER_DEFINITION(GoochModelLightData)
+ADD_BUFFER_TYPED_FIELD(warmOffsetAndPosX)
+ADD_BUFFER_TYPED_FIELD(coolOffsetAndPosY)
+ADD_BUFFER_TYPED_FIELD(highlightColorAndPosZ)
+ADD_BUFFER_TYPED_FIELD(lightColorAndRadius)
+END_BUFFER_DEFINITION();
+
+BEGIN_BUFFER_DEFINITION(GoochModelLightArray)
+ADD_BUFFER_STRUCT_FIELD(lights, GoochModelLightData)
+ADD_BUFFER_TYPED_FIELD(count)
+END_BUFFER_DEFINITION();
+
+#define GOOCH_SHADER_NAME "GoochModel"
+
+class GoochModelShader : public UniqueUtilityShader
+{
+    DECLARE_GRAPHICS_RESOURCE(GoochModelShader, , UniqueUtilityShader, )
+protected:
+    GoochModelShader()
+        : BaseType(GOOCH_SHADER_NAME)
+    {}
+public:
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
+    {
+        static GoochModelLightCommonBufferParamInfo LIGHTCOMMON_INFO;
+        static GoochModelLightArrayBufferParamInfo LIGHTDATA_INFO;
+        static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
+        {
+            { "lightCommon", &LIGHTCOMMON_INFO },
+            { "lightArray", &LIGHTDATA_INFO },
+            { "viewData", RenderSceneBase::sceneViewParamInfo().at("viewData") }
+        };
+
+
+        for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : SHADER_PARAMS_INFO)
+        {
+            auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
+
+            debugAssert(foundDescBinding != bindingBuffers.end());
+
+            foundDescBinding->second->bufferParamInfo = bufferInfo.second;
+        }
+    }
+};
+
+DEFINE_GRAPHICS_RESOURCE(GoochModelShader)
+
+//////////////////////////////////////////////////////////////////////////
+/// Pipeline registration
+//////////////////////////////////////////////////////////////////////////
+
+ScreenSpaceQuadShaderPipelineRegistrar GOOCHMODEL_SHADER_PIPELINE_REGISTER(GOOCH_SHADER_NAME);

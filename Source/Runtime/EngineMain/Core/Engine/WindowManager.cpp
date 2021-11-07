@@ -1,10 +1,11 @@
 #include "WindowManager.h"
-#include "../Platform/PlatformInstances.h"
-#include "GameEngine.h"
+#include "PlatformInstances.h"
+#include "Engine/GameEngine.h"
+#include "Logger/Logger.h"
+#include "Engine/Config/EngineGlobalConfigs.h"
+#include "InputSystem.h"
+#include "GenericAppWindow.h"
 #include "../../RenderInterface/PlatformIndependentHeaders.h"
-#include "../Logger/Logger.h"
-#include "Config/EngineGlobalConfigs.h"
-#include "../Input/InputSystem.h"
 #include "../../RenderInterface/Rendering/IRenderCommandList.h"
 #include "../../RenderApi/GBuffersAndTextures.h"
 
@@ -140,17 +141,25 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
 {
     if(window->windowHeight != height || window->windowWidth != width)
     {
-        ENQUEUE_COMMAND_NODEBUG(WindowResize, LAMBDA_BODY
-            (
+        ENQUEUE_COMMAND(WindowResize)(
+            [this, window, width, height](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+            {
                 cmdList->waitIdle();
                 window->setWindowSize(width, height, true);
-                if(window == appMainWindow)
+                // Update the canvas
+                GenericWindowCanvas* windowCanvas = getWindowCanvas(window);
+                if (windowCanvas)
+                {
+                    Logger::debug("WindowsAppWindow", "%s() : Reiniting window canvas", __func__);
+                    windowCanvas->reinitResources();
+                }
+                if (window == appMainWindow)
                 {
                     Size2D newSize{ window->windowWidth, window->windowHeight };
                     GlobalBuffers::onSurfaceUpdated();
                     EngineSettings::surfaceSize.set(newSize);
                 }
-            ), this, window, width, height);
+            });
         //gEngine->waitOnRenderApi();
     }
 }
@@ -158,9 +167,4 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
 void WindowManager::onMouseMoved(uint32 xPos, uint32 yPos, GenericAppWindow* window)
 {
     Logger::log("Test", "Mouse abs x : %d, y : %d", xPos, yPos);
-}
-
-const InputSystem* GenericAppInstance::inputSystem() const
-{
-    return appWindowManager.getInputSystem();
 }

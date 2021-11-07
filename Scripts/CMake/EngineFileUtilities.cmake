@@ -57,7 +57,7 @@ function(get_all_cpp_files out_file_list)
         LIST_DIRECTORIES false
         RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         CONFIGURE_DEPENDS
-        *.c[px][px] *.c *.hpp *.h)
+        *.c[px][px] *.c *.hpp *.h *.inl)
     set(${out_file_list} ${file_list} PARENT_SCOPE)
 endfunction()
 
