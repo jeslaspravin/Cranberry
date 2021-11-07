@@ -1,3 +1,6 @@
+file(REAL_PATH "Scripts/CMake" cmake_script_dir BASE_DIRECTORY ${PROJECT_SOURCE_DIR})
+
+include (${cmake_script_dir}/StringUtilities.cmake)
 
 # Setting Global properties
 option (native_main "Whether to use native main function as application entry?" ON)
@@ -7,10 +10,34 @@ set (vulkan_sdk_path $ENV{VULKAN_SDK} CACHE PATH "Vulkan SDK path")
 # TODO(Jeslas) : Change this to automatically resolve/download dependencies
 set (cpp_libs_path $ENV{CPP_LIB} CACHE PATH "Path to CPP libraries")
 
+# Relative to target binary directory
+set (target_generated_path Generated)
+set (experimental_def $<IF:$<BOOL:${experimental}>, EXPERIMENTAL=1, EXPERIMENTAL=0>)
+set (engine_def RENDERAPI_VULKAN=1 ENGINE_VERSION=0 ENGINE_MINOR_VERSION=1)
+
+# Platform related, We define platforms but make them boolean for use with generator expressions easily, UNIX will be skipped instead define more specialized platforms like LINUX
+set (all_platform_folders "Windows" "Linux" "Apple")
+make_match_any_pattern_from_list(LIST ${all_platform_folders} OUT_PATTERN match_any_platform_folder)
+if (DEFINED UNIX AND NOT DEFINED APPLE)
+    set (LINUX 1)
+    set (platform_folder "Linux")
+    message("Platform: LINUX")
+else ()
+    set (LINUX 0)
+endif ()
+if (DEFINED APPLE)
+    set (platform_folder "Apple")
+else ()
+    set (APPLE 0)
+endif ()
+if (DEFINED WIN32)
+    set (platform_folder "Windows")
+else ()
+    set (WIN32 0)
+endif ()
+
 # Setting CMAKE Variables
 set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_C_STANDARD 17)
 # Setting all Runtime(exe, dll, so) to project binary directory
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-
-file(REAL_PATH "Scripts/CMake" cmake_script_dir BASE_DIRECTORY ${PROJECT_SOURCE_DIR})

@@ -1,6 +1,6 @@
 #pragma once
 #include "MeshAsset.h"
-#include "../../Core/Math/Vector4D.h"
+#include "Math/Vector4D.h"
 
 struct StaticMeshVertex
 {

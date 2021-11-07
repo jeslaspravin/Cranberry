@@ -1,9 +1,11 @@
-#include "Core/Engine/GameEngine.h"
-#include "Core/Logger/Logger.h"
-#include "Core/Platform/PlatformInstances.h"
-#include "Core/Platform/LFS/PlatformLFS.h"
-#include "Core/Platform/PlatformAssertionErrors.h"
-#include "Core/Platform/PlatformFunctions.h"
+#include "Engine/GameEngine.h"
+#include "Logger/Logger.h"
+#include "PlatformInstances.h"
+#include "LFS/PlatformLFS.h"
+#include "PlatformAssertionErrors.h"
+#include "PlatformFunctions.h"
+#include "Core/Engine/WindowManager.h"
+#include "Assets/AssetsManager.h"
 
 
 int appMain(GenericAppInstance* appInstance)
@@ -24,7 +26,7 @@ int appMain(GenericAppInstance* appInstance)
     return 0;
 }
 
-#if _WIN32
+#if PLATFORM_WINDOWS
 
 #include <wtypes.h>
 
@@ -37,6 +39,10 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     /*_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);*/
 
     PlatformAppInstance appInstance;
+    WindowManager appWindowManager;
+    AssetManager assetManager;
+    appInstance.appWindowManager = &appWindowManager;
+    appInstance.assetManager = &assetManager;
     FileSystemFunctions::applicationDirectory(appInstance.applicationName);
     String extension;
     appInstance.applicationName = FileSystemFunctions::stripExtension(appInstance.applicationName, extension);
@@ -54,11 +60,8 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     return exitCode;
 }
 
-#elif __unix__
-
+#elif PLATFORM_LINUX
 static_assert(false, "Platform not supported!");
-#elif __linux__
-static_assert(false, "Platform not supported!");
-#elif __APPLE__
+#elif PLATFORM_APPLE
 static_assert(false, "Platform not supported!");
 #endif

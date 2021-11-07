@@ -1,7 +1,8 @@
 #pragma once
 
+#include "Types/CoreTypes.h"
+
 #include <map>
-#include "../Platform/PlatformTypes.h"
 
 class GenericAppWindow;
 class GenericWindowCanvas;
