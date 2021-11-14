@@ -5,6 +5,8 @@ include (${cmake_script_dir}/StringUtilities.cmake)
 # Setting Global properties
 option (native_main "Whether to use native main function as application entry?" ON)
 option (experimental "Defines EXPERIMENTAL macro for Engine C++ modules" ON)
+# option (multithread "Whether to do multi threaded compilation" ON)
+option (engine_static_modules "Should compile and link engine modules statically?" OFF)
 
 set (vulkan_sdk_path $ENV{VULKAN_SDK} CACHE PATH "Vulkan SDK path")
 # TODO(Jeslas) : Change this to automatically resolve/download dependencies
@@ -13,7 +15,7 @@ set (cpp_libs_path $ENV{CPP_LIB} CACHE PATH "Path to CPP libraries")
 # Relative to target binary directory
 set (target_generated_path Generated)
 set (experimental_def $<IF:$<BOOL:${experimental}>, EXPERIMENTAL=1, EXPERIMENTAL=0>)
-set (engine_def RENDERAPI_VULKAN=1 ENGINE_VERSION=0 ENGINE_MINOR_VERSION=1)
+set (engine_def RENDERAPI_VULKAN=1 ENGINE_VERSION=0 ENGINE_MINOR_VERSION=1 ENGINE_PATCH_VERSION=0 ENGINE_NAME=${project_name})
 
 # Platform related, We define platforms but make them boolean for use with generator expressions easily, UNIX will be skipped instead define more specialized platforms like LINUX
 set (all_platform_folders "Windows" "Linux" "Apple")

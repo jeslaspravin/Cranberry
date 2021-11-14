@@ -1,27 +1,29 @@
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
-#include "RenderInterface/Shaders/Base/GenericComputePipeline.h"
+#include "RenderInterface/Resources/Pipelines.h"
+#include "ShaderReflected.h"
 #include "Logger/Logger.h"
 #include "RenderApi/Scene/RenderScene.h"
+#include "RenderApi/GBuffersAndTextures.h"
 
-DEFINE_GRAPHICS_RESOURCE(DrawMeshShader)
+DEFINE_GRAPHICS_RESOURCE(DrawMeshShaderConfig)
 
-String DrawMeshShader::getShaderFileName() const
+String DrawMeshShaderConfig::getShaderFileName() const
 {
     return getResourceName() + EVertexType::toString(vertexUsage()) + ERenderPassFormat::toString(renderpassUsage());
 }
 
-void DrawMeshShader::getSpecializationConsts(std::map<String, struct SpecializationConstantEntry>& specializationConst) const
+void DrawMeshShaderConfig::getSpecializationConsts(std::map<String, struct SpecializationConstantEntry>& specializationConst) const
 {
     BaseType::getSpecializationConsts(specializationConst);
     RenderSceneBase::sceneViewSpecConsts(specializationConst);
     EVertexType::vertexSpecConsts(vertexUsage(), specializationConst);
 }
 
-DEFINE_GRAPHICS_RESOURCE(UniqueUtilityShader)
+DEFINE_GRAPHICS_RESOURCE(UniqueUtilityShaderConfig)
 
-EVertexType::Type UniqueUtilityShader::vertexUsage() const
+EVertexType::Type UniqueUtilityShaderConfig::vertexUsage() const
 {
     EVertexType::Type overridenType = vertexUsed();
     if (overridenType != EVertexType::MaxVertexType)
@@ -85,71 +87,100 @@ EVertexType::Type UniqueUtilityShader::vertexUsage() const
     return EVertexType::Simple2;
 }
 
-DEFINE_GRAPHICS_RESOURCE(ComputeShader)
+DEFINE_GRAPHICS_RESOURCE(ComputeShaderConfig)
 
-DEFINE_GRAPHICS_RESOURCE(SimpleComputePipeline)
-
-SimpleComputePipeline::SimpleComputePipeline(const PipelineBase* parent)
-    : BaseType(static_cast<const ComputePipeline*>(parent))
-{}
-
-SimpleComputePipeline::SimpleComputePipeline(const ShaderResource* shaderResource)
-    : BaseType()
+namespace ScreenSpaceQuadPipelineConfigs
 {
-    setPipelineShader(shaderResource);
-    setResourceName("SimpleComp_" + shaderResource->getResourceName());
+    GraphicsPipelineConfig screenSpaceQuadConfig(String& pipelineName, const ShaderResource* shaderResource)
+    {
+        pipelineName = "ScreenSpaceQuad_" + shaderResource->getResourceName();
+        GraphicsPipelineConfig config;
+        config.supportedCullings.emplace_back(ECullingMode::BackFace);
+        config.allowedDrawModes.emplace_back(EPolygonDrawMode::Fill);
+
+        config.renderpassProps.bOneRtPerFormat = true;
+        config.renderpassProps.multisampleCount = EPixelSampleCount::SampleCount1;
+        config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::BGRA_U8_Norm);
+        config.renderpassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
+
+        config.depthState.bEnableWrite = false;
+        config.depthState.compareOp = CoreGraphicsTypes::ECompareOp::Always;
+
+        AttachmentBlendState blendState;
+        blendState.bBlendEnable = false;
+        config.attachmentBlendStates.emplace_back(blendState);
+
+        return config;
+    }
+
+    GraphicsPipelineConfig screenSpaceQuadOverBlendConfig(String& pipelineName, const ShaderResource* shaderResource)
+    {
+        GraphicsPipelineConfig config = screenSpaceQuadConfig(pipelineName, shaderResource);
+
+        pipelineName = "OverBlendedSSQuad_" + shaderResource->getResourceName();
+        config.attachmentBlendStates[0].bBlendEnable = true;
+        config.attachmentBlendStates[0].colorBlendOp = EBlendOp::Add;
+        config.attachmentBlendStates[0].srcColorFactor = EBlendFactor::SrcAlpha;
+        config.attachmentBlendStates[0].dstColorFactor = EBlendFactor::OneMinusSrcAlpha;
+        config.attachmentBlendStates[0].alphaBlendOp = EBlendOp::Add;
+        config.attachmentBlendStates[0].srcAlphaFactor = config.attachmentBlendStates[0].dstAlphaFactor = EBlendFactor::One;
+
+        return config;
+    }
+
+
+    GraphicsPipelineConfig screenSpaceQuadOverBlendDepthTestedShaderConfig(String& pipelineName, const ShaderResource* shaderResource)
+    {
+        GraphicsPipelineConfig config = screenSpaceQuadOverBlendConfig(pipelineName, shaderResource);
+
+        pipelineName = "OverBlendedSSQuadDepthTested_" + shaderResource->getResourceName();
+        // Just add depth attachment and disable depth write
+        config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::D24S8_U32_DNorm_SInt);
+
+        config.depthState.bEnableWrite = false;
+        config.depthState.compareOp = CoreGraphicsTypes::ECompareOp::Greater;
+
+        return config;
+    }
 }
 
-DEFINE_GRAPHICS_RESOURCE(ScreenSpaceQuadShaderPipeline)
-
-ScreenSpaceQuadShaderPipeline::ScreenSpaceQuadShaderPipeline(const PipelineBase* parent)
-    : BaseType(static_cast<const GraphicsPipelineBase*>(parent))
-{}
-
-ScreenSpaceQuadShaderPipeline::ScreenSpaceQuadShaderPipeline(const ShaderResource* shaderResource)
-    : BaseType()
+namespace CommonGraphicsPipelineConfigs
 {
-    setPipelineShader(shaderResource);
-    setResourceName("ScreenSpaceQuad_" + shaderResource->getResourceName());
-    supportedCullings.emplace_back(ECullingMode::BackFace);
-    allowedDrawModes.emplace_back(EPolygonDrawMode::Fill);
+    GraphicsPipelineConfig writeGbufferShaderConfig(String& pipelineName, const ShaderResource* shaderResource)
+    {
+        pipelineName = shaderResource->getResourceName();
 
-    renderpassProps.bOneRtPerFormat = true;
-    renderpassProps.multisampleCount = EPixelSampleCount::SampleCount1;
-    renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::BGRA_U8_Norm);
-    renderpassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
+        GraphicsPipelineConfig config;
 
-    depthState.bEnableWrite = false;
-    depthState.compareOp = CoreGraphicsTypes::ECompareOp::Always;
+        config.supportedCullings.resize(2);
+        config.supportedCullings[0] = ECullingMode::FrontFace;
+        config.supportedCullings[1] = ECullingMode::BackFace;
 
-    AttachmentBlendState blendState;
-    blendState.bBlendEnable = false;
-    attachmentBlendStates.emplace_back(blendState);
-}
+        config.allowedDrawModes.resize(2);
+        config.allowedDrawModes[0] = EPolygonDrawMode::Fill;
+        config.allowedDrawModes[1] = EPolygonDrawMode::Line;
 
-DEFINE_GRAPHICS_RESOURCE(OverBlendedSSQuadShaderPipeline)
+        // No alpha based blending for default shaders
+        AttachmentBlendState blendState;
+        blendState.bBlendEnable = false;
 
-OverBlendedSSQuadShaderPipeline::OverBlendedSSQuadShaderPipeline(const ShaderResource* shaderResource)
-    : BaseType(shaderResource)
-{
-    setResourceName("OverBlendedSSQuad_" + shaderResource->getResourceName());
+        bool bHasDepth = false;
+        FramebufferFormat fbFormat = GlobalBuffers
+            ::getFramebufferRenderpassProps(static_cast<const DrawMeshShaderConfig*>(shaderResource->getShaderConfig())->renderpassUsage()).renderpassAttachmentFormat;
+        config.attachmentBlendStates.reserve(fbFormat.attachments.size());
+        for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
+        {
+            if (!EPixelDataFormat::isDepthFormat(attachmentFormat))
+            {
+                config.attachmentBlendStates.emplace_back(blendState);
+            }
+            else
+            {
+                bHasDepth = true;
+            }
+        }
 
-    attachmentBlendStates[0].bBlendEnable = true;
-    attachmentBlendStates[0].colorBlendOp = EBlendOp::Add;
-    attachmentBlendStates[0].srcColorFactor = EBlendFactor::SrcAlpha;
-    attachmentBlendStates[0].dstColorFactor = EBlendFactor::OneMinusSrcAlpha;
-    attachmentBlendStates[0].alphaBlendOp = EBlendOp::Add;
-    attachmentBlendStates[0].srcAlphaFactor = attachmentBlendStates[0].dstAlphaFactor = EBlendFactor::One;
-}
-
-DEFINE_GRAPHICS_RESOURCE(OverBlendedSSQuadWithDepthTestPipeline)
-OverBlendedSSQuadWithDepthTestPipeline::OverBlendedSSQuadWithDepthTestPipeline(const ShaderResource* shaderResource)
-    : BaseType(shaderResource)
-{
-    setResourceName("OverBlendedSSQuadDepthTested_" + shaderResource->getResourceName());
-    // Just add depth attachment and disable depth write
-    renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::D24S8_U32_DNorm_SInt);
-
-    depthState.bEnableWrite = false;
-    depthState.compareOp = CoreGraphicsTypes::ECompareOp::Greater;
+        config.depthState.bEnableWrite = bHasDepth;
+        return config;
+    }
 }

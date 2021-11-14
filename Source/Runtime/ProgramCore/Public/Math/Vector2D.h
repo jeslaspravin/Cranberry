@@ -91,7 +91,22 @@ public:
     static Vector2D modf(Vector2D& wholePart, const Vector2D& value);
 };
 
-Vector2D operator/(float n, const Vector2D& d);
-Vector2D operator-(float n, const Vector2D& d);
-Vector2D operator*(float n, const Vector2D& d);
-Vector2D operator+(float n, const Vector2D& d);
+FORCE_INLINE Vector2D operator/(float n, const Vector2D& d)
+{
+    return Vector2D(n / d.value);
+}
+
+FORCE_INLINE Vector2D operator-(float n, const Vector2D& d)
+{
+    return Vector2D(n - d.value);
+}
+
+FORCE_INLINE Vector2D operator*(float n, const Vector2D& d)
+{
+    return d * n;
+}
+
+FORCE_INLINE Vector2D operator+(float n, const Vector2D& d)
+{
+    return d + n;
+}

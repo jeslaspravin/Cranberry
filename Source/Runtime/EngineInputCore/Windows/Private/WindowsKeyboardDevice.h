@@ -1,5 +1,5 @@
 #pragma once
-#include "../InputDevice.h"
+#include "InputDevice.h"
 
 #include <map>
 

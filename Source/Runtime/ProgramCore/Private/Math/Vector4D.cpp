@@ -231,26 +231,6 @@ Vector4D Vector4D::rejectFrom(const Vector4D& b) const
     return *this - projectTo(b);
 }
 
-Vector4D operator/(float n, const Vector4D& d)
-{
-    return Vector4D(n / d.value);
-}
-
-Vector4D operator-(float n, const Vector4D& d)
-{
-    return Vector4D(n - d.value);
-}
-
-Vector4D operator*(float n, const Vector4D& d)
-{
-    return d * n;
-}
-
-Vector4D operator+(float n, const Vector4D& d)
-{
-    return d + n;
-}
-
 const Vector4D Vector4D::ZERO(0);
 const Vector4D Vector4D::ONE(1);
 

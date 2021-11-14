@@ -1,14 +1,9 @@
 #pragma once
 #include "String/String.h"
+#include "EngineRendererExports.h"
 
 namespace CoreGraphicsTypes
 {
-    struct EnumTypeInfo
-    {
-        const uint32 value;
-        const String name;
-    };
-
     namespace ECompareOp
     {
         enum Type
@@ -23,9 +18,6 @@ namespace CoreGraphicsTypes
             Always = 7,
         };
     }
-
-
-    const EnumTypeInfo* getEnumTypeInfo(ECompareOp::Type compareOp);
 }
 
 
@@ -64,15 +56,8 @@ namespace EPixelComponentMapping
         B,
         A
     };
-    struct ComponentMappingInfo
-    {
-        const uint32 mapping;
-        const String mappingName;
-    };
 
-    const ComponentMappingInfo* getComponentMapping(EPixelComponentMapping::Type mapping);
-
-    inline constexpr Type fromImageComponent(EPixelComponent component)
+    ENGINERENDERER_EXPORT constexpr Type fromImageComponent(EPixelComponent component)
     {
         return Type(uint32(component) + uint32(Type::R));
     }
@@ -220,7 +205,6 @@ namespace EPixelDataFormat
 
     struct PixelFormatInfo
     {
-        const uint32 format;
         const uint32 pixelDataSize;
         const String formatName;
         // In bits
@@ -231,7 +215,7 @@ namespace EPixelDataFormat
         // Packed offsets in bits 0b-7b R comp, 8b-15b G, 16b-23b B, 24b-31b A
         const uint32 componentOffsets = calcOffsets();
 
-        inline constexpr uint8 getOffset(EPixelComponent component) const
+        ENGINERENDERER_EXPORT inline constexpr uint8 getOffset(EPixelComponent component) const
         {
             uint32 shift = uint32(component) * 8;
             return uint8((componentOffsets >> shift) & 0x000000FF);
@@ -269,11 +253,10 @@ namespace EPixelDataFormat
 
     };
 
-    const PixelFormatInfo* getFormatInfo(EPixelDataFormat::Type dataFormat);
-    EPixelDataFormat::Type fromApiFormat(uint32 apiFormat);
-    bool isDepthFormat(EPixelDataFormat::Type dataFormat);
-    bool isStencilFormat(EPixelDataFormat::Type dataFormat);
-    bool isFloatingFormat(EPixelDataFormat::Type dataFormat);
+    ENGINERENDERER_EXPORT const PixelFormatInfo* getFormatInfo(EPixelDataFormat::Type dataFormat);
+    ENGINERENDERER_EXPORT bool isDepthFormat(EPixelDataFormat::Type dataFormat);
+    ENGINERENDERER_EXPORT bool isStencilFormat(EPixelDataFormat::Type dataFormat);
+    ENGINERENDERER_EXPORT bool isFloatingFormat(EPixelDataFormat::Type dataFormat);
 }
 
 namespace EPixelSampleCount
@@ -303,14 +286,7 @@ namespace ESamplerFiltering
         Cubic = 2
     };
 
-    struct SamplerFilteringInfo
-    {
-        const uint32 filterTypeValue;
-        const String filterName;
-    };
-
-    const SamplerFilteringInfo* getFilterInfo(ESamplerFiltering::Type dataFormat);
-    const SamplerFilteringInfo* getMipFilterInfo(ESamplerFiltering::Type dataFormat);
+    ENGINERENDERER_EXPORT String filterName(ESamplerFiltering::Type dataFormat);
 }
 
 namespace ESamplerTilingMode
@@ -323,8 +299,6 @@ namespace ESamplerTilingMode
         BorderClamp = 3,
         EdgeMirroredClamp = 4
     };
-
-    uint32 getSamplerTiling(ESamplerTilingMode::Type tilingMode);
 }
 
 namespace ESamplerBorderColors
@@ -438,7 +412,7 @@ struct AttachmentBlendState
     EBlendFactor dstAlphaFactor = EBlendFactor::Zero;
     EBlendOp alphaBlendOp = EBlendOp::Add;
 
-    bool usesBlendConstant() const
+    ENGINERENDERER_EXPORT bool usesBlendConstant() const
     {
         return srcColorFactor == EBlendFactor::ConstColor || srcColorFactor == EBlendFactor::OneMinusConstColor
             || srcColorFactor == EBlendFactor::ConstAlpha || srcColorFactor == EBlendFactor::ConstColor
@@ -469,7 +443,40 @@ namespace EAttachmentOp
         DontCare,
         Store
     };
+}
 
-    uint32 getLoadOp(LoadOp loadOp);
-    uint32 getStoreOp(StoreOp storeOp);
+#define EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName) \
+    FirstMacroName(Top) \
+    MacroName(DrawIndirect) \
+    MacroName(VertexInput) \
+    MacroName(VertexShaderStage) \
+    MacroName(TessellationControlShaderStage) \
+    MacroName(TessallationEvalShaderStage) \
+    MacroName(GeometryShaderStage) \
+    MacroName(FragmentShaderStage) \
+    MacroName(EarlyFragTest) \
+    MacroName(LateFragTest) \
+    MacroName(ColorAttachmentOutput) \
+    MacroName(ComputeShaderStage) \
+    MacroName(Transfer) \
+    MacroName(Bottom) \
+    MacroName(Host) \
+    MacroName(AllGraphics) \
+    LastMacroName(AllCommands)
+
+#define EPIPELINESTAGES_FOR_EACH(MacroName) EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
+
+namespace EPipelineStages
+{
+#define EPIPELINESTAGES_FIRST(Stage) Stage## = 0,
+#define EPIPELINESTAGES(Stage) Stage##,
+#define EPIPELINESTAGES_LAST(Stage) Stage
+    enum Type
+    {
+        EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(EPIPELINESTAGES_FIRST, EPIPELINESTAGES, EPIPELINESTAGES_LAST),
+        PipelineStageMax
+    };
+#undef EPIPELINESTAGES_FIRST
+#undef EPIPELINESTAGES
+#undef EPIPELINESTAGES_LAST
 }

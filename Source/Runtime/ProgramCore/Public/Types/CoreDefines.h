@@ -10,11 +10,13 @@
 #define DEBUG_INLINE inline
 
 #define ARRAY_LENGTH(ArrayVar) sizeof(ArrayVar)/sizeof(ArrayVar[0])
+#define MACRO_TO_STRING(VarName) #VarName 
 
 #define ONE_BIT_SET(FlagStatement) ((FlagStatement) && !((FlagStatement) & ((FlagStatement) - 1)))
 #define BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == CheckFlags)
 #define BIT_NOT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) != CheckFlags)
 #define ANY_BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) > 0)
+#define INDEX_TO_FLAG_MASK(Idx) (1 << (Idx))
 
 #define MAKE_INITIALIZER(...) { __VA_ARGS__ }
 
@@ -23,10 +25,10 @@
 #define VAR_COUNT_internal(Var1,Var2,Var3,Var4,Var5,Var6,Var7,Var8,Var9,VarCount, ...) VarCount
 #define COMBINE_internal(X,Y) X##Y
 
-#define ExpandArgs(...) __VA_ARGS__
-#define FIRST(...) ExpandArgs(FIRST_internal(__VA_ARGS__))
-#define TUPLE_TAIL(...) ExpandArgs(TUPLE_TAIL_internal(__VA_ARGS__))
-#define VAR_COUNT(...) ExpandArgs(VAR_COUNT_internal(__VA_ARGS__, 9,8,7,6,5,4,3,2,1))
+#define EXPAND_ARGS(...) __VA_ARGS__
+#define FIRST(...) EXPAND_ARGS(FIRST_internal(__VA_ARGS__))
+#define TUPLE_TAIL(...) EXPAND_ARGS(TUPLE_TAIL_internal(__VA_ARGS__))
+#define VAR_COUNT(...) EXPAND_ARGS(VAR_COUNT_internal(__VA_ARGS__, 9,8,7,6,5,4,3,2,1))
 #define COMBINE(X,Y) COMBINE_internal(X,Y)
 
 

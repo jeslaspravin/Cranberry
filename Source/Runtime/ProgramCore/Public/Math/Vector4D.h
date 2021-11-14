@@ -89,7 +89,22 @@ public:
     static Vector4D modf(Vector4D& wholePart, const Vector4D& value);
 };
 
-Vector4D operator/(float n, const Vector4D& d);
-Vector4D operator-(float n, const Vector4D& d);
-Vector4D operator*(float n, const Vector4D& d);
-Vector4D operator+(float n, const Vector4D& d);
+FORCE_INLINE Vector4D operator/(float n, const Vector4D& d)
+{
+    return Vector4D(n / d.value);
+}
+
+FORCE_INLINE Vector4D operator-(float n, const Vector4D& d)
+{
+    return Vector4D(n - d.value);
+}
+
+FORCE_INLINE Vector4D operator*(float n, const Vector4D& d)
+{
+    return d * n;
+}
+
+FORCE_INLINE Vector4D operator+(float n, const Vector4D& d)
+{
+    return d + n;
+}

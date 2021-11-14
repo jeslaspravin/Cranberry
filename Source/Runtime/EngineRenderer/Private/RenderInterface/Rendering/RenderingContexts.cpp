@@ -1,20 +1,24 @@
 #include "RenderInterface/Rendering/RenderingContexts.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
-#include "RenderInterface/PlatformIndependentHeaders.h"
 #include "RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
-#include "Types/Textures/RenderTargetTextures.h"
+#include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "RenderInterface/ShaderCore/ShaderObject.h"
 #include "RenderInterface/Resources/Pipelines.h"
+#include "RenderInterface/GraphicsHelper.h"
 #include "RenderApi/GBuffersAndTextures.h"
-#include "Engine/GameEngine.h"
 #include "Engine/Config/EngineGlobalConfigs.h"
+#include "IRenderInterfaceModule.h"
+#include "ShaderReflected.h"
 
-void GlobalRenderingContextBase::initContext(IGraphicsInstance* graphicsInstance)
+void GlobalRenderingContextBase::initContext(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
+    graphicsInstanceCache = graphicsInstance;
+    graphicsHelperCache = graphicsHelper;
+
     std::map<String, uint32>& runtimeResCount = ShaderParameterUtility::unboundArrayResourcesCount();
     // Fill Runtime indexed resources max count over here
     runtimeResCount["srcImages"] = 16u;
@@ -36,14 +40,25 @@ void GlobalRenderingContextBase::clearContext()
     writeAndDestroyPipelineCache();
     destroyShaderResources();
 
+    // Deleting all created framebuffers
     for (const std::pair<const GenericRenderPassProperties, std::vector<const Framebuffer*>>& framebuffers : rtFramebuffers)
     {
         for (Framebuffer const* const& fb : framebuffers.second)
         {
-            GlobalBuffers::destroyFbInstance(fb);
+            delete fb;
         }
     }
     rtFramebuffers.clear();
+
+    // Deleting all created swapchain framebuffers
+    for (const std::pair<WindowCanvasRef, std::vector<const Framebuffer*>>& framebuffers : windowCanvasFramebuffers)
+    {
+        for (const Framebuffer* fb : framebuffers.second)
+        {
+            delete fb;
+        }
+    }
+    windowCanvasFramebuffers.clear();
 
     clearApiContext();
 }
@@ -57,8 +72,11 @@ void GlobalRenderingContextBase::initShaderResources()
     }
 
     std::map<String, std::pair<uint32, ShaderResource*>> shaderUniqParamUsageMaxBitCount;
-    std::vector<GraphicsResource*> allShaderResources;
-    GraphicsShaderResource::staticType()->allChildDefaultResources(allShaderResources, true, true);
+    std::vector<ShaderResource*> allShaderResources;
+    std::vector<GraphicsResource*> allShaderConfigs;
+    ShaderConfigCollector::staticType()->allChildDefaultResources(allShaderConfigs, true, true);
+    allShaderResources.reserve(allShaderConfigs.size());
+
     // Initialize all shaders
     {
         uint32 bindlessUsageMaxBitCount = 0;
@@ -69,53 +87,57 @@ void GlobalRenderingContextBase::initShaderResources()
 
         std::map<EVertexType::Type, std::pair<uint32, ShaderResource*>> vertexParamUsageMaxBitCount;
 
-        for (GraphicsResource* shader : allShaderResources)
+        for (GraphicsResource* config : allShaderConfigs)
         {
+            ShaderConfigCollector* shaderConfig = static_cast<ShaderConfigCollector*>(config);
+            ShaderResource* shader = graphicsHelperCache->createShaderResource(shaderConfig);
             shader->init();
+            allShaderResources.emplace_back(shader);
+            shaderConfig->setShaderConfigured(shader);
 
-            if (shader->getType()->isChildOf(DrawMeshShader::staticType()))
+            if (shaderConfig->getType()->isChildOf(DrawMeshShaderConfig::staticType()))
             {
-                DrawMeshShader* drawMeshShader = static_cast<DrawMeshShader*>(shader);
+                const DrawMeshShaderConfig* drawMeshShaderConfig = static_cast<const DrawMeshShaderConfig*>(shaderConfig);
 
-                for (const ReflectDescriptorBody& descriptorsSetMeta : drawMeshShader->getReflection()->descriptorsSets)
+                for (const ReflectDescriptorBody& descriptorsSetMeta : shader->getReflection()->descriptorsSets)
                 {
                     uint32 setBitCount = PlatformFunctions::getSetBitCount(descriptorsSetMeta.combinedSetUsage);
 
                     if (descriptorsSetMeta.set == ShaderParameterUtility::INSTANCE_UNIQ_SET) // Vertex param
                     {
-                        auto itr = vertexParamUsageMaxBitCount.find(drawMeshShader->vertexUsage());
+                        auto itr = vertexParamUsageMaxBitCount.find(drawMeshShaderConfig->vertexUsage());
                         if (itr == vertexParamUsageMaxBitCount.end())
                         {
-                            vertexParamUsageMaxBitCount[drawMeshShader->vertexUsage()] = { setBitCount, drawMeshShader };
+                            vertexParamUsageMaxBitCount[drawMeshShaderConfig->vertexUsage()] = { setBitCount, shader };
                         }
                         else if (itr->second.first < setBitCount)
                         {
                             itr->second.first = setBitCount;
-                            itr->second.second = drawMeshShader;
+                            itr->second.second = shader;
                         }
                     }
                     else if (descriptorsSetMeta.set == ShaderParameterUtility::SHADER_UNIQ_SET)
                     {
-                        auto itr = shaderUniqParamUsageMaxBitCount.find(drawMeshShader->getResourceName());
+                        auto itr = shaderUniqParamUsageMaxBitCount.find(drawMeshShaderConfig->getResourceName());
                         if (itr == shaderUniqParamUsageMaxBitCount.end())
                         {
-                            shaderUniqParamUsageMaxBitCount[drawMeshShader->getResourceName()] = { setBitCount, drawMeshShader };
+                            shaderUniqParamUsageMaxBitCount[drawMeshShaderConfig->getResourceName()] = { setBitCount, shader };
                         }
                         else if (itr->second.first < setBitCount)
                         {
                             itr->second.first = setBitCount;
-                            itr->second.second = drawMeshShader;
+                            itr->second.second = shader;
                         }
                     }
                     else if(descriptorsSetMeta.set == ShaderParameterUtility::VIEW_UNIQ_SET && viewParamUsageMaxBitCount < setBitCount) // View param
                     {
                         viewParamUsageMaxBitCount = setBitCount;
-                        viewParamUsedInShader = drawMeshShader;
+                        viewParamUsedInShader = shader;
                     }
                     else if (descriptorsSetMeta.set == ShaderParameterUtility::BINDLESS_SET && bindlessUsageMaxBitCount < setBitCount) // bind less
                     {
                         bindlessUsageMaxBitCount = setBitCount;
-                        bindlessParamUsedInShader = drawMeshShader;
+                        bindlessParamUsedInShader = shader;
                     }
                 }
             }
@@ -134,19 +156,21 @@ void GlobalRenderingContextBase::initShaderResources()
 
         for (const std::pair<const EVertexType::Type, std::pair<uint32, ShaderResource*>>& vertexParamLayoutInfo : vertexParamUsageMaxBitCount)
         {
+            EVertexType::Type vertUsage = static_cast<const DrawMeshShaderConfig*>(vertexParamLayoutInfo.second.second->getShaderConfig())->vertexUsage();
+
             // Vertex unique param layout
-            auto perVertParamLayoutItr = perVertexTypeLayouts.find(static_cast<DrawMeshShader*>(vertexParamLayoutInfo.second.second)->vertexUsage());
+            auto perVertParamLayoutItr = perVertexTypeLayouts.find(vertUsage);
             debugAssert(perVertParamLayoutItr == perVertexTypeLayouts.end());
             GraphicsResource* paramLayout = shaderParamLayoutsFactory->create(vertexParamLayoutInfo.second.second, ShaderParameterUtility::INSTANCE_UNIQ_SET);
             debugAssert(paramLayout != nullptr);
             paramLayout->init();
-            perVertexTypeLayouts[static_cast<DrawMeshShader*>(vertexParamLayoutInfo.second.second)->vertexUsage()] = paramLayout;
+            perVertexTypeLayouts[vertUsage] = paramLayout;
         }
     }
     initShaderPipelines(allShaderResources, shaderUniqParamUsageMaxBitCount);
 }
 
-void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsResource*>& allShaderResources
+void GlobalRenderingContextBase::initShaderPipelines(const std::vector<ShaderResource*>& allShaderResources
     , const std::map<String, std::pair<uint32, ShaderResource*>>& shaderUniqParamShader)
 {
     std::set<EVertexType::Type> filledVertexInfo;
@@ -164,18 +188,18 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
         }
     };
 
-    for (GraphicsResource* shader : allShaderResources)
+    for (ShaderResource* shader : allShaderResources)
     {
-        if (shader->getType()->isChildOf(DrawMeshShader::staticType()))
+        if (shader->getShaderConfig()->getType()->isChildOf(DrawMeshShaderConfig::staticType()))
         {
-            DrawMeshShader* drawMeshShader = static_cast<DrawMeshShader*>(shader);
-            vertexAttribFillLambda(drawMeshShader->vertexUsage(), drawMeshShader->getReflection()->inputs);
+            const DrawMeshShaderConfig* drawMeshShaderConfig = static_cast<const DrawMeshShaderConfig*>(shader->getShaderConfig());
+            vertexAttribFillLambda(drawMeshShaderConfig->vertexUsage(), drawMeshShaderConfig->getReflection()->inputs);
 
             ShaderDataCollection& shaderCollection = rawShaderObjects[shader->getResourceName()];
             if (shaderCollection.shadersParamLayout == nullptr)
             {
-                ShaderResource* shaderToUse = drawMeshShader;
-                auto shaderToUseItr = shaderUniqParamShader.find(drawMeshShader->getResourceName());
+                ShaderResource* shaderToUse = shader;
+                auto shaderToUseItr = shaderUniqParamShader.find(shader->getResourceName());
                 if (shaderToUseItr != shaderUniqParamShader.cend())
                 {
                     shaderToUse = shaderToUseItr->second.second;
@@ -185,52 +209,54 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
             }
             if (shaderCollection.shaderObject == nullptr)
             {
-                shaderCollection.shaderObject = shaderObjectFactory->create(shader->getResourceName(), drawMeshShader);
+                shaderCollection.shaderObject = shaderObjectFactory->create(shader->getResourceName(), shader);
             }
-            GraphicsPipelineBase* graphicsPipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create({ drawMeshShader }));
+            GraphicsPipelineBase* graphicsPipeline = static_cast<GraphicsPipelineBase*>(
+                pipelineFactory->create(graphicsInstanceCache, graphicsHelperCache, { shader }));
+            fatalAssert(graphicsPipeline, "%s() : Graphics pipeline creation failed for shader %s", __func__, shader->getResourceName().getChar());
 
             // Check if there is set 3(Per variant shader parameters)
             GraphicsResource* perVariantLayout = nullptr;
-            for (const ReflectDescriptorBody& reflectDescBody : drawMeshShader->getReflection()->descriptorsSets)
+            for (const ReflectDescriptorBody& reflectDescBody : shader->getReflection()->descriptorsSets)
             {
                 if (reflectDescBody.set == ShaderParameterUtility::SHADER_VARIANT_UNIQ_SET)
                 {
-                    perVariantLayout = shaderParamLayoutsFactory->create(drawMeshShader, reflectDescBody.set);
+                    perVariantLayout = shaderParamLayoutsFactory->create(shader, reflectDescBody.set);
                     perVariantLayout->init();
                     graphicsPipeline->setParamLayoutAtSet(perVariantLayout, reflectDescBody.set);
                 }
             }
             graphicsPipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout, ShaderParameterUtility::SHADER_UNIQ_SET);
-            graphicsPipeline->setParamLayoutAtSet(perVertexTypeLayouts[drawMeshShader->vertexUsage()], ShaderParameterUtility::INSTANCE_UNIQ_SET);
+            graphicsPipeline->setParamLayoutAtSet(perVertexTypeLayouts[drawMeshShaderConfig->vertexUsage()], ShaderParameterUtility::INSTANCE_UNIQ_SET);
             graphicsPipeline->setParamLayoutAtSet(sceneViewParamLayout, ShaderParameterUtility::VIEW_UNIQ_SET);
             graphicsPipeline->setParamLayoutAtSet(bindlessParamLayout, ShaderParameterUtility::BINDLESS_SET);
-            graphicsPipeline->setPipelineShader(drawMeshShader);
+            graphicsPipeline->setPipelineShader(shader);
             graphicsPipeline->setPipelineCache(pipelinesCache);
             GenericRenderPassProperties renderpassProp;
-            renderpassProp.renderpassAttachmentFormat.rpFormat = drawMeshShader->renderpassUsage();
+            renderpassProp.renderpassAttachmentFormat.rpFormat = drawMeshShaderConfig->renderpassUsage();
             graphicsPipeline->setRenderpassProperties(renderpassProp);
 
             DrawMeshShaderObject* drawMeshShaderObj = static_cast<DrawMeshShaderObject*>(shaderCollection.shaderObject);
-            drawMeshShaderObj->addShader(drawMeshShader);
-            drawMeshShaderObj->setPipeline(drawMeshShader, graphicsPipeline);
-            drawMeshShaderObj->setVariantParamsLayout(drawMeshShader, perVariantLayout);
+            drawMeshShaderObj->addShader(shader);
+            drawMeshShaderObj->setPipeline(shader, graphicsPipeline);
+            drawMeshShaderObj->setVariantParamsLayout(shader, perVariantLayout);
         }
-        else if (shader->getType()->isChildOf(UniqueUtilityShader::staticType()))
+        else if (shader->getShaderConfig()->getType()->isChildOf(UniqueUtilityShaderConfig::staticType()))
         {
-            UniqueUtilityShader* utilityShader = static_cast<UniqueUtilityShader*>(shader);
-            vertexAttribFillLambda(utilityShader->vertexUsage(), utilityShader->getReflection()->inputs);
+            const UniqueUtilityShaderConfig* utilityShaderConfig = static_cast<const UniqueUtilityShaderConfig*>(shader->getShaderConfig());
+            vertexAttribFillLambda(utilityShaderConfig->vertexUsage(), utilityShaderConfig->getReflection()->inputs);
 
             ShaderDataCollection& shaderCollection = rawShaderObjects[shader->getResourceName()];
             debugAssert(shaderCollection.shaderObject == nullptr);
             debugAssert(shaderCollection.shadersParamLayout == nullptr);
 
-            shaderCollection.shaderObject = shaderObjectFactory->create(shader->getResourceName(), utilityShader);
-            shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(utilityShader, 0/*doesn't matter*/);
+            shaderCollection.shaderObject = shaderObjectFactory->create(shader->getResourceName(), shader);
+            shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(shader, 0/*doesn't matter*/);
             shaderCollection.shadersParamLayout->init();
 
-            GraphicsPipelineBase* graphicsPipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create({ utilityShader }));
+            GraphicsPipelineBase* graphicsPipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create(graphicsInstanceCache, graphicsHelperCache, { shader }));
             graphicsPipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout);
-            graphicsPipeline->setPipelineShader(utilityShader);
+            graphicsPipeline->setPipelineShader(shader);
             graphicsPipeline->setPipelineCache(pipelinesCache);
             // Can be parents since other child pipelines will be derived from this initial defaults
             graphicsPipeline->setCanBeParent(true);
@@ -238,20 +264,19 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
             static_cast<UniqueUtilityShaderObject*>(shaderCollection.shaderObject)->setPipeline(graphicsPipeline->getRenderpassProperties()
                 , graphicsPipeline);
         }
-        else if (shader->getType()->isChildOf<ComputeShader>())
+        else if (shader->getShaderConfig()->getType()->isChildOf<ComputeShaderConfig>())
         {
-            ShaderResource* shaderResource = static_cast<ShaderResource*>(shader);
             ShaderDataCollection& shaderCollection = rawShaderObjects[shader->getResourceName()];
             debugAssert(shaderCollection.shaderObject == nullptr);
             debugAssert(shaderCollection.shadersParamLayout == nullptr);
 
-            shaderCollection.shaderObject = shaderObjectFactory->create(shader->getResourceName(), shaderResource);
-            shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(shaderResource, 0/*doesn't matter*/);
+            shaderCollection.shaderObject = shaderObjectFactory->create(shader->getResourceName(), shader);
+            shaderCollection.shadersParamLayout = shaderParamLayoutsFactory->create(shader, 0/*doesn't matter*/);
             shaderCollection.shadersParamLayout->init();
 
-            PipelineBase *pipeline = pipelineFactory->create({ shaderResource });
+            PipelineBase *pipeline = pipelineFactory->create(graphicsInstanceCache, graphicsHelperCache, { shader });
             pipeline->setParamLayoutAtSet(shaderCollection.shadersParamLayout);
-            pipeline->setPipelineShader(shaderResource);
+            pipeline->setPipelineShader(shader);
             pipeline->setPipelineCache(pipelinesCache);
 
             static_cast<ComputeShaderObject*>(shaderCollection.shaderObject)->setPipeline(static_cast<ComputePipelineBase*>(pipeline));
@@ -262,10 +287,11 @@ void GlobalRenderingContextBase::initShaderPipelines(const std::vector<GraphicsR
 void GlobalRenderingContextBase::destroyShaderResources()
 {
     std::vector<GraphicsResource*> shaderResources;
-    GraphicsShaderResource::staticType()->allChildDefaultResources(shaderResources, true, true);
+    ShaderResource::staticType()->allRegisteredResources(shaderResources, true, true);
     for (GraphicsResource* shader : shaderResources)
     {
         shader->release();
+        delete shader;
     }
 
     sceneViewParamLayout->release();
@@ -308,25 +334,25 @@ void GlobalRenderingContextBase::writeAndDestroyPipelineCache()
     }
 }
 
-GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const
-{
-    GenericRenderPassProperties renderpassProperties;
-    renderpassProperties.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
-    if (!rtTextures.empty())
-    {
-        // Since all the textures in a same framebuffer must have same properties on below two
-        renderpassProperties.bOneRtPerFormat = rtTextures[0]->isSameReadWriteTexture();
-        renderpassProperties.multisampleCount = rtTextures[0]->getSampleCount();
-
-        renderpassProperties.renderpassAttachmentFormat.attachments.reserve(rtTextures.size());
-        for (const RenderTargetTexture*const & rtTexture : rtTextures)
-        {
-            renderpassProperties.renderpassAttachmentFormat.attachments.emplace_back(rtTexture->getFormat());
-        }
-    }
-
-    return renderpassProperties;
-}
+//GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const
+//{
+//    GenericRenderPassProperties renderpassProperties;
+//    renderpassProperties.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
+//    if (!rtTextures.empty())
+//    {
+//        // Since all the textures in a same framebuffer must have same properties on below two
+//        renderpassProperties.bOneRtPerFormat = rtTextures[0]->isSameReadWriteTexture();
+//        renderpassProperties.multisampleCount = rtTextures[0]->getSampleCount();
+//
+//        renderpassProperties.renderpassAttachmentFormat.attachments.reserve(rtTextures.size());
+//        for (const RenderTargetTexture*const & rtTexture : rtTextures)
+//        {
+//            renderpassProperties.renderpassAttachmentFormat.attachments.emplace_back(rtTexture->getFormat());
+//        }
+//    }
+//
+//    return renderpassProperties;
+//}
 
 GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromFb(const Framebuffer* fb) const
 {
@@ -352,16 +378,16 @@ GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromFb(co
 
 GenericRenderPassProperties GlobalRenderingContextBase::renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx) const
 {
-    const Framebuffer* fb = GlobalBuffers::getFramebuffer(renderpassFormat, frameIdx);
-    if (fb)
-    {
-        return renderpassPropsFromFb(fb);
-    }
+    //const Framebuffer* fb = GlobalBuffers::getFramebuffer(renderpassFormat, frameIdx);
+    //if (fb)
+    //{
+    //    return renderpassPropsFromFb(fb);
+    //}
 
     return GlobalBuffers::getFramebufferRenderpassProps(renderpassFormat);
 }
 
-const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRenderPassProperties& renderpassProps, const std::vector<RenderTargetTexture*>& rtTextures) const
+const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRenderPassProperties& renderpassProps, const std::vector<ImageResourceRef>& frameAttachments) const
 {
     auto renderpassFbs = rtFramebuffers.find(renderpassProps);
 
@@ -372,27 +398,15 @@ const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRende
             // there can be only one render pass without any attachments.
             return renderpassFbs->second[0];
         }
-        // Note: not handling outdated resources case right now, if outdated remove manually and recreate fbs for external RTs
-        std::vector<const ImageResource*> expectedAttachments;
-        for (const RenderTargetTexture* const& rtTexture : rtTextures)
-        {
-            expectedAttachments.emplace_back(rtTexture->getRtTexture());
-
-            // Since depth formats do not have resolve
-            if (!renderpassProps.bOneRtPerFormat && !EPixelDataFormat::isDepthFormat(rtTexture->getFormat()))
-            {
-                expectedAttachments.emplace_back(rtTexture->getTextureResource());
-            }
-        }
 
         for (const Framebuffer* const& fb : renderpassFbs->second)
         {
-            if (fb->textures.size() == expectedAttachments.size())
+            if (fb->textures.size() == frameAttachments.size())
             {
                 bool bSameTextures = true;
                 for (int32 attachmentIdx = 0; attachmentIdx < fb->textures.size(); ++attachmentIdx)
                 {
-                    bSameTextures = bSameTextures && fb->textures[attachmentIdx] == expectedAttachments[attachmentIdx];
+                    bSameTextures = bSameTextures && fb->textures[attachmentIdx] == frameAttachments[attachmentIdx];
                 }
 
                 if (bSameTextures)
@@ -406,40 +420,30 @@ const Framebuffer* GlobalRenderingContextBase::getFramebuffer(const GenericRende
 }
 
 const Framebuffer* GlobalRenderingContextBase::createNewFramebuffer(const GenericRenderPassProperties& renderpassProps
-    , const std::vector<RenderTargetTexture*>& rtTextures) const
+    , const std::vector<ImageResourceRef>& frameAttachments) const
 {
-    Framebuffer* fb = GlobalBuffers::createFbInstance();
+    Framebuffer* fb = graphicsHelperCache->createFbInstance();
     fb->bHasResolves = !renderpassProps.bOneRtPerFormat;
 
-    if (rtTextures.empty())
+    if (frameAttachments.empty())
     {
-        GlobalBuffers::initializeFb(fb, Size2D());
+        graphicsHelperCache->initializeFb(graphicsInstanceCache, fb, Size2D());
     }
     else
     {
-        for (const RenderTargetTexture* const& rtTexture : rtTextures)
-        {
-            fb->textures.emplace_back(rtTexture->getRtTexture());
-
-            // Since depth formats do not have resolve
-            if (!renderpassProps.bOneRtPerFormat && !EPixelDataFormat::isDepthFormat(rtTexture->getFormat()))
-            {
-                fb->textures.emplace_back(rtTexture->getTextureResource());
-            }
-        }
-
-        GlobalBuffers::initializeFb(fb, rtTextures[0]->getTextureSize());
+        fb->textures.insert(fb->textures.begin(), frameAttachments.cbegin(), frameAttachments.cend());
+        graphicsHelperCache->initializeFb(graphicsInstanceCache, fb, Size2D(frameAttachments[0]->getImageSize().x, frameAttachments[0]->getImageSize().y));
     }
 
     return fb;
 }
 
-const Framebuffer* GlobalRenderingContextBase::getOrCreateFramebuffer(const GenericRenderPassProperties& renderpassProps, const std::vector<RenderTargetTexture*>& rtTextures)
+const Framebuffer* GlobalRenderingContextBase::getOrCreateFramebuffer(const GenericRenderPassProperties& renderpassProps, const std::vector<ImageResourceRef>& frameAttachments)
 {
-    const Framebuffer* fb = getFramebuffer(renderpassProps, rtTextures);
+    const Framebuffer* fb = getFramebuffer(renderpassProps, frameAttachments);
     if (fb == nullptr)
     {
-        fb = createNewFramebuffer(renderpassProps, rtTextures);
+        fb = createNewFramebuffer(renderpassProps, frameAttachments);
         rtFramebuffers[renderpassProps].emplace_back(fb);
     }
     return fb;
@@ -450,14 +454,17 @@ PipelineBase* GlobalRenderingContextBase::createNewPipeline(UniqueUtilityShaderO
 {
     fatalAssert(renderpassProps.renderpassAttachmentFormat.attachments.size() == shaderObject->getDefaultPipeline()->getRenderpassProperties().renderpassAttachmentFormat.attachments.size()
         , "Attachment count must be same for utility shader pipeline variants");
-    GraphicsPipelineBase* pipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create({ shaderObject->getShader(), shaderObject->getDefaultPipeline() }));
+    GraphicsPipelineBase* pipeline = static_cast<GraphicsPipelineBase*>(pipelineFactory->create(
+        graphicsInstanceCache
+        , graphicsHelperCache
+        , { shaderObject->getShader(), shaderObject->getDefaultPipeline() }));
     pipeline->setRenderpassProperties(renderpassProps);
 
     initializeGenericGraphicsPipeline(shaderObject, pipeline);
     return pipeline;
 }
 
-void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineContext* pipelineContext)
+void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineContext* pipelineContext, GenericRenderPassProperties renderpassProps)
 {
     std::unordered_map<String, ShaderDataCollection>::const_iterator shaderDataCollectionItr 
         = rawShaderObjects.find(pipelineContext->materialName);
@@ -467,54 +474,65 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         return;
     }
 
-    if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == DrawMeshShader::staticType())
+    if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == DrawMeshShaderConfig::staticType())
     {
-        DrawMeshShaderObject* drawMeshShaderObj = static_cast<DrawMeshShaderObject*>(shaderDataCollectionItr->second.shaderObject);
+        fatalAssert(!pipelineContext->frameAttachments.empty(), "%s() : Frame attachments cannot be empty");
 
+        DrawMeshShaderObject* drawMeshShaderObj = static_cast<DrawMeshShaderObject*>(shaderDataCollectionItr->second.shaderObject);
+ 
         GraphicsPipelineBase* graphicsPipeline;
         drawMeshShaderObj->getShader(pipelineContext->forVertexType, FramebufferFormat(pipelineContext->renderpassFormat), &graphicsPipeline);
         pipelineContext->pipelineUsed = graphicsPipeline;
-
+ 
         // If empty RTs then get framebuffer from global buffers
         const Framebuffer* fb = nullptr;
-        if (pipelineContext->rtTextures.empty())
         {
-            fb = GlobalBuffers::getFramebuffer(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx);
-        }
-        else
-        {
-            GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(pipelineContext->rtTextures);
             renderpassProps.renderpassAttachmentFormat.rpFormat = pipelineContext->renderpassFormat;
             // To make sure that RTs created framebuffer is compatible with GlobalBuffers created FBs and its render pass and pipelines
             fatalAssert(renderpassProps == renderpassPropsFromRpFormat(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx)
                 , "%s() : Incompatible RTs for Mesh Draw shaders", __func__);
-
-            fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->rtTextures);
+ 
+            fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->frameAttachments);
         }
         fatalAssert(fb != nullptr, "%s() : Framebuffer is invalid[Shader : %s, Render pass format : %s]", __func__, pipelineContext->materialName.getChar()
             , ERenderPassFormat::toString(pipelineContext->renderpassFormat));
         pipelineContext->framebuffer = fb;
     }
-    else if(shaderDataCollectionItr->second.shaderObject->baseShaderType() == UniqueUtilityShader::staticType())
+    else if(shaderDataCollectionItr->second.shaderObject->baseShaderType() == UniqueUtilityShaderConfig::staticType())
     {
-        GenericRenderPassProperties renderpassProps;
         const Framebuffer* fb = nullptr;
-        if (pipelineContext->bUseSwapchainFb)
+        if (pipelineContext->windowCanvas.isValid())
         {
-            fb = GlobalBuffers::getSwapchainFramebuffer(pipelineContext->swapchainIdx);
-
-            const GenericWindowCanvas* windowCanvas = gEngine->getApplicationInstance()->appWindowManager
-                .getWindowCanvas(gEngine->getApplicationInstance()->appWindowManager.getMainWindow());
+            auto itr = windowCanvasFramebuffers.find(pipelineContext->windowCanvas);
+            if (itr == windowCanvasFramebuffers.end())
+            {
+                const uint32 imageCount = pipelineContext->windowCanvas->imagesCount();
+                std::vector<const Framebuffer*>& fbs = windowCanvasFramebuffers[pipelineContext->windowCanvas];
+                fbs.resize(imageCount);
+                for (uint32 i = 0; i < imageCount; ++i)
+                {
+                    Framebuffer* newFb = graphicsHelperCache->createFbInstance();
+                    graphicsHelperCache->initializeSwapchainFb(graphicsInstanceCache, newFb, pipelineContext->windowCanvas, i);
+                    fbs[i] = newFb;
+                }
+                fb = fbs[pipelineContext->swapchainIdx];
+            }
+            else
+            {
+                fb = itr->second[pipelineContext->swapchainIdx];
+            }
+ 
+            renderpassProps = GenericRenderPassProperties();
             renderpassProps.bOneRtPerFormat = true;
             renderpassProps.multisampleCount = EPixelSampleCount::SampleCount1;
             renderpassProps.renderpassAttachmentFormat.attachments.resize(1);
-            renderpassProps.renderpassAttachmentFormat.attachments[0] = windowCanvas->windowCanvasFormat();
+            renderpassProps.renderpassAttachmentFormat.attachments[0] = pipelineContext->windowCanvas->windowCanvasFormat();
             renderpassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
         }
         else
         {
-            renderpassProps = renderpassPropsFromRTs(pipelineContext->rtTextures);
-            fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->rtTextures);
+            fatalAssert(!pipelineContext->frameAttachments.empty(), "%s() : Frame attachments cannot be empty", __func__);
+            fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->frameAttachments);
         }
         UniqueUtilityShaderObject* uniqUtilShaderObj = static_cast<UniqueUtilityShaderObject*>(shaderDataCollectionItr->second.shaderObject);
         GraphicsPipelineBase* graphicsPipeline = uniqUtilShaderObj->getPipeline(renderpassProps);
@@ -526,57 +544,57 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         pipelineContext->pipelineUsed = graphicsPipeline;        
         pipelineContext->framebuffer = fb;
     }
-    else if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == ComputeShader::staticType())
+    else if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == ComputeShaderConfig::staticType())
     {
         ComputeShaderObject* computeShaderObj = static_cast<ComputeShaderObject*>(shaderDataCollectionItr->second.shaderObject);
         pipelineContext->pipelineUsed = computeShaderObj->getPipeline();
     }
 }
 
-void GlobalRenderingContextBase::clearExternInitRtsFramebuffer(const std::vector<RenderTargetTexture*>& rtTextures)
+void GlobalRenderingContextBase::clearExternInitRtsFramebuffer(const std::vector<ImageResourceRef>& frameAttachments, GenericRenderPassProperties renderpassProps)
 {
-    GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);
-
     auto renderpassFbs = rtFramebuffers.find(renderpassProps);
     if (renderpassFbs != rtFramebuffers.cend() && !renderpassFbs->second.empty())
     {
         if (renderpassProps.renderpassAttachmentFormat.attachments.empty())
         {
             // there can be only one render pass without any attachments.
-            GlobalBuffers::destroyFbInstance(renderpassFbs->second[0]);
+            delete renderpassFbs->second[0];
             renderpassFbs->second.clear();
             return;
-        }
-        std::vector<const ImageResource*> expectedAttachments;
-        for (const RenderTargetTexture* const& rtTexture : rtTextures)
-        {
-            expectedAttachments.emplace_back(rtTexture->getRtTexture());
-
-            // Since depth formats do not have resolve
-            if (!renderpassProps.bOneRtPerFormat && !EPixelDataFormat::isDepthFormat(rtTexture->getFormat()))
-            {
-                expectedAttachments.emplace_back(rtTexture->getTextureResource());
-            }
         }
 
         for (auto itr = renderpassFbs->second.begin(); itr != renderpassFbs->second.end(); ++itr)
         {
             const Framebuffer *fb = *itr;
-            if (fb->textures.size() == expectedAttachments.size())
+            if (fb->textures.size() == frameAttachments.size())
             {
                 bool bSameTextures = true;
                 for (int32 attachmentIdx = 0; attachmentIdx < fb->textures.size(); ++attachmentIdx)
                 {
-                    bSameTextures = bSameTextures && fb->textures[attachmentIdx] == expectedAttachments[attachmentIdx];
+                    bSameTextures = bSameTextures && fb->textures[attachmentIdx] == frameAttachments[attachmentIdx];
                 }
 
                 if (bSameTextures)
                 {
-                    GlobalBuffers::destroyFbInstance(fb);
+                    delete fb;
                     renderpassFbs->second.erase(itr);
                     return;
                 }
             }
         }
     }
+}
+
+void GlobalRenderingContextBase::clearWindowCanvasFramebuffer(WindowCanvasRef windowCanvas)
+{
+    auto itr = windowCanvasFramebuffers.find(windowCanvas);
+    if (itr != windowCanvasFramebuffers.end())
+    {
+        for (const Framebuffer* fb : itr->second)
+        {
+            delete fb;
+        }
+    }
+    windowCanvasFramebuffers.erase(itr);
 }

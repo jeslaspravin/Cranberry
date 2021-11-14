@@ -4,11 +4,12 @@
 #include "RenderInterface/Shaders/EngineShaders/ShadowDepthDraw.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderInterface/Resources/Pipelines.h"
 
 template<EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
-class DefaultShader : public DrawMeshShader
+class DefaultShader : public DrawMeshShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(DefaultShader, <ExpandArgs(VertexUsage, RenderpassFormat)>,DrawMeshShader,)
+    DECLARE_GRAPHICS_RESOURCE(DefaultShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>,DrawMeshShaderConfig,)
 protected:
     DefaultShader()
         : BaseType(DEFAULT_SHADER_NAME)
@@ -58,8 +59,8 @@ public:
     }
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DefaultShader, <ExpandArgs(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
-    , <ExpandArgs(VertexUsage, RenderpassFormat)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DefaultShader, <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
+    , <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
 
 template class DefaultShader<EVertexType::Simple2, ERenderPassFormat::Multibuffer>;
 
@@ -72,58 +73,5 @@ template class DefaultShader<EVertexType::StaticMesh, ERenderPassFormat::Directi
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-class DefaultShaderPipeline : public GraphicsPipeline
-{
-    DECLARE_GRAPHICS_RESOURCE(DefaultShaderPipeline,, GraphicsPipeline,)
-private:
-    DefaultShaderPipeline() = default;
-public:
-    DefaultShaderPipeline(const PipelineBase* parent);
-    DefaultShaderPipeline(const ShaderResource* shaderResource);
-};
-
-DEFINE_GRAPHICS_RESOURCE(DefaultShaderPipeline)
-
-DefaultShaderPipeline::DefaultShaderPipeline(const PipelineBase* parent)
-    : BaseType(static_cast<const GraphicsPipelineBase*>(parent))
-{}
-
-DefaultShaderPipeline::DefaultShaderPipeline(const ShaderResource* shaderResource)
-    : BaseType()
-{
-    setPipelineShader(shaderResource);
-    setResourceName("Default_" + shaderResource->getResourceName());
-    supportedCullings.resize(2);
-    supportedCullings[0] = ECullingMode::FrontFace;
-    supportedCullings[1] = ECullingMode::BackFace;
-
-    allowedDrawModes.resize(2);
-    allowedDrawModes[0] = EPolygonDrawMode::Fill;
-    allowedDrawModes[1] = EPolygonDrawMode::Line;
-
-    // No alpha based blending for default shaders
-    AttachmentBlendState blendState;
-    blendState.bBlendEnable = false;
-
-    bool bHasDepth = false;
-    FramebufferFormat fbFormat = GlobalBuffers
-        ::getFramebufferRenderpassProps(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage()).renderpassAttachmentFormat;
-    attachmentBlendStates.reserve(fbFormat.attachments.size());
-    for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
-    {
-        if (!EPixelDataFormat::isDepthFormat(attachmentFormat))
-        {
-            attachmentBlendStates.emplace_back(blendState);
-        }
-        else
-        {
-            bHasDepth = true;
-        }
-    }
-
-    depthState.bEnableWrite = bHasDepth;
-}
-
-using DefaultShaderPipelineRegistrar = GenericPipelineRegistrar<DefaultShaderPipeline>;
-DefaultShaderPipelineRegistrar DEFAULT_SHADER_PIPELINE_REGISTER(DEFAULT_SHADER_NAME);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(DEFAULT_SHADER_PIPELINE_REGISTER, DEFAULT_SHADER_NAME, &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig);
 

@@ -8,6 +8,7 @@
 #include "RenderApi/Scene/RenderScene.h"
 #include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
 #include "Engine/Config/EngineGlobalConfigs.h"
+#include "RenderInterface/Resources/Pipelines.h"
 
 BEGIN_BUFFER_DEFINITION(PbrSpotLight)
 ADD_BUFFER_TYPED_FIELD(sptLightColor_lumen)
@@ -48,9 +49,9 @@ END_BUFFER_DEFINITION();
 #define PBRLIGHTSNOSHADOW_SHADER_NAME "PBRLightsNoShadow"
 #define PBRLIGHTSWITHSHADOW_SHADER_NAME "PBRLightsWithShadow"
 
-class PBRShaders : public UniqueUtilityShader
+class PBRShaders : public UniqueUtilityShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(PBRShaders, , UniqueUtilityShader, )
+    DECLARE_GRAPHICS_RESOURCE(PBRShaders, , UniqueUtilityShaderConfig, )
 private:
     PBRShaders() = default;
 protected:
@@ -127,5 +128,5 @@ DEFINE_GRAPHICS_RESOURCE(PBRLightsWithShadowShader)
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-ScreenSpaceQuadShaderPipelineRegistrar PBRNOSHADOW_SHADER_PIPELINE_REGISTER(PBRLIGHTSNOSHADOW_SHADER_NAME);
-ScreenSpaceQuadShaderPipelineRegistrar PBRWITHSHADOW_SHADER_PIPELINE_REGISTER(PBRLIGHTSWITHSHADOW_SHADER_NAME);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(PBRNOSHADOW_SHADER_PIPELINE_REGISTER, PBRLIGHTSNOSHADOW_SHADER_NAME, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(PBRWITHSHADOW_SHADER_PIPELINE_REGISTER, PBRLIGHTSWITHSHADOW_SHADER_NAME, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);

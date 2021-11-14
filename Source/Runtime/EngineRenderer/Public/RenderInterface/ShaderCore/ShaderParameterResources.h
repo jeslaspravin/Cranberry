@@ -1,17 +1,20 @@
 #pragma once
-#include "../Resources/GraphicsResources.h"
+#include <map>
+#include <set>
+#include <optional>
+#include <atomic>
+
+#include "Types/Containers/ReferenceCountPtr.h"
+#include "RenderInterface/Resources/GraphicsResources.h"
+#include "RenderInterface/Resources/Samplers/SamplerInterface.h"
+#include "RenderInterface/Resources/MemoryResources.h"
 #include "ShaderDataTypes.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 #include "Logger/Logger.h"
 #include "Reflections/Functions.h"
-#include "RenderInterface/Rendering/IRenderCommandList.h"
 
-#include <map>
-#include <set>
 
 class ShaderResource;
-class BufferResource;
-class ImageResource;
 class IRenderCommandList;
 class IGraphicsInstance;
 class Vector2D;
@@ -96,7 +99,7 @@ public:
 //  Descriptors set 0 will be common for scene so only one layout will be available in global context
 //  Descriptors set 1 will be common for a vertex type instance so layout will be available in vertex specific type objects
 //  Descriptors set 2 will be unique for each shader
-class ShaderSetParametersLayout : public GraphicsResource
+class ENGINERENDERER_EXPORT ShaderSetParametersLayout : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(ShaderSetParametersLayout, , GraphicsResource, )
 
@@ -161,10 +164,12 @@ public:
     const ShaderResource* getShaderResource() const { return respectiveShaderRes; }
 };
 
-class ShaderParameters : public GraphicsResource
+class ENGINERENDERER_EXPORT ShaderParameters : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(ShaderParameters, , GraphicsResource, )
 
+private:
+    std::atomic<uint32> refCounter;
 protected:
 
     struct ParamUpdateLambdaOut
@@ -210,7 +215,7 @@ protected:
         bool bIsExternal = false;
         const ShaderBufferDescriptorType* descriptorInfo;
         uint8* cpuBuffer;
-        BufferResource* gpuBuffer = nullptr;
+        BufferResourceRef gpuBuffer;
 
         std::map<String, BufferParameter> bufferParams;
         std::optional<RuntimeArrayParameter> runtimeArray;
@@ -219,17 +224,17 @@ protected:
     struct TexelParameterData
     {
         const ShaderBufferDescriptorType* descriptorInfo;
-        std::vector<BufferResource*> gpuBuffers;
+        std::vector<BufferResourceRef> gpuBuffers;
     };
 
     struct TextureParameterData
     {
         struct TextureViewAndSampler
         {
-            ImageResource* texture = nullptr;
+            ImageResourceRef texture;
             ImageViewInfo viewInfo;
             // Optional sampler
-            SharedPtr<class SamplerInterface> sampler;
+            SamplerRef sampler;
         };
         const ShaderTextureDescriptorType* descriptorInfo;
         
@@ -240,7 +245,7 @@ protected:
     {
         const ShaderSamplerDescriptorType* descriptorInfo;
 
-        std::vector<SharedPtr<class SamplerInterface>> samplers;
+        std::vector<SamplerRef> samplers;
     };
 
     std::map<String, BufferParametersData> shaderBuffers;
@@ -279,6 +284,10 @@ protected:
     ShaderParameters() = default;
     ShaderParameters(const GraphicsResource* shaderParamLayout, const std::set<uint32>& ignoredSetIds = {});
 public:
+    /* ReferenceCountPtr implementation */
+    void addRef();
+    void removeRef();
+    uint32 refCount() const;
     /* GraphicsResource overrides */
     virtual void init() override;
     virtual void release() override;
@@ -289,13 +298,13 @@ public:
     const GraphicsResource* getParamLayout() const { return paramLayout; }
 
     // Read only
-    std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> getAllReadOnlyTextures() const;
-    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllReadOnlyBuffers() const;
-    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllReadOnlyTexels() const;
+    std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType*>> getAllReadOnlyTextures() const;
+    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType*>> getAllReadOnlyBuffers() const;
+    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType*>> getAllReadOnlyTexels() const;
     // Read Write and Write
-    std::vector<std::pair<ImageResource*, const ShaderTextureDescriptorType*>> getAllWriteTextures() const;
-    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllWriteBuffers() const;
-    std::vector<std::pair<BufferResource*, const ShaderBufferDescriptorType*>> getAllWriteTexels() const;
+    std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType*>> getAllWriteTextures() const;
+    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType*>> getAllWriteBuffers() const;
+    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType*>> getAllWriteTexels() const;
 
     virtual void updateParams(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
     void pullBufferParamUpdates(std::vector<BatchCopyBufferData>& copies, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
@@ -315,12 +324,12 @@ public:
     bool setMatrixParam(const String& paramName, const String& bufferName, const Matrix4& value, uint32 index = 0);
     template<typename BufferType>
     bool setBuffer(const String& paramName, const BufferType& bufferValue, uint32 index = 0);
-    bool setBufferResource(const String& bufferName, BufferResource* buffer);
-    bool setTexelParam(const String& paramName, BufferResource* texelBuffer, uint32 index = 0);
-    bool setTextureParam(const String& paramName, ImageResource* texture, uint32 index = 0);
-    bool setTextureParam(const String& paramName, ImageResource* texture, SharedPtr<SamplerInterface> sampler, uint32 index = 0);
+    bool setBufferResource(const String& bufferName, BufferResourceRef buffer);
+    bool setTexelParam(const String& paramName, BufferResourceRef texelBuffer, uint32 index = 0);
+    bool setTextureParam(const String& paramName, ImageResourceRef texture, uint32 index = 0);
+    bool setTextureParam(const String& paramName, ImageResourceRef texture, SamplerRef sampler, uint32 index = 0);
     bool setTextureParamViewInfo(const String& paramName, const ImageViewInfo& textureViewInfo, uint32 index = 0);
-    bool setSamplerParam(const String& paramName, SharedPtr<SamplerInterface> sampler, uint32 index = 0);
+    bool setSamplerParam(const String& paramName, SamplerRef sampler, uint32 index = 0);
 
     int32 getIntParam(const String& paramName, uint32 index = 0) const;
     uint32 getUintParam(const String& paramName, uint32 index = 0) const;
@@ -334,73 +343,11 @@ public:
     Vector2D getVector2Param(const String& paramName, const String& bufferName, uint32 index = 0) const;
     Vector4D getVector4Param(const String& paramName, const String& bufferName, uint32 index = 0) const;
     Matrix4 getMatrixParam(const String& paramName, const String& bufferName, uint32 index = 0) const;
-    BufferResource* getBufferResource(const String& paramName);
-    BufferResource* getTexelParam(const String& paramName, uint32 index = 0) const;
-    ImageResource* getTextureParam(const String& paramName, uint32 index = 0) const;
-    ImageResource* getTextureParam(SharedPtr<SamplerInterface>& outSampler, const String& paramName, uint32 index = 0) const;
-    SharedPtr<SamplerInterface> getSamplerParam(const String& paramName, uint32 index = 0) const;
+    BufferResourceRef getBufferResource(const String& paramName);
+    BufferResourceRef getTexelParam(const String& paramName, uint32 index = 0) const;
+    ImageResourceRef getTextureParam(const String& paramName, uint32 index = 0) const;
+    ImageResourceRef getTextureParam(SamplerRef& outSampler, const String& paramName, uint32 index = 0) const;
+    SamplerRef getSamplerParam(const String& paramName, uint32 index = 0) const;
 };
+using ShaderParametersRef = ReferenceCountPtr<ShaderParameters>;
 
-template<typename BufferType>
-bool ShaderParameters::setBuffer(const String& paramName, const BufferType& bufferValue, uint32 index/* = 0 */)
-{
-    bool bValueSet = false;
-    auto bufferDataItr = shaderBuffers.find(paramName);
-
-    if (bufferDataItr == shaderBuffers.end())
-    {
-        String bufferName;
-        std::pair<const BufferParametersData*, const BufferParametersData::BufferParameter*> foundInfo = findBufferParam(bufferName, paramName);
-        if (foundInfo.first && foundInfo.second && BIT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct)
-            && (!foundInfo.second->bufferField->isPointer() || foundInfo.first->runtimeArray->currentSize > index))
-        {
-            if (foundInfo.second->bufferField->isIndexAccessible())
-            {
-                if (bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index))
-                {
-                    genericUpdates.emplace_back([foundInfo, index](ParamUpdateLambdaOut& paramOut, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
-                        {
-                            BufferType* bufferPtr = reinterpret_cast<BufferType*>(foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr));
-                            cmdList->recordCopyToBuffer<BufferType>(*paramOut.bufferUpdates, foundInfo.first->gpuBuffer
-                                , foundInfo.second->bufferField->offset + (index * foundInfo.second->bufferField->stride)
-                                , bufferPtr + index, foundInfo.second->bufferField->paramInfo);
-                        });
-                }
-            }
-            else if (bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue))
-            {
-                genericUpdates.emplace_back([foundInfo](ParamUpdateLambdaOut& paramOut, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
-                    {
-                        cmdList->recordCopyToBuffer<BufferType>(*paramOut.bufferUpdates, foundInfo.first->gpuBuffer
-                            , foundInfo.second->bufferField->offset
-                            , reinterpret_cast<BufferType*>(foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr))
-                            , foundInfo.second->bufferField->paramInfo);
-                    });
-            }
-        }
-        else
-        {
-            Logger::error("ShaderParameters", "%s() : Cannot set %s[%d] of %s", __func__, paramName.getChar(), index, bufferName.getChar());
-        }
-    }
-    else
-    {
-        BufferParametersData* bufferDataPtr = &bufferDataItr->second;
-        bValueSet = (bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride() == sizeof(BufferType)) && !bufferDataPtr->runtimeArray.has_value();
-        if (bValueSet)
-        {
-            (*reinterpret_cast<BufferType*>(bufferDataPtr->cpuBuffer)) = bufferValue;
-            genericUpdates.emplace_back([bufferDataPtr](ParamUpdateLambdaOut& paramOut, IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
-                {
-                    cmdList->recordCopyToBuffer<BufferType>(*paramOut.bufferUpdates, bufferDataPtr->gpuBuffer
-                        , 0, reinterpret_cast<BufferType*>(bufferDataPtr->cpuBuffer), bufferDataPtr->descriptorInfo->bufferParamInfo);
-                });
-        }
-        else
-        {
-            Logger::error("ShaderParameters", "%s() : Cannot set stride %d to stride %d or cannot set buffer with runtime array as single struct, Set runtime array separately"
-                , __func__, sizeof(BufferType), bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride());
-        }
-    }
-    return bValueSet;
-}

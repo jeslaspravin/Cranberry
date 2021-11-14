@@ -1,10 +1,13 @@
 #pragma once
+#include <atomic>
+
 #include "GraphicsResources.h"
-#include "../../Core/Math/CoreMathTypedefs.h"
-#include "../../Core/String/String.h"
-#include "../../Core/Types/HashTypes.h"
-#include "../../Core/Types/CoreDefines.h"
-#include "../CoreGraphicsTypes.h"
+#include "Math/CoreMathTypedefs.h"
+#include "String/String.h"
+#include "Types/HashTypes.h"
+#include "Types/CoreDefines.h"
+#include "RenderInterface/CoreGraphicsTypes.h"
+#include "Types/Containers/ReferenceCountPtr.h"
 
 struct ENGINERENDERER_EXPORT BufferViewInfo
 {
@@ -92,7 +95,8 @@ using ImageViewTypeAndInfo = std::pair<int32, ImageViewInfo>;
 template <>
 struct ENGINERENDERER_EXPORT std::hash<ImageViewInfo::ImageComponentMapping>
 {
-    _NODISCARD size_t operator()(const ImageViewInfo::ImageComponentMapping& keyval) const noexcept {
+    _NODISCARD size_t operator()(const ImageViewInfo::ImageComponentMapping& keyval) const noexcept 
+    {
         hash<uint32> uint32Hasher;
         size_t seed = uint32Hasher(keyval.r);
         HashUtility::hashCombine(seed, keyval.g);
@@ -105,7 +109,8 @@ struct ENGINERENDERER_EXPORT std::hash<ImageViewInfo::ImageComponentMapping>
 template <>
 struct ENGINERENDERER_EXPORT std::hash<ImageSubresource>
 {
-    _NODISCARD size_t operator()(const ImageSubresource& keyval) const noexcept {
+    _NODISCARD size_t operator()(const ImageSubresource& keyval) const noexcept 
+    {
         hash<uint32> uint32Hasher;
         size_t seed = uint32Hasher(keyval.baseLayer);
         HashUtility::hashCombine(seed, keyval.baseMip);
@@ -118,7 +123,8 @@ struct ENGINERENDERER_EXPORT std::hash<ImageSubresource>
 template <>
 struct ENGINERENDERER_EXPORT std::hash<ImageViewInfo>
 {
-    _NODISCARD size_t operator()(const ImageViewInfo& keyval) const noexcept {
+    _NODISCARD size_t operator()(const ImageViewInfo& keyval) const noexcept 
+    {
         size_t seed = hash<bool>{}(keyval.bUseStencil);
         HashUtility::hashCombine(seed, keyval.componentMapping);
         HashUtility::hashCombine(seed, keyval.viewSubresource);
@@ -129,7 +135,8 @@ struct ENGINERENDERER_EXPORT std::hash<ImageViewInfo>
 template <>
 struct ENGINERENDERER_EXPORT std::hash<ImageViewTypeAndInfo>
 {
-    _NODISCARD size_t operator()(const ImageViewTypeAndInfo& keyval) const noexcept {
+    _NODISCARD size_t operator()(const ImageViewTypeAndInfo& keyval) const noexcept 
+    {
         size_t seed = hash<int32>{}(keyval.first);
         HashUtility::hashCombine(seed, keyval.second);
         return seed;
@@ -140,7 +147,8 @@ struct ENGINERENDERER_EXPORT std::hash<ImageViewTypeAndInfo>
 class ENGINERENDERER_EXPORT MemoryResource : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(MemoryResource, , GraphicsResource, )
-
+private:
+    std::atomic<uint32> refCounter;
 protected:
     // For image this is always used for buffer this is used only in special cases
     EPixelDataFormat::Type dataFormat;
@@ -160,11 +168,16 @@ public:
 
     bool isStagingResource() const { return bIsStagingResource; }
 
+    /* ReferenceCountPtr implementation */
+    void addRef();
+    void removeRef();
+    uint32 refCount() const;
     /* GraphicsResource overrides */
     String getResourceName() const override;
     void setResourceName(const String& name) override;
     /* overrides ends */
 };
+using MemoryResourceRef = ReferenceCountPtr<MemoryResource>;
 
 class ENGINERENDERER_EXPORT BufferResource : public MemoryResource
 {
@@ -180,6 +193,15 @@ public:
     virtual void setBufferStride(uint32 newStride) {}
     virtual uint32 bufferCount() const { return 0; }
     virtual void setBufferCount(uint32 newCount) {}
+};
+using BufferResourceRef = ReferenceCountPtr<BufferResource>;
+
+struct ImageResourceCreateInfo
+{
+    EPixelDataFormat::Type imageFormat;
+    Size3D dimensions{ 256,256,1 };
+    uint32 numOfMips{ 0 };
+    uint32 layerCount{ 1 };
 };
 
 class ENGINERENDERER_EXPORT ImageResource : public MemoryResource
@@ -198,7 +220,7 @@ protected:
 
     uint32 mipCountFromDim();
 public:
-    ImageResource(EPixelDataFormat::Type imageFormat);
+    ImageResource(ImageResourceCreateInfo createInfo);
 
     void setLayerCount(uint32 count);
 
@@ -215,4 +237,56 @@ public:
     FORCE_INLINE EPixelSampleCount::Type sampleCount() const { return sampleCounts; }
     FORCE_INLINE bool isShaderRead() const { return (shaderUsage & EImageShaderUsage::Sampling) > 0; }
     FORCE_INLINE bool isShaderWrite() const { return (shaderUsage & EImageShaderUsage::Writing) > 0; }
+};
+using ImageResourceRef = ReferenceCountPtr<ImageResource>;
+
+struct CopyBufferInfo
+{
+    uint64 srcOffset;
+    uint64 dstOffset;
+    uint32 copySize;
+};
+// Single copy from src to dst
+struct BatchCopyBufferInfo
+{
+    BufferResourceRef src;
+    BufferResourceRef dst;
+    CopyBufferInfo copyInfo;
+};
+
+// Single copy struct, Used to copy cpu visible data to a gpu(can be cpu visible) buffer
+struct BatchCopyBufferData
+{
+    BufferResourceRef dst;
+    uint32 dstOffset;
+    const void* dataToCopy;
+    uint32 size;
+};
+
+struct CopyPixelsToImageInfo
+{
+    // Offset and extent for MIP base rest will be calculated automatically
+    Size3D srcOffset;
+    Size3D dstOffset;
+    Size3D extent;
+
+    ImageSubresource subres;
+
+    bool bGenerateMips;
+    // Filtering to be used to generate MIPs
+    ESamplerFiltering::Type mipFiltering;
+};
+
+struct CopyImageInfo
+{
+    // Offset and extent for MIP base rest will be calculated automatically
+    Size3D offset{ 0 };
+    Size3D extent;
+
+    ImageSubresource subres;
+
+    FORCE_INLINE bool isCopyCompatible(const CopyImageInfo& rhs) const
+    {
+        return extent == rhs.extent && subres == rhs.subres;
+    }
 };

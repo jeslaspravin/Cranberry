@@ -1,9 +1,11 @@
 #pragma once
+#include <vector>
+
 #include "RenderInterface/CoreGraphicsTypes.h"
 #include "Types/HashTypes.h"
 #include "EngineRendererExports.h"
+#include "RenderInterface/Resources/MemoryResources.h"
 
-#include <vector>
 
 namespace ERenderPassFormat
 {
@@ -20,7 +22,7 @@ namespace ERenderPassFormat
 
 #define FOR_EACH_RENDERPASS_FORMAT(OpMacro) \
     OpMacro(Generic)                        \
-    OpMacro(Multibuffer)                   \
+    OpMacro(Multibuffer)                    \
     OpMacro(Depth)                          \
     OpMacro(PointLightDepth)                \
     OpMacro(DirectionalLightDepth)
@@ -31,14 +33,12 @@ namespace ERenderPassFormat
 // Framebuffer types
 //////////////////////////////////////////////////////////////////////////
 
-class ImageResource;
-
 struct ENGINERENDERER_EXPORT FramebufferFormat
 {
 public:
     using AttachmentsFormatList = std::vector<EPixelDataFormat::Type>;
     // One format per RT and resolve pair
-     AttachmentsFormatList attachments;
+    AttachmentsFormatList attachments;
     ERenderPassFormat::Type rpFormat;
 
     explicit FramebufferFormat(AttachmentsFormatList&& frameBuffers, ERenderPassFormat::Type renderpassFormat)
@@ -76,7 +76,7 @@ struct ENGINERENDERER_EXPORT std::hash<FramebufferFormat>
 
 struct ENGINERENDERER_EXPORT Framebuffer
 {
-    std::vector<ImageResource*> textures;
+    std::vector<ImageResourceRef> textures;
     // If true then all color attachments will definitely have a resolve to it and it will be next to each color attachment
     bool bHasResolves = false;
 
@@ -94,7 +94,11 @@ struct ENGINERENDERER_EXPORT GenericRenderPassProperties
     // if all RT used is using same read write textures?
     bool bOneRtPerFormat;
     
-    GenericRenderPassProperties() : renderpassAttachmentFormat(ERenderPassFormat::Generic) {}
+    GenericRenderPassProperties() 
+        : renderpassAttachmentFormat(ERenderPassFormat::Generic)
+        , multisampleCount(EPixelSampleCount::SampleCount1)
+        , bOneRtPerFormat(true)
+    {}
 
     bool operator==(const GenericRenderPassProperties& otherProperties) const;
 };

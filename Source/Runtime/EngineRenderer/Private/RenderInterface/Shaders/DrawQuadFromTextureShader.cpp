@@ -1,11 +1,12 @@
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
+#include "RenderInterface/Resources/Pipelines.h"
 
 #define DRAW_QUAD_FROM_TEXTURE "DrawQuadFromTexture"
 
-class DrawQuadFromTexture : public UniqueUtilityShader
+class DrawQuadFromTexture : public UniqueUtilityShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(DrawQuadFromTexture, , UniqueUtilityShader, );
+    DECLARE_GRAPHICS_RESOURCE(DrawQuadFromTexture, , UniqueUtilityShaderConfig, );
 private:
     DrawQuadFromTexture();
 };
@@ -18,9 +19,9 @@ DrawQuadFromTexture::DrawQuadFromTexture()
 
 
 #define DRAW_OVER_BLENDED_QUAD_FROM_TEXTURE "DrawOverBlendedQuadFromTexture"
-class DrawOverBlendedQuadFromTexture : public UniqueUtilityShader
+class DrawOverBlendedQuadFromTexture : public UniqueUtilityShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(DrawOverBlendedQuadFromTexture, , UniqueUtilityShader, );
+    DECLARE_GRAPHICS_RESOURCE(DrawOverBlendedQuadFromTexture, , UniqueUtilityShaderConfig, );
 private:
     DrawOverBlendedQuadFromTexture();
 
@@ -41,5 +42,5 @@ DrawOverBlendedQuadFromTexture::DrawOverBlendedQuadFromTexture()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-ScreenSpaceQuadShaderPipelineRegistrar QUAD_FROM_TEXTURE_PIPELINE_REGISTER(DRAW_QUAD_FROM_TEXTURE);
-OverBlendedSSQuadShaderPipelineRegistrar OVER_BLENDED_QUAD_FROM_TEXTURE_PIPELINE_REGISTER(DRAW_OVER_BLENDED_QUAD_FROM_TEXTURE);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(QUAD_FROM_TEXTURE_PIPELINE_REGISTER, DRAW_QUAD_FROM_TEXTURE, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(OVER_BLENDED_QUAD_FROM_TEXTURE_PIPELINE_REGISTER, DRAW_OVER_BLENDED_QUAD_FROM_TEXTURE, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig);

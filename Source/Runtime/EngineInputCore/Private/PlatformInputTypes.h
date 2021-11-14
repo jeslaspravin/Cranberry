@@ -1,18 +1,15 @@
 #pragma once
 
-#if _WIN32
+#if PLATFORM_WINDOWS
 
-#include "Windows/WindowsKeyCodes.h"
-#include "Windows/WindowsKeyboardDevice.h"
-#include "Windows/WindowsMouseDevice.h"
-#include "Windows/WindowsRawInputBuffer.h"
+#include "WindowsKeyCodes.h"
+#include "WindowsKeyboardDevice.h"
+#include "WindowsMouseDevice.h"
+#include "WindowsRawInputBuffer.h"
 
-#elif __unix__
-
+#elif PLATFORM_LINUX
 static_assert(false, "Platform not supported!");
-#elif __linux__
-static_assert(false, "Platform not supported!");
-#elif __APPLE__
+#elif PLATFORM_APPLE
 static_assert(false, "Platform not supported!");
 #endif
 #include "MakeBreakKeyCodes.h"

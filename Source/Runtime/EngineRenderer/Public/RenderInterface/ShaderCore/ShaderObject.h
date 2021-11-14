@@ -1,17 +1,19 @@
 #pragma once
-#include "String/String.h"
-#include "RenderApi/VertexData.h"
-#include "RenderInterface/Rendering/FramebufferTypes.h"
-#include "RenderInterface/ShaderCore/ShaderInputOutput.h"
 
 #include <set>
 #include <unordered_map>
 
+#include "String/String.h"
+#include "RenderApi/VertexData.h"
+#include "RenderInterface/Rendering/FramebufferTypes.h"
+#include "RenderInterface/ShaderCore/ShaderInputOutput.h"
+#include "EngineRendererExports.h"
+
 class GraphicsResourceType;
 class ShaderResource;
-class DrawMeshShader;
-class UniqueUtilityShader;
-class ComputeShader;
+class DrawMeshShaderConfig;
+class UniqueUtilityShaderConfig;
+class ComputeShaderConfig;
 struct FramebufferFormat;
 
 class GraphicsPipelineBase;
@@ -19,7 +21,7 @@ class ComputePipelineBase;
 class PipelineCacheBase;
 class GraphicsResource;
 
-class ShaderObjectBase
+class ENGINERENDERER_EXPORT ShaderObjectBase
 {
 private:
     String shaderName;
@@ -43,12 +45,12 @@ public:
 *
 * @date June 2020
 */
-class DrawMeshShaderObject final : public ShaderObjectBase
+class ENGINERENDERER_EXPORT DrawMeshShaderObject final : public ShaderObjectBase
 {
 public:
     struct ShaderResourceInfo
     {
-        const DrawMeshShader* shader;
+        const ShaderResource* shader;
         GraphicsPipelineBase* pipeline;
         // In set 3
         GraphicsResource* perVariantParamsLayout;
@@ -68,7 +70,7 @@ public:
     DrawMeshShaderObject(const String& sName);
     ~DrawMeshShaderObject();
 
-    const DrawMeshShader* getShader(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat
+    const ShaderResource* getShader(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat
         , GraphicsPipelineBase** outGraphicsPipeline = nullptr) const;
     GraphicsResource* getVariantUniqueParamsLayout(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat) const;
     const ShaderResourceList& getAllShaders() const;
@@ -93,10 +95,10 @@ public:
 *
 * @date July 2020
 */
-class UniqueUtilityShaderObject final : public ShaderObjectBase
+class ENGINERENDERER_EXPORT UniqueUtilityShaderObject final : public ShaderObjectBase
 {
 private:
-    const UniqueUtilityShader* utilityShader;
+    const ShaderResource* utilityShader;
 
     GenericRenderPassProperties defaultPipelineProps;
     std::unordered_map<GenericRenderPassProperties, GraphicsPipelineBase*> graphicsPipelines;
@@ -104,7 +106,7 @@ public:
     UniqueUtilityShaderObject(const String& sName, const ShaderResource* shaderResource);
     ~UniqueUtilityShaderObject();
 
-    const UniqueUtilityShader* getShader() const;
+    const ShaderResource* getShader() const;
     GraphicsPipelineBase* getPipeline(const GenericRenderPassProperties& renderpassProps) const;
     GraphicsPipelineBase* getDefaultPipeline() const;
     std::vector<const GraphicsPipelineBase*> getAllPipelines() const;
@@ -119,16 +121,16 @@ public:
     /* Override ends */
 };
 
-class ComputeShaderObject final : public ShaderObjectBase
+class ENGINERENDERER_EXPORT ComputeShaderObject final : public ShaderObjectBase
 {
 private:
-    const ComputeShader* computeShader;
+    const ShaderResource* computeShader;
     ComputePipelineBase* computePipeline;
 public:
     ComputeShaderObject(const String& sName, const ShaderResource* shaderResource);
     ~ComputeShaderObject();
 
-    const ComputeShader* getShader() const;
+    const ShaderResource* getShader() const;
     ComputePipelineBase* getPipeline() const;
 
     // Internal use functions

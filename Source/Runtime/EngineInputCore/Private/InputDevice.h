@@ -1,5 +1,5 @@
 #pragma once
-#include "../Platform/PlatformTypes.h"
+#include "Types/CoreTypes.h"
 
 class Keys;
 class AnalogStates;

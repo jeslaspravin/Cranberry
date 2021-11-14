@@ -1,7 +1,7 @@
 #include "WindowsRawInputBuffer.h"
-#include "../../Logger/Logger.h"
-#include "../InputDevice.h"
-#include "../../Platform/Windows/WindowsCommonHeaders.h"
+#include "Logger/Logger.h"
+#include "InputDevice.h"
+#include "WindowsCommonHeaders.h"
 
 WindowsRawInputBuffer::~WindowsRawInputBuffer()
 {

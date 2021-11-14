@@ -7,6 +7,14 @@
 
 struct SpecializationConstantEntry;
 
+struct StaticMeshVertex
+{
+    Vector4D position;// xyz position, w texture coord's U
+    Vector4D normal;// xyz normal, w texture coord's V
+    Vector4D tangent;
+};
+
+
 namespace EVertexType
 {
     // Also update in "MaterialCommonUniforms.h" MaterialVertexUniforms
@@ -29,44 +37,44 @@ namespace EVertexType
     template<Type VertexType>
     const std::vector<ShaderVertexParamInfo*>& vertexParamInfo();
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple2>();
+    ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple2>();
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<UI>();
+    ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<UI>();
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3>();
+    ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3>();
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3DColor>();
+    ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<Simple3DColor>();
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<BasicMesh>();
+    ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<BasicMesh>();
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<StaticMesh>();
+    ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<StaticMesh>();
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<InstancedSimple3DColor>();
+    ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<InstancedSimple3DColor>();
     template<>
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<NoVertex>();
+    ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo*>& vertexParamInfo<NoVertex>();
 
-    const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType);
+    ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo*>& vertexParamInfo(Type vertexType);
 
     template<Type VertexType>
     void vertexSpecConsts(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<Simple2>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts<Simple2>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<UI>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts<UI>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<Simple3>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts<Simple3>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<Simple3DColor>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts<Simple3DColor>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<BasicMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts<BasicMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<InstancedSimple3DColor>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts<InstancedSimple3DColor>(std::map<String, SpecializationConstantEntry>& specializationConst);
     template<>
-    void vertexSpecConsts<NoVertex>(std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts<NoVertex>(std::map<String, SpecializationConstantEntry>& specializationConst);
 
-    void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry>& specializationConst);
+    ENGINERENDERER_EXPORT void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry>& specializationConst);
 }

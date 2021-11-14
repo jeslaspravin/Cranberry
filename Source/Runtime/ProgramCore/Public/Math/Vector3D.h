@@ -96,7 +96,22 @@ public:
     static Vector3D modf(Vector3D& wholePart, const Vector3D& value);
 };
 
-Vector3D operator/(float n, const Vector3D& d);
-Vector3D operator-(float n, const Vector3D& d);
-Vector3D operator*(float n, const Vector3D& d);
-Vector3D operator+(float n, const Vector3D& d);
+FORCE_INLINE Vector3D operator/(float n, const Vector3D& d)
+{
+    return Vector3D(n / d.value);
+}
+
+FORCE_INLINE Vector3D operator-(float n, const Vector3D& d)
+{
+    return Vector3D(n - d.value);
+}
+
+FORCE_INLINE Vector3D operator*(float n, const Vector3D& d)
+{
+    return d * n;
+}
+
+FORCE_INLINE Vector3D operator+(float n, const Vector3D& d)
+{
+    return d + n;
+}

@@ -2,45 +2,37 @@
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
+#include "RenderInterface/Resources/Pipelines.h"
 #include "RenderApi/Scene/RenderScene.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 #define DRAW_GRID_NAME "DrawGrid"
 
 template <bool DepthTest>
-using DrawGridQuadPipelineBase = std::conditional_t<DepthTest, OverBlendedSSQuadWithDepthTestPipeline, OverBlendedSSQuadShaderPipeline>;
-
-template <typename DrawGridPipelineBaseType>
-class DrawGridQuadPipeline : public DrawGridPipelineBaseType
+GraphicsPipelineConfig drawGridPipelineConfig(String& pipelineName, const ShaderResource* shaderResource)
 {
-    DECLARE_GRAPHICS_RESOURCE(DrawGridQuadPipeline, <ExpandArgs(DrawGridPipelineBaseType)>, DrawGridPipelineBaseType, );
-
-private:
-    using DrawGridPipelineBaseType::supportedCullings;
-
-    DrawGridQuadPipeline() = default;
-public:
-    DrawGridQuadPipeline(const PipelineBase * parent)
-        : BaseType(parent)
-    {}
-    DrawGridQuadPipeline(const ShaderResource* shaderResource)
-        : BaseType(shaderResource)
+    pipelineName = shaderResource->getResourceName();
+    GraphicsPipelineConfig config;
+    if constexpr (DepthTest)
     {
-        // Since grid has to be visible either side
-        supportedCullings.clear();
-        supportedCullings.emplace_back(ECullingMode::None);
+        config = ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendDepthTestedShaderConfig(pipelineName, shaderResource);
     }
-};
+    else
+    {
+        config = ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig(pipelineName, shaderResource);
+    }
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DrawGridQuadPipeline, <ExpandArgs(typename DrawGridPipelineBaseType)>, <ExpandArgs(DrawGridPipelineBaseType)>);
+    // Since grid has to be visible either side
+    config.supportedCullings.clear();
+    config.supportedCullings.emplace_back(ECullingMode::None);
+
+    return config;
+}
 
 template <bool DepthTest>
-using DrawGridQuadPipelineRegistrar = GenericPipelineRegistrar<DrawGridQuadPipeline<DrawGridQuadPipelineBase<DepthTest>>>;
-
-template <bool DepthTest>
-class DrawGrid : public UniqueUtilityShader
+class DrawGrid : public UniqueUtilityShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(DrawGrid, <ExpandArgs(DepthTest)>, UniqueUtilityShader, );
+    DECLARE_GRAPHICS_RESOURCE(DrawGrid, <EXPAND_ARGS(DepthTest)>, UniqueUtilityShaderConfig, );
 private:
     String shaderFileName;
 
@@ -48,7 +40,7 @@ private:
         : BaseType(String(DRAW_GRID_NAME) + (DepthTest ? "DTest" : ""))
         , shaderFileName(DRAW_GRID_NAME)
     {
-        static DrawGridQuadPipelineRegistrar<DepthTest> DRAW_GRID_PIPELINE_REGISTRAR(getResourceName());
+        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_GRID_PIPELINE_REGISTRAR, getResourceName(), &drawGridPipelineConfig<DepthTest>);
     }
 
 protected:
@@ -74,8 +66,7 @@ public:
     }
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DrawGrid, <ExpandArgs(bool DepthTest)>, <ExpandArgs(DepthTest)>);
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DrawGrid, <EXPAND_ARGS(bool DepthTest)>, <EXPAND_ARGS(DepthTest)>);
 
 template DrawGrid<false>;
 template DrawGrid<true>;
-

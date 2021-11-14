@@ -1,5 +1,5 @@
 #pragma once
-#include "../RawInputBuffer.h"
+#include "RawInputBuffer.h"
 
 class WindowsRawInputBuffer final : public IRawInputBuffer
 {

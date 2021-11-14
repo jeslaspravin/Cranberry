@@ -4,6 +4,7 @@
 #include "RenderApi/GBuffersAndTextures.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderInterface/Resources/Pipelines.h"
 
 #define TEXTURED_SHADER_NAME "Textured"
 
@@ -25,9 +26,9 @@ ADD_BUFFER_STRUCT_FIELD(meshData, TexturedMeshData)
 END_BUFFER_DEFINITION();
 
 template<EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
-class TexturedShader : public DrawMeshShader
+class TexturedShader : public DrawMeshShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(TexturedShader, <ExpandArgs(VertexUsage, RenderpassFormat)>, DrawMeshShader, )
+    DECLARE_GRAPHICS_RESOURCE(TexturedShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>, DrawMeshShaderConfig, )
 protected:
     TexturedShader()
         : BaseType(TEXTURED_SHADER_NAME)
@@ -56,8 +57,8 @@ protected:
     }
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(TexturedShader, <ExpandArgs(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
-    , <ExpandArgs(VertexUsage, RenderpassFormat)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(TexturedShader, <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
+    , <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
 
 template class TexturedShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffer>;
 
@@ -65,57 +66,4 @@ template class TexturedShader<EVertexType::StaticMesh, ERenderPassFormat::Multib
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-class TexturedShaderPipeline : public GraphicsPipeline
-{
-    DECLARE_GRAPHICS_RESOURCE(TexturedShaderPipeline, , GraphicsPipeline, )
-private:
-    TexturedShaderPipeline() = default;
-public:
-    TexturedShaderPipeline(const PipelineBase* parent);
-    TexturedShaderPipeline(const ShaderResource* shaderResource);
-};
-
-DEFINE_GRAPHICS_RESOURCE(TexturedShaderPipeline)
-
-TexturedShaderPipeline::TexturedShaderPipeline(const PipelineBase* parent)
-    : BaseType(static_cast<const GraphicsPipelineBase*>(parent))
-{}
-
-TexturedShaderPipeline::TexturedShaderPipeline(const ShaderResource* shaderResource)
-    : BaseType()
-{
-    setPipelineShader(shaderResource);
-    setResourceName(shaderResource->getResourceName());
-    supportedCullings.resize(2);
-    supportedCullings[0] = ECullingMode::FrontFace;
-    supportedCullings[1] = ECullingMode::BackFace;
-
-    allowedDrawModes.resize(2);
-    allowedDrawModes[0] = EPolygonDrawMode::Fill;
-    allowedDrawModes[1] = EPolygonDrawMode::Line;
-
-    // No alpha based blending for default shaders
-    AttachmentBlendState blendState;
-    blendState.bBlendEnable = false;
-
-    bool bHasDepth = false;
-    FramebufferFormat fbFormat = GlobalBuffers
-        ::getFramebufferRenderpassProps(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage()).renderpassAttachmentFormat;
-    attachmentBlendStates.reserve(fbFormat.attachments.size());
-    for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
-    {
-        if (!EPixelDataFormat::isDepthFormat(attachmentFormat))
-        {
-            attachmentBlendStates.emplace_back(blendState);
-        }
-        else
-        {
-            bHasDepth = true;
-        }
-    }
-
-    depthState.bEnableWrite = bHasDepth;
-}
-
-using TexturedShaderPipelineRegistrar = GenericPipelineRegistrar<TexturedShaderPipeline>;
-TexturedShaderPipelineRegistrar TEXTURED_SHADER_PIPELINE_REGISTER(TEXTURED_SHADER_NAME);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(TEXTURED_SHADER_PIPELINE_REGISTER, TEXTURED_SHADER_NAME, &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig);

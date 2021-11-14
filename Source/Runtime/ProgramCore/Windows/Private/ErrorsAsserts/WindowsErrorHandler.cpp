@@ -1,6 +1,6 @@
 #include "WindowsErrorHandler.h"
 #include "Logger/Logger.h"
-#include "Types/Platform/ModuleManager.h"
+#include "Modules/ModuleManager.h"
 #include "Types/Platform/GenericPlatformFunctions.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
@@ -99,7 +99,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
     symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
     SymSetOptions(symOptions);
 
-    std::vector<std::pair<LibPointerPtr, ModuleData>> modulesDataPairs = ModuleManager::get()->getAllModuleData();
+    std::vector<std::pair<LibPointerPtr, LibraryData>> modulesDataPairs = ModuleManager::get()->getAllModuleData();
 
     IMAGE_NT_HEADERS* imageHeader = ImageNtHeader(modulesDataPairs[0].second.basePtr);
     dword imageType = imageHeader->FileHeader.Machine;
@@ -130,7 +130,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
             uint64 moduleBase = SymGetModuleBase64(processHandle, frame.AddrPC.Offset);
             SymbolInfo symInfo = SymbolInfo(processHandle, frame.AddrPC.Offset, symOffset);
             String moduleName;
-            for (const std::pair<const LibPointerPtr, ModuleData>& modulePair : modulesDataPairs)
+            for (const std::pair<const LibPointerPtr, LibraryData>& modulePair : modulesDataPairs)
             {
                 if (moduleBase == (uint64)modulePair.second.basePtr)
                 {

@@ -1,44 +1,11 @@
 #pragma once
+#include "EngineRendererExports.h"
 
-#include "../../PlatformIndependentHeaders.h"
+struct GraphicsPipelineConfig;
 
-class ScreenSpaceQuadShaderPipeline : public GraphicsPipeline
+namespace ScreenSpaceQuadPipelineConfigs
 {
-    DECLARE_GRAPHICS_RESOURCE(ScreenSpaceQuadShaderPipeline, , GraphicsPipeline, )
-protected:
-    ScreenSpaceQuadShaderPipeline() = default;
-public:
-    ScreenSpaceQuadShaderPipeline(const PipelineBase* parent);
-    ScreenSpaceQuadShaderPipeline(const ShaderResource* shaderResource);
-};
-
-// Registrar
-using ScreenSpaceQuadShaderPipelineRegistrar = GenericPipelineRegistrar<ScreenSpaceQuadShaderPipeline>;
-
-// Combine this with ScreenSpaceQuadShaderPipeline once blend states become dynamic permuted pipeline state
-class OverBlendedSSQuadShaderPipeline : public ScreenSpaceQuadShaderPipeline
-{
-    DECLARE_GRAPHICS_RESOURCE(OverBlendedSSQuadShaderPipeline, , ScreenSpaceQuadShaderPipeline, )
-protected:
-    OverBlendedSSQuadShaderPipeline() = default;
-public:
-    OverBlendedSSQuadShaderPipeline(const PipelineBase* parent)
-        : BaseType(parent)
-    {}
-    OverBlendedSSQuadShaderPipeline(const ShaderResource* shaderResource);
-};
-class OverBlendedSSQuadWithDepthTestPipeline : public OverBlendedSSQuadShaderPipeline
-{
-    DECLARE_GRAPHICS_RESOURCE(OverBlendedSSQuadWithDepthTestPipeline, , OverBlendedSSQuadShaderPipeline, )
-protected:
-    OverBlendedSSQuadWithDepthTestPipeline() = default;
-public:
-    OverBlendedSSQuadWithDepthTestPipeline(const PipelineBase* parent)
-        : BaseType(parent)
-    {}
-    OverBlendedSSQuadWithDepthTestPipeline(const ShaderResource* shaderResource);
-};
-
-// Registrar
-using OverBlendedSSQuadShaderPipelineRegistrar = GenericPipelineRegistrar<OverBlendedSSQuadShaderPipeline>;
-using OverBlendedSSQuadDepthTestPipelineRegistrar = GenericPipelineRegistrar<OverBlendedSSQuadWithDepthTestPipeline>;
+    ENGINERENDERER_EXPORT GraphicsPipelineConfig screenSpaceQuadConfig(String& pipelineName, const ShaderResource* shaderResource);
+    ENGINERENDERER_EXPORT GraphicsPipelineConfig screenSpaceQuadOverBlendConfig(String& pipelineName, const ShaderResource* shaderResource);
+    ENGINERENDERER_EXPORT GraphicsPipelineConfig screenSpaceQuadOverBlendDepthTestedShaderConfig(String& pipelineName, const ShaderResource* shaderResource);
+}

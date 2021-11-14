@@ -3,6 +3,26 @@
 
 DEFINE_GRAPHICS_RESOURCE(MemoryResource)
 
+void MemoryResource::addRef()
+{
+    refCounter.fetch_add(1);
+}
+
+void MemoryResource::removeRef()
+{
+    uint32 count = refCounter.fetch_sub(1);
+    if (count == 1)
+    {
+        release();
+        delete this;
+    }
+}
+
+uint32 MemoryResource::refCount() const
+{
+    return refCounter.load();
+}
+
 String MemoryResource::getResourceName() const
 {
     return memoryResName;
@@ -17,11 +37,12 @@ DEFINE_GRAPHICS_RESOURCE(BufferResource)
 DEFINE_GRAPHICS_RESOURCE(ImageResource)
 
 
-ImageResource::ImageResource(EPixelDataFormat::Type imageFormat)
-    : MemoryResource(imageFormat)
-{
-
-}
+ImageResource::ImageResource(ImageResourceCreateInfo createInfo)
+    : MemoryResource(createInfo.imageFormat)
+    , dimensions(createInfo.dimensions)
+    , numOfMips(createInfo.numOfMips)
+    , layerCount(createInfo.layerCount)
+{}
 
 uint32 ImageResource::mipCountFromDim()
 {

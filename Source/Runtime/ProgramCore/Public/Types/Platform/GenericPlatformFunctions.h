@@ -3,23 +3,13 @@
 #include "String/String.h"
 #include "GenericPlatformTypes.h"
 
-struct PROGRAMCORE_EXPORT ModuleData
-{
-    String name;
-    String imgName;
-    void* basePtr;
-    dword moduleSize;
-};
-
 template <typename PlatformClass>
 class GenericPlatformFunctions
 {
 
 protected:
-
-
 public:
-
+    // Extensions are auto appended by api to platform default
     static LibPointer* openLibrary(String libName)
     {
         return PlatformClass::openLibrary(libName);
@@ -55,7 +45,7 @@ public:
         PlatformClass::getAllModules(processHandle, modules, modulesSize);
     }
 
-    static void getModuleInfo(void* processHandle, LibPointer* libraryHandle, ModuleData& moduleData)
+    static void getModuleInfo(void* processHandle, LibPointer* libraryHandle, LibraryData& moduleData)
     {
         PlatformClass::getModuleInfo(processHandle, libraryHandle, moduleData);
     }

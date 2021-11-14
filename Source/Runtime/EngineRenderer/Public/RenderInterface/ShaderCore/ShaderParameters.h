@@ -26,7 +26,7 @@ using ShaderBufferParamInfo = ShaderParamInfo<ShaderBufferFieldNode>;
 //// Vertex fields
 //////////////////////////////////////////////////////////////////////////
 
-struct ShaderVertexField
+struct ENGINERENDERER_EXPORT ShaderVertexField
 {
     String attributeName = "";
     uint32 offset = 0;
@@ -59,7 +59,7 @@ struct ShaderVertexMemberField : public ShaderVertexField
 //// Buffer fields
 //////////////////////////////////////////////////////////////////////////
 
-struct ShaderBufferField
+struct ENGINERENDERER_EXPORT ShaderBufferField
 {
     enum ShaderBufferFieldDecorations : uint8
     {
@@ -453,7 +453,7 @@ public:
     }
 };
 
-struct ShaderVertexParamInfo : public ShaderParamInfo<ShaderVertexFieldNode>
+struct ENGINERENDERER_EXPORT ShaderVertexParamInfo : public ShaderParamInfo<ShaderVertexFieldNode>
 {
 public:
     virtual EShaderInputFrequency::Type inputFrequency() const = 0;

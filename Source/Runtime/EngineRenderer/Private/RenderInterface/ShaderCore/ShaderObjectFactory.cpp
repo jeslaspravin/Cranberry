@@ -6,15 +6,15 @@
 
 ShaderObjectBase* ShaderObjectFactory::create(const String& shaderName, const ShaderResource* shader) const
 {
-    if (shader->getType()->isChildOf<DrawMeshShader>())
+    if (shader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>())
     {
         return new DrawMeshShaderObject(shaderName);
     }
-    else if (shader->getType()->isChildOf<UniqueUtilityShader>())
+    else if (shader->getShaderConfig()->getType()->isChildOf<UniqueUtilityShaderConfig>())
     {
         return new UniqueUtilityShaderObject(shaderName, shader);
     }
-    else if (shader->getType()->isChildOf<ComputeShader>())
+    else if (shader->getShaderConfig()->getType()->isChildOf<ComputeShaderConfig>())
     {
         return new ComputeShaderObject(shaderName, shader);
     }

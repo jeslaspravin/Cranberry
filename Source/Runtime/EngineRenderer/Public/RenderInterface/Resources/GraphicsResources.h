@@ -101,7 +101,7 @@ protected:
 public:
 
     GraphicsResourceTypeSpecialized(GraphicsResource* resource, GraphicsResourceType::DeleteFn deleteFunc, const String& resTypeName)
-        :GraphicsResourceType(resource, deleteFunc, resTypeName)
+        : GraphicsResourceType(resource, deleteFunc, resTypeName)
     {}
 
     const GraphicsResourceType* getParent() const override
