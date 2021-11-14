@@ -7,41 +7,55 @@
 
 class IGraphicsInstance;
 class GlobalRenderingContextBase;
+class IRenderTargetTexture;
+struct GenericRenderPassProperties;
+class GraphicsHelperAPI;
 
 class ENGINERENDERER_EXPORT RenderManager
 {
 private:
-    IGraphicsInstance* graphicsInstance;
     GlobalRenderingContextBase* globalContext;
 
+    using ImmediateExecuteCommandType = SingleCastDelegate<void, class IRenderCommandList*, IGraphicsInstance*, const GraphicsHelperAPI*>;
     class IRenderCommandList* renderCmds;
     std::queue<class IRenderCommand*> commands;
 
-    class ImGuiManager* imGuiManager;
-
     // TODO(Jeslas) : Once multi threaded rendering is added this should be changed to some TLS value
     bool bIsInsideRenderCommand = false;
+    bool bIsInitializing = false;
 
-    DelegateHandle onVsyncChangeHandle;
+    // TODO(Commented) DelegateHandle onVsyncChangeHandle;
 public:
 
 private:
+    // Helpers
+    // 
+    // Get generic render pass properties from Render targets
+    GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<IRenderTargetTexture*>& rtTextures) const;
+
     void createSingletons();
 
     void enqueueCommand(class IRenderCommand* renderCommand);
+    void immediateExecCommand(ImmediateExecuteCommandType&& immediateCmd) const;
     void executeAllCmds();
 public:
 
     void initialize();
-    void postInit();
+    void finalizeInit();
     void destroy();
 
     void renderFrame(const float& timedelta);
-    IGraphicsInstance* getGraphicsInstance() const;
     GlobalRenderingContextBase* getGlobalRenderingContext() const;
-    class ImGuiManager* getImGuiManager() const;
+
+    // Fills pipelineContext with info necessary to render using this particular requested pipeline, with given framebuffer attachments
+    void preparePipelineContext(class LocalPipelineContext* pipelineContext,
+        const std::vector<IRenderTargetTexture*>& rtTextures);
+    void preparePipelineContext(class LocalPipelineContext* pipelineContext);
+    void clearExternInitRtsFramebuffer(const std::vector<IRenderTargetTexture*>& rtTextures);
 
     void waitOnCommands();
+    // If initializing we assume it is executing as well
+    bool isExecutingCommands() const { return bIsInitializing || bIsInsideRenderCommand; }
 
     template <typename RenderCmdClass>
     static void issueRenderCommand(RenderManager* renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
@@ -52,7 +66,12 @@ void RenderManager::issueRenderCommand(RenderManager* renderApi, typename Render
 {
     if (renderApi->bIsInsideRenderCommand)
     {
-        renderCommandFn(renderApi->renderCmds, renderApi->graphicsInstance);
+        renderApi->immediateExecCommand(ImmediateExecuteCommandType::createLambda(
+            [renderCommandFn](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+            {
+                renderCommandFn(cmdList, graphicsInstance, graphicsHelper);
+            }
+        ));
     }
     else
     {

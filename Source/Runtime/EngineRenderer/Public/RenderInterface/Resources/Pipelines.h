@@ -1,17 +1,20 @@
 #pragma once
 #include "GraphicsResources.h"
 #include "String/String.h"
+#include "Types/Patterns/FactoriesBase.h"
 #include "Types/CoreDefines.h"
+#include "Types/Delegates/Delegate.h"
 #include "RenderInterface/CoreGraphicsTypes.h"
 #include "RenderInterface/Rendering/FramebufferTypes.h"
-#include "Types/Patterns/FactoriesBase.h"
 #include "EngineRendererExports.h"
 
 #include <map>
 
 class ShaderResource;
+class GraphicsHelperAPI;
+class IGraphicsInstance;
 
-class PipelineCacheBase : public GraphicsResource
+class ENGINERENDERER_EXPORT PipelineCacheBase : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(PipelineCacheBase, , GraphicsResource, )
 private:
@@ -90,8 +93,6 @@ namespace EPrimitiveTopology
         Point
     };
 
-    uint32 apiInputAssemblyState(EPrimitiveTopology::Type inputAssembly);
-
     template<Type PrimType>
     constexpr const AChar* getChar()
     {
@@ -117,11 +118,8 @@ struct GraphicsPipelineQueryParams
     ECullingMode cullingMode;
 };
 
-class GraphicsPipelineBase : public PipelineBase
+struct GraphicsPipelineConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(GraphicsPipelineBase,, PipelineBase,)
-
-protected:
     // In draw mesh shader, only renderpassAttachmentFormat of below property will be valid value
     GenericRenderPassProperties renderpassProps;
 
@@ -141,7 +139,14 @@ protected:
     // Dynamic params(All permuted combination of pipeline with below states will be created)
     std::vector<EPolygonDrawMode> allowedDrawModes;
     std::vector<ECullingMode> supportedCullings;
+};
 
+class ENGINERENDERER_EXPORT GraphicsPipelineBase : public PipelineBase
+{
+    DECLARE_GRAPHICS_RESOURCE(GraphicsPipelineBase,, PipelineBase,)
+
+protected:
+    GraphicsPipelineConfig config;
 protected:
     GraphicsPipelineBase() = default;
     GraphicsPipelineBase(const GraphicsPipelineBase * parent);
@@ -152,16 +157,17 @@ protected:
 
 public:
 
-    void setRenderpassProperties(const GenericRenderPassProperties& newProps) { renderpassProps = newProps; }
+    void setPipelineConfig(const GraphicsPipelineConfig& newConfig) { config = newConfig; }
+    void setRenderpassProperties(const GenericRenderPassProperties& newProps) { config.renderpassProps = newProps; }
 
-    const GenericRenderPassProperties& getRenderpassProperties() const { return renderpassProps; }
+    const GenericRenderPassProperties& getRenderpassProperties() const { return config.renderpassProps; }
 };
 
 //////////////////////////////////////////////////////////////////////////
 /// Compute pipeline related types
 //////////////////////////////////////////////////////////////////////////
 
-class ComputePipelineBase : public PipelineBase
+class ENGINERENDERER_EXPORT ComputePipelineBase : public PipelineBase
 {
     DECLARE_GRAPHICS_RESOURCE(ComputePipelineBase, , PipelineBase, )
 
@@ -183,41 +189,38 @@ struct PipelineFactoryArgs
     const PipelineBase* parentPipeline = nullptr;
 };
 
-struct PipelineFactoryRegistrar
-{
-    PipelineFactoryRegistrar(const String& shaderName);
-    virtual PipelineBase* operator()(const PipelineFactoryArgs& args) const = 0;
-};
-
 /*
-* Pipeline registration - common case
+* Pipeline registration
 */
-template <typename PipelineType>
-struct GenericPipelineRegistrar final : public PipelineFactoryRegistrar
-{
-    GenericPipelineRegistrar(const String& shaderName)
-        : PipelineFactoryRegistrar(shaderName)
-    {}
+#define CREATE_GRAPHICS_PIPELINE_REGISTRANT(Registrant, ShaderName, FunctionPtr) \
+    GraphicsPipelineFactoryRegistrant Registrant(ShaderName \
+        , GraphicsPipelineFactoryRegistrant::GraphicsPipelineConfigGetter::createStatic(FunctionPtr))
 
-    PipelineBase* operator()(const PipelineFactoryArgs& args) const final
-    {
-        if (args.parentPipeline != nullptr)
-        {
-            return new PipelineType(args.parentPipeline);
-        }
-        else
-        {
-            return new PipelineType(args.pipelineShader);
-        }
-    }
+struct ENGINERENDERER_EXPORT GraphicsPipelineFactoryRegistrant
+{
+    using GraphicsPipelineConfigGetter = SingleCastDelegate<GraphicsPipelineConfig, String&, const ShaderResource*>;
+    GraphicsPipelineConfigGetter getter;
+
+public:
+    GraphicsPipelineFactoryRegistrant(const String& shaderName, GraphicsPipelineConfigGetter configGetter);
+    FORCE_INLINE PipelineBase* operator()(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper, const PipelineFactoryArgs& args) const;
 };
 
-class PipelineFactory final : public FactoriesBase<PipelineBase, const PipelineFactoryArgs&>
+struct ENGINERENDERER_EXPORT ComputePipelineFactoryRegistrant
+{
+public:
+    ComputePipelineFactoryRegistrant(const String& shaderName);
+    FORCE_INLINE PipelineBase* operator()(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper, const PipelineFactoryArgs& args) const;
+};
+
+class ENGINERENDERER_EXPORT PipelineFactory final : public FactoriesBase<PipelineBase*, IGraphicsInstance*, const GraphicsHelperAPI*, const PipelineFactoryArgs&>
 {
 private:
-    friend PipelineFactoryRegistrar;
-    static std::map<String, const PipelineFactoryRegistrar*>& namedPipelineFactoriesRegistry();
-public:
-    PipelineBase* create(const PipelineFactoryArgs& args) const final;
+    friend GraphicsPipelineFactoryRegistrant;
+    friend ComputePipelineFactoryRegistrant;
 
+    static std::map<String, GraphicsPipelineFactoryRegistrant>& graphicsPipelineFactoriesRegistry();
+    static std::map<String, ComputePipelineFactoryRegistrant>& computePipelineFactoriesRegistry();
+public:
+    PipelineBase* create(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper, const PipelineFactoryArgs& args) const final;
 };

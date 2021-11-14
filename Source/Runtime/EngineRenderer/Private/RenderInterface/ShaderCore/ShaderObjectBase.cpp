@@ -20,7 +20,7 @@ DrawMeshShaderObject::DrawMeshShaderObject(const String& sName)
     : ShaderObjectBase(sName)
 {}
 
-const DrawMeshShader* DrawMeshShaderObject::getShader(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat
+const ShaderResource* DrawMeshShaderObject::getShader(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat
     , GraphicsPipelineBase** outGraphicsPipeline /*= nullptr*/) const
 {
     auto shadersForFormatItr = shadersForRenderPass.find(outputBufferFormat);
@@ -63,14 +63,14 @@ GraphicsResource* DrawMeshShaderObject::getVariantUniqueParamsLayout(EVertexType
 
 void DrawMeshShaderObject::addShader(const ShaderResource* shaderResource)
 {
-    const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
+    const DrawMeshShaderConfig* drawMeshShader = static_cast<const DrawMeshShaderConfig*>(shaderResource->getShaderConfig());
     FramebufferFormat usageFormats(drawMeshShader->renderpassUsage());
     ShaderResourcesConstIterator itr = std::find_if(shaderResources.cbegin(), shaderResources.cend()
-        , [drawMeshShader](const ShaderResourceInfo& shaderPipelineInfo) { return shaderPipelineInfo.shader == drawMeshShader; });
+        , [shaderResource](const ShaderResourceInfo& shaderPipelineInfo) { return shaderPipelineInfo.shader == shaderResource; });
     if (itr == shaderResources.cend())
     {
         int32 shaderResIndex = int32(shaderResources.size());
-        shaderResources.emplace_back(ShaderResourceInfo{ drawMeshShader, nullptr, nullptr });
+        shaderResources.emplace_back(ShaderResourceInfo{ shaderResource, nullptr, nullptr });
 
         auto shadersForFormatItr = shadersForRenderPass.find(usageFormats);
         if (shadersForFormatItr == shadersForRenderPass.end())
@@ -96,9 +96,8 @@ void DrawMeshShaderObject::addShader(const ShaderResource* shaderResource)
 
 void DrawMeshShaderObject::setPipeline(const ShaderResource* shaderResource, GraphicsPipelineBase* graphicsPipeline)
 {
-    const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
     ShaderResourcesIterator itr = std::find_if(shaderResources.begin(), shaderResources.end()
-        , [drawMeshShader](const ShaderResourceInfo& shaderPipelinePair) { return shaderPipelinePair.shader == drawMeshShader; });
+        , [shaderResource](const ShaderResourceInfo& shaderPipelinePair) { return shaderPipelinePair.shader == shaderResource; });
 
     debugAssert(itr != shaderResources.end());
 
@@ -107,9 +106,8 @@ void DrawMeshShaderObject::setPipeline(const ShaderResource* shaderResource, Gra
 
 void DrawMeshShaderObject::setVariantParamsLayout(const ShaderResource* shaderResource, GraphicsResource* perVariantParamsLayout)
 {
-    const DrawMeshShader* drawMeshShader = static_cast<const DrawMeshShader*>(shaderResource);
     ShaderResourcesIterator itr = std::find_if(shaderResources.begin(), shaderResources.end()
-        , [drawMeshShader](const ShaderResourceInfo& shaderPipelinePair) { return shaderPipelinePair.shader == drawMeshShader; });
+        , [shaderResource](const ShaderResourceInfo& shaderPipelinePair) { return shaderPipelinePair.shader == shaderResource; });
 
     debugAssert(itr != shaderResources.end());
 
@@ -147,7 +145,7 @@ void DrawMeshShaderObject::preparePipelineCache(PipelineCacheBase* pipelineCache
 
 const GraphicsResourceType* DrawMeshShaderObject::baseShaderType() const
 {
-    return DrawMeshShader::staticType();
+    return DrawMeshShaderConfig::staticType();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -156,10 +154,10 @@ const GraphicsResourceType* DrawMeshShaderObject::baseShaderType() const
 
 UniqueUtilityShaderObject::UniqueUtilityShaderObject(const String& sName, const ShaderResource* shaderResource)
     : ShaderObjectBase(sName)
-    , utilityShader(static_cast<const UniqueUtilityShader*>(shaderResource))
+    , utilityShader(shaderResource)
 {}
 
-const UniqueUtilityShader* UniqueUtilityShaderObject::getShader() const
+const ShaderResource* UniqueUtilityShaderObject::getShader() const
 {
     return utilityShader;
 }
@@ -202,7 +200,7 @@ UniqueUtilityShaderObject::~UniqueUtilityShaderObject()
 
 const GraphicsResourceType* UniqueUtilityShaderObject::baseShaderType() const
 {
-    return UniqueUtilityShader::staticType();
+    return UniqueUtilityShaderConfig::staticType();
 }
 
 void UniqueUtilityShaderObject::preparePipelineCache(PipelineCacheBase* pipelineCache) const
@@ -230,7 +228,7 @@ std::vector<const GraphicsPipelineBase*> UniqueUtilityShaderObject::getAllPipeli
 
 ComputeShaderObject::ComputeShaderObject(const String& sName, const ShaderResource* shaderResource)
     : ShaderObjectBase(sName)
-    , computeShader(static_cast<const ComputeShader*>(shaderResource))
+    , computeShader(shaderResource)
 {}
 
 ComputeShaderObject::~ComputeShaderObject()
@@ -239,7 +237,7 @@ ComputeShaderObject::~ComputeShaderObject()
     delete computePipeline;
 }
 
-const ComputeShader* ComputeShaderObject::getShader() const
+const ShaderResource* ComputeShaderObject::getShader() const
 {
     return computeShader;
 }
@@ -256,7 +254,7 @@ void ComputeShaderObject::setPipeline(ComputePipelineBase* pipeline)
 
 const GraphicsResourceType* ComputeShaderObject::baseShaderType() const
 {
-    return ComputeShader::staticType();
+    return ComputeShaderConfig::staticType();
 }
 
 void ComputeShaderObject::preparePipelineCache(PipelineCacheBase* pipelineCache) const

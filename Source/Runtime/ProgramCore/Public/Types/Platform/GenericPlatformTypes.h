@@ -1,5 +1,6 @@
 #pragma once
 
+#include "String/String.h"
 #include "ProgramCoreExports.h"
 
 struct PROGRAMCORE_EXPORT LibPointer 
@@ -11,5 +12,10 @@ struct PROGRAMCORE_EXPORT LibPointer
 
 typedef LibPointer* LibPointerPtr;
 
-struct PROGRAMCORE_EXPORT PlatformInstance{};
-
+struct LibraryData
+{
+    String name;
+    String imgName;
+    void* basePtr;
+    dword moduleSize;
+};

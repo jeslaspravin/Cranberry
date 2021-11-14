@@ -1,5 +1,7 @@
+
+#include <array>
+
 #include "RenderApi/VertexData.h"
-#include "Assets/Asset/StaticMeshAsset.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Math/Vector2D.h"
 #include "Math/Vector3D.h"
@@ -7,9 +9,8 @@
 #include "ShaderDataTypes.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "RenderInterface/PlatformIndependentHeaders.h"
-
-#include <array>
+#include "IRenderInterfaceModule.h"
+#include "RenderInterface/GraphicsHelper.h"
 
 BEGIN_VERTEX_DEFINITION(StaticMeshVertex, EShaderInputFrequency::PerVertex)
 ADD_VERTEX_FIELD(position)
@@ -248,28 +249,18 @@ namespace EVertexType
 }
 
 
-void GlobalBuffers::destroyVertIndBuffers(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+void GlobalBuffers::destroyVertIndBuffers()
 {
-    lineGizmoVertxInds.first->release();
-    delete lineGizmoVertxInds.first;
-    lineGizmoVertxInds.first = nullptr;
-    lineGizmoVertxInds.second->release();
-    delete lineGizmoVertxInds.second;
-    lineGizmoVertxInds.second = nullptr;
+    lineGizmoVertxInds.first.reset();
+    lineGizmoVertxInds.second.reset();
 
-    quadTriVerts->release();
-    delete quadTriVerts;
-    quadTriVerts = nullptr;
+    quadTriVerts.reset();
 
-    quadRectVertsInds.first->release();
-    delete quadRectVertsInds.first;
-    quadRectVertsInds.first = nullptr;
-    quadRectVertsInds.second->release();
-    delete quadRectVertsInds.second;
-    quadRectVertsInds.second = nullptr;
+    quadRectVertsInds.first.reset();
+    quadRectVertsInds.second.reset();
 }
 
-void GlobalBuffers::createVertIndBuffers(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+void GlobalBuffers::createVertIndBuffers(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
     const std::array<Vector3D, 3> quadTriVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
     // const std::array<uint32, 3> quadTriIndices = { 0,1,2 };// 3 Per tri of quad
@@ -390,28 +381,28 @@ void GlobalBuffers::createVertIndBuffers(class IRenderCommandList* cmdList, IGra
         gizmoIndices[axis * vertPerAxis + 9] = idx;
     }
 
-    BufferResource* lineGizmoVertsBuffer = new GraphicsVertexBuffer(sizeof(VertexSimple3DColor), static_cast<uint32>(gizmoVerts.size()));
+    BufferResourceRef lineGizmoVertsBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(VertexSimple3DColor), static_cast<uint32>(gizmoVerts.size()));
     lineGizmoVertsBuffer->setResourceName("LineGizmosVertices");
     lineGizmoVertsBuffer->init();
 
-    BufferResource* lineGizmoIndicesBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(gizmoIndices.size()));
+    BufferResourceRef lineGizmoIndicesBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), static_cast<uint32>(gizmoIndices.size()));
     lineGizmoIndicesBuffer->setResourceName("LineGizmosIndices");
     lineGizmoIndicesBuffer->init();
 
     GlobalBuffers::lineGizmoVertxInds.first = lineGizmoVertsBuffer;
     GlobalBuffers::lineGizmoVertxInds.second = lineGizmoIndicesBuffer;
 
-    BufferResource* quadTriVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadTriVerts.size()));
+    BufferResourceRef quadTriVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadTriVerts.size()));
     quadTriVertexBuffer->setResourceName("ScreenQuadTriVertices");
     quadTriVertexBuffer->init();
 
     GlobalBuffers::quadTriVerts = quadTriVertexBuffer;
 
-    BufferResource* quadRectVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadRectVerts.size()));
+    BufferResourceRef quadRectVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadRectVerts.size()));
     quadRectVertexBuffer->setResourceName("ScreenQuadRectVertices");
     quadRectVertexBuffer->init();
 
-    BufferResource* quadRectIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadRectIndices.size()));
+    BufferResourceRef quadRectIndexBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), static_cast<uint32>(quadRectIndices.size()));
     quadRectIndexBuffer->setResourceName("ScreenQuadRectIndices");
     quadRectIndexBuffer->init();
 

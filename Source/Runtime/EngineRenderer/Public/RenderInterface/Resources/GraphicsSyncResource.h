@@ -1,12 +1,17 @@
 #pragma once
+#include <atomic>
+
 #include "GraphicsResources.h"
-#include "../../Core/Platform/PlatformTypes.h"
-#include "../../Core/String/String.h"
+#include "Types/CoreTypes.h"
+#include "String/String.h"
+#include "Types/Containers/ReferenceCountPtr.h"
 
 
 class ENGINERENDERER_EXPORT GraphicsSyncResource : public GraphicsResource
 {
-    DECLARE_GRAPHICS_RESOURCE(GraphicsSyncResource,,GraphicsResource,)
+    DECLARE_GRAPHICS_RESOURCE(GraphicsSyncResource, , GraphicsResource, )
+private:
+    std::atomic<uint32> refCounter;
 protected:
     String resourceName;
 public:
@@ -16,6 +21,12 @@ public:
     virtual void resetSignal() {}
     String getResourceName() const override;
     void setResourceName(const String& name) override;
+
+    /* ReferenceCountPtr implementation */
+    void addRef();
+    void removeRef();
+    uint32 refCount() const;
+    /* Impl ends */
 };
 
 class ENGINERENDERER_EXPORT GraphicsSemaphore : public GraphicsSyncResource
@@ -44,3 +55,6 @@ class ENGINERENDERER_EXPORT GraphicsFence : public GraphicsSyncResource
 {
     DECLARE_GRAPHICS_RESOURCE(GraphicsFence,,GraphicsSyncResource,)
 };
+using SemaphoreRef = ReferenceCountPtr<GraphicsSemaphore>;
+using TimelineSemaphoreRef = ReferenceCountPtr<GraphicsTimelineSemaphore>;
+using FenceRef = ReferenceCountPtr<GraphicsFence>;

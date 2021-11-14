@@ -23,7 +23,7 @@ namespace EQueuePriority
     };
 }
 
-class QueueResourceBase : public GraphicsResource
+class ENGINERENDERER_EXPORT QueueResourceBase : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(QueueResourceBase,, GraphicsResource,)
 

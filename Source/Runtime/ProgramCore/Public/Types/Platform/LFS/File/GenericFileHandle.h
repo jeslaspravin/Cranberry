@@ -21,8 +21,8 @@ namespace EFileFlags
 
 namespace FileFlags 
 {
-    PROGRAMCORE_EXPORT const uint8 ACCESS_FLAGS = (EFileFlags::Read | EFileFlags::Write | EFileFlags::Execute);
-    PROGRAMCORE_EXPORT const uint8 OPEN_ACTION_FLAGS = 0xFF & ~ACCESS_FLAGS;
+    const uint8 ACCESS_FLAGS = (EFileFlags::Read | EFileFlags::Write | EFileFlags::Execute);
+    const uint8 OPEN_ACTION_FLAGS = 0xFF & ~ACCESS_FLAGS;
 }
 
 namespace EFileSharing

@@ -1,17 +1,17 @@
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
-#include "RenderInterface/Shaders/Base/GenericComputePipeline.h"
+#include "RenderInterface/Resources/Pipelines.h"
 
 #define HDRITOCUBE_SHADER_NAME "HDRIToCube"
 
-class HDRIToCubeShader : public ComputeShaderTemplated<16, 16, 1>
+class HDRIToCubeShader : public ComputeShaderConfigTemplated<16, 16, 1>
 {
-    DECLARE_GRAPHICS_RESOURCE(HDRIToCubeShader,, ComputeShaderTemplated, <ExpandArgs(16, 16, 1)>)
+    DECLARE_GRAPHICS_RESOURCE(HDRIToCubeShader,, ComputeShaderConfigTemplated, <EXPAND_ARGS(16, 16, 1)>)
 
 public:
     HDRIToCubeShader()
         : BaseType(HDRITOCUBE_SHADER_NAME)
     { 
-        static SimpleComputePipelineRegistrar HDRITOCUBE_SHADER_PIPELINE_REGISTER(getResourceName());
+        static ComputePipelineFactoryRegistrant HDRITOCUBE_SHADER_PIPELINE_REGISTER(getResourceName());
     }
 };
 

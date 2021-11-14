@@ -18,7 +18,7 @@ struct WindowsLibHandle : public LibPointer
 
 LibPointer* WindowsPlatformFunctions::openLibrary(String libName)
 {
-    WindowsLibHandle* handle = new WindowsLibHandle(LoadLibraryA(libName.getChar()),true);
+    WindowsLibHandle* handle = new WindowsLibHandle(LoadLibraryA(libName.getChar()), true);
 
     if (!handle->libHandle)
     {
@@ -31,7 +31,8 @@ LibPointer* WindowsPlatformFunctions::openLibrary(String libName)
 void WindowsPlatformFunctions::releaseLibrary(const LibPointer* libraryHandle)
 {
     HMODULE handle = static_cast<const WindowsLibHandle*>(libraryHandle)->libHandle;
-    if (handle) {
+    if (handle) 
+    {
         FreeLibrary(handle);
     }
 }
@@ -41,7 +42,7 @@ void* WindowsPlatformFunctions::getProcAddress(const LibPointer* libraryHandle, 
     return GetProcAddress(static_cast<const WindowsLibHandle*>(libraryHandle)->libHandle,symName.getChar());
 }
 
-void WindowsPlatformFunctions::getModuleInfo(void* processHandle, LibPointer* libraryHandle, ModuleData& moduleData)
+void WindowsPlatformFunctions::getModuleInfo(void* processHandle, LibPointer* libraryHandle, LibraryData& moduleData)
 {
     if (!libraryHandle)
     {

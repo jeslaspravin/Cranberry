@@ -3,6 +3,7 @@
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderInterface/Resources/Pipelines.h"
 
 #define CLEAR_RT "ClearRT"
 
@@ -15,9 +16,9 @@ BEGIN_BUFFER_DEFINITION(ClearRTClearInfo)
 ADD_BUFFER_TYPED_FIELD(clearColor)
 END_BUFFER_DEFINITION();
 
-class ClearRT : public UniqueUtilityShader
+class ClearRT : public UniqueUtilityShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(ClearRT, , UniqueUtilityShader, );
+    DECLARE_GRAPHICS_RESOURCE(ClearRT, , UniqueUtilityShaderConfig, );
 private:
     ClearRT();
 public:
@@ -52,4 +53,5 @@ ClearRT::ClearRT()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-ScreenSpaceQuadShaderPipelineRegistrar CLEAR_RT_PIPELINE_REGISTER(CLEAR_RT);
+
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(CLEAR_RT_PIPELINE_REGISTER, CLEAR_RT, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);

@@ -4,94 +4,102 @@
 
 DEFINE_GRAPHICS_RESOURCE(SamplerInterface)
 
-SamplerInterface::SamplerInterface()
+SamplerInterface::SamplerInterface(SamplerCreateInfo samplerCI)
     : BaseType()
-    , filtering(ESamplerFiltering::Nearest)
-    , mipFiltering(ESamplerFiltering::Nearest)
-    , tilingMode(0,0,0)
-    , mipLodRange(0,0)
-    , compareOp(CoreGraphicsTypes::ECompareOp::Greater)
-    , useCompareOp(0)
-    , borderColorFlags(0)
-{}
-
-SamplerInterface::SamplerInterface(ESamplerTilingMode::Type samplerTiling, ESamplerFiltering::Type samplerFiltering,
-    float poorMipLod /*= 0*/, uint8 samplerBorderColFlags /*= 0*/)
-    : BaseType()
-    , filtering(samplerFiltering)
-    , mipFiltering(samplerFiltering)
-    , tilingMode(samplerTiling,samplerTiling,samplerTiling)
-    , mipLodRange(0, poorMipLod)
-    , compareOp(CoreGraphicsTypes::ECompareOp::Greater)
-    , useCompareOp(0)
-    , borderColorFlags(samplerBorderColFlags)
+    , config(samplerCI)
 {
     std::stringstream nameStream("Sampler_");
-    nameStream << ESamplerFiltering::getFilterInfo(samplerFiltering)->filterName.getChar() << "_";
-    nameStream << ESamplerTilingMode::getSamplerTiling(samplerTiling);
-    resourceName = nameStream.str();
+    nameStream << ESamplerFiltering::filterName(config.filtering).getChar() << "_";
+    nameStream << std::get<0>(config.tilingMode) << "_";
+    nameStream << std::get<1>(config.tilingMode) << "_";
+    nameStream << std::get<2>(config.tilingMode);
+    config.resourceName = nameStream.str();
 }
 
 void SamplerInterface::setMipLod(const float& fineMipLod, const float& poorMipLod)
 {
-    mipLodRange.x = fineMipLod;
-    mipLodRange.y = poorMipLod;
+    config.mipLodRange.minBound = fineMipLod;
+    config.mipLodRange.maxBound = poorMipLod;
 }
 
 void SamplerInterface::getMipLod(float& fineMipLod, float& poorMipLod)
 {
-    fineMipLod = mipLodRange.x;
-    poorMipLod = mipLodRange.y;
+    fineMipLod = config.mipLodRange.minBound;
+    poorMipLod = config.mipLodRange.maxBound;
 }
 
 void SamplerInterface::setMipFiltering(ESamplerFiltering::Type samplerFiltering)
 {
-    mipFiltering = samplerFiltering;
+    config.mipFiltering = samplerFiltering;
 }
 
 ESamplerFiltering::Type SamplerInterface::getMipFiltering()
 {
-    return mipFiltering;
+    return config.mipFiltering;
 }
 
 ESamplerFiltering::Type SamplerInterface::getFinestFiltering()
 {
-    return filtering;
+    return config.filtering;
 }
 
 void SamplerInterface::setCompareOp(bool enable, CoreGraphicsTypes::ECompareOp::Type compareOpValue)
 {
-    useCompareOp = enable ? 1 : 0;
-    compareOp = compareOpValue;
+    config.useCompareOp = enable ? 1 : 0;
+    config.compareOp = compareOpValue;
 }
 
 bool SamplerInterface::getCompareOp(CoreGraphicsTypes::ECompareOp::Type& compareOpValue)
 {
-    compareOpValue = compareOp;
-    return useCompareOp;
+    compareOpValue = config.compareOp;
+    return config.useCompareOp;
 }
 
 void SamplerInterface::setBorderColor(uint8 samplerBorderColFlags)
 {
-    borderColorFlags = samplerBorderColFlags;
+    config.borderColorFlags = samplerBorderColFlags;
 }
 
 void SamplerInterface::setTilingMode(ESamplerTilingMode::Type u, ESamplerTilingMode::Type v, ESamplerTilingMode::Type w)
 {
-    tilingMode.x = u; tilingMode.y = v; tilingMode.z = w;
+    std::get<0>(config.tilingMode) = u;
+    std::get<1>(config.tilingMode) = v; 
+    std::get<2>(config.tilingMode) = w;
 }
 
 void SamplerInterface::getTilingMode(ESamplerTilingMode::Type& u, ESamplerTilingMode::Type& v, ESamplerTilingMode::Type& w)
 {
-    u = tilingMode.x; v = tilingMode.y; w = tilingMode.z;
+    u = std::get<0>(config.tilingMode);
+    v = std::get<1>(config.tilingMode);
+    w = std::get<2>(config.tilingMode);
+}
+
+void SamplerInterface::addRef()
+{
+    refCounter.fetch_add(1);
+}
+
+void SamplerInterface::removeRef()
+{
+    uint32 count = refCounter.fetch_sub(1);
+    if (count == 1)
+    {
+        release();
+        delete this;
+    }
+}
+
+uint32 SamplerInterface::refCount() const
+{
+    return refCounter.load();
 }
 
 String SamplerInterface::getResourceName() const
 {
-    return resourceName;
+    return config.resourceName;
 }
 
 void SamplerInterface::setResourceName(const String& name)
 {
-    resourceName = name;
+    config.resourceName = name;
 }

@@ -13,7 +13,7 @@ struct ViewData
     Matrix4 invProjection;
 };
 
-class RenderSceneBase
+class ENGINERENDERER_EXPORT RenderSceneBase
 {
 public:
     static const std::map<String, ShaderBufferParamInfo*>& sceneViewParamInfo();

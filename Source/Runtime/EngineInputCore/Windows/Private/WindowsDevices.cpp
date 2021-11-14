@@ -1,11 +1,12 @@
+
 #include "WindowsKeyboardDevice.h"
 #include "WindowsMouseDevice.h"
-#include "../../Platform/Windows/WindowsCommonHeaders.h"
-#include "../../Platform/Windows/WindowsAppWindow.h"
-#include "../../Logger/Logger.h"
-#include "../../Math/Math.h"
-#include "../Keys.h"
-#include "../PlatformInputTypes.h"
+#include "WindowsCommonHeaders.h"
+#include "GenericAppWindow.h"
+#include "Logger/Logger.h"
+#include "Math/Math.h"
+#include "Keys.h"
+#include "PlatformInputTypes.h"
 
 #include <hidusage.h>
 
@@ -76,7 +77,7 @@ bool WindowsMouseDevice::registerWindow(const GenericAppWindow* window) const
     mouseDevice.usUsage = HID_USAGE_GENERIC_MOUSE;
     mouseDevice.usUsagePage = HID_USAGE_PAGE_GENERIC;
     mouseDevice.dwFlags = 0;
-    mouseDevice.hwndTarget = static_cast<const WindowsAppWindow*>(window)->getWindowHandle();
+    mouseDevice.hwndTarget = (HWND)window->getWindowHandle();
 
     if (!RegisterRawInputDevices(&mouseDevice, 1, sizeof(decltype(mouseDevice))))
     {
@@ -196,7 +197,7 @@ bool WindowsKeyboardDevice::registerWindow(const GenericAppWindow* window) const
     keyboardDevice.usUsage = HID_USAGE_GENERIC_KEYBOARD;
     keyboardDevice.usUsagePage = HID_USAGE_PAGE_GENERIC;
     keyboardDevice.dwFlags = 0;
-    keyboardDevice.hwndTarget = static_cast<const WindowsAppWindow*>(window)->getWindowHandle();
+    keyboardDevice.hwndTarget = (HWND)window->getWindowHandle();
 
     if (!RegisterRawInputDevices(&keyboardDevice, 1, sizeof(decltype(keyboardDevice))))
     {

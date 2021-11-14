@@ -1,9 +1,10 @@
 #include "RenderInterface/Shaders/EngineShaders/SingleColorShader.h"
 #include "RenderInterface/Shaders/Base/DrawMeshShader.h"
+#include "RenderInterface/Resources/Pipelines.h"
+#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "Types/CoreDefines.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
-#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 
 #define SINGLECOLOR_SHADER_NAME "SingleColor"
 
@@ -23,9 +24,9 @@ ADD_BUFFER_STRUCT_FIELD(meshData, SingleColorMeshData)
 END_BUFFER_DEFINITION();
 
 template<EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
-class SingleColorShader : public DrawMeshShader
+class SingleColorShader : public DrawMeshShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(SingleColorShader, <ExpandArgs(VertexUsage, RenderpassFormat)>,DrawMeshShader,)
+    DECLARE_GRAPHICS_RESOURCE(SingleColorShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>,DrawMeshShaderConfig,)
 protected:
     SingleColorShader()
         : BaseType(SINGLECOLOR_SHADER_NAME)
@@ -54,8 +55,8 @@ protected:
     }
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(SingleColorShader, <ExpandArgs(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
-    , <ExpandArgs(VertexUsage, RenderpassFormat)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(SingleColorShader, <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
+    , <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
 
 template class SingleColorShader<EVertexType::Simple2, ERenderPassFormat::Multibuffer>;
 template class SingleColorShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffer>;
@@ -64,57 +65,4 @@ template class SingleColorShader<EVertexType::StaticMesh, ERenderPassFormat::Mul
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-class SingleColorShaderPipeline : public GraphicsPipeline
-{
-    DECLARE_GRAPHICS_RESOURCE(SingleColorShaderPipeline,, GraphicsPipeline,)
-private:
-    SingleColorShaderPipeline() = default;
-public:
-    SingleColorShaderPipeline(const PipelineBase* parent);
-    SingleColorShaderPipeline(const ShaderResource* shaderResource);
-};
-
-DEFINE_GRAPHICS_RESOURCE(SingleColorShaderPipeline)
-
-SingleColorShaderPipeline::SingleColorShaderPipeline(const PipelineBase* parent)
-    : BaseType(static_cast<const GraphicsPipelineBase*>(parent))
-{}
-
-SingleColorShaderPipeline::SingleColorShaderPipeline(const ShaderResource* shaderResource)
-    : BaseType()
-{
-    setPipelineShader(shaderResource);
-    setResourceName(shaderResource->getResourceName());
-    supportedCullings.resize(2);
-    supportedCullings[0] = ECullingMode::FrontFace;
-    supportedCullings[1] = ECullingMode::BackFace;
-
-    allowedDrawModes.resize(2);
-    allowedDrawModes[0] = EPolygonDrawMode::Fill;
-    allowedDrawModes[1] = EPolygonDrawMode::Line;
-
-    // No alpha based blending for default shaders
-    AttachmentBlendState blendState;
-    blendState.bBlendEnable = false;
-
-    bool bHasDepth = false;
-    FramebufferFormat fbFormat = GlobalBuffers
-        ::getFramebufferRenderpassProps(static_cast<const DrawMeshShader*>(shaderResource)->renderpassUsage()).renderpassAttachmentFormat;
-    attachmentBlendStates.reserve(fbFormat.attachments.size());
-    for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)
-    {
-        if (!EPixelDataFormat::isDepthFormat(attachmentFormat))
-        {
-            attachmentBlendStates.emplace_back(blendState);
-        }
-        else
-        {
-            bHasDepth = true;
-        }
-    }
-
-    depthState.bEnableWrite = bHasDepth;
-}
-
-using SingleColorShaderPipelineRegistrar = GenericPipelineRegistrar<SingleColorShaderPipeline>;
-SingleColorShaderPipelineRegistrar SINGLECOLOR_SHADER_PIPELINE_REGISTER(SINGLECOLOR_SHADER_NAME);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(SINGLECOLOR_SHADER_PIPELINE_REGISTER, SINGLECOLOR_SHADER_NAME, &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig);

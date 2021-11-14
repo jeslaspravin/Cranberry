@@ -216,26 +216,6 @@ Vector2D Vector2D::rejectFrom(const Vector2D& b) const
     return *this - projectTo(b);
 }
 
-Vector2D operator/(float n, const Vector2D& d)
-{
-    return Vector2D(n / d.value);
-}
-
-Vector2D operator-(float n, const Vector2D& d)
-{
-    return Vector2D(n - d.value);
-}
-
-Vector2D operator*(float n, const Vector2D& d)
-{
-    return d * n;
-}
-
-Vector2D operator+(float n, const Vector2D& d)
-{
-    return d + n;
-}
-
 const Vector2D Vector2D::RIGHT(0,1);
 
 const Vector2D Vector2D::FWD(1,0);

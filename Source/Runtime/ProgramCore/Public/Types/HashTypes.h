@@ -1,5 +1,5 @@
 #pragma once
-#include "ProgramCoreExports.h"
+#include "CoreDefines.h"
 
 namespace HashUtility
 {
@@ -10,7 +10,7 @@ namespace HashUtility
         seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
 
-    PROGRAMCORE_EXPORT inline void hashCombine(size_t& seed1, const size_t& seed2)
+    FORCE_INLINE void hashCombine(size_t& seed1, const size_t& seed2)
     {
         seed1 ^= seed2 + 0x9e3779b9 + (seed1 << 6) + (seed1 >> 2);
     }

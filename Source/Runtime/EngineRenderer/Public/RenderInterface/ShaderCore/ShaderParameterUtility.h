@@ -4,7 +4,7 @@
 
 #include <map>
 
-class ShaderParameterUtility
+class ENGINERENDERER_EXPORT ShaderParameterUtility
 {
 public:
     // Some common descriptor set indexes

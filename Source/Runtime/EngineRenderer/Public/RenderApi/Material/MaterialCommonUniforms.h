@@ -1,7 +1,9 @@
 #pragma once
-#include "Math/Matrix4.h"
-#include "RenderApi/VertexData.h"
 #include <map>
+
+#include "Math/Matrix4.h"
+#include "EngineRendererExports.h"
+#include "RenderApi/VertexData.h"
 
 
 // Base vertex instance specific data
@@ -21,19 +23,19 @@ namespace MaterialVertexUniforms
     const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo();
 
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple2>();
+    ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple2>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::UI>();
+    ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::UI>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3>();
+    ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3DColor>();
+    ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::Simple3DColor>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::BasicMesh>();
+    ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::BasicMesh>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::StaticMesh>();
+    ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::StaticMesh>();
     template<>
-    const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::NoVertex>();
+    ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo<EVertexType::NoVertex>();
 
     template<EVertexType::Type VertexType>
     const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo()
@@ -42,7 +44,7 @@ namespace MaterialVertexUniforms
         return NoInstanceDataForThisVertex;
     }
 
-    constexpr const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo(EVertexType::Type vertexType)
+    ENGINERENDERER_EXPORT constexpr const std::map<String, ShaderBufferParamInfo*>& bufferParamInfo(EVertexType::Type vertexType)
     {
         switch (vertexType)
         {

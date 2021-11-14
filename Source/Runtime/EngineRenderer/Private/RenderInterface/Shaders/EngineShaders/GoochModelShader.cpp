@@ -7,6 +7,7 @@
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderApi/Scene/RenderScene.h"
 #include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
+#include "RenderInterface/Resources/Pipelines.h"
 
 BEGIN_BUFFER_DEFINITION(GoochModelLightCommon)
 ADD_BUFFER_TYPED_FIELD(lightsCount)
@@ -27,9 +28,9 @@ END_BUFFER_DEFINITION();
 
 #define GOOCH_SHADER_NAME "GoochModel"
 
-class GoochModelShader : public UniqueUtilityShader
+class GoochModelShader : public UniqueUtilityShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(GoochModelShader, , UniqueUtilityShader, )
+    DECLARE_GRAPHICS_RESOURCE(GoochModelShader, , UniqueUtilityShaderConfig, )
 protected:
     GoochModelShader()
         : BaseType(GOOCH_SHADER_NAME)
@@ -64,4 +65,5 @@ DEFINE_GRAPHICS_RESOURCE(GoochModelShader)
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-ScreenSpaceQuadShaderPipelineRegistrar GOOCHMODEL_SHADER_PIPELINE_REGISTER(GOOCH_SHADER_NAME);
+
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(GOOCHMODEL_SHADER_PIPELINE_REGISTER, GOOCH_SHADER_NAME, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);

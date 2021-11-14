@@ -235,26 +235,6 @@ Vector3D Vector3D::rejectFrom(const Vector3D& b) const
     return *this - projectTo(b);
 }
 
-Vector3D operator/(float n, const Vector3D& d)
-{
-    return Vector3D(n / d.value);
-}
-
-Vector3D operator-(float n, const Vector3D& d)
-{
-    return Vector3D(n - d.value);
-}
-
-Vector3D operator*(float n, const Vector3D& d)
-{
-    return d * n;
-}
-
-Vector3D operator+(float n, const Vector3D& d)
-{
-    return d + n;
-}
-
 const Vector3D Vector3D::RIGHT(0, 1);
 
 const Vector3D Vector3D::FWD(1, 0);

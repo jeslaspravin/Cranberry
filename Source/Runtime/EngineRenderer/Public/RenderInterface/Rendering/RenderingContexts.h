@@ -2,11 +2,11 @@
 #include "RenderApi/VertexData.h"
 #include "Types/Patterns/FactoriesBase.h"
 #include "RenderInterface/Rendering/FramebufferTypes.h"
+#include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "EngineRendererExports.h"
 
 #include <unordered_map>
 
-class String;
 class IGraphicsInstance;
 class GraphicsResource;
 class ShaderResource;
@@ -14,9 +14,10 @@ class ShaderObjectBase;
 class UniqueUtilityShaderObject;
 class PipelineBase;
 class PipelineCacheBase;
-class RenderTargetTexture;
 struct PipelineFactoryArgs;
 struct Framebuffer;
+class GraphicsHelperAPI;
+class GenericWindowCanvas;
 
 /////////////////////////////////////////////////////////////////////////////////
 // Contains most of the global common items that could be one time initialized
@@ -40,6 +41,8 @@ protected:
         // One for each unique of material(not shader)
         GraphicsResource* shadersParamLayout = nullptr;
     };
+    IGraphicsInstance* graphicsInstanceCache; 
+    const GraphicsHelperAPI* graphicsHelperCache;
 
     // Shader(material as all shader with same name considered as same material) name to collection
     std::unordered_map<String, ShaderDataCollection> rawShaderObjects;
@@ -52,17 +55,20 @@ protected:
 
     std::unordered_map<GenericRenderPassProperties, std::vector<const Framebuffer*>> rtFramebuffers;
     PipelineCacheBase* pipelinesCache;
+    
+    // One for each swapchain
+    std::unordered_map<WindowCanvasRef, std::vector<const Framebuffer*>> windowCanvasFramebuffers;
 
-    FactoriesBase<ShaderObjectBase, const String&, const ShaderResource*>* shaderObjectFactory;
-    FactoriesBase<GraphicsResource, const ShaderResource*, uint32>* shaderParamLayoutsFactory;
-    FactoriesBase<PipelineBase, const PipelineFactoryArgs&>* pipelineFactory;
+    FactoriesBase<ShaderObjectBase*, const String&, const ShaderResource*>* shaderObjectFactory;
+    FactoriesBase<GraphicsResource*, const ShaderResource*, uint32>* shaderParamLayoutsFactory;
+    FactoriesBase<PipelineBase*, IGraphicsInstance*, const GraphicsHelperAPI*, const PipelineFactoryArgs&>* pipelineFactory;
 
 private:
-    void initContext(IGraphicsInstance* graphicsInstance);
+    void initContext(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
     void clearContext();
 
     void initShaderResources();
-    void initShaderPipelines(const std::vector<GraphicsResource*>& allShaderResources
+    void initShaderPipelines(const std::vector<ShaderResource*>& allShaderResources
         , const std::map<String, std::pair<uint32, ShaderResource*>>& shaderUniqParamShader);
     void destroyShaderResources();
     void writeAndDestroyPipelineCache();
@@ -76,25 +82,26 @@ protected:
 
     // Fills necessary render pass info to pipeline(Pipeline render pass properties has to filled before using this) and initializes it
     virtual void initializeGenericGraphicsPipeline(UniqueUtilityShaderObject* shaderObject, PipelineBase* pipeline) = 0;
-    // Get generic render pass properties from Render targets
-    GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const;
+    // Get generic render pass properties from Render targets, Moved to RenderManager.h
+    //GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>& rtTextures) const;
     // Get generic render pass properties from framebuffer
     GenericRenderPassProperties renderpassPropsFromFb(const Framebuffer* fb) const;
     // Get generic render pass properties from render pass format, Useful in case of using custom RTs with predefined render passes 
     GenericRenderPassProperties renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx) const;
     const Framebuffer* getFramebuffer(const GenericRenderPassProperties& renderpassProps
-        , const std::vector<RenderTargetTexture*>& rtTextures) const;
+        , const std::vector<ImageResourceRef>& frameAttachments) const;
     const Framebuffer* createNewFramebuffer(const GenericRenderPassProperties& renderpassProps
-        , const std::vector<RenderTargetTexture*>& rtTextures) const;
+        , const std::vector<ImageResourceRef>& frameAttachments) const;
     const Framebuffer* getOrCreateFramebuffer(const GenericRenderPassProperties& renderpassProps
-        , const std::vector<RenderTargetTexture*>& rtTextures);
+        , const std::vector<ImageResourceRef>& frameAttachments);
     // Creates new pipeline based on default pipeline of shader object but with new render pass or different render pass and returns it
     PipelineBase* createNewPipeline(UniqueUtilityShaderObject* shaderObject, const GenericRenderPassProperties& renderpassProps);
 
 public:
 
-    void preparePipelineContext(class LocalPipelineContext* pipelineContext);
-    void clearExternInitRtsFramebuffer(const std::vector<RenderTargetTexture*>& rtTextures);
+    void preparePipelineContext(class LocalPipelineContext* pipelineContext, GenericRenderPassProperties renderpassProps);
+    void clearExternInitRtsFramebuffer(const std::vector<ImageResourceRef>& frameAttachments, GenericRenderPassProperties renderpassProps);
+    void clearWindowCanvasFramebuffer(WindowCanvasRef windowCanvas);
 };
 
 // Temporary class high chance to change later so avoid relying on this.
@@ -108,10 +115,11 @@ private:
 
 public:
     uint32 swapchainIdx;
+    WindowCanvasRef windowCanvas;
 
-    std::vector<RenderTargetTexture*> rtTextures;
+    // Will be filled by RenderManager
+    std::vector<ImageResourceRef> frameAttachments;
     ERenderPassFormat::Type renderpassFormat;
-    bool bUseSwapchainFb = false;
 
     EVertexType::Type forVertexType;
 
@@ -121,10 +129,10 @@ public:
     const PipelineBase* getPipeline() const { return pipelineUsed; }
 };
 
-struct ENGINERENDERER_EXPORT TinyDrawingContext
-{
-    const GraphicsResource* cmdBuffer;
-
-    std::vector<RenderTargetTexture*> rtTextures;
-    uint32 swapchainIdx = ~(0u);
-};
+//struct ENGINERENDERER_EXPORT TinyDrawingContext
+//{
+//    const GraphicsResource* cmdBuffer;
+//
+//    std::vector<RenderTargetTexture*> rtTextures;
+//    uint32 swapchainIdx = ~(0u);
+//};

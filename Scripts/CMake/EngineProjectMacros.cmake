@@ -89,6 +89,7 @@ macro (cpp_common_variables)
             $<IF:${WIN32}, PLATFORM_WINDOWS=1, PLATFORM_WINDOWS=0>
             $<IF:${LINUX}, PLATFORM_LINUX=1, PLATFORM_LINUX=0>
             $<IF:${APPLE}, PLATFORM_APPLE=1, PLATFORM_APPLE=0>
+            $<IF:$<BOOL:${engine_static_modules}>, STATIC_LINKED=1, STATIC_LINKED=0>
     )
     # Includes 
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/Private)
@@ -133,6 +134,11 @@ macro (cpp_common_variables)
     if (${public_dependency_count} GREATER 0)
         target_link_libraries (${target_name} PRIVATE ${public_dependencies})
     endif ()
+    # Interface Libraries
+    list (LENGTH interface_dependencies interface_dependency_count)
+    if (${interface_dependency_count} GREATER 0)
+        target_link_libraries (${target_name} INTERFACE ${interface_dependencies})
+    endif ()
 
     # POD/Variables in class has to initialized with {} to zero initialize if calling constructors that are not compiler generated
     # target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/sdl>)    
@@ -152,6 +158,8 @@ macro (generate_cpp_console_project)
 endmacro()
 
 macro (generate_cpp_static_lib)
+    include(GenerateExportHeader)
+
     get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
     get_all_cpp_files(src_files)
 
@@ -159,6 +167,17 @@ macro (generate_cpp_static_lib)
 
     add_library(${target_name} STATIC)
 
+    generate_export_header(${target_name} 
+        EXPORT_FILE_NAME ${target_generated_path}/Public/${target_name}Exports.h
+    )
+    # Make export macros void since this is static library
+    target_compile_definitions(${target_name} 
+        PUBLIC 
+            $<UPPER_CASE:${target_name}>_STATIC_DEFINE
+    )
+    # Since we need generated headers to be visible outside
+    list(APPEND public_includes ${CMAKE_CURRENT_BINARY_DIR}/${target_generated_path}/Public)
+    
     set_target_sources(
         TARGET_NAME ${target_name}
         SOURCES ${src_files})
@@ -178,15 +197,24 @@ macro (generate_cpp_shared_lib)
     generate_export_header(${target_name} 
         EXPORT_FILE_NAME ${target_generated_path}/Public/${target_name}Exports.h
     )
+    # Since we need generated headers to be visible outside
+    list(APPEND public_includes ${CMAKE_CURRENT_BINARY_DIR}/${target_generated_path}/Public)
+
     # After generating
     set_target_sources(
         TARGET_NAME ${target_name}
         SOURCES ${src_files})
 
-    # Since we need generated headers to be visible outside
-    list(APPEND public_includes ${CMAKE_CURRENT_BINARY_DIR}/${target_generated_path}/Public)
-
     cpp_common_variables()
+endmacro()
+
+# Used for engine modules to determine whether to build as shared or static library
+macro (generate_engine_library)
+    if (${engine_static_modules})
+        generate_cpp_static_lib()
+    else ()
+        generate_cpp_shared_lib()
+    endif ()
 endmacro()
 
 ########################################################################################################
