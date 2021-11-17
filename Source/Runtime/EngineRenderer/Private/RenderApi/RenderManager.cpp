@@ -37,16 +37,15 @@ void RenderManager::createSingletons()
     globalContext = IRenderInterfaceModule::get()->currentGraphicsHelper()->createGlobalRenderingContext();
 }
 
-void RenderManager::initialize()
+void RenderManager::initialize(IGraphicsInstance* graphicsInstance)
 {
-    bIsInitializing = true;
+    graphicsInstanceCache = graphicsInstance;
     auto engineRendererModule = static_cast<EngineRedererModule*>(IRenderInterfaceModule::get());
     debugAssert(engineRendererModule);
-    IGraphicsInstance* graphicsInstance = engineRendererModule->currentGraphicsInstance();
 
     createSingletons();
     renderCmds = IRenderCommandList::genericInstance();
-    graphicsInstance->load();
+    graphicsInstanceCache->load();
     // Load instance done 
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostLoadInstance);
 
@@ -84,14 +83,12 @@ void RenderManager::finalizeInit()
     // Process post init pre-frame render commands
     waitOnCommands();
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostFinalizeInit);
-    bIsInitializing = false;
 }
 
 void RenderManager::destroy()
 {
     debugAssert(IRenderInterfaceModule::get());
     auto engineRendererModule = static_cast<EngineRedererModule*>(IRenderInterfaceModule::get());
-    IGraphicsInstance* graphicsInstance = engineRendererModule->currentGraphicsInstance();
 
     // TODO(Commented) EngineSettings::enableVsync.onConfigChanged().unbind(onVsyncChangeHandle);
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreCleanupCommands);
@@ -116,7 +113,7 @@ void RenderManager::destroy()
         Logger::warn("RenderManager", "%s() : Commands enqueued at post clean up phase, but they will not be executed", __func__);
     }
 
-    graphicsInstance->unload();
+    graphicsInstanceCache->unload();
 
     std::vector<GraphicsResource*> resourceLeak;
     GraphicsResource::staticType()->allRegisteredResources(resourceLeak, true);
@@ -197,10 +194,9 @@ void RenderManager::enqueueCommand(class IRenderCommand* renderCommand)
     if (bIsInsideRenderCommand && renderCmds)
     {
         debugAssert(IRenderInterfaceModule::get());
-        IGraphicsInstance* graphicsInstance = IRenderInterfaceModule::get()->currentGraphicsInstance();
         const GraphicsHelperAPI* graphicsHelperApi = IRenderInterfaceModule::get()->currentGraphicsHelper();
 
-        renderCommand->execute(renderCmds, graphicsInstance, graphicsHelperApi);
+        renderCommand->execute(renderCmds, graphicsInstanceCache, graphicsHelperApi);
         delete renderCommand;
     }
     else
@@ -211,10 +207,9 @@ void RenderManager::enqueueCommand(class IRenderCommand* renderCommand)
 
 void RenderManager::immediateExecCommand(ImmediateExecuteCommandType&& immediateCmd) const
 {
-    IGraphicsInstance* graphicsInstance = IRenderInterfaceModule::get()->currentGraphicsInstance();
     const GraphicsHelperAPI* graphicsHelperApi = IRenderInterfaceModule::get()->currentGraphicsHelper();
 
-    immediateCmd.invoke(renderCmds, graphicsInstance, graphicsHelperApi);
+    immediateCmd.invoke(renderCmds, graphicsInstanceCache, graphicsHelperApi);
 }
 
 void RenderManager::executeAllCmds()
@@ -222,7 +217,6 @@ void RenderManager::executeAllCmds()
     bIsInsideRenderCommand = true;
 
     debugAssert(IRenderInterfaceModule::get());
-    IGraphicsInstance* graphicsInstance = IRenderInterfaceModule::get()->currentGraphicsInstance();
     const GraphicsHelperAPI* graphicsHelperApi = IRenderInterfaceModule::get()->currentGraphicsHelper();
 
     while (!commands.empty())
@@ -230,7 +224,7 @@ void RenderManager::executeAllCmds()
         IRenderCommand* command = commands.front();
         commands.pop();
 
-        command->execute(renderCmds, graphicsInstance, graphicsHelperApi);
+        command->execute(renderCmds, graphicsInstanceCache, graphicsHelperApi);
         delete command;
     }
     bIsInsideRenderCommand = false;

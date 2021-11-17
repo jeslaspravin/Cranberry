@@ -27,6 +27,7 @@ void WindowManager::init()
     appMainWindow->onWindowActivated.bindObject(this, &WindowManager::activateWindow, appMainWindow);
     appMainWindow->onWindowDeactived.bindObject(this, &WindowManager::deactivateWindow, appMainWindow);
     appMainWindow->onResize.bindObject(this, &WindowManager::onWindowResize, appMainWindow);
+    appMainWindow->onDestroyRequested.bindObject(this, &WindowManager::requestDestroyWindow, appMainWindow);
     appMainWindow->createWindow(appInstance);
     static_cast<ApplicationModule*>(IApplicationModule::get())->onWindowCreated.invoke(appMainWindow);
 
@@ -153,16 +154,49 @@ void WindowManager::deactivateWindow(GenericAppWindow* window)
 
 bool WindowManager::pollWindows()
 {
+    windowsToDestroy.clear();
     for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
     {
         windowData.first->updateWindow();
     }
+
+    std::vector<WindowCanvasRef> canvasesToDestroy;
+    canvasesToDestroy.reserve(windowsToDestroy.size());
+    auto* appModule = static_cast<ApplicationModule*>(IApplicationModule::get());
+    for (GenericAppWindow* window : windowsToDestroy)
+    {
+        auto foundItr = windowsOpened.find(window);
+
+        WindowCanvasRef windowCanvas = foundItr->second.windowCanvas;
+        canvasesToDestroy.emplace_back(windowCanvas);
+
+        appModule->onWindowDestroyed.invoke(foundItr->first);
+        foundItr->first->destroyWindow();
+        delete foundItr->first;
+
+        windowsOpened.erase(foundItr);
+
+        if (windowsOpened.empty())
+        {
+            appModule->onAllWindowsDestroyed.invoke();
+        }
+    }
+    if (!canvasesToDestroy.empty())
+    {
+        ENQUEUE_COMMAND(WindowsCanvasDestroy)(
+            [canvasesToDestroy](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper) mutable
+            {
+                // Clear will release and destroy ref resources
+                canvasesToDestroy.clear();
+            });
+    }
+
     return activeWindow != nullptr;
 }
 
 void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow* window)
 {
-    if(window->windowHeight != height || window->windowWidth != width)
+    if (window->windowHeight != height || window->windowWidth != width)
     {
         ENQUEUE_COMMAND(WindowResize)(
             [this, window, width, height](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
@@ -191,7 +225,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
     }
 }
 
-void WindowManager::onMouseMoved(uint32 xPos, uint32 yPos, GenericAppWindow* window)
+void WindowManager::requestDestroyWindow(GenericAppWindow* window)
 {
-    Logger::log("Test", "Mouse abs x : %d, y : %d", xPos, yPos);
+    windowsToDestroy.emplace(window);
 }

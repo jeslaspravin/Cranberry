@@ -117,7 +117,7 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
     WeakModulePtr existingModule = getModule(moduleName);
     ModulePtr retModule = existingModule.expired() ? nullptr : existingModule.lock();
 
-    if (retModule == nullptr)
+    if (!bool(retModule))
     {
         Logger::log("ModuleManager", "%s() : Loading module %s", __func__, moduleName.getChar());
 
@@ -131,7 +131,7 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
         else
         {
             fatalAssert(!"Module initializer not found", "%s() : Module initializer not found", __func__);
-            return nullptr;
+            return existingModule;
         }
 #else // STATIC_LINKED
         else

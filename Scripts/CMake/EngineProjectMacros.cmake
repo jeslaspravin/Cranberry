@@ -83,7 +83,57 @@ function (set_target_sources)
     )
 endfunction ()
 
-macro (cpp_common_variables)
+# Recursively finds all engine modules that this target depends on
+# Use with
+# configure_file(${cmake_script_dir}/${configure_file_folder}/ModuleDependencies.list.in ${CMAKE_CURRENT_BINARY_DIR}/ModuleDependencies.list
+#     USE_SOURCE_PERMISSIONS 
+#     @ONLY
+# )
+#
+# DIRECT_MODULES Modules target depends on
+# OUT_ALL_MODULES
+function (find_all_modules_recursively)
+    set(one_value_args OUT_ALL_MODULES)
+    set(multi_value_args DIRECT_MODULES)
+    cmake_parse_arguments(all_modules "" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+    set (out_modules )
+    set (modules_tree ${all_modules_DIRECT_MODULES})
+    while (ON)
+        set (new_modules_tree )
+        foreach (module ${modules_tree})
+            # Skip if already visited module
+            list(FIND out_modules ${module} found_idx)
+            if (found_idx GREATER_EQUAL 0)
+                continue ()
+            endif ()
+            
+            list(APPEND out_modules ${module})
+            get_target_property(module_bin_dir ${module} BINARY_DIR)            
+            if (EXISTS ${module_bin_dir}/ModuleDependencies.list)
+                file(READ ${module_bin_dir}/ModuleDependencies.list dep_module_list)
+                foreach (new_item ${dep_module_list})
+                    STRING(STRIP ${new_item} new_module)
+                    # If not just empty spaces
+                    if(${new_module} MATCHES ".*")
+                        message ("Module ${new_module}")
+                        list (APPEND new_modules_tree ${new_module})
+                    endif ()
+                endforeach ()
+            endif ()
+        endforeach ()
+        
+        set (modules_tree ${new_modules_tree})        
+        list(LENGTH modules_tree modules_count)
+        if (modules_count EQUAL 0)
+            break ()
+        endif ()
+    endwhile ()
+    
+    set (${all_modules_OUT_ALL_MODULES} ${out_modules} PARENT_SCOPE)
+endfunction ()
+
+macro (cpp_common_options_and_defines)
     target_compile_definitions(${target_name}
         PRIVATE
             $<IF:${WIN32}, PLATFORM_WINDOWS=1, PLATFORM_WINDOWS=0>
@@ -91,6 +141,12 @@ macro (cpp_common_variables)
             $<IF:${APPLE}, PLATFORM_APPLE=1, PLATFORM_APPLE=0>
             $<IF:$<BOOL:${engine_static_modules}>, STATIC_LINKED=1, STATIC_LINKED=0>
     )
+
+    # POD/Variables in class has to initialized with {} to zero initialize if calling constructors that are not compiler generated
+    # target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/sdl>)        
+endmacro ()
+
+macro (cpp_common_includes)
     # Includes 
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/Private)
         list (APPEND private_includes Private)
@@ -123,25 +179,118 @@ macro (cpp_common_variables)
                 ${public_includes}
         )
     endif ()
+endmacro ()
 
-    # Private dependencies
-    list (LENGTH private_dependencies private_dependency_count)
-    if (${private_dependency_count} GREATER 0)
-        target_link_libraries (${target_name} PRIVATE ${private_dependencies})
+# Both Shared/Static libraries or Engine module libraries
+macro (cpp_common_dependencies)
+    # Private libraries
+    list (LENGTH private_libraries private_libraries_count)
+    if (${private_libraries_count} GREATER 0)
+        target_link_libraries (${target_name} PRIVATE ${private_libraries})
     endif ()
     # Public dependencies
-    list (LENGTH public_dependencies public_dependency_count)
-    if (${public_dependency_count} GREATER 0)
-        target_link_libraries (${target_name} PRIVATE ${public_dependencies})
+    list (LENGTH public_libraries public_libraries_count)
+    if (${public_libraries_count} GREATER 0)
+        target_link_libraries (${target_name} PUBLIC ${public_libraries})
     endif ()
     # Interface Libraries
-    list (LENGTH interface_dependencies interface_dependency_count)
-    if (${interface_dependency_count} GREATER 0)
-        target_link_libraries (${target_name} INTERFACE ${interface_dependencies})
+    list (LENGTH interface_libraries interface_libraries_count)
+    if (${interface_libraries_count} GREATER 0)
+        target_link_libraries (${target_name} INTERFACE ${interface_libraries})
     endif ()
+endmacro()
 
-    # POD/Variables in class has to initialized with {} to zero initialize if calling constructors that are not compiler generated
-    # target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/sdl>)    
+macro (engine_module_dependencies)
+
+    # Private dependencies
+    list (LENGTH private_modules private_modules_count)
+    if (${private_modules_count} GREATER 0)
+        if (${engine_static_modules})
+            target_link_libraries (${target_name} PUBLIC ${private_modules})
+        else ()
+            target_link_libraries (${target_name} PRIVATE ${private_modules})
+        endif ()
+    endif ()
+    # Public dependencies
+    list (LENGTH public_modules public_modules_count)
+    if (${public_modules_count} GREATER 0)
+        target_link_libraries (${target_name} PUBLIC ${public_modules})
+    endif ()
+    # Interface dependencies
+    list (LENGTH interface_modules interface_modules_count)
+    if (${interface_modules_count} GREATER 0)
+        target_link_libraries (${target_name} INTERFACE ${interface_modules})
+    endif ()
+    
+    # Since we do not want all symbols that are not referenced removed as some were left out in local context like static initialized factory registers    
+    if (${engine_static_modules})
+        foreach (module ${private_modules} ${public_modules})
+            target_link_options(${target_name} 
+                PRIVATE 
+                    $<$<CXX_COMPILER_ID:MSVC>:/WHOLEARCHIVE:${module}> 
+                    $<$<CXX_COMPILER_ID:GNU>:--whole-archive ${module}> 
+                    $<$<CXX_COMPILER_ID:Clang>:-force_load ${module}>
+            )
+        endforeach ()
+    endif ()
+endmacro ()
+
+macro (engine_module_dependencies_includes)    
+    set(engine_module_pri_incls )
+    set(engine_module_pub_incls )
+    set(engine_module_interface_incls )
+
+    # Private dependencies
+    list (LENGTH private_modules private_modules_count)
+    if (${private_modules_count} GREATER 0)
+        foreach (module ${private_modules})
+            get_target_property(incl_src_dir ${module} SOURCE_DIR)
+            if (EXISTS ${incl_src_dir}/Public)
+                list (APPEND engine_module_pri_incls ${incl_src_dir}/Public)
+            endif ()
+            # Platform includes
+            if (EXISTS ${incl_src_dir}/${platform_folder}/Public)
+                list (APPEND engine_module_pri_incls ${incl_src_dir}/${platform_folder}/Public)
+            endif ()
+        endforeach ()
+    endif ()
+    # Public dependencies
+    list (LENGTH public_modules public_modules_count)
+    if (${public_modules_count} GREATER 0)        
+        foreach (module ${public_modules})
+            get_target_property(incl_src_dir ${module} SOURCE_DIR)
+            if (EXISTS ${incl_src_dir}/Public)
+                list (APPEND engine_module_pub_incls ${incl_src_dir}/Public)
+            endif ()
+            # Platform includes
+            if (EXISTS ${incl_src_dir}/${platform_folder}/Public)
+                list (APPEND engine_module_pub_incls ${incl_src_dir}/${platform_folder}/Public)
+            endif ()
+        endforeach ()
+    endif ()
+    # Interface dependencies
+    list (LENGTH interface_modules interface_modules_count)
+    if (${interface_modules_count} GREATER 0)
+        foreach (module ${interface_modules})
+            get_target_property(incl_src_dir ${module} SOURCE_DIR)
+            if (EXISTS ${incl_src_dir}/Public)
+                list (APPEND engine_module_pub_incls ${incl_src_dir}/Public)
+            endif ()
+            # Platform includes
+            if (EXISTS ${incl_src_dir}/${platform_folder}/Public)
+                list (APPEND engine_module_interface_incls ${incl_src_dir}/${platform_folder}/Public)
+            endif ()
+        endforeach ()
+    endif ()
+    
+    target_include_directories(${target_name} 
+        PRIVATE
+            ${engine_module_pri_incls}
+        PUBLIC
+            ${engine_module_pub_incls}
+        INTERFACE
+            ${engine_module_interface_incls}
+    )
 endmacro ()
 
 macro (generate_cpp_console_project)
@@ -154,9 +303,16 @@ macro (generate_cpp_console_project)
     set_target_sources(
         TARGET_NAME ${target_name}
         SOURCES ${src_files})
-    cpp_common_variables()
+
+    cpp_common_options_and_defines()
+    cpp_common_includes()
+    cpp_common_dependencies()
+
+    # We add this just in case some executable uses engine modules
+    engine_module_dependencies()
 endmacro()
 
+# Only maximum 1 argument is allowed, 1st argument if is true then build as object library
 macro (generate_cpp_static_lib)
     include(GenerateExportHeader)
 
@@ -181,7 +337,10 @@ macro (generate_cpp_static_lib)
     set_target_sources(
         TARGET_NAME ${target_name}
         SOURCES ${src_files})
-    cpp_common_variables()
+
+    cpp_common_options_and_defines()
+    cpp_common_includes()
+    cpp_common_dependencies()
 endmacro()
 
 macro (generate_cpp_shared_lib)
@@ -204,8 +363,10 @@ macro (generate_cpp_shared_lib)
     set_target_sources(
         TARGET_NAME ${target_name}
         SOURCES ${src_files})
-
-    cpp_common_variables()
+        
+    cpp_common_options_and_defines()
+    cpp_common_includes()
+    cpp_common_dependencies()
 endmacro()
 
 # Used for engine modules to determine whether to build as shared or static library
@@ -215,6 +376,7 @@ macro (generate_engine_library)
     else ()
         generate_cpp_shared_lib()
     endif ()
+    engine_module_dependencies()
 endmacro()
 
 ########################################################################################################

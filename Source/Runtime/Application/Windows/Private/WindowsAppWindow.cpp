@@ -114,6 +114,14 @@ void WindowsAppWindow::windowResizing(uint32 width, uint32 height) const
     }
 }
 
+void WindowsAppWindow::windowDestroyRequested() const
+{
+    if (onDestroyRequested.isBound())
+    {
+        onDestroyRequested.invoke();
+    }
+}
+
 Rect WindowsAppWindow::windowClientRect() const
 {
     Rect retVal(Vector2D::ZERO, Vector2D::ZERO);
@@ -152,7 +160,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         Logger::log("WindowsAppWindow", "%s() : Quiting window %s", __func__, windowPtr->getWindowName().getChar());
 
         // This will trigger window destroyed event which can be used to kill engine
-        static_cast<ApplicationModule*>(IApplicationModule::get())->windowManager()->destroyWindow(windowPtr);
+        windowPtr->pushEvent(WM_CLOSE, [windowPtr]() 
+            {
+                windowPtr->windowDestroyRequested();
+            });
         return 0;
     }
     case WM_ACTIVATEAPP:
@@ -177,11 +188,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         WindowsAppWindow* const windowPtr = reinterpret_cast<WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
         if (windowPtr && (wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED) && LOWORD(lParam) > 0 && HIWORD(lParam) > 0)
         {
-            windowPtr->pushEvent(WM_ACTIVATEAPP, { [windowPtr, lParam]() 
+            windowPtr->pushEvent(WM_ACTIVATEAPP, [windowPtr, lParam]() 
                 {
                     Logger::log("WindowsAppWindow", "%s() : Resizing window %s ( %d, %d )", __func__, windowPtr->getWindowName().getChar(), LOWORD(lParam), HIWORD(lParam));
                     windowPtr->windowResizing(LOWORD(lParam), HIWORD(lParam));
-                }});
+                });
             return 0;
         }
         break;

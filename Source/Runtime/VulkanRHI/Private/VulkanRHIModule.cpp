@@ -25,27 +25,26 @@ DECLARE_MODULE(VulkanRHI, VulkanRHIModule)
 
 IGraphicsInstance* VulkanRHIModule::createGraphicsInstance()
 {
-	if (graphicsInstance == nullptr)
-	{
-		graphicsInstance = new VulkanGraphicsInstance();
-	}
-	return graphicsInstance;
+    if (graphicsInstance == nullptr)
+    {
+        graphicsInstance = new VulkanGraphicsInstance();
+    }
+    return graphicsInstance;
 }
 
 void VulkanRHIModule::destroyGraphicsInstance()
 {
     if (graphicsInstance != nullptr)
     {
-		graphicsInstance->unload();
-		delete graphicsInstance;
-		graphicsInstance = nullptr;
+        delete graphicsInstance;
+        graphicsInstance = nullptr;
     }
 }
 
 const GraphicsHelperAPI* VulkanRHIModule::getGraphicsHelper() const
 {
     static VulkanGraphicsHelper graphicsHelper;
-	return &graphicsHelper;
+    return &graphicsHelper;
 }
 
 void VulkanRHIModule::init()
@@ -60,7 +59,7 @@ void VulkanRHIModule::release()
 
 IGraphicsInstance* VulkanRHIModule::getGraphicsInstance() const
 {
-	return graphicsInstance;
+    return graphicsInstance;
 }
 
 IVulkanRHIModule* IVulkanRHIModule::get()

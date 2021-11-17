@@ -127,6 +127,13 @@ public:
 
     const Framebuffer* getFb() const { return framebuffer; }
     const PipelineBase* getPipeline() const { return pipelineUsed; }
+
+    // Reset all Reference resources held by this context
+    FORCE_INLINE void reset()
+    {
+        windowCanvas.reset();
+        frameAttachments.clear();
+    }
 };
 
 //struct ENGINERENDERER_EXPORT TinyDrawingContext

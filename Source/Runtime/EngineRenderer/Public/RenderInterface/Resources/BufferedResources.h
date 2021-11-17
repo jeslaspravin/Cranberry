@@ -95,10 +95,10 @@ void SwapchainBufferedResource<RefCountType<ResourceType>>::reset()
 {
     for (RefCountType<ResourceType>& res : resources)
     {
-        res->release();
         res.reset();
     }
     resources.clear();
+    basedOnSwapchain.reset();
 }
 
 template<template <typename> typename RefCountType, typename ResourceType>
@@ -144,7 +144,6 @@ void SwapchainBufferedResource<RefCountType<ResourceType>>::swapchainChanged()
     // Release and reset all extra
     for (int32 i = basedOnSwapchain->imagesCount(); i < resources.size(); ++i)
     {
-        resources[i]->release();
         resources[i].reset();
     }
     resources.resize(basedOnSwapchain->imagesCount());
@@ -197,6 +196,7 @@ void SwapchainBufferedResource<ResourceType>::reset()
         delete res;
     }
     resources.clear();
+    basedOnSwapchain.reset();
 }
 
 template<typename ResourceType>

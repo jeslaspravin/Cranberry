@@ -6,8 +6,7 @@
 
 namespace ERenderTargetFormat
 {
-    template<>
-    constexpr EPixelDataFormat::Type rtFormatToPixelFormat</*bIsSrgb = */true>(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
+    EPixelDataFormat::Type rtFormatToPixelFormatSrgb(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
     {
         switch (rtFormat)
         {
@@ -29,8 +28,7 @@ namespace ERenderTargetFormat
         return EPixelDataFormat::Undefined;
     }
 
-    template<>
-    constexpr EPixelDataFormat::Type rtFormatToPixelFormat</*bIsSrgb = */false>(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
+    EPixelDataFormat::Type rtFormatToPixelFormat(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
     {
         switch (rtFormat)
         {
@@ -108,11 +106,11 @@ RenderTargetTexture* RenderTargetTexture::createTexture(const RenderTextureCreat
     texture->layerCount = 1;
     if (createParams.bIsSrgb)
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<true>(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     else
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<false>(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     // Dependent values
     texture->setSampleCount(createParams.bSameReadWriteTexture ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
@@ -259,11 +257,11 @@ RenderTargetTextureCube* RenderTargetTextureCube::createTexture(const RenderText
     texture->rtFormat = createParams.format;
     if (createParams.bIsSrgb)
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<true>(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     else
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<false>(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     texture->layerCount = 6;
 
@@ -315,11 +313,11 @@ RenderTargetTextureArray* RenderTargetTextureArray::createTexture(const RenderTe
     texture->rtFormat = createParams.format;
     if (createParams.bIsSrgb)
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<true>(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     else
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<false>(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     texture->setLayerCount(createParams.layerCount);
 

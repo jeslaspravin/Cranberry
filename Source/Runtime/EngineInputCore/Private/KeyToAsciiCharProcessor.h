@@ -5,22 +5,22 @@
 
 class KeyToAsciiCharProcessor : public IKeyToCharProcessor
 {
-	struct KeyCharInfo
-	{
-		uint8 baseChar;
-		uint8 shiftedChar = 0;
-		AnalogStates::StateKeyType lockStateKey = AnalogStates::None;
+    struct KeyCharInfo
+    {
+        uint8 baseChar;
+        uint8 shiftedChar = 0;
+        AnalogStates::StateKeyType lockStateKey = AnalogStates::None;
 
-		uint8 currentChar = 0;
-	};
+        uint8 currentChar = 0;
+    };
 
-	std::map<Keys::StateKeyType, KeyCharInfo> keyToCharMap;
+    std::map<Keys::StateKeyType, KeyCharInfo> keyToCharMap;
 
 public:
-	KeyToAsciiCharProcessor();
+    KeyToAsciiCharProcessor();
 
-	/* IKeyToCharProcessor implementations */
-	void updateCharacters(class Keys* keyStates, class AnalogStates* analogStates) override;
-	Utf32 keyChar(Keys::StateKeyType key) const override;
-	/* Overrides ends */
+    /* IKeyToCharProcessor implementations */
+    void updateCharacters(class Keys* keyStates, class AnalogStates* analogStates) override;
+    Utf32 keyChar(Keys::StateKeyType key) const override;
+    /* Overrides ends */
 };

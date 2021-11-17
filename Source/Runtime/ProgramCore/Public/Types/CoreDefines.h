@@ -10,7 +10,8 @@
 #define DEBUG_INLINE inline
 
 #define ARRAY_LENGTH(ArrayVar) sizeof(ArrayVar)/sizeof(ArrayVar[0])
-#define MACRO_TO_STRING(VarName) #VarName 
+#define MACRO_TO_STRING_internal(DefExpanded) #DefExpanded
+#define MACRO_TO_STRING(VarName) MACRO_TO_STRING_internal(VarName)
 
 #define ONE_BIT_SET(FlagStatement) ((FlagStatement) && !((FlagStatement) & ((FlagStatement) - 1)))
 #define BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == CheckFlags)

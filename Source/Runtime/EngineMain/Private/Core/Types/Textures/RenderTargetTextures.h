@@ -15,8 +15,9 @@ namespace ERenderTargetFormat
         RT_Depth, // signed float
     };
 
-    template<bool bIsSrgb>
-    EPixelDataFormat::Type rtFormatToPixelFormat(ERenderTargetFormat::Type, EPixelDataFormat::Type);
+
+    EPixelDataFormat::Type rtFormatToPixelFormat(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat);
+    EPixelDataFormat::Type rtFormatToPixelFormatSrgb(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat);
 }
 
 struct RenderTextureCreateParams : public TextureBaseCreateParams

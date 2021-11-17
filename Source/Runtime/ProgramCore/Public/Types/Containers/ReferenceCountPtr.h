@@ -55,6 +55,7 @@ public:
         if (refPtr)
         {
             refPtr->removeRef();
+            refPtr = nullptr;
         }
     }
 

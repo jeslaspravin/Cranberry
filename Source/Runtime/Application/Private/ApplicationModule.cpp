@@ -121,4 +121,8 @@ void ApplicationModule::release()
         appInstance.platformApp = nullptr;
     }
     windowMan.destroy();
+    if (IRenderInterfaceModule* renderInterface = IRenderInterfaceModule::get())
+    {
+        renderInterface->unregisterToStateEvents(graphicsInitEventHandle);
+    }
 }

@@ -26,18 +26,18 @@ const vec2 poissonDisk[16] = vec2[]
 // http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
 float vec2Random(vec2 co)
 {
-	float a = 12.9898;
-	float b = 78.233;
-	float c = 43758.5453;
-	float dt= dot(co.xy ,vec2(a,b));
-	float sn= mod(dt,3.14);
-	return fract(sin(sn) * c);
+    float a = 12.9898;
+    float b = 78.233;
+    float c = 43758.5453;
+    float dt= dot(co.xy ,vec2(a,b));
+    float sn= mod(dt,3.14);
+    return fract(sin(sn) * c);
 }
 
 // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
 float vec4Random(vec4 seed)
 {
-	float dot_product = dot(seed, vec4(12.9898,78.233,45.164,94.673));
+    float dot_product = dot(seed, vec4(12.9898,78.233,45.164,94.673));
     return fract(sin(dot_product) * 43758.5453);
 }
 

@@ -1,17 +1,16 @@
 include(${cmake_script_dir}/EngineProjectMacros.cmake)
 
-set (private_dependencies    
+set (private_modules    
     ProgramCore
-    EngineShaderData
-)
-set (interface_dependencies
-    EngineShaderData
-)
-set (public_dependencies
 )
 
-set(private_includes
+set (private_libraries
+    EngineShaderData
 )
+set (interface_libraries
+    EngineShaderData
+)
+
 # TODO : Move unnecessary public includes to private
 set(public_includes
     ${cpp_libs_path}/glm

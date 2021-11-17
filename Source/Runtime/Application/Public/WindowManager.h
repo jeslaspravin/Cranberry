@@ -5,6 +5,7 @@
 #include "ApplicationExports.h"
 
 #include <map>
+#include <set>
 
 class GenericAppWindow;
 class GenericWindowCanvas;
@@ -22,11 +23,13 @@ private:
     };
 
     std::map<GenericAppWindow*, ManagerData> windowsOpened;
+    // For now Will be valid only inside pollWindows
+    std::set<GenericAppWindow*> windowsToDestroy;
 
     void activateWindow(GenericAppWindow* window);
     void deactivateWindow(GenericAppWindow* window);
     void onWindowResize(uint32 width, uint32 height, GenericAppWindow* window);
-    void onMouseMoved(uint32 xPos, uint32 yPos, GenericAppWindow* window);
+    void requestDestroyWindow(GenericAppWindow* window);
 public:
 
     GenericAppWindow* getMainWindow() const;

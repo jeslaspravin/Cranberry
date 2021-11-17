@@ -51,4 +51,6 @@ void GenericAppWindow::destroyWindow()
     childWindows.clear();
     onWindowDeactived.clear();
     onWindowActivated.clear();
+    onResize.clear();
+    onDestroyRequested.clear();
 }
