@@ -1,14 +1,14 @@
 include(${cmake_script_dir}/EngineProjectMacros.cmake)
 
-set(private_dependencies
+set(private_modules
     ProgramCore
     EngineRenderer
 )
 
-set(public_dependencies    
+set(public_modules    
 )
 
-set (interface_dependencies
+set (interface_modules
 )
 
 generate_engine_library()

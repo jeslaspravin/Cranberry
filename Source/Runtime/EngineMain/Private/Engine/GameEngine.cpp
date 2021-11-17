@@ -92,6 +92,12 @@ void GameEngine::engineLoop()
         timeData.activeTimeDilation = applicationModule->pollWindows()? 1.0f : 0.0f;
         inputModule->getInputSystem()->updateInputStates();
 
+        // Possible when window destroy event was sent
+        if (isExiting())
+        {
+            break;
+        }
+
         timeData.progressFrame();
         tickEngine();
         rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);

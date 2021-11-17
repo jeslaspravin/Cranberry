@@ -252,20 +252,25 @@ void VulkanDebugLogger::unregisterDebugLogger()
 
     if (getData().debugMsgrPtr)
     {
-        Vk::vkDestroyDebugUtilsMessengerEXT(getData().vulkanInstance, getData().debugMsgrPtr,nullptr);
+        Vk::vkDestroyDebugUtilsMessengerEXT(getData().vulkanInstance, getData().debugMsgrPtr, nullptr);
+        getData().debugMsgrPtr = nullptr;
     }
     if (getData().infoMsgrPtr)
     {
         Vk::vkDestroyDebugUtilsMessengerEXT(getData().vulkanInstance, getData().infoMsgrPtr,nullptr);
+        getData().infoMsgrPtr = nullptr;
     }
     if (getData().warnMsgrPtr)
     {
         Vk::vkDestroyDebugUtilsMessengerEXT(getData().vulkanInstance, getData().warnMsgrPtr, nullptr);
+        getData().warnMsgrPtr = nullptr;
     }
     if (getData().errorMsgrPtr)
     {
-        Vk::vkDestroyDebugUtilsMessengerEXT(getData().vulkanInstance, getData().errorMsgrPtr,nullptr);
+        Vk::vkDestroyDebugUtilsMessengerEXT(getData().vulkanInstance, getData().errorMsgrPtr, nullptr);
+        getData().errorMsgrPtr = nullptr;
     }
+    getData().vulkanInstance = nullptr;
 #endif
 }
 

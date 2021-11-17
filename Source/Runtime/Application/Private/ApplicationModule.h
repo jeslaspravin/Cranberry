@@ -8,42 +8,41 @@
 class ApplicationModule final : public IApplicationModule
 {
 private:
-	ApplicationInstance appInstance;
-	WindowManager windowMan;
+    ApplicationInstance appInstance;
+    WindowManager windowMan;
 public:
-	AppWindowDelegate onWindowCreated;
+    AppWindowDelegate onWindowCreated;
     AppWindowDelegate onWindowDestroyed;
-	// Called before window property change has lead to surface reinitialization
+    // Called before window property change has lead to surface reinitialization
     AppWindowDelegate preWindowSurfaceUpdate;
-	// When resized/updated that lead to underlying surface/canvas to be updated
+    // When resized/updated that lead to underlying surface/canvas to be updated
     AppWindowDelegate onWindowSurfaceUpdated;
-	SimpleDelegate onAllWindowsDestroyed;
+    SimpleDelegate onAllWindowsDestroyed;
 private:
-	DelegateHandle graphicsInitEventHandle;
-	void graphicsInitEvents(ERenderStateEvent renderState);
+    DelegateHandle graphicsInitEventHandle;
+    void graphicsInitEvents(ERenderStateEvent renderState);
 public:
-	WindowManager* windowManager() { return &windowMan; }
 
-	/* IApplicationModule finals */
-	void createApplication(const AppInstanceCreateInfo& appCI) final;
-	const ApplicationInstance* getApplication() const final;
-	GenericAppWindow* mainWindow() final;
-	WindowManager* getWindowManager() final;
-	bool pollWindows() final;
+    /* IApplicationModule finals */
+    void createApplication(const AppInstanceCreateInfo& appCI) final;
+    const ApplicationInstance* getApplication() const final;
+    GenericAppWindow* mainWindow() final;
+    WindowManager* getWindowManager() final;
+    bool pollWindows() final;
 
-	DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) final;
     void unregisterOnWindowCreated(const DelegateHandle& callbackHandle) final;
     DelegateHandle registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType callback) final;
     void unregisterPreWindowSurfaceUpdate(const DelegateHandle& callbackHandle) final;
     DelegateHandle registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType callback) final;
     void unregisterOnWindowSurfaceUpdated(const DelegateHandle& callbackHandle) final;
-	DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType callback) final;
     void unregisterOnWindowDestroyed(const DelegateHandle& callbackHandle) final;
     DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback) final;
     void unregisterAllWindowDestroyed(const DelegateHandle& callbackHandle) final;
-	/* IModuleBase finals */
-	void init() final;
-	void release() final;
-	/* finals end */
+    /* IModuleBase finals */
+    void init() final;
+    void release() final;
+    /* finals end */
 
 };

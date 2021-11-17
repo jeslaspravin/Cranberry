@@ -27,21 +27,21 @@ vec2 hammersley(uint i, uint nSamples)
 vec3 importanceSampleGGX(vec2 uniformSample, vec3 normal, float roughness)
 {
     float a = SQR(roughness);
-	
+    
     float phi = 2.0 * M_PI * uniformSample.x;
     float cosTheta = sqrt((1.0 - uniformSample.y) / (1.0 + (SQR(a) - 1.0) * uniformSample.y));
     float sinTheta = sqrt(1.0 - SQR(cosTheta));
-	
+    
     // from spherical coordinates to cartesian coordinates
     vec3 localHalfVec;
     localHalfVec.x = cos(phi) * sinTheta;
     localHalfVec.y = sin(phi) * sinTheta;
     localHalfVec.z = cosTheta;
-	
+    
     // from tangent-space vector to world-space sample vector
     vec3 bitan   = normalize(cross(normal, (abs(normal.x) < 0.999 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.0, 1.0))));
     vec3 tangent = cross(bitan, normal);
-	
+    
     vec3 sampleVec = tangent * localHalfVec.x + bitan * localHalfVec.y + normal * localHalfVec.z;
     return normalize(sampleVec);
 }
@@ -112,14 +112,14 @@ vec2 integrateBRDF(float nDotV, float roughness, uint sampleCount)
 // http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_slides.pdf
 float falloff(float falloffDistance, float maxRadius ) 
 {
-	float falloff = 0;
-	float distOverRadius = falloffDistance / maxRadius;
-	float distOverRadius4 = SQR(SQR(distOverRadius));
-	falloff = clamp(1.0 - distOverRadius4, 0.0, 1.0);
+    float falloff = 0;
+    float distOverRadius = falloffDistance / maxRadius;
+    float distOverRadius4 = SQR(SQR(distOverRadius));
+    falloff = clamp(1.0 - distOverRadius4, 0.0, 1.0);
     falloff = SQR(falloff);
 // Scaling to meters
-	falloff /= SQR(falloffDistance * M_CM2M) + 1.0;
-	return falloff;
+    falloff /= SQR(falloffDistance * M_CM2M) + 1.0;
+    return falloff;
 }
 
 #endif // PBRCOMMON_INCLUDE

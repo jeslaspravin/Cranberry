@@ -61,6 +61,7 @@ void VulkanSemaphore::release()
     if (semaphore)
     {
         vulkanDevice->vkDestroySemaphore(ownerDevice, semaphore, nullptr);
+        semaphore = nullptr;
     }
     BaseType::release();
 }
@@ -182,6 +183,7 @@ void VulkanTimelineSemaphore::release()
     if (semaphore)
     {
         vulkanDevice->vkDestroySemaphore(ownerDevice, semaphore, nullptr);
+        semaphore = nullptr;
     }
     BaseType::release();
 }

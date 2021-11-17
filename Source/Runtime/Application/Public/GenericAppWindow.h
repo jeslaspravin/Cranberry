@@ -28,6 +28,7 @@ protected:
     // TODO(Jeslas) : Rework this delegate based direct events(Hard to extend)
     SimpleDelegate onWindowActivated;
     SimpleDelegate onWindowDeactived;
+    SimpleDelegate onDestroyRequested;
     ScreenDimDelegate onResize;
 protected:
     virtual void updateWindowResources();

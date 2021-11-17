@@ -1,6 +1,6 @@
 include(${cmake_script_dir}/EngineProjectMacros.cmake)
 
-set(private_dependencies
+set(private_libraries
     EngineShaderData
 )
 set(private_includes

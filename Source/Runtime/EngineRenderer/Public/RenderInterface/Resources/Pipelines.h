@@ -153,7 +153,11 @@ protected:
 
     GraphicsPipelineQueryParams paramForIdx(int32 idx) const;
     int32 idxFromParam(GraphicsPipelineQueryParams queryParam) const;
-    FORCE_INLINE int32 pipelinesCount() const;
+
+    FORCE_INLINE int32 pipelinesCount() const
+    {
+        return int32(config.allowedDrawModes.size() * config.supportedCullings.size());
+    }
 
 public:
 

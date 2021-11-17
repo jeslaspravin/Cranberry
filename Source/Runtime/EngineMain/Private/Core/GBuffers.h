@@ -11,7 +11,7 @@ class GBuffers
 {
 private:
     // Frame buffer format to frame buffers swapchain count times
-    static std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> gBuffers;
+    static std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>& gBuffers();
 
 private:
 

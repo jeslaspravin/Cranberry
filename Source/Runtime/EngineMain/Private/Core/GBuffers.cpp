@@ -33,11 +33,11 @@ GBufferRenderTexture* GBufferRenderTexture::createTexture(const GBufferRTCreateP
     texture->bSameReadWriteTexture = createParams.bSameReadWriteTexture;
     if (createParams.bIsSrgb)
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<true>(createParams.format, createParams.dataFormat);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(createParams.format, createParams.dataFormat);
     }
     else
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat<false>(createParams.format, createParams.dataFormat);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(createParams.format, createParams.dataFormat);
     }
     // Dependent values
 
@@ -54,12 +54,15 @@ void GBufferRenderTexture::destroyTexture(GBufferRenderTexture* texture)
     RenderTargetTexture::destroyTexture(texture);
 }
 
-
-std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> GBuffers::gBuffers
+std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>& GBuffers::gBuffers()
 {
-    { FramebufferFormat(GlobalBuffers::getGBufferAttachmentFormat(ERenderPassFormat::Multibuffer), ERenderPassFormat::Multibuffer), {}}
-};
+    static std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>> GBUFFERS
+    {
+        { FramebufferFormat(GlobalBuffers::getGBufferAttachmentFormat(ERenderPassFormat::Multibuffer), ERenderPassFormat::Multibuffer), {}}
+    };
 
+    return GBUFFERS;
+}
 
 void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
 {
@@ -72,7 +75,7 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
             const EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(newValue);
             const bool bCanHaveResolves = sampleCount != EPixelSampleCount::SampleCount1;
 
-            for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
+            for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers())
             {
                 for (FramebufferWrapper& framebufferData : framebufferPair.second)
                 {
@@ -110,7 +113,7 @@ void GBuffers::onScreenResized(Size2D newSize)
         {
             cmdList->flushAllcommands();
 
-            for (const std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
+            for (const std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers())
             {
                 for (const FramebufferWrapper& framebufferData : framebufferPair.second)
                 {
@@ -132,7 +135,7 @@ void GBuffers::initialize(int32 swapchainCount)
     EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
     const bool bCanHaveResolves = sampleCount != EPixelSampleCount::SampleCount1;
 
-    for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
+    for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers())
     {
         framebufferPair.second.clear();
         for (uint32 i = 0; i < swapchainCount; ++i)
@@ -161,7 +164,7 @@ void GBuffers::initialize(int32 swapchainCount)
 
 void GBuffers::destroy()
 {
-    for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers)
+    for (std::pair<const FramebufferFormat, std::vector<FramebufferWrapper>>& framebufferPair : gBuffers())
     {
         for (FramebufferWrapper& framebufferData : framebufferPair.second)
         {
@@ -172,15 +175,15 @@ void GBuffers::destroy()
         }
         framebufferPair.second.clear();
     }
-    gBuffers.clear();
+    gBuffers().clear();
 }
 
 std::vector<IRenderTargetTexture*> GBuffers::getFramebufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx)
 {
     std::vector<IRenderTargetTexture*> rts;
     std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr
-        = gBuffers.find(FramebufferFormat(renderpassFormat));
-    if (framebufferItr != gBuffers.cend() && (framebufferItr->second.size() > frameIdx))
+        = gBuffers().find(FramebufferFormat(renderpassFormat));
+    if (framebufferItr != gBuffers().cend() && (framebufferItr->second.size() > frameIdx))
     {
         for (auto* rt : framebufferItr->second[frameIdx].rtTextures)
         {
@@ -194,8 +197,8 @@ std::vector<ImageResourceRef> GBuffers::getFramebufferAttachments(ERenderPassFor
 {
     std::vector<ImageResourceRef> rts;
     std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>::const_iterator framebufferItr
-        = gBuffers.find(FramebufferFormat(renderpassFormat));
-    if (framebufferItr != gBuffers.cend() && (framebufferItr->second.size() > frameIdx))
+        = gBuffers().find(FramebufferFormat(renderpassFormat));
+    if (framebufferItr != gBuffers().cend() && (framebufferItr->second.size() > frameIdx))
     {
         for (auto* rt : framebufferItr->second[frameIdx].rtTextures)
         {

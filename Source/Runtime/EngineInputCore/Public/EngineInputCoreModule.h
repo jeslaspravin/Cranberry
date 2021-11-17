@@ -6,16 +6,16 @@
 class ENGINEINPUTCORE_EXPORT EngineInputCoreModule : public IModuleBase
 {
 private:
-	InputSystem inputSystem;
-	DelegateHandle createdWindowHandle;
+    InputSystem inputSystem;
+    DelegateHandle createdWindowHandle;
 private:
-	void createdNewWindow(GenericAppWindow* window) const;
+    void createdNewWindow(GenericAppWindow* window) const;
 public:
-	InputSystem* getInputSystem() { return &inputSystem; }
-	void updateInputs();
+    InputSystem* getInputSystem() { return &inputSystem; }
+    void updateInputs();
 
-	/* IModuleBase overrides */
-	void init() override;
-	void release() override;
-	/* Overrides end */
+    /* IModuleBase overrides */
+    void init() override;
+    void release() override;
+    /* Overrides end */
 };

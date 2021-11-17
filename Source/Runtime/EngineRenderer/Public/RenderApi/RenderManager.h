@@ -15,6 +15,7 @@ class ENGINERENDERER_EXPORT RenderManager
 {
 private:
     GlobalRenderingContextBase* globalContext;
+    IGraphicsInstance* graphicsInstanceCache;
 
     using ImmediateExecuteCommandType = SingleCastDelegate<void, class IRenderCommandList*, IGraphicsInstance*, const GraphicsHelperAPI*>;
     class IRenderCommandList* renderCmds;
@@ -22,7 +23,6 @@ private:
 
     // TODO(Jeslas) : Once multi threaded rendering is added this should be changed to some TLS value
     bool bIsInsideRenderCommand = false;
-    bool bIsInitializing = false;
 
     // TODO(Commented) DelegateHandle onVsyncChangeHandle;
 public:
@@ -40,7 +40,7 @@ private:
     void executeAllCmds();
 public:
 
-    void initialize();
+    void initialize(IGraphicsInstance* graphicsInstance);
     void finalizeInit();
     void destroy();
 
@@ -55,7 +55,7 @@ public:
 
     void waitOnCommands();
     // If initializing we assume it is executing as well
-    bool isExecutingCommands() const { return bIsInitializing || bIsInsideRenderCommand; }
+    bool isExecutingCommands() const { return bIsInsideRenderCommand; }
 
     template <typename RenderCmdClass>
     static void issueRenderCommand(RenderManager* renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);

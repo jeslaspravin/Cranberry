@@ -179,11 +179,6 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     return idx;
 }
 
-FORCE_INLINE int32 GraphicsPipelineBase::pipelinesCount() const
-{
-    return int32(config.allowedDrawModes.size() * config.supportedCullings.size());
-}
-
 //////////////////////////////////////////////////////////////////////////
 /// Compute pipeline
 //////////////////////////////////////////////////////////////////////////

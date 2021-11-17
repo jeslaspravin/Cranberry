@@ -18,7 +18,7 @@ const GraphicsHelperAPI* EngineRedererModule::currentGraphicsHelper() const
 
 void EngineRedererModule::initializeGraphics()
 {
-    getRenderManager()->initialize();
+    getRenderManager()->initialize(graphicsInstanceCache);
 }
 
 void EngineRedererModule::finalizeGraphicsInitialization()
