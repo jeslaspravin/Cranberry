@@ -6,6 +6,8 @@
 #include "Modules/ModuleManager.h"
 #include "IApplicationModule.h"
 #include "EngineInputCoreModule.h"
+#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "WindowManager.h"
 
 
 void EngineTime::engineStart()
@@ -51,6 +53,7 @@ void GameEngine::startup(const AppInstanceCreateInfo appInstanceCI)
     renderStateChangeHandle = rendererModule->registerToStateEvents(RenderStateDelegate::SingleCastDelegateType::createObject(this, &GameEngine::onRenderStateChange));
     applicationModule = static_cast<IApplicationModule*>(ModuleManager::get()->getOrLoadModule("Application").lock().get());
     exitAppHandle = applicationModule->registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType::createObject(this, &GameEngine::tryExitApp));
+    windowSurfaceUpdateHandle = applicationModule->registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType::createObject(this, &GameEngine::onPreWindowurfaceUpdate));
     inputModule = static_cast<EngineInputCoreModule*>(ModuleManager::get()->getOrLoadModule("EngineInputCore").lock().get());
 
     applicationModule->createApplication(appInstanceCI);
@@ -138,6 +141,12 @@ void GameEngine::onRenderStateChange(ERenderStateEvent state)
     default:
         break;
     }
+}
+
+void GameEngine::onPreWindowurfaceUpdate(GenericAppWindow* window) const
+{
+    rendererModule->getRenderManager()->getGlobalRenderingContext()
+        ->clearWindowCanvasFramebuffer(applicationModule->getWindowManager()->getWindowCanvas(window));
 }
 
 void GameEngine::tryExitApp()

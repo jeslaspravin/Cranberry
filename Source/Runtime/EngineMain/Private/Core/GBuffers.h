@@ -2,7 +2,7 @@
 #include "RenderApi/GBuffersAndTextures.h"
 
 
-struct FramebufferWrapper
+struct GbufferWrapper
 {
     std::vector<class GBufferRenderTexture*> rtTextures;
 };
@@ -11,7 +11,7 @@ class GBuffers
 {
 private:
     // Frame buffer format to frame buffers swapchain count times
-    static std::unordered_map<FramebufferFormat, std::vector<FramebufferWrapper>>& gBuffers();
+    static std::unordered_map<FramebufferFormat, std::vector<GbufferWrapper>>& gBuffers();
 
 private:
 
@@ -22,6 +22,6 @@ public:
 
     static void onScreenResized(Size2D newSize);
 
-    static std::vector<class IRenderTargetTexture*> getFramebufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
-    static std::vector<ImageResourceRef> getFramebufferAttachments(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
+    static std::vector<class IRenderTargetTexture*> getGbufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
+    static std::vector<ImageResourceRef> getGbufferAttachments(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
 };

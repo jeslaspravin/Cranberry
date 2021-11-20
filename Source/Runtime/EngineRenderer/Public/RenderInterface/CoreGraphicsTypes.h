@@ -480,3 +480,30 @@ namespace EPipelineStages
 #undef EPIPELINESTAGES
 #undef EPIPELINESTAGES_LAST
 }
+
+//////////////////////////////////////////////////////////////////////////////
+/// Engine graphics types - 
+/// Graphics types that are only relevant to engine and not to graphics api
+/////////////////////////////////////////////////////////////////////////////
+
+// Moved here to not include FrameBufferTypes.h in places where only this enum is necessary
+namespace ERenderPassFormat
+{
+    enum Type
+    {
+        Generic,
+        Multibuffer,
+        Depth,
+        PointLightDepth,
+        DirectionalLightDepth
+    };
+
+    ENGINERENDERER_EXPORT String toString(ERenderPassFormat::Type renderpassFormat);
+
+#define FOR_EACH_RENDERPASS_FORMAT(OpMacro) \
+    OpMacro(Generic)                        \
+    OpMacro(Multibuffer)                    \
+    OpMacro(Depth)                          \
+    OpMacro(PointLightDepth)                \
+    OpMacro(DirectionalLightDepth)
+}
