@@ -61,12 +61,12 @@ layout(set = 3, binding = 1) uniform ColorCorrection
 vec3 prefilteredReflection(vec3 reflectDir, float roughness)
 {
     const float maxSpecEnvLod = textureQueryLevels(specEnvMap) - 1;
-//	float lod = roughness * maxSpecEnvLod;
-//	float lodf = floor(lod);
-//	float lodc = ceil(lod);
-//	vec3 a = textureLod(specEnvMap, reflectDir, lodf).xyz;
-//	vec3 b = textureLod(specEnvMap, reflectDir, lodc).xyz;
-//	return mix(a, b, lod - lodf);
+//    float lod = roughness * maxSpecEnvLod;
+//    float lodf = floor(lod);
+//    float lodc = ceil(lod);
+//    vec3 a = textureLod(specEnvMap, reflectDir, lodf).xyz;
+//    vec3 b = textureLod(specEnvMap, reflectDir, lodc).xyz;
+//    return mix(a, b, lod - lodf);
     return textureLod(specEnvMap, reflectDir, roughness * maxSpecEnvLod).xyz;
 }
 

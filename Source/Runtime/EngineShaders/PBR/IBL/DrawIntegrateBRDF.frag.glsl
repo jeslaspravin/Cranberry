@@ -11,6 +11,6 @@ layout(location = 0) out vec4 colorAttachment0;
 
 void mainFS()
 {
-	vec2 outValues = integrateBRDF(inTextureCoord.x, inTextureCoord.y, SAMPLE_COUNT);
+    vec2 outValues = integrateBRDF(inTextureCoord.x, inTextureCoord.y, SAMPLE_COUNT);
     colorAttachment0 = vec4(outValues, 0.0, 1.0);
 }
