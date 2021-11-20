@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Types/Delegates/Delegate.h"
+#include "RenderInterface/CoreGraphicsTypes.h"
 #include "EngineRendererExports.h"
 
 #include <queue>
@@ -51,7 +52,9 @@ public:
     void preparePipelineContext(class LocalPipelineContext* pipelineContext,
         const std::vector<IRenderTargetTexture*>& rtTextures);
     void preparePipelineContext(class LocalPipelineContext* pipelineContext);
-    void clearExternInitRtsFramebuffer(const std::vector<IRenderTargetTexture*>& rtTextures);
+    // Hint on render pass format in case of non generic renderpass is necessary
+    void clearExternInitRtsFramebuffer(const std::vector<IRenderTargetTexture*>& rtTextures
+        , ERenderPassFormat::Type rpFormat = ERenderPassFormat::Generic);
 
     void waitOnCommands();
     // If initializing we assume it is executing as well

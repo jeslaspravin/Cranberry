@@ -2,31 +2,9 @@
 #include <vector>
 
 #include "RenderInterface/CoreGraphicsTypes.h"
+#include "RenderInterface/Resources/MemoryResources.h"
 #include "Types/HashTypes.h"
 #include "EngineRendererExports.h"
-#include "RenderInterface/Resources/MemoryResources.h"
-
-
-namespace ERenderPassFormat
-{
-    enum Type
-    {
-        Generic,
-        Multibuffer,
-        Depth,
-        PointLightDepth,
-        DirectionalLightDepth
-    };
-
-    ENGINERENDERER_EXPORT String toString(ERenderPassFormat::Type renderpassFormat);
-
-#define FOR_EACH_RENDERPASS_FORMAT(OpMacro) \
-    OpMacro(Generic)                        \
-    OpMacro(Multibuffer)                    \
-    OpMacro(Depth)                          \
-    OpMacro(PointLightDepth)                \
-    OpMacro(DirectionalLightDepth)
-}
 
 
 //////////////////////////////////////////////////////////////////////////

@@ -181,9 +181,11 @@ void RenderManager::preparePipelineContext(class LocalPipelineContext* pipelineC
     globalContext->preparePipelineContext(pipelineContext, {});
 }
 
-void RenderManager::clearExternInitRtsFramebuffer(const std::vector<IRenderTargetTexture*>& rtTextures)
+void RenderManager::clearExternInitRtsFramebuffer(const std::vector<IRenderTargetTexture*>& rtTextures, ERenderPassFormat::Type rpFormat /*= ERenderPassFormat::Generic*/)
 {
     GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);
+    renderpassProps.renderpassAttachmentFormat.rpFormat = rpFormat;
+
     std::vector<ImageResourceRef> frameAttachments;
     rtTexturesToFrameAttachments(rtTextures, frameAttachments);
     globalContext->clearExternInitRtsFramebuffer(frameAttachments, renderpassProps);

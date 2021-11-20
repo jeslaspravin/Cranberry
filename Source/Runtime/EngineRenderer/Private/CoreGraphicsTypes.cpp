@@ -196,3 +196,23 @@ namespace EShaderStage
     }
 #undef SHADER_STAGE_TO_API_PAIR
 }
+
+//////////////////////////////////////////////////////////////////////////////
+/// Engine graphics types - 
+/// Graphics types that are only relevant to engine and not to graphics api
+/////////////////////////////////////////////////////////////////////////////
+
+namespace ERenderPassFormat
+{
+    String toString(Type renderpassFormat)
+    {
+#define CASE_MACRO(Format) case ERenderPassFormat::##Format: \
+    return #Format;
+
+        switch (renderpassFormat)
+        {
+            FOR_EACH_RENDERPASS_FORMAT(CASE_MACRO)
+        }
+        return "";
+    }
+}

@@ -1000,7 +1000,7 @@ void ExperimentalEnginePBR::createScene()
     std::array<String, 8> floorTypes{ "WoodFloor043", "Tiles086", "Tiles074", "MetalPlates006", "Marble006", "Ground042", "Ground037", "Gravel022" };
     std::array<String, 6> ceilTypes{ "WoodFloor043", "Tiles108", "Tiles074", "MetalPlates006", "Marble006", "Wood051" };
     std::array<String, 9> pillarTypes{ "WoodFloor043", "Tiles108", "Tiles074", "MetalPlates006", "Marble006", "Marble006", "Rock035", "Ground037", "PaintedPlaster016" };
-    std::array<String, 15> textures{ "Bricks065", "Gravel022", "Ground037", "Ground042", "Leather028", "Marble006", "Metal034", "Metal038", "MetalPlates006"
+    std::array<String, 15> textures{ "Bricks059", "Gravel022", "Ground037", "Ground042", "Leather028", "Marble006", "Metal034", "Metal038", "MetalPlates006"
         , "PaintedPlaster016", "Rock035","Tiles086", "Tiles074" , "Tiles108", "Wood051" };
 #else
     std::array<String, 1> floorTypes{ "Tiles074" };
@@ -1684,7 +1684,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance* graphi
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         GenericRenderPassProperties renderProps = GlobalBuffers::getFramebufferRenderpassProps(ERenderPassFormat::Multibuffer);
-        std::vector<ImageResourceRef> multibufferRts = GBuffers::getFramebufferAttachments(ERenderPassFormat::Multibuffer, i);
+        std::vector<ImageResourceRef> multibufferRts = GBuffers::getGbufferAttachments(ERenderPassFormat::Multibuffer, i);
         const int32 fbIncrement = renderProps.bOneRtPerFormat ? 1 : 2;
         const int32 resolveIdxOffset = renderProps.bOneRtPerFormat ? 0 : 1;
 
@@ -1776,7 +1776,7 @@ void ExperimentalEnginePBR::reupdateTextureParamsOnResize()
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         GenericRenderPassProperties renderProps = GlobalBuffers::getFramebufferRenderpassProps(ERenderPassFormat::Multibuffer);
-        std::vector<ImageResourceRef> multibufferRts = GBuffers::getFramebufferAttachments(ERenderPassFormat::Multibuffer, i);
+        std::vector<ImageResourceRef> multibufferRts = GBuffers::getGbufferAttachments(ERenderPassFormat::Multibuffer, i);
         const int32 fbIncrement = renderProps.bOneRtPerFormat ? 1 : 2;
         const int32 resolveIdxOffset = renderProps.bOneRtPerFormat ? 0 : 1;
 
@@ -1962,7 +1962,7 @@ void ExperimentalEnginePBR::resizeLightingRts(const Size2D& size)
         rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
 
         // Used in debug rendering using depth map as read only target
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt, GBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, i)[3] });
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, i)[3] });
     }
 }
 
@@ -2009,7 +2009,7 @@ void ExperimentalEnginePBR::destroyFrameResources()
 
 void ExperimentalEnginePBR::getPipelineContextForSubpass()
 {
-    auto multibufferRts = GBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, 0);
+    auto multibufferRts = GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0);
     singleColorPipelineContext.forVertexType = EVertexType::StaticMesh;
     singleColorPipelineContext.materialName = "SingleColor";
     singleColorPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffer;
@@ -2043,7 +2043,7 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
     std::vector<IRenderTargetTexture*> lightingPassRts{ frameResources[0].lightingPassRt };
     std::vector<IRenderTargetTexture*> lightingPassResolveRts{ frameResources[0].lightingPassResolved };
     // Using depth map as read only target
-    std::vector<IRenderTargetTexture*> lightPassAndDepthRts{ frameResources[0].lightingPassRt, GBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, 0)[3] };
+    std::vector<IRenderTargetTexture*> lightPassAndDepthRts{ frameResources[0].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0)[3] };
     // PBR model
     drawPbrWithShadowPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawPbrWithShadowPipelineContext.materialName = "PBRLightsWithShadow";
@@ -2296,7 +2296,7 @@ void ExperimentalEnginePBR::frameRender(class IRenderCommandList* cmdList, IGrap
     resolveToPresentPipelineContext.windowCanvas = windowCanvas;
     rendererModule->getRenderManager()->preparePipelineContext(&resolveToPresentPipelineContext);
 
-    rendererModule->getRenderManager()->preparePipelineContext(&singleColorPipelineContext, GBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, index));
+    rendererModule->getRenderManager()->preparePipelineContext(&singleColorPipelineContext, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index));
 
     std::vector<IRenderTargetTexture*> lightRtAttachments{ frameResources[index].lightingPassRt };
     rendererModule->getRenderManager()->preparePipelineContext(&drawPbrWithShadowPipelineContext, lightRtAttachments);
@@ -2677,7 +2677,7 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
     scissor.minBound = { 0, 0 };
     scissor.maxBound = EngineSettings::screenSize.get();
 
-    std::vector<IRenderTargetTexture*> backFramebufferRts{ frameResources[swapchainIdx].lightingPassRt, GBuffers::getFramebufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3] };
+    std::vector<IRenderTargetTexture*> backFramebufferRts{ frameResources[swapchainIdx].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3] };
 #if _DEBUG
     rendererModule->getRenderManager()->preparePipelineContext(&sceneDebugLinesPipelineContext, backFramebufferRts);
 
