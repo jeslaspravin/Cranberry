@@ -45,10 +45,10 @@ void EngineRedererModule::unregisterToStateEvents(const DelegateHandle& handle)
 void EngineRedererModule::init()
 {
     weakRHI = ModuleManager::get()->getOrLoadModule("VulkanRHI");
-    auto rhiModule = weakRHI.lock();
+    auto rhiModule = weakRHI.lock().get();
 
-    graphicsInstanceCache = static_cast<IRHIModule*>(rhiModule.get())->createGraphicsInstance();
-    graphicsHelperCache = static_cast<IRHIModule*>(rhiModule.get())->getGraphicsHelper();
+    graphicsInstanceCache = static_cast<IRHIModule*>(rhiModule)->createGraphicsInstance();
+    graphicsHelperCache = static_cast<IRHIModule*>(rhiModule)->getGraphicsHelper();
 }
 
 void EngineRedererModule::release()
@@ -56,11 +56,12 @@ void EngineRedererModule::release()
     getRenderManager()->destroy();
 
     WeakModulePtr weakRHI = ModuleManager::get()->getOrLoadModule("VulkanRHI");
-    auto rhiModule = weakRHI.lock();
+    auto rhiModule = weakRHI.lock().get();
 
-    static_cast<IRHIModule*>(rhiModule.get())->destroyGraphicsInstance();
+    static_cast<IRHIModule*>(rhiModule)->destroyGraphicsInstance();
     graphicsInstanceCache = nullptr;
     graphicsHelperCache = nullptr;
+    ModuleManager::get()->unloadModule("VulkanRHI");
 }
 
 // IRenderInterfaceModule Impl

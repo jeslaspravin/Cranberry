@@ -41,13 +41,14 @@ ModuleManager::~ModuleManager()
     for (const std::pair<const String, ModulePtr>& modulePair : loadedModuleInterfaces)
     {
         modulePair.second->release();
+        Logger::debug("ModuleManager", "%s() : Unloaded module %s", __func__, modulePair.first.getChar());
     }
     loadedModuleInterfaces.clear();
 
     for (const std::pair<const String, std::pair<LibPointerPtr, LibraryData>>& libPair : loadedLibraries) 
     {
         delete libPair.second.first;
-        Logger::debug("ModuleManager", "%s() : Unloaded module %s", __func__, libPair.first.getChar());
+        Logger::debug("ModuleManager", "%s() : Unloaded library %s", __func__, libPair.first.getChar());
     }
     loadedLibraries.clear();
 }
@@ -80,7 +81,7 @@ LibPointer* ModuleManager::getOrLoadLibrary(String moduleName)
         LibPointer* library = PlatformFunctions::openLibrary(moduleName);
         if (library)
         {    
-            Logger::debug("ModuleManager", "%s() : Loaded module %s", __func__, moduleName.getChar());
+            Logger::debug("ModuleManager", "%s() : Loaded Library %s", __func__, moduleName.getChar());
             loadedLibraries[moduleName].first = library;
             PlatformFunctions::getModuleInfo(PlatformFunctions::getCurrentProcessHandle(), loadedLibraries[moduleName].first,
                 loadedLibraries[moduleName].second);
@@ -161,9 +162,10 @@ void ModuleManager::unloadModule(String moduleName)
     WeakModulePtr existingModule = getModule(moduleName);
     if (!existingModule.expired())
     {
-        ModulePtr moduleInterface = existingModule.lock();
-        loadedModuleInterfaces.erase(moduleName);
+        IModuleBase* moduleInterface = existingModule.lock().get();
         moduleInterface->release();
+        loadedModuleInterfaces.erase(moduleName);
+        Logger::debug("ModuleManager", "%s() : Unloaded module %s", __func__, moduleName.getChar());
 #if !STATIC_LINKED
         LibPointerPtr libPtr = getLibrary(moduleName);
         if (libPtr)

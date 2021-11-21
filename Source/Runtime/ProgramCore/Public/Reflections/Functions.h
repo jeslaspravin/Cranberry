@@ -214,7 +214,7 @@ struct LambdaFunction
     // Compiler bug? using int as it is working SFINAE within function template, void is always returning false
     template <typename Callable, typename IsCallable<Callable, int> = 0>
     LambdaFunction(Callable &&lambda)
-        : lambdaDelegate(std::forward<Callable>(lambda))
+        : lambdaDelegate(std::forward<decltype(lambda)>(lambda))
     {}
 
     LambdaFunction(const LambdaDelegate &functionPointer)

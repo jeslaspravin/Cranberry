@@ -325,7 +325,7 @@ public:
     template<typename LambdaType, typename... Variables>
     void bindLambda(LambdaType&& lambda, Variables ...vars)
     {
-        delegatePtr.reset(new LambdaDelegateType<Variables...>(LambdaDelegateType<Variables...>::FunctionPtr(std::forward<LambdaType>(lambda))
+        delegatePtr.reset(new LambdaDelegateType<Variables...>(LambdaDelegateType<Variables...>::FunctionPtr(std::forward<LambdaType&&>(lambda))
             , std::forward<Variables>(vars)...));
     }
 
@@ -401,10 +401,10 @@ public:
     }
 
     template<typename LambdaType, typename... Variables>
-    static SingleCastDelegate createLambda(typename LambdaType lambda, Variables ...vars)
+    static SingleCastDelegate createLambda(typename LambdaType &&lambda, Variables ...vars)
     {
         SingleCastDelegate sDelegate;
-        sDelegate.bindLambda(std::forward<LambdaType>(lambda), std::forward<Variables>(vars)...);
+        sDelegate.bindLambda(std::forward<LambdaType&&>(lambda), std::forward<Variables>(vars)...);
         return sDelegate;
     }
 };
