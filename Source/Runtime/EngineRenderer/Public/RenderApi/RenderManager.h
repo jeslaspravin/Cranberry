@@ -69,12 +69,7 @@ void RenderManager::issueRenderCommand(RenderManager* renderApi, typename Render
 {
     if (renderApi->bIsInsideRenderCommand)
     {
-        renderApi->immediateExecCommand(ImmediateExecuteCommandType::createLambda(
-            [renderCommandFn](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
-            {
-                renderCommandFn(cmdList, graphicsInstance, graphicsHelper);
-            }
-        ));
+        renderApi->immediateExecCommand(ImmediateExecuteCommandType::createLambda(std::forward<decltype(renderCommandFn)>(renderCommandFn)));
     }
     else
     {
