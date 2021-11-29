@@ -1,10 +1,12 @@
 #include "Logger/Logger.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
-#include <sstream>
 #include <cstdarg>
+#if LOG_TO_CONSOLE
+#include <iostream>
+#endif // LOG_TO_CONSOLE
 
-std::ostringstream& loggerBuffer()
+std::ostringstream& Logger::loggerBuffer()
 {
     static std::ostringstream buffer(std::ios_base::trunc);
     return buffer;
@@ -44,8 +46,11 @@ void Logger::debugInternal(const AChar* category, const String& message)
     static const String CATEGORY = "[DEBUG]";
 
     std::ostringstream& stream = loggerBuffer();
-    stream << "[" << category << "]" << CATEGORY << message.getChar() << "\r\n";
-#endif
+    stream << "[" << category << "]" << CATEGORY << message.getChar() << std::endl;
+#if LOG_TO_CONSOLE
+    std::cout << "[" << category << "]" << CATEGORY << message.getChar() << std::endl;
+#endif // LOG_TO_CONSOLE
+#endif // _DEBUG
 }
 
 void Logger::logInternal(const AChar* category, const String& message)
@@ -53,7 +58,10 @@ void Logger::logInternal(const AChar* category, const String& message)
     static const String CATEGORY = "[LOG]";
 
     std::ostringstream& stream = loggerBuffer();
-    stream << "[" << category << "]" << CATEGORY << message.getChar() << "\r\n";
+    stream << "[" << category << "]" << CATEGORY << message.getChar() << std::endl;
+#if LOG_TO_CONSOLE
+    std::cout << "[" << category << "]" << CATEGORY << message.getChar() << std::endl;
+#endif // LOG_TO_CONSOLE
 }
 
 void Logger::warnInternal(const AChar* category, const String& message)
@@ -61,7 +69,10 @@ void Logger::warnInternal(const AChar* category, const String& message)
     static const String CATEGORY = "[WARN]";
 
     std::ostringstream& stream = loggerBuffer();
-    stream << "[" << category << "]" << CATEGORY << message.getChar() << "\r\n";
+    stream << "[" << category << "]" << CATEGORY << message.getChar() << std::endl;
+#if LOG_TO_CONSOLE
+    std::cerr << "[" << category << "]" << CATEGORY << message.getChar() << std::endl;
+#endif // LOG_TO_CONSOLE
 }
 
 void Logger::errorInternal(const AChar* category, const String& message)
@@ -69,7 +80,10 @@ void Logger::errorInternal(const AChar* category, const String& message)
     static const String CATEGORY = "[ERROR]";
 
     std::ostringstream& stream = loggerBuffer();
-    stream << "[" << category << "]" << CATEGORY << message.getChar() << "\r\n";
+    stream << "[" << category << "]" << CATEGORY << message.getChar() << std::endl;
+#if LOG_TO_CONSOLE
+    std::cerr << "[" << category << "]" << CATEGORY << message.getChar() << std::endl;
+#endif // LOG_TO_CONSOLE
 }
 
 void Logger::flushStream()

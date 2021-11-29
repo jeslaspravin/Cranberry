@@ -39,6 +39,10 @@ public:
     {
         return PlatformClass::getCurrentProcessHandle();
     }
+    static void closeProcessHandle(void* handle)
+    {
+        PlatformClass::closeProcessHandle(handle);
+    }
 
     static void getAllModules(void* processHandle, LibPointerPtr* modules,uint32& modulesSize)
     {

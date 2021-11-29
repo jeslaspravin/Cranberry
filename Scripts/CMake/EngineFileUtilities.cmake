@@ -16,7 +16,7 @@ function(get_first_level_cmake_lists root_dir out_sub_dirs)
                     # message("Directory : ${path}")
                     # If this sub dir has CMakeLists.txt then this must be sub-directory for current CMakeLists.txt, else this sub-directory must be scanned further
                     if (EXISTS ${path}/CMakeLists.txt)
-                        message("Found CMakeList under ${path}")
+                        message("-- Found CMakeList under ${path}")
                         list(APPEND sub_dirs ${path})
                     else (EXISTS ${path}/CMakeLists.txt)
                         list(APPEND new_dir_tree ${path})
@@ -67,3 +67,11 @@ macro(add_cmake_subdirectories)
         add_subdirectory(${sub_dir})
     endforeach()
 endmacro()
+
+# Copies dll and other runtime common dependencies
+function(copy_target_exe_runtime_deps target_name)    
+    add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:${target_name}> $<TARGET_FILE_DIR:${target_name}>
+        COMMAND_EXPAND_LISTS
+    )
+endfunction ()

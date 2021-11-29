@@ -14,6 +14,7 @@ public:
 
     static void* getCurrentThreadHandle();
     static void* getCurrentProcessHandle();
+    static void closeProcessHandle(void* handle);
     static void getAllModules(void* processHandle, LibPointerPtr* modules, uint32& modulesSize);
 
     static String getClipboard();

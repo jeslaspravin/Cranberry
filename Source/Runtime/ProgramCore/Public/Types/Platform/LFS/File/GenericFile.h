@@ -35,7 +35,7 @@ protected:
     virtual bool dirDelete() const = 0;
     virtual bool dirClearAndDelete() const = 0;
 
-    void setPaths(const String& fPath);
+    void setPath(const String& fPath);
 
 public:
     GenericFile();

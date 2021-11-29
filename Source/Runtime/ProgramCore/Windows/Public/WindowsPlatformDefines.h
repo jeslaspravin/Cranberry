@@ -16,6 +16,16 @@
 #define BIG_ENDIAN 0
 #endif
 
+// Windows has no library prefix
+#ifndef LIB_PREFIX
+#define LIB_PREFIX ""
+#endif
+#ifndef SHARED_LIB_EXTENSION
+#define SHARED_LIB_EXTENSION "dll"
+#endif
+#ifndef STATIC_LIB_EXTENSION
+#define STATIC_LIB_EXTENSION "lib"
+#endif
 
 #ifndef DLL_EXPORT
 // DLL export and import
