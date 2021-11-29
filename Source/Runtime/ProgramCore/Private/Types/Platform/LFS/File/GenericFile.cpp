@@ -9,13 +9,13 @@ void* GenericFile::getFileHandleRaw() const
 }
 
 
-void GenericFile::setPaths(const String& fPath)
+void GenericFile::setPath(const String& fPath)
 {
     size_t hostDirectoryAt;
     String pathSeperator;
     if (fPath.findAny(hostDirectoryAt, pathSeperator, { "/","\\" }, 0, true))
     {
-        directoryPath = { fPath.substr(0, hostDirectoryAt ) };
+        directoryPath = { fPath.substr(0, hostDirectoryAt) };
         fileName = { fPath.substr(hostDirectoryAt + 1) };
 
         if (fileName.rfind('.') == String::npos)
@@ -24,9 +24,10 @@ void GenericFile::setPaths(const String& fPath)
         }
         fullPath = fPath;
     }
-    else
+    else // No directory separator found so it must be just file name
     {
         Logger::error("File", "%s() : File path \"%s\" is invalid", __func__, fPath.getChar());
+        debugAssert(!"File path is invalid");
     }
 }
 
@@ -52,7 +53,7 @@ GenericFile::GenericFile(const String& path)
 {
     if(path.length() > 0)
     {
-        setPaths(path);
+        setPath(path);
     }
 }
 

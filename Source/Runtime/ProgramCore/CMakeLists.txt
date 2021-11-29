@@ -11,4 +11,11 @@ set(public_includes
 
 generate_engine_library()
 target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/MP>)
-target_compile_definitions(${target_name} PUBLIC ${engine_def} ${experimental_def})
+# We do all non common but engine common defines once here as this is the module which probably will get added to every engine related projects/targets
+target_compile_definitions(${target_name} PUBLIC 
+    ${engine_def} 
+    ${experimental_def} 
+# Path where all engine modules exists for use with delayed loaded dlls
+    ENGINE_MODULES_PATH="$<TARGET_FILE_DIR:${target_name}>"
+    $<$<BOOL:${enable_console_log}>:LOG_TO_CONSOLE=1>
+)

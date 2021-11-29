@@ -71,12 +71,17 @@ bool WindowsPlatformFunctions::isSame(const LibPointer* leftHandle, const LibPoi
 
 void* WindowsPlatformFunctions::getCurrentThreadHandle()
 {
-    return GetCurrentThread();
+    return ::GetCurrentThread();
 }
 
 void* WindowsPlatformFunctions::getCurrentProcessHandle()
 {
-    return GetCurrentProcess();
+    return ::GetCurrentProcess();
+}
+
+void WindowsPlatformFunctions::closeProcessHandle(void* handle)
+{
+    ::CloseHandle((HANDLE)handle);
 }
 
 void WindowsPlatformFunctions::getAllModules(void* processHandle, LibPointerPtr* modules, uint32& modulesSize)
@@ -85,13 +90,13 @@ void WindowsPlatformFunctions::getAllModules(void* processHandle, LibPointerPtr*
     {
         DWORD modSize;
         HMODULE mod;
-        EnumProcessModules(processHandle, &mod, 1,&modSize);
+        EnumProcessModulesEx(processHandle, &mod, 1, &modSize, LIST_MODULES_64BIT);
         modulesSize = modSize / sizeof(mod);
     }
     else
     {
         std::vector<HMODULE> mods(modulesSize);
-        EnumProcessModules(processHandle, mods.data(), modulesSize, (LPDWORD)&modulesSize);
+        EnumProcessModulesEx(processHandle, mods.data(), modulesSize, (LPDWORD)&modulesSize, LIST_MODULES_64BIT);
         uint32 totalInserts = 0;
         for (HMODULE mod : mods)
         {

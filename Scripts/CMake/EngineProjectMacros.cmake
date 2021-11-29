@@ -2,6 +2,10 @@
 # C++ related functions
 ########################################################################################################
 
+#
+# CPP helper functions
+#
+
 # split_src_per_access : Splits input source files list into Public and Private based on matching if It has /Private/ folder in the path
 function (split_src_per_access)    
     set(one_value_args OUTPUT_PRIVATE OUTPUT_PUBLIC)
@@ -133,6 +137,9 @@ function (find_all_modules_recursively)
     set (${all_modules_OUT_ALL_MODULES} ${out_modules} PARENT_SCOPE)
 endfunction ()
 
+#
+# CPP Project related functions
+#
 macro (cpp_common_options_and_defines)
     target_compile_definitions(${target_name}
         PRIVATE
@@ -235,6 +242,7 @@ macro (engine_module_dependencies)
     endif ()
 endmacro ()
 
+# Converts engine modules as just includes for this target
 macro (engine_module_dependencies_includes)    
     set(engine_module_pri_incls )
     set(engine_module_pub_incls )
@@ -291,6 +299,59 @@ macro (engine_module_dependencies_includes)
         INTERFACE
             ${engine_module_interface_incls}
     )
+endmacro ()
+
+macro (mark_delay_loaded_dlls)
+    set (delay_load_list )
+
+    # If static linked then having engine modules as delay loaded does not makes sense
+    if (${engine_static_modules})
+        # ProgramCore module must be skipped as it has all base code for loading modules,
+        # So instead we add POST_BUILD copy here
+        set (program_core_module "ProgramCore")
+        add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${program_core_module}> $<TARGET_FILE_DIR:${target_name}>
+            COMMAND_EXPAND_LISTS
+        )
+
+        # Private dependencies
+        list (LENGTH private_modules private_modules_count)
+        if (${private_modules_count} GREATER 0)
+            foreach (module ${private_modules})
+                list (APPEND delay_load_list ${module})
+            endforeach ()
+        endif ()
+        # Public dependencies
+        list (LENGTH public_modules public_modules_count)
+        if (${public_modules_count} GREATER 0)        
+            foreach (module ${public_modules})
+                list (APPEND delay_load_list ${module})
+            endforeach ()
+        endif ()
+        # Interface dependencies
+        list (LENGTH interface_modules interface_modules_count)
+        if (${interface_modules_count} GREATER 0)
+            foreach (module ${interface_modules})
+                list (APPEND delay_load_list ${module})
+            endforeach ()
+        endif ()
+    endif (${engine_static_modules})
+
+    # delay load dlls
+    list (APPEND delay_load_list ${delay_load_dlls})
+    
+    # Remove ProgramCore
+    list (REMOVE_ITEM delay_load_list ${program_core_module})
+
+    if (${WIN32})        
+        foreach (module ${delay_load_list})
+            # .dll extension is needed for /DELAYLOAD linker option
+            target_link_options(${target_name} 
+                PRIVATE 
+                    $<$<CXX_COMPILER_ID:MSVC>:/DELAYLOAD:${module}.dll>
+            )
+        endforeach ()
+    endif ()
 endmacro ()
 
 macro (generate_cpp_console_project)
@@ -377,6 +438,8 @@ macro (generate_engine_library)
         generate_cpp_shared_lib()
     endif ()
     engine_module_dependencies()
+    set_target_properties(${target_name} PROPERTIES 
+        FOLDER ${CMAKE_PROJECT_NAME})
 endmacro()
 
 ########################################################################################################

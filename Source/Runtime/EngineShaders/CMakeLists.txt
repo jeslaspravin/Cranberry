@@ -23,3 +23,6 @@ add_custom_target(${target_name} ALL
     SOURCES ${src_files}
     DEPENDS ${compiled_outputs}
 )
+# This also goes with engine
+set_target_properties(${target_name} PROPERTIES 
+    FOLDER ${CMAKE_PROJECT_NAME})

@@ -28,6 +28,7 @@ set_target_properties(${target_name}
         WIN32_EXECUTABLE ${native_main}
 )
 
+# To update below project when outdated
 add_dependencies(${target_name} EngineShaders)
 if (WIN32 OR LINUX)
     add_dependencies(${target_name} VulkanRHI)

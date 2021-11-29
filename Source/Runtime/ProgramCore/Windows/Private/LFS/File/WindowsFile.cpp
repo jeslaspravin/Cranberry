@@ -243,7 +243,7 @@ bool WindowsFile::renameFile(String newName)
     }
     if (FileSystemFunctions::moveFile(this, &newFile))
     {
-        setPaths(newFile.getFullPath());
+        setPath(newFile.getFullPath());
         if (reopenFile) {
             openFile();
         }

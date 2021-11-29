@@ -27,18 +27,22 @@ public:
         return FileSystemType::listAllFiles(directory, bRecursive);
     }
 
-    static bool moveFile(GenericFile* moveFrom, GenericFile* moveTo) {
+    static bool moveFile(GenericFile* moveFrom, GenericFile* moveTo) 
+    {
         return FileSystemType::moveFile(moveFrom, moveTo);
     }
 
-    static bool copyFile(GenericFile* copyFrom, GenericFile* copyTo) {
+    static bool copyFile(GenericFile* copyFrom, GenericFile* copyTo) 
+    {
         return FileSystemType::moveFile(copyFrom, copyTo);
     }
-    static bool replaceFile(GenericFile* replaceWith, GenericFile* replacing,GenericFile* backupFile) {
+    static bool replaceFile(GenericFile* replaceWith, GenericFile* replacing,GenericFile* backupFile) 
+    {
         return FileSystemType::replaceFile(replaceWith,replacing,backupFile);
     }
 
-    static String stripExtension(const String& fileName, String& extension) {
+    static String stripExtension(const String& fileName, String& extension)
+    {
         String::size_type foundAt = fileName.rfind('.', fileName.length());
 
         if (foundAt != String::npos) {

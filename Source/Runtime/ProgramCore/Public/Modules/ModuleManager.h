@@ -40,13 +40,21 @@ using WeakModulePtr = WeakPtr<IModuleBase>;
 class PROGRAMCORE_EXPORT ModuleManager 
 {
 private:
-    friend StaticModuleInitializerRegistrant;
-    static StaticModuleInitializerList& getModuleInitializerList();
     // Contains modules loaded as shared libraries
     std::unordered_map<String, std::pair<LibPointerPtr, LibraryData>> loadedLibraries;
 
     // Contains module interface implementation provided by a module
     std::unordered_map<String, ModulePtr> loadedModuleInterfaces;
+    // Library paths to look for a library if not found in initial OS environment paths search
+    std::vector<String> additionalLibraryPaths;
+private:
+    friend StaticModuleInitializerRegistrant;
+    static StaticModuleInitializerList& getModuleInitializerList();
+
+    /*
+    * Checks and appends/prepends library prefix and extension as required if not present already
+    */
+    LibPointer* loadFromAdditionalPaths(String moduleName) const;
 public:
     ModuleManager();
     ~ModuleManager();

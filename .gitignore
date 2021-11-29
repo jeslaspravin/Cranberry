@@ -36,7 +36,8 @@ bld/
 [Ii]nstalled/
 
 # Generated
-[Gg]enerated*/
+*[Gg]enerated/
+*[Bb]uild/
 
 # External dependencies
 [Ee]xternal
