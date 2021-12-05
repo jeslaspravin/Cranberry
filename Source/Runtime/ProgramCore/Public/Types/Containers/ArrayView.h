@@ -47,6 +47,11 @@ public:
         return length;
     }
 
+    [[nodiscard]] bool empty() const
+    {
+        return length == 0;
+    }
+
     ElementType* data()
     {
         return dataPtr + offset;

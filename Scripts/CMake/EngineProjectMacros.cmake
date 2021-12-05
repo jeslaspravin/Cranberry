@@ -305,43 +305,39 @@ macro (mark_delay_loaded_dlls)
     set (delay_load_list )
 
     # If static linked then having engine modules as delay loaded does not makes sense
-    if (${engine_static_modules})
-        # ProgramCore module must be skipped as it has all base code for loading modules,
-        # So instead we add POST_BUILD copy here
-        set (program_core_module "ProgramCore")
-        add_custom_command(TARGET ${target_name} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${program_core_module}> $<TARGET_FILE_DIR:${target_name}>
-            COMMAND_EXPAND_LISTS
-        )
-
+    if (NOT ${engine_static_modules})
         # Private dependencies
         list (LENGTH private_modules private_modules_count)
         if (${private_modules_count} GREATER 0)
-            foreach (module ${private_modules})
-                list (APPEND delay_load_list ${module})
-            endforeach ()
+            list (APPEND delay_load_list ${private_modules})
         endif ()
         # Public dependencies
         list (LENGTH public_modules public_modules_count)
-        if (${public_modules_count} GREATER 0)        
-            foreach (module ${public_modules})
-                list (APPEND delay_load_list ${module})
-            endforeach ()
+        if (${public_modules_count} GREATER 0)
+            list (APPEND delay_load_list ${public_modules})
         endif ()
         # Interface dependencies
         list (LENGTH interface_modules interface_modules_count)
         if (${interface_modules_count} GREATER 0)
-            foreach (module ${interface_modules})
-                list (APPEND delay_load_list ${module})
-            endforeach ()
+            list (APPEND delay_load_list ${interface_modules})
         endif ()
-    endif (${engine_static_modules})
+        
+        # ProgramCore module must be skipped as it has all base code for loading modules,
+        # So instead we add POST_BUILD copy here
+        set (program_core_module "ProgramCore")
+        list (FIND delay_load_list ${program_core_module} program_core_idx)
+        if (${program_core_idx} GREATER_EQUAL 0)
+            add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${program_core_module}> $<TARGET_FILE_DIR:${target_name}>
+                COMMAND_EXPAND_LISTS
+            )
+            # Remove ProgramCore
+            list (REMOVE_ITEM delay_load_list ${program_core_module})
+        endif (${program_core_idx} GREATER_EQUAL 0)
+    endif (NOT ${engine_static_modules})
 
     # delay load dlls
-    list (APPEND delay_load_list ${delay_load_dlls})
-    
-    # Remove ProgramCore
-    list (REMOVE_ITEM delay_load_list ${program_core_module})
+    list (APPEND delay_load_list ${delay_load_dlls})    
 
     if (${WIN32})        
         foreach (module ${delay_load_list})

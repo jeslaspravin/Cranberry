@@ -1,11 +1,8 @@
 ﻿using GameBuilder.BuildFileUtils;
 using GameBuilder.Logger;
 using GameBuilder.Modes;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Threading;
 
 namespace GameBuilder
 {
@@ -20,7 +17,7 @@ namespace GameBuilder
         private const string MODE = "mode";
         private const string COMPILE_SHADER = "shaderCompile";
 
-        static void parseConsoleArgs(string[] args,ref Dictionary<string, List<string>> outArgs)
+        static void parseConsoleArgs(string[] args, ref Dictionary<string, List<string>> outArgs)
         {
             List<string> flags = new List<string>();
             for (int i = 0; i < args.Length; ++i)
@@ -36,7 +33,7 @@ namespace GameBuilder
 
                     List<string> values = new List<string>();
                     int valueIndexOffset = 1;
-                    while((valueIndexOffset + i) < args.Length && !args[i + valueIndexOffset].StartsWith("-"))
+                    while ((valueIndexOffset + i) < args.Length && !args[i + valueIndexOffset].StartsWith("-"))
                     {
                         string val = args[i + valueIndexOffset];
                         values.Add(val);
@@ -57,10 +54,10 @@ namespace GameBuilder
             outArgs.Add("flags", flags);
 
             LoggerUtils.Log("Console args : ");
-            foreach(KeyValuePair<string,List<string>> arg in outArgs)
+            foreach (KeyValuePair<string, List<string>> arg in outArgs)
             {
                 LoggerUtils.Log("\t{0} :", arg.Key);
-                foreach(string value in arg.Value)
+                foreach (string value in arg.Value)
                 {
                     LoggerUtils.Log("\t\t{0}", value);
                 }
@@ -69,16 +66,16 @@ namespace GameBuilder
 
         static int Main(string[] args)
         {
-            LoggerUtils.Log("{0} using {1}",Directories.APP_NAME,Directories.BUILDER_EXE);
+            LoggerUtils.Log("{0} using {1}", Directories.APP_NAME, Directories.BUILDER_EXE);
             LoggerUtils.Log("Engine root {0}", Directories.ENGINE_ROOT);
 
             Dictionary<string, List<string>> consoleArgs = new Dictionary<string, List<string>>();
             parseConsoleArgs(args, ref consoleArgs);
 
             ProgramMode mode = null;
-            if(consoleArgs.ContainsKey(MODE))
+            if (consoleArgs.ContainsKey(MODE))
             {
-                switch(consoleArgs[MODE][0])
+                switch (consoleArgs[MODE][0])
                 {
                     case COMPILE_SHADER:
                         mode = new CompileShadersMode();
@@ -103,7 +100,7 @@ namespace GameBuilder
             }
             else
             {
-                LoggerUtils.Error("No mode selected exiting, expected -{0} with mode [{1}]",MODE,COMPILE_SHADER);
+                LoggerUtils.Error("No mode selected exiting, expected -{0} with mode [{1}]", MODE, COMPILE_SHADER);
             }
 
             LoggerUtils.waitUntilTasksFinished();

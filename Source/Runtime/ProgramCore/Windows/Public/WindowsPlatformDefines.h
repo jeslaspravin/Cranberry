@@ -34,3 +34,7 @@
 #ifndef DLL_IMPORT
 #define DLL_IMPORT __declspec(dllimport)
 #endif
+
+#ifndef LINE_FEED_CHAR
+#define LINE_FEED_CHAR "\r\n"
+#endif

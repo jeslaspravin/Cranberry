@@ -15,6 +15,12 @@ private:
 
     Iterator iterator;
 public:
+    /* Iterator traits skipped difference_type as it does not makes sense */
+    using value_type = KeyType;
+    using reference = KeyType;
+    using pointer = KeyType*;
+    using iterator_category = std::forward_iterator_tag;
+
     InputStateIterator() = default;
     InputStateIterator(Iterator itr) : iterator(itr) {}
 

@@ -54,7 +54,7 @@ private:
     /*
     * Checks and appends/prepends library prefix and extension as required if not present already
     */
-    LibPointer* loadFromAdditionalPaths(String moduleName) const;
+    LibPointer* loadFromAdditionalPaths(String modulePath) const;
 public:
     ModuleManager();
     ~ModuleManager();
@@ -64,7 +64,7 @@ public:
     // Library loading functions
     bool isLibraryLoaded(String moduleName) const;
     LibPointer* getLibrary(String moduleName) const;
-    LibPointer* getOrLoadLibrary(String moduleName);
+    LibPointer* getOrLoadLibrary(String modulePath);
 
     // Engine/Game module loading functions
     bool isModuleLoaded(String moduleName) const;

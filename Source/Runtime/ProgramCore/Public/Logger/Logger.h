@@ -48,7 +48,7 @@ private:
     }
 
     template<typename... Args>
-    static String fmtString(const AChar* fmt, Args... args)
+    DEBUG_INLINE static String fmtString(const AChar* fmt, Args... args)
     {
         int32 size = std::snprintf(nullptr, 0, fmt, getChar<Args>(args)...);
         String fmted;
@@ -96,25 +96,25 @@ private:
     static void errorInternal(const AChar* category, const String& message);
 public:
     template<typename CatType, typename FmtType, typename... Args>
-    static void debug(const CatType category, const FmtType fmt, Args... args)
+    DEBUG_INLINE static void debug(const CatType category, const FmtType fmt, Args... args)
     {
         debugInternal(getChar(category), fmtString(getChar(fmt), toString<Args>(args)...));
     }
 
     template<typename CatType, typename FmtType, typename... Args>
-    static void log(const CatType category, const FmtType fmt, Args... args)
+    DEBUG_INLINE static void log(const CatType category, const FmtType fmt, Args... args)
     {
         logInternal(getChar(category), fmtString(getChar(fmt), toString<Args>(args)...));
     }
 
     template<typename CatType, typename FmtType, typename... Args>
-    static void warn(const CatType category, const FmtType fmt, Args... args)
+    DEBUG_INLINE static void warn(const CatType category, const FmtType fmt, Args... args)
     {
         warnInternal(getChar(category), fmtString(getChar(fmt), toString<Args>(args)...));
     }
 
     template<typename CatType, typename FmtType, typename... Args>
-    static void error(const CatType category, const FmtType fmt, Args... args)
+    DEBUG_INLINE static void error(const CatType category, const FmtType fmt, Args... args)
     {
         errorInternal(getChar(category), fmtString(getChar(fmt), toString<Args>(args)...));
     }

@@ -17,27 +17,27 @@ StaticModuleInitializerList& ModuleManager::getModuleInitializerList()
     return initializerList;
 }
 
-LibPointer* ModuleManager::loadFromAdditionalPaths(String moduleName) const
+LibPointer* ModuleManager::loadFromAdditionalPaths(String modulePath) const
 {
-    std::filesystem::path modulePath(moduleName.getChar());
+    std::filesystem::path moduleFullPath(modulePath.getChar());
     // If is relative path then it is okay to append it to available paths and do load checks
-    if (modulePath.is_absolute())
+    if (moduleFullPath.is_absolute())
     {
         return nullptr;
     }
 
     // append prefix name if not present
-    if (!String(LIB_PREFIX).empty() && !String(modulePath.filename().string()).startsWith(LIB_PREFIX, true))
+    if (!String(LIB_PREFIX).empty() && !String(moduleFullPath.filename().string()).startsWith(LIB_PREFIX, true))
     {
-        modulePath.replace_filename(LIB_PREFIX + modulePath.filename().string());
+        moduleFullPath.replace_filename(LIB_PREFIX + moduleFullPath.filename().string());
     }
     // Add extensions
-    if (!modulePath.has_extension())
+    if (!moduleFullPath.has_extension())
     {
-        modulePath.replace_extension(SHARED_LIB_EXTENSION);
+        moduleFullPath.replace_extension(SHARED_LIB_EXTENSION);
     }
 
-    String relativeModulePath(modulePath.string());
+    String relativeModulePath(moduleFullPath.string());
     for (const String& lookAtPath : additionalLibraryPaths)
     {
         if (LibPointer* library = PlatformFunctions::openLibrary(FileSystemFunctions::combinePath(lookAtPath, relativeModulePath)))
@@ -46,7 +46,7 @@ LibPointer* ModuleManager::loadFromAdditionalPaths(String moduleName) const
         }
         else
         {
-            Logger::warn("ModuleManager", "%s() : Searched for %s library at %s", __func__, moduleName, lookAtPath);
+            Logger::warn("ModuleManager", "%s() : Searched for %s library at %s", __func__, modulePath, lookAtPath);
         }
     }
     return nullptr;
@@ -112,18 +112,25 @@ LibPointer* ModuleManager::getLibrary(String moduleName) const
     return libItr->second.first;
 }
 
-LibPointer* ModuleManager::getOrLoadLibrary(String moduleName)
+LibPointer* ModuleManager::getOrLoadLibrary(String modulePath)
 {
+    // Remove path and extension info, If any
+    std::filesystem::path modulePathName(modulePath.getChar());
+    modulePathName.replace_extension();
+    String moduleName = modulePathName.filename().string();
+
     if (!isLibraryLoaded(moduleName))
     {        
-        LibPointer* library = PlatformFunctions::openLibrary(moduleName);
+        LibPointer* library = PlatformFunctions::openLibrary(modulePath);
         if (library == nullptr)
         {
-            library = loadFromAdditionalPaths(moduleName);
+            // Pass in sent path to derive abs paths from relative if any
+            library = loadFromAdditionalPaths(modulePath);
         }
         if (library)
         {    
-            Logger::debug("ModuleManager", "%s() : Loaded Library %s", __func__, moduleName);
+            Logger::debug("ModuleManager", "%s() : Loaded Library %s from %s", __func__, moduleName, modulePath);
+
             loadedLibraries[moduleName].first = library;
             PlatformFunctions::getModuleInfo(PlatformFunctions::getCurrentProcessHandle(), loadedLibraries[moduleName].first,
                 loadedLibraries[moduleName].second);

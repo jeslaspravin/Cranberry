@@ -22,10 +22,10 @@ else ()
     message (FATAL_ERROR "Clang package not found, Make sure to configure \"llvm_install_path\" config CACHE with path to llvm install")
 endif ()
 
-set(public_libraries
+set(private_libraries
     libclang
 )
-set(public_includes
+set(private_includes
     ${CLANG_INCLUDE_DIRS}
 )
 set(private_modules

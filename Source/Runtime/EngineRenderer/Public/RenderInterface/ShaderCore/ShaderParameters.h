@@ -314,6 +314,12 @@ private:
         using FieldType = decltype(std::declval<FieldNodeType>().field);
         static_assert(std::is_pointer_v<FieldType>, "Field type must be pointer type");
 
+        /* Iterator traits skipped difference_type as it does not makes sense */
+        using value_type = FieldType;
+        using reference = FieldType;
+        using pointer = FieldType;
+        using iterator_category = std::forward_iterator_tag;
+
         // End constructor, We assume it null rather than iterating through until end
         IteratorBase() : node(nullptr) {}
         IteratorBase(const ShaderParamInfo* paramInfo)
