@@ -171,6 +171,22 @@ public:
         return s;
     }
 
+    template <typename IteratorType>
+    static String join(IteratorType begin, IteratorType end, const String&& separator)
+    {
+        String s;
+        if (begin == end)
+        {
+            return s;
+        }
+        s += *begin;
+        while (++begin != end)
+        {
+            s += separator;
+            s += *begin;
+        }
+        return s;
+    }
 };
 
 

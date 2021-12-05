@@ -2,12 +2,44 @@
 
 #include "Types/Platform/PlatformDefines.h"
 
+// Platform safety defines
+
 #ifndef FORCE_INLINE
 #define FORCE_INLINE inline
 #endif
 
 // Debug-able inline
+#if _DEBUG
+#define DEBUG_INLINE
+#elif NDEBUG
+#define DEBUG_INLINE FORCE_INLINE
+#else
 #define DEBUG_INLINE inline
+#endif
+
+#ifndef LIB_PREFIX
+#define LIB_PREFIX
+#endif
+#ifndef SHARED_LIB_EXTENSION
+#define SHARED_LIB_EXTENSION
+#endif
+#ifndef STATIC_LIB_EXTENSION
+#define STATIC_LIB_EXTENSION
+#endif
+
+#ifndef DLL_EXPORT
+// DLL export and import
+#define DLL_EXPORT
+#endif
+#ifndef DLL_IMPORT
+#define DLL_IMPORT
+#endif
+
+#ifndef LINE_FEED_CHAR
+#define LINE_FEED_CHAR '\n'
+#endif
+
+// Other non platform defines
 
 #ifndef LOG_TO_CONSOLE
 #define LOG_TO_CONSOLE 0
