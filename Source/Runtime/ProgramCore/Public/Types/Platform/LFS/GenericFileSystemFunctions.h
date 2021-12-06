@@ -19,7 +19,7 @@ public:
     template <typename... Paths>
     static String combinePath(Paths... paths)
     {
-        return FileSystemType::combinePath(paths...);
+        return FileSystemType::combinePath(std::forward<Paths>(paths)...);
     }
 
     static std::vector<String> listAllFiles(const String& directory, bool bRecursive)

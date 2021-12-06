@@ -12,6 +12,7 @@ private:
     WindowManager windowMan;
 public:
     AppWindowDelegate onWindowCreated;
+    // Called just before windows is finalized to be destroyed
     AppWindowDelegate onWindowDestroyed;
     // Called before window property change has lead to surface reinitialization
     AppWindowDelegate preWindowSurfaceUpdate;

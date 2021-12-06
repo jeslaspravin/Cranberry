@@ -26,15 +26,19 @@ public:
     virtual DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) = 0;
     virtual void unregisterOnWindowCreated(const DelegateHandle& callbackHandle) = 0;
 
+    // Called before window property change has lead to surface reinitialization
     virtual DelegateHandle registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType callback) = 0;
     virtual void unregisterPreWindowSurfaceUpdate(const DelegateHandle& callbackHandle) = 0;
 
+    // When resized/updated that lead to underlying surface/canvas to be updated
     virtual DelegateHandle registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType callback) = 0;
     virtual void unregisterOnWindowSurfaceUpdated(const DelegateHandle& callbackHandle) = 0;
 
+    // Called just before windows is finalized to be destroyed
     virtual DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType callback) = 0;
     virtual void unregisterOnWindowDestroyed(const DelegateHandle& callbackHandle) = 0;
 
+    // After all windows are destroyed
     virtual DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback) = 0;
     virtual void unregisterAllWindowDestroyed(const DelegateHandle& callbackHandle) = 0;
 };

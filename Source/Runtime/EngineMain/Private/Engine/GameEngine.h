@@ -43,7 +43,6 @@ private:
 
     DelegateHandle renderStateChangeHandle;
     DelegateHandle exitAppHandle;
-    DelegateHandle windowSurfaceUpdateHandle;
 protected:
     IRenderInterfaceModule* rendererModule;
     IApplicationModule* applicationModule;
@@ -54,7 +53,6 @@ protected:
     EngineTime timeData;
 private:
     void onRenderStateChange(ERenderStateEvent state);
-    void onPreWindowurfaceUpdate(GenericAppWindow* window) const;
     void tryExitApp();
 protected:
     virtual void onStartUp();
