@@ -282,7 +282,8 @@ namespace CppReflectionParser
             visitClasses(cursor, srcParsedInfo);
             return;
         case CXCursor_EnumDecl:
-            break;
+            visitEnums(cursor, srcParsedInfo);
+            return;
         case CXCursor_FieldDecl:
             break;
         case CXCursor_EnumConstantDecl:
@@ -993,6 +994,9 @@ namespace CppReflectionParser
         case CXCursor_FieldDecl:
             visitMemberField(cursor, srcParsedInfo);
             break;
+        case CXCursor_Constructor:
+        case CXCursor_Destructor:
+        case CXCursor_ConversionFunction:
         case CXCursor_CXXMethod:
             visitMemberCppMethods(cursor, srcParsedInfo);
             break;
@@ -1172,6 +1176,51 @@ namespace CppReflectionParser
         }
     }
 
+    void visitEnums(CXCursor cursor, SourceParsedInfo& srcParsedInfo)
+    {
+        CXStringRef enumName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
+        CXStringRef enumDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
+        Logger::log("CppReflectionParser", "%s() : Enum %s : Display name %s", __func__, enumName, enumDispName);
+        srcParsedInfo.namespaceList.push_back(clang_getCString(enumName->str));
+
+        String enumPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), "::");
+        Logger::log("CppReflectionParser", "%s() : Enum %s - Full path name %s", __func__, enumName, enumPathName);
+
+        int32 bIsScopedEnum = clang_EnumDecl_isScoped(cursor);
+        Logger::log("CppReflectionParser", "%s() : Enum %s : Is scoped enum(Strongly typed with Class)? %s", __func__, enumName
+            , (!!bIsScopedEnum)
+            ? "true" : "false"
+        );
+
+        clang_visitChildren(cursor,
+            [](CXCursor c, CXCursor p, CXClientData clientData)
+            {
+                CXCursorKind cursorKind = clang_getCursorKind(c);
+                CXStringRef cursorName(new CXStringWrapper(clang_getCursorSpelling(c)));
+                CXStringRef enumName(new CXStringWrapper(clang_getCursorSpelling(p)));
+                switch (cursorKind)
+                {
+                case CXCursor_AnnotateAttr:
+                    // Cursor spelling contains content of annotation
+                    Logger::log("CppReflectionParser", "visitEnums() : Enum %s - Annotated as %s", enumName, cursorName);
+                    break;
+                case CXCursor_EnumConstantDecl:
+                {
+                    int64 enumVal = clang_getEnumConstantDeclValue(c);
+                    Logger::log("CppReflectionParser", "visitEnums() : Enum %s - Value(name %s, value %ld)", enumName, cursorName, enumVal);
+                    return CXChildVisit_Recurse;
+                }
+                default:
+                    CppReflectionParser::visitTUCusor(c, *(SourceParsedInfo*)(clientData));
+                    break;
+                }
+                return CXChildVisit_Continue;
+            }
+        , &srcParsedInfo);
+
+        srcParsedInfo.namespaceList.pop_back();
+    }
+
     void visitMemberField(CXCursor cursor, SourceParsedInfo& srcParsedInfo)
     {
         CXStringRef fieldName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
@@ -1210,6 +1259,7 @@ namespace CppReflectionParser
                     Logger::log("CppReflectionParser", "visitMemberField() : Field %s - Annotated as %s", fieldName, cursorName);
                     break;
                 default:
+                    CppReflectionParser::visitTUCusor(c, *(SourceParsedInfo*)(clientData));
                     break;
                 }
                 return CXChildVisit_Continue;
@@ -1252,6 +1302,7 @@ namespace CppReflectionParser
                     Logger::log("CppReflectionParser", "visitVariableDecl() : Field %s - Annotated as %s", fieldName, cursorName);
                     break;
                 default:
+                    CppReflectionParser::visitTUCusor(c, *(SourceParsedInfo*)(clientData));
                     break;
                 }
                 return CXChildVisit_Continue;
@@ -1326,7 +1377,6 @@ namespace CppReflectionParser
             CXCursor* baseCursors;
             // Gives up-to only one level
             clang_getOverriddenCursors(cursor, &baseCursors, &numOverrides);
-
             uint32 levelFromThisOverride = 1;
             Logger::log("CppReflectionParser", "%s() : Function %s - Overrides following methods ---->", __func__, funcName);
             std::vector<ArrayView<CXCursor>> currOverridenCursors{ ArrayView<CXCursor>(baseCursors, numOverrides) };

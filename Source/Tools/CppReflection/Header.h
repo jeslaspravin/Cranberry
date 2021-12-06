@@ -10,6 +10,25 @@
 
 #define TEST_API __declspec(dllexport)
 
+enum class META_ANNOTATE(TEST_API, EnumType("Nope")) ETestEnumClassScoped
+{
+    EnumValueZeroth META_ANNOTATE(, EnumType("Zeroth")),
+    EnumValueFirst META_ANNOTATE(, EnumType("First")),
+    EnumValueSecond META_ANNOTATE(, EnumType("Second")),
+    EnumValueThird META_ANNOTATE(, EnumType("Third")),
+};
+
+namespace ETestEnumGlobalScoped
+{
+    enum META_ANNOTATE(TEST_API, EnumType("Nope")) Type
+    {
+        ValueOne META_ANNOTATE(, EnumType("One")) = 1,
+        ValueTwo,
+        ValueThree,
+        ValueFour,
+    };
+}
+
 struct META_ANNOTATE(, HelloSir) Anarchy
 {
     AChar test;
@@ -28,6 +47,12 @@ private:
     friend InAnarchy;
 public:
     int32 field = 34;
+
+    MyClass();
+    MyClass(int32 inField);
+
+    operator int32() const;
+    MyClass& operator=(int32 value);
 
     META_ANNOTATE(, Deprecate)
     virtual void method(const AChar *ch, const int32& idxRef, int32& outIdx, int32 inNum, int32 *optionalNum) const = 0;
