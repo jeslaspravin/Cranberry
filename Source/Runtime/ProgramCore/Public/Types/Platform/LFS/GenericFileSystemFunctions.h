@@ -16,8 +16,12 @@ public:
         return FileSystemType::applicationDirectory(appName);
     }
 
+    // combinePath(...)
+    // Combines given paths with platform specifier separator
+    //
+    // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as well else r-values gets converted to l-values on this call
     template <typename... Paths>
-    static String combinePath(Paths... paths)
+    CONST_EXPR static String combinePath(Paths&&... paths)
     {
         return FileSystemType::combinePath(std::forward<Paths>(paths)...);
     }

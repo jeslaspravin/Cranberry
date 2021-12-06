@@ -39,7 +39,36 @@
 #define LINE_FEED_CHAR '\n'
 #endif
 
+// File System path separator
+#ifndef FS_PATH_SEPARATOR
+#define FS_PATH_SEPARATOR "/"
+#endif
+
 // Other non platform defines
+
+// CPP Language specific defines
+
+#ifndef CONST_EXPR
+#define CONST_EXPR constexpr
+#endif
+
+#ifndef CONST_EVAL
+#define CONST_EVAL consteval
+#endif
+
+#ifndef CONST_INIT
+#define CONST_INIT constinit
+#endif
+
+#ifndef NODISCARD
+#define NODISCARD [[nodiscard]]
+#endif
+
+#ifndef DEPRECATED
+#define DEPRECATED(Message) [[deprecated( #Message )]]
+#endif
+
+// End CPP language specific
 
 #ifndef LOG_TO_CONSOLE
 #define LOG_TO_CONSOLE 0

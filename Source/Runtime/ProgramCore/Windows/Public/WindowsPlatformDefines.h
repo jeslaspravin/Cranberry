@@ -38,3 +38,8 @@
 #ifndef LINE_FEED_CHAR
 #define LINE_FEED_CHAR "\r\n"
 #endif
+
+// File System path separator
+#ifndef FS_PATH_SEPARATOR
+#define FS_PATH_SEPARATOR "\\"
+#endif

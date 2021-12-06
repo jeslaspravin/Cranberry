@@ -16,21 +16,21 @@ class String : public std::string
 {
 
 public:
-    FORCE_INLINE String() : std::string() {}
-    FORCE_INLINE String(const String& otherString) : std::string(otherString) {}
-    FORCE_INLINE String(const String& otherString, size_type pos, size_type len) : std::string(otherString, pos, len) {}
-    FORCE_INLINE String(const AChar* s, size_type n) : std::string(s, n) {}
-    FORCE_INLINE String(const AChar* s) : std::string(s) {}
-    FORCE_INLINE String(size_type n, AChar c) : std::string(n, c) {}
-    FORCE_INLINE String(const std::string& otherString) : std::string(otherString) {}
-    FORCE_INLINE String(std::string&& otherString) : std::string(otherString) {}
+    FORCE_INLINE CONST_EXPR String() : std::string() {}
+    FORCE_INLINE CONST_EXPR String(const String& otherString) : std::string(otherString) {}
+    FORCE_INLINE CONST_EXPR String(const String& otherString, size_type pos, size_type len) : std::string(otherString, pos, len) {}
+    FORCE_INLINE CONST_EXPR String(const AChar* s, size_type n) : std::string(s, n) {}
+    FORCE_INLINE CONST_EXPR String(const AChar* s) : std::string(s) {}
+    FORCE_INLINE CONST_EXPR String(size_type n, AChar c) : std::string(n, c) {}
+    FORCE_INLINE CONST_EXPR String(const std::string& otherString) : std::string(otherString) {}
+    FORCE_INLINE CONST_EXPR String(std::string&& otherString) : std::string(otherString) {}
 
-    FORCE_INLINE const AChar* getChar() const
+    FORCE_INLINE CONST_EXPR const AChar* getChar() const
     {
         return c_str();
     }
 
-    FORCE_INLINE bool findAny(size_t& outIndex, String& outFoundString, const std::vector<String>& findStrgs, size_t offset = 0, bool fromEnd = false) const
+    FORCE_INLINE bool CONST_EXPR findAny(size_t& outIndex, String& outFoundString, const std::vector<String>& findStrgs, size_t offset = 0, bool fromEnd = false) const
     {
         size_t foundAt = npos;
         for (const String& strg : findStrgs)
@@ -51,7 +51,7 @@ public:
         return false;
     }
 
-    FORCE_INLINE String replaceAllCopy(const String& from, const String& to) const
+    FORCE_INLINE CONST_EXPR String replaceAllCopy(const String& from, const String& to) const
     {
         String newStr = this->getChar();
         size_t replaceAtPos = 0;
@@ -63,7 +63,7 @@ public:
         return newStr;
     }
 
-    FORCE_INLINE void replaceAll(const String& from, const String& to)
+    FORCE_INLINE CONST_EXPR void replaceAll(const String& from, const String& to)
     {
         size_t replaceAtPos = 0;
         while ((replaceAtPos = find(from, replaceAtPos)) != npos)
@@ -73,7 +73,7 @@ public:
         }
     }
 
-    FORCE_INLINE bool startsWith(const String& match, bool bMatchCase = true) const
+    FORCE_INLINE CONST_EXPR bool startsWith(const String& match, bool bMatchCase = true) const
     {
         if (length() < match.length())
             return false;
@@ -92,7 +92,7 @@ public:
         return cbegin() == it;
     }
 
-    FORCE_INLINE bool endsWith(const String& match, bool bMatchCase = true) const
+    FORCE_INLINE CONST_EXPR bool endsWith(const String& match, bool bMatchCase = true) const
     {
         if (length() < match.length())
             return false;
@@ -112,7 +112,7 @@ public:
         return it == searchFrom;
     }
 
-    FORCE_INLINE void trimL()
+    FORCE_INLINE CONST_EXPR void trimL()
     {
         erase(begin(), std::find_if(begin(), end(),
             [](unsigned char ch)
@@ -122,7 +122,7 @@ public:
         );
     }
 
-    FORCE_INLINE void trimR()
+    FORCE_INLINE CONST_EXPR void trimR()
     {
         erase(std::find_if(rbegin(), rend(),
             [](unsigned char ch)
@@ -133,13 +133,13 @@ public:
                 );
     }
 
-    FORCE_INLINE void trim()
+    FORCE_INLINE CONST_EXPR void trim()
     {
         trimL();
         trimR();
     }
 
-    FORCE_INLINE String trimLCopy() const
+    FORCE_INLINE CONST_EXPR String trimLCopy() const
     {
         String s(*this);
         s.erase(s.begin(), std::find_if(s.begin(), s.end(),
@@ -151,7 +151,7 @@ public:
         return s;
     }
 
-    FORCE_INLINE String trimRCopy() const
+    FORCE_INLINE CONST_EXPR String trimRCopy() const
     {
         String s(*this);
         s.erase(std::find_if(s.rbegin(), s.rend(),
@@ -164,7 +164,7 @@ public:
         return s;
     }
 
-    FORCE_INLINE String trimCopy() const
+    FORCE_INLINE CONST_EXPR String trimCopy() const
     {
         String s(*this);
         s.trim();
@@ -172,7 +172,7 @@ public:
     }
 
     template <typename IteratorType>
-    static String join(IteratorType begin, IteratorType end, const String&& separator)
+    CONST_EXPR static String join(IteratorType begin, IteratorType end, const String&& separator)
     {
         String s;
         if (begin == end)
@@ -193,8 +193,7 @@ public:
 template <>
 struct PROGRAMCORE_EXPORT std::hash<String>
 {
-
-    _NODISCARD size_t operator()(const String& keyval) const noexcept {
+    NODISCARD size_t operator()(const String& keyval) const noexcept {
         auto stringHash = hash<std::string>();
         return stringHash(keyval);
     }
