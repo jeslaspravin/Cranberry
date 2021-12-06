@@ -4,6 +4,7 @@
 #include "Engine/Config/EngineGlobalConfigs.h"
 #include "GenericAppWindow.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
+#include "RenderInterface/Rendering/RenderingContexts.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/GraphicsIntance.h"
 #include "RenderApi/GBuffersAndTextures.h"
@@ -48,16 +49,20 @@ void WindowManager::destroy()
     for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
     {
         WindowCanvasRef windowCanvas = windowData.second.windowCanvas;
-        ENQUEUE_COMMAND(MainWindowDestroy)(
-            [windowCanvas](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
-            {
-                windowCanvas->release();
-            });
         windowData.second.windowCanvas.reset();
 
         static_cast<ApplicationModule*>(IApplicationModule::get())->onWindowDestroyed.invoke(windowData.first);
         windowData.first->destroyWindow();
         delete windowData.first;
+
+        ENQUEUE_COMMAND(MainWindowDestroy)(
+            [windowCanvas](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+            {
+                // Release the canvas before deleting
+                IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()
+                    ->clearWindowCanvasFramebuffer(windowCanvas);
+                windowCanvas->release();
+            });
     }
     appMainWindow = nullptr;
     windowsOpened.clear();
@@ -110,6 +115,7 @@ void WindowManager::postInitGraphicCore()
             for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
             {
                 // As init might have failed when preparing initial surface
+                // And we do not need to free window canvas frame here as it is first init
                 windowData.second.windowCanvas->reinitResources();
             }
             EngineSettings::surfaceSize.set(Size2D(appMainWindow->windowWidth, appMainWindow->windowHeight));
@@ -126,6 +132,10 @@ void WindowManager::updateWindowCanvas()
             for (std::pair<GenericAppWindow* const, ManagerData>& windowData : windowsOpened)
             {
                 appModule->preWindowSurfaceUpdate.invoke(windowData.first);
+
+                // Release the canvas related frame buffers before updating
+                IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()
+                    ->clearWindowCanvasFramebuffer(windowData.second.windowCanvas);
                 windowData.second.windowCanvas->reinitResources();
                 appModule->onWindowSurfaceUpdated.invoke(windowData.first);
             }
@@ -186,6 +196,13 @@ bool WindowManager::pollWindows()
         ENQUEUE_COMMAND(WindowsCanvasDestroy)(
             [canvasesToDestroy](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper) mutable
             {
+                cmdList->flushAllcommands();
+                for(const WindowCanvasRef& windowCanvas : canvasesToDestroy)
+                {
+                    // Release the canvas related frame buffers before updating
+                    IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()
+                        ->clearWindowCanvasFramebuffer(windowCanvas);
+                }
                 // Clear will release and destroy ref resources
                 canvasesToDestroy.clear();
             });
@@ -212,6 +229,9 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                 if (windowCanvas.isValid())
                 {
                     Logger::debug("WindowsAppWindow", "%s() : Reiniting window canvas", __func__);
+                    // Release the canvas before updating
+                    IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()
+                        ->clearWindowCanvasFramebuffer(windowCanvas);
                     windowCanvas->reinitResources();
                 }
 

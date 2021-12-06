@@ -6,20 +6,20 @@ class PROGRAMCORE_EXPORT WindowsFileSystemFunctions : public GenericFileSystemFu
 {
 public:
     template <typename FirstType, typename LastType, typename std::enable_if<IsStringTypes<FirstType, LastType>::value, int>::type = 0>
-    static String combinePath(FirstType firstPath, LastType lastPath)
+    static String combinePath(FirstType&& firstPath, LastType&& lastPath)
     {
-        String returnPath = firstPath;
+        String returnPath(std::forward<FirstType>(firstPath));
         returnPath.append("\\");
-        returnPath.append(lastPath);
+        returnPath.append(std::forward<LastType>(lastPath));
         return returnPath;
     }
 
     template <typename BaseType,typename... Paths,typename std::enable_if<IsString<BaseType>::value && IsStringTypes<Paths...>::value,int>::type = 0>
-    static String combinePath(const BaseType& basePath, Paths... paths)
+    static String combinePath(BaseType&& basePath, Paths... paths)
     {
-        String returnPath = basePath;
+        String returnPath(std::forward<BaseType>(basePath));
         returnPath.append("\\");
-        returnPath.append(combinePath(paths...));
+        returnPath.append(combinePath(std::forward<Paths>(paths)...));
         return returnPath;
     }
 

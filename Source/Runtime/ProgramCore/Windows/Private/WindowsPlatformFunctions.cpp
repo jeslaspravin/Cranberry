@@ -18,6 +18,9 @@ struct WindowsLibHandle : public LibPointer
 
 LibPointer* WindowsPlatformFunctions::openLibrary(String libName)
 {
+    // #TODO(Jeslas) : Improve this to handle dependent dlls here, Using
+    // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/february/inside-windows-win32-portable-executable-file-format-in-detail
+    // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/march/inside-windows-an-in-depth-look-into-the-win32-portable-executable-file-format-part-2
     WindowsLibHandle* handle = new WindowsLibHandle(LoadLibraryA(libName.getChar()), true);
 
     if (!handle->libHandle)

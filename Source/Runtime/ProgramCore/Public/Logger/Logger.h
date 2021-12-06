@@ -35,25 +35,25 @@ private:
 
     template<typename StrType>
     FORCE_INLINE static const std::enable_if_t<std::is_convertible_v<StrType, const AChar*>, const AChar*>
-        getChar(StrType value)
+        getChar(StrType&& value)
     {
         return static_cast<const AChar*>(value);
     }
 
     template<typename StrType>
     FORCE_INLINE static const std::enable_if_t<std::negation_v<IsString<StrType>>, StrType>
-        getChar(StrType value)
+        getChar(StrType&& value)
     {
-        return value;
+        return std::forward<StrType>(value);
     }
 
     template<typename... Args>
     DEBUG_INLINE static String fmtString(const AChar* fmt, Args... args)
     {
-        int32 size = std::snprintf(nullptr, 0, fmt, getChar<Args>(args)...);
+        int32 size = std::snprintf(nullptr, 0, fmt, getChar<Args>(std::forward<Args>(args))...);
         String fmted;
         fmted.resize(size + 1);
-        std::snprintf(fmted.data(), size + 1, fmt, getChar<Args>(args)...);
+        std::snprintf(fmted.data(), size + 1, fmt, getChar<Args>(std::forward<Args>(args))...);
         return fmted;
     }
 
@@ -85,9 +85,9 @@ private:
     // All string and primitive(fundamental) type
     template<typename Type>
     FORCE_INLINE static std::enable_if_t<std::disjunction_v<IsString<Type>, std::negation<std::is_compound<Type>>>, Type>
-        toString(const Type& value)
+        toString(Type&& value)
     {
-        return value;
+        return std::forward<Type>(value);
     }
 
     static void debugInternal(const AChar* category, const String& message);
@@ -96,27 +96,51 @@ private:
     static void errorInternal(const AChar* category, const String& message);
 public:
     template<typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE static void debug(const CatType category, const FmtType fmt, Args... args)
+    DEBUG_INLINE static void debug(CatType&& category, FmtType&& fmt, Args... args)
     {
-        debugInternal(getChar(category), fmtString(getChar(fmt), toString<Args>(args)...));
+        debugInternal(
+            getChar<CatType>(std::forward<CatType>(category))
+            , fmtString(
+                getChar<FmtType>(std::forward<FmtType>(fmt))
+                , toString<Args>(std::forward<Args>(args))...
+            )
+        );
     }
 
     template<typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE static void log(const CatType category, const FmtType fmt, Args... args)
+    DEBUG_INLINE static void log(CatType&& category, FmtType&& fmt, Args... args)
     {
-        logInternal(getChar(category), fmtString(getChar(fmt), toString<Args>(args)...));
+        logInternal(
+            getChar<CatType>(std::forward<CatType>(category))
+            , fmtString(
+                getChar<FmtType>(std::forward<FmtType>(fmt))
+                , toString<Args>(std::forward<Args>(args))...
+            )
+        );
     }
 
     template<typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE static void warn(const CatType category, const FmtType fmt, Args... args)
+    DEBUG_INLINE static void warn(CatType&& category, FmtType&& fmt, Args... args)
     {
-        warnInternal(getChar(category), fmtString(getChar(fmt), toString<Args>(args)...));
+        warnInternal(
+            getChar<CatType>(std::forward<CatType>(category))
+            , fmtString(
+                getChar<FmtType>(std::forward<FmtType>(fmt))
+                , toString<Args>(std::forward<Args>(args))...
+            )
+        );
     }
 
     template<typename CatType, typename FmtType, typename... Args>
-    DEBUG_INLINE static void error(const CatType category, const FmtType fmt, Args... args)
+    DEBUG_INLINE static void error(CatType&& category, FmtType&& fmt, Args... args)
     {
-        errorInternal(getChar(category), fmtString(getChar(fmt), toString<Args>(args)...));
+        errorInternal(
+            getChar<CatType>(std::forward<CatType>(category))
+            , fmtString(
+                getChar<FmtType>(std::forward<FmtType>(fmt))
+                , toString<Args>(std::forward<Args>(args))...
+            )
+        );
     }
 
     static void flushStream();

@@ -207,9 +207,13 @@ struct IsStringUnqualified<String> : std::true_type {};
 template<>
 struct IsStringUnqualified<std::string> : std::true_type {};
 template<>
-struct IsStringUnqualified<AChar*> : std::true_type {};
-template<>
-struct IsStringUnqualified<const AChar*> : std::true_type {};
+struct IsStringUnqualified<AChar> : std::true_type {};
+// For char[] arrays
+template<typename T, int32 Num>
+struct IsStringUnqualified<T[Num]> : IsStringUnqualified<typename std::remove_cv<typename std::remove_reference<T>::type>::type> {};
+// for char* pointers
+template<typename T>
+struct IsStringUnqualified<T*> : IsStringUnqualified<typename std::remove_cv<typename std::remove_reference<T>::type>::type> {};
 
 template<typename T>
 struct IsString : IsStringUnqualified<typename std::remove_cv<typename std::remove_reference<T>::type>::type> {};
