@@ -51,6 +51,8 @@ namespace CppReflectionParser
     void visitStructs(CXCursor cursor, SourceParsedInfo& srcParsedInfo);
     void visitStructMember(CXCursor cursor, SourceParsedInfo& srcParsedInfo);
 
+    void visitEnums(CXCursor cursor, SourceParsedInfo& srcParsedInfo);
+
     void visitMemberField(CXCursor cursor, SourceParsedInfo& srcParsedInfo);
     // For both static and global variable declarations and variables inside function definition
     void visitVariableDecl(CXCursor cursor, SourceParsedInfo& srcParsedInfo);
