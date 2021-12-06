@@ -47,7 +47,7 @@ public:
         return length;
     }
 
-    [[nodiscard]] bool empty() const
+    NODISCARD bool empty() const
     {
         return length == 0;
     }

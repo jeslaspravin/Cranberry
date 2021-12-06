@@ -33,7 +33,7 @@ private:
 #if _DEBUG
     void collectInstanceLayers(std::vector<const char*>& layers) const;
 #endif
-    [[nodiscard]] bool collectInstanceExtensions(std::vector<const char*>& extensions) const;
+    NODISCARD bool collectInstanceExtensions(std::vector<const char*>& extensions) const;
 public:
 
     /* IGraphicsInstance override */

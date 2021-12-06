@@ -104,9 +104,9 @@ public:
     QueueResourceBasePtr getGenericQueue() const;
     const VulkanDebugGraphics* debugGraphics() const { return &graphicsDebug; }
 
-    [[nodiscard]] int32 compare(const VulkanDevice& otherDevice, const WindowCanvasRef& windowCanvas) const;
-    [[nodiscard]] bool isValidDevice() const;
-    [[nodiscard]] bool isLogicalDeviceCreated() const;
+    NODISCARD int32 compare(const VulkanDevice& otherDevice, const WindowCanvasRef& windowCanvas) const;
+    NODISCARD bool isValidDevice() const;
+    NODISCARD bool isLogicalDeviceCreated() const;
 
     void getMemoryStat(uint64& totalBudget, uint64& usage,uint32 heapIndex);
 
