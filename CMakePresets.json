@@ -1,0 +1,92 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired":
+    {
+        "major": 3,
+        "minor": 22,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "BasePreset",
+            "description": "Base preset that needs to be inherited and overriden by all others",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/Build",
+            "cacheVariables":
+            {
+                "CMAKE_INSTALL_PREFIX":
+                {
+                    "type": "STRING",
+                    "value": "${sourceDir}/Installed`"
+                },
+                "engine_static_modules":
+                {
+                    "type": "BOOL",
+                    "value": "OFF"
+                }
+            }
+        },
+        {
+            "name": "Engine-DynamicLinked",
+            "description": "Creates dynamically linked engine libraries",
+            "generator": "Visual Studio 16 2019",
+            "inherits": "BasePreset",
+            "architecture":
+            {
+                "strategy": "set",
+                "value": "x64"
+            },
+            "toolset":
+            {
+                "strategy": "set",
+                "value": "host=x64"
+            },
+            "condition":
+            {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "vendor":
+            {
+                "microsoft.com/VisualStudioSettings/CMake/1.0":
+                {
+                    "hostOS": ["Windows"]
+                }
+            }
+        },
+        {
+            "name": "Engine-StaticLinked",
+            "description": "Creates statically linked engine libraries",
+            "inherits": "Engine-DynamicLinked",
+            "binaryDir": "${sourceDir}/StaticBuild",
+            "cacheVariables":
+            {
+                "engine_static_modules":
+                {
+                    "type": "BOOL",
+                    "value": "ON"
+                }
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "Engine-DynamicLinked",
+            "configurePreset": "Engine-DynamicLinked"
+        },
+        {
+            "name": "Engine-StaticLinked",
+            "configurePreset": "Engine-StaticLinked"
+        }
+    ],
+    "testPresets": [
+    ],
+    "vendor":
+    {
+        "microsoft.com/VisualStudioSettings/CMake/1.0":
+        {
+            "hostOS": ["Windows"]
+        }
+    }
+}
