@@ -37,16 +37,18 @@ public:
         cellsCount = std::move(other.cellsCount);
     }
 
-    FORCE_INLINE void operator=(const VectorND<T, d>& other)
+    FORCE_INLINE VectorND& operator=(const VectorND<T, d>& other)
     {
         cellsCount = other.cellsCount;
         data = other.data;
+        return *this;
     }
 
-    FORCE_INLINE void operator=(VectorND<T, d>&& other)
+    FORCE_INLINE VectorND& operator=(VectorND<T, d>&& other)
     {
         data = std::move(other.data);
         cellsCount = std::move(other.cellsCount);
+        return *this;
     }
 
     FORCE_INLINE T& operator[](const CellIndex<d>& cell)

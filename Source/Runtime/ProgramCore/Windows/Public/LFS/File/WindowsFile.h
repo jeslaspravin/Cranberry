@@ -23,6 +23,7 @@ public:
     void seek(const int64& pointer) const override;
     void offsetCursor(const int64& offset) const override;
 
+    bool setFileSize(const int64& newSize) const override;
     void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const override;
     void write(const ArrayView<uint8>& writeBytes) const override;
 

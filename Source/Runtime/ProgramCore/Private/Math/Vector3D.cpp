@@ -42,14 +42,16 @@ Vector3D::Vector3D(const Vector2D& xy, const float& z)
     : value(xy.x(), xy.y(), z)
 {}
 
-void Vector3D::operator=(const Vector3D & other)
+Vector3D& Vector3D::operator=(const Vector3D & other)
 {
     value = other.value;
+    return *this;
 }
 
-void Vector3D::operator=(Vector3D && other)
+Vector3D& Vector3D::operator=(Vector3D && other)
 {
     value = std::move(other.value);
+    return *this;
 }
 
 float& Vector3D::x()
@@ -114,9 +116,10 @@ Vector3D Vector3D::operator*(const Vector3D& b) const
     return Vector3D(value * b.value);
 }
 
-void Vector3D::operator*=(const Vector3D& b)
+Vector3D& Vector3D::operator*=(const Vector3D& b)
 {
     value *= b.value;
+    return *this;
 }
 
 Vector3D Vector3D::operator*(const float& scalar) const
@@ -124,9 +127,10 @@ Vector3D Vector3D::operator*(const float& scalar) const
     return Vector3D(value * scalar);
 }
 
-void Vector3D::operator*=(const float& scalar)
+Vector3D& Vector3D::operator*=(const float& scalar)
 {
     value *= scalar;
+    return *this;
 }
 
 Vector3D Vector3D::operator/(const Vector3D& b) const
@@ -134,9 +138,10 @@ Vector3D Vector3D::operator/(const Vector3D& b) const
     return Vector3D(value / b.value);
 }
 
-void Vector3D::operator/=(const Vector3D& b)
+Vector3D& Vector3D::operator/=(const Vector3D& b)
 {
     value /= b.value;
+    return *this;
 }
 
 Vector3D Vector3D::operator/(const float& scalar) const
@@ -144,9 +149,10 @@ Vector3D Vector3D::operator/(const float& scalar) const
     return Vector3D(value / scalar);
 }
 
-void Vector3D::operator/=(const float& scalar)
+Vector3D& Vector3D::operator/=(const float& scalar)
 {
     value /= scalar;
+    return *this;
 }
 
 Vector3D Vector3D::operator-(const Vector3D& b) const
@@ -154,9 +160,10 @@ Vector3D Vector3D::operator-(const Vector3D& b) const
     return Vector3D(value - b.value);
 }
 
-void Vector3D::operator-=(const Vector3D& b)
+Vector3D& Vector3D::operator-=(const Vector3D& b)
 {
     value -= b.value;
+    return *this;
 }
 
 Vector3D Vector3D::operator-(const float& scalar) const
@@ -164,9 +171,10 @@ Vector3D Vector3D::operator-(const float& scalar) const
     return Vector3D(value - scalar);
 }
 
-void Vector3D::operator-=(const float& scalar)
+Vector3D& Vector3D::operator-=(const float& scalar)
 {
     value -= scalar;
+    return *this;
 }
 
 Vector3D Vector3D::operator-() const
@@ -179,9 +187,10 @@ Vector3D Vector3D::operator+(const Vector3D& b) const
     return Vector3D(value + b.value);
 }
 
-void Vector3D::operator+=(const Vector3D& b)
+Vector3D& Vector3D::operator+=(const Vector3D& b)
 {
     value += b.value;
+    return *this;
 }
 
 Vector3D Vector3D::operator+(const float& scalar) const
@@ -189,9 +198,10 @@ Vector3D Vector3D::operator+(const float& scalar) const
     return Vector3D(value + scalar);
 }
 
-void Vector3D::operator+=(const float& scalar)
+Vector3D& Vector3D::operator+=(const float& scalar)
 {
     value += scalar;
+    return *this;
 }
 
 bool Vector3D::isSame(const Vector3D& b, float epsilon /*= SMALL_EPSILON*/) const

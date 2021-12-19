@@ -19,7 +19,7 @@ GenericFile* Logger::getLogFile()
     if (!logFile)
     {
         String logFileName;
-        String logFilePath = FileSystemFunctions::applicationDirectory(logFileName).append("\\Saved\\");
+        String logFilePath = FileSystemFunctions::applicationDirectory(logFileName).append("/Saved/Logs/");
         String extension;
         logFileName = FileSystemFunctions::stripExtension(logFileName, extension);
         PlatformFile checkFile{ logFilePath.append(logFileName).append(".log") };

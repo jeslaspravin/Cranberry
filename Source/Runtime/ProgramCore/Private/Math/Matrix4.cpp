@@ -50,14 +50,16 @@ Matrix4::Matrix4(const Vector3D& scale)
         , 0, 0, 0, 1)
 {}
 
-void Matrix4::operator=(const Matrix4 & other)
+Matrix4& Matrix4::operator=(const Matrix4 & other)
 {
     value = other.value;
+    return *this;
 }
 
-void Matrix4::operator=(Matrix4 && other)
+Matrix4& Matrix4::operator=(Matrix4 && other)
 {
     value = std::move(other.value);
+    return *this;
 }
 
 Matrix4Col& Matrix4::operator[](uint32 colIndex)
@@ -87,9 +89,10 @@ Matrix4 Matrix4::operator*(const Matrix4& b) const
     return value * b.value;
 }
 
-void Matrix4::operator*=(const Matrix4& b)
+Matrix4& Matrix4::operator*=(const Matrix4& b)
 {
     value *= b.value;
+    return *this;
 }
 
 Matrix4 Matrix4::operator*(const float& scalar) const
@@ -97,9 +100,10 @@ Matrix4 Matrix4::operator*(const float& scalar) const
     return value * scalar;
 }
 
-void Matrix4::operator*=(const float& scalar)
+Matrix4& Matrix4::operator*=(const float& scalar)
 {
     value *= scalar;
+    return *this;
 }
 
 Matrix4 Matrix4::inverse() const
@@ -122,9 +126,10 @@ Matrix4 Matrix4::operator|(const Matrix4& b) const
     return glm::matrixCompMult(value, b.value);
 }
 
-void Matrix4::operator|=(const Matrix4& b)
+Matrix4& Matrix4::operator|=(const Matrix4& b)
 {
     value = glm::matrixCompMult(value, b.value);
+    return *this;
 }
 
 Matrix4 Matrix4::operator/(const Matrix4& b) const
@@ -132,9 +137,10 @@ Matrix4 Matrix4::operator/(const Matrix4& b) const
     return value / b.value;
 }
 
-void Matrix4::operator/=(const Matrix4& b)
+Matrix4& Matrix4::operator/=(const Matrix4& b)
 {
     value /= b.value;
+    return *this;
 }
 
 Matrix4 Matrix4::operator/(const float& scalar) const
@@ -142,9 +148,10 @@ Matrix4 Matrix4::operator/(const float& scalar) const
     return Matrix4(value / scalar);
 }
 
-void Matrix4::operator/=(const float& scalar)
+Matrix4& Matrix4::operator/=(const float& scalar)
 {
     value /= scalar;
+    return *this;
 }
 
 Matrix4 Matrix4::operator-(const Matrix4& b) const
@@ -152,9 +159,10 @@ Matrix4 Matrix4::operator-(const Matrix4& b) const
     return (value - b.value);
 }
 
-void Matrix4::operator-=(const Matrix4& b)
+Matrix4& Matrix4::operator-=(const Matrix4& b)
 {
     value -= b.value;
+    return *this;
 }
 
 Matrix4 Matrix4::operator-(const float& scalar) const
@@ -162,9 +170,10 @@ Matrix4 Matrix4::operator-(const float& scalar) const
     return (value - scalar);
 }
 
-void Matrix4::operator-=(const float& scalar)
+Matrix4& Matrix4::operator-=(const float& scalar)
 {
     value -= scalar;
+    return *this;
 }
 
 Matrix4 Matrix4::operator+(const Matrix4& b) const
@@ -172,9 +181,10 @@ Matrix4 Matrix4::operator+(const Matrix4& b) const
     return (value + b.value);
 }
 
-void Matrix4::operator+=(const Matrix4& b)
+Matrix4& Matrix4::operator+=(const Matrix4& b)
 {
     value += b.value;
+    return *this;
 }
 
 Matrix4 Matrix4::operator+(const float& scalar) const
@@ -182,9 +192,10 @@ Matrix4 Matrix4::operator+(const float& scalar) const
     return (value + scalar);
 }
 
-void Matrix4::operator+=(const float& scalar)
+Matrix4& Matrix4::operator+=(const float& scalar)
 {
     value += scalar;
+    return *this;
 }
 
 const Matrix4 Matrix4::IDENTITY{ Vector3D(1,0), Vector3D(0,1), Vector3D(0,0,1), Vector3D(0) };

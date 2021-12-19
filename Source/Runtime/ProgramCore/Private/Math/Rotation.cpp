@@ -25,14 +25,16 @@ Rotation::Rotation(const float& r, const float& p, const float& y)
     : value(r, p, y)
 {}
 
-void Rotation::operator=(const Rotation& other)
+Rotation& Rotation::operator=(const Rotation& other)
 {
     value = other.value;
+    return *this;
 }
 
-void Rotation::operator=(Rotation&& other)
+Rotation& Rotation::operator=(Rotation&& other)
 {
     value = std::move(other.value);
+    return *this;
 }
 
 float& Rotation::roll()
@@ -75,9 +77,10 @@ Rotation Rotation::operator*(const Rotation& b) const
     return Rotation(value * b.value);
 }
 
-void Rotation::operator*=(const Rotation& b)
+Rotation& Rotation::operator*=(const Rotation& b)
 {
     value *= b.value;
+    return *this;
 }
 
 Rotation Rotation::operator*(const float& scalar) const
@@ -85,9 +88,10 @@ Rotation Rotation::operator*(const float& scalar) const
     return Rotation(value * scalar);
 }
 
-void Rotation::operator*=(const float& scalar)
+Rotation& Rotation::operator*=(const float& scalar)
 {
     value *= scalar;
+    return *this;
 }
 
 Rotation Rotation::operator/(const Rotation& b) const
@@ -95,9 +99,10 @@ Rotation Rotation::operator/(const Rotation& b) const
     return Rotation(value / b.value);
 }
 
-void Rotation::operator/=(const Rotation& b)
+Rotation& Rotation::operator/=(const Rotation& b)
 {
     value /= b.value;
+    return *this;
 }
 
 Rotation Rotation::operator/(const float& scalar) const
@@ -105,9 +110,10 @@ Rotation Rotation::operator/(const float& scalar) const
     return Rotation(value / scalar);
 }
 
-void Rotation::operator/=(const float& scalar)
+Rotation& Rotation::operator/=(const float& scalar)
 {
     value /= scalar;
+    return *this;
 }
 
 Rotation Rotation::operator-(const Rotation& b) const
@@ -115,9 +121,10 @@ Rotation Rotation::operator-(const Rotation& b) const
     return Rotation(value - b.value);
 }
 
-void Rotation::operator-=(const Rotation& b)
+Rotation& Rotation::operator-=(const Rotation& b)
 {
     value -= b.value;
+    return *this;
 }
 
 Rotation Rotation::operator-(const float& scalar) const
@@ -125,9 +132,10 @@ Rotation Rotation::operator-(const float& scalar) const
     return Rotation(value - scalar);
 }
 
-void Rotation::operator-=(const float& scalar)
+Rotation& Rotation::operator-=(const float& scalar)
 {
     value -= scalar;
+    return *this;
 }
 
 Rotation Rotation::operator+(const Rotation& b) const
@@ -135,9 +143,10 @@ Rotation Rotation::operator+(const Rotation& b) const
     return Rotation(value + b.value);
 }
 
-void Rotation::operator+=(const Rotation& b)
+Rotation& Rotation::operator+=(const Rotation& b)
 {
     value += b.value;
+    return *this;
 }
 
 Rotation Rotation::operator+(const float& scalar) const
@@ -145,9 +154,10 @@ Rotation Rotation::operator+(const float& scalar) const
     return Rotation(value + scalar);
 }
 
-void Rotation::operator+=(const float& scalar)
+Rotation& Rotation::operator+=(const float& scalar)
 {
     value += scalar;
+    return *this;
 }
 
 bool Rotation::isSame(const Rotation& b, float epsilon /*= SMALL_EPSILON*/) const

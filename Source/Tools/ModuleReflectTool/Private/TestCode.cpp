@@ -1,10 +1,13 @@
 #include "TestCode.h"
+#include "Types/PropertyTypes.h"
+#include "Types/FunctionTypes.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/PlatformFunctions.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Containers/ArrayView.h"
 
 #include <iostream>
+#include <regex>
 
 // Logger overrides
 std::ostream& operator<<(std::ostream& stream, const CppReflectionParser::CXStringRef& str)
@@ -1462,7 +1465,7 @@ namespace CppReflectionParser
 
 namespace TestCode
 {
-    void testCode(String srcDir) noexcept
+    void testLibClangParsing(String srcDir) noexcept
     {
         CXIndex index = clang_createIndex(0, 0);
         String argRefParseDef("-D__REF_PARSE__");
@@ -1470,6 +1473,8 @@ namespace TestCode
         String argIncludeModuleGen("-ID:/Workspace/VisualStudio/GameEngine/Build/Source/Runtime/ProgramCore/Generated/Public");
         const AChar* args[] = { argIncludeModuleGen.getChar(), argIncludeModulePublic.getChar(), argRefParseDef.getChar()};
         // Use parse TU functions if need to customize certain options while compiling
+        // Header.H - H has to be capital but why?
+        // It is okay if we miss some insignificant includes as they are ignored and parsing continues
         CXTranslationUnit unit = clang_parseTranslationUnit(
             index,
             FileSystemFunctions::combinePath(srcDir, "Header.H").getChar()
@@ -1513,5 +1518,173 @@ namespace TestCode
 
         clang_disposeTranslationUnit(unit);
         clang_disposeIndex(index);
+    }
+
+    struct TestDataProperties
+    {
+        int32 normalInt;
+        String normalString;
+        int32* intPtr = nullptr;
+        const int32* constIntPtr = nullptr;
+
+        static String staticVal;
+
+        void modifyValues(int32 a)
+        {
+            normalInt *= a;
+            normalString = "Modified by func " + normalString;
+            staticVal = "Modified by func " + staticVal;
+        }
+    };
+    String TestDataProperties::staticVal = "Hello World";
+    String globalVal;
+    int32 globalMod(int32& reminder, int32 dividend, int32 divisor)
+    {
+        int32 quotient = Math::floor(dividend / (float)divisor);
+        reminder = dividend - (quotient * divisor);
+        return quotient;
+    }
+
+    void testTypesAndProperties()
+    {
+        Logger::log("Test", "Test type info \n%s\n%s\n%s\n%s\n%s\n%s\n%s"
+            // Referenced variable is const
+            , typeInfoFrom<const int32&>()
+            , typeInfoFrom<const int32&&>()
+            // Pointer to const variable
+            , typeInfoFrom<const int32*>()
+            // Const pointer to const variable
+            , typeInfoFrom<int32 const* const>()
+            // Const reference to pointer to const variable
+            , typeInfoFrom<int32 const* const&>()
+            , typeInfoFrom<int32 const* const&&>()
+            , typeInfoFrom<std::vector<int32>&>()
+        );
+        Logger::log("Test", "Test type info %d, %d, %d"
+            , typeInfoFrom<const int32&>() == typeInfoFrom<const int32&&>()
+            , typeInfoFrom<const int32*>() == typeInfoFrom<int32 const* const&>()
+            , typeInfoFrom<int32 const* const&>() == typeInfoFrom<int32 const* const&&>()
+        );
+
+        auto testList = typeInfoListFrom<const int32&, const int32&&, const int32*, int32 const* const, int32 const* const&, int32 const* const&&>();
+
+        TestDataProperties testDataProps;
+        int32 tempVal = 1;
+        int32 tempVal2 = 5;
+        MemberFieldWrapperImpl<TestDataProperties, int32> normalIntProp(&TestDataProperties::normalInt);
+        MemberFieldWrapperImpl<TestDataProperties, String> normalStrProp(&TestDataProperties::normalString);
+        MemberFieldWrapperImpl<TestDataProperties, int32*> intPtrProp(&TestDataProperties::intPtr);
+        MemberFieldWrapperImpl<TestDataProperties, const int32*> constIntPtrProp(&TestDataProperties::constIntPtr);
+        GlobalFieldWrapperImpl<String> staticValProp(&TestDataProperties::staticVal);
+        GlobalFieldWrapperImpl<String> globalValProp(&TestCode::globalVal);
+
+        Logger::log("Test", "Before setting values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
+            *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr
+            , (intPtrProp.getAsType<int32*>(testDataProps)) ? reinterpret_cast<uint64>(*intPtrProp.getAsType<int32*>(testDataProps).vPtr) : 0
+            , (intPtrProp.getAsType<int32*>(testDataProps) && *intPtrProp.getAsType<int32*>(testDataProps).vPtr) ? **intPtrProp.getAsType<int32*>(testDataProps).vPtr : 0
+            , constIntPtrProp.getAsType<const int32*>(testDataProps) ? reinterpret_cast<uint64>(*constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr) : 0
+            , (constIntPtrProp.getAsType<const int32*>(testDataProps) && *constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr) ? **constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr : 0
+            , *staticValProp.getAsType<String>().vPtr
+            , *globalValProp.getAsType<String>().vPtr
+        );
+
+        normalIntProp.setFromType<int32>(28u, &testDataProps);
+        normalIntProp.setFromType("test", &testDataProps);
+        normalStrProp.setFromType<String>("Hello this is normal str", testDataProps);
+        intPtrProp.setFromType(&tempVal, testDataProps);
+        constIntPtrProp.setFromType(&tempVal, testDataProps);
+        **intPtrProp.getAsType<int32*>(testDataProps).vPtr = 9;
+        if (auto ptrToProp = constIntPtrProp.getAsType<int32*>(testDataProps))
+        {
+            **ptrToProp.vPtr = 10;
+        }
+        else
+        {
+            *constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr = &tempVal2;
+        }
+        staticValProp.setFromType<String>("This is static");
+        globalValProp.setFromType<String>("This is global static");
+
+        Logger::log("Test", "After setting values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
+            *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr
+            , (intPtrProp.getAsType<int32*>(testDataProps)) ? reinterpret_cast<uint64>(*intPtrProp.getAsType<int32*>(testDataProps).vPtr) : 0
+            , (intPtrProp.getAsType<int32*>(testDataProps) && *intPtrProp.getAsType<int32*>(testDataProps).vPtr) ? **intPtrProp.getAsType<int32*>(testDataProps).vPtr : 0
+            , constIntPtrProp.getAsType<const int32*>(testDataProps) ? reinterpret_cast<uint64>(*constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr) : 0
+            , (constIntPtrProp.getAsType<const int32*>(testDataProps) && *constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr) ? **constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr : 0
+            , *staticValProp.getAsType<String>().vPtr
+            , *globalValProp.getAsType<String>().vPtr
+        );
+
+        MemberFunctionWrapperImpl<TestDataProperties, void, int32> modifierFunc(&TestDataProperties::modifyValues);
+        GlobalFunctionWrapperImpl<int32, int32&, int32, int32> modFunc(&globalMod);
+
+        modifierFunc.invokeVoid(testDataProps, 34);
+        Logger::log("Test", "After Modify values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
+            *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr
+            , (intPtrProp.getAsType<int32*>(testDataProps)) ? reinterpret_cast<uint64>(*intPtrProp.getAsType<int32*>(testDataProps).vPtr) : 0
+            , (intPtrProp.getAsType<int32*>(testDataProps) && *intPtrProp.getAsType<int32*>(testDataProps).vPtr) ? **intPtrProp.getAsType<int32*>(testDataProps).vPtr : 0
+            , constIntPtrProp.getAsType<const int32*>(testDataProps) ? reinterpret_cast<uint64>(*constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr) : 0
+            , (constIntPtrProp.getAsType<const int32*>(testDataProps) && *constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr) ? **constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr : 0
+            , *staticValProp.getAsType<String>().vPtr
+            , *globalValProp.getAsType<String>().vPtr
+        );
+
+        int32 q;
+        int32 r;
+        modFunc.invoke(q, r, 4, 3);
+        Logger::log("Test", "Quotient %d, Remainder %d, Dividend %d, Divisor %d", q, r, 4, 3);
+    }
+
+
+    void testRegex()
+    {
+        String testStr = "Hello {{name}}, {{ \n\
+        This must match {{Match2}}{\n\
+            {{name}}{{{{HelloMe}}}}\n\
+            }\n\
+        }};";
+
+        std::vector<std::smatch> allMatches;
+        try
+        {
+            std::regex searchPattern("\\{\\{([^{}]+)\\}\\}", std::regex_constants::ECMAScript);
+
+            auto startItr = testStr.cbegin();
+            std::smatch matches;
+            while (std::regex_search(startItr, testStr.cend(), matches, searchPattern))
+            {
+                allMatches.push_back(matches);
+                Logger::log("Test", "Matched n = %d", matches.size());
+                Logger::log("Test", "Prefix : %s", matches.prefix().str());
+                for (auto& match : matches)
+                {
+                    Logger::log("Test", "Match : %s", match.str());
+                }
+                Logger::log("Test", "suffix : %s", matches.suffix().str());
+                startItr = matches.suffix().first;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            Logger::error("Test", "Error : %s", e.what());
+        }
+
+
+        for (const std::smatch& match : allMatches)
+        {
+            const std::ssub_match& submatch = match[match.size() - 1];
+            const std::ssub_match& wholesubmatch = match[0];
+            Logger::log("Test", "Must replace with value of %s, from index %d to %d"
+                , submatch.str(), std::distance(testStr.cbegin(), wholesubmatch.first), std::distance(testStr.cbegin(), wholesubmatch.second));
+        }
+
+        std::unordered_map<String, FormatArg> args
+        {
+            {"name" , "Jeslas Pravin"},
+            {"Match2", 8235},
+            {"HelloMe", 123.08}
+        };
+        String formattedVal = StringFormat::formatMustache(testStr, args);
+        Logger::log("Test", "Mustache formatted %s", formattedVal);
     }
 }

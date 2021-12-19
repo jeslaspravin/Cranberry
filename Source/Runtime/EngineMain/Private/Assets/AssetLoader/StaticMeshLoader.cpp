@@ -34,8 +34,8 @@ struct std::hash<tinyobj::index_t> {
 
     size_t operator()(const tinyobj::index_t keyval) const noexcept {
         size_t hashVal = std::hash<int32>{}(keyval.vertex_index);
-        HashUtility::hashCombine(hashVal, std::hash<int32>{}(keyval.texcoord_index));
-        HashUtility::hashCombine(hashVal, std::hash<int32>{}(keyval.normal_index));
+        HashUtility::hashCombine(hashVal, keyval.texcoord_index);
+        HashUtility::hashCombine(hashVal, keyval.normal_index);
         return hashVal;
     }
 };

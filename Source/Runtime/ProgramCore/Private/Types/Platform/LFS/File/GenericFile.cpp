@@ -11,22 +11,25 @@ void* GenericFile::getFileHandleRaw() const
 
 void GenericFile::setPath(const String& fPath)
 {
-    size_t hostDirectoryAt;
-    String pathSeperator;
-    if (fPath.findAny(hostDirectoryAt, pathSeperator, { "/","\\" }, 0, true))
+    String fPathTmp = fPath.replaceAllCopy("\\", "/");
+    // reverse find from last
+    size_t hostDirectoryAt = fPathTmp.rfind('/', fPathTmp.length());
+    // #TODO(Jeslas) : Remove any duplicate consecutive '/'
+    if (hostDirectoryAt != String::npos)
     {
-        directoryPath = { fPath.substr(0, hostDirectoryAt) };
-        fileName = { fPath.substr(hostDirectoryAt + 1) };
+        directoryPath = { fPathTmp.substr(0, hostDirectoryAt) };
+        // Skip the separator char so +1
+        fileName = { fPathTmp.substr(hostDirectoryAt + 1) };
 
         if (fileName.rfind('.') == String::npos)
         {
             fileName = "";
         }
-        fullPath = fPath;
+        fullPath = fPathTmp;
     }
     else // No directory separator found so it must be just file name
     {
-        Logger::error("File", "%s() : File path \"%s\" is invalid", __func__, fPath.getChar());
+        Logger::error("File", "%s() : File path \"%s\" is invalid", __func__, fPathTmp.getChar());
         debugAssert(!"File path is invalid");
     }
 }
@@ -106,6 +109,30 @@ String GenericFile::getFileName() const
 String GenericFile::getHostDirectory() const
 {
     return directoryPath;
+}
+
+String GenericFile::getDirectoryName() const
+{
+    String dirName;
+    if (isDirectory())
+    {
+        size_t directoryAt = fullPath.rfind('/', fullPath.length());
+        if (directoryAt != String::npos)
+        {
+            // Skip the separator char so +1
+            dirName = { fullPath.substr(directoryAt + 1) };
+        }
+    }
+    else
+    {
+        size_t directoryAt = directoryPath.rfind('/', directoryPath.length());
+        if (directoryAt != String::npos)
+        {
+            // Skip the separator char so +1
+            dirName = { directoryPath.substr(directoryAt + 1) };
+        }
+    }
+    return dirName;
 }
 
 String GenericFile::getFullPath() const

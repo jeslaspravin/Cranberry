@@ -146,7 +146,8 @@ void WindowsFile::seekBegin() const
 
 void WindowsFile::seek(const int64& pointer) const
 {
-    if (getFileHandleRaw()) {
+    if (getFileHandleRaw())
+    {
         LARGE_INTEGER newPointer;
         newPointer.QuadPart = pointer;
 
@@ -156,7 +157,8 @@ void WindowsFile::seek(const int64& pointer) const
 
 void WindowsFile::offsetCursor(const int64& offset) const
 {
-    if (getFileHandleRaw()) {
+    if (getFileHandleRaw()) 
+    {
         LARGE_INTEGER newOffset;
         newOffset.QuadPart = offset;
 
@@ -164,9 +166,30 @@ void WindowsFile::offsetCursor(const int64& offset) const
     }
 }
 
+bool WindowsFile::setFileSize(const int64& newSize) const
+{
+    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
+    {
+        return false;
+    }
+
+    uint64 filePointerCache = filePointer();
+    seek(newSize);
+    
+    bool bResized = false;
+    if (SetEndOfFile((HANDLE)getFileHandleRaw()) == TRUE)
+    {
+        filePointerCache = Math::min(newSize, filePointerCache);
+        bResized = true;
+    }
+    seek(filePointerCache);
+    return bResized;
+}
+
 void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*= (~0u)*/) const
 {
-    if (!getFileHandleRaw() && !(fileFlags & EFileFlags::Read)) {
+    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
+    {
         return;
     }
 
@@ -196,7 +219,8 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*=
 
 void WindowsFile::write(const ArrayView<uint8>& writeBytes) const
 {
-    if (!getFileHandleRaw() || (fileFlags & EFileFlags::Write) == 0) {
+    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
+    {
         return;
     }
 

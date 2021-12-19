@@ -3,9 +3,7 @@
 #include "Logger/Logger.h"
 #include "Modules/ModuleManager.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
-#include "Types/Platform/PlatformFunctions.h"
 #include "TestCode.h"
-
 
 int32 main(int32 argsc, AChar** args)
 {
@@ -20,14 +18,9 @@ int32 main(int32 argsc, AChar** args)
         srcDir = args[i];
     }
 
-    void* procHandle = PlatformFunctions::getCurrentProcessHandle();
-    uint32 modulesSize;
-    PlatformFunctions::getAllModules(procHandle, nullptr, modulesSize);
-    std::vector<LibPointerPtr> libptrs(modulesSize);
-    PlatformFunctions::getAllModules(procHandle, libptrs.data(), modulesSize);
-    libptrs.resize(modulesSize);
-
-    TestCode::testCode(srcDir);
+    //TestCode::testLibClangParsing(srcDir);
+    TestCode::testTypesAndProperties();
+    TestCode::testRegex();
 
     ModuleManager::get()->unloadModule("ProgramCore");
     Logger::flushStream();

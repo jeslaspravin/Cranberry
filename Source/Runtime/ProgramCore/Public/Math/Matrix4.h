@@ -33,8 +33,8 @@ public:
     Matrix4(const Vector3D& scale);
     Matrix4(const Matrix4& other);
     Matrix4(Matrix4&& other);
-    void operator=(const Matrix4& other);
-    void operator=(Matrix4&& other);
+    Matrix4& operator=(const Matrix4& other);
+    Matrix4& operator=(Matrix4&& other);
 
     Matrix4Col& operator[](uint32 colIndex);
     Matrix4Col operator[](uint32 colIndex) const;
@@ -43,7 +43,7 @@ public:
     Vector4D operator*(const Vector4D& transformingVector) const;
     Vector3D operator*(const Vector3D& transformingVector) const;
     Matrix4 operator*(const Matrix4& b) const;
-    void operator*=(const Matrix4& b);
+    Matrix4& operator*=(const Matrix4& b);
 
     Matrix4 inverse() const;
     float determinant() const;
@@ -51,21 +51,21 @@ public:
 
     // Component wise operations
     Matrix4 operator|(const Matrix4& b) const;
-    void operator|=(const Matrix4& b);
+    Matrix4& operator|=(const Matrix4& b);
     Matrix4 operator/(const Matrix4& b) const;
-    void operator/=(const Matrix4& b);
+    Matrix4& operator/=(const Matrix4& b);
     Matrix4 operator-(const Matrix4& b) const;
-    void operator-=(const Matrix4& b);
+    Matrix4& operator-=(const Matrix4& b);
     Matrix4 operator+(const Matrix4& b) const;
-    void operator+=(const Matrix4& b);
+    Matrix4& operator+=(const Matrix4& b);
     Matrix4 operator*(const float& scalar) const;
-    void operator*=(const float& scalar);
+    Matrix4& operator*=(const float& scalar);
     Matrix4 operator/(const float& scalar) const;
-    void operator/=(const float& scalar);
+    Matrix4& operator/=(const float& scalar);
     Matrix4 operator-(const float& scalar) const;
-    void operator-=(const float& scalar);
+    Matrix4& operator-=(const float& scalar);
     Matrix4 operator+(const float& scalar) const;
-    void operator+=(const float& scalar);
+    Matrix4& operator+=(const float& scalar);
 
 public:
     static const Matrix4 IDENTITY;

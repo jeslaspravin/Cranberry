@@ -1,7 +1,8 @@
 include(${cmake_script_dir}/EngineProjectMacros.cmake)
 
 # Since Clang creates more targets
-set (CMAKE_FOLDER Tools/CppReflection)
+get_filename_component(directory_name ${CMAKE_CURRENT_LIST_DIR} NAME)
+set (CMAKE_FOLDER Tools/${directory_name})
 
 # Finding LLVM libraries
 find_package(LLVM 13
@@ -30,6 +31,7 @@ set(private_includes
 )
 set(private_modules
     ProgramCore
+    ReflectionRuntime
 )
 
 generate_cpp_console_project()
