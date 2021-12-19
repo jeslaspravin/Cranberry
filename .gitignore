@@ -39,6 +39,10 @@ bld/
 *[Gg]enerated/
 *[Bb]uild/
 
+# Temporary folders
+[Tt]emp/
+[Tt]mp/
+
 # External dependencies
 [Ee]xternal
 

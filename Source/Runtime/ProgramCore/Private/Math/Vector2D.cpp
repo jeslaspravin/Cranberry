@@ -34,14 +34,16 @@ Vector2D::Vector2D(const Vector3D& other)
     : value(other.x(), other.y())
 {}
 
-void Vector2D::operator=(const Vector2D & other)
+Vector2D& Vector2D::operator=(const Vector2D & other)
 {
     value = other.value;
+    return *this;
 }
 
-void Vector2D::operator=(Vector2D && other)
+Vector2D& Vector2D::operator=(Vector2D && other)
 {
     value = std::move(other.value);
+    return *this;
 }
 
 float& Vector2D::x()
@@ -96,9 +98,10 @@ Vector2D Vector2D::operator*(const Vector2D& b) const
     return Vector2D(value * b.value);
 }
 
-void Vector2D::operator*=(const Vector2D& b)
+Vector2D& Vector2D::operator*=(const Vector2D& b)
 {
     value *= b.value;
+    return *this;
 }
 
 Vector2D Vector2D::operator*(const float& scalar) const
@@ -106,9 +109,10 @@ Vector2D Vector2D::operator*(const float& scalar) const
     return Vector2D(value * scalar);
 }
 
-void Vector2D::operator*=(const float& scalar)
+Vector2D& Vector2D::operator*=(const float& scalar)
 {
     value *= scalar;
+    return *this;
 }
 
 Vector2D Vector2D::operator/(const Vector2D& b) const
@@ -116,9 +120,10 @@ Vector2D Vector2D::operator/(const Vector2D& b) const
     return Vector2D(value / b.value);
 }
 
-void Vector2D::operator/=(const Vector2D& b)
+Vector2D& Vector2D::operator/=(const Vector2D& b)
 {
     value /= b.value;
+    return *this;
 }
 
 Vector2D Vector2D::operator/(const float& scalar) const
@@ -126,9 +131,10 @@ Vector2D Vector2D::operator/(const float& scalar) const
     return Vector2D(value / scalar);
 }
 
-void Vector2D::operator/=(const float& scalar)
+Vector2D& Vector2D::operator/=(const float& scalar)
 {
     value /= scalar;
+    return *this;
 }
 
 Vector2D Vector2D::operator-(const Vector2D& b) const
@@ -136,9 +142,10 @@ Vector2D Vector2D::operator-(const Vector2D& b) const
     return Vector2D(value - b.value);
 }
 
-void Vector2D::operator-=(const Vector2D& b)
+Vector2D& Vector2D::operator-=(const Vector2D& b)
 {
     value -= b.value;
+    return *this;
 }
 
 Vector2D Vector2D::operator-(const float& scalar) const
@@ -146,9 +153,10 @@ Vector2D Vector2D::operator-(const float& scalar) const
     return Vector2D(value - scalar);
 }
 
-void Vector2D::operator-=(const float& scalar)
+Vector2D& Vector2D::operator-=(const float& scalar)
 {
     value -= scalar;
+    return *this;
 }
 
 Vector2D Vector2D::operator-() const
@@ -161,9 +169,10 @@ Vector2D Vector2D::operator+(const Vector2D& b) const
     return Vector2D(value + b.value);
 }
 
-void Vector2D::operator+=(const Vector2D& b)
+Vector2D& Vector2D::operator+=(const Vector2D& b)
 {
     value += b.value;
+    return *this;
 }
 
 Vector2D Vector2D::operator+(const float& scalar) const
@@ -171,9 +180,10 @@ Vector2D Vector2D::operator+(const float& scalar) const
     return Vector2D(value + scalar);
 }
 
-void Vector2D::operator+=(const float& scalar)
+Vector2D& Vector2D::operator+=(const float& scalar)
 {
     value += scalar;
+    return *this;
 }
 
 bool Vector2D::isSame(const Vector2D& b, float epsilon /*= SMALL_EPSILON*/) const

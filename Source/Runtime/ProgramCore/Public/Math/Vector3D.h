@@ -28,8 +28,8 @@ public:
     // Construct from v4d x,y,z
     Vector3D(const Vector4D& other);
     Vector3D(Vector3D&& other);
-    void operator=(const Vector3D& other);
-    void operator=(Vector3D&& other);
+    Vector3D& operator=(const Vector3D& other);
+    Vector3D& operator=(Vector3D&& other);
 
     float& x();
     float& y();
@@ -46,21 +46,21 @@ public:
     Vector3D operator^(const Vector3D& b) const;
     // Component wise operations
     Vector3D operator*(const Vector3D& b) const;
-    void operator*=(const Vector3D& b);
+    Vector3D& operator*=(const Vector3D& b);
     Vector3D operator/(const Vector3D& b) const;
-    void operator/=(const Vector3D& b);
+    Vector3D& operator/=(const Vector3D& b);
     Vector3D operator-(const Vector3D& b) const;
-    void operator-=(const Vector3D& b);
+    Vector3D& operator-=(const Vector3D& b);
     Vector3D operator+(const Vector3D& b) const;
-    void operator+=(const Vector3D& b);
+    Vector3D& operator+=(const Vector3D& b);
     Vector3D operator*(const float& scalar) const;
-    void operator*=(const float& scalar);
+    Vector3D& operator*=(const float& scalar);
     Vector3D operator/(const float& scalar) const;
-    void operator/=(const float& scalar);
+    Vector3D& operator/=(const float& scalar);
     Vector3D operator-(const float& scalar) const;
-    void operator-=(const float& scalar);
+    Vector3D& operator-=(const float& scalar);
     Vector3D operator+(const float& scalar) const;
-    void operator+=(const float& scalar);
+    Vector3D& operator+=(const float& scalar);
     Vector3D operator-() const;
     bool isSame(const Vector3D& b, float epsilon = SMALL_EPSILON) const;
     Vector3D normalized() const;

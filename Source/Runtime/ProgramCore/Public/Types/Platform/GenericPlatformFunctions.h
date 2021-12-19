@@ -1,7 +1,7 @@
 #pragma once
 #include "Types/CoreTypes.h"
 #include "String/String.h"
-#include "GenericPlatformTypes.h"
+#include "Types/Platform/GenericPlatformTypes.h"
 
 template <typename PlatformClass>
 class GenericPlatformFunctions

@@ -33,14 +33,16 @@ Vector4D::Vector4D(const Vector3D& xyz, const float& w)
     : value(xyz.x(), xyz.y(), xyz.z(), w)
 {}
 
-void Vector4D::operator=(const Vector4D & other)
+Vector4D& Vector4D::operator=(const Vector4D & other)
 {
     value = other.value;
+    return *this;
 }
 
-void Vector4D::operator=(Vector4D && other)
+Vector4D& Vector4D::operator=(Vector4D && other)
 {
     value = std::move(other.value);
+    return *this;
 }
 
 float& Vector4D::x()
@@ -110,9 +112,10 @@ Vector4D Vector4D::operator*(const Vector4D& b) const
     return Vector4D(value * b.value);
 }
 
-void Vector4D::operator*=(const Vector4D& b)
+Vector4D& Vector4D::operator*=(const Vector4D& b)
 {
     value *= b.value;
+    return *this;
 }
 
 Vector4D Vector4D::operator*(const float& scalar) const
@@ -120,9 +123,10 @@ Vector4D Vector4D::operator*(const float& scalar) const
     return Vector4D(value * scalar);
 }
 
-void Vector4D::operator*=(const float& scalar)
+Vector4D& Vector4D::operator*=(const float& scalar)
 {
     value *= scalar;
+    return *this;
 }
 
 Vector4D Vector4D::operator/(const Vector4D& b) const
@@ -130,9 +134,10 @@ Vector4D Vector4D::operator/(const Vector4D& b) const
     return Vector4D(value / b.value);
 }
 
-void Vector4D::operator/=(const Vector4D& b)
+Vector4D& Vector4D::operator/=(const Vector4D& b)
 {
     value /= b.value;
+    return *this;
 }
 
 Vector4D Vector4D::operator/(const float& scalar) const
@@ -140,9 +145,10 @@ Vector4D Vector4D::operator/(const float& scalar) const
     return Vector4D(value / scalar);
 }
 
-void Vector4D::operator/=(const float& scalar)
+Vector4D& Vector4D::operator/=(const float& scalar)
 {
     value /= scalar;
+    return *this;
 }
 
 Vector4D Vector4D::operator-(const Vector4D& b) const
@@ -150,9 +156,10 @@ Vector4D Vector4D::operator-(const Vector4D& b) const
     return Vector4D(value - b.value);
 }
 
-void Vector4D::operator-=(const Vector4D& b)
+Vector4D& Vector4D::operator-=(const Vector4D& b)
 {
     value -= b.value;
+    return *this;
 }
 
 Vector4D Vector4D::operator-(const float& scalar) const
@@ -160,9 +167,10 @@ Vector4D Vector4D::operator-(const float& scalar) const
     return Vector4D(value - scalar);
 }
 
-void Vector4D::operator-=(const float& scalar)
+Vector4D& Vector4D::operator-=(const float& scalar)
 {
     value -= scalar;
+    return *this;
 }
 
 Vector4D Vector4D::operator-() const
@@ -175,9 +183,10 @@ Vector4D Vector4D::operator+(const Vector4D& b) const
     return Vector4D(value + b.value);
 }
 
-void Vector4D::operator+=(const Vector4D& b)
+Vector4D& Vector4D::operator+=(const Vector4D& b)
 {
     value += b.value;
+    return *this;
 }
 
 Vector4D Vector4D::operator+(const float& scalar) const
@@ -185,9 +194,10 @@ Vector4D Vector4D::operator+(const float& scalar) const
     return Vector4D(value + scalar);
 }
 
-void Vector4D::operator+=(const float& scalar)
+Vector4D& Vector4D::operator+=(const float& scalar)
 {
     value += scalar;
+    return *this;
 }
 
 bool Vector4D::isSame(const Vector4D& b, float epsilon /*= SMALL_EPSILON*/) const

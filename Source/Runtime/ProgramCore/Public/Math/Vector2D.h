@@ -24,8 +24,8 @@ public:
     Vector2D(const Vector2D& other);
     Vector2D(const Vector3D& other);
     Vector2D(Vector2D&& other);
-    void operator=(const Vector2D& other);
-    void operator=(Vector2D&& other);
+    Vector2D& operator=(const Vector2D& other);
+    Vector2D& operator=(Vector2D&& other);
 
     float& x();
     float& y();
@@ -40,21 +40,21 @@ public:
     float operator^(const Vector2D& b) const;
     // Component wise operations
     Vector2D operator*(const Vector2D& b) const;
-    void operator*=(const Vector2D& b);
+    Vector2D& operator*=(const Vector2D& b);
     Vector2D operator/(const Vector2D& b) const;
-    void operator/=(const Vector2D& b);
+    Vector2D& operator/=(const Vector2D& b);
     Vector2D operator-(const Vector2D& b) const;
-    void operator-=(const Vector2D& b);
+    Vector2D& operator-=(const Vector2D& b);
     Vector2D operator+(const Vector2D& b) const;
-    void operator+=(const Vector2D& b);
+    Vector2D& operator+=(const Vector2D& b);
     Vector2D operator*(const float& scalar) const;
-    void operator*=(const float& scalar);
+    Vector2D& operator*=(const float& scalar);
     Vector2D operator/(const float& scalar) const;
-    void operator/=(const float& scalar);
+    Vector2D& operator/=(const float& scalar);
     Vector2D operator-(const float& scalar) const;
-    void operator-=(const float& scalar);
+    Vector2D& operator-=(const float& scalar);
     Vector2D operator+(const float& scalar) const;
-    void operator+=(const float& scalar);
+    Vector2D& operator+=(const float& scalar);
     Vector2D operator-() const;
 
 

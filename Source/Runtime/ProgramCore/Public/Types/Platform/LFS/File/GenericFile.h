@@ -18,9 +18,13 @@ protected:
     String fileName;
     String fullPath;
 
+    // EFileFlags
     uint8 fileFlags;
+    // EFileSharing
     uint8 sharingMode;
+    // EFileAdditionalFlags
     uint32 attributes;
+    // Platform specific flags do not use if cross platform and not sure if needed
     uint64 advancedFlags;
 
 protected:
@@ -55,8 +59,12 @@ public:
     bool isDirectory() const;
     bool isFile() const;
 
+    // Name of file if any(File name is one with .ext)
     String getFileName() const;
+    // Path of parent directory ignores file name if file or last directory name in path if directory path
     String getHostDirectory() const;
+    // Returns last directory name of full directory path
+    String getDirectoryName() const;
     String getFullPath() const;
 
     // Direct OS specific flags maps directly to OS bits
@@ -82,6 +90,8 @@ public:
     void addAttributes(const uint32& attribs);
     void removeAttributes(const uint32& attribs);
 
+    // Operations after file handle is created
+
     virtual uint64 lastWriteTimeStamp() const = 0;
     virtual uint64 fileSize() const = 0;
     virtual uint64 filePointer() const = 0;
@@ -90,6 +100,7 @@ public:
     virtual void seek(const int64& pointer) const = 0;
     virtual void offsetCursor(const int64& offset) const = 0;
 
+    virtual bool setFileSize(const int64& newSize) const = 0;
     virtual void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const = 0;
     virtual void write(const ArrayView<uint8>& writeBytes) const = 0;
 

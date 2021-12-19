@@ -1,6 +1,6 @@
 #pragma once
 #include "RenderInterface/ShaderCore/ShaderInputOutput.h"
-#include "Reflections/MemberField.h"
+#include "Reflections/Fields.h"
 #include "Types/Containers/ArrayView.h"
 #include "Types/Traits/ValueTraits.h"
 #include "Types/Traits/TypeTraits.h"
@@ -115,7 +115,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     using ShaderBufferTypedField<OuterType>::paramInfo;
     using ShaderBufferTypedField<OuterType>::size;
     using ShaderBufferTypedField<OuterType>::stride;
-    using ArrayType = IndexableType<MemberType>;
+    using ArrayType = IndexableElementType<MemberType>;
 
     using FieldPtr = ClassMemberField<false, OuterType, MemberType>;
     FieldPtr memberPtr;
@@ -136,8 +136,9 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         return sizeof(MemberType)/sizeof(ArrayType);
     }
 
+    // #TODO(Jeslas) : Move this to concepts
     template <typename DataType>
-    constexpr static std::enable_if_t<IsIndexable<DataType>::value, IndexableType<DataType>>* memberDataPtr(DataType& data)
+    constexpr static std::enable_if_t<IsIndexable<DataType>::value, IndexableElementType<DataType>>* memberDataPtr(DataType& data)
     {
         return &data[0];
     }

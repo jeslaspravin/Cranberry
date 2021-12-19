@@ -64,3 +64,50 @@ typedef GenericPlatformTypes::word word;
 typedef GenericPlatformTypes::dword dword;
 
 typedef GenericPlatformTypes::UInt64 UInt64;
+
+// We do not want to clear all previous STATIC_ASSERTS
+#pragma push_macro("STATIC_ASSERT")
+#define STATIC_ASSERT(Stmt) static_assert((Stmt), #Stmt)
+
+STATIC_ASSERT(sizeof(uint8) == 1);
+STATIC_ASSERT(sizeof(uint16) == 2);
+STATIC_ASSERT(sizeof(uint32) == 4);
+STATIC_ASSERT(sizeof(uint64) == 8);
+
+STATIC_ASSERT(sizeof(int8) == 1);
+STATIC_ASSERT(sizeof(int16) == 2);
+STATIC_ASSERT(sizeof(int32) == 4);
+STATIC_ASSERT(sizeof(int64) == 8);
+
+STATIC_ASSERT(sizeof(AChar) == 1);
+// Depends on platform STATIC_ASSERT(sizeof(WChar) == 2); STATIC_ASSERT(sizeof(TChar) == 4);
+STATIC_ASSERT(sizeof(Utf8) == 1);
+STATIC_ASSERT(sizeof(Utf16) == 2);
+STATIC_ASSERT(sizeof(Utf32) == 4);
+STATIC_ASSERT(sizeof(Ucs2) == 2);
+
+STATIC_ASSERT(sizeof(word) == 2);
+STATIC_ASSERT(sizeof(dword) == 4);
+
+STATIC_ASSERT(sizeof(UInt64) == 8);
+
+#undef STATIC_ASSERT
+#pragma pop_macro("STATIC_ASSERT")
+
+union CoreTypesUnion
+{
+    uint8 uInt8Val;
+    uint16 uInt16Val;
+    uint32 uInt32Val;
+    uint64 uInt64Val;
+
+    int8 int8Val;
+    int16 int16Val;
+    int32 int32Val;
+    int64 int64Val;
+
+    float floatVal;
+    double doubleVal;
+
+    bool boolVal;
+};

@@ -33,14 +33,16 @@ Matrix2::Matrix2(const Vector2D& scale)
     : value(scale.x(), 0, 0, scale.y())
 {}
 
-void Matrix2::operator=(const Matrix2& other)
+Matrix2& Matrix2::operator=(const Matrix2& other)
 {
     value = other.value;
+    return *this;
 }
 
-void Matrix2::operator=(Matrix2&& other)
+Matrix2& Matrix2::operator=(Matrix2&& other)
 {
     value = std::move(other.value);
+    return *this;
 }
 
 Matrix2Col& Matrix2::operator[](uint32 colIndex)
@@ -63,9 +65,10 @@ Matrix2 Matrix2::operator*(const Matrix2& b) const
     return value * b.value;
 }
 
-void Matrix2::operator*=(const Matrix2& b)
+Matrix2& Matrix2::operator*=(const Matrix2& b)
 {
     value *= b.value;
+    return *this;
 }
 
 Matrix2 Matrix2::inverse() const
@@ -88,9 +91,10 @@ Matrix2 Matrix2::operator*(const float& scalar) const
     return value * scalar;
 }
 
-void Matrix2::operator*=(const float& scalar)
+Matrix2& Matrix2::operator*=(const float& scalar)
 {
     value *= scalar;
+    return *this;
 }
 
 Matrix2 Matrix2::operator|(const Matrix2& b) const
@@ -98,9 +102,10 @@ Matrix2 Matrix2::operator|(const Matrix2& b) const
     return glm::matrixCompMult(value,b.value);
 }
 
-void Matrix2::operator|=(const Matrix2& b)
+Matrix2& Matrix2::operator|=(const Matrix2& b)
 {
     value = glm::matrixCompMult(value, b.value);
+    return *this;
 }
 
 Matrix2 Matrix2::operator/(const Matrix2& b) const
@@ -108,9 +113,10 @@ Matrix2 Matrix2::operator/(const Matrix2& b) const
     return value / b.value;
 }
 
-void Matrix2::operator/=(const Matrix2& b)
+Matrix2& Matrix2::operator/=(const Matrix2& b)
 {
     value /= b.value;
+    return *this;
 }
 
 Matrix2 Matrix2::operator/(const float& scalar) const
@@ -118,9 +124,10 @@ Matrix2 Matrix2::operator/(const float& scalar) const
     return Matrix2(value / scalar);
 }
 
-void Matrix2::operator/=(const float& scalar)
+Matrix2& Matrix2::operator/=(const float& scalar)
 {
     value /= scalar;
+    return *this;
 }
 
 Matrix2 Matrix2::operator-(const Matrix2& b) const
@@ -128,9 +135,10 @@ Matrix2 Matrix2::operator-(const Matrix2& b) const
     return (value - b.value);
 }
 
-void Matrix2::operator-=(const Matrix2& b)
+Matrix2& Matrix2::operator-=(const Matrix2& b)
 {
     value -= b.value;
+    return *this;
 }
 
 Matrix2 Matrix2::operator-(const float& scalar) const
@@ -138,9 +146,10 @@ Matrix2 Matrix2::operator-(const float& scalar) const
     return (value - scalar);
 }
 
-void Matrix2::operator-=(const float& scalar)
+Matrix2& Matrix2::operator-=(const float& scalar)
 {
     value -= scalar;
+    return *this;
 }
 
 Matrix2 Matrix2::operator-() const
@@ -153,9 +162,10 @@ Matrix2 Matrix2::operator+(const Matrix2& b) const
     return (value + b.value);
 }
 
-void Matrix2::operator+=(const Matrix2& b)
+Matrix2& Matrix2::operator+=(const Matrix2& b)
 {
     value += b.value;
+    return *this;
 }
 
 Matrix2 Matrix2::operator+(const float& scalar) const
@@ -163,9 +173,10 @@ Matrix2 Matrix2::operator+(const float& scalar) const
     return (value + scalar);
 }
 
-void Matrix2::operator+=(const float& scalar)
+Matrix2& Matrix2::operator+=(const float& scalar)
 {
     value += scalar;
+    return *this;
 }
 
 const Matrix2 Matrix2::IDENTITY{ 1,0 ,0,1 };

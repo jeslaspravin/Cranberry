@@ -17,7 +17,7 @@
                 "CMAKE_INSTALL_PREFIX":
                 {
                     "type": "STRING",
-                    "value": "${sourceDir}/Installed`"
+                    "value": "${sourceDir}/Installed"
                 },
                 "engine_static_modules":
                 {

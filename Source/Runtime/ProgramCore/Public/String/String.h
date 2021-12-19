@@ -37,8 +37,18 @@ public:
         {
             size_t foundAtNew = fromEnd ? rfind(strg, length() - offset) : find(strg, offset);
             if (foundAtNew != npos) {
-                outIndex = (foundAt == npos || (fromEnd ? foundAt<foundAtNew : foundAt>foundAtNew)) ? foundAtNew : foundAt;
-                outFoundString = (foundAt == npos || (fromEnd ? foundAt<foundAtNew : foundAt>foundAtNew)) ? strg : outFoundString;
+                outIndex = (foundAt == npos 
+                    || (fromEnd 
+                        ? foundAt < foundAtNew 
+                        : foundAt > foundAtNew)) 
+                    ? foundAtNew 
+                    : foundAt;
+                outFoundString = (foundAt == npos 
+                    || (fromEnd 
+                        ? foundAt < foundAtNew 
+                        : foundAt > foundAtNew)) 
+                    ? strg 
+                    : outFoundString;
                 foundAt = outIndex;
             }
         }
@@ -208,14 +218,39 @@ struct IsStringUnqualified<std::string> : std::true_type {};
 template<>
 struct IsStringUnqualified<AChar> : std::true_type {};
 // For char[] arrays
-template<typename T, int32 Num>
-struct IsStringUnqualified<T[Num]> : IsStringUnqualified<typename std::remove_cv<typename std::remove_reference<T>::type>::type> {};
+template<typename T, uint32 Num>
+struct IsStringUnqualified<T[Num]> : IsStringUnqualified<std::remove_cvref_t<T>> {};
 // for char* pointers
 template<typename T>
-struct IsStringUnqualified<T*> : IsStringUnqualified<typename std::remove_cv<typename std::remove_reference<T>::type>::type> {};
+struct IsStringUnqualified<T*> : IsStringUnqualified<std::remove_cvref_t<T>> {};
 
 template<typename T>
-struct IsString : IsStringUnqualified<typename std::remove_cv<typename std::remove_reference<T>::type>::type> {};
+struct IsString : IsStringUnqualified<std::remove_cvref_t<T>> {};
 
 template <typename... T>
 struct IsStringTypes : std::conjunction<IsString<T>...> {};
+
+
+template <typename T>
+concept StringType = IsString<T>::value;
+template <typename T>
+concept NonStringType = std::negation_v<IsString<T>>;
+
+
+//
+// Allows using character literals as template parameters like below
+// valPrint<"Test">();
+// 
+// template <StringLiteral Val>
+// void valPrint();
+//
+template<size_t N>
+struct StringLiteral 
+{
+    CONST_EXPR StringLiteral(const AChar (&str)[N])
+    {
+        std::copy_n(str, N, value);
+    }
+
+    AChar value[N];
+};

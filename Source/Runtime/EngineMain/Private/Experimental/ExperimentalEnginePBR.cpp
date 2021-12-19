@@ -195,7 +195,7 @@ struct std::hash<GridEntity>
     _NODISCARD size_t operator()(const GridEntity& keyval) const noexcept 
     {
         size_t outHash = HashUtility::hash(keyval.type);
-        HashUtility::hashCombine<decltype(keyval.idx)>(outHash, keyval.idx);
+        HashUtility::hashCombine(outHash, keyval.idx);
         return outHash;
     }
 };

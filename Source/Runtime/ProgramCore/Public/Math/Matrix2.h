@@ -20,8 +20,8 @@ public:
     Matrix2(const Vector2D& scale);
     Matrix2(const Matrix2& other);
     Matrix2(Matrix2&& other);
-    void operator=(const Matrix2& other);
-    void operator=(Matrix2&& other);
+    Matrix2& operator=(const Matrix2& other);
+    Matrix2& operator=(Matrix2&& other);
 
     Matrix2Col& operator[](uint32 colIndex);
     Matrix2Col operator[](uint32 colIndex) const;
@@ -29,7 +29,7 @@ public:
 public:
     Vector2D operator*(const Vector2D& transformingVector) const;
     Matrix2 operator*(const Matrix2& b) const;
-    void operator*=(const Matrix2& b);
+    Matrix2& operator*=(const Matrix2& b);
 
     Matrix2 inverse() const;
     float determinant() const;
@@ -37,21 +37,21 @@ public:
 
     // Component wise operations
     Matrix2 operator|(const Matrix2& b) const;
-    void operator|=(const Matrix2& b);
+    Matrix2& operator|=(const Matrix2& b);
     Matrix2 operator/(const Matrix2& b) const;
-    void operator/=(const Matrix2& b);
+    Matrix2& operator/=(const Matrix2& b);
     Matrix2 operator-(const Matrix2& b) const;
-    void operator-=(const Matrix2& b);
+    Matrix2& operator-=(const Matrix2& b);
     Matrix2 operator+(const Matrix2& b) const;
-    void operator+=(const Matrix2& b);
+    Matrix2& operator+=(const Matrix2& b);
     Matrix2 operator*(const float& scalar) const;
-    void operator*=(const float& scalar);
+    Matrix2& operator*=(const float& scalar);
     Matrix2 operator/(const float& scalar) const;
-    void operator/=(const float& scalar);
+    Matrix2& operator/=(const float& scalar);
     Matrix2 operator-(const float& scalar) const;
-    void operator-=(const float& scalar);
+    Matrix2& operator-=(const float& scalar);
     Matrix2 operator+(const float& scalar) const;
-    void operator+=(const float& scalar);
+    Matrix2& operator+=(const float& scalar);
     Matrix2 operator-() const;
 public:
     static const Matrix2 IDENTITY;

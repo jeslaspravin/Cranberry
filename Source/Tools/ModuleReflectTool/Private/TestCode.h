@@ -64,5 +64,7 @@ namespace CppReflectionParser
 
 namespace TestCode
 {
-    void testCode(String srcDir) noexcept;
+    void testLibClangParsing(String srcDir) noexcept;
+    void testTypesAndProperties();
+    void testRegex();
 }
