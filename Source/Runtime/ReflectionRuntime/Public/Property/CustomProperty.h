@@ -39,7 +39,7 @@ public:
     template <typename ConstructType, typename... CTorArgs>
     FORCE_INLINE ConstructType* constructDataRetriever(CTorArgs&&... args)
     {
-        ConstructType* retriever = (new ConstructType(std::forward<CTorArgs>(args)...))->setOwnerProperty(this);
+        ConstructType* retriever = static_cast<ConstructType*>((new ConstructType(std::forward<CTorArgs>(args)...))->setOwnerProperty(this));
         dataRetriever = retriever;
         return retriever;
     }
@@ -124,10 +124,12 @@ class REFLECTIONRUNTIME_EXPORT IteratorElementWrapper : public RefCountable
 {
 public:
     virtual void* getElement() const = 0;
+    // Gets const element in iterators like set or unordered set where it is not possible to edit the element in the container
+    virtual const void* getConstElement() const = 0;
     // ++Iterator
-    virtual void iterateFwd() const = 0;
+    virtual void iterateFwd() = 0;
     // --Iterator
-    virtual void iterateBwd() const = 0;
+    virtual void iterateBwd() = 0;
     // Iterator != end
     virtual bool isValid() const = 0;
 };
@@ -167,11 +169,15 @@ public:
     {
         return &(*itr);
     }
-    void iterateFwd() const override
+    const void* getConstElement() const override
+    {
+        return &(*itr);
+    }
+    void iterateFwd() override
     {
         ++itr;
     }
-    void iterateBwd() const override
+    void iterateBwd() override
     {
         --itr;
     }
@@ -198,7 +204,7 @@ class MapDataRetrieverImpl : public IterateableDataRetriever
 public:
     IteratorElementWrapperRef createIterator(void* object) const override
     {
-        return IteratorElementWrapperRef(MapIteratorWrapperImpl<MapType>((MapType*)(object)));
+        return IteratorElementWrapperRef(new MapIteratorWrapperImpl<MapType>((MapType*)(object)));
     }
 };
 
@@ -255,13 +261,25 @@ public:
     /* IteratorElementWrapper overrides */
     void* getElement() const override
     {
+        if CONST_EXPR (std::is_const_v<UnderlyingTypeWithConst<ContainerType::iterator::reference>>)
+        {
+            return nullptr;
+        }
+        else
+        {
+            return &(*itr);
+        }
+    }
+    const void* getConstElement() const override
+    {
         return &(*itr);
     }
-    void iterateFwd() const override
+
+    void iterateFwd() override
     {
         ++itr;
     }
-    void iterateBwd() const override
+    void iterateBwd() override
     {
         --itr;
     }
@@ -291,11 +309,16 @@ public:
     {
         return &(*itr);
     }
-    void iterateFwd() const override
+    const void* getConstElement() const override
+    {
+        return &(*itr);
+    }
+
+    void iterateFwd() override
     {
         ++itr;
     }
-    void iterateBwd() const override
+    void iterateBwd() override
     {
         --itr;
     }
@@ -319,12 +342,12 @@ private:
     static IteratorElementWrapperRef createIteratorImpl(void* object)
         requires Indexable<ContainerType>
     {
-        return IteratorElementWrapperRef(IndexableContainerIteratorWrapperImpl<ContainerType>((ContainerType*)(object)));
+        return IteratorElementWrapperRef(new IndexableContainerIteratorWrapperImpl<ContainerType>((ContainerType*)(object)));
     }
     static IteratorElementWrapperRef createIteratorImpl(void* object) 
         requires (!Indexable<ContainerType>)
     {
-        return IteratorElementWrapperRef(ContainerIteratorWrapperImpl<ContainerType>((ContainerType*)(object)));
+        return IteratorElementWrapperRef(new ContainerIteratorWrapperImpl<ContainerType>((ContainerType*)(object)));
     }
 public:
     IteratorElementWrapperRef createIterator(void* object) const override
@@ -333,7 +356,7 @@ public:
     }
 };
 
-class REFLECTIONRUNTIME_EXPORT ContainerProperty final : public CustomProperty
+class REFLECTIONRUNTIME_EXPORT ContainerProperty : public CustomProperty
 {
 public:
     const BaseProperty* elementProp;

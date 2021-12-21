@@ -11,7 +11,7 @@ using IndexableElementType = std::conditional_t<std::is_pointer_v<DataType>, std
 
 // Indexable checks for both compound types and dynamic pointer array and native array
 template <typename DataType>
-concept IndexableCompound = requires(DataType & val, uint64 idx)
+concept IndexableCompound = requires(DataType& val, uint64 idx)
     {
         DataType::value_type;
         { val[idx] } -> std::convertible_to<typename DataType::value_type>;

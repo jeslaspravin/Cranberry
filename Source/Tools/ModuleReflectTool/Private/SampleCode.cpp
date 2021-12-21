@@ -1,13 +1,20 @@
-#include "TestCode.h"
+#include "SampleCode.h"
 #include "Types/PropertyTypes.h"
 #include "Types/FunctionTypes.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/PlatformFunctions.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Containers/ArrayView.h"
+#include "Modules/ModuleManager.h"
+#include "IReflectionRuntime.h"
+#include "Property/PropertyHelper.h"
+#include "Types/TypesInfo.h"
+#include "Property/Property.h"
+#include "Property/ContainerProperty.h"
 
 #include <iostream>
 #include <regex>
+#include <set>
 
 // Logger overrides
 std::ostream& operator<<(std::ostream& stream, const CppReflectionParser::CXStringRef& str)
@@ -1463,7 +1470,7 @@ namespace CppReflectionParser
 
 }
 
-namespace TestCode
+namespace SampleCode
 {
     void testLibClangParsing(String srcDir) noexcept
     {
@@ -1549,21 +1556,21 @@ namespace TestCode
     {
         Logger::log("Test", "Test type info \n%s\n%s\n%s\n%s\n%s\n%s\n%s"
             // Referenced variable is const
-            , typeInfoFrom<const int32&>()
-            , typeInfoFrom<const int32&&>()
+            , *typeInfoFrom<const int32&>()
+            , *typeInfoFrom<const int32&&>()
             // Pointer to const variable
-            , typeInfoFrom<const int32*>()
+            , *typeInfoFrom<const int32*>()
             // Const pointer to const variable
-            , typeInfoFrom<int32 const* const>()
+            , *typeInfoFrom<int32 const* const>()
             // Const reference to pointer to const variable
-            , typeInfoFrom<int32 const* const&>()
-            , typeInfoFrom<int32 const* const&&>()
-            , typeInfoFrom<std::vector<int32>&>()
+            , *typeInfoFrom<int32 const* const&>()
+            , *typeInfoFrom<int32 const* const&&>()
+            , *typeInfoFrom<std::vector<int32>&>()
         );
         Logger::log("Test", "Test type info %d, %d, %d"
-            , typeInfoFrom<const int32&>() == typeInfoFrom<const int32&&>()
-            , typeInfoFrom<const int32*>() == typeInfoFrom<int32 const* const&>()
-            , typeInfoFrom<int32 const* const&>() == typeInfoFrom<int32 const* const&&>()
+            , *typeInfoFrom<const int32&>() == *typeInfoFrom<const int32&&>()
+            , *typeInfoFrom<const int32*>() == *typeInfoFrom<int32 const* const&>()
+            , *typeInfoFrom<int32 const* const&>() == *typeInfoFrom<int32 const* const&&>()
         );
 
         auto testList = typeInfoListFrom<const int32&, const int32&&, const int32*, int32 const* const, int32 const* const&, int32 const* const&&>();
@@ -1576,7 +1583,7 @@ namespace TestCode
         MemberFieldWrapperImpl<TestDataProperties, int32*> intPtrProp(&TestDataProperties::intPtr);
         MemberFieldWrapperImpl<TestDataProperties, const int32*> constIntPtrProp(&TestDataProperties::constIntPtr);
         GlobalFieldWrapperImpl<String> staticValProp(&TestDataProperties::staticVal);
-        GlobalFieldWrapperImpl<String> globalValProp(&TestCode::globalVal);
+        GlobalFieldWrapperImpl<String> globalValProp(&SampleCode::globalVal);
 
         Logger::log("Test", "Before setting values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
             *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr
@@ -1686,5 +1693,241 @@ namespace TestCode
         };
         String formattedVal = StringFormat::formatMustache(testStr, args);
         Logger::log("Test", "Mustache formatted %s", formattedVal);
+
+        Logger::log("Test", PropertyHelper::getValidSymbolName("class <Niown>>"));
+    }
+
+    class TestPropertyClass
+    {
+    public:
+        struct TestInnerStruct
+        {
+            std::vector<String> names;
+            uint32 numNames;
+        };
+    public:
+        std::map<int32, TestInnerStruct> idToSection;
+        String newNameStr;
+
+        TestPropertyClass* nextClass;
+        std::set<uint64> handles;
+
+        static int32 staticInteger;
+
+    public:
+        TestPropertyClass(String newName)
+            : newNameStr(newName)
+        {}
+
+        void printNewNameStr() const
+        {
+            Logger::log("TestPropertyClass", "%s() : New Name str %s", __func__, newNameStr);
+        }
+    };
+    int32 TestPropertyClass::staticInteger = 8235;
+
+    struct RegisterPropertyFactory_TestPropertyClass
+    {
+        using ThisType = RegisterPropertyFactory_TestPropertyClass;
+        RegisterPropertyFactory_TestPropertyClass()
+        {
+            // Just for testing, Since only runtime game/engine modules can have reflected data
+            // Tools do not have reflection
+            ModuleManager::get()->loadModule("ReflectionRuntime");
+
+            IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<TestPropertyClass*>()
+                , { &ThisType::createTestPropertyClassPtrProperty, &ThisType::initTestPropertyClassPtrProperty });
+            IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>()
+                , { &ThisType::createstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property, &ThisType::initstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property });
+            IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>()
+                , { &ThisType::createstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property, &ThisType::initstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property });
+            IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::map<int32, TestPropertyClass::TestInnerStruct>>()
+                , { &ThisType::createstd__map_int32__TestPropertyClass__TestInnerStruct_Property, &ThisType::initstd__map_int32__TestPropertyClass__TestInnerStruct_Property });
+            IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::set<uint64>>()
+                , { &ThisType::createstd__set_uint64_Property, &ThisType::initstd__set_uint64_Property });
+
+            IReflectionRuntimeModule::get()->registerClassFactory("TestPropertyClass", typeInfoFrom<TestPropertyClass>()
+                , { &ThisType::createTestPropertyClassProperty, &ThisType::initTestPropertyClassProperty });
+        }
+
+        static BaseProperty* createTestPropertyClassPtrProperty()
+        {
+            PointerProperty* prop = (new PointerProperty("TestPropertyClass*", typeInfoFrom<TestPropertyClass*>()));
+            return prop;
+        }
+        static void initTestPropertyClassPtrProperty(BaseProperty* prop)
+        {
+            PointerProperty* p = static_cast<PointerProperty*>(prop);
+            p->setPointedType(IReflectionRuntimeModule::getClassType<TestPropertyClass>());
+        }
+
+        static BaseProperty* createstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property()
+        {
+            BaseProperty* prop = new PairProperty("std::pair<const int32, TestPropertyClass::TestInnerStruct>", typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>());
+            return prop;
+        }
+        static void initstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property(BaseProperty* prop)
+        {
+            PairProperty* p = static_cast<PairProperty*>(prop);
+            p->setFirstProperty(IReflectionRuntimeModule::getType<const int32>());
+            p->setSecondProperty(IReflectionRuntimeModule::getType<TestPropertyClass::TestInnerStruct>());
+            p->constructDataRetriever<PairDataRetrieverImpl<const int32, TestPropertyClass::TestInnerStruct>>();
+        }
+
+        static BaseProperty* createstd__set_uint64_Property()
+        {
+            BaseProperty* prop = new ContainerPropertyImpl<std::set<uint64>>("std::set<uint64>", typeInfoFrom<std::set<uint64>>());
+            return prop;
+        }
+        static void initstd__set_uint64_Property(BaseProperty* prop)
+        {
+            ContainerPropertyImpl<std::set<uint64>>* p = static_cast<ContainerPropertyImpl<std::set<uint64>>*>(prop);
+            p->setElementProperty(IReflectionRuntimeModule::getType<std::set<uint64>>());
+            p->constructDataRetriever<ContainerRetrieverImpl<std::set<uint64>>>();
+        }
+
+        static BaseProperty* createstd__map_int32__TestPropertyClass__TestInnerStruct_Property()
+        {
+            BaseProperty* prop = new MapProperty("std::map<int32, TestPropertyClass::TestInnerStruct>", typeInfoFrom<std::map<int32, TestPropertyClass::TestInnerStruct>>());
+            return prop;
+        }
+        static void initstd__map_int32__TestPropertyClass__TestInnerStruct_Property(BaseProperty* prop)
+        {
+            MapProperty* p = static_cast<MapProperty*>(prop);
+            p->setElementProperty(IReflectionRuntimeModule::getType<std::pair<const int32, TestPropertyClass::TestInnerStruct>>());
+            p->setKeyProperty(IReflectionRuntimeModule::getType<int32>());
+            p->setValueProperty(IReflectionRuntimeModule::getType<TestPropertyClass::TestInnerStruct>());
+            p->constructDataRetriever<MapDataRetrieverImpl<std::map<int32, TestPropertyClass::TestInnerStruct>>>();
+        }
+
+        static TestPropertyClass* TestPropertyClassCtor(String newName)
+        {
+            return new TestPropertyClass(newName);
+        }
+        static ClassProperty* createTestPropertyClassProperty()
+        {
+            ClassProperty* prop = (new ClassProperty("TestPropertyClass", typeInfoFrom<TestPropertyClass>()));
+            return prop;
+        }
+        static void initTestPropertyClassProperty(ClassProperty* prop)
+        {
+            prop->addCtorPtr()
+                ->setFieldAccessor(EPropertyAccessSpecifier::Public)
+                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<TestPropertyClass*>())
+                ->addFunctionParamProperty("newName", IReflectionRuntimeModule::getType<String>())
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<TestPropertyClass*, String>>(&ThisType::TestPropertyClassCtor);
+            prop->addMemberFunc("printNewNameStr")
+                ->setFieldAccessor(EPropertyAccessSpecifier::Public)
+                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void>())
+                ->constructFuncPointer<MemberFunctionWrapperImpl<const TestPropertyClass, void>>(&TestPropertyClass::printNewNameStr);
+
+            prop->addStaticField("staticInteger")
+                ->setFieldAccessor(EPropertyAccessSpecifier::Public)
+                ->setField(IReflectionRuntimeModule::getType<int32>())
+                ->constructFieldPtr<GlobalFieldWrapperImpl<int32>>(&TestPropertyClass::staticInteger);
+            
+            prop->addMemberField("idToSection")
+                ->setFieldAccessor(EPropertyAccessSpecifier::Public)
+                ->setField(IReflectionRuntimeModule::getType<std::map<int32, TestPropertyClass::TestInnerStruct>>())
+                ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, std::map<int32, TestPropertyClass::TestInnerStruct>>>(&TestPropertyClass::idToSection);
+
+            prop->addMemberField("newNameStr")
+                ->setFieldAccessor(EPropertyAccessSpecifier::Public)
+                ->setField(IReflectionRuntimeModule::getType<String>())
+                ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, String>>(&TestPropertyClass::newNameStr);
+
+            prop->addMemberField("nextClass")
+                ->setFieldAccessor(EPropertyAccessSpecifier::Public)
+                ->setField(IReflectionRuntimeModule::getType<TestPropertyClass*>())
+                ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, TestPropertyClass*>>(&TestPropertyClass::nextClass);
+
+            prop->addMemberField("handles")
+                ->setFieldAccessor(EPropertyAccessSpecifier::Public)
+                ->setField(IReflectionRuntimeModule::getType<std::set<uint64>>())
+                ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, std::set<uint64>>>(&TestPropertyClass::handles);
+        }
+    } __zzz__RegisterPropertyFactory_TestPropertyClass;
+
+    struct RegisterPropertyFactory_TestPropertyClass_TestInnerStruct
+    {
+        using ThisType = RegisterPropertyFactory_TestPropertyClass_TestInnerStruct;
+        RegisterPropertyFactory_TestPropertyClass_TestInnerStruct()
+        {
+            IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::vector<String>>()
+                , { &ThisType::createstd_vector_StringProperty, &ThisType::initstd_vector_StringProperty });
+
+            IReflectionRuntimeModule::get()->registerClassFactory("TestPropertyClass::TestInnerStruct", typeInfoFrom<TestPropertyClass::TestInnerStruct>()
+                , { &ThisType::createTestPropertyClass_TestInnerStructProperty, &ThisType::initTestPropertyClass_TestInnerStructProperty });
+        }
+
+        static BaseProperty* createstd_vector_StringProperty()
+        {
+            BaseProperty* prop = new ContainerPropertyImpl<std::vector<String>>("std::vector<String>", typeInfoFrom<std::vector<String>>());
+            return prop;
+        }
+        static void initstd_vector_StringProperty(BaseProperty* prop)
+        {
+            ContainerPropertyImpl<std::vector<String>>* p = static_cast<ContainerPropertyImpl<std::vector<String>>*>(prop);
+            p->setElementProperty(IReflectionRuntimeModule::getType<String>());
+            p->constructDataRetriever<ContainerRetrieverImpl<std::vector<String>>>();
+        }
+
+        static ClassProperty* createTestPropertyClass_TestInnerStructProperty()
+        {
+            ClassProperty* prop = (new ClassProperty("TestPropertyClass::TestInnerStruct", typeInfoFrom<TestPropertyClass::TestInnerStruct>()));
+            return prop;
+        }
+        static void initTestPropertyClass_TestInnerStructProperty(ClassProperty* prop)
+        {
+            prop->addMemberField("names")
+                ->setFieldAccessor(EPropertyAccessSpecifier::Public)
+                ->setField(IReflectionRuntimeModule::getType<std::vector<String>>())
+                ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass::TestInnerStruct, std::vector<String>>>(&TestPropertyClass::TestInnerStruct::names);
+
+            prop->addMemberField("numNames")
+                ->setFieldAccessor(EPropertyAccessSpecifier::Public)
+                ->setField(IReflectionRuntimeModule::getType<uint32>())
+                ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass::TestInnerStruct, uint32>>(&TestPropertyClass::TestInnerStruct::numNames);
+        }
+
+    } __zzz__RegisterPropertyFactory_TestPropertyClass_TestInnerStruct;
+    void testPropertySystem()
+    {
+        const ClassProperty* prop = IReflectionRuntimeModule::getClassType<TestPropertyClass>();
+        for (const FunctionProperty* ctor : prop->constructors)
+        {
+            String args = "";
+            if (!ctor->funcParamsProp.empty())
+            {
+                args += ctor->funcParamsProp[0].second->name + " " + ctor->funcParamsProp[0].first;
+                for (int32 i = 1; i < ctor->funcParamsProp.size(); ++i)
+                {
+                    args += ", " + ctor->funcParamsProp[i].second->name + " " + ctor->funcParamsProp[i].first;
+                }
+            }
+            Logger::log("Test", "Class %s: CTor %s(%s)", prop->name, ctor->name, args);
+        }
+        for (const FunctionProperty* memFunc : prop->memberFunctions)
+        {
+            String args = "";
+            if (!memFunc->funcParamsProp.empty())
+            {
+                args += memFunc->funcParamsProp[0].second->name + " " + memFunc->funcParamsProp[0].first;
+                for (int32 i = 1; i < memFunc->funcParamsProp.size(); ++i)
+                {
+                    args += ", " + memFunc->funcParamsProp[i].second->name + " " + memFunc->funcParamsProp[i].first;
+                }
+            }
+            Logger::log("Test", "Class %s: Func %s %s(%s)", prop->name, memFunc->funcReturnProp->name, memFunc->name, args);
+        }
+        for (const FieldProperty* memField : prop->memberFields)
+        {
+            Logger::log("Test", "Class %s: Field %s %s;", prop->name, memField->field->name, memField->name);
+        }
+        TestPropertyClass* object = nullptr;
+        if (static_cast<const GlobalFunctionWrapper*>(prop->constructors[0]->funcPtr)->invoke<TestPropertyClass*, String>(object, "Jeslas Pravin"))
+        {
+            static_cast<const MemberFunctionWrapper*>(prop->memberFunctions[0]->funcPtr)->invokeVoid(object);
+        }
     }
 }

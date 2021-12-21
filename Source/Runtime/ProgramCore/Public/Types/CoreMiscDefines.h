@@ -4,10 +4,16 @@
 #define MACRO_TO_STRING_internal(DefExpanded) #DefExpanded
 #define MACRO_TO_STRING(VarName) MACRO_TO_STRING_internal(VarName)
 
+// If only one bit set in this unsigned integer
 #define ONE_BIT_SET(FlagStatement) ((FlagStatement) && !((FlagStatement) & ((FlagStatement) - 1)))
+// If all check bits is set in this unsigned integer
 #define BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == CheckFlags)
+// If not all check bits is set in this unsigned integer
 #define BIT_NOT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) != CheckFlags)
+// If any bit of check bits is set in this unsigned integer
 #define ANY_BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) > 0)
+// If no bits of check bits is set in this unsigned integer
+#define NO_BITS_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) > 0)
 #define INDEX_TO_FLAG_MASK(Idx) (1 << (Idx))
 
 #define MAKE_INITIALIZER(...) { __VA_ARGS__ }

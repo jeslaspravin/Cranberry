@@ -62,9 +62,10 @@ namespace CppReflectionParser
     void visitNonMemberFunctions(CXCursor cursor, SourceParsedInfo& srcParsedInfo);
 }
 
-namespace TestCode
+namespace SampleCode
 {
     void testLibClangParsing(String srcDir) noexcept;
     void testTypesAndProperties();
+    void testPropertySystem();
     void testRegex();
 }

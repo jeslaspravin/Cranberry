@@ -55,7 +55,7 @@ public:
     MyClass& operator=(int32 value);
 
     META_ANNOTATE(, Deprecate)
-    virtual void method(const AChar *ch, const int32& idxRef, int32& outIdx, int32 inNum, int32 *optionalNum) const = 0;
+    virtual void method(const AChar *ch, const int32 & idxRef, int32& outIdx, int32 inNum, int32 *optionalNum) const = 0;
 
     static const int static_field;
     static int32 static_method();

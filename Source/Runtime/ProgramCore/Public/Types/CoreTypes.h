@@ -94,20 +94,22 @@ STATIC_ASSERT(sizeof(UInt64) == 8);
 #undef STATIC_ASSERT
 #pragma pop_macro("STATIC_ASSERT")
 
+#define FOR_EACH_CORE_TYPES(MacroName) \
+    MacroName(uint8) \
+    MacroName(uint16)\
+    MacroName(uint32)\
+    MacroName(uint64)\
+    MacroName(int8) \
+    MacroName(int16)\
+    MacroName(int32)\
+    MacroName(int64)\
+    MacroName(float) \
+    MacroName(double)\
+    MacroName(bool)
+
+#define DECLARE_CORE_TYPE_VAR(Type) Type Type##Val;
 union CoreTypesUnion
 {
-    uint8 uInt8Val;
-    uint16 uInt16Val;
-    uint32 uInt32Val;
-    uint64 uInt64Val;
-
-    int8 int8Val;
-    int16 int16Val;
-    int32 int32Val;
-    int64 int64Val;
-
-    float floatVal;
-    double doubleVal;
-
-    bool boolVal;
+    FOR_EACH_CORE_TYPES(DECLARE_CORE_TYPE_VAR)
 };
+#undef DECLARE_CORE_TYPE_VAR

@@ -96,11 +96,7 @@ EnumProperty::EnumProperty(const String& enumName, const ReflectTypeInfo* enumTy
 
 PointerProperty::PointerProperty(const String& propName, const ReflectTypeInfo* propTypeInfo)
     : TypedProperty(propName, EPropertyType::PointerType, propTypeInfo)
-    , pointedTypeInfo(nullptr)
     , pointedTypeProperty(nullptr)
 {
     fatalAssert(typeInfo->innerType, "%s() : Inner type cannot be nullptr for a pointer type %s", __func__, propName);
-    pointedTypeInfo = typeInfo->innerType;
-    pointedTypeProperty = IReflectionRuntimeModule::get()->getClassType(pointedTypeInfo);
-    fatalAssert(pointedTypeProperty, "%s() : Reflected pointer must be a reflected class type", __func__);
 }

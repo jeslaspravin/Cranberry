@@ -40,7 +40,7 @@ public:
     const BaseProperty * elementProp;
 public:
     ContainerPropertyImpl(const String& propName, const ReflectTypeInfo* propTypeInfo)
-        : CustomProperty(propName, ContainerEPropertyType<ContainerType>::type, propTypeInfo)
+        : ContainerProperty(propName, ContainerEPropertyType<ContainerType>::type, propTypeInfo)
     {}
 
     FORCE_INLINE ContainerPropertyImpl* setElementProperty(const BaseProperty* elementProperty)
