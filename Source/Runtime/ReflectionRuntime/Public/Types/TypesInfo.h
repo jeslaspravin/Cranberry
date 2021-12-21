@@ -18,16 +18,14 @@ namespace EReflectTypeQualifiers
         LReference = 1, // L-Val
         RReference = 2, // R-Val
         Pointer = 4, // Pointer
-        Constant = 8, // Const-ness of Pointer(Not pointed type) or reference(Not referenced type)
-        ClassType = 16
+        Constant = 8 // Const-ness of Pointer(Not pointed type) or reference(Not referenced type)
     };
 }
 #define FOREACH_REFLECTTYPEQUALIFIER(MacroFn) \
     MacroFn(LReference) \
     MacroFn(RReference) \
     MacroFn(Pointer)    \
-    MacroFn(Constant)   \
-    MacroFn(ClassType)
+    MacroFn(Constant)
 
 struct ReflectTypeInfo
 {
@@ -36,8 +34,9 @@ struct ReflectTypeInfo
     uint32 qualifiers;
 
     std::strong_ordering operator<=>(const ReflectTypeInfo& otherTypeInfo) const = default;
-};
 
+    REFLECTIONRUNTIME_EXPORT static const ReflectTypeInfo* createTypeInfo(const std::type_info& cleanTypeInfo, const ReflectTypeInfo* innerTypeInfo, uint32 inQualifiers);
+};
 
 template <typename Type>
 using CleanType = UnderlyingType<Type>;
@@ -53,15 +52,15 @@ using CleanType = UnderlyingType<Type>;
 // 
 //  Logger::log("Test", "Test type info \n%s\n%s\n%s\n%s\n%s\n%s"
 //      // Referenced variable is const
-//      , typeInfoFrom<const int32&>()
-//      , typeInfoFrom<const int32&&>()
+//      , *typeInfoFrom<const int32&>()
+//      , *typeInfoFrom<const int32&&>()
 //      // Pointer to const variable
-//      , typeInfoFrom<const int32*>()
+//      , *typeInfoFrom<const int32*>()
 //      // Const pointer to const variable
-//      , typeInfoFrom<int32 const* const>()
+//      , *typeInfoFrom<int32 const* const>()
 //      // reference to Const pointer to const variable
-//      , typeInfoFrom<int32 const* const&>()
-//      , typeInfoFrom<int32 const* const&&>()
+//      , *typeInfoFrom<int32 const* const&>()
+//      , *typeInfoFrom<int32 const* const&&>()
 //  );
 //  Logger::log("Test", "Test type info %d, %d, %d"
 //      , typeInfoFrom<const int32&>() == typeInfoFrom<const int32&&>()
@@ -70,25 +69,26 @@ using CleanType = UnderlyingType<Type>;
 //  );
 // 
 template <typename Type>
-FORCE_INLINE const ReflectTypeInfo& typeInfoFrom()
+FORCE_INLINE const ReflectTypeInfo* typeInfoFrom()
 {
     // Pointer can be const reference cannot be const
     using InnerType = std::conditional_t<std::is_pointer_v<Type>
         , std::remove_pointer_t<std::remove_const_t<Type>>
         , std::remove_reference_t<Type>>;
 
-    static ReflectTypeInfo TYPE_INFO
-    {
+    static const ReflectTypeInfo* TYPE_INFO = ReflectTypeInfo::createTypeInfo
+    (
         typeid(CleanType<Type>),
-        (std::is_same_v<Type, InnerType>? nullptr : &typeInfoFrom<InnerType>()),
+        (std::is_same_v<Type, InnerType>? nullptr : typeInfoFrom<InnerType>()),
         {
             ConditionalValue_v<uint32, uint32, std::is_lvalue_reference<Type>, EReflectTypeQualifiers::LReference, 0>
             | ConditionalValue_v<uint32, uint32, std::is_rvalue_reference<Type>, EReflectTypeQualifiers::RReference, 0>
             | ConditionalValue_v<uint32, uint32, std::is_const<Type>, EReflectTypeQualifiers::Constant, 0>
             | ConditionalValue_v<uint32, uint32, std::is_pointer<Type>, EReflectTypeQualifiers::Pointer, 0>
-            | ConditionalValue_v<uint32, uint32, std::is_class<Type>, EReflectTypeQualifiers::ClassType, 0>
+            //| ConditionalValue_v<uint32, uint32, std::is_class<Type>, EReflectTypeQualifiers::ClassType, 0>
+            //| ConditionalValue_v<uint32, uint32, std::is_enum<Type>, EReflectTypeQualifiers::EnumType, 0>
         }
-    };
+    );
 
     return TYPE_INFO;
 }
@@ -99,7 +99,7 @@ FORCE_INLINE const ReflectTypeInfo& typeInfoFrom()
 template <typename... Types>
 FORCE_INLINE std::vector<const ReflectTypeInfo*> typeInfoListFrom()
 {
-    std::vector<const ReflectTypeInfo*> retVal{ &typeInfoFrom<Types>()... };
+    std::vector<const ReflectTypeInfo*> retVal{ typeInfoFrom<Types>()... };
     return retVal;
 }
 

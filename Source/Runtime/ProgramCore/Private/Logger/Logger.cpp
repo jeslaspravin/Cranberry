@@ -40,10 +40,20 @@ GenericFile* Logger::getLogFile()
     return &(*logFile);
 }
 
+std::vector<uint8>& Logger::muteFlags()
+{
+    static std::vector<uint8> serverityMuteFlags = { 0 };
+    return serverityMuteFlags;
+}
+
 void Logger::debugInternal(const AChar* category, const String& message)
 {
 #if _DEBUG
     static const String CATEGORY = "[DEBUG]";
+    if (BIT_SET(muteFlags().back(), ELogServerity::Debug))
+    {
+        return;
+    }
 
     std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
@@ -56,6 +66,10 @@ void Logger::debugInternal(const AChar* category, const String& message)
 void Logger::logInternal(const AChar* category, const String& message)
 {
     static const String CATEGORY = "[LOG]";
+    if (BIT_SET(muteFlags().back(), ELogServerity::Log))
+    {
+        return;
+    }
 
     std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
@@ -67,6 +81,10 @@ void Logger::logInternal(const AChar* category, const String& message)
 void Logger::warnInternal(const AChar* category, const String& message)
 {
     static const String CATEGORY = "[WARN]";
+    if (BIT_SET(muteFlags().back(), ELogServerity::Warning))
+    {
+        return;
+    }
 
     std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
@@ -78,6 +96,10 @@ void Logger::warnInternal(const AChar* category, const String& message)
 void Logger::errorInternal(const AChar* category, const String& message)
 {
     static const String CATEGORY = "[ERROR]";
+    if (BIT_SET(muteFlags().back(), ELogServerity::Error))
+    {
+        return;
+    }
 
     std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
@@ -96,5 +118,18 @@ void Logger::flushStream()
         logFile->write(ArrayView<uint8>(reinterpret_cast<uint8*>(str.data()), uint32(str.length())));
         loggerBuffer().str({});
         logFile->closeFile();
+    }
+}
+
+void Logger::pushMuteSeverities(uint8 muteSeverities)
+{
+    muteFlags().push_back(muteSeverities);
+}
+
+void Logger::popMuteSeverities()
+{
+    if (muteFlags().size() > 1)
+    {
+        muteFlags().pop_back();
     }
 }

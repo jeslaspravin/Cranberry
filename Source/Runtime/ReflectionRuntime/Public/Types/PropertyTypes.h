@@ -26,7 +26,7 @@ public:
     template <typename CheckType>
     FORCE_INLINE bool isSameType() const
     {
-        return propertyTypeInfo == &typeInfoFrom<CheckType>();
+        return propertyTypeInfo == typeInfoFrom<CheckType>();
     }
 
     // Non CV-Ref qualifiers
@@ -82,9 +82,9 @@ public:
     template <typename CheckType>
     FORCE_INLINE bool isMemberOfSameType() const
     {
-        return memberOfType == &typeInfoFrom<CheckType>();
+        return memberOfType == typeInfoFrom<CheckType>();
     }
-
+    
     virtual void* get(void* object) const = 0;
     virtual const void* get(const void* object) const = 0;
 
@@ -96,7 +96,7 @@ public:
         static_assert(std::disjunction_v<std::is_pointer<ObjectType>, std::is_reference<ObjectType>>, "Must be a pointer or a reference type");
 
         // Const-ness can be determined in non const type
-        const ReflectTypeInfo* objectTypeInfo = &typeInfoFrom<std::remove_pointer_t<ObjectType>>();
+        const ReflectTypeInfo* objectTypeInfo = typeInfoFrom<std::remove_pointer_t<ObjectType>>();
         if (isMemberOfSameType<CleanType<ObjectType>>() && isSameType<AsType>())
         {
             // If constant then we use const MemberDataPointer or if object is const
@@ -130,7 +130,7 @@ public:
     {
         using MemberType = std::remove_cvref_t<FromType>;
 
-        const ReflectTypeInfo* objectTypeInfo = &typeInfoFrom<std::remove_pointer_t<ObjectType>>();
+        const ReflectTypeInfo* objectTypeInfo = typeInfoFrom<std::remove_pointer_t<ObjectType>>();
         if (isMemberOfSameType<CleanType<ObjectType>>() && isSameType<MemberType>())
         {
             // If constant then we use const MemberDataPointer
@@ -232,7 +232,7 @@ private:
     MemberFieldType memberField;
 public:
     MemberFieldWrapperImpl(MemberFieldType::MemberFieldPtr memberPtr)
-        : MemberFieldWrapper(&typeInfoFrom<ObjectType>(), &typeInfoFrom<MemberType>())
+        : MemberFieldWrapper(typeInfoFrom<ObjectType>(), typeInfoFrom<MemberType>())
         , memberField(memberPtr)
     {}
 
@@ -246,8 +246,16 @@ protected:
 public:
     void* get(void* object) const override
     {
-        ObjectType* outerObject = (ObjectType*)(object);
-        return &memberField.get(outerObject);
+        if CONST_EXPR(std::is_const_v<MemberType>)
+        {
+            Logger::error("MemberFieldWrapperImpl", "%s() : Use const object function to retrieve const value", __func__);
+            return nullptr;
+        }
+        else
+        {
+            ObjectType* outerObject = (ObjectType*)(object);
+            return &memberField.get(outerObject);
+        }
     }
 
     const void* get(const void* object) const override
@@ -269,7 +277,7 @@ private:
     FieldType field;
 public:
     GlobalFieldWrapperImpl(FieldType::GlobalFieldPtr fieldPtr)
-        : GlobalFieldWrapper(&typeInfoFrom<MemberType>())
+        : GlobalFieldWrapper(typeInfoFrom<MemberType>())
         , field(fieldPtr)
     {}
 

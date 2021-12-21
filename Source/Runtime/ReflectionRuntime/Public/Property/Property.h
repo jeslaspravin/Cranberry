@@ -107,7 +107,6 @@ public:
 class REFLECTIONRUNTIME_EXPORT FunctionProperty final : public BaseProperty
 {
 public:
-public:
     // Class/Struct that owns this field and nullptr for global property
     const ClassProperty* ownerProperty;
     EPropertyAccessSpecifier accessor;
@@ -168,11 +167,11 @@ public:
     ClassProperty(const String& className, const ReflectTypeInfo* classTypeInfo);
     ~ClassProperty();
 
-    template <typename ConstructType, typename... CTorArgs>
-    FORCE_INLINE ClassProperty* addCtorPtr(CTorArgs&&... args)
+    FORCE_INLINE FunctionProperty* addCtorPtr()
     {
-        constructors.emplace_back(new ConstructType(std::forward<CTorArgs>(args)...));
-        return this;
+        FunctionProperty* funcProp = (new FunctionProperty(name))->setOwnerProperty(this);
+        constructors.emplace_back(funcProp);
+        return funcProp;
     }
 
     FORCE_INLINE FieldProperty* addMemberField(const String& fieldName)
@@ -233,9 +232,13 @@ public:
 class REFLECTIONRUNTIME_EXPORT PointerProperty : public TypedProperty
 {
 public:
-    // representing class's type info
-    const ReflectTypeInfo* pointedTypeInfo;
-    const ClassProperty* pointedTypeProperty;
+    const BaseProperty* pointedTypeProperty;
 public:
     PointerProperty(const String& propName, const ReflectTypeInfo* propTypeInfo);
+
+    FORCE_INLINE PointerProperty* setPointedType(const BaseProperty* prop)
+    {
+        pointedTypeProperty = prop;
+        return this;
+    }
 };

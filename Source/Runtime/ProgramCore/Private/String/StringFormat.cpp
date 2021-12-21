@@ -25,16 +25,16 @@ FormatArg& FormatArg::operator=(FormatArg&& arg)
         value.fundamentalVals.boolVal = std::move(arg.value.fundamentalVals.boolVal);
         break;
     case FormatArg::UInt8:
-        value.fundamentalVals.uInt8Val = std::move(arg.value.fundamentalVals.uInt8Val);
+        value.fundamentalVals.uint8Val = std::move(arg.value.fundamentalVals.uint8Val);
         break;
     case FormatArg::UInt16:
-        value.fundamentalVals.uInt16Val = std::move(arg.value.fundamentalVals.uInt16Val);
+        value.fundamentalVals.uint16Val = std::move(arg.value.fundamentalVals.uint16Val);
         break;
     case FormatArg::UInt32:
-        value.fundamentalVals.uInt32Val = std::move(arg.value.fundamentalVals.uInt32Val);
+        value.fundamentalVals.uint32Val = std::move(arg.value.fundamentalVals.uint32Val);
         break;
     case FormatArg::UInt64:
-        value.fundamentalVals.uInt64Val = std::move(arg.value.fundamentalVals.uInt64Val);
+        value.fundamentalVals.uint64Val = std::move(arg.value.fundamentalVals.uint64Val);
         break;
     case FormatArg::Int8:
         value.fundamentalVals.int8Val = std::move(arg.value.fundamentalVals.int8Val);
@@ -72,16 +72,16 @@ FormatArg& FormatArg::operator=(const FormatArg& arg)
         value.fundamentalVals.boolVal = arg.value.fundamentalVals.boolVal;
         break;
     case FormatArg::UInt8:
-        value.fundamentalVals.uInt8Val = arg.value.fundamentalVals.uInt8Val;
+        value.fundamentalVals.uint8Val = arg.value.fundamentalVals.uint8Val;
         break;
     case FormatArg::UInt16:
-        value.fundamentalVals.uInt16Val = arg.value.fundamentalVals.uInt16Val;
+        value.fundamentalVals.uint16Val = arg.value.fundamentalVals.uint16Val;
         break;
     case FormatArg::UInt32:
-        value.fundamentalVals.uInt32Val = arg.value.fundamentalVals.uInt32Val;
+        value.fundamentalVals.uint32Val = arg.value.fundamentalVals.uint32Val;
         break;
     case FormatArg::UInt64:
-        value.fundamentalVals.uInt64Val = arg.value.fundamentalVals.uInt64Val;
+        value.fundamentalVals.uint64Val = arg.value.fundamentalVals.uint64Val;
         break;
     case FormatArg::Int8:
         value.fundamentalVals.int8Val = arg.value.fundamentalVals.int8Val;
@@ -119,16 +119,16 @@ String FormatArg::toString() const
         return (value.fundamentalVals.boolVal) ? "true" : "false";
         break;
     case FormatArg::UInt8:
-        return StringFormat::format("%hhu", value.fundamentalVals.uInt8Val);
+        return StringFormat::format("%hhu", value.fundamentalVals.uint8Val);
         break;
     case FormatArg::UInt16:
-        return StringFormat::format("%hu", value.fundamentalVals.uInt16Val);
+        return StringFormat::format("%hu", value.fundamentalVals.uint16Val);
         break;
     case FormatArg::UInt32:
-        return StringFormat::format("%u", value.fundamentalVals.uInt32Val);
+        return StringFormat::format("%u", value.fundamentalVals.uint32Val);
         break;
     case FormatArg::UInt64:
-        return StringFormat::format("%llu", value.fundamentalVals.uInt64Val);
+        return StringFormat::format("%llu", value.fundamentalVals.uint64Val);
         break;
     case FormatArg::Int8:
         return StringFormat::format("%hhd", value.fundamentalVals.int8Val);
@@ -160,23 +160,16 @@ String FormatArg::toString() const
 String StringFormat::formatMustache(const String& fmt, const std::unordered_map<String, FormatArg>& formatArgs)
 {
     std::vector<std::smatch> allMatches;
-    try
-    {
-        // Scans for pattern within a line, Matches inner most {{.+}} and captures the inner name of the match
-        static const std::regex searchPattern("\\{\\{([^{}]+)\\}\\}", std::regex_constants::ECMAScript);
 
-        auto startItr = fmt.cbegin();
-        std::smatch matches;
-        while (std::regex_search(startItr, fmt.cend(), matches, searchPattern))
-        {
-            allMatches.push_back(matches);
-            startItr = matches.suffix().first;
-        }
-    }
-    catch (const std::exception& e)
+    // Scans for pattern within a line, Matches inner most {{.+}} and captures the inner name of the match
+    static const std::regex searchPattern("\\{\\{([^{}]+)\\}\\}", std::regex_constants::ECMAScript);
+
+    auto startItr = fmt.cbegin();
+    std::smatch matches;
+    while (std::regex_search(startItr, fmt.cend(), matches, searchPattern))
     {
-        Logger::error("StringFormat", "%s() : Error : %s", __func__, e.what());
-        fatalAssert(false, "%s() : %s", __func__, e.what());
+        allMatches.push_back(matches);
+        startItr = matches.suffix().first;
     }
 
     // Each segment starts at first index of prefix and has extend

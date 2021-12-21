@@ -16,7 +16,7 @@ public:
         : returnTypeInfo(retType)
         , argsTypeInfo(std::move(argsType))
     {}
-    BaseFunctionWrapper(const ReflectTypeInfo * retType, const std::vector<const ReflectTypeInfo*>& argsType)
+    BaseFunctionWrapper(const ReflectTypeInfo* retType, const std::vector<const ReflectTypeInfo*>& argsType)
         : returnTypeInfo(retType)
         , argsTypeInfo(argsType)
     {}
@@ -32,7 +32,7 @@ public:
     template <typename CheckType>
     FORCE_INLINE bool isSameReturnType() const
     {
-        return returnTypeInfo == &typeInfoFrom<CheckType>();
+        return returnTypeInfo == typeInfoFrom<CheckType>();
     }
 
     template <typename... Args>
@@ -79,7 +79,7 @@ public:
         , memberOfTypeInner(getInnerMostType(memberOfType))
     {
     }
-    MemberFunctionWrapper(const ReflectTypeInfo* outerClassType, const ReflectTypeInfo * retType, const std::vector<const ReflectTypeInfo*>& argsType)
+    MemberFunctionWrapper(const ReflectTypeInfo* outerClassType, const ReflectTypeInfo* retType, const std::vector<const ReflectTypeInfo*>& argsType)
         : BaseFunctionWrapper(retType, argsType)
         , memberOfType(outerClassType)
         , memberOfTypeInner(getInnerMostType(memberOfType))
@@ -94,7 +94,7 @@ public:
             return false;
         }
         // Since type ID of the innermost type must be same with object type's inner most type
-        const ReflectTypeInfo* objectInnerMostType = getInnerMostType(&typeInfoFrom<ObjectType>());
+        const ReflectTypeInfo* objectInnerMostType = getInnerMostType(typeInfoFrom<ObjectType>());
         if (objectInnerMostType->typeID != memberOfTypeInner->typeID)
         {
             Logger::error("MemberFunctionWrapper", "%s() : Cannot call this function with given object type", __func__);
@@ -134,7 +134,7 @@ public:
             return false;
         }
         // Since type ID of the innermost type must be same with object type's inner most type
-        const ReflectTypeInfo* objectInnerMostType = getInnerMostType(&typeInfoFrom<ObjectType>());
+        const ReflectTypeInfo* objectInnerMostType = getInnerMostType(typeInfoFrom<ObjectType>());
         if (objectInnerMostType->typeID != memberOfTypeInner->typeID)
         {
             Logger::error("MemberFunctionWrapper", "%s() : Cannot call this function with given object type", __func__);
@@ -227,7 +227,7 @@ protected:
     }
 public:
     MemberFunctionWrapperImpl(MemberFunction::ClassDelegate funcPtr)
-        : MemberFunctionWrapper(&typeInfoFrom<ObjectType>(), &typeInfoFrom<ReturnType>(), std::move(typeInfoListFrom<Args...>()))
+        : MemberFunctionWrapper(typeInfoFrom<ObjectType>(), typeInfoFrom<ReturnType>(), std::move(typeInfoListFrom<Args...>()))
         , memberFunc(funcPtr)
     {}
 };
@@ -246,7 +246,7 @@ protected:
     }
 public:
     GlobalFunctionWrapperImpl(GlobalFunction::StaticDelegate funcPtr)
-        : GlobalFunctionWrapper(&typeInfoFrom<ReturnType>(), std::move(typeInfoListFrom<Args...>()))
+        : GlobalFunctionWrapper(typeInfoFrom<ReturnType>(), std::move(typeInfoListFrom<Args...>()))
         , func(funcPtr)
     {}
 };

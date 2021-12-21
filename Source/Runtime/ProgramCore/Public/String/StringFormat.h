@@ -73,10 +73,10 @@ struct PROGRAMCORE_EXPORT FormatArg
     } type;
 
     FormatArg(bool argValue)    : type(Bool)    { value.fundamentalVals.boolVal = argValue; }
-    FormatArg(uint8 argValue)   : type(UInt8)   { value.fundamentalVals.uInt8Val = argValue; }
-    FormatArg(uint16 argValue)  : type(UInt16)  { value.fundamentalVals.uInt16Val = argValue; }
-    FormatArg(uint32 argValue)  : type(UInt32)  { value.fundamentalVals.uInt32Val = argValue; }
-    FormatArg(uint64 argValue)  : type(UInt64)  { value.fundamentalVals.uInt64Val = argValue; }
+    FormatArg(uint8 argValue)   : type(UInt8)   { value.fundamentalVals.uint8Val = argValue; }
+    FormatArg(uint16 argValue)  : type(UInt16)  { value.fundamentalVals.uint16Val = argValue; }
+    FormatArg(uint32 argValue)  : type(UInt32)  { value.fundamentalVals.uint32Val = argValue; }
+    FormatArg(uint64 argValue)  : type(UInt64)  { value.fundamentalVals.uint64Val = argValue; }
     FormatArg(int8 argValue)    : type(Int8)    { value.fundamentalVals.int8Val = argValue; }
     FormatArg(int16 argValue)   : type(Int16)   { value.fundamentalVals.int16Val = argValue; }
     FormatArg(int32 argValue)   : type(Int32)   { value.fundamentalVals.int32Val = argValue; }
