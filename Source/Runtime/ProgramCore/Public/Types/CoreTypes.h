@@ -94,8 +94,8 @@ STATIC_ASSERT(sizeof(UInt64) == 8);
 #undef STATIC_ASSERT
 #pragma pop_macro("STATIC_ASSERT")
 
-#define FOR_EACH_CORE_TYPES(MacroName) \
-    MacroName(uint8) \
+#define FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName) \
+    FirstMacroName(uint8) \
     MacroName(uint16)\
     MacroName(uint32)\
     MacroName(uint64)\
@@ -105,7 +105,9 @@ STATIC_ASSERT(sizeof(UInt64) == 8);
     MacroName(int64)\
     MacroName(float) \
     MacroName(double)\
-    MacroName(bool)
+    LastMacroName(bool)
+
+#define FOR_EACH_CORE_TYPES(MacroName) FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
 
 #define DECLARE_CORE_TYPE_VAR(Type) Type Type##Val;
 union CoreTypesUnion

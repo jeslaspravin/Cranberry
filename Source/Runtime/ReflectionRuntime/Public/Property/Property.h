@@ -17,7 +17,7 @@ enum class EPropertyType
     Function,
     FundamentalType,
     SpecialType,// Types that are not fundamental but can be serialized as binary stream like Vector(nD), Matrix, Transforms, Colors, Rotations etc,.
-    PointerType,
+    QualifiedType,// Types that are const, reference or pointer qualified and has inner type of its unqualified type
     MapType,
     SetType,
     PairType,
@@ -229,16 +229,16 @@ public:
 };
 
 // Will be class that has proper reflection
-class REFLECTIONRUNTIME_EXPORT PointerProperty : public TypedProperty
+class REFLECTIONRUNTIME_EXPORT QualifiedProperty : public TypedProperty
 {
 public:
-    const BaseProperty* pointedTypeProperty;
+    const BaseProperty* unqualTypeProperty;
 public:
-    PointerProperty(const String& propName, const ReflectTypeInfo* propTypeInfo);
+    QualifiedProperty(const String& propName, const ReflectTypeInfo* propTypeInfo);
 
-    FORCE_INLINE PointerProperty* setPointedType(const BaseProperty* prop)
+    FORCE_INLINE QualifiedProperty* setUnqualifiedType(const BaseProperty* prop)
     {
-        pointedTypeProperty = prop;
+        unqualTypeProperty = prop;
         return this;
     }
 };

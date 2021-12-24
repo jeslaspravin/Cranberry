@@ -11,6 +11,7 @@
 #include "Types/TypesInfo.h"
 #include "Property/Property.h"
 #include "Property/ContainerProperty.h"
+#include "String/MustacheFormatString.h"
 
 #include <iostream>
 #include <regex>
@@ -1645,37 +1646,41 @@ namespace SampleCode
 
     void testRegex()
     {
-        String testStr = "Hello {{name}}, {{ \n\
-        This must match {{Match2}}{\n\
-            {{name}}{{{{HelloMe}}}}\n\
+        String testStr = "\n\
+        Hello {{name}}, \n\
+        {{ \n\
+        This must match {{Match2}} \n\
+            {\n\
+                {{name}}{{{{HelloMe}}}}\n\
+                {{#PrintInner}} \
+                This is inner code for {{name}}\
+                {{/PrintInner}} \n\
             }\n\
-        }};";
-
+        }};\n";
+        String testStr2 = "This is going to be used as partial \n\
+            Peoples Details :{{!List of peoples}}\n\
+            {{#Run}} \
+                {{>Peps}} \
+            {{/Run}} \
+        ";
+#if 0 // Prints the regex matched values and its indices
         std::vector<std::smatch> allMatches;
-        try
-        {
-            std::regex searchPattern("\\{\\{([^{}]+)\\}\\}", std::regex_constants::ECMAScript);
+        std::regex searchPattern("\\{\\{([^{}]+)\\}\\}", std::regex_constants::ECMAScript);
 
-            auto startItr = testStr.cbegin();
-            std::smatch matches;
-            while (std::regex_search(startItr, testStr.cend(), matches, searchPattern))
+        auto startItr = testStr.cbegin();
+        std::smatch matches;
+        while (std::regex_search(startItr, testStr.cend(), matches, searchPattern))
+        {
+            allMatches.push_back(matches);
+            Logger::log("Test", "Matched n = %d", matches.size());
+            Logger::log("Test", "Prefix : %s", matches.prefix().str());
+            for (auto& match : matches)
             {
-                allMatches.push_back(matches);
-                Logger::log("Test", "Matched n = %d", matches.size());
-                Logger::log("Test", "Prefix : %s", matches.prefix().str());
-                for (auto& match : matches)
-                {
-                    Logger::log("Test", "Match : %s", match.str());
-                }
-                Logger::log("Test", "suffix : %s", matches.suffix().str());
-                startItr = matches.suffix().first;
+                Logger::log("Test", "Match : %s", match.str());
             }
+            Logger::log("Test", "suffix : %s", matches.suffix().str());
+            startItr = matches.suffix().first;
         }
-        catch (const std::exception& e)
-        {
-            Logger::error("Test", "Error : %s", e.what());
-        }
-
 
         for (const std::smatch& match : allMatches)
         {
@@ -1684,15 +1689,81 @@ namespace SampleCode
             Logger::log("Test", "Must replace with value of %s, from index %d to %d"
                 , submatch.str(), std::distance(testStr.cbegin(), wholesubmatch.first), std::distance(testStr.cbegin(), wholesubmatch.second));
         }
+#endif
 
         std::unordered_map<String, FormatArg> args
         {
             {"name" , "Jeslas Pravin"},
             {"Match2", 8235},
-            {"HelloMe", 123.08}
+            {"HelloMe", 123.08},
+            {"PrintInner", false}
         };
-        String formattedVal = StringFormat::formatMustache(testStr, args);
-        Logger::log("Test", "Mustache formatted %s", formattedVal);
+        std::unordered_map<String, FormatArg> args2
+        {
+            {"name" , "Subity Jerald"},
+            {"Match2", 8265},
+            {"HelloMe", *typeInfoFrom<uint32>() },
+            {"PrintInner", true}
+        };
+        MustacheStringFormatter peps{ testStr };
+        MustacheStringFormatter mustacheTest{ testStr2 };
+        Logger::log("Test", "Mustache formatted \n%s \n\tand another \n%s", peps.formatBasic(args), peps.formatBasic(args2));
+
+        Logger::log("Test", "Mustache rendered \n%s", mustacheTest.render(
+            {}
+            , {{ "Run", { args, args2 }}}
+            , {}
+            , {{ "Peps", peps }}
+        ));
+
+        String testStr3 = "ID : {{Count}}{{#MSectFormat}}{{!This will be replaced}}\
+        {{#CanRecurse}}\n{{>Recurse}}\n{{/CanRecurse}}{{/MSectFormat}}";
+        MustacheStringFormatter sectFormatter{ testStr3 };
+        class TestDynamicFormatData
+        {
+        public:
+            MustacheStringFormatter* localFormatter;
+            const FormatArgsMap* arg1;
+            const FormatArgsMap* arg2;
+            int32 count = 0;
+
+            String customFormat(const MustacheStringFormatter& formatter, const MustacheContext& context)
+            {
+                String out = localFormatter->render((count % 2) == 0 ? *arg1 : *arg2);
+                count++;
+                out += formatter.render(*context.args, *context.sectionArgs, *context.sectionFormatters, *context.partials);
+                return out;
+            }
+
+            String getCount() const
+            {
+                return std::to_string(count);
+            }
+
+            String canRecurse() const
+            {
+                if (count < 10)
+                {
+                    return std::to_string(count);
+                }
+                return "";
+            }
+        };
+        TestDynamicFormatData dynDataTest
+        {
+            &peps
+            , &args
+            , &args2
+        };
+        Logger::log("Test", "Mustache render dynamically modified recursive loop \n%s", sectFormatter.render(
+            { 
+                {"CanRecurse", FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse)}
+                , {"Count", FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::getCount)}
+            }
+            , {}
+            , { {"MSectFormat", MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat)} }
+            , { {"Recurse", sectFormatter}}
+        ));
 
         Logger::log("Test", PropertyHelper::getValidSymbolName("class <Niown>>"));
     }
@@ -1752,13 +1823,13 @@ namespace SampleCode
 
         static BaseProperty* createTestPropertyClassPtrProperty()
         {
-            PointerProperty* prop = (new PointerProperty("TestPropertyClass*", typeInfoFrom<TestPropertyClass*>()));
+            QualifiedProperty* prop = (new QualifiedProperty("TestPropertyClass*", typeInfoFrom<TestPropertyClass*>()));
             return prop;
         }
         static void initTestPropertyClassPtrProperty(BaseProperty* prop)
         {
-            PointerProperty* p = static_cast<PointerProperty*>(prop);
-            p->setPointedType(IReflectionRuntimeModule::getClassType<TestPropertyClass>());
+            QualifiedProperty* p = static_cast<QualifiedProperty*>(prop);
+            p->setUnqualifiedType(IReflectionRuntimeModule::getClassType<TestPropertyClass>());
         }
 
         static BaseProperty* createstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property()

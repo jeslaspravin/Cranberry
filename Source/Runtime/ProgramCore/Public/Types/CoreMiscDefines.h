@@ -13,7 +13,7 @@
 // If any bit of check bits is set in this unsigned integer
 #define ANY_BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) > 0)
 // If no bits of check bits is set in this unsigned integer
-#define NO_BITS_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) > 0)
+#define NO_BITS_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == 0)
 #define INDEX_TO_FLAG_MASK(Idx) (1 << (Idx))
 
 #define MAKE_INITIALIZER(...) { __VA_ARGS__ }

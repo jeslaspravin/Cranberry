@@ -3,9 +3,6 @@
 #include "String/StringFormat.h"
 #include "ProgramCoreExports.h"
 
-#include <sstream>
-#include <cstdio>
-
 class GenericFile;
 
 class PROGRAMCORE_EXPORT Logger 

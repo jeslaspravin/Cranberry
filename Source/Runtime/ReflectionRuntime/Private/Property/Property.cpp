@@ -94,9 +94,10 @@ EnumProperty::EnumProperty(const String& enumName, const ReflectTypeInfo* enumTy
 /// PointerProperty
 //////////////////////////////////////////////////////////////////////////
 
-PointerProperty::PointerProperty(const String& propName, const ReflectTypeInfo* propTypeInfo)
-    : TypedProperty(propName, EPropertyType::PointerType, propTypeInfo)
-    , pointedTypeProperty(nullptr)
+QualifiedProperty::QualifiedProperty(const String& propName, const ReflectTypeInfo* propTypeInfo)
+    : TypedProperty(propName, EPropertyType::QualifiedType, propTypeInfo)
+    , unqualTypeProperty(nullptr)
 {
-    fatalAssert(typeInfo->innerType, "%s() : Inner type cannot be nullptr for a pointer type %s", __func__, propName);
+    // Only const type can have no inner type as const int can be qualified type. This case is not a useful one, and so we throw error here.
+    fatalAssert(typeInfo->innerType, "%s() : Inner type cannot be nullptr for a qualified type type %s", __func__, propName);
 }

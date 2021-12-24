@@ -4,6 +4,8 @@
 #include "Modules/ModuleManager.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "SampleCode.h"
+#include <array>
+#include "Types/TypesInfo.h"
 
 int32 main(int32 argsc, AChar** args)
 {
@@ -22,7 +24,7 @@ int32 main(int32 argsc, AChar** args)
         srcDir = args[i];
     }
 
-    SampleCode::testLibClangParsing(srcDir);
+    //SampleCode::testLibClangParsing(srcDir);
     SampleCode::testTypesAndProperties();
     SampleCode::testPropertySystem();
     //SampleCode::testRegex();
