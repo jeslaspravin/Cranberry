@@ -1,7 +1,6 @@
 #include "Logger/Logger.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
-#include <cstdarg>
 #if LOG_TO_CONSOLE
 #include <iostream>
 #endif // LOG_TO_CONSOLE

@@ -1,5 +1,5 @@
 #include "ReflectionRuntimeModule.h"
-#include "Property/Property.h"
+#include "ReflectionMacros.h"
 #include "Types/TypesInfo.h"
 #include "Math/CoreMathTypes.h"
 #include "Types/Colors.h"
@@ -17,34 +17,27 @@ BaseProperty* createSpecialProperty()
     return new TypedProperty(TypeName.value, EPropertyType::SpecialType, typeInfoFrom<Type>());
 }
 
+#define CREATE_QUALIFIED_PROPERTIES(TypeName) \
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName&>(), { &createQualifiedProperty<TypeName&, #TypeName" &">, &initQualifiedProperty<TypeName&> }); \
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName*>(), { &createQualifiedProperty<TypeName*, #TypeName" *">, &initQualifiedProperty<TypeName*> }); \
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName*>(), { &createQualifiedProperty<const TypeName*, "const "#TypeName" *">, &initQualifiedProperty<TypeName*> }); \
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName&>(), { &createQualifiedProperty<const TypeName&, "const "#TypeName" &">, &initQualifiedProperty<TypeName*> });
+
 #define CREATE_FUNDAMENTAL_PROPERTY(TypeName) \
     IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName>(), { &createFundamentalProperty<TypeName, #TypeName>, nullptr }); \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName&>(), { &createFundamentalProperty<TypeName&, #TypeName" &">, nullptr }); \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName>(), { &createFundamentalProperty<const TypeName, "const "#TypeName>, nullptr }); \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName&>(), { &createFundamentalProperty<const TypeName&, "const "#TypeName" &">, nullptr }); \
+    CREATE_QUALIFIED_PROPERTIES(TypeName)
 
 #define CREATE_SPECIAL_PROPERTY(TypeName) \
     IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName>(), { &createSpecialProperty<TypeName, #TypeName>, nullptr }); \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName&>(), { &createSpecialProperty<TypeName&, #TypeName" &">, nullptr }); \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName>(), { &createSpecialProperty<const TypeName, "const "#TypeName>, nullptr }); \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName&>(), { &createSpecialProperty<const TypeName&, "const "#TypeName" &">, nullptr }); \
+    CREATE_QUALIFIED_PROPERTIES(TypeName)
 
 void ReflectionRuntimeModule::initCommonProperties() const
 {
     FOR_EACH_CORE_TYPES(CREATE_FUNDAMENTAL_PROPERTY);
     // Register void as well
     IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<void>(), { &createFundamentalProperty<void, "void">, nullptr });
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const void>(), { &createFundamentalProperty<const void, "const void">, nullptr });
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<void*>(), { &createQualifiedProperty<void*, "void*">, &initQualifiedProperty<void*> });
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const void*>(), { &createQualifiedProperty<const void*, "const void*">, &initQualifiedProperty<const void*> });
 
-    CREATE_SPECIAL_PROPERTY(String);
-    CREATE_SPECIAL_PROPERTY(Color);
-    CREATE_SPECIAL_PROPERTY(LinearColor);
-    CREATE_SPECIAL_PROPERTY(Vector2D);
-    CREATE_SPECIAL_PROPERTY(Vector3D);
-    CREATE_SPECIAL_PROPERTY(Vector4D);
-    CREATE_SPECIAL_PROPERTY(Matrix2);
-    CREATE_SPECIAL_PROPERTY(Matrix3);
-    CREATE_SPECIAL_PROPERTY(Matrix4);
-    CREATE_SPECIAL_PROPERTY(Rotation);
-    CREATE_SPECIAL_PROPERTY(Transform3D);
+    FOR_EACH_SPECIAL_TYPES(CREATE_SPECIAL_PROPERTY);
 }

@@ -1,9 +1,15 @@
 #pragma once
 
 #include "String/String.h"
+#include "Types/Traits/TypeTraits.h"
+#include "Types/Delegates/Delegate.h"
 #include "ProgramCoreExports.h"
 
+#include <sstream>
+#include <cstdio>
 #include <unordered_map>
+
+class StringFormat;
 
 template <typename T>
 concept HasValidCStrMethod = requires(T&& val)
@@ -35,11 +41,28 @@ concept HasOStreamInsertOverrideMethod = NonStringType<Type> && std::is_compound
 template<typename Type, typename CleanType = std::remove_cvref_t<Type>>
 concept StringOrFundamentalTypes = std::disjunction_v<IsString<Type>, std::is_fundamental<CleanType>>;
 
+template<typename Type>
+concept StringConvertibleIteratorType = NonStringType<Type> 
+    && requires(Type && val)
+    {
+        val.cbegin();
+        val.cend();
+        { StringFormat::toString(*val.cbegin()) } -> StringOrFundamentalTypes;
+    };
+
+template<typename Type>
+concept HasStringFormatToStringImpl = requires(Type && val)
+{
+    { StringFormat::toString(val) } -> StringOrFundamentalTypes;
+};
+
 struct PROGRAMCORE_EXPORT FormatArg
 {
+    using ArgGetter = SingleCastDelegate<String>;
     union ArgValue
     {
         String strVal;
+        ArgGetter argGetter;
         CoreTypesUnion fundamentalVals;
 
         ArgValue(CoreTypesUnion inFundamentalVals)
@@ -48,6 +71,9 @@ struct PROGRAMCORE_EXPORT FormatArg
         template <typename StrType> requires StringType<StrType>
         ArgValue(StrType&& inStrVal)
             : strVal(std::forward<StrType>(inStrVal))
+        {}
+        ArgValue(const ArgGetter& getter)
+            : argGetter(getter)
         {}
         ArgValue()
             : strVal()
@@ -69,6 +95,7 @@ struct PROGRAMCORE_EXPORT FormatArg
         Int64,
         Float,
         Double,
+        Getter,
         AsString // Whatever other type that will be stored as string after toString conversion
     } type;
 
@@ -82,7 +109,8 @@ struct PROGRAMCORE_EXPORT FormatArg
     FormatArg(int32 argValue)   : type(Int32)   { value.fundamentalVals.int32Val = argValue; }
     FormatArg(int64 argValue)   : type(Int64)   { value.fundamentalVals.int64Val = argValue; }
     FormatArg(float argValue)   : type(Float)   { value.fundamentalVals.floatVal = argValue; }
-    FormatArg(double argValue)  : type(Double)  { value.fundamentalVals.doubleVal = argValue; }
+    FormatArg(double argValue) : type(Double) { value.fundamentalVals.doubleVal = argValue; }
+    FormatArg(ArgGetter argValue) : value(argValue), type(Getter) {}
     template <typename InType>
     FormatArg(InType&& argValue);
 
@@ -92,7 +120,9 @@ struct PROGRAMCORE_EXPORT FormatArg
     FormatArg& operator=(FormatArg&& arg);
 
     String toString() const;
+    operator bool() const;
 };
+using FormatArgsMap = std::unordered_map<String, FormatArg>;
 
 class StringFormat
 {
@@ -144,6 +174,34 @@ public:
     {
         return std::forward<Type>(value);
     }
+    
+    template<HasStringFormatToStringImpl KeyType, HasStringFormatToStringImpl ValueType>
+    FORCE_INLINE CONST_EXPR static String toString(const std::pair<KeyType, ValueType>& pair)
+    {
+        std::ostringstream stream;
+        stream << "{ " << toString(pair.first) << ", " << toString(pair.second) << " }";
+        return stream.str();
+    }
+
+    template<StringConvertibleIteratorType IterableType>
+    FORCE_INLINE CONST_EXPR static std::string toString(IterableType&& iterable)
+    {
+        using Type = UnderlyingType<IterableType>;
+
+        std::ostringstream stream;
+        stream << "[ ";
+        typename Type::const_iterator itr = iterable.cbegin();
+        if (itr != iterable.cend())
+        {
+            stream << toString(*itr);
+            while ((++itr) != iterable.cend())
+            {
+                stream << ", " << toString(*itr);
+            }
+        }
+        stream << " ]";
+        return stream.str();
+    }
 
 private:
     StringFormat() = default;
@@ -170,7 +228,7 @@ public:
         return fmtString(getChar<FmtType>(std::forward<FmtType>(fmt)), toString<Args>(std::forward<Args>(args))...);
     }
 
-    PROGRAMCORE_EXPORT static String formatMustache(const String& fmt, const std::unordered_map<String, FormatArg>& formatArgs);
+    PROGRAMCORE_EXPORT static String formatMustache(const String& fmt, const FormatArgsMap& formatArgs);
 };
 
 template <typename InType>

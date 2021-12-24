@@ -24,6 +24,7 @@ public:
     FORCE_INLINE CONST_EXPR String(size_type n, AChar c) : std::string(n, c) {}
     FORCE_INLINE CONST_EXPR String(const std::string& otherString) : std::string(otherString) {}
     FORCE_INLINE CONST_EXPR String(std::string&& otherString) : std::string(otherString) {}
+    FORCE_INLINE CONST_EXPR String(std::string::const_iterator start, std::string::const_iterator end) : std::string(start, end) {}
 
     FORCE_INLINE CONST_EXPR const AChar* getChar() const
     {
