@@ -2075,7 +2075,7 @@ namespace SampleCode
         sourceFileContext.args["HeaderFileId"] = PropertyHelper::getValidSymbolName(appName);
         sourceFileContext.args["HeaderInclude"] = PropertyHelper::getValidSymbolName(appName);
 
-        std::vector<MustacheContext>& allReflectTypes = sourceFileContext.sectionContexts["AllRegisterTypes"];
+        std::vector<MustacheContext> allReflectTypes;
         // QualifiedTypes
         {
             MustacheContext& classPtr = allReflectTypes.emplace_back();
@@ -2292,6 +2292,7 @@ namespace SampleCode
                 }
             }
         }
+        sourceFileContext.sectionContexts["AllRegisterTypes"] = allReflectTypes;
 
         // Write header file
         String headerContent = templates["ReflectedHeader"].render(headerFileContext, templates);

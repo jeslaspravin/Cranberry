@@ -106,12 +106,12 @@ void AssetManager::addPathsToScan(const String& scanPath)
 AssetBase* AssetManager::getOrLoadAsset(const String& relAssetPath)
 {
     String newRelPath = relAssetPath.replaceAllCopy("\\", "/");
-    String extension;
+    String appName;
     AssetHeader header;
-    header.assetPath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(extension), "Assets", newRelPath);
+    header.assetPath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(appName), "Assets", newRelPath);
     header.type = AssetLoaderLibrary::typeFromAssetPath(newRelPath);
     header.assetName = PlatformFile(header.assetPath).getFileName();
-    header.assetName = FileSystemFunctions::stripExtension(header.assetName, extension);
+    header.assetName = PathFunctions::stripExtension(header.assetName);
 
     return getOrLoadAsset(header);
 }

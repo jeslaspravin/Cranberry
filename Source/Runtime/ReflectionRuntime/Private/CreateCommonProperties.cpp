@@ -17,6 +17,18 @@ BaseProperty* createSpecialProperty()
     return new TypedProperty(TypeName.value, EPropertyType::SpecialType, typeInfoFrom<Type>());
 }
 
+template <typename Type, StringLiteral TypeName>
+BaseProperty* createQualifiedProperty()
+{
+    return new QualifiedProperty(TypeName.value, typeInfoFrom<Type>());
+}
+template <typename Type>
+void initQualifiedProperty(BaseProperty* prop)
+{
+    QualifiedProperty* p = static_cast<QualifiedProperty*>(prop);
+    p->setUnqualifiedType(IReflectionRuntimeModule::getType<CleanType<Type>>());
+}
+
 #define CREATE_QUALIFIED_PROPERTIES(TypeName) \
     IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName&>(), { &createQualifiedProperty<TypeName&, #TypeName" &">, &initQualifiedProperty<TypeName&> }); \
     IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName*>(), { &createQualifiedProperty<TypeName*, #TypeName" *">, &initQualifiedProperty<TypeName*> }); \
