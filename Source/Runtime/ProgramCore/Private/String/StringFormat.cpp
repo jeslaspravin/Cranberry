@@ -222,8 +222,15 @@ MustacheStringFormatter::MustacheStringFormatter(const String& fmt)
     : fmtStr(fmt)
     , allMatches()
 {
+    parseFmtStr();
+}
+
+void MustacheStringFormatter::parseFmtStr()
+{
     // Scans for pattern within a line, Matches inner most {{.+}} and captures the inner name of the match
     static const std::regex searchPattern("\\{\\{([^{}]+)\\}\\}", std::regex_constants::ECMAScript);
+    allMatches.clear();
+    sections.clear();
 
     auto startItr = fmtStr.cbegin();
     std::smatch matches;
@@ -386,10 +393,18 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap& formatArgs) con
     return outputStr;
 }
 
-void MustacheStringFormatter::renderSection(std::ostringstream& outStr, uint32 sectionIdx, const FormatArgsMap& args
-    , const std::unordered_map<String, std::vector<FormatArgsMap>>& sectionArgs
-    , const std::unordered_map<String, MustacheSectionFormatter>& sectionFormatters
-    , const std::unordered_map<String, MustacheStringFormatter>& partials) const
+FORCE_INLINE void MustacheStringFormatter::renderSectionInner(std::ostringstream& outStr, const Section& section, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
+{
+    // Render all inner tags
+    for (uint32 matchIdx = section.sectionStartIdx + 1; matchIdx < section.sectionEndIdx;)
+    {
+        matchIdx = renderTag(outStr, matchIdx, context, partials);
+    }
+    // Append any thing before the sectionEndIdx
+    outStr << std::string_view(allMatches[section.sectionEndIdx].prefix().first, allMatches[section.sectionEndIdx].prefix().second);
+}
+
+void MustacheStringFormatter::renderSection(std::ostringstream& outStr, uint32 sectionIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
 {
     const Section& section = sections[sectionIdx];
 
@@ -401,41 +416,30 @@ void MustacheStringFormatter::renderSection(std::ostringstream& outStr, uint32 s
     String argName = matchStr;
     removeMustachePrefix(argName);
 
-    std::unordered_map<String, MustacheSectionFormatter>::const_iterator sectionFormatterItr = sectionFormatters.find(argName);
-    std::unordered_map<String, std::vector<FormatArgsMap>>::const_iterator additionalArgsItr = sectionArgs.find(argName);
-    FormatArgsMap::const_iterator argItr = args.find(argName);
+    std::unordered_map<String, MustacheSectionFormatter>::const_iterator sectionFormatterItr = context.sectionFormatters.find(argName);
+    std::unordered_map<String, std::vector<MustacheContext>>::const_iterator additionalContextsItr = context.sectionContexts.find(argName);
+    FormatArgsMap::const_iterator argItr = context.args.find(argName);
 
     // If not condition enabled then all condition must fail to render
     if (isANotSection(matchStr))
     {
-        if (sectionFormatterItr == sectionFormatters.cend()
-            && (additionalArgsItr == sectionArgs.cend() || additionalArgsItr->second.empty())
-            && (argItr == args.cend() || !argItr->second))
+        if (sectionFormatterItr == context.sectionFormatters.cend()
+            && (additionalContextsItr == context.sectionContexts.cend() || additionalContextsItr->second.empty())
+            && (argItr == context.args.cend() || !argItr->second))
         {
-            // Render all inner tags
-            for (uint32 matchIdx = section.sectionStartIdx + 1; matchIdx < section.sectionEndIdx;)
-            {
-                matchIdx = renderTag(outStr, matchIdx, args, sectionArgs, sectionFormatters, partials);
-            }
+            renderSectionInner(outStr, section, context, partials);
         }
     }
     else
     {
-        if (sectionFormatterItr != sectionFormatters.cend())
+        if (sectionFormatterItr != context.sectionFormatters.cend())
         {
             if (sectionFormatterItr->second.isBound())
             {
                 // Start match's suffix start itr to end match's prefix end itr gives the inner unformatted string
                 MustacheStringFormatter innerFormatter{ String(match.suffix().first, allMatches[section.sectionEndIdx].prefix().second) };
-                MustacheContext context
-                {
-                    .args = &args,
-                    .sectionArgs = &sectionArgs,
-                    .sectionFormatters = &sectionFormatters,
-                    .partials = &partials
-                };
 
-                outStr << sectionFormatterItr->second.invoke(innerFormatter, context);
+                outStr << sectionFormatterItr->second.invoke(innerFormatter, context, partials);
             }
             else
             {
@@ -444,37 +448,29 @@ void MustacheStringFormatter::renderSection(std::ostringstream& outStr, uint32 s
             }
         }
         // If sectionArgs are found and they are valid then we render the tags inside section
-        else if (additionalArgsItr != sectionArgs.cend() && !additionalArgsItr->second.empty())
+        else if (additionalContextsItr != context.sectionContexts.cend() && !additionalContextsItr->second.empty())
         {
-            for (const FormatArgsMap& additionalArgs : additionalArgsItr->second)
+            for (const MustacheContext& additionalContext : additionalContextsItr->second)
             {
                 // First additionalArgs to allow overriding default args
-                FormatArgsMap newArgs(additionalArgs);
-                newArgs.insert(args.cbegin(), args.cend());
+                MustacheContext newContext(additionalContext);
+                newContext.args.insert(context.args.cbegin(), context.args.cend());
+                newContext.sectionContexts.insert(context.sectionContexts.cbegin(), context.sectionContexts.cend());
+                newContext.sectionFormatters.insert(context.sectionFormatters.cbegin(), context.sectionFormatters.cend());
 
-                // Render all inner tags for each section args list
-                for (uint32 matchIdx = section.sectionStartIdx + 1; matchIdx < section.sectionEndIdx;)
-                {
-                    matchIdx = renderTag(outStr, matchIdx, newArgs, sectionArgs, sectionFormatters, partials);
-                }
+                // Render all inner tags for each section contexts
+                renderSectionInner(outStr, section, newContext, partials);
             }
         }
         // If section representing arg is true, Gives valid result and can render output
-        else if (argItr != args.cend() && argItr->second)
+        else if (argItr != context.args.cend() && argItr->second)
         {
-            // Render all inner tags
-            for (uint32 matchIdx = section.sectionStartIdx + 1; matchIdx < section.sectionEndIdx;)
-            {
-                matchIdx = renderTag(outStr, matchIdx, args, sectionArgs, sectionFormatters, partials);
-            }
+            renderSectionInner(outStr, section, context, partials);
         }
     }
 }
 
-uint32 MustacheStringFormatter::renderTag(std::ostringstream& outStr, uint32 matchIdx, const FormatArgsMap& args
-    , const std::unordered_map<String, std::vector<FormatArgsMap>>& sectionArgs
-    , const std::unordered_map<String, MustacheSectionFormatter>& sectionFormatters
-    , const std::unordered_map<String, MustacheStringFormatter>& partials) const
+uint32 MustacheStringFormatter::renderTag(std::ostringstream& outStr, uint32 matchIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
 {
     // Append match's prefix
     outStr << std::string_view(allMatches[matchIdx].prefix().first, allMatches[matchIdx].prefix().second);
@@ -496,7 +492,7 @@ uint32 MustacheStringFormatter::renderTag(std::ostringstream& outStr, uint32 mat
         }
         else
         {
-            outStr << partialItr->second.render(args, sectionArgs, sectionFormatters, partials);
+            outStr << partialItr->second.render(context, partials);
         }
     }
     else if (isASection(matchStr))
@@ -504,14 +500,14 @@ uint32 MustacheStringFormatter::renderTag(std::ostringstream& outStr, uint32 mat
         auto itr = std::find_if(sections.cbegin(), sections.cend(), [matchIdx](const Section& section) { return matchIdx == section.sectionStartIdx; });
         fatalAssert(itr != sections.cend(), "%s() : Section %s not found in sections list", __func__, argName);
         uint32 sectionIdx = std::distance(sections.cbegin(), itr);
-        renderSection(outStr, sectionIdx, args, sectionArgs, sectionFormatters, partials);
+        renderSection(outStr, sectionIdx, context, partials);
 
         return itr->sectionEndIdx + 1;
     }
     else if (!isAComment(matchStr))
     {
-        auto arg = args.find(argName);
-        if (arg == args.end())
+        auto arg = context.args.find(argName);
+        if (arg == context.args.end())
         {
             Logger::error("MustacheStringFormatter", "%s() : Could not find format arg for tag {{%s}}", __func__, matchStr);
         }
@@ -523,13 +519,12 @@ uint32 MustacheStringFormatter::renderTag(std::ostringstream& outStr, uint32 mat
     return matchIdx + 1;
 }
 
-String MustacheStringFormatter::render(const FormatArgsMap& args, const std::unordered_map<String, std::vector<FormatArgsMap>>& sectionArgs
-    , const std::unordered_map<String, MustacheSectionFormatter>& sectionFormatters, const std::unordered_map<String, MustacheStringFormatter>& partials) const
+String MustacheStringFormatter::render(const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
 {
     std::ostringstream outputStr;
     for (uint32 matchIdx = 0; matchIdx < allMatches.size();)
     {
-        matchIdx = renderTag(outputStr, matchIdx, args, sectionArgs, sectionFormatters, partials);
+        matchIdx = renderTag(outputStr, matchIdx, context, partials);
     }
     // Now append final suffix
     outputStr << std::string_view(allMatches.back().suffix().first, allMatches.back().suffix().second);

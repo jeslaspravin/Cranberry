@@ -102,6 +102,7 @@ public:
 
     virtual bool setFileSize(const int64& newSize) const = 0;
     virtual void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const = 0;
+    virtual void read(uint8* readTo, const uint32& bytesToRead) const = 0;
     virtual void write(const ArrayView<uint8>& writeBytes) const = 0;
 
     virtual bool deleteFile() = 0;

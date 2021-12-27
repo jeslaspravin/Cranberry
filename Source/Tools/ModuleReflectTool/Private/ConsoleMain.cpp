@@ -3,9 +3,10 @@
 #include "Logger/Logger.h"
 #include "Modules/ModuleManager.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
-#include "SampleCode.h"
-#include <array>
 #include "Types/TypesInfo.h"
+
+#include "Types/Platform/LFS/PathFunctions.h"
+#include "SampleCode.h"
 
 int32 main(int32 argsc, AChar** args)
 {
@@ -25,9 +26,10 @@ int32 main(int32 argsc, AChar** args)
     }
 
     //SampleCode::testLibClangParsing(srcDir);
-    SampleCode::testTypesAndProperties();
+    //SampleCode::testTypesAndProperties();
     SampleCode::testPropertySystem();
     //SampleCode::testRegex();
+    SampleCode::testTemplateReflectionGeneration();
 
     moduleManager->unloadModule("ReflectionRuntime");
     moduleManager->unloadModule("ProgramCore");

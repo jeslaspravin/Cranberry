@@ -3,6 +3,7 @@
 #include "Modules/ModuleManager.h"
 #include "Types/TypesInfo.h"
 #include "Property/Property.h"
+#include "Property/PropertyMetaData.h"
 
 #include <unordered_set>
 
@@ -404,6 +405,51 @@ const BaseProperty* ReflectionRuntimeModule::getType(const ReflectTypeInfo* type
     return retVal;
 }
 
+void ReflectionRuntimeModule::setMetaData(const BaseProperty* forProperty, std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+{
+    std::vector<std::pair<PropertyMetaDataKey, const PropertyMetaDataBase*>> initializerList;
+    initializerList.reserve(propertyMeta.size());
+    for (const PropertyMetaDataBase* metaData : propertyMeta)
+    {
+        initializerList.push_back({ {forProperty, metaData->metaType()}, metaData });
+    }
+    propertiesMetaData.insert(initializerList.cbegin(), initializerList.cend());
+    propertiesMetaFlags.insert({ forProperty, propertyMetaFlags });
+}
+
+std::vector<const PropertyMetaDataBase*> ReflectionRuntimeModule::getPropertyMetaData(const BaseProperty* prop) const
+{
+    std::vector<const PropertyMetaDataBase*> retVal;
+    for (const auto& metaData : propertiesMetaData)
+    {
+        if (metaData.first.first == prop)
+        {
+            retVal.emplace_back(metaData.second);
+        }
+    }
+    return retVal;
+}
+
+const PropertyMetaDataBase* ReflectionRuntimeModule::getPropertyMetaData(const BaseProperty* prop, const ReflectTypeInfo* typeInfo) const
+{
+    auto itr = propertiesMetaData.find({ prop, typeInfo });
+    if(itr != propertiesMetaData.cend())
+    {
+        return itr->second;
+    }
+    return nullptr;
+}
+
+uint64 ReflectionRuntimeModule::getPropertyMetaFlags(const BaseProperty* prop) const
+{
+    auto itr = propertiesMetaFlags.find(prop);
+    if (itr != propertiesMetaFlags.cend())
+    {
+        return itr->second;
+    }
+    return 0;
+}
+
 void ReflectionRuntimeModule::init()
 {
     initCommonProperties();
@@ -434,4 +480,12 @@ void ReflectionRuntimeModule::release()
     dbEnumTypes.clear();
     dbEnumTypesFromName.clear();
     dbOtherTypes.clear();
+
+    // Clear all meta data
+    for (const auto& propertyMetaData : propertiesMetaData)
+    {
+        delete propertyMetaData.second;
+    }
+    propertiesMetaFlags.clear();
+    propertiesMetaData.clear();
 }

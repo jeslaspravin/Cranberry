@@ -1,5 +1,6 @@
 #pragma once
-#include "String/String.h"
+
+#include "Types/Platform/LFS/PathFunctions.h"
 
 class GenericFile;
 
@@ -23,12 +24,17 @@ public:
     template <typename... Paths>
     CONST_EXPR static String combinePath(Paths&&... paths)
     {
-        return FileSystemType::combinePath(std::forward<Paths>(paths)...);
+        return PathFunctions::combinePath(std::forward<Paths>(paths)...);
     }
 
     static std::vector<String> listAllFiles(const String& directory, bool bRecursive)
     {
         return FileSystemType::listAllFiles(directory, bRecursive);
+    }
+
+    static std::vector<String> listFiles(const String& directory, bool bRecursive, const String& wildcard = "*")
+    {
+        return FileSystemType::listFiles(directory, bRecursive, wildcard);
     }
 
     static bool moveFile(GenericFile* moveFrom, GenericFile* moveTo) 
@@ -43,17 +49,5 @@ public:
     static bool replaceFile(GenericFile* replaceWith, GenericFile* replacing,GenericFile* backupFile) 
     {
         return FileSystemType::replaceFile(replaceWith,replacing,backupFile);
-    }
-
-    static String stripExtension(const String& fileName, String& extension)
-    {
-        String::size_type foundAt = fileName.rfind('.', fileName.length());
-
-        if (foundAt != String::npos) {
-            String newFileName = fileName.substr(0, foundAt);
-            extension = fileName.substr(foundAt + 1);
-            return newFileName;
-        }
-        return fileName;
     }
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IReflectionRuntime.h"
+#include "Types/HashTypes.h"
 #include "String/String.h"
 
 #include <unordered_map>
@@ -43,7 +44,13 @@ private:
     std::unordered_map<String, const EnumProperty*> dbEnumTypesFromName;
 
     std::unordered_map<const ReflectTypeInfo*, const BaseProperty*> dbOtherTypes;
+
+    using PropertyMetaDataKey = std::pair<const BaseProperty*, const ReflectTypeInfo*>;
+    std::unordered_map<PropertyMetaDataKey, const PropertyMetaDataBase*> propertiesMetaData;
+    std::unordered_map<const BaseProperty*, uint64> propertiesMetaFlags;
 public:
+    void setMetaData(const BaseProperty* forProperty, std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+
     /* IReflectionRuntimeModule finals */
     const ClassProperty* getStructType(const ReflectTypeInfo* typeInfo) final;
     const ClassProperty* getStructType(const String& structName) final;
@@ -55,6 +62,10 @@ public:
     const EnumProperty* getEnumType(const String& enumName) final;
 
     const BaseProperty* getType(const ReflectTypeInfo* typeInfo) final;
+
+    std::vector<const PropertyMetaDataBase*> getPropertyMetaData(const BaseProperty* prop) const final;
+    const PropertyMetaDataBase* getPropertyMetaData(const BaseProperty* prop, const ReflectTypeInfo* typeInfo) const final;
+    uint64 getPropertyMetaFlags(const BaseProperty* prop) const final;
 
     /* IModuleBase finals */
     void init() final;

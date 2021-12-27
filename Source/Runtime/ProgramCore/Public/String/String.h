@@ -64,12 +64,12 @@ public:
 
     FORCE_INLINE CONST_EXPR String replaceAllCopy(const String& from, const String& to) const
     {
-        String newStr = this->getChar();
+        String newStr{ this->getChar() };
         size_t replaceAtPos = 0;
         while ((replaceAtPos = newStr.find(from, replaceAtPos)) != npos)
         {
-            newStr.replace(replaceAtPos, from.size(), to);
-            replaceAtPos += to.size();
+            newStr.replace(replaceAtPos, from.length(), to);
+            replaceAtPos += to.length();
         }
         return newStr;
     }
@@ -79,8 +79,8 @@ public:
         size_t replaceAtPos = 0;
         while ((replaceAtPos = find(from, replaceAtPos)) != npos)
         {
-            replace(replaceAtPos, from.size(), to);
-            replaceAtPos += to.size();
+            replace(replaceAtPos, from.length(), to);
+            replaceAtPos += to.length();
         }
     }
 
@@ -198,6 +198,22 @@ public:
         }
         return s;
     }
+
+    CONST_EXPR static std::vector<String> split(const String& inStr, const String&& separator)
+    {
+        std::vector<String> outStrs;
+        uint64 replaceAtPos = 0;
+        uint64 offsetPos = 0;
+        while ((replaceAtPos = inStr.find(separator, offsetPos)) != npos)
+        {
+            // Since offsetPos is end of last separator and foundAtPos is where this separator is found, Whatever in between is what we need
+            outStrs.emplace_back(String(inStr.cbegin() + offsetPos, inStr.cbegin() + replaceAtPos));
+            offsetPos = replaceAtPos + separator.length();
+        }
+        // After final separator the suffix has to be added
+        outStrs.emplace_back(String(inStr.cbegin() + offsetPos, inStr.cend()));
+        return outStrs;
+    }
 };
 
 
@@ -236,6 +252,8 @@ template <typename T>
 concept StringType = IsString<T>::value;
 template <typename T>
 concept NonStringType = std::negation_v<IsString<T>>;
+template <typename... T>
+concept StringTypes = IsStringTypes<T...>::value;
 
 
 //

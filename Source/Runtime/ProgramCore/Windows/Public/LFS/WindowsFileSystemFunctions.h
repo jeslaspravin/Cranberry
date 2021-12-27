@@ -5,25 +5,9 @@
 class PROGRAMCORE_EXPORT WindowsFileSystemFunctions : public GenericFileSystemFunctions<WindowsFileSystemFunctions>
 {
 public:
-    template <typename FirstType, typename LastType, typename std::enable_if<IsStringTypes<FirstType, LastType>::value, int>::type = 0>
-    CONST_EXPR static String combinePath(FirstType&& firstPath, LastType&& lastPath)
-    {
-        String returnPath(std::forward<FirstType>(firstPath));
-        returnPath.append(FS_PATH_SEPARATOR);
-        returnPath.append(std::forward<LastType>(lastPath));
-        return returnPath;
-    }
-
-    template <typename BaseType,typename... Paths,typename std::enable_if<IsString<BaseType>::value && IsStringTypes<Paths...>::value,int>::type = 0>
-    CONST_EXPR static String combinePath(BaseType&& basePath, Paths&&... paths)
-    {
-        String returnPath(std::forward<BaseType>(basePath));
-        returnPath.append(FS_PATH_SEPARATOR);
-        returnPath.append(combinePath(std::forward<Paths>(paths)...));
-        return returnPath;
-    }
 
     static std::vector<String> listAllFiles(const String& directory, bool bRecursive);
+    static std::vector<String> listFiles(const String& directory, bool bRecursive, const String& wildcard);
     static String applicationDirectory(String &appName);
     static bool moveFile(GenericFile* moveFrom, GenericFile* moveTo);
     static bool copyFile(GenericFile* copyFrom, GenericFile* copyTo);

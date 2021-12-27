@@ -47,6 +47,7 @@ namespace GameBuilder.BuildFileUtils
                     }
                 }
             }
+            // Remove last "/"
             sanitizedPath.Remove(sanitizedPath.Length - 1, 1);
 
             outPath = sanitizedPath.ToString();

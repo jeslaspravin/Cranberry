@@ -1709,10 +1709,12 @@ namespace SampleCode
         MustacheStringFormatter mustacheTest{ testStr2 };
         Logger::log("Test", "Mustache formatted \n%s \n\tand another \n%s", peps.formatBasic(args), peps.formatBasic(args2));
 
+        MustacheContext context1
+        {
+            .sectionContexts = { { "Run", { MustacheContext{.args = args }, MustacheContext{.args = args2 } } } }
+        };
         Logger::log("Test", "Mustache rendered \n%s", mustacheTest.render(
-            {}
-            , {{ "Run", { args, args2 }}}
-            , {}
+            context1
             , {{ "Peps", peps }}
         ));
 
@@ -1727,11 +1729,11 @@ namespace SampleCode
             const FormatArgsMap* arg2;
             int32 count = 0;
 
-            String customFormat(const MustacheStringFormatter& formatter, const MustacheContext& context)
+            String customFormat(const MustacheStringFormatter& formatter, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials)
             {
-                String out = localFormatter->render((count % 2) == 0 ? *arg1 : *arg2);
+                String out = localFormatter->render({ (count % 2) == 0 ? *arg1 : *arg2 }, partials);
                 count++;
-                out += formatter.render(*context.args, *context.sectionArgs, *context.sectionFormatters, *context.partials);
+                out += formatter.render(context, partials);
                 return out;
             }
 
@@ -1755,14 +1757,18 @@ namespace SampleCode
             , &args
             , &args2
         };
+        MustacheContext context2
+        {
+            .args = 
+                {
+                    {"CanRecurse", FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse)}
+                    , {"Count", FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::getCount)}
+                },
+            .sectionFormatters = { {"MSectFormat", MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat)} }
+        };
         Logger::log("Test", "Mustache render dynamically modified recursive loop \n%s", sectFormatter.render(
-            { 
-                {"CanRecurse", FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse)}
-                , {"Count", FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::getCount)}
-            }
-            , {}
-            , { {"MSectFormat", MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat)} }
-            , { {"Recurse", sectFormatter}}
+            context2
+            , { {"Recurse", sectFormatter} }
         ));
 
         Logger::log("Test", PropertyHelper::getValidSymbolName("class <Niown>>"));
@@ -1775,6 +1781,14 @@ namespace SampleCode
         {
             std::vector<String> names;
             uint32 numNames;
+        };
+
+        enum ETestEnumType
+        {
+            E1 = 1,
+            E2,
+            E3,
+            E4
         };
     public:
         std::map<int32, TestInnerStruct> idToSection;
@@ -1794,6 +1808,17 @@ namespace SampleCode
         {
             Logger::log("TestPropertyClass", "%s() : New Name str %s", __func__, newNameStr);
         }
+
+        void setNewNameStr(const String& newName)
+        {
+            newNameStr = newName;
+        }
+
+        static void incAndPrintInt()
+        {
+            staticInteger++;
+            Logger::log("TestPropertyClass", "%s() : New int value %d", __func__, staticInteger);
+        }
     };
     int32 TestPropertyClass::staticInteger = 8235;
 
@@ -1808,8 +1833,6 @@ namespace SampleCode
 
             IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<TestPropertyClass*>()
                 , { &ThisType::createTestPropertyClassPtrProperty, &ThisType::initTestPropertyClassPtrProperty });
-            IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>()
-                , { &ThisType::createstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property, &ThisType::initstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property });
             IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>()
                 , { &ThisType::createstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property, &ThisType::initstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property });
             IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::map<int32, TestPropertyClass::TestInnerStruct>>()
@@ -2000,5 +2023,294 @@ namespace SampleCode
         {
             static_cast<const MemberFunctionWrapper*>(prop->memberFunctions[0]->funcPtr)->invokeVoid(object);
         }
+    }
+
+    void testTemplateReflectionGeneration()
+    {
+        String appName;
+        String appDir = FileSystemFunctions::applicationDirectory(appName);
+        appName = PathFunctions::stripExtension(appName);
+        std::vector<String> templateFiles = FileSystemFunctions::listFiles(PathFunctions::toAbsolutePath("../../../Source/Tools/ModuleReflectTool/Templates", appDir), true, "*.mustache");
+        std::unordered_map<String, MustacheStringFormatter> templates;
+        templates.reserve(templateFiles.size());
+        for (const String& filePath : templateFiles)
+        {
+            PlatformFile file(filePath);
+            file.setFileFlags(EFileFlags::Read);
+            file.setCreationAction(EFileFlags::OpenExisting);
+            file.setSharingMode(EFileSharing::ReadOnly);
+            file.openFile();
+
+            String fileContent;
+            fileContent.resize(file.fileSize());
+            if (!fileContent.empty())
+            {
+                file.read(reinterpret_cast<uint8*>(fileContent.data()), fileContent.size());
+                templates.insert({ PathFunctions::stripExtension(file.getFileName()), MustacheStringFormatter(fileContent) });
+            }
+            file.closeFile();
+        }
+
+        MustacheContext headerFileContext;
+        headerFileContext.args["HeaderFileId"] = PropertyHelper::getValidSymbolName(appName);
+        // #ReflectTypes contexts
+        {
+            std::vector<MustacheContext> reflectTypesContexts;
+
+            MustacheContext& reflectClassCntx = reflectTypesContexts.emplace_back();
+            reflectClassCntx.args["LineNumber"] = 10;
+            reflectClassCntx.args["TypeName"] = "TestPropertyClass";
+            reflectClassCntx.args["IsClass"] = true;
+            reflectClassCntx.args["IsBaseType"] = true;
+
+            MustacheContext& reflectStructCntx = reflectTypesContexts.emplace_back();
+            reflectStructCntx.args["LineNumber"] = 14;
+            reflectStructCntx.args["TypeName"] = "TestPropertyClass::TestInnerStruct";
+            reflectStructCntx.args["IsClass"] = false;
+
+            headerFileContext.sectionContexts.insert({ "ReflectTypes", std::move(reflectTypesContexts) });
+        }
+
+        MustacheContext sourceFileContext;
+        sourceFileContext.args["HeaderFileId"] = PropertyHelper::getValidSymbolName(appName);
+        sourceFileContext.args["HeaderInclude"] = PropertyHelper::getValidSymbolName(appName);
+
+        std::vector<MustacheContext>& allReflectTypes = sourceFileContext.sectionContexts["AllRegisterTypes"];
+        // QualifiedTypes
+        {
+            MustacheContext& classPtr = allReflectTypes.emplace_back();
+            classPtr.args["TypeName"] = "TestPropertyClass*";
+            classPtr.args["SanitizedName"] = PropertyHelper::getValidSymbolName("TestPropertyClass *");
+            classPtr.args["PropertyTypeName"] = "BaseProperty";
+            classPtr.args["RegisterFunctionName"] = "registerTypeFactory";
+
+            sourceFileContext.sectionContexts["QualifiedTypes"].emplace_back(classPtr);
+        }
+        // PairTypes
+        {
+            MustacheContext& mapElemPair = allReflectTypes.emplace_back();
+            mapElemPair.args["TypeName"] = "std::pair<const int32, TestPropertyClass::TestInnerStruct>";
+            mapElemPair.args["SanitizedName"] = PropertyHelper::getValidSymbolName("std::pair<const int32, TestPropertyClass::TestInnerStruct>");
+            mapElemPair.args["PropertyTypeName"] = "BaseProperty";
+            mapElemPair.args["RegisterFunctionName"] = "registerTypeFactory";
+
+            sourceFileContext.sectionContexts["PairTypes"].emplace_back(mapElemPair);
+        }
+        // ContainerTypes
+        {
+            MustacheContext& setInt = allReflectTypes.emplace_back();
+            setInt.args["TypeName"] = "std::set<uint64>";
+            setInt.args["SanitizedName"] = PropertyHelper::getValidSymbolName("std::set<uint64>");
+            setInt.args["PropertyTypeName"] = "BaseProperty";
+            setInt.args["RegisterFunctionName"] = "registerTypeFactory";
+            sourceFileContext.sectionContexts["ContainerTypes"].emplace_back(setInt);
+            
+            MustacheContext& vectorStr = allReflectTypes.emplace_back();
+            vectorStr.args["TypeName"] = "std::vector<String>";
+            vectorStr.args["SanitizedName"] = PropertyHelper::getValidSymbolName("std::vector<String>");
+            vectorStr.args["PropertyTypeName"] = "BaseProperty";
+            vectorStr.args["RegisterFunctionName"] = "registerTypeFactory";
+            sourceFileContext.sectionContexts["ContainerTypes"].emplace_back(vectorStr);
+        }
+        // MapTypes
+        {
+            MustacheContext& mapType = allReflectTypes.emplace_back();
+            mapType.args["TypeName"] = "std::map<int32, TestPropertyClass::TestInnerStruct>";
+            mapType.args["SanitizedName"] = PropertyHelper::getValidSymbolName("std::map<int32, TestPropertyClass::TestInnerStruct>");
+            mapType.args["PropertyTypeName"] = "BaseProperty";
+            mapType.args["RegisterFunctionName"] = "registerTypeFactory";
+
+            sourceFileContext.sectionContexts["MapTypes"].emplace_back(mapType);
+        }
+        // EnumTypes
+        {
+            MustacheContext& enumType = allReflectTypes.emplace_back();
+            enumType.args["TypeName"] = "TestPropertyClass::ETestEnumType";
+            enumType.args["SanitizedName"] = PropertyHelper::getValidSymbolName("TestPropertyClass::ETestEnumType");
+            enumType.args["PropertyTypeName"] = "EnumProperty";
+            enumType.args["RegisterFunctionName"] = "registerEnumFactory";
+
+            MustacheContext& enumTypesContext = sourceFileContext.sectionContexts["EnumTypes"].emplace_back(enumType);
+            enumTypesContext.args["CanUseAsFlags"] = false;
+            enumTypesContext.args["TypeMetaFlags"] = 0;
+            enumTypesContext.args["TypeMetaData"] = "";
+            std::vector<MustacheContext>& enumFields = enumTypesContext.sectionContexts["EnumFields"];
+            {
+                MustacheContext cntxt;
+                cntxt.args["EnumFieldName"] = "E1";
+                cntxt.args["EnumFieldValue"] = uint64(TestPropertyClass::ETestEnumType::E1);
+                cntxt.args["EnumFieldMetaFlags"] = 0;
+                cntxt.args["EnumFieldMetaData"] = "";
+                enumFields.emplace_back(cntxt);
+
+                cntxt = {};
+                cntxt.args["EnumFieldName"] = "E2";
+                cntxt.args["EnumFieldValue"] = uint64(TestPropertyClass::ETestEnumType::E2);
+                cntxt.args["EnumFieldMetaFlags"] = 0;
+                cntxt.args["EnumFieldMetaData"] = "";
+                enumFields.emplace_back(cntxt);
+
+                cntxt = {};
+                cntxt.args["EnumFieldName"] = "E3";
+                cntxt.args["EnumFieldValue"] = uint64(TestPropertyClass::ETestEnumType::E3);
+                cntxt.args["EnumFieldMetaFlags"] = 0;
+                cntxt.args["EnumFieldMetaData"] = "";
+                enumFields.emplace_back(cntxt);
+                cntxt = {};
+                cntxt.args["EnumFieldName"] = "E4";
+                cntxt.args["EnumFieldValue"] = uint64(TestPropertyClass::ETestEnumType::E4);
+                cntxt.args["EnumFieldMetaFlags"] = 0;
+                cntxt.args["EnumFieldMetaData"] = "";
+                enumFields.emplace_back(cntxt);
+            }
+        }
+        // ClassTypes
+        {
+            MustacheContext& classType = allReflectTypes.emplace_back();
+            classType.args["TypeName"] = "TestPropertyClass";
+            classType.args["SanitizedName"] = PropertyHelper::getValidSymbolName("TestPropertyClass");
+            classType.args["PropertyTypeName"] = "ClassProperty";
+            classType.args["RegisterFunctionName"] = "registerClassFactory";
+
+            MustacheContext& classTypeContext = sourceFileContext.sectionContexts["Classes"].emplace_back(classType);
+            classTypeContext.args["TypeMetaFlags"] = 0;
+            classTypeContext.args["TypeMetaData"] = "";
+            {
+                std::vector<MustacheContext>& classCtors = classTypeContext.sectionContexts["Ctors"];
+                {
+                    MustacheContext& ctor = classCtors.emplace_back();
+                    ctor.args["ParamsList"] = "String";
+                    ctor.args["AccessSpecifier"] = "Public";
+                    ctor.args["CtorMetaFlags"] = 0;
+                    ctor.args["CtorMetaData"] = "";
+                    std::vector<MustacheContext>& ctorParamsCnxt = ctor.sectionContexts["ParamsListContext"];
+                    MustacheContext& ctorStrParam = ctorParamsCnxt.emplace_back();
+                    ctorStrParam.args["ParamName"] = "newName";
+                    ctorStrParam.args["ParamTypeName"] = "String";
+                }
+                std::vector<MustacheContext>& memFuncs = classTypeContext.sectionContexts["MemberFuncs"];
+                {
+                    MustacheContext& memFunc = memFuncs.emplace_back();
+                    memFunc.args["FunctionName"] = "printNewNameStr";
+                    memFunc.args["ReturnTypeName"] = "void";
+                    memFunc.args["ParamsList"] = "";
+                    memFunc.args["FuncConst"] = true;
+                    memFunc.args["AccessSpecifier"] = "Public";
+                    memFunc.args["FuncMetaFlags"] = 0;
+                    memFunc.args["FuncMetaData"] = "";
+
+                    MustacheContext& memFuncSetter = memFuncs.emplace_back();
+                    memFuncSetter.args["FunctionName"] = "setNewNameStr";
+                    memFuncSetter.args["ReturnTypeName"] = "void";
+                    memFuncSetter.args["ParamsList"] = "String";
+                    memFuncSetter.args["FuncConst"] = false;
+                    memFuncSetter.args["AccessSpecifier"] = "Public";
+                    memFuncSetter.args["FuncMetaFlags"] = 0;
+                    memFuncSetter.args["FuncMetaData"] = "";
+                    std::vector<MustacheContext>& memFuncSetterParamsCnxt = memFuncSetter.sectionContexts["ParamsListContext"];
+                    MustacheContext& strParam = memFuncSetterParamsCnxt.emplace_back();
+                    strParam.args["ParamName"] = "newName";
+                    strParam.args["ParamTypeName"] = "const String &";
+                }
+                std::vector<MustacheContext>& staticFuncs = classTypeContext.sectionContexts["StaticFuncs"];
+                {
+                    MustacheContext& staticFunc = staticFuncs.emplace_back();
+                    staticFunc.args["FunctionName"] = "incAndPrintInt";
+                    staticFunc.args["ReturnTypeName"] = "void";
+                    staticFunc.args["ParamsList"] = "";
+                    staticFunc.args["AccessSpecifier"] = "Public";
+                    staticFunc.args["FuncMetaFlags"] = 0;
+                    staticFunc.args["FuncMetaData"] = "";
+                }
+                std::vector<MustacheContext>& memFields = classTypeContext.sectionContexts["MemberFields"];
+                {
+                    MustacheContext& idToSectField = memFields.emplace_back();
+                    idToSectField.args["FieldName"] = "idToSection";
+                    idToSectField.args["FieldTypeName"] = "std::map<int32, TestPropertyClass::TestInnerStruct>";
+                    idToSectField.args["AccessSpecifier"] = "Public";
+                    idToSectField.args["FieldMetaFlags"] = 0;
+                    idToSectField.args["FieldMetaData"] = "";
+
+                    MustacheContext& strField = memFields.emplace_back();
+                    strField.args["FieldName"] = "newNameStr";
+                    strField.args["FieldTypeName"] = "String";
+                    strField.args["AccessSpecifier"] = "Public";
+                    strField.args["FieldMetaFlags"] = 0;
+                    strField.args["FieldMetaData"] = "";
+
+                    MustacheContext& nxtClsField = memFields.emplace_back();
+                    nxtClsField.args["FieldName"] = "nextClass";
+                    nxtClsField.args["FieldTypeName"] = "TestPropertyClass*";
+                    nxtClsField.args["AccessSpecifier"] = "Public";
+                    nxtClsField.args["FieldMetaFlags"] = 0;
+                    nxtClsField.args["FieldMetaData"] = "";
+
+                    MustacheContext& hndsField = memFields.emplace_back();
+                    hndsField.args["FieldName"] = "handles";
+                    hndsField.args["FieldTypeName"] = "std::set<uint64>";
+                    hndsField.args["AccessSpecifier"] = "Public";
+                    hndsField.args["FieldMetaFlags"] = 0;
+                    hndsField.args["FieldMetaData"] = "";
+                }
+                static int32 staticInteger;
+                std::vector<MustacheContext>& staticFields = classTypeContext.sectionContexts["StaticFields"];
+                {
+                    MustacheContext& staticIntField = staticFields.emplace_back();
+                    staticIntField.args["FieldName"] = "staticInteger";
+                    staticIntField.args["FieldTypeName"] = "int32";
+                    staticIntField.args["AccessSpecifier"] = "Public";
+                    staticIntField.args["FieldMetaFlags"] = 0;
+                    staticIntField.args["FieldMetaData"] = "";
+                }
+            }
+
+            MustacheContext& structType = allReflectTypes.emplace_back();
+            structType.args["TypeName"] = "TestPropertyClass::TestInnerStruct";
+            structType.args["SanitizedName"] = PropertyHelper::getValidSymbolName("TestPropertyClass::TestInnerStruct");
+            structType.args["PropertyTypeName"] = "ClassProperty";
+            structType.args["RegisterFunctionName"] = "registerStructFactory";
+
+            MustacheContext& structTypeContext = sourceFileContext.sectionContexts["Classes"].emplace_back(structType);
+            structTypeContext.args["TypeMetaFlags"] = 0;
+            structTypeContext.args["TypeMetaData"] = "";
+            {
+                std::vector<MustacheContext>& memFields = structTypeContext.sectionContexts["MemberFields"];
+                {
+                    MustacheContext& idToSectField = memFields.emplace_back();
+                    idToSectField.args["FieldName"] = "names";
+                    idToSectField.args["FieldTypeName"] = "std::vector<String>";
+                    idToSectField.args["AccessSpecifier"] = "Public";
+                    idToSectField.args["FieldMetaFlags"] = 0;
+                    idToSectField.args["FieldMetaData"] = "";
+
+                    MustacheContext& strField = memFields.emplace_back();
+                    strField.args["FieldName"] = "numNames";
+                    strField.args["FieldTypeName"] = "uint32";
+                    strField.args["AccessSpecifier"] = "Public";
+                    strField.args["FieldMetaFlags"] = 0;
+                    strField.args["FieldMetaData"] = "";
+                }
+            }
+        }
+
+        // Write header file
+        String headerContent = templates["ReflectedHeader"].render(headerFileContext, templates);
+        PlatformFile headerFile(PathFunctions::combinePath(appDir, "Saved", "Test", appName + ".gen.h"));
+        headerFile.setCreationAction(EFileFlags::CreateAlways);
+        headerFile.setFileFlags(EFileFlags::Write);
+        headerFile.setSharingMode(EFileSharing::ReadOnly);
+        headerFile.openOrCreate();
+        headerFile.write({ reinterpret_cast<uint8*>(headerContent.data()), uint32(headerContent.size()) });
+        headerFile.closeFile();
+
+        // Write source file
+        String sourceContent = templates["ReflectedSource"].render(sourceFileContext, templates);
+        PlatformFile srcFile(PathFunctions::combinePath(appDir, "Saved", "Test", appName + ".gen.cpp"));
+        srcFile.setCreationAction(EFileFlags::CreateAlways);
+        srcFile.setFileFlags(EFileFlags::Write);
+        srcFile.setSharingMode(EFileSharing::ReadOnly);
+        srcFile.openOrCreate();
+        srcFile.write({ reinterpret_cast<uint8*>(sourceContent.data()), uint32(sourceContent.size()) });
+        srcFile.closeFile();
     }
 }

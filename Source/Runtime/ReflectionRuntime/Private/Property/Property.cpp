@@ -2,11 +2,28 @@
 #include "Types/TypesInfo.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "IReflectionRuntime.h"
+#include "Property/PropertyMetaData.h"
+#include "ReflectionRuntimeModule.h"
 
 BaseProperty::BaseProperty(const String& propName, EPropertyType propType)
     : name(propName)
     , type(propType)
 {}
+
+const PropertyMetaDataBase* BaseProperty::getMetaData(const ReflectTypeInfo * typeInfo) const
+{
+    return IReflectionRuntimeModule::get()->getPropertyMetaData(this, typeInfo);
+}
+
+FORCE_INLINE uint64 BaseProperty::getMetaFlags() const
+{
+    return IReflectionRuntimeModule::get()->getPropertyMetaFlags(this);
+}
+
+FORCE_INLINE void BaseProperty::setMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+{
+    static_cast<ReflectionRuntimeModule*>(IReflectionRuntimeModule::get())->setMetaData(this, propertyMeta, propertyMetaFlags);
+}
 
 //////////////////////////////////////////////////////////////////////////
 /// FieldProperty
@@ -25,6 +42,16 @@ FieldProperty::~FieldProperty()
     fieldPtr = nullptr;
 }
 
+void FieldProperty::setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+{
+    setMetaData(propertyMeta, propertyMetaFlags);
+}
+
+uint64 FieldProperty::getPropertyMetaFlags() const
+{
+    return getMetaFlags();
+}
+
 //////////////////////////////////////////////////////////////////////////
 /// FunctionProperty
 //////////////////////////////////////////////////////////////////////////
@@ -39,6 +66,16 @@ FunctionProperty::~FunctionProperty()
 {
     delete funcPtr;
     funcPtr = nullptr;
+}
+
+void FunctionProperty::setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+{
+    setMetaData(propertyMeta, propertyMetaFlags);
+}
+
+uint64 FunctionProperty::getPropertyMetaFlags() const
+{
+    return getMetaFlags();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -81,6 +118,16 @@ ClassProperty::~ClassProperty()
     staticFunctions.clear();
 }
 
+void ClassProperty::setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+{
+    setMetaData(propertyMeta, propertyMetaFlags);
+}
+
+uint64 ClassProperty::getPropertyMetaFlags() const
+{
+    return getMetaFlags();
+}
+
 //////////////////////////////////////////////////////////////////////////
 /// EnumProperty
 //////////////////////////////////////////////////////////////////////////
@@ -89,6 +136,26 @@ EnumProperty::EnumProperty(const String& enumName, const ReflectTypeInfo* enumTy
     : TypedProperty(enumName, EPropertyType::EnumType, enumTypeInfo)
     , bIsFlags(bCanBeUsedAsFlags)
 {}
+
+EnumProperty* EnumProperty::addEnumField(const String& fieldName, uint64 fieldValue, uint64 metaFlags, std::vector<const PropertyMetaDataBase*> fieldMetaData)
+{
+    fields.emplace_back(EnumField{ fieldName, fieldValue, metaFlags });
+    for (const PropertyMetaDataBase* metaData : fieldMetaData)
+    {
+        fieldsMeta.insert({ { fieldValue, metaData->metaType() }, metaData });
+    }
+    return this;
+}
+
+void EnumProperty::setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+{
+    setMetaData(propertyMeta, propertyMetaFlags);
+}
+
+uint64 EnumProperty::getPropertyMetaFlags() const
+{
+    return getMetaFlags();
+}
 
 //////////////////////////////////////////////////////////////////////////
 /// PointerProperty

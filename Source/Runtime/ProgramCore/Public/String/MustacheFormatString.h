@@ -17,13 +17,12 @@ class MustacheStringFormatter;
 //mustache(1), http://mustache.github.io/
 //
 
-using MustacheSectionFormatter = SingleCastDelegate<String, const MustacheStringFormatter&, const MustacheContext&>;
+using MustacheSectionFormatter = SingleCastDelegate<String, const MustacheStringFormatter&, const MustacheContext&, const std::unordered_map<String, MustacheStringFormatter>&>;
 struct MustacheContext
 {
-    const FormatArgsMap* args;
-    const std::unordered_map<String, std::vector<FormatArgsMap>>* sectionArgs;
-    const std::unordered_map<String, MustacheSectionFormatter>* sectionFormatters;
-    const std::unordered_map<String, MustacheStringFormatter>* partials;
+    FormatArgsMap args;
+    std::unordered_map<String, std::vector<MustacheContext>> sectionContexts;
+    std::unordered_map<String, MustacheSectionFormatter> sectionFormatters;
 };
 
 // This is just a sub set of entire mustache tags
@@ -50,6 +49,7 @@ private:
     String fmtStr;
     std::vector<std::smatch> allMatches;
     std::vector<Section> sections;
+    void parseFmtStr();
 
     FORCE_INLINE bool isASection(const String& tagName) const { return tagName.startsWith("#") || tagName.startsWith("^"); }
     FORCE_INLINE bool isANotSection(const String& tagName) const { return tagName.startsWith("^"); }
@@ -58,15 +58,36 @@ private:
     FORCE_INLINE bool isAPartial(const String& tagName) const { return tagName.startsWith(">"); }
     FORCE_INLINE void removeMustachePrefix(String& tagName) const;
 
-    void renderSection(std::ostringstream& outStr, uint32 sectionIdx, const FormatArgsMap& args, const std::unordered_map<String, std::vector<FormatArgsMap>>& sectionArgs
-        , const std::unordered_map<String, MustacheSectionFormatter>& sectionFormatters
-        , const std::unordered_map<String, MustacheStringFormatter>& partials) const;
+    void renderSection(std::ostringstream& outStr, uint32 sectionIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
+    FORCE_INLINE void renderSectionInner(std::ostringstream& outStr, const Section& section, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
     // Returns next match idx to render 
-    uint32 renderTag(std::ostringstream& outStr, uint32 matchIdx, const FormatArgsMap& args, const std::unordered_map<String, std::vector<FormatArgsMap>>& sectionArgs
-        , const std::unordered_map<String, MustacheSectionFormatter>& sectionFormatters
-        , const std::unordered_map<String, MustacheStringFormatter>& partials) const;
+    uint32 renderTag(std::ostringstream& outStr, uint32 matchIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
 public:
+    MustacheStringFormatter() = default;
     MustacheStringFormatter(const String& fmt);
+    FORCE_INLINE MustacheStringFormatter(const MustacheStringFormatter& other)
+        : fmtStr(other.fmtStr)
+    {
+        parseFmtStr();
+    }
+    FORCE_INLINE MustacheStringFormatter(MustacheStringFormatter&& other)
+        : fmtStr(std::move(other.fmtStr))
+    {
+        parseFmtStr();
+    }
+    FORCE_INLINE MustacheStringFormatter& operator=(const MustacheStringFormatter& other)
+    {
+        fmtStr = other.fmtStr;
+        parseFmtStr();
+        return *this;
+    }
+    FORCE_INLINE MustacheStringFormatter& operator=(MustacheStringFormatter&& other)
+    {
+        fmtStr = std::move(other.fmtStr);
+        parseFmtStr();
+        return *this;
+    }
+
 
     // Just replaces all the tag with value(Assumes all tags in format as basic Variables)
     // Ignores comment tags
@@ -75,15 +96,5 @@ public:
     String formatBasic(const FormatArgsMap& formatArgs) const;
 
     // Warning use partials with caution to avoid infinite recursions, When using partials try to wrap around a branch with lambda condition check
-    FORCE_INLINE String render(const FormatArgsMap& args) const
-    {
-        return render(args, {}, {}, {});
-    }
-    FORCE_INLINE String render(const FormatArgsMap& args, const std::unordered_map<String, std::vector<FormatArgsMap>>& sectionArgs) const
-    {
-        return render(args, sectionArgs, {}, {});
-    }
-    String render(const FormatArgsMap& args, const std::unordered_map<String, std::vector<FormatArgsMap>>& sectionArgs
-        , const std::unordered_map<String, MustacheSectionFormatter>& sectionFormatters
-        , const std::unordered_map<String, MustacheStringFormatter>& partials) const;
+    String render(const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
 };
