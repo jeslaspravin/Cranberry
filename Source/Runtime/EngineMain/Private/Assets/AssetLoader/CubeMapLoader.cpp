@@ -36,7 +36,7 @@ HDRLoader::HDRLoader(const String& assetPath)
 {
     PlatformFile textureFile(assetPath);
     textureFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
-    textureName = FileSystemFunctions::stripExtension(textureFile.getFileName(), textureName);// Extension is passed in as dummy(same textureName)
+    textureName = PathFunctions::stripExtension(textureFile.getFileName(), textureName);// Extension is passed in as dummy(same textureName)
     if (textureFile.exists() && textureFile.openFile())
     {
         std::vector<uint8> fileData;
@@ -93,7 +93,7 @@ AssetBase* AssetLoaderLibrary::loadCubeMap(const String& assetPath)
     EnvironmentMapAsset* envMapsAsset = nullptr;
 
     String extension;
-    FileSystemFunctions::stripExtension(assetPath, extension);
+    PathFunctions::stripExtension(assetPath, extension);
     if (extension.startsWith("hdr"))
     {
         loader = new HDRLoader(assetPath);

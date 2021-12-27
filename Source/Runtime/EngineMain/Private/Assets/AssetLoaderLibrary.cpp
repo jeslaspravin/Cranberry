@@ -5,7 +5,7 @@
 EAssetType::Type AssetLoaderLibrary::typeFromAssetPath(const String& assetPath)
 {
     String extension;
-    FileSystemFunctions::stripExtension(assetPath, extension);
+    PathFunctions::stripExtension(assetPath, extension);
 
     const AChar* extensionChar = extension.getChar();
     if (std::strcmp(extensionChar, "obj") == 0)

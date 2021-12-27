@@ -15,7 +15,7 @@ TextureLoader::TextureLoader(const String& texturePath)
 {
     PlatformFile textureFile(texturePath);
     textureFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
-    textureName = FileSystemFunctions::stripExtension(textureFile.getFileName(), textureName);// Extension is passed in as dummy(same textureName)
+    textureName = PathFunctions::stripExtension(textureFile.getFileName());// Extension is passed in as dummy(same textureName)
     if (textureFile.exists() && textureFile.openFile())
     {
         std::vector<uint8> fileData;
