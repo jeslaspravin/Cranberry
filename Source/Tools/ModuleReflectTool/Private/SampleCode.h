@@ -68,4 +68,5 @@ namespace SampleCode
     void testTypesAndProperties();
     void testPropertySystem();
     void testRegex();
+    void testTemplateReflectionGeneration();
 }

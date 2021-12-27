@@ -1,0 +1,18 @@
+#pragma once
+/* Generated codes do not modify here */
+#include "ReflectionCommonHeaders.h"
+
+#ifdef HEADER_FILE_ID
+#undef HEADER_FILE_ID
+#endif
+
+#define HEADER_FILE_ID {{HeaderFileId}}
+
+{{!For each reflect struct/class types expand below}}
+{{#ReflectTypes}}
+#define {{HeaderFileId}}_{{LineNumber}}_GENERATED_CODES \
+public: \
+{{>StaticTypeGetter}} {{#IsClass}}\
+{{>VirtualTypeGetter}}
+{{/IsClass}}
+{{/ReflectTypes}}

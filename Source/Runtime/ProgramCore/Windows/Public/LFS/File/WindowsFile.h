@@ -25,6 +25,7 @@ public:
 
     bool setFileSize(const int64& newSize) const override;
     void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const override;
+    void read(uint8* readTo, const uint32& bytesToRead) const override;
     void write(const ArrayView<uint8>& writeBytes) const override;
 
     bool deleteFile() override;

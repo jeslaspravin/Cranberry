@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CustomProperty.h"
+#include "Property/CustomProperty.h"
 
 #include <set>
 #include <unordered_set>

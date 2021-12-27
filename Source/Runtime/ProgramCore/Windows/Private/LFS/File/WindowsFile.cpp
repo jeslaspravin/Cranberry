@@ -217,6 +217,35 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*=
     seek(filePointerCache);
 }
 
+void WindowsFile::read(uint8* readTo, const uint32& bytesToRead) const
+{
+    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
+    {
+        return;
+    }
+
+    const dword readBufferSize = 10 * 1024 * 1024;// 10MB
+
+    uint64 filePointerCache = filePointer();
+    uint64 availableSizeCanRead = (fileSize() - filePointerCache);
+    dword bytesLeftToRead = (dword)(availableSizeCanRead > bytesToRead ? bytesToRead : availableSizeCanRead);
+
+    uint64 filePointerOffset = 0;
+    dword bytesLastRead = 0;
+    while (bytesLeftToRead > 0)
+    {
+        ReadFile(getFileHandleRaw(), readTo + filePointerOffset, (bytesLeftToRead > readBufferSize)
+            ? readBufferSize : bytesLeftToRead
+            , &bytesLastRead, nullptr);
+
+        bytesLeftToRead -= bytesLastRead;
+        filePointerOffset += bytesLastRead;
+        seek(filePointerOffset + filePointerCache);
+    }
+
+    seek(filePointerCache);
+}
+
 void WindowsFile::write(const ArrayView<uint8>& writeBytes) const
 {
     if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Write))

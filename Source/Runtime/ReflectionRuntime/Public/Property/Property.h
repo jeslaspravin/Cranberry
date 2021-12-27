@@ -1,11 +1,14 @@
 #pragma once
 #include "String/String.h"
+#include "Types/HashTypes.h"
 #include "ReflectionRuntimeExports.h"
 
 #include <utility>
+#include <map>
 
 class BaseFieldWrapper;
 class BaseFunctionWrapper;
+class PropertyMetaDataBase;
 struct ReflectTypeInfo;
 class ClassProperty;
 
@@ -31,6 +34,10 @@ public:
     String name;
     EPropertyType type;
 
+protected:
+    const PropertyMetaDataBase* getMetaData(const ReflectTypeInfo* typeInfo) const;
+    uint64 getMetaFlags() const;
+    void setMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
 public:
     BaseProperty(const String& propName, EPropertyType propType);
     BaseProperty() = delete;
@@ -100,6 +107,16 @@ public:
         fieldPtr = new ConstructType(std::forward<CTorArgs>(args)...);
         return this;
     }
+
+    void setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+
+    // Get functions
+    template <class MetaType> 
+    FORCE_INLINE const MetaType* getPropertyMetaData() const
+    {
+        return static_cast<const MetaType*>(getMetaData(typeInfoFrom<MetaType>()));
+    }
+    uint64 getPropertyMetaFlags() const;
 };
 
 
@@ -148,6 +165,16 @@ public:
         funcPtr = new ConstructType(std::forward<CTorArgs>(args)...);
         return this;
     }
+
+    void setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+
+    // Get functions
+    template <class MetaType>
+    FORCE_INLINE const MetaType* getPropertyMetaData() const
+    {
+        return static_cast<const MetaType*>(getMetaData(typeInfoFrom<MetaType>()));
+    }
+    uint64 getPropertyMetaFlags() const;
 };
 
 class REFLECTIONRUNTIME_EXPORT ClassProperty final : public TypedProperty
@@ -202,30 +229,49 @@ public:
         staticFunctions.emplace_back(funcProp);
         return funcProp;
     }
+
+    void setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+
+    // Get functions
+    template <class MetaType>
+    FORCE_INLINE const MetaType* getPropertyMetaData() const
+    {
+        return static_cast<const MetaType*>(getMetaData(typeInfoFrom<MetaType>()));
+    }
+    uint64 getPropertyMetaFlags() const;
 };
 
 class REFLECTIONRUNTIME_EXPORT EnumProperty final : public TypedProperty
 {
 public:
+    // enum field's value and type of meta data class is unique key here
+    using EnumFieldMetaKey = std::pair<uint64, const ReflectTypeInfo*>;
     struct EnumField
     {
         String entryName;
         uint64 value;
+        uint64 metaFlags;
     };
 
 public:
     std::vector<EnumField> fields;
+    std::map<EnumFieldMetaKey, const PropertyMetaDataBase*> fieldsMeta;
     // If this enum is flags
     bool bIsFlags;
 public:
     // Complete class name including namespace/classes
     EnumProperty(const String& enumName, const ReflectTypeInfo* enumTypeInfo, bool bCanBeUsedAsFlags);
 
-    FORCE_INLINE EnumProperty* addEnumField(const String& fieldName, uint64 fieldValue)
+    EnumProperty* addEnumField(const String& fieldName, uint64 fieldValue, uint64 metaFlags, std::vector<const PropertyMetaDataBase*> fieldMetaData);
+    void setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+
+    // Get functions
+    template <class MetaType>
+    FORCE_INLINE const MetaType* getPropertyMetaData() const
     {
-        fields.emplace_back(EnumField{ fieldName, fieldValue });
-        return this;
+        return static_cast<const MetaType*>(getMetaData(typeInfoFrom<MetaType>()));
     }
+    uint64 getPropertyMetaFlags() const;
 };
 
 // Will be class that has proper reflection

@@ -67,3 +67,15 @@ namespace HashUtility
         hashAllInto(outSeed, std::forward<Types>(hashables)...);
     }
 }
+
+
+template <typename FirstType, typename SecondType>
+struct PROGRAMCORE_EXPORT std::hash<std::pair<FirstType, SecondType>>
+{
+    NODISCARD size_t operator()(const std::pair<FirstType, SecondType>& val) const noexcept
+    {
+        auto hashCode = HashUtility::hash(val.first);
+        HashUtility::hashCombine(hashCode, val.second);
+        return hashCode;
+    }
+};

@@ -84,6 +84,7 @@ struct PROGRAMCORE_EXPORT FormatArg
     ArgValue value;
     enum
     {
+        NoType,
         Bool,
         UInt8,
         UInt16,
@@ -99,6 +100,7 @@ struct PROGRAMCORE_EXPORT FormatArg
         AsString // Whatever other type that will be stored as string after toString conversion
     } type;
 
+    FormatArg() : value(), type(NoType) {}
     FormatArg(bool argValue)    : type(Bool)    { value.fundamentalVals.boolVal = argValue; }
     FormatArg(uint8 argValue)   : type(UInt8)   { value.fundamentalVals.uint8Val = argValue; }
     FormatArg(uint16 argValue)  : type(UInt16)  { value.fundamentalVals.uint16Val = argValue; }

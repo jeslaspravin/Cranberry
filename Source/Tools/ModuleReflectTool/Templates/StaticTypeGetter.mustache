@@ -1,0 +1,5 @@
+static const ClassProperty* staticType() \
+{ \
+{{#IsClass}}    return IReflectionRuntimeModule::getClassType<{{TypeName}}>();{{/IsClass}} \
+{{^IsClass}}    return IReflectionRuntimeModule::getStructType<{{TypeName}}>();{{/IsClass}} \
+}

@@ -39,9 +39,22 @@ generate_cpp_console_project()
 set(delay_load_dlls
     libclang
 )
-target_compile_definitions(${target_name} PRIVATE
-    LLVM_INSTALL_PATH="${LLVM_INSTALL_PREFIX}"
+target_compile_definitions(${target_name} 
+    PRIVATE
+        LLVM_INSTALL_PATH="${LLVM_INSTALL_PREFIX}"
 )
 mark_delay_loaded_dlls()
 # we delay load here
 #copy_target_exe_runtime_deps(${target_name})
+
+# Add mustache templates to sources list
+file (GLOB_RECURSE mustache_templates 
+    LIST_DIRECTORIES false
+    RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+    CONFIGURE_DEPENDS
+    Templates/*.[Mm]ustache)
+source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${mustache_templates})
+target_sources(${target_name}
+    PRIVATE
+        ${mustache_templates}
+)

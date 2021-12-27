@@ -4,7 +4,7 @@
 
 namespace EFileFlags
 {
-    enum PROGRAMCORE_EXPORT EFileFlags : uint8
+    enum EFileFlags : uint8
     {
         None = 0x00,
         Read = 0x01,
@@ -27,7 +27,7 @@ namespace FileFlags
 
 namespace EFileSharing
 {
-    enum PROGRAMCORE_EXPORT EFileSharing : uint8 
+    enum EFileSharing : uint8 
     {
         NoSharing = 0x00,
         DeleteOnly = 0x01,
@@ -38,7 +38,7 @@ namespace EFileSharing
 
 namespace EFileAdditionalFlags
 {
-    enum PROGRAMCORE_EXPORT EFileAdditionalFlags : uint32 
+    enum EFileAdditionalFlags : uint32 
     {
         // File property flags
         Normal = 0x00000000,// Default, No special attributes

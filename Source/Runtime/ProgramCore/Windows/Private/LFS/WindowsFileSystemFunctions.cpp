@@ -4,7 +4,7 @@
 
 #include <queue>
 
-std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& directory, bool bRecursive)
+FORCE_INLINE std::vector<String> WindowsFileSystemFunctions::listFiles(const String& directory, bool bRecursive, const String& wildcard)
 {
     std::vector<String> fileList;
     {
@@ -24,19 +24,21 @@ std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& direc
         directories.pop();
 
         WIN32_FIND_DATAA data;
-        HANDLE fHandle = FindFirstFileA(combinePath(currentDir, "*").c_str(), &data);
+        HANDLE fHandle = FindFirstFileA(combinePath(currentDir, wildcard).c_str(), &data);
 
         if (fHandle != INVALID_HANDLE_VALUE)
         {
-            do {
+            do
+            {
                 String path = combinePath(currentDir, data.cFileName);
                 String fileName = data.cFileName;
+                // To replace . and .. that is part of file system redirectors
                 fileName.replaceAll(".", "");
                 if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
                 {
                     fileList.push_back(path);
                 }
-                else if(bRecursive && !fileName.empty())
+                else if (bRecursive && !fileName.empty())
                 {
                     directories.push(path);
                 }
@@ -46,6 +48,11 @@ std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& direc
         }
     }
     return fileList;
+}
+
+std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& directory, bool bRecursive)
+{
+    return listFiles(directory, bRecursive, "*");
 }
 
 String WindowsFileSystemFunctions::applicationDirectory(String &appName)
