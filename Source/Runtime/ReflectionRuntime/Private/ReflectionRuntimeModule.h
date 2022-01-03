@@ -49,7 +49,7 @@ private:
     std::unordered_map<PropertyMetaDataKey, const PropertyMetaDataBase*> propertiesMetaData;
     std::unordered_map<const BaseProperty*, uint64> propertiesMetaFlags;
 public:
-    void setMetaData(const BaseProperty* forProperty, std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+    void setMetaData(const BaseProperty* forProperty, const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
 
     /* IReflectionRuntimeModule finals */
     const ClassProperty* getStructType(const ReflectTypeInfo* typeInfo) final;

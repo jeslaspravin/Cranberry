@@ -29,6 +29,11 @@ public:
     static String toRelativePath(const String& absPath, const String& relToPath);
     // To abs path converts relative path to absolute canonical path and replaces any up directory redirectors
     static String toAbsolutePath(const String& relPath, const String& basePath);
+    /*
+    * Determines if checkDir is sub directory of basePath
+    * C:/ABC/DEF/GHI/Some.txt is sub directory of C:/ABC/DEF and not sub directory of C:/ABC/DEF/JKL
+    */
+    static bool isSubdirectory(const String& checkPath, const String& basePath);
 
     static String stripExtension(const String& fileName, String& extension);
     static String stripExtension(const String& fileName);

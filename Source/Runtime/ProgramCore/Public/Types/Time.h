@@ -2,10 +2,15 @@
 #include "Types/CoreTypes.h"
 #include "ProgramCoreExports.h"
 
+class String;
+
 // Data type to send time units in for conversions or other operations
 using TimeConvType = float;
 // Tick representation
 using TickRep = int64;
+
+// If real world clock time is needed use clockTimeNow
+// If time interval is needed use timeNow
 
 // IN MILLISECONDS PRECISION
 namespace Time
@@ -22,6 +27,8 @@ namespace Time
 
     PROGRAMCORE_EXPORT TickRep timeNow();
     PROGRAMCORE_EXPORT TickRep clockTimeNow();
+
+    PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
 }
 
 // IN NANOSECONDS PRECISION
@@ -39,6 +46,8 @@ namespace HighResolutionTime
 
     PROGRAMCORE_EXPORT TickRep timeNow();
     PROGRAMCORE_EXPORT TickRep clockTimeNow();
+
+    PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
 }
 
 // Uses High Res Time

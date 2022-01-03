@@ -37,7 +37,7 @@ public:
 protected:
     const PropertyMetaDataBase* getMetaData(const ReflectTypeInfo* typeInfo) const;
     uint64 getMetaFlags() const;
-    void setMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+    void setMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
 public:
     BaseProperty(const String& propName, EPropertyType propType);
     BaseProperty() = delete;
@@ -108,7 +108,7 @@ public:
         return this;
     }
 
-    void setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+    FieldProperty* setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType> 
@@ -166,7 +166,7 @@ public:
         return this;
     }
 
-    void setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+    FunctionProperty* setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>
@@ -189,6 +189,8 @@ public:
     std::vector<const FieldProperty*> staticFields;
     // We do not support function overload for reflect functions(We can but we don't)
     std::vector<const FunctionProperty*> staticFunctions;
+
+    std::vector<const ClassProperty*> baseClasses;
 public:
     // Complete class name including namespace/classes
     ClassProperty(const String& className, const ReflectTypeInfo* classTypeInfo);
@@ -230,7 +232,13 @@ public:
         return funcProp;
     }
 
-    void setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+    FORCE_INLINE ClassProperty* addBaseClass(const BaseProperty* baseClassProp)
+    {
+        baseClasses.emplace_back(static_cast<const ClassProperty*>(baseClassProp));
+        return this;
+    }
+
+    ClassProperty* setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>
@@ -263,7 +271,7 @@ public:
     EnumProperty(const String& enumName, const ReflectTypeInfo* enumTypeInfo, bool bCanBeUsedAsFlags);
 
     EnumProperty* addEnumField(const String& fieldName, uint64 fieldValue, uint64 metaFlags, std::vector<const PropertyMetaDataBase*> fieldMetaData);
-    void setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
+    EnumProperty* setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>

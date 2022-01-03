@@ -16,22 +16,25 @@ class String : public std::string
 {
 
 public:
-    FORCE_INLINE CONST_EXPR String() : std::string() {}
-    FORCE_INLINE CONST_EXPR String(const String& otherString) : std::string(otherString) {}
-    FORCE_INLINE CONST_EXPR String(const String& otherString, size_type pos, size_type len) : std::string(otherString, pos, len) {}
-    FORCE_INLINE CONST_EXPR String(const AChar* s, size_type n) : std::string(s, n) {}
-    FORCE_INLINE CONST_EXPR String(const AChar* s) : std::string(s) {}
-    FORCE_INLINE CONST_EXPR String(size_type n, AChar c) : std::string(n, c) {}
-    FORCE_INLINE CONST_EXPR String(const std::string& otherString) : std::string(otherString) {}
-    FORCE_INLINE CONST_EXPR String(std::string&& otherString) : std::string(otherString) {}
-    FORCE_INLINE CONST_EXPR String(std::string::const_iterator start, std::string::const_iterator end) : std::string(start, end) {}
+    FORCE_INLINE String() : std::string() {}
+    FORCE_INLINE String(const String& otherString) : std::string(otherString) {}
+    FORCE_INLINE String(const String& otherString, size_type pos, size_type len) : std::string(otherString, pos, len) {}
+    FORCE_INLINE String(const AChar* s, size_type n) : std::string(s, n) {}
+    FORCE_INLINE String(const AChar* s) : std::string(s) {}
+    FORCE_INLINE String(size_type n, AChar c) : std::string(n, c) {}
+    //template<size_t N>
+    //CONST_EXPR String(const AChar(&str)[N]) : std::string(str) {}
+    FORCE_INLINE String(const std::string& otherString) : std::string(otherString) {}
+    FORCE_INLINE String(std::string&& otherString) : std::string(otherString) {}
+    FORCE_INLINE String(std::string::const_iterator start, std::string::const_iterator end) : std::string(start, end) {}
+    FORCE_INLINE String(const std::string_view& strView) : std::string(strView) {}
 
-    FORCE_INLINE CONST_EXPR const AChar* getChar() const
+    FORCE_INLINE const AChar* getChar() const
     {
         return c_str();
     }
 
-    FORCE_INLINE bool CONST_EXPR findAny(size_t& outIndex, String& outFoundString, const std::vector<String>& findStrgs, size_t offset = 0, bool fromEnd = false) const
+    FORCE_INLINE bool findAny(size_t& outIndex, String& outFoundString, const std::vector<String>& findStrgs, size_t offset = 0, bool fromEnd = false) const
     {
         size_t foundAt = npos;
         for (const String& strg : findStrgs)
@@ -62,7 +65,7 @@ public:
         return false;
     }
 
-    FORCE_INLINE CONST_EXPR String replaceAllCopy(const String& from, const String& to) const
+    FORCE_INLINE String replaceAllCopy(const String& from, const String& to) const
     {
         String newStr{ this->getChar() };
         size_t replaceAtPos = 0;
@@ -74,7 +77,7 @@ public:
         return newStr;
     }
 
-    FORCE_INLINE CONST_EXPR void replaceAll(const String& from, const String& to)
+    FORCE_INLINE String& replaceAll(const String& from, const String& to)
     {
         size_t replaceAtPos = 0;
         while ((replaceAtPos = find(from, replaceAtPos)) != npos)
@@ -82,9 +85,10 @@ public:
             replace(replaceAtPos, from.length(), to);
             replaceAtPos += to.length();
         }
+        return *this;
     }
 
-    FORCE_INLINE CONST_EXPR bool startsWith(const String& match, bool bMatchCase = true) const
+    FORCE_INLINE bool startsWith(const String& match, bool bMatchCase = true) const
     {
         if (length() < match.length())
             return false;
@@ -103,7 +107,7 @@ public:
         return cbegin() == it;
     }
 
-    FORCE_INLINE CONST_EXPR bool endsWith(const String& match, bool bMatchCase = true) const
+    FORCE_INLINE bool endsWith(const String& match, bool bMatchCase = true) const
     {
         if (length() < match.length())
             return false;
@@ -123,7 +127,7 @@ public:
         return it == searchFrom;
     }
 
-    FORCE_INLINE CONST_EXPR void trimL()
+    FORCE_INLINE String& trimL()
     {
         erase(begin(), std::find_if(begin(), end(),
             [](unsigned char ch)
@@ -131,26 +135,29 @@ public:
                 return !std::isspace(ch);
             })
         );
+        return *this;
     }
 
-    FORCE_INLINE CONST_EXPR void trimR()
+    FORCE_INLINE String& trimR()
     {
         erase(std::find_if(rbegin(), rend(),
-            [](unsigned char ch)
+            [](const AChar& ch)
             {
                 return !std::isspace(ch);
             }).base()
-                , end()
-                );
+            , end()
+        );
+        return *this;
     }
 
-    FORCE_INLINE CONST_EXPR void trim()
+    FORCE_INLINE String& trim()
     {
         trimL();
         trimR();
+        return *this;
     }
 
-    FORCE_INLINE CONST_EXPR String trimLCopy() const
+    FORCE_INLINE String trimLCopy() const
     {
         String s(*this);
         s.erase(s.begin(), std::find_if(s.begin(), s.end(),
@@ -162,7 +169,7 @@ public:
         return s;
     }
 
-    FORCE_INLINE CONST_EXPR String trimRCopy() const
+    FORCE_INLINE String trimRCopy() const
     {
         String s(*this);
         s.erase(std::find_if(s.rbegin(), s.rend(),
@@ -175,15 +182,46 @@ public:
         return s;
     }
 
-    FORCE_INLINE CONST_EXPR String trimCopy() const
+    FORCE_INLINE String trimCopy() const
     {
         String s(*this);
         s.trim();
         return s;
     }
 
+    /*
+    * Splits given string into list of line views
+    */
+    std::vector<std::string_view> splitLines() const
+    {
+        std::vector<std::string_view> outStrs;
+        uint64 foundAtPos = 0;
+        uint64 offsetPos = 0;
+        while ((foundAtPos = find('\n', offsetPos)) != npos)
+        {
+            // If previous char is valid and it is carriage return(\r) then we have to consider that as part of CR-LF
+            if (foundAtPos != 0 || cbegin()[foundAtPos - 1] == '\r')
+            {
+                outStrs.emplace_back(std::string_view(cbegin() + offsetPos, cbegin() + (foundAtPos - 1)));
+            }
+            else
+            {
+                // Since offsetPos is end of last separator and foundAtPos is where this separator is found, Whatever in between is what we need
+                outStrs.emplace_back(std::string_view(cbegin() + offsetPos, cbegin() + foundAtPos));
+            }
+            // Post CR-LF char
+            offsetPos = foundAtPos + 1;
+        }
+        // After final separator the suffix has to be added if there is any char after final CR-LF
+        if ((cbegin() + offsetPos) != cend())
+        {
+            outStrs.emplace_back(std::string_view(cbegin() + offsetPos, cend()));
+        }
+        return outStrs;
+    }
+
     template <typename IteratorType>
-    CONST_EXPR static String join(IteratorType begin, IteratorType end, const String&& separator)
+    static String join(IteratorType begin, IteratorType end, const String&& separator)
     {
         String s;
         if (begin == end)
@@ -199,16 +237,16 @@ public:
         return s;
     }
 
-    CONST_EXPR static std::vector<String> split(const String& inStr, const String&& separator)
+    static std::vector<String> split(const String& inStr, const String&& separator)
     {
         std::vector<String> outStrs;
-        uint64 replaceAtPos = 0;
+        uint64 foundAtPos = 0;
         uint64 offsetPos = 0;
-        while ((replaceAtPos = inStr.find(separator, offsetPos)) != npos)
+        while ((foundAtPos = inStr.find(separator, offsetPos)) != npos)
         {
             // Since offsetPos is end of last separator and foundAtPos is where this separator is found, Whatever in between is what we need
-            outStrs.emplace_back(String(inStr.cbegin() + offsetPos, inStr.cbegin() + replaceAtPos));
-            offsetPos = replaceAtPos + separator.length();
+            outStrs.emplace_back(String(inStr.cbegin() + offsetPos, inStr.cbegin() + foundAtPos));
+            offsetPos = foundAtPos + separator.length();
         }
         // After final separator the suffix has to be added
         outStrs.emplace_back(String(inStr.cbegin() + offsetPos, inStr.cend()));
@@ -272,4 +310,25 @@ struct StringLiteral
     }
 
     AChar value[N];
+};
+
+template <StringLiteral StoreValue>
+struct StringLiteralStore
+{
+    CONST_EXPR static const decltype(StoreValue) Literal = StoreValue;
+
+    CONST_EXPR const AChar* getChar() const
+    {
+        return StoreValue.value;
+    }
+
+    operator String() const
+    {
+        return { StoreValue.value };
+    }
+
+    String toString() const
+    {
+        return { StoreValue.value };
+    }
 };

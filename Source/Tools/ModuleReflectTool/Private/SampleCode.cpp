@@ -12,24 +12,12 @@
 #include "Property/Property.h"
 #include "Property/ContainerProperty.h"
 #include "String/MustacheFormatString.h"
+#include "Parser/ClangWrappers.h"
+#include "Parser/ParserHelper.h"
 
 #include <iostream>
 #include <regex>
 #include <set>
-
-// Logger overrides
-std::ostream& operator<<(std::ostream& stream, const CppReflectionParser::CXStringRef& str)
-{
-    stream << clang_getCString(str->str);
-    return stream;
-}
-
-std::ostream& operator<<(std::ostream& stream, const CXString& cxStr)
-{
-    stream << clang_getCString(cxStr);
-    clang_disposeString(cxStr);
-    return stream;
-}
 
 namespace CppReflectionParser
 {
@@ -75,24 +63,23 @@ namespace CppReflectionParser
     {
         CXType canonicalType = clang_getCanonicalType(type);
         CXStringRef typeName(new CXStringWrapper(clang_getTypeSpelling(type)));
+        CXType innerType = clang_getPointeeType(canonicalType);
         switch (canonicalType.kind)
         {
         case CXType_RValueReference:
-            Logger::log("CppReflectionParser", "%s() : Type %s is a r-value", __func__, typeName);
+            Logger::log("CppReflectionParser", "%s() : Type %s is a r-value, Referred type %s(Is POD %d)", __func__, typeName, clang_getTypeSpelling(innerType), clang_isPODType(innerType));
             break;
         case CXType_LValueReference:
-            Logger::log("CppReflectionParser", "%s() : Type %s is a l-value", __func__, typeName);
+            Logger::log("CppReflectionParser", "%s() : Type %s is a l-value, Referred type %s(Is POD %d)", __func__, typeName, clang_getTypeSpelling(innerType), clang_isPODType(innerType));
             break;
         case CXType_Pointer:
         {
-            // Get cursor to declaration of pointer's type
-            // Use declaration if only that type is not basic POD type, If POD then just inner type will be same and child visitor will find the referenced type
-            CXType innerType = clang_getPointeeType(canonicalType);
             int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-            Logger::log("CppReflectionParser", "%s() : Type %s - Inner type is %s and is const? %s", __func__, typeName
+            Logger::log("CppReflectionParser", "%s() : Type %s - Inner type is %s and is const? %s(Is POD %d)", __func__, typeName
                 , clang_getTypeSpelling(innerType)
                 , !!(bIsInnerTypeConst)
                 ? "true" : "false"
+                , clang_isPODType(innerType)
             );
             break;
         }
@@ -103,13 +90,12 @@ namespace CppReflectionParser
         case CXType_Vector:
         case CXType_VariableArray:
         {
-            // Use declaration if only that type is not basic POD type, If POD then just inner type will be same and child visitor will find the referenced type
-            CXType innerType = clang_getPointeeType(canonicalType);
             int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-            Logger::log("CppReflectionParser", "%s() : Type %s - Inner type is %s and is const? %s", __func__, typeName
+            Logger::log("CppReflectionParser", "%s() : Type %s - Inner type is %s and is const? %s(Is POD %d)", __func__, typeName
                 , clang_getTypeSpelling(innerType)
                 , !!(bIsInnerTypeConst)
                 ? "true" : "false"
+                , clang_isPODType(innerType)
             );
             break;
         }
@@ -248,6 +234,7 @@ namespace CppReflectionParser
         String functionParams;
         // print return type's param 
         printJustTypeInfo(funcRetType);
+        Logger::log("CppReflectionParser", "%s() : Return type unqualified name %s", __func__, ParserHelper::getNonConstTypeName(funcRetType, clang_getNullCursor()));
         {
             Logger::log("CppReflectionParser", "%s() : Function %s Arguments info ---->", __func__, functionName);
             std::vector<String> paramStrs;
@@ -259,7 +246,7 @@ namespace CppReflectionParser
                 CXStringRef paramTypeName(new CXStringWrapper(clang_getTypeSpelling(paramType)));
                 CXStringRef paramName(new CXStringWrapper(clang_getCursorSpelling(c)));
 
-                Logger::log("CppReflectionParser", "%s() : Argument %d Name %s Type %s", __func__, i, paramName, paramTypeName);
+                Logger::log("CppReflectionParser", "%s() : Argument %d Name %s Type %s(Unqualified %s)", __func__, i, paramName, paramTypeName, ParserHelper::getNonConstTypeName(paramType, c));
                 printJustTypeInfo(paramType);
 
                 paramDeclStr = clang_getCString(paramTypeName->str) + String(" ") + clang_getCString(paramName->str);
@@ -896,6 +883,8 @@ namespace CppReflectionParser
         String currAccessSpecifier = srcParsedInfo.scopeAccessSpecifier;
         srcParsedInfo.scopeAccessSpecifier = "private";
 
+        // Below statement also returns type name with namespace so we do not need to keep track of namespace
+        // String classPathName = ParserHelper::getNonConstTypeName(clang_getCursorType(cursor), cursor);
         String classPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), "::");
         Logger::log("CppReflectionParser", "%s() : Class full path name %s", __func__, classPathName);
 
@@ -1009,6 +998,7 @@ namespace CppReflectionParser
         case CXCursor_Destructor:
         case CXCursor_ConversionFunction:
         case CXCursor_CXXMethod:
+            // All member functions including static member functions
             visitMemberCppMethods(cursor, srcParsedInfo);
             break;
         case CXCursor_VarDecl:
@@ -1485,10 +1475,10 @@ namespace SampleCode
         // It is okay if we miss some insignificant includes as they are ignored and parsing continues
         CXTranslationUnit unit = clang_parseTranslationUnit(
             index,
-            FileSystemFunctions::combinePath(srcDir, "Header.H").getChar()
-            , args, 3, nullptr, 0, CXTranslationUnit_DetailedPreprocessingRecord);
+            PathFunctions::combinePath(srcDir, "SampleHeader.H").getChar()
+            , args, 3, nullptr, 0, CXTranslationUnit_KeepGoing);
         //CXTranslationUnit unit = clang_createTranslationUnitFromSourceFile(index
-        //    , FileSystemFunctions::combinePath(srcDir, "Header.H").getChar()
+        //    , PathFunctions::combinePath(srcDir, "Header.H").getChar()
         //    , 3, args, 0, nullptr);
         if (unit == nullptr)
         {
@@ -2042,10 +2032,9 @@ namespace SampleCode
             file.openFile();
 
             String fileContent;
-            fileContent.resize(file.fileSize());
+            file.read(fileContent);
             if (!fileContent.empty())
             {
-                file.read(reinterpret_cast<uint8*>(fileContent.data()), fileContent.size());
                 templates.insert({ PathFunctions::stripExtension(file.getFileName()), MustacheStringFormatter(fileContent) });
             }
             file.closeFile();
@@ -2313,5 +2302,6 @@ namespace SampleCode
         srcFile.openOrCreate();
         srcFile.write({ reinterpret_cast<uint8*>(sourceContent.data()), uint32(sourceContent.size()) });
         srcFile.closeFile();
+
     }
 }

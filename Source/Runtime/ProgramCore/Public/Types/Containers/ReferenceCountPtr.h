@@ -5,35 +5,6 @@
 #include "Types/CoreDefines.h"
 #include "Types/HashTypes.h"
 
-class RefCountable
-{
-private:
-    std::atomic<uint32> refCounter;
-public:
-    virtual ~RefCountable() = default;
-
-    /* ReferenceCountPtr implementation */
-    void addRef()
-    {
-        refCounter.fetch_add(1);
-    }
-
-    void removeRef()
-    {
-        uint32 count = refCounter.fetch_sub(1);
-        if (count == 1)
-        {
-            delete this;
-        }
-    }
-
-    uint32 refCount() const
-    {
-        return refCounter.load();
-    }
-    /* end overrides */
-};
-
 template <typename PtrType>
 class ReferenceCountPtr
 {
@@ -258,5 +229,40 @@ struct std::hash<ReferenceCountPtr<RefType>>
     _NODISCARD size_t operator()(const ReferenceCountPtr<RefType>& refCountPtr) const noexcept
     {
         return HashUtility::hash(refCountPtr.reference());
+    }
+};
+
+class RefCountable
+{
+private:
+    std::atomic<uint32> refCounter;
+public:
+    virtual ~RefCountable() = default;
+
+    /* ReferenceCountPtr implementation */
+    void addRef()
+    {
+        refCounter.fetch_add(1);
+    }
+
+    void removeRef()
+    {
+        uint32 count = refCounter.fetch_sub(1);
+        if (count == 1)
+        {
+            delete this;
+        }
+    }
+
+    uint32 refCount() const
+    {
+        return refCounter.load();
+    }
+
+    /* end overrides */
+    template <typename AsType>
+    ReferenceCountPtr<AsType> makeRefCounted()
+    {
+        return ReferenceCountPtr<AsType>(this);
     }
 };

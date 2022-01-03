@@ -55,8 +55,9 @@ private:
     * Checks and appends/prepends library prefix and extension as required if not present already
     */
     LibPointer* loadFromAdditionalPaths(String modulePath) const;
-public:
+
     ModuleManager();
+public:
     ~ModuleManager();
 
     static ModuleManager* get();

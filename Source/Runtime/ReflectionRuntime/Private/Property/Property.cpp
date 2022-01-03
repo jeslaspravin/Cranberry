@@ -20,7 +20,7 @@ FORCE_INLINE uint64 BaseProperty::getMetaFlags() const
     return IReflectionRuntimeModule::get()->getPropertyMetaFlags(this);
 }
 
-FORCE_INLINE void BaseProperty::setMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+void BaseProperty::setMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
 {
     static_cast<ReflectionRuntimeModule*>(IReflectionRuntimeModule::get())->setMetaData(this, propertyMeta, propertyMetaFlags);
 }
@@ -42,9 +42,10 @@ FieldProperty::~FieldProperty()
     fieldPtr = nullptr;
 }
 
-void FieldProperty::setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+FieldProperty* FieldProperty::setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
 {
     setMetaData(propertyMeta, propertyMetaFlags);
+    return this;
 }
 
 uint64 FieldProperty::getPropertyMetaFlags() const
@@ -68,9 +69,10 @@ FunctionProperty::~FunctionProperty()
     funcPtr = nullptr;
 }
 
-void FunctionProperty::setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+FunctionProperty* FunctionProperty::setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
 {
     setMetaData(propertyMeta, propertyMetaFlags);
+    return this;
 }
 
 uint64 FunctionProperty::getPropertyMetaFlags() const
@@ -118,9 +120,10 @@ ClassProperty::~ClassProperty()
     staticFunctions.clear();
 }
 
-void ClassProperty::setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+ClassProperty* ClassProperty::setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
 {
     setMetaData(propertyMeta, propertyMetaFlags);
+    return this;
 }
 
 uint64 ClassProperty::getPropertyMetaFlags() const
@@ -147,9 +150,10 @@ EnumProperty* EnumProperty::addEnumField(const String& fieldName, uint64 fieldVa
     return this;
 }
 
-void EnumProperty::setPropertyMetaData(std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+EnumProperty* EnumProperty::setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
 {
     setMetaData(propertyMeta, propertyMetaFlags);
+    return this;
 }
 
 uint64 EnumProperty::getPropertyMetaFlags() const

@@ -1,6 +1,7 @@
 #pragma once
 #include "String/String.h"
 #include "Types/Containers/ArrayView.h"
+#include "Types/Time.h"
 #include "ProgramCoreExports.h"
 
 #include <memory>
@@ -60,12 +61,12 @@ public:
     bool isFile() const;
 
     // Name of file if any(File name is one with .ext)
-    String getFileName() const;
+    const String& getFileName() const;
     // Path of parent directory ignores file name if file or last directory name in path if directory path
-    String getHostDirectory() const;
+    const String& getHostDirectory() const;
     // Returns last directory name of full directory path
     String getDirectoryName() const;
-    String getFullPath() const;
+    const String& getFullPath() const;
 
     // Direct OS specific flags maps directly to OS bits
     void setAdvancedFlags(const uint64& flags) { advancedFlags = flags; }
@@ -92,7 +93,8 @@ public:
 
     // Operations after file handle is created
 
-    virtual uint64 lastWriteTimeStamp() const = 0;
+    virtual TickRep lastWriteTimeStamp() const = 0;
+    virtual TickRep createTimeStamp() const = 0;
     virtual uint64 fileSize() const = 0;
     virtual uint64 filePointer() const = 0;
     virtual void seekEnd() const = 0;
@@ -103,6 +105,7 @@ public:
     virtual bool setFileSize(const int64& newSize) const = 0;
     virtual void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const = 0;
     virtual void read(uint8* readTo, const uint32& bytesToRead) const = 0;
+    virtual void read(String& readTo, const uint32& bytesToRead = (~0u)) const = 0;
     virtual void write(const ArrayView<uint8>& writeBytes) const = 0;
 
     virtual bool deleteFile() = 0;

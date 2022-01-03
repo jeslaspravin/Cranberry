@@ -16,12 +16,13 @@
 #define NO_BITS_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == 0)
 #define INDEX_TO_FLAG_MASK(Idx) (1 << (Idx))
 
-#define MAKE_INITIALIZER(...) { __VA_ARGS__ }
-
+#define MAKE_INITIALIZER_internal(...) { __VA_ARGS__ }
 #define FIRST_internal(X,...) X
 #define TUPLE_TAIL_internal(X,...) __VA_ARGS__
 #define VAR_COUNT_internal(Var1,Var2,Var3,Var4,Var5,Var6,Var7,Var8,Var9,VarCount, ...) VarCount
 #define COMBINE_internal(X,Y) X##Y
+
+#define MAKE_INITIALIZER(...) MAKE_INITIALIZER_internal(__VA_ARGS__)
 
 #define EXPAND_ARGS(...) __VA_ARGS__
 #define FIRST(...) EXPAND_ARGS(FIRST_internal(__VA_ARGS__))

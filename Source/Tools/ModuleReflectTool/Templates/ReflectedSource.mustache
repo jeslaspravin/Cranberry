@@ -1,5 +1,6 @@
 #include "{{HeaderInclude}}"
 #include "Property/ContainerProperty.h"
+#include "Types/CoreMiscDefines.h"
 
 /* Generated codes do not modify here */
     
@@ -19,9 +20,9 @@ struct HEADER_FILE_ID
     static void init_{{SanitizedName}}({{PropertyTypeName}}* typeProperty);{{/NoInit}}
     {{/AllRegisterTypes}}
     
-    {{#Classes}}
+    {{#Classes}}{{^IsAbstract}}
     template <typename... Args>
-    static {{TypeName}}* {{SanitizedName}}_CTor(Args&&... args);{{/Classes}}
+    static {{TypeName}}* {{SanitizedName}}_CTor(Args&&... args);{{/IsAbstract}}{{/Classes}}
 } COMBINE(HEADER_FILE_ID, _autoinit);
 
 HEADER_FILE_ID::HEADER_FILE_ID()
@@ -101,12 +102,12 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(EnumProperty* typeProperty)
 }
 {{/EnumTypes}}
 
-{{#Classes}}
+{{#Classes}}{{^IsAbstract}}
 template <typename... Args>
 static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(Args&&... args)
 {
     return new {{TypeName}}(std::forward<Args>(args)...);
-}
+}{{/IsAbstract}}
 
 ClassProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 {
@@ -116,7 +117,9 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
 {
     typeProperty->setPropertyMetaData({ {{TypeMetaData}} }, {{TypeMetaFlags}});
 {{!Now the Class's section context contains context for class fields}}
-{{#Ctors}}
+{{#BaseClasses}}
+    typeProperty->addBaseClass(IReflectionRuntimeModule::getType<{{BaseClassTypeName}}>());{{/BaseClasses}}
+{{^IsAbstract}}{{#Ctors}}
     typeProperty->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
                 ->addFunctionParamProperty("{{ParamName}}", IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
@@ -128,7 +131,7 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
                 ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}}*>>(&ThisType::{{SanitizedName}}_CTor<>);
-{{/Ctors}}{{#MemberFuncs}}
+{{/Ctors}}{{/IsAbstract}}{{#MemberFuncs}}
     typeProperty->addMemberFunc("{{FunctionName}}")
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
                 ->addFunctionParamProperty("{{ParamName}}", IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}

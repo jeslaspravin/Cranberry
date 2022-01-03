@@ -1,4 +1,6 @@
 #pragma once
+// We do not need this when parsing for reflection
+#ifndef __REF_PARSE__
 /* Generated codes do not modify here */
 #include "ReflectionCommonHeaders.h"
 
@@ -13,6 +15,9 @@
 #define {{HeaderFileId}}_{{LineNumber}}_GENERATED_CODES \
 public: \
 {{>StaticTypeGetter}} {{#IsClass}}\
-{{>VirtualTypeGetter}}
+{{>VirtualTypeGetter}}\
+friend struct HEADER_FILE_ID;
 {{/IsClass}}
 {{/ReflectTypes}}
+
+#endif // ifndef __REF_PARSE__

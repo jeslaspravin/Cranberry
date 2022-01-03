@@ -1,40 +1,60 @@
 #pragma once
 #include "Types/CoreTypes.h"
 #include "ReflectionRuntimeExports.h"
+#include "Property/PropertyMetaFlags.inl"
 
 #include <utility>
 
 struct ReflectTypeInfo;
 
+#define META_FLAG_ENTRY_FIRST(Flag) CLASSMETA_##Flag
+#define META_FLAG_ENTRY(Flag) , CLASSMETA_##Flag
 /*
 * Meta flags for struct and class types
 */
-enum ClassMetaFlags : uint64
+enum EClassMetaFlags : uint64
 {
-    /* Any class that is going to be base reflect class for a hierarchy of reflected classes */
-    CLASSMETA_BaseType = 1
+    FOR_EACH_CLASS_META_FLAGS_UNIQUE_FIRST_LAST(META_FLAG_ENTRY_FIRST, META_FLAG_ENTRY, META_FLAG_ENTRY)
 };
+#undef META_FLAG_ENTRY_FIRST
+#undef META_FLAG_ENTRY
 
+
+#define META_FLAG_ENTRY_FIRST(Flag) ENUMMETA_##Flag
+#define META_FLAG_ENTRY(Flag) , ENUMMETA_##Flag
 /*
 * Meta flags for enum and its fields
 */
-enum EnumMetaFlags : uint64
+enum EEnumMetaFlags : uint64
 {
+    FOR_EACH_ENUM_META_FLAGS_UNIQUE_FIRST_LAST(META_FLAG_ENTRY_FIRST, META_FLAG_ENTRY, META_FLAG_ENTRY)
 };
+#undef META_FLAG_ENTRY_FIRST
+#undef META_FLAG_ENTRY
 
+#define META_FLAG_ENTRY_FIRST(Flag) FIELDMETA_##Flag
+#define META_FLAG_ENTRY(Flag) , FIELDMETA_##Flag
 /*
 * Meta flags for fields
 */
-enum FieldMetaFlags : uint64
+enum EFieldMetaFlags : uint64
 {
+    FOR_EACH_FIELD_META_FLAGS_UNIQUE_FIRST_LAST(META_FLAG_ENTRY_FIRST, META_FLAG_ENTRY, META_FLAG_ENTRY)
 };
+#undef META_FLAG_ENTRY_FIRST
+#undef META_FLAG_ENTRY
 
+#define META_FLAG_ENTRY_FIRST(Flag) FUNCMETA_##Flag
+#define META_FLAG_ENTRY(Flag) , FUNCMETA_##Flag
 /*
 * Meta flags for functions
 */
-enum FunctionMetaFlags : uint64
+enum EFunctionMetaFlags : uint64
 {
+    FOR_EACH_FUNC_META_FLAGS_UNIQUE_FIRST_LAST(META_FLAG_ENTRY_FIRST, META_FLAG_ENTRY, META_FLAG_ENTRY)
 };
+#undef META_FLAG_ENTRY_FIRST
+#undef META_FLAG_ENTRY
 
 class REFLECTIONRUNTIME_EXPORT PropertyMetaDataBase
 {

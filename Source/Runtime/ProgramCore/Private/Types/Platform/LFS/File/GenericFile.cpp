@@ -101,12 +101,12 @@ bool GenericFile::isFile() const
     return !isDirectory();
 }
 
-String GenericFile::getFileName() const
+const String& GenericFile::getFileName() const
 {
     return fileName;
 }
 
-String GenericFile::getHostDirectory() const
+const String& GenericFile::getHostDirectory() const
 {
     return directoryPath;
 }
@@ -135,7 +135,7 @@ String GenericFile::getDirectoryName() const
     return dirName;
 }
 
-String GenericFile::getFullPath() const
+const String& GenericFile::getFullPath() const
 {
     return fullPath;
 }

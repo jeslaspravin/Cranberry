@@ -1,4 +1,7 @@
 #include "WindowsPlatformFunctions.h"
+#include "Types/Time.h"
+#include <chrono>
+#include <ratio>
 #include <wtypes.h>
 #include <libloaderapi.h>
 #include <Psapi.h>
@@ -15,6 +18,29 @@ struct WindowsLibHandle : public LibPointer
             WindowsPlatformFunctions::releaseLibrary(this);
     }
 };
+
+/* Time impl functions, No need to enclose in macro as this TU won't be included in other platforms */
+template <typename Resolution>
+TickRep fromPlatformTimeImpl(int64 platformTick)
+{
+    using namespace std::chrono;
+    using WindowsTimeDuration = duration<int64, std::ratio<1, 10'000'000>>;
+
+    // From https://stackoverflow.com/questions/6161776/convert-windows-filetime-to-second-in-unix-linux
+    // Difference in seconds between epoch time(1st Jan 1970) and windows time(1st Jan 1601)
+    static const seconds winTimeToEpochDuration(11644473600ll);
+    return duration_cast<Resolution>(WindowsTimeDuration(platformTick) - winTimeToEpochDuration).count();
+}
+
+template <typename Resolution>
+TickRep fromPlatformTime(int64 platformTick);
+#define SPECIALIZE_FROM_PLATFORM_TIME(TimeResolution) \
+template <> \
+TickRep fromPlatformTime<TimeResolution>(int64 platformTick) { return ::fromPlatformTimeImpl<TimeResolution>(platformTick); }
+// std::chrono::microseconds
+SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::microseconds)
+SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::nanoseconds)
+#undef SPECIALIZE_FROM_PLATFORM_TIME
 
 LibPointer* WindowsPlatformFunctions::openLibrary(String libName)
 {

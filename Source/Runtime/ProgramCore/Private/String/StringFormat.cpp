@@ -521,6 +521,11 @@ uint32 MustacheStringFormatter::renderTag(std::ostringstream& outStr, uint32 mat
 
 String MustacheStringFormatter::render(const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
 {
+    // If no matches then return format string itself
+    if (allMatches.empty())
+    {
+        return fmtStr;
+    }
     std::ostringstream outputStr;
     for (uint32 matchIdx = 0; matchIdx < allMatches.size();)
     {

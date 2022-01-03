@@ -61,6 +61,28 @@ String PathFunctions::toAbsolutePath(const String& relPath, const String& basePa
 }
 
 
+bool PathFunctions::isSubdirectory(const String& checkPath, const String& basePath)
+{
+    const std::vector<String> checkPathElems{ String::split(checkPath.replaceAllCopy("\\", "/"), "/") };
+    const std::vector<String> basePathElems{ String::split(basePath.replaceAllCopy("\\", "/"), "/") };
+
+    // If basePath folder count is larger or equal to checkPath then it means basPath can not fit into checkPath. checkPath can never be subdir of basePath
+    if (basePathElems.size() >= checkPathElems.size())
+    {
+        return false;
+    }
+
+    for (uint32 i = 0; i < basePathElems.size(); ++i)
+    {
+        // If any folder do not match then it cannot be subdirectory
+        if (checkPathElems[i] != basePathElems[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 String PathFunctions::stripExtension(const String& fileName, String& extension)
 {
     String::size_type foundAt = fileName.rfind('.', fileName.length());

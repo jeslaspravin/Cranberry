@@ -2,6 +2,7 @@
 
 #include "Reflections/Functions.h"
 #include "Types/TypesInfo.h"
+#include "Logger/Logger.h"
 
 
 class BaseFunctionWrapper

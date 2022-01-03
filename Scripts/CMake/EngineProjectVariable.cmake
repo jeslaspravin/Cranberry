@@ -19,7 +19,7 @@ set (llvm_install_path ${cpp_libs_path}/llvm CACHE PATH "LLVM installed path(For
 
 # Relative to target binary directory
 set (target_generated_path Generated)
-set (experimental_def $<IF:$<BOOL:${experimental}>, EXPERIMENTAL=1, EXPERIMENTAL=0>)
+set (experimental_def $<IF:$<BOOL:${experimental}>,EXPERIMENTAL=1,EXPERIMENTAL=0>)
 set (engine_def RENDERAPI_VULKAN=1 ENGINE_VERSION=0 ENGINE_MINOR_VERSION=1 ENGINE_PATCH_VERSION=0 ENGINE_NAME=${CMAKE_PROJECT_NAME})
 set (configure_file_folder ConfigureFiles)
 

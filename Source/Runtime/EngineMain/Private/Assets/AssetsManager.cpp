@@ -69,7 +69,7 @@ void AssetManager::load()
     addPathsToScan("Assets");
     for (const String& scanPath : preloadingPaths)
     {
-        String scanFullPath = FileSystemFunctions::combinePath(appPath, scanPath);
+        String scanFullPath = PathFunctions::combinePath(appPath, scanPath);
         loadUnderPath(scanFullPath);
     }
 }
@@ -108,7 +108,7 @@ AssetBase* AssetManager::getOrLoadAsset(const String& relAssetPath)
     String newRelPath = relAssetPath.replaceAllCopy("\\", "/");
     String appName;
     AssetHeader header;
-    header.assetPath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(appName), "Assets", newRelPath);
+    header.assetPath = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(appName), "Assets", newRelPath);
     header.type = AssetLoaderLibrary::typeFromAssetPath(newRelPath);
     header.assetName = PlatformFile(header.assetPath).getFileName();
     header.assetName = PathFunctions::stripExtension(header.assetName);

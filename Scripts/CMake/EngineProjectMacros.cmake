@@ -143,10 +143,10 @@ endfunction ()
 macro (cpp_common_options_and_defines)
     target_compile_definitions(${target_name}
         PRIVATE
-            $<IF:${WIN32}, PLATFORM_WINDOWS=1, PLATFORM_WINDOWS=0>
-            $<IF:${LINUX}, PLATFORM_LINUX=1, PLATFORM_LINUX=0>
-            $<IF:${APPLE}, PLATFORM_APPLE=1, PLATFORM_APPLE=0>
-            $<IF:$<BOOL:${engine_static_modules}>, STATIC_LINKED=1, STATIC_LINKED=0>
+            $<IF:${WIN32},PLATFORM_WINDOWS=1,PLATFORM_WINDOWS=0>
+            $<IF:${LINUX},PLATFORM_LINUX=1,PLATFORM_LINUX=0>
+            $<IF:${APPLE},PLATFORM_APPLE=1,PLATFORM_APPLE=0>
+            $<IF:$<BOOL:${engine_static_modules}>,STATIC_LINKED=1,STATIC_LINKED=0>
     )
 
     # POD/Variables in class has to initialized with {} to zero initialize if calling constructors that are not compiler generated
@@ -208,7 +208,6 @@ macro (cpp_common_dependencies)
 endmacro()
 
 macro (engine_module_dependencies)
-
     # Private dependencies
     list (LENGTH private_modules private_modules_count)
     if (${private_modules_count} GREATER 0)
@@ -228,6 +227,23 @@ macro (engine_module_dependencies)
     if (${interface_modules_count} GREATER 0)
         target_link_libraries (${target_name} INTERFACE ${interface_modules})
     endif ()
+
+    # For each INTERFACE exposed modules for transitive dependencies we have to explicitly add include and compile definitions to help when reflecting codes
+    set(transitive_modules ${public_modules} ${interface_modules})
+    # private_modules are exposed as well in static builds
+    if (${engine_static_modules})
+        list (APPEND transitive_modules ${private_modules})
+    endif ()
+    foreach (module ${transitive_modules})
+        target_include_directories(${target_name}
+            PUBLIC
+                $<TARGET_PROPERTY:${module},INTERFACE_INCLUDE_DIRECTORIES>
+        )
+        target_compile_definitions(${target_name}
+            PUBLIC
+                $<TARGET_PROPERTY:${module},INTERFACE_COMPILE_DEFINITIONS>
+        )
+    endforeach ()
     
     # Since we do not want all symbols that are not referenced removed as some were left out in local context like static initialized factory registers    
     if (${engine_static_modules})
