@@ -42,6 +42,7 @@ set(delay_load_dlls
 target_compile_definitions(${target_name} 
     PRIVATE
         LLVM_INSTALL_PATH="${LLVM_INSTALL_PREFIX}"
+        TEMPLATES_DIR="${CMAKE_CURRENT_LIST_DIR}/Templates"
 )
 mark_delay_loaded_dlls()
 # we delay load here
@@ -51,7 +52,6 @@ mark_delay_loaded_dlls()
 file (GLOB_RECURSE mustache_templates 
     LIST_DIRECTORIES false
     RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-    CONFIGURE_DEPENDS
     Templates/*.[Mm]ustache)
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${mustache_templates})
 target_sources(${target_name}

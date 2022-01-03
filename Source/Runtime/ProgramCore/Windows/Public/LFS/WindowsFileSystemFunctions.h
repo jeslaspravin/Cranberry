@@ -8,6 +8,7 @@ public:
 
     static std::vector<String> listAllFiles(const String& directory, bool bRecursive);
     static std::vector<String> listFiles(const String& directory, bool bRecursive, const String& wildcard);
+    static std::vector<String> listAllDirectories(const String& directory, bool bRecursive);
     static String applicationDirectory(String &appName);
     static bool moveFile(GenericFile* moveFrom, GenericFile* moveTo);
     static bool copyFile(GenericFile* copyFrom, GenericFile* copyTo);

@@ -23,18 +23,66 @@ FORCE_INLINE std::vector<String> WindowsFileSystemFunctions::listFiles(const Str
         String currentDir = directories.front();
         directories.pop();
 
+        // If we recurse find and append all subdirectories
+        if (bRecursive)
+        {
+            for (const String& subDir : listAllDirectories(currentDir, bRecursive))
+            {
+                directories.push(subDir);
+            }
+        }
+
         WIN32_FIND_DATAA data;
-        HANDLE fHandle = FindFirstFileA(combinePath(currentDir, wildcard).c_str(), &data);
+        HANDLE fHandle = FindFirstFileA(PathFunctions::combinePath(currentDir, wildcard).c_str(), &data);
 
         if (fHandle != INVALID_HANDLE_VALUE)
         {
             do
             {
-                String path = combinePath(currentDir, data.cFileName);
+                String path = PathFunctions::combinePath(currentDir, data.cFileName);
+                if (BIT_NOT_SET(data.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY))
+                {
+                    fileList.push_back(path);
+                }
+
+            } while (FindNextFileA(fHandle, &data));
+            FindClose(fHandle);
+        }
+    }
+    return fileList;
+}
+
+std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& directory, bool bRecursive)
+{
+    std::vector<String> fileList;
+    {
+        WindowsFile rootDirectory(directory);
+        if (!rootDirectory.isDirectory() || !rootDirectory.exists())
+        {
+            return fileList;
+        }
+    }
+
+    std::queue<String> directories;
+    directories.push(directory);
+
+    while (!directories.empty())
+    {
+        String currentDir = directories.front();
+        directories.pop();
+
+        WIN32_FIND_DATAA data;
+        HANDLE fHandle = FindFirstFileA(PathFunctions::combinePath(currentDir, "*").c_str(), &data);
+
+        if (fHandle != INVALID_HANDLE_VALUE)
+        {
+            do
+            {
+                String path = PathFunctions::combinePath(currentDir, data.cFileName);
                 String fileName = data.cFileName;
                 // To replace . and .. that is part of file system redirectors
                 fileName.replaceAll(".", "");
-                if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+                if (BIT_NOT_SET(data.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY))
                 {
                     fileList.push_back(path);
                 }
@@ -50,9 +98,50 @@ FORCE_INLINE std::vector<String> WindowsFileSystemFunctions::listFiles(const Str
     return fileList;
 }
 
-std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& directory, bool bRecursive)
+std::vector<String> WindowsFileSystemFunctions::listAllDirectories(const String& directory, bool bRecursive)
 {
-    return listFiles(directory, bRecursive, "*");
+    std::vector<String> folderList;
+    {
+        WindowsFile rootDirectory(directory);
+        if (!rootDirectory.isDirectory() || !rootDirectory.exists())
+        {
+            return folderList;
+        }
+    }
+
+    std::queue<String> directories;
+    directories.push(directory);
+
+    while (!directories.empty())
+    {
+        String currentDir = directories.front();
+        directories.pop();
+
+        WIN32_FIND_DATAA data;
+        HANDLE fHandle = FindFirstFileA(PathFunctions::combinePath(currentDir, "*").c_str(), &data);
+
+        if (fHandle != INVALID_HANDLE_VALUE)
+        {
+            do
+            {
+                String path = PathFunctions::combinePath(currentDir, data.cFileName);
+                String fileName = data.cFileName;
+                // To replace . and .. that is part of file system redirectors
+                fileName.replaceAll(".", "");
+                if(BIT_SET(data.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY) && !fileName.empty())
+                {
+                    folderList.emplace_back(path);
+                    if (bRecursive)
+                    {
+                        directories.push(path);
+                    }
+                }
+
+            } while (FindNextFileA(fHandle, &data));
+            FindClose(fHandle);
+        }
+    }
+    return folderList;
 }
 
 String WindowsFileSystemFunctions::applicationDirectory(String &appName)

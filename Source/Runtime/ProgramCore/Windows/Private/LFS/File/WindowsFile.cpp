@@ -97,17 +97,24 @@ uint64 WindowsFile::fileSize() const
     UInt64 fSize;
     fSize.quadPart = 0;
 
-    if (getFileHandleRaw()) {
+    if (getFileHandleRaw()) 
+    {
         fSize.lowPart = GetFileSize(getFileHandleRaw(), &fSize.highPart);
     }
-    else {
-        HANDLE fHandle = FindFirstFileA(getFullPath().getChar(), nullptr);
-        if (fHandle != INVALID_HANDLE_VALUE) {
-            fSize.lowPart = GetFileSize(fHandle, &fSize.highPart);
+    else 
+    {
+
+        WIN32_FIND_DATAA data;
+        HANDLE fHandle = FindFirstFileA(getFullPath().getChar(), &data);
+        if (fHandle != INVALID_HANDLE_VALUE) 
+        {
+            fSize.lowPart = data.nFileSizeLow;
+            fSize.highPart = data.nFileSizeHigh;
         }
     }
 
-    if (fSize.lowPart == INVALID_FILE_SIZE) {
+    if (fSize.lowPart == INVALID_FILE_SIZE) 
+    {
         fSize.quadPart = 0;
     }
     return fSize.quadPart;
@@ -201,20 +208,24 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*=
     readTo.clear();
     readTo.resize(bytesLeftToRead);
 
-    uint64 filePointerOffset = 0;
-    dword bytesLastRead = 0;
-    while (bytesLeftToRead > 0) 
+    read(readTo.data(), bytesLeftToRead);
+}
+void WindowsFile::read(String& readTo, const uint32& bytesToRead /*= (~0u)*/) const
+{
+    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
     {
-        ReadFile(getFileHandleRaw(), readTo.data() + filePointerOffset, (bytesLeftToRead > readBufferSize)
-            ? readBufferSize : bytesLeftToRead
-            , &bytesLastRead, nullptr);
-
-        bytesLeftToRead -= bytesLastRead;
-        filePointerOffset += bytesLastRead;
-        seek(filePointerOffset + filePointerCache);
+        return;
     }
 
-    seek(filePointerCache);
+    const dword readBufferSize = 10 * 1024 * 1024;// 10MB
+
+    uint64 filePointerCache = filePointer();
+    uint64 availableSizeCanRead = (fileSize() - filePointerCache);
+    dword bytesLeftToRead = (dword)(availableSizeCanRead > bytesToRead ? bytesToRead : availableSizeCanRead);
+    readTo.clear();
+    readTo.resize(bytesLeftToRead);
+
+    read(reinterpret_cast<uint8*>(readTo.data()), bytesLeftToRead);
 }
 
 void WindowsFile::read(uint8* readTo, const uint32& bytesToRead) const
@@ -282,7 +293,7 @@ bool WindowsFile::deleteFile()
 
 bool WindowsFile::renameFile(String newName)
 {
-    WindowsFile newFile{ getHostDirectory().append("\\").append(newName) };
+    WindowsFile newFile{ PathFunctions::combinePath(getHostDirectory(), newName) };
 
     if (newFile.exists())
     {
@@ -308,14 +319,15 @@ bool WindowsFile::renameFile(String newName)
 bool WindowsFile::createDirectory() const
 {
     WindowsFile hostDirectoryFile = WindowsFile(getHostDirectory());
-    if (!hostDirectoryFile.exists()) {
+    if (!hostDirectoryFile.exists())
+    {
         hostDirectoryFile.createDirectory();
     }
 
     return CreateDirectoryA(getFullPath().getChar(),nullptr);
 }
 
-uint64 WindowsFile::lastWriteTimeStamp() const
+TickRep WindowsFile::lastWriteTimeStamp() const
 {
     UInt64 timeStamp;
     timeStamp.quadPart = 0;
@@ -326,17 +338,46 @@ uint64 WindowsFile::lastWriteTimeStamp() const
         timeStamp.lowPart = writeTime.dwLowDateTime;
         timeStamp.highPart = writeTime.dwHighDateTime;
     }
-    else {
+    else 
+    {
         WIN32_FIND_DATAA data;
         HANDLE fHandle = FindFirstFileA(getFullPath().getChar(), &data);
-        if (fHandle != INVALID_HANDLE_VALUE) {
+        if (fHandle != INVALID_HANDLE_VALUE) 
+        {
             timeStamp.lowPart = data.ftLastWriteTime.dwLowDateTime;
             timeStamp.highPart = data.ftLastWriteTime.dwHighDateTime;
             FindClose(fHandle);
         }
     }
 
-    return timeStamp.quadPart;
+    // It is okay to convert to signed as time stamp would not cross signed max
+    return Time::fromPlatformTime(int64(timeStamp.quadPart));
+}
+
+TickRep WindowsFile::createTimeStamp() const 
+{
+    UInt64 timeStamp;
+    timeStamp.quadPart = 0;
+    if (getFileHandleRaw())
+    {
+        FILETIME createdTime;
+        GetFileTime(getFileHandleRaw(), &createdTime, nullptr, nullptr);
+        timeStamp.lowPart = createdTime.dwLowDateTime;
+        timeStamp.highPart = createdTime.dwHighDateTime;
+    }
+    else
+    {
+        WIN32_FIND_DATAA data;
+        HANDLE fHandle = FindFirstFileA(getFullPath().getChar(), &data);
+        if (fHandle != INVALID_HANDLE_VALUE)
+        {
+            timeStamp.lowPart = data.ftCreationTime.dwLowDateTime;
+            timeStamp.highPart = data.ftCreationTime.dwHighDateTime;
+            FindClose(fHandle);
+        }
+    }
+    // It is okay to convert to signed as time stamp would not cross signed max
+    return Time::fromPlatformTime(int64(timeStamp.quadPart));
 }
 
 GenericFileHandle* WindowsFile::openOrCreateImpl()

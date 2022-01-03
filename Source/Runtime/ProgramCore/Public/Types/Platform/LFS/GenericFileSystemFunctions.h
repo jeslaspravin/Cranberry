@@ -17,16 +17,6 @@ public:
         return FileSystemType::applicationDirectory(appName);
     }
 
-    // combinePath(...)
-    // Combines given paths with platform specifier separator
-    //
-    // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as well else r-values gets converted to l-values on this call
-    template <typename... Paths>
-    CONST_EXPR static String combinePath(Paths&&... paths)
-    {
-        return PathFunctions::combinePath(std::forward<Paths>(paths)...);
-    }
-
     static std::vector<String> listAllFiles(const String& directory, bool bRecursive)
     {
         return FileSystemType::listAllFiles(directory, bRecursive);
@@ -35,6 +25,11 @@ public:
     static std::vector<String> listFiles(const String& directory, bool bRecursive, const String& wildcard = "*")
     {
         return FileSystemType::listFiles(directory, bRecursive, wildcard);
+    }
+
+    static std::vector<String> listAllDirectories(const String& directory, bool bRecursive)
+    {
+        return FileSystemType::listAllDirectories(directory, bRecursive);
     }
 
     static bool moveFile(GenericFile* moveFrom, GenericFile* moveTo) 

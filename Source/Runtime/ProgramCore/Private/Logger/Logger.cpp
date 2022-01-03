@@ -3,6 +3,10 @@
 
 #if LOG_TO_CONSOLE
 #include <iostream>
+
+// If 0 both user provided category will be skipped in console log
+// Severity category will be printed only for errors
+#define SKIP_CAT_IN_CONSOLE 1
 #endif // LOG_TO_CONSOLE
 
 std::ostringstream& Logger::loggerBuffer()
@@ -56,7 +60,11 @@ void Logger::debugInternal(const AChar* category, const String& message)
     std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    std::cout << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    std::cout
+#if SKIP_CAT_IN_CONSOLE == 0
+        << "[" << category << "]" << CATEGORY 
+#endif
+        << message.getChar() << std::endl;
 #endif // LOG_TO_CONSOLE
 #endif // _DEBUG
 }
@@ -72,7 +80,11 @@ void Logger::logInternal(const AChar* category, const String& message)
     std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    std::cout << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    std::cout
+#if SKIP_CAT_IN_CONSOLE == 0
+        << "[" << category << "]" << CATEGORY
+#endif
+        << message.getChar() << std::endl;
 #endif // LOG_TO_CONSOLE
 }
 
@@ -87,7 +99,11 @@ void Logger::warnInternal(const AChar* category, const String& message)
     std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    std::cerr << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    std::cerr
+#if SKIP_CAT_IN_CONSOLE == 0
+        << "[" << category << "]" << CATEGORY
+#endif
+        << message.getChar() << std::endl;
 #endif // LOG_TO_CONSOLE
 }
 
@@ -102,7 +118,11 @@ void Logger::errorInternal(const AChar* category, const String& message)
     std::ostringstream& stream = loggerBuffer();
     stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    std::cerr << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    std::cerr
+#if SKIP_CAT_IN_CONSOLE == 0
+        << "[" << category << "]"
+#endif
+        << CATEGORY << message.getChar() << std::endl;
 #endif // LOG_TO_CONSOLE
 }
 

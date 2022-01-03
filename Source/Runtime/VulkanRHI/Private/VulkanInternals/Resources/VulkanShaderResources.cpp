@@ -85,7 +85,7 @@ String VulkanShaderResource::getObjectName() const
 void VulkanShaderResource::init()
 {
     String filePath;
-    filePath = FileSystemFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), "Shaders", shaderConfig->getShaderFileName());
+    filePath = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), "Shaders", shaderConfig->getShaderFileName());
     String shaderFilePath = filePath + "." + SHADER_EXTENSION;
     String reflectionsFilePath = filePath + "." + REFLECTION_EXTENSION;
     PlatformFile shaderFile(shaderFilePath);

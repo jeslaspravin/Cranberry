@@ -405,7 +405,7 @@ const BaseProperty* ReflectionRuntimeModule::getType(const ReflectTypeInfo* type
     return retVal;
 }
 
-void ReflectionRuntimeModule::setMetaData(const BaseProperty* forProperty, std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+void ReflectionRuntimeModule::setMetaData(const BaseProperty* forProperty, const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
 {
     std::vector<std::pair<PropertyMetaDataKey, const PropertyMetaDataBase*>> initializerList;
     initializerList.reserve(propertyMeta.size());

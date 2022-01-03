@@ -1,11 +1,18 @@
 #include "Types/Time.h"
+#include "String/String.h"
 #include "Types/CoreDefines.h"
 
 #include <chrono>
 #include <ratio>
+#include <time.h>
+
+// Will be implemented in platform specific TU
+template <typename Resolution>
+TickRep fromPlatformTime(int64 platformTick);
 
 using TimeResolution = std::chrono::microseconds;
 using TimeHighResolution = std::chrono::nanoseconds;
+
 
 template <bool bIsHighRes = false>
 class TimeHelper
@@ -49,6 +56,17 @@ public:
         return duration_cast<duration<TimeConvType, std::ratio<86400>>>(Resolution(tickValue)).count();
     }
 
+    //FORCE_INLINE static String asString(const TickRep& tickValue, const String& formatStr)
+    //{
+    //    using namespace std::chrono;
+    //    steady_clock::time_point tickTimePoint(Resolution(tickValue));
+    //    std::tm timeBuffer;
+    //
+    //    std::stringstream outStr;
+    //    outStr << put_time(localtime_s(&tickTimePoint, &timeBuffer), formatStr.getChar());
+    //    return outStr.str();
+    //}
+
     FORCE_INLINE static TickRep addSeconds(const TickRep& tickValue, TimeConvType seconds)
     {
         using namespace std::chrono;
@@ -74,7 +92,6 @@ public:
         duration<TimeConvType, std::ratio<3600>> hoursToAdd(hours);
         tickDur += hoursToAdd;
         return duration_cast<Resolution>(tickDur).count();
-
     }
 
     FORCE_INLINE static TickRep addDays(const TickRep& tickValue, TimeConvType days)
@@ -84,6 +101,11 @@ public:
         duration<TimeConvType, std::ratio<86400>> daysToAdd(days);
         tickDur += daysToAdd;
         return duration_cast<Resolution>(tickDur).count();
+    }
+
+    FORCE_INLINE static TickRep fromPlatformTime(int64 platformTick)
+    {
+        return ::fromPlatformTime<Resolution>(platformTick);
     }
 };
 
@@ -140,6 +162,11 @@ TickRep Time::addDays(const TickRep& tickValue, TimeConvType days)
     return TimeHelper<false>::addDays(tickValue, days);
 }
 
+TickRep Time::fromPlatformTime(int64 platformTick)
+{
+    return TimeHelper<false>::fromPlatformTime(platformTick);
+}
+
 // namespace HighResolutionTime
 
 TickRep HighResolutionTime::timeNow()
@@ -191,6 +218,11 @@ TickRep HighResolutionTime::addHours(const TickRep& tickValue, TimeConvType hour
 TickRep HighResolutionTime::addDays(const TickRep& tickValue, TimeConvType days)
 {
     return TimeHelper<true>::addDays(tickValue, days);
+}
+
+TickRep HighResolutionTime::fromPlatformTime(int64 platformTick)
+{
+    return TimeHelper<true>::fromPlatformTime(platformTick);
 }
 
 // Stopwatch

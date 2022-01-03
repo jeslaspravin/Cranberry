@@ -40,7 +40,7 @@ LibPointer* ModuleManager::loadFromAdditionalPaths(String modulePath) const
     String relativeModulePath(moduleFullPath.string());
     for (const String& lookAtPath : additionalLibraryPaths)
     {
-        if (LibPointer* library = PlatformFunctions::openLibrary(FileSystemFunctions::combinePath(lookAtPath, relativeModulePath)))
+        if (LibPointer* library = PlatformFunctions::openLibrary(PathFunctions::combinePath(lookAtPath, relativeModulePath)))
         {
             return library;
         }

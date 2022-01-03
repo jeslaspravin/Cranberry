@@ -13,6 +13,7 @@ struct AppInstanceCreateInfo
     int32 majorVersion;
     int32 minorVersion;
     int32 patchVersion;
+    // This cmdLine will be used as reference inside ProgramCmdLine
     String cmdLine;
 
     void* platformAppHandle;

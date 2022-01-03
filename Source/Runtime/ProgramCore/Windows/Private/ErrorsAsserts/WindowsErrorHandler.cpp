@@ -155,11 +155,11 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
         {
             break;
         }
-        stackTrace << "\r\n";
+        stackTrace << "\n";
     } while (true);
     SymCleanup(processHandle);
     
-    Logger::error("WindowsUnexpectedErrorHandler", "Error call trace : \r\n%s", stackTrace.str().c_str());
+    Logger::error("WindowsUnexpectedErrorHandler", "Error call trace : \n%s", stackTrace.str().c_str());
 
     Logger::flushStream();
     if (bCloseEngine)

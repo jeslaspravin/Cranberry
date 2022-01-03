@@ -1,5 +1,5 @@
 
-# Root must be absolute path under current cmake list file's folder
+# Root must be absolute path
 function(get_first_level_cmake_lists root_dir out_sub_dirs)
     set (sub_dirs )
     set (dir_tree ${root_dir})
@@ -7,10 +7,14 @@ function(get_first_level_cmake_lists root_dir out_sub_dirs)
         # new sub directories to check if current subdirectory did not had any CMakeLists.txt
         set(new_dir_tree )
         foreach (curr_dir ${dir_tree})        
-            file (GLOB_RECURSE all_child_dir LIST_DIRECTORIES true
+            # Why recurse when going to filter only immediate files and directories
+            # file (GLOB_RECURSE all_child_dir LIST_DIRECTORIES true
+            #     ${curr_dir}/*)
+            # # filter all directories with depth >= 1 from curr_dir and files with .*.extensions
+            # list(FILTER all_child_dir EXCLUDE REGEX "${curr_dir}/(.*[./].*)")
+            file (GLOB all_child_dir LIST_DIRECTORIES true
                 ${curr_dir}/*)
-            # filter all directories with depth >= 1 from curr_dir and files with .*.extensions
-            list(FILTER all_child_dir EXCLUDE REGEX "${curr_dir}/(.*[./].*)")
+            
             foreach (path ${all_child_dir})
                 if (IS_DIRECTORY ${path})
                     # message("Directory : ${path}")
@@ -43,6 +47,7 @@ function(get_first_level_cmake_lists root_dir out_sub_dirs)
     set (${out_sub_dirs} ${rel_sub_dirs} PARENT_SCOPE)
 endfunction()
 
+# gather source files are done under CMAKE_CURRENT_LIST_DIR directory
 function(get_all_csharp_files out_file_list)
     file (GLOB_RECURSE file_list 
         LIST_DIRECTORIES false

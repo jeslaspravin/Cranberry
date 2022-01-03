@@ -11,9 +11,10 @@ set (interface_libraries
     EngineShaderData
 )
 
-# TODO : Move unnecessary public includes to private
+# EngineShaderData is general library so we need to manually include to propagate transitive includes and compile definitions
 set(public_includes
     ${cpp_libs_path}/glm
+    $<TARGET_PROPERTY:EngineShaderData,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
 generate_engine_library()

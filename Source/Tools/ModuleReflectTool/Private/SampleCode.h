@@ -7,21 +7,6 @@
 
 namespace CppReflectionParser
 {
-    struct CXStringWrapper : public RefCountable
-    {
-        CXString str;
-
-        CXStringWrapper(CXString inStr)
-            : str(inStr)
-        {}
-
-        ~CXStringWrapper()
-        {
-            clang_disposeString(str);
-        }
-    };
-    using CXStringRef = ReferenceCountPtr<CXStringWrapper>;
-
     struct SourceParsedInfo
     {
         bool bHasGenerateMacro;
