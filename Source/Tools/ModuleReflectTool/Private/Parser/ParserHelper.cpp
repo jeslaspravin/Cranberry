@@ -26,6 +26,7 @@ CXType ParserHelper::getTypeReferred(CXType clangType, CXCursor typeRefCursor)
     // If template ref then it is not possible to get the type name from cursor alone so use type for it
     if (!(clang_Cursor_isNull(innerTypeCursor) || clang_getCursorKind(innerTypeCursor) == CXCursor_TemplateRef))
     {
+        // We do not have to recurse in cursor derived referred type as it is based on lexical cursor and TypeRef accurately mean referred type
         return clang_getCursorType(innerTypeCursor);
     }
 
@@ -35,7 +36,7 @@ CXType ParserHelper::getTypeReferred(CXType clangType, CXCursor typeRefCursor)
     case CXType_RValueReference:
     case CXType_LValueReference:
     case CXType_Pointer:
-        return innerType;
+        return getTypeReferred(innerType, innerTypeCursor);
         break;
     default:
         break;
@@ -313,6 +314,7 @@ bool ParserHelper::getMapElementTypes(CXType& outKeyType, CXType& outValueType, 
 
     outKeyType = clang_Type_getTemplateArgumentAsType(referredType, 0);
     outValueType = clang_Type_getTemplateArgumentAsType(referredType, 1);
+
     return outKeyType.kind != CXType_Invalid && outValueType.kind != CXType_Invalid;
 }
 
@@ -407,7 +409,7 @@ bool ParserHelper::isValidFuncReturnType(CXType clangType)
 {
     // bool bIsValid = commonTypeValidity(clangType);
     // Right now we do not have any validation other than common for return type
-    return clangType.kind == CXType_Void || commonTypeValidity(clangType);
+    return commonTypeValidity(clangType);
 }
 
 bool ParserHelper::isValidFunction(CXCursor funcCursor)
@@ -430,7 +432,8 @@ bool ParserHelper::isValidFunction(CXCursor funcCursor)
     CXType funcRetType = clang_getCursorResultType(funcCursor);
     if (!isValidFuncReturnType(funcRetType))
     {
-        Logger::error("ParserHelper", "%s() : Function %s return type %s is not valid", __func__, functionName, clang_getTypeSpelling(funcRetType));
+        Logger::log("ParserHelper", "%s ERROR %s() : Function %s return type %s is not valid", clang_getCursorLocation(funcCursor)
+            , __func__, functionName, clang_getTypeSpelling(funcRetType));
         return false;
     }
 
@@ -442,8 +445,8 @@ bool ParserHelper::isValidFunction(CXCursor funcCursor)
 
         if (!isValidFuncParamType(paramType, paramCursor))
         {
-            Logger::error("ParserHelper", "%s() : Function %s param %s at %d is not valid type %s", __func__, functionName
-                , clang_getCursorSpelling(funcCursor), i, clang_getTypeSpelling(paramType));
+            Logger::log("ParserHelper", "%s ERROR %s() : Function %s param %s at %d is not valid type %s", clang_getCursorLocation(paramCursor)
+                , __func__, functionName, clang_getCursorSpelling(paramCursor), i, clang_getTypeSpelling(paramType));
             return false;
         }
     }

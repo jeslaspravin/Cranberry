@@ -5,6 +5,9 @@
 #include "Assets/AssetsManager.h"
 #include "Modules/ModuleManager.h"
 
+#include "IReflectionRuntime.h"
+#include "TestReflectionGen.h"
+
 
 int appMain(String cmdLine, void* appPlatformInstance)
 {
@@ -17,8 +20,10 @@ int appMain(String cmdLine, void* appPlatformInstance)
     appCI.platformAppHandle = appPlatformInstance;
 
     // Main Core
-    bool bProgramCoreLoaded = ModuleManager::get()->loadModule("ProgramCore");
-    fatalAssert(bProgramCoreLoaded, "Loading mandatory modules failed");
+    bool bMandatoryModulesLoaded = ModuleManager::get()->loadModule("ProgramCore")
+        && ModuleManager::get()->loadModule("ReflectionRuntime")
+        && ModuleManager::get()->loadModule("CoreObjects");
+    fatalAssert(bMandatoryModulesLoaded, "Loading mandatory modules failed");
 
     UnexpectedErrorHandler::getHandler()->registerFilter();
 
