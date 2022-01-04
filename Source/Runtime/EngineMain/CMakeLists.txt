@@ -5,6 +5,7 @@ set(private_modules
     EngineRenderer
     Application
     EngineInputCore
+    CoreObjects
 )
 if (${engine_static_modules})
     if(${WIN32} OR ${LINUX})

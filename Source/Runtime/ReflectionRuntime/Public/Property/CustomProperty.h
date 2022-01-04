@@ -213,6 +213,8 @@ class REFLECTIONRUNTIME_EXPORT MapProperty final : public CustomProperty
 public:
     const BaseProperty* keyProp;
     const BaseProperty* valueProp;
+    // Will be std::pair<const KeyType, ValueType>
+    // Element prop will be nullptr unless the type is reflected in function parameters or reflected field
     const BaseProperty* elementProp;
 public:
     MapProperty(const String& propName, const ReflectTypeInfo* propTypeInfo)

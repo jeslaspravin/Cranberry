@@ -413,8 +413,14 @@ void ReflectionRuntimeModule::setMetaData(const BaseProperty* forProperty, const
     {
         initializerList.push_back({ {forProperty, metaData->metaType()}, metaData });
     }
-    propertiesMetaData.insert(initializerList.cbegin(), initializerList.cend());
-    propertiesMetaFlags.insert({ forProperty, propertyMetaFlags });
+    if (!initializerList.empty())
+    {
+        propertiesMetaData.insert(initializerList.cbegin(), initializerList.cend());
+    }
+    if (propertyMetaFlags != 0)
+    {
+        propertiesMetaFlags.insert({ forProperty, propertyMetaFlags });
+    }
 }
 
 std::vector<const PropertyMetaDataBase*> ReflectionRuntimeModule::getPropertyMetaData(const BaseProperty* prop) const

@@ -42,7 +42,7 @@ BaseProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 void HEADER_FILE_ID::init_{{SanitizedName}}(BaseProperty* typeProperty)
 {
     QualifiedProperty* prop = static_cast<QualifiedProperty*>(typeProperty);
-    prop->setUnqualifiedType(IReflectionRuntimeModule::getClassType<CleanType<{{TypeName}}>>());
+    prop->setUnqualifiedType(IReflectionRuntimeModule::getType<CleanType<{{TypeName}}>>());
 }
 {{/QualifiedTypes}}
 

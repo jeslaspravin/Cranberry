@@ -38,6 +38,24 @@ FORCE_INLINE void setTypeMetaInfo(MustacheContext& typeContext, const std::vecto
     }
 }
 
+FORCE_INLINE void addQualifiedType(const String& typeName, const String& sanitizedTypeName, SourceGeneratorContext* srcGenContext)
+{
+    MustacheContext& qualifiedContext = srcGenContext->qualifiedTypes.emplace_back();
+    MustacheContext& allRegisterdTypeCntxt = srcGenContext->allRegisteredypes.emplace_back();
+
+    // Setup contexts
+    allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = typeName;
+    allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
+    allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
+    allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::BASEPROPERTY;
+    allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERTYPEFACTORY_FUNC;
+
+    qualifiedContext.args[GeneratorConsts::TYPENAME_TAG] = typeName;
+    qualifiedContext.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
+
+    srcGenContext->addedSymbols.insert(sanitizedTypeName);
+}
+
 void generatePrereqTypes(CXType type, SourceGeneratorContext* srcGenContext);
 
 void visitEnums(CXCursor cursor, SourceGeneratorContext* srcGenContext)
@@ -61,7 +79,7 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     // Setup source contexts
     allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = enumTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
-    allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANC_TAG] = false;
+    allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::ENUMPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERENUMFACTORY_FUNC;
 
@@ -171,7 +189,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext& localCntxt)
         return;
     }
 
-    CXStringRef funcName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
+    String funcName(CXStringWrapper(clang_getCursorSpelling(cursor)).toString());
 
     if (!ParserHelper::isValidFunction(cursor))
     {
@@ -314,7 +332,7 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     // Setup source contexts
     allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = structTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
-    allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANC_TAG] = false;
+    allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERSTRUCTFACTORY_FUNC;
 
@@ -325,6 +343,15 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext* srcGenContext)
 
 
     // Now fill members
+    
+    // Class and Struct have constructor and they return there own pointers so we generate class/struct pointer even when not used anywhere yet
+    const String structPtrTypeName = structTypeName + " *";
+    const String structPtrSanitizedName = PropertyHelper::getValidSymbolName(structPtrTypeName);
+    if (!srcGenContext->addedSymbols.contains(structPtrSanitizedName))
+    {
+        addQualifiedType(structPtrTypeName, structPtrSanitizedName, srcGenContext);
+    }
+
     LocalContext localCtx
     {
         .srcGenContext = srcGenContext,
@@ -380,7 +407,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     // Setup source contexts
     allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = classTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
-    allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANC_TAG] = false;
+    allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERCLASSFACTORY_FUNC;
 
@@ -391,6 +418,15 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext* srcGenContext)
 
 
     // Now fill members
+
+    // Class and Struct have constructor and they return there own pointers so we generate class/struct pointer even when not used anywhere yet
+    const String classPtrTypeName = classTypeName + " *";
+    const String classPtrSanitizedName = PropertyHelper::getValidSymbolName(classPtrTypeName);
+    if (!srcGenContext->addedSymbols.contains(classPtrSanitizedName))
+    {
+        addQualifiedType(classPtrTypeName, classPtrSanitizedName, srcGenContext);
+    }
+
     LocalContext classLocalCtx
     {
         .srcGenContext = srcGenContext,
@@ -474,6 +510,9 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext* srcGenContext)
         srcGenContext->addedSymbols.insert(sanitizedTypeName);
 
         MustacheContext* typeContext = nullptr;
+        // Why do like below? switch context base on qualified state? - Since we did the symbol added check for currently generating type
+        // Which might be qualified so inside qualified condition we do base symbol check and add it as needed
+
         // If qualified then we need to create non const qualified type as well, In which case below if scope will be creating base custom property
         // If the type itself is unqualified then the above typeContext will be one creating base custom property
         if (bIsQualified)
@@ -491,7 +530,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext* srcGenContext)
                 // Setup contexts
                 allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = baseTypeName;
                 allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = baseSanitizedTypeName;
-                allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANC_TAG] = false;
+                allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
                 allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::BASEPROPERTY;
                 allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERTYPEFACTORY_FUNC;
 
@@ -514,7 +553,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext* srcGenContext)
         // Setup contexts
         allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = typeName;
         allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
-        allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANC_TAG] = false;
+        allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
         allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::BASEPROPERTY;
         allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERTYPEFACTORY_FUNC;
 
@@ -537,20 +576,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext* srcGenContext)
         {
             if (bIsQualified)
             {
-                MustacheContext& qualifiedContext = srcGenContext->qualifiedTypes.emplace_back();
-                MustacheContext& allRegisterdTypeCntxt = srcGenContext->allRegisteredypes.emplace_back();
-
-                // Setup contexts
-                allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = typeName;
-                allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
-                allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANC_TAG] = false;
-                allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::BASEPROPERTY;
-                allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERTYPEFACTORY_FUNC;
-
-                qualifiedContext.args[GeneratorConsts::TYPENAME_TAG] = typeName;
-                qualifiedContext.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
-
-                srcGenContext->addedSymbols.insert(sanitizedTypeName);                
+                addQualifiedType(typeName, sanitizedTypeName, srcGenContext);
                 // We do not need to generate inner prerequisite types here
             }
         }

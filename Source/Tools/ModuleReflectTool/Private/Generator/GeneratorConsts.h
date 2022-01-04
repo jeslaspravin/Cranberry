@@ -33,7 +33,7 @@ namespace GeneratorConsts
     // AllRegisterTypes section tags
     CONST_EXPR StringLiteralStore<"PropertyTypeName"> PROPERTYTYPENAME_TAG;
     CONST_EXPR StringLiteralStore<"RegisterFunctionName"> REGISTERFUNCNAME_TAG;
-    CONST_EXPR StringLiteralStore<"NoInit"> NOINIT_BRANC_TAG;
+    CONST_EXPR StringLiteralStore<"NoInit"> NOINIT_BRANCH_TAG;
     // EnumTypes section tags
     CONST_EXPR StringLiteralStore<"CanUseAsFlags"> CANUSEASFLAGS_TAG;
     CONST_EXPR StringLiteralStore<"EnumFields"> ENUMFIELDS_SECTION_TAG;
