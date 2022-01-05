@@ -1,3 +1,13 @@
+# 
+# \file StringUtilities.cmake
+# 
+# \author Jeslas Pravin
+# \date January 2022
+# \copyright
+#  Copyright (C) Jeslas Pravin, Since 2022
+#  @jeslaspravin pravinjeslas@gmail.com
+#  License can be read in LICENSE file at this repository's root
+# 
 
 # Makes regex search pattern to match one of values in list
 function (make_match_any_pattern_from_list)

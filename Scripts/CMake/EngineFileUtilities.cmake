@@ -1,3 +1,13 @@
+# 
+# \file EngineFileUtilities.cmake
+# 
+# \author Jeslas Pravin
+# \date January 2022
+# \copyright
+#  Copyright (C) Jeslas Pravin, Since 2022
+#  @jeslaspravin pravinjeslas@gmail.com
+#  License can be read in LICENSE file at this repository's root
+# 
 
 # Root must be absolute path
 function(get_first_level_cmake_lists root_dir out_sub_dirs)

@@ -1,3 +1,14 @@
+/*!
+ * \file VulkanWindowCanvas.cpp
+ *
+ * \author Jeslas Pravin
+ * \date January 2022
+ * \copyright
+ *  Copyright (C) Jeslas Pravin, Since 2022
+ *  @jeslaspravin pravinjeslas@gmail.com
+ *  License can be read in LICENSE file at this repository's root
+ */
+
 #include "VulkanInternals/Resources/VulkanWindowCanvas.h"
 #include "VulkanInternals/VulkanFunctions.h"
 #include "VulkanInternals/VulkanGraphicsTypes.h"

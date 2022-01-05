@@ -1,3 +1,13 @@
+# 
+# \file GeneratedReflectionsMacros.cmake
+# 
+# \author Jeslas Pravin
+# \date January 2022
+# \copyright
+#  Copyright (C) Jeslas Pravin, Since 2022
+#  @jeslaspravin pravinjeslas@gmail.com
+#  License can be read in LICENSE file at this repository's root
+# 
 
 function (determine_reflect_gen_files out_generated target_name target_src_dir target_binary_dir)
     file (GLOB_RECURSE headers_list 
