@@ -1,3 +1,14 @@
+# 
+# \file EngineProjectVariable.cmake
+# 
+# \author Jeslas Pravin
+# \date January 2022
+# \copyright
+#  Copyright (C) Jeslas Pravin, Since 2022
+#  @jeslaspravin pravinjeslas@gmail.com
+#  License can be read in LICENSE file at this repository's root
+# 
+
 # Included at root CMakeLists.txt. DO NOT include it in any internal List files
 
 file(REAL_PATH "Scripts/CMake" cmake_script_dir BASE_DIRECTORY ${PROJECT_SOURCE_DIR})
