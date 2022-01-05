@@ -315,7 +315,8 @@ struct StringLiteral
 template <StringLiteral StoreValue>
 struct StringLiteralStore
 {
-    CONST_EXPR static const decltype(StoreValue) Literal = StoreValue;
+    using LiteralType = decltype(StoreValue);
+    CONST_EXPR static const LiteralType Literal = StoreValue;
 
     CONST_EXPR const AChar* getChar() const
     {

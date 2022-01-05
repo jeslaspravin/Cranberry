@@ -25,6 +25,10 @@ void initializeCmdArguments()
     CmdLineArgument exeSampleCode("Executes sample code instead of actual application", ReflectToolCmdLineConst::SAMPLE_CODE);
     CmdLineArgument filterDiagnostics("Filters the diagnostics results and only display what is absolutely necessary", ReflectToolCmdLineConst::FILTER_DIAGNOSTICS);
     CmdLineArgument noDiagnostics("No diagnostics will be displayed", ReflectToolCmdLineConst::NO_DIAGNOSTICS);
+
+    ProgramCmdLine::get()->setProgramDescription("ModuleReflectTool Copyright (C) Jeslas Pravin, Since 2022\n\
+    Parses the headers in provided module and creates reflection files for them.\n\
+    It uses clang libraries and mustache style templates to generate reflection data");
 }
 
 int32 main(int32 argsc, AChar** args)
@@ -35,9 +39,6 @@ int32 main(int32 argsc, AChar** args)
     moduleManager->loadModule("ProgramCore");
     initializeCmdArguments();
 
-    ProgramCmdLine::get()->setProgramDescription("ModuleReflectTool\n\
-    Parses the headers in provided module and creates reflection files for them.\n\
-    It uses clang libraries and mustache style templates to generate reflection data");
     if (!ProgramCmdLine::get()->parse(args, argsc))
     {
         Logger::log("CPPReflect", "%s(): Failed to parse command line arguments", __func__);
