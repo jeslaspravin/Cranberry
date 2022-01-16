@@ -53,13 +53,13 @@ int32 main(int32 argsc, AChar** args)
     if (!ProgramCmdLine::get()->parse(args, argsc))
     {
         Logger::log("CPPReflect", "%s(): Failed to parse command line arguments", __func__);
+        ProgramCmdLine::get()->printCommandLine();
     }
     if (ProgramCmdLine::get()->printHelp())
     {
         // Since this invocation is for printing help
         return 0;
     }
-    ProgramCmdLine::get()->printCommandLine();
 
     // Loading other libraries
     moduleManager->loadModule("ReflectionRuntime");

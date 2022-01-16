@@ -20,10 +20,15 @@ public:
     static UnexpectedErrorHandler* getHandler();
 
     virtual void registerFilter() = 0;
-    virtual void unregisterFilter() = 0;
-    virtual void dumpCallStack(bool bShouldCrashApp) = 0;
+    virtual void unregisterFilter() const = 0;
+    virtual void dumpCallStack(bool bShouldCrashApp) const = 0;
+    /**
+     * Calls debugger only if present else does nothing
+     */
+    virtual void debugBreak() const = 0;
 };
 
+// Debug assert or slow assert
 #ifndef debugAssert
 #if _DEBUG
 #include <assert.h>
@@ -32,6 +37,7 @@ do{\
 if(!(Expr)){\
     Logger::error("DebugAssertion", "%s() : Assert expression failed "#Expr,__func__);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(false);}\
+    /* Using assert macro to make use of assert window to crash or debug */\
     assert((Expr));\
 }while(0)
 #else
@@ -43,7 +49,17 @@ if(!(Expr)){\
 #define fatalAssert(Expr,Message, ...)\
 do{\
 if(!(Expr)){\
-    Logger::error("DebugAssertion", "%s() : Assert expression failed ["#Expr"] "#Message,__func__, __VA_ARGS__);\
+    Logger::error("FatalAssertion", "%s() : Assert expression failed ["#Expr"] "#Message,__func__, __VA_ARGS__);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(true);}\
+}while(0)
+#endif
+
+#ifndef alertIf
+#define alertIf(Expr,Message, ...)\
+do{\
+if(!(Expr)){\
+    Logger::error("DebugAssertion", "%s() : Signalling failure ["#Expr"] "#Message,__func__, __VA_ARGS__);\
+    UnexpectedErrorHandler::getHandler()->dumpCallStack(false);\
+    UnexpectedErrorHandler::getHandler()->debugBreak();}\
 }while(0)
 #endif

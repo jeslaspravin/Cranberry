@@ -18,7 +18,7 @@ private:
     typedef long (*PreviousFilterFunc)(struct _EXCEPTION_POINTERS* ExceptionInfo);
     PreviousFilterFunc previousFilter;
 
-    void dumpStack(struct _CONTEXT* context, bool bCloseApp);
+    void dumpStack(struct _CONTEXT* context, bool bCloseApp) const;
 public:
     
     static WindowsUnexpectedErrorHandler* getHandler()
@@ -31,8 +31,9 @@ public:
 
     /* UnexpectedErrorHandler Implementation */
     void registerFilter() override;
-    void unregisterFilter() override;
-    void dumpCallStack(bool bShouldCrashApp) override;
+    void unregisterFilter() const override;
+    void dumpCallStack(bool bShouldCrashApp) const override;
+    void debugBreak() const override;
     /* Ends */
 };
 
