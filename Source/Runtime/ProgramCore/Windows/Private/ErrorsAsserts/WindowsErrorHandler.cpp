@@ -14,10 +14,10 @@
 #include "Modules/ModuleManager.h"
 #include "Types/Platform/GenericPlatformFunctions.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "WindowsCommonHeaders.h"
 
 #pragma comment(lib, "dbghelp.lib")
 
-#include <Windows.h>
 #include <DbgHelp.h>
 #include <sstream>
 
@@ -78,11 +78,10 @@ public:
 
 void WindowsUnexpectedErrorHandler::registerFilter()
 {
-
     previousFilter = SetUnhandledExceptionFilter(handlerFilter);
 }
 
-void WindowsUnexpectedErrorHandler::dumpCallStack(bool bShouldCrashApp)
+void WindowsUnexpectedErrorHandler::dumpCallStack(bool bShouldCrashApp) const
 {
     CONTEXT context = {};
     context.ContextFlags = CONTEXT_FULL;
@@ -90,12 +89,28 @@ void WindowsUnexpectedErrorHandler::dumpCallStack(bool bShouldCrashApp)
     dumpStack(&context, bShouldCrashApp);
 }
 
-void WindowsUnexpectedErrorHandler::unregisterFilter()
+void WindowsUnexpectedErrorHandler::debugBreak() const
+{
+    HANDLE processHandle = GetCurrentProcess();
+    int32 bRemoteDebuggerAvailable = false;
+    bool bIsRunByDebugger = !!IsDebuggerPresent();
+    if (CheckRemoteDebuggerPresent(processHandle, &bRemoteDebuggerAvailable) == 0)
+    {
+        Logger::error("WindowsUnexpectedErrorHandler", "%s() : Unable to find remoter debugger state", __func__);
+    }
+
+    if (!!bRemoteDebuggerAvailable || bIsRunByDebugger)
+    {
+        DebugBreak();
+    }
+}
+
+void WindowsUnexpectedErrorHandler::unregisterFilter() const
 {
     SetUnhandledExceptionFilter(previousFilter);
 }
 
-void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCloseEngine)
+void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCloseApp) const
 {
     HANDLE processHandle = GetCurrentProcess();
     HANDLE threadHandle = GetCurrentThread();
@@ -173,9 +188,10 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
     Logger::error("WindowsUnexpectedErrorHandler", "Error call trace : \n%s", stackTrace.str().c_str());
 
     Logger::flushStream();
-    if (bCloseEngine)
+    if (bCloseApp)
     {
         Logger::flushStream();
+        debugBreak();
         exit(1);
     }
 }

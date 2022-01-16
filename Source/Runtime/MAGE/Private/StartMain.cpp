@@ -15,9 +15,7 @@
 #include "Types/Platform/PlatformFunctions.h"
 #include "Assets/AssetsManager.h"
 #include "Modules/ModuleManager.h"
-
-#include "IReflectionRuntime.h"
-#include "TestReflectionGen.h"
+#include "CmdLine/CmdLine.h"
 
 
 int appMain(String cmdLine, void* appPlatformInstance)
@@ -38,7 +36,14 @@ int appMain(String cmdLine, void* appPlatformInstance)
 
     UnexpectedErrorHandler::getHandler()->registerFilter();
 
-    Logger::log("Engine", "%s() : Engine start", __func__);
+    if (!ProgramCmdLine::get()->parse(appCI.cmdLine))
+    {
+        Logger::error("Engine", "%s() : Invalid command line", __func__);
+        ProgramCmdLine::get()->printCommandLine();
+    }
+
+    float fltTMin = -FLT_TRUE_MIN;
+    Logger::log("Engine", "%s() : Engine start %u", __func__, *reinterpret_cast<uint32*>(&fltTMin));
     gEngine->startup(appCI);
 
     Logger::flushStream();

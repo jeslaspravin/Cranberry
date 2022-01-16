@@ -1,6 +1,6 @@
-# GameEngine
+# My Ardent Game Engine(MAGE)
 
-Currently named as **Cranberry Engine** is my Personal hobby game engine. I do not get time to work on this often, I try to work on this as best as I could.
+**My Ardent Game Engine** is my Personal hobby game engine. I work on this as best as I could during my holidays.
 
 ## Instructions
 
@@ -10,12 +10,13 @@ Currently named as **Cranberry Engine** is my Personal hobby game engine. I do n
     - `Engine-DynamicLinked` preset creates command `cmake -B Build -G "Visual Studio 16 2019" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=OFF`
     - Hidden preset not available `BasePreset` preset creates command `cmake -B Build -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=OFF`
     - User preset not available under *CMakePresets.json* `Engine-WindowsDebug` creates command `cmake -B Build -G "Visual Studio 16 2019" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=OFF -Dllvm_install_path:PATH="D:/Workspace/VisualStudio/CppLibs/llvm/Debug"`
-
-## Current dependencies:
-
-* Vulkan headers
-* glm
-* tinyObjloader
-* SPIRVCross(Few necessary files are copied directly rather than using as include)
-* stb
-* ImGui and ImPlot(Embedded into the project)
+## Third parties
+Licenses for third party packages used is placed under `Licenses` folder
+### Current dependencies:
+* **`SPIRVCross`**(Few necessary files are copied directly rather than using as include)
+* **`ImGui`** and **`ImPlot`**(Embedded into the project)
+* **`Vulkan`** headers
+* **`glm`**
+* **`tinyObjloader`**
+* **`stb`**
+* **`LLVM`**(**`CLang`**)
