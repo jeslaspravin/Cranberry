@@ -56,6 +56,11 @@
 #define FS_PATH_SEPARATOR "/"
 #endif
 
+// Math defines
+#ifndef IS_FINITE
+#define  IS_FINITE std::isfinite
+#endif
+
 // Other non platform defines
 
 // CPP Language specific defines

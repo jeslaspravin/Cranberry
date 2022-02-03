@@ -71,6 +71,7 @@ public:
     Vector4D& operator+=(const float& scalar);
     Vector4D operator-() const;
     bool isSame(const Vector4D& b, float epsilon = SMALL_EPSILON) const;
+    bool isFinite() const;
     Vector4D normalized() const;
     Vector4D safeNormalize(float threshold = SMALL_EPSILON) const;
     float length() const;

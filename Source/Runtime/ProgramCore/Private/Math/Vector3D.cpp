@@ -221,6 +221,13 @@ bool Vector3D::isSame(const Vector3D& b, float epsilon /*= SMALL_EPSILON*/) cons
         && Math::isEqual(value.z, b.value.z, epsilon);
 }
 
+bool Vector3D::isFinite() const
+{
+    return Math::isFinite(value.x)
+        && Math::isFinite(value.y)
+        && Math::isFinite(value.z);
+}
+
 Vector3D Vector3D::normalized() const
 {
     return Vector3D(glm::normalize(value));

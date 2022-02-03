@@ -176,8 +176,8 @@ bool GraphicsResourceType::isChildOf(const GraphicsResourceType* otherType) cons
 
 ResourceTypesGraph& GraphicsResourceType::getTypeGraph() const
 {
-    static ResourceTypesGraph typeGraph;
-    return typeGraph;
+    static ResourceTypesGraph singletonTypeGraph;
+    return singletonTypeGraph;
 }
 
 GraphicsResourceType::GraphicsResourceType(GraphicsResource* resource, DeleteFn deleteFunc, const String& resTypeName)

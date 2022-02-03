@@ -237,12 +237,15 @@ FORCE_INLINE bool operator==(RefType* lhs, const ReferenceCountPtr<ReferencedTyp
 template <typename RefType>
 struct std::hash<ReferenceCountPtr<RefType>>
 {
-    _NODISCARD size_t operator()(const ReferenceCountPtr<RefType>& refCountPtr) const noexcept
+    NODISCARD size_t operator()(const ReferenceCountPtr<RefType>& refCountPtr) const noexcept
     {
         return HashUtility::hash(refCountPtr.reference());
     }
 };
 
+/**
+ * Memory order safe
+ */
 class RefCountable
 {
 private:
@@ -257,7 +260,10 @@ public:
     }
 
     void removeRef()
-    {
+    {        
+        // TODO(Jeslas) : fetch_sub loads the old value relaxed meaning no memory ordering in cache coherency protocol/instruction reordering(out of order execution) barrier is enforced
+        // This is still not thread safe as preemptive concurrency or multi threading can still add a new reference before delete
+        // , To avoid that never assign a raw pointer after initially creating ReferenceCountPtr
         uint32 count = refCounter.fetch_sub(1);
         if (count == 1)
         {

@@ -177,6 +177,13 @@ bool Rotation::isSame(const Rotation& b, float epsilon /*= SMALL_EPSILON*/) cons
         && Math::isEqual(value.z, b.value.z, epsilon);
 }
 
+bool Rotation::isFinite() const
+{
+    return Math::isFinite(value.x)
+        && Math::isFinite(value.y)
+        && Math::isFinite(value.z);
+}
+
 Rotation Math::deg2Rad(const Rotation& value)
 {
     glm::vec3 rotVal(value.roll(), value.pitch(), value.yaw());

@@ -102,7 +102,7 @@ void Transform3D::operator=(const Matrix4& transformMatrix)
     transformTranslation = Vector3D(transformMatrix[3].x, transformMatrix[3].y, transformMatrix[3].z);
     transformScale = Vector3D(Vector3D(transformMatrix[0]).length(), Vector3D(transformMatrix[1]).length()
         , Vector3D(transformMatrix[2]).length());
-    transformRotation = Rotation(RotationMatrix(transformMatrix / Matrix4(transformScale)).asRotation());
+    transformRotation = RotationMatrix(transformMatrix / Matrix4(transformScale)).asRotation();
     transformMatrixCache = transformMatrix;
     bCachedLatest = true;
 }

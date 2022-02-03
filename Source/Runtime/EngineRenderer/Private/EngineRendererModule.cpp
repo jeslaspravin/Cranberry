@@ -39,8 +39,9 @@ void EngineRedererModule::finalizeGraphicsInitialization()
 
 RenderManager* EngineRedererModule::getRenderManager() const
 {
-    static RenderManager renderManager;
-    return &renderManager;
+    // #TODO(Jeslas) : Should this be singleton?
+    static RenderManager singletonRenderManager;
+    return &singletonRenderManager;
 }
 
 DelegateHandle EngineRedererModule::registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback)

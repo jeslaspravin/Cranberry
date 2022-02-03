@@ -202,6 +202,12 @@ bool Vector2D::isSame(const Vector2D& b, float epsilon /*= SMALL_EPSILON*/) cons
     return Math::isEqual(value.x, b.value.x, epsilon) && Math::isEqual(value.y, b.value.y, epsilon);
 }
 
+bool Vector2D::isFinite() const
+{
+    return Math::isFinite(value.x)
+        && Math::isFinite(value.y);
+}
+
 Vector2D Vector2D::normalized() const
 {
     return Vector2D(glm::normalize(value));

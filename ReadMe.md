@@ -1,6 +1,6 @@
-# My Ardent Game Engine(MAGE)
+# Cranberry Game Engine
 
-**My Ardent Game Engine** is my Personal hobby game engine. I work on this as best as I could during my holidays.
+**Cranberry Game Engine** is my Personal hobby game engine. I work on this as best as I could during my holidays.
 
 ## Instructions
 

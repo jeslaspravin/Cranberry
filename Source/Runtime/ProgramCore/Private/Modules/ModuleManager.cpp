@@ -24,8 +24,8 @@ StaticModuleInitializerRegistrant::StaticModuleInitializerRegistrant(String modu
 
 StaticModuleInitializerList& ModuleManager::getModuleInitializerList()
 {
-    static StaticModuleInitializerList initializerList;
-    return initializerList;
+    static StaticModuleInitializerList singletonInitializerList;
+    return singletonInitializerList;
 }
 
 LibPointer* ModuleManager::loadFromAdditionalPaths(String modulePath) const

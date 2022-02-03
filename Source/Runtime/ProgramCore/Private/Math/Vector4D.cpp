@@ -217,6 +217,14 @@ bool Vector4D::isSame(const Vector4D& b, float epsilon /*= SMALL_EPSILON*/) cons
         && Math::isEqual(value.z, b.value.z, epsilon);
 }
 
+bool Vector4D::isFinite() const
+{
+    return Math::isFinite(value.x)
+        && Math::isFinite(value.y)
+        && Math::isFinite(value.z)
+        && Math::isFinite(value.w);
+}
+
 Vector4D Vector4D::normalized() const
 {
     return Vector4D(glm::normalize(value));
