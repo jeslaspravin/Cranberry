@@ -70,6 +70,7 @@ public:
 
 
     bool isSame(const Vector2D& b, float epsilon = SMALL_EPSILON) const;
+    bool isFinite() const;
     Vector2D normalized() const;
     Vector2D safeNormalize(float threshold = SMALL_EPSILON) const;
     float length() const;

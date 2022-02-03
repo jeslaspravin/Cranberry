@@ -12,13 +12,15 @@
 #pragma once
 #include "Math/Matrix3.h"
 #include "Math/Matrix4.h"
+#include "Types/CoreDefines.h"
 
 
 class PROGRAMCORE_EXPORT RotationMatrix
 {
 private:
     Matrix3 rotationMatrix;
-    inline void fromRotation(const class Rotation& rotation);
+    FORCE_INLINE void fromRotation(const class Rotation& rotation);
+    void verifyMatrix() const;
 public:
     RotationMatrix();
     RotationMatrix(const RotationMatrix& other);

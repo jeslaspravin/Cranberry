@@ -48,22 +48,23 @@ public:
     bool operator==(const Rotation& b) const;
     // Component wise operations
     Rotation operator*(const Rotation& b) const;
-    Rotation& operator*=(const Rotation& b);;
+    Rotation& operator*=(const Rotation& b);
     Rotation operator/(const Rotation& b) const;
-    Rotation& operator/=(const Rotation& b);;
+    Rotation& operator/=(const Rotation& b);
     Rotation operator-(const Rotation& b) const;
-    Rotation& operator-=(const Rotation& b);;
+    Rotation& operator-=(const Rotation& b);
     Rotation operator+(const Rotation& b) const;
-    Rotation& operator+=(const Rotation& b);;
+    Rotation& operator+=(const Rotation& b);
     Rotation operator*(const float& scalar) const;
-    Rotation& operator*=(const float& scalar);;
+    Rotation& operator*=(const float& scalar);
     Rotation operator/(const float& scalar) const;
-    Rotation& operator/=(const float& scalar);;
+    Rotation& operator/=(const float& scalar);
     Rotation operator-(const float& scalar) const;
-    Rotation& operator-=(const float& scalar);;
+    Rotation& operator-=(const float& scalar);
     Rotation operator+(const float& scalar) const;
-    Rotation& operator+=(const float& scalar);;
+    Rotation& operator+=(const float& scalar);
     bool isSame(const Rotation& b, float epsilon = SMALL_EPSILON) const;
+    bool isFinite() const;
 
     static Rotation clamp(const Rotation& value, const Rotation& min, const Rotation& max);
     static Rotation min(const Rotation& a, const Rotation& b);

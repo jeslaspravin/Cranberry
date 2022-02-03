@@ -74,6 +74,7 @@ public:
     Vector3D& operator+=(const float& scalar);
     Vector3D operator-() const;
     bool isSame(const Vector3D& b, float epsilon = SMALL_EPSILON) const;
+    bool isFinite() const;
     Vector3D normalized() const;
     Vector3D safeNormalize(float threshold = SMALL_EPSILON) const;
     float length() const;

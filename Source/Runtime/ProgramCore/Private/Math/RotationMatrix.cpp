@@ -13,37 +13,11 @@
 #include "Math/Rotation.h"
 #include "Math/Vector3D.h"
 #include "Math/Math.h"
-
-RotationMatrix::RotationMatrix()
-    : rotationMatrix(Vector3D::FWD, Vector3D::RIGHT, Vector3D::UP)
-{}
-
-RotationMatrix::RotationMatrix(const class Rotation& rotation)
-{
-    fromRotation(rotation);
-}
-
-RotationMatrix::RotationMatrix(const Matrix3& rotMatrix)
-    : rotationMatrix(rotMatrix)
-{}
-
-RotationMatrix::RotationMatrix(const Matrix4& rotMatrix)
-    : rotationMatrix(rotMatrix[0].x, rotMatrix[0].y, rotMatrix[0].z
-        , rotMatrix[1].x, rotMatrix[1].y, rotMatrix[1].z
-        , rotMatrix[2].x, rotMatrix[2].y, rotMatrix[2].z)
-{}
-
-RotationMatrix::RotationMatrix(const RotationMatrix& other)
-    : rotationMatrix(other.rotationMatrix)
-{}
-
-RotationMatrix::RotationMatrix(RotationMatrix&& other)
-    : rotationMatrix(std::move(other.rotationMatrix))
-{}
+#include "Types/Platform/PlatformAssertionErrors.h"
 
 #define ROTATIONORDER_RPY 1// Yaw on top of Pitch on top of Roll
 #define ROTATIONORDER_YPR 0
-void RotationMatrix::fromRotation(const class Rotation& rotation)
+FORCE_INLINE void RotationMatrix::fromRotation(const class Rotation& rotation)
 {
     Rotation cosVal = Math::cos(rotation);
     Rotation sinVal = Math::sin(rotation);
@@ -148,6 +122,47 @@ Rotation RotationMatrix::asRotation() const
 }
 #undef ROTATIONORDER_RPY
 #undef ROTATIONORDER_YPR
+
+
+RotationMatrix::RotationMatrix()
+    : rotationMatrix(Vector3D::FWD, Vector3D::RIGHT, Vector3D::UP)
+{}
+
+RotationMatrix::RotationMatrix(const class Rotation& rotation)
+{
+    fromRotation(rotation);
+}
+
+RotationMatrix::RotationMatrix(const Matrix3& rotMatrix)
+    : rotationMatrix(rotMatrix)
+{
+    verifyMatrix();
+}
+
+RotationMatrix::RotationMatrix(const Matrix4& rotMatrix)
+    : rotationMatrix(rotMatrix[0].x, rotMatrix[0].y, rotMatrix[0].z
+        , rotMatrix[1].x, rotMatrix[1].y, rotMatrix[1].z
+        , rotMatrix[2].x, rotMatrix[2].y, rotMatrix[2].z)
+{
+    verifyMatrix();
+}
+
+RotationMatrix::RotationMatrix(const RotationMatrix& other)
+    : rotationMatrix(other.rotationMatrix)
+{}
+
+RotationMatrix::RotationMatrix(RotationMatrix&& other)
+    : rotationMatrix(std::move(other.rotationMatrix))
+{}
+
+void RotationMatrix::verifyMatrix() const
+{
+    alertIf(Math::isEqual(Vector3D(rotationMatrix[0]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
+        && Math::isEqual(Vector3D(rotationMatrix[1]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
+        && Math::isEqual(Vector3D(rotationMatrix[2]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
+        , "Matrix4's rotation matrix must be orthogonal"
+    );
+}
 
 const Matrix3& RotationMatrix::matrix() const
 {

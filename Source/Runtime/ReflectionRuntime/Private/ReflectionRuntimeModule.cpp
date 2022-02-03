@@ -92,13 +92,13 @@ void IReflectionRuntimeModule::registerTypeFactory(const ReflectTypeInfo* typeIn
 
 std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::classFactoryFromTypeInfo()
 {
-    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>> factoriesRegistry;
-    return factoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
+    return singletonFactoriesRegistry;
 }
 std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::classFactoryFromTypeName()
 {
-    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>> factoriesRegistry;
-    return factoriesRegistry;
+    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
+    return singletonFactoriesRegistry;
 }
 const ClassProperty* ReflectionRuntimeModule::createClassProperty(const ReflectTypeInfo* typeInfo)
 {
@@ -154,13 +154,13 @@ const ClassProperty* ReflectionRuntimeModule::createClassProperty(const String& 
 
 std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::structFactoryFromTypeInfo()
 {
-    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>> factoriesRegistry;
-    return factoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
+    return singletonFactoriesRegistry;
 }
 std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::structFactoryFromTypeName()
 {
-    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>> factoriesRegistry;
-    return factoriesRegistry;
+    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
+    return singletonFactoriesRegistry;
 }
 const ClassProperty* ReflectionRuntimeModule::createStructProperty(const ReflectTypeInfo* typeInfo)
 {
@@ -215,13 +215,13 @@ const ClassProperty* ReflectionRuntimeModule::createStructProperty(const String&
 
 std::unordered_map<const ReflectTypeInfo*, std::pair<String, EnumPropertyFactoryCell>>& ReflectionRuntimeModule::enumFactoryFromTypeInfo()
 {
-    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, EnumPropertyFactoryCell>> factoriesRegistry;
-    return factoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, EnumPropertyFactoryCell>> singletonFactoriesRegistry;
+    return singletonFactoriesRegistry;
 }
 std::unordered_map<String, std::pair<const ReflectTypeInfo*, EnumPropertyFactoryCell>>& ReflectionRuntimeModule::enumFactoryFromTypeName()
 {
-    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, EnumPropertyFactoryCell>> factoriesRegistry;
-    return factoriesRegistry;
+    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, EnumPropertyFactoryCell>> singletonFactoriesRegistry;
+    return singletonFactoriesRegistry;
 }
 const EnumProperty* ReflectionRuntimeModule::createEnumProperty(const ReflectTypeInfo* typeInfo)
 {
@@ -276,8 +276,8 @@ const EnumProperty* ReflectionRuntimeModule::createEnumProperty(const String& ty
 
 std::unordered_map<const ReflectTypeInfo*, TypedPropertyFactoryCell>& ReflectionRuntimeModule::otherTypesFactories()
 {
-    static std::unordered_map<const ReflectTypeInfo*, TypedPropertyFactoryCell> factoriesRegistry;
-    return factoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo*, TypedPropertyFactoryCell> singletonFactoriesRegistry;
+    return singletonFactoriesRegistry;
 }
 const BaseProperty* ReflectionRuntimeModule::createTypedProperty(const ReflectTypeInfo* typeInfo)
 {

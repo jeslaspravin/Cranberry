@@ -14,30 +14,34 @@
 #include "Math/CoreMathTypedefs.h"
 #include "Types/CoreDefines.h"
 #include "ProgramCoreExports.h"
+#include "Types/Traits/TypeTraits.h"
 
 #include <glm/common.hpp>
 #include <glm/exponential.hpp>
 #include <glm/trigonometric.hpp>
+#include <cmath>
 
 class Vector3D;
 class Vector2D;
 class Vector4D;
 class Rotation;
+class Quat;
 namespace std { class random_device; }
 
 template <typename Type>
-using IsCustomMathTypes = std::disjunction<
+concept CustomMathTypes = std::disjunction_v<
     std::is_same<Type, Vector2D>
     , std::is_same<Type, Vector3D>
     , std::is_same<Type, Vector4D>
     , std::is_same<Type, Rotation>
+    , std::is_same<Type, Quat>
 >;
 
 template <typename Type, typename Enable = void>
 class MathHelper;
 
-template <typename Type>
-class MathHelper<Type, std::enable_if_t<std::negation_v<IsCustomMathTypes<typename Type>>>>
+template <typename Type> requires (!CustomMathTypes<Type>)
+class MathHelper<Type>
 {
     friend class Math;
 private:
@@ -99,10 +103,16 @@ private:
     {
         return abs(a - b) <= epsilon;
     }
+
+    template <typename Type>
+    FORCE_INLINE static bool isFinite(const Type& value)
+    {
+        return IS_FINITE(value);
+    }
 };
 
-template <typename Type>
-class MathHelper<Type, std::enable_if_t<IsCustomMathTypes<typename Type>::value>>
+template <CustomMathTypes Type>
+class MathHelper<Type>
 {
     friend class Math;
 private:
@@ -162,6 +172,12 @@ private:
     static bool isEqual(const Type& a, const Type& b, float epsilon)
     {
         a.isSame(b, epsilon);
+    }
+
+    template <typename Type>
+    FORCE_INLINE static bool isFinite(const Type& value)
+    {
+        return value.isFinite();
     }
 };
 
@@ -345,47 +361,57 @@ public:
 
     /* Uniform between 0 to 1 */
     static float random();
-
-    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    
+    template <std::unsigned_integral Type>
     static bool isPowOf2(Type value)
     {
         return ((value - 1) & value) == 0;
     }
     // Converts to higher power of two, in 3 gets converted to 4
-    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    template <std::unsigned_integral Type>
     static Type toHigherPowOf2(Type value)
     {
         return Math::pow(2u, Type(Math::ceil(Math::log2(value))));
     }
     // Converts to higher power of two, in 3 gets converted to 4
-    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    template <std::unsigned_integral Type>
     static Type toLowerPowOf2(Type value)
     {
         return Math::pow(2u, Type(Math::floor(Math::log2(value))));
     }
-    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    template <std::unsigned_integral Type>
     static Type alignBy2(Type value)
     {
         return (value + 1u) & ~1u;
     }
     // AlignVal has to be a power of 2
-    template <typename Type, std::enable_if_t<std::conjunction_v<std::is_unsigned<Type>, std::is_integral<Type>>, int32> = 0>
+    template <std::unsigned_integral Type>
     static Type alignBy(Type value, Type alignVal)
     {
         Type roundedToPow2 = toHigherPowOf2(alignVal);
         return (value + roundedToPow2 - 1) & ~(roundedToPow2 - 1);
     }
 
-    template <typename Type>
-    FORCE_INLINE static std::enable_if_t<std::is_integral_v<Type>, bool> isEqual(const Type& a, const Type& b, Type epsilon = 0)
+    template <std::integral Type>
+    FORCE_INLINE static bool isEqual(const Type& a, const Type& b, Type epsilon = 0)
+    {
+        return MathHelper<Type>::isEqual(a, b, epsilon);
+    }
+
+    template <NotAnIntegral Type>
+    FORCE_INLINE static bool isEqual(const Type& a, const Type& b, Type epsilon = SMALL_EPSILON)
     {
         return MathHelper<Type>::isEqual(a, b, epsilon);
     }
 
     template <typename Type>
-    FORCE_INLINE static std::enable_if_t<std::negation_v<std::is_integral<Type>>, bool> isEqual(const Type& a, const Type& b, Type epsilon = SMALL_EPSILON)
+    FORCE_INLINE static bool isFinite(const Type& value)
     {
-        return MathHelper<Type>::isEqual(a, b, epsilon);
+        if CONST_EXPR(std::is_integral_v<Type>)
+        {
+            return true;
+        }
+        return MathHelper<Type>::isFinite(value);
     }
 
     // Rotation specializations
@@ -401,13 +427,8 @@ private:
     Math() = default;
     static std::random_device rDevice;
 
-    template <typename ClampType, typename ClampType1, typename ClampType2>
-    FORCE_INLINE static std::enable_if_t<
-        std::conjunction_v<
-            std::is_convertible<ClampType1, ClampType>, std::is_convertible<ClampType2, ClampType>
-        >
-        , ClampType>
-        clampInternal(const ClampType & value, const ClampType1 & min, const ClampType2 & max)
+    template <typename ClampType, typename ClampType1, typename ClampType2> requires IsConvertible<ClampType, ClampType1, ClampType2>
+    FORCE_INLINE static ClampType clampInternal(const ClampType & value, const ClampType1 & min, const ClampType2 & max)
     {
         return MathHelper<ClampType>::clamp(value, ClampType(min), ClampType(max));
     }

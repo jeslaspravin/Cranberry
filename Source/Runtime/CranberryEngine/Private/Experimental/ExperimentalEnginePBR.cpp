@@ -42,6 +42,7 @@
 #include "RenderApi/Scene/RenderScene.h"
 #include "RenderApi/Material/MaterialCommonUniforms.h"
 #include "Math/RotationMatrix.h"
+#include "Math/Quaternion.h"
 #include "Math/BVH.h"
 #include "Core/Types/Textures/RenderTargetTextures.h"
 #include "RenderInterface/GlobalRenderVariables.h"

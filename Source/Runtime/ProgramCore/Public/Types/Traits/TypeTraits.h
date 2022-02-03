@@ -30,6 +30,12 @@ concept IndexableCompound = requires(DataType& val, uint64 idx)
 template <typename DataType>
 concept Indexable = std::disjunction_v<std::is_array<DataType>, std::is_pointer<DataType>> || IndexableCompound<DataType>;
 
+template <typename Type, typename ...OtherTypes>
+concept IsConvertible = std::conjunction_v<std::is_convertible<Type, OtherTypes>...>;
+
+template <typename Type>
+concept NotAnIntegral = std::negation_v<std::is_integral<Type>>;
+
 // Removes ref(Don't have to remove cv as remove_ptr removes pointer const), then removes ptr, then again removes cv & ref of underlying type to get plain type
 template <typename Type>
 using UnderlyingType = std::remove_cvref_t<std::remove_pointer_t<std::remove_reference_t<Type>>>;

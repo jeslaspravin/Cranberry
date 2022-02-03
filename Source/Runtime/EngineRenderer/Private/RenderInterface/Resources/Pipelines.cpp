@@ -252,14 +252,14 @@ FORCE_INLINE PipelineBase* ComputePipelineFactoryRegistrant::operator()(IGraphic
 
 std::map<String, GraphicsPipelineFactoryRegistrant>& PipelineFactory::graphicsPipelineFactoriesRegistry()
 {
-    static std::map<String, GraphicsPipelineFactoryRegistrant> REGISTERED_PIPELINE_FACTORIES;
-    return REGISTERED_PIPELINE_FACTORIES;
+    static std::map<String, GraphicsPipelineFactoryRegistrant> singletonPipelineFactoriesRegistry;
+    return singletonPipelineFactoriesRegistry;
 }
 
 std::map<String, ComputePipelineFactoryRegistrant>& PipelineFactory::computePipelineFactoriesRegistry()
 {
-    static std::map<String, ComputePipelineFactoryRegistrant> REGISTERED_PIPELINE_FACTORIES;
-    return REGISTERED_PIPELINE_FACTORIES;
+    static std::map<String, ComputePipelineFactoryRegistrant> singletonPipelineFactoriesRegistry;
+    return singletonPipelineFactoriesRegistry;
 }
 
 PipelineBase* PipelineFactory::create(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper, const PipelineFactoryArgs& args) const
