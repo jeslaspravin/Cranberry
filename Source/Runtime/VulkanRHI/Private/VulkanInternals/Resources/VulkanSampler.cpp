@@ -83,7 +83,7 @@ void VulkanSampler::reinitResources()
     }
     else
     {
-        Logger::error("VulkanSampler", "%s() : Initialization of sampler failed", __func__);
+        LOG_ERROR("VulkanSampler", "%s() : Initialization of sampler failed", __func__);
     }
 }
 

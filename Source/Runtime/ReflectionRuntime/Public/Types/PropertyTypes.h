@@ -148,7 +148,7 @@ public:
             if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant)
                 || BIT_SET(objectTypeInfo->qualifiers, EReflectTypeQualifiers::Constant))
             {
-                Logger::error("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+                LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
             }
             else
             {
@@ -214,7 +214,7 @@ public:
             // If constant then we use const MemberDataPointer
             if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
             {
-                Logger::error("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+                LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
             }
             else
             {
@@ -259,7 +259,7 @@ public:
     {
         if CONST_EXPR(std::is_const_v<MemberType>)
         {
-            Logger::error("MemberFieldWrapperImpl", "%s() : Use const object function to retrieve const value", __func__);
+            LOG_ERROR("MemberFieldWrapperImpl", "%s() : Use const object function to retrieve const value", __func__);
             return nullptr;
         }
         else

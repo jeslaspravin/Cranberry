@@ -74,8 +74,8 @@ public: \
     ENQUEUE_COMMAND(CommandName) \
     ([ ##__VA_ARGS__## ](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)##LambdaBody )
 
-#define SCOPED_CMD_MARKER(CmdList,CommandBuffer,Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, #Name)
-#define SCOPED_CMD_COLORMARKER(CmdList,CommandBuffer,Name,Color) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, #Name, Color)
+#define SCOPED_CMD_MARKER(CmdList,CommandBuffer,Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name))
+#define SCOPED_CMD_COLORMARKER(CmdList,CommandBuffer,Name,Color) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name), Color)
 struct ENGINERENDERER_EXPORT ScopedCommandMarker
 {
     const GraphicsResource* cmdBuffer;
@@ -302,7 +302,7 @@ bool ShaderParameters::setBuffer(const String& paramName, const BufferType& buff
         }
         else
         {
-            Logger::error("ShaderParameters", "%s() : Cannot set %s[%d] of %s", __func__, paramName.getChar(), index, bufferName.getChar());
+            LOG_ERROR("ShaderParameters", "%s() : Cannot set %s[%d] of %s", __func__, paramName.getChar(), index, bufferName.getChar());
         }
     }
     else
@@ -320,7 +320,7 @@ bool ShaderParameters::setBuffer(const String& paramName, const BufferType& buff
         }
         else
         {
-            Logger::error("ShaderParameters", "%s() : Cannot set stride %d to stride %d or cannot set buffer with runtime array as single struct, Set runtime array separately"
+            LOG_ERROR("ShaderParameters", "%s() : Cannot set stride %d to stride %d or cannot set buffer with runtime array as single struct, Set runtime array separately"
                 , __func__, sizeof(BufferType), bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride());
         }
     }

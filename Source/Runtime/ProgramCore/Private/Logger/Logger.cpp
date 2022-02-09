@@ -20,9 +20,9 @@
 #define SKIP_CAT_IN_CONSOLE 1
 #endif // LOG_TO_CONSOLE
 
-std::ostringstream& Logger::loggerBuffer()
+OStringStream& Logger::loggerBuffer()
 {
-    static std::ostringstream buffer(std::ios_base::trunc);
+    static OStringStream buffer(std::ios_base::trunc);
     return buffer;
 }
 
@@ -33,15 +33,15 @@ GenericFile* Logger::getLogFile()
     if (!logFile)
     {
         String logFileName;
-        String logFilePath = FileSystemFunctions::applicationDirectory(logFileName).append("/Saved/Logs/");
+        String logFilePath = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
         logFileName = PathFunctions::stripExtension(logFileName);
-        PlatformFile checkFile{ logFilePath.append(logFileName).append(".log") };
+        PlatformFile checkFile{ logFilePath.append(logFileName).append(TCHAR(".log")) };
 
         if (checkFile.exists()) 
         {
             uint64 lastWrite = checkFile.lastWriteTimeStamp();
             logFilePath = checkFile.getFullPath();
-            checkFile.renameFile(logFileName.append("-").append(std::to_string(lastWrite)).append(".log"));
+            checkFile.renameFile(logFileName.append(TCHAR("-")).append(String::toString(lastWrite)).append(TCHAR(".log")));
         }
 
         logFile = UniquePtr<GenericFile>(new PlatformFile(logFilePath));
@@ -59,79 +59,79 @@ std::vector<uint8>& Logger::muteFlags()
     return serverityMuteFlags;
 }
 
-void Logger::debugInternal(const AChar* category, const String& message)
+void Logger::debugInternal(const TChar* category, const String& message)
 {
 #if _DEBUG
-    static const String CATEGORY = "[DEBUG]";
+    static const String CATEGORY{ TCHAR("[DEBUG]") };
     if (BIT_SET(muteFlags().back(), ELogServerity::Debug))
     {
         return;
     }
 
-    std::ostringstream& stream = loggerBuffer();
-    stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    OStringStream& stream = loggerBuffer();
+    stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    std::cout
+    COUT
 #if SKIP_CAT_IN_CONSOLE == 0
-        << "[" << category << "]" << CATEGORY 
+        << TCHAR("[") << category << TCHAR("]") << CATEGORY
 #endif
         << message.getChar() << std::endl;
 #endif // LOG_TO_CONSOLE
 #endif // _DEBUG
 }
 
-void Logger::logInternal(const AChar* category, const String& message)
+void Logger::logInternal(const TChar* category, const String& message)
 {
-    static const String CATEGORY = "[LOG]";
+    static const String CATEGORY{ TCHAR("[LOG]") };
     if (BIT_SET(muteFlags().back(), ELogServerity::Log))
     {
         return;
     }
 
-    std::ostringstream& stream = loggerBuffer();
-    stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    OStringStream& stream = loggerBuffer();
+    stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    std::cout
+    COUT
 #if SKIP_CAT_IN_CONSOLE == 0
-        << "[" << category << "]" << CATEGORY
+        << TCHAR("[") << category << TCHAR("]") << CATEGORY
 #endif
         << message.getChar() << std::endl;
 #endif // LOG_TO_CONSOLE
 }
 
-void Logger::warnInternal(const AChar* category, const String& message)
+void Logger::warnInternal(const TChar* category, const String& message)
 {
-    static const String CATEGORY = "[WARN]";
+    static const String CATEGORY{ TCHAR("[WARN]") };
     if (BIT_SET(muteFlags().back(), ELogServerity::Warning))
     {
         return;
     }
 
-    std::ostringstream& stream = loggerBuffer();
-    stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    OStringStream& stream = loggerBuffer();
+    stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    std::cerr
+    CERR
 #if SKIP_CAT_IN_CONSOLE == 0
-        << "[" << category << "]" << CATEGORY
+        << TCHAR("[") << category << TCHAR("]") << CATEGORY
 #endif
         << message.getChar() << std::endl;
 #endif // LOG_TO_CONSOLE
 }
 
-void Logger::errorInternal(const AChar* category, const String& message)
+void Logger::errorInternal(const TChar* category, const String& message)
 {
-    static const String CATEGORY = "[ERROR]";
+    static const String CATEGORY{ TCHAR("[ERROR]") };
     if (BIT_SET(muteFlags().back(), ELogServerity::Error))
     {
         return;
     }
 
-    std::ostringstream& stream = loggerBuffer();
-    stream << "[" << category << "]" << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    OStringStream& stream = loggerBuffer();
+    stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    std::cerr
+    CERR
 #if SKIP_CAT_IN_CONSOLE == 0
-        << "[" << category << "]"
+        << TCHAR("[") << category << TCHAR("]")
 #endif
         << CATEGORY << message.getChar() << std::endl;
 #endif // LOG_TO_CONSOLE
@@ -144,7 +144,8 @@ void Logger::flushStream()
     if (!str.empty() && logFile && logFile->openOrCreate())
     {
         logFile->seekEnd();
-        logFile->write(ArrayView<uint8>(reinterpret_cast<uint8*>(str.data()), uint32(str.length())));
+        std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
+        logFile->write(ArrayView<uint8>(reinterpret_cast<uint8*>(utf8str.data()), uint32(utf8str.length())));
         loggerBuffer().str({});
         logFile->closeFile();
     }

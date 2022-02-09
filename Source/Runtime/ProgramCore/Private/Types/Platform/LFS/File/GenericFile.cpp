@@ -11,6 +11,7 @@
 
 #include "Types/Platform/LFS/File/GenericFile.h"
 #include "Types/Platform/LFS/File/GenericFileHandle.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 #include "Logger/Logger.h"
 #include "Types/CoreDefines.h"
 
@@ -22,25 +23,25 @@ void* GenericFile::getFileHandleRaw() const
 
 void GenericFile::setPath(const String& fPath)
 {
-    String fPathTmp = fPath.replaceAllCopy("\\", "/");
+    String fPathTmp = PathFunctions::asGenericPath(fPath);
+
     // reverse find from last
-    size_t hostDirectoryAt = fPathTmp.rfind('/', fPathTmp.length());
-    // #TODO(Jeslas) : Remove any duplicate consecutive '/'
+    size_t hostDirectoryAt = fPathTmp.rfind(TCHAR('/'), fPathTmp.length());
     if (hostDirectoryAt != String::npos)
     {
         directoryPath = { fPathTmp.substr(0, hostDirectoryAt) };
         // Skip the separator char so +1
         fileName = { fPathTmp.substr(hostDirectoryAt + 1) };
 
-        if (fileName.rfind('.') == String::npos)
+        if (fileName.rfind(TCHAR('.')) == String::npos)
         {
-            fileName = "";
+            fileName = TCHAR("");
         }
         fullPath = fPathTmp;
     }
     else // No directory separator found so it must be just file name
     {
-        Logger::error("File", "%s() : File path \"%s\" is invalid", __func__, fPathTmp.getChar());
+        LOG_ERROR("File", "%s() : File path \"%s\" is invalid", __func__, fPathTmp);
         debugAssert(!"File path is invalid");
     }
 }
@@ -75,7 +76,7 @@ bool GenericFile::openOrCreate()
 {
     if (fileHandle)
     {
-        return false;
+        return true;
     }
     fileHandle = openOrCreateImpl();
     return fileHandle != nullptr;
@@ -85,7 +86,7 @@ bool GenericFile::openFile()
 {
     if (fileHandle)
     {
-        return false;
+        return true;
     }
     fileHandle = openImpl();
     return fileHandle != nullptr;

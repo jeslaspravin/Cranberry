@@ -47,7 +47,7 @@ private:
     std::vector<SourceInformation> sources;
 private:
     void printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptions, uint32 idx);
-    void addAdditionalCompileOpts(std::vector<String>& compilerArgs);
+    void addAdditionalCompileOpts(std::vector<std::string>& compilerArgs);
 public:
     ModuleSources();
     ~ModuleSources();

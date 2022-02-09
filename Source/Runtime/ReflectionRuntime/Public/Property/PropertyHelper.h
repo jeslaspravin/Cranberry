@@ -13,7 +13,7 @@
 #include "String/String.h"
 #include "ReflectionRuntimeExports.h"
 
-#define VALID_SYMBOL_REGEX_PATTERN "^[a-zA-Z_]{1}[a-zA-Z0-9_]*"
+#define VALID_SYMBOL_REGEX_PATTERN TCHAR("^[a-zA-Z_]{1}[a-zA-Z0-9_]*")
 class REFLECTIONRUNTIME_EXPORT PropertyHelper
 {
 private:

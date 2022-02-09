@@ -49,25 +49,30 @@ public:
         }
     }
 
-    String name() { return symBuff.symbol.Name; }
+    String name() { return UTF8_TO_TCHAR(symBuff.symbol.Name); }
     String undecoratedName() {
         String udName;
-        udName.resize(MAX_BUFFER_LEN);
         if (*symBuff.symbol.Name == '\0')
         {
-            udName = "no mapping from PC to function name";
+            udName = TCHAR("no mapping from PC to function name");
         }
         else
         {
-            dword nameLen = UnDecorateSymbolName(symBuff.symbol.Name, udName.data(), MAX_BUFFER_LEN, UNDNAME_COMPLETE);
-            udName.resize(nameLen);
+            std::string undecName;
+            undecName.resize(MAX_BUFFER_LEN, '\0');
+            dword nameLen = UnDecorateSymbolName(symBuff.symbol.Name, undecName.data(), MAX_BUFFER_LEN, UNDNAME_COMPLETE);
+            undecName.resize(nameLen);
+
+            udName = UTF8_TO_TCHAR(undecName.c_str());
         }        
         return udName;
     }
 
     String fileName()
     {
-        return line.FileName?line.FileName:"";
+        return line.FileName
+            ? UTF8_TO_TCHAR(line.FileName)
+            : TCHAR("");
     }
 
     dword lineNumber()
@@ -96,7 +101,7 @@ void WindowsUnexpectedErrorHandler::debugBreak() const
     bool bIsRunByDebugger = !!IsDebuggerPresent();
     if (CheckRemoteDebuggerPresent(processHandle, &bRemoteDebuggerAvailable) == 0)
     {
-        Logger::error("WindowsUnexpectedErrorHandler", "%s() : Unable to find remoter debugger state", __func__);
+        LOG_ERROR("WindowsUnexpectedErrorHandler", "%s() : Unable to find remoter debugger state", __func__);
     }
 
     if (!!bRemoteDebuggerAvailable || bIsRunByDebugger)
@@ -118,7 +123,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
 
     if (!SymInitialize(processHandle, NULL, TRUE))
     {
-        Logger::error("WindowsUnexpectedErrorHandler", "%s() : Failed loading symbols for initializing stack trace symbols", __func__);
+        LOG_ERROR("WindowsUnexpectedErrorHandler", "%s() : Failed loading symbols for initializing stack trace symbols", __func__);
         return;
     }
     dword symOptions = SymGetOptions();
@@ -148,7 +153,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
     frame.AddrFrame.Mode = AddrModeFlat;
 #endif
 
-    std::stringstream stackTrace;
+    StringStream stackTrace;
     do 
     {
         if (frame.AddrPC.Offset != 0)
@@ -167,13 +172,13 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
             String fileName = symInfo.fileName();
             fileName = fileName.length() > 0 ? PlatformFile(fileName).getFileName() : fileName;
 
-            stackTrace << moduleName.getChar() << " [0x" << std::hex << frame.AddrPC.Offset << std::dec <<"] : " 
-                << symInfo.name() << "("
-                << fileName.getChar() << "):" << symInfo.lineNumber();
+            stackTrace << moduleName.getChar() << TCHAR(" [0x") << std::hex << frame.AddrPC.Offset << std::dec << TCHAR("] : ")
+                << symInfo.name() << TCHAR("(")
+                << fileName.getChar() << TCHAR("):") << symInfo.lineNumber();
         }
         else
         {
-            stackTrace << "No symbols found";
+            stackTrace << TCHAR("No symbols found");
         }
 
         if (!StackWalk64(imageType, processHandle, threadHandle, &frame, context, nullptr, SymFunctionTableAccess64,
@@ -181,11 +186,11 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
         {
             break;
         }
-        stackTrace << "\n";
+        stackTrace << TCHAR("\n");
     } while (true);
     SymCleanup(processHandle);
     
-    Logger::error("WindowsUnexpectedErrorHandler", "Error call trace : \n%s", stackTrace.str().c_str());
+    LOG_ERROR("WindowsUnexpectedErrorHandler", "Error call trace : \n%s", stackTrace.str().c_str());
 
     Logger::flushStream();
     if (bCloseApp)
@@ -202,64 +207,64 @@ String exceptionCodeMessage(dword ExpCode)
     switch (ExpCode)
     {
     case EXCEPTION_ACCESS_VIOLATION:
-        retVal = "Access violation";
+        retVal = TCHAR("Access violation");
         break;
     case EXCEPTION_DATATYPE_MISALIGNMENT:
-        retVal = "Misaligned data";
+        retVal = TCHAR("Misaligned data");
         break;
     case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
-        retVal = "Array access out of bound";
+        retVal = TCHAR("Array access out of bound");
         break;
     case EXCEPTION_FLT_DENORMAL_OPERAND:
-        retVal = "Too small floating point value";
+        retVal = TCHAR("Too small floating point value");
         break;
     case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-        retVal = "Float divide by zero";
+        retVal = TCHAR("Float divide by zero");
         break;
     case EXCEPTION_FLT_INEXACT_RESULT:
-        retVal = "Decimal point representation not valid";
+        retVal = TCHAR("Decimal point representation not valid");
         break;
     case EXCEPTION_FLT_INVALID_OPERATION:
-        retVal = "Invalid floating point operation";
+        retVal = TCHAR("Invalid floating point operation");
         break;
     case EXCEPTION_FLT_OVERFLOW:
-        retVal = "Float overflow";
+        retVal = TCHAR("Float overflow");
         break;
     case EXCEPTION_FLT_STACK_CHECK:
-        retVal = "Floating point operation lead to stack overflow";
+        retVal = TCHAR("Floating point operation lead to stack overflow");
         break;
     case EXCEPTION_FLT_UNDERFLOW:
-        retVal = "Exponent of float is less than minimum of this standard";
+        retVal = TCHAR("Exponent of float is less than minimum of this standard");
         break;
     case EXCEPTION_INT_DIVIDE_BY_ZERO:
-        retVal = "Integer divide by zero";
+        retVal = TCHAR("Integer divide by zero");
         break;
     case EXCEPTION_INT_OVERFLOW:
-        retVal = "Integer overflow";
+        retVal = TCHAR("Integer overflow");
         break;
     case EXCEPTION_PRIV_INSTRUCTION:
-        retVal = "Invalid instruction for machine";
+        retVal = TCHAR("Invalid instruction for machine");
         break;
     case EXCEPTION_IN_PAGE_ERROR:
-        retVal = "Page error";
+        retVal = TCHAR("Page error");
         break;
     case EXCEPTION_ILLEGAL_INSTRUCTION:
-        retVal = "Invalid instruction";
+        retVal = TCHAR("Invalid instruction");
         break;
     case EXCEPTION_NONCONTINUABLE_EXCEPTION:
-        retVal = "Non continuable exception";
+        retVal = TCHAR("Non continuable exception");
         break;
     case EXCEPTION_STACK_OVERFLOW:
-        retVal = "Stack overflow";
+        retVal = TCHAR("Stack overflow");
         break;
     case EXCEPTION_INVALID_DISPOSITION:
-        retVal = "Fatal exception occurred";
+        retVal = TCHAR("Fatal exception occurred");
         break;
     case EXCEPTION_INVALID_HANDLE:
-        retVal = "Invalid handle";
+        retVal = TCHAR("Invalid handle");
         break;
     default:
-        retVal = "Generic exception has occurred";
+        retVal = TCHAR("Generic exception has occurred");
         break;
     }
     return retVal;
@@ -269,11 +274,11 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS* ex
 {
     PEXCEPTION_RECORD pExceptionRecord = exp->ExceptionRecord;
 
-    std::stringstream errorStream;
+    StringStream errorStream;
     while (pExceptionRecord != NULL)
     {
-        errorStream << exceptionCodeMessage(pExceptionRecord->ExceptionCode) << " [0x" << std::hex <<
-            pExceptionRecord->ExceptionAddress << "]";
+        errorStream << exceptionCodeMessage(pExceptionRecord->ExceptionCode) << TCHAR(" [0x") << std::hex <<
+            pExceptionRecord->ExceptionAddress << TCHAR("]");
         pExceptionRecord = pExceptionRecord->ExceptionRecord;
     }
     AChar* errorMsg;
@@ -281,7 +286,7 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS* ex
     FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
         dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),(LPSTR)&errorMsg,0, NULL);
     
-    Logger::error("WindowsUnexpectedErrorHandler", "Application encountered an error! Error : %s%s",errorMsg,errorStream.str().c_str());
+    LOG_ERROR("WindowsUnexpectedErrorHandler", "Application encountered an error! Error : %s%s",errorMsg,errorStream.str().c_str());
     LocalFree(errorMsg);
     
     getHandler()->unregisterFilter();

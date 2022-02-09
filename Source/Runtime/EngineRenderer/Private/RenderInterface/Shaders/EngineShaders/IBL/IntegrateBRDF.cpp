@@ -14,8 +14,8 @@
 #include "RenderInterface/Resources/Pipelines.h"
 #include "ShaderDataTypes.h"
 
-#define SAMPLE_COUNT "SAMPLE_COUNT"
-#define INTEGRATEBRDF_SHADER_NAME "IntegrateBRDF"
+#define SAMPLE_COUNT TCHAR("SAMPLE_COUNT")
+#define INTEGRATEBRDF_SHADER_NAME TCHAR("IntegrateBRDF")
 
 class IntegrateBRDFShader final : public ComputeShaderConfigTemplated<16, 16, 1>
 {
@@ -36,7 +36,7 @@ public:
 
 DEFINE_GRAPHICS_RESOURCE(IntegrateBRDFShader)
 
-#define DRAWINTEGRATEBRDF_SHADER_NAME "DrawIntegrateBRDF"
+#define DRAWINTEGRATEBRDF_SHADER_NAME TCHAR("DrawIntegrateBRDF")
 
 class DrawIntegrateBRDFShader : public UniqueUtilityShaderConfig
 {

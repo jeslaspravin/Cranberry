@@ -17,32 +17,32 @@
 struct PROGRAMCORE_EXPORT CmdLineArgument
 {
     // Short arg is for flags alone
-    CmdLineArgument(String description, String cmdArg, String shortArg = "");
+    CmdLineArgument(String description, String cmdArg, String shortArg = TCHAR(""));
 };
 
 /*
 * Args starting with `single -` will be short hand flags and can be stringed together and they cannot accept values
 * Args starting with `--` Can have values space delimited strings
 * Args starting with `@` refers to file which contains all arguments(It can be absolute path or relative to application directory)
-* All args are case senstive
+* All args are case sensitive
 */
 class PROGRAMCORE_EXPORT ProgramCmdLine
 {
 private:
-    // Args parsed from file are placed here
-    String argsFromFile;
+    // Args parsed from file/Multibyte chars are placed here
+    String argsCache;
 protected:
     ProgramCmdLine() = default;
 
     String programDescription;
-    std::vector<std::string_view> cmdLineElements;
+    std::vector<StringView> cmdLineElements;
 private:
     bool parseFromFile(const String& filePath);
 public:
     static ProgramCmdLine* get();
     // Takes the pointer as it is and hold it for all parsing and data retrieval
     bool parse(AChar* cmdArgs[], uint32 count);
-    // Takes the reference as it is and uses the AChar* to the cmdLine references
+    // Takes the reference as it is and uses the TChar* to the cmdLine references
     // NOTE: The String passed in must live throughout the life time of ProgramCmdLine
     bool parse(const String& cmdLine);
     void setProgramDescription(const String& description)

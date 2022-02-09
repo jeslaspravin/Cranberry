@@ -39,7 +39,7 @@ TextureLoader::TextureLoader(const String& texturePath)
 
         if (texelData == nullptr)
         {
-            Logger::error("Texture Loader", "%s() : Failed loading image[%s] - %s", __func__, textureName.getChar(), STB::lastFailure());
+            LOG_ERROR("Texture Loader", "%s() : Failed loading image[%s] - %s", __func__, textureName.getChar(), STB::lastFailure());
             bLoaded = false;
         }
         else
@@ -69,7 +69,7 @@ TextureLoader::TextureLoader(const String& texturePath)
     }
     else
     {
-        Logger::error("Texture Loader", "%s() : Failed opening texture file - %s", __func__, textureFile.getFileName().getChar());
+        LOG_ERROR("Texture Loader", "%s() : Failed opening texture file - %s", __func__, textureFile.getFileName().getChar());
         bLoaded = false;
     }
 }
@@ -112,7 +112,7 @@ bool TextureLoader::isNormalTexture(const uint8* texels) const
     if (Math::abs(rgMaxLum - 127.5f) < 17.5f && blueMaxLum > 200)
     {
         isNormal = true;
-        Logger::log("Texture Loader", "%s() : Texture %s with Max Red Green lum %u Max RG weight %0.3f, Max Blue lum %u Max B weight %0.3f is determined as normal texture"
+        LOG("Texture Loader", "%s() : Texture %s with Max Red Green lum %u Max RG weight %0.3f, Max Blue lum %u Max B weight %0.3f is determined as normal texture"
             , __func__, textureName.getChar()
             , rgMaxLum, rgMaxWeight, blueMaxLum, blueMaxWeight);
     }
@@ -132,19 +132,19 @@ bool TextureLoader::isNormalTexture(const uint8* texels) const
         normalizedPixs += (channelsCount >= 3 && Math::isEqual(1.0f, pixelLen, 0.1f) && texel.z() > 0.0f) ? 1 : 0;
     }
     const float normalizedPixFrac = float(normalizedPixs) / pixelsCount;
-    Logger::debug("Texture Loader", "%s() : Normalization ratio %0.2f for texture %s", __func__, normalizedPixFrac, textureName.getChar());
+    LOG_DEBUG("Texture Loader", "%s() : Normalization ratio %0.2f for texture %s", __func__, normalizedPixFrac, textureName.getChar());
     if (normalizedPixFrac > 0.25f)
     {
-        Logger::log("Texture Loader", "%s() : Texture %s is marked as normal map, Normalization ratio %0.2f", __func__, textureName.getChar(), normalizedPixFrac);
+        LOG("Texture Loader", "%s() : Texture %s is marked as normal map, Normalization ratio %0.2f", __func__, textureName.getChar(), normalizedPixFrac);
         isNormal = true;
     }
 #endif
 
 
-    if (!isNormal && textureName.endsWith("_N", false))
+    if (!isNormal && textureName.endsWith(TCHAR("_N"), false))
     {
         isNormal = true;
-        Logger::debug("Texture Loader", "%s() : Texture %s is determined as normal texture based on suffix _N, Please rename texture if not intended", __func__, textureName.getChar());
+        LOG_DEBUG("Texture Loader", "%s() : Texture %s is determined as normal texture based on suffix _N, Please rename texture if not intended", __func__, textureName.getChar());
     }
     return isNormal;
 }

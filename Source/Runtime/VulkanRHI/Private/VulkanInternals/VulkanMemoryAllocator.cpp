@@ -55,7 +55,7 @@ private:
 
         if (!Math::isPowOf2(offsetAlignment))
         {
-            Logger::warn("VulkanMemoryAllocator", "%s() : Offset alignment %d is not an exponent of 2, \
+            LOG_WARN("VulkanMemoryAllocator", "%s() : Offset alignment %d is not an exponent of 2, \
                  Memory allocator is not developed with that into consideration", __func__, offsetAlignment);
         }
 
@@ -201,6 +201,16 @@ public:
             }
         }
 
+        // If freeBlockHead is after freeing endBlock then we can just link the end to current freeBlockHead and start as new freeBlockHead
+        if (freeBlockHead && endBlockIndex < getBlockIndex(freeBlockHead))
+        {
+            blocks[endBlockIndex].nextFreeBlock = freeBlockHead;
+            freeBlockHead = &blocks[startBlockIndex];
+            return;
+        }
+
+        // If memoryBlock is in between freeBlockHead and current end block or after current end block
+        // Find first free head in front of memoryBlock and first free tail after end of memoryBlock and link them together
         VulkanMemoryBlock* freeHead = nullptr;
         VulkanMemoryBlock* freeTail = nullptr;
         for (uint64 offsetIdx = 1; offsetIdx <= startBlockIndex; ++offsetIdx)
@@ -313,7 +323,7 @@ class VulkanChunkAllocator
         VulkanMemoryChunk* chunk = new VulkanMemoryChunk(alignment);
         chunk->alignSize(chunkSize, allocatingSize);
 
-        if (totalHeapSize - currentUsageSize < allocatingSize)
+        if ((totalHeapSize - currentUsageSize) < allocatingSize)
         {
             chunk->alignSize(totalHeapSize - currentUsageSize, allocatingSize);
             allocatingSize -= alignment;// Just to stay in safe limits
@@ -321,10 +331,10 @@ class VulkanChunkAllocator
 
         if (allocatingSize == 0)
         {
-            Logger::error("VulkanMemory", "%s() : Out of Memory", __func__);
+            LOG_ERROR("VulkanMemory", "%s() : Out of Memory", __func__);
             return -1;
         }
-        Logger::debug("VulkanChunkAllocator", "%s() : Allocating a chunk of size %d", __func__, allocatingSize);
+        LOG_DEBUG("VulkanChunkAllocator", "%s() : Allocating a chunk of size %d", __func__, allocatingSize);
 
         MEMORY_ALLOCATE_INFO(allocateInfo);
         allocateInfo.allocationSize = allocatingSize;
@@ -335,12 +345,12 @@ class VulkanChunkAllocator
 
         if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_HOST_MEMORY)
         {
-            Logger::error("VulkanMemory", "%s() : Out of Memory", __func__);
+            LOG_ERROR("VulkanMemory", "%s() : Out of Memory", __func__);
             return -1;
         }
         else if (result != VK_SUCCESS)
         {
-            Logger::error("VulkanMemory", "%s() : Allocating memory failed", __func__);
+            LOG_ERROR("VulkanMemory", "%s() : Allocating memory failed", __func__);
             return -1;
         }
 
@@ -534,15 +544,15 @@ public:
             if (block1->offset != 0)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
                     , __func__, block1->offset, 0);
             }
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block1->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block1->size, c4.availableHeapSize());
             VulkanMemoryBlock* oomBlock = c4.allocateBlock(40, 1);
             if (oomBlock)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block should be nullptr");
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block should be nullptr");
             }
             uint64 aligned28;
             c4.alignSize(27, aligned28);
@@ -550,126 +560,126 @@ public:
             if (block2->offset != 4)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
                     , __func__, block2->offset, 4);
             }
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block2->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block2->size, c4.availableHeapSize());
             oomBlock = c4.allocateBlock(4, 1);
             if (oomBlock)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block should be nullptr");
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block should be nullptr");
             }
 
             c4.freeBlock(block1);
             if (block1->free != 1)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block should be free");
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block should be free");
             }
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
 
             block1 = c4.allocateBlock(aligned4, 1);
             if (block1->offset != 0)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
                     , __func__, block1->offset, 0);
             }
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block1->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block1->size, c4.availableHeapSize());
 
             c4.freeBlock(block2);
             if (block2->free != 1)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block should be free");
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block should be free");
             }
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 28, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 28, c4.availableHeapSize());
 
             block2 = c4.allocateBlock(12, 1);
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block2->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block2->size, c4.availableHeapSize());
             VulkanMemoryBlock* block3 = c4.allocateBlock(4, 1);
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block3->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block3->size, c4.availableHeapSize());
             VulkanMemoryBlock* block4 = c4.allocateBlock(12, 1);
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block4->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block4->size, c4.availableHeapSize());
             c4.freeBlock(block2);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 12, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 12, c4.availableHeapSize());
             c4.freeBlock(block3);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
             block2 = c4.allocateBlock(4, 1);
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block2->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block2->size, c4.availableHeapSize());
             block3 = c4.allocateBlock(4, 1);
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block3->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block3->size, c4.availableHeapSize());
             VulkanMemoryBlock* block5 = c4.allocateBlock(4, 1);
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block5->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block5->size, c4.availableHeapSize());
             VulkanMemoryBlock* block6 = c4.allocateBlock(4, 1);
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block6->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block6->size, c4.availableHeapSize());
 
             if (!block2 || !block3 || !block4 || !block6)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : blocks dealloc and realloc failed");
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : blocks dealloc and realloc failed");
             }
 
             c4.freeBlock(block2);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
             block2 = nullptr;
             c4.freeBlock(block5);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
             c4.freeBlock(block6);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
             block6 = nullptr;
 
             block5 = c4.allocateBlock(8, 1);
             if (!block5 || block5->offset != 12)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
                     , __func__, block5->offset, 12);
             }
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block5->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block5->size, c4.availableHeapSize());
             c4.freeBlock(block5);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 8, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 8, c4.availableHeapSize());
             c4.freeBlock(block4);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 12, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 12, c4.availableHeapSize());
             c4.freeBlock(block1);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
             c4.freeBlock(block3);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
 
             block1 = c4.allocateBlock(4, 1);
             block2 = c4.allocateBlock(4, 1);
             block3 = c4.allocateBlock(4, 1);
             block4 = c4.allocateBlock(4, 1);
             block5 = c4.allocateBlock(4, 1);
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, 20, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, 20, c4.availableHeapSize());
             c4.freeBlock(block1);
             block1 = nullptr;
             c4.freeBlock(block3);
             block3 = nullptr;
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 8, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 8, c4.availableHeapSize());
 
             block6 = c4.allocateBlock(12, 1);
-            Logger::debug("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block6->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - Allocated %d heap left", __func__, block6->size, c4.availableHeapSize());
             if (!block6 || block6->offset != 20)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : block offset %d expected offset %d"
                     , __func__, block6->offset, 20);
             }
 
             c4.freeBlock(block2);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
             c4.freeBlock(block4);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
             c4.freeBlock(block5);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 4, c4.availableHeapSize());
             c4.freeBlock(block6);
-            Logger::debug("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 12, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%s() : %d - deallocated %d heap left", __func__, 12, c4.availableHeapSize());
             if (c4.availableHeapSize() != 32)
             {
                 failedAny |= true;
-                Logger::error("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : Heap size %d expected size %d"
+                LOG_ERROR("TestChunk", "%s() : unexpected behavior(VulkanMemoryAllocator) : Heap size %d expected size %d"
                     , __func__, c4.availableHeapSize(), 32);
             }
         }
@@ -695,7 +705,7 @@ public:
 
     void initAllocator() override
     {
-        Logger::debug("VulkanMemoryAllocator", "%s()", __func__);
+        LOG_DEBUG("VulkanMemoryAllocator", "%s()", __func__);
 #if _DEBUG
         TestChunk::testChunk();
 #endif
@@ -710,12 +720,14 @@ public:
             if (device->memoryProperties.memoryTypes[i].propertyFlags != 0)
             {
                 // TODO(Jeslas) : Revisit hard coded size per chunk part.
-                linearChunkAllocators[i] = new VulkanChunkAllocator(128 * 1024 * 1024, alignment, device, i,
+                linearChunkAllocators[i] = new VulkanChunkAllocator(64 * 1024 * 1024, alignment, device, i,
                     device->memoryProperties.memoryTypes[i].heapIndex);
 
                 if((device->memoryProperties.memoryTypes[i].propertyFlags & VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0)
                 {
-                    optimalChunkAllocators[i] = new VulkanChunkAllocator(64 * 1024 * 1024, alignment, device, i,
+                    // If alignment is 64bytes the image memory alignment is considered 1024bytes = 1KB
+                    // Maybe reduce this size in future once memory allocator is improved
+                    optimalChunkAllocators[i] = new VulkanChunkAllocator(128 * 1024 * 1024, alignment * 16, device, i,
                         device->memoryProperties.memoryTypes[i].heapIndex);
                 }
 
@@ -727,18 +739,18 @@ public:
 
     void destroyAllocator() override
     {
-        Logger::debug("VulkanMemoryAllocator", "%s()", __func__);
+        LOG_DEBUG("VulkanMemoryAllocator", "%s()", __func__);
 
         for (const std::pair<const uint32,VkMemoryPropertyFlags>& indexPropPair : availableMemoryProps)
         {
-            Logger::debug("VulkanMemoryAllocator", "%s() : Freeing %dBytes of linear memory", __func__, 
+            LOG_DEBUG("VulkanMemoryAllocator", "%s() : Freeing %dBytes of linear memory", __func__, 
                 linearChunkAllocators[indexPropPair.first]->allocatorSize());
             delete linearChunkAllocators[indexPropPair.first];
             linearChunkAllocators[indexPropPair.first] = nullptr;
 
             if (optimalChunkAllocators[indexPropPair.first] != nullptr)
             {
-                Logger::debug("VulkanMemoryAllocator", "%s() : Freeing %dBytes of optimal memory", __func__,
+                LOG_DEBUG("VulkanMemoryAllocator", "%s() : Freeing %dBytes of optimal memory", __func__,
                     optimalChunkAllocators[indexPropPair.first]->allocatorSize());
                 delete optimalChunkAllocators[indexPropPair.first];
                 optimalChunkAllocators[indexPropPair.first] = nullptr;

@@ -72,9 +72,10 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         // 0 means unbound array 
         if (descCount == 0)
         {
-            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
-                , "Unbound image(texel) buffer array is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+                , "Unbound image(texel) buffer array is not allowed for parameter %s", attribName);
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
         }
@@ -109,9 +110,10 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         // 0 means unbound array 
         if (descCount == 0)
         {
-            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
-                , "Unbound sampled(texel) buffer array is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+                , "Unbound sampled(texel) buffer array is not allowed for parameter %s", attribName);
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
         }
@@ -146,9 +148,10 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         // 0 means unbound array 
         if (descCount == 0)
         {
-            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
-                , "Unbound array of images or imageArray is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+                , "Unbound array of images or imageArray is not allowed for parameter %s", attribName);
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
         }
@@ -183,9 +186,10 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         // 0 means unbound array 
         if (descCount == 0)
         {
-            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
-                , "Unbound array of textures or textureArray is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+                , "Unbound array of textures or textureArray is not allowed for parameter %s", attribName);
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
         }
@@ -220,9 +224,10 @@ void fillDescriptorsSet(std::vector<VkDescriptorPoolSize>& poolAllocateInfo, std
         // 0 means unbound array 
         if (descCount == 0)
         {
-            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(descriptorInfo.attributeName);
+            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssert(itr != ShaderParameterUtility::unboundArrayResourcesCount().cend()
-                , "Unbound array of sampled textures or sampled textureArray is not allowed for parameter %s", descriptorInfo.attributeName.c_str());
+                , "Unbound array of sampled textures or sampled textureArray is not allowed for parameter %s", attribName);
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
         }
@@ -286,7 +291,7 @@ VulkanShaderSetParamsLayout::VulkanShaderSetParamsLayout(const ShaderResource* s
 
 String VulkanShaderSetParamsLayout::getObjectName() const
 {
-    return "";
+    return {};
 }
 
 uint64 VulkanShaderSetParamsLayout::getDispatchableHandle() const
@@ -447,7 +452,7 @@ void VulkanShaderUniqDescLayout::bindBufferParamInfo(std::map<String, struct Sha
 
 String VulkanShaderUniqDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + "_DescriptorsSetLayout" + std::to_string(getSetID());
+    return respectiveShaderRes->getResourceName() + TCHAR("_DescriptorsSetLayout") + String::toString(getSetID());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -462,7 +467,7 @@ VulkanVertexUniqDescLayout::VulkanVertexUniqDescLayout(const ShaderResource* sha
 
 String VulkanVertexUniqDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + "_DescriptorsSetLayout" + std::to_string(ShaderParameterUtility::INSTANCE_UNIQ_SET);
+    return respectiveShaderRes->getResourceName() + TCHAR("_DescriptorsSetLayout") + String::toString(ShaderParameterUtility::INSTANCE_UNIQ_SET);
 }
 
 void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const
@@ -492,7 +497,7 @@ VulkanViewUniqDescLayout::VulkanViewUniqDescLayout(const ShaderResource* shaderR
 
 String VulkanViewUniqDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + "_DescriptorsSetLayout" + std::to_string(ShaderParameterUtility::VIEW_UNIQ_SET);
+    return respectiveShaderRes->getResourceName() + TCHAR("_DescriptorsSetLayout") + String::toString(ShaderParameterUtility::VIEW_UNIQ_SET);
 }
 
 void VulkanViewUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const
@@ -521,7 +526,7 @@ VulkanBindlessDescLayout::VulkanBindlessDescLayout(const ShaderResource* shaderR
 
 String VulkanBindlessDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + "_BindlessDescriptorsSetLayout" + std::to_string(ShaderParameterUtility::BINDLESS_SET);
+    return respectiveShaderRes->getResourceName() + TCHAR("_BindlessDescriptorsSetLayout") + String::toString(ShaderParameterUtility::BINDLESS_SET);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -639,7 +644,7 @@ void VulkanShaderParametersLayout::init()
         }
         descSetLayoutInfo.descriptorLayout = VulkanGraphicsHelper::createDescriptorsSetLayout(graphicsInstance, descLayoutCreateInfo);
         VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(descSetLayoutInfo.descriptorLayout)
-            , getResourceName() + std::to_string(descriptorsSet.set), getObjectType());
+            , getResourceName() + String::toString(descriptorsSet.set), getObjectType());
     }
 }
 
@@ -659,7 +664,7 @@ void VulkanShaderParametersLayout::release()
 
 String VulkanShaderParametersLayout::getResourceName() const
 {
-    return respectiveShaderRes->getResourceName() + "_DescSetLayout";
+    return respectiveShaderRes->getResourceName() + TCHAR("_DescSetLayout");
 }
 
 bool VulkanShaderParametersLayout::hasBindless(uint32 setIdx) const
@@ -698,7 +703,7 @@ DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderSetParameters, VK_OBJECT_TYPE_DESCRIPTOR
 
 String VulkanShaderSetParameters::getObjectName() const
 {
-    return getResourceName() + "_DescSet" + std::to_string(static_cast<const ShaderSetParametersLayout*>(paramLayout)->getSetID());
+    return getResourceName() + TCHAR("_DescSet") + String::toString(static_cast<const ShaderSetParametersLayout*>(paramLayout)->getSetID());
 }
 
 void VulkanShaderSetParameters::init()
@@ -895,7 +900,7 @@ DEFINE_VK_GRAPHICS_RESOURCE(VulkanShaderParameters, VK_OBJECT_TYPE_DESCRIPTOR_SE
 
 String VulkanShaderParameters::getObjectName() const
 {
-    return getResourceName() + "_DescSet";
+    return getResourceName() + TCHAR("_DescSet");
 }
 
 void VulkanShaderParameters::init()
@@ -928,11 +933,11 @@ void VulkanShaderParameters::init()
             {
                 descriptorsSets[descriptorsBody.set] = descSet;
                 VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(descSet)
-                    , getObjectName() + std::to_string(descriptorsBody.set), getObjectType());
+                    , getObjectName() + String::toString(descriptorsBody.set), getObjectType());
             }
             else
             {
-                Logger::error("VulkanShaderParameters", "%s() : Allocation of descriptors set %d failed %s", __func__, descriptorsBody.set, getResourceName().getChar());
+                LOG_ERROR("VulkanShaderParameters", "%s() : Allocation of descriptors set %d failed %s", __func__, descriptorsBody.set, getResourceName().getChar());
                 return;
             }
         }

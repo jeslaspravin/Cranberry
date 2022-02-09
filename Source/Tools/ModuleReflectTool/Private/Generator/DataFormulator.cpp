@@ -35,17 +35,17 @@ FORCE_INLINE void setTypeMetaInfo(MustacheContext& typeContext, const std::vecto
     std::vector<String> metaDataInitList(metaData.size());
     for (uint32 i = 0; i < metaData.size(); ++i)
     {
-        metaDataInitList[i] = "new " + metaData[i];
+        metaDataInitList[i] = TCHAR("new " + metaData[i]);
     }
 
-    typeContext.args[MetaDataTag.value] = String::join(metaDataInitList.cbegin(), metaDataInitList.cend(), ", ");
+    typeContext.args[MetaDataTag.value] = String::join(metaDataInitList.cbegin(), metaDataInitList.cend(), TCHAR(", "));
     if (metaFlags.empty())
     {
-        typeContext.args[MetaFlagsTag.value] = "0";
+        typeContext.args[MetaFlagsTag.value] = TCHAR("0");
     }
     else
     {
-        typeContext.args[MetaFlagsTag.value] = String::join(metaFlags.cbegin(), metaFlags.cend(), " | ");
+        typeContext.args[MetaFlagsTag.value] = String::join(metaFlags.cbegin(), metaFlags.cend(), TCHAR(" | "));
     }
 }
 
@@ -170,7 +170,7 @@ void visitMemberField(CXCursor cursor, LocalContext& localCntxt)
 
     if (!ParserHelper::isValidFieldType(fieldType, cursor))
     {
-        Logger::log("SourceGenerator", "%s ERROR %s() : Invalid member field %s", clang_getCursorLocation(cursor), __func__, fieldName);
+        LOG("SourceGenerator", "%s ERROR %s() : Invalid member field %s", clang_getCursorLocation(cursor), __func__, fieldName);
         localCntxt.srcGenContext->bGenerated = false;
         return;
     }
@@ -204,7 +204,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext& localCntxt)
 
     if (!ParserHelper::isValidFunction(cursor))
     {
-        Logger::log("SourceGenerator", "%s ERROR %s() : Invalid function %s", clang_getCursorLocation(cursor), __func__, funcName);
+        LOG("SourceGenerator", "%s ERROR %s() : Invalid function %s", clang_getCursorLocation(cursor), __func__, funcName);
         localCntxt.srcGenContext->bGenerated = false;
         return;
     }
@@ -260,7 +260,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext& localCntxt)
         contextPtr = &context;
     }
     contextPtr->args[GeneratorConsts::ACCESSSPECIFIER_TAG] = ParserHelper::accessSpecifierName(cursor);
-    contextPtr->args[GeneratorConsts::PARAMLIST_TAG] = String::join(paramsList.cbegin(), paramsList.cend(), ", ");
+    contextPtr->args[GeneratorConsts::PARAMLIST_TAG] = String::join(paramsList.cbegin(), paramsList.cend(), TCHAR(", "));
 
     std::vector<MustacheContext>& paramsListContexts = contextPtr->sectionContexts[GeneratorConsts::PARAMSLISTCONTEXT_SECTION_TAG];
     paramsListContexts.resize(paramsList.size());
@@ -283,7 +283,7 @@ void visitClassMember(CXCursor cursor, LocalContext& localCntxt)
         CXCursor baseClass = clang_getTypeDeclaration(clang_getCursorType(cursor));
         if (clang_Cursor_isNull(baseClass))
         {
-            Logger::log("SourceGenerator", "%s ERROR %s() : Cannot find declaration of base class %s", clang_getCursorLocation(baseClass), __func__, cursorName);
+            LOG("SourceGenerator", "%s ERROR %s() : Cannot find declaration of base class %s", clang_getCursorLocation(baseClass), __func__, cursorName);
             localCntxt.srcGenContext->bGenerated = false;
         }
         else if (ParserHelper::isReflectedClass(baseClass))
@@ -356,7 +356,7 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     // Now fill members
     
     // Class and Struct have constructor and they return there own pointers so we generate class/struct pointer even when not used anywhere yet
-    const String structPtrTypeName = structTypeName + " *";
+    const String structPtrTypeName = structTypeName + TCHAR(" *");
     const String structPtrSanitizedName = PropertyHelper::getValidSymbolName(structPtrTypeName);
     if (!srcGenContext->addedSymbols.contains(structPtrSanitizedName))
     {
@@ -431,7 +431,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     // Now fill members
 
     // Class and Struct have constructor and they return there own pointers so we generate class/struct pointer even when not used anywhere yet
-    const String classPtrTypeName = classTypeName + " *";
+    const String classPtrTypeName = classTypeName + TCHAR(" *");
     const String classPtrSanitizedName = PropertyHelper::getValidSymbolName(classPtrTypeName);
     if (!srcGenContext->addedSymbols.contains(classPtrSanitizedName))
     {
@@ -514,7 +514,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext* srcGenContext)
         }
         else
         {
-            Logger::error("SourceGenerator", "%s() : Type %s is not fully supported custom type", __func__, clang_getTypeSpelling(referredType));
+            LOG_ERROR("SourceGenerator", "%s() : Type %s is not fully supported custom type", __func__, clang_getTypeSpelling(referredType));
             srcGenContext->bGenerated = false;
             return;
         }
@@ -576,7 +576,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext* srcGenContext)
         CXCursor typeDecl = clang_getTypeDeclaration(referredType);
         if (clang_Cursor_isNull(typeDecl))
         {
-            Logger::error("SourceGenerator", "%s() : Type %s do not have any declaration and cannot be reflected", __func__, clang_getTypeSpelling(referredType));
+            LOG_ERROR("SourceGenerator", "%s() : Type %s do not have any declaration and cannot be reflected", __func__, clang_getTypeSpelling(referredType));
             srcGenContext->bGenerated = false;
             return;
         }
@@ -593,7 +593,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext* srcGenContext)
         }
         else
         {
-            Logger::log("SourceGenerator", "%s ERROR %s() : Type %s declaration is not reflected", clang_getCursorLocation(typeDecl), __func__, clang_getTypeSpelling(referredType));
+            LOG("SourceGenerator", "%s ERROR %s() : Type %s declaration is not reflected", clang_getCursorLocation(typeDecl), __func__, clang_getTypeSpelling(referredType));
             srcGenContext->bGenerated = false;
             return;
         }

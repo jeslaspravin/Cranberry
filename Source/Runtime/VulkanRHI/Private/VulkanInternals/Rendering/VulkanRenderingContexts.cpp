@@ -86,7 +86,7 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
                 if (defaultShader == nullptr)
                 {
-                    Logger::error("VulkanGlobalRenderingContext", "%s : Default shader must contain all the permutations, Missing for [%s %s]"
+                    LOG_ERROR("VulkanGlobalRenderingContext", "%s : Default shader must contain all the permutations, Missing for [%s %s]"
                         , __func__, EVertexType::toString(vertUsage).getChar()
                         , ERenderPassFormat::toString(renderPassUsage).getChar());
                     fatalAssert(defaultShader, "Default shader missing!");
@@ -300,12 +300,12 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
     VkPipelineLayout pipelineLayout;
     if (device->vkCreatePipelineLayout(device->logicalDevice, &layoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s : Pipeline layout creation failed for shader %s", __func__, shaderResource->getResourceName().getChar());
+        LOG_ERROR("VulkanGraphicsHelper", "%s : Pipeline layout creation failed for shader %s", __func__, shaderResource->getResourceName().getChar());
         pipelineLayout = nullptr;
     }
     else
     {
-        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(pipelineLayout), pipeline->getResourceName() + "_PipelineLayout", VkObjectType::VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+        VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(pipelineLayout), pipeline->getResourceName() + TCHAR("_PipelineLayout"), VkObjectType::VK_OBJECT_TYPE_PIPELINE_LAYOUT);
     }
 
     return pipelineLayout;

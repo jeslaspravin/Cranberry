@@ -33,8 +33,8 @@
 
 using namespace ImGui;
 
-const String ImGuiManager::TEXTURE_PARAM_NAME{ "textureAtlas" };
-const String ImGuiManager::IMGUI_SHADER_NAME{ "DrawImGui" };
+const String ImGuiManager::TEXTURE_PARAM_NAME{ TCHAR("textureAtlas") };
+const String ImGuiManager::IMGUI_SHADER_NAME{ TCHAR("DrawImGui") };
 
 ImGuiManager::ImGuiManager(ImGuiManager* parent)
     : parentGuiManager(parent)
@@ -81,13 +81,13 @@ void ImGuiManager::release()
 
 void ImGuiManager::setClipboard(void* userData, const char* text)
 {
-    PlatformFunctions::setClipboard(text);
+    PlatformFunctions::setClipboard(UTF8_TO_TCHAR(text));
 }
 
 const char* ImGuiManager::getClipboard(void* userData)
 {
-    reinterpret_cast<ImGuiManager*>(userData)->clipboard = PlatformFunctions::getClipboard();
-    return reinterpret_cast<ImGuiManager*>(userData)->clipboard.getChar();
+    reinterpret_cast<ImGuiManager*>(userData)->clipboard = TCHAR_TO_UTF8(PlatformFunctions::getClipboard().getChar());
+    return reinterpret_cast<ImGuiManager*>(userData)->clipboard.c_str();
 }
 
 void ImGuiManager::setShaderData()
@@ -97,8 +97,8 @@ void ImGuiManager::setShaderData()
     {
         Vector2D scale = 2.0f / Vector2D(drawData->DisplaySize);
         Vector2D translate = -1.0f - Vector2D(drawData->DisplayPos) * scale;
-        imguiTransformParams->setVector2Param("scale", scale);
-        imguiTransformParams->setVector2Param("translate", translate);
+        imguiTransformParams->setVector2Param(TCHAR("scale"), scale);
+        imguiTransformParams->setVector2Param(TCHAR("translate"), translate);
     }
 }
 
@@ -151,7 +151,7 @@ ShaderParametersRef ImGuiManager::createTextureParam(const TextureBase* texture,
     {
         ShaderParametersRef params = graphicsHelper->createShaderParameters(graphicsInstance, pipelineContext.getPipeline()->getParamLayoutAtSet(0), { 0 });
         params->setTextureParam(TEXTURE_PARAM_NAME, texture->getTextureResource(), getTextureSampler());
-        params->setResourceName("ShaderParams_" + texture->getTextureName());
+        params->setResourceName(TCHAR("ShaderParams_") + texture->getTextureName());
         params->init();
         
         textureParams[texture] = params;
@@ -208,7 +208,7 @@ void ImGuiManager::setupInputs()
 
     bCaptureInput = false;
     inputSystem = nullptr;
-    WeakModulePtr inputModuleWeak = ModuleManager::get()->getModule("EngineInputCore");
+    WeakModulePtr inputModuleWeak = ModuleManager::get()->getModule(TCHAR("EngineInputCore"));
     if (!inputModuleWeak.expired())
     {
         inputSystem = static_cast<EngineInputCoreModule*>(inputModuleWeak.lock().get())->getInputSystem();
@@ -221,7 +221,7 @@ void ImGuiManager::updateInputs()
 
     if (!inputSystem)
     {
-        WeakModulePtr inputModuleWeak = ModuleManager::get()->getModule("EngineInputCore");
+        WeakModulePtr inputModuleWeak = ModuleManager::get()->getModule(TCHAR("EngineInputCore"));
         debugAssert(!inputModuleWeak.expired());
         inputSystem = static_cast<EngineInputCoreModule*>(inputModuleWeak.lock().get())->getInputSystem();
     }
@@ -336,8 +336,8 @@ void ImGuiManager::updateRenderResources(class IRenderCommandList* cmdList, IGra
                 vertexBuffer.set(graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, int32(sizeof(ImDrawVert)), 1, true), i);
                 idxBuffer.set(graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, int32(sizeof(ImDrawIdx)), 1, true), i);                
 
-                vertexBuffer.getResources()[i]->setResourceName("ImGuiVertices_" + std::to_string(i));
-                idxBuffer.getResources()[i]->setResourceName("ImGuiIndices_" + std::to_string(i));
+                vertexBuffer.getResources()[i]->setResourceName(TCHAR("ImGuiVertices_") + String::toString(i));
+                idxBuffer.getResources()[i]->setResourceName(TCHAR("ImGuiIndices_") + String::toString(i));
             }
         }
 
@@ -394,13 +394,13 @@ void ImGuiManager::updateRenderResources(class IRenderCommandList* cmdList, IGra
         // As 0 contains all sets in utility shader, ignore 0 as it is unique to each GUI manager
         imguiFontAtlasParams = graphicsHelper->createShaderParameters(graphicsInstance, pipelineContext.getPipeline()->getParamLayoutAtSet(0), { 0 });
         imguiFontAtlasParams->setTextureParam(TEXTURE_PARAM_NAME, getFontTextureAtlas()->getTextureResource(), getTextureSampler());
-        imguiFontAtlasParams->setResourceName("ShaderParams_" + getFontTextureAtlas()->getTextureName());
+        imguiFontAtlasParams->setResourceName(TCHAR("ShaderParams_") + getFontTextureAtlas()->getTextureName());
         imguiFontAtlasParams->init();
     }
     if (!imguiTransformParams.isValid())
     {
         imguiTransformParams = graphicsHelper->createShaderParameters(graphicsInstance, pipelineContext.getPipeline()->getParamLayoutAtSet(0), { 1 });
-        imguiTransformParams->setResourceName("ShaderParams_IMGUI_TX");
+        imguiTransformParams->setResourceName(TCHAR("ShaderParams_IMGUI_TX"));
         setShaderData();
         imguiTransformParams->init();
     }
@@ -439,7 +439,7 @@ void ImGuiManager::setupRendering()
     else
     {
         ImGuiFontTextureParams textureParams;
-        textureParams.textureName = "ImGuiTextureAtlas";
+        textureParams.textureName = TCHAR("ImGuiTextureAtlas");
         textureParams.filtering = ESamplerFiltering::Linear;
         textureParams.owningContext = context;
         textureAtlas = TextureBase::createTexture<ImGuiFontTextureAtlas>(textureParams);
@@ -452,7 +452,7 @@ void ImGuiManager::setupRendering()
                     .filtering = ESamplerFiltering::Linear,
                     .mipFiltering = ESamplerFiltering::Linear,
                     .tilingMode = { ESamplerTilingMode::EdgeClamp, ESamplerTilingMode::EdgeClamp, ESamplerTilingMode::EdgeClamp },
-                    .resourceName = "ImGuiFontAtlasSampler"
+                    .resourceName = TCHAR("ImGuiFontAtlasSampler")
                 };
                 textureSampler = graphicsHelper->createSampler(graphicsInstance, createInfo);
                 textureSampler->init();
@@ -501,6 +501,7 @@ void ImGuiManager::releaseRendering()
                     freeTextureParams.front().reset();
                     freeTextureParams.pop();
                 }
+                activeTextureParams.clear();
             }
         });
 
@@ -571,7 +572,7 @@ void ImGuiManager::draw(class IRenderCommandList* cmdList, IGraphicsInstance* gr
                 const ImDrawCmd& drawCmd = uiCmdList->CmdBuffer[cmdIdx];
                 if (drawCmd.UserCallback != nullptr)
                 {
-                    Logger::warn("ImGui", "%s() : Commands with callback is not supported", __func__);
+                    LOG_WARN("ImGui", "%s() : Commands with callback is not supported", __func__);
                     debugAssert(drawCmd.UserCallback != nullptr);
                     continue;
                 }
@@ -644,7 +645,7 @@ void ImGuiManager::addFont(const String& fontAssetPath, float fontSize)
 
         if (imguiFontAtlasParams.isValid())
         {
-            imguiFontAtlasParams->setTextureParam("textureAtlas", getFontTextureAtlas()->getTextureResource(), getTextureSampler());
+            imguiFontAtlasParams->setTextureParam(TCHAR("textureAtlas"), getFontTextureAtlas()->getTextureResource(), getTextureSampler());
         }
     }
 }

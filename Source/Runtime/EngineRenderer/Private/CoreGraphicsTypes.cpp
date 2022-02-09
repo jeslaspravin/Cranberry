@@ -22,7 +22,7 @@ namespace EPixelDataFormat
     // Except packed format everything else is in byte order 0...N Byte, while packed formats are in order of bit N...0 Bit
 #define PREPEND_COMP(X) COMBINE(EPixelComponent::, X)
 #define MAKE_COMPS(...) MAKE_INITIALIZER(TRANSFORM_ALL(PREPEND_COMP, __VA_ARGS__))
-#define IMG_FORMAT_INFO_PAIR(PixelFormat, DataSize, ComponentSize, ...) { PixelFormat, { DataSize, #PixelFormat, ComponentSize, __VA_ARGS__ }}
+#define IMG_FORMAT_INFO_PAIR(PixelFormat, DataSize, ComponentSize, ...) { PixelFormat, { DataSize, TCHAR(#PixelFormat), ComponentSize, __VA_ARGS__ }}
     const std::map<Type, PixelFormatInfo> DATA_FORMAT_TO_API_FORMAT = {
         IMG_FORMAT_INFO_PAIR(Undefined, 0, MAKE_INITIALIZER(0,0,0,0)),
         IMG_FORMAT_INFO_PAIR(BGR_U8_Norm, 3, MAKE_INITIALIZER(8,8,8,0), MAKE_COMPS(B, G, R, A)),
@@ -167,24 +167,24 @@ namespace ESamplerFiltering
         switch (dataFormat)
         {
         case ESamplerFiltering::Nearest:
-            return "Nearest";
+            return TCHAR("Nearest");
             break;
         case ESamplerFiltering::Linear:
-            return "Linear";
+            return TCHAR("Linear");
             break;
         case ESamplerFiltering::Cubic:
-            return "Cubic";
+            return TCHAR("Cubic");
             break;
         default:
             break;
         }
-        return "";
+        return {};
     }
 }
 
 namespace EShaderStage
 {
-#define SHADER_STAGE_TO_API_PAIR(ShaderStage, EntryPointName, ShortName) { ShaderStage, { #ShaderStage, ShortName, EntryPointName }}
+#define SHADER_STAGE_TO_API_PAIR(ShaderStage, EntryPointName, ShortName) { ShaderStage, { TCHAR(#ShaderStage), TCHAR(ShortName), TCHAR(EntryPointName) }}
 
     const ShaderStageInfo* getShaderStageInfo(EShaderStage::Type shaderStage)
     {
@@ -218,12 +218,12 @@ namespace ERenderPassFormat
     String toString(Type renderpassFormat)
     {
 #define CASE_MACRO(Format) case ERenderPassFormat::##Format: \
-    return #Format;
+    return TCHAR(#Format);
 
         switch (renderpassFormat)
         {
             FOR_EACH_RENDERPASS_FORMAT(CASE_MACRO)
         }
-        return "";
+        return {};
     }
 }

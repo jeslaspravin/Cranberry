@@ -16,7 +16,7 @@
 #include "Math/Vector2D.h"
 #include "Math/Vector4D.h"
 
-#define TESTCOMPUTE_SHADER_NAME "TestCompute"
+#define TESTCOMPUTE_SHADER_NAME TCHAR("TestCompute")
 
 struct AOS
 {
@@ -57,7 +57,7 @@ public:
         static TestAOSBufferParamInfo TESTAOS_INFO;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "inData", &TESTAOS_INFO }
+            { TCHAR("inData"), &TESTAOS_INFO }
         };
 
 

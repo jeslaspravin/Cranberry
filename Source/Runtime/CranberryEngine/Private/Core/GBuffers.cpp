@@ -109,7 +109,7 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
                         rtCreateParam.dataFormat = framebufferFormat;
                         rtCreateParam.sampleCount = sampleCount;
                         rtCreateParam.textureSize = { screenSize.x, screenSize.y };
-                        rtCreateParam.textureName = "GBuffer_" + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
+                        rtCreateParam.textureName = TCHAR("GBuffer_") + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
                     
                         GBufferRenderTexture* rtTexture = TextureBase::createTexture<GBufferRenderTexture>(rtCreateParam);
                     
@@ -173,7 +173,7 @@ void GBuffers::initialize(int32 swapchainCount)
                 rtCreateParam.dataFormat = framebufferFormat;
                 rtCreateParam.sampleCount = sampleCount;
                 rtCreateParam.textureSize = { initialSize.x, initialSize.y };
-                rtCreateParam.textureName = "GBuffer_" + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
+                rtCreateParam.textureName = TCHAR("GBuffer_") + EPixelDataFormat::getFormatInfo(framebufferFormat)->formatName;
 
                 GBufferRenderTexture* rtTexture = TextureBase::createTexture<GBufferRenderTexture>(rtCreateParam);
 

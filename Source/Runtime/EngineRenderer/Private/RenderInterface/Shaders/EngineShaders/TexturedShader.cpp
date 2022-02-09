@@ -17,7 +17,7 @@
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/Resources/Pipelines.h"
 
-#define TEXTURED_SHADER_NAME "Textured"
+#define TEXTURED_SHADER_NAME TCHAR("Textured")
 
 struct TexturedMeshMaterials
 {
@@ -53,7 +53,7 @@ protected:
         static TexturedMeshMaterialsBufferParamInfo MESH_MATERIALS_DATA;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "materials", &MESH_MATERIALS_DATA }
+            { TCHAR("materials"), &MESH_MATERIALS_DATA }
         };
 
 

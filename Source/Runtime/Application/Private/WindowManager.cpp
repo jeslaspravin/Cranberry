@@ -239,7 +239,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                 WindowCanvasRef windowCanvas = getWindowCanvas(window);
                 if (windowCanvas.isValid())
                 {
-                    Logger::debug("WindowsAppWindow", "%s() : Reiniting window canvas", __func__);
+                    LOG_DEBUG("WindowsAppWindow", "%s() : Reiniting window canvas", __func__);
                     // Release the canvas before updating
                     IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()
                         ->clearWindowCanvasFramebuffer(windowCanvas);

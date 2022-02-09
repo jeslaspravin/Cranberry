@@ -36,7 +36,7 @@ namespace MaterialVertexUniforms
         static InstanceDataWrapperBufferParamInfo INSTDATA_WRAPPER_INFO;
         static const std::map<String, ShaderBufferParamInfo*> VERTEX_BUFFER_PARAMS
         {
-            { "instancesWrapper", &INSTDATA_WRAPPER_INFO }
+            { TCHAR("instancesWrapper"), &INSTDATA_WRAPPER_INFO }
         };
 
         return VERTEX_BUFFER_PARAMS;

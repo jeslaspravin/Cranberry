@@ -16,7 +16,7 @@
 
 struct GraphicsPipelineConfig;
 
-#define DEFAULT_SHADER_NAME "Default"
+#define DEFAULT_SHADER_NAME TCHAR("Default")
 
 class ENGINERENDERER_EXPORT DrawMeshShaderConfig : public ShaderConfigCollector
 {

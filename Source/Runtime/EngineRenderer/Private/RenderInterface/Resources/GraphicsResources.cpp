@@ -216,5 +216,5 @@ void GraphicsResource::release()
 
 String GraphicsResource::getResourceName() const
 {
-    return "";
+    return {};
 }

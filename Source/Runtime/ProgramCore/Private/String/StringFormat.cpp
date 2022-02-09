@@ -127,42 +127,43 @@ FormatArg& FormatArg::operator=(const FormatArg& arg)
     return *this;
 }
 
+#define FORMAT_FUNDAMENTALS(Specifier, VarName) StringFormat::format(TCHAR(Specifier), value.fundamentalVals.##VarName)
 String FormatArg::toString() const
 {
     switch (type)
     {
     case FormatArg::Bool:
-        return (value.fundamentalVals.boolVal) ? "true" : "false";
+        return (value.fundamentalVals.boolVal) ? TCHAR("true") : TCHAR("false");
         break;
     case FormatArg::UInt8:
-        return StringFormat::format("%hhu", value.fundamentalVals.uint8Val);
+        return FORMAT_FUNDAMENTALS("%hhu", uint8Val);
         break;
     case FormatArg::UInt16:
-        return StringFormat::format("%hu", value.fundamentalVals.uint16Val);
+        return FORMAT_FUNDAMENTALS("%hu", uint16Val);
         break;
     case FormatArg::UInt32:
-        return StringFormat::format("%u", value.fundamentalVals.uint32Val);
+        return FORMAT_FUNDAMENTALS("%u", uint32Val);
         break;
     case FormatArg::UInt64:
-        return StringFormat::format("%llu", value.fundamentalVals.uint64Val);
+        return FORMAT_FUNDAMENTALS("%llu", uint64Val);
         break;
     case FormatArg::Int8:
-        return StringFormat::format("%hhd", value.fundamentalVals.int8Val);
+        return FORMAT_FUNDAMENTALS("%hhd", int8Val);
         break;
     case FormatArg::Int16:
-        return StringFormat::format("%hd", value.fundamentalVals.int16Val);
+        return FORMAT_FUNDAMENTALS("%hd", int16Val);
         break;
     case FormatArg::Int32:
-        return StringFormat::format("%d", value.fundamentalVals.int32Val);
+        return FORMAT_FUNDAMENTALS("%d", int32Val);
         break;
     case FormatArg::Int64:
-        return StringFormat::format("%lld", value.fundamentalVals.int64Val);
+        return FORMAT_FUNDAMENTALS("%lld", int64Val);
         break;
     case FormatArg::Float:
-        return StringFormat::format("%f", value.fundamentalVals.floatVal);
+        return FORMAT_FUNDAMENTALS("%f", floatVal);
         break;
     case FormatArg::Double:
-        return StringFormat::format("%f", value.fundamentalVals.doubleVal);
+        return FORMAT_FUNDAMENTALS("%f", doubleVal);
         break;
     case FormatArg::Getter:
         return value.argGetter.invoke();
@@ -172,8 +173,9 @@ String FormatArg::toString() const
     default:
         break;
     }
-    return "Invalid FormatArg";
+    return TCHAR("Invalid FormatArg");
 }
+#undef FORMAT_FUNDAMENTALS
 
 FormatArg::operator bool() const
 {
@@ -239,12 +241,12 @@ MustacheStringFormatter::MustacheStringFormatter(const String& fmt)
 void MustacheStringFormatter::parseFmtStr()
 {
     // Scans for pattern within a line, Matches inner most {{.+}} and captures the inner name of the match
-    static const std::regex searchPattern("\\{\\{([^{}]+)\\}\\}", std::regex_constants::ECMAScript);
+    static const StringRegex searchPattern(TCHAR("\\{\\{([^{}]+)\\}\\}"), std::regex_constants::ECMAScript);
     allMatches.clear();
     sections.clear();
 
     auto startItr = fmtStr.cbegin();
-    std::smatch matches;
+    StringMatch matches;
     while (std::regex_search(startItr, fmtStr.cend(), matches, searchPattern))
     {
         allMatches.push_back(matches);
@@ -254,7 +256,7 @@ void MustacheStringFormatter::parseFmtStr()
     std::vector<std::pair<String, uint32>> sectAndIdxStack;
     for (uint32 i = 0; i < allMatches.size(); ++i)
     {
-        const std::smatch& match = allMatches[i];
+        const StringMatch& match = allMatches[i];
         String matchStr{ match[match.size() - 1].str() };
         String argName = matchStr;
         removeMustachePrefix(argName);
@@ -278,9 +280,9 @@ void MustacheStringFormatter::parseFmtStr()
 FORCE_INLINE void MustacheStringFormatter::removeMustachePrefix(String& tagName) const
 {
     // Match and replace first char
-    static const std::regex searchPattern("^[#^!>/]{1}", std::regex_constants::ECMAScript);
+    static const StringRegex searchPattern(TCHAR("^[#^!>/]{1}"), std::regex_constants::ECMAScript);
 
-    tagName = std::regex_replace(tagName, searchPattern, "");
+    tagName = std::regex_replace(tagName, searchPattern, TCHAR(""));
     tagName.trim();
 }
 
@@ -301,10 +303,10 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap& formatArgs) con
     // Below loop creates arg string for each matched mustache from formatArgs
     // Then creates post replacement offsets for each prefix from each match 
     // and also as side effect creates post replace suffix offset for last match as well
-    for (const std::smatch& match : allMatches)
+    for (const StringMatch& match : allMatches)
     {
-        const std::ssub_match& submatch = match[match.size() - 1];
-        const std::ssub_match& wholesubmatch = match[0];
+        const StringSubmatch& submatch = match[match.size() - 1];
+        const StringSubmatch& wholesubmatch = match[0];
 
         String argName = submatch.str();
         auto formatArgItr = formatArgs.find(argName);
@@ -320,7 +322,7 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap& formatArgs) con
         }
         else if (formatArgItr == formatArgs.cend()) // Match's FormatArg not found so we skip and wont change final string size here
         {
-            Logger::warn("StringFormat", "%s() : Format Arg not found for Arg Name %s", __func__, argName);
+            LOG_WARN("StringFormat", "%s() : Format Arg not found for Arg Name %s", __func__, argName);
             outSegments.emplace_back(
                 FormatSegment
                 {
@@ -360,10 +362,10 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap& formatArgs) con
     outputStr.resize(outStrLength);
     for (uint32 i = 0; i < allMatches.size(); ++i)
     {
-        const std::smatch& match = allMatches[i];
+        const StringMatch& match = allMatches[i];
         const FormatSegment& fmtSegment = outSegments[i];
 
-        const std::ssub_match& wholesubmatch = match[0];
+        const StringSubmatch& wholesubmatch = match[0];
         String argName = match[match.size() - 1].str();
         if (isAComment(argName))
         {
@@ -404,7 +406,7 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap& formatArgs) con
     return outputStr;
 }
 
-FORCE_INLINE void MustacheStringFormatter::renderSectionInner(std::ostringstream& outStr, const Section& section, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
+FORCE_INLINE void MustacheStringFormatter::renderSectionInner(OStringStream& outStr, const Section& section, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
 {
     // Render all inner tags
     for (uint32 matchIdx = section.sectionStartIdx + 1; matchIdx < section.sectionEndIdx;)
@@ -412,16 +414,16 @@ FORCE_INLINE void MustacheStringFormatter::renderSectionInner(std::ostringstream
         matchIdx = renderTag(outStr, matchIdx, context, partials);
     }
     // Append any thing before the sectionEndIdx
-    outStr << std::string_view(allMatches[section.sectionEndIdx].prefix().first, allMatches[section.sectionEndIdx].prefix().second);
+    outStr << StringView(allMatches[section.sectionEndIdx].prefix().first, allMatches[section.sectionEndIdx].prefix().second);
 }
 
-void MustacheStringFormatter::renderSection(std::ostringstream& outStr, uint32 sectionIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
+void MustacheStringFormatter::renderSection(OStringStream& outStr, uint32 sectionIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
 {
     const Section& section = sections[sectionIdx];
 
-    const std::smatch& match = allMatches[section.sectionStartIdx];
-    const std::ssub_match& submatch = match[match.size() - 1];
-    const std::ssub_match& wholesubmatch = match[0];
+    const StringMatch& match = allMatches[section.sectionStartIdx];
+    const StringSubmatch& submatch = match[match.size() - 1];
+    const StringSubmatch& wholesubmatch = match[0];
 
     String matchStr = submatch.str();
     String argName = matchStr;
@@ -455,7 +457,7 @@ void MustacheStringFormatter::renderSection(std::ostringstream& outStr, uint32 s
             else
             {
                 // If found formatter and still not bound then we remove this section, Even if negate condition unbound cannot be executed
-                Logger::error("MustacheStringFormatter", "%s() : Section formatter function found for section {{%s}}, but it is unbound!", __func__, matchStr);
+                LOG_ERROR("MustacheStringFormatter", "%s() : Section formatter function found for section {{%s}}, but it is unbound!", __func__, matchStr);
             }
         }
         // If sectionArgs are found and they are valid then we render the tags inside section
@@ -481,14 +483,14 @@ void MustacheStringFormatter::renderSection(std::ostringstream& outStr, uint32 s
     }
 }
 
-uint32 MustacheStringFormatter::renderTag(std::ostringstream& outStr, uint32 matchIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
+uint32 MustacheStringFormatter::renderTag(OStringStream& outStr, uint32 matchIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const
 {
     // Append match's prefix
-    outStr << std::string_view(allMatches[matchIdx].prefix().first, allMatches[matchIdx].prefix().second);
+    outStr << StringView(allMatches[matchIdx].prefix().first, allMatches[matchIdx].prefix().second);
 
-    const std::smatch& match = allMatches[matchIdx];
-    const std::ssub_match& submatch = match[match.size() - 1];
-    const std::ssub_match& wholesubmatch = match[0];
+    const StringMatch& match = allMatches[matchIdx];
+    const StringSubmatch& submatch = match[match.size() - 1];
+    const StringSubmatch& wholesubmatch = match[0];
 
     String matchStr = submatch.str();
     String argName = matchStr;
@@ -499,7 +501,7 @@ uint32 MustacheStringFormatter::renderTag(std::ostringstream& outStr, uint32 mat
         auto partialItr = partials.find(argName);
         if (partialItr == partials.cend())
         {
-            Logger::error("MustacheStringFormatter", "%s() : Could not find any partial for partial tag {{%s}}", __func__, matchStr);
+            LOG_ERROR("MustacheStringFormatter", "%s() : Could not find any partial for partial tag {{%s}}", __func__, matchStr);
         }
         else
         {
@@ -520,7 +522,7 @@ uint32 MustacheStringFormatter::renderTag(std::ostringstream& outStr, uint32 mat
         auto arg = context.args.find(argName);
         if (arg == context.args.end())
         {
-            Logger::error("MustacheStringFormatter", "%s() : Could not find format arg for tag {{%s}}", __func__, matchStr);
+            LOG_ERROR("MustacheStringFormatter", "%s() : Could not find format arg for tag {{%s}}", __func__, matchStr);
         }
         else
         {
@@ -537,13 +539,13 @@ String MustacheStringFormatter::render(const MustacheContext& context, const std
     {
         return fmtStr;
     }
-    std::ostringstream outputStr;
+    OStringStream outputStr;
     for (uint32 matchIdx = 0; matchIdx < allMatches.size();)
     {
         matchIdx = renderTag(outputStr, matchIdx, context, partials);
     }
     // Now append final suffix
-    outputStr << std::string_view(allMatches.back().suffix().first, allMatches.back().suffix().second);
+    outputStr << StringView(allMatches.back().suffix().first, allMatches.back().suffix().second);
     return outputStr.str();
 }
 

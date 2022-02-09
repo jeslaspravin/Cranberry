@@ -69,7 +69,7 @@ WindowsFile::~WindowsFile()
 {
     if (getFileHandle() != nullptr)
     {
-        Logger::warn("WindowsFile", "File %s is not closed, Please close it before destroying", getFullPath().getChar());
+        LOG_WARN("WindowsFile", "File %s is not closed, Please close it before destroying", getFullPath().getChar());
         closeFile();
     }
 }
@@ -83,12 +83,12 @@ void WindowsFile::flush() const
 
 bool WindowsFile::exists() const
 {
-    if (getFileName().compare(".") == 0 || getFileName().compare("..") == 0)// not valid files or folders
+    if (getFileName().compare(TCHAR(".")) == 0 || getFileName().compare(TCHAR("..")) == 0)// not valid files or folders
     {
         return false;
     }
 
-    dword fType = GetFileAttributesA(getFullPath().getChar());
+    dword fType = GetFileAttributes(getFullPath().getChar());
 
     if (fType == INVALID_FILE_ATTRIBUTES)
     {
@@ -115,8 +115,8 @@ uint64 WindowsFile::fileSize() const
     else 
     {
 
-        WIN32_FIND_DATAA data;
-        HANDLE fHandle = FindFirstFileA(getFullPath().getChar(), &data);
+        WIN32_FIND_DATA data;
+        HANDLE fHandle = FindFirstFile(getFullPath().getChar(), &data);
         if (fHandle != INVALID_HANDLE_VALUE) 
         {
             fSize.lowPart = data.nFileSizeLow;
@@ -217,26 +217,9 @@ void WindowsFile::read(std::vector<uint8>& readTo, const uint32& bytesToRead /*=
     uint64 availableSizeCanRead = (fileSize() - filePointerCache);
     dword bytesLeftToRead = (dword)(availableSizeCanRead > bytesToRead ? bytesToRead : availableSizeCanRead);
     readTo.clear();
-    readTo.resize(bytesLeftToRead);
+    readTo.resize(bytesLeftToRead, 0);
 
     read(readTo.data(), bytesLeftToRead);
-}
-void WindowsFile::read(String& readTo, const uint32& bytesToRead /*= (~0u)*/) const
-{
-    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Read))
-    {
-        return;
-    }
-
-    const dword readBufferSize = 10 * 1024 * 1024;// 10MB
-
-    uint64 filePointerCache = filePointer();
-    uint64 availableSizeCanRead = (fileSize() - filePointerCache);
-    dword bytesLeftToRead = (dword)(availableSizeCanRead > bytesToRead ? bytesToRead : availableSizeCanRead);
-    readTo.clear();
-    readTo.resize(bytesLeftToRead);
-
-    read(reinterpret_cast<uint8*>(readTo.data()), bytesLeftToRead);
 }
 
 void WindowsFile::read(uint8* readTo, const uint32& bytesToRead) const
@@ -299,7 +282,7 @@ bool WindowsFile::deleteFile()
     if (getFileHandle() && getFileHandleRaw()) {
         closeFile();
     }
-    return DeleteFileA(getFullPath().getChar());
+    return DeleteFile(getFullPath().getChar());
 }
 
 bool WindowsFile::renameFile(String newName)
@@ -335,7 +318,7 @@ bool WindowsFile::createDirectory() const
         hostDirectoryFile.createDirectory();
     }
 
-    return CreateDirectoryA(getFullPath().getChar(),nullptr);
+    return CreateDirectory(getFullPath().getChar(),nullptr);
 }
 
 TickRep WindowsFile::lastWriteTimeStamp() const
@@ -351,8 +334,8 @@ TickRep WindowsFile::lastWriteTimeStamp() const
     }
     else 
     {
-        WIN32_FIND_DATAA data;
-        HANDLE fHandle = FindFirstFileA(getFullPath().getChar(), &data);
+        WIN32_FIND_DATA data;
+        HANDLE fHandle = FindFirstFile(getFullPath().getChar(), &data);
         if (fHandle != INVALID_HANDLE_VALUE) 
         {
             timeStamp.lowPart = data.ftLastWriteTime.dwLowDateTime;
@@ -378,8 +361,8 @@ TickRep WindowsFile::createTimeStamp() const
     }
     else
     {
-        WIN32_FIND_DATAA data;
-        HANDLE fHandle = FindFirstFileA(getFullPath().getChar(), &data);
+        WIN32_FIND_DATA data;
+        HANDLE fHandle = FindFirstFile(getFullPath().getChar(), &data);
         if (fHandle != INVALID_HANDLE_VALUE)
         {
             timeStamp.lowPart = data.ftCreationTime.dwLowDateTime;
@@ -447,7 +430,7 @@ bool WindowsFile::closeImpl() const
 
 bool WindowsFile::dirDelete() const
 {
-    return RemoveDirectoryA(getFullPath().getChar());
+    return RemoveDirectory(getFullPath().getChar());
 }
 
 bool WindowsFile::dirClearAndDelete() const 
@@ -455,7 +438,7 @@ bool WindowsFile::dirClearAndDelete() const
     std::vector<String> filesPath = FileSystemFunctions::listAllFiles(isDirectory() ? getFullPath() : getHostDirectory(), true);    
     for (const String& filePath : filesPath)
     {
-        if (!DeleteFileA(filePath.getChar()))
+        if (!DeleteFile(filePath.getChar()))
         {
             return false;
         }

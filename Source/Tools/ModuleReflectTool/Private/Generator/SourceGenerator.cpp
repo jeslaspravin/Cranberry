@@ -12,6 +12,7 @@
 #include "Generator/SourceGenerator.h"
 #include "CmdLine/CmdLine.h"
 #include "CmdLineArgConst.h"
+#include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "ModuleSources.h"
 #include "GeneratorConsts.h"
@@ -30,24 +31,20 @@ void SourceGenerator::initialize(const ModuleSources* sources)
 
 void SourceGenerator::writeGeneratedFiles()
 {
-    std::vector<String> templateFiles = FileSystemFunctions::listFiles(TEMPLATES_DIR, true, "*.mustache");
+    std::vector<String> templateFiles = FileSystemFunctions::listFiles(TCHAR(TEMPLATES_DIR), true, TCHAR("*.mustache"));
     std::unordered_map<String, MustacheStringFormatter> sourceGenTemplates;
     sourceGenTemplates.reserve(templateFiles.size());
     for (const String& filePath : templateFiles)
     {
-        PlatformFile file(filePath);
-        file.setFileFlags(EFileFlags::Read);
-        file.setCreationAction(EFileFlags::OpenExisting);
-        file.setSharingMode(EFileSharing::ReadOnly);
-        file.openFile();
-
         String fileContent;
-        file.read(fileContent);
-        if (!fileContent.empty())
+        if (FileHelper::readString(fileContent, filePath) && !fileContent.empty())
         {
-            sourceGenTemplates.insert({ PathFunctions::stripExtension(file.getFileName()), MustacheStringFormatter(fileContent) });
+            sourceGenTemplates.insert(
+                { 
+                    PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(filePath))
+                    , MustacheStringFormatter(fileContent) 
+                });
         }
-        file.closeFile();
     }
     String moduleExpMacro;
     ProgramCmdLine::get()->getArg(moduleExpMacro, ReflectToolCmdLineConst::MODULE_EXP_MACRO);
@@ -70,18 +67,12 @@ void SourceGenerator::writeGeneratedFiles()
         headerContext.args[GeneratorConsts::EXPORT_SYMBOL_MACRO] = moduleExpMacro;
 
         String headerContent = sourceGenTemplates[GeneratorConsts::REFLECTHEADER_TEMPLATE].render(headerContext, sourceGenTemplates);
-        PlatformFile headerFile(srcInfo->generatedHeaderPath);
-        headerFile.setCreationAction(EFileFlags::CreateAlways);
-        headerFile.setFileFlags(EFileFlags::Write);
-        headerFile.setSharingMode(EFileSharing::ReadOnly);
-        if (!headerFile.openOrCreate())
+        if (!FileHelper::writeString(headerContent, srcInfo->generatedHeaderPath))
         {
-            Logger::error("SourceGenerator", "%s() : Could not write generated header(%s) for header %s", __func__, srcInfo->generatedHeaderPath, srcInfo->headerIncl);
+            LOG_ERROR("SourceGenerator", "%s() : Could not write generated header(%s) for header %s", __func__, srcInfo->generatedHeaderPath, srcInfo->headerIncl);
             bHasAnyError = true;
             continue;
         }
-        headerFile.write({ reinterpret_cast<uint8*>(headerContent.data()), uint32(headerContent.size()) });
-        headerFile.closeFile();
 
         // Generate source file
         MustacheContext sourceContext;
@@ -96,18 +87,12 @@ void SourceGenerator::writeGeneratedFiles()
         sourceContext.sectionContexts[GeneratorConsts::CLASSTYPES_SECTION_TAG] = srcGenCntxt.classTypes;
 
         String sourceContent = sourceGenTemplates[GeneratorConsts::REFLECTSOURCE_TEMPLATE].render(sourceContext, sourceGenTemplates);
-        PlatformFile srcFile(srcInfo->generatedTUPath);
-        srcFile.setCreationAction(EFileFlags::CreateAlways);
-        srcFile.setFileFlags(EFileFlags::Write);
-        srcFile.setSharingMode(EFileSharing::ReadOnly);
-        if (!srcFile.openOrCreate())
+        if (!FileHelper::writeString(sourceContent, srcInfo->generatedTUPath))
         {
-            Logger::error("SourceGenerator", "%s() : Could not write generated sources(%s) for header %s", __func__, srcInfo->generatedTUPath, srcInfo->headerIncl);
+            LOG_ERROR("SourceGenerator", "%s() : Could not write generated sources(%s) for header %s", __func__, srcInfo->generatedTUPath, srcInfo->headerIncl);
             bHasAnyError = true;
             continue;
         }
-        srcFile.write({ reinterpret_cast<uint8*>(sourceContent.data()), uint32(sourceContent.size()) });
-        srcFile.closeFile();
     }
 }
 

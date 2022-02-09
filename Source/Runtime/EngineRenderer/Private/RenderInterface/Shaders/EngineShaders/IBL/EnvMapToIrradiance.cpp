@@ -14,8 +14,8 @@
 #include "RenderInterface/Resources/Pipelines.h"
 #include "ShaderDataTypes.h"
 
-#define SAMPLE_COUNT "SAMPLE_COUNT"
-#define ENVMAPTODIFFIRRAD_SHADER_NAME "EnvToDiffuseIrradiance"
+#define SAMPLE_COUNT TCHAR("SAMPLE_COUNT")
+#define ENVMAPTODIFFIRRAD_SHADER_NAME TCHAR("EnvToDiffuseIrradiance")
 
 template <uint32 SizeX, uint32 SizeY, uint32 SizeZ>
 class EnvMapToDiffuseIrradiance final : public ComputeShaderConfigTemplated<SizeX, SizeY, SizeZ>
@@ -44,7 +44,7 @@ DEFINE_TEMPLATED_GRAPHICS_RESOURCE(EnvMapToDiffuseIrradiance, <EXPAND_ARGS(uint3
 /// HDRI to Pre-filtered specular map
 //////////////////////////////////////////////////////////////////////////
 
-#define HDRITOPREFILTEREDSPEC_SHADER_NAME "HDRIToPrefilteredSpecMap"
+#define HDRITOPREFILTEREDSPEC_SHADER_NAME TCHAR("HDRIToPrefilteredSpecMap")
 
 template <uint32 SizeX, uint32 SizeY, uint32 SizeZ>
 class HDRIToPrefilteredSpecular final : public ComputeShaderConfigTemplated<SizeX, SizeY, SizeZ>
@@ -61,7 +61,7 @@ public:
     void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry>& specializationConst) const final
     {
         specializationConst[SAMPLE_COUNT] = SpecializationConstUtility::fromValue(1024u);
-        specializationConst["MIP_COUNT"] = SpecializationConstUtility::fromValue(EngineSettings::maxPrefilteredCubeMiplevels.get());
+        specializationConst[TCHAR("MIP_COUNT")] = SpecializationConstUtility::fromValue(EngineSettings::maxPrefilteredCubeMiplevels.get());
     }
 };
 

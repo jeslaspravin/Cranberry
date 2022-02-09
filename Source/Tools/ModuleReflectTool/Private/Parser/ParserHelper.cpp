@@ -12,9 +12,9 @@
 #include "Parser/ParserHelper.h"
 #include "Parser/ClangWrappers.h"
 #include "ReflectionMacros.h"
-#include "Types/Platform/LFS/PlatformLFS.h"
-
-#include <regex>
+#include "String/StringRegex.h"
+#include "Types/Platform/LFS/File/FileHelper.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 
 String ParserHelper::getNonConstTypeName(CXType clangType, CXCursor typeRefCursor)
@@ -80,7 +80,7 @@ String ParserHelper::getCursorTypeName(CXCursor cursor)
 {
     if (clang_Cursor_isNull(cursor))
     {
-        return "";
+        return {};
     }
     CXType type = clang_getCursorType(cursor);
     CXType canonicalType = clang_getCanonicalType(type);
@@ -103,17 +103,17 @@ String ParserHelper::accessSpecifierName(CXCursor cursor)
     switch (currentScopeAccess)
     {
     case CX_CXXPublic:
-        access = "Public";
+        access = TCHAR("Public");
         break;
     case CX_CXXProtected:
-        access = "Protected";
+        access = TCHAR("Protected");
         break;
     case CX_CXXPrivate:
-        access = "Private";
+        access = TCHAR("Private");
         break;
     case CX_CXXInvalidAccessSpecifier:
     default:
-        access = "Public";
+        access = TCHAR("Public");
         break;
     }
     return access;
@@ -127,20 +127,10 @@ bool ParserHelper::isBuiltinType(CXType clangType)
 
 bool ParserHelper::shouldReflectHeader(const String& headerFilePath)
 {
-    PlatformFile headerFile(headerFilePath);
-    headerFile.setFileFlags(EFileFlags::Read);
-    headerFile.setCreationAction(EFileFlags::OpenExisting);
-    headerFile.setSharingMode(EFileSharing::ReadOnly);
-
     String headerFileContent;
-    if (headerFile.openFile())
+    if (!FileHelper::readString(headerFileContent, headerFilePath))
     {
-        headerFile.read(headerFileContent);
-        headerFile.closeFile();
-    }
-    else
-    {
-        Logger::error("ParserHelper", "%s() : Cannot open header file(%s) to read", __func__, headerFilePath);
+        LOG_ERROR("ParserHelper", "%s() : Cannot open header file(%s) to read", __func__, headerFilePath);
         return false;
     }
 
@@ -148,11 +138,11 @@ bool ParserHelper::shouldReflectHeader(const String& headerFilePath)
     // Second match ".*META_ANNOTATE.*\\(.*\\)[ \t]*.*" checks if the there is a meta annotated field or declaration
     // Third match "[ \t]*GENERATED_CODES\\(\\)" match if there is a line with GENERATED_CODES() macro expansion
     // If anyone of above matches then we consider that header for reflection compiling, Further validations will be done there
-    static const std::regex searchPattern("(#include *[<\"]{1}.*\\.gen\\.h[>\"]{1}|.*META_ANNOTATE.*\\(.*\\)[ \t]*.*|[ \t]*GENERATED_CODES\\(\\))", std::regex_constants::ECMAScript);
+    static const StringRegex searchPattern(TCHAR("(#include *[<\"]{1}.*\\.gen\\.h[>\"]{1}|.*META_ANNOTATE.*\\(.*\\)[ \t]*.*|[ \t]*GENERATED_CODES\\(\\))"), std::regex_constants::ECMAScript);
 
     bool bGenReflection = false;
-    std::vector<std::string_view> lines = headerFileContent.splitLines();
-    for (const std::string_view& codeLine : lines)
+    std::vector<StringView> lines = headerFileContent.splitLines();
+    for (const StringView& codeLine : lines)
     {
         if (std::regex_match(codeLine.cbegin(), codeLine.cend(), searchPattern))
         {
@@ -162,11 +152,11 @@ bool ParserHelper::shouldReflectHeader(const String& headerFilePath)
     }
     if (bGenReflection)
     {
-        String checkHeader(PathFunctions::stripExtension(headerFile.getFileName()) + ".gen.h");
-        static const std::regex includePattern("#include *[<\"]{1}(.*)[>\"]{1}", std::regex_constants::ECMAScript);
+        String checkHeader(PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(headerFilePath)) + TCHAR(".gen.h"));
+        static const StringRegex includePattern(TCHAR("#include *[<\"]{1}(.*)[>\"]{1}"), std::regex_constants::ECMAScript);
         uint32 genInclLine = std::numeric_limits<uint32>::max();
         uint32 lineNo = 0;
-        for (const std::string_view& codeLine : lines)
+        for (const StringView& codeLine : lines)
         {
             std::match_results<decltype(codeLine.cbegin())> matchResult;
             if (std::regex_match(codeLine.cbegin(), codeLine.cend(), matchResult, includePattern))
@@ -179,8 +169,8 @@ bool ParserHelper::shouldReflectHeader(const String& headerFilePath)
                 }
                 else if(lineNo > genInclLine) // Not gen header but include after gen header print error and skip this header file
                 {
-                    Logger::error("ParserHelper", "%s() : Generated header include(%s:%d) must be last include of this header file %s"
-                        , __func__, checkHeader, genInclLine, headerFile.getFileName());
+                    LOG_ERROR("ParserHelper", "%s() : Generated header include(%s:%d) must be last include of this header file %s"
+                        , __func__, checkHeader, genInclLine, headerFilePath);
                     bGenReflection = false;
                     break;
                 }
@@ -191,8 +181,8 @@ bool ParserHelper::shouldReflectHeader(const String& headerFilePath)
     return bGenReflection;
 }
 
-#define CHECK_TYPE_FIRST(TypeName) ((#TypeName) == checkTypeName)
-#define CHECK_TYPE(TypeName) || ((#TypeName) == checkTypeName)
+#define CHECK_TYPE_FIRST(TypeName) (TCHAR(#TypeName) == checkTypeName)
+#define CHECK_TYPE(TypeName) || (TCHAR(#TypeName) == checkTypeName)
 bool ParserHelper::isSpecializedType(CXType clangType, CXCursor typeRefCursor)
 {
     String checkTypeName = getNonConstTypeName(clangType, typeRefCursor);
@@ -201,8 +191,8 @@ bool ParserHelper::isSpecializedType(CXType clangType, CXCursor typeRefCursor)
 #undef CHECK_TYPE
 #undef CHECK_TYPE_FIRST
 
-#define CHECK_TYPE_FIRST(TypeName) (checkTypeName.startsWith((#TypeName)))
-#define CHECK_TYPE(TypeName) || (checkTypeName.startsWith((#TypeName)))
+#define CHECK_TYPE_FIRST(TypeName) (checkTypeName.startsWith(TCHAR(#TypeName)))
+#define CHECK_TYPE(TypeName) || (checkTypeName.startsWith(TCHAR(#TypeName)))
 bool ParserHelper::isCustomType(CXType clangType, CXCursor typeRefCursor)
 {
     String checkTypeName = getNonConstTypeName(clangType, typeRefCursor);
@@ -257,7 +247,7 @@ bool ParserHelper::isReflectedClass(CXCursor declCursor)
             // If generated type alias/typedef decl is present
             else if (cursorKind == CXCursor_TypeAliasDecl || cursorKind == CXCursor_TypedefDecl)
             {
-                bValid[1] = bValid[1] || (CXStringWrapper(clang_getCursorSpelling(c)).toString() == MACRO_TO_STRING(GENERATED_CODES_ALIAS));
+                bValid[1] = bValid[1] || (CXStringWrapper(clang_getCursorSpelling(c)).toString() == TCHAR(MACRO_TO_STRING(GENERATED_CODES_ALIAS)));
             }
             return CXChildVisit_Continue;
         }
@@ -280,7 +270,7 @@ CXCursor ParserHelper::getGeneratedCodeCursor(CXCursor declCursor)
             CXCursorKind cursorKind = clang_getCursorKind(c);
             // If generated type alias/typedef decl is present
             if ((cursorKind == CXCursor_TypeAliasDecl || cursorKind == CXCursor_TypedefDecl) 
-                && (CXStringWrapper(clang_getCursorSpelling(c)).toString() == MACRO_TO_STRING(GENERATED_CODES_ALIAS)))
+                && (CXStringWrapper(clang_getCursorSpelling(c)).toString() == TCHAR(MACRO_TO_STRING(GENERATED_CODES_ALIAS))))
             {
                 *(CXCursor*)(clientData) = c;
             }
@@ -315,7 +305,7 @@ bool ParserHelper::getMapElementTypes(CXType& outKeyType, CXType& outValueType, 
     String mapName = getNonConstTypeName(mapType, mapTypeRefCursor);
     CXType referredType = getTypeReferred(mapType, mapTypeRefCursor);
     
-    if (!(mapName.startsWith("std::map") || mapName.startsWith("std::unordered_map")))
+    if (!(mapName.startsWith(TCHAR("std::map")) || mapName.startsWith(TCHAR("std::unordered_map"))))
     {
         return false;
     }
@@ -334,7 +324,7 @@ bool ParserHelper::getPairElementTypes(CXType& outKeyType, CXType& outValueType,
     String pairName = getNonConstTypeName(pairType, pairTypeRefCursor);
     CXType referredType = getTypeReferred(pairType, pairTypeRefCursor);
 
-    if (!pairName.startsWith("std::pair"))
+    if (!pairName.startsWith(TCHAR("std::pair")))
     {
         return false;
     }
@@ -352,7 +342,7 @@ bool ParserHelper::getContainerElementType(CXType& outType, CXType containerType
     String typeName = getNonConstTypeName(containerType, typeRefCursor);
     CXType referredType = getTypeReferred(containerType, typeRefCursor);
 
-    if (!(typeName.startsWith("std::set") || typeName.startsWith("std::unordered_set") || typeName.startsWith("std::vector")))
+    if (!(typeName.startsWith(TCHAR("std::set")) || typeName.startsWith(TCHAR("std::unordered_set")) || typeName.startsWith(TCHAR("std::vector"))))
     {
         return false;
     }
@@ -430,20 +420,20 @@ bool ParserHelper::isValidFunction(CXCursor funcCursor)
         || clang_getCursorKind(funcCursor) == CXCursor_Constructor 
         || clang_getCursorKind(funcCursor) == CXCursor_CXXMethod))
     {
-        Logger::error("ParserHelper", "%s() : Function %s is not a function declaration", __func__, functionName);
+        LOG_ERROR("ParserHelper", "%s() : Function %s is not a function declaration", __func__, functionName);
         return false;
     }
     CXRefQualifierKind methodCalledRefKind = clang_Type_getCXXRefQualifier(clang_getCursorType(funcCursor));
     if (methodCalledRefKind != CXRefQualifier_None)
     {
-        Logger::error("ParserHelper", "%s() : Reference typed only function(%s) is not supported in reflection", __func__, functionName);
+        LOG_ERROR("ParserHelper", "%s() : Reference typed only function(%s) is not supported in reflection", __func__, functionName);
         return false;
     }
 
     CXType funcRetType = clang_getCursorResultType(funcCursor);
     if (!isValidFuncReturnType(funcRetType))
     {
-        Logger::log("ParserHelper", "%s ERROR %s() : Function %s return type %s is not valid", clang_getCursorLocation(funcCursor)
+        LOG("ParserHelper", "%s ERROR %s() : Function %s return type %s is not valid", clang_getCursorLocation(funcCursor)
             , __func__, functionName, clang_getTypeSpelling(funcRetType));
         return false;
     }
@@ -456,7 +446,7 @@ bool ParserHelper::isValidFunction(CXCursor funcCursor)
 
         if (!isValidFuncParamType(paramType, paramCursor))
         {
-            Logger::log("ParserHelper", "%s ERROR %s() : Function %s param %s at %d is not valid type %s", clang_getCursorLocation(paramCursor)
+            LOG("ParserHelper", "%s ERROR %s() : Function %s param %s at %d is not valid type %s", clang_getCursorLocation(paramCursor)
                 , __func__, functionName, clang_getCursorSpelling(paramCursor), i, clang_getTypeSpelling(paramType));
             return false;
         }
@@ -479,7 +469,7 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
         case CXType_LValueReference:
             // Reference is not valid for field
             bIsValid = false;
-            Logger::error("ParserHelper", "%s() : Reference type[%s] cannot be a field in field %s %s", __func__, typeName, typeName, fieldName);
+            LOG_ERROR("ParserHelper", "%s() : Reference type[%s] cannot be a field in field %s %s", __func__, typeName, typeName, fieldName);
             break;
         case CXType_Pointer:
         {
@@ -489,7 +479,7 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
             bIsValid = clang_getCursorKind(classDecl) == CXCursor_ClassDecl && isReflectedClass(classDecl);
             if (!bIsValid)
             {
-                Logger::error("ParserHelper", "%s() : Pointer type[%s] must be a class that is reflected in field %s %s", __func__, typeName, typeName, fieldName);
+                LOG_ERROR("ParserHelper", "%s() : Pointer type[%s] must be a class that is reflected in field %s %s", __func__, typeName, typeName, fieldName);
             }
             break;
         }
@@ -499,7 +489,7 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
             bIsValid = isValidFieldType(innerType, clang_getNullCursor());
             if (!bIsValid)
             {
-                Logger::error("ParserHelper", "%s() : Vector type[%s] must hold valid type that is reflected in field %s %s", __func__, typeName, typeName, fieldName);
+                LOG_ERROR("ParserHelper", "%s() : Vector type[%s] must hold valid type that is reflected in field %s %s", __func__, typeName, typeName, fieldName);
             }
             break;
         }
@@ -518,7 +508,7 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
                         || isCustomType(clangType, fieldCursor));
                 if (!bIsValid)
                 {
-                    Logger::error("ParserHelper", "%s() : Type %s is not valid field type", __func__, typeName);
+                    LOG_ERROR("ParserHelper", "%s() : Type %s is not valid field type", __func__, typeName);
                 }
             }
             break;

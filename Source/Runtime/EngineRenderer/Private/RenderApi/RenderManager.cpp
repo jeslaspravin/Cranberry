@@ -121,7 +121,7 @@ void RenderManager::destroy()
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostCleanupCommands);
     if (!commands.empty())
     {
-        Logger::warn("RenderManager", "%s() : Commands enqueued at post clean up phase, but they will not be executed", __func__);
+        LOG_WARN("RenderManager", "%s() : Commands enqueued at post clean up phase, but they will not be executed", __func__);
     }
 
     graphicsInstanceCache->unload();
@@ -130,10 +130,10 @@ void RenderManager::destroy()
     GraphicsResource::staticType()->allRegisteredResources(resourceLeak, true);
     if (!resourceLeak.empty())
     {
-        Logger::error("GraphicsResourceLeak", "%s() : Resource leak detected", __func__);
+        LOG_ERROR("GraphicsResourceLeak", "%s() : Resource leak detected", __func__);
         for (const GraphicsResource* resource : resourceLeak)
         {
-            Logger::error(resource->getType()->getName(), "\t%s", resource->getResourceName().getChar());
+            LOG_ERROR("GraphicsResourceLeak", "\tType:%s, Resource Name %s", resource->getType()->getName(), resource->getResourceName().getChar());
         }
     }
 }
@@ -179,7 +179,7 @@ void RenderManager::preparePipelineContext(class LocalPipelineContext* pipelineC
     GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);
     if (rtTextures.empty())
     {
-        Logger::error("RenderManager", "%s() : RT textures cannot be empty(Necessary to find GenericRenderPassProperties)", __func__);
+        LOG_ERROR("RenderManager", "%s() : RT textures cannot be empty(Necessary to find GenericRenderPassProperties)", __func__);
         return;
     }
 

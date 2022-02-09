@@ -17,7 +17,7 @@
 #include "RenderApi/Scene/RenderScene.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-#define DRAW_GRID_NAME "DrawGrid"
+#define DRAW_GRID_NAME TCHAR("DrawGrid")
 
 template <bool DepthTest>
 GraphicsPipelineConfig drawGridPipelineConfig(String& pipelineName, const ShaderResource* shaderResource)
@@ -48,7 +48,7 @@ private:
     String shaderFileName;
 
     DrawGrid()
-        : BaseType(String(DRAW_GRID_NAME) + (DepthTest ? "DTest" : ""))
+        : BaseType(String(DRAW_GRID_NAME) + (DepthTest ? TCHAR("DTest") : TCHAR("")))
         , shaderFileName(DRAW_GRID_NAME)
     {
         static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_GRID_PIPELINE_REGISTRAR, getResourceName(), &drawGridPipelineConfig<DepthTest>);

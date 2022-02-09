@@ -31,14 +31,14 @@ public:
 private:
     Logger() = default;
 
-    static std::ostringstream& loggerBuffer();
+    static OStringStream& loggerBuffer();
     static GenericFile* getLogFile();
     static std::vector<uint8>& muteFlags();
 
-    static void debugInternal(const AChar* category, const String& message);
-    static void logInternal(const AChar* category, const String& message);
-    static void warnInternal(const AChar* category, const String& message);
-    static void errorInternal(const AChar* category, const String& message);
+    static void debugInternal(const TChar* category, const String& message);
+    static void logInternal(const TChar* category, const String& message);
+    static void warnInternal(const TChar* category, const String& message);
+    static void errorInternal(const TChar* category, const String& message);
 public:
     // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as well else r-values gets converted to l-values on this call
     template<typename CatType, typename FmtType, typename... Args>
@@ -93,6 +93,11 @@ public:
     static void pushMuteSeverities(uint8 muteSeverities);
     static void popMuteSeverities();
 };
+
+#define LOG_DEBUG(Category, Fmt, ...) Logger::debug(TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG(Category, Fmt, ...) Logger::log(TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG_WARN(Category, Fmt, ...) Logger::warn(TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#define LOG_ERROR(Category, Fmt, ...) Logger::error(TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
 
 struct ScopedMuteLogServerity
 {

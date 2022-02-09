@@ -83,8 +83,13 @@ public:
         return PlatformClass::getSetBitCount(value);
     }
 
-    static void wcharToStr(String& outStr, const WChar* wChar)
+    static bool wcharToUtf8(std::string& outStr, const WChar* wChar)
     {
-        PlatformClass::wcharToStr(outStr, wChar);
+        return PlatformClass::wcharToUtf8(outStr, wChar);
+    }
+
+    static bool utf8ToWChar(String& outStr, const AChar* aChar)
+    {
+        return PlatformClass::utf8ToWChar(outStr, aChar);
     }
 };

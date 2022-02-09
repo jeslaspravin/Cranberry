@@ -28,7 +28,7 @@ void VulkanWindowCanvas::init()
     BaseType::init();
     if (!ownerWindow || !ownerWindow->isValidWindow())
     {
-        Logger::error("VkSurfaceKHR", "%s() : Cannot initialize Vulkan windows canvas without valid windows", __func__);
+        LOG_ERROR("VkSurfaceKHR", "%s() : Cannot initialize Vulkan windows canvas without valid windows", __func__);
         return;
     }
 
@@ -52,13 +52,13 @@ void VulkanWindowCanvas::reinitResources()
 
     if (!nextSwapchain || nextSwapchain == VK_NULL_HANDLE)
     {
-        Logger::error("VulkanWindowCanvas", "%s() : failed creating swap chain for surface", __func__);
+        LOG_ERROR("VulkanWindowCanvas", "%s() : failed creating swap chain for surface", __func__);
         return;
     }
     const String& windowName = ownerWindow->getWindowName();
 
     VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject((uint64)surfacePtr,
-        windowName + "Surface", VK_OBJECT_TYPE_SURFACE_KHR);
+        windowName + TCHAR("Surface"), VK_OBJECT_TYPE_SURFACE_KHR);
 
     if (swapchainPtr && swapchainPtr != VK_NULL_HANDLE)
     {
@@ -73,7 +73,7 @@ void VulkanWindowCanvas::reinitResources()
     }
     swapchainPtr = nextSwapchain;
     VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject((uint64)swapchainPtr,
-        windowName + "Swapchain", VK_OBJECT_TYPE_SWAPCHAIN_KHR);
+        windowName + TCHAR("Swapchain"), VK_OBJECT_TYPE_SWAPCHAIN_KHR);
     VulkanGraphicsHelper::fillSwapchainImages(graphicsInstance, swapchainPtr, &swapchainImages, &swapchainImageViews);
     if (swapchainImages.size() > 0)
     {
@@ -81,16 +81,16 @@ void VulkanWindowCanvas::reinitResources()
         fences.resize(swapchainImages.size());
         for (int32 i = 0; i < swapchainImages.size(); ++i)
         {
-            String indexString = std::to_string(i);
-            semaphores[i] = graphicsHelper->createSemaphore(graphicsInstance, (windowName + "Semaphore" + indexString).c_str());
+            String indexString = String::toString(i);
+            semaphores[i] = graphicsHelper->createSemaphore(graphicsInstance, (windowName + TCHAR("Semaphore") + indexString).c_str());
             semaphores[i]->init();
-            fences[i] = graphicsHelper->createFence(graphicsInstance, (windowName + "Fence" + indexString).c_str());
+            fences[i] = graphicsHelper->createFence(graphicsInstance, (windowName + TCHAR("Fence") + indexString).c_str());
             fences[i]->init();
 
             VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject((uint64)swapchainImages[i],
-                (windowName + "Image" + indexString), VK_OBJECT_TYPE_IMAGE);
+                (windowName + TCHAR("Image") + indexString), VK_OBJECT_TYPE_IMAGE);
             VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject((uint64)swapchainImageViews[i],
-                (windowName + "ImageView" + indexString), VK_OBJECT_TYPE_IMAGE_VIEW);
+                (windowName + TCHAR("ImageView") + indexString), VK_OBJECT_TYPE_IMAGE_VIEW);
         }
     }
 
@@ -155,7 +155,7 @@ uint32 VulkanWindowCanvas::requestNextImage(SemaphoreRef* waitOnSemaphore, Fence
     }
     else
     {
-        Logger::warn("VulkanWindowCanvas", "%s() : both waiting semaphore and fence being null is source of performance lose/bug", __func__);
+        LOG_WARN("VulkanWindowCanvas", "%s() : both waiting semaphore and fence being null is source of performance lose/bug", __func__);
         // if both are null then wait here
         fences[currentSyncIdx]->waitForSignal();
         currentFence = fences[currentSyncIdx];

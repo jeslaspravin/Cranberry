@@ -31,7 +31,7 @@ GraphicsResource* VulkanShaderParametersLayoutFactory::create(const ShaderResour
         case ShaderParameterUtility::SHADER_VARIANT_UNIQ_SET:
             return new VulkanShaderUniqDescLayout(forShader, descriptorsSetIdx);
         default:
-            Logger::error("VulkanShaderParametersLayoutFactory", "%s : Not support descriptor index %d for shader %s"
+            LOG_ERROR("VulkanShaderParametersLayoutFactory", "%s : Not support descriptor index %d for shader %s"
                 , __func__, descriptorsSetIdx, forShader->getResourceName().getChar());
             return nullptr;
         }

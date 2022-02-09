@@ -92,10 +92,10 @@ bool WindowsFileHandle::openFile(const String& filePath)
         attributsAndFlags |= rawFileFlags;
     }
 
-    fileHandle = CreateFileA(filePath.getChar(), desiredAccess, shareMode, nullptr, creationAction, attributsAndFlags, nullptr);
+    fileHandle = CreateFile(filePath.getChar(), desiredAccess, shareMode, nullptr, creationAction, attributsAndFlags, nullptr);
 
     if (fileHandle == INVALID_HANDLE_VALUE) {
-        Logger::error("WindowsFileHandle", "%s() : File handle creation/opening failed for %s", __func__, filePath.getChar());
+        LOG_ERROR("WindowsFileHandle", "%s() : File handle creation/opening failed for %s", __func__, filePath.getChar());
         fileHandle = nullptr;
         return false;
     }

@@ -48,4 +48,7 @@ public:
 
     static String stripExtension(const String& fileName, String& extension);
     static String stripExtension(const String& fileName);
+    static String fileOrDirectoryName(const String& filePath);
+
+    static String asGenericPath(const String& path);
 };

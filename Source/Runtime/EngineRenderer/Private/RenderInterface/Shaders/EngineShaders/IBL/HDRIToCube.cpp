@@ -12,7 +12,7 @@
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderInterface/Resources/Pipelines.h"
 
-#define HDRITOCUBE_SHADER_NAME "HDRIToCube"
+#define HDRITOCUBE_SHADER_NAME TCHAR("HDRIToCube")
 
 class HDRIToCubeShader : public ComputeShaderConfigTemplated<16, 16, 1>
 {

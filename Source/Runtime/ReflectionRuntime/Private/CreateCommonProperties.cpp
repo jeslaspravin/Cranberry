@@ -41,26 +41,26 @@ void initQualifiedProperty(BaseProperty* prop)
 }
 
 #define CREATE_QUALIFIED_PROPERTIES(TypeName) \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName&>(), { &createQualifiedProperty<TypeName&, #TypeName" &">, &initQualifiedProperty<TypeName&> }); \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName*>(), { &createQualifiedProperty<TypeName*, #TypeName" *">, &initQualifiedProperty<TypeName*> }); \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName*>(), { &createQualifiedProperty<const TypeName*, "const "#TypeName" *">, &initQualifiedProperty<TypeName*> }); \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName&>(), { &createQualifiedProperty<const TypeName&, "const "#TypeName" &">, &initQualifiedProperty<TypeName*> });
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName&>(), { &createQualifiedProperty<TypeName&, TCHAR(#TypeName" &")>, &initQualifiedProperty<TypeName&> }); \
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName*>(), { &createQualifiedProperty<TypeName*, TCHAR(#TypeName" *")>, &initQualifiedProperty<TypeName*> }); \
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName*>(), { &createQualifiedProperty<const TypeName*, TCHAR("const "#TypeName" *")>, &initQualifiedProperty<TypeName*> }); \
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const TypeName&>(), { &createQualifiedProperty<const TypeName&, TCHAR("const "#TypeName" &")>, &initQualifiedProperty<TypeName*> });
 
 #define CREATE_FUNDAMENTAL_PROPERTY(TypeName) \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName>(), { &createFundamentalProperty<TypeName, #TypeName>, nullptr }); \
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName>(), { &createFundamentalProperty<TypeName, TCHAR(#TypeName)>, nullptr }); \
     CREATE_QUALIFIED_PROPERTIES(TypeName)
 
 #define CREATE_SPECIAL_PROPERTY(TypeName) \
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName>(), { &createSpecialProperty<TypeName, #TypeName>, nullptr }); \
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<TypeName>(), { &createSpecialProperty<TypeName, TCHAR(#TypeName)>, nullptr }); \
     CREATE_QUALIFIED_PROPERTIES(TypeName)
 
 void ReflectionRuntimeModule::initCommonProperties() const
 {
     FOR_EACH_CORE_TYPES(CREATE_FUNDAMENTAL_PROPERTY);
     // Register void as well
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<void>(), { &createFundamentalProperty<void, "void">, nullptr });
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<void*>(), { &createQualifiedProperty<void*, "void*">, &initQualifiedProperty<void*> });
-    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const void*>(), { &createQualifiedProperty<const void*, "const void*">, &initQualifiedProperty<const void*> });
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<void>(), { &createFundamentalProperty<void, TCHAR("void")>, nullptr });
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<void*>(), { &createQualifiedProperty<void*, TCHAR("void*")>, &initQualifiedProperty<void*> });
+    IReflectionRuntimeModule::registerTypeFactory(typeInfoFrom<const void*>(), { &createQualifiedProperty<const void*, TCHAR("const void*")>, &initQualifiedProperty<const void*> });
 
     FOR_EACH_SPECIAL_TYPES(CREATE_SPECIAL_PROPERTY);
 }

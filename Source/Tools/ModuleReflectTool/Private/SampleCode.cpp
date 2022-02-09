@@ -14,6 +14,7 @@
 #include "Types/FunctionTypes.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/PlatformFunctions.h"
+#include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Containers/ArrayView.h"
 #include "Modules/ModuleManager.h"
@@ -25,6 +26,7 @@
 #include "String/MustacheFormatString.h"
 #include "Parser/ClangWrappers.h"
 #include "Parser/ParserHelper.h"
+#include "String/StringRegex.h"
 
 #include <iostream>
 #include <regex>
@@ -38,7 +40,7 @@ namespace CppReflectionParser
         const uint32 childDiagsNum = clang_getNumDiagnosticsInSet(childDiags);
 
         CXStringRef diagnosticStr(new CXStringWrapper(clang_formatDiagnostic(diagnostic, formatOptions)));
-        Logger::warn("Diagnostics", "%s", diagnosticStr);
+        LOG_WARN("Diagnostics", "%s", diagnosticStr);
         for (int32 i = 0; i < childDiagsNum; ++i)
         {
             auto childDiagnostic = clang_getDiagnosticInSet(childDiags, i);
@@ -54,17 +56,17 @@ namespace CppReflectionParser
         switch (currentScopeAccess)
         {
         case CX_CXXPublic:
-            access = "public";
+            access = TCHAR("public");
             break;
         case CX_CXXProtected:
-            access = "protected";
+            access = TCHAR("protected");
             break;
         case CX_CXXPrivate:
-            access = "private";
+            access = TCHAR("private");
             break;
         case CX_CXXInvalidAccessSpecifier:
         default:
-            access = "Invalid";
+            access = TCHAR("Invalid");
             break;
         }
         return access;
@@ -78,15 +80,15 @@ namespace CppReflectionParser
         switch (canonicalType.kind)
         {
         case CXType_RValueReference:
-            Logger::log("CppReflectionParser", "%s() : Type %s is a r-value, Referred type %s(Is POD %d)", __func__, typeName, clang_getTypeSpelling(innerType), clang_isPODType(innerType));
+            LOG("CppReflectionParser", "%s() : Type %s is a r-value, Referred type %s(Is POD %d)", __func__, typeName, clang_getTypeSpelling(innerType), clang_isPODType(innerType));
             break;
         case CXType_LValueReference:
-            Logger::log("CppReflectionParser", "%s() : Type %s is a l-value, Referred type %s(Is POD %d)", __func__, typeName, clang_getTypeSpelling(innerType), clang_isPODType(innerType));
+            LOG("CppReflectionParser", "%s() : Type %s is a l-value, Referred type %s(Is POD %d)", __func__, typeName, clang_getTypeSpelling(innerType), clang_isPODType(innerType));
             break;
         case CXType_Pointer:
         {
             int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-            Logger::log("CppReflectionParser", "%s() : Type %s - Inner type is %s and is const? %s(Is POD %d)", __func__, typeName
+            LOG("CppReflectionParser", "%s() : Type %s - Inner type is %s and is const? %s(Is POD %d)", __func__, typeName
                 , clang_getTypeSpelling(innerType)
                 , !!(bIsInnerTypeConst)
                 ? "true" : "false"
@@ -95,14 +97,14 @@ namespace CppReflectionParser
             break;
         }
         case CXType_ConstantArray:
-            Logger::log("CppReflectionParser", "%s() : Type %s container element count %d", __func__, typeName, clang_getNumElements(type));
+            LOG("CppReflectionParser", "%s() : Type %s container element count %d", __func__, typeName, clang_getNumElements(type));
         case CXType_IncompleteArray:
         case CXType_DependentSizedArray:
         case CXType_Vector:
         case CXType_VariableArray:
         {
             int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-            Logger::log("CppReflectionParser", "%s() : Type %s - Inner type is %s and is const? %s(Is POD %d)", __func__, typeName
+            LOG("CppReflectionParser", "%s() : Type %s - Inner type is %s and is const? %s(Is POD %d)", __func__, typeName
                 , clang_getTypeSpelling(innerType)
                 , !!(bIsInnerTypeConst)
                 ? "true" : "false"
@@ -121,7 +123,7 @@ namespace CppReflectionParser
 
         // The type can be considered const if its container is const or the type itself is const
         int32 bIsOuterTypeConst = clang_isConstQualifiedType(fieldCanonicalType);
-        Logger::log("CppReflectionParser", "%s() : Field %s - Is const? %s", __func__, fieldName
+        LOG("CppReflectionParser", "%s() : Field %s - Is const? %s", __func__, fieldName
             , !!(bIsOuterTypeConst)
             ? "true" : "false"
         );
@@ -131,10 +133,10 @@ namespace CppReflectionParser
         switch (fieldCanonicalType.kind)
         {
         case CXType_RValueReference:
-            Logger::log("CppReflectionParser", "%s() : Field %s is a r-value", __func__, fieldName);
+            LOG("CppReflectionParser", "%s() : Field %s is a r-value", __func__, fieldName);
             break;
         case CXType_LValueReference:
-            Logger::log("CppReflectionParser", "%s() : Field %s is a l-value", __func__, fieldName);
+            LOG("CppReflectionParser", "%s() : Field %s is a l-value", __func__, fieldName);
             break;
         case CXType_Pointer:
         {
@@ -144,7 +146,7 @@ namespace CppReflectionParser
             if (!!clang_isPODType(fieldCanonicalType))
             {
                 int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-                Logger::log("CppReflectionParser", "%s() : Field %s - Inner type %s is const? %s", __func__, fieldName
+                LOG("CppReflectionParser", "%s() : Field %s - Inner type %s is const? %s", __func__, fieldName
                     , clang_getTypeSpelling(innerType)
                     , !!(bIsInnerTypeConst)
                     ? "true" : "false"
@@ -154,11 +156,11 @@ namespace CppReflectionParser
             {
                 innerTypeCursor = clang_getTypeDeclaration(innerType);
             }
-            Logger::log("CppReflectionParser", "%s() : Field %s - pointer inner type is %s", __func__, fieldName, clang_getTypeSpelling(innerType));
+            LOG("CppReflectionParser", "%s() : Field %s - pointer inner type is %s", __func__, fieldName, clang_getTypeSpelling(innerType));
             break;
         }
         case CXType_ConstantArray:
-            Logger::log("CppReflectionParser", "%s() : Field %s - container element count %d", __func__, fieldName, clang_getNumElements(fieldType));
+            LOG("CppReflectionParser", "%s() : Field %s - container element count %d", __func__, fieldName, clang_getNumElements(fieldType));
         case CXType_IncompleteArray:
         case CXType_DependentSizedArray:
         case CXType_Vector:
@@ -169,7 +171,7 @@ namespace CppReflectionParser
             if (!!clang_isPODType(fieldCanonicalType))
             {
                 int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerType);
-                Logger::log("CppReflectionParser", "%s() : Field %s - Element type %s is const? %s", __func__, fieldName
+                LOG("CppReflectionParser", "%s() : Field %s - Element type %s is const? %s", __func__, fieldName
                     , clang_getTypeSpelling(innerType)
                     , !!(bIsInnerTypeConst)
                     ? "true" : "false"
@@ -179,7 +181,7 @@ namespace CppReflectionParser
             {
                 innerTypeCursor = clang_getTypeDeclaration(innerType);
             }
-            Logger::log("CppReflectionParser", "%s() : Field %s - container element type is %s", __func__, fieldName, clang_getTypeSpelling(innerType));
+            LOG("CppReflectionParser", "%s() : Field %s - container element type is %s", __func__, fieldName, clang_getTypeSpelling(innerType));
             break;
         }
         default:
@@ -192,7 +194,7 @@ namespace CppReflectionParser
             innerCanonicalType = clang_getCursorType(clang_getCanonicalCursor(innerTypeCursor));
 
             int32 bIsInnerTypeConst = clang_isConstQualifiedType(innerCanonicalType);
-            Logger::log("CppReflectionParser", "%s() : Field %s - Inner type %s is const? %s", __func__, fieldName
+            LOG("CppReflectionParser", "%s() : Field %s - Inner type %s is const? %s", __func__, fieldName
                 , clang_getTypeSpelling(innerCanonicalType)
                 , !!(bIsInnerTypeConst)
                 ? "true" : "false"
@@ -212,7 +214,7 @@ namespace CppReflectionParser
                     // Cannot get canonical cursor here as POD will not be having any cursor, so use canonical type instead
                     // CXCursor innerMostDeclTypeCursor = clang_getCanonicalCursor(c);
                     CXType innerMostType = clang_getCanonicalType(clang_getCursorType(c));
-                    Logger::log("CppReflectionParser", "printVariableTypeInfo() : Field's innermost canonical type is %s", clang_getTypeSpelling(innerMostType));
+                    LOG("CppReflectionParser", "printVariableTypeInfo() : Field's innermost canonical type is %s", clang_getTypeSpelling(innerMostType));
                     break;
                 }
                 case CXCursor_AnnotateAttr:
@@ -240,14 +242,14 @@ namespace CppReflectionParser
             paramsCursor[i] = clang_Cursor_getArgument(cursor, i);
         }
 
-        String functionPath = String::join(srcParsedInfo.namespaceList.begin(), srcParsedInfo.namespaceList.end(), "::");
+        String functionPath = String::join(srcParsedInfo.namespaceList.begin(), srcParsedInfo.namespaceList.end(), TCHAR("::"));
         CXStringRef functionName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         String functionParams;
         // print return type's param 
         printJustTypeInfo(funcRetType);
-        Logger::log("CppReflectionParser", "%s() : Return type unqualified name %s", __func__, ParserHelper::getNonConstTypeName(funcRetType, clang_getNullCursor()));
+        LOG("CppReflectionParser", "%s() : Return type unqualified name %s", __func__, ParserHelper::getNonConstTypeName(funcRetType, clang_getNullCursor()));
         {
-            Logger::log("CppReflectionParser", "%s() : Function %s Arguments info ---->", __func__, functionName);
+            LOG("CppReflectionParser", "%s() : Function %s Arguments info ---->", __func__, functionName);
             std::vector<String> paramStrs;
             int32 i = 0;
             for (CXCursor c : paramsCursor)
@@ -257,17 +259,17 @@ namespace CppReflectionParser
                 CXStringRef paramTypeName(new CXStringWrapper(clang_getTypeSpelling(paramType)));
                 CXStringRef paramName(new CXStringWrapper(clang_getCursorSpelling(c)));
 
-                Logger::log("CppReflectionParser", "%s() : Argument %d Name %s Type %s(Unqualified %s)", __func__, i, paramName, paramTypeName, ParserHelper::getNonConstTypeName(paramType, c));
+                LOG("CppReflectionParser", "%s() : Argument %d Name %s Type %s(Unqualified %s)", __func__, i, paramName, paramTypeName, ParserHelper::getNonConstTypeName(paramType, c));
                 printJustTypeInfo(paramType);
 
-                paramDeclStr = clang_getCString(paramTypeName->str) + String(" ") + clang_getCString(paramName->str);
+                paramDeclStr = UTF8_TO_TCHAR(clang_getCString(paramTypeName->str)) + String(TCHAR(" ")) + UTF8_TO_TCHAR(clang_getCString(paramName->str));
                 ++i;
             }
 
-            functionParams = String::join(paramStrs.cbegin(), paramStrs.cend(), ", ");
+            functionParams = String::join(paramStrs.cbegin(), paramStrs.cend(), TCHAR(", "));
         }
 
-        Logger::log("CppReflectionParser", "%s() : Function %s Signature is %s %s::%s(%s)", __func__, functionName
+        LOG("CppReflectionParser", "%s() : Function %s Signature is %s %s::%s(%s)", __func__, functionName
             , clang_getTypeSpelling(funcRetType), functionPath, functionName, functionParams);
     }
 
@@ -806,7 +808,7 @@ namespace CppReflectionParser
         {
             CXStringRef cursorSpelling(new CXStringWrapper(clang_getCursorSpelling(cursor)));
             CXStringRef cursorKindSpelling(new CXStringWrapper(clang_getCursorKindSpelling(cursorKind)));
-            Logger::log("CppReflectionParser", "%s() : Cursor '%s' of kind '%s'", __func__, cursorSpelling, cursorKindSpelling);
+            LOG("CppReflectionParser", "%s() : Cursor '%s' of kind '%s'", __func__, cursorSpelling, cursorKindSpelling);
         }
     }
 
@@ -815,8 +817,8 @@ namespace CppReflectionParser
         // Since we just need namespace's name string alone
         CXStringRef namespaceName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         CXStringRef displayName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Namespace %s starts - Display name %s", __func__, namespaceName, displayName);
-        srcParsedInfo.namespaceList.push_back(clang_getCString(namespaceName->str));
+        LOG("CppReflectionParser", "%s() : Namespace %s starts - Display name %s", __func__, namespaceName, displayName);
+        srcParsedInfo.namespaceList.push_back(UTF8_TO_TCHAR(clang_getCString(namespaceName->str)));
 
         clang_visitChildren(cursor,
             [](CXCursor c, CXCursor p, CXClientData clientData)
@@ -827,7 +829,7 @@ namespace CppReflectionParser
             , &srcParsedInfo);
 
         srcParsedInfo.namespaceList.pop_back();
-        Logger::log("CppReflectionParser", "%s() : Namespace %s ends", __func__, namespaceName);
+        LOG("CppReflectionParser", "%s() : Namespace %s ends", __func__, namespaceName);
     }
 
     void visitMacroDefinition(CXCursor cursor, SourceParsedInfo& srcParsedInfo)
@@ -839,7 +841,7 @@ namespace CppReflectionParser
         CXToken* token = clang_getToken(tu, cursorSrcLoc);
         CXStringRef tokenStr(new CXStringWrapper(clang_getTokenSpelling(tu, *token)));
         CXStringRef macroName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Macro %s defined as %s", __func__, macroName, tokenStr);
+        LOG("CppReflectionParser", "%s() : Macro %s defined as %s", __func__, macroName, tokenStr);
 
         // #TODO(Jeslas) : Find how to get macro's value and arguments if the cursor is function like macro
         clang_disposeTokens(tu, token, 1);
@@ -854,7 +856,7 @@ namespace CppReflectionParser
         CXToken* token = clang_getToken(tu, cursorSrcLoc);
         CXStringRef tokenStr(new CXStringWrapper(clang_getTokenSpelling(tu, *token)));
         CXStringRef macroName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Macro %s expanded as %s", __func__, macroName, tokenStr);
+        LOG("CppReflectionParser", "%s() : Macro %s expanded as %s", __func__, macroName, tokenStr);
 
         // #TODO(Jeslas) : Find how to get macro's expanded value and arguments passed in if the cursor is function like macro
         clang_disposeTokens(tu, token, 1);
@@ -875,12 +877,12 @@ namespace CppReflectionParser
                 // Gives the cached resolved path and file name
                 inclsFilePath = new CXStringWrapper(clang_getFileName(includeFile));
             }
-            Logger::log("CppReflectionParser", "%s() : \"%s\" include file resolved from %s", __func__, inclsName, inclsFilePath);
+            LOG("CppReflectionParser", "%s() : \"%s\" include file resolved from %s", __func__, inclsName, inclsFilePath);
         }
         else
         {
-            srcParsedInfo.includes.emplace_back(clang_getCString(inclsName->str));
-            Logger::error("CppReflectionParser", "%s() : \"%s\" include file could not be resolved", __func__, inclsName);
+            srcParsedInfo.includes.emplace_back(UTF8_TO_TCHAR(clang_getCString(inclsName->str)));
+            LOG_ERROR("CppReflectionParser", "%s() : \"%s\" include file could not be resolved", __func__, inclsName);
         }
     }
 
@@ -889,20 +891,20 @@ namespace CppReflectionParser
         // Since class defines new namespace for declared variables
         CXStringRef className(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         CXStringRef classDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Class %s starts - Display name %s", __func__, className, classDispName);
-        srcParsedInfo.namespaceList.push_back(clang_getCString(className->str));
+        LOG("CppReflectionParser", "%s() : Class %s starts - Display name %s", __func__, className, classDispName);
+        srcParsedInfo.namespaceList.push_back(UTF8_TO_TCHAR(clang_getCString(className->str)));
         String currAccessSpecifier = srcParsedInfo.scopeAccessSpecifier;
-        srcParsedInfo.scopeAccessSpecifier = "private";
+        srcParsedInfo.scopeAccessSpecifier = TCHAR("private");
 
         // Below statement also returns type name with namespace so we do not need to keep track of namespace
         // String classPathName = ParserHelper::getNonConstTypeName(clang_getCursorType(cursor), cursor);
-        String classPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), "::");
-        Logger::log("CppReflectionParser", "%s() : Class full path name %s", __func__, classPathName);
+        String classPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
+        LOG("CppReflectionParser", "%s() : Class full path name %s", __func__, classPathName);
 
         int32 bIsAbstract = clang_CXXRecord_isAbstract(cursor);
         if (!!bIsAbstract)
         {
-            Logger::log("CppReflectionParser", "%s() : Class %s is abstract", __func__, className);
+            LOG("CppReflectionParser", "%s() : Class %s is abstract", __func__, className);
         }
 
         clang_visitChildren(cursor,
@@ -915,7 +917,7 @@ namespace CppReflectionParser
 
         srcParsedInfo.scopeAccessSpecifier = currAccessSpecifier;
         srcParsedInfo.namespaceList.pop_back();
-        Logger::log("CppReflectionParser", "%s() : Class %s ends", __func__, className);
+        LOG("CppReflectionParser", "%s() : Class %s ends", __func__, className);
     }
 
     void visitClassMember(CXCursor cursor, SourceParsedInfo& srcParsedInfo)
@@ -941,24 +943,24 @@ namespace CppReflectionParser
 
             fatalAssert(tokensCount > 1, "%s() : Tokens must be atleast 2(Got %d) in case of access specifiers 'public' and (':' or 'class/struct name')", __func__, tokensCount);
             CXStringRef tokenStr(new CXStringWrapper(clang_getTokenSpelling(tu, tokens[0])));
-            access = clang_getCString(tokenStr->str);
+            access = UTF8_TO_TCHAR(clang_getCString(tokenStr->str));
 #endif
             // Since we need just string to log now cursor spelling provides base record(class/struct) name. If need to find cursor/type one approach is to use same technique used in FriendDecl visitor below
             // To check if base struct is virtual(To avoid multiple inheritance of base type)
             int32 bIsBaseVirtual = clang_isVirtualBase(cursor);
             // To check if base type is abstract we need cursor of that type declaration, We get base type by getting cursor's type
             int32 bIsBaseAbstract = clang_CXXRecord_isAbstract(clang_getTypeDeclaration(clang_getCursorType(cursor)));
-            Logger::log("CppReflectionParser", "%s() : Inherited from %s(%s and %s) with %s access specifier", __func__, cursorName
+            LOG("CppReflectionParser", "%s() : Inherited from %s(%s and %s) with %s access specifier", __func__, cursorName
                 , (!!bIsBaseAbstract)
-                ? "Abstract" : "Non-Abstract"
+                ? TCHAR("Abstract") : TCHAR("Non-Abstract")
                 , (!!bIsBaseVirtual)
-                ? "Virtual" : "Non-Virtual"
+                ? TCHAR("Virtual") : TCHAR("Non-Virtual")
                 , access);
             break; 
         }
         case CXCursor_AnnotateAttr:
             // Cursor spelling contains content of annotation
-            Logger::log("CppReflectionParser", "%s() : [Access : %s] Annotated as %s", __func__, srcParsedInfo.scopeAccessSpecifier, cursorName);
+            LOG("CppReflectionParser", "%s() : [Access : %s] Annotated as %s", __func__, srcParsedInfo.scopeAccessSpecifier, cursorName);
             break;
         case CXCursor_CXXAccessSpecifier:
         {
@@ -979,11 +981,11 @@ namespace CppReflectionParser
                 const AChar* str = clang_getCString(tokenStr->str);
                 if (strcmp(str, ":") != 0)
                 {
-                    access += str;
+                    access += UTF8_TO_TCHAR(str);
                 }
             }
 #endif
-            Logger::log("CppReflectionParser", "%s() : Previous access %s new access is %s", __func__, srcParsedInfo.scopeAccessSpecifier, access);
+            LOG("CppReflectionParser", "%s() : Previous access %s new access is %s", __func__, srcParsedInfo.scopeAccessSpecifier, access);
             srcParsedInfo.scopeAccessSpecifier = access;
             break;
         }
@@ -994,7 +996,7 @@ namespace CppReflectionParser
             CXType type = clang_getTypedefDeclUnderlyingType(cursor);
             // Since this typedef/using decl might be type alias by itself get its canonical type
             type = clang_getCanonicalType(type);
-            Logger::log("CppReflectionParser", "%s() : %s type is being aliased as %s", __func__, clang_getTypeSpelling(type), cursorName);
+            LOG("CppReflectionParser", "%s() : %s type is being aliased as %s", __func__, clang_getTypeSpelling(type), cursorName);
             break;
         }
         case CXCursor_FriendDecl:
@@ -1069,10 +1071,10 @@ namespace CppReflectionParser
                     }
 
                     CXStringRef tokenStr(new CXStringWrapper(clang_getTokenSpelling(tu, tokens[i])));
-                    tokensStr.emplace_back(clang_getCString(tokenStr->str));
+                    tokensStr.emplace_back(UTF8_TO_TCHAR(clang_getCString(tokenStr->str)));
                 }
             }
-            friendDeclStr = String::join(tokensStr.cbegin(), tokensStr.cend(), " ");
+            friendDeclStr = String::join(tokensStr.cbegin(), tokensStr.cend(), TCHAR(" "));
 
             if (!clang_Cursor_isNull(friendTypeCursor))
             {
@@ -1084,7 +1086,7 @@ namespace CppReflectionParser
             }
             clang_disposeTokens(tu, tokens, tokensCount);
         }
-        Logger::log("CppReflectionParser", "%s() : [Access : %s] %s(%s) is a friend of class %s"
+        LOG("CppReflectionParser", "%s() : [Access : %s] %s(%s) is a friend of class %s"
             , __func__, srcParsedInfo.scopeAccessSpecifier, friendedType, friendDeclStr, srcParsedInfo.namespaceList.back());
     }
 
@@ -1093,19 +1095,19 @@ namespace CppReflectionParser
         // Since struct defines new namespace for declared variables
         CXStringRef structName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         CXStringRef structDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Struct %s starts - Display name %s", __func__, structName, structDispName);
-        srcParsedInfo.namespaceList.push_back(clang_getCString(structName->str));
+        LOG("CppReflectionParser", "%s() : Struct %s starts - Display name %s", __func__, structName, structDispName);
+        srcParsedInfo.namespaceList.push_back(UTF8_TO_TCHAR(clang_getCString(structName->str)));
         String currAccessSpecifier = srcParsedInfo.scopeAccessSpecifier;
-        srcParsedInfo.scopeAccessSpecifier = "public";
+        srcParsedInfo.scopeAccessSpecifier = TCHAR("public");
 
-        String structPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), "::");
-        Logger::log("CppReflectionParser", "%s() : Struct full path name %s", __func__, structPathName);
+        String structPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
+        LOG("CppReflectionParser", "%s() : Struct full path name %s", __func__, structPathName);
 
         // Since cursor is struct declaration
         int32 bIsAbstract = clang_CXXRecord_isAbstract(cursor);
         if (!!bIsAbstract)
         {
-            Logger::log("CppReflectionParser", "%s() : Struct %s is abstract", __func__, structName);
+            LOG("CppReflectionParser", "%s() : Struct %s is abstract", __func__, structName);
         }
 
         clang_visitChildren(cursor,
@@ -1118,7 +1120,7 @@ namespace CppReflectionParser
 
         srcParsedInfo.scopeAccessSpecifier = currAccessSpecifier;
         srcParsedInfo.namespaceList.pop_back();
-        Logger::log("CppReflectionParser", "%s() : Struct %s ends", __func__, structName);
+        LOG("CppReflectionParser", "%s() : Struct %s ends", __func__, structName);
     }
 
     void visitStructMember(CXCursor cursor, SourceParsedInfo& srcParsedInfo)
@@ -1144,24 +1146,24 @@ namespace CppReflectionParser
 
             fatalAssert(tokensCount > 1, "%s() : Tokens must be atleast 2(Got %d) in case of access specifiers 'public' and (':' or 'class/struct name')", __func__, tokensCount);
             CXStringRef tokenStr(new CXStringWrapper(clang_getTokenSpelling(tu, tokens[0])));
-            access = clang_getCString(tokenStr->str);
+            access = UTF8_TO_TCHAR(clang_getCString(tokenStr->str));
 #endif
             // Since we need just string to log now cursor spelling provides base record(class/struct) name. If need to find cursor/type one approach is to use same technique used in FriendDecl visitor below
             // To check if base struct is virtual(To avoid multiple inheritance of base type)
             int32 bIsBaseVirtual = clang_isVirtualBase(cursor);
             // To check if base type is abstract we need cursor of that type declaration, We get base type by getting cursor's type
             int32 bIsBaseAbstract = clang_CXXRecord_isAbstract(clang_getTypeDeclaration(clang_getCursorType(cursor)));
-            Logger::log("CppReflectionParser", "%s() : Inherited from %s(%s and %s) with %s access specifier", __func__, cursorName
+            LOG("CppReflectionParser", "%s() : Inherited from %s(%s and %s) with %s access specifier", __func__, cursorName
                 , (!!bIsBaseAbstract)
-                ? "Abstract" : "Non-Abstract"
+                ? TCHAR("Abstract") : TCHAR("Non-Abstract")
                 , (!!bIsBaseVirtual)
-                ? "Virtual" : "Non-Virtual"
+                ? TCHAR("Virtual") : TCHAR("Non-Virtual")
                 , access);
             break;
         }
         case CXCursor_AnnotateAttr:
             // Cursor spelling contains content of annotation
-            Logger::log("CppReflectionParser", "%s() : [Access : %s] Annotated as %s", __func__, srcParsedInfo.scopeAccessSpecifier, cursorName);
+            LOG("CppReflectionParser", "%s() : [Access : %s] Annotated as %s", __func__, srcParsedInfo.scopeAccessSpecifier, cursorName);
             break;
         case CXCursor_TypeAliasDecl:
         case CXCursor_TypedefDecl:
@@ -1170,7 +1172,7 @@ namespace CppReflectionParser
             CXType type = clang_getTypedefDeclUnderlyingType(cursor);
             // Since this typedef/using decl might be type alias by itself get its canonical type
             type = clang_getCanonicalType(type);
-            Logger::log("CppReflectionParser", "%s() : %s type is being aliased as %s", __func__, clang_getTypeSpelling(type), cursorName);
+            LOG("CppReflectionParser", "%s() : %s type is being aliased as %s", __func__, clang_getTypeSpelling(type), cursorName);
             break;
         }
         case CXCursor_FieldDecl:
@@ -1192,16 +1194,16 @@ namespace CppReflectionParser
     {
         CXStringRef enumName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         CXStringRef enumDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Enum %s : Display name %s", __func__, enumName, enumDispName);
-        srcParsedInfo.namespaceList.push_back(clang_getCString(enumName->str));
+        LOG("CppReflectionParser", "%s() : Enum %s : Display name %s", __func__, enumName, enumDispName);
+        srcParsedInfo.namespaceList.push_back(UTF8_TO_TCHAR(clang_getCString(enumName->str)));
 
-        String enumPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), "::");
-        Logger::log("CppReflectionParser", "%s() : Enum %s - Full path name %s", __func__, enumName, enumPathName);
+        String enumPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
+        LOG("CppReflectionParser", "%s() : Enum %s - Full path name %s", __func__, enumName, enumPathName);
 
         int32 bIsScopedEnum = clang_EnumDecl_isScoped(cursor);
-        Logger::log("CppReflectionParser", "%s() : Enum %s : Is scoped enum(Strongly typed with Class)? %s", __func__, enumName
+        LOG("CppReflectionParser", "%s() : Enum %s : Is scoped enum(Strongly typed with Class)? %s", __func__, enumName
             , (!!bIsScopedEnum)
-            ? "true" : "false"
+            ? TCHAR("true") : TCHAR("false")
         );
 
         clang_visitChildren(cursor,
@@ -1214,12 +1216,12 @@ namespace CppReflectionParser
                 {
                 case CXCursor_AnnotateAttr:
                     // Cursor spelling contains content of annotation
-                    Logger::log("CppReflectionParser", "visitEnums() : Enum %s - Annotated as %s", enumName, cursorName);
+                    LOG("CppReflectionParser", "visitEnums() : Enum %s - Annotated as %s", enumName, cursorName);
                     break;
                 case CXCursor_EnumConstantDecl:
                 {
                     int64 enumVal = clang_getEnumConstantDeclValue(c);
-                    Logger::log("CppReflectionParser", "visitEnums() : Enum %s - Value(name %s, value %ld)", enumName, cursorName, enumVal);
+                    LOG("CppReflectionParser", "visitEnums() : Enum %s - Value(name %s, value %ld)", enumName, cursorName, enumVal);
                     return CXChildVisit_Recurse;
                 }
                 default:
@@ -1237,10 +1239,10 @@ namespace CppReflectionParser
     {
         CXStringRef fieldName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         CXStringRef fieldDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Field %s - Display name %s", __func__, fieldName, fieldDispName);
+        LOG("CppReflectionParser", "%s() : Field %s - Display name %s", __func__, fieldName, fieldDispName);
 
-        String fieldPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), "::");
-        Logger::log("CppReflectionParser", "%s() : Field %s - Base path name %s", __func__, fieldName, fieldPathName);
+        String fieldPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
+        LOG("CppReflectionParser", "%s() : Field %s - Base path name %s", __func__, fieldName, fieldPathName);
 
         CXType fieldType = clang_getCursorType(cursor);
         CXType fieldCanonicalType = clang_getCanonicalType(fieldType);
@@ -1251,10 +1253,10 @@ namespace CppReflectionParser
         {
             typeName = new CXStringWrapper(clang_getTypeSpelling(fieldType));
         }
-        Logger::log("CppReflectionParser", "%s() : Field %s - Field typename %s, Canonical typename %s, Type kind %s", __func__, fieldName, typeName, canonicalTypeName, typeKindName);
+        LOG("CppReflectionParser", "%s() : Field %s - Field typename %s, Canonical typename %s, Type kind %s", __func__, fieldName, typeName, canonicalTypeName, typeKindName);
         if (fieldType.kind == CXType_LValueReference)
         {
-            Logger::error("CppReflectionParser", "%s() : Field %s - Having reference member field is not good!", __func__, fieldName);
+            LOG_ERROR("CppReflectionParser", "%s() : Field %s - Having reference member field is not good!", __func__, fieldName);
             return;
         }
 
@@ -1268,7 +1270,7 @@ namespace CppReflectionParser
                 {
                 case CXCursor_AnnotateAttr:
                     // Cursor spelling contains content of annotation
-                    Logger::log("CppReflectionParser", "visitMemberField() : Field %s - Annotated as %s", fieldName, cursorName);
+                    LOG("CppReflectionParser", "visitMemberField() : Field %s - Annotated as %s", fieldName, cursorName);
                     break;
                 default:
                     CppReflectionParser::visitTUCusor(c, *(SourceParsedInfo*)(clientData));
@@ -1285,10 +1287,10 @@ namespace CppReflectionParser
     {
         CXStringRef varName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         CXStringRef varDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Variable %s - Display name %s", __func__, varName, varDispName);
+        LOG("CppReflectionParser", "%s() : Variable %s - Display name %s", __func__, varName, varDispName);
 
-        String fieldPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), "::");
-        Logger::log("CppReflectionParser", "%s() : Variable %s - Base path name %s", __func__, varName, fieldPathName);
+        String fieldPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
+        LOG("CppReflectionParser", "%s() : Variable %s - Base path name %s", __func__, varName, fieldPathName);
 
         CXType fieldType = clang_getCursorType(cursor);
         CXType fieldCanonicalType = clang_getCanonicalType(fieldType);
@@ -1299,7 +1301,7 @@ namespace CppReflectionParser
         {
             typeName = new CXStringWrapper(clang_getTypeSpelling(fieldType));
         }
-        Logger::log("CppReflectionParser", "%s() : Variable %s - Variable typename %s, Canonical typename %s, Type kind %s", __func__, varName, typeName, canonicalTypeName, typeKindName);
+        LOG("CppReflectionParser", "%s() : Variable %s - Variable typename %s, Canonical typename %s, Type kind %s", __func__, varName, typeName, canonicalTypeName, typeKindName);
 
         clang_visitChildren(cursor,
             [](CXCursor c, CXCursor p, CXClientData clientData)
@@ -1311,7 +1313,7 @@ namespace CppReflectionParser
                 {
                 case CXCursor_AnnotateAttr:
                     // Cursor spelling contains content of annotation
-                    Logger::log("CppReflectionParser", "visitVariableDecl() : Field %s - Annotated as %s", fieldName, cursorName);
+                    LOG("CppReflectionParser", "visitVariableDecl() : Field %s - Annotated as %s", fieldName, cursorName);
                     break;
                 default:
                     CppReflectionParser::visitTUCusor(c, *(SourceParsedInfo*)(clientData));
@@ -1328,10 +1330,10 @@ namespace CppReflectionParser
     {
         CXStringRef funcName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         CXStringRef funcDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Function %s - Display name %s", __func__, funcName, funcDispName);
+        LOG("CppReflectionParser", "%s() : Function %s - Display name %s", __func__, funcName, funcDispName);
 
-        String funcPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), "::");
-        Logger::log("CppReflectionParser", "%s() : Function %s - Base path name %s", __func__, funcName, funcPathName);
+        String funcPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
+        LOG("CppReflectionParser", "%s() : Function %s - Base path name %s", __func__, funcName, funcPathName);
 
         clang_visitChildren(cursor,
             [](CXCursor c, CXCursor p, CXClientData clientData)
@@ -1343,7 +1345,7 @@ namespace CppReflectionParser
                 {
                 case CXCursor_AnnotateAttr:
                     // Cursor spelling contains content of annotation
-                    Logger::log("CppReflectionParser", "visitNonMemberFunctions() : Function %s - Annotated as %s", funcName, cursorName);
+                    LOG("CppReflectionParser", "visitNonMemberFunctions() : Function %s - Annotated as %s", funcName, cursorName);
                     break;
                 case CXCursor_ParmDecl:
                     // Since we handle this in print function signature
@@ -1363,24 +1365,24 @@ namespace CppReflectionParser
     {
         CXStringRef funcName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
         CXStringRef funcDispName(new CXStringWrapper(clang_getCursorDisplayName(cursor)));
-        Logger::log("CppReflectionParser", "%s() : Function %s - Display name %s", __func__, funcName, funcDispName);
+        LOG("CppReflectionParser", "%s() : Function %s - Display name %s", __func__, funcName, funcDispName);
 
-        String funcPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), "::");
-        Logger::log("CppReflectionParser", "%s() : Function %s - Base path name %s", __func__, funcName, funcPathName);
+        String funcPathName = String::join(srcParsedInfo.namespaceList.cbegin(), srcParsedInfo.namespaceList.cend(), TCHAR("::"));
+        LOG("CppReflectionParser", "%s() : Function %s - Base path name %s", __func__, funcName, funcPathName);
 
         int32 bIsPureVirtual = clang_CXXMethod_isPureVirtual(cursor);
         int32 bIsVirtual = clang_CXXMethod_isVirtual(cursor);
         int32 bIsStatic = clang_CXXMethod_isStatic(cursor);
         int32 bIsConst = clang_CXXMethod_isConst(cursor);
-        Logger::log("CppReflectionParser", "%s() : Function %s - %s%s", __func__, funcName
+        LOG("CppReflectionParser", "%s() : Function %s - %s%s", __func__, funcName
             , (!!bIsStatic)
-            ? "Static and "
+            ? TCHAR("Static and ")
             : (!!bIsConst)
-            ? "Const and " : ""
+            ? TCHAR("Const and ") : TCHAR("")
             , (!!bIsVirtual)
             ? (!!bIsPureVirtual)
-            ? "Pure virtual" : "virtual"
-            : "Non-virtual"
+            ? TCHAR("Pure virtual") : TCHAR("virtual")
+            : TCHAR("Non-virtual")
         );
         // If not pure virtual method then print all base methods
         if(bIsVirtual && !bIsPureVirtual)
@@ -1390,7 +1392,7 @@ namespace CppReflectionParser
             // Gives up-to only one level
             clang_getOverriddenCursors(cursor, &baseCursors, &numOverrides);
             uint32 levelFromThisOverride = 1;
-            Logger::log("CppReflectionParser", "%s() : Function %s - Overrides following methods ---->", __func__, funcName);
+            LOG("CppReflectionParser", "%s() : Function %s - Overrides following methods ---->", __func__, funcName);
             std::vector<ArrayView<CXCursor>> currOverridenCursors{ ArrayView<CXCursor>(baseCursors, numOverrides) };
             while (!currOverridenCursors.empty())
             {
@@ -1404,7 +1406,7 @@ namespace CppReflectionParser
                         // CXType overridenClassType = clang_Type_getClassType(clang_getCursorType(overridenCursors[i]));
                         // Semantic parent gives place where this cursor is declared in
                         CXType overridenClassType = clang_getCursorType(clang_getCursorSemanticParent(overridenCursors[i]));
-                        Logger::log("CppReflectionParser", "%s() : Function %s - (Level %d) method %s of %s", __func__, funcName
+                        LOG("CppReflectionParser", "%s() : Function %s - (Level %d) method %s of %s", __func__, funcName
                             , levelFromThisOverride, clang_getCursorSpelling(overridenCursors[i]), clang_getTypeSpelling(overridenClassType));
 
                         // Add overrides of this base class's function
@@ -1431,10 +1433,10 @@ namespace CppReflectionParser
         CXRefQualifierKind methodCalledRefKind = clang_Type_getCXXRefQualifier(clang_getCursorType(cursor));
         if (methodCalledRefKind != CXRefQualifier_None)
         {
-            Logger::log("CppReflectionParser", "%s() : Function %s can be called from %s-value reference only", __func__
+            LOG("CppReflectionParser", "%s() : Function %s can be called from %s-value reference only", __func__
                 , funcName
                 , (methodCalledRefKind == CXRefQualifier_LValue)
-                ? "l" : "r"
+                ? TCHAR("l") : TCHAR("r")
             );
         }
         
@@ -1447,14 +1449,14 @@ namespace CppReflectionParser
                 switch (cursorKind)
                 {
                 case CXCursor_CXXFinalAttr:
-                    Logger::log("CppReflectionParser", "visitMemberCppMethods() : Function %s - virtual is made final", funcName);
+                    LOG("CppReflectionParser", "visitMemberCppMethods() : Function %s - virtual is made final", funcName);
                     break;
                 case CXCursor_CXXOverrideAttr:
-                    Logger::log("CppReflectionParser", "visitMemberCppMethods() : Function %s - Has attribute override", funcName);
+                    LOG("CppReflectionParser", "visitMemberCppMethods() : Function %s - Has attribute override", funcName);
                     break;
                 case CXCursor_AnnotateAttr:
                     // Cursor spelling contains content of annotation
-                    Logger::log("CppReflectionParser", "visitMemberCppMethods() : Function %s - Annotated as %s", funcName, cursorName);
+                    LOG("CppReflectionParser", "visitMemberCppMethods() : Function %s - Annotated as %s", funcName, cursorName);
                     break;
                 case CXCursor_ParmDecl:
                     // Since we handle this in print function signature
@@ -1477,23 +1479,23 @@ namespace SampleCode
     void testLibClangParsing(String srcDir) noexcept
     {
         CXIndex index = clang_createIndex(0, 0);
-        String argRefParseDef("-D__REF_PARSE__");
-        String argIncludeModulePublic("-ID:/Workspace/VisualStudio/GameEngine/Source/Runtime/ProgramCore/Public");
-        String argIncludeModuleGen("-ID:/Workspace/VisualStudio/GameEngine/Build/Source/Runtime/ProgramCore/Generated/Public");
-        const AChar* args[] = { argIncludeModuleGen.getChar(), argIncludeModulePublic.getChar(), argRefParseDef.getChar()};
+        std::string argRefParseDef("-D__REF_PARSE__");
+        std::string argIncludeModulePublic("-ID:/Workspace/VisualStudio/GameEngine/Source/Runtime/ProgramCore/Public");
+        std::string argIncludeModuleGen("-ID:/Workspace/VisualStudio/GameEngine/Build/Source/Runtime/ProgramCore/Generated/Public");
+        const AChar* args[] = { argIncludeModuleGen.c_str(), argIncludeModulePublic.c_str(), argRefParseDef.c_str()};
         // Use parse TU functions if need to customize certain options while compiling
         // Header.H - H has to be capital but why?
         // It is okay if we miss some insignificant includes as they are ignored and parsing continues
         CXTranslationUnit unit = clang_parseTranslationUnit(
             index,
-            PathFunctions::combinePath(srcDir, "SampleHeader.H").getChar()
+            TCHAR_TO_ANSI(PathFunctions::combinePath(srcDir, TCHAR("SampleHeader.H")).getChar())
             , args, 3, nullptr, 0, CXTranslationUnit_KeepGoing);
         //CXTranslationUnit unit = clang_createTranslationUnitFromSourceFile(index
         //    , PathFunctions::combinePath(srcDir, "Header.H").getChar()
         //    , 3, args, 0, nullptr);
         if (unit == nullptr)
         {
-            Logger::error("TestCode", "Unable to parse translation unit. Quitting.");
+            LOG_ERROR("TestCode", "Unable to parse translation unit. Quitting.");
             return;
         }
         else
@@ -1541,11 +1543,11 @@ namespace SampleCode
         void modifyValues(int32 a)
         {
             normalInt *= a;
-            normalString = "Modified by func " + normalString;
-            staticVal = "Modified by func " + staticVal;
+            normalString = TCHAR("Modified by func ") + normalString;
+            staticVal = TCHAR("Modified by func ") + staticVal;
         }
     };
-    String TestDataProperties::staticVal = "Hello World";
+    String TestDataProperties::staticVal = TCHAR("Hello World");
     String globalVal;
     int32 globalMod(int32& reminder, int32 dividend, int32 divisor)
     {
@@ -1556,7 +1558,7 @@ namespace SampleCode
 
     void testTypesAndProperties()
     {
-        Logger::log("Test", "Test type info \n%s\n%s\n%s\n%s\n%s\n%s\n%s"
+        LOG("Test", "Test type info \n%s\n%s\n%s\n%s\n%s\n%s\n%s"
             // Referenced variable is const
             , *typeInfoFrom<const int32&>()
             , *typeInfoFrom<const int32&&>()
@@ -1569,7 +1571,7 @@ namespace SampleCode
             , *typeInfoFrom<int32 const* const&&>()
             , *typeInfoFrom<std::vector<int32>&>()
         );
-        Logger::log("Test", "Test type info %d, %d, %d"
+        LOG("Test", "Test type info %d, %d, %d"
             , *typeInfoFrom<const int32&>() == *typeInfoFrom<const int32&&>()
             , *typeInfoFrom<const int32*>() == *typeInfoFrom<int32 const* const&>()
             , *typeInfoFrom<int32 const* const&>() == *typeInfoFrom<int32 const* const&&>()
@@ -1587,7 +1589,7 @@ namespace SampleCode
         GlobalFieldWrapperImpl<String> staticValProp(&TestDataProperties::staticVal);
         GlobalFieldWrapperImpl<String> globalValProp(&SampleCode::globalVal);
 
-        Logger::log("Test", "Before setting values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
+        LOG("Test", "Before setting values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
             *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr
             , (intPtrProp.getAsType<int32*>(testDataProps)) ? reinterpret_cast<uint64>(*intPtrProp.getAsType<int32*>(testDataProps).vPtr) : 0
             , (intPtrProp.getAsType<int32*>(testDataProps) && *intPtrProp.getAsType<int32*>(testDataProps).vPtr) ? **intPtrProp.getAsType<int32*>(testDataProps).vPtr : 0
@@ -1598,8 +1600,8 @@ namespace SampleCode
         );
 
         normalIntProp.setFromType<int32>(28u, &testDataProps);
-        normalIntProp.setFromType("test", &testDataProps);
-        normalStrProp.setFromType<String>("Hello this is normal str", testDataProps);
+        normalIntProp.setFromType(TCHAR("test"), &testDataProps);
+        normalStrProp.setFromType<String>(TCHAR("Hello this is normal str"), testDataProps);
         intPtrProp.setFromType(&tempVal, testDataProps);
         constIntPtrProp.setFromType(&tempVal, testDataProps);
         **intPtrProp.getAsType<int32*>(testDataProps).vPtr = 9;
@@ -1611,10 +1613,10 @@ namespace SampleCode
         {
             *constIntPtrProp.getAsType<const int32*>(testDataProps).vPtr = &tempVal2;
         }
-        staticValProp.setFromType<String>("This is static");
-        globalValProp.setFromType<String>("This is global static");
+        staticValProp.setFromType<String>(TCHAR("This is static"));
+        globalValProp.setFromType<String>(TCHAR("This is global static"));
 
-        Logger::log("Test", "After setting values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
+        LOG("Test", "After setting values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
             *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr
             , (intPtrProp.getAsType<int32*>(testDataProps)) ? reinterpret_cast<uint64>(*intPtrProp.getAsType<int32*>(testDataProps).vPtr) : 0
             , (intPtrProp.getAsType<int32*>(testDataProps) && *intPtrProp.getAsType<int32*>(testDataProps).vPtr) ? **intPtrProp.getAsType<int32*>(testDataProps).vPtr : 0
@@ -1628,7 +1630,7 @@ namespace SampleCode
         GlobalFunctionWrapperImpl<int32, int32&, int32, int32> modFunc(&globalMod);
 
         modifierFunc.invokeVoid(testDataProps, 34);
-        Logger::log("Test", "After Modify values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
+        LOG("Test", "After Modify values : \n    normalInt %d\n    normatString %s\n    intPtr 0x%llx(%d)\n    constIntPtr 0x%llx(%d)\n    staticVal %s\n    globalVal %s",
             *normalIntProp.getAsType<int32>(testDataProps).vPtr, *normalStrProp.getAsType<String>(testDataProps).vPtr
             , (intPtrProp.getAsType<int32*>(testDataProps)) ? reinterpret_cast<uint64>(*intPtrProp.getAsType<int32*>(testDataProps).vPtr) : 0
             , (intPtrProp.getAsType<int32*>(testDataProps) && *intPtrProp.getAsType<int32*>(testDataProps).vPtr) ? **intPtrProp.getAsType<int32*>(testDataProps).vPtr : 0
@@ -1641,13 +1643,13 @@ namespace SampleCode
         int32 q;
         int32 r;
         modFunc.invoke(q, r, 4, 3);
-        Logger::log("Test", "Quotient %d, Remainder %d, Dividend %d, Divisor %d", q, r, 4, 3);
+        LOG("Test", "Quotient %d, Remainder %d, Dividend %d, Divisor %d", q, r, 4, 3);
     }
 
 
     void testRegex()
     {
-        String testStr = "\n\
+        String testStr = TCHAR("\n\
         Hello {{name}}, \n\
         {{ \n\
         This must match {{Match2}} \n\
@@ -1657,70 +1659,70 @@ namespace SampleCode
                 This is inner code for {{name}}\
                 {{/PrintInner}} \n\
             }\n\
-        }};\n";
-        String testStr2 = "This is going to be used as partial \n\
+        }};\n");
+        String testStr2 = TCHAR("This is going to be used as partial \n\
             Peoples Details :{{!List of peoples}}\n\
             {{#Run}} \
                 {{>Peps}} \
             {{/Run}} \
-        ";
+        ");
 #if 0 // Prints the regex matched values and its indices
         std::vector<std::smatch> allMatches;
-        std::regex searchPattern("\\{\\{([^{}]+)\\}\\}", std::regex_constants::ECMAScript);
+        StringRegex searchPattern(TCHAR("\\{\\{([^{}]+)\\}\\}"), std::regex_constants::ECMAScript);
 
         auto startItr = testStr.cbegin();
-        std::smatch matches;
+        StringMatch matches;
         while (std::regex_search(startItr, testStr.cend(), matches, searchPattern))
         {
             allMatches.push_back(matches);
-            Logger::log("Test", "Matched n = %d", matches.size());
-            Logger::log("Test", "Prefix : %s", matches.prefix().str());
+            LOG("Test", "Matched n = %d", matches.size());
+            LOG("Test", "Prefix : %s", matches.prefix().str());
             for (auto& match : matches)
             {
-                Logger::log("Test", "Match : %s", match.str());
+                LOG("Test", "Match : %s", match.str());
             }
-            Logger::log("Test", "suffix : %s", matches.suffix().str());
+            LOG("Test", "suffix : %s", matches.suffix().str());
             startItr = matches.suffix().first;
         }
 
-        for (const std::smatch& match : allMatches)
+        for (const StringMatch& match : allMatches)
         {
-            const std::ssub_match& submatch = match[match.size() - 1];
-            const std::ssub_match& wholesubmatch = match[0];
-            Logger::log("Test", "Must replace with value of %s, from index %d to %d"
+            const StringSubmatch& submatch = match[match.size() - 1];
+            const StringSubmatch& wholesubmatch = match[0];
+            LOG("Test", "Must replace with value of %s, from index %d to %d"
                 , submatch.str(), std::distance(testStr.cbegin(), wholesubmatch.first), std::distance(testStr.cbegin(), wholesubmatch.second));
         }
 #endif
 
         std::unordered_map<String, FormatArg> args
         {
-            {"name" , "Jeslas Pravin"},
-            {"Match2", 8235},
-            {"HelloMe", 123.08},
-            {"PrintInner", false}
+            {TCHAR("name") , TCHAR("Jeslas Pravin")},
+            {TCHAR("Match2"), 8235},
+            {TCHAR("HelloMe"), 123.08},
+            {TCHAR("PrintInner"), false}
         };
         std::unordered_map<String, FormatArg> args2
         {
-            {"name" , "Subity Jerald"},
-            {"Match2", 8265},
-            {"HelloMe", *typeInfoFrom<uint32>() },
-            {"PrintInner", true}
+            {TCHAR("name") , TCHAR("Subity Jerald")},
+            {TCHAR("Match2"), 8265},
+            {TCHAR("HelloMe"), *typeInfoFrom<uint32>() },
+            {TCHAR("PrintInner"), true}
         };
         MustacheStringFormatter peps{ testStr };
         MustacheStringFormatter mustacheTest{ testStr2 };
-        Logger::log("Test", "Mustache formatted \n%s \n\tand another \n%s", peps.formatBasic(args), peps.formatBasic(args2));
+        LOG("Test", "Mustache formatted \n%s \n\tand another \n%s", peps.formatBasic(args), peps.formatBasic(args2));
 
         MustacheContext context1
         {
-            .sectionContexts = { { "Run", { MustacheContext{.args = args }, MustacheContext{.args = args2 } } } }
+            .sectionContexts = { { TCHAR("Run"), { MustacheContext{.args = args }, MustacheContext{.args = args2 } } } }
         };
-        Logger::log("Test", "Mustache rendered \n%s", mustacheTest.render(
+        LOG("Test", "Mustache rendered \n%s", mustacheTest.render(
             context1
-            , {{ "Peps", peps }}
+            , {{ TCHAR("Peps"), peps }}
         ));
 
-        String testStr3 = "ID : {{Count}}{{#MSectFormat}}{{!This will be replaced}}\
-        {{#CanRecurse}}\n{{>Recurse}}\n{{/CanRecurse}}{{/MSectFormat}}";
+        String testStr3 = TCHAR("ID : {{Count}}{{#MSectFormat}}{{!This will be replaced}}\
+        {{#CanRecurse}}\n{{>Recurse}}\n{{/CanRecurse}}{{/MSectFormat}}");
         MustacheStringFormatter sectFormatter{ testStr3 };
         class TestDynamicFormatData
         {
@@ -1740,16 +1742,16 @@ namespace SampleCode
 
             String getCount() const
             {
-                return std::to_string(count);
+                return String::toString(count);
             }
 
             String canRecurse() const
             {
                 if (count < 10)
                 {
-                    return std::to_string(count);
+                    return String::toString(count);
                 }
-                return "";
+                return {};
             }
         };
         TestDynamicFormatData dynDataTest
@@ -1762,17 +1764,17 @@ namespace SampleCode
         {
             .args = 
                 {
-                    {"CanRecurse", FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse)}
-                    , {"Count", FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::getCount)}
+                    {TCHAR("CanRecurse"), FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse)}
+                    , {TCHAR("Count"), FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::getCount)}
                 },
-            .sectionFormatters = { {"MSectFormat", MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat)} }
+            .sectionFormatters = { {TCHAR("MSectFormat"), MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat)} }
         };
-        Logger::log("Test", "Mustache render dynamically modified recursive loop \n%s", sectFormatter.render(
+        LOG("Test", "Mustache render dynamically modified recursive loop \n%s", sectFormatter.render(
             context2
-            , { {"Recurse", sectFormatter} }
+            , { {TCHAR("Recurse"), sectFormatter} }
         ));
 
-        Logger::log("Test", PropertyHelper::getValidSymbolName("class <Niown>>"));
+        LOG("Test", "%s", PropertyHelper::getValidSymbolName(TCHAR("class <Niown>>")));
     }
 
     class TestPropertyClass
@@ -1807,7 +1809,7 @@ namespace SampleCode
 
         void printNewNameStr() const
         {
-            Logger::log("TestPropertyClass", "%s() : New Name str %s", __func__, newNameStr);
+            LOG("TestPropertyClass", "%s() : New Name str %s", __func__, newNameStr);
         }
 
         void setNewNameStr(const String& newName)
@@ -1818,7 +1820,7 @@ namespace SampleCode
         static void incAndPrintInt()
         {
             staticInteger++;
-            Logger::log("TestPropertyClass", "%s() : New int value %d", __func__, staticInteger);
+            LOG("TestPropertyClass", "%s() : New int value %d", __func__, staticInteger);
         }
     };
     int32 TestPropertyClass::staticInteger = 8235;
@@ -1830,7 +1832,7 @@ namespace SampleCode
         {
             // Just for testing, Since only runtime game/engine modules can have reflected data
             // Tools do not have reflection
-            ModuleManager::get()->loadModule("ReflectionRuntime");
+            ModuleManager::get()->loadModule(TCHAR("ReflectionRuntime"));
 
             IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<TestPropertyClass*>()
                 , { &ThisType::createTestPropertyClassPtrProperty, &ThisType::initTestPropertyClassPtrProperty });
@@ -1841,13 +1843,13 @@ namespace SampleCode
             IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::set<uint64>>()
                 , { &ThisType::createstd__set_uint64_Property, &ThisType::initstd__set_uint64_Property });
 
-            IReflectionRuntimeModule::get()->registerClassFactory("TestPropertyClass", typeInfoFrom<TestPropertyClass>()
+            IReflectionRuntimeModule::get()->registerClassFactory(TCHAR("TestPropertyClass"), typeInfoFrom<TestPropertyClass>()
                 , { &ThisType::createTestPropertyClassProperty, &ThisType::initTestPropertyClassProperty });
         }
 
         static BaseProperty* createTestPropertyClassPtrProperty()
         {
-            QualifiedProperty* prop = (new QualifiedProperty("TestPropertyClass*", typeInfoFrom<TestPropertyClass*>()));
+            QualifiedProperty* prop = (new QualifiedProperty(TCHAR("TestPropertyClass*"), typeInfoFrom<TestPropertyClass*>()));
             return prop;
         }
         static void initTestPropertyClassPtrProperty(BaseProperty* prop)
@@ -1858,7 +1860,7 @@ namespace SampleCode
 
         static BaseProperty* createstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property()
         {
-            BaseProperty* prop = new PairProperty("std::pair<const int32, TestPropertyClass::TestInnerStruct>", typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>());
+            BaseProperty* prop = new PairProperty(TCHAR("std::pair<const int32, TestPropertyClass::TestInnerStruct>"), typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>());
             return prop;
         }
         static void initstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property(BaseProperty* prop)
@@ -1871,7 +1873,7 @@ namespace SampleCode
 
         static BaseProperty* createstd__set_uint64_Property()
         {
-            BaseProperty* prop = new ContainerPropertyImpl<std::set<uint64>>("std::set<uint64>", typeInfoFrom<std::set<uint64>>());
+            BaseProperty* prop = new ContainerPropertyImpl<std::set<uint64>>(TCHAR("std::set<uint64>"), typeInfoFrom<std::set<uint64>>());
             return prop;
         }
         static void initstd__set_uint64_Property(BaseProperty* prop)
@@ -1883,7 +1885,7 @@ namespace SampleCode
 
         static BaseProperty* createstd__map_int32__TestPropertyClass__TestInnerStruct_Property()
         {
-            BaseProperty* prop = new MapProperty("std::map<int32, TestPropertyClass::TestInnerStruct>", typeInfoFrom<std::map<int32, TestPropertyClass::TestInnerStruct>>());
+            BaseProperty* prop = new MapProperty(TCHAR("std::map<int32, TestPropertyClass::TestInnerStruct>"), typeInfoFrom<std::map<int32, TestPropertyClass::TestInnerStruct>>());
             return prop;
         }
         static void initstd__map_int32__TestPropertyClass__TestInnerStruct_Property(BaseProperty* prop)
@@ -1901,7 +1903,7 @@ namespace SampleCode
         }
         static ClassProperty* createTestPropertyClassProperty()
         {
-            ClassProperty* prop = (new ClassProperty("TestPropertyClass", typeInfoFrom<TestPropertyClass>()));
+            ClassProperty* prop = (new ClassProperty(TCHAR("TestPropertyClass"), typeInfoFrom<TestPropertyClass>()));
             return prop;
         }
         static void initTestPropertyClassProperty(ClassProperty* prop)
@@ -1909,34 +1911,34 @@ namespace SampleCode
             prop->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<TestPropertyClass*>())
-                ->addFunctionParamProperty("newName", IReflectionRuntimeModule::getType<String>())
+                ->addFunctionParamProperty(TCHAR("newName"), IReflectionRuntimeModule::getType<String>())
                 ->constructFuncPointer<GlobalFunctionWrapperImpl<TestPropertyClass*, String>>(&ThisType::TestPropertyClassCtor);
-            prop->addMemberFunc("printNewNameStr")
+            prop->addMemberFunc(TCHAR("printNewNameStr"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void>())
                 ->constructFuncPointer<MemberFunctionWrapperImpl<const TestPropertyClass, void>>(&TestPropertyClass::printNewNameStr);
 
-            prop->addStaticField("staticInteger")
+            prop->addStaticField(TCHAR("staticInteger"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<int32>())
                 ->constructFieldPtr<GlobalFieldWrapperImpl<int32>>(&TestPropertyClass::staticInteger);
             
-            prop->addMemberField("idToSection")
+            prop->addMemberField(TCHAR("idToSection"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<std::map<int32, TestPropertyClass::TestInnerStruct>>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, std::map<int32, TestPropertyClass::TestInnerStruct>>>(&TestPropertyClass::idToSection);
 
-            prop->addMemberField("newNameStr")
+            prop->addMemberField(TCHAR("newNameStr"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<String>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, String>>(&TestPropertyClass::newNameStr);
 
-            prop->addMemberField("nextClass")
+            prop->addMemberField(TCHAR("nextClass"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<TestPropertyClass*>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, TestPropertyClass*>>(&TestPropertyClass::nextClass);
 
-            prop->addMemberField("handles")
+            prop->addMemberField(TCHAR("handles"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<std::set<uint64>>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, std::set<uint64>>>(&TestPropertyClass::handles);
@@ -1951,13 +1953,13 @@ namespace SampleCode
             IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::vector<String>>()
                 , { &ThisType::createstd_vector_StringProperty, &ThisType::initstd_vector_StringProperty });
 
-            IReflectionRuntimeModule::get()->registerClassFactory("TestPropertyClass::TestInnerStruct", typeInfoFrom<TestPropertyClass::TestInnerStruct>()
+            IReflectionRuntimeModule::get()->registerClassFactory(TCHAR("TestPropertyClass::TestInnerStruct"), typeInfoFrom<TestPropertyClass::TestInnerStruct>()
                 , { &ThisType::createTestPropertyClass_TestInnerStructProperty, &ThisType::initTestPropertyClass_TestInnerStructProperty });
         }
 
         static BaseProperty* createstd_vector_StringProperty()
         {
-            BaseProperty* prop = new ContainerPropertyImpl<std::vector<String>>("std::vector<String>", typeInfoFrom<std::vector<String>>());
+            BaseProperty* prop = new ContainerPropertyImpl<std::vector<String>>(TCHAR("std::vector<String>"), typeInfoFrom<std::vector<String>>());
             return prop;
         }
         static void initstd_vector_StringProperty(BaseProperty* prop)
@@ -1969,17 +1971,17 @@ namespace SampleCode
 
         static ClassProperty* createTestPropertyClass_TestInnerStructProperty()
         {
-            ClassProperty* prop = (new ClassProperty("TestPropertyClass::TestInnerStruct", typeInfoFrom<TestPropertyClass::TestInnerStruct>()));
+            ClassProperty* prop = (new ClassProperty(TCHAR("TestPropertyClass::TestInnerStruct"), typeInfoFrom<TestPropertyClass::TestInnerStruct>()));
             return prop;
         }
         static void initTestPropertyClass_TestInnerStructProperty(ClassProperty* prop)
         {
-            prop->addMemberField("names")
+            prop->addMemberField(TCHAR("names"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<std::vector<String>>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass::TestInnerStruct, std::vector<String>>>(&TestPropertyClass::TestInnerStruct::names);
 
-            prop->addMemberField("numNames")
+            prop->addMemberField(TCHAR("numNames"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<uint32>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass::TestInnerStruct, uint32>>(&TestPropertyClass::TestInnerStruct::numNames);
@@ -1991,36 +1993,36 @@ namespace SampleCode
         const ClassProperty* prop = IReflectionRuntimeModule::getClassType<TestPropertyClass>();
         for (const FunctionProperty* ctor : prop->constructors)
         {
-            String args = "";
+            String args;
             if (!ctor->funcParamsProp.empty())
             {
-                args += ctor->funcParamsProp[0].second->name + " " + ctor->funcParamsProp[0].first;
+                args += ctor->funcParamsProp[0].second->name + TCHAR(" ") + ctor->funcParamsProp[0].first;
                 for (int32 i = 1; i < ctor->funcParamsProp.size(); ++i)
                 {
-                    args += ", " + ctor->funcParamsProp[i].second->name + " " + ctor->funcParamsProp[i].first;
+                    args += TCHAR(", ") + ctor->funcParamsProp[i].second->name + TCHAR(" ") + ctor->funcParamsProp[i].first;
                 }
             }
-            Logger::log("Test", "Class %s: CTor %s(%s)", prop->name, ctor->name, args);
+            LOG("Test", "Class %s: CTor %s(%s)", prop->name, ctor->name, args);
         }
         for (const FunctionProperty* memFunc : prop->memberFunctions)
         {
-            String args = "";
+            String args;
             if (!memFunc->funcParamsProp.empty())
             {
-                args += memFunc->funcParamsProp[0].second->name + " " + memFunc->funcParamsProp[0].first;
+                args += memFunc->funcParamsProp[0].second->name + TCHAR(" ") + memFunc->funcParamsProp[0].first;
                 for (int32 i = 1; i < memFunc->funcParamsProp.size(); ++i)
                 {
-                    args += ", " + memFunc->funcParamsProp[i].second->name + " " + memFunc->funcParamsProp[i].first;
+                    args += TCHAR(", ") + memFunc->funcParamsProp[i].second->name + TCHAR(" ") + memFunc->funcParamsProp[i].first;
                 }
             }
-            Logger::log("Test", "Class %s: Func %s %s(%s)", prop->name, memFunc->funcReturnProp->name, memFunc->name, args);
+            LOG("Test", "Class %s: Func %s %s(%s)", prop->name, memFunc->funcReturnProp->name, memFunc->name, args);
         }
         for (const FieldProperty* memField : prop->memberFields)
         {
-            Logger::log("Test", "Class %s: Field %s %s;", prop->name, memField->field->name, memField->name);
+            LOG("Test", "Class %s: Field %s %s;", prop->name, memField->field->name, memField->name);
         }
         TestPropertyClass* object = nullptr;
-        if (static_cast<const GlobalFunctionWrapper*>(prop->constructors[0]->funcPtr)->invoke<TestPropertyClass*, String>(object, "Jeslas Pravin"))
+        if (static_cast<const GlobalFunctionWrapper*>(prop->constructors[0]->funcPtr)->invoke<TestPropertyClass*, String>(object, TCHAR("Jeslas Pravin")))
         {
             static_cast<const MemberFunctionWrapper*>(prop->memberFunctions[0]->funcPtr)->invokeVoid(object);
         }
@@ -2031,272 +2033,264 @@ namespace SampleCode
         String appName;
         String appDir = FileSystemFunctions::applicationDirectory(appName);
         appName = PathFunctions::stripExtension(appName);
-        std::vector<String> templateFiles = FileSystemFunctions::listFiles(PathFunctions::toAbsolutePath("../../../Source/Tools/ModuleReflectTool/Templates", appDir), true, "*.mustache");
+        std::vector<String> templateFiles = FileSystemFunctions::listFiles(PathFunctions::toAbsolutePath(TCHAR("../../../Source/Tools/ModuleReflectTool/Templates"), appDir), true, TCHAR("*.mustache"));
         std::unordered_map<String, MustacheStringFormatter> templates;
         templates.reserve(templateFiles.size());
         for (const String& filePath : templateFiles)
         {
-            PlatformFile file(filePath);
-            file.setFileFlags(EFileFlags::Read);
-            file.setCreationAction(EFileFlags::OpenExisting);
-            file.setSharingMode(EFileSharing::ReadOnly);
-            file.openFile();
-
             String fileContent;
-            file.read(fileContent);
-            if (!fileContent.empty())
+            if (FileHelper::readString(fileContent, filePath) && !fileContent.empty())
             {
-                templates.insert({ PathFunctions::stripExtension(file.getFileName()), MustacheStringFormatter(fileContent) });
+                templates.insert({ PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(filePath)), MustacheStringFormatter(fileContent) });
             }
-            file.closeFile();
         }
 
         MustacheContext headerFileContext;
-        headerFileContext.args["HeaderFileId"] = PropertyHelper::getValidSymbolName(appName);
+        headerFileContext.args[TCHAR("HeaderFileId")] = PropertyHelper::getValidSymbolName(appName);
         // #ReflectTypes contexts
         {
             std::vector<MustacheContext> reflectTypesContexts;
 
             MustacheContext& reflectClassCntx = reflectTypesContexts.emplace_back();
-            reflectClassCntx.args["LineNumber"] = 10;
-            reflectClassCntx.args["TypeName"] = "TestPropertyClass";
-            reflectClassCntx.args["IsClass"] = true;
-            reflectClassCntx.args["IsBaseType"] = true;
+            reflectClassCntx.args[TCHAR("LineNumber")] = 10;
+            reflectClassCntx.args[TCHAR("TypeName")] = TCHAR("TestPropertyClass");
+            reflectClassCntx.args[TCHAR("IsClass")] = true;
+            reflectClassCntx.args[TCHAR("IsBaseType")] = true;
 
             MustacheContext& reflectStructCntx = reflectTypesContexts.emplace_back();
-            reflectStructCntx.args["LineNumber"] = 14;
-            reflectStructCntx.args["TypeName"] = "TestPropertyClass::TestInnerStruct";
-            reflectStructCntx.args["IsClass"] = false;
+            reflectStructCntx.args[TCHAR("LineNumber")] = 14;
+            reflectStructCntx.args[TCHAR("TypeName")] = TCHAR("TestPropertyClass::TestInnerStruct");
+            reflectStructCntx.args[TCHAR("IsClass")] = false;
 
-            headerFileContext.sectionContexts.insert({ "ReflectTypes", std::move(reflectTypesContexts) });
+            headerFileContext.sectionContexts.insert({ TCHAR("ReflectTypes"), std::move(reflectTypesContexts) });
         }
 
         MustacheContext sourceFileContext;
-        sourceFileContext.args["HeaderFileId"] = PropertyHelper::getValidSymbolName(appName);
-        sourceFileContext.args["HeaderInclude"] = PropertyHelper::getValidSymbolName(appName);
+        sourceFileContext.args[TCHAR("HeaderFileId")] = PropertyHelper::getValidSymbolName(appName);
+        sourceFileContext.args[TCHAR("HeaderInclude")] = PropertyHelper::getValidSymbolName(appName);
 
         std::vector<MustacheContext> allReflectTypes;
         // QualifiedTypes
         {
             MustacheContext& classPtr = allReflectTypes.emplace_back();
-            classPtr.args["TypeName"] = "TestPropertyClass*";
-            classPtr.args["SanitizedName"] = PropertyHelper::getValidSymbolName("TestPropertyClass *");
-            classPtr.args["PropertyTypeName"] = "BaseProperty";
-            classPtr.args["RegisterFunctionName"] = "registerTypeFactory";
+            classPtr.args[TCHAR("TypeName")] = TCHAR("TestPropertyClass*");
+            classPtr.args[TCHAR("SanitizedName")] = PropertyHelper::getValidSymbolName(TCHAR("TestPropertyClass *"));
+            classPtr.args[TCHAR("PropertyTypeName")] = TCHAR("BaseProperty");
+            classPtr.args[TCHAR("RegisterFunctionName")] = TCHAR("registerTypeFactory");
 
-            sourceFileContext.sectionContexts["QualifiedTypes"].emplace_back(classPtr);
+            sourceFileContext.sectionContexts[TCHAR("QualifiedTypes")].emplace_back(classPtr);
         }
         // PairTypes
         {
             MustacheContext& mapElemPair = allReflectTypes.emplace_back();
-            mapElemPair.args["TypeName"] = "std::pair<const int32, TestPropertyClass::TestInnerStruct>";
-            mapElemPair.args["SanitizedName"] = PropertyHelper::getValidSymbolName("std::pair<const int32, TestPropertyClass::TestInnerStruct>");
-            mapElemPair.args["PropertyTypeName"] = "BaseProperty";
-            mapElemPair.args["RegisterFunctionName"] = "registerTypeFactory";
+            mapElemPair.args[TCHAR("TypeName")] = TCHAR("std::pair<const int32, TestPropertyClass::TestInnerStruct>");
+            mapElemPair.args[TCHAR("SanitizedName")] = PropertyHelper::getValidSymbolName(TCHAR("std::pair<const int32, TestPropertyClass::TestInnerStruct>"));
+            mapElemPair.args[TCHAR("PropertyTypeName")] = TCHAR("BaseProperty");
+            mapElemPair.args[TCHAR("RegisterFunctionName")] = TCHAR("registerTypeFactory");
 
-            sourceFileContext.sectionContexts["PairTypes"].emplace_back(mapElemPair);
+            sourceFileContext.sectionContexts[TCHAR("PairTypes")].emplace_back(mapElemPair);
         }
         // ContainerTypes
         {
             MustacheContext& setInt = allReflectTypes.emplace_back();
-            setInt.args["TypeName"] = "std::set<uint64>";
-            setInt.args["SanitizedName"] = PropertyHelper::getValidSymbolName("std::set<uint64>");
-            setInt.args["PropertyTypeName"] = "BaseProperty";
-            setInt.args["RegisterFunctionName"] = "registerTypeFactory";
-            sourceFileContext.sectionContexts["ContainerTypes"].emplace_back(setInt);
+            setInt.args[TCHAR("TypeName")] = TCHAR("std::set<uint64>");
+            setInt.args[TCHAR("SanitizedName")] = PropertyHelper::getValidSymbolName(TCHAR("std::set<uint64>"));
+            setInt.args[TCHAR("PropertyTypeName")] = TCHAR("BaseProperty");
+            setInt.args[TCHAR("RegisterFunctionName")] = TCHAR("registerTypeFactory");
+            sourceFileContext.sectionContexts[TCHAR("ContainerTypes")].emplace_back(setInt);
             
             MustacheContext& vectorStr = allReflectTypes.emplace_back();
-            vectorStr.args["TypeName"] = "std::vector<String>";
-            vectorStr.args["SanitizedName"] = PropertyHelper::getValidSymbolName("std::vector<String>");
-            vectorStr.args["PropertyTypeName"] = "BaseProperty";
-            vectorStr.args["RegisterFunctionName"] = "registerTypeFactory";
-            sourceFileContext.sectionContexts["ContainerTypes"].emplace_back(vectorStr);
+            vectorStr.args[TCHAR("TypeName")] = TCHAR("std::vector<String>");
+            vectorStr.args[TCHAR("SanitizedName")] = PropertyHelper::getValidSymbolName(TCHAR("std::vector<String>"));
+            vectorStr.args[TCHAR("PropertyTypeName")] = TCHAR("BaseProperty");
+            vectorStr.args[TCHAR("RegisterFunctionName")] = TCHAR("registerTypeFactory");
+            sourceFileContext.sectionContexts[TCHAR("ContainerTypes")].emplace_back(vectorStr);
         }
         // MapTypes
         {
             MustacheContext& mapType = allReflectTypes.emplace_back();
-            mapType.args["TypeName"] = "std::map<int32, TestPropertyClass::TestInnerStruct>";
-            mapType.args["SanitizedName"] = PropertyHelper::getValidSymbolName("std::map<int32, TestPropertyClass::TestInnerStruct>");
-            mapType.args["PropertyTypeName"] = "BaseProperty";
-            mapType.args["RegisterFunctionName"] = "registerTypeFactory";
+            mapType.args[TCHAR("TypeName")] = TCHAR("std::map<int32, TestPropertyClass::TestInnerStruct>");
+            mapType.args[TCHAR("SanitizedName")] = PropertyHelper::getValidSymbolName(TCHAR("std::map<int32, TestPropertyClass::TestInnerStruct>"));
+            mapType.args[TCHAR("PropertyTypeName")] = TCHAR("BaseProperty");
+            mapType.args[TCHAR("RegisterFunctionName")] = TCHAR("registerTypeFactory");
 
-            sourceFileContext.sectionContexts["MapTypes"].emplace_back(mapType);
+            sourceFileContext.sectionContexts[TCHAR("MapTypes")].emplace_back(mapType);
         }
         // EnumTypes
         {
             MustacheContext& enumType = allReflectTypes.emplace_back();
-            enumType.args["TypeName"] = "TestPropertyClass::ETestEnumType";
-            enumType.args["SanitizedName"] = PropertyHelper::getValidSymbolName("TestPropertyClass::ETestEnumType");
-            enumType.args["PropertyTypeName"] = "EnumProperty";
-            enumType.args["RegisterFunctionName"] = "registerEnumFactory";
+            enumType.args[TCHAR("TypeName")] = TCHAR("TestPropertyClass::ETestEnumType");
+            enumType.args[TCHAR("SanitizedName")] = PropertyHelper::getValidSymbolName(TCHAR("TestPropertyClass::ETestEnumType"));
+            enumType.args[TCHAR("PropertyTypeName")] = TCHAR("EnumProperty");
+            enumType.args[TCHAR("RegisterFunctionName")] = TCHAR("registerEnumFactory");
 
-            MustacheContext& enumTypesContext = sourceFileContext.sectionContexts["EnumTypes"].emplace_back(enumType);
-            enumTypesContext.args["CanUseAsFlags"] = false;
-            enumTypesContext.args["TypeMetaFlags"] = 0;
-            enumTypesContext.args["TypeMetaData"] = "";
-            std::vector<MustacheContext>& enumFields = enumTypesContext.sectionContexts["EnumFields"];
+            MustacheContext& enumTypesContext = sourceFileContext.sectionContexts[TCHAR("EnumTypes")].emplace_back(enumType);
+            enumTypesContext.args[TCHAR("CanUseAsFlags")] = false;
+            enumTypesContext.args[TCHAR("TypeMetaFlags")] = 0;
+            enumTypesContext.args[TCHAR("TypeMetaData")] = TCHAR("");
+            std::vector<MustacheContext>& enumFields = enumTypesContext.sectionContexts[TCHAR("EnumFields")];
             {
                 MustacheContext cntxt;
-                cntxt.args["EnumFieldName"] = "E1";
-                cntxt.args["EnumFieldValue"] = uint64(TestPropertyClass::ETestEnumType::E1);
-                cntxt.args["EnumFieldMetaFlags"] = 0;
-                cntxt.args["EnumFieldMetaData"] = "";
+                cntxt.args[TCHAR("EnumFieldName")] = TCHAR("E1");
+                cntxt.args[TCHAR("EnumFieldValue")] = uint64(TestPropertyClass::ETestEnumType::E1);
+                cntxt.args[TCHAR("EnumFieldMetaFlags")] = 0;
+                cntxt.args[TCHAR("EnumFieldMetaData")] = TCHAR("");
                 enumFields.emplace_back(cntxt);
 
                 cntxt = {};
-                cntxt.args["EnumFieldName"] = "E2";
-                cntxt.args["EnumFieldValue"] = uint64(TestPropertyClass::ETestEnumType::E2);
-                cntxt.args["EnumFieldMetaFlags"] = 0;
-                cntxt.args["EnumFieldMetaData"] = "";
+                cntxt.args[TCHAR("EnumFieldName")] = TCHAR("E2");
+                cntxt.args[TCHAR("EnumFieldValue")] = uint64(TestPropertyClass::ETestEnumType::E2);
+                cntxt.args[TCHAR("EnumFieldMetaFlags")] = 0;
+                cntxt.args[TCHAR("EnumFieldMetaData")] = TCHAR("");
                 enumFields.emplace_back(cntxt);
 
                 cntxt = {};
-                cntxt.args["EnumFieldName"] = "E3";
-                cntxt.args["EnumFieldValue"] = uint64(TestPropertyClass::ETestEnumType::E3);
-                cntxt.args["EnumFieldMetaFlags"] = 0;
-                cntxt.args["EnumFieldMetaData"] = "";
+                cntxt.args[TCHAR("EnumFieldName")] = TCHAR("E3");
+                cntxt.args[TCHAR("EnumFieldValue")] = uint64(TestPropertyClass::ETestEnumType::E3);
+                cntxt.args[TCHAR("EnumFieldMetaFlags")] = 0;
+                cntxt.args[TCHAR("EnumFieldMetaData")] = TCHAR("");
                 enumFields.emplace_back(cntxt);
                 cntxt = {};
-                cntxt.args["EnumFieldName"] = "E4";
-                cntxt.args["EnumFieldValue"] = uint64(TestPropertyClass::ETestEnumType::E4);
-                cntxt.args["EnumFieldMetaFlags"] = 0;
-                cntxt.args["EnumFieldMetaData"] = "";
+                cntxt.args[TCHAR("EnumFieldName")] = TCHAR("E4");
+                cntxt.args[TCHAR("EnumFieldValue")] = uint64(TestPropertyClass::ETestEnumType::E4);
+                cntxt.args[TCHAR("EnumFieldMetaFlags")] = 0;
+                cntxt.args[TCHAR("EnumFieldMetaData")] = TCHAR("");
                 enumFields.emplace_back(cntxt);
             }
         }
         // ClassTypes
         {
             MustacheContext& classType = allReflectTypes.emplace_back();
-            classType.args["TypeName"] = "TestPropertyClass";
-            classType.args["SanitizedName"] = PropertyHelper::getValidSymbolName("TestPropertyClass");
-            classType.args["PropertyTypeName"] = "ClassProperty";
-            classType.args["RegisterFunctionName"] = "registerClassFactory";
+            classType.args[TCHAR("TypeName")] = TCHAR("TestPropertyClass");
+            classType.args[TCHAR("SanitizedName")] = PropertyHelper::getValidSymbolName(TCHAR("TestPropertyClass"));
+            classType.args[TCHAR("PropertyTypeName")] = TCHAR("ClassProperty");
+            classType.args[TCHAR("RegisterFunctionName")] = TCHAR("registerClassFactory");
 
-            MustacheContext& classTypeContext = sourceFileContext.sectionContexts["Classes"].emplace_back(classType);
-            classTypeContext.args["TypeMetaFlags"] = 0;
-            classTypeContext.args["TypeMetaData"] = "";
+            MustacheContext& classTypeContext = sourceFileContext.sectionContexts[TCHAR("Classes")].emplace_back(classType);
+            classTypeContext.args[TCHAR("TypeMetaFlags")] = 0;
+            classTypeContext.args[TCHAR("TypeMetaData")] = TCHAR("");
             {
-                std::vector<MustacheContext>& classCtors = classTypeContext.sectionContexts["Ctors"];
+                std::vector<MustacheContext>& classCtors = classTypeContext.sectionContexts[TCHAR("Ctors")];
                 {
                     MustacheContext& ctor = classCtors.emplace_back();
-                    ctor.args["ParamsList"] = "String";
-                    ctor.args["AccessSpecifier"] = "Public";
-                    ctor.args["CtorMetaFlags"] = 0;
-                    ctor.args["CtorMetaData"] = "";
-                    std::vector<MustacheContext>& ctorParamsCnxt = ctor.sectionContexts["ParamsListContext"];
+                    ctor.args[TCHAR("ParamsList")] = TCHAR("String");
+                    ctor.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    ctor.args[TCHAR("CtorMetaFlags")] = 0;
+                    ctor.args[TCHAR("CtorMetaData")] = TCHAR("");
+                    std::vector<MustacheContext>& ctorParamsCnxt = ctor.sectionContexts[TCHAR("ParamsListContext")];
                     MustacheContext& ctorStrParam = ctorParamsCnxt.emplace_back();
-                    ctorStrParam.args["ParamName"] = "newName";
-                    ctorStrParam.args["ParamTypeName"] = "String";
+                    ctorStrParam.args[TCHAR("ParamName")] = TCHAR("newName");
+                    ctorStrParam.args[TCHAR("ParamTypeName")] = TCHAR("String");
                 }
-                std::vector<MustacheContext>& memFuncs = classTypeContext.sectionContexts["MemberFuncs"];
+                std::vector<MustacheContext>& memFuncs = classTypeContext.sectionContexts[TCHAR("MemberFuncs")];
                 {
                     MustacheContext& memFunc = memFuncs.emplace_back();
-                    memFunc.args["FunctionName"] = "printNewNameStr";
-                    memFunc.args["ReturnTypeName"] = "void";
-                    memFunc.args["ParamsList"] = "";
-                    memFunc.args["FuncConst"] = true;
-                    memFunc.args["AccessSpecifier"] = "Public";
-                    memFunc.args["FuncMetaFlags"] = 0;
-                    memFunc.args["FuncMetaData"] = "";
+                    memFunc.args[TCHAR("FunctionName")] = TCHAR("printNewNameStr");
+                    memFunc.args[TCHAR("ReturnTypeName")] = TCHAR("void");
+                    memFunc.args[TCHAR("ParamsList")] = TCHAR("");
+                    memFunc.args[TCHAR("FuncConst")] = true;
+                    memFunc.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    memFunc.args[TCHAR("FuncMetaFlags")] = 0;
+                    memFunc.args[TCHAR("FuncMetaData")] = TCHAR("");
 
                     MustacheContext& memFuncSetter = memFuncs.emplace_back();
-                    memFuncSetter.args["FunctionName"] = "setNewNameStr";
-                    memFuncSetter.args["ReturnTypeName"] = "void";
-                    memFuncSetter.args["ParamsList"] = "String";
-                    memFuncSetter.args["FuncConst"] = false;
-                    memFuncSetter.args["AccessSpecifier"] = "Public";
-                    memFuncSetter.args["FuncMetaFlags"] = 0;
-                    memFuncSetter.args["FuncMetaData"] = "";
-                    std::vector<MustacheContext>& memFuncSetterParamsCnxt = memFuncSetter.sectionContexts["ParamsListContext"];
+                    memFuncSetter.args[TCHAR("FunctionName")] = TCHAR("setNewNameStr");
+                    memFuncSetter.args[TCHAR("ReturnTypeName")] = TCHAR("void");
+                    memFuncSetter.args[TCHAR("ParamsList")] = TCHAR("String");
+                    memFuncSetter.args[TCHAR("FuncConst")] = false;
+                    memFuncSetter.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    memFuncSetter.args[TCHAR("FuncMetaFlags")] = 0;
+                    memFuncSetter.args[TCHAR("FuncMetaData")] = TCHAR("");
+                    std::vector<MustacheContext>& memFuncSetterParamsCnxt = memFuncSetter.sectionContexts[TCHAR("ParamsListContext")];
                     MustacheContext& strParam = memFuncSetterParamsCnxt.emplace_back();
-                    strParam.args["ParamName"] = "newName";
-                    strParam.args["ParamTypeName"] = "const String &";
+                    strParam.args[TCHAR("ParamName")] = TCHAR("newName");
+                    strParam.args[TCHAR("ParamTypeName")] = TCHAR("const String &");
                 }
-                std::vector<MustacheContext>& staticFuncs = classTypeContext.sectionContexts["StaticFuncs"];
+                std::vector<MustacheContext>& staticFuncs = classTypeContext.sectionContexts[TCHAR("StaticFuncs")];
                 {
                     MustacheContext& staticFunc = staticFuncs.emplace_back();
-                    staticFunc.args["FunctionName"] = "incAndPrintInt";
-                    staticFunc.args["ReturnTypeName"] = "void";
-                    staticFunc.args["ParamsList"] = "";
-                    staticFunc.args["AccessSpecifier"] = "Public";
-                    staticFunc.args["FuncMetaFlags"] = 0;
-                    staticFunc.args["FuncMetaData"] = "";
+                    staticFunc.args[TCHAR("FunctionName")] = TCHAR("incAndPrintInt");
+                    staticFunc.args[TCHAR("ReturnTypeName")] = TCHAR("void");
+                    staticFunc.args[TCHAR("ParamsList")] = TCHAR("");
+                    staticFunc.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    staticFunc.args[TCHAR("FuncMetaFlags")] = 0;
+                    staticFunc.args[TCHAR("FuncMetaData")] = TCHAR("");
                 }
-                std::vector<MustacheContext>& memFields = classTypeContext.sectionContexts["MemberFields"];
+                std::vector<MustacheContext>& memFields = classTypeContext.sectionContexts[TCHAR("MemberFields")];
                 {
                     MustacheContext& idToSectField = memFields.emplace_back();
-                    idToSectField.args["FieldName"] = "idToSection";
-                    idToSectField.args["FieldTypeName"] = "std::map<int32, TestPropertyClass::TestInnerStruct>";
-                    idToSectField.args["AccessSpecifier"] = "Public";
-                    idToSectField.args["FieldMetaFlags"] = 0;
-                    idToSectField.args["FieldMetaData"] = "";
+                    idToSectField.args[TCHAR("FieldName")] = TCHAR("idToSection");
+                    idToSectField.args[TCHAR("FieldTypeName")] = TCHAR("std::map<int32, TestPropertyClass::TestInnerStruct>");
+                    idToSectField.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    idToSectField.args[TCHAR("FieldMetaFlags")] = 0;
+                    idToSectField.args[TCHAR("FieldMetaData")] = TCHAR("");
 
                     MustacheContext& strField = memFields.emplace_back();
-                    strField.args["FieldName"] = "newNameStr";
-                    strField.args["FieldTypeName"] = "String";
-                    strField.args["AccessSpecifier"] = "Public";
-                    strField.args["FieldMetaFlags"] = 0;
-                    strField.args["FieldMetaData"] = "";
+                    strField.args[TCHAR("FieldName")] = TCHAR("newNameStr");
+                    strField.args[TCHAR("FieldTypeName")] = TCHAR("String");
+                    strField.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    strField.args[TCHAR("FieldMetaFlags")] = 0;
+                    strField.args[TCHAR("FieldMetaData")] = TCHAR("");
 
                     MustacheContext& nxtClsField = memFields.emplace_back();
-                    nxtClsField.args["FieldName"] = "nextClass";
-                    nxtClsField.args["FieldTypeName"] = "TestPropertyClass*";
-                    nxtClsField.args["AccessSpecifier"] = "Public";
-                    nxtClsField.args["FieldMetaFlags"] = 0;
-                    nxtClsField.args["FieldMetaData"] = "";
+                    nxtClsField.args[TCHAR("FieldName")] = TCHAR("nextClass");
+                    nxtClsField.args[TCHAR("FieldTypeName")] = TCHAR("TestPropertyClass*");
+                    nxtClsField.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    nxtClsField.args[TCHAR("FieldMetaFlags")] = 0;
+                    nxtClsField.args[TCHAR("FieldMetaData")] = TCHAR("");
 
                     MustacheContext& hndsField = memFields.emplace_back();
-                    hndsField.args["FieldName"] = "handles";
-                    hndsField.args["FieldTypeName"] = "std::set<uint64>";
-                    hndsField.args["AccessSpecifier"] = "Public";
-                    hndsField.args["FieldMetaFlags"] = 0;
-                    hndsField.args["FieldMetaData"] = "";
+                    hndsField.args[TCHAR("FieldName")] = TCHAR("handles");
+                    hndsField.args[TCHAR("FieldTypeName")] = TCHAR("std::set<uint64>");
+                    hndsField.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    hndsField.args[TCHAR("FieldMetaFlags")] = 0;
+                    hndsField.args[TCHAR("FieldMetaData")] = TCHAR("");
                 }
                 static int32 staticInteger;
-                std::vector<MustacheContext>& staticFields = classTypeContext.sectionContexts["StaticFields"];
+                std::vector<MustacheContext>& staticFields = classTypeContext.sectionContexts[TCHAR("StaticFields")];
                 {
                     MustacheContext& staticIntField = staticFields.emplace_back();
-                    staticIntField.args["FieldName"] = "staticInteger";
-                    staticIntField.args["FieldTypeName"] = "int32";
-                    staticIntField.args["AccessSpecifier"] = "Public";
-                    staticIntField.args["FieldMetaFlags"] = 0;
-                    staticIntField.args["FieldMetaData"] = "";
+                    staticIntField.args[TCHAR("FieldName")] = TCHAR("staticInteger");
+                    staticIntField.args[TCHAR("FieldTypeName")] = TCHAR("int32");
+                    staticIntField.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    staticIntField.args[TCHAR("FieldMetaFlags")] = 0;
+                    staticIntField.args[TCHAR("FieldMetaData")] = TCHAR("");
                 }
             }
 
             MustacheContext& structType = allReflectTypes.emplace_back();
-            structType.args["TypeName"] = "TestPropertyClass::TestInnerStruct";
-            structType.args["SanitizedName"] = PropertyHelper::getValidSymbolName("TestPropertyClass::TestInnerStruct");
-            structType.args["PropertyTypeName"] = "ClassProperty";
-            structType.args["RegisterFunctionName"] = "registerStructFactory";
+            structType.args[TCHAR("TypeName")] = TCHAR("TestPropertyClass::TestInnerStruct");
+            structType.args[TCHAR("SanitizedName")] = PropertyHelper::getValidSymbolName(TCHAR("TestPropertyClass::TestInnerStruct"));
+            structType.args[TCHAR("PropertyTypeName")] = TCHAR("ClassProperty");
+            structType.args[TCHAR("RegisterFunctionName")] = TCHAR("registerStructFactory");
 
-            MustacheContext& structTypeContext = sourceFileContext.sectionContexts["Classes"].emplace_back(structType);
-            structTypeContext.args["TypeMetaFlags"] = 0;
-            structTypeContext.args["TypeMetaData"] = "";
+            MustacheContext& structTypeContext = sourceFileContext.sectionContexts[TCHAR("Classes")].emplace_back(structType);
+            structTypeContext.args[TCHAR("TypeMetaFlags")] = 0;
+            structTypeContext.args[TCHAR("TypeMetaData")] = TCHAR("");
             {
-                std::vector<MustacheContext>& memFields = structTypeContext.sectionContexts["MemberFields"];
+                std::vector<MustacheContext>& memFields = structTypeContext.sectionContexts[TCHAR("MemberFields")];
                 {
                     MustacheContext& idToSectField = memFields.emplace_back();
-                    idToSectField.args["FieldName"] = "names";
-                    idToSectField.args["FieldTypeName"] = "std::vector<String>";
-                    idToSectField.args["AccessSpecifier"] = "Public";
-                    idToSectField.args["FieldMetaFlags"] = 0;
-                    idToSectField.args["FieldMetaData"] = "";
+                    idToSectField.args[TCHAR("FieldName")] = TCHAR("names");
+                    idToSectField.args[TCHAR("FieldTypeName")] = TCHAR("std::vector<String>");
+                    idToSectField.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    idToSectField.args[TCHAR("FieldMetaFlags")] = 0;
+                    idToSectField.args[TCHAR("FieldMetaData")] = TCHAR("");
 
                     MustacheContext& strField = memFields.emplace_back();
-                    strField.args["FieldName"] = "numNames";
-                    strField.args["FieldTypeName"] = "uint32";
-                    strField.args["AccessSpecifier"] = "Public";
-                    strField.args["FieldMetaFlags"] = 0;
-                    strField.args["FieldMetaData"] = "";
+                    strField.args[TCHAR("FieldName")] = TCHAR("numNames");
+                    strField.args[TCHAR("FieldTypeName")] = TCHAR("uint32");
+                    strField.args[TCHAR("AccessSpecifier")] = TCHAR("Public");
+                    strField.args[TCHAR("FieldMetaFlags")] = 0;
+                    strField.args[TCHAR("FieldMetaData")] = TCHAR("");
                 }
             }
         }
-        sourceFileContext.sectionContexts["AllRegisterTypes"] = allReflectTypes;
+        sourceFileContext.sectionContexts[TCHAR("AllRegisterTypes")] = allReflectTypes;
 
         // Write header file
-        String headerContent = templates["ReflectedHeader"].render(headerFileContext, templates);
-        PlatformFile headerFile(PathFunctions::combinePath(appDir, "Saved", "Test", appName + ".gen.h"));
+        String headerContent = templates[TCHAR("ReflectedHeader")].render(headerFileContext, templates);
+        PlatformFile headerFile(PathFunctions::combinePath(appDir, TCHAR("Saved"), TCHAR("Test"), appName + TCHAR(".gen.h")));
         headerFile.setCreationAction(EFileFlags::CreateAlways);
         headerFile.setFileFlags(EFileFlags::Write);
         headerFile.setSharingMode(EFileSharing::ReadOnly);
@@ -2305,8 +2299,8 @@ namespace SampleCode
         headerFile.closeFile();
 
         // Write source file
-        String sourceContent = templates["ReflectedSource"].render(sourceFileContext, templates);
-        PlatformFile srcFile(PathFunctions::combinePath(appDir, "Saved", "Test", appName + ".gen.cpp"));
+        String sourceContent = templates[TCHAR("ReflectedSource")].render(sourceFileContext, templates);
+        PlatformFile srcFile(PathFunctions::combinePath(appDir, TCHAR("Saved"), TCHAR("Test"), appName + TCHAR(".gen.cpp")));
         srcFile.setCreationAction(EFileFlags::CreateAlways);
         srcFile.setFileFlags(EFileFlags::Write);
         srcFile.setSharingMode(EFileSharing::ReadOnly);

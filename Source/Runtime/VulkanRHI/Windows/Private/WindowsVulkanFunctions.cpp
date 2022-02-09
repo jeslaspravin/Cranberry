@@ -33,7 +33,7 @@ void PFN_Win32SurfaceKHR::operator()(VkInstance instance, const void* pNext, con
 {
     if (!hInstance || !hWindow)
     {        
-        Logger::error("Vulkan", "PFN_Win32SurfaceKHR() : Cannot create surface withot HINSTANCE or HWND");
+        LOG_ERROR("Vulkan", "PFN_Win32SurfaceKHR() : Cannot create surface withot HINSTANCE or HWND");
         return;
     }
 
@@ -47,13 +47,13 @@ void PFN_Win32SurfaceKHR::operator()(VkInstance instance, const void* pNext, con
     PFN_vkCreateWin32SurfaceKHR win32SurfaceCreate = (PFN_vkCreateWin32SurfaceKHR)
         Vk::vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR");
     if (win32SurfaceCreate == nullptr) {
-        Logger::error("Vulkan", "PFN_Win32SurfaceKHR() : failed fetching Create Surface function vkCreateWin32SurfaceKHR");
+        LOG_ERROR("Vulkan", "PFN_Win32SurfaceKHR() : failed fetching Create Surface function vkCreateWin32SurfaceKHR");
         return;
     }
 
     VkResult result = win32SurfaceCreate(instance,&createInfo, allocatorCallback, surface);
 
     if (result != VK_SUCCESS) {
-        Logger::error("Vulkan", "PFN_Win32SurfaceKHR() : failed creating surface");
+        LOG_ERROR("Vulkan", "PFN_Win32SurfaceKHR() : failed creating surface");
     }
 }

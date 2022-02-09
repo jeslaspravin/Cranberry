@@ -30,7 +30,7 @@ const ReflectTypeInfo* ReflectTypeInfo::createTypeInfo(const std::type_info& cle
 
 IReflectionRuntimeModule* IReflectionRuntimeModule::get()
 {
-    static WeakModulePtr appModule = ModuleManager::get()->getOrLoadModule("ReflectionRuntime");
+    static WeakModulePtr appModule = ModuleManager::get()->getOrLoadModule(TCHAR("ReflectionRuntime"));
     if (appModule.expired())
     {
         return nullptr;
@@ -122,7 +122,7 @@ const ClassProperty* ReflectionRuntimeModule::createClassProperty(const ReflectT
     }
     else
     {
-        Logger::error("ReflectionRuntimeModule", "%s() : Creating class property failed for type %s", __func__, *typeInfo);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating class property failed for type %s", __func__, *typeInfo);
     }
     return nullptr;
 }
@@ -147,7 +147,7 @@ const ClassProperty* ReflectionRuntimeModule::createClassProperty(const String& 
     }
     else
     {
-        Logger::error("ReflectionRuntimeModule", "%s() : Creating class property failed for type %s", __func__, typeName);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating class property failed for type %s", __func__, typeName);
     }
     return nullptr;
 }
@@ -183,7 +183,7 @@ const ClassProperty* ReflectionRuntimeModule::createStructProperty(const Reflect
     }
     else
     {
-        Logger::error("ReflectionRuntimeModule", "%s() : Creating struct property failed for type %s", __func__, *typeInfo);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating struct property failed for type %s", __func__, *typeInfo);
     }
     return nullptr;
 }
@@ -208,7 +208,7 @@ const ClassProperty* ReflectionRuntimeModule::createStructProperty(const String&
     }
     else
     {
-        Logger::error("ReflectionRuntimeModule", "%s() : Creating struct property failed for type %s", __func__, typeName);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating struct property failed for type %s", __func__, typeName);
     }
     return nullptr;
 }
@@ -244,7 +244,7 @@ const EnumProperty* ReflectionRuntimeModule::createEnumProperty(const ReflectTyp
     }
     else
     {
-        Logger::error("ReflectionRuntimeModule", "%s() : Creating enum property failed for type %s", __func__, *typeInfo);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating enum property failed for type %s", __func__, *typeInfo);
     }
     return nullptr;
 }
@@ -269,7 +269,7 @@ const EnumProperty* ReflectionRuntimeModule::createEnumProperty(const String& ty
     }
     else
     {
-        Logger::error("ReflectionRuntimeModule", "%s() : Creating enum property failed for type %s", __func__, typeName);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating enum property failed for type %s", __func__, typeName);
     }
     return nullptr;
 }
@@ -295,7 +295,7 @@ const BaseProperty* ReflectionRuntimeModule::createTypedProperty(const ReflectTy
     }
     else
     {
-        Logger::error("ReflectionRuntimeModule", "%s() : Creating typed property failed for type %s", __func__, *typeInfo);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating typed property failed for type %s", __func__, *typeInfo);
     }
     return nullptr;
 }

@@ -90,7 +90,7 @@ FORCE_INLINE VkPipelineBindPoint VulkanCommandList::getPipelineBindPoint(const P
         return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_COMPUTE;
     }
 
-    Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, pipeline->getResourceName().getChar());
+    LOG_ERROR("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, pipeline->getResourceName().getChar());
     return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_MAX_ENUM;
 }
 
@@ -200,10 +200,10 @@ VulkanCommandList::VulkanCommandList(IGraphicsInstance* graphicsInstance, const 
 
 void VulkanCommandList::copyBuffer(BufferResourceRef src, BufferResourceRef dst, const CopyBufferInfo& copyInfo)
 {
-    FenceRef tempFence = IVulkanRHIModule::get()->getGraphicsHelper()->createFence(graphicsInstanceCache, "CopyBufferTemp", false);
+    FenceRef tempFence = IVulkanRHIModule::get()->getGraphicsHelper()->createFence(graphicsInstanceCache, TCHAR("CopyBufferTemp"), false);
     tempFence->init();
 
-    const GraphicsResource* commandBuffer = cmdBufferManager.beginTempCmdBuffer("Copy buffer", EQueueFunction::Transfer);
+    const GraphicsResource* commandBuffer = cmdBufferManager.beginTempCmdBuffer(TCHAR("Copy buffer"), EQueueFunction::Transfer);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
 
     VkBufferCopy bufferCopyRegion{ copyInfo.srcOffset, copyInfo.dstOffset, copyInfo.copySize };
@@ -224,10 +224,10 @@ void VulkanCommandList::copyBuffer(BufferResourceRef src, BufferResourceRef dst,
 
 void VulkanCommandList::copyBuffer(const std::vector<BatchCopyBufferInfo>& batchCopies)
 {
-    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, "BatchCopyBufferTemp", false);
+    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("BatchCopyBufferTemp"), false);
     tempFence->init();
 
-    const GraphicsResource* commandBuffer = cmdBufferManager.beginTempCmdBuffer("Batch Copy buffer", EQueueFunction::Transfer);
+    const GraphicsResource* commandBuffer = cmdBufferManager.beginTempCmdBuffer(TCHAR("Batch Copy buffer"), EQueueFunction::Transfer);
 
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
     std::map<std::pair<BufferResource*, BufferResource*>, std::vector<VkBufferCopy>> srcDstToCopies;
@@ -305,7 +305,7 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
                 }
                 else
                 {
-                    Logger::error("VulkanCommandList", "%s() : Copying buffer type is invalid", __func__);
+                    LOG_ERROR("VulkanCommandList", "%s() : Copying buffer type is invalid", __func__);
                     continue;
                 }
                 dstToStagingBufferMap[vulkanDst] = { stagingBuffer, { &copyData } };
@@ -336,10 +336,10 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
     }
 
     // Copying between buffers
-    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, "BatchCopyBufferTemp", false);
+    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("BatchCopyBufferTemp"), false);
     tempFence->init();
 
-    const GraphicsResource* commandBuffer = cmdBufferManager.beginTempCmdBuffer("Batch copy buffers", EQueueFunction::Transfer);
+    const GraphicsResource* commandBuffer = cmdBufferManager.beginTempCmdBuffer(TCHAR("Batch copy buffers"), EQueueFunction::Transfer);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
 
     for (const auto& dstToStagingPair : dstToStagingBufferMap)
@@ -373,7 +373,7 @@ void VulkanCommandList::copyToBuffer_Internal(BufferResourceRef dst, uint32 dstO
     if (dst->getType()->isChildOf(graphicsHelperCache->writeOnlyBufferType()) 
         || dst->getType()->isChildOf(graphicsHelperCache->writeOnlyTexelsType()))
     {
-        Logger::error("VulkanCommandList", "%s() : Copy to buffer(%s) that is write only is not allowed", __func__, dst->getResourceName().getChar());
+        LOG_ERROR("VulkanCommandList", "%s() : Copy to buffer(%s) that is write only is not allowed", __func__, dst->getResourceName().getChar());
         return;
     }
     debugAssert((dst->getResourceSize() - dstOffset) >= size);
@@ -424,7 +424,7 @@ void VulkanCommandList::copyToBuffer_Internal(BufferResourceRef dst, uint32 dstO
         }
         else
         {
-            Logger::error("VulkanCommandList", "%s() : Copying buffer type is invalid", __func__);
+            LOG_ERROR("VulkanCommandList", "%s() : Copying buffer type is invalid", __func__);
         }
     }
 }
@@ -506,7 +506,7 @@ void VulkanCommandList::setupInitialLayout(ImageResourceRef image)
 {
     const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(image->imageFormat());
 
-    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer("LayoutTransition_" + image->getResourceName(), EQueueFunction::Graphics);
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer(TCHAR("LayoutTransition_") + image->getResourceName(), EQueueFunction::Graphics);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     IMAGE_MEMORY_BARRIER(layoutTransition);
@@ -523,7 +523,7 @@ void VulkanCommandList::setupInitialLayout(ImageResourceRef image)
 
     cmdBufferManager.endCmdBuffer(cmdBuffer);
 
-    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, "TempLayoutTransitionFence");
+    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("TempLayoutTransitionFence"));
     tempFence->init();
 
     CommandSubmitInfo submitInfo;
@@ -563,7 +563,7 @@ void VulkanCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer,
         && srcInfoCpy.isCopyCompatible(dstInfoCpy);
     if (srcInfoCpy.subres.mipCount != dstInfoCpy.subres.mipCount || srcInfoCpy.extent != dstInfoCpy.extent)
     {
-        Logger::error("VulkanCommandList", "%s : MIP counts && extent must be same between source and destination regions", __func__);
+        LOG_ERROR("VulkanCommandList", "%s : MIP counts && extent must be same between source and destination regions", __func__);
         return;
     }
     {
@@ -571,7 +571,7 @@ void VulkanCommandList::cmdCopyOrResolveImage(const GraphicsResource* cmdBuffer,
         SizeBox3D dstBound(dstInfoCpy.offset, Size3D(dstInfoCpy.offset + dstInfoCpy.extent));
         if (src == dst && srcBound.intersect(dstBound))
         {
-            Logger::error("VulkanCommandList", "%s : Cannot copy to same image with intersecting region", __func__);
+            LOG_ERROR("VulkanCommandList", "%s : Cannot copy to same image with intersecting region", __func__);
             return;
         }
     }
@@ -836,7 +836,7 @@ void VulkanCommandList::cmdTransitionLayouts(const GraphicsResource* cmdBuffer, 
             }
             else
             {
-                Logger::error("VulkanCommandList", "%s() : Barrier is applied on image(%s) that is only read so far", __func__, image->getResourceName().getChar());
+                LOG_ERROR("VulkanCommandList", "%s() : Barrier is applied on image(%s) that is only read so far", __func__, image->getResourceName().getChar());
             }
         }
 
@@ -850,11 +850,11 @@ void VulkanCommandList::cmdClearImage(const GraphicsResource* cmdBuffer, ImageRe
 {
     if (EPixelDataFormat::isDepthFormat(image->imageFormat()))
     {
-        Logger::error("VulkanCommandList", " %s() : Depth image clear cannot be done in color clear", __func__);
+        LOG_ERROR("VulkanCommandList", " %s() : Depth image clear cannot be done in color clear", __func__);
         return;
     }
 
-    Logger::warn("VulkanCommandList", "%s : Synchronization not handled", __func__);
+    LOG_WARN("VulkanCommandList", "%s : Synchronization not handled", __func__);
 
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
@@ -880,11 +880,11 @@ void VulkanCommandList::cmdClearDepth(const GraphicsResource* cmdBuffer, ImageRe
 {
     if (!EPixelDataFormat::isDepthFormat(image->imageFormat()))
     {
-        Logger::error("VulkanCommandList", " %s() : Color image clear cannot be done in depth clear", __func__);
+        LOG_ERROR("VulkanCommandList", " %s() : Color image clear cannot be done in depth clear", __func__);
         return;
     }
 
-    Logger::warn("VulkanCommandList", "%s : Synchronization not handled", __func__);
+    LOG_WARN("VulkanCommandList", "%s : Synchronization not handled", __func__);
 
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
@@ -1068,7 +1068,7 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource* cmdBuffer, c
                         }
                         else
                         {
-                            Logger::error("VulkanRenderCmdList", "%s(): Invalid all read pipeline stages %d when expected before writing to buffer"
+                            LOG_ERROR("VulkanRenderCmdList", "%s(): Invalid all read pipeline stages %d when expected before writing to buffer"
                                 , __func__, barrierInfo->accessors.allReadStages);
                             memBarrier.srcStageMask = cmdBufferManager.isGraphicsCmdBuffer(cmdBuffer)
                                 ? resourceShaderStageFlags()
@@ -1174,7 +1174,7 @@ void VulkanCommandList::cmdBeginRenderPass(const GraphicsResource* cmdBuffer, co
 {
     if (!renderArea.isValidAABB())
     {
-        Logger::error("VulkanCommandList", "%s() : Incorrect render area", __func__);
+        LOG_ERROR("VulkanCommandList", "%s() : Incorrect render area", __func__);
         debugAssert(false);
         return;
     }
@@ -1284,7 +1284,7 @@ void VulkanCommandList::cmdBindGraphicsPipeline(const GraphicsResource* cmdBuffe
 
     if (pipeline == VK_NULL_HANDLE)
     {
-        Logger::error("VulkanCommandList", "%s() : Pipeline is invalid", __func__);
+        LOG_ERROR("VulkanCommandList", "%s() : Pipeline is invalid", __func__);
         debugAssert(false);
         return;
     }
@@ -1319,7 +1319,7 @@ void VulkanCommandList::cmdPushConstants(const GraphicsResource* cmdBuffer, cons
     }
     else
     {
-        Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline.getPipeline()->getResourceName().getChar());
+        LOG_ERROR("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline.getPipeline()->getResourceName().getChar());
         debugAssert(false);
         return;
     }
@@ -1361,7 +1361,7 @@ void VulkanCommandList::cmdBindDescriptorsSetInternal(const GraphicsResource* cm
     }
     else
     {
-        Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline->getResourceName().getChar());
+        LOG_ERROR("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline->getResourceName().getChar());
         debugAssert(false);
         return;
     }
@@ -1411,7 +1411,7 @@ void VulkanCommandList::cmdBindDescriptorsSetsInternal(const GraphicsResource* c
     }
     else
     {
-        Logger::error("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline->getResourceName().getChar());
+        LOG_ERROR("VulkanPipeline", "%s() : Invalid pipeline %s", __func__, contextPipeline->getResourceName().getChar());
         debugAssert(false);
         return;
     }
@@ -1570,7 +1570,7 @@ void VulkanCommandList::copyToImage(ImageResourceRef dst, const std::vector<clas
     fatalAssert(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
     {
-        Logger::error("VulkanCommandList", "%s() : Depth/Float format is not supported for copying from Color data", __func__);
+        LOG_ERROR("VulkanCommandList", "%s() : Depth/Float format is not supported for copying from Color data", __func__);
         return;
     }
     const EPixelDataFormat::PixelFormatInfo* formatInfo = EPixelDataFormat::getFormatInfo(dst->imageFormat());
@@ -1600,7 +1600,7 @@ void VulkanCommandList::copyToImage(ImageResourceRef dst, const std::vector<clas
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat())
         && (formatInfo->componentSize[0] != 32 || EPixelDataFormat::isStencilFormat(dst->imageFormat())))
     {
-        Logger::error("VulkanCommandList", "%s() : Depth/Float format with size other than 32bit is not supported for copying from Color data", __func__);
+        LOG_ERROR("VulkanCommandList", "%s() : Depth/Float format with size other than 32bit is not supported for copying from Color data", __func__);
         return;
     }
 
@@ -1625,7 +1625,7 @@ void VulkanCommandList::copyToImageLinearMapped(ImageResourceRef dst, const std:
     fatalAssert(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
     {
-        Logger::error("VulkanCommandList", "%s() : Depth/Float format is not supported for copying from Color data", __func__);
+        LOG_ERROR("VulkanCommandList", "%s() : Depth/Float format is not supported for copying from Color data", __func__);
         return;
     }
 
@@ -1701,7 +1701,7 @@ void VulkanCommandList::copyToImage_Internal(ImageResourceRef dst, const BufferR
         }
     }
 
-    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer("CopyPixelToImage_" + dst->getResourceName()
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer(TCHAR("CopyPixelToImage_") + dst->getResourceName()
         , copyInfo.bGenerateMips ? EQueueFunction::Graphics : EQueueFunction::Transfer);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
@@ -1730,7 +1730,7 @@ void VulkanCommandList::copyToImage_Internal(ImageResourceRef dst, const BufferR
     vDevice->vkCmdCopyBufferToImage(rawCmdBuffer, pixelData.reference<VulkanBufferResource>()->buffer
         , dst.reference<VulkanImageResource>()->image, currentLayout, uint32(copies.size()), copies.data());
 
-    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, "TempCpyImageFence");
+    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("TempCpyImageFence"));
     tempFence->init();
     if (copyInfo.bGenerateMips && copyInfo.subres.mipCount > 1)
     {
@@ -1834,7 +1834,7 @@ void VulkanCommandList::copyOrResolveImage(ImageResourceRef src, ImageResourceRe
         && srcInfoCpy.isCopyCompatible(dstInfo);
     if (srcInfoCpy.subres.mipCount != dstInfo.subres.mipCount || srcInfoCpy.extent != dstInfo.extent)
     {
-        Logger::error("VulkanCommandList", "%s : MIP counts && extent must be same between source and destination regions", __func__);
+        LOG_ERROR("VulkanCommandList", "%s : MIP counts && extent must be same between source and destination regions", __func__);
         return;
     }
     {
@@ -1842,7 +1842,7 @@ void VulkanCommandList::copyOrResolveImage(ImageResourceRef src, ImageResourceRe
         SizeBox3D dstBound(dstInfo.offset, Size3D(dstInfo.offset + dstInfo.extent));
         if (src == dst && srcBound.intersect(dstBound))
         {
-            Logger::error("VulkanCommandList", "%s : Cannot copy to same image with intersecting region", __func__);
+            LOG_ERROR("VulkanCommandList", "%s : Cannot copy to same image with intersecting region", __func__);
             return;
         }
     }
@@ -1863,8 +1863,8 @@ void VulkanCommandList::copyOrResolveImage(ImageResourceRef src, ImageResourceRe
         ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL : VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 
-    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer((bCanSimpleCopy ? "CopyImage_" : "ResolveImage_")
-        + src->getResourceName() + "_to_" + dst->getResourceName(), EQueueFunction::Transfer);
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer((bCanSimpleCopy ? TCHAR("CopyImage_") : TCHAR("ResolveImage_"))
+        + src->getResourceName() + TCHAR("_to_") + dst->getResourceName(), EQueueFunction::Transfer);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     // Transition to transferable layout one for src and dst
@@ -1973,7 +1973,7 @@ void VulkanCommandList::copyOrResolveImage(ImageResourceRef src, ImageResourceRe
     cmdPipelineBarrier(vDevice, rawCmdBuffer, transitionInfo, {});
 
     cmdBufferManager.endCmdBuffer(cmdBuffer);
-    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, "CopyOrResolveImage");
+    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("CopyOrResolveImage"));
     tempFence->init();
 
     CommandSubmitInfo submitInfo;
@@ -1990,11 +1990,11 @@ void VulkanCommandList::clearImage(ImageResourceRef image, const LinearColor& cl
 {
     if (EPixelDataFormat::isDepthFormat(image->imageFormat()))
     {
-        Logger::error("VulkanCommandList", " %s() : Depth image clear cannot be done in color clear", __func__);
+        LOG_ERROR("VulkanCommandList", " %s() : Depth image clear cannot be done in color clear", __func__);
         return;
     }
 
-    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer("ClearImage_" + image->getResourceName(), EQueueFunction::Graphics);
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer(TCHAR("ClearImage_") + image->getResourceName(), EQueueFunction::Graphics);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     std::vector<VkImageSubresourceRange> ranges;
@@ -2015,7 +2015,7 @@ void VulkanCommandList::clearImage(ImageResourceRef image, const LinearColor& cl
     vDevice->vkCmdClearColorImage(rawCmdBuffer, image.reference<VulkanImageResource>()->image, determineImageLayout(image), &clearVals, uint32(ranges.size()), ranges.data());
 
     cmdBufferManager.endCmdBuffer(cmdBuffer);
-    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, "ClearImageFence");
+    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("ClearImageFence"));
     tempFence->init();
 
     CommandSubmitInfo submitInfo;
@@ -2032,11 +2032,11 @@ void VulkanCommandList::clearDepth(ImageResourceRef image, float depth, uint32 s
 {
     if (!EPixelDataFormat::isDepthFormat(image->imageFormat()))
     {
-        Logger::error("VulkanCommandList", " %s() : Color image clear cannot be done in depth clear", __func__);
+        LOG_ERROR("VulkanCommandList", " %s() : Color image clear cannot be done in depth clear", __func__);
         return;
     }
 
-    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer("ClearDepth_" + image->getResourceName(), EQueueFunction::Graphics);
+    const GraphicsResource* cmdBuffer = cmdBufferManager.beginTempCmdBuffer(TCHAR("ClearDepth_") + image->getResourceName(), EQueueFunction::Graphics);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     std::vector<VkImageSubresourceRange> ranges;
@@ -2056,7 +2056,7 @@ void VulkanCommandList::clearDepth(ImageResourceRef image, float depth, uint32 s
     vDevice->vkCmdClearDepthStencilImage(rawCmdBuffer, image.reference<VulkanImageResource>()->image, determineImageLayout(image), &clearVals, uint32(ranges.size()), ranges.data());
 
     cmdBufferManager.endCmdBuffer(cmdBuffer);
-    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, "ClearDepthFence");
+    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("ClearDepthFence"));
     tempFence->init();
 
     CommandSubmitInfo submitInfo;

@@ -11,5 +11,11 @@
 
 #pragma once
 
+#include "Types/CoreDefines.h"
+
+#if USING_UNICODE
+#define UNICODE 1
+#endif
+
 #define NOMINMAX
 #include <windows.h>

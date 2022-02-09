@@ -23,7 +23,7 @@ std::vector<String> ParserHelper::parseMeta(std::vector<String>& metaData, const
 {
     std::vector<String> metaFlags;
     // We do ; termination for meta specifiers atleast for now just to make sure parsing is easier and simple
-    for (String& meta : String::split(annotatedStr, ";"))
+    for (String& meta : String::split(annotatedStr, TCHAR(";")))
     {
         if (PropertyHelper::isValidFunctionCall(meta.trim()))
         {
@@ -49,7 +49,7 @@ void ParserHelper::parseClassMeta(std::vector<String>& metaFlags, std::vector<St
     {
         if (TYPE_META_FLAGS.contains(metaFlag))
         {
-            metaFlags.emplace_back("EClassMetaFlags::CLASSMETA_" + metaFlag);
+            metaFlags.emplace_back(TCHAR("EClassMetaFlags::CLASSMETA_") + metaFlag);
         }
         else
         {
@@ -70,7 +70,7 @@ void ParserHelper::parseFieldMeta(std::vector<String>& metaFlags, std::vector<St
     {
         if (TYPE_META_FLAGS.contains(metaFlag))
         {
-            metaFlags.emplace_back("EFieldMetaFlags::FIELDMETA_" + metaFlag);
+            metaFlags.emplace_back(TCHAR("EFieldMetaFlags::FIELDMETA_") + metaFlag);
         }
         else
         {
@@ -91,7 +91,7 @@ void ParserHelper::parseFunctionMeta(std::vector<String>& metaFlags, std::vector
     {
         if (TYPE_META_FLAGS.contains(metaFlag))
         {
-            metaFlags.emplace_back("EFunctionMetaFlags::FUNCMETA_" + metaFlag);
+            metaFlags.emplace_back(TCHAR("EFunctionMetaFlags::FUNCMETA_") + metaFlag);
         }
         else
         {
@@ -112,7 +112,7 @@ void ParserHelper::parseEnumMeta(std::vector<String>& metaFlags, std::vector<Str
     {
         if (TYPE_META_FLAGS.contains(metaFlag))
         {
-            metaFlags.emplace_back("EEnumMetaFlags::ENUMMETA_" + metaFlag);
+            metaFlags.emplace_back(TCHAR("EEnumMetaFlags::ENUMMETA_") + metaFlag);
         }
         else
         {

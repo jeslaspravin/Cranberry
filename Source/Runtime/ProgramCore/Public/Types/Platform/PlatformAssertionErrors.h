@@ -35,7 +35,7 @@ public:
 #define debugAssert(Expr)\
 do{\
 if(!(Expr)){\
-    Logger::error("DebugAssertion", "%s() : Assert expression failed "#Expr,__func__);\
+    LOG_ERROR("DebugAssertion", "%s() : Assert expression failed "#Expr,__func__);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(false);}\
     /* Using assert macro to make use of assert window to crash or debug */\
     assert((Expr));\
@@ -49,7 +49,7 @@ if(!(Expr)){\
 #define fatalAssert(Expr,Message, ...)\
 do{\
 if(!(Expr)){\
-    Logger::error("FatalAssertion", "%s() : Assert expression failed ["#Expr"] "#Message,__func__, __VA_ARGS__);\
+    LOG_ERROR("FatalAssertion", "%s() : Assert expression failed ["#Expr"] "#Message,__func__, __VA_ARGS__);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(true);}\
 }while(0)
 #endif
@@ -58,7 +58,7 @@ if(!(Expr)){\
 #define alertIf(Expr,Message, ...)\
 do{\
 if(!(Expr)){\
-    Logger::error("DebugAssertion", "%s() : Signalling failure ["#Expr"] "#Message,__func__, __VA_ARGS__);\
+    LOG_ERROR("DebugAssertion", "%s() : Signalling failure ["#Expr"] "#Message,__func__, __VA_ARGS__);\
     UnexpectedErrorHandler::getHandler()->dumpCallStack(false);\
     UnexpectedErrorHandler::getHandler()->debugBreak();}\
 }while(0)

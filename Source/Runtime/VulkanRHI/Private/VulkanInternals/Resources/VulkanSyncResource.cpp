@@ -27,18 +27,18 @@ VulkanSemaphore::VulkanSemaphore(const VulkanDevice* deviceInstance)
 
 void VulkanSemaphore::waitForSignal() const
 {
-    Logger::warn("VulkanSemaphore", "%s() : Cannot wait on binary semaphores from host", __func__);
+    LOG_WARN("VulkanSemaphore", "%s() : Cannot wait on binary semaphores from host", __func__);
 }
 
 bool VulkanSemaphore::isSignaled() const
 {
-    Logger::warn("VulkanSemaphore", "%s() : Cannot check state on binary semaphores from host", __func__);
+    LOG_WARN("VulkanSemaphore", "%s() : Cannot check state on binary semaphores from host", __func__);
     return false;
 }
 
 void VulkanSemaphore::resetSignal()
 {
-    Logger::warn("VulkanSemaphore", "%s() : Cannot reset state on binary semaphores from host", __func__);
+    LOG_WARN("VulkanSemaphore", "%s() : Cannot reset state on binary semaphores from host", __func__);
 }
 
 void VulkanSemaphore::init()
@@ -62,7 +62,7 @@ void VulkanSemaphore::reinitResources()
     }
     else
     {
-        Logger::error("VulkanSemaphore", "%s() : Reinit failed to create new semaphore", __func__);
+        LOG_ERROR("VulkanSemaphore", "%s() : Reinit failed to create new semaphore", __func__);
     }
 }
 
@@ -129,7 +129,7 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
 
         if (vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkSignalSemaphore)(ownerDevice, &signalInfo) != VK_SUCCESS)
         {
-            Logger::error("VulkanTimelineSemaphore", "%s() : Signaling to value %d failed", __func__, value);
+            LOG_ERROR("VulkanTimelineSemaphore", "%s() : Signaling to value %d failed", __func__, value);
         }
     }
 }
@@ -166,7 +166,7 @@ void VulkanTimelineSemaphore::reinitResources()
     BaseType::reinitResources();
     if (!GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get())
     {
-        Logger::warn("VulkanTimelineSemaphore", "Cannot use timeline semaphore as feature is not supported");
+        LOG_WARN("VulkanTimelineSemaphore", "Cannot use timeline semaphore as feature is not supported");
         semaphore = nullptr;
         return;
     }
@@ -184,7 +184,7 @@ void VulkanTimelineSemaphore::reinitResources()
     }
     else
     {
-        Logger::error("VulkanSemaphore", "%s() : Reinit failed to create new semaphore", __func__);
+        LOG_ERROR("VulkanSemaphore", "%s() : Reinit failed to create new semaphore", __func__);
     }
 }
 
@@ -219,7 +219,7 @@ void VulkanFence::waitForSignal() const
 
     if (result == VK_TIMEOUT)
     {
-        Logger::warn("VulkanFence", "%s() : waiting for fence timedout", __func__);
+        LOG_WARN("VulkanFence", "%s() : waiting for fence timedout", __func__);
     }
 }
 
@@ -255,7 +255,7 @@ void VulkanFence::reinitResources()
     }
     else
     {
-        Logger::error("VulkanFence", "%s() : Failed recreating fence", __func__);
+        LOG_ERROR("VulkanFence", "%s() : Failed recreating fence", __func__);
     }
 }
 

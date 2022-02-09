@@ -276,7 +276,7 @@ protected:
     const GraphicsResource* paramLayout;
     String descriptorSetName;
 private:
-    void initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, const char* outerName) const;
+    void initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, String::const_pointer outerName) const;
     // Runtime array related, returns true if runtime array is setup
     bool initRuntimeArrayData(BufferParametersData& bufferParamData) const;
 

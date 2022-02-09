@@ -94,7 +94,7 @@ EVertexType::Type UniqueUtilityShaderConfig::vertexUsage() const
         }
     }
 
-    Logger::error("UniqueUtilityShader", "%s() : not supported vertex format for Utility shader %s", __func__, getResourceName().getChar());
+    LOG_ERROR("UniqueUtilityShader", "%s() : not supported vertex format for Utility shader %s", __func__, getResourceName().getChar());
     return EVertexType::Simple2;
 }
 
@@ -104,7 +104,7 @@ namespace ScreenSpaceQuadPipelineConfigs
 {
     GraphicsPipelineConfig screenSpaceQuadConfig(String& pipelineName, const ShaderResource* shaderResource)
     {
-        pipelineName = "ScreenSpaceQuad_" + shaderResource->getResourceName();
+        pipelineName = TCHAR("ScreenSpaceQuad_") + shaderResource->getResourceName();
         GraphicsPipelineConfig config;
         config.supportedCullings.emplace_back(ECullingMode::BackFace);
         config.allowedDrawModes.emplace_back(EPolygonDrawMode::Fill);
@@ -128,7 +128,7 @@ namespace ScreenSpaceQuadPipelineConfigs
     {
         GraphicsPipelineConfig config = screenSpaceQuadConfig(pipelineName, shaderResource);
 
-        pipelineName = "OverBlendedSSQuad_" + shaderResource->getResourceName();
+        pipelineName = TCHAR("OverBlendedSSQuad_") + shaderResource->getResourceName();
         config.attachmentBlendStates[0].bBlendEnable = true;
         config.attachmentBlendStates[0].colorBlendOp = EBlendOp::Add;
         config.attachmentBlendStates[0].srcColorFactor = EBlendFactor::SrcAlpha;
@@ -144,7 +144,7 @@ namespace ScreenSpaceQuadPipelineConfigs
     {
         GraphicsPipelineConfig config = screenSpaceQuadOverBlendConfig(pipelineName, shaderResource);
 
-        pipelineName = "OverBlendedSSQuadDepthTested_" + shaderResource->getResourceName();
+        pipelineName = TCHAR("OverBlendedSSQuadDepthTested_") + shaderResource->getResourceName();
         // Just add depth attachment and disable depth write
         config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::D24S8_U32_DNorm_SInt);
 

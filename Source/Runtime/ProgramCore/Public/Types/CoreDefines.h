@@ -20,6 +20,16 @@
 #define FORCE_INLINE inline
 #endif
 
+// String defines
+// Changing UNICODE must also be changed in TChar typedef
+#ifndef USING_UNICODE
+#define USING_UNICODE 0
+#endif
+#ifndef TCHAR_inner
+#define TCHAR_inner(x) x
+#endif
+#define TCHAR(x) TCHAR_inner(x)
+
 // Debug-able inline
 #if _DEBUG
 #define DEBUG_INLINE
@@ -48,12 +58,12 @@
 #endif
 
 #ifndef LINE_FEED_CHAR
-#define LINE_FEED_CHAR "\n"
+#define LINE_FEED_CHAR TCHAR("\n")
 #endif
 
 // File System path separator
 #ifndef FS_PATH_SEPARATOR
-#define FS_PATH_SEPARATOR "/"
+#define FS_PATH_SEPARATOR TCHAR("/")
 #endif
 
 // Math defines

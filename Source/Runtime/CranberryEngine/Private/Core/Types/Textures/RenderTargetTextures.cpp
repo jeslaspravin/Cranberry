@@ -157,7 +157,7 @@ void RenderTargetTexture::init(RenderTargetTexture* texture)
 
             if (!texture->bSameReadWriteTexture)
             {
-                texture->rtResource->setResourceName(texture->textureName + "_RT");
+                texture->rtResource->setResourceName(texture->textureName + TCHAR("_RT"));
 
                 texture->textureResource = graphicsHelper->createImage(graphicsInstance, imageCI);
                 texture->textureResource->setResourceName(texture->textureName);
@@ -233,7 +233,7 @@ void RenderTargetTextureCube::init(RenderTargetTextureCube* texture)
 
             if (!texture->bSameReadWriteTexture)
             {
-                texture->rtResource->setResourceName(texture->textureName + "_RT");
+                texture->rtResource->setResourceName(texture->textureName + TCHAR("_RT"));
 
                 texture->textureResource = graphicsHelper->createCubeImage(graphicsInstance, imageCI);
                 texture->textureResource->setResourceName(texture->textureName);

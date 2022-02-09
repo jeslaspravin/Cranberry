@@ -42,7 +42,7 @@ String PipelineCacheBase::getResourceName() const
 void PipelineCacheBase::setResourceName(const String& name)
 {
     cacheName = name;
-    cacheFileName = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(cacheFileName), "Cache", cacheName + ".cache");
+    cacheFileName = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(cacheFileName), TCHAR("Cache"), cacheName + TCHAR(".cache"));
 }
 
 void PipelineCacheBase::addPipelineToCache(const class PipelineBase* pipeline)
@@ -171,7 +171,7 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     while (tempIdx < config.allowedDrawModes.size() && config.allowedDrawModes[tempIdx] != queryParam.drawMode) ++tempIdx;
     if (tempIdx >= config.allowedDrawModes.size())
     {
-        Logger::warn("GraphicsPipeline", "%s() : Not supported draw mode %d for pipeline of shader %s"
+        LOG_WARN("GraphicsPipeline", "%s() : Not supported draw mode %d for pipeline of shader %s"
             , __func__, tempIdx, pipelineShader->getResourceName().getChar());
     }
     idx += (tempIdx % config.allowedDrawModes.size()) * polyDeg;
@@ -182,7 +182,7 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     while (tempIdx < config.supportedCullings.size() && config.supportedCullings[tempIdx] != queryParam.cullingMode) ++tempIdx;
     if (tempIdx >= config.supportedCullings.size())
     {
-        Logger::warn("GraphicsPipeline", "%s() : Not supported culling mode %d for pipeline of shader %s"
+        LOG_WARN("GraphicsPipeline", "%s() : Not supported culling mode %d for pipeline of shader %s"
             , __func__, tempIdx, pipelineShader->getResourceName().getChar());
     }
     idx += (tempIdx % config.supportedCullings.size()) * polyDeg;
@@ -242,7 +242,7 @@ FORCE_INLINE PipelineBase* ComputePipelineFactoryRegistrant::operator()(IGraphic
     }
     else
     {
-        String pipelineName = "Compute_" + args.pipelineShader->getResourceName();
+        String pipelineName = TCHAR("Compute_") + args.pipelineShader->getResourceName();
         pipeline = graphicsHelper->createComputePipeline(graphicsInstance);
         pipeline->setResourceName(pipelineName);
         pipeline->setPipelineShader(args.pipelineShader);
@@ -280,6 +280,6 @@ PipelineBase* PipelineFactory::create(IGraphicsInstance* graphicsInstance, const
 
         return (factoryItr->second)(graphicsInstance, graphicsHelper, args);
     }
-    Logger::error("PipelineFactory", "%() : Pipeline factory unsupported shader config/shader", __func__);
+    LOG_ERROR("PipelineFactory", "%() : Pipeline factory unsupported shader config/shader", __func__);
     return nullptr;
 }

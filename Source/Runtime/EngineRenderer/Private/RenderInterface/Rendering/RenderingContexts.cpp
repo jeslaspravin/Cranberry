@@ -32,8 +32,8 @@ void GlobalRenderingContextBase::initContext(IGraphicsInstance* graphicsInstance
 
     std::map<String, uint32>& runtimeResCount = ShaderParameterUtility::unboundArrayResourcesCount();
     // Fill Runtime indexed resources max count over here
-    runtimeResCount["srcImages"] = 16u;
-    runtimeResCount["globalSampledTexs"] = EngineSettings::globalSampledTexsSize.get();
+    runtimeResCount[TCHAR("srcImages")] = 16u;
+    runtimeResCount[TCHAR("globalSampledTexs")] = EngineSettings::globalSampledTexsSize.get();
 
     initApiInstances();
 
@@ -78,7 +78,7 @@ void GlobalRenderingContextBase::initShaderResources()
 {
     if (pipelinesCache)
     {
-        pipelinesCache->setResourceName("shaders");
+        pipelinesCache->setResourceName(TCHAR("shaders"));
         pipelinesCache->init();
     }
 
@@ -481,7 +481,7 @@ void GlobalRenderingContextBase::preparePipelineContext(class LocalPipelineConte
         = rawShaderObjects.find(pipelineContext->materialName);
     if (shaderDataCollectionItr == rawShaderObjects.cend())
     {
-        Logger::error("GlobalRenderingContext", "%s : Requested material %s is not found", __func__, pipelineContext->materialName.getChar());
+        LOG_ERROR("GlobalRenderingContext", "%s : Requested material %s is not found", __func__, pipelineContext->materialName.getChar());
         return;
     }
 

@@ -35,35 +35,35 @@ struct CXStringWrapper : public RefCountable
     {
         if (const AChar* cPtr = clang_getCString(str))
         {
-            return cPtr;
+            return UTF8_TO_TCHAR(cPtr);
         }
         return {};
     }
 };
 
 // Logger overrides
-FORCE_INLINE std::ostream& operator<<(std::ostream& stream, const CXStringRef& str)
+FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const CXStringRef& str)
 {
     stream << str->toString();
     return stream;
 }
 
-FORCE_INLINE std::ostream& operator<<(std::ostream& stream, const CXString& cxStr)
+FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const CXString& cxStr)
 {
     if (const AChar* cPtr = clang_getCString(cxStr))
     {
-        stream << cPtr;
+        stream << UTF8_TO_TCHAR(cPtr);
         clang_disposeString(cxStr);
     }
     return stream;
 }
 
-FORCE_INLINE std::ostream& operator<<(std::ostream& stream, const CXSourceLocation& cxStrLoc)
+FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const CXSourceLocation& cxStrLoc)
 {
     CXFile file;
     uint32 lineNum, colNum;
     clang_getFileLocation(cxStrLoc, &file, &lineNum, &colNum, nullptr);
     String srcfile(CXStringWrapper(clang_getFileName(file)).toString());
-    stream << srcfile << "(" << lineNum << "," << colNum << "):";
+    stream << srcfile << TCHAR("(") << lineNum << TCHAR(",") << colNum << TCHAR("):");
     return stream;
 }

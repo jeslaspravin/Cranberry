@@ -43,8 +43,8 @@ FORCE_INLINE std::vector<String> WindowsFileSystemFunctions::listFiles(const Str
             }
         }
 
-        WIN32_FIND_DATAA data;
-        HANDLE fHandle = FindFirstFileA(PathFunctions::combinePath(currentDir, wildcard).c_str(), &data);
+        WIN32_FIND_DATA data;
+        HANDLE fHandle = ::FindFirstFile(PathFunctions::combinePath(currentDir, wildcard).c_str(), &data);
 
         if (fHandle != INVALID_HANDLE_VALUE)
         {
@@ -56,8 +56,8 @@ FORCE_INLINE std::vector<String> WindowsFileSystemFunctions::listFiles(const Str
                     fileList.push_back(path);
                 }
 
-            } while (FindNextFileA(fHandle, &data));
-            FindClose(fHandle);
+            } while (::FindNextFile(fHandle, &data));
+            ::FindClose(fHandle);
         }
     }
     return fileList;
@@ -82,8 +82,8 @@ std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& direc
         String currentDir = directories.front();
         directories.pop();
 
-        WIN32_FIND_DATAA data;
-        HANDLE fHandle = FindFirstFileA(PathFunctions::combinePath(currentDir, "*").c_str(), &data);
+        WIN32_FIND_DATA data;
+        HANDLE fHandle = ::FindFirstFile(PathFunctions::combinePath(currentDir, TCHAR("*")).c_str(), &data);
 
         if (fHandle != INVALID_HANDLE_VALUE)
         {
@@ -92,7 +92,7 @@ std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& direc
                 String path = PathFunctions::combinePath(currentDir, data.cFileName);
                 String fileName = data.cFileName;
                 // To replace . and .. that is part of file system redirectors
-                fileName.replaceAll(".", "");
+                fileName.replaceAll(TCHAR("."), TCHAR(""));
                 if (BIT_NOT_SET(data.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY))
                 {
                     fileList.push_back(path);
@@ -102,8 +102,8 @@ std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String& direc
                     directories.push(path);
                 }
 
-            } while (FindNextFileA(fHandle, &data));
-            FindClose(fHandle);
+            } while (::FindNextFile(fHandle, &data));
+            ::FindClose(fHandle);
         }
     }
     return fileList;
@@ -128,8 +128,8 @@ std::vector<String> WindowsFileSystemFunctions::listAllDirectories(const String&
         String currentDir = directories.front();
         directories.pop();
 
-        WIN32_FIND_DATAA data;
-        HANDLE fHandle = FindFirstFileA(PathFunctions::combinePath(currentDir, "*").c_str(), &data);
+        WIN32_FIND_DATA data;
+        HANDLE fHandle = ::FindFirstFile(PathFunctions::combinePath(currentDir, TCHAR("*")).c_str(), &data);
 
         if (fHandle != INVALID_HANDLE_VALUE)
         {
@@ -138,7 +138,7 @@ std::vector<String> WindowsFileSystemFunctions::listAllDirectories(const String&
                 String path = PathFunctions::combinePath(currentDir, data.cFileName);
                 String fileName = data.cFileName;
                 // To replace . and .. that is part of file system redirectors
-                fileName.replaceAll(".", "");
+                fileName.replaceAll(TCHAR("."), TCHAR(""));
                 if(BIT_SET(data.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY) && !fileName.empty())
                 {
                     folderList.emplace_back(path);
@@ -148,8 +148,8 @@ std::vector<String> WindowsFileSystemFunctions::listAllDirectories(const String&
                     }
                 }
 
-            } while (FindNextFileA(fHandle, &data));
-            FindClose(fHandle);
+            } while (::FindNextFile(fHandle, &data));
+            ::FindClose(fHandle);
         }
     }
     return folderList;
@@ -160,7 +160,7 @@ String WindowsFileSystemFunctions::applicationDirectory(String &appName)
     String path;
     path.resize(MAX_PATH);
     dword pathActualSize = (dword)path.length();
-    pathActualSize = GetModuleFileNameA(nullptr, path.data(), pathActualSize);
+    pathActualSize = ::GetModuleFileName(nullptr, path.data(), pathActualSize);
     
     path.resize(pathActualSize);
     WindowsFile file{ path };
@@ -170,17 +170,17 @@ String WindowsFileSystemFunctions::applicationDirectory(String &appName)
 
 bool WindowsFileSystemFunctions::moveFile(GenericFile* moveFrom, GenericFile* moveTo)
 {
-    return MoveFileA(moveFrom->getFullPath().getChar(), moveTo->getFullPath().getChar());
+    return ::MoveFile(moveFrom->getFullPath().getChar(), moveTo->getFullPath().getChar());
 }
 
 bool WindowsFileSystemFunctions::copyFile(GenericFile* copyFrom, GenericFile* copyTo)
 {
-    return CopyFileA(copyFrom->getFullPath().getChar(), copyTo->getFullPath().getChar(), true);
+    return ::CopyFile(copyFrom->getFullPath().getChar(), copyTo->getFullPath().getChar(), true);
 }
 
 bool WindowsFileSystemFunctions::replaceFile(GenericFile* replaceWith, GenericFile* replacing, GenericFile* backupFile)
 {
-    return ReplaceFileA(replacing->getFullPath().getChar(), replaceWith->getFullPath().getChar(),
+    return ::ReplaceFile(replacing->getFullPath().getChar(), replaceWith->getFullPath().getChar(),
         backupFile ? backupFile->getFullPath().getChar() : nullptr,
         REPLACEFILE_IGNORE_ACL_ERRORS | REPLACEFILE_IGNORE_MERGE_ERRORS, nullptr, nullptr);
 }

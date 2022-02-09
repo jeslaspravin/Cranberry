@@ -26,8 +26,8 @@ String PathFunctions::toRelativePath(const String& absPath, const String& relToP
     // Should we implement a toRelativePath platform independent? std::filesystem::relative does that under the hood anyways
     std::error_code errorCode;
     std::filesystem::path relPath = std::filesystem::relative(absolutePath, relativeToPath, errorCode);
-    fatalAssert(errorCode.value() == 0, "%s() : Error %s when making [%s] as relative to %s", errorCode.message(), absPath, relToPath);
-    return relPath.string();
+    fatalAssert(errorCode.value() == 0, "%s() : Error %s when making [%s] as relative to %s", UTF8_TO_TCHAR(errorCode.message().c_str()), absPath, relToPath);
+    return relPath.c_str();
 }
 
 String PathFunctions::toAbsolutePath(const String& relPath, const String& basePath)
@@ -43,14 +43,14 @@ String PathFunctions::toAbsolutePath(const String& relPath, const String& basePa
 
     const String absPath(PathFunctions::combinePath(basePath, relPath));
     // Replace all "//" and split each path elements
-    const std::vector<String> pathElems{ String::split(absPath.replaceAllCopy("\\", "/"), "/") };
+    const std::vector<String> pathElems{ String::split(absPath.replaceAllCopy(TCHAR("\\"), TCHAR("/")), TCHAR("/")) };
     std::vector<String> sanitizedPathElems;
     sanitizedPathElems.reserve(pathElems.size());
 
     int32 parentDirNum = 0;
     for (int64 i = pathElems.size() - 1; i >= 0; --i)
     {
-        if (".." == pathElems[i])
+        if (TCHAR("..") == pathElems[i])
         {
             ++parentDirNum;
         }
@@ -68,14 +68,14 @@ String PathFunctions::toAbsolutePath(const String& relPath, const String& basePa
     }
     std::reverse(sanitizedPathElems.begin(), sanitizedPathElems.end());
 
-    return String::join(sanitizedPathElems.cbegin(), sanitizedPathElems.cend(), "/");
+    return String::join(sanitizedPathElems.cbegin(), sanitizedPathElems.cend(), TCHAR("/"));
 }
 
 
 bool PathFunctions::isSubdirectory(const String& checkPath, const String& basePath)
 {
-    const std::vector<String> checkPathElems{ String::split(checkPath.replaceAllCopy("\\", "/"), "/") };
-    const std::vector<String> basePathElems{ String::split(basePath.replaceAllCopy("\\", "/"), "/") };
+    const std::vector<String> checkPathElems{ String::split(asGenericPath(checkPath), TCHAR("/")) };
+    const std::vector<String> basePathElems{ String::split(asGenericPath(basePath), TCHAR("/")) };
 
     // If basePath folder count is larger or equal to checkPath then it means basPath can not fit into checkPath. checkPath can never be subdir of basePath
     if (basePathElems.size() >= checkPathElems.size())
@@ -115,4 +115,25 @@ String PathFunctions::stripExtension(const String& fileName)
         return fileName.substr(0, foundAt);
     }
     return fileName;
+}
+
+String PathFunctions::fileOrDirectoryName(const String& filePath)
+{
+    String pathTmp = asGenericPath(filePath);
+    String fileName;
+
+    size_t hostDirectoryAt = pathTmp.rfind(TCHAR('/'), pathTmp.length());
+    if (hostDirectoryAt != String::npos)
+    {
+        // Skip the separator char so +1
+        fileName = { pathTmp.substr(hostDirectoryAt + 1) };
+    }
+    return fileName;
+}
+
+String PathFunctions::asGenericPath(const String& path)
+{
+    String pathTmp = path.replaceAllCopy(TCHAR("\\"), TCHAR("/"));
+    pathTmp.trimDuplicates(TCHAR('/'));
+    return pathTmp;
 }

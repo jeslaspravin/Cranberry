@@ -57,8 +57,8 @@ ADD_BUFFER_TYPED_FIELD(cascadeFarPlane)
 ADD_BUFFER_TYPED_FIELD(shadowFlags)
 END_BUFFER_DEFINITION();
 
-#define PBRLIGHTSNOSHADOW_SHADER_NAME "PBRLightsNoShadow"
-#define PBRLIGHTSWITHSHADOW_SHADER_NAME "PBRLightsWithShadow"
+#define PBRLIGHTSNOSHADOW_SHADER_NAME TCHAR("PBRLightsNoShadow")
+#define PBRLIGHTSWITHSHADOW_SHADER_NAME TCHAR("PBRLightsWithShadow")
 
 class PBRShaders : public UniqueUtilityShaderConfig
 {
@@ -79,9 +79,9 @@ public:
         {
             std::map<String, ShaderBufferParamInfo*> paramInfo
             {
-                { "lightArray", &LIGHTDATA_INFO },
-                { "colorCorrection", &COLOR_CORRECTION_INFO },
-                { "shadowData", &SHADOW_DATA_INFO }
+                { TCHAR("lightArray"), &LIGHTDATA_INFO },
+                { TCHAR("colorCorrection"), &COLOR_CORRECTION_INFO },
+                { TCHAR("shadowData"), &SHADOW_DATA_INFO }
             };
             paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
             return paramInfo;
@@ -127,9 +127,9 @@ protected:
 public:
     void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry>& specializationConst) const override
     {
-        specializationConst["PCF_KERNEL_SIZE"] = SpecializationConstUtility::fromValue(EngineSettings::pcfKernelSize.get());
-        specializationConst["POINT_PCF_SAMPLES"] = SpecializationConstUtility::fromValue(EngineSettings::pointPcfKernelSize.get());
-        specializationConst["POINT_PCF_KERNEL_EXTEND"] = SpecializationConstUtility::fromValue(0.2f);
+        specializationConst[TCHAR("PCF_KERNEL_SIZE")] = SpecializationConstUtility::fromValue(EngineSettings::pcfKernelSize.get());
+        specializationConst[TCHAR("POINT_PCF_SAMPLES")] = SpecializationConstUtility::fromValue(EngineSettings::pointPcfKernelSize.get());
+        specializationConst[TCHAR("POINT_PCF_KERNEL_EXTEND")] = SpecializationConstUtility::fromValue(0.2f);
     }
 };
 

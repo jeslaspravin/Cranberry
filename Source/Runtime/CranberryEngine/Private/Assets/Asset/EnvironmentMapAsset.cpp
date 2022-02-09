@@ -41,7 +41,7 @@ void EnvironmentMapAsset::initAsset()
                 .layerCount = 1
             };
             ImageResourceRef hdrImage = graphicsHelper->createImage(graphicsInstance, hdrImageCreateInfo);
-            hdrImage->setResourceName("HDR_temp_image");
+            hdrImage->setResourceName(TCHAR("HDR_temp_image"));
             hdrImage->setShaderUsage(EImageShaderUsage::Sampling);
             hdrImage->setSampleCounts(EPixelSampleCount::SampleCount1);
             hdrImage->init();
@@ -62,21 +62,21 @@ void EnvironmentMapAsset::initAsset()
             createParams.dataFormat = ECubeTextureFormat::CT_F16;
             createParams.mipCount = 1;
             createParams.textureSize = Size2D(EngineSettings::maxEnvMapSize);
-            createParams.textureName = assetName() + "_EnvMap";
+            createParams.textureName = assetName() + TCHAR("_EnvMap");
             envMap = TextureBase::createTexture<CubeTexture>(createParams);
 
             // Diffuse Irradiance
             createParams.dataFormat = ECubeTextureFormat::CT_F32;
             // 1024/16 = 64, Scaled in this ratio
             createParams.textureSize = Size2D(EngineSettings::maxEnvMapSize / 16u);
-            createParams.textureName = assetName() + "_DifIrrad";
+            createParams.textureName = assetName() + TCHAR("_DifIrrad");
             diffuseIrradMap = TextureBase::createTexture<CubeTexture>(createParams);
 
             // Pre-filtered specular map
             createParams.dataFormat = ECubeTextureFormat::CT_F16;
             createParams.textureSize = Size2D(EngineSettings::maxEnvMapSize / 2u);
             createParams.mipCount = EngineSettings::maxPrefilteredCubeMiplevels;
-            createParams.textureName = assetName() + "_FilteredSpec";
+            createParams.textureName = assetName() + TCHAR("_FilteredSpec");
             specularIrradMap = TextureBase::createTexture<CubeTexture>(createParams);
 
             {
@@ -88,19 +88,19 @@ void EnvironmentMapAsset::initAsset()
                 rwCreateParams.dataFormat = ECubeTextureFormat::CT_F16;
                 rwCreateParams.mipCount = 1;
                 rwCreateParams.textureSize = envMap->getTextureSize();
-                rwCreateParams.textureName = "CubeMapIntermediate";
+                rwCreateParams.textureName = TCHAR("CubeMapIntermediate");
                 CubeTextureRW* writeIntermediate = TextureBase::createTexture<CubeTextureRW>(rwCreateParams);
 
                 // Diffuse irradiance intermediate
                 rwCreateParams.dataFormat = ECubeTextureFormat::CT_F32;
                 rwCreateParams.textureSize = diffuseIrradMap->getTextureSize();
-                rwCreateParams.textureName = "DiffuseIrradIntermediate";
+                rwCreateParams.textureName = TCHAR("DiffuseIrradIntermediate");
                 CubeTextureRW* diffIrradIntermediate = TextureBase::createTexture<CubeTextureRW>(rwCreateParams);
 
                 rwCreateParams.dataFormat = ECubeTextureFormat::CT_F16;
                 rwCreateParams.textureSize = specularIrradMap->getTextureSize();
                 rwCreateParams.mipCount = EngineSettings::maxPrefilteredCubeMiplevels;
-                rwCreateParams.textureName = "SpecularIrradIntermediate";
+                rwCreateParams.textureName = TCHAR("SpecularIrradIntermediate");
                 CubeTextureRW* specIrradIntermediate = TextureBase::createTexture<CubeTextureRW>(rwCreateParams);
 
                 SamplerCreateInfo samplerCI
@@ -115,25 +115,25 @@ void EnvironmentMapAsset::initAsset()
 
                 // Create Env map from HDRI
                 LocalPipelineContext hdriToCubeContext;
-                hdriToCubeContext.materialName = "HDRIToCube_16x16x1";
+                hdriToCubeContext.materialName = TCHAR("HDRIToCube_16x16x1");
                 renderMan->preparePipelineContext(&hdriToCubeContext);
                 ShaderParametersRef hdriToCubeParams = graphicsHelper->createShaderParameters(graphicsInstance, hdriToCubeContext.getPipeline()->getParamLayoutAtSet(0), {});
-                hdriToCubeParams->setTextureParam("outCubeMap", writeIntermediate->getTextureResource());
-                hdriToCubeParams->setTextureParam("hdri", hdrImage, sampler);
+                hdriToCubeParams->setTextureParam(TCHAR("outCubeMap"), writeIntermediate->getTextureResource());
+                hdriToCubeParams->setTextureParam(TCHAR("hdri"), hdrImage, sampler);
                 hdriToCubeParams->init();
 
                 // Env to Diffuse Irradiance
                 LocalPipelineContext envToDiffIrradContext;
-                envToDiffIrradContext.materialName = "EnvToDiffuseIrradiance_4x4x1";
+                envToDiffIrradContext.materialName = TCHAR("EnvToDiffuseIrradiance_4x4x1");
                 renderMan->preparePipelineContext(&envToDiffIrradContext);
                 ShaderParametersRef envToDiffIrradParams = graphicsHelper->createShaderParameters(graphicsInstance, envToDiffIrradContext.getPipeline()->getParamLayoutAtSet(0), {});
-                envToDiffIrradParams->setTextureParam("outDiffuseIrradiance", diffIrradIntermediate->getTextureResource());
-                envToDiffIrradParams->setTextureParam("envMap", envMap->getTextureResource(), sampler);
+                envToDiffIrradParams->setTextureParam(TCHAR("outDiffuseIrradiance"), diffIrradIntermediate->getTextureResource());
+                envToDiffIrradParams->setTextureParam(TCHAR("envMap"), envMap->getTextureResource(), sampler);
                 envToDiffIrradParams->init();
 
                 // HDRI to pre-filtered specular map
                 LocalPipelineContext hdriToPrefilteredSpecContext;
-                hdriToPrefilteredSpecContext.materialName = "HDRIToPrefilteredSpecMap_16x16x1";
+                hdriToPrefilteredSpecContext.materialName = TCHAR("HDRIToPrefilteredSpecMap_16x16x1");
                 renderMan->preparePipelineContext(&hdriToPrefilteredSpecContext);
                 ShaderParametersRef hdriToPrefilteredSpecParams = graphicsHelper->createShaderParameters(graphicsInstance, hdriToPrefilteredSpecContext.getPipeline()->getParamLayoutAtSet(0), {});
                 for (uint32 i = 0; i < specIrradIntermediate->getMipCount(); ++i)
@@ -141,14 +141,14 @@ void EnvironmentMapAsset::initAsset()
                     ImageViewInfo viewInfo;
                     viewInfo.viewSubresource.baseMip = i;
                     viewInfo.viewSubresource.mipCount = 1;
-                    hdriToPrefilteredSpecParams->setTextureParam("outPrefilteredSpecMap", specIrradIntermediate->getTextureResource(), i);
-                    hdriToPrefilteredSpecParams->setTextureParamViewInfo("outPrefilteredSpecMap", viewInfo, i);
+                    hdriToPrefilteredSpecParams->setTextureParam(TCHAR("outPrefilteredSpecMap"), specIrradIntermediate->getTextureResource(), i);
+                    hdriToPrefilteredSpecParams->setTextureParamViewInfo(TCHAR("outPrefilteredSpecMap"), viewInfo, i);
                 }
-                hdriToPrefilteredSpecParams->setTextureParam("hdri", hdrImage, sampler);
+                hdriToPrefilteredSpecParams->setTextureParam(TCHAR("hdri"), hdrImage, sampler);
                 hdriToPrefilteredSpecParams->init();
 
                 // Start creating maps
-                const GraphicsResource* createEnvCmdBuffer = cmdList->startCmd("CreateEnvMap_" + assetName(), EQueueFunction::Graphics, false);
+                const GraphicsResource* createEnvCmdBuffer = cmdList->startCmd(TCHAR("CreateEnvMap_") + assetName(), EQueueFunction::Graphics, false);
 
                 cmdList->cmdBarrierResources(createEnvCmdBuffer, { hdriToCubeParams });
                 cmdList->cmdBindComputePipeline(createEnvCmdBuffer, hdriToCubeContext);
@@ -170,7 +170,7 @@ void EnvironmentMapAsset::initAsset()
                 cmdList->cmdCopyOrResolveImage(createEnvCmdBuffer, diffIrradIntermediate->getTextureResource(), diffuseIrradMap->getTextureResource(), copyInfo, copyInfo);
 
                 cmdList->cmdBindComputePipeline(createEnvCmdBuffer, hdriToPrefilteredSpecContext);
-                cmdList->cmdPushConstants(createEnvCmdBuffer, hdriToPrefilteredSpecContext, { {"sourceSize", envMap->getTextureSize().x } });
+                cmdList->cmdPushConstants(createEnvCmdBuffer, hdriToPrefilteredSpecContext, { {TCHAR("sourceSize"), envMap->getTextureSize().x } });
                 cmdList->cmdBindDescriptorsSets(createEnvCmdBuffer, hdriToPrefilteredSpecContext, hdriToPrefilteredSpecParams);
                 subgrpSize = static_cast<const ComputeShaderConfig*>(hdriToPrefilteredSpecContext.getPipeline()->getShaderResource()->getShaderConfig())->getSubGroupSize();
                 cmdList->cmdDispatch(createEnvCmdBuffer, specIrradIntermediate->getTextureSize().x / subgrpSize.x, specIrradIntermediate->getTextureSize().y / subgrpSize.y);
