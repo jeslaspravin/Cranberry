@@ -37,7 +37,7 @@ ADD_BUFFER_STRUCT_FIELD(lights, GoochModelLightData)
 ADD_BUFFER_TYPED_FIELD(count)
 END_BUFFER_DEFINITION();
 
-#define GOOCH_SHADER_NAME "GoochModel"
+#define GOOCH_SHADER_NAME TCHAR("GoochModel")
 
 class GoochModelShader : public UniqueUtilityShaderConfig
 {
@@ -53,9 +53,9 @@ public:
         static GoochModelLightArrayBufferParamInfo LIGHTDATA_INFO;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "lightCommon", &LIGHTCOMMON_INFO },
-            { "lightArray", &LIGHTDATA_INFO },
-            { "viewData", RenderSceneBase::sceneViewParamInfo().at("viewData") }
+            { TCHAR("lightCommon"), &LIGHTCOMMON_INFO },
+            { TCHAR("lightArray"), &LIGHTDATA_INFO },
+            { TCHAR("viewData"), RenderSceneBase::sceneViewParamInfo().at(TCHAR("viewData")) }
         };
 
 

@@ -127,13 +127,6 @@ RotationMatrix Quat::toRotationMatrix() const
     return RotationMatrix(rotMat);
 }
 
-Vector3D Quat::rotateVector(const Vector3D& vector) const
-{
-    Vector3D q{ x,y,z };    
-    return (w * w - q.sqrlength()) * vector
-        + 2 * ((q | vector) * q + w * (q ^ vector));
-}
-
 void Quat::fromAngleAxisImpl(float angle, Vector3D axis)
 {
     const float hAngleRad = Math::deg2Rad(angle) * 0.5f;
@@ -152,6 +145,18 @@ void Quat::fromAngleAxisImpl(float angle, Vector3D axis)
     w = Math::cos(hAngleRad);
 }
 
+Vector3D Quat::rotateVector(const Vector3D& vector) const
+{
+    Vector3D q{ x,y,z };
+    return (w * w - q.sqrlength()) * vector
+        + 2 * ((q | vector) * q + w * (q ^ vector));
+}
+
+float Quat::dot(const Quat& a, const Quat& b)
+{
+    return a | b;
+}
+
 float Quat::operator[](uint32 index) const
 {
     return (&this->x)[index];
@@ -160,6 +165,14 @@ float Quat::operator[](uint32 index) const
 float& Quat::operator[](uint32 index)
 {
     return (&this->x)[index];
+}
+
+float Quat::operator|(const Quat& b) const
+{
+    return (x * b.x)
+        + (y * b.y)
+        + (z * b.z)
+        + (w * b.w);
 }
 
 Quat Quat::operator*(const Quat& b) const
@@ -306,6 +319,19 @@ Quat Quat::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
         return IDENTITY;
     }
     return Quat((*this) * Math::invSqrt(sqrLen));
+}
+
+Quat Quat::inverse() const
+{
+    Quat retVal(*this);
+    if (!Math::isEqual(sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON))
+    {
+        retVal = safeNormalize();
+    }
+    retVal.x = -retVal.x;
+    retVal.y = -retVal.y;
+    retVal.z = -retVal.z;
+    return retVal;
 }
 
 float Quat::length() const

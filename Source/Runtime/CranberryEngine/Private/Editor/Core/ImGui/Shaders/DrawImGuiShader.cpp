@@ -29,7 +29,7 @@ ADD_BUFFER_TYPED_FIELD(scale)
 ADD_BUFFER_TYPED_FIELD(translate)
 END_BUFFER_DEFINITION();
 
-#define DRAW_IMGUI "DrawImGui"
+#define DRAW_IMGUI TCHAR("DrawImGui")
 
 class DrawImGui : public UniqueUtilityShaderConfig
 {
@@ -43,7 +43,7 @@ public:
         static UiTransformBufferParamInfo UI_TRANSFORM_INFO;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "uiTransform", &UI_TRANSFORM_INFO }
+            { TCHAR("uiTransform"), &UI_TRANSFORM_INFO }
         };
 
 

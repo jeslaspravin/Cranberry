@@ -120,7 +120,7 @@ void VulkanCommandPool::reinitResources()
 {
     if (cmdPoolInfo.queueResource == nullptr)
     {
-        Logger::error("VulkanCommandPool", "%s() : Command pool information is invalid", __func__);
+        LOG_ERROR("VulkanCommandPool", "%s() : Command pool information is invalid", __func__);
         return;
     }
     release();
@@ -132,34 +132,34 @@ void VulkanCommandPool::reinitResources()
     commandPoolCreateInfo.flags = 0;
     if (cmdPoolInfo.vDevice->vkCreateCommandPool(cmdPoolInfo.logicalDevice, &commandPoolCreateInfo, nullptr, &oneTimeRecordPool) != VK_SUCCESS)
     {
-        Logger::error("VulkanCommandPool", "%s() : Failed creating one time record command buffer pool", __func__);
+        LOG_ERROR("VulkanCommandPool", "%s() : Failed creating one time record command buffer pool", __func__);
         oneTimeRecordPool = nullptr;
     }
     else
     {
-        cmdPoolInfo.vDevice->debugGraphics()->markObject((uint64)oneTimeRecordPool, getResourceName() + "_OneTimeRecordPool", getObjectType());
+        cmdPoolInfo.vDevice->debugGraphics()->markObject((uint64)oneTimeRecordPool, getResourceName() + TCHAR("_OneTimeRecordPool"), getObjectType());
     }
 
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     if(cmdPoolInfo.vDevice->vkCreateCommandPool(cmdPoolInfo.logicalDevice, &commandPoolCreateInfo, nullptr, &tempCommandsPool) != VK_SUCCESS)
     {
-        Logger::error("VulkanCommandPool", "%s() : Failed creating temporary one time use command buffer pool", __func__);
+        LOG_ERROR("VulkanCommandPool", "%s() : Failed creating temporary one time use command buffer pool", __func__);
         tempCommandsPool = nullptr;
     }
     else
     {
-        cmdPoolInfo.vDevice->debugGraphics()->markObject((uint64)tempCommandsPool, getResourceName() + "_TempCmdsPool", getObjectType());
+        cmdPoolInfo.vDevice->debugGraphics()->markObject((uint64)tempCommandsPool, getResourceName() + TCHAR("_TempCmdsPool"), getObjectType());
     }
 
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     if(cmdPoolInfo.vDevice->vkCreateCommandPool(cmdPoolInfo.logicalDevice, &commandPoolCreateInfo, nullptr, &rerecordableCommandPool) != VK_SUCCESS)
     {
-        Logger::error("VulkanCommandPool", "%s() : Failed creating rerecordable command buffer pool", __func__);
+        LOG_ERROR("VulkanCommandPool", "%s() : Failed creating rerecordable command buffer pool", __func__);
         rerecordableCommandPool = nullptr;
     }
     else
     {
-        cmdPoolInfo.vDevice->debugGraphics()->markObject((uint64)rerecordableCommandPool, getResourceName() + "_RerecordableCmdPool", getObjectType());
+        cmdPoolInfo.vDevice->debugGraphics()->markObject((uint64)rerecordableCommandPool, getResourceName() + TCHAR("_RerecordableCmdPool"), getObjectType());
     }
 }
 
@@ -237,7 +237,7 @@ VulkanCmdBufferManager::~VulkanCmdBufferManager()
     {
         if (cmdBuffer.second.cmdSyncInfoIdx != -1)
         {
-            Logger::warn("VulkanCmdBufferManager", "%s: Command buffer %s is not finished, trying to finish it"
+            LOG_WARN("VulkanCmdBufferManager", "%s: Command buffer %s is not finished, trying to finish it"
                 , __func__, cmdBuffer.second.cmdBuffer->getResourceName().getChar());
             cmdFinished(cmdBuffer.second.cmdBuffer->getResourceName(), nullptr);
         }
@@ -310,11 +310,11 @@ const GraphicsResource* VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
         {
         case ECmdState::Recorded:
         case ECmdState::Submitted:
-            Logger::error("VulkanCommandBufferManager", "%s() : Trying to record a prerecorded command again is restricted Command = [%s]", __func__, cmdName.getChar());
+            LOG_ERROR("VulkanCommandBufferManager", "%s() : Trying to record a prerecorded command again is restricted Command = [%s]", __func__, cmdName.getChar());
             fatalAssert(false, "Cannot record prerecorded command again");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
-            Logger::warn("VulkanCommandBufferManager", "%s() : Command %s is already being recorded", __func__, cmdName.getChar());
+            LOG_WARN("VulkanCommandBufferManager", "%s() : Command %s is already being recorded", __func__, cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Idle:
         default:
@@ -361,11 +361,11 @@ const GraphicsResource* VulkanCmdBufferManager::beginReuseCmdBuffer(const String
         switch (cmdBufferItr->second.cmdState)
         {
         case ECmdState::Submitted:
-            Logger::error("VulkanCommandBufferManager", "%s() : Trying to record a submitted command [%s] is restricted before it is finished", __func__, cmdName.getChar());
+            LOG_ERROR("VulkanCommandBufferManager", "%s() : Trying to record a submitted command [%s] is restricted before it is finished", __func__, cmdName.getChar());
             fatalAssert(false, "Cannot record command while it is still executing");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
-            Logger::warn("VulkanCommandBufferManager", "%s() : Command [%s] is already being recorded", __func__, cmdName.getChar());
+            LOG_WARN("VulkanCommandBufferManager", "%s() : Command [%s] is already being recorded", __func__, cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recorded:
         case ECmdState::Idle:
@@ -545,7 +545,7 @@ ECmdState VulkanCmdBufferManager::getState(const GraphicsResource* cmdBuffer) co
     {
         return cmdBufferItr->second.cmdState;
     }
-    Logger::debug("VulkanCmdBufferManager", "%s() : Not available command buffer[%s] queried for state", __func__, cmdBuffer->getResourceName().getChar());
+    LOG_DEBUG("VulkanCmdBufferManager", "%s() : Not available command buffer[%s] queried for state", __func__, cmdBuffer->getResourceName().getChar());
     return ECmdState::Idle;
 }
 
@@ -602,14 +602,14 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
             cmdBuffers[i] = vCmdBuffer->cmdBuffer;
             if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
             {
-                Logger::error("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+                LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
                 return;
             }
             queueRes = cmdPool.cmdPoolInfo.queueResource;
         }
         if (queueRes == nullptr)
         {
-            Logger::error("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
             return;
         }
 
@@ -682,14 +682,14 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
         cmdBuffers[i] = vCmdBuffer->cmdBuffer;
         if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
         {
-            Logger::error("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
             return;
         }
         queueRes = cmdPool.cmdPoolInfo.queueResource;
     }
     if (queueRes == nullptr)
     {
-        Logger::error("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+        LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
         return;
     }
 
@@ -770,7 +770,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
             const auto* vCmdBuffer = static_cast<const VulkanCommandBuffer*>(commands[cmdSubmitIdx].cmdBuffers[i]);
             if (vCmdBuffer->bIsTempBuffer)
             {
-                Logger::error("VulkanCommandBufferManager", "%s() : Temporary buffers[%s] are required to use advanced submit function", __func__
+                LOG_ERROR("VulkanCommandBufferManager", "%s() : Temporary buffers[%s] are required to use advanced submit function", __func__
                     , vCmdBuffer->getResourceName().getChar());
                 return;
             }
@@ -779,7 +779,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
             cmdBuffers[i] = vCmdBuffer->cmdBuffer;
             if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
             {
-                Logger::error("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+                LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
                 return;
             }
             queueRes = cmdPool.cmdPoolInfo.queueResource;
@@ -793,7 +793,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
                     auto cmdBufferItr = commandBuffers.find(waitOn.cmdBuffer->getResourceName());
                     if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
                     {
-                        Logger::error("VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__, waitOn.cmdBuffer->getResourceName().getChar());
+                        LOG_ERROR("VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__, waitOn.cmdBuffer->getResourceName().getChar());
                         return;
                     }
 
@@ -805,7 +805,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
         }
         if (queueRes == nullptr)
         {
-            Logger::error("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
             return;
         }
 
@@ -815,7 +815,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
             auto cmdBufferItr = commandBuffers.find(waitOn->getResourceName());
             if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
             {
-                Logger::error("VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__, waitOn->getResourceName().getChar());
+                LOG_ERROR("VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__, waitOn->getResourceName().getChar());
                 return;
             }
 
@@ -831,7 +831,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
         allSubmitInfo[cmdSubmitIdx].pWaitDstStageMask = waitingStages.data();
     }
 
-    FenceRef cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, "SubmitBatched");
+    FenceRef cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("SubmitBatched"));
     cmdsCompleteFence->init();
 
     // Fill all signaling semaphores, Set cmd states
@@ -855,7 +855,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, const std
             }
         }
 
-        syncInfo.signalingSemaphore = graphicsHelper->createSemaphore(graphicsInstance, ("SubmitBatched_" + std::to_string(cmdSubmitIdx)).c_str());
+        syncInfo.signalingSemaphore = graphicsHelper->createSemaphore(graphicsInstance, (TCHAR("SubmitBatched_") + String::toString(cmdSubmitIdx)).c_str());
         syncInfo.signalingSemaphore->init();
 
         std::vector<VkSemaphore>& signalingSemaphores = allSignalingSemaphores[cmdSubmitIdx];
@@ -889,7 +889,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
         const auto* vCmdBuffer = static_cast<const VulkanCommandBuffer*>(command.cmdBuffers[i]);
         if (vCmdBuffer->bIsTempBuffer)
         {
-            Logger::error("VulkanCommandBufferManager", "%s() : Temporary buffers[%s] are required to use advanced submit function", __func__
+            LOG_ERROR("VulkanCommandBufferManager", "%s() : Temporary buffers[%s] are required to use advanced submit function", __func__
                 , vCmdBuffer->getResourceName().getChar());
             return;
         }
@@ -898,7 +898,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
         cmdBuffers[i] = vCmdBuffer->cmdBuffer;
         if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
         {
-            Logger::error("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
             return;
         }
         queueRes = cmdPool.cmdPoolInfo.queueResource;
@@ -912,7 +912,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
                 auto cmdBufferItr = commandBuffers.find(waitOn.cmdBuffer->getResourceName());
                 if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
                 {
-                    Logger::error("VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__, waitOn.cmdBuffer->getResourceName().getChar());
+                    LOG_ERROR("VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__, waitOn.cmdBuffer->getResourceName().getChar());
                     return;
                 }
 
@@ -924,7 +924,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     }
     if (queueRes == nullptr)
     {
-        Logger::error("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+        LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
         return;
     }
 
@@ -933,7 +933,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
         auto cmdBufferItr = commandBuffers.find(waitOn->getResourceName());
         if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
         {
-            Logger::error("VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__, waitOn->getResourceName().getChar());
+            LOG_ERROR("VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__, waitOn->getResourceName().getChar());
             return;
         }
 
@@ -942,7 +942,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
         waitingStages.emplace_back(VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
     }
 
-    FenceRef cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, "SubmitBatched");
+    FenceRef cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("SubmitBatched"));
     cmdsCompleteFence->init();
 
     int32 index = int32(cmdsSyncInfo.get());
@@ -963,7 +963,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
         }
     }
 
-    syncInfo.signalingSemaphore = graphicsHelper->createSemaphore(graphicsInstance, "SubmitSemaphore");
+    syncInfo.signalingSemaphore = graphicsHelper->createSemaphore(graphicsInstance, TCHAR("SubmitSemaphore"));
     syncInfo.signalingSemaphore->init();
     signalingSemaphores.emplace_back(syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore);
 

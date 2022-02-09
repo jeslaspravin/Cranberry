@@ -45,12 +45,12 @@ public:
     void cacheSurfaceProperties(class IGraphicsInstance* graphicsInstance, const WindowCanvasRef& windowCanvas) const final;
 
 
-    SemaphoreRef createSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName) const final;
-    TimelineSemaphoreRef createTimelineSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName) const final;
+    SemaphoreRef createSemaphore(class IGraphicsInstance* graphicsInstance, const TChar* semaphoreName) const;
+    TimelineSemaphoreRef createTimelineSemaphore(class IGraphicsInstance* graphicsInstance, const TChar* semaphoreName) const;
     void waitTimelineSemaphores(class IGraphicsInstance* graphicsInstance,
         std::vector<TimelineSemaphoreRef>* semaphores, std::vector<uint64>* waitForValues) const final;
 
-    FenceRef createFence(class IGraphicsInstance* graphicsInstance, const char* fenceName, bool bIsSignaled = false) const final;
+    FenceRef createFence(class IGraphicsInstance* graphicsInstance, const TChar* fenceName, bool bIsSignaled = false) const;
     void waitFences(class IGraphicsInstance* graphicsInstance, std::vector<FenceRef>* fences, bool waitAll) const final;
 
     SamplerRef createSampler(class IGraphicsInstance* graphicsInstance, SamplerCreateInfo createInfo) const final;

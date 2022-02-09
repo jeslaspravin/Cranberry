@@ -118,7 +118,7 @@ public:
         }
         if (queueFamilyPropIndex != -1)
         {
-            Logger::debug("VulkanQueueResource", "%s() : Selected queue family at index %d for %s processing",
+            LOG_DEBUG("VulkanQueueResource", "%s() : Selected queue family at index %d for %s processing",
                 __func__, queueFamilyPropIndex, getSupportedQueueName().getChar());
             familyProperty = properties[queueFamilyPropIndex];
 
@@ -149,12 +149,12 @@ public:
                     ++priorityBegin;
                 }
 
-                //Logger::debug("VulkanQueueResource", "%s() : Filling priority %0.2f from %d to %d of queue priorities",
+                //LOG_DEBUG("VulkanQueueResource", "%s() : Filling priority %0.2f from %d to %d of queue priorities",
                 //    __func__, priority, index - maxQCountPerPriority, index);
             }
 
             queuePointer.countPerPriority = maxQCountPerPriority;
-            Logger::debug("VulkanQueueResource", "%s() : Using %d queues per priority and %d Total queues for %s",
+            LOG_DEBUG("VulkanQueueResource", "%s() : Using %d queues per priority and %d Total queues for %s",
                 __func__, maxQCountPerPriority, totalQueueCount, getSupportedQueueName().getChar());
         }
     }
@@ -192,7 +192,7 @@ public:
         }
         if (queueFamilyPropIndex != -1)
         {
-            Logger::debug("VulkanQueueResource", "%s() : Selected queue family at index %d for %s processing",
+            LOG_DEBUG("VulkanQueueResource", "%s() : Selected queue family at index %d for %s processing",
                 __func__, queueFamilyPropIndex, getSupportedQueueName().getChar());
             familyProperty = *(properties.find(queueFamilyPropIndex)->second);
 
@@ -225,7 +225,7 @@ public:
             }
 
             queuePointer.countPerPriority = maxQCountPerPriority;
-            Logger::debug("VulkanQueueResource", "%s() : Using %d queues per priority and %d Total queues for %s",
+            LOG_DEBUG("VulkanQueueResource", "%s() : Using %d queues per priority and %d Total queues for %s",
                 __func__, maxQCountPerPriority, totalQueueCount, getSupportedQueueName().getChar());
         }
     }
@@ -235,20 +235,20 @@ public:
         switch (QueueType)
         {
         case EQueueFunction::Compute:
-            return "Compute";
+            return TCHAR("Compute");
             break;
         case EQueueFunction::Graphics:
-            return "Graphics";
+            return TCHAR("Graphics");
                 break;
         case EQueueFunction::Transfer:
-            return "Transfer";
+            return TCHAR("Transfer");
             break;
         case EQueueFunction::Present:
-            return "Present";
+            return TCHAR("Present");
             break;
         case EQueueFunction::Generic:
         default:
-            return "Generic";
+            return TCHAR("Generic");
             break;
         }
     }
@@ -273,12 +273,15 @@ public:
             funcPtr(logicalDevice, queueFamilyPropIndex, index, &queues[index]);
             if (queues[index] == nullptr)
             {
-                Logger::error("VulkanQueueResource", "%s() : [%s] Get queue failed for queue family %d at queue index %d"
+                LOG_ERROR("VulkanQueueResource", "%s() : [%s] Get queue failed for queue family %d at queue index %d"
                     , __func__, getSupportedQueueName().getChar(), queueFamilyPropIndex, index);
             }
-            VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance())->markObject(
-                (uint64)queues[index], getObjectName().append("Queue_").append(std::to_string(priorities[index])),
-                getObjectType());
+            VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance())
+                ->markObject(
+                    (uint64)queues[index]
+                    , getObjectName().append(TCHAR("Queue_")).append(String::toString(priorities[index]))
+                    , getObjectType()
+                );
         }
 
         int32 qIdx = 0;
@@ -299,7 +302,7 @@ public:
         if (Priority < queuePointer.minAvailablePriority)
         {
             PriorityToFetch = queuePointer.minAvailablePriority;
-            Logger::warn("VulkanQueue", "%s : %s queue requested priority %d is not available using priority %d", __func__
+            LOG_WARN("VulkanQueue", "%s : %s queue requested priority %d is not available using priority %d", __func__
                 , getSupportedQueueName().getChar(), Priority, PriorityToFetch);
         }
         uint32 currentQueueIndex = queuePointer.lastQueueIndex[PriorityToFetch]++;
@@ -352,7 +355,7 @@ namespace VulkanQueueResourceInvoker
             return Functor<VulkanQueueResource<EQueueFunction::Generic>>{}
                 (static_cast<VulkanQueueResource<EQueueFunction::Generic>*>(queueRes), args...);
         }
-        Logger::error("VulkanQueueResourceInvoker", "%s() : Invoker failed to find a type", __func__);
+        LOG_ERROR("VulkanQueueResourceInvoker", "%s() : Invoker failed to find a type", __func__);
 
         return Functor<VulkanQueueResource<EQueueFunction::Generic>>{}
             (static_cast<VulkanQueueResource<EQueueFunction::Generic>*>(queueRes), args...);

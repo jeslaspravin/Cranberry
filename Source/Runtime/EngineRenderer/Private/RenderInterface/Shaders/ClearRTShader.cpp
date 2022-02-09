@@ -16,7 +16,7 @@
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/Resources/Pipelines.h"
 
-#define CLEAR_RT "ClearRT"
+#define CLEAR_RT TCHAR("ClearRT")
 
 struct ClearRTClearInfo
 {
@@ -38,7 +38,7 @@ public:
         static ClearRTClearInfoBufferParamInfo CLEAR_INFO;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "clearInfo", &CLEAR_INFO }
+            { TCHAR("clearInfo"), &CLEAR_INFO }
         };
 
 

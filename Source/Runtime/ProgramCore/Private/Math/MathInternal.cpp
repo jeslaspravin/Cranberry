@@ -17,6 +17,8 @@ std::random_device Math::rDevice;
 
 float Math::random()
 {
+    // Use SFMT if MT is not fast enough in furture
+    // http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/index.html
     std::default_random_engine generator(rDevice());
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
 

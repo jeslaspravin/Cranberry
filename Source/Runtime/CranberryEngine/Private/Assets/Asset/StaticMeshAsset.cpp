@@ -22,12 +22,12 @@ void StaticMeshAsset::initAsset()
         {
             vertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, EVertexType::vertexParamInfo<EVertexType::StaticMesh>()[0]->paramStride()
                 , uint32(vertices.size()));
-            vertexBuffer->setResourceName(assetHeader.assetName + "_VertexBuffer");
+            vertexBuffer->setResourceName(assetHeader.assetName + TCHAR("_VertexBuffer"));
             vertexBuffer->init();
             cmdList->copyToBuffer(vertexBuffer, 0, vertices.data(), uint32(vertexBuffer->getResourceSize()));
 
             indexBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), uint32(indices.size()));
-            indexBuffer->setResourceName(assetHeader.assetName + "_IndexBuffer");
+            indexBuffer->setResourceName(assetHeader.assetName + TCHAR("_IndexBuffer"));
             indexBuffer->init();
             cmdList->copyToBuffer(indexBuffer, 0, indices.data(), uint32(indexBuffer->getResourceSize()));
         });
@@ -37,7 +37,7 @@ void StaticMeshAsset::initAsset()
         [this](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
         {
             tbnVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(TbnLinePoint), uint32(tbnVerts.size()));
-            tbnVertexBuffer->setResourceName(assetHeader.assetName + "_TbnVertexBuffer");
+            tbnVertexBuffer->setResourceName(assetHeader.assetName + TCHAR("_TbnVertexBuffer"));
             tbnVertexBuffer->init();
             cmdList->copyToBuffer(tbnVertexBuffer, 0, tbnVerts.data(), uint32(tbnVertexBuffer->getResourceSize()));
         });

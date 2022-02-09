@@ -19,7 +19,7 @@
 class FileChangesTracker
 {
 private:
-    const String FILE_NAME = "FileManifest.manifest";
+    const String FILE_NAME{ TCHAR("FileManifest.manifest") };
 
     String trackerManifestName;
     String folderPath;

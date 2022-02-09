@@ -32,7 +32,7 @@ void VulkanBufferResource::reinitResources()
     BaseType::reinitResources();
     if (getResourceSize() == 0)
     {
-        Logger::error("VulkanBufferResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanBufferResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
         return;
     }
 
@@ -54,7 +54,7 @@ void VulkanBufferResource::reinitResources()
     }
     else
     {
-        Logger::error("VulkanBufferResource", "%s() : Failed creating buffer %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanBufferResource", "%s() : Failed creating buffer %s", __func__, getObjectName().getChar());
     }
 }
 
@@ -190,7 +190,7 @@ void VulkanImageResource::reinitResources()
             // Then must be cube array 
             if (layerCount > 6 && (layerCount % 6 != 0))
             {
-                Logger::warn("VulkanImageResource", "%s() : Cube map image %s should have 6 multiple layers, current layer count %d", __func__, getResourceName().getChar(), layerCount);
+                LOG_WARN("VulkanImageResource", "%s() : Cube map image %s should have 6 multiple layers, current layer count %d", __func__, getResourceName().getChar(), layerCount);
                 layerCount = ((layerCount / 6) + 1) * 6;
             }
         }
@@ -214,7 +214,7 @@ void VulkanImageResource::reinitResources()
 
         if (!formatInfo)
         {
-            Logger::error("VulkanImageResource", "%s() : Not supported image format", __func__);
+            LOG_ERROR("VulkanImageResource", "%s() : Not supported image format", __func__);
             return;
         }
         if (EPixelDataFormat::isDepthFormat(dataFormat))
@@ -270,7 +270,7 @@ void VulkanImageResource::reinitResources()
 
     if (getResourceSize() == 0)
     {
-        Logger::error("VulkanImageResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanImageResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
         return;
     }
 
@@ -302,7 +302,7 @@ void VulkanImageResource::reinitResources()
     }
     else
     {
-        Logger::error("VulkanImageResource", "%s() : Failed creating image %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanImageResource", "%s() : Failed creating image %s", __func__, getObjectName().getChar());
     }
 }
 
@@ -393,7 +393,7 @@ VkImageView VulkanImageResource::createImageView(const ImageViewInfo& viewInfo, 
 
     IGraphicsInstance* graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
     VkImageView imgView = VulkanGraphicsHelper::createImageView(graphicsInstance, imageViewCreateInfo);
-    VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(imgView), getResourceName() + "_View", VkObjectType::VK_OBJECT_TYPE_IMAGE_VIEW);
+    VulkanGraphicsHelper::debugGraphics(graphicsInstance)->markObject(uint64(imgView), getResourceName() + TCHAR("_View"), VkObjectType::VK_OBJECT_TYPE_IMAGE_VIEW);
     return imgView;
 }
 

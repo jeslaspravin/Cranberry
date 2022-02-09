@@ -11,34 +11,33 @@
 
 #include "Property/PropertyHelper.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
-
-#include <regex>
+#include "String/StringRegex.h"
 
 String PropertyHelper::getValidSymbolName(const String& inValue)
 {
     // Replace all Pointers as Ptr and References as Ref
-    String postReplaceRefPtr = inValue.replaceAllCopy("*", "Ptr");
-    postReplaceRefPtr.replaceAll("&", "Ref");
+    String postReplaceRefPtr = inValue.replaceAllCopy(TCHAR("*"), TCHAR("Ptr"));
+    postReplaceRefPtr.replaceAll(TCHAR("&"), TCHAR("Ref"));
 
     // Now replace other invalid chars as _
     String output;
     output.resize(postReplaceRefPtr.length());
 
-    static const std::regex matchPattern("^[0-9]{1}|[^a-zA-Z0-9_]{1}", std::regex_constants::ECMAScript);
-    std::regex_replace(output.begin(), postReplaceRefPtr.cbegin(), postReplaceRefPtr.cend(), matchPattern, "_");
+    static const StringRegex matchPattern(TCHAR("^[0-9]{1}|[^a-zA-Z0-9_]{1}"), std::regex_constants::ECMAScript);
+    std::regex_replace(output.begin(), postReplaceRefPtr.cbegin(), postReplaceRefPtr.cend(), matchPattern, TCHAR("_"));
 
     return output;
 }
 
 bool PropertyHelper::isValidSymbolName(const String& inValue)
 {
-    static const std::regex matchPattern(VALID_SYMBOL_REGEX_PATTERN, std::regex_constants::ECMAScript);
+    static const StringRegex matchPattern(VALID_SYMBOL_REGEX_PATTERN, std::regex_constants::ECMAScript);
     return std::regex_match(inValue, matchPattern);
 }
 
 bool PropertyHelper::isValidFunctionCall(const String& inValue)
 {
     // Start with valid symbol then open and close braces followed by space or ;
-    static const std::regex matchPattern(COMBINE(VALID_SYMBOL_REGEX_PATTERN, " *\\(.*\\)[ ;]*"), std::regex_constants::ECMAScript);
+    static const StringRegex matchPattern(COMBINE(VALID_SYMBOL_REGEX_PATTERN, " *\\(.*\\)[ ;]*"), std::regex_constants::ECMAScript);
     return std::regex_match(inValue, matchPattern);
 }

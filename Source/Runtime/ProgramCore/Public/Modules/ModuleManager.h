@@ -26,7 +26,7 @@
 
 #define DECLARE_STATIC_LINKED_MODULE(ModuleName, ModuleClass) \
     MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass) \
-    static StaticModuleInitializerRegistrant staticModuleInitializerRegistrant_##ModuleName{ #ModuleName ,  SingleCastDelegate<IModuleBase*>::createStatic(&createModule_##ModuleName) };
+    static StaticModuleInitializerRegistrant staticModuleInitializerRegistrant_##ModuleName{ TCHAR(#ModuleName) ,  SingleCastDelegate<IModuleBase*>::createStatic(&createModule_##ModuleName) };
 
 #if STATIC_LINKED
 #define DECLARE_MODULE(ModuleName, ModuleClass) \
@@ -41,7 +41,7 @@
 
 struct StaticModuleInitializerRegistrant
 {
-    StaticModuleInitializerRegistrant(String moduleName, SingleCastDelegate<IModuleBase*> functionPtr);
+    StaticModuleInitializerRegistrant(String moduleName, SingleCastDelegate<IModuleBase*> factoryFuncPtr);
 };
 using StaticModuleInitializerList = std::unordered_map<String, SingleCastDelegate<IModuleBase*>>;
 

@@ -19,7 +19,7 @@
 
 DEFINE_GRAPHICS_RESOURCE(ShaderCodeResource)
 
-ShaderCodeResource::ShaderCodeResource(const String& shaderName, const String& entryPointName, const uint8* shaderCodePtr)
+ShaderCodeResource::ShaderCodeResource(const String& shaderName, const std::string& entryPointName, const uint8* shaderCodePtr)
     : BaseType()
     , shaderFileName(shaderName)
     , shaderEntryPoint(entryPointName)
@@ -44,7 +44,7 @@ EShaderStage::Type ShaderCodeResource::shaderStage() const
     return EShaderStage::Compute/*0*/;
 }
 
-const String& ShaderCodeResource::entryPoint() const
+const std::string& ShaderCodeResource::entryPoint() const
 {
     return shaderEntryPoint;
 }

@@ -39,7 +39,7 @@ using ShaderBufferParamInfo = ShaderParamInfo<ShaderBufferFieldNode>;
 
 struct ENGINERENDERER_EXPORT ShaderVertexField
 {
-    String attributeName = "";
+    String attributeName{};
     uint32 offset = 0;
     // Location and format will be retrieved from reflection
     uint32 location = 0;
@@ -490,14 +490,14 @@ struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo \
 }
 
 #define ADD_BUFFER_TYPED_FIELD(FieldName) \
-    ShaderBufferMemberField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { #FieldName, &BufferDataType::##FieldName }; \
+    ShaderBufferMemberField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { TCHAR(#FieldName), &BufferDataType::##FieldName }; \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 // NOTE : Right now supporting : Buffer with any alignment
 // but in case of inner struct only with proper alignment with respect to GPU(Alignment correction on copying to GPU is only done for first level of variables)  
 #define ADD_BUFFER_STRUCT_FIELD(FieldName, FieldType) \
     FieldType##BufferParamInfo FieldName##ParamInfo; \
-    ShaderBufferStructField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { #FieldName, &BufferDataType::##FieldName##, &##FieldName##ParamInfo }; \
+    ShaderBufferStructField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { TCHAR(#FieldName), &BufferDataType::##FieldName##, &##FieldName##ParamInfo }; \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 
@@ -512,11 +512,11 @@ struct VertexType##VertexParamInfo final : public ShaderVertexParamInfo \
     EShaderInputFrequency::Type inputFrequency() const final { return  vertexInputFreq; }
 
 #define ADD_VERTEX_FIELD(FieldName) \
-    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field = { #FieldName, &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName) }; \
+    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName) }; \
     ShaderVertexFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 #define ADD_VERTEX_FIELD_AND_FORMAT(FieldName, OverrideFormat) \
-    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field = { #FieldName, &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName), OverrideFormat }; \
+    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName), OverrideFormat }; \
     ShaderVertexFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 #define END_VERTEX_DEFINITION() \

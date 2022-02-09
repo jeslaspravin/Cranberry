@@ -638,7 +638,7 @@ void IRenderCommandList::copyToImage(ImageResourceRef dst, const std::vector<cla
 {
     if (pixelData.size() < (dst->getImageSize().z * dst->getImageSize().y * dst->getImageSize().x) * dst->getLayerCount())
     {
-        Logger::error("RenderCommandList", "%s() : Texel data count is not sufficient to fill all texels of %s", __func__
+        LOG_ERROR("RenderCommandList", "%s() : Texel data count is not sufficient to fill all texels of %s", __func__
             , dst->getResourceName().getChar());
         return;
     }
@@ -658,7 +658,7 @@ void IRenderCommandList::copyToImageLinearMapped(ImageResourceRef dst, const std
 {
     if (pixelData.size() < (dst->getImageSize().z * dst->getImageSize().y * dst->getImageSize().x) * dst->getLayerCount())
     {
-        Logger::error("RenderCommandList", "%s() : Texel data count is not sufficient to fill all texels of %s", __func__
+        LOG_ERROR("RenderCommandList", "%s() : Texel data count is not sufficient to fill all texels of %s", __func__
             , dst->getResourceName().getChar());
         return;
     }
@@ -696,7 +696,7 @@ struct PushConstCopier
         }
         else
         {
-            Logger::error("RenderCommandList", "%s() : Cannot cast pushable constant %s", __func__, field->attributeName.c_str());
+            LOG_ERROR("RenderCommandList", "%s() : Cannot cast pushable constant %s", __func__, field->attributeName.c_str());
         }
     }
 };
@@ -707,8 +707,8 @@ void IRenderCommandList::cmdPushConstants(const GraphicsResource* cmdBuffer, con
 
     if (!entry.data.pushConstantField.bufferStructFields.empty())
     {
-        Logger::warn("RenderCommandList", "%s() : [Shader: %s, Attribute: %s]Using SoS in push constant in not recommended"
-            , __func__, contextPipeline.getPipeline()->getShaderResource()->getResourceName().getChar(), entry.attributeName.c_str());
+        LOG_WARN("RenderCommandList", "%s() : [Shader: %s, Attribute: %s]Using SoS in push constant in not recommended"
+            , __func__, contextPipeline.getPipeline()->getShaderResource()->getResourceName(), entry.attributeName.c_str());
     }
 
     if (entry.data.pushConstantField.bufferFields.empty() && entry.data.pushConstantField.bufferStructFields.empty())
@@ -725,14 +725,15 @@ void IRenderCommandList::cmdPushConstants(const GraphicsResource* cmdBuffer, con
             const ReflectBufferShaderField* current = tree[i];
             for (const ReflectBufferEntry& field : current->bufferFields)
             {
+                String fieldAttribName{ UTF8_TO_TCHAR(field.attributeName.c_str()) };
                 if (field.data.arraySize.size() != 1 || field.data.arraySize[0].isSpecializationConst || field.data.arraySize[0].dimension != 1)
                 {
-                    Logger::warn("RenderCommandList", "%s(): [Shader: %s, Attribute: %s] Array data is not supported in push constants"
-                        , __func__, contextPipeline.getPipeline()->getShaderResource()->getResourceName().getChar(), field.attributeName.c_str());
+                    LOG_WARN("RenderCommandList", "%s(): [Shader: %s, Attribute: %s] Array data is not supported in push constants"
+                        , __func__, contextPipeline.getPipeline()->getShaderResource()->getResourceName(), fieldAttribName);
                 }
                 else
                 {
-                    nameToEntry[field.attributeName] = &field;
+                    nameToEntry[fieldAttribName] = &field;
                 }
             }
 
@@ -751,7 +752,7 @@ void IRenderCommandList::cmdPushConstants(const GraphicsResource* cmdBuffer, con
         auto itr = nameToEntry.find(pushConst.first);
         if (itr == nameToEntry.end())
         {
-            Logger::error("RenderCommandList", "%s() : Cannot find %s in pushable constants", __func__, pushConst.first.getChar());
+            LOG_ERROR("RenderCommandList", "%s() : Cannot find %s in pushable constants", __func__, pushConst.first);
             continue;
         }
 
@@ -834,7 +835,7 @@ void IRenderCommandList::cmdPushConstants(const GraphicsResource* cmdBuffer, con
         case EShaderInputAttribFormat::UInt4Norm:
         case EShaderInputAttribFormat::Undefined:
         default:
-            Logger::error("RenderCommandList", "%s(): [Shader: %s, Attribute: %s] Unsupported format %s in push constants"
+            LOG_ERROR("RenderCommandList", "%s(): [Shader: %s, Attribute: %s] Unsupported format %s in push constants"
                 , __func__, contextPipeline.getPipeline()->getShaderResource()->getResourceName().getChar()
                 , itr->second->attributeName.c_str(), pushConst.second.type().name());
             break;

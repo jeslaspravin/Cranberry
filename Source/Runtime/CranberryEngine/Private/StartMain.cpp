@@ -21,7 +21,7 @@
 int appMain(String cmdLine, void* appPlatformInstance)
 {
     AppInstanceCreateInfo appCI;
-    appCI.applicationName = MACRO_TO_STRING(ENGINE_NAME);
+    appCI.applicationName = TCHAR(MACRO_TO_STRING(ENGINE_NAME));
     appCI.cmdLine = cmdLine;
     appCI.majorVersion = ENGINE_VERSION;
     appCI.minorVersion = ENGINE_MINOR_VERSION;
@@ -29,28 +29,28 @@ int appMain(String cmdLine, void* appPlatformInstance)
     appCI.platformAppHandle = appPlatformInstance;
 
     // Main Core
-    bool bMandatoryModulesLoaded = ModuleManager::get()->loadModule("ProgramCore")
-        && ModuleManager::get()->loadModule("ReflectionRuntime")
-        && ModuleManager::get()->loadModule("CoreObjects");
+    bool bMandatoryModulesLoaded = ModuleManager::get()->loadModule(TCHAR("ProgramCore"))
+        && ModuleManager::get()->loadModule(TCHAR("ReflectionRuntime"))
+        && ModuleManager::get()->loadModule(TCHAR("CoreObjects"));
     fatalAssert(bMandatoryModulesLoaded, "Loading mandatory modules failed");
 
     UnexpectedErrorHandler::getHandler()->registerFilter();
 
     if (!ProgramCmdLine::get()->parse(appCI.cmdLine))
     {
-        Logger::error("Engine", "%s() : Invalid command line", __func__);
+        LOG_ERROR("Engine", "%s() : Invalid command line", __func__);
         ProgramCmdLine::get()->printCommandLine();
     }
 
     float fltTMin = -FLT_TRUE_MIN;
-    Logger::log("Engine", "%s() : Engine start %u", __func__, *reinterpret_cast<uint32*>(&fltTMin));
+    LOG("Engine", "%s() : Engine start %u", __func__, *reinterpret_cast<uint32*>(&fltTMin));
     gEngine->startup(appCI);
 
     Logger::flushStream();
     gEngine->engineLoop();
 
     gEngine->quit();
-    Logger::log("Engine", "%s() : Engine quit", __func__);
+    LOG("Engine", "%s() : Engine quit", __func__);
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
     Logger::flushStream();
     
@@ -69,9 +69,8 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 {
     /*_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);*/
 
-    String cmdLine;
-    PlatformFunctions::wcharToStr(cmdLine, pCmdLine);
-    Logger::debug("CommandLine", "%s() : Command [%s]", __func__, cmdLine.getChar());
+    String cmdLine{ pCmdLine };
+    LOG_DEBUG("CommandLine", "%s() : Command [%s]", __func__, cmdLine.getChar());
 
     int32 exitCode = appMain(cmdLine, hInstance);
 

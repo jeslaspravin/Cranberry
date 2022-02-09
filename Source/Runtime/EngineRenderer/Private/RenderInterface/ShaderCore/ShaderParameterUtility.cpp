@@ -120,7 +120,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
             {
                 const ReflectBufferStructEntry& bufferStructField = bufferField.bufferStructFields[structIdx];
 
-                auto currFieldItr = attribNameToNode.find(bufferStructField.attributeName);
+                auto currFieldItr = attribNameToNode.find(UTF8_TO_TCHAR(bufferStructField.attributeName.c_str()));
                 debugAssert(currFieldItr != attribNameToNode.end() && BIT_SET(currFieldItr->second->fieldDecorations, ShaderBufferField::IsStruct));
                 ShaderBufferField* currentField = currFieldItr->second;
 
@@ -167,7 +167,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
             {
                 const ReflectBufferEntry& bufferInnerField = bufferField.bufferFields[innerFieldIdx];
 
-                auto currFieldItr = attribNameToNode.find(bufferInnerField.attributeName);
+                auto currFieldItr = attribNameToNode.find(UTF8_TO_TCHAR(bufferInnerField.attributeName.c_str()));
                 debugAssert(currFieldItr != attribNameToNode.end() && BIT_SET(currFieldItr->second->fieldDecorations, ShaderBufferField::IsStruct));
                 ShaderBufferField* currentField = currFieldItr->second;
 
@@ -220,7 +220,8 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
             {
                 for (const ReflectBufferStructEntry& bufferStructField : bufferField.bufferStructFields)
                 {
-                    if (bufferStructField.attributeName == currentField->paramName)
+                    String reflectStructFieldName{ UTF8_TO_TCHAR(bufferStructField.attributeName.c_str()) };
+                    if (reflectStructFieldName == currentField->paramName)
                     {
                         // If runtime array then update offset, else check offset to be sure that runtime array is last member
                         if ((bufferStructField.data.totalSize == 0 && currentField->isPointer()))
@@ -234,7 +235,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
                             debugAssert(bufferStructField.data.totalSize != 0 && !currentField->isPointer());
                             fatalAssert(!bHasRuntimeArray || (runtimeArrayOffset >= bufferStructField.data.offset)
                                 , "%s() : Runtime array(offset : %d) must be the last member of SoA. Member %s offset %d"
-                                , __func__, runtimeArrayOffset, bufferStructField.attributeName.c_str(), bufferStructField.data.offset);
+                                , __func__, runtimeArrayOffset, reflectStructFieldName, bufferStructField.data.offset);
                         }
 
                         // Not array dimension greater than 1
@@ -254,7 +255,8 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
             {
                 for (const ReflectBufferEntry& bufferInnerField : bufferField.bufferFields)
                 {
-                    if (bufferInnerField.attributeName == currentField->paramName)
+                    String reflectFieldName{ UTF8_TO_TCHAR(bufferInnerField.attributeName.c_str()) };
+                    if (reflectFieldName == currentField->paramName)
                     {
                         // If runtime array then update offset, else check offset to be sure that runtime array is last member
                         if ((bufferInnerField.data.totalSize == 0 && currentField->isPointer()))
@@ -268,7 +270,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(ShaderBufferParamInfo& buffer
                             debugAssert(bufferInnerField.data.totalSize != 0 && !currentField->isPointer());
                             fatalAssert(!bHasRuntimeArray || (runtimeArrayOffset >= bufferInnerField.data.offset)
                                 , "%s() : Runtime array(offset : %d) must be the last member of SoA. Member %s offset %d"
-                                , __func__, runtimeArrayOffset, bufferInnerField.attributeName.c_str(), bufferInnerField.data.offset);
+                                , __func__, runtimeArrayOffset, reflectFieldName, bufferInnerField.data.offset);
                         }
 
                         // Not array dimension greater than 1
@@ -301,7 +303,8 @@ bool ShaderParameterUtility::fillRefToVertexParamInfo(ShaderVertexParamInfo& ver
     {
         for (const ReflectInputOutput& vertexAttribute : inputEntries)
         {
-            if (vertexAttribute.attributeName == currentField->attributeName)
+            String reflectVertAttribName{ UTF8_TO_TCHAR(vertexAttribute.attributeName.c_str()) };
+            if (reflectVertAttribName == currentField->attributeName)
             {
                 currentField->location = vertexAttribute.data.location;
                 if (currentField->format == EShaderInputAttribFormat::Undefined)
@@ -325,7 +328,8 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(std::vector<std:
     {
         for (const ReflectSpecializationConstant& stageSpecConst : stageDesc.stageSpecializationEntries)
         {
-            std::map<String, SpecializationConstantEntry>::const_iterator specConstVal = namedSpecializationConsts.find(stageSpecConst.attributeName);
+            String specConstAttribName{ UTF8_TO_TCHAR(stageSpecConst.attributeName.c_str()) };
+            std::map<String, SpecializationConstantEntry>::const_iterator specConstVal = namedSpecializationConsts.find(specConstAttribName);
             if (specConstVal != namedSpecializationConsts.cend())
             {
                 SpecializationConstantEntry& entry = stageSpecializationConsts[stageIdx].emplace_back(specConstVal->second);
@@ -335,8 +339,8 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(std::vector<std:
             {
                 if(!stageSpecConst.attributeName.empty())
                 {
-                    Logger::warn("ShaderSetParametersLayout", "%s() : No specialization const value found for %s, using default", __func__,
-                        stageSpecConst.attributeName.c_str());
+                    LOG_WARN("ShaderSetParametersLayout", "%s() : No specialization const value found for %s, using default", __func__,
+                        specConstAttribName);
                 }
                 stageSpecializationConsts[stageIdx].emplace_back(stageSpecConst.data);
             }

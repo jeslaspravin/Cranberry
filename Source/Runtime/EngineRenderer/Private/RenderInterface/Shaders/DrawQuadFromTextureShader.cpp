@@ -13,7 +13,7 @@
 #include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
 #include "RenderInterface/Resources/Pipelines.h"
 
-#define DRAW_QUAD_FROM_TEXTURE "DrawQuadFromTexture"
+#define DRAW_QUAD_FROM_TEXTURE TCHAR("DrawQuadFromTexture")
 
 class DrawQuadFromTexture : public UniqueUtilityShaderConfig
 {
@@ -29,7 +29,7 @@ DrawQuadFromTexture::DrawQuadFromTexture()
 {}
 
 
-#define DRAW_OVER_BLENDED_QUAD_FROM_TEXTURE "DrawOverBlendedQuadFromTexture"
+#define DRAW_OVER_BLENDED_QUAD_FROM_TEXTURE TCHAR("DrawOverBlendedQuadFromTexture")
 class DrawOverBlendedQuadFromTexture : public UniqueUtilityShaderConfig
 {
     DECLARE_GRAPHICS_RESOURCE(DrawOverBlendedQuadFromTexture, , UniqueUtilityShaderConfig, );

@@ -28,73 +28,82 @@ void ShaderDescriptorParamType::wrapReflectedDescriptors(std::map<String, Shader
 {
     for (const DescEntryBuffer& descriptorInfo : reflectDescriptors.uniforms)
     {
+        String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
         ShaderBufferDescriptorType* bufferDescriptorWrapper = new ShaderBufferDescriptorType();
         bufferDescriptorWrapper->bIsStorage = false;
         bufferDescriptorWrapper->bufferEntryPtr = &descriptorInfo;
-        descriptorParams[descriptorInfo.attributeName] = bufferDescriptorWrapper;
+        descriptorParams[attribName] = bufferDescriptorWrapper;
         if (filterBufferDescriptors)
         {
-            (*filterBufferDescriptors)[descriptorInfo.attributeName] = bufferDescriptorWrapper;
+            (*filterBufferDescriptors)[attribName] = bufferDescriptorWrapper;
         }
     }
     for (const DescEntryBuffer& descriptorInfo : reflectDescriptors.buffers)
     {
+        String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
         ShaderBufferDescriptorType* bufferDescriptorWrapper = new ShaderBufferDescriptorType();
         bufferDescriptorWrapper->bIsStorage = true;
         bufferDescriptorWrapper->bufferEntryPtr = &descriptorInfo;
-        descriptorParams[descriptorInfo.attributeName] = bufferDescriptorWrapper;
+        descriptorParams[attribName] = bufferDescriptorWrapper;
         if (filterBufferDescriptors)
         {
-            (*filterBufferDescriptors)[descriptorInfo.attributeName] = bufferDescriptorWrapper;
+            (*filterBufferDescriptors)[attribName] = bufferDescriptorWrapper;
         }
     }
     for (const DescEntryTexelBuffer& descriptorInfo : reflectDescriptors.imageBuffers)
     {
+        String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
         ShaderBufferDescriptorType* texelDescriptorWrapper = new ShaderBufferDescriptorType();
         texelDescriptorWrapper->bIsStorage = true;
         texelDescriptorWrapper->texelBufferEntryPtr = &descriptorInfo;
-        descriptorParams[descriptorInfo.attributeName] = texelDescriptorWrapper;
+        descriptorParams[attribName] = texelDescriptorWrapper;
     }
     for (const DescEntryTexelBuffer& descriptorInfo : reflectDescriptors.samplerBuffers)
     {
+        String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
         ShaderBufferDescriptorType* texelDescriptorWrapper = new ShaderBufferDescriptorType();
         texelDescriptorWrapper->bIsStorage = false;
         texelDescriptorWrapper->texelBufferEntryPtr = &descriptorInfo;
-        descriptorParams[descriptorInfo.attributeName] = texelDescriptorWrapper;
+        descriptorParams[attribName] = texelDescriptorWrapper;
     }
     for (const DescEntryTexture& descriptorInfo : reflectDescriptors.imagesAndImgArrays)
     {
+        String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
         ShaderTextureDescriptorType* textureDescriptorWrapper = new ShaderTextureDescriptorType();
         textureDescriptorWrapper->bIsAttachedSampler = false;
         textureDescriptorWrapper->imageUsageFlags = EImageShaderUsage::Writing;
         textureDescriptorWrapper->textureEntryPtr = &descriptorInfo;
-        descriptorParams[descriptorInfo.attributeName] = textureDescriptorWrapper;
+        descriptorParams[attribName] = textureDescriptorWrapper;
     }
     for (const DescEntryTexture& descriptorInfo : reflectDescriptors.textureAndArrays)
     {
+        String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
         ShaderTextureDescriptorType* textureDescriptorWrapper = new ShaderTextureDescriptorType();
         textureDescriptorWrapper->bIsAttachedSampler = false;
         textureDescriptorWrapper->imageUsageFlags = EImageShaderUsage::Sampling;
         textureDescriptorWrapper->textureEntryPtr = &descriptorInfo;
-        descriptorParams[descriptorInfo.attributeName] = textureDescriptorWrapper;
+        descriptorParams[attribName] = textureDescriptorWrapper;
     }
     for (const DescEntryTexture& descriptorInfo : reflectDescriptors.sampledTexAndArrays)
     {
+        String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
         ShaderTextureDescriptorType* textureDescriptorWrapper = new ShaderTextureDescriptorType();
         textureDescriptorWrapper->bIsAttachedSampler = true;
         textureDescriptorWrapper->imageUsageFlags = EImageShaderUsage::Sampling;
         textureDescriptorWrapper->textureEntryPtr = &descriptorInfo;
-        descriptorParams[descriptorInfo.attributeName] = textureDescriptorWrapper;
+        descriptorParams[attribName] = textureDescriptorWrapper;
     }
     for (const DescEntrySampler& descriptorInfo : reflectDescriptors.samplers)
     {
+        String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
         ShaderSamplerDescriptorType* samplerDescriptorWrapper = new ShaderSamplerDescriptorType();
         samplerDescriptorWrapper->samplerEntryPtr = &descriptorInfo;
-        descriptorParams[descriptorInfo.attributeName] = samplerDescriptorWrapper;
+        descriptorParams[attribName] = samplerDescriptorWrapper;
     }
     for (const DescEntrySubpassInput& descriptorInfo : reflectDescriptors.subpassInputs)
     {
-        Logger::warn("DescriptorTypeParams", "%s() : Sub pass inputs are not supported yet %s", __func__, descriptorInfo.attributeName.c_str());
+        String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+        LOG_WARN("DescriptorTypeParams", "%s() : Sub pass inputs are not supported yet %s", __func__, attribName.c_str());
     }
 }
 
@@ -197,7 +206,7 @@ const ShaderDescriptorParamType* ShaderSetParametersLayout::parameterDescription
         outSetIdx = shaderSetID;
         return foundParamItr->second;
     }
-    Logger::error("ShaderSetParametersLayout", "%s() : Parameter %s is not available in shader %s at set %u", __func__
+    LOG_ERROR("ShaderSetParametersLayout", "%s() : Parameter %s is not available in shader %s at set %u", __func__
         , paramName.getChar(), respectiveShaderRes->getResourceName().getChar(), shaderSetID);
     return nullptr;
 }
@@ -276,7 +285,7 @@ const ShaderDescriptorParamType* ShaderParametersLayout::parameterDescription(ui
         outSetIdx = foundParamItr->second.first;
         return foundParamItr->second.second;
     }
-    Logger::error("ShaderParametersLayout", "%s() : Parameter %s is not available in shader %s", __func__
+    LOG_ERROR("ShaderParametersLayout", "%s() : Parameter %s is not available in shader %s", __func__
         , paramName.getChar(), respectiveShaderRes->getResourceName().getChar());
     return nullptr;
 }
@@ -402,11 +411,11 @@ void ShaderParameters::init()
     }
 }
 
-void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, const char* outerName) const
+void ShaderParameters::initBufferParams(BufferParametersData& bufferParamData, const ShaderBufferParamInfo* bufferParamInfo, void* outerPtr, String::const_pointer outerName) const
 {
     for(const ShaderBufferField* currentField : *bufferParamInfo)
     {
-        bufferParamData.bufferParams[currentField->paramName] = { outerPtr, (outerName)? outerName : "", currentField };
+        bufferParamData.bufferParams[currentField->paramName] = { outerPtr, (outerName)? outerName : TCHAR(""), currentField };
         if (BIT_SET(currentField->fieldDecorations, ShaderBufferField::IsStruct))
         {
             // AoS inside shader base uniform struct is supported, AoSoA... not supported due to parameter indexing limitation being 1 right now
@@ -446,7 +455,7 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
                     // If 0 runtime offset then it must be resized
                     if (bufferInitStride == 0)
                     {
-                        Logger::warn("ShaderParameters", "%s() : Runtime array \"%s\" struct has 0 size and must be resized before init", __func__, paramData.runtimeArray->paramName.getChar());
+                        LOG_WARN("ShaderParameters", "%s() : Runtime array \"%s\" struct has 0 size and must be resized before init", __func__, paramData.runtimeArray->paramName.getChar());
                     }
                 }
 
@@ -459,14 +468,16 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
                         : graphicsHelper->createReadOnlyBuffer(graphicsInstance, bufferInitStride);
                 }
 
-                shaderBuffers[bufferParamDesc->bufferEntryPtr->attributeName] = paramData;
+                String attribName{ UTF8_TO_TCHAR(bufferParamDesc->bufferEntryPtr->attributeName.c_str()) };
+                shaderBuffers[attribName] = paramData;
             }
             else
             {
                 debugAssert(bufferParamDesc->texelBufferEntryPtr->data.data.arraySize.size() == 1);
                 uint32 count = ShaderParameterUtility::getArrayElementCount<1>(paramDesc.first, bufferParamDesc->texelBufferEntryPtr->data.data.arraySize, specializationConsts);
 
-                TexelParameterData& paramData = shaderTexels[bufferParamDesc->texelBufferEntryPtr->attributeName];
+                String attribName{ UTF8_TO_TCHAR(bufferParamDesc->texelBufferEntryPtr->attributeName.c_str()) };
+                TexelParameterData& paramData = shaderTexels[attribName];
                 paramData.descriptorInfo = bufferParamDesc;
                 paramData.gpuBuffers.resize(count, nullptr);
             }
@@ -476,7 +487,8 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
             debugAssert(textureParamDesc->textureEntryPtr->data.data.arraySize.size() == 1);
             uint32 count = ShaderParameterUtility::getArrayElementCount<1>(paramDesc.first, textureParamDesc->textureEntryPtr->data.data.arraySize, specializationConsts);
 
-            TextureParameterData& paramData = shaderTextures[textureParamDesc->textureEntryPtr->attributeName];
+            String attribName{ UTF8_TO_TCHAR(textureParamDesc->textureEntryPtr->attributeName.c_str()) };
+            TextureParameterData& paramData = shaderTextures[attribName];
             paramData.textures.resize(count);
             paramData.descriptorInfo = textureParamDesc;
         }
@@ -485,7 +497,8 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
             debugAssert(samplerParamDesc->samplerEntryPtr->data.data.size() == 1);
             uint32 count = ShaderParameterUtility::getArrayElementCount<1>(paramDesc.first, samplerParamDesc->samplerEntryPtr->data.data, specializationConsts);
 
-            SamplerParameterData& paramData = shaderSamplers[samplerParamDesc->samplerEntryPtr->attributeName];
+            String attribName{ UTF8_TO_TCHAR(samplerParamDesc->samplerEntryPtr->attributeName.c_str()) };
+            SamplerParameterData& paramData = shaderSamplers[attribName];
             paramData.samplers.resize(count);
             paramData.descriptorInfo = samplerParamDesc;
         }
@@ -495,7 +508,7 @@ void ShaderParameters::initParamsMaps(const std::map<String, ShaderDescriptorPar
 bool ShaderParameters::initRuntimeArrayData(BufferParametersData& bufferParamData) const
 {
     uint32 runtimeOffset = 0;
-    String bufferRuntimeParamName = "";
+    String bufferRuntimeParamName;
     uint32 paramsCount = 0;
     for (const ShaderBufferField* currentField : *bufferParamData.descriptorInfo->bufferParamInfo)
     {
@@ -698,7 +711,7 @@ void ShaderParameters::pullBufferParamUpdates(std::vector<BatchCopyBufferData>& 
             {
                 if (outerBufferParamField->bufferField->isIndexAccessible())
                 {
-                    Logger::warn("ShaderParameters", "%s(): Setting value of parameter[%s] inside a struct[%s] in AoS[%s] will always set param value at struct index 0", __func__
+                    LOG_WARN("ShaderParameters", "%s(): Setting value of parameter[%s] inside a struct[%s] in AoS[%s] will always set param value at struct index 0", __func__
                         , bufferUpdate.paramName.getChar(), bufferUpdate.bufferName.getChar(), outerBufferParamField->bufferField->paramName.getChar());
                 }
 
@@ -732,12 +745,12 @@ void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minS
     BufferParametersData& bufferData = bufferDataItr->second;
     if (bufferDataItr == shaderBuffers.end())
     {
-        Logger::error("ShaderParameters", "%s() : Buffer %s not found", __func__, bufferName.getChar());
+        LOG_ERROR("ShaderParameters", "%s() : Buffer %s not found", __func__, bufferName.getChar());
         return;
     }
     else if (bufferDataItr->second.bIsExternal)
     {
-        Logger::error("ShaderParameters", "%s() : External buffer assigned to %s cannot be resized", __func__, bufferName.getChar());
+        LOG_ERROR("ShaderParameters", "%s() : External buffer assigned to %s cannot be resized", __func__, bufferName.getChar());
         return;
     }
 
@@ -770,7 +783,7 @@ void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minS
                     // Since only storage can be runtime array
                     bufferData.gpuBuffer = IRenderInterfaceModule::get()->currentGraphicsHelper()
                         ->createWriteOnlyBuffer(graphicsInstance, bufferData.runtimeArray->offset + bufferData.runtimeArray->currentSize * gpuDataStride);
-                    bufferData.gpuBuffer->setResourceName(bufferName + "_" + bufferData.runtimeArray->paramName + "_RuntimeSoA");
+                    bufferData.gpuBuffer->setResourceName(bufferName + TCHAR("_") + bufferData.runtimeArray->paramName + TCHAR("_RuntimeSoA"));
                     bufferData.gpuBuffer->init();
 
                     // Push descriptor update
@@ -844,8 +857,8 @@ bool ShaderParameters::setFieldParam(const String& paramName, const FieldType& v
     }
     else
     {
-        Logger::error("ShaderParameters", "%s() : Cannot set %s[%d] of %s"
-            , __func__, paramName.getChar(), index, bufferName.empty() ? "Buffer not found" : bufferName.getChar());
+        LOG_ERROR("ShaderParameters", "%s() : Cannot set %s[%d] of %s"
+            , __func__, paramName.getChar(), index, bufferName.empty() ? TCHAR("Buffer not found") : bufferName.getChar());
     }
     return bValueSet;
 }
@@ -882,7 +895,7 @@ bool ShaderParameters::setFieldParam(const String& paramName, const String& buff
     }
     else
     {
-        Logger::error("ShaderParameters", "%s() : Cannot set %s[%d] of %s"
+        LOG_ERROR("ShaderParameters", "%s() : Cannot set %s[%d] of %s"
             , __func__, paramName.getChar(), index, bufferName.getChar());
     }
     return bValueSet;
@@ -908,8 +921,8 @@ FieldType ShaderParameters::getFieldParam(const String& paramName, uint32 index)
     }
     else
     {
-        Logger::error("ShaderParameters", "%s() : Cannot get %s[%d] of %s"
-            , __func__, paramName.getChar(), index, bufferName.empty() ? "Buffer not found" : bufferName.getChar());
+        LOG_ERROR("ShaderParameters", "%s() : Cannot get %s[%d] of %s"
+            , __func__, paramName.getChar(), index, bufferName.empty() ? TCHAR("Buffer not found") : bufferName.getChar());
     }
     return FieldType(0);
 }
@@ -935,7 +948,7 @@ FieldType ShaderParameters::getFieldParam(const String& paramName, const String&
     }
     else
     {
-        Logger::error("ShaderParameters", "%s() : Cannot get %s[%d] of %s"
+        LOG_ERROR("ShaderParameters", "%s() : Cannot get %s[%d] of %s"
             , __func__, paramName.getChar(), index, bufferName.getChar());
     }
     return FieldType(0);

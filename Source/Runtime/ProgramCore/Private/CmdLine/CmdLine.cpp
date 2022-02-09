@@ -11,6 +11,7 @@
 
 #include "CmdLine/CmdLine.h"
 #include "Logger/Logger.h"
+#include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
 #include <unordered_map>
@@ -87,17 +88,9 @@ bool ProgramCmdLine::parseFromFile(const String& filePath)
     appDir = FileSystemFunctions::applicationDirectory(appDir);
     String argFilePath = PathFunctions::toAbsolutePath(filePath, appDir);
 
-    PlatformFile argFile(argFilePath);
-    argFile.setFileFlags(EFileFlags::Read);
-    argFile.setSharingMode(EFileSharing::ReadOnly);
-    argFile.setCreationAction(EFileFlags::OpenExisting);
-    if (argFile.exists())
+    if (FileHelper::readString(argsCache, argFilePath))
     {
-        argFile.openFile();        
-        argFile.read(argsFromFile);
-        argFile.closeFile();
-
-        return parse(argsFromFile);
+        return parse(argsCache);
     }
     return false;
 }
@@ -105,11 +98,24 @@ bool ProgramCmdLine::parseFromFile(const String& filePath)
 bool ProgramCmdLine::parse(AChar* cmdArgs[], uint32 count)
 {
     bool bSuccess = true;
+    // Fill args cache and update data for string view
+    argsCache.clear();
+    std::vector<std::pair<uint64, uint64>> cmdArgIdxRange;
+    cmdArgIdxRange.resize(count);
+    for (uint32 i = 0; i < count; ++i)
+    {
+        cmdArgIdxRange[i].first = argsCache.length();
+        argsCache.append(UTF8_TO_TCHAR(cmdArgs[i]));
+        cmdArgIdxRange[i].second = argsCache.length();
+        argsCache.append(TCHAR(" "));
+    }
+
+    // Parse from each view
     cmdLineElements.clear();
     cmdLineElements.reserve(count);
     for (uint32 i = 0; i < count; ++i)
     {
-        AChar* cmdArg = cmdArgs[i];
+        StringView cmdArgView{ argsCache.cbegin() + cmdArgIdxRange[i].first,  argsCache.cbegin() + cmdArgIdxRange[i].second };
         // Do not need to trim spaces as they must already trimmed before reaching this point
         //while ((*cmdArg) != '\0' && std::isspace(*cmdArg))
         //{
@@ -117,20 +123,21 @@ bool ProgramCmdLine::parse(AChar* cmdArgs[], uint32 count)
         //}
 
         // Parse from file
-        if ((*cmdArg) == '@')
+        if (cmdArgView.starts_with(TCHAR('@')))
         {
-            String filePath(cmdArg + 1);
+            // Skip @ char
+            String filePath(cmdArgView.substr(1, cmdArgView.length() - 1));
             // If it is quoted path then remove first and last
-            if (filePath.startsWith("\"") || filePath.startsWith("'"))
+            if (filePath.startsWith(TCHAR("\"")) || filePath.startsWith(TCHAR("'")))
             {
-                filePath.replace(0, 1, "").replace(filePath.length() - 1, 1, "");
+                filePath.replace(0, 1, TCHAR("")).replace(filePath.length() - 1, 1, TCHAR(""));
             }
             bSuccess = parseFromFile(filePath);
             break;
         }
-        else if ((*cmdArg) != '\0')
+        else if (!cmdArgView.starts_with(TCHAR('\0')))
         {
-            cmdLineElements.emplace_back(std::string_view(cmdArg));
+            cmdLineElements.emplace_back(cmdArgView);
         }
     }
 
@@ -174,11 +181,11 @@ bool ProgramCmdLine::parse(const String& cmdLine)
         tokenItr = IterateTillNextNonSpace(tokenItr, cmdLine.cend());
         auto endTokenItr = tokenItr;
         // If it is file reference then parse from file
-        if ((*endTokenItr) == '@')
+        if ((*endTokenItr) == TCHAR('@'))
         {
             ++endTokenItr;
             tokenItr = endTokenItr;
-            if ((*endTokenItr) == '"' || (*endTokenItr) == '\'')
+            if ((*endTokenItr) == TCHAR('"') || (*endTokenItr) == TCHAR('\''))
             {
                 tokenItr = endTokenItr + 1;
                 endTokenItr = IterateTillEndQoute(tokenItr, endTokenItr, cmdLine.cend());
@@ -191,7 +198,7 @@ bool ProgramCmdLine::parse(const String& cmdLine)
             bSuccess = parseFromFile(String(tokenItr, endTokenItr));
             break;
         }
-        else if ((*endTokenItr) == '"' || (*endTokenItr) == '\'')// If quoted value then end iterator is at the closing quote
+        else if ((*endTokenItr) == TCHAR('"') || (*endTokenItr) == TCHAR('\''))// If quoted value then end iterator is at the closing quote
         {
             tokenItr = endTokenItr + 1;
             endTokenItr = IterateTillEndQoute(tokenItr, endTokenItr, cmdLine.cend());
@@ -203,7 +210,7 @@ bool ProgramCmdLine::parse(const String& cmdLine)
         
         if (endTokenItr != tokenItr)
         {
-            cmdLineElements.emplace_back(std::string_view(tokenItr, endTokenItr));
+            cmdLineElements.emplace_back(StringView(tokenItr, endTokenItr));
         }
         // endItr can be either at the end or at a space char or at a quote char
         // In case of quote character we need to shift it by one for next iteration to work good
@@ -226,11 +233,11 @@ void ProgramCmdLineInstance::parseArgElements()
     for (auto itr = cmdLineElements.cbegin(); itr != cmdLineElements.cend();)
     {
         // If starts with - then this itr must be a arg start
-        if (itr->starts_with('-'))
+        if (itr->starts_with(TCHAR('-')))
         {
             auto currentArgItr = itr;
             // Can have value check next itrs for value
-            if (itr->starts_with("--"))
+            if (itr->starts_with(TCHAR("--")))
             {
                 itr = itr + 1;
                 // Every element that does not start with `-` after current arg will be value for this 
@@ -256,7 +263,7 @@ void ProgramCmdLineInstance::parseArgElements()
                 auto flagsItr = currentArgItr->cbegin() + 1;
                 for (; flagsItr != currentArgItr->cend(); ++flagsItr)
                 {
-                    String argName = "-" + String(1, *flagsItr);
+                    String argName = TCHAR("-") + String(1, *flagsItr);
                     // Insert each flags separately prefixed with `-`
                     addCmdArg(argName
                         , ArgElementsRange
@@ -280,26 +287,26 @@ void ProgramCmdLineInstance::parseArgElements()
 bool ProgramCmdLine::printHelp() const
 {
     const ProgramCmdLineInstance* thisInst = static_cast<const ProgramCmdLineInstance*>(this);
-    auto itrHelp = thisInst->cmdArgs.find("--help");
+    auto itrHelp = thisInst->cmdArgs.find(TCHAR("--help"));
     if (itrHelp == thisInst->cmdArgs.cend())
     {
-        itrHelp = thisInst->cmdArgs.find("-h");
+        itrHelp = thisInst->cmdArgs.find(TCHAR("-h"));
     }
     if (itrHelp != thisInst->cmdArgs.cend())
     {
-        String outHelp = programDescription + "\n";
+        String outHelp = programDescription + TCHAR("\n");
         for (const auto& allowedArg : thisInst->allowedArgs)
         {
             if (allowedArg.shortArgName.empty())
             {
-                outHelp += StringFormat::format("\n\"%s\" - %s", allowedArg.argName, allowedArg.argDescription);
+                outHelp += StringFormat::format(TCHAR("\n\"%s\" - %s"), allowedArg.argName, allowedArg.argDescription);
             }
             else
             {
-                outHelp += StringFormat::format("\n\"%s\", \"%s\" - %s", allowedArg.argName, allowedArg.shortArgName, allowedArg.argDescription);
+                outHelp += StringFormat::format(TCHAR("\n\"%s\", \"%s\" - %s"), allowedArg.argName, allowedArg.shortArgName, allowedArg.argDescription);
             }
         }
-        Logger::log("CmdLineHelp", "\n%s\n", outHelp);
+        LOG("CmdLineHelp", "\n%s\n", outHelp);
         return true;
     }
     return false;
@@ -313,9 +320,9 @@ void ProgramCmdLine::printCommandLine() const
     String cmdLine;
     for (uint32 i = 1; i < cmdLineElements.size(); ++i)
     {
-        cmdLine += " " + String(cmdLineElements[i]);
+        cmdLine += TCHAR(" ") + String(cmdLineElements[i]);
     }
-    Logger::log("CommandLine", "%s%s", appName, cmdLine);
+    LOG("CommandLine", "%s%s", appName, cmdLine);
 }
 
 bool ProgramCmdLine::hasArg(const String& argName) const

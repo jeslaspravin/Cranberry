@@ -10,6 +10,7 @@
  */
 
 #include "WindowsPlatformFunctions.h"
+#include "WindowsCommonHeaders.h"
 #include "Types/Time.h"
 #include <chrono>
 #include <ratio>
@@ -58,7 +59,7 @@ LibPointer* WindowsPlatformFunctions::openLibrary(String libName)
     // #TODO(Jeslas) : Improve this to handle dependent dlls here, Using
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/february/inside-windows-win32-portable-executable-file-format-in-detail
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/march/inside-windows-an-in-depth-look-into-the-win32-portable-executable-file-format-part-2
-    WindowsLibHandle* handle = new WindowsLibHandle(LoadLibraryA(libName.getChar()), true);
+    WindowsLibHandle* handle = new WindowsLibHandle(LoadLibrary(libName.getChar()), true);
 
     if (!handle->libHandle)
     {
@@ -79,7 +80,7 @@ void WindowsPlatformFunctions::releaseLibrary(const LibPointer* libraryHandle)
 
 void* WindowsPlatformFunctions::getProcAddress(const LibPointer* libraryHandle, String symName)
 {
-    return GetProcAddress(static_cast<const WindowsLibHandle*>(libraryHandle)->libHandle,symName.getChar());
+    return GetProcAddress(static_cast<const WindowsLibHandle*>(libraryHandle)->libHandle, TCHAR_TO_UTF8(symName.getChar()));
 }
 
 void WindowsPlatformFunctions::getModuleInfo(void* processHandle, LibPointer* libraryHandle, LibraryData& moduleData)
@@ -89,7 +90,7 @@ void WindowsPlatformFunctions::getModuleInfo(void* processHandle, LibPointer* li
         return;
     }
 
-    char temp[MAX_PATH];
+    String::value_type temp[MAX_PATH];
     MODULEINFO mi;
     HMODULE module = static_cast<WindowsLibHandle*>(libraryHandle)->libHandle;
 
@@ -97,9 +98,9 @@ void WindowsPlatformFunctions::getModuleInfo(void* processHandle, LibPointer* li
     moduleData.basePtr = mi.lpBaseOfDll;
     moduleData.moduleSize = mi.SizeOfImage;
 
-    GetModuleFileNameExA(processHandle, module, temp, sizeof(temp));
+    GetModuleFileNameEx(processHandle, module, temp, sizeof(temp));
     moduleData.imgName = temp;
-    GetModuleBaseNameA(processHandle, module, temp, sizeof(temp));
+    GetModuleBaseName(processHandle, module, temp, sizeof(temp));
     moduleData.name = temp;
 }
 
@@ -151,7 +152,6 @@ void WindowsPlatformFunctions::getAllModules(void* processHandle, LibPointerPtr*
 
 String WindowsPlatformFunctions::getClipboard()
 {
-    String clipboard;
     if (!::OpenClipboard(NULL))
         return NULL;
     HANDLE clipboardHnd = ::GetClipboardData(CF_UNICODETEXT);
@@ -160,10 +160,7 @@ String WindowsPlatformFunctions::getClipboard()
         ::CloseClipboard();
         return NULL;
     }
-    if (const WChar* globalClipboardData = (const WChar*)::GlobalLock(clipboardHnd))
-    {
-        wcharToStr(clipboard, globalClipboardData);
-    }
+    String clipboard{ (const WChar*)::GlobalLock(clipboardHnd) };
     ::GlobalUnlock(clipboardHnd);
     ::CloseClipboard();
     return clipboard;
@@ -173,6 +170,14 @@ bool WindowsPlatformFunctions::setClipboard(const String& text)
 {
     if (!::OpenClipboard(NULL))
         return false;
+#if USING_UNICODE
+    ::EmptyClipboard();
+    if (::SetClipboardData(CF_UNICODETEXT, (HANDLE)text.getChar()) == NULL)
+    {
+        ::CloseClipboard();
+        return false;
+    }
+#else // USING_UNICODE
     const int wideCharLen = ::MultiByteToWideChar(CP_UTF8, 0, text.getChar(), -1, NULL, 0);
     HGLOBAL clipboardHnd = ::GlobalAlloc(GMEM_MOVEABLE, (SIZE_T)wideCharLen * sizeof(WCHAR));
     if (clipboardHnd == NULL)
@@ -190,6 +195,7 @@ bool WindowsPlatformFunctions::setClipboard(const String& text)
         ::CloseClipboard();
         return false;
     }
+#endif // USING_UNICODE
     ::CloseClipboard();
     return true;
 }
@@ -214,9 +220,36 @@ uint32 WindowsPlatformFunctions::getSetBitCount(const uint64& value)
     return uint32(::__popcnt64(value));
 }
 
-void WindowsPlatformFunctions::wcharToStr(String& outStr, const WChar* wChar)
+bool WindowsPlatformFunctions::wcharToUtf8(std::string& outStr, const WChar* wChar)
 {
-    int buf_len = ::WideCharToMultiByte(CP_UTF8, 0, wChar, -1, NULL, 0, NULL, NULL);
-    outStr.resize(buf_len);
-    ::WideCharToMultiByte(CP_UTF8, 0, wChar, -1, outStr.data(), buf_len, NULL, NULL);
+    int32 bufLen = ::WideCharToMultiByte(CP_UTF8, 0, wChar, -1, NULL, 0, NULL, NULL);
+    outStr.resize(bufLen);
+    bufLen = ::WideCharToMultiByte(CP_UTF8, 0, wChar, -1, outStr.data(), bufLen, NULL, NULL);
+
+    if (bufLen == 0)
+    {
+        return false;
+    }
+    else
+    {
+        outStr.resize(bufLen);
+        return true;
+    }
+}
+
+bool WindowsPlatformFunctions::utf8ToWChar(String& outStr, const AChar* aChar)
+{
+    int32 bufLen = ::MultiByteToWideChar(CP_UTF8, 0, aChar, -1, NULL, 0);
+    outStr.resize(bufLen);
+    bufLen = ::MultiByteToWideChar(CP_UTF8, 0, aChar, -1, outStr.data(), bufLen);
+
+    if (bufLen == 0)
+    {
+        return false;
+    }
+    else
+    {
+        outStr.resize(bufLen);
+        return true;
+    }
 }

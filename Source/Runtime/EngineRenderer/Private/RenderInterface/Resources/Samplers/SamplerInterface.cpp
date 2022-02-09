@@ -19,10 +19,10 @@ SamplerInterface::SamplerInterface(SamplerCreateInfo samplerCI)
     : BaseType()
     , config(samplerCI)
 {
-    std::stringstream nameStream("Sampler_");
-    nameStream << ESamplerFiltering::filterName(config.filtering).getChar() << "_";
-    nameStream << std::get<0>(config.tilingMode) << "_";
-    nameStream << std::get<1>(config.tilingMode) << "_";
+    StringStream nameStream(TCHAR("Sampler_"));
+    nameStream << ESamplerFiltering::filterName(config.filtering).getChar() << TCHAR("_");
+    nameStream << std::get<0>(config.tilingMode) << TCHAR("_");
+    nameStream << std::get<1>(config.tilingMode) << TCHAR("_");
     nameStream << std::get<2>(config.tilingMode);
     config.resourceName = nameStream.str();
 }

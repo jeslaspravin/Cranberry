@@ -59,7 +59,7 @@ private:
     std::set<ShaderParametersRef> activeTextureParams;
 
     // Unique per GUI manager
-    String clipboard;
+    std::string clipboard;
     const InputSystem* inputSystem;
     bool bCaptureInput;
 

@@ -55,7 +55,10 @@ protected:
     ComputeShaderConfigTemplated(const String& name)
         : BaseType(
             Size3D(SizeX, SizeY, SizeZ)
-            , name + "_" + std::to_string(SizeX) + "x"+ std::to_string(SizeY) + "x" + std::to_string(SizeZ)
+            , name 
+            + TCHAR("_") + String::toString(SizeX) 
+            + TCHAR("x")+ String::toString(SizeY)
+            + TCHAR("x") + String::toString(SizeZ)
             )
         , shaderFileName(name)
     {}

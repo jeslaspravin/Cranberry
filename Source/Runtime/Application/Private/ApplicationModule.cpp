@@ -17,7 +17,7 @@ DECLARE_MODULE(Application, ApplicationModule)
 
 IApplicationModule* IApplicationModule::get()
 {
-    static WeakModulePtr appModule = ModuleManager::get()->getOrLoadModule("Application");
+    static WeakModulePtr appModule = ModuleManager::get()->getOrLoadModule(TCHAR("Application"));
     if (appModule.expired())
     {
         return nullptr;

@@ -27,6 +27,8 @@ private:
 
     static DebugMessengerData& getData();
 
+    static String messageTypeStr(VkDebugUtilsMessageTypeFlagsEXT messageTypes);
+
     static VkBool32 vkDebugUtilsMessengerCallbackDebug(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT    messageTypes,const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData);

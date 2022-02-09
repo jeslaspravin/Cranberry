@@ -178,25 +178,25 @@ namespace EVertexType
         switch (vertexType)
         {
         case EVertexType::Simple2:
-            return "Simple2d";
+            return TCHAR("Simple2d");
         case EVertexType::Simple3:
-            return "Simple3d";
+            return TCHAR("Simple3d");
             break;
         case EVertexType::Simple3DColor:
-            return "Simple3dColor";
+            return TCHAR("Simple3dColor");
             break;
         case EVertexType::BasicMesh:
-            return "BasicMesh";
+            return TCHAR("BasicMesh");
             break;
         case EVertexType::StaticMesh:
-            return "StaticMesh";
+            return TCHAR("StaticMesh");
             break;
         case EVertexType::InstancedSimple3DColor:
-            return "InstSimple3dColor";
+            return TCHAR("InstSimple3dColor");
         case EVertexType::NoVertex:
-            return "NoVertex";
+            return TCHAR("NoVertex");
         }
-        return "";
+        return {};
     }
 
     template<>
@@ -393,28 +393,28 @@ void GlobalBuffers::createVertIndBuffers(class IRenderCommandList* cmdList, IGra
     }
 
     BufferResourceRef lineGizmoVertsBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(VertexSimple3DColor), static_cast<uint32>(gizmoVerts.size()));
-    lineGizmoVertsBuffer->setResourceName("LineGizmosVertices");
+    lineGizmoVertsBuffer->setResourceName(TCHAR("LineGizmosVertices"));
     lineGizmoVertsBuffer->init();
 
     BufferResourceRef lineGizmoIndicesBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), static_cast<uint32>(gizmoIndices.size()));
-    lineGizmoIndicesBuffer->setResourceName("LineGizmosIndices");
+    lineGizmoIndicesBuffer->setResourceName(TCHAR("LineGizmosIndices"));
     lineGizmoIndicesBuffer->init();
 
     GlobalBuffers::lineGizmoVertxInds.first = lineGizmoVertsBuffer;
     GlobalBuffers::lineGizmoVertxInds.second = lineGizmoIndicesBuffer;
 
     BufferResourceRef quadTriVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadTriVerts.size()));
-    quadTriVertexBuffer->setResourceName("ScreenQuadTriVertices");
+    quadTriVertexBuffer->setResourceName(TCHAR("ScreenQuadTriVertices"));
     quadTriVertexBuffer->init();
 
     GlobalBuffers::quadTriVerts = quadTriVertexBuffer;
 
     BufferResourceRef quadRectVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadRectVerts.size()));
-    quadRectVertexBuffer->setResourceName("ScreenQuadRectVertices");
+    quadRectVertexBuffer->setResourceName(TCHAR("ScreenQuadRectVertices"));
     quadRectVertexBuffer->init();
 
     BufferResourceRef quadRectIndexBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), static_cast<uint32>(quadRectIndices.size()));
-    quadRectIndexBuffer->setResourceName("ScreenQuadRectIndices");
+    quadRectIndexBuffer->setResourceName(TCHAR("ScreenQuadRectIndices"));
     quadRectIndexBuffer->init();
 
     GlobalBuffers::quadRectVertsInds.first = quadRectVertexBuffer;

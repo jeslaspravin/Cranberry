@@ -201,7 +201,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
 
     if (device->vkCreateRenderPass(device->logicalDevice, &renderPassCreateInfo, nullptr, &renderPass) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s() : Failed creating render pass", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "%s() : Failed creating render pass", __func__);
         renderPass = nullptr;
     }
     return renderPass;
@@ -316,7 +316,7 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance* gra
 
     if (device->vkCreateRenderPass(device->logicalDevice, &renderPassCreateInfo, nullptr, &renderPass) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s() : Failed creating render pass", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "%s() : Failed creating render pass", __func__);
         renderPass = nullptr;
     }
     return renderPass;

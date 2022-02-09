@@ -18,17 +18,16 @@ EAssetType::Type AssetLoaderLibrary::typeFromAssetPath(const String& assetPath)
     String extension;
     PathFunctions::stripExtension(assetPath, extension);
 
-    const AChar* extensionChar = extension.getChar();
-    if (std::strcmp(extensionChar, "obj") == 0)
+    if (extension.startsWith(TCHAR("obj"), false))
     {
         return EAssetType::StaticMesh;
     }
-    else if (std::strcmp(extensionChar, "jpg") == 0 || std::strcmp(extensionChar, "jpeg") == 0 
-        || std::strcmp(extensionChar, "png") == 0 || std::strcmp(extensionChar, "tga") == 0)
+    else if (extension.startsWith(TCHAR("jpg"), false) || extension.startsWith(TCHAR("jpeg"), false)
+        || extension.startsWith(TCHAR("png"), false) || extension.startsWith(TCHAR("tga"), false))
     {
         return EAssetType::Texture2D;
     }
-    else if (std::strcmp(extensionChar, "hdr") == 0)
+    else if (extension.startsWith(TCHAR("hdr"), false))
     {
         return EAssetType::CubeMap;
     }

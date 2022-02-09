@@ -238,7 +238,7 @@ void VulkanGraphicsPipeline::fillShaderStages(std::vector<VkPipelineShaderStageC
         const SharedPtr<ShaderCodeResource>& shaderCode = pipelineShader->getShaders().at(EShaderStage::Type(shaderStageDesc.stage));
         PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
         shaderStageCreateInfo.stage = EngineToVulkanAPI::vulkanShaderStage(shaderCode->shaderStage());
-        shaderStageCreateInfo.pName = shaderCode->entryPoint().getChar();
+        shaderStageCreateInfo.pName = shaderCode->entryPoint().c_str();
         shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource*>(shaderCode.get())->shaderModule;
         // filled later
         shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;
@@ -585,7 +585,7 @@ void VulkanComputePipeline::fillShaderStages(VkPipelineShaderStageCreateInfo& sh
 
     PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
     shaderStageCreateInfo.stage = EngineToVulkanAPI::vulkanShaderStage(computeShaderCodeItr->second->shaderStage());
-    shaderStageCreateInfo.pName = computeShaderCodeItr->second->entryPoint().getChar();
+    shaderStageCreateInfo.pName = computeShaderCodeItr->second->entryPoint().c_str();
     shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource*>(computeShaderCodeItr->second.get())->shaderModule;
     // filled later
     shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;

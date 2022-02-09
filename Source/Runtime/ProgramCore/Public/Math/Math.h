@@ -13,8 +13,8 @@
 
 #include "Math/CoreMathTypedefs.h"
 #include "Types/CoreDefines.h"
-#include "ProgramCoreExports.h"
 #include "Types/Traits/TypeTraits.h"
+#include "ProgramCoreExports.h"
 
 #include <glm/common.hpp>
 #include <glm/exponential.hpp>
@@ -34,6 +34,15 @@ concept CustomMathTypes = std::disjunction_v<
     , std::is_same<Type, Vector3D>
     , std::is_same<Type, Vector4D>
     , std::is_same<Type, Rotation>
+    , std::is_same<Type, Quat>
+>;
+
+// Types that can be a vector in certain coordinate system
+template <typename Type>
+concept VectorTypes = std::disjunction_v<
+    std::is_same<Type, Vector2D>
+    , std::is_same<Type, Vector3D>
+    , std::is_same<Type, Vector4D>
     , std::is_same<Type, Quat>
 >;
 

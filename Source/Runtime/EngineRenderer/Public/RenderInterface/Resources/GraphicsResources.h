@@ -176,7 +176,7 @@ public:\
 #ifndef DEFINE_GRAPHICS_RESOURCE
 #define DEFINE_GRAPHICS_RESOURCE(NewTypeName)\
     UniquePtr<NewTypeName::##NewTypeName##_Type> NewTypeName::STATIC_TYPE \
-        = UniquePtr<NewTypeName::##NewTypeName##_Type>(new NewTypeName::##NewTypeName##_Type(new NewTypeName(), &NewTypeName::delFn, #NewTypeName));\
+        = UniquePtr<NewTypeName::##NewTypeName##_Type>(new NewTypeName::##NewTypeName##_Type(new NewTypeName(), &NewTypeName::delFn, TCHAR(#NewTypeName)));\
     \
     void NewTypeName::delFn(GraphicsResource* resource) \
     { \
@@ -193,7 +193,7 @@ public:\
     UniquePtr<typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type> NewTypeName##TemplatesDefine## \
         ::STATIC_TYPE=UniquePtr<typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type>( \
         new typename NewTypeName##TemplatesDefine##::##NewTypeName##_Type(new typename NewTypeName##TemplatesDefine##::NewType(),\
-        &NewTypeName##TemplatesDefine##::delFn, #NewTypeName#TemplatesDefine));\
+        &NewTypeName##TemplatesDefine##::delFn, TCHAR(#NewTypeName#TemplatesDefine)));\
     \
     template ##NewTypeTemplates## \
     void NewTypeName##TemplatesDefine##::delFn(GraphicsResource* resource) \

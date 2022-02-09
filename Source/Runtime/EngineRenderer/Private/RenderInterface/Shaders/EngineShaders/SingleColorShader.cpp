@@ -17,7 +17,7 @@
 #include "RenderApi/GBuffersAndTextures.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-#define SINGLECOLOR_SHADER_NAME "SingleColor"
+#define SINGLECOLOR_SHADER_NAME TCHAR("SingleColor")
 
 struct SingleColorMeshMaterials
 {
@@ -51,7 +51,7 @@ protected:
         static SingleColorMeshMaterialsBufferParamInfo MESH_DATA_MATERIALS;
         static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
         {
-            { "materials", &MESH_DATA_MATERIALS }
+            { TCHAR("materials"), &MESH_DATA_MATERIALS }
         };
 
 

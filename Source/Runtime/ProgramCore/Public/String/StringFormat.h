@@ -25,13 +25,13 @@ class StringFormat;
 template <typename T>
 concept HasValidCStrMethod = requires(T&& val)
 {
-    { val.c_str() } -> std::convertible_to<const AChar*>;
+    { val.c_str() } -> std::convertible_to<BaseString::const_pointer>;
 };
 
 template <typename T>
 concept HasValidGetCharMethod = requires(T&& val)
 {
-    { val.getChar() } -> std::convertible_to<const AChar*>;
+    { val.getChar() } -> std::convertible_to<BaseString::const_pointer>;
 };
 
 // If not a string type and toString method exists
@@ -46,7 +46,7 @@ template<typename Type, typename CleanType = std::remove_cvref_t<Type>>
 concept HasOStreamInsertOverrideMethod = NonStringType<Type> && std::is_compound_v<CleanType>
     && requires(Type && val)
     {
-        { std::declval<std::ostream&>() << std::declval<Type>() } -> std::same_as<std::ostream&>;
+        { std::declval<OutputStream&>() << std::declval<Type>() } -> std::same_as<OutputStream&>;
     };
 
 template<typename Type, typename CleanType = std::remove_cvref_t<Type>>
@@ -140,23 +140,23 @@ using FormatArgsMap = std::unordered_map<String, FormatArg>;
 class StringFormat
 {
 public:
-    // getChar - String to AChar* and primitive types pass templates
+    // getChar - String to TChar* and primitive types pass templates
     template<typename StrType> requires HasValidCStrMethod<StrType>
-    FORCE_INLINE CONST_EXPR static const AChar* getChar(const StrType& value)
+    FORCE_INLINE CONST_EXPR static const TChar* getChar(const StrType& value)
     {
-        return static_cast<const AChar*>(value.c_str());
+        return static_cast<const TChar*>(value.c_str());
     }
 
     template<typename StrType> requires HasValidGetCharMethod<StrType> && (!HasValidCStrMethod<StrType>)
-    FORCE_INLINE CONST_EXPR static const AChar* getChar(const StrType& value)
+    FORCE_INLINE CONST_EXPR static const TChar* getChar(const StrType& value)
     {
-        return static_cast<const AChar*>(value.getChar());
+        return static_cast<const TChar*>(value.getChar());
     }
 
-    template<typename StrType> requires std::convertible_to<StrType, const AChar*>
-    FORCE_INLINE CONST_EXPR static const AChar* getChar(StrType&& value)
+    template<typename StrType> requires std::convertible_to<StrType, const TChar*>
+    FORCE_INLINE CONST_EXPR static const TChar* getChar(StrType&& value)
     {
-        return static_cast<const AChar*>(value);
+        return static_cast<const TChar*>(value);
     }
 
     template<typename StrType> requires NonStringType<StrType>
@@ -174,9 +174,9 @@ public:
 
     // Only std::ostream << type exists
     template<typename Type> requires HasOStreamInsertOverrideMethod<Type>
-    FORCE_INLINE CONST_EXPR static std::string toString(const Type& value)
+    FORCE_INLINE CONST_EXPR static BaseString toString(const Type& value)
     {
-        std::ostringstream stream;
+        OStringStream stream;
         stream << value;
         return stream.str();
     }
@@ -191,47 +191,53 @@ public:
     template<HasStringFormatToStringImpl KeyType, HasStringFormatToStringImpl ValueType>
     FORCE_INLINE CONST_EXPR static String toString(const std::pair<KeyType, ValueType>& pair)
     {
-        std::ostringstream stream;
-        stream << "{ " << toString(pair.first) << ", " << toString(pair.second) << " }";
+        OStringStream stream;
+        stream << TCHAR("{ ") << toString(pair.first) << TCHAR(", ") << toString(pair.second) << TCHAR(" }");
         return stream.str();
     }
 
     template<StringConvertibleIteratorType IterableType>
-    FORCE_INLINE CONST_EXPR static std::string toString(IterableType&& iterable)
+    FORCE_INLINE CONST_EXPR static BaseString toString(IterableType&& iterable)
     {
         using Type = UnderlyingType<IterableType>;
 
-        std::ostringstream stream;
-        stream << "[ ";
+        OStringStream stream;
+        stream << TCHAR("[ ");
         typename Type::const_iterator itr = iterable.cbegin();
         if (itr != iterable.cend())
         {
             stream << toString(*itr);
             while ((++itr) != iterable.cend())
             {
-                stream << ", " << toString(*itr);
+                stream << TCHAR(", ") << toString(*itr);
             }
         }
-        stream << " ]";
+        stream << TCHAR(" ]");
         return stream.str();
     }
 
 private:
     StringFormat() = default;
 
+#if USING_UNICODE
+#define STRING_PRINTF std::swprintf
+#else // USING_UNICODE
+#define STRING_PRINTF std::snprintf
+#endif
     // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as well, else r-values gets converted to l-values on this call
     template<typename... Args>
-    DEBUG_INLINE CONST_EXPR static String fmtString(const AChar* fmt, Args&&... args)
+    DEBUG_INLINE CONST_EXPR static String fmtString(const TChar* fmt, Args&&... args)
     {
-        int32 size = std::snprintf(nullptr, 0, fmt, getChar<Args>(std::forward<Args>(args))...);
+        int32 size = STRING_PRINTF(nullptr, 0, fmt, getChar<Args>(std::forward<Args>(args))...);
         String fmted;
         // +1 size printf needs one more in buffer for null char
         fmted.resize(size + 1);
-        std::snprintf(fmted.data(), size + 1, fmt, getChar<Args>(std::forward<Args>(args))...);
+        STRING_PRINTF(fmted.data(), size + 1, fmt, getChar<Args>(std::forward<Args>(args))...);
         // Resizing it back to original length
         fmted.resize(size);
         return fmted;
     }
+#undef STRING_PRINTF
 
 public:
 

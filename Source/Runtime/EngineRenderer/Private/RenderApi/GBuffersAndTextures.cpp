@@ -139,13 +139,13 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList* cmdList, IGraphicsInsta
     imageCI.imageFormat = EPixelDataFormat::BGRA_U8_Norm;
     imageCI.layerCount = imageCI.numOfMips = 1;
     dummyBlackTexture = graphicsHelper->createImage(graphicsInstance, imageCI);
-    dummyBlackTexture->setResourceName("Dummy_Black");
+    dummyBlackTexture->setResourceName(TCHAR("Dummy_Black"));
 
     dummyWhiteTexture = graphicsHelper->createImage(graphicsInstance, imageCI);
-    dummyWhiteTexture->setResourceName("Dummy_White");
+    dummyWhiteTexture->setResourceName(TCHAR("Dummy_White"));
 
     dummyNormalTexture = graphicsHelper->createImage(graphicsInstance, imageCI);
-    dummyNormalTexture->setResourceName("Dummy_Normal");
+    dummyNormalTexture->setResourceName(TCHAR("Dummy_Normal"));
 
     if (GlobalRenderVariables::ENABLE_EXTENDED_STORAGES)
     {
@@ -154,11 +154,11 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList* cmdList, IGraphicsInsta
         imageCI.dimensions = Size3D(EngineSettings::maxEnvMapSize / 2u, EngineSettings::maxEnvMapSize / 2u, 1);
         integratedBRDF = graphicsHelper->createImage(graphicsInstance, imageCI);
         integratedBRDF->setShaderUsage(EImageShaderUsage::Sampling | EImageShaderUsage::Writing);
-        integratedBRDF->setResourceName("LUT_IntegratedBRDF");
+        integratedBRDF->setResourceName(TCHAR("LUT_IntegratedBRDF"));
     }
     else
     {
-        Logger::error("GlobalBuffers", "%s(): Cannot create integrated BRDF LUT, RG_SF16 is not supported format", __func__);
+        LOG_ERROR("GlobalBuffers", "%s(): Cannot create integrated BRDF LUT, RG_SF16 is not supported format", __func__);
         integratedBRDF = nullptr;
     }
 }
@@ -175,13 +175,13 @@ void GlobalBuffers::generateTexture2Ds()
             cmdList->setupInitialLayout(integratedBRDF);
 
             LocalPipelineContext integrateBrdfContext;
-            integrateBrdfContext.materialName = "IntegrateBRDF_16x16x1";
+            integrateBrdfContext.materialName = TCHAR("IntegrateBRDF_16x16x1");
             IRenderInterfaceModule::get()->getRenderManager()->preparePipelineContext(&integrateBrdfContext);
             ShaderParametersRef integrateBrdfParams = graphicsHelper->createShaderParameters(graphicsInstance, integrateBrdfContext.getPipeline()->getParamLayoutAtSet(0), {});
-            integrateBrdfParams->setTextureParam("outIntegratedBrdf", integratedBRDF);
+            integrateBrdfParams->setTextureParam(TCHAR("outIntegratedBrdf"), integratedBRDF);
             integrateBrdfParams->init();
 
-            const GraphicsResource* cmdBuffer = cmdList->startCmd("IntegrateBRDF", EQueueFunction::Graphics, false);
+            const GraphicsResource* cmdBuffer = cmdList->startCmd(TCHAR("IntegrateBRDF"), EQueueFunction::Graphics, false);
             cmdList->cmdBindComputePipeline(cmdBuffer, integrateBrdfContext);
             cmdList->cmdBindDescriptorsSets(cmdBuffer, integrateBrdfContext, { integrateBrdfParams });
             Size3D subgrpSize = static_cast<const ComputeShaderConfig*>(integrateBrdfContext.getPipeline()->getShaderResource()->getShaderConfig())->getSubGroupSize();
@@ -222,7 +222,7 @@ void GlobalBuffers::createTextureCubes(IRenderCommandList* cmdList, IGraphicsIns
     imageCI.layerCount = 6;
     imageCI.numOfMips = 1;
     dummyCubeTexture = graphicsHelper->createCubeImage(graphicsInstance, imageCI);
-    dummyCubeTexture->setResourceName("DummyCubeMap");
+    dummyCubeTexture->setResourceName(TCHAR("DummyCubeMap"));
 }
 
 void GlobalBuffers::destroyTextureCubes()

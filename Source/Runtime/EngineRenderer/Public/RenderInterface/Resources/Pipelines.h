@@ -105,21 +105,21 @@ namespace EPrimitiveTopology
     };
 
     template<Type PrimType>
-    constexpr const AChar* getChar()
+    constexpr const TChar* getChar()
     {
         switch (PrimType)
         {
         case EPrimitiveTopology::Triangle:
-            return "Triangle";
+            return TCHAR("Triangle");
         case EPrimitiveTopology::Line:
-            return "Line";
+            return TCHAR("Line");
             break;
         case EPrimitiveTopology::Point:
-            return "Point";
+            return TCHAR("Point");
         default:
             break;
         }
-        return "";
+        return TCHAR("");
     }
 }
 

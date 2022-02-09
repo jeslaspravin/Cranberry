@@ -11,9 +11,8 @@
 
 #pragma once
 #include "String/StringFormat.h"
+#include "String/StringRegex.h"
 #include "ProgramCoreExports.h"
-
-#include <regex>
 
 struct MustacheContext;
 class MustacheStringFormatter;
@@ -58,21 +57,21 @@ private:
     };
 private:
     String fmtStr;
-    std::vector<std::smatch> allMatches;
+    std::vector<StringMatch> allMatches;
     std::vector<Section> sections;
     void parseFmtStr();
 
-    FORCE_INLINE bool isASection(const String& tagName) const { return tagName.startsWith("#") || tagName.startsWith("^"); }
-    FORCE_INLINE bool isANotSection(const String& tagName) const { return tagName.startsWith("^"); }
-    FORCE_INLINE bool isSectionClose(const String& tagName) const { return tagName.startsWith("/"); }
-    FORCE_INLINE bool isAComment(const String& tagName) const { return tagName.startsWith("!"); }
-    FORCE_INLINE bool isAPartial(const String& tagName) const { return tagName.startsWith(">"); }
+    FORCE_INLINE bool isASection(const String& tagName) const { return tagName.startsWith(TCHAR('#')) || tagName.startsWith(TCHAR('^')); }
+    FORCE_INLINE bool isANotSection(const String& tagName) const { return tagName.startsWith(TCHAR('^')); }
+    FORCE_INLINE bool isSectionClose(const String& tagName) const { return tagName.startsWith(TCHAR('/')); }
+    FORCE_INLINE bool isAComment(const String& tagName) const { return tagName.startsWith(TCHAR('!')); }
+    FORCE_INLINE bool isAPartial(const String& tagName) const { return tagName.startsWith(TCHAR('>')); }
     FORCE_INLINE void removeMustachePrefix(String& tagName) const;
 
-    void renderSection(std::ostringstream& outStr, uint32 sectionIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
-    FORCE_INLINE void renderSectionInner(std::ostringstream& outStr, const Section& section, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
+    void renderSection(OStringStream& outStr, uint32 sectionIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
+    FORCE_INLINE void renderSectionInner(OStringStream& outStr, const Section& section, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
     // Returns next match idx to render 
-    uint32 renderTag(std::ostringstream& outStr, uint32 matchIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
+    uint32 renderTag(OStringStream& outStr, uint32 matchIdx, const MustacheContext& context, const std::unordered_map<String, MustacheStringFormatter>& partials) const;
 public:
     MustacheStringFormatter() = default;
     MustacheStringFormatter(const String& fmt);

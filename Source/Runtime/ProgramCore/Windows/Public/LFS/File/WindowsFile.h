@@ -16,7 +16,7 @@ class PROGRAMCORE_EXPORT WindowsFile final : public GenericFile
 {
 
 public:
-    WindowsFile(const String& path = ""):GenericFile(path){}
+    WindowsFile(const String& path = TCHAR("")):GenericFile(path){}
     WindowsFile(WindowsFile&& otherFile);
     WindowsFile(const WindowsFile& otherFile);
     ~WindowsFile();
@@ -38,7 +38,6 @@ public:
     bool setFileSize(const int64& newSize) const override;
     void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const override;
     void read(uint8* readTo, const uint32& bytesToRead) const override;
-    void read(String& readTo, const uint32& bytesToRead = (~0u)) const override;
     void write(const ArrayView<uint8>& writeBytes) const override;
 
     bool deleteFile() override;

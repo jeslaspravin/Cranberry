@@ -33,7 +33,7 @@ public:
         return FileSystemType::listAllFiles(directory, bRecursive);
     }
 
-    static std::vector<String> listFiles(const String& directory, bool bRecursive, const String& wildcard = "*")
+    static std::vector<String> listFiles(const String& directory, bool bRecursive, const String& wildcard = TCHAR("*"))
     {
         return FileSystemType::listFiles(directory, bRecursive, wildcard);
     }

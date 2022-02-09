@@ -10,6 +10,7 @@
  */
 
 #include "FileChangesTracker.h"
+#include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
 #include <unordered_set>
@@ -20,22 +21,16 @@ FileChangesTracker::FileChangesTracker(const String name, const String& director
     , writePath(intermediateDir)
 {
     fatalAssert(PlatformFile(folderPath).exists(), "%s() : Tracking base directory %s is not valid", __func__, folderPath);
-    PlatformFile existingManifestFile(PathFunctions::combinePath(writePath, trackerManifestName));
-    existingManifestFile.setFileFlags(EFileFlags::Read);
-    existingManifestFile.setSharingMode(EFileSharing::ReadOnly);
-    existingManifestFile.setCreationAction(EFileFlags::OpenExisting);
-    if (existingManifestFile.exists() && existingManifestFile.openFile())
+    String manifestContent;
+    if (FileHelper::writeString(manifestContent, PathFunctions::combinePath(writePath, trackerManifestName)))
     {
-        String manifestContent;
-        existingManifestFile.read(manifestContent);
-        std::vector<std::string_view> readLines = manifestContent.splitLines();
+        std::vector<StringView> readLines = manifestContent.splitLines();
         for(String line : readLines)
         {
-            std::vector<String> fileEntry = String::split(line, "=");
+            std::vector<String> fileEntry = String::split(line, TCHAR("="));
             fatalAssert(fileEntry.size() == 2, "%s() : Cannot parse file timestamp from %s", __func__, line);
             fileLastTimestamp[fileEntry[0]] = std::stoll(fileEntry[1]);
         }
-        existingManifestFile.closeFile();
     }
 }
 
@@ -45,20 +40,12 @@ FileChangesTracker::~FileChangesTracker()
     int32 i = 0;
     for (const auto& fileEntry : fileLastTimestamp)
     {
-        manifestEntries[i] = StringFormat::format("%s=%lld", fileEntry.first, fileEntry.second);
+        manifestEntries[i] = StringFormat::format(TCHAR("%s=%lld"), fileEntry.first, fileEntry.second);
         ++i;
     }
 
-    PlatformFile manifestFile(PathFunctions::combinePath(writePath, trackerManifestName));
-    manifestFile.setFileFlags(EFileFlags::Write);
-    manifestFile.setSharingMode(EFileSharing::ReadOnly);
-    manifestFile.setCreationAction(EFileFlags::OpenAlways);
-    if (manifestFile.openOrCreate())
-    {
-        String manifestFileContent = String::join(manifestEntries.cbegin(), manifestEntries.cend(), LINE_FEED_CHAR);
-        manifestFile.write(ArrayView<uint8>(reinterpret_cast<uint8*>(manifestFileContent.data()), manifestFileContent.length()));
-        manifestFile.closeFile();
-    }
+    String manifestFileContent = String::join(manifestEntries.cbegin(), manifestEntries.cend(), LINE_FEED_CHAR);
+    FileHelper::writeString(manifestFileContent, PathFunctions::combinePath(writePath, trackerManifestName));
 }
 
 bool FileChangesTracker::isTargetOutdated(const String& absPath, const std::vector<String>& outputFiles) const

@@ -23,7 +23,7 @@ const std::map<String, ShaderBufferParamInfo*>& RenderSceneBase::sceneViewParamI
     static ViewDataBufferParamInfo VIEW_DATA_INFO;
     static const std::map<String, ShaderBufferParamInfo*> VIEW_PARAMS_INFO
     {
-        { "viewData", &VIEW_DATA_INFO }
+        { TCHAR("viewData"), &VIEW_DATA_INFO }
     };
 
     return VIEW_PARAMS_INFO;

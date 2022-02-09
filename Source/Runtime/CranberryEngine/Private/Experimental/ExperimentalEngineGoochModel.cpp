@@ -563,10 +563,10 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer()
             // Resizing material parameters
             sceneShaderUniqParams[pipeMeshPairToBatchEntity.first]->resizeRuntimeBuffer("materials", materialCount);
             totalDrawCalls += pipelineDrawCalls;
-            Logger::log("ExperimentalEnginePBR", "%s() : %s Pipeline's Material's count %d", __func__, pipeMeshPairToBatchEntity.first->materialName.getChar(), materialCount);
-            Logger::log("ExperimentalEnginePBR", "%s() : %s Pipeline's instanced draw calls %d", __func__, pipeMeshPairToBatchEntity.first->materialName.getChar(), pipelineDrawCalls);
+            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's Material's count %d", __func__, pipeMeshPairToBatchEntity.first->materialName.getChar(), materialCount);
+            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's instanced draw calls %d", __func__, pipeMeshPairToBatchEntity.first->materialName.getChar(), pipelineDrawCalls);
         }
-        Logger::log("ExperimentalEnginePBR", "%s() : Total instanced draw calls %d", __func__, totalDrawCalls);
+        LOG("ExperimentalEnginePBR", "%s() : Total instanced draw calls %d", __func__, totalDrawCalls);
 
         // Resize instance parameters
         instanceParameters->resizeRuntimeBuffer("instancesWrapper", instanceCount);
@@ -772,14 +772,14 @@ void ExperimentalEngineGoochModel::createShaderParameters()
     {
         // as 1 and 2 are light common and textures
         lightData[i] = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 2 });
-        lightData[i]->setResourceName("Light_" + std::to_string(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + "to"
-            + std::to_string(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights)));
+        lightData[i]->setResourceName("Light_" + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + "to"
+            + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights)));
     }
 
     const GraphicsResource* drawQuadDescLayout = drawQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0);
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        const String iString = std::to_string(i);
+        const String iString = String::toString(i);
         lightTextures.set(GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 3 }), i);
         lightTextures.getResources()[i]->setResourceName("LightFrameCommon_" + iString);
         drawQuadTextureDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
@@ -1007,14 +1007,14 @@ void ExperimentalEngineGoochModel::createFrameResources()
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
         String name = "Frame";
-        name.append(std::to_string(i));
+        name.append(String::toString(i));
 
         frameResources[i].usageWaitSemaphore.push_back(GraphicsHelper::createSemaphore(getRenderManager()->getGraphicsInstance(), (name + "QueueSubmit").c_str()));
         frameResources[i].recordingFence = GraphicsHelper::createFence(getRenderManager()->getGraphicsInstance(), (name + "RecordingGaurd").c_str(),true);
 
-        rtCreateParams.textureName = "LightingRT_" + std::to_string(i);
+        rtCreateParams.textureName = "LightingRT_" + String::toString(i);
         frameResources[i].lightingPassRt = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
-        rtCreateParams.textureName = "LightingResolved_" + std::to_string(i);
+        rtCreateParams.textureName = "LightingResolved_" + String::toString(i);
         frameResources[i].lightingPassResolved = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
     }
 }
@@ -1281,7 +1281,7 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
     scissor.minBound = { 0, 0 };
     scissor.maxBound = EngineSettings::screenSize.get();
 
-    String cmdName = "FrameRender" + std::to_string(index);
+    String cmdName = "FrameRender" + String::toString(index);
     cmdList->finishCmd(cmdName);
 
     //{
@@ -1650,12 +1650,12 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
                     int32 idx = 0;
                     for (const auto& threadInds : bitonic.perThreadIndices)
                     {
-                        String labelId = "Thread: " + std::to_string(idx);
+                        String labelId = "Thread: " + String::toString(idx);
                         ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_Line, LinearColor(threadInds.second));
                         int32 segIdx = 0;
                         for (const TestBitonicSortIndices::LineSegment& seg : threadInds.first)
                         {
-                            String segId = labelId + "Segment : " + std::to_string(segIdx);
+                            String segId = labelId + "Segment : " + String::toString(segIdx);
                             ImPlot::PlotLine(segId.getChar(), seg.step.data(), seg.indices.data(), int32(seg.indices.size()));
                             segIdx++;
                         }
@@ -1673,12 +1673,12 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
                     int32 idx = 0;
                     for (const auto& grpInds : bitonic.perGroup)
                     {
-                        String labelId = "Group: " + std::to_string(idx);
+                        String labelId = "Group: " + String::toString(idx);
                         ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_Line, LinearColor(grpInds.second));
                         int32 segIdx = 0;
                         for (const TestBitonicSortIndices::LineSegment& seg : grpInds.first)
                         {
-                            String segId = labelId + "Segment : " + std::to_string(segIdx);
+                            String segId = labelId + "Segment : " + String::toString(segIdx);
                             ImPlot::PlotLine(segId.getChar(), seg.step.data(), seg.indices.data(), int32(seg.indices.size()));
                             segIdx++;
                         }

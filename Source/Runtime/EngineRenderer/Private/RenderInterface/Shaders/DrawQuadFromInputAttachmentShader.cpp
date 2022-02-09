@@ -13,7 +13,7 @@
 #include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
 #include "RenderInterface/Resources/Pipelines.h"
 
-#define DRAW_QUAD_FROM_INPUT_ATTACHMENT "DrawQuadFromInputAttachment"
+#define DRAW_QUAD_FROM_INPUT_ATTACHMENT TCHAR("DrawQuadFromInputAttachment")
 
 class DrawQuadFromInputAttachment : public ShaderConfigCollector/* UniqueUtilityShader Once support for input attachments are introduced */
 {

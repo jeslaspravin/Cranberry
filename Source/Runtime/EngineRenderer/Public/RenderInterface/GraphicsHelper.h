@@ -46,12 +46,12 @@ class ENGINERENDERER_EXPORT GraphicsHelperAPI
 {
 public:
 
-    virtual SemaphoreRef createSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName) const = 0;
-    virtual TimelineSemaphoreRef createTimelineSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName) const = 0;
+    virtual SemaphoreRef createSemaphore(class IGraphicsInstance* graphicsInstance, const TChar* semaphoreName) const = 0;
+    virtual TimelineSemaphoreRef createTimelineSemaphore(class IGraphicsInstance* graphicsInstance, const TChar* semaphoreName) const = 0;
     virtual void waitTimelineSemaphores(class IGraphicsInstance* graphicsInstance,
         std::vector<TimelineSemaphoreRef>* semaphores, std::vector<uint64>* waitForValues) const = 0;
 
-    virtual FenceRef createFence(class IGraphicsInstance* graphicsInstance,const char* fenceName, bool bIsSignaled = false) const = 0;
+    virtual FenceRef createFence(class IGraphicsInstance* graphicsInstance,const TChar* fenceName, bool bIsSignaled = false) const = 0;
     virtual void waitFences(class IGraphicsInstance* graphicsInstance, std::vector<FenceRef>* fences, bool waitAll) const = 0;
 
     virtual SamplerRef createSampler(class IGraphicsInstance* graphicsInstance, SamplerCreateInfo createInfo) const = 0;

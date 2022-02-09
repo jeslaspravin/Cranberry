@@ -38,9 +38,9 @@ LibPointer* ModuleManager::loadFromAdditionalPaths(String modulePath) const
     }
 
     // append prefix name if not present
-    if (!String(LIB_PREFIX).empty() && !String(moduleFullPath.filename().string()).startsWith(LIB_PREFIX, true))
+    if (!String(LIB_PREFIX).empty() && !String(moduleFullPath.filename().c_str()).startsWith(LIB_PREFIX, true))
     {
-        moduleFullPath.replace_filename(LIB_PREFIX + moduleFullPath.filename().string());
+        moduleFullPath.replace_filename(LIB_PREFIX + String(moduleFullPath.filename().c_str()));
     }
     // Add extensions
     if (!moduleFullPath.has_extension())
@@ -48,7 +48,7 @@ LibPointer* ModuleManager::loadFromAdditionalPaths(String modulePath) const
         moduleFullPath.replace_extension(SHARED_LIB_EXTENSION);
     }
 
-    String relativeModulePath(moduleFullPath.string());
+    String relativeModulePath(moduleFullPath.c_str());
     for (const String& lookAtPath : additionalLibraryPaths)
     {
         if (LibPointer* library = PlatformFunctions::openLibrary(PathFunctions::combinePath(lookAtPath, relativeModulePath)))
@@ -57,7 +57,7 @@ LibPointer* ModuleManager::loadFromAdditionalPaths(String modulePath) const
         }
         else
         {
-            Logger::warn("ModuleManager", "%s() : Searched for %s library at %s", __func__, modulePath, lookAtPath);
+            LOG_WARN("ModuleManager", "%s() : Searched for %s library at %s", __func__, modulePath, lookAtPath);
         }
     }
     return nullptr;
@@ -65,7 +65,7 @@ LibPointer* ModuleManager::loadFromAdditionalPaths(String modulePath) const
 
 ModuleManager::ModuleManager()
     : loadedLibraries()
-    , additionalLibraryPaths{ ENGINE_MODULES_PATH }
+    , additionalLibraryPaths{ TCHAR(ENGINE_MODULES_PATH) }
 {
     void* procHandle = PlatformFunctions::getCurrentProcessHandle();
     uint32 modulesSize;
@@ -78,7 +78,7 @@ ModuleManager::ModuleManager()
     {
         LibraryData data;
         PlatformFunctions::getModuleInfo(procHandle, libPtr, data);
-        Logger::debug("ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d", __func__,
+        LOG_DEBUG("ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d", __func__,
             data.name.getChar(), data.imgName.getChar(), data.moduleSize);
         loadedLibraries[data.name].first = libPtr;
         loadedLibraries[data.name].second = data;
@@ -90,14 +90,14 @@ ModuleManager::~ModuleManager()
     for (const std::pair<const String, ModulePtr>& modulePair : loadedModuleInterfaces)
     {
         modulePair.second->release();
-        Logger::debug("ModuleManager", "%s() : Unloaded module %s", __func__, modulePair.first);
+        LOG_DEBUG("ModuleManager", "%s() : Unloaded module %s", __func__, modulePair.first);
     }
     loadedModuleInterfaces.clear();
 
     for (const std::pair<const String, std::pair<LibPointerPtr, LibraryData>>& libPair : loadedLibraries) 
     {
         delete libPair.second.first;
-        Logger::debug("ModuleManager", "%s() : Unloaded library %s", __func__, libPair.first);
+        LOG_DEBUG("ModuleManager", "%s() : Unloaded library %s", __func__, libPair.first);
     }
     loadedLibraries.clear();
 }
@@ -128,7 +128,7 @@ LibPointer* ModuleManager::getOrLoadLibrary(String modulePath)
     // Remove path and extension info, If any
     std::filesystem::path modulePathName(modulePath.getChar());
     modulePathName.replace_extension();
-    String moduleName = modulePathName.filename().string();
+    String moduleName{ modulePathName.filename().c_str() };
 
     if (!isLibraryLoaded(moduleName))
     {        
@@ -140,7 +140,7 @@ LibPointer* ModuleManager::getOrLoadLibrary(String modulePath)
         }
         if (library)
         {    
-            Logger::debug("ModuleManager", "%s() : Loaded Library %s from %s", __func__, moduleName, modulePath);
+            LOG_DEBUG("ModuleManager", "%s() : Loaded Library %s from %s", __func__, moduleName, modulePath);
 
             loadedLibraries[moduleName].first = library;
             PlatformFunctions::getModuleInfo(PlatformFunctions::getCurrentProcessHandle(), loadedLibraries[moduleName].first,
@@ -180,7 +180,7 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
 
     if (!bool(retModule))
     {
-        Logger::log("ModuleManager", "%s() : Loading module %s", __func__, moduleName);
+        LOG("ModuleManager", "%s() : Loading module %s", __func__, moduleName);
 
         auto staticInitializerItr = getModuleInitializerList().find(moduleName);
         if (staticInitializerItr != getModuleInitializerList().end())
@@ -203,7 +203,7 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
             fatalAssert(libPtr, "%s() : Failed loading module %s", __func__, moduleName);
 
             Function<IModuleBase*> createFuncPtr(
-                (Function<IModuleBase*>::StaticDelegate)PlatformFunctions::getProcAddress(libPtr, "createModule_" + moduleName));
+                (Function<IModuleBase*>::StaticDelegate)PlatformFunctions::getProcAddress(libPtr, TCHAR("createModule_") + moduleName));
             fatalAssert(createFuncPtr, "%s() : Failed find module create function for module %s", __func__, moduleName);
 
             retModule = ModulePtr(createFuncPtr());
@@ -225,7 +225,7 @@ void ModuleManager::unloadModule(String moduleName)
         IModuleBase* moduleInterface = existingModule.lock().get();
         moduleInterface->release();
         loadedModuleInterfaces.erase(moduleName);
-        Logger::debug("ModuleManager", "%s() : Unloaded module %s", __func__, moduleName.getChar());
+        LOG_DEBUG("ModuleManager", "%s() : Unloaded module %s", __func__, moduleName.getChar());
 #if !STATIC_LINKED
         LibPointerPtr libPtr = getLibrary(moduleName);
         if (libPtr)
@@ -256,7 +256,7 @@ std::vector<std::pair<LibPointerPtr, LibraryData>> ModuleManager::getAllModuleDa
         if(loadedLibraries.find(data.name) != loadedLibraries.end())
             continue;
 
-        Logger::debug("ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d", __func__,
+        LOG_DEBUG("ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d", __func__,
             data.name.getChar(), data.imgName.getChar(), data.moduleSize);
         loadedLibraries[data.name].first = libPtr;
         loadedLibraries[data.name].second = data;

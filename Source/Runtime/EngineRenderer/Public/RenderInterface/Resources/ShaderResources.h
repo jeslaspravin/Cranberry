@@ -48,13 +48,14 @@ class ENGINERENDERER_EXPORT ShaderCodeResource : public GraphicsResource
 
 private:
     String shaderFileName;
-    String shaderEntryPoint;
+    // Why multibyte here? As we need a AChar pointer to shader entry name when creating pipeline stages
+    std::string shaderEntryPoint;
 protected:
     const uint8* shaderCode;
 
     ShaderCodeResource() = default;
 public:
-    ShaderCodeResource(const String& shaderName,const String& entryPointName, const uint8* shaderCodePtr);
+    ShaderCodeResource(const String& shaderName,const std::string& entryPointName, const uint8* shaderCodePtr);
 
     /* GraphicsResources overrides */
     void init() override;
@@ -62,7 +63,7 @@ public:
     void setResourceName(const String& name) override {}
     /* End overrides */
 
-    const String& entryPoint() const;
+    const std::string& entryPoint() const;
     virtual EShaderStage::Type shaderStage() const;
 };
 
@@ -103,8 +104,8 @@ class ENGINERENDERER_EXPORT ShaderResource : public GraphicsResource
     DECLARE_GRAPHICS_RESOURCE(ShaderResource,,GraphicsResource,)
 
 protected:
-    const String SHADER_EXTENSION = "shader";
-    const String REFLECTION_EXTENSION = "ref";
+    const String SHADER_EXTENSION{ TCHAR("shader") };
+    const String REFLECTION_EXTENSION{ TCHAR("ref") };
 
     const ShaderConfigCollector* shaderConfig;
 protected:

@@ -17,10 +17,10 @@
 #include "RenderApi/Scene/RenderScene.h"
 #include "RenderApi/Material/MaterialCommonUniforms.h"
 
-#define DRAW_3D_COLORED_PER_VERTEX_NAME "Draw3DColoredPerVertex"
-#define DRAW_3D_COLORED_PER_INSTANCE_NAME "Draw3DColoredPerInstance"
-#define DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME "DirectDraw3DColoredPerVertex"
-#define DIRECT_DRAW_3D_COLORED_PER_INSTANCE_NAME "DirectDraw3DColoredPerInstance"
+#define DRAW_3D_COLORED_PER_VERTEX_NAME TCHAR("Draw3DColoredPerVertex")
+#define DRAW_3D_COLORED_PER_INSTANCE_NAME TCHAR("Draw3DColoredPerInstance")
+#define DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME TCHAR("DirectDraw3DColoredPerVertex")
+#define DIRECT_DRAW_3D_COLORED_PER_INSTANCE_NAME TCHAR("DirectDraw3DColoredPerInstance")
 
 //////////////////////////////////////////////////////////////////////////
 /// Pipeline registration
@@ -29,7 +29,7 @@
 template <EPrimitiveTopology::Type Topology, bool DepthWrite>
 GraphicsPipelineConfig drawSimple3DPipelineConfig(String& pipelineName, const ShaderResource* shaderResource)
 {
-    pipelineName = "DrawSimple3D_" + shaderResource->getResourceName();
+    pipelineName = TCHAR("DrawSimple3D_") + shaderResource->getResourceName();
     GraphicsPipelineConfig config;
 
     config.supportedCullings.emplace_back(ECullingMode::BackFace);
@@ -76,7 +76,7 @@ private:
     String shaderFileName;
 
     Draw3DColoredPerVertex()
-        : BaseType(String(DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite? "DWrite" : ""))
+        : BaseType(String(DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite? TCHAR("DWrite") : TCHAR("")))
         , shaderFileName(DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
         static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
@@ -176,7 +176,7 @@ private:
     String shaderFileName;
 
     DirectDraw3DColoredPerVertex()
-        : BaseType(String(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite ? "DWrite" : ""))
+        : BaseType(String(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite ? TCHAR("DWrite") : TCHAR("")))
         , shaderFileName(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
         static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);

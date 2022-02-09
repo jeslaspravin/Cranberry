@@ -99,7 +99,7 @@ void calcTangent(MeshLoaderData& loaderData, StaticMeshVertex& vertexData, const
     float invDet = uv10.x() * uv20.y() - uv20.x() * uv10.y();
     if (invDet == 0.0f)
     {
-        Logger::debug("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents", __func__);
+        LOG_DEBUG("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents", __func__);
 
         Rotation tbnFrame = RotationMatrix::fromZ(normal).asRotation();
         tangent = tbnFrame.fwdVector();
@@ -210,7 +210,7 @@ void StaticMeshLoader::normalize(Vector4D& normal) const
 
 void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials)
 {
-    MeshLoaderData& meshLoaderData = loadedMeshes[mesh.name];
+    MeshLoaderData& meshLoaderData = loadedMeshes[UTF8_TO_TCHAR(mesh.name.c_str())];
     meshLoaderData.indices.resize(mesh.mesh.indices.size());
 
     uint32 faceCount = uint32(mesh.mesh.indices.size() / 3);
@@ -322,7 +322,7 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
 void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials)
 {
     const float smoothingThreshold = Math::cos(Math::deg2Rad(smoothingAngle));
-    MeshLoaderData& meshLoaderData = loadedMeshes[mesh.name];
+    MeshLoaderData& meshLoaderData = loadedMeshes[UTF8_TO_TCHAR(mesh.name.c_str())];
     meshLoaderData.indices.resize(mesh.mesh.indices.size());
 
     uint32 faceCount = uint32(mesh.mesh.indices.size() / 3);
@@ -665,7 +665,7 @@ void StaticMeshLoader::splitMeshBatches(MeshLoaderData& meshLoaderData, const st
             MeshVertexView vertexBatchView;
             vertexBatchView.startIndex = uint32(meshLoaderData.indices.size());
             vertexBatchView.numOfIndices = uint32(matIdIndices.second.size());
-            vertexBatchView.name = String(materials[matIdIndices.first].name).trimCopy();
+            vertexBatchView.name = String(UTF8_TO_TCHAR(materials[matIdIndices.first].name.c_str())).trimCopy();
             meshLoaderData.indices.insert(meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
             meshLoaderData.meshBatches.push_back(vertexBatchView);
         }
@@ -686,19 +686,17 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
     std::vector<tinyobj::shape_t> meshes;
     std::vector<tinyobj::material_t> materials;
 
-    String warning("");
-    String error("");
-    bIsSuccessful = tinyobj::LoadObj(&attrib, &meshes, &materials, &warning, &error, assetPath.getChar()
-        , PlatformFile(assetPath).getHostDirectory().getChar());
-    warning.trim();
-    error.trim();
+    std::string warning;
+    std::string error;
+    bIsSuccessful = tinyobj::LoadObj(&attrib, &meshes, &materials, &warning, &error, TCHAR_TO_ANSI(assetPath.getChar())
+        , TCHAR_TO_ANSI(PlatformFile(assetPath).getHostDirectory().getChar()));
     if (!warning.empty())
     {
-        Logger::warn("StaticMeshLoader", "Tiny obj loader %s", warning.getChar());
+        LOG_WARN("StaticMeshLoader", "Tiny obj loader %s", UTF8_TO_TCHAR(warning.c_str()));
     }
     if (!error.empty())
     {
-        Logger::error("StaticMeshLoader", "Tiny obj loader %s", error.getChar());
+        LOG_ERROR("StaticMeshLoader", "Tiny obj loader %s",UTF8_TO_TCHAR(error.c_str()));
         return;
     }
 

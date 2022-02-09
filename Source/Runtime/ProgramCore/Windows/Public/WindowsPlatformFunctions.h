@@ -36,7 +36,8 @@ public:
     static uint32 getSetBitCount(const uint32& value);
     static uint32 getSetBitCount(const uint64& value);
 
-    static void wcharToStr(String& outStr, const WChar* wChar);
+    static bool wcharToUtf8(std::string& outStr, const WChar* wChar);
+    static bool utf8ToWChar(String& outStr, const AChar* aChar);
 };
 
 namespace GPlatformFunctions 

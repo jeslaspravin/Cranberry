@@ -26,16 +26,16 @@ LRESULT CALLBACK WindowProc(HWND   hwnd,UINT   uMsg,WPARAM wParam,LPARAM lParam)
 void WindowsAppWindow::createWindow(const ApplicationInstance* appInstance)
 {
     HINSTANCE instanceHandle = (HINSTANCE)appInstance->platformApp->getPlatformAppInstance();
-    WNDCLASSA windowClass{};
-    if(GetClassInfoA(instanceHandle,windowName.getChar()
-        ,&windowClass) == 0)
+    WNDCLASS windowClass{};
+    if(GetClassInfo(instanceHandle, windowName.getChar()
+        , &windowClass) == 0)
     {
         windowClass = {};
         windowClass.lpfnWndProc = &WindowProc;
         windowClass.hInstance = instanceHandle;
         windowClass.lpszClassName = windowName.getChar();
 
-        RegisterClassA(&windowClass);
+        RegisterClass(&windowClass);
     }
 
     dword style = bIsWindowed ? WS_OVERLAPPED | WS_THICKFRAME | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX : WS_POPUP | WS_MAXIMIZE;
@@ -44,13 +44,13 @@ void WindowsAppWindow::createWindow(const ApplicationInstance* appInstance)
 
     AdjustWindowRect(&windowRect, style, false);
     
-    windowsHandle = CreateWindowA(windowName.getChar(), windowName.getChar(), style
+    windowsHandle = CreateWindow(windowName.getChar(), windowName.getChar(), style
         , 0, 0, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top,
         parentWindow? (HWND)static_cast<WindowsAppWindow*>(parentWindow)->windowsHandle : nullptr, nullptr, instanceHandle, this);
 
     if (windowsHandle == nullptr)
     {
-        Logger::error("WindowsAppWindow", "%s() : Failed creating window, Error code %d", __func__, GetLastError());
+        LOG_ERROR("WindowsAppWindow", "%s() : Failed creating window, Error code %d", __func__, GetLastError());
         return;
     }
 
@@ -155,20 +155,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         const WindowsAppWindow* const windowPtr = reinterpret_cast<const WindowsAppWindow*>(
             reinterpret_cast<LPCREATESTRUCTA>(lParam)->lpCreateParams);
         SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(windowPtr));
-        Logger::log("WindowsAppWindow", "%s() : Created window %s", __func__, windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "%s() : Created window %s", __func__, windowPtr->getWindowName().getChar());
         return 0;
     }        
     case WM_DESTROY:
     {        
         const WindowsAppWindow* const windowPtr = reinterpret_cast<const WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        Logger::log("WindowsAppWindow", "%s() : Destroying window %s", __func__, windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "%s() : Destroying window %s", __func__, windowPtr->getWindowName().getChar());
         return 0;
     }
 
     case WM_CLOSE:
     {
         WindowsAppWindow* const windowPtr = reinterpret_cast<WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        Logger::log("WindowsAppWindow", "%s() : Quiting window %s", __func__, windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "%s() : Quiting window %s", __func__, windowPtr->getWindowName().getChar());
 
         // This will trigger window destroyed event which can be used to kill engine
         windowPtr->pushEvent(WM_CLOSE, [windowPtr]() 
@@ -201,7 +201,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
             windowPtr->pushEvent(WM_ACTIVATEAPP, [windowPtr, lParam]() 
                 {
-                    Logger::log("WindowsAppWindow", "%s() : Resizing window %s ( %d, %d )", __func__, windowPtr->getWindowName().getChar(), LOWORD(lParam), HIWORD(lParam));
+                    LOG("WindowsAppWindow", "%s() : Resizing window %s ( %d, %d )", __func__, windowPtr->getWindowName().getChar(), LOWORD(lParam), HIWORD(lParam));
                     windowPtr->windowResizing(LOWORD(lParam), HIWORD(lParam));
                 });
             return 0;

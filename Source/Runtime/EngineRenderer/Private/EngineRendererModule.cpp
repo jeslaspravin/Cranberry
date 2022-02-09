@@ -56,7 +56,7 @@ void EngineRedererModule::unregisterToStateEvents(const DelegateHandle& handle)
 
 void EngineRedererModule::init()
 {
-    weakRHI = ModuleManager::get()->getOrLoadModule("VulkanRHI");
+    weakRHI = ModuleManager::get()->getOrLoadModule(TCHAR("VulkanRHI"));
     auto rhiModule = weakRHI.lock().get();
 
     graphicsInstanceCache = static_cast<IRHIModule*>(rhiModule)->createGraphicsInstance();
@@ -67,19 +67,19 @@ void EngineRedererModule::release()
 {
     getRenderManager()->destroy();
 
-    WeakModulePtr weakRHI = ModuleManager::get()->getOrLoadModule("VulkanRHI");
+    WeakModulePtr weakRHI = ModuleManager::get()->getOrLoadModule(TCHAR("VulkanRHI"));
     auto rhiModule = weakRHI.lock().get();
 
     static_cast<IRHIModule*>(rhiModule)->destroyGraphicsInstance();
     graphicsInstanceCache = nullptr;
     graphicsHelperCache = nullptr;
-    ModuleManager::get()->unloadModule("VulkanRHI");
+    ModuleManager::get()->unloadModule(TCHAR("VulkanRHI"));
 }
 
 // IRenderInterfaceModule Impl
 
 IRenderInterfaceModule* IRenderInterfaceModule::get()
 {
-    static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule("EngineRenderer"));
+    static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer")));
     return weakRiModule.expired() ? nullptr : static_cast<IRenderInterfaceModule*>(weakRiModule.lock().get());
 }

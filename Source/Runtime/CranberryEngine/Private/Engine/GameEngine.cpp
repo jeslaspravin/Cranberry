@@ -60,11 +60,11 @@ float EngineTime::getDeltaTime()
 void GameEngine::startup(const AppInstanceCreateInfo appInstanceCI)
 {
     timeData.engineStart();
-    rendererModule = static_cast<IRenderInterfaceModule*>(ModuleManager::get()->getOrLoadModule("EngineRenderer").lock().get());
+    rendererModule = static_cast<IRenderInterfaceModule*>(ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer")).lock().get());
     renderStateChangeHandle = rendererModule->registerToStateEvents(RenderStateDelegate::SingleCastDelegateType::createObject(this, &GameEngine::onRenderStateChange));
-    applicationModule = static_cast<IApplicationModule*>(ModuleManager::get()->getOrLoadModule("Application").lock().get());
+    applicationModule = static_cast<IApplicationModule*>(ModuleManager::get()->getOrLoadModule(TCHAR("Application")).lock().get());
     exitAppHandle = applicationModule->registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType::createObject(this, &GameEngine::tryExitApp));
-    inputModule = static_cast<EngineInputCoreModule*>(ModuleManager::get()->getOrLoadModule("EngineInputCore").lock().get());
+    inputModule = static_cast<EngineInputCoreModule*>(ModuleManager::get()->getOrLoadModule(TCHAR("EngineInputCore")).lock().get());
 
     applicationModule->createApplication(appInstanceCI);
     rendererModule->initializeGraphics();
@@ -81,23 +81,23 @@ void GameEngine::quit()
 
     assetManager.unload();
 
-    ModuleManager::get()->unloadModule("EngineInputCore");
-    ModuleManager::get()->unloadModule("Application");
-    ModuleManager::get()->unloadModule("EngineRenderer");
+    ModuleManager::get()->unloadModule(TCHAR("EngineInputCore"));
+    ModuleManager::get()->unloadModule(TCHAR("Application"));
+    ModuleManager::get()->unloadModule(TCHAR("EngineRenderer"));
     rendererModule = nullptr;
     applicationModule = nullptr;
     inputModule = nullptr;
 
     assetManager.clearToDestroy();
 
-    Logger::log("GameEngine", "%s() : Engine run time in %.3f minutes", __func__
+    LOG("GameEngine", "%s() : Engine run time in %.3f minutes", __func__
         , Time::asMinutes(Time::timeNow() - timeData.startTick));
 }
 
 void GameEngine::engineLoop()
 {
     timeData.tickStart();
-    Logger::log("GameEngine", "%s() : Engine initialized in %0.3f seconds", __func__
+    LOG("GameEngine", "%s() : Engine initialized in %0.3f seconds", __func__
         , Time::asSeconds(timeData.initEndTick - timeData.startTick));
 
     while (!isExiting())

@@ -574,7 +574,7 @@ public: \
 #ifndef DEFINE_VK_GRAPHICS_RESOURCE
 #define DEFINE_VK_GRAPHICS_RESOURCE(NewTypeName,VkObjTypeName)\
     VkObjectType NewTypeName::getObjectType() const { return VkObjTypeName; }\
-    String NewTypeName::OBJ_TYPE_NAME = #VkObjTypeName; \
+    String NewTypeName::OBJ_TYPE_NAME = TCHAR(#VkObjTypeName); \
     const String& NewTypeName::getObjectTypeName() const { return OBJ_TYPE_NAME; }\
     DEFINE_GRAPHICS_RESOURCE(NewTypeName) 
 #endif //DEFINE_VK_GRAPHICS_RESOURCE
@@ -585,7 +585,7 @@ public: \
     VkObjectType NewTypeName##TemplatesDefine##::getObjectType() const { return VkObjTypeName; }\
     \
     template ##NewTypeTemplates## \
-    String NewTypeName##TemplatesDefine##::OBJ_TYPE_NAME = #VkObjTypeName; \
+    String NewTypeName##TemplatesDefine##::OBJ_TYPE_NAME = TCHAR(#VkObjTypeName); \
     \
     template ##NewTypeTemplates## \
     const String& NewTypeName##TemplatesDefine##::getObjectTypeName() const { return OBJ_TYPE_NAME; } \

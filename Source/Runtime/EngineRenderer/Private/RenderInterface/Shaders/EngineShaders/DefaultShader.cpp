@@ -41,7 +41,7 @@ public:
         {
             static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
             {
-                { "lightViews",  DirectionalShadowCascadeViews::paramInfo() }
+                { TCHAR("lightViews"),  DirectionalShadowCascadeViews::paramInfo() }
             };
 
             paramInfo = &SHADER_PARAMS_INFO;
@@ -50,7 +50,7 @@ public:
         {
             static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
             {
-                { "lightViews",  PointShadowDepthViews::paramInfo() }
+                { TCHAR("lightViews"),  PointShadowDepthViews::paramInfo() }
             };
 
             paramInfo = &SHADER_PARAMS_INFO;

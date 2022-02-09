@@ -81,13 +81,13 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
 
     if (!device->isValidDevice())
     {
-        Logger::error("VulkanSwapchain", "%s() : Cannot access resources of invalid device", __func__);
+        LOG_ERROR("VulkanSwapchain", "%s() : Cannot access resources of invalid device", __func__);
         return nullptr;
     }
 
     if (device->swapchainFormat.format == VkFormat::VK_FORMAT_UNDEFINED)
     {
-        Logger::error("VulkanSwapchain", "%s() : Surface properties are invalid", __func__);
+        LOG_ERROR("VulkanSwapchain", "%s() : Surface properties are invalid", __func__);
         return nullptr;
     }
 
@@ -189,7 +189,7 @@ void VulkanGraphicsHelper::destroySwapchain(class IGraphicsInstance* graphicsIns
 
     if (!device->isValidDevice())
     {
-        Logger::error("VulkanSwapchain", "%s() : Cannot access resources of invalid device", __func__);
+        LOG_ERROR("VulkanSwapchain", "%s() : Cannot access resources of invalid device", __func__);
         return;
     }
 
@@ -210,12 +210,12 @@ uint32 VulkanGraphicsHelper::getNextSwapchainImage(class IGraphicsInstance* grap
 
     if (result == VK_TIMEOUT)
     {
-        Logger::error("VulkanSwapchain", "%s() : Timed out waiting to acquire next swapchain image", __func__);
+        LOG_ERROR("VulkanSwapchain", "%s() : Timed out waiting to acquire next swapchain image", __func__);
         return -1;
     }
     else if (result == VK_NOT_READY)
     {
-        Logger::error("VulkanSwapchain", "%s() : swapchain is not suitable for use", __func__);
+        LOG_ERROR("VulkanSwapchain", "%s() : swapchain is not suitable for use", __func__);
         return -1;
     }
     return imageIndex;
@@ -256,7 +256,7 @@ void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstanc
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        Logger::error("VulkanPresenting", "%s() : Failed to present images", __func__);
+        LOG_ERROR("VulkanPresenting", "%s() : Failed to present images", __func__);
     }
     else
     {
@@ -264,14 +264,14 @@ void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstanc
         {
             if (results[i] != VK_SUCCESS && results[i] != VK_SUBOPTIMAL_KHR)
             {
-                Logger::error("VulkanPresenting", "%s() : Failed presenting for window %s", __func__,
+                LOG_ERROR("VulkanPresenting", "%s() : Failed presenting for window %s", __func__,
                     (*canvases)[i]->getResourceName().getChar());
             }
         }
     }
 }
 
-SemaphoreRef VulkanGraphicsHelper::createSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName) const
+SemaphoreRef VulkanGraphicsHelper::createSemaphore(class IGraphicsInstance* graphicsInstance, const TChar* semaphoreName) const
 {
     const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
@@ -281,7 +281,7 @@ SemaphoreRef VulkanGraphicsHelper::createSemaphore(class IGraphicsInstance* grap
     return SemaphoreRef(semaphore);
 }
 
-TimelineSemaphoreRef VulkanGraphicsHelper::createTimelineSemaphore(class IGraphicsInstance* graphicsInstance, const char* semaphoreName) const
+TimelineSemaphoreRef VulkanGraphicsHelper::createTimelineSemaphore(class IGraphicsInstance* graphicsInstance, const TChar* semaphoreName) const
 {
     const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
@@ -313,7 +313,7 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(class IGraphicsInstance* graph
     device->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(device->logicalDevice, &waitInfo, 2000000000/*2 Seconds*/);
 }
 
-FenceRef VulkanGraphicsHelper::createFence(class IGraphicsInstance* graphicsInstance, const char* fenceName, bool bIsSignaled /*= false*/) const
+FenceRef VulkanGraphicsHelper::createFence(class IGraphicsInstance* graphicsInstance, const TChar* fenceName, bool bIsSignaled /*= false*/) const
 {
     const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
     const VulkanDevice* device = &gInstance->selectedDevice;
@@ -357,7 +357,7 @@ VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsIns
         const EPixelDataFormat::PixelFormatInfo* imageFormatInfo = EPixelDataFormat::getFormatInfo(bufferDataFormat);
         if (bufferDataFormat == EPixelDataFormat::Undefined || !imageFormatInfo)
         {
-            Logger::error("NewBufferCreation", "%s() : Invalid expected pixel format for buffer", __func__);
+            LOG_ERROR("NewBufferCreation", "%s() : Invalid expected pixel format for buffer", __func__);
             return buffer;
         }
 
@@ -366,7 +366,7 @@ VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsIns
 
         if ((formatProps.bufferFeatures & requiredFeatures) != requiredFeatures)
         {
-            Logger::error("NewBufferCreation", "%s() : Required format %s for buffer is not supported by device"
+            LOG_ERROR("NewBufferCreation", "%s() : Required format %s for buffer is not supported by device"
                 , __func__, imageFormatInfo->formatName.getChar());
             return buffer;
         }
@@ -465,7 +465,7 @@ VkBufferView VulkanGraphicsHelper::createBufferView(class IGraphicsInstance* gra
     VkBufferView view;
     if (device->vkCreateBufferView(device->logicalDevice, &viewCreateInfo, nullptr, &view) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s() : Buffer view creation failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "%s() : Buffer view creation failed", __func__);
         view = nullptr;
     }
     return view;
@@ -564,7 +564,7 @@ VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInsta
             pixelFormatProperties.linearTilingFeatures : pixelFormatProperties.optimalTilingFeatures;
         if ((availableFeatures & requiredFeatures) != requiredFeatures)
         {
-            Logger::error("NewImageCreation", "%s() : Required format for image is not supported by device", __func__);
+            LOG_ERROR("NewImageCreation", "%s() : Required format for image is not supported by device", __func__);
             return image;
         }
     }
@@ -575,7 +575,7 @@ VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInsta
     if (imageFormatProperties.maxExtent.width < createInfo.extent.width || imageFormatProperties.maxExtent.height < createInfo.extent.height
         || imageFormatProperties.maxExtent.depth < createInfo.extent.depth)
     {
-        Logger::error("NewImageCreation", "%s() : Image size (%d, %d, %d) is exceeding the maximum size (%d, %d, %d) supported by device"
+        LOG_ERROR("NewImageCreation", "%s() : Image size (%d, %d, %d) is exceeding the maximum size (%d, %d, %d) supported by device"
             , __func__, createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth, imageFormatProperties.maxExtent.width
             , imageFormatProperties.maxExtent.height, imageFormatProperties.maxExtent.depth);
         return image;
@@ -583,14 +583,14 @@ VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInsta
 
     if (createInfo.arrayLayers > imageFormatProperties.maxArrayLayers)
     {
-        Logger::warn("NewImageCreation", "%s() : Image layer count %d is exceeding the maximum layer count %d supported by device, using max limit"
+        LOG_WARN("NewImageCreation", "%s() : Image layer count %d is exceeding the maximum layer count %d supported by device, using max limit"
             , __func__,createInfo.arrayLayers,imageFormatProperties.maxArrayLayers );
         createInfo.arrayLayers = imageFormatProperties.maxArrayLayers;
     }
 
     if (createInfo.mipLevels > imageFormatProperties.maxMipLevels)
     {
-        Logger::warn("NewImageCreation", "%s() : Image mip levels %d is exceeding the maximum mip levels %d supported by device, using max limit"
+        LOG_WARN("NewImageCreation", "%s() : Image mip levels %d is exceeding the maximum mip levels %d supported by device, using max limit"
             , __func__, createInfo.mipLevels, imageFormatProperties.maxMipLevels);
         createInfo.mipLevels = imageFormatProperties.maxMipLevels;
     }
@@ -646,7 +646,7 @@ VkImageView VulkanGraphicsHelper::createImageView(class IGraphicsInstance* graph
     VkImageView view;
     if (device->vkCreateImageView(device->logicalDevice, &viewCreateInfo, nullptr, &view) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s() : Image view creation failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "%s() : Image view creation failed", __func__);
         view = nullptr;
     }
     return view;
@@ -718,7 +718,7 @@ ESamplerFiltering::Type VulkanGraphicsHelper::clampFiltering(class IGraphicsInst
             requiredFeature |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG;
             break;
         default:
-            Logger::error("VulkanGraphicsHelper", "%s() : not supported filtering mode %s", __func__
+            LOG_ERROR("VulkanGraphicsHelper", "%s() : not supported filtering mode %s", __func__
                 , ESamplerFiltering::filterName(choosenFiltering).getChar());
             choosenFiltering = ESamplerFiltering::Type(choosenFiltering - 1);
             continue;
@@ -788,7 +788,7 @@ void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInsta
         VkResult result = device->vkFlushMappedMemoryRanges(device->logicalDevice, uint32(memRanges.size()), memRanges.data());
         if (result != VK_SUCCESS)
         {
-            Logger::error("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
+            LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
         }
     }
 }
@@ -828,7 +828,7 @@ void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInsta
         VkResult result = device->vkFlushMappedMemoryRanges(device->logicalDevice, uint32(memRanges.size()), memRanges.data());
         if (result != VK_SUCCESS)
         {
-            Logger::error("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
+            LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
         }
     }
 }
@@ -845,7 +845,7 @@ VkShaderModule VulkanGraphicsHelper::createShaderModule(class IGraphicsInstance*
     VkShaderModule shaderModule;
     if (device->vkCreateShaderModule(device->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s() : failure in creating shader module[Shader size : %d]", __func__, size);
+        LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in creating shader module[Shader size : %d]", __func__, size);
         shaderModule = nullptr;
     }
     return shaderModule;
@@ -871,7 +871,7 @@ void VulkanGraphicsHelper::createFramebuffer(class IGraphicsInstance* graphicsIn
     const VulkanDevice* device = &gInstance->selectedDevice; 
     if (device->vkCreateFramebuffer(device->logicalDevice, &fbCreateInfo, nullptr, framebuffer) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s() : Failed creating framebuffer", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "%s() : Failed creating framebuffer", __func__);
         (*framebuffer) = nullptr;
     }
 }
@@ -892,7 +892,7 @@ VkDescriptorSetLayout VulkanGraphicsHelper::createDescriptorsSetLayout(class IGr
     VkDescriptorSetLayout layout;
     if (device->vkCreateDescriptorSetLayout(device->logicalDevice, &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s : Failed creating descriptor set layout", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "%s : Failed creating descriptor set layout", __func__);
         layout = nullptr;
     }
     return layout;
@@ -950,7 +950,7 @@ VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstanc
     VkPipelineCache pipelineCache;
     if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
         pipelineCache = nullptr;
     }
     return pipelineCache;
@@ -966,7 +966,7 @@ VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstanc
     VkPipelineCache pipelineCache;
     if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
         pipelineCache = nullptr;
     }
     return pipelineCache;
@@ -987,7 +987,7 @@ void VulkanGraphicsHelper::mergePipelineCaches(class IGraphicsInstance* graphics
 
     if (device->vkMergePipelineCaches(device->logicalDevice, dstCache, uint32(srcCaches.size()), srcCaches.data()) != VK_SUCCESS)
     {
-        Logger::error("VulkanGraphicsHelper", "%s : Merging pipeline caches failed", __func__);
+        LOG_ERROR("VulkanGraphicsHelper", "%s : Merging pipeline caches failed", __func__);
     }
 }
 

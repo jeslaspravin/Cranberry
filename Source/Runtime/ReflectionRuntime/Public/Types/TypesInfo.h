@@ -61,7 +61,7 @@ using CleanType = UnderlyingType<Type>;
 // 
 //  Test codes below
 // 
-//  Logger::log("Test", "Test type info \n%s\n%s\n%s\n%s\n%s\n%s"
+//  LOG("Test", "Test type info \n%s\n%s\n%s\n%s\n%s\n%s"
 //      // Referenced variable is const
 //      , *typeInfoFrom<const int32&>()
 //      , *typeInfoFrom<const int32&&>()
@@ -73,7 +73,7 @@ using CleanType = UnderlyingType<Type>;
 //      , *typeInfoFrom<int32 const* const&>()
 //      , *typeInfoFrom<int32 const* const&&>()
 //  );
-//  Logger::log("Test", "Test type info %d, %d, %d"
+//  LOG("Test", "Test type info %d, %d, %d"
 //      , typeInfoFrom<const int32&>() == typeInfoFrom<const int32&&>()
 //      , typeInfoFrom<const int32*>() == typeInfoFrom<int32 const* const&>()
 //      , typeInfoFrom<int32 const* const&>() == typeInfoFrom<int32 const* const&&>()
@@ -115,21 +115,21 @@ FORCE_INLINE std::vector<const ReflectTypeInfo*> typeInfoListFrom()
 }
 
 #define REFLECTTYPEQUALIFIER_STR(QualifierEnum) \
-    << (BIT_SET(str.qualifiers, EReflectTypeQualifiers::##QualifierEnum##) ? " "#QualifierEnum : "")
+    << (BIT_SET(str.qualifiers, EReflectTypeQualifiers::##QualifierEnum##) ? TCHAR(" "#QualifierEnum) : TCHAR(""))
 // Logger overrides
-FORCE_INLINE std::ostream& operator<<(std::ostream& stream, const ReflectTypeInfo& str)
+FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const ReflectTypeInfo& str)
 {
-    stream << "Type info[0x" << std::hex << &str << std::dec << "]";
-    stream <<"[Name:" << str.typeID.name() << ", ";
-    stream << "Hash : " << str.typeID.hash_code() << ", ";
-    stream << "Qualifiers :("
+    stream << TCHAR("Type info[0x") << std::hex << &str << std::dec << TCHAR("]");
+    stream << TCHAR("[Name:") << str.typeID.name() << TCHAR(", ");
+    stream << TCHAR("Hash : ") << str.typeID.hash_code() << TCHAR(", ");
+    stream << TCHAR("Qualifiers :(")
         FOREACH_REFLECTTYPEQUALIFIER(REFLECTTYPEQUALIFIER_STR)
-        << " )";
+        << TCHAR(" )");
     if(str.innerType)
     {
-        stream << ", Inner type : " << *str.innerType;
+        stream << TCHAR(", Inner type : ") << *str.innerType;
     }
-    stream << "]";
+    stream << TCHAR("]");
     return stream;
 }
 #undef REFLECTTYPEQUALIFIER_STR

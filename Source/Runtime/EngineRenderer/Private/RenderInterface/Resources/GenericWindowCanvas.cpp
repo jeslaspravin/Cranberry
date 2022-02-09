@@ -43,5 +43,5 @@ String GenericWindowCanvas::getResourceName() const
 {
     // TODO(Jeslas)(Low) : return ownerWindow->getWindowName();
     // Does not matter as anyway marking graphics resource will be done with Window name directly
-    return "WindowCanvas";
+    return TCHAR("WindowCanvas");
 }

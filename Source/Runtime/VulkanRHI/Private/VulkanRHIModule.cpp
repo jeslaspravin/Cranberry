@@ -75,6 +75,6 @@ IGraphicsInstance* VulkanRHIModule::getGraphicsInstance() const
 
 IVulkanRHIModule* IVulkanRHIModule::get()
 {
-    static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule("VulkanRHI"));
+    static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("VulkanRHI")));
     return weakRiModule.expired() ? nullptr : static_cast<IVulkanRHIModule*>(weakRiModule.lock().get());
 }
