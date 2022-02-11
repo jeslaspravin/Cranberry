@@ -1001,11 +1001,11 @@ void ExperimentalEnginePBR::createScene()
     StaticMeshAsset* suzanne = static_cast<StaticMeshAsset*>(assetManager.getOrLoadAsset(TCHAR("Suzanne.obj")));
     std::array<StaticMeshAsset*, 5> assets{ cube, sphere, cylinder, cone, suzanne };
 #if NDEBUG
-    std::array<String, 8> floorTypes{ TCHAR("WoodFloor043"), TCHAR("Tiles086"), TCHAR("Tiles074"), TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Ground042"), TCHAR("Ground037"), TCHAR("Gravel022" };
-    std::array<String, 6> ceilTypes{ TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"), TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Wood051" };
-    std::array<String, 9> pillarTypes{ TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"), TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Marble006"), TCHAR("Rock035"), TCHAR("Ground037"), TCHAR("PaintedPlaster016" };
-    std::array<String, 15> textures{ TCHAR("Bricks059"), TCHAR("Gravel022"), TCHAR("Ground037"), TCHAR("Ground042"), TCHAR("Leather028"), TCHAR("Marble006"), TCHAR("Metal034"), TCHAR("Metal038"), TCHAR("MetalPlates006"
-        , TCHAR("PaintedPlaster016"), TCHAR("Rock035"),"Tiles086"), TCHAR("Tiles074" , TCHAR("Tiles108"), TCHAR("Wood051" };
+    std::array<String, 8> floorTypes{ TCHAR("WoodFloor043"), TCHAR("Tiles086"), TCHAR("Tiles074"), TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Ground042"), TCHAR("Ground037"), TCHAR("Gravel022") };
+    std::array<String, 6> ceilTypes{ TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"), TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Wood051") };
+    std::array<String, 9> pillarTypes{ TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"), TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Marble006"), TCHAR("Rock035"), TCHAR("Ground037"), TCHAR("PaintedPlaster016") };
+    std::array<String, 15> textures{ TCHAR("Bricks059"), TCHAR("Gravel022"), TCHAR("Ground037"), TCHAR("Ground042"), TCHAR("Leather028"), TCHAR("Marble006"), TCHAR("Metal034"), TCHAR("Metal038"), TCHAR("MetalPlates006")
+        , TCHAR("PaintedPlaster016"), TCHAR("Rock035"), TCHAR("Tiles086"), TCHAR("Tiles074") , TCHAR("Tiles108"), TCHAR("Wood051") };
 #else
     std::array<String, 1> floorTypes{ TCHAR("Tiles074") };
     std::array<String, 1> ceilTypes{ TCHAR("Tiles074") };
@@ -3268,6 +3268,9 @@ void ExperimentalEnginePBR::tempTest()
     Matrix4 test8;
     Color test9;
     LinearColor test10;
+
+    String outStr = UTF16_TO_TCHAR(UTF8_TO_UTF16(UTF32_TO_UTF8(UTF8_TO_UTF32("Hello good sir! How are you?"))));
+    LOG("TEST", "%s ", outStr);
 }
 
 //static uint64 allocationCount = 0;

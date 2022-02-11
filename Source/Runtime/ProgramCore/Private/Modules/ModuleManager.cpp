@@ -38,9 +38,9 @@ LibPointer* ModuleManager::loadFromAdditionalPaths(String modulePath) const
     }
 
     // append prefix name if not present
-    if (!String(LIB_PREFIX).empty() && !String(moduleFullPath.filename().c_str()).startsWith(LIB_PREFIX, true))
+    if (!String(LIB_PREFIX).empty() && !String(WCHAR_TO_TCHAR(moduleFullPath.filename().c_str())).startsWith(LIB_PREFIX, true))
     {
-        moduleFullPath.replace_filename(LIB_PREFIX + String(moduleFullPath.filename().c_str()));
+        moduleFullPath.replace_filename(LIB_PREFIX + String(WCHAR_TO_TCHAR(moduleFullPath.filename().c_str())));
     }
     // Add extensions
     if (!moduleFullPath.has_extension())
@@ -48,7 +48,7 @@ LibPointer* ModuleManager::loadFromAdditionalPaths(String modulePath) const
         moduleFullPath.replace_extension(SHARED_LIB_EXTENSION);
     }
 
-    String relativeModulePath(moduleFullPath.c_str());
+    String relativeModulePath(WCHAR_TO_TCHAR(moduleFullPath.c_str()));
     for (const String& lookAtPath : additionalLibraryPaths)
     {
         if (LibPointer* library = PlatformFunctions::openLibrary(PathFunctions::combinePath(lookAtPath, relativeModulePath)))
@@ -128,7 +128,7 @@ LibPointer* ModuleManager::getOrLoadLibrary(String modulePath)
     // Remove path and extension info, If any
     std::filesystem::path modulePathName(modulePath.getChar());
     modulePathName.replace_extension();
-    String moduleName{ modulePathName.filename().c_str() };
+    String moduleName{ WCHAR_TO_TCHAR(modulePathName.filename().c_str()) };
 
     if (!isLibraryLoaded(moduleName))
     {        

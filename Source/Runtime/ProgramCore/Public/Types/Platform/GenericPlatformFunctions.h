@@ -88,7 +88,7 @@ public:
         return PlatformClass::wcharToUtf8(outStr, wChar);
     }
 
-    static bool utf8ToWChar(String& outStr, const AChar* aChar)
+    static bool utf8ToWChar(std::wstring& outStr, const AChar* aChar)
     {
         return PlatformClass::utf8ToWChar(outStr, aChar);
     }

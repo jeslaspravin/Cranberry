@@ -39,8 +39,11 @@ typedef PlatformCoreTypes::Utf32 Char32; // Fixed width
 typedef PlatformCoreTypes::Utf8 Utf8;// Variable width
 typedef PlatformCoreTypes::Utf16 Utf16;// Variable width
 typedef PlatformCoreTypes::Utf32 Utf32; // Fixed width
-typedef PlatformCoreTypes::Ucs2 Ucs2; // Fixed width
-typedef PlatformCoreTypes::Ucs4 Ucs4; // Fixed width
+//typedef PlatformCoreTypes::Ucs2 Ucs2; // Fixed width
+//typedef PlatformCoreTypes::Ucs4 Ucs4; // Fixed width
+// Encoding used in platform specific WChar type
+typedef PlatformCoreTypes::WCharEncodedType WCharEncodedType;
+// Encoding used in engine for this platform
 typedef PlatformCoreTypes::EncodedType EncodedType;
 
 typedef PlatformCoreTypes::word word;
@@ -67,7 +70,8 @@ STATIC_ASSERT(sizeof(AChar) == 1);
 STATIC_ASSERT(sizeof(Utf8) == 1);
 STATIC_ASSERT(sizeof(Utf16) == 2);
 STATIC_ASSERT(sizeof(Utf32) == 4);
-STATIC_ASSERT(sizeof(Ucs2) == 2);
+// STATIC_ASSERT(sizeof(Ucs2) == 2);
+STATIC_ASSERT(sizeof(WChar) == sizeof(WCharEncodedType));
 
 STATIC_ASSERT(sizeof(word) == 2);
 STATIC_ASSERT(sizeof(dword) == 4);

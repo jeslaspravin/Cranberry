@@ -68,7 +68,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 {
     /*_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);*/
 
-    String cmdLine{ pCmdLine };
+    String cmdLine{ WCHAR_TO_TCHAR(pCmdLine) };
     LOG_DEBUG("CommandLine", "%s() : Command [%s]", __func__, cmdLine.getChar());
 
     int32 exitCode = appMain(cmdLine, hInstance);

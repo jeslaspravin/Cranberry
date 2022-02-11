@@ -160,7 +160,7 @@ String WindowsPlatformFunctions::getClipboard()
         ::CloseClipboard();
         return NULL;
     }
-    String clipboard{ (const WChar*)::GlobalLock(clipboardHnd) };
+    String clipboard{ WCHAR_TO_TCHAR((const WChar*)::GlobalLock(clipboardHnd)) };
     ::GlobalUnlock(clipboardHnd);
     ::CloseClipboard();
     return clipboard;
@@ -237,7 +237,7 @@ bool WindowsPlatformFunctions::wcharToUtf8(std::string& outStr, const WChar* wCh
     }
 }
 
-bool WindowsPlatformFunctions::utf8ToWChar(String& outStr, const AChar* aChar)
+bool WindowsPlatformFunctions::utf8ToWChar(std::wstring& outStr, const AChar* aChar)
 {
     int32 bufLen = ::MultiByteToWideChar(CP_UTF8, 0, aChar, -1, NULL, 0);
     outStr.resize(bufLen);

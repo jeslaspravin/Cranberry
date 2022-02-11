@@ -29,12 +29,14 @@ public:
     typedef wchar_t WChar;
     typedef char AChar;
     // In case changing TChar type do not forget to change USING_WIDE_UNICODE define
+    // Also change EncodedType to new appropriate type
     typedef WChar TChar;
     typedef char8_t Utf8;
     typedef char16_t Utf16;
     typedef char32_t Utf32;
     typedef uint16 Ucs2;
     typedef uint32 Ucs4;
+    typedef Utf32 WCharEncodedType;
     typedef Utf32 EncodedType;
 
     typedef unsigned short word;

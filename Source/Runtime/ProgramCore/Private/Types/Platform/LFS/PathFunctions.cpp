@@ -27,7 +27,7 @@ String PathFunctions::toRelativePath(const String& absPath, const String& relToP
     std::error_code errorCode;
     std::filesystem::path relPath = std::filesystem::relative(absolutePath, relativeToPath, errorCode);
     fatalAssert(errorCode.value() == 0, "%s() : Error %s when making [%s] as relative to %s", UTF8_TO_TCHAR(errorCode.message().c_str()), absPath, relToPath);
-    return relPath.c_str();
+    return WCHAR_TO_TCHAR(relPath.c_str());
 }
 
 String PathFunctions::toAbsolutePath(const String& relPath, const String& basePath)

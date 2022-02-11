@@ -21,7 +21,8 @@
 #endif
 
 // String defines
-// Changing UNICODE must also be changed in TChar typedef
+// Changing UNICODE must also be changed in TChar typedef of CoreTypes
+// If using wide unicode it means we are using platform native Unicode in this platform as TChar
 #ifndef USING_WIDE_UNICODE
 #define USING_WIDE_UNICODE 0
 #endif
