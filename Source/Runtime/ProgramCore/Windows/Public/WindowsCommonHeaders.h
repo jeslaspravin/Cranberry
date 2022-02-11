@@ -13,7 +13,7 @@
 
 #include "Types/CoreDefines.h"
 
-#if USING_UNICODE
+#if USING_WIDE_UNICODE
 #define UNICODE 1
 #endif
 

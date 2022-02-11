@@ -33,6 +33,7 @@ using OStringStream = std::basic_ostringstream<BaseString::value_type, BaseStrin
 using StringStream = std::basic_stringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
 
 // No need to export as this is header only
+// TODO(Jeslas) : Test and Fix for variable length characters https://trello.com/c/qjRh9RK8
 class String : public BaseString
 {
 public:

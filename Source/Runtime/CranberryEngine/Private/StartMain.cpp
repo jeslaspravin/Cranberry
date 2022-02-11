@@ -17,7 +17,6 @@
 #include "Modules/ModuleManager.h"
 #include "CmdLine/CmdLine.h"
 
-
 int appMain(String cmdLine, void* appPlatformInstance)
 {
     AppInstanceCreateInfo appCI;

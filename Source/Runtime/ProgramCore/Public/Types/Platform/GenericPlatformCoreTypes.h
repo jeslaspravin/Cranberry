@@ -28,7 +28,7 @@ public:
 
     typedef wchar_t WChar;
     typedef char AChar;
-    // In case changing TChar type do not forget to change USING_UNICODE define
+    // In case changing TChar type do not forget to change USING_WIDE_UNICODE define
     typedef WChar TChar;
     typedef char8_t Utf8;
     typedef char16_t Utf16;

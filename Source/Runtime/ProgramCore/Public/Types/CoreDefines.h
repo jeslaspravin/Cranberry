@@ -22,8 +22,8 @@
 
 // String defines
 // Changing UNICODE must also be changed in TChar typedef
-#ifndef USING_UNICODE
-#define USING_UNICODE 0
+#ifndef USING_WIDE_UNICODE
+#define USING_WIDE_UNICODE 0
 #endif
 #ifndef TCHAR_inner
 #define TCHAR_inner(x) x
