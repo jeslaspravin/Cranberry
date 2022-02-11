@@ -25,8 +25,6 @@ struct ToStringImpl
 
 // Remember we are only converting to UTF-8 when we convert to AChar or char or char8_t
 // For now it is okay if ASCII/ANSI end up as garbage
-// 
-// Set locale if converting to wchar_t using C++ stl functions, Right now it is just converted using reinterpret_cast
 template <typename FromCharType, typename ToCharType>
 struct StringConv
 {
@@ -38,7 +36,22 @@ struct StringConv
     }
 };
 
-// Implementations
+// Converter that uses STL to convert between an encoded format(UTF-16/UTF-32) and UTF-8, This is not for converting between platform string and multi byte string
+// Set locale if converting to wchar_t from it's corresponding encoded value utf16/32 using C++ stl functions, Right now it is just converted using reinterpret_cast
+template <typename FromCharType, typename ToCharType>
+struct StlStringConv
+{
+    const ToCharType* convert(const FromCharType* start)
+    {
+        static_assert(false, "Unsupported CharType conversion combination for stl only string conv");
+        return nullptr;
+    }
+};
+
+
+//////////////////////////////////////////////////////////////////////////
+/// Generalized Implementations
+//////////////////////////////////////////////////////////////////////////
 template <>
 template <typename Type>
 FORCE_INLINE String ToStringImpl<WChar>::toString(Type&& value)
@@ -52,75 +65,104 @@ FORCE_INLINE String ToStringImpl<AChar>::toString(Type&& value)
     return String(std::to_string(std::forward<Type>(value)));
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Conversion between char types implementations
+//////////////////////////////////////////////////////////////////////////
+
+// For conversion between same char types
+template <typename CharType>
+struct StringConv<CharType, CharType>
+{
+private:
+public:
+    FORCE_INLINE const CharType* convert(const CharType* start)
+    {
+        // Does it pass the same pointer and keep the temporary converter if any valid?
+        return start;
+    }
+};
+// For conversion between platform WideChar and UTF-8
 template <>
 struct StringConv<WChar, AChar>
 {
-private:
-    std::string str;
+protected:
+    std::string str{};
 public:
     PROGRAMCORE_EXPORT const AChar* convert(const WChar* start);
+    // Just alias for above to allow converting from inherited StringConv<Utf16/32, Utf8>
+    FORCE_INLINE const AChar* convert(const WCharEncodedType* start)
+    {
+        return convert(reinterpret_cast<const WChar*>(start));
+    }
 };
 template <>
 struct StringConv<AChar, WChar>
 {
-private:
-    String str;
+protected:
+    std::wstring str{};
 public:
     PROGRAMCORE_EXPORT const WChar* convert(const AChar* start);
 };
-// Platform encoded type
+// Conversion to UTF-8 between UTF-16
 template <>
-struct StringConv<EncodedType, AChar>
+struct StlStringConv<AChar, Utf16>
 {
-private:
-    StringConv<WChar, AChar> convertor;
+protected:
+    std::u16string str{};
 public:
-    FORCE_INLINE const AChar* convert(const EncodedType* start)
-    {
-        return convertor.convert(reinterpret_cast<const WChar*>(start));
-    }
+    PROGRAMCORE_EXPORT const Utf16* convert(const AChar* start);
 };
 template <>
-struct StringConv<AChar, EncodedType>
+struct StlStringConv<Utf16, AChar>
 {
-private:
-    StringConv<AChar, WChar> convertor;
+protected:
+    std::string str{};
 public:
-    FORCE_INLINE const EncodedType* convert(const AChar* start)
-    {
-        return reinterpret_cast<const EncodedType*>(convertor.convert(start));
-    }
+    PROGRAMCORE_EXPORT const AChar* convert(const Utf16* start);
 };
-// Exclusion of platform char encoded type
-using NotEncodedCharType = std::conditional_t<std::is_same_v<EncodedType, Utf16>, Utf32, Utf16>;
+// Conversion to UTF-8 between UTF-32
 template <>
-struct StringConv<NotEncodedCharType, AChar>
+struct StlStringConv<AChar, Utf32>
 {
-private:
-    std::string str;
+protected:
+    std::u32string str{};
 public:
-    PROGRAMCORE_EXPORT const AChar* convert(const NotEncodedCharType* start);
+    PROGRAMCORE_EXPORT const Utf32* convert(const AChar* start);
 };
 template <>
-struct StringConv<AChar, NotEncodedCharType>
+struct StlStringConv<Utf32, AChar>
 {
-private:
-    using StringType = std::basic_string<NotEncodedCharType, std::char_traits<NotEncodedCharType>, std::allocator<NotEncodedCharType>>;
-    StringType str;
+protected:
+    std::string str{};
 public:
-    PROGRAMCORE_EXPORT const NotEncodedCharType* convert(const AChar* start);
+    PROGRAMCORE_EXPORT const AChar* convert(const Utf32* start);
 };
-template <typename CharType>
-struct StringConv<CharType, CharType>
-{
-    // End is inclusive of null-terminated character
-    FORCE_INLINE const CharType* convert(const CharType* start)
-    {
-        return start;
-    }
-};
+// StringConv specialization for conversion between any encoded char type and UTF-8
+template <typename FromCharType> requires (!std::same_as<FromCharType, AChar>)
+struct StringConv<FromCharType, AChar> 
+    : public std::conditional_t<
+    std::is_same_v<FromCharType, WCharEncodedType>// ?
+    , StringConv<WChar, AChar> // :
+    , StlStringConv<FromCharType, AChar>>
+{};
+template <typename ToCharType> requires (!std::same_as<ToCharType, AChar>)
+struct StringConv<AChar, ToCharType>
+    : public std::conditional_t<
+    std::is_same_v<ToCharType, WCharEncodedType>// ?
+    , StringConv<AChar, WChar> // :
+    , StlStringConv<AChar, ToCharType>>
+{};
 
-// String implementations
+//////////////////////////////////////////////////////////////////////////
+/// String implementations
+//////////////////////////////////////////////////////////////////////////
+
+template <typename Type>
+FORCE_INLINE String String::toString(Type&& value)
+{
+    return ToStringImpl<String::value_type>::toString(std::forward<Type>(value));
+}
+
 #if USING_WIDE_UNICODE
 #define COUT std::wcout
 #define CERR std::wcerr
@@ -139,17 +181,23 @@ struct StringConv<CharType, CharType>
 #define UTF8_TO_UTF16(Utf8Ptr) StringConv<AChar, Utf16>{}.convert((const AChar*)Utf8Ptr)
 #define UTF32_TO_UTF8(Utf32Ptr) StringConv<Utf32, AChar>{}.convert((const Utf32*)Utf32Ptr)
 #define UTF8_TO_UTF32(Utf8Ptr) StringConv<AChar, Utf32>{}.convert((const AChar*)Utf8Ptr)
+
+#if USING_WIDE_UNICODE
+
 #if PLATFORM_WINDOWS
-#define UTF16_TO_TCHAR(Utf16Ptr) StringConv<WChar, TChar>{}.convert(reinterpret_cast<const WChar*>(Utf16Ptr))
+#define UTF16_TO_TCHAR(Utf16Ptr) StringConv<WChar, TChar>{}.convert((const WChar*)(Utf16Ptr))
 #define UTF32_TO_TCHAR(Utf32Ptr) UTF8_TO_TCHAR(UTF32_TO_UTF8(Utf32Ptr))
 #else // PLATFORM_WINDOWS
 #define UTF16_TO_TCHAR(Utf16Ptr) UTF8_TO_TCHAR(UTF16_TO_UTF8(Utf16Ptr))
-#define UTF32_TO_TCHAR(Utf32Ptr) StringConv<WChar, TChar>{}.convert(reinterpret_cast<const WChar*>(Utf32Ptr))
+#define UTF32_TO_TCHAR(Utf32Ptr) StringConv<WChar, TChar>{}.convert((const WChar*)(Utf32Ptr))
 #endif // PLATFORM_WINDOWS
 
-template <typename Type>
-FORCE_INLINE String String::toString(Type&& value)
-{
-    return ToStringImpl<String::value_type>::toString(std::forward<Type>(value));
-}
+#define WCHAR_TO_TCHAR(WCharPtr) WCharPtr
 
+#else // USING_WIDE_UNICODE
+#define UTF16_TO_TCHAR(Utf16Ptr) UTF16_TO_UTF8(Utf16Ptr)
+#define UTF32_TO_TCHAR(Utf32Ptr) UTF32_TO_UTF8(Utf32Ptr)
+
+#define WCHAR_TO_TCHAR(WCharPtr) StringConv<WChar, AChar>{}.convert((const WChar*)(WCharPtr))
+
+#endif // USING_WIDE_UNICODE

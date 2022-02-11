@@ -33,7 +33,6 @@ using OStringStream = std::basic_ostringstream<BaseString::value_type, BaseStrin
 using StringStream = std::basic_stringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
 
 // No need to export as this is header only
-// TODO(Jeslas) : Test and Fix for variable length characters https://trello.com/c/qjRh9RK8
 class String : public BaseString
 {
 public:
@@ -189,6 +188,7 @@ public:
     }
 
     // Removes consequently duplicated chars
+    // **NOTE** Only works for characters that can be represented in sizeof(TChar)
     FORCE_INLINE String& trimDuplicates(TChar duplicateChar, uint64 offset = 0)
     {
         uint64 foundAt = find(duplicateChar, offset);
@@ -247,6 +247,7 @@ public:
     }
 
     // Removes consequently duplicated chars
+    // **NOTE** Only works for characters that can be represented in sizeof(TChar)
     FORCE_INLINE String trimDuplicatesCopy(TChar duplicateChar, uint64 offset = 0)
     {
         String s(*this);

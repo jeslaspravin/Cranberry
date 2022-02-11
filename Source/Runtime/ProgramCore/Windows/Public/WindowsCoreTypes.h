@@ -16,7 +16,10 @@ class WindowsCoreTypes : public GenericPlatformCoreTypes<WindowsCoreTypes>
 private:
     WindowsCoreTypes() = default;
 public:
-    typedef Utf16 EncodedType;
+    // Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore
+    typedef AChar TChar;
+    typedef Utf16 WCharEncodedType;
+    typedef Utf8 EncodedType;
 };
 
 using PlatformCoreTypes = WindowsCoreTypes;
