@@ -219,9 +219,9 @@ public:
 private:
     StringFormat() = default;
 
-#if USING_UNICODE
+#if USING_WIDE_UNICODE
 #define STRING_PRINTF std::swprintf
-#else // USING_UNICODE
+#else // USING_WIDE_UNICODE
 #define STRING_PRINTF std::snprintf
 #endif
     // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as well, else r-values gets converted to l-values on this call

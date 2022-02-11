@@ -12,8 +12,8 @@
 #pragma once
 
 // String defines
-#ifndef USING_UNICODE
-#define USING_UNICODE 1
+#ifndef USING_WIDE_UNICODE
+#define USING_WIDE_UNICODE 1
 #endif
 #ifndef TCHAR_inner
 #define TCHAR_inner(x) L##x

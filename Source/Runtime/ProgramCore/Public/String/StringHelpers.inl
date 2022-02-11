@@ -121,13 +121,13 @@ struct StringConv<CharType, CharType>
 };
 
 // String implementations
-#if USING_UNICODE
+#if USING_WIDE_UNICODE
 #define COUT std::wcout
 #define CERR std::wcerr
-#else // USING_UNICODE
+#else // USING_WIDE_UNICODE
 #define COUT std::cout
 #define CERR std::cerr
-#endif // USING_UNICODE
+#endif // USING_WIDE_UNICODE
 
 // Pass Char ptr of that type to convert from and AChar is always UTF8 encoded in our case, Do not store reference to returned pointer
 #define TCHAR_TO_ANSI(TCharPtr) StringConv<TChar, AChar>{}.convert((const TChar*)TCharPtr)
