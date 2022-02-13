@@ -170,14 +170,15 @@ bool WindowsPlatformFunctions::setClipboard(const String& text)
 {
     if (!::OpenClipboard(NULL))
         return false;
-#if USING_WIDE_UNICODE
+
     ::EmptyClipboard();
-    if (::SetClipboardData(CF_UNICODETEXT, (HANDLE)text.getChar()) == NULL)
+    if (::SetClipboardData(CF_UNICODETEXT, (HANDLE)TCHAR_TO_WCHAR(text.getChar())) == NULL)
     {
         ::CloseClipboard();
         return false;
     }
-#else // USING_WIDE_UNICODE
+
+#if 0
     const int wideCharLen = ::MultiByteToWideChar(CP_UTF8, 0, text.getChar(), -1, NULL, 0);
     HGLOBAL clipboardHnd = ::GlobalAlloc(GMEM_MOVEABLE, (SIZE_T)wideCharLen * sizeof(WCHAR));
     if (clipboardHnd == NULL)
@@ -195,7 +196,7 @@ bool WindowsPlatformFunctions::setClipboard(const String& text)
         ::CloseClipboard();
         return false;
     }
-#endif // USING_WIDE_UNICODE
+#endif // Disabled
     ::CloseClipboard();
     return true;
 }

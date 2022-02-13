@@ -48,6 +48,9 @@ GenericFile* Logger::getLogFile()
         logFile->setFileFlags(EFileFlags::OpenAlways | EFileFlags::Write);
         logFile->setSharingMode(EFileSharing::ReadOnly);
         logFile->setAttributes(EFileAdditionalFlags::Normal);
+
+        bool bLogFileOpened = logFile->openOrCreate();
+        fatalAssert(bLogFileOpened, "Failed to open log file %s", logFile->getFullPath());
     }
 
     return &(*logFile);
@@ -141,13 +144,11 @@ void Logger::flushStream()
 {
     GenericFile* logFile = getLogFile();
     auto str = loggerBuffer().str();
-    if (!str.empty() && logFile && logFile->openOrCreate())
+    if (!str.empty() && logFile)
     {
-        logFile->seekEnd();
         std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
         logFile->write(ArrayView<uint8>(reinterpret_cast<uint8*>(utf8str.data()), uint32(utf8str.length())));
         loggerBuffer().str({});
-        logFile->closeFile();
     }
 }
 

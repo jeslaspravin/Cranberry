@@ -193,11 +193,13 @@ FORCE_INLINE String String::toString(Type&& value)
 #endif // PLATFORM_WINDOWS
 
 #define WCHAR_TO_TCHAR(WCharPtr) WCharPtr
+#define TCHAR_TO_WCHAR(TCharPtr) TCharPtr
 
 #else // USING_WIDE_UNICODE
 #define UTF16_TO_TCHAR(Utf16Ptr) UTF16_TO_UTF8(Utf16Ptr)
 #define UTF32_TO_TCHAR(Utf32Ptr) UTF32_TO_UTF8(Utf32Ptr)
 
 #define WCHAR_TO_TCHAR(WCharPtr) StringConv<WChar, AChar>{}.convert((const WChar*)(WCharPtr))
+#define TCHAR_TO_WCHAR(TCharPtr) StringConv<AChar, WChar>{}.convert((const TChar*)(TCharPtr))
 
 #endif // USING_WIDE_UNICODE

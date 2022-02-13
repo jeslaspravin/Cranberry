@@ -136,7 +136,8 @@ uint64 WindowsFile::filePointer() const
     uint64 fPointer = 0;
     LARGE_INTEGER largePointer;
     largePointer.QuadPart = 0;
-    if (getFileHandleRaw()) {
+    if (getFileHandleRaw()) 
+    {
         largePointer.LowPart = SetFilePointer(getFileHandleRaw(), largePointer.LowPart, &largePointer.HighPart, FILE_CURRENT);
         fPointer = largePointer.LowPart == INVALID_SET_FILE_POINTER ? 0 :
             TypeConversion<LONGLONG, uint64, true>::toUnsigned(largePointer.QuadPart);
