@@ -21,6 +21,7 @@
 #endif
 
 // String defines
+// Always use TCHAR to initialize represent inline char arrays, always use like TCHAR("some chars" )
 // Changing UNICODE must also be changed in TChar typedef of CoreTypes
 // If using wide unicode it means we are using platform native Unicode in this platform as TChar
 #ifndef USING_WIDE_UNICODE

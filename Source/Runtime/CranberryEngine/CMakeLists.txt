@@ -6,6 +6,7 @@ set(private_modules
     Application
     EngineInputCore
     CoreObjects
+    ThreadingCore
 )
 if (${engine_static_modules})
     if(${WIN32} OR ${LINUX})
