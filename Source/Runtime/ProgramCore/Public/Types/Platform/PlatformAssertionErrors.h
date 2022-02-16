@@ -30,7 +30,7 @@ public:
 
 // Debug assert or slow assert
 #ifndef debugAssert
-#if _DEBUG
+#if DEBUG_VALIDATIONS
 #include <assert.h>
 #define debugAssert(Expr)\
 do{\

@@ -99,6 +99,15 @@
 
 // End CPP language specific
 
+#if _DEBUG
+#define DEBUG_VALIDATIONS 1
+#elif NDEBUG
+#define DEBUG_VALIDATIONS 0
+#else
+#define DEBUG_VALIDATIONS 0
+#endif
+
+
 #ifndef LOG_TO_CONSOLE
 #define LOG_TO_CONSOLE 0
 #endif

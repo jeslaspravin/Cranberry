@@ -42,7 +42,7 @@ public:
     typedef unsigned short word;
     typedef unsigned long dword;
 
-
+    // This must be reversed in Big Endian
     typedef union _uint64
     {
         struct

@@ -23,6 +23,28 @@ struct ToStringImpl
     }
 };
 
+
+struct StringCodePointsHelper
+{
+    static uint64 count(const AChar* startChar);
+    static uint64 count(const WChar* startChar);
+    
+    PROGRAMCORE_EXPORT static void validateStartCode(AChar startChar);
+    PROGRAMCORE_EXPORT static void validateStartCode(WChar startChar);
+    FORCE_INLINE static uint32 utf8ToCode(const Utf8* firstChar, uint32 byteCount);
+    FORCE_INLINE static uint32 utf16ToCode(const Utf16* firstChar);
+    // startChar must be valid a code point start
+    FORCE_INLINE static uint32 codePoint(AChar const*& endChar, AChar const*& startChar);
+    FORCE_INLINE static uint32 codePoint(WChar const*& endChar, WChar const*& startChar);
+
+    // Gets next/previous code point from given character start and reference outs endChar for this variable length character
+    FORCE_INLINE static uint32 nextCodePoint(AChar const*& endChar, AChar const*& startChar);
+    FORCE_INLINE static uint32 nextCodePoint(WChar const*& endChar, WChar const*& startChar);
+    // Previous must be invoked from 1st char and never from 0th char
+    FORCE_INLINE static uint32 prevCodePoint(AChar const*& endChar, AChar const*& startChar);
+    FORCE_INLINE static uint32 prevCodePoint(WChar const*& endChar, WChar const*& startChar);
+};
+
 // Remember we are only converting to UTF-8 when we convert to AChar or char or char8_t
 // For now it is okay if ASCII/ANSI end up as garbage
 template <typename FromCharType, typename ToCharType>
@@ -63,6 +85,234 @@ template <typename Type>
 FORCE_INLINE String ToStringImpl<AChar>::toString(Type&& value)
 {
     return String(std::to_string(std::forward<Type>(value)));
+}
+
+// Code counter for UTF
+// Count code points
+// https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&item_id=IWS-AppendixA
+FORCE_INLINE uint64 StringCodePointsHelper::count(const WChar* startChar)
+{
+    uint64 num = 0;
+    if CONST_EXPR(std::is_same_v<Utf16, WCharEncodedType>)
+    {
+        while (const auto ch = *reinterpret_cast<const Utf16*>(startChar++))
+        {
+            // Special characters(Supplementary planes) are in range 0xD800 to 0xDFFF so anything not in this region is a character
+            // Higher word of 32bit utf-16 starts from 0xD800 and lower word of 32bit utf-16 starts from 0xDC00
+            // So if a character is either above or equal to 0xE000 or is below 0xDC00 it can be counted as a character
+            // https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&item_id=IWS-AppendixA
+            // https://en.wikipedia.org/wiki/UTF-16
+            num += (ch < 0xDC00u) || (ch >= 0xE000u);
+        }
+    }
+    else
+    {
+        while (const auto ch = *reinterpret_cast<const Utf32*>(startChar++))
+        {
+            // Special characters(Supplementary planes) are in range 0xD800 to 0xDFFF so anything not in this region is a character
+            // We must ignore those here but it is okay
+            num++;
+        }
+    }
+    return num;
+}
+
+FORCE_INLINE uint64 StringCodePointsHelper::count(const AChar* startChar)
+{
+    uint64 num = 0;
+    while (const auto ch = *reinterpret_cast<const Utf8*>(startChar++))
+    {
+        // If is less than 128(0x80) or greater than/equal to 192(0b11000xxx) then it means a character
+        // https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&item_id=IWS-AppendixA
+        num += (ch >= 192u) || (ch < 128u);
+    }
+    return num;
+}
+
+FORCE_INLINE uint32 StringCodePointsHelper::utf8ToCode(const Utf8* firstChar, uint32 byteCount)
+{
+    uint32 codePoint = 0;
+    switch (byteCount)
+    {
+    case 1:
+        codePoint = (uint32)(*firstChar);
+        break;
+    case 2:
+        // 1st byte - Remove 0b110xxxxx from first byte and left shift by 6(*64)
+        // 2nd byte - Remove 0b10xxxxxx from second byte
+        codePoint = (*firstChar - 192u) * 64u
+            + (*(firstChar + 1) - 128u);
+        break;
+    case 3:
+        // 1st byte - Remove 0b1110xxxx(224u) from first byte and left shift by 12(*4096)
+        // 2nd byte - Remove 0b10xxxxxx from second byte and left shift by 6(*64)
+        // 3rd byte - Remove 0b10xxxxxx from third byte
+        codePoint = (*firstChar - 224u) * 4096u
+            + (*(firstChar + 1) - 128u) * 64u
+            + (*(firstChar + 2) - 128u);
+        break;
+    case 4:
+    default:
+        // Handling anything above 4 bytes as 4 bytes and skip rest of the bytes
+        
+        // 1st byte - Remove 0b11110xxx(240u) from first byte and left shift by 18(*262144)
+        // 2nd byte - Remove 0b10xxxxxx from second byte and left shift by 12(*4096)
+        // 3rd byte - Remove 0b10xxxxxx from third byte and left shift by 6(*64)
+        // 4th byte - Remove 0b10xxxxxx from fourth byte
+        codePoint = (*firstChar - 240u) * 262144u
+            + (*(firstChar + 1) - 128u) * 4096u
+            + (*(firstChar + 2) - 128u) * 64u
+            + (*(firstChar + 3) - 128u);
+        break;
+    }
+    return codePoint;
+}
+
+FORCE_INLINE uint32 StringCodePointsHelper::utf16ToCode(const Utf16* firstChar)
+{
+    // Single wide char
+    if ((*firstChar < 0xD800u) && (*firstChar >= 0xE000u))
+    {
+        return (uint32)(*firstChar);
+    }
+
+    // HighWord - remove added 0xD800 specialization plane from higher word and left shift by 10(*0x400u)
+    // LowWord - remove added 0xDC00 from lower word
+    // Add back the 2^16(65536 chars) offset subtracted when encoding specialization plane to fit in 20bits
+    return 0x10000u 
+        + (*firstChar - 0xD800u) * 0x400u
+        + (*(firstChar + 1) - 0xDC00u);
+}
+
+FORCE_INLINE uint32 StringCodePointsHelper::codePoint(AChar const*& endChar, AChar const*& startChar)
+{
+#if DEBUG_VALIDATIONS
+    validateStartCode(*startChar);
+#endif // DEBUG_VALIDATIONS
+
+    // null terminated already?
+    if (*startChar == '\0')
+    {
+        endChar = startChar;
+        return 0;
+    }
+
+    // If less than 128 it is 1byte length
+    if (*reinterpret_cast<const Utf8*>(startChar) < 128u)
+    {
+        endChar = startChar + 1;
+        return *startChar;
+    }
+
+    uint32 byteCount = 1;
+    // This is multi-byte at this point, Iterate until end and find byteCount
+    const Utf8* firstChar = reinterpret_cast<const Utf8*>(startChar + 1);
+    while (*firstChar && (*firstChar < 192u && *firstChar >= 128u))
+    {
+        ++byteCount;
+        ++firstChar;
+    }
+    endChar = (const AChar*)firstChar;
+
+    return utf8ToCode(reinterpret_cast<const Utf8*>(startChar), byteCount);
+}
+
+FORCE_INLINE uint32 StringCodePointsHelper::nextCodePoint(AChar const*& endChar, AChar const*& startChar)
+{
+    // Find the next char that has valid first byte, This avoids invalid char if startChar is from middle of multi-byte
+    // Any character in range [128u, 192) is not valid start byte
+    const Utf8* firstChar = reinterpret_cast<const Utf8*>(startChar);
+    while (*firstChar && (*firstChar < 192u && *firstChar >= 128u))
+    {
+        ++firstChar;
+    }
+    startChar = (const AChar*)firstChar;
+
+    return codePoint(endChar, startChar);
+}
+
+FORCE_INLINE uint32 StringCodePointsHelper::prevCodePoint(AChar const*& endChar, AChar const*& startChar)
+{
+    const Utf8* firstChar = reinterpret_cast<const Utf8*>(--startChar);
+    while (*firstChar < 192u && *firstChar >= 128u)
+    {
+        --firstChar;
+    }
+    startChar = (const AChar*)firstChar;
+
+    return codePoint(endChar, startChar);
+}
+
+FORCE_INLINE uint32 StringCodePointsHelper::codePoint(WChar const*& endChar, WChar const*& startChar)
+{
+#if DEBUG_VALIDATIONS
+    validateStartCode(*startChar);
+#endif // DEBUG_VALIDATIONS
+
+    // null terminated already?
+    if (*startChar == L'\0')
+    {
+        endChar = startChar;
+        return 0;
+    }
+
+    endChar = startChar + 1;
+    if CONST_EXPR(std::is_same_v<Utf16, WCharEncodedType>)
+    {
+        const Utf16* firstChar = reinterpret_cast<const Utf16*>(startChar);
+        // Add one more byte if character is two word encoded
+        endChar = endChar + ((*firstChar >= 0xD800u) && (*firstChar < 0xDC00u));
+        return utf16ToCode(firstChar);
+    }
+    else
+    {
+        return (uint32)(*startChar);
+    }
+
+}
+
+FORCE_INLINE uint32 StringCodePointsHelper::nextCodePoint(WChar const*& endChar, WChar const*& startChar)
+{
+    if CONST_EXPR(std::is_same_v<Utf16, WCharEncodedType>)
+    {
+        // First valid start must be either single word or word greater than or equal to 0xD800 and Less than 0xDC00
+        // (or must not be in range [0xDC00, 0xE000)
+        const Utf16* firstChar = reinterpret_cast<const Utf16*>(startChar);
+        while (*firstChar && !(*firstChar >= 0xDC00u && *firstChar < 0xE000u))
+        {
+            ++firstChar;
+        }
+        startChar = (const WChar*)firstChar;
+
+        return codePoint(endChar, startChar);
+    }
+    else
+    {
+        endChar = startChar + 1;
+        return (uint32)(*startChar);
+    }
+}
+
+FORCE_INLINE uint32 StringCodePointsHelper::prevCodePoint(WChar const*& endChar, WChar const*& startChar)
+{
+    if CONST_EXPR(std::is_same_v<Utf16, WCharEncodedType>)
+    {
+        // First valid start must be either single word or word greater than or equal to 0xD800 and Less than 0xDC00
+        // (or must not be in range [0xDC00, 0xE000)
+        const Utf16* firstChar = reinterpret_cast<const Utf16*>(--startChar);
+        while (!(*firstChar >= 0xDC00u && *firstChar < 0xE000u))
+        {
+            --firstChar;
+        }
+        startChar = (const WChar*)firstChar;
+
+        return codePoint(endChar, startChar);
+    }
+    else
+    {
+        endChar = startChar--;
+        return (uint32)(*startChar);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -162,6 +412,130 @@ FORCE_INLINE String String::toString(Type&& value)
 {
     return ToStringImpl<String::value_type>::toString(std::forward<Type>(value));
 }
+
+FORCE_INLINE uint64 String::codeCount() const
+{
+    return StringCodePointsHelper::count(getChar());
+}
+// Code points iterator
+// Lifetime must be less than the string that this is iterating
+class StringCodePointsIterator
+{
+private:
+    String::const_pointer beginPtr;
+    String::const_pointer endPtr;
+    String::const_pointer charStart;
+    String::const_pointer charEnd;
+    uint32 codePoint;
+
+public:
+    /* Iterator traits skipped difference_type as it does not makes sense */
+    using value_type = uint32;
+    using reference = uint32&;
+    using pointer = uint32*;
+    using const_reference = const uint32&;
+    using const_pointer = const uint32*;
+    using iterator_category = std::bidirectional_iterator_tag;
+
+    StringCodePointsIterator() = default;
+    StringCodePointsIterator(const StringCodePointsIterator& itr) = default;
+    StringCodePointsIterator(StringCodePointsIterator&& itr) = default;
+    StringCodePointsIterator(const String& str)
+        : beginPtr(str.getChar())
+        , endPtr(str.getChar() + str.size())
+        , charStart(str.getChar())
+        , codePoint(StringCodePointsHelper::codePoint(charEnd, charStart))
+    {}
+
+    // Helper to get end iterator for a String
+    static StringCodePointsIterator end(const String& str)
+    {
+        StringCodePointsIterator itr(str);
+        // Setting end will make next char to start from end
+        itr.charEnd = itr.endPtr;
+        return ++itr;
+    }
+
+    StringView view() const
+    {
+        return StringView(charStart, charEnd);
+    }
+
+    const_pointer operator->() const
+    {
+        return &codePoint;
+    }
+
+    const value_type& operator*() const
+    {
+        return codePoint;
+    }
+
+    bool operator!=(const StringCodePointsIterator& other) const
+    {
+        return !(codePoint == other.codePoint && charStart == other.charStart && charEnd == other.charEnd);
+    }
+
+    StringCodePointsIterator& operator++()
+    {
+        // if we arrived at end just setup few things manually, calling nextCodePoint must give same result with same input
+        if (charEnd == endPtr)
+        {
+            charStart = charEnd = endPtr;
+            codePoint = 0;
+        }
+        else
+        {
+            charStart = charEnd;
+            codePoint = StringCodePointsHelper::nextCodePoint(charEnd, charStart);
+        }
+        return *this;
+    }
+
+    StringCodePointsIterator operator++(int)
+    {
+        StringCodePointsIterator retVal(*this);
+        this->operator++();
+        return retVal;
+    }
+
+    StringCodePointsIterator& operator--()
+    {
+        if (charStart != beginPtr)
+        {
+            codePoint = StringCodePointsHelper::prevCodePoint(charEnd, charStart);
+        }
+        return *this;
+    }
+
+    StringCodePointsIterator operator--(int)
+    {
+        StringCodePointsIterator retVal(*this);
+        this->operator--();
+        return retVal;
+    }
+};
+
+struct StringCodePoints
+{
+    const String* str = nullptr;
+
+    StringCodePoints(const String& inStr)
+        : str(&inStr)
+    {}
+
+    StringCodePointsIterator begin() const
+    {
+        if (!str) return StringCodePointsIterator();
+        return StringCodePointsIterator(*str);
+    }
+
+    StringCodePointsIterator end() const
+    {
+        if (!str) return StringCodePointsIterator();
+        return StringCodePointsIterator::end(*str);
+    }
+};
 
 #if USING_WIDE_UNICODE
 #define COUT std::wcout
