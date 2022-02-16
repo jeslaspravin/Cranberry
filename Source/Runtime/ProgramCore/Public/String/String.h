@@ -54,6 +54,9 @@ public:
         return c_str();
     }
 
+    // Count of String's character code points
+    FORCE_INLINE uint64 codeCount() const;
+
     FORCE_INLINE bool findAny(size_t& outIndex, String& outFoundString, const std::vector<String>& findStrgs, size_t offset = 0, bool fromEnd = false) const
     {
         size_t foundAt = npos;

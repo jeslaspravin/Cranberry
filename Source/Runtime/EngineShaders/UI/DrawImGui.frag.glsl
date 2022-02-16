@@ -20,5 +20,5 @@ layout(set = 1, binding = 0) uniform sampler2D textureAtlas;
 
 void mainFS()
 {
-    colorAttachment0 = inColor * texture(textureAtlas, inTextureCoord);
+    colorAttachment0 = inColor * texture(textureAtlas, inTextureCoord).r;
 }

@@ -3256,7 +3256,14 @@ void ExperimentalEnginePBR::tempTest()
     Vector3D dir2 = t1.matrix() * Vector3D::FWD;
 
     String outStr = UTF16_TO_TCHAR(UTF8_TO_UTF16(UTF32_TO_UTF8(UTF8_TO_UTF32("Hello good sir! How are you?"))));
-    LOG("TEST", "%s %s", outStr, "\x7a\xc3\x9f\xe6\xb0\xb4\xe0\xae\x85\xf0\x9f\x8d\x8c");
+    String testStr{ "\x7a\xc3\x9f\xe6\xb0\xb4\xe0\xae\x85\xf0\x9f\x8d\x8c\xe2\x9c\x88\xf0\x9f\x98\x94" };
+    uint32 count = 0;
+    for (const uint32& codePt : StringCodePoints(testStr))
+    {
+        LOG("TEST", "0x%x", codePt);
+        count++;
+    }
+    LOG("TEST", "%s %s -> Length %llu", outStr, testStr, testStr.codeCount());
 }
 
 //static uint64 allocationCount = 0;

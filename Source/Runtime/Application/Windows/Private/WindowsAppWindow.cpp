@@ -26,8 +26,16 @@ LRESULT CALLBACK WindowProc(HWND   hwnd,UINT   uMsg,WPARAM wParam,LPARAM lParam)
 void WindowsAppWindow::createWindow(const ApplicationInstance* appInstance)
 {
     HINSTANCE instanceHandle = (HINSTANCE)appInstance->platformApp->getPlatformAppInstance();
+    // Setup application's default awareness, If no parent it is main window
+    // https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/february/windows-with-c-write-high-dpi-apps-for-windows-8-1
+    if (!parentWindow)
+    {
+        bool bSetDpiAwarness = ::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+        fatalAssert(bSetDpiAwarness, "DPI awareness setup failed");
+    }
+
     WNDCLASS windowClass{};
-    if(GetClassInfo(instanceHandle, windowName.getChar()
+    if(::GetClassInfo(instanceHandle, windowName.getChar()
         , &windowClass) == 0)
     {
         windowClass = {};
@@ -42,7 +50,7 @@ void WindowsAppWindow::createWindow(const ApplicationInstance* appInstance)
 
     RECT windowRect{ 0,0,(LONG)windowWidth,(LONG)windowHeight };
 
-    AdjustWindowRect(&windowRect, style, false);
+    ::AdjustWindowRect(&windowRect, style, false);
     
     windowsHandle = CreateWindow(windowName.getChar(), windowName.getChar(), style
         , 0, 0, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top,
@@ -54,7 +62,9 @@ void WindowsAppWindow::createWindow(const ApplicationInstance* appInstance)
         return;
     }
 
-    ShowWindow((HWND)windowsHandle, SW_SHOW);
+    ::ShowWindow((HWND)windowsHandle, SW_SHOW);
+    // Get window's dpi for a monitor
+    windowDpiChanged(::GetDpiForWindow((HWND)windowsHandle));
 }
 
 void WindowsAppWindow::updateWindow()
@@ -123,6 +133,12 @@ void WindowsAppWindow::windowResizing(uint32 width, uint32 height) const
     {
         onResize.invoke(width, height);
     }
+}
+
+void WindowsAppWindow::windowDpiChanged(uint32 newDpi)
+{
+    CONST_EXPR int32 WINDOWS_DEFAULT_DPI = 96;
+    dpiScaling = float(WINDOWS_DEFAULT_DPI) / float(newDpi);
 }
 
 void WindowsAppWindow::windowDestroyRequested() const
@@ -194,12 +210,24 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
         break;
     }
+    case WM_DPICHANGED:
+    {
+        WindowsAppWindow* windowPtr = reinterpret_cast<WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
+        if (windowPtr && LOWORD(wParam) > 0 && HIWORD(wParam) > 0)
+        {
+            windowPtr->windowDpiChanged(Math::max(LOWORD(wParam), HIWORD(wParam)));
+            RECT& windowRect = *reinterpret_cast<RECT*>(lParam);
+            SetWindowPos(hwnd, NULL
+                , windowRect.left, windowRect.top, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top
+                , SWP_NOACTIVATE | SWP_NOZORDER);
+        }
+    }
     case WM_SIZE:
     {
         WindowsAppWindow* const windowPtr = reinterpret_cast<WindowsAppWindow*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
         if (windowPtr && (wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED) && LOWORD(lParam) > 0 && HIWORD(lParam) > 0)
         {
-            windowPtr->pushEvent(WM_ACTIVATEAPP, [windowPtr, lParam]() 
+            windowPtr->pushEvent(WM_SIZE, [windowPtr, lParam]() 
                 {
                     LOG("WindowsAppWindow", "%s() : Resizing window %s ( %d, %d )", __func__, windowPtr->getWindowName().getChar(), LOWORD(lParam), HIWORD(lParam));
                     windowPtr->windowResizing(LOWORD(lParam), HIWORD(lParam));

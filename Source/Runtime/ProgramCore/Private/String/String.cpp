@@ -1,6 +1,7 @@
 #include "String/String.h"
 #include "Types/Traits/ValueTraits.h"
 #include "Types/Platform/PlatformFunctions.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Logger/Logger.h"
 
 #include <locale>
@@ -8,7 +9,7 @@
 template <typename BufferType, typename NonUtf8Type>
 FORCE_INLINE bool convertToUtf8(BufferType& buffer, const NonUtf8Type* start)
 {
-    auto& ToUtf8 = std::use_facet<std::codecvt<NonUtf8Type, Utf8, std::mbstate_t>>(std::locale());
+    auto& toUtf8 = std::use_facet<std::codecvt<NonUtf8Type, Utf8, std::mbstate_t>>(std::locale());
     const auto* end = String::recurseToNullEnd(start);
 
     // Convert from UTF-16/UTF-32 to UTF-8
@@ -16,10 +17,10 @@ FORCE_INLINE bool convertToUtf8(BufferType& buffer, const NonUtf8Type* start)
     const NonUtf8Type* nextFrom = nullptr;
     Utf8* nextTo = nullptr;
 
-    buffer.resize(ToUtf8.max_length() * (end - start), TCHAR('\0'));
+    buffer.resize(toUtf8.max_length() * (end - start), TCHAR('\0'));
     Utf8* outData = reinterpret_cast<Utf8*>(buffer.data());
 
-    std::codecvt_base::result status = ToUtf8.out(state
+    std::codecvt_base::result status = toUtf8.out(state
         , reinterpret_cast<const NonUtf8Type*>(start), reinterpret_cast<const NonUtf8Type*>(end), nextFrom
         , outData, outData + buffer.size(), nextTo);
     buffer.resize(nextTo - outData);
@@ -107,4 +108,14 @@ const AChar* StlStringConv<Utf32, AChar>::convert(const Utf32* start)
         LOG_ERROR("StringConv", "Failed to convert from UTF-32 to AChar(UTF-8)");
     }
     return str.c_str();
+}
+
+void StringCodePointsHelper::validateStartCode(AChar startChar)
+{
+    debugAssert((startChar >= 192u) || (startChar < 128u));
+}
+
+void StringCodePointsHelper::validateStartCode(WChar startChar)
+{
+    debugAssert(sizeof(WChar) == 4 || (startChar < 0xDC00u) || (startChar >= 0xE000u));
 }

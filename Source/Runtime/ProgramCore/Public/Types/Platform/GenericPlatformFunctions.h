@@ -65,6 +65,8 @@ public:
         PlatformClass::getModuleInfo(processHandle, libraryHandle, moduleData);
     }
 
+    // Platform tools
+
     static String getClipboard()
     {
         return PlatformClass::getClipboard();
@@ -74,6 +76,8 @@ public:
     {
         return PlatformClass::setClipboard(text);
     }
+
+    // Utilities 
 
     template<typename UnsignedType>
     static std::enable_if_t

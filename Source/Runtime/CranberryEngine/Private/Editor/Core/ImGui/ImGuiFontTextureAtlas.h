@@ -17,7 +17,6 @@ struct ImGuiContext;
 
 struct ImGuiFontTextureParams : public TextureBaseCreateParams
 {
-    Color defaultColor = ColorConst::WHITE;
     ImGuiContext* owningContext;
 };
 
@@ -25,7 +24,6 @@ struct ImGuiFontTextureParams : public TextureBaseCreateParams
 class ImGuiFontTextureAtlas : public TextureBase
 {
 private:
-    Color defaultColor;
     ImGuiContext* owningContext;
     std::vector<Color> rawData;
 

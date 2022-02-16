@@ -18,10 +18,9 @@ ImGuiFontTextureAtlas* ImGuiFontTextureAtlas::createTexture(const ImGuiFontTextu
 {
     ImGuiFontTextureAtlas* texture = new ImGuiFontTextureAtlas();
 
-    texture->defaultColor = createParams.defaultColor;
     texture->owningContext = createParams.owningContext;
     texture->textureName = createParams.textureName;
-    texture->dataFormat = EPixelDataFormat::BGRA_U8_Norm;
+    texture->dataFormat = EPixelDataFormat::R_U8_Norm;
     // Dependent values
     texture->setSampleCount(EPixelSampleCount::SampleCount1);// MS not possible for read only textures
     texture->setFilteringMode(createParams.filtering);
@@ -47,11 +46,10 @@ void ImGuiFontTextureAtlas::generateImGuiTexture()
 
     textureSize = Size3D(textureSizeX, textureSizeY, 1);
     mipCount = (uint32)(1 + Math::floor(Math::log2((float)Math::max(textureSize.x, textureSize.y))));
-    rawData.resize(textureSizeX * textureSizeY);
+    rawData.resize(textureSizeX * textureSizeY, ColorConst::BLACK);
     for (int32 i = 0; i < rawData.size(); ++i)
     {
-        rawData[i] = defaultColor;
-        rawData[i].setA(alphaVals[i]);
+        rawData[i].setR(alphaVals[i]);
     }
 }
 

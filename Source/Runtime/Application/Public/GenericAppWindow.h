@@ -24,6 +24,11 @@ class APPLICATION_EXPORT GenericAppWindow
 protected:
     uint32 windowWidth;
     uint32 windowHeight;
+    // Inverse of percent to scale the application interfaces. Example if dpi is 150% this will be 100/150.
+    // This allows us to just multiply this value to render target resolution to get actual resolution to work
+    // Example if we are rendering to 3840x2160 RT texts will be very small however multiplying 150% scale factor gives 
+    // virtual scaled resolution as 2560x1440
+    float dpiScaling = 1.f;
 
     String windowName;
     // Not supporting multi window so this is irrelevant
@@ -46,6 +51,8 @@ protected:
 public:
     void windowSize(uint32& width, uint32& height) const;
     void setWindowSize(const uint32& width, const uint32& height, bool updateResources);
+
+    float dpiScale() const { return dpiScaling; }
 
     /* Below set functions are initialize functions and are not usable after creating window */
     void setWindowMode(bool bIsFullScreen);

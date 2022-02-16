@@ -132,9 +132,9 @@ void GameEngine::onRenderStateChange(ERenderStateEvent state)
     case ERenderStateEvent::PostInitGraphicsContext:
         break;
     case ERenderStateEvent::PostInititialize:
+        imguiManager.initialize();
         break;
     case ERenderStateEvent::PreFinalizeInit:
-        imguiManager.initialize();
         break;
     case ERenderStateEvent::PostFinalizeInit:
         break;

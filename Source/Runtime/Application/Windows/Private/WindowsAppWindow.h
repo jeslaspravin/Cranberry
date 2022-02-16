@@ -32,6 +32,7 @@ public:
     void activateWindow() const;
     void deactivateWindow() const;
     void windowResizing(uint32 width, uint32 height) const;
+    void windowDpiChanged(uint32 newDpi);
     void windowDestroyRequested() const;
     Rect windowClientRect() const override;
 

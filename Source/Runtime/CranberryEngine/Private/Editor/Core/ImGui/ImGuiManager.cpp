@@ -254,7 +254,8 @@ void ImGuiManager::updateInputs()
 
     // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
     Rect windowArea = IApplicationModule::get()->mainWindow()->windowClientRect();
-    io.MousePos = Vector2D(inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue, inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue) - windowArea.minBound;
+    float dpiScaleFactor = IApplicationModule::get()->mainWindow()->dpiScale();
+    io.MousePos = (Vector2D(inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue, inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue) - windowArea.minBound) * dpiScaleFactor;
     // Resize to screen render size, If using screen size
     //const Vector2D pos = Vector2D(inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue, inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue) - windowArea.minBound;
     //io.MousePos = pos * (Vector2D(EngineSettings::screenSize.get()) / Vector2D(EngineSettings::surfaceSize.get()));
@@ -416,12 +417,16 @@ void ImGuiManager::setupRendering()
 {
     ImGuiIO& io = GetIO();
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
+
+    // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
+    float dpiScaleFactor = IApplicationModule::get()->mainWindow()->dpiScale();
     // Using surface size
-    io.DisplaySize = Vector2D(float(EngineSettings::surfaceSize.get().x), float(EngineSettings::surfaceSize.get().y));
+    io.DisplaySize = Vector2D(float(EngineSettings::surfaceSize.get().x), float(EngineSettings::surfaceSize.get().y)) * dpiScaleFactor;
     textureResizedHnd = EngineSettings::surfaceSize.onConfigChanged().bindLambda({ 
         [&io](Size2D oldSize, Size2D newSize)
         {
-            io.DisplaySize = Vector2D(float(newSize.x), float(newSize.y));
+            float dpiScaleFactor = IApplicationModule::get()->mainWindow()->dpiScale();
+            io.DisplaySize = Vector2D(float(newSize.x), float(newSize.y)) * dpiScaleFactor;
         }});
     // Using screen size
     //io.DisplaySize = Vector2D(float(EngineSettings::screenSize.get().x), float(EngineSettings::screenSize.get().y));
@@ -440,7 +445,7 @@ void ImGuiManager::setupRendering()
     {
         ImGuiFontTextureParams textureParams;
         textureParams.textureName = TCHAR("ImGuiTextureAtlas");
-        textureParams.filtering = ESamplerFiltering::Linear;
+        textureParams.filtering = ESamplerFiltering::Nearest;
         textureParams.owningContext = context;
         textureAtlas = TextureBase::createTexture<ImGuiFontTextureAtlas>(textureParams);
 
@@ -449,8 +454,8 @@ void ImGuiManager::setupRendering()
             {
                 SamplerCreateInfo createInfo
                 {
-                    .filtering = ESamplerFiltering::Linear,
-                    .mipFiltering = ESamplerFiltering::Linear,
+                    .filtering = ESamplerFiltering::Nearest,
+                    .mipFiltering = ESamplerFiltering::Nearest,
                     .tilingMode = { ESamplerTilingMode::EdgeClamp, ESamplerTilingMode::EdgeClamp, ESamplerTilingMode::EdgeClamp },
                     .resourceName = TCHAR("ImGuiFontAtlasSampler")
                 };
