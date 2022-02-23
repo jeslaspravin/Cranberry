@@ -11,6 +11,43 @@
 
 #pragma once
 
+
+#ifndef DEVELOPMENT
+#define DEVELOPMENT 0
+#endif
+
+#if _DEBUG
+#define DEBUG_BUILD 1
+#define DEV_BUILD 1
+#define DEBUG_VALIDATIONS 1
+#elif DEVELOPMENT
+#define DEV_BUILD 1
+#define DEBUG_VALIDATIONS 1
+#elif NDEBUG
+#define RELEASE_BUILD 1
+#endif
+
+#ifndef DEV_BUILD
+#define DEV_BUILD 0
+#endif
+
+#ifndef DEBUG_BUILD
+#define DEBUG_BUILD 0
+#endif
+
+#ifndef RELEASE_BUILD
+#define RELEASE_BUILD 0
+#endif
+
+#ifndef DEBUG_VALIDATIONS
+#define DEBUG_VALIDATIONS 0
+#endif
+
+
+#ifndef LOG_TO_CONSOLE
+#define LOG_TO_CONSOLE 0
+#endif
+
 #define ARRAY_LENGTH(ArrayVar) sizeof(ArrayVar)/sizeof(ArrayVar[0])
 #define MACRO_TO_STRING_internal(DefExpanded) #DefExpanded
 #define MACRO_TO_STRING(VarName) MACRO_TO_STRING_internal(VarName)

@@ -24,6 +24,12 @@ template<class T,uint32 d>
 class Box
 {
 public:
+    using PointType = T;
+    using PointElementType = typename PointType::value_type;
+    CONST_EXPR static const uint32 Dim = d;
+
+    using value_type = T;
+public:
     T minBound;
     T maxBound;
 
@@ -34,7 +40,7 @@ public:
         , maxBound(max)
     {}
 
-    Box(const T& value)
+    explicit Box(const T& value)
         : minBound(value)
         , maxBound(value)
     {}
@@ -196,6 +202,50 @@ public:
         }
         return true;
     }
+    bool contains(const Box<T, d>& other)
+    {
+        for (uint32 i = 0; i < d; i++)
+        {
+            // If any min bound is less than this or if max bound is greater than this it means that box cannot be contained in this box
+            if (other.minBound[i] < minBound[i] || other.maxBound[i] > maxBound[i])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Returns 0 if this cannot contain, 1 if is within this, 2 if other is exactly on the border or is matching the box exactly
+    uint8 encloses(const T& point) const
+    {
+        bool bIsOnBorder = false;
+        for (uint32 i = 0; i < d; i++)
+        {
+            if (point[i] < minBound[i] || point[i] > maxBound[i])
+            {
+                return 0;
+            }
+            // If even one axis in on border, point is in border
+            bIsOnBorder = bIsOnBorder 
+                || Math::isEqual(point[i], minBound[i]) 
+                || Math::isEqual(point[i], maxBound[i]);
+        }
+        return bIsOnBorder? 2u : 1u;
+    }
+    uint8 encloses(const Box<T, d>& other)
+    {
+        PointElementType thisVolume = 1, otherVolume = 1;
+        for (uint32 i = 0; i < d; i++)
+        {
+            if (other.minBound[i] < minBound[i] || other.maxBound[i] > maxBound[i])
+            {
+                return 0;
+            }
+            thisVolume *= (maxBound[i] - minBound[i]);
+            otherVolume *= (other.maxBound[i] - other.minBound[i]);
+        }
+        return Math::isEqual(thisVolume, otherVolume)? 2u : 1u;
+    }
 
     T size() const
     {
@@ -312,6 +362,12 @@ public:
 template<class T>
 class Box<T, 1>
 {
+public:
+    using PointType = T;
+    using PointElementType = T;
+    CONST_EXPR static const uint32 Dim = 1;
+
+    using value_type = T;
 public:
     T minBound;
     T maxBound;
@@ -430,6 +486,23 @@ public:
     {
         return point >= minBound && point <= maxBound;
     }
+    bool contains(const Box<T, 1>& other) const
+    {
+        return other.minBound >= minBound && other.maxBound <= maxBound;
+    }
+    uint8 encloses(const T& point) const
+    {
+        if (point < minBound || point > maxBound)
+            return 0;
+        
+        return (Math::isEqual(point, minBound) || Math::isEqual(point,maxBound))? 2u : 1u;
+    }
+    uint8 encloses(const Box<T, 1>& other) const
+    {
+        if (other.minBound < minBound || other.maxBound > maxBound)
+            return 0;
+        return (Math::isEqual(other.minBound, minBound) && Math::isEqual(other.maxBound, maxBound)) ? 2u : 1u;
+    }
 
     T size() const
     {
@@ -448,8 +521,42 @@ using ValueRange = Box<T, 1>;
 using SizeBox2D = Box<Size2D, 2>;
 using SizeBox3D = Box<Size3D, 3>;
 
+using ShortSizeBox2D = Box<ShortSize2D, 2>;
+
 using QuantizedBox2D = Box<Int2D, 2>;
 using QuantizedBox3D = Box<Int3D, 3>;
 
+using QuantShortBox2D = Box<Short2D, 2>;
+
 using Rect = Box<Vector2D, 2>;
 using AABB = Box<Vector3D, 3>;
+
+template <typename BoxType>
+struct IsBox2DType : std::false_type
+{};
+
+template <typename Type>
+struct IsBox2DType<Box<Type, 2>> : std::true_type
+{};
+
+template <typename BoxType>
+struct IsBox3DType : std::false_type
+{};
+
+template <typename Type>
+struct IsBox3DType<Box<Type, 3>> : std::true_type
+{};
+
+template <typename BoxType>
+struct IsBoxType : std::false_type
+{};
+
+template <typename Type, uint32 ExtDim>
+struct IsBoxType<Box<Type, ExtDim>> : std::true_type
+{};
+
+template <typename BoxType>
+concept Box2DType = IsBox2DType<BoxType>::value;
+
+template <typename BoxType>
+concept Box3DType = IsBox3DType<BoxType>::value;

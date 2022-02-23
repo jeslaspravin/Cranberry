@@ -28,6 +28,8 @@ private:
     friend Vector2D operator/(float n, const Vector2D& d);
     friend Vector2D operator-(float n, const Vector2D& d);
 public:
+    using value_type = glm::vec2::value_type;
+public:
     Vector2D();
     explicit Vector2D(const Matrix2Col& vector2d);
     Vector2D(const float& x, const float& y);

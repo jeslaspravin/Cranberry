@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Types/CoreTypes.h"
+#include "FontManager.h"
 #include "String/String.h"
 #include "ApplicationExports.h"
 
@@ -41,10 +42,12 @@ private:
     String cmdLine;
 
 public:
+    PlatformAppInstanceBase* platformApp;
+    FontManager fontManager;
+public:
     ApplicationInstance() = default;
     ApplicationInstance(const AppInstanceCreateInfo& createInfo);
 
-    PlatformAppInstanceBase* platformApp;
 
     const String& getAppName() const { return applicationName; }
     void getVersion(int32& majorVer, int32& minorVer, int32& patchVer) const 

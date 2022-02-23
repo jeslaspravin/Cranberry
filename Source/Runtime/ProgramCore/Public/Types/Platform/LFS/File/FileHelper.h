@@ -28,6 +28,8 @@ public:
 
     static bool readString(String& outStr, const String& fileName);
     static bool readUtf8String(std::string& outStr, const String& fileName);
+    static bool readBytes(std::vector<uint8>& outBytes, const String& fileName);
     // Always writes to new file, overwrites if existing
     static bool writeString(const String& content, const String& fileName);
+    static bool writeBytes(std::vector<uint8>& bytes, const String& fileName);
 };

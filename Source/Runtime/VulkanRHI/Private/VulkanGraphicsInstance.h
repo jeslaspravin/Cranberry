@@ -41,7 +41,7 @@ private:
     // Window canvas if provided will be used to check surface capabilities, If not that will be ignored
     void createVulkanDevice(const WindowCanvasRef& windowCanvas);
 
-#if _DEBUG
+#if DEV_BUILD
     void collectInstanceLayers(std::vector<const char*>& layers) const;
 #endif
     NODISCARD bool collectInstanceExtensions(std::vector<const char*>& extensions) const;

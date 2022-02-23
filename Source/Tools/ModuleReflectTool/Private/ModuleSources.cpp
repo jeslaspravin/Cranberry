@@ -256,23 +256,27 @@ void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformati
             return lhs.fileSize > rhs.fileSize;
         });
 
-    // For each gen files
-    for (uint32 i = 0; i < genFiles.size(); ++i)
+    // Only if anything new is generated inject those sources
+    if(!generatedSrcs.empty())
     {
-        std::vector<String> includeStmts;
-        // Since stride is number of generated module files
-        for (uint32 j = 0; j < sources.size(); j += genFiles.size())
+        // For each gen files
+        for (uint32 i = 0; i < genFiles.size(); ++i)
         {
-            includeStmts.emplace_back(StringFormat::format(TCHAR("#include \"%s\"")
-                , PathFunctions::fileOrDirectoryName(sources[j].generatedTUPath)));
-        }
+            std::vector<String> includeStmts;
+            // Since stride is number of generated module files
+            for (uint32 j = i; j < sources.size(); j += genFiles.size())
+            {
+                includeStmts.emplace_back(StringFormat::format(TCHAR("#include \"%s\"")
+                    , PathFunctions::fileOrDirectoryName(sources[j].generatedTUPath)));
+            }
 
-        String genFileContent = String::join(includeStmts.cbegin(), includeStmts.cend(), LINE_FEED_CHAR);
-        if (!FileHelper::writeString(genFileContent, genFiles[i]))
-        {
-            LOG_ERROR("GeneratingBuildTU", "%s() : Failed to write file %s", __func__, genFiles[i]);
-            std::exit(1);
-            return;
+            String genFileContent = String::join(includeStmts.cbegin(), includeStmts.cend(), LINE_FEED_CHAR);
+            if (!FileHelper::writeString(genFileContent, genFiles[i]))
+            {
+                LOG_ERROR("GeneratingBuildTU", "%s() : Failed to write file %s", __func__, genFiles[i]);
+                std::exit(1);
+                return;
+            }
         }
     }
     // Now generating is done so mark the tracker manifest with generated files

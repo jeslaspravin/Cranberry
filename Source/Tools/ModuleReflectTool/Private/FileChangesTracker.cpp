@@ -22,7 +22,7 @@ FileChangesTracker::FileChangesTracker(const String name, const String& director
 {
     fatalAssert(PlatformFile(folderPath).exists(), "%s() : Tracking base directory %s is not valid", __func__, folderPath);
     String manifestContent;
-    if (FileHelper::writeString(manifestContent, PathFunctions::combinePath(writePath, trackerManifestName)))
+    if (FileHelper::readString(manifestContent, PathFunctions::combinePath(writePath, trackerManifestName)))
     {
         std::vector<StringView> readLines = manifestContent.splitLines();
         for(String line : readLines)

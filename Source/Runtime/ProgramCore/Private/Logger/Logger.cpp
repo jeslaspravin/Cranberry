@@ -64,7 +64,7 @@ std::vector<uint8>& Logger::muteFlags()
 
 void Logger::debugInternal(const TChar* category, const String& message)
 {
-#if _DEBUG
+#if DEV_BUILD
     static const String CATEGORY{ TCHAR("[DEBUG]") };
     if (BIT_SET(muteFlags().back(), ELogServerity::Debug))
     {
@@ -80,7 +80,7 @@ void Logger::debugInternal(const TChar* category, const String& message)
 #endif
         << message.getChar() << std::endl;
 #endif // LOG_TO_CONSOLE
-#endif // _DEBUG
+#endif // DEV_BUILD
 }
 
 void Logger::logInternal(const TChar* category, const String& message)

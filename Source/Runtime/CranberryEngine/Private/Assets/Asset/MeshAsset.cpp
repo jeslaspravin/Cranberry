@@ -26,7 +26,7 @@ BufferResourceRef MeshAsset::getIndexBuffer() const
     return indexBuffer;
 }
 
-#if _DEBUG
+#if DEV_BUILD
 BufferResourceRef MeshAsset::getTbnVertexBuffer() const
 {
     return tbnVertexBuffer;

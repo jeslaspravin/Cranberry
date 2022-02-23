@@ -29,6 +29,8 @@ private:
     friend Vector3D operator/(float n, const Vector3D& d);
     friend Vector3D operator-(float n, const Vector3D& d);
 public:
+    using value_type = glm::vec3::value_type;
+public:
     Vector3D();
     explicit Vector3D(const Matrix3Col& vector3d);
     Vector3D(const float& x, const float& y, const float& z);

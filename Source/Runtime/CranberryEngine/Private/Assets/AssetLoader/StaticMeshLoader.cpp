@@ -35,7 +35,7 @@ struct MeshLoaderData
     std::vector<MeshVertexView> meshBatches;
     AABB bound{ Vector3D::ZERO, Vector3D::ZERO };
 
-#if _DEBUG
+#if DEV_BUILD
     std::vector<TbnLinePoint> tbnVerts;
 #endif
 };
@@ -129,7 +129,7 @@ void calcTangent(MeshLoaderData& loaderData, StaticMeshVertex& vertexData, const
     //vertexData.bitangent = Vector4D(bitangent, 0);
     vertexData.tangent = Vector4D(tangent, 0);
 
-#if _DEBUG
+#if DEV_BUILD
     const float drawLen = 10;
     TbnLinePoint pt1;
     pt1.position = Vector3D(vertexData.position);
@@ -730,7 +730,7 @@ bool StaticMeshLoader::fillAssetInformation(const std::vector<StaticMeshAsset*>&
             staticMesh->meshBatches = meshDataPair.second.meshBatches;
             staticMesh->bounds = meshDataPair.second.bound;
 
-#if _DEBUG
+#if DEV_BUILD
             staticMesh->tbnVerts = meshDataPair.second.tbnVerts;
 #endif
             ++idx;

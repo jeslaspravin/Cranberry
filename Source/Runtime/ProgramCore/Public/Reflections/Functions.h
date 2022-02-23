@@ -11,10 +11,13 @@
 
 #pragma once
 
+#include "Types/CoreDefines.h"
+
 #include <functional>
 
 template <typename ReturnType, typename... Parameters>
-struct Function {
+struct Function 
+{
 
     typedef ReturnType(*StaticDelegate)(Parameters...);
 
@@ -45,11 +48,11 @@ struct Function {
     }
     // End class default constructors and operators
 
-    Function(const StaticDelegate& functionPointer)
+    CONST_EXPR Function(const StaticDelegate& functionPointer)
         : staticDelegate(functionPointer)
     {}
 
-    void operator=(const StaticDelegate& functionPointer)
+    CONST_EXPR void operator=(const StaticDelegate& functionPointer)
     {
         staticDelegate = functionPointer;
     }
@@ -70,7 +73,8 @@ template <bool IsConst,typename ClassType, typename ReturnType, typename... Para
 struct ClassFunction;
 
 template <typename ClassType,typename ReturnType, typename... Parameters>
-struct ClassFunction<false, ClassType, ReturnType, Parameters...> {
+struct ClassFunction<false, ClassType, ReturnType, Parameters...> 
+{
     typedef ReturnType (ClassType::*ClassDelegate)(Parameters...);
 
     ClassDelegate classDelegate = nullptr;
@@ -100,11 +104,11 @@ struct ClassFunction<false, ClassType, ReturnType, Parameters...> {
     }
     // End class default constructors and operators
 
-    ClassFunction(const ClassDelegate& functionPointer)
+    CONST_EXPR ClassFunction(const ClassDelegate& functionPointer)
         : classDelegate(functionPointer)
     {}
 
-    void operator=(const ClassDelegate& functionPointer)
+    CONST_EXPR void operator=(const ClassDelegate& functionPointer)
     {
         classDelegate = functionPointer;
     }
@@ -156,11 +160,11 @@ struct ClassFunction<true, ClassType, ReturnType, Parameters...> {
     }
     // End class default constructors and operators
 
-    ClassFunction(const ClassDelegate& functionPointer)
+    CONST_EXPR ClassFunction(const ClassDelegate& functionPointer)
         : classDelegate(functionPointer)
     {}
 
-    void operator=(const ClassDelegate& functionPointer)
+    CONST_EXPR void operator=(const ClassDelegate& functionPointer)
     {
         classDelegate = functionPointer;
     }
@@ -224,7 +228,7 @@ struct LambdaFunction
 
     // Compiler bug? using int as it is working SFINAE within function template, void is always returning false
     template <typename Callable, typename IsCallable<Callable, int> = 0>
-    LambdaFunction(Callable &&lambda)
+    CONST_EXPR LambdaFunction(Callable &&lambda)
         : lambdaDelegate(std::forward<decltype(lambda)>(lambda))
     {}
 

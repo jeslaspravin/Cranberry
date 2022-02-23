@@ -102,3 +102,10 @@ union CoreTypesUnion
     FOR_EACH_CORE_TYPES(DECLARE_CORE_TYPE_VAR)
 };
 #undef DECLARE_CORE_TYPE_VAR
+
+enum EInitType
+{
+    InitType_DefaultInit,
+    InitType_ForceInit,
+    InitType_NoInit
+};

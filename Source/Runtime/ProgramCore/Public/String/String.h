@@ -32,7 +32,6 @@ using IStringStream = std::basic_istringstream<BaseString::value_type, BaseStrin
 using OStringStream = std::basic_ostringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
 using StringStream = std::basic_stringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
 
-// No need to export as this is header only
 class String : public BaseString
 {
 public:

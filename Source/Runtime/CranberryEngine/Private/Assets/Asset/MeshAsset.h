@@ -25,7 +25,7 @@ struct MeshVertexView
     String name;
 };
 
-#if _DEBUG
+#if DEV_BUILD
 struct TbnLinePoint
 {
     Vector3D position;
@@ -39,7 +39,7 @@ class MeshAsset : public AssetBase, public ICleanupAsset
     BufferResourceRef vertexBuffer = nullptr;
     BufferResourceRef indexBuffer = nullptr;
 
-#if _DEBUG
+#if DEV_BUILD
     std::vector<TbnLinePoint> tbnVerts;
     BufferResourceRef tbnVertexBuffer = nullptr;
 #endif
@@ -52,7 +52,7 @@ public:
     BufferResourceRef getVertexBuffer() const;
     BufferResourceRef getIndexBuffer() const;
 
-#if _DEBUG
+#if DEV_BUILD
     BufferResourceRef getTbnVertexBuffer() const;
 #endif
 

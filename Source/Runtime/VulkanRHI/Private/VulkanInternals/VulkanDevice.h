@@ -74,7 +74,7 @@ private:
     
     std::vector<VkLayerProperties> availableLayers;
     std::vector<const char*> registeredLayers;
-#if _DEBUG
+#if DEV_BUILD
     void collectDeviceLayers(std::vector<const char*>& layers) const;
 #endif
     // Extensions and Layers

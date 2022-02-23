@@ -32,7 +32,7 @@ void StaticMeshAsset::initAsset()
             cmdList->copyToBuffer(indexBuffer, 0, indices.data(), uint32(indexBuffer->getResourceSize()));
         });
 
-#if _DEBUG
+#if DEV_BUILD
     ENQUEUE_COMMAND(InitializeSMTbnVertices)(
         [this](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
         {
@@ -55,7 +55,7 @@ void StaticMeshAsset::clearAsset()
             indexBuffer.reset();
         });
 
-#if _DEBUG
+#if DEV_BUILD
     ENQUEUE_COMMAND(InitializeSMTbnVertices)(
         [this](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
         {

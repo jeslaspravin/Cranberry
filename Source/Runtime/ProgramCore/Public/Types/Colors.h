@@ -15,6 +15,8 @@
 
 class LinearColor;
 
+#define NORMALIZE_COLOR_COMP(Val) ((Val) / 255.0f) 
+
 class PROGRAMCORE_EXPORT Color
 {
 private:
@@ -54,8 +56,8 @@ public:
     // As RGBA packed
     operator uint32() const;
 
-    static Color fromHsl(const Vector3D& hsl);
-    static LinearColor fromHsv(const Vector3D& hsv);
+    static Color fromHsl(const Vector3D& hsl, uint8 alpha = 255);
+    static LinearColor fromHsv(const Vector3D& hsv, uint8 alpha = 255);
 };
 
 class PROGRAMCORE_EXPORT LinearColor
@@ -91,13 +93,13 @@ public:
     glm::vec3 rgb() const { return glm::vec3(colorValue.r, colorValue.g, colorValue.b); }
 
     float operator[](uint32 idx) const;
-    static LinearColor fromHsl(const Vector3D& hsl);
-    static LinearColor fromHsv(const Vector3D& hsv);
+    static LinearColor fromHsl(const Vector3D& hsl, float alpha = 1.0f);
+    static LinearColor fromHsv(const Vector3D& hsv, float alpha = 1.0f);
 };
 
 namespace ColorConst
 {
-    PROGRAMCORE_EXPORT Color random();
+    PROGRAMCORE_EXPORT Color random(uint8 alpha = 255);
 
     const Color Transparent(255, 255, 255, 0);
     const Color WHITE(255, 255, 255, 255);
@@ -110,7 +112,7 @@ namespace ColorConst
 
 namespace LinearColorConst
 {
-    PROGRAMCORE_EXPORT LinearColor random();
+    PROGRAMCORE_EXPORT LinearColor random(float alpha = 1.0f);
 
     const LinearColor Transparent(1, 1, 1, 0);
     const LinearColor WHITE(1, 1, 1, 1);

@@ -528,7 +528,7 @@ public:
     }
 };
 
-#if _DEBUG
+#if DEBUG_BUILD
 class TestChunk
 {
 public:
@@ -706,7 +706,7 @@ public:
     void initAllocator() override
     {
         LOG_DEBUG("VulkanMemoryAllocator", "%s()", __func__);
-#if _DEBUG
+#if DEBUG_BUILD
         TestChunk::testChunk();
 #endif
         // to handle offset alignment

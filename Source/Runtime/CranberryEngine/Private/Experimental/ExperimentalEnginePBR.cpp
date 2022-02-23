@@ -44,6 +44,7 @@
 #include "RenderApi/Material/MaterialCommonUniforms.h"
 #include "Math/RotationMatrix.h"
 #include "Math/Quaternion.h"
+#include "Math/MathGeom.h"
 #include "Math/BVH.h"
 #include "Core/Types/Textures/RenderTargetTextures.h"
 #include "RenderInterface/GlobalRenderVariables.h"
@@ -396,6 +397,8 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     int32 selectedEnv = 0;
 
     String noneString{ TCHAR("None") };
+
+    std::vector<ShortSizeBox2D> boxes;
 protected:
     void onStartUp() override;
     void onQuit() override;
@@ -2238,6 +2241,33 @@ void ExperimentalEnginePBR::onStartUp()
     }
     selectedEnv = 0;
 
+    std::vector<ShortSizeBox2D> bxs{
+        ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{64, 80} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{128, 48} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{48, 56} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{64, 128} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{32} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{61, 35} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{45, 51} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{33, 37} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{70, 21} }
+    };
+    boxes.swap(bxs);
+    std::vector<ShortSizeBox2D*> boxPtrs{
+        boxes.data(),
+        boxes.data() + 1,
+        boxes.data() + 2,
+        boxes.data() + 3,
+        boxes.data() + 4,
+        boxes.data() + 5,
+        boxes.data() + 6,
+        boxes.data() + 7,
+        boxes.data() + 8
+    };
+    std::vector<PackedRectsBin<ShortSizeBox2D>> packedbins;
+    ShortSize2D binSize{ 256 };
+    bool bValue = MathGeom::packRectangles(packedbins, binSize, boxPtrs);
+
     tempTest();
 }
 
@@ -2674,7 +2704,7 @@ void ExperimentalEnginePBR::debugFrameRender(class IRenderCommandList* cmdList, 
     scissor.maxBound = EngineSettings::screenSize.get();
 
     std::vector<IRenderTargetTexture*> backFramebufferRts{ frameResources[swapchainIdx].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3] };
-#if _DEBUG
+#if DEV_BUILD
     rendererModule->getRenderManager()->preparePipelineContext(&sceneDebugLinesPipelineContext, backFramebufferRts);
 
     if (bDrawTbn && selection.type == GridEntity::Entity)
@@ -2878,7 +2908,6 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
             const InputAnalogState* amxState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseX);
             const InputAnalogState* amyState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseY);
             ImGui::Text("Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue, rmyState->currentValue);
-
             if (ImGui::CollapsingHeader("Camera"))
             {
                 {
@@ -2974,7 +3003,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                     ImGui::TreePop();
                     ImGui::Separator();
                 }
-#if _DEBUG
+#if DEV_BUILD
                 ImGui::Checkbox("Draw TBN", &bDrawTbn);
 #endif
                 {
@@ -3066,14 +3095,30 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                     }
                 }
             }
+
+            if (ImGui::CollapsingHeader("Rect Packer"))
+            {
+                static std::vector<Color> col;
+                if (boxes.size() > col.size())
+                {
+                    uint32 i = uint32(col.size());
+                    col.resize(boxes.size());
+                    for (; i < col.size(); ++i)
+                    {
+                        col[i] = ColorConst::random(127);
+                    }
+                }
+                drawInterface->drawPackedRectangles(boxes.data(), col.data(), (uint32)(boxes.size()), ShortSizeBox2D::PointType(256), ColorConst::RED);
+            }
+
             ImGui::PopStyleVar();
             ImGui::End();
         }
     }
 
     // FPS
-    ImGui::SetNextWindowSize(ImVec2(145, 10), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 145, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(165, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 165, 0), ImGuiCond_Always);
 
     ImGui::PushStyleColor(ImGuiCol_WindowBg, LinearColor(0, 0, 0, 0.6f));
     ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
@@ -3256,7 +3301,7 @@ void ExperimentalEnginePBR::tempTest()
     Vector3D dir2 = t1.matrix() * Vector3D::FWD;
 
     String outStr = UTF16_TO_TCHAR(UTF8_TO_UTF16(UTF32_TO_UTF8(UTF8_TO_UTF32("Hello good sir! How are you?"))));
-    String testStr{ "\x7a\xc3\x9f\xe6\xb0\xb4\xe0\xae\x85\xf0\x9f\x8d\x8c\xe2\x9c\x88\xf0\x9f\x98\x94" };
+    String testStr{ "\x7a\xc3\x9f\xe6\xb0\xb4\xe0\xae\x85\xf0\x9f\x8d\x8c\xe2\x9c\x88\xf0\x9f\x98\x94 \xe0\xae\x95\xe0\xaf\x80\xe0\xae\x8e\xe0\xaf\x80" };
     uint32 count = 0;
     for (const uint32& codePt : StringCodePoints(testStr))
     {
@@ -3264,6 +3309,7 @@ void ExperimentalEnginePBR::tempTest()
         count++;
     }
     LOG("TEST", "%s %s -> Length %llu", outStr, testStr, testStr.codeCount());
+
 }
 
 //static uint64 allocationCount = 0;

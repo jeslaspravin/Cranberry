@@ -211,6 +211,21 @@ bool FileHelper::readUtf8String(std::string& outStr, const String& fileName)
     return true;
 }
 
+bool FileHelper::readBytes(std::vector<uint8>& outBytes, const String& fileName)
+{
+    PlatformFile file(fileName);
+    file.setSharingMode(EFileSharing::ReadOnly);
+    file.setCreationAction(EFileFlags::OpenExisting);
+    file.setFileFlags(EFileFlags::Read);
+    if (file.openFile())
+    {
+        file.read(outBytes);
+        file.closeFile();
+        return true;
+    }
+    return false;
+}
+
 bool FileHelper::writeString(const String& content, const String& fileName)
 {
     std::string utf8Str{ TCHAR_TO_UTF8(content.getChar()) };
@@ -222,6 +237,21 @@ bool FileHelper::writeString(const String& content, const String& fileName)
     if (file.openOrCreate())
     {
         file.write(ArrayView<uint8>(reinterpret_cast<uint8*>(utf8Str.data()), utf8Str.size()));
+        file.closeFile();
+        return true;
+    }
+    return false;
+}
+
+bool FileHelper::writeBytes(std::vector<uint8>& bytes, const String& fileName)
+{
+    PlatformFile file(fileName);
+    file.setSharingMode(EFileSharing::ReadOnly);
+    file.setCreationAction(EFileFlags::CreateAlways);
+    file.setFileFlags(EFileFlags::Write);
+    if (file.openOrCreate())
+    {
+        file.write(ArrayView<uint8>(bytes.data(), bytes.size()));
         file.closeFile();
         return true;
     }

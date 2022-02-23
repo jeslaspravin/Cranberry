@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "Types/Platform/PlatformDefines.h"
 #include "Types/CoreMiscDefines.h"
+#include "Types/Platform/PlatformDefines.h"
 
 // Platform safety defines
 
@@ -33,9 +33,9 @@
 #define TCHAR(x) TCHAR_inner(x)
 
 // Debug-able inline
-#if _DEBUG
+#if DEBUG_BUILD
 #define DEBUG_INLINE
-#elif NDEBUG
+#elif RELEASE_BUILD
 #define DEBUG_INLINE FORCE_INLINE
 #else
 #define DEBUG_INLINE inline
@@ -97,17 +97,4 @@
 #define DEPRECATED(Message) [[deprecated( #Message )]]
 #endif
 
-// End CPP language specific
-
-#if _DEBUG
-#define DEBUG_VALIDATIONS 1
-#elif NDEBUG
-#define DEBUG_VALIDATIONS 0
-#else
-#define DEBUG_VALIDATIONS 0
-#endif
-
-
-#ifndef LOG_TO_CONSOLE
-#define LOG_TO_CONSOLE 0
-#endif
+ // End CPP language specific

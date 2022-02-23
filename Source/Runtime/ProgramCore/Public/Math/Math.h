@@ -262,7 +262,7 @@ public:
     template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
     FORCE_INLINE static T modf(Type1& wholePart, const Type2& value)
     {
-        return modfInternal<Type1, Type2>(value, wholePart);
+        return modfInternal<Type1, Type2>(wholePart, value);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -402,9 +402,14 @@ public:
     }
 
     template <std::integral Type>
-    FORCE_INLINE static bool isEqual(const Type& a, const Type& b, Type epsilon = 0)
+    FORCE_INLINE static bool isEqual(const Type& a, const Type& b, Type epsilon)
     {
         return MathHelper<Type>::isEqual(a, b, epsilon);
+    }
+    template <std::integral Type>
+    FORCE_INLINE static bool isEqual(const Type& a, const Type& b)
+    {
+        return a == b;
     }
 
     template <NotAnIntegral Type>
@@ -493,6 +498,6 @@ private:
     template <typename Type1, typename Type2, typename T = std::common_type_t<Type1, Type2>>
     FORCE_INLINE static T modfInternal(Type1& wholePart, const Type2& value)
     {
-        return MathHelper<T>::modf(T(value), T(wholePart));
+        return MathHelper<T>::modf(wholePart, value);
     }
 };
