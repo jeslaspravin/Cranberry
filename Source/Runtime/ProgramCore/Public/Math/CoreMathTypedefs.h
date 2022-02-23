@@ -21,11 +21,11 @@
 #undef PI
 #define PI (3.1415926535897932f)
 #define GOLDEN_RATIO (1.618033f)
-#define SMALL_EPSILON (1.e-8f)
+#define SMALL_EPSILON (1.e-6f)
 #define SLIGHTLY_SMALL_EPSILON (1.e-4f)
 
 #ifndef FLT_EPSILON
-#define FLT_EPSILON (1.192092896e-07f)
+#define FLT_EPSILON (1.192092896e-7f)
 #endif
 #ifndef FLT_MIN
 #define FLT_MIN (1.175494351e-38f)
@@ -47,10 +47,12 @@
 typedef glm::vec<4, uint32, glm::defaultp> Size4D;
 typedef glm::vec<3, uint32, glm::defaultp> Size3D;
 typedef glm::vec<2, uint32, glm::defaultp> Size2D;
+typedef glm::vec<2, uint16, glm::defaultp> ShortSize2D;
 
 typedef glm::vec<4, int32, glm::defaultp> Int4D;
 typedef glm::vec<3, int32, glm::defaultp> Int3D;
 typedef glm::vec<2, int32, glm::defaultp> Int2D;
+typedef glm::vec<2, int16, glm::defaultp> Short2D;
 
 typedef glm::vec<3, uint8, glm::defaultp> Byte2D;
 typedef glm::vec<3, uint8, glm::defaultp> Byte3D;

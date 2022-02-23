@@ -28,6 +28,8 @@ private:
     friend Vector4D operator/(float n, const Vector4D& d);
     friend Vector4D operator-(float n, const Vector4D& d);
 public:
+    using value_type = glm::vec4::value_type;
+public:
     Vector4D();
     Vector4D(const float& x, const float& y, const float& z, const float& w);
     explicit Vector4D(const Matrix4Col& vector4d);

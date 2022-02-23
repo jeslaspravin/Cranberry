@@ -401,15 +401,18 @@ bool IRenderCommandList::simpleCopyPixelsTo(BufferResourceRef stagingBuffer, uin
     if (dataFormat == EPixelDataFormat::RGBA_U8_Norm || dataFormat == EPixelDataFormat::RGBA_U8_SRGB || dataFormat == EPixelDataFormat::RGBA_U8_Scaled)
     {
         memcpy(stagingPtr, pixelData.data(), pixelData.size() * formatInfo->pixelDataSize);
+        return true;
     }
 
     // If components are in order(R,G,B) and 8bit per component the do memcpy
     bool bInOrder = true;
+    bool bAllByteSized = true;
     for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
     {
         bInOrder = bInOrder 
             && EPixelComponent(idx) == formatInfo->componentOrder[idx] // Is in same order
             && formatInfo->componentSize[uint8(formatInfo->componentOrder[idx])] == 8;// 8 bit
+        bAllByteSized = bAllByteSized && formatInfo->componentSize[uint8(formatInfo->componentOrder[idx])] == 8;
     }
     if (bInOrder)
     {
@@ -417,6 +420,20 @@ bool IRenderCommandList::simpleCopyPixelsTo(BufferResourceRef stagingBuffer, uin
         {
             uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
             memcpy(pixelStagingPtr, &pixelData[i], formatInfo->pixelDataSize);
+        }
+        return true;
+    }
+    // if all components are byte sized, then copy each component to corresponding other component
+    if (bAllByteSized)
+    {
+        for (uint32 i = 0; i < pixelData.size(); ++i)
+        {
+            uint8* pixelStagingPtr = stagingPtr + (i * formatInfo->pixelDataSize);
+            for (uint8 idx = 0; idx < formatInfo->componentCount; ++idx)
+            {
+                const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
+                pixelStagingPtr[idx] = pixelData[i].getColorValue()[compIdx];
+            }
         }
         return true;
     }

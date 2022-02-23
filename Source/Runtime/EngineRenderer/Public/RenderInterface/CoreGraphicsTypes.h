@@ -216,6 +216,7 @@ namespace EPixelDataFormat
 
     struct PixelFormatInfo
     {
+        // In bytes
         const uint32 pixelDataSize;
         const String formatName;
         // In bits

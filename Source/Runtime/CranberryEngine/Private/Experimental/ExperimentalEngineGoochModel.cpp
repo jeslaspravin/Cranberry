@@ -14,13 +14,7 @@
 #if EXPERIMENTAL & 0
 
 #include "RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
-#include "VulkanInternals/Resources/VulkanQueueResource.h"
-#include "VulkanInternals/Debugging.h"
-#include "RenderInterface/PlatformIndependentHeaders.h"
-#include "RenderInterface/PlatformIndependentHelper.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
-#include "VulkanInternals/VulkanDescriptorAllocator.h"
-#include "VulkanInternals/Resources/VulkanSampler.h"
 #include "Math/Vector3D.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "../Assets/Asset/TextureAsset.h"
@@ -30,14 +24,12 @@
 #include "Keys.h"
 #include "Engine/Config/EngineGlobalConfigs.h"
 #include "../Assets/Asset/StaticMeshAsset.h"
-#include "VulkanGraphicsHelper.h"
 #include "RenderApi/RenderManager.h"
 #include "ApplicationInstance.h"
 #include "InputSystem.h"
 #include "Math/Math.h"
 #include "RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "RenderInterface/CoreGraphicsTypes.h"
-#include "VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
 #include "RenderInterface/Shaders/EngineShaders/SingleColorShader.h"
 #include "RenderApi/Scene/RenderScene.h"
 #include "RenderApi/Material/MaterialCommonUniforms.h"
@@ -51,7 +43,6 @@
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderInterface/Resources/QueueResource.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
-#include "VulkanInternals/Resources/VulkanSyncResource.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
@@ -67,8 +58,6 @@
 #include <array>
 #include <random>
 #include <map>
-
-#include <vulkan_core.h>
 
 struct AOS
 {

@@ -213,7 +213,7 @@ bool VulkanDevice::collectDeviceExtensions(std::vector<const char*>& extensions)
     return true;
 }
 
-#if _DEBUG
+#if DEV_BUILD
 void VulkanDevice::collectDeviceLayers(std::vector<const char*>& layers) const
 {
 
@@ -655,7 +655,7 @@ void VulkanDevice::createLogicDevice()
     }
 
     CREATE_DEVICE_INFO(deviceCreateInfo);
-#if _DEBUG
+#if DEV_BUILD
     collectDeviceLayers(registeredLayers);
     deviceCreateInfo.enabledLayerCount = (uint32_t)registeredLayers.size();
     deviceCreateInfo.ppEnabledLayerNames = registeredLayers.data();

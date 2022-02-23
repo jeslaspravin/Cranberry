@@ -59,7 +59,20 @@ void ImGuiManager::initialize()
     io.BackendPlatformName = "CranberryEngine";
     io.LogFilename = nullptr;
     io.IniFilename = nullptr;
-    io.Fonts->AddFontDefault();
+    ImFontConfig fontConfig;
+    fontConfig.OversampleH = 3;
+    fontConfig.OversampleV = 3;
+    fontConfig.GlyphExtraSpacing = ImVec2(1, 1);
+    fontConfig.RasterizerMultiply = 2.0f;
+    io.Fonts->AddFontDefault(&fontConfig);
+
+
+    //fontConfig.OversampleH = 2;
+    //fontConfig.OversampleV = 2;
+    //fontConfig.GlyphExtraSpacing = ImVec2(1, 1);
+    //fontConfig.RasterizerMultiply = 1.25f;
+    //io.Fonts->AddFontFromFileTTF("D:/Workspace/VisualStudio/Cranberry/Build/Debug/Assets/Fonts/CascadiaMono-Bold.ttf"
+    //    , 13.0f, &fontConfig);
 
     // Setup Dear ImGui style
     StyleColorsDark();
@@ -445,7 +458,7 @@ void ImGuiManager::setupRendering()
     {
         ImGuiFontTextureParams textureParams;
         textureParams.textureName = TCHAR("ImGuiTextureAtlas");
-        textureParams.filtering = ESamplerFiltering::Nearest;
+        textureParams.filtering = ESamplerFiltering::Linear;
         textureParams.owningContext = context;
         textureAtlas = TextureBase::createTexture<ImGuiFontTextureAtlas>(textureParams);
 
@@ -454,9 +467,10 @@ void ImGuiManager::setupRendering()
             {
                 SamplerCreateInfo createInfo
                 {
-                    .filtering = ESamplerFiltering::Nearest,
-                    .mipFiltering = ESamplerFiltering::Nearest,
+                    .filtering = ESamplerFiltering::Linear,
+                    .mipFiltering = ESamplerFiltering::Linear,
                     .tilingMode = { ESamplerTilingMode::EdgeClamp, ESamplerTilingMode::EdgeClamp, ESamplerTilingMode::EdgeClamp },
+                    .mipLodRange = {0, 0},
                     .resourceName = TCHAR("ImGuiFontAtlasSampler")
                 };
                 textureSampler = graphicsHelper->createSampler(graphicsInstance, createInfo);

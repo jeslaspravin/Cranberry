@@ -203,7 +203,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(VkDebugUtilsMessa
 
 bool VulkanDebugLogger::registerDebugLogger(const VkInstance vulkanInstance)
 {
-#if _DEBUG & _VERBOSE
+#if DEV_BUILD & _VERBOSE
     {
         CREATE_DEBUG_UTILS_MESSENGER_INFO(debugCreateInfo);
         debugCreateInfo.messageSeverity = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
@@ -220,7 +220,7 @@ bool VulkanDebugLogger::registerDebugLogger(const VkInstance vulkanInstance)
         Vk::vkCreateDebugUtilsMessengerEXT(vulkanInstance, &debugCreateInfo, nullptr, &getData().infoMsgrPtr);
     }
 #endif
-#if _DEBUG
+#if DEV_BUILD
     {
         CREATE_DEBUG_UTILS_MESSENGER_INFO(debugCreateInfo);
         debugCreateInfo.messageSeverity = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
@@ -244,7 +244,7 @@ bool VulkanDebugLogger::registerDebugLogger(const VkInstance vulkanInstance)
 
 void VulkanDebugLogger::unregisterDebugLogger()
 {
-#if _DEBUG
+#if DEV_BUILD
     if (!getData().vulkanInstance)
         return;
 

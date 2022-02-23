@@ -12,13 +12,13 @@
 #include "Assets/AssetLoader/StbWrapper.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-#if _DEBUG
+#if DEV_BUILD
 #define STBI_FAILURE_USERMSG
-#elif _NDEBUG
+#elif RELEASE_BUILD
 #define STBI_NO_FAILURE_STRINGS
 #endif
 #define STBI_NO_STDIO
-#define STBI_ASSERT(x) debugAssert(x);
+#define STBI_ASSERT(x) debugAssert(x)
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 

@@ -113,7 +113,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
 
     CREATE_INSTANCE_INFO(instanceCreateInfo);
     std::vector<std::string::const_pointer> layers;
-#if _DEBUG
+#if DEV_BUILD
     collectInstanceLayers(layers);
     instanceCreateInfo.ppEnabledLayerNames = layers.size() > 0 ? &layers[0] : nullptr;
     instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
@@ -144,7 +144,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
     fatalAssert(result == VkResult::VK_SUCCESS && vulkanInstance != nullptr,"Could not create vulkan instance");
 }
 
-#if _DEBUG
+#if DEV_BUILD
 void VulkanGraphicsInstance::collectInstanceLayers(std::vector<const char*>& layers) const
 {
     layers.push_back("VK_LAYER_KHRONOS_validation");

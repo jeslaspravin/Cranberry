@@ -420,8 +420,6 @@ public:
     }
 };
 
-using SimpleSingleCastDelegate = SingleCastDelegate<void>;
-
 /* Does not handle life time of object delegates needs to be externally handled */
 template <typename OwnerType, typename ReturnType, typename... Params>
 class SingleCastEvent : public SingleCastDelegateBase<ReturnType, Params...>
@@ -709,3 +707,11 @@ void Event<OwnerType, Params...>::invoke(Params... params) const
         }
     }
 }
+
+
+using SimpleSingleCastDelegate = SingleCastDelegate<void>;
+using SimpleDelegate = Delegate<>;
+template <typename OwnerType>
+using SimpleSingleCastEvent = SingleCastEvent<OwnerType, void>;
+template <typename OwnerType>
+using SimpleEvent = Event<OwnerType>;

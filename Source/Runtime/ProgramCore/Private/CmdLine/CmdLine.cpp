@@ -78,8 +78,8 @@ CmdLineArgument::CmdLineArgument(String description, String cmdArg, String short
 
 ProgramCmdLine* ProgramCmdLine::get()
 {
-    static ProgramCmdLineInstance instance;
-    return &instance;
+    static ProgramCmdLineInstance singletonProgramCmdLine;
+    return &singletonProgramCmdLine;
 }
 
 bool ProgramCmdLine::parseFromFile(const String& filePath)

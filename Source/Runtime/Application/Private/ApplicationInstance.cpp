@@ -17,4 +17,5 @@ ApplicationInstance::ApplicationInstance(const AppInstanceCreateInfo& createInfo
     , minorVersion(createInfo.minorVersion)
     , patchVersion(createInfo.patchVersion)
     , cmdLine(createInfo.cmdLine)
+    , fontManager(InitType_DefaultInit)
 {}
