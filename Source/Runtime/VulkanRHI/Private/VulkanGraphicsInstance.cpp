@@ -62,7 +62,7 @@ void VulkanGraphicsInstance::load()
 void VulkanGraphicsInstance::unload()
 {
     if (selectedDevice.isValidDevice())
-    {    
+    {
         memoryAllocator.reset();
         descriptorsSetAllocator.reset();
         vulkanCmdList.reset();

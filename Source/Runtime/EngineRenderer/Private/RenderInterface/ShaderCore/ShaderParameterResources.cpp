@@ -387,8 +387,9 @@ void ShaderParameters::removeRef()
     uint32 count = refCounter.fetch_sub(1);
     if (count == 1)
     {
-        release();
-        delete this;
+        IRenderInterfaceModule::get()->currentGraphicsHelper()
+            ->markForDeletion(IRenderInterfaceModule::get()->currentGraphicsInstance()
+                , this, EDeferredDelStrategy::SwapchainCount);
     }
 }
 
@@ -781,8 +782,8 @@ void ShaderParameters::resizeRuntimeBuffer(const String& bufferName, uint32 minS
                     BufferResourceRef oldBuffer = bufferData.gpuBuffer;
 
                     // Since only storage can be runtime array
-                    bufferData.gpuBuffer = IRenderInterfaceModule::get()->currentGraphicsHelper()
-                        ->createWriteOnlyBuffer(graphicsInstance, bufferData.runtimeArray->offset + bufferData.runtimeArray->currentSize * gpuDataStride);
+                    bufferData.gpuBuffer = graphicsHelper->createWriteOnlyBuffer(graphicsInstance
+                        , bufferData.runtimeArray->offset + bufferData.runtimeArray->currentSize * gpuDataStride);
                     bufferData.gpuBuffer->setResourceName(bufferName + TCHAR("_") + bufferData.runtimeArray->paramName + TCHAR("_RuntimeSoA"));
                     bufferData.gpuBuffer->init();
 

@@ -226,6 +226,8 @@ public:
 
     // Waits until GPU is idle
     virtual void waitIdle() = 0;
+    // Waits until all cmds that uses this resource is terminated, However the resource must be manually marked by using cmdBarrierResources() function
+    virtual void waitOnResDepCmds(const MemoryResourceRef& resource) = 0;
     virtual void flushAllcommands() = 0;
 };
 

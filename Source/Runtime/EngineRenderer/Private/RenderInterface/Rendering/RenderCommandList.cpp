@@ -109,6 +109,7 @@ public:
     void finishCmd(const String& uniqueName) final;
     const GraphicsResource* getCmdBuffer(const String& uniqueName) const final;
     void waitIdle() final;
+    void waitOnResDepCmds(const MemoryResourceRef& resource) final;
     void flushAllcommands() final;
 };
 
@@ -251,6 +252,11 @@ const GraphicsResource* RenderCommandList::getCmdBuffer(const String& uniqueName
 void RenderCommandList::waitIdle()
 {
     cmdList->waitIdle();
+}
+
+void RenderCommandList::waitOnResDepCmds(const MemoryResourceRef& resource)
+{
+    cmdList->waitOnResDepCmds(resource);
 }
 
 void RenderCommandList::flushAllcommands()

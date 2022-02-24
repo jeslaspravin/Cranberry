@@ -11,6 +11,7 @@
 
 #pragma once
 #include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderInterface/Resources/DeferredDeleter.h"
 
 #include <vulkan_core.h>
 
@@ -26,6 +27,10 @@ private:
     std::unordered_map<ERenderPassFormat::Type, std::vector<RenderpassPropsPair>> gbufferRenderPasses;
 
     std::unordered_map<const ShaderResource*, VkPipelineLayout> pipelineLayouts;
+
+#if DEFER_DELETION
+    DeferredDeleter resourceDeleter;
+#endif
 private:
     VkRenderPass createGbufferRenderpass(ERenderPassFormat::Type rpUsageFormat, const RenderPassAdditionalProps& additionalProps) const;
 protected:
@@ -40,4 +45,6 @@ protected:
 public:
     VkRenderPass getRenderPass(ERenderPassFormat::Type renderpassFormat, const RenderPassAdditionalProps& additionalProps);
     VkRenderPass getRenderPass(const GenericRenderPassProperties& renderpassProps, const RenderPassAdditionalProps& additionalProps);
+
+    FORCE_INLINE DeferredDeleter* getDeferredDeleter() { return &resourceDeleter; }
 };

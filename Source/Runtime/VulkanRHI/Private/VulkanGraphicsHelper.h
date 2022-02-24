@@ -18,6 +18,7 @@
 
 class GenericAppWindow;
 class GenericWindowCanvas;
+class DeferredDeleter;
 
 class VulkanGraphicsHelper : public GraphicsHelperAPI
 {
@@ -32,6 +33,9 @@ public:
     static VkDevice getDevice(const class VulkanDevice* vulkanDevice);
     static const class VulkanDebugGraphics* debugGraphics(class IGraphicsInstance* graphicsInstance);
     static class VulkanDescriptorsSetAllocator* getDescriptorsSetAllocator(class IGraphicsInstance* graphicsInstance);
+#if DEFER_DELETION
+    static DeferredDeleter* getDeferredDeleter(class IGraphicsInstance* graphicsInstance);
+#endif
 
 
     static VkSwapchainKHR createSwapchain(class IGraphicsInstance* graphicsInstance, const GenericWindowCanvas* windowCanvas, struct SwapchainInfo* swapchainInfo);
@@ -68,24 +72,24 @@ public:
     static void destroyBufferView(class IGraphicsInstance* graphicsInstance, VkBufferView view);
 
     // Normal data buffers
-    BufferResourceRef createReadOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const final;
+    BufferResourceRef createReadOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
     // Cannot be used as uniform
-    BufferResourceRef createWriteOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const final;
+    BufferResourceRef createWriteOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
     // Can be used as both uniform and storage
-    BufferResourceRef createReadWriteBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const final;
+    BufferResourceRef createReadWriteBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
 
     // Texels buffers
-    BufferResourceRef createReadOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1, bool bIsStaging = false) const final;
+    BufferResourceRef createReadOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const final;
     // Cannot be used as uniform sampled
-    BufferResourceRef createWriteOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1, bool bIsStaging = false) const final;
-    BufferResourceRef createReadWriteTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1, bool bIsStaging = false) const final;
+    BufferResourceRef createWriteOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const final;
+    BufferResourceRef createReadWriteTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const final;
 
     // Other utility buffers
-    BufferResourceRef createReadOnlyIndexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const final;
-    BufferResourceRef createReadOnlyVertexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const final;
+    BufferResourceRef createReadOnlyIndexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
+    BufferResourceRef createReadOnlyVertexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
 
-    BufferResourceRef createReadOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const final;
-    BufferResourceRef createWriteOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const final;
+    BufferResourceRef createReadOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
+    BufferResourceRef createWriteOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const final;
 
     static VkImage createImage(class IGraphicsInstance* graphicsInstance, VkImageCreateInfo& createInfo
         , VkFormatFeatureFlags& requiredFeatures);
@@ -107,12 +111,14 @@ public:
     void unmapResource(class IGraphicsInstance* graphicsInstance, BufferResourceRef& buffer) const final;
     void mapResource(class IGraphicsInstance* graphicsInstance, ImageResourceRef& image) const final;
     void unmapResource(class IGraphicsInstance* graphicsInstance, ImageResourceRef& image) const final;
-    virtual void* borrowMappedPtr(class IGraphicsInstance* graphicsInstance, ImageResourceRef& resource) const final;
-    virtual void returnMappedPtr(class IGraphicsInstance* graphicsInstance, ImageResourceRef& resource) const final;
-    virtual void flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<ImageResourceRef>& resources) const final;
-    virtual void* borrowMappedPtr(class IGraphicsInstance* graphicsInstance, BufferResourceRef& resource) const final;
-    virtual void returnMappedPtr(class IGraphicsInstance* graphicsInstance, BufferResourceRef& resource) const final;
-    virtual void flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<BufferResourceRef>& resources) const final;
+    void* borrowMappedPtr(class IGraphicsInstance* graphicsInstance, ImageResourceRef& resource) const final;
+    void returnMappedPtr(class IGraphicsInstance* graphicsInstance, ImageResourceRef& resource) const final;
+    void flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<ImageResourceRef>& resources) const final;
+    void* borrowMappedPtr(class IGraphicsInstance* graphicsInstance, BufferResourceRef& resource) const final;
+    void returnMappedPtr(class IGraphicsInstance* graphicsInstance, BufferResourceRef& resource) const final;
+    void flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<BufferResourceRef>& resources) const final;
+
+    void markForDeletion(class IGraphicsInstance* graphicsInstance, GraphicsResource* resource, EDeferredDelStrategy deleteStrategy, TickRep duration = 1) const final;
 
     // Size in bytes not 4bytes
     static VkShaderModule createShaderModule(class IGraphicsInstance* graphicsInstance, const uint8* code, uint32 size);
@@ -185,4 +191,5 @@ public:
     const GraphicsResourceType* cubeImageType() const final;
     const GraphicsResourceType* rtImageType() const final;
     const GraphicsResourceType* cubeRTImageType() const final;
+
 };

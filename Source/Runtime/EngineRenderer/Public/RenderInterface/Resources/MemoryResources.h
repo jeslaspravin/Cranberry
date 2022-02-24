@@ -163,12 +163,13 @@ private:
 protected:
     // For image this is always used for buffer this is used only in special cases
     EPixelDataFormat::Type dataFormat;
-    bool bIsStagingResource;
+    bool bIsStagingResource, bDeferDelete;
 
     MemoryResource(EPixelDataFormat::Type resourceFormat = EPixelDataFormat::Undefined) 
         : BaseType()
         , dataFormat(resourceFormat)
         , bIsStagingResource(false)
+        , bDeferDelete(true)
     {}
 
     String memoryResName;
@@ -177,7 +178,10 @@ public:
     virtual uint64 getResourceSize() const { return 0; }
     virtual bool isValid() { return false; }
 
+    // If this resource is temporary and will not be used anymore mark it to force immediate delete
+    void setDeferredDelete(bool bDeleteDeferred) { bDeferDelete = bDeleteDeferred; }
     bool isStagingResource() const { return bIsStagingResource; }
+    bool isDeferredDelete() const { return bDeferDelete; }
 
     /* ReferenceCountPtr implementation */
     void addRef();

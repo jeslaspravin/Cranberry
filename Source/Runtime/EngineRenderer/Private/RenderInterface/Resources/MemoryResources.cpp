@@ -10,6 +10,8 @@
  */
 
 #include "RenderInterface/Resources/MemoryResources.h"
+#include "RenderInterface/GraphicsHelper.h"
+#include "IRenderInterfaceModule.h"
 #include "Math/Math.h"
 
 DEFINE_GRAPHICS_RESOURCE(MemoryResource)
@@ -24,8 +26,13 @@ void MemoryResource::removeRef()
     uint32 count = refCounter.fetch_sub(1);
     if (count == 1)
     {
-        release();
-        delete this;
+        IRenderInterfaceModule::get()->currentGraphicsHelper()
+            ->markForDeletion(IRenderInterfaceModule::get()->currentGraphicsInstance()
+                , this
+                , bDeferDelete
+                ? EDeferredDelStrategy::SwapchainCount
+                : EDeferredDelStrategy::Immediate
+        );
     }
 }
 
@@ -38,7 +45,7 @@ String MemoryResource::getResourceName() const
 {
     return memoryResName;
 }
-
+    
 void MemoryResource::setResourceName(const String& name)
 {
     memoryResName = name;

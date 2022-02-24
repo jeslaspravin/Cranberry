@@ -664,6 +664,7 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance* graphicsInst
     {
         pointDrawCmds[i] = graphicsHelper->createReadOnlyIndirectBuffer(graphicsInstance, sizeof(DrawIndexedIndirectCommand));
         pointDrawCmds[i]->setAsStagingResource(true);
+        pointDrawCmds[i]->setDeferredDelete(false);
         pointDrawCmds[i]->setResourceName(TCHAR("PointDepthDrawCmds_") + String::toString(i));
 #if SHADOWS_USE_CULLED_DRAW_CMDS
         pointDrawCmds[i]->init();
@@ -673,6 +674,7 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance* graphicsInst
     {
         spotDrawCmds[i] = graphicsHelper->createReadOnlyIndirectBuffer(graphicsInstance, sizeof(DrawIndexedIndirectCommand));
         spotDrawCmds[i]->setAsStagingResource(true);
+        spotDrawCmds[i]->setDeferredDelete(false);
         spotDrawCmds[i]->setResourceName(TCHAR("SpotDepthDrawCmds_") + String::toString(i));
 #if SHADOWS_USE_CULLED_DRAW_CMDS
         spotDrawCmds[i]->init();

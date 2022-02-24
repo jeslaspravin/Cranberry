@@ -1084,6 +1084,34 @@ const std::vector<VulkanResourcesTracker::CommandResUsageInfo>* VulkanResourcesT
     return nullptr;
 }
 
+std::vector<const GraphicsResource*> VulkanResourcesTracker::getCmdBufferResourceDeps(const MemoryResourceRef& resource) const
+{
+    std::vector<const GraphicsResource*> retVal;
+
+    auto resourceAccessorItr = resourcesAccessors.find(resource);
+    if (resourceAccessorItr != resourcesAccessors.cend())
+    {
+        if (resourceAccessorItr->second.lastWrite)
+        {
+            retVal.emplace_back(resourceAccessorItr->second.lastWrite);
+        }
+        retVal.insert(retVal.end()
+            , resourceAccessorItr->second.lastReadsIn.cbegin(), resourceAccessorItr->second.lastReadsIn.cend());
+    }
+
+    auto attachmentAccessItr = renderpassAttachments.find(resource);
+    if (attachmentAccessItr != renderpassAttachments.cend())
+    {
+        if (attachmentAccessItr->second.lastWrite)
+        {
+            retVal.emplace_back(attachmentAccessItr->second.lastWrite);
+        }
+        retVal.insert(retVal.end()
+            , attachmentAccessItr->second.lastReadsIn.cbegin(), attachmentAccessItr->second.lastReadsIn.cend());
+    }
+    return retVal;
+}
+
 void VulkanResourcesTracker::clearCmdBufferDeps(const GraphicsResource* cmdBuffer)
 {
     cmdWaitInfo.erase(cmdBuffer);
@@ -1093,38 +1121,64 @@ void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource* cmdBuffer)
 {
     cmdWaitInfo.erase(cmdBuffer);
 
-    for (auto& resAccessor : resourcesAccessors)
+    // Remove cmdBuffer from read list and write and remove resource if no cmd buffer is related to it
+    for (auto resAccessorItr = resourcesAccessors.begin(); resAccessorItr != resourcesAccessors.end();)
     {
-        if (resAccessor.second.lastWrite == cmdBuffer)
+        if (resAccessorItr->second.lastWrite == cmdBuffer)
         {
-            resAccessor.second.lastWrite = nullptr;
+            resAccessorItr->second.lastWrite = nullptr;
         }
 
-        auto newEnd = std::remove_if(resAccessor.second.lastReadsIn.begin(), resAccessor.second.lastReadsIn.end()
+        auto newEnd = std::remove_if(resAccessorItr->second.lastReadsIn.begin(), resAccessorItr->second.lastReadsIn.end()
             ,[cmdBuffer](const GraphicsResource* cmd)
             {
                 return cmd == cmdBuffer;
             }
         );
-        resAccessor.second.lastReadsIn.erase(newEnd, resAccessor.second.lastReadsIn.end());
+        resAccessorItr->second.lastReadsIn.erase(newEnd, resAccessorItr->second.lastReadsIn.end());
+
+        if (resAccessorItr->second.lastWrite == nullptr && resAccessorItr->second.lastReadsIn.empty())
+        {
+            resAccessorItr = resourcesAccessors.erase(resAccessorItr);
+        }
+        else
+        {
+            ++resAccessorItr;
+        }
     }
 
 
-    for (auto& attachment : renderpassAttachments)
+    // Remove cmdBuffer from read list and write and remove resource if no cmd buffer is related to it
+    for (auto attachmentItr = renderpassAttachments.begin(); attachmentItr != renderpassAttachments.end();)
     {
-        if (attachment.second.lastWrite == cmdBuffer)
+        if (attachmentItr->second.lastWrite == cmdBuffer)
         {
-            attachment.second.lastWrite = nullptr;
+            attachmentItr->second.lastWrite = nullptr;
         }
 
-        auto newEnd = std::remove_if(attachment.second.lastReadsIn.begin(), attachment.second.lastReadsIn.end()
+        auto newEnd = std::remove_if(attachmentItr->second.lastReadsIn.begin(), attachmentItr->second.lastReadsIn.end()
             , [cmdBuffer](const GraphicsResource* cmd)
             {
                 return cmd == cmdBuffer;
             }
         );
-        attachment.second.lastReadsIn.erase(newEnd, attachment.second.lastReadsIn.end());
+        attachmentItr->second.lastReadsIn.erase(newEnd, attachmentItr->second.lastReadsIn.end());
+
+        if (attachmentItr->second.lastWrite == nullptr && attachmentItr->second.lastReadsIn.empty())
+        {
+            attachmentItr = renderpassAttachments.erase(attachmentItr);
+        }
+        else
+        {
+            ++attachmentItr;
+        }
     }
+}
+
+void VulkanResourcesTracker::clearResource(const MemoryResourceRef& resource)
+{
+    resourcesAccessors.erase(resource);
+    renderpassAttachments.erase(resource);
 }
 
 void VulkanResourcesTracker::clearUnwanted()
@@ -1143,6 +1197,7 @@ void VulkanResourcesTracker::clearUnwanted()
         }
         else 
         {
+            // Remove duplicate reads preserving first read alone
             if (itr->second.lastReadsIn.size() > 1)
             {
                 // Since we need to preserve first read alone
@@ -1173,6 +1228,7 @@ void VulkanResourcesTracker::clearUnwanted()
         }
         else
         {
+            // Remove duplicate reads preserving first read alone
             if (itr->second.lastReadsIn.size() > 1)
             {
                 // Since we need to preserve first read alone

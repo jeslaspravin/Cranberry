@@ -347,11 +347,15 @@ void ImGuiManager::updateRenderResources(class IRenderCommandList* cmdList, IGra
 
             for (uint32 i = 0; i < windowCanvas->imagesCount(); ++i)
             {
-                vertexBuffer.set(graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, int32(sizeof(ImDrawVert)), 1, true), i);
-                idxBuffer.set(graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, int32(sizeof(ImDrawIdx)), 1, true), i);                
+                BufferResourceRef vertexBuf = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, int32(sizeof(ImDrawVert)), 1);
+                vertexBuf->setAsStagingResource(true);
+                vertexBuf->setResourceName(TCHAR("ImGuiVertices_") + String::toString(i));
+                BufferResourceRef idxBuf = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, int32(sizeof(ImDrawIdx)), 1);
+                idxBuf->setAsStagingResource(true);
+                idxBuf->setResourceName(TCHAR("ImGuiIndices_") + String::toString(i));
 
-                vertexBuffer.getResources()[i]->setResourceName(TCHAR("ImGuiVertices_") + String::toString(i));
-                idxBuffer.getResources()[i]->setResourceName(TCHAR("ImGuiIndices_") + String::toString(i));
+                vertexBuffer.set(vertexBuf, i);
+                idxBuffer.set(idxBuf, i);
             }
         }
 

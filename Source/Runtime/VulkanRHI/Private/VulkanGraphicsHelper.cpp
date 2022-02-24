@@ -478,73 +478,63 @@ void VulkanGraphicsHelper::destroyBufferView(class IGraphicsInstance* graphicsIn
     device->vkDestroyBufferView(device->logicalDevice, view, nullptr);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rBuffer = new VulkanRBuffer(bufferStride, bufferCount);
-    rBuffer->setAsStagingResource(bIsStaging);
     return BufferResourceRef(rBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createWriteOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createWriteOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto wBuffer = new VulkanWBuffer(bufferStride, bufferCount);
-    wBuffer->setAsStagingResource(bIsStaging);
     return BufferResourceRef(wBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadWriteBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadWriteBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rwBuffer = new VulkanRWBuffer(bufferStride, bufferCount);
-    rwBuffer->setAsStagingResource(bIsStaging);
     return BufferResourceRef(rwBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
 {
     auto rTexels = new VulkanRTexelBuffer(texelFormat, bufferCount);
-    rTexels->setAsStagingResource(bIsStaging);
     return BufferResourceRef(rTexels);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createWriteOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createWriteOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
 {
     auto wTexels = new VulkanWTexelBuffer(texelFormat, bufferCount);
-    wTexels->setAsStagingResource(bIsStaging);
     return BufferResourceRef(wTexels);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadWriteTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadWriteTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
 {
     auto rwTexels = new VulkanRWTexelBuffer(texelFormat, bufferCount);
-    rwTexels->setAsStagingResource(bIsStaging);
     return BufferResourceRef(rwTexels);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyIndexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyIndexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rIndexBuffer = new VulkanIndexBuffer(bufferStride, bufferCount);
-    rIndexBuffer->setAsStagingResource(bIsStaging);
     return BufferResourceRef(rIndexBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyVertexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyVertexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rVertexBuffer = new VulkanVertexBuffer(bufferStride, bufferCount);
-    rVertexBuffer->setAsStagingResource(bIsStaging);
     return BufferResourceRef(rVertexBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rIndirectBuffer = new VulkanRIndirectBuffer(bufferStride, bufferCount);
-    rIndirectBuffer->setAsStagingResource(bIsStaging);
     return BufferResourceRef(rIndirectBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createWriteOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/, bool bIsStaging /*= false*/) const
+BufferResourceRef VulkanGraphicsHelper::createWriteOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto wIndirectBuffer = new VulkanWIndirectBuffer(bufferStride, bufferCount);
-    wIndirectBuffer->setAsStagingResource(bIsStaging);
     return BufferResourceRef(wIndirectBuffer);
 }
 
@@ -831,6 +821,41 @@ void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInsta
             LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
         }
     }
+}
+
+void VulkanGraphicsHelper::markForDeletion(class IGraphicsInstance* graphicsInstance, GraphicsResource* resource, EDeferredDelStrategy deleteStrategy, TickRep duration /*= 1*/) const
+{
+#if DEFER_DELETION
+    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    VulkanDevice* device = &gInstance->selectedDevice;
+
+    DeferredDeleter::DeferringData deferInfo
+    {
+        .resource = resource,
+        .elapsedDuration = 0,
+        .strategy = deleteStrategy
+    };
+    switch (deleteStrategy)
+    {
+    case EDeferredDelStrategy::FrameCount:
+        deferInfo.deferDuration = duration;
+        break;
+    case EDeferredDelStrategy::SwapchainCount:
+        deferInfo.deferDuration = device->choosenImageCount;
+        break;
+    case EDeferredDelStrategy::TimePeriod:
+        deferInfo.deferDuration = duration;
+        deferInfo.elapsedDuration = Time::timeNow();
+        break;
+    case EDeferredDelStrategy::Immediate:
+    default:
+        break;
+    }
+    getDeferredDeleter(graphicsInstance)->deferDelete(std::move(deferInfo));
+#else // DEFER_DELETION
+    resource->release();
+    delete resource;
+#endif // DEFER_DELETION
 }
 
 VkShaderModule VulkanGraphicsHelper::createShaderModule(class IGraphicsInstance* graphicsInstance, const uint8* code, uint32 size)

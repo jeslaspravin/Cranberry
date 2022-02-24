@@ -141,7 +141,9 @@ void RenderManager::destroy()
 void RenderManager::renderFrame(const float& timedelta)
 {
     // #TODO(Jeslas): Start new frame before any commands, Since not multi-threaded it is okay to call directly here
+    bIsInsideRenderCommand = true;
     renderCmds->newFrame(timedelta);
+    bIsInsideRenderCommand = false;
 
     debugAssert(IRenderInterfaceModule::get());
     auto engineRendererModule = static_cast<EngineRedererModule*>(IRenderInterfaceModule::get());
