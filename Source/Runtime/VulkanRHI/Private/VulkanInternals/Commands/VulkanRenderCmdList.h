@@ -117,6 +117,7 @@ public:
     void finishCmd(const String& uniqueName) final;
     const GraphicsResource* getCmdBuffer(const String& uniqueName) const final;
     void waitIdle() final;
+    void waitOnResDepCmds(const MemoryResourceRef& resource) final;
     void flushAllcommands() final;
 
 };

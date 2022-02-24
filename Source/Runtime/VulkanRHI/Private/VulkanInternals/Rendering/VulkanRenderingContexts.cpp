@@ -124,6 +124,10 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
 void VulkanGlobalRenderingContext::clearApiContext()
 {
+#if DEFER_DELETION
+    resourceDeleter.clear();
+#endif
+
     IGraphicsInstance* graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
     for (const std::pair<ShaderResource const* const, VkPipelineLayout>& pipelineLayout : pipelineLayouts)
     {

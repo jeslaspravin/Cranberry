@@ -15,6 +15,7 @@
 
 #include "VulkanInternals/Commands/VulkanRenderCmdList.h"
 #include "RenderInterface/GlobalRenderVariables.h"
+#include "RenderInterface/Resources/DeferredDeleter.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "VulkanInternals/VulkanDescriptorAllocator.h"
@@ -120,6 +121,16 @@ FORCE_INLINE void VulkanCommandList::fillClearValue(EPixelDataFormat::Type forma
     clearValue.uint32[2] = uint32(Math::pow(2, formatInfo->componentSize[2]) * clamped[2]);
     clearValue.uint32[3] = uint32(Math::pow(2, formatInfo->componentSize[3]) * clamped[3]);
 }
+
+#if DEFER_DELETION
+DeferredDeleter* VulkanGraphicsHelper::getDeferredDeleter(class IGraphicsInstance* graphicsInstance)
+{
+    VulkanGlobalRenderingContext* renderingCntxt
+        = static_cast<VulkanGlobalRenderingContext*>(IRenderInterfaceModule::get()
+            ->getRenderManager()->getGlobalRenderingContext());
+    return renderingCntxt->getDeferredDeleter();
+}
+#endif
 
 FORCE_INLINE void cmdPipelineBarrier(VulkanDevice* vDevice, VkCommandBuffer cmdBuffer, const std::vector<VkImageMemoryBarrier2KHR>& imageBarriers, const std::vector<VkBufferMemoryBarrier2KHR>& bufferBarriers)
 {
@@ -259,6 +270,9 @@ void VulkanCommandList::copyBuffer(const std::vector<BatchCopyBufferInfo>& batch
 void VulkanCommandList::newFrame(const float& tiimeDelta)
 {
     resourcesTracker.clearUnwanted();
+#if DEFER_DELETION
+    VulkanGraphicsHelper::getDeferredDeleter(graphicsInstanceCache)->update();
+#endif
     VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstanceCache)->tick(tiimeDelta);
 }
 
@@ -294,14 +308,14 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
                     || vulkanDst->getType()->isChildOf(graphicsHelperCache->readOnlyIndirectBufferType()) || vulkanDst->getType()->isChildOf(graphicsHelperCache->writeOnlyIndirectBufferType()))
                 {
                     // In case of buffer larger than 4GB using UINT32 will create issue
-                    stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, uint32(vulkanDst->getResourceSize()), 1, true);
+                    stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, uint32(vulkanDst->getResourceSize()), 1);
                 }
                 else if (vulkanDst->getType()->isChildOf(graphicsHelperCache->readOnlyTexelsType())
                     || vulkanDst->getType()->isChildOf(graphicsHelperCache->readWriteTexelsType()) || vulkanDst->getType()->isChildOf(graphicsHelperCache->writeOnlyTexelsType()))
                 {
                     // In case of buffer larger than 4GB using UINT32 will create issue
                     stagingBuffer = graphicsHelperCache->createReadOnlyTexels(graphicsInstanceCache, vulkanDst->texelFormat()
-                        , uint32(vulkanDst->getResourceSize() / EPixelDataFormat::getFormatInfo(vulkanDst->texelFormat())->pixelDataSize), true);
+                        , uint32(vulkanDst->getResourceSize() / EPixelDataFormat::getFormatInfo(vulkanDst->texelFormat())->pixelDataSize));
                 }
                 else
                 {
@@ -310,6 +324,7 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData>& bat
                 }
                 dstToStagingBufferMap[vulkanDst] = { stagingBuffer, { &copyData } };
                 stagingBuffer->setAsStagingResource(true);
+                stagingBuffer->setDeferredDelete(false);
                 stagingBuffer->init();
 
                 // We don't want to flush same buffer again
@@ -397,6 +412,7 @@ void VulkanCommandList::copyToBuffer_Internal(BufferResourceRef dst, uint32 dstO
         auto copyFromStaging = [&](BufferResourceRef& stagingBuffer)
         {
             stagingBuffer->setAsStagingResource(true);
+            stagingBuffer->setDeferredDelete(false);
             stagingBuffer->init();
 
             fatalAssert(stagingBuffer->isValid(), "Initializing staging buffer failed");
@@ -411,7 +427,7 @@ void VulkanCommandList::copyToBuffer_Internal(BufferResourceRef dst, uint32 dstO
             || dst->getType()->isChildOf(graphicsHelperCache->readOnlyIndirectBufferType()) || dst->getType()->isChildOf(graphicsHelperCache->writeOnlyIndirectBufferType()))
         {
             // In case of buffer larger than 4GB using UINT32 will create issue
-            auto stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, uint32(stagingSize), 1, true);
+            auto stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, uint32(stagingSize), 1);
             copyFromStaging(stagingBuffer);
         }
         else if (dst->getType()->isChildOf(graphicsHelperCache->readOnlyTexelsType())
@@ -419,7 +435,7 @@ void VulkanCommandList::copyToBuffer_Internal(BufferResourceRef dst, uint32 dstO
         {
             // In case of buffer larger than 4GB using UINT32 will create issue
             auto stagingBuffer = graphicsHelperCache->createReadOnlyTexels(graphicsInstanceCache, dst->texelFormat()
-                , uint32(stagingSize / EPixelDataFormat::getFormatInfo(dst->texelFormat())->pixelDataSize), true);
+                , uint32(stagingSize / EPixelDataFormat::getFormatInfo(dst->texelFormat())->pixelDataSize));
             copyFromStaging(stagingBuffer);
         }
         else
@@ -495,6 +511,17 @@ const GraphicsResource* VulkanCommandList::getCmdBuffer(const String& uniqueName
 void VulkanCommandList::waitIdle()
 {
     vDevice->vkDeviceWaitIdle(VulkanGraphicsHelper::getDevice(vDevice));
+}
+
+void VulkanCommandList::waitOnResDepCmds(const MemoryResourceRef& resource)
+{
+    std::vector<const GraphicsResource*> cmdBuffers = resourcesTracker.getCmdBufferResourceDeps(resource);
+    resourcesTracker.clearResource(resource);
+    for (const GraphicsResource* cmdBuffer : cmdBuffers)
+    {
+        finishCmd(cmdBuffer);
+        resourcesTracker.clearFinishedCmd(cmdBuffer);
+    }
 }
 
 void VulkanCommandList::flushAllcommands()
@@ -1577,8 +1604,9 @@ void VulkanCommandList::copyToImage(ImageResourceRef dst, const std::vector<clas
 
     // Add 32 bit extra space to staging to compensate 32 mask out of range when copying data
     uint32 dataMargin = uint32(Math::ceil(float(sizeof(uint32)) / formatInfo->pixelDataSize));
-    BufferResourceRef stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin, true);
+    BufferResourceRef stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin);
     stagingBuffer->setAsStagingResource(true);
+    stagingBuffer->setDeferredDelete(false);
     stagingBuffer->init();
 
     uint8* stagingPtr = reinterpret_cast<uint8*>(graphicsHelperCache->borrowMappedPtr(graphicsInstanceCache, stagingBuffer));
@@ -1606,8 +1634,9 @@ void VulkanCommandList::copyToImage(ImageResourceRef dst, const std::vector<clas
 
     // Add 32 bit extra space to staging to compensate 32 mask out of range when copying data
     uint32 dataMargin = uint32(Math::ceil(float(sizeof(uint32)) / formatInfo->pixelDataSize));
-    BufferResourceRef stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin, true);
+    BufferResourceRef stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin);
     stagingBuffer->setAsStagingResource(true);
+    stagingBuffer->setDeferredDelete(false);
     stagingBuffer->init();
 
     uint8* stagingPtr = reinterpret_cast<uint8*>(graphicsHelperCache->borrowMappedPtr(graphicsInstanceCache, stagingBuffer));
@@ -1633,8 +1662,9 @@ void VulkanCommandList::copyToImageLinearMapped(ImageResourceRef dst, const std:
 
     // Add 32 bit extra space to staging to compensate 32 mask out of range when copying data
     uint32 dataMargin = uint32(Math::ceil(float(sizeof(uint32)) / formatInfo->pixelDataSize));
-    BufferResourceRef stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin, true);
+    BufferResourceRef stagingBuffer = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin);
     stagingBuffer->setAsStagingResource(true);
+    stagingBuffer->setDeferredDelete(false);
     stagingBuffer->init();
 
     uint8* stagingPtr = reinterpret_cast<uint8*>(graphicsHelperCache->borrowMappedPtr(graphicsInstanceCache, stagingBuffer));

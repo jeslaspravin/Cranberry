@@ -20,6 +20,7 @@
 #include "RenderInterface/Resources/GraphicsSyncResource.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderInterface/Resources/DeferredDeleter.h"
 
 
 class GlobalRenderingContextBase;
@@ -63,26 +64,26 @@ public:
     virtual void cacheSurfaceProperties(class IGraphicsInstance* graphicsInstance, const WindowCanvasRef& windowCanvas) const = 0;
 
     // Normal data buffers
-    virtual BufferResourceRef createReadOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
+    virtual BufferResourceRef createReadOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
     // Cannot be used as uniform
-    virtual BufferResourceRef createWriteOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
+    virtual BufferResourceRef createWriteOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
     // Can be used as both uniform and storage
-    virtual BufferResourceRef createReadWriteBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
+    virtual BufferResourceRef createReadWriteBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
 
     // Texels buffers
-    virtual BufferResourceRef createReadOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
+    virtual BufferResourceRef createReadOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const = 0;
     // Cannot be used as uniform sampled
-    virtual BufferResourceRef createWriteOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
-    virtual BufferResourceRef createReadWriteTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
+    virtual BufferResourceRef createWriteOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const = 0;
+    virtual BufferResourceRef createReadWriteTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount = 1) const = 0;
 
     // Other utility buffers
-    virtual BufferResourceRef createReadOnlyIndexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
-    virtual BufferResourceRef createReadOnlyVertexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
+    virtual BufferResourceRef createReadOnlyIndexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
+    virtual BufferResourceRef createReadOnlyVertexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
 
-    virtual BufferResourceRef createReadOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
-    virtual BufferResourceRef createWriteOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1, bool bIsStaging = false) const = 0;
+    virtual BufferResourceRef createReadOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
+    virtual BufferResourceRef createWriteOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount = 1) const = 0;
 
-    // Images
+    // Images, Images are created with staging as we are not going to use image and staging and this is for advanced use only
     virtual ImageResourceRef createImage(class IGraphicsInstance* graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const = 0;
     virtual ImageResourceRef createCubeImage(class IGraphicsInstance* graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging = false) const = 0;
     virtual ImageResourceRef createRTImage(class IGraphicsInstance* graphicsInstance, ImageResourceCreateInfo createInfo, EPixelSampleCount::Type sampleCount = EPixelSampleCount::SampleCount1) const = 0;
@@ -98,6 +99,10 @@ public:
     virtual void* borrowMappedPtr(class IGraphicsInstance* graphicsInstance, BufferResourceRef& resource) const = 0;
     virtual void returnMappedPtr(class IGraphicsInstance* graphicsInstance, BufferResourceRef& resource) const = 0;
     virtual void flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<BufferResourceRef>& resources) const = 0;
+
+    // Marks this resource for deletion if deferred delete is present else deletes it immediately, delete strategy will be used if deferring is allowed
+    // duration determines time duration/number of frames based on the strategy
+    virtual void markForDeletion(class IGraphicsInstance* graphicsInstance, GraphicsResource* resource, EDeferredDelStrategy deleteStrategy, TickRep duration = 1) const = 0;
 
     // Pipelines
     virtual PipelineBase* createGraphicsPipeline(class IGraphicsInstance* graphicsInstance, const PipelineBase* parent) const = 0;

@@ -186,8 +186,10 @@ private:
 
 public:
     const std::vector<CommandResUsageInfo>* getCmdBufferDeps(const GraphicsResource* cmdBuffer) const;
+    std::vector<const GraphicsResource*> getCmdBufferResourceDeps(const MemoryResourceRef& resource) const;
     void clearCmdBufferDeps(const GraphicsResource* cmdBuffer);
     void clearFinishedCmd(const GraphicsResource* cmdBuffer);
+    void clearResource(const MemoryResourceRef& resource);
     void clearUnwanted();
 
     /* Reading resources functions */
