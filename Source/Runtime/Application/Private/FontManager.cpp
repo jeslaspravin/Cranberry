@@ -14,11 +14,15 @@
 #include "Math/CoreMathTypes.h"
 #include "Math/Math.h"
 #include "Math/Box.h"
+#include "Math/MathGeom.h"
 #include "RenderInterface/Resources/MemoryResources.h"
+#include "RenderInterface/Rendering/IRenderCommandList.h"
+#include "RenderInterface/GraphicsHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 #include <unordered_set>
+#include <array>
 
 // Have all function as static
 #define STBTT_STATIC
@@ -45,9 +49,13 @@ CONST_EXPR static const TChar QUESTION_CHAR = TCHAR('?');
 CONST_EXPR static const uint32 UNKNOWN_GLYPH = 0xFFFD;
 
 CONST_EXPR static const int32 TAB_SIZE = 4;
+CONST_EXPR static const uint16 ATLAS_MAX_SIZE = 2048;
+CONST_EXPR static const uint16 BORDER_SIZE = 1;
 
 class FontManagerContext
 {
+private:
+    const FontManager* owner;
 public:
     // 21bits(11-31) Unicode point, 6bits(5-10) Font index, 5bits(0-4) Height of font in FontHeight multiplier(Stores 0 to 31 values representing 0 -> 16, 1 x 32, 2 x 32,... 31 x 32)
     using GlyphIndex = uint32;
@@ -81,15 +89,22 @@ public:
         int32 lsb = 0;
         // Index to texture atlas
         int32 texAtlasIdx = -1;
+        int32 texCoordIdx = -1;
         // Bitmap data start index in cached bitmap data
         int64 bitmapDataIdx = -1;
-        // Texture coordinate in texture atlas, In texels
+    };
+    // This struct is created such that GlyphCoord can be casted from textCoords after packing
+    struct GlyphCoords
+    {
+        // Texture coordinate in texture atlas, In texels including border
         ShortSizeBox2D texCoords;
+        GlyphIndex contextGlyphIdx;
     };
 
     FontIndex defaultFont;
     std::vector<FontInfo> allFonts;
     std::unordered_map<GlyphIndex, FontGlyph> allGlyphs;
+    std::vector<GlyphCoords> allGlyphCoords;
     // We support maximum 2 atlas, now
     ImageResourceRef textureAtlases[2];
     std::vector<uint8> bitmapCache;
@@ -99,7 +114,15 @@ public:
 private:
     DEBUG_INLINE uint32 findFallbackCodepoint(FontIndex font);
 public:
-    FontManagerContext() = default;
+    FontManagerContext(const FontManager* inOwner)
+        : owner(inOwner)
+        , defaultFont(0)
+    {};
+
+    FORCE_INLINE static ShortSizeBox2D clipBorder(const ShortSizeBox2D& inTexCoord)
+    {
+        return ShortSizeBox2D(inTexCoord.minBound + BORDER_SIZE, inTexCoord.maxBound - BORDER_SIZE);
+    }
 
     FORCE_INLINE static FontHeight pixelsToHeight(uint32 heightInPixels)
     {
@@ -193,7 +216,8 @@ public:
     }
 
     // Wrapper
-    // Fills the bitmap in outBitmap for this glyph and uses bitmapStride to next row
+    // Fills the bitmap in outBitmap for this glyph and uses bitmapStride to move to next row
+    // glyphWidth and glyphHeight are used as scissor and viewport size for font rasterizer
     // Bitmap is scaled with provided scaling
     FORCE_INLINE void glyphBitmapSubPixel(FontIndex font, const FontGlyph& glyph, float scale, float xShift, float yShift
         , uint8* outBitmap, int32 glyphWidth, int32 glyphHeight, int32 bitmapStride) const
@@ -293,6 +317,13 @@ DEBUG_INLINE uint32 FontManagerContext::findFallbackCodepoint(FontIndex font)
 
 void FontManagerContext::updatePendingGlyphs()
 {
+    if (glyphsPending.empty())
+    {
+        return;
+    }
+
+    allGlyphCoords.reserve(allGlyphCoords.size() + glyphsPending.size()); 
+    allGlyphs.reserve(allGlyphs.size() + glyphsPending.size());
     for (const GlyphIndex& contextGlyphIdx : glyphsPending)
     {
         uint32 codepoint;
@@ -324,9 +355,16 @@ void FontManagerContext::updatePendingGlyphs()
         if (texelsCount != 0)
         {
             glyph.bitmapDataIdx = int64(bitmapCache.size());
-            glyph.texCoords = ShortSizeBox2D{ ShortSize2D(0), ShortSize2D(bitmapSize.x, bitmapSize.y) };
+            glyph.texCoordIdx = uint32(allGlyphCoords.size());
+
+            GlyphCoords& glyphCoords = allGlyphCoords.emplace_back();
+            glyphCoords.contextGlyphIdx = contextGlyphIdx;
+            // Add border texels to size
+            glyphCoords.texCoords = ShortSizeBox2D{ ShortSize2D(0)
+                , ShortSize2D(bitmapSize.x, bitmapSize.y) + ShortSizeBox2D::PointElementType(2 * BORDER_SIZE) };
+
             bitmapCache.resize(bitmapCache.size() + texelsCount);
-            glyphBitmapSubPixel(font, glyph, fontToGlyphScale, 0, 0, &bitmapCache[glyph.bitmapDataIdx], bitmapSize.x, bitmapSize.y, 0);
+            glyphBitmapSubPixel(font, glyph, fontToGlyphScale, 0, 0, &bitmapCache[glyph.bitmapDataIdx], bitmapSize.x, bitmapSize.y, bitmapSize.x);
         }
     }
     glyphsPending.clear();
@@ -336,13 +374,90 @@ void FontManagerContext::updatePendingGlyphs()
     // Convert each of rectangles to be placed at origin
     for (std::pair<const GlyphIndex, FontGlyph>& glyphPair : allGlyphs)
     {
-        ShortSizeBox2D::PointType rectSize = glyphPair.second.texCoords.size();
-        glyphPair.second.texCoords.minBound = ShortSizeBox2D::PointType(0);
-        glyphPair.second.texCoords.maxBound = rectSize;
+        if (glyphPair.second.texCoordIdx == -1)
+        {
+            continue;
+        }
+        GlyphCoords& glyphCoords = allGlyphCoords[glyphPair.second.texCoordIdx];
+        ShortSizeBox2D::PointType rectSize = glyphCoords.texCoords.size();
+        glyphCoords.texCoords.minBound = ShortSizeBox2D::PointType(0);
+        glyphCoords.texCoords.maxBound = rectSize;
 
-        packRects.emplace_back(&glyphPair.second.texCoords);
+        packRects.emplace_back(&glyphCoords.texCoords);
     }
-    // #TODO: Fill bitmap to texture atlas
+
+    std::vector<PackedRectsBin<ShortSizeBox2D>> packedBins;
+    std::vector<std::vector<Color>> atlasTexels;
+    std::vector<ShortSize2D> atlasSizes;
+    if (MathGeom::packRectangles(packedBins, ShortSizeBox2D::PointType(ATLAS_MAX_SIZE), packRects))
+    {
+        alertIf(packedBins.size() <= ARRAY_LENGTH(textureAtlases)
+            , "Packing fonts in unsuccessful in %d texture atlases extend atlas count if necessary", ARRAY_LENGTH(textureAtlases));
+
+        for (int32 i = 0; i < ARRAY_LENGTH(textureAtlases) && i < packedBins.size(); ++i)
+        {
+            const ShortSize2D& atlasSize = packedBins[i].binSize;
+
+            atlasSizes.emplace_back(atlasSize);
+            std::vector<Color>& atlasTexs = atlasTexels.emplace_back();
+            atlasTexs.resize(atlasSize.x * atlasSize.y);
+            for (ShortSizeBox2D* glyphBox : packedBins[i].rects)
+            {
+                GlyphCoords& glyphCoords = *reinterpret_cast<GlyphCoords*>(glyphBox);
+                FontGlyph& glyph = allGlyphs[glyphCoords.contextGlyphIdx];
+                glyph.texAtlasIdx = i;
+
+                // Offset border so we copy only to glyph
+                ShortSizeBox2D bound = clipBorder(glyphCoords.texCoords);
+                ShortSize2D boundSize = bound.size();
+
+                // Copy all rows in glyph from bitmap to pixels
+                for (uint32 y = bound.minBound.y; y < bound.maxBound.y; ++y)
+                {
+                    uint32 yOffset = y - bound.minBound.y;
+                    for (uint32 x = bound.minBound.x; x < bound.maxBound.x; ++x)
+                    {
+                        uint32 xOffset = x - bound.minBound.x;
+
+                        // X columns constitutes a Row 
+                        uint32 texIdx = y * atlasSize.x + x;
+                        // In Bitmap glyphs are stored as individual continuous stream so no need for additional stride
+                        uint32 bitmapIdx = glyph.bitmapDataIdx + (yOffset * boundSize.x) + xOffset;
+
+                        uint8 bitmap = bitmapCache[bitmapIdx];
+                        atlasTexs[texIdx] = Color(bitmap, bitmap, bitmap, bitmap);
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        fatalAssert(false, "Packing fonts failed");
+        return;
+    }
+
+    owner->broadcastPreTextureAtlasUpdate();
+    ENQUEUE_COMMAND(UpdateFontGlyphs)(
+        [this, atlasTexels, atlasSizes](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+        {
+            for (int32 i = 0; i < atlasSizes.size(); ++i)
+            {
+                ImageResourceCreateInfo ci
+                {
+                    .imageFormat = EPixelDataFormat::R_U8_Norm,
+                    .dimensions = { atlasSizes[i].x, atlasSizes[i].y, 1 },
+                    .numOfMips = 1
+                };
+                textureAtlases[i] = graphicsHelper->createImage(graphicsInstance, ci);
+                textureAtlases[i]->setShaderUsage(EImageShaderUsage::Sampling);
+                textureAtlases[i]->setResourceName("FontAtlas_" + String::toString(i));
+                textureAtlases[i]->init();
+
+                cmdList->copyToImage(textureAtlases[i], atlasTexels[i]);
+            }
+            owner->broadcastTextureAtlasUpdated();
+        });
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -354,30 +469,18 @@ unsigned char screen[20][79];
 
 FontManager::FontManager(EInitType)
 {
-    context = new FontManagerContext();
-
-    FontIndex idx = addFont(TCHAR("D:/Workspace/VisualStudio/Cranberry/Build/Debug/Assets/Fonts/CascadiaMono-Bold.ttf"));
-
-    addGlyphs(idx, 
-        {
-            { 0x0020u, 0x0100u },
-            { 0u, 1u }
-        }
-        , { 16 }
-    );
-    uint32 w8 = calculateRenderWidth(TCHAR("Check this\n out!"), idx, 8);
-    uint32 w16 = calculateRenderWidth(TCHAR("Check this\n out!"), idx, 16);
+    context = new FontManagerContext(this);
 }
 
 FontManager::FontManager(FontManager&& otherManager)
-    : context(otherManager.context)
 {
+    context = new (otherManager.context)FontManagerContext(this);
     otherManager.context = nullptr;
 }
 
 FontManager& FontManager::operator=(FontManager&& otherManager)
 {
-    context = otherManager.context;
+    context = new (otherManager.context)FontManagerContext(this);
     otherManager.context = nullptr;
     return (*this);
 }
@@ -471,6 +574,18 @@ void FontManager::addGlyphs(FontIndex font, const ValueRange<uint32>& glyphCodeR
             context->glyphsPending.insert(glyphIdx);
         }
     }
+}
+
+void FontManager::setupTextureAtlas(ShaderParameters* shaderParams, const String& paramName)
+{
+    ENQUEUE_COMMAND(SetupTextureAtlas)(
+        [this, shaderParams, paramName](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+        {
+            for (int32 i = 0; i < ARRAY_LENGTH(context->textureAtlases); ++i)
+            {
+                shaderParams->setTextureParam(paramName, context->textureAtlases[i], i);
+            }
+        });
 }
 
 uint32 FontManager::calculateRenderWidth(const String& text, FontIndex font, uint32 height) const

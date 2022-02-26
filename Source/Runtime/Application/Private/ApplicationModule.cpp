@@ -43,10 +43,11 @@ void ApplicationModule::graphicsInitEvents(ERenderStateEvent renderState)
     }
 }
 
-void ApplicationModule::createApplication(const AppInstanceCreateInfo& appCI)
+ApplicationInstance* ApplicationModule::createApplication(const AppInstanceCreateInfo& appCI)
 {
     appInstance = ApplicationInstance(appCI);
     appInstance.platformApp = new PlatformAppInstance(appCI.platformAppHandle);
+    return &appInstance;
 }
 
 const ApplicationInstance* ApplicationModule::getApplication() const 

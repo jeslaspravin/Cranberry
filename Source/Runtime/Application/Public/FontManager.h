@@ -16,6 +16,8 @@
 #include "Types/Delegates/Delegate.h"
 #include "ApplicationExports.h"
 
+class ShaderParameters;
+
 class FontManager
 {
 private:
@@ -41,6 +43,9 @@ public:
     FontManager& operator=(FontManager && otherManager);
     ~FontManager();
 
+    void broadcastPreTextureAtlasUpdate() const { preTextureAtlasUpdate.invoke(); }
+    void broadcastTextureAtlasUpdated() const { textureAltasUpdated.invoke(); }
+
     APPLICATION_EXPORT FontIndex addFont(const String& fontPath) const;
     APPLICATION_EXPORT FontIndex addFont(const std::vector<uint8>& fontData, const String& fontName) const;
     /**
@@ -57,6 +62,8 @@ public:
     */
     APPLICATION_EXPORT void addGlyphs(FontIndex font, const std::vector<ValueRange<uint32>>& glyphCodeRanges, const std::vector<uint32>& heights) const;
     APPLICATION_EXPORT void addGlyphs(FontIndex font, const ValueRange<uint32>& glyphCodeRange, uint32 height) const;
+
+    APPLICATION_EXPORT void setupTextureAtlas(ShaderParameters* shaderParams, const String& paramName);
 
     APPLICATION_EXPORT uint32 calculateRenderWidth(const String& text, FontIndex font, uint32 height) const;
     // If wrap width is -1 no wrapping will be calculated

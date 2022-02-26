@@ -10,8 +10,8 @@
  */
 
 #include "RenderInterface/Resources/MemoryResources.h"
+#include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/GraphicsHelper.h"
-#include "IRenderInterfaceModule.h"
 #include "Math/Math.h"
 
 DEFINE_GRAPHICS_RESOURCE(MemoryResource)
@@ -26,13 +26,16 @@ void MemoryResource::removeRef()
     uint32 count = refCounter.fetch_sub(1);
     if (count == 1)
     {
-        IRenderInterfaceModule::get()->currentGraphicsHelper()
-            ->markForDeletion(IRenderInterfaceModule::get()->currentGraphicsInstance()
-                , this
-                , bDeferDelete
-                ? EDeferredDelStrategy::SwapchainCount
-                : EDeferredDelStrategy::Immediate
-        );
+        ENQUEUE_COMMAND(DeleteMemoryResource)(
+            [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+            {
+                graphicsHelper->markForDeletion(graphicsInstance
+                    , this
+                    , bDeferDelete
+                    ? EDeferredDelStrategy::SwapchainCount
+                    : EDeferredDelStrategy::Immediate
+                );
+            });
     }
 }
 

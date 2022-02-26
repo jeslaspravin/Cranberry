@@ -36,7 +36,7 @@ private:
 public:
 
     /* IApplicationModule finals */
-    void createApplication(const AppInstanceCreateInfo& appCI) final;
+    ApplicationInstance* createApplication(const AppInstanceCreateInfo& appCI);
     const ApplicationInstance* getApplication() const final;
     GenericAppWindow* mainWindow() final;
     WindowManager* getWindowManager() final;
