@@ -281,13 +281,13 @@ struct BatchCopyBufferData
 struct CopyPixelsToImageInfo
 {
     // Offset and extent for MIP base rest will be calculated automatically
-    Size3D srcOffset;
-    Size3D dstOffset;
+    Size3D srcOffset{ 0 };
+    Size3D dstOffset{ 0 };
     Size3D extent;
 
     ImageSubresource subres;
 
-    bool bGenerateMips;
+    bool bGenerateMips = false;
     // Filtering to be used to generate MIPs
     ESamplerFiltering::Type mipFiltering;
 };

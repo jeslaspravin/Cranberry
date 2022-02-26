@@ -3312,6 +3312,18 @@ void ExperimentalEnginePBR::tempTest()
     }
     LOG("TEST", "%s %s -> Length %llu", outStr, testStr, testStr.codeCount());
 
+    FontManager& fontManager = application->fontManager;
+    FontManager::FontIndex idx = fontManager.addFont(TCHAR("D:/Workspace/VisualStudio/Cranberry/Build/Debug/Assets/Fonts/CascadiaMono-Bold.ttf"));
+
+    fontManager.addGlyphs(idx,
+        {
+            { 0x0020u, 0x0100u },
+            { 0u, 1u }
+        }
+        , { 16, 32 }
+    );
+    uint32 w8 = fontManager.calculateRenderWidth(TCHAR("Check this\n out!"), idx, 8);
+    uint32 w16 = fontManager.calculateRenderWidth(TCHAR("Check this\n out!"), idx, 16);
 }
 
 //static uint64 allocationCount = 0;

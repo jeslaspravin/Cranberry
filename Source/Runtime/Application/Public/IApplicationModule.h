@@ -28,7 +28,7 @@ class APPLICATION_EXPORT IApplicationModule : public IModuleBase
 public:
     static IApplicationModule* get();
 
-    virtual void createApplication(const AppInstanceCreateInfo& appCI) = 0;
+    virtual ApplicationInstance* createApplication(const AppInstanceCreateInfo& appCI) = 0;
     virtual const ApplicationInstance* getApplication() const = 0;
     virtual GenericAppWindow* mainWindow() = 0;
     virtual WindowManager* getWindowManager() = 0;

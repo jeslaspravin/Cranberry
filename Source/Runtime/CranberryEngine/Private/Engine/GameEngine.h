@@ -59,6 +59,7 @@ protected:
     IApplicationModule* applicationModule;
     EngineInputCoreModule* inputModule;
 
+    ApplicationInstance* application;
     ImGuiManager imguiManager;
     AssetManager assetManager;
     EngineTime timeData;

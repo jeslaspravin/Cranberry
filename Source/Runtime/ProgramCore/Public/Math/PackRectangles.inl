@@ -32,7 +32,7 @@ class RectPacker
 {
 public:
     using RectPointType = typename RectType::PointType;
-    using RectCompType = typename RectPointType::value_type;
+    using RectCompType = typename RectType::PointElementType;
 
 private:
     RectPacker() = default;

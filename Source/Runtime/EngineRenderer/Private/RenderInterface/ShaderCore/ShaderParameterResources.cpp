@@ -387,9 +387,14 @@ void ShaderParameters::removeRef()
     uint32 count = refCounter.fetch_sub(1);
     if (count == 1)
     {
-        IRenderInterfaceModule::get()->currentGraphicsHelper()
-            ->markForDeletion(IRenderInterfaceModule::get()->currentGraphicsInstance()
-                , this, EDeferredDelStrategy::SwapchainCount);
+        ENQUEUE_COMMAND(DeleteShaderParameter)(
+            [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+            {
+                graphicsHelper->markForDeletion(graphicsInstance
+                    , this
+                    , EDeferredDelStrategy::SwapchainCount
+                );
+            });
     }
 }
 

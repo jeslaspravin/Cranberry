@@ -66,7 +66,7 @@ void GameEngine::startup(const AppInstanceCreateInfo appInstanceCI)
     exitAppHandle = applicationModule->registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType::createObject(this, &GameEngine::tryExitApp));
     inputModule = static_cast<EngineInputCoreModule*>(ModuleManager::get()->getOrLoadModule(TCHAR("EngineInputCore")).lock().get());
 
-    applicationModule->createApplication(appInstanceCI);
+    application = applicationModule->createApplication(appInstanceCI);
     rendererModule->initializeGraphics();
     assetManager.load();
 
