@@ -406,19 +406,41 @@ void LinearColor::operator=(const LinearColor& otherColor)
     colorValue = std::move(otherColor.colorValue);
 }
 
-PROGRAMCORE_EXPORT Color ColorConst::random(uint8 alpha /*= 255*/)
+namespace ColorConst
 {
-    return Color(LinearColorConst::random(NORMALIZE_COLOR_COMP(alpha)));
+    Color random(uint8 alpha /*= 255*/)
+    {
+        return Color(LinearColorConst::random(NORMALIZE_COLOR_COMP(alpha)));
+    }
+
+    const Color Transparent(255, 255, 255, 0);
+    const Color WHITE(255, 255, 255, 255);
+    const Color GRAY(128, 128, 128, 255);
+    const Color BLACK(0, 0, 0, 255);
+    const Color RED(255, 0, 0, 255);
+    const Color BLUE(0, 0, 255, 255);
+    const Color GREEN(0, 255, 0, 255);
 }
 
-PROGRAMCORE_EXPORT LinearColor LinearColorConst::random(float alpha /*= 1.0f*/)
+namespace LinearColorConst
 {
-    // use golden ratio
-    float goldenRatioConjugate = 1 / GOLDEN_RATIO;
+    LinearColor random(float alpha /*= 1.0f*/)
+    {
+        // use golden ratio
+        float goldenRatioConjugate = 1 / GOLDEN_RATIO;
 
-    float h = Math::random();
-    h += goldenRatioConjugate;
-    h = Math::frac(h);
-    //return LinearColor::fromHsl(Vector3D(h, 0.5f, 0.5f));
-    return LinearColor::fromHsv(Vector3D(h, 0.5f, 1.0f));
+        float h = Math::random();
+        h += goldenRatioConjugate;
+        h = Math::frac(h);
+        //return LinearColor::fromHsl(Vector3D(h, 0.5f, 0.5f));
+        return LinearColor::fromHsv(Vector3D(h, 0.5f, 1.0f));
+    }
+
+    const LinearColor Transparent(1, 1, 1, 0);
+    const LinearColor WHITE(1, 1, 1, 1);
+    const LinearColor GRAY(0.5, 0.5, 0.5, 1);
+    const LinearColor BLACK(0, 0, 0, 1);
+    const LinearColor RED(1, 0, 0, 1);
+    const LinearColor BLUE(0, 0, 1, 1);
+    const LinearColor GREEN(0, 1, 0, 1);
 }
