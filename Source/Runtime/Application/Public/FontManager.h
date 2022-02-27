@@ -13,10 +13,19 @@
 
 #include "String/String.h"
 #include "Math/Box.h"
+#include "Math/Vector2D.h"
 #include "Types/Delegates/Delegate.h"
 #include "ApplicationExports.h"
 
 class ShaderParameters;
+
+// Just font manager output data, This needs to be further processed for working with renderer
+struct FontVertex
+{
+    Vector2D texCoord;
+    Int2D pos;
+    uint8 atlasIdx;
+};
 
 class FontManager
 {
@@ -63,9 +72,32 @@ public:
     APPLICATION_EXPORT void addGlyphs(FontIndex font, const std::vector<ValueRange<uint32>>& glyphCodeRanges, const std::vector<uint32>& heights) const;
     APPLICATION_EXPORT void addGlyphs(FontIndex font, const ValueRange<uint32>& glyphCodeRange, uint32 height) const;
 
+    // Flushes all pending glyphs and font added
+    APPLICATION_EXPORT void flushUpdates() const;
+
     APPLICATION_EXPORT void setupTextureAtlas(ShaderParameters* shaderParams, const String& paramName);
 
     APPLICATION_EXPORT uint32 calculateRenderWidth(const String& text, FontIndex font, uint32 height) const;
     // If wrap width is -1 no wrapping will be calculated
     APPLICATION_EXPORT uint32 calculateRenderHeight(const String& text, FontIndex font, uint32 height, int32 wrapWidth = -1) const;
+    /**
+    * FontManager::draw Vertices will contain quads and each will be ordered clockwise.
+    *  0         1
+    *   +-------+
+    *   |       |
+    *   |       |
+    *   +-------+ 
+    *  3         2
+    * Access: public  
+    *
+    * @param std::vector<FontVertex> & outVertices 
+    * @param QuantizedBox2D & outBB 
+    * @param const String & text 
+    * @param FontIndex font 
+    * @param uint32 height 
+    * @param int32 wrapWidth 
+    *
+    * @return void
+    */
+    APPLICATION_EXPORT void draw(std::vector<FontVertex>& outVertices, QuantizedBox2D& outBB, const String& text, FontIndex font, uint32 height, int32 wrapWidth = -1) const;
 };

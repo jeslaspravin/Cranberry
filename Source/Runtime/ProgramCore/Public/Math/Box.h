@@ -28,7 +28,7 @@ public:
     using PointElementType = typename PointType::value_type;
     CONST_EXPR static const uint32 Dim = d;
 
-    using value_type = T;
+    using value_type = PointType;
 public:
     T minBound;
     T maxBound;
@@ -113,6 +113,12 @@ public:
         minBound = std::move(other.minBound);
         maxBound = std::move(other.maxBound);
         return *this;
+    }
+
+    void reset(const T& min, const T& max)
+    {
+        minBound = min;
+        maxBound = max;
     }
 
     void offset(const T& offset)
@@ -367,7 +373,7 @@ public:
     using PointElementType = T;
     CONST_EXPR static const uint32 Dim = 1;
 
-    using value_type = T;
+    using value_type = PointType;
 public:
     T minBound;
     T maxBound;
@@ -431,6 +437,12 @@ public:
         minBound = std::move(other.minBound);
         maxBound = std::move(other.maxBound);
         return *this;
+    }
+
+    void reset(const T& min, const T& max)
+    {
+        minBound = min;
+        maxBound = max;
     }
 
     void offset(const T& offset)

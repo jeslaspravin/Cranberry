@@ -397,8 +397,6 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     int32 selectedEnv = 0;
 
     String noneString{ TCHAR("None") };
-
-    std::vector<ShortSizeBox2D> boxes;
 protected:
     void onStartUp() override;
     void onQuit() override;
@@ -2243,33 +2241,6 @@ void ExperimentalEnginePBR::onStartUp()
     }
     selectedEnv = 0;
 
-    std::vector<ShortSizeBox2D> bxs{
-        ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{64, 80} }
-        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{128, 48} }
-        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{48, 56} }
-        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{64, 128} }
-        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{32} }
-        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{61, 35} }
-        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{45, 51} }
-        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{33, 37} }
-        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{70, 21} }
-    };
-    boxes.swap(bxs);
-    std::vector<ShortSizeBox2D*> boxPtrs{
-        boxes.data(),
-        boxes.data() + 1,
-        boxes.data() + 2,
-        boxes.data() + 3,
-        boxes.data() + 4,
-        boxes.data() + 5,
-        boxes.data() + 6,
-        boxes.data() + 7,
-        boxes.data() + 8
-    };
-    std::vector<PackedRectsBin<ShortSizeBox2D>> packedbins;
-    ShortSize2D binSize{ 256 };
-    bool bValue = MathGeom::packRectangles(packedbins, binSize, boxPtrs);
-
     tempTest();
 }
 
@@ -3097,22 +3068,6 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface* drawInterface)
                     }
                 }
             }
-
-            if (ImGui::CollapsingHeader("Rect Packer"))
-            {
-                static std::vector<Color> col;
-                if (boxes.size() > col.size())
-                {
-                    uint32 i = uint32(col.size());
-                    col.resize(boxes.size());
-                    for (; i < col.size(); ++i)
-                    {
-                        col[i] = ColorConst::random(127);
-                    }
-                }
-                drawInterface->drawPackedRectangles(boxes.data(), col.data(), (uint32)(boxes.size()), ShortSizeBox2D::PointType(256), ColorConst::RED);
-            }
-
             ImGui::PopStyleVar();
             ImGui::End();
         }
@@ -3311,19 +3266,6 @@ void ExperimentalEnginePBR::tempTest()
         count++;
     }
     LOG("TEST", "%s %s -> Length %llu", outStr, testStr, testStr.codeCount());
-
-    FontManager& fontManager = application->fontManager;
-    FontManager::FontIndex idx = fontManager.addFont(TCHAR("D:/Workspace/VisualStudio/Cranberry/Build/Debug/Assets/Fonts/CascadiaMono-Bold.ttf"));
-
-    fontManager.addGlyphs(idx,
-        {
-            { 0x0020u, 0x0100u },
-            { 0u, 1u }
-        }
-        , { 16, 32 }
-    );
-    uint32 w8 = fontManager.calculateRenderWidth(TCHAR("Check this\n out!"), idx, 8);
-    uint32 w16 = fontManager.calculateRenderWidth(TCHAR("Check this\n out!"), idx, 16);
 }
 
 //static uint64 allocationCount = 0;
@@ -3366,9 +3308,9 @@ void ExperimentalEnginePBR::tempTestQuit()
 //    return free(ptr);
 //}
 
-GameEngine* GameEngineWrapper::createEngineInstance()
-{
-    static ExperimentalEnginePBR gameEngine;
-    return &gameEngine;
-}
+//GameEngine* GameEngineWrapper::createEngineInstance()
+//{
+//    static ExperimentalEnginePBR gameEngine;
+//    return &gameEngine;
+//}
 #endif

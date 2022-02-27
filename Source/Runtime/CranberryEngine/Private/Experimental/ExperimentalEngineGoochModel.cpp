@@ -11,7 +11,7 @@
 
 #include "Engine/GameEngine.h"
 
-#if EXPERIMENTAL & 0
+#if EXPERIMENTAL
 
 #include "RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
@@ -20,10 +20,16 @@
 #include "../Assets/Asset/TextureAsset.h"
 #include "../Core/Types/Textures/Texture2D.h"
 #include "../Core/Types/Textures/TexturesBase.h"
+#include "../Editor/Core/ImGui/ImGuiManager.h"
+#include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
+#include "../Editor/Core/ImGui/ImGuiLib/implot.h"
+#include "../Editor/Core/ImGui/IImGuiLayer.h"
+#include "Core/GBuffers.h"
+#include "../Core/Types/Textures/RenderTargetTextures.h"
+#include "../Assets/Asset/StaticMeshAsset.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "Keys.h"
 #include "Engine/Config/EngineGlobalConfigs.h"
-#include "../Assets/Asset/StaticMeshAsset.h"
 #include "RenderApi/RenderManager.h"
 #include "ApplicationInstance.h"
 #include "InputSystem.h"
@@ -34,12 +40,8 @@
 #include "RenderApi/Scene/RenderScene.h"
 #include "RenderApi/Material/MaterialCommonUniforms.h"
 #include "Math/RotationMatrix.h"
-#include "../Core/Types/Textures/RenderTargetTextures.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
-#include "../Editor/Core/ImGui/ImGuiManager.h"
-#include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
-#include "../Editor/Core/ImGui/ImGuiLib/implot.h"
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderInterface/Resources/QueueResource.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
@@ -49,15 +51,22 @@
 #include "Types/Transform3D.h"
 #include "Types/Camera/Camera.h"
 #include "Types/Colors.h"
+#include "Types/Containers/ReferenceCountPtr.h"
+#include "IApplicationModule.h"
+#include "EngineInputCoreModule.h"
+#include "WindowManager.h"
 #include "RenderInterface/Rendering/RenderingContexts.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Resources/BufferedResources.h"
+#include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
-#include "../Editor/Core/ImGui/IImGuiLayer.h"
+#include "RenderInterface/GraphicsHelper.h"
 
 #include <array>
 #include <random>
 #include <map>
+#include "RenderInterface/Resources/Pipelines.h"
+#include "Math/MathGeom.h"
 
 struct AOS
 {
@@ -65,10 +74,6 @@ struct AOS
     Vector2D b;
     Vector2D c[4];
 };
-
-class ShaderParameters;
-class IRenderCommandList;
-class Texture2DRW;
 
 struct TestBitonicSortIndices
 {
@@ -144,26 +149,6 @@ struct TestBitonicSortIndices
     }
 };
 
-struct QueueCommandPool
-{
-    VkCommandPool tempCommandsPool;
-    VkCommandPool resetableCommandPool;
-    VkCommandPool oneTimeRecordPool;
-};
-
-struct TexelBuffer
-{
-    class BufferResourceRef buffer = nullptr;
-    // Only necessary for texel buffers
-    VkBufferView bufferView = nullptr;
-};
-
-struct ImageData
-{
-    class TextureBase* image = nullptr;
-    VkImageView imageView = nullptr;
-};
-
 struct SceneEntity
 {
     Transform3D transform;
@@ -177,63 +162,55 @@ struct SceneEntity
     std::vector<uint32> instanceParamIdx;
     std::vector<uint32> batchShaderParamIdx;
 
-    void updateInstanceParams(SharedPtr<ShaderParameters>& shaderParams, uint32 batchIdx);
-    void updateInstanceParams(SharedPtr<ShaderParameters>& shaderParams)
+    void updateInstanceParams(ShaderParametersRef& shaderParams, uint32 batchIdx);
+    void updateInstanceParams(ShaderParametersRef& shaderParams)
     {
         for (uint32 i = 0; i < meshBatchColors.size(); ++i)
         {
             updateInstanceParams(shaderParams, i);
         }
     }
-    void updateMaterialParams(SharedPtr<ShaderParameters>& shaderParams, const std::unordered_map<const ImageResourceRef, uint32>& tex2dToBindlessIdx, uint32 batchIdx) const;
+    void updateMaterialParams(ShaderParametersRef& shaderParams, const std::unordered_map<ImageResourceRef, uint32>& tex2dToBindlessIdx, uint32 batchIdx) const;
 };
 
-void SceneEntity::updateInstanceParams(SharedPtr<ShaderParameters>& shaderParams, uint32 batchIdx)
+void SceneEntity::updateInstanceParams(ShaderParametersRef& shaderParams, uint32 batchIdx)
 {
     InstanceData gpuInstance;
     gpuInstance.model = transform.getTransformMatrix();
     gpuInstance.invModel = transform.getTransformMatrix().inverse();
     gpuInstance.shaderUniqIdx = batchShaderParamIdx[batchIdx];
 
-    shaderParams->setBuffer("instances", gpuInstance, instanceParamIdx[batchIdx]);
+    shaderParams->setBuffer(TCHAR("instances"), gpuInstance, instanceParamIdx[batchIdx]);
 }
 
-void SceneEntity::updateMaterialParams(SharedPtr<ShaderParameters>& shaderParams, const std::unordered_map<const ImageResourceRef, uint32>& tex2dToBindlessIdx, uint32 batchIdx) const
+void SceneEntity::updateMaterialParams(ShaderParametersRef& shaderParams, const std::unordered_map<ImageResourceRef, uint32>& tex2dToBindlessIdx, uint32 batchIdx) const
 {
     SingleColorMeshData singleColorMeshData;
     singleColorMeshData.meshColor = meshBatchColors[batchIdx];
     singleColorMeshData.metallic = 0;
     singleColorMeshData.roughness = 0;
-    shaderParams->setBuffer("meshData", singleColorMeshData, batchShaderParamIdx[batchIdx]);
+    shaderParams->setBuffer(TCHAR("meshData"), singleColorMeshData, batchShaderParamIdx[batchIdx]);
 }
 
 struct FrameResource
 {
-    std::vector<SharedPtr<GraphicsSemaphore>> usageWaitSemaphore;
+    std::vector<SemaphoreRef> usageWaitSemaphore;
     RenderTargetTexture* lightingPassRt;
     RenderTargetTexture* lightingPassResolved;
-    SharedPtr<GraphicsFence> recordingFence;
+    FenceRef recordingFence;
 };
 
 class ExperimentalEngineGoochModel : public GameEngine, public IImGuiLayer
 {
-    class VulkanDevice* vDevice;
-    VkDevice device;
-    const class VulkanDebugGraphics* graphicsDbg;
-
-    std::map<EQueueFunction, QueueCommandPool> pools;
-    void createPools();
-    void destroyPools();
-
-    SharedPtr<class SamplerInterface> nearestFiltering = nullptr;
-    SharedPtr<class SamplerInterface> linearFiltering = nullptr;
+    SamplerRef nearestFiltering = nullptr;
+    SamplerRef linearFiltering = nullptr;
     // TODO(Jeslas) : Cubic filtering not working check new drivers or log bug in nvidia
     // SharedPtr<class SamplerInterface> cubicFiltering = nullptr;
-    void createImages();
+    void createImages(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
     void destroyImages();
     // Global parameters
     // Asset's data
-    std::unordered_map<const ImageResourceRef, uint32> tex2dToBindlessIdx;
+    std::unordered_map<ImageResourceRef, uint32> tex2dToBindlessIdx;
     // offset in count, in scene
     std::unordered_map<const MeshAsset*, std::pair<uint32, uint32>> meshVertIdxOffset;
 
@@ -244,18 +221,18 @@ class ExperimentalEngineGoochModel : public GameEngine, public IImGuiLayer
     BufferResourceRef allEntityDrawCmds;
     // Offset in bytes, Count in size
     std::unordered_map<const LocalPipelineContext*, std::pair<uint32, uint32>> pipelineToDrawCmdOffsetCount;
-    void createDrawCmdsBuffer();
+    void createDrawCmdsBuffer(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
     void destroyDrawCmdsBuffer();
 
     std::vector<struct GoochModelLightData> sceneLightData;
-    std::vector<SharedPtr<ShaderParameters>> lightData;
-    SharedPtr<ShaderParameters> lightCommon;
-    SwapchainBufferedResource<SharedPtr<ShaderParameters>> lightTextures;
-    SharedPtr<ShaderParameters> viewParameters;
-    SharedPtr<ShaderParameters> instanceParameters;
-    std::unordered_map<const LocalPipelineContext*, SharedPtr<ShaderParameters>> sceneShaderUniqParams;
+    std::vector<ShaderParametersRef> lightData;
+    ShaderParametersRef lightCommon;
+    SwapchainBufferedResource<ShaderParametersRef> lightTextures;
+    ShaderParametersRef viewParameters;
+    ShaderParametersRef instanceParameters;
+    std::unordered_map<const LocalPipelineContext*, ShaderParametersRef> sceneShaderUniqParams;
     void createScene();
-    void createSceneRenderData(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    void createSceneRenderData(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
     void destroyScene();
 
     // Camera parameters
@@ -264,13 +241,13 @@ class ExperimentalEngineGoochModel : public GameEngine, public IImGuiLayer
     Rotation cameraRotation;
     void updateCameraParams();
 
-    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadTextureDescs;
-    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadNormalDescs;
-    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawQuadDepthDescs;
-    SwapchainBufferedResource<SharedPtr<ShaderParameters>> drawLitColorsDescs;
+    SwapchainBufferedResource<ShaderParametersRef> drawQuadTextureDescs;
+    SwapchainBufferedResource<ShaderParametersRef> drawQuadNormalDescs;
+    SwapchainBufferedResource<ShaderParametersRef> drawQuadDepthDescs;
+    SwapchainBufferedResource<ShaderParametersRef> drawLitColorsDescs;
 
-    void createShaderParameters();
-    void setupShaderParameterParams();
+    void createShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
+    void setupShaderParameterParams(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
     void updateShaderParameters(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
     void destroyShaderParameters();
 
@@ -280,30 +257,29 @@ class ExperimentalEngineGoochModel : public GameEngine, public IImGuiLayer
     // Shader pipeline resources
     RenderPassClearValue clearValues;
 
-    void createFrameResources();
+    void createFrameResources(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
     void destroyFrameResources();
 
     LocalPipelineContext drawSmPipelineContext;
 
-    VkRenderPass lightingRenderPass;
     LocalPipelineContext drawGoochPipelineContext;
 
-    class BufferResourceRef quadVertexBuffer = nullptr;
-    class BufferResourceRef quadIndexBuffer = nullptr;
     LocalPipelineContext drawQuadPipelineContext;
     LocalPipelineContext resolveLightRtPipelineContext;
 
-    SharedPtr<ShaderParameters> clearInfoParams;
+    ShaderParametersRef clearInfoParams;
     LocalPipelineContext clearQuadPipelineContext;
 
-    ImageData writeTexture;
-    SharedPtr<ShaderParameters> testComputeParams;
+
+    class TextureBase* writeTexture = nullptr;
+    ShaderParametersRef testComputeParams;
     LocalPipelineContext testComputePipelineContext;
 
     void getPipelineForSubpass();
+    void clearPipelineContexts();
 
     std::vector<FrameResource> frameResources;
-    void createPipelineResources();
+    void createPipelineResources(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
     void destroyPipelineResources();
 
     // End shader pipeline resources
@@ -315,6 +291,22 @@ class ExperimentalEngineGoochModel : public GameEngine, public IImGuiLayer
     uint32 texturesCount;
     uint32 testBindlessTextureIdx;
 
+    std::vector<ShortSizeBox2D> boxes;
+    
+    String textToRender;
+    LinearColor textCol = LinearColorConst::BLUE;
+    int32 wrapSize = 60;
+    int32 textHeight = 32;
+    QuantizedBox2D textBB;
+    LocalPipelineContext imguiShaderCntxt;
+    ShaderParametersRef textRenderParams;
+    uint32 textVertCount, textIdxCount;
+    BufferResourceRef textVertsBuffer;
+    BufferResourceRef textIndexBuffer;
+    void createTextRenderResources(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
+    void destroyTextRenderResources();
+    void updateTextRenderData(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
+
     int32 frameVisualizeId = 0;// 0 color 1 normal 2 depth
     Size2D renderSize{ 1280, 720 };
     ECameraProjection projection = ECameraProjection::Perspective;
@@ -323,9 +315,9 @@ protected:
     void onQuit() override;
     void tickEngine() override;
 
-    void startUpRenderInit();
+    void startUpRenderInit(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
     void renderQuit();
-    void frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance);
+    void frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
 
     void tempTest();
     void tempTestPerFrame();
@@ -347,136 +339,42 @@ void ExperimentalEngineGoochModel::tempTestPerFrame()
 
 }
 
-template <EQueueFunction QueueFunction> VulkanQueueResource<QueueFunction>* getQueue(const VulkanDevice* device);
-
-void ExperimentalEngineGoochModel::createPools()
+void ExperimentalEngineGoochModel::createImages(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
+    SamplerCreateInfo samplerCI
     {
-        VulkanQueueResource<EQueueFunction::Compute>* queue = getQueue<EQueueFunction::Compute>(vDevice);
-        if (queue != nullptr)
-        {
-            QueueCommandPool& pool = pools[EQueueFunction::Compute];
-            CREATE_COMMAND_POOL_INFO(commandPoolCreateInfo);
-            commandPoolCreateInfo.queueFamilyIndex = queue->queueFamilyIndex();
+        .filtering = ESamplerFiltering::Nearest,
+        .mipFiltering = ESamplerFiltering::Nearest,
+        .tilingMode = { ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat},
+        .mipLodRange = { 0, float(EngineSettings::minSamplingMipLevel.get()) },
+        .resourceName = TCHAR("NearestSampler")
+    };
+    nearestFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    nearestFiltering->init();
 
-            commandPoolCreateInfo.flags = 0;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.oneTimeRecordPool);
-
-            commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.tempCommandsPool);
-
-            commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.resetableCommandPool);
-
-            graphicsDbg->markObject((uint64)pool.oneTimeRecordPool, "Compute_OneTimeRecordPool", VK_OBJECT_TYPE_COMMAND_POOL);
-            graphicsDbg->markObject((uint64)pool.tempCommandsPool, "Compute_TempCmdsPool", VK_OBJECT_TYPE_COMMAND_POOL);
-            graphicsDbg->markObject((uint64)pool.resetableCommandPool, "Compute_ResetableCmdPool", VK_OBJECT_TYPE_COMMAND_POOL);
-        }
-    }
-    {
-        VulkanQueueResource<EQueueFunction::Graphics>* queue = getQueue<EQueueFunction::Graphics>(vDevice);
-        if (queue != nullptr)
-        {
-            QueueCommandPool& pool = pools[EQueueFunction::Graphics];
-            CREATE_COMMAND_POOL_INFO(commandPoolCreateInfo);
-            commandPoolCreateInfo.queueFamilyIndex = queue->queueFamilyIndex();
-
-            commandPoolCreateInfo.flags = 0;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.oneTimeRecordPool);
-
-            commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.tempCommandsPool);
-
-            commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.resetableCommandPool);
-
-            graphicsDbg->markObject((uint64)pool.oneTimeRecordPool, "Graphics_OneTimeRecordPool", VK_OBJECT_TYPE_COMMAND_POOL);
-            graphicsDbg->markObject((uint64)pool.tempCommandsPool, "Graphics_TempCmdsPool", VK_OBJECT_TYPE_COMMAND_POOL);
-            graphicsDbg->markObject((uint64)pool.resetableCommandPool, "Graphics_ResetableCmdPool", VK_OBJECT_TYPE_COMMAND_POOL);
-        }
-    }
-    {
-        VulkanQueueResource<EQueueFunction::Transfer>* queue = getQueue<EQueueFunction::Transfer>(vDevice);
-        if (queue != nullptr)
-        {
-            QueueCommandPool& pool = pools[EQueueFunction::Transfer];
-            CREATE_COMMAND_POOL_INFO(commandPoolCreateInfo);
-            commandPoolCreateInfo.queueFamilyIndex = queue->queueFamilyIndex();
-
-            commandPoolCreateInfo.flags = 0;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.oneTimeRecordPool);
-
-            commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.tempCommandsPool);
-
-            commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.resetableCommandPool);
-
-            graphicsDbg->markObject((uint64)pool.oneTimeRecordPool, "Transfer_OneTimeRecordPool", VK_OBJECT_TYPE_COMMAND_POOL);
-            graphicsDbg->markObject((uint64)pool.tempCommandsPool, "Transfer_TempCmdsPool", VK_OBJECT_TYPE_COMMAND_POOL);
-            graphicsDbg->markObject((uint64)pool.resetableCommandPool, "Transfer_ResetableCmdPool", VK_OBJECT_TYPE_COMMAND_POOL);
-        }
-    }
-    {
-        VulkanQueueResource<EQueueFunction::Present>* queue = getQueue<EQueueFunction::Present>(vDevice);
-        if (queue != nullptr)
-        {
-            QueueCommandPool& pool = pools[EQueueFunction::Present];
-            CREATE_COMMAND_POOL_INFO(commandPoolCreateInfo);
-            commandPoolCreateInfo.queueFamilyIndex = queue->queueFamilyIndex();
-
-            commandPoolCreateInfo.flags = 0;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.oneTimeRecordPool);
-
-            commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.tempCommandsPool);
-
-            commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-            vDevice->vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &pool.resetableCommandPool);
-
-            graphicsDbg->markObject((uint64)pool.oneTimeRecordPool, "Present_OneTimeRecordPool", VK_OBJECT_TYPE_COMMAND_POOL);
-            graphicsDbg->markObject((uint64)pool.tempCommandsPool, "Present_TempCmdsPool", VK_OBJECT_TYPE_COMMAND_POOL);
-            graphicsDbg->markObject((uint64)pool.resetableCommandPool, "Present_ResetableCmdPool", VK_OBJECT_TYPE_COMMAND_POOL);
-        }
-    }
-}
-
-void ExperimentalEngineGoochModel::destroyPools()
-{
-    for (const std::pair<const EQueueFunction, QueueCommandPool>& pool : pools)
-    {
-        vDevice->vkDestroyCommandPool(device, pool.second.oneTimeRecordPool, nullptr);
-        vDevice->vkDestroyCommandPool(device, pool.second.resetableCommandPool, nullptr);
-        vDevice->vkDestroyCommandPool(device, pool.second.tempCommandsPool, nullptr);
-    }
-}
-
-void ExperimentalEngineGoochModel::createImages()
-{
-    nearestFiltering = GraphicsHelper::createSampler(gEngine->getRenderManager()->getGraphicsInstance(), "NearestSampler",
-        ESamplerTilingMode::Repeat, ESamplerFiltering::Nearest);
-    linearFiltering = GraphicsHelper::createSampler(gEngine->getRenderManager()->getGraphicsInstance(), "LinearSampler",
-        ESamplerTilingMode::Repeat, ESamplerFiltering::Linear);
+    samplerCI.resourceName = TCHAR("LinearSampler");
+    samplerCI.filtering = samplerCI.mipFiltering = ESamplerFiltering::Linear;
+    linearFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    linearFiltering->init();
 
     Texture2DRWCreateParams createParam;
     createParam.textureSize = Size2D(512);
     createParam.mipCount = 1;
-    createParam.textureName = "Compute Write";
+    createParam.textureName = TCHAR("Compute Write");
     createParam.format = EPixelDataFormat::RGBA_U8_Norm;
     createParam.bIsWriteOnly = false;
-    writeTexture.image = TextureBase::createTexture<Texture2DRW>(createParam);
-    writeTexture.imageView = static_cast<VulkanImageResourceRef>(writeTexture.image->getTextureResource())->getImageView({});
+    writeTexture = TextureBase::createTexture<Texture2DRW>(createParam);
 }
 
 void ExperimentalEngineGoochModel::destroyImages()
 {
-    TextureBase::destroyTexture<Texture2DRW>(writeTexture.image);
-    writeTexture.image = nullptr;
-    nearestFiltering->release();
-    linearFiltering->release();
+    TextureBase::destroyTexture<Texture2DRW>(writeTexture);
+    writeTexture = nullptr;
+    nearestFiltering.reset();
+    linearFiltering.reset();
 }
 
-void ExperimentalEngineGoochModel::createDrawCmdsBuffer()
+void ExperimentalEngineGoochModel::createDrawCmdsBuffer(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
     // Setup all draw commands, Instance idx for each batch and its material idx
     std::vector<DrawIndexedIndirectCommand> drawCmds;
@@ -550,7 +448,7 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer()
                 , pipelineDrawCalls
             };
             // Resizing material parameters
-            sceneShaderUniqParams[pipeMeshPairToBatchEntity.first]->resizeRuntimeBuffer("materials", materialCount);
+            sceneShaderUniqParams[pipeMeshPairToBatchEntity.first]->resizeRuntimeBuffer(TCHAR("materials"), materialCount);
             totalDrawCalls += pipelineDrawCalls;
             LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's Material's count %d", __func__, pipeMeshPairToBatchEntity.first->materialName.getChar(), materialCount);
             LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's instanced draw calls %d", __func__, pipeMeshPairToBatchEntity.first->materialName.getChar(), pipelineDrawCalls);
@@ -558,11 +456,11 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer()
         LOG("ExperimentalEnginePBR", "%s() : Total instanced draw calls %d", __func__, totalDrawCalls);
 
         // Resize instance parameters
-        instanceParameters->resizeRuntimeBuffer("instancesWrapper", instanceCount);
+        instanceParameters->resizeRuntimeBuffer(TCHAR("instancesWrapper"), instanceCount);
 
         // Create buffer with draw calls and copy draw cmds
-        allEntityDrawCmds = new GraphicsRIndirectBuffer(sizeof(DrawIndexedIndirectCommand), totalDrawCalls);
-        allEntityDrawCmds->setResourceName("AllEntityDrawCmds");
+        allEntityDrawCmds = graphicsHelper->createReadOnlyIndirectBuffer(graphicsInstance, sizeof(DrawIndexedIndirectCommand), totalDrawCalls);
+        allEntityDrawCmds->setResourceName(TCHAR("AllEntityDrawCmds"));
         allEntityDrawCmds->init();
 
         // Now setup instance and material parameters
@@ -578,7 +476,7 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer()
     }
 
     ENQUEUE_COMMAND(CreateAllEntityDrawCmds)(
-        [drawCmds, this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        [drawCmds, this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
         {
             cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize()));
         });
@@ -586,16 +484,15 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer()
 
 void ExperimentalEngineGoochModel::destroyDrawCmdsBuffer()
 {
-    allEntityDrawCmds->release();
-    delete allEntityDrawCmds;
+    allEntityDrawCmds.reset();
 }
 
 void ExperimentalEngineGoochModel::createScene()
 {
-    StaticMeshAsset* cube = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cube.obj"));
-    StaticMeshAsset* sphere = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Sphere.obj"));
-    StaticMeshAsset* cylinder = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cylinder.obj"));
-    StaticMeshAsset* cone = static_cast<StaticMeshAsset*>(appInstance().assetManager.getOrLoadAsset("Cone.obj"));
+    StaticMeshAsset* cube = static_cast<StaticMeshAsset*>(assetManager.getOrLoadAsset(TCHAR("Cube.obj")));
+    StaticMeshAsset* sphere = static_cast<StaticMeshAsset*>(assetManager.getOrLoadAsset(TCHAR("Sphere.obj")));
+    StaticMeshAsset* cylinder = static_cast<StaticMeshAsset*>(assetManager.getOrLoadAsset(TCHAR("Cylinder.obj")));
+    StaticMeshAsset* cone = static_cast<StaticMeshAsset*>(assetManager.getOrLoadAsset(TCHAR("Cone.obj")));
     std::array<StaticMeshAsset*, 4> assets{ cube, sphere, cylinder, cone };
     std::default_random_engine generator;
     std::uniform_real_distribution<float> distribution(-1.0, 1.0);
@@ -673,7 +570,7 @@ void ExperimentalEngineGoochModel::createScene()
     }
 }
 
-void ExperimentalEngineGoochModel::createSceneRenderData(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+void ExperimentalEngineGoochModel::createSceneRenderData(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
     uint32 totalVertexLen = 0;
     uint32 totalIdxLen = 0;
@@ -688,8 +585,8 @@ void ExperimentalEngineGoochModel::createSceneRenderData(IRenderCommandList* cmd
     }
 
     // Initialize scene vertex and index buffer
-    sceneVertexBuffer = new GraphicsVertexBuffer(sizeof(StaticMeshVertex), totalVertexLen / sizeof(StaticMeshVertex));
-    sceneIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), totalIdxLen / sizeof(uint32));
+    sceneVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(StaticMeshVertex), totalVertexLen / sizeof(StaticMeshVertex));
+    sceneIndexBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), totalIdxLen / sizeof(uint32));
     sceneVertexBuffer->init();
     sceneIndexBuffer->init();
 
@@ -719,49 +616,47 @@ void ExperimentalEngineGoochModel::createSceneRenderData(IRenderCommandList* cmd
 void ExperimentalEngineGoochModel::destroyScene()
 {
     ENQUEUE_COMMAND(DestroyScene)(
-        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
         {
-            sceneVertexBuffer->release();
-            delete sceneVertexBuffer;
-            sceneIndexBuffer->release();
-            delete sceneIndexBuffer;
+            sceneVertexBuffer.reset();
+            sceneIndexBuffer.reset();
         });
     sceneData.clear();
 }
 
-void ExperimentalEngineGoochModel::createShaderParameters()
+void ExperimentalEngineGoochModel::createShaderParameters(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
-    IGraphicsInstance* graphicsInstance = getRenderManager()->getGraphicsInstance();
     const PipelineBase* smPipeline = static_cast<const GraphicsPipelineBase*>(drawSmPipelineContext.getPipeline());
     // Since view data and other view related data are at set 0
-    viewParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::VIEW_UNIQ_SET));
-    viewParameters->setResourceName("View");
+    viewParameters = graphicsHelper->createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::VIEW_UNIQ_SET));
+    viewParameters->setResourceName(TCHAR("View"));
     // All vertex type's instance data(we have only static)
-    instanceParameters = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::INSTANCE_UNIQ_SET));
-    instanceParameters->setResourceName("StaticVertexInstances");
-    SharedPtr<ShaderParameters> singleColShaderParams = GraphicsHelper::createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::SHADER_UNIQ_SET));
-    singleColShaderParams->setResourceName("SingleColorShaderParams");
+    instanceParameters = graphicsHelper->createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::INSTANCE_UNIQ_SET));
+    instanceParameters->setResourceName(TCHAR("StaticVertexInstances"));
+    ShaderParametersRef singleColShaderParams = graphicsHelper->createShaderParameters(graphicsInstance, smPipeline->getParamLayoutAtSet(ShaderParameterUtility::SHADER_UNIQ_SET));
+    singleColShaderParams->setResourceName(TCHAR("SingleColorShaderParams"));
     sceneShaderUniqParams[&drawSmPipelineContext] = singleColShaderParams;
 
-    uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
-    lightTextures.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
-    drawQuadTextureDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
-    drawQuadNormalDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
-    drawQuadDepthDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
-    drawLitColorsDescs.setNewSwapchain(appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow()));
+    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    uint32 swapchainCount = windowCanvas->imagesCount();
+    lightTextures.setNewSwapchain(windowCanvas);
+    drawQuadTextureDescs.setNewSwapchain(windowCanvas);
+    drawQuadNormalDescs.setNewSwapchain(windowCanvas);
+    drawQuadDepthDescs.setNewSwapchain(windowCanvas);
+    drawLitColorsDescs.setNewSwapchain(windowCanvas);
 
     // Light related descriptors
     // as 2 and 3 are textures and light data
     const GraphicsResource* goochModelDescLayout = drawGoochPipelineContext.getPipeline()->getParamLayoutAtSet(0);
-    lightCommon = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 2,3 });
-    lightCommon->setResourceName("LightCommon");
+    lightCommon = graphicsHelper->createShaderParameters(graphicsInstance, goochModelDescLayout, { 2,3 });
+    lightCommon->setResourceName(TCHAR("LightCommon"));
     const uint32 lightDataCount = uint32(Math::ceil(sceneLightData.size() / float(ARRAY_LENGTH(GoochModelLightArray::lights))));
     lightData.resize(lightDataCount);
     for (uint32 i = 0; i < lightDataCount; ++i)
     {
         // as 1 and 2 are light common and textures
-        lightData[i] = GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 2 });
-        lightData[i]->setResourceName("Light_" + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + "to"
+        lightData[i] = graphicsHelper->createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 2 });
+        lightData[i]->setResourceName(TCHAR("Light_") + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + TCHAR("to")
             + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights)));
     }
 
@@ -769,89 +664,92 @@ void ExperimentalEngineGoochModel::createShaderParameters()
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
         const String iString = String::toString(i);
-        lightTextures.set(GraphicsHelper::createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 3 }), i);
-        lightTextures.getResources()[i]->setResourceName("LightFrameCommon_" + iString);
-        drawQuadTextureDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
-        drawQuadTextureDescs.getResources()[i]->setResourceName("QuadUnlit_" + iString);
-        drawQuadNormalDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
-        drawQuadNormalDescs.getResources()[i]->setResourceName("QuadNormal_" + iString);
-        drawQuadDepthDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
-        drawQuadDepthDescs.getResources()[i]->setResourceName("QuadDepth_" + iString);
-        drawLitColorsDescs.set(GraphicsHelper::createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
-        drawLitColorsDescs.getResources()[i]->setResourceName("QuadLit_" + iString);
+        lightTextures.set(graphicsHelper->createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 3 }), i);
+        lightTextures.getResources()[i]->setResourceName(TCHAR("LightFrameCommon_") + iString);
+        drawQuadTextureDescs.set(graphicsHelper->createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawQuadTextureDescs.getResources()[i]->setResourceName(TCHAR("QuadUnlit_") + iString);
+        drawQuadNormalDescs.set(graphicsHelper->createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawQuadNormalDescs.getResources()[i]->setResourceName(TCHAR("QuadNormal_") + iString);
+        drawQuadDepthDescs.set(graphicsHelper->createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawQuadDepthDescs.getResources()[i]->setResourceName(TCHAR("QuadDepth_") + iString);
+        drawLitColorsDescs.set(graphicsHelper->createShaderParameters(graphicsInstance, drawQuadDescLayout), i);
+        drawLitColorsDescs.getResources()[i]->setResourceName(TCHAR("QuadLit_") + iString);
     }
 
-    clearInfoParams = GraphicsHelper::createShaderParameters(graphicsInstance, clearQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0));
-    clearInfoParams->setResourceName("ClearInfo");
+    clearInfoParams = graphicsHelper->createShaderParameters(graphicsInstance, clearQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0));
+    clearInfoParams->setResourceName(TCHAR("ClearInfo"));
 
-    testComputeParams = GraphicsHelper::createShaderParameters(graphicsInstance, testComputePipelineContext.getPipeline()->getParamLayoutAtSet(0));
-    testComputeParams->setResourceName("TestCompute");
+    testComputeParams = graphicsHelper->createShaderParameters(graphicsInstance, testComputePipelineContext.getPipeline()->getParamLayoutAtSet(0));
+    testComputeParams->setResourceName(TCHAR("TestCompute"));
 
-    setupShaderParameterParams();
+    createTextRenderResources(cmdList, graphicsInstance, graphicsHelper);
+
+    setupShaderParameterParams(graphicsInstance, graphicsHelper);
 }
 
-void ExperimentalEngineGoochModel::setupShaderParameterParams()
+void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
-    IGraphicsInstance* graphicsInstance = getRenderManager()->getGraphicsInstance();
-
     ViewData viewData;
     viewData.view = camera.viewMatrix();
     viewData.invView = viewData.view.inverse();
     viewData.projection = camera.projectionMatrix();
     viewData.invProjection = viewData.projection.inverse();
-    viewParameters->setBuffer("viewData", viewData);
+    viewParameters->setBuffer(TCHAR("viewData"), viewData);
     viewParameters->init();
 
     // Setting values to instance params and material shader params happens along with global draw command data buffer setup
     // Dummy resize
-    instanceParameters->resizeRuntimeBuffer("instancesWrapper", 1);
+    instanceParameters->resizeRuntimeBuffer(TCHAR("instancesWrapper"), 1);
     instanceParameters->init();
 
     for (auto& shaderUniqParams : sceneShaderUniqParams)
     {
         // Dummy resize
-        shaderUniqParams.second->resizeRuntimeBuffer("materials", 1);
+        shaderUniqParams.second->resizeRuntimeBuffer(TCHAR("materials"), 1);
         shaderUniqParams.second->init();
     }
 
-    lightCommon->setBuffer("viewData", viewData);
-    lightCommon->setIntParam("lightsCount", uint32(sceneLightData.size()));
-    lightCommon->setFloatParam("invLightsCount", 1.0f / sceneLightData.size());
+    lightCommon->setBuffer(TCHAR("viewData"), viewData);
+    lightCommon->setIntParam(TCHAR("lightsCount"), uint32(sceneLightData.size()));
+    lightCommon->setFloatParam(TCHAR("invLightsCount"), 1.0f / sceneLightData.size());
     lightCommon->init();
     uint32 lightStartIdx = 0;
-    for (SharedPtr<ShaderParameters>& light : lightData)
+    for (ShaderParametersRef& light : lightData)
     {
         uint32 rangeIdx = 0;
         for (; rangeIdx < ARRAY_LENGTH(GoochModelLightArray::lights) && (rangeIdx + lightStartIdx) < sceneLightData.size(); ++rangeIdx)
         {
-            light->setBuffer("lights", sceneLightData[rangeIdx + lightStartIdx], rangeIdx);
+            light->setBuffer(TCHAR("lights"), sceneLightData[rangeIdx + lightStartIdx], rangeIdx);
         }
-        light->setIntParam("count", uint32(rangeIdx));
+        light->setIntParam(TCHAR("count"), uint32(rangeIdx));
         light->init();
 
         lightStartIdx += ARRAY_LENGTH(GoochModelLightArray::lights);
     }
 
-    uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
+    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    uint32 swapchainCount = windowCanvas->imagesCount();
     ImageViewInfo depthImageViewInfo;
     depthImageViewInfo.componentMapping.g = depthImageViewInfo.componentMapping.b 
         = depthImageViewInfo.componentMapping.a = depthImageViewInfo.componentMapping.r = EPixelComponentMapping::R;
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffer, i);
-        const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
-        const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
-        lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParamViewInfo("ssDepth", depthImageViewInfo);
-        lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
+        GenericRenderPassProperties renderProps = GlobalBuffers::getFramebufferRenderpassProps(ERenderPassFormat::Multibuffer);
+        std::vector<ImageResourceRef> multibufferRts = GBuffers::getGbufferAttachments(ERenderPassFormat::Multibuffer, i);
+        const int32 fbIncrement = renderProps.bOneRtPerFormat ? 1 : 2;
+        const int32 resolveIdxOffset = renderProps.bOneRtPerFormat ? 0 : 1;
 
-        drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
-        drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
-        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(3 * fbIncrement)], linearFiltering);
-        drawQuadDepthDescs.getResources()[i]->setTextureParamViewInfo("quadTexture", depthImageViewInfo);
-        drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
+        lightTextures.getResources()[i]->setTextureParam(TCHAR("ssUnlitColor"), multibufferRts[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam(TCHAR("ssNormal"), multibufferRts[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam(TCHAR("ssDepth"), multibufferRts[(3 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParamViewInfo(TCHAR("ssDepth"), depthImageViewInfo);
+        lightTextures.getResources()[i]->setTextureParam(TCHAR("ssColor"), frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
+
+        drawQuadTextureDescs.getResources()[i]->setTextureParam(TCHAR("quadTexture"), multibufferRts[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
+        drawQuadNormalDescs.getResources()[i]->setTextureParam(TCHAR("quadTexture"), multibufferRts[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
+        drawQuadDepthDescs.getResources()[i]->setTextureParam(TCHAR("quadTexture"), multibufferRts[(3 * fbIncrement)], linearFiltering);
+        drawQuadDepthDescs.getResources()[i]->setTextureParamViewInfo(TCHAR("quadTexture"), depthImageViewInfo);
+        drawLitColorsDescs.getResources()[i]->setTextureParam(TCHAR("quadTexture"), frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
     lightTextures.init();
     drawQuadTextureDescs.init();
@@ -859,17 +757,17 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams()
     drawQuadDepthDescs.init();
     drawLitColorsDescs.init();
 
-    clearInfoParams->setVector4Param("clearColor", Vector4D(0, 0, 0, 0));
+    clearInfoParams->setVector4Param(TCHAR("clearColor"), Vector4D(0, 0, 0, 0));
     clearInfoParams->init();
 
-    testComputeParams->setTextureParam("resultImage", writeTexture.image->getTextureResource());
+    testComputeParams->setTextureParam(TCHAR("resultImage"), writeTexture->getTextureResource());
 
-    testComputeParams->resizeRuntimeBuffer("inData", 2);
-    auto textures = appInstance().assetManager.getAssetsOfType<EAssetType::Texture2D, TextureAsset>();
+    testComputeParams->resizeRuntimeBuffer(TCHAR("inData"), 2);
+    auto textures = assetManager.getAssetsOfType<EAssetType::Texture2D, TextureAsset>();
     texturesCount = uint32(textures.size());
     for (uint32 i = 0; i < textures.size(); ++i)
     {
-        testComputeParams->setTextureParam("srcImages", textures[i]->getTexture()->getTextureResource(), linearFiltering, i);
+        testComputeParams->setTextureParam(TCHAR("srcImages"), textures[i]->getTexture()->getTextureResource(), linearFiltering, i);
     }
     AOS testRuntime;
     testRuntime.a = Vector4D(1, 0, 1, 0);
@@ -878,9 +776,9 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams()
     testRuntime.c[1] = Vector2D::FWD;
     testRuntime.c[2] = Vector2D::RIGHT;
     testRuntime.c[3] = Vector2D::FWD;
-    testComputeParams->setVector4Param("test1", testRuntime.a);
-    testComputeParams->setBuffer("data", testRuntime, 0);
-    testComputeParams->setBuffer("data", testRuntime, 1);
+    testComputeParams->setVector4Param(TCHAR("test1"), testRuntime.a);
+    testComputeParams->setBuffer(TCHAR("data"), testRuntime, 0);
+    testComputeParams->setBuffer(TCHAR("data"), testRuntime, 1);
     testComputeParams->init();
 }
 
@@ -903,29 +801,31 @@ void ExperimentalEngineGoochModel::updateShaderParameters(class IRenderCommandLi
         ShaderParameters::staticType()->allRegisteredResources(shaderParams, true, true);
         for (GraphicsResource* resource : shaderParams)
         {
-            static_cast<ShaderParametersRef>(resource)->updateParams(cmdList, graphicsInstance);
+            static_cast<ShaderParameters*>(resource)->updateParams(cmdList, graphicsInstance);
         }
     }
 }
 
 void ExperimentalEngineGoochModel::reupdateTextureParamsOnResize()
 {
-    uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
+    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    uint32 swapchainCount = windowCanvas->imagesCount();
 
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
-        Framebuffer* multibuffer = GlobalBuffers::getFramebuffer(ERenderPassFormat::Multibuffer, i);
-        const int32 fbIncrement = multibuffer->bHasResolves ? 2 : 1;
-        const int32 resolveIdxOffset = multibuffer->bHasResolves ? 1 : 0;
-        lightTextures.getResources()[i]->setTextureParam("ssUnlitColor", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssNormal", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssDepth", multibuffer->textures[(3 * fbIncrement)], nearestFiltering);
-        lightTextures.getResources()[i]->setTextureParam("ssColor", frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
+        GenericRenderPassProperties renderProps = GlobalBuffers::getFramebufferRenderpassProps(ERenderPassFormat::Multibuffer);
+        std::vector<ImageResourceRef> multibufferRts = GBuffers::getGbufferAttachments(ERenderPassFormat::Multibuffer, i);
+        const int32 fbIncrement = renderProps.bOneRtPerFormat ? 1 : 2;
+        const int32 resolveIdxOffset = renderProps.bOneRtPerFormat ? 0 : 1;
+        lightTextures.getResources()[i]->setTextureParam(TCHAR("ssUnlitColor"), multibufferRts[(0 * fbIncrement) + resolveIdxOffset], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam(TCHAR("ssNormal"), multibufferRts[(1 * fbIncrement) + resolveIdxOffset], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam(TCHAR("ssDepth"), multibufferRts[(3 * fbIncrement)], nearestFiltering);
+        lightTextures.getResources()[i]->setTextureParam(TCHAR("ssColor"), frameResources[i].lightingPassResolved->getTextureResource(), nearestFiltering);
 
-        drawQuadTextureDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
-        drawQuadNormalDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
-        drawQuadDepthDescs.getResources()[i]->setTextureParam("quadTexture", multibuffer->textures[(3 * fbIncrement)], linearFiltering);
-        drawLitColorsDescs.getResources()[i]->setTextureParam("quadTexture", frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
+        drawQuadTextureDescs.getResources()[i]->setTextureParam(TCHAR("quadTexture"), multibufferRts[(0 * fbIncrement) + resolveIdxOffset], linearFiltering);
+        drawQuadNormalDescs.getResources()[i]->setTextureParam(TCHAR("quadTexture"), multibufferRts[(1 * fbIncrement) + resolveIdxOffset], linearFiltering);
+        drawQuadDepthDescs.getResources()[i]->setTextureParam(TCHAR("quadTexture"), multibufferRts[(3 * fbIncrement)], linearFiltering);
+        drawLitColorsDescs.getResources()[i]->setTextureParam(TCHAR("quadTexture"), frameResources[i].lightingPassRt->getTextureResource(), linearFiltering);
     }
 }
 
@@ -942,13 +842,11 @@ void ExperimentalEngineGoochModel::destroyShaderParameters()
         shaderUniqParams.second->release();
     }
     sceneShaderUniqParams.clear();
-
-    uint32 swapchainCount = appInstance().appWindowManager.getWindowCanvas(appInstance().appWindowManager.getMainWindow())->imagesCount();
     
     lightCommon->release();
     lightCommon.reset();
 
-    for (SharedPtr<ShaderParameters>& light : lightData)
+    for (ShaderParametersRef& light : lightData)
     {
         light->release();
         light.reset();
@@ -965,26 +863,26 @@ void ExperimentalEngineGoochModel::destroyShaderParameters()
 
     testComputeParams->release();
     testComputeParams.reset();
+
+    destroyTextRenderResources();
 }
 
 void ExperimentalEngineGoochModel::resizeLightingRts(const Size2D& size)
 {
-    GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
-        ->appWindowManager.getMainWindow());
+    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
         frameResources[i].lightingPassRt->setTextureSize(size);
         frameResources[i].lightingPassResolved->setTextureSize(size);
-        getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
-        getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
     }
 }
 
-void ExperimentalEngineGoochModel::createFrameResources()
+void ExperimentalEngineGoochModel::createFrameResources(IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
-    GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
-        ->appWindowManager.getMainWindow());
+    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
@@ -995,32 +893,31 @@ void ExperimentalEngineGoochModel::createFrameResources()
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
-        String name = "Frame";
+        String name = TCHAR("Frame");
         name.append(String::toString(i));
 
-        frameResources[i].usageWaitSemaphore.push_back(GraphicsHelper::createSemaphore(getRenderManager()->getGraphicsInstance(), (name + "QueueSubmit").c_str()));
-        frameResources[i].recordingFence = GraphicsHelper::createFence(getRenderManager()->getGraphicsInstance(), (name + "RecordingGaurd").c_str(),true);
+        frameResources[i].usageWaitSemaphore.push_back(graphicsHelper->createSemaphore(graphicsInstance, (name + TCHAR("QueueSubmit")).c_str()));
+        frameResources[i].usageWaitSemaphore.back()->init();
+        frameResources[i].recordingFence = graphicsHelper->createFence(graphicsInstance, (name + TCHAR("RecordingGaurd")).c_str(),true);
+        frameResources[i].recordingFence->init();
 
-        rtCreateParams.textureName = "LightingRT_" + String::toString(i);
+        rtCreateParams.textureName = TCHAR("LightingRT_") + String::toString(i);
         frameResources[i].lightingPassRt = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
-        rtCreateParams.textureName = "LightingResolved_" + String::toString(i);
+        rtCreateParams.textureName = TCHAR("LightingResolved_") + String::toString(i);
         frameResources[i].lightingPassResolved = TextureBase::createTexture<RenderTargetTexture>(rtCreateParams);
     }
 }
 
 void ExperimentalEngineGoochModel::destroyFrameResources()
 {
-    GenericWindowCanvas* windowCanvas = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
-        ->appWindowManager.getMainWindow());
-
-    for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
+    for (int32 i = 0; i < frameResources.size(); ++i)
     {
         frameResources[i].usageWaitSemaphore[0]->release();
         frameResources[i].recordingFence->release();
         frameResources[i].usageWaitSemaphore[0].reset();
         frameResources[i].recordingFence.reset();
 
-        getRenderManager()->getGlobalRenderingContext()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassRt);
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassResolved);
     }
@@ -1028,118 +925,214 @@ void ExperimentalEngineGoochModel::destroyFrameResources()
 
 void ExperimentalEngineGoochModel::getPipelineForSubpass()
 {
-    VulkanGlobalRenderingContext* vulkanRenderingContext = static_cast<VulkanGlobalRenderingContext*>(getRenderManager()->getGlobalRenderingContext());
+    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    auto multibufferRts = GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0);
 
     drawSmPipelineContext.forVertexType = EVertexType::StaticMesh;
-    drawSmPipelineContext.materialName = "SingleColor";
+    drawSmPipelineContext.materialName = TCHAR("SingleColor");
     drawSmPipelineContext.renderpassFormat = ERenderPassFormat::Multibuffer;
     drawSmPipelineContext.swapchainIdx = 0;
-    vulkanRenderingContext->preparePipelineContext(&drawSmPipelineContext);
+    rendererModule->getRenderManager()->preparePipelineContext(&drawSmPipelineContext, multibufferRts);
 
     // Gooch model
     drawGoochPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
-    drawGoochPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassRt);
-    drawGoochPipelineContext.materialName = "GoochModel";
-    vulkanRenderingContext->preparePipelineContext(&drawGoochPipelineContext);
-    lightingRenderPass = vulkanRenderingContext->getRenderPass(
-        static_cast<const GraphicsPipelineBase*>(drawGoochPipelineContext.getPipeline())->getRenderpassProperties(), {});
+    drawGoochPipelineContext.materialName = TCHAR("GoochModel");
+    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { frameResources[0].lightingPassRt });
 
     clearQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
-    clearQuadPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassResolved);
-    clearQuadPipelineContext.materialName = "ClearRT";
-    vulkanRenderingContext->preparePipelineContext(&clearQuadPipelineContext);
+    clearQuadPipelineContext.materialName = TCHAR("ClearRT");
+    rendererModule->getRenderManager()->preparePipelineContext(&clearQuadPipelineContext, { frameResources[0].lightingPassResolved });
     
     resolveLightRtPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
-    resolveLightRtPipelineContext.rtTextures.emplace_back(frameResources[0].lightingPassResolved);
-    resolveLightRtPipelineContext.materialName = "DrawQuadFromTexture";
-    vulkanRenderingContext->preparePipelineContext(&resolveLightRtPipelineContext);
+    resolveLightRtPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
+    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { frameResources[0].lightingPassResolved });
 
-    drawQuadPipelineContext.bUseSwapchainFb = true;
-    drawQuadPipelineContext.materialName = "DrawQuadFromTexture";
+    drawQuadPipelineContext.windowCanvas = windowCanvas;
+    drawQuadPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
     drawQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawQuadPipelineContext.swapchainIdx = 0;
-    vulkanRenderingContext->preparePipelineContext(&drawQuadPipelineContext);
+    rendererModule->getRenderManager()->preparePipelineContext(&drawQuadPipelineContext);
 
-    testComputePipelineContext.materialName = "TestCompute";
-    vulkanRenderingContext->preparePipelineContext(&testComputePipelineContext);
+    testComputePipelineContext.materialName = TCHAR("TestCompute");
+    rendererModule->getRenderManager()->preparePipelineContext(&testComputePipelineContext);
+
+    imguiShaderCntxt.materialName = TCHAR("DrawImGui");
+    imguiShaderCntxt.renderpassFormat = ERenderPassFormat::Generic;
+    rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { frameResources[0].lightingPassRt });
 }
 
-void ExperimentalEngineGoochModel::createPipelineResources()
+void ExperimentalEngineGoochModel::clearPipelineContexts()
+{
+    drawSmPipelineContext.reset();
+    drawGoochPipelineContext.reset();
+    clearQuadPipelineContext.reset();
+    resolveLightRtPipelineContext.reset();
+    drawQuadPipelineContext.reset();
+
+    testComputePipelineContext.reset();
+    imguiShaderCntxt.reset();
+}
+
+void ExperimentalEngineGoochModel::createPipelineResources(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
     clearValues.colors.resize(drawSmPipelineContext.getFb()->textures.size(), LinearColorConst::BLACK);
 
-    ENQUEUE_COMMAND_NODEBUG(QuadVerticesInit,LAMBDA_BODY
-        (
-            const std::array<Vector3D, 3> quadVerts = { Vector3D(-1,-1,0),Vector3D(3,-1,0),Vector3D(-1,3,0) };
-            const std::array<uint32, 3> quadIndices = { 0,1,2 };// 3 Per tri of quad
-
-            quadVertexBuffer = new GraphicsVertexBuffer(sizeof(Vector3D), static_cast<uint32>(quadVerts.size()));
-            quadVertexBuffer->setResourceName("ScreenQuadVertices");
-            quadVertexBuffer->init();
-            quadIndexBuffer = new GraphicsIndexBuffer(sizeof(uint32), static_cast<uint32>(quadIndices.size()));
-            quadIndexBuffer->setResourceName("ScreenQuadIndices");
-            quadIndexBuffer->init();
-
-            cmdList->copyToBuffer(quadVertexBuffer, 0, quadVerts.data(), uint32(quadVertexBuffer->getResourceSize()));
-            cmdList->copyToBuffer(quadIndexBuffer, 0, quadIndices.data(), uint32(quadIndexBuffer->getResourceSize()));
-        )
-        , this);
-
     // Shader pipeline's buffers and image access
-    createShaderParameters();
+    createShaderParameters(cmdList, graphicsInstance, graphicsHelper);
 }
 
 void ExperimentalEngineGoochModel::destroyPipelineResources()
 {
-    ENQUEUE_COMMAND_NODEBUG(QuadVerticesRelease,LAMBDA_BODY
-        (
-            quadVertexBuffer->release();
-            quadIndexBuffer->release();
-            delete quadVertexBuffer;
-            quadVertexBuffer = nullptr;
-            delete quadIndexBuffer;
-            quadIndexBuffer = nullptr;
-        )
-    , this);
     // Shader pipeline's buffers and image access
     destroyShaderParameters();
+}
+
+void ExperimentalEngineGoochModel::createTextRenderResources(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+{
+    FontManager& fontManager = application->fontManager;
+    FontManager::FontIndex idx = fontManager.addFont(TCHAR("D:/Workspace/VisualStudio/Cranberry/Build/Debug/Assets/Fonts/CascadiaMono-Bold.ttf"));
+
+    fontManager.addGlyphs(idx,
+        {
+            { 0x0020u, 0x0100u },
+            { 0u, 1u }
+        }
+        , { 32, 64 }
+    );
+    fontManager.flushUpdates();
+    textToRender = TCHAR("Hello World!\nCheck this out!");
+
+    textRenderParams = graphicsHelper->createShaderParameters(graphicsInstance, imguiShaderCntxt.getPipeline()->getParamLayoutAtSet(0));
+    textRenderParams->setResourceName(TCHAR("TestTextRenderParams"));
+    // Just tiny hack now
+    fontManager.setupTextureAtlas(textRenderParams.get(), TCHAR("textureAtlas"));
+    textRenderParams->setTextureParam(TCHAR("textureAtlas"), textRenderParams->getTextureParam(TCHAR("textureAtlas")), linearFiltering);
+    textRenderParams->init();
+
+    textVertsBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, int32(sizeof(ImDrawVert)));
+    textVertsBuffer->setResourceName(TCHAR("TestTextRenderVertices"));
+    textIndexBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, int32(sizeof(ImDrawIdx)));
+    textIndexBuffer->setResourceName(TCHAR("TestTextRenderIndices"));
+    updateTextRenderData(cmdList, graphicsInstance, graphicsHelper);
+}
+
+void ExperimentalEngineGoochModel::destroyTextRenderResources()
+{
+    textRenderParams.reset();
+    textVertsBuffer.reset();
+    textIndexBuffer.reset();
+}
+
+void ExperimentalEngineGoochModel::updateTextRenderData(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+{
+    FontManager& fontManager = application->fontManager;
+    std::vector<FontVertex> fontVerts;
+    fontManager.draw(fontVerts, textBB, textToRender, 0, textHeight, wrapSize);
+    Color fontCol{ textCol };
+    
+    if (fontVerts.size() > textVertsBuffer->bufferCount())
+    {
+        // Recreate and resize vertex and index buffer
+        if (textIndexBuffer->isValid())
+        {
+            textIndexBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, int32(sizeof(uint32)));
+            textIndexBuffer->setResourceName(TCHAR("TestTextRenderIndices"));
+        }
+        if (textVertsBuffer->isValid())
+        {
+            textVertsBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, int32(sizeof(ImDrawVert)));
+            textVertsBuffer->setResourceName(TCHAR("TestTextRenderVertices"));
+        }
+        textVertsBuffer->setBufferCount(fontVerts.size());
+        textVertsBuffer->init();
+        textIndexBuffer->setBufferCount((fontVerts.size() * 6) / 4);
+        textIndexBuffer->init();
+    }
+
+    textVertCount = fontVerts.size();
+    textIdxCount = (textVertCount * 6) / 4;
+    // Copying directly as we can use transform to move the vertices in place
+    std::vector<ImDrawVert> verts(textVertCount);
+    std::vector<uint32> idxs(textIdxCount);
+    uint32 endIdx = verts.size() / 4;
+    for (uint32 idx = 0; idx < endIdx; ++idx)
+    {
+        uint32 vertIdx = idx * 4;
+        for (uint32 i = 0; i < 4; ++i)
+        {
+            ImDrawVert& thisVert = verts[vertIdx + i];
+            thisVert.pos = { float(fontVerts[vertIdx + i].pos.x), float(fontVerts[vertIdx + i].pos.y) };
+            thisVert.uv = fontVerts[vertIdx + i].texCoord;
+            thisVert.col = fontCol;
+        }
+        uint32 indexIdx = idx * 6;
+        idxs[indexIdx + 0] = vertIdx + 0;
+        idxs[indexIdx + 1] = vertIdx + 2;
+        idxs[indexIdx + 2] = vertIdx + 3;
+        idxs[indexIdx + 3] = vertIdx + 0;
+        idxs[indexIdx + 4] = vertIdx + 1;
+        idxs[indexIdx + 5] = vertIdx + 2;
+    }
+    std::vector<BatchCopyBufferData> copies(2);
+    copies[0] = BatchCopyBufferData{
+        textIndexBuffer
+        , 0
+        , idxs.data()
+        , uint32(idxs.size() * sizeof(uint32))
+    };
+    copies[1] = BatchCopyBufferData{
+        textVertsBuffer
+        , 0
+        , verts.data()
+        , uint32(verts.size() * sizeof(ImDrawVert))
+    };
+    cmdList->copyToBuffer(copies);
+
+    Int2D textSize = textBB.size();
+    Vector2D scale = 2.0f / Vector2D(textSize.x, textSize.y);
+    Vector2D translate{ -1.0f - Vector2D(textBB.minBound) * scale };
+    // Now offset transforms so that text will be centered in middle of screen
+    textBB += (Int2D(EngineSettings::screenSize.get()) - textSize) / 2;
+
+    textRenderParams->setVector2Param(TCHAR("scale"), scale);
+    textRenderParams->setVector2Param(TCHAR("translate"), translate);
 }
 
 void ExperimentalEngineGoochModel::updateCameraParams()
 {
     ViewData viewDataTemp;
 
-    if (appInstance().inputSystem()->isKeyPressed(Keys::RMB))
+    if (inputModule->getInputSystem()->isKeyPressed(Keys::RMB))
     {
-        cameraRotation.yaw() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
-        cameraRotation.pitch() += appInstance().inputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
+        cameraRotation.yaw() += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
+        cameraRotation.pitch() += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
     }
 
-    if (appInstance().inputSystem()->isKeyPressed(Keys::A))
+    if (inputModule->getInputSystem()->isKeyPressed(Keys::A))
     {
         cameraTranslation -= cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (appInstance().inputSystem()->isKeyPressed(Keys::D))
+    if (inputModule->getInputSystem()->isKeyPressed(Keys::D))
     {
         cameraTranslation += cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (appInstance().inputSystem()->isKeyPressed(Keys::W))
+    if (inputModule->getInputSystem()->isKeyPressed(Keys::W))
     {
         cameraTranslation += cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (appInstance().inputSystem()->isKeyPressed(Keys::S))
+    if (inputModule->getInputSystem()->isKeyPressed(Keys::S))
     {
         cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (appInstance().inputSystem()->isKeyPressed(Keys::Q))
+    if (inputModule->getInputSystem()->isKeyPressed(Keys::Q))
     {
         cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (appInstance().inputSystem()->isKeyPressed(Keys::E))
+    if (inputModule->getInputSystem()->isKeyPressed(Keys::E))
     {
         cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (appInstance().inputSystem()->keyState(Keys::R)->keyWentUp)
+    if (inputModule->getInputSystem()->keyState(Keys::R)->keyWentUp)
     {
         cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
     }
@@ -1150,10 +1143,10 @@ void ExperimentalEngineGoochModel::updateCameraParams()
         viewDataTemp.projection = camera.projectionMatrix();
         viewDataTemp.invProjection = viewDataTemp.projection.inverse();
 
-        viewParameters->setMatrixParam("projection", viewDataTemp.projection);
-        viewParameters->setMatrixParam("invProjection", viewDataTemp.invProjection);
-        lightCommon->setMatrixParam("projection", viewDataTemp.projection);
-        lightCommon->setMatrixParam("invProjection", viewDataTemp.invProjection);
+        viewParameters->setMatrixParam(TCHAR("projection"), viewDataTemp.projection);
+        viewParameters->setMatrixParam(TCHAR("invProjection"), viewDataTemp.invProjection);
+        lightCommon->setMatrixParam(TCHAR("projection"), viewDataTemp.projection);
+        lightCommon->setMatrixParam(TCHAR("invProjection"), viewDataTemp.invProjection);
     }
 
     camera.setRotation(cameraRotation);
@@ -1161,10 +1154,10 @@ void ExperimentalEngineGoochModel::updateCameraParams()
 
     viewDataTemp.view = camera.viewMatrix();
     viewDataTemp.invView = viewDataTemp.view.inverse();
-    viewParameters->setMatrixParam("view", viewDataTemp.view);
-    viewParameters->setMatrixParam("invView", viewDataTemp.invView);
-    lightCommon->setMatrixParam("view", viewDataTemp.view);
-    lightCommon->setMatrixParam("invView", viewDataTemp.invView);
+    viewParameters->setMatrixParam(TCHAR("view"), viewDataTemp.view);
+    viewParameters->setMatrixParam(TCHAR("invView"), viewDataTemp.invView);
+    lightCommon->setMatrixParam(TCHAR("view"), viewDataTemp.view);
+    lightCommon->setMatrixParam(TCHAR("invView"), viewDataTemp.invView);
 }
 
 void ExperimentalEngineGoochModel::onStartUp()
@@ -1172,10 +1165,10 @@ void ExperimentalEngineGoochModel::onStartUp()
     GameEngine::onStartUp();
 
     ENQUEUE_COMMAND(EngineStartUp)(
-        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
         {
-            createSceneRenderData(cmdList, graphicsInstance);
-            startUpRenderInit();
+            createSceneRenderData(cmdList, graphicsInstance, graphicsHelper);
+            startUpRenderInit(cmdList, graphicsInstance, graphicsHelper);
         });
 
     camera.cameraProjection = projection;
@@ -1190,39 +1183,70 @@ void ExperimentalEngineGoochModel::onStartUp()
     camera.lookAt(Vector3D::ZERO);
     cameraRotation = camera.rotation();
 
-    getRenderManager()->getImGuiManager()->addLayer(this);
+    imguiManager.addLayer(this);
     createScene();
+
+    std::vector<ShortSizeBox2D> bxs{
+        ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{64, 80} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{128, 48} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{48, 56} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{64, 128} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{32} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{61, 35} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{45, 51} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{33, 37} }
+        , ShortSizeBox2D{ ShortSize2D{0}, ShortSize2D{70, 21} }
+    };
+    boxes.swap(bxs);
+    std::vector<ShortSizeBox2D*> boxPtrs{
+        boxes.data(),
+        boxes.data() + 1,
+        boxes.data() + 2,
+        boxes.data() + 3,
+        boxes.data() + 4,
+        boxes.data() + 5,
+        boxes.data() + 6,
+        boxes.data() + 7,
+        boxes.data() + 8
+    };
+    std::vector<PackedRectsBin<ShortSizeBox2D>> packedbins;
+    ShortSize2D binSize{ 256 };
+    bool bValue = MathGeom::packRectangles(packedbins, binSize, boxPtrs);
 
     tempTest();
 }
 
-void ExperimentalEngineGoochModel::startUpRenderInit()
+void ExperimentalEngineGoochModel::startUpRenderInit(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
-    vDevice = VulkanGraphicsHelper::getVulkanDevice(getRenderManager()->getGraphicsInstance());
-    device = VulkanGraphicsHelper::getDevice(vDevice);
-    graphicsDbg = VulkanGraphicsHelper::debugGraphics(getRenderManager()->getGraphicsInstance());
-    createPools();
-    frameResources.resize(getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow())->imagesCount());
+    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    frameResources.resize(windowCanvas->imagesCount());
+    GBuffers::initialize(windowCanvas->imagesCount());
 
-    createFrameResources();
+    createFrameResources(graphicsInstance, graphicsHelper);
     getPipelineForSubpass();
-    createImages();
-    createPipelineResources();
-    createDrawCmdsBuffer();
+    createImages(graphicsInstance, graphicsHelper);
+    createPipelineResources(cmdList, graphicsInstance, graphicsHelper);
+    createDrawCmdsBuffer(graphicsInstance, graphicsHelper);
 }
 
 void ExperimentalEngineGoochModel::onQuit()
 {
-    ENQUEUE_COMMAND_NODEBUG(EngineQuit, { renderQuit(); }, this);
+    ENQUEUE_COMMAND(EngineQuit)(
+        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+        {
+            cmdList->flushAllcommands();
+            renderQuit();
+        });
 
-    getRenderManager()->getImGuiManager()->removeLayer(this);
+    imguiManager.removeLayer(this);
     GameEngine::onQuit();
 }
 
 void ExperimentalEngineGoochModel::renderQuit()
 {
-    vDevice->vkDeviceWaitIdle(device);
+    GBuffers::destroy();
 
+    clearPipelineContexts();
     destroyDrawCmdsBuffer();
     destroyPipelineResources();
     destroyFrameResources();
@@ -1230,23 +1254,19 @@ void ExperimentalEngineGoochModel::renderQuit()
     destroyImages();
 
     destroyScene();
-
-    destroyPools();
 }
 
-void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance)
+void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
 {
-    SharedPtr<GraphicsSemaphore> waitSemaphore;
-    uint32 index = getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()
-        ->appWindowManager.getMainWindow())->requestNextImage(&waitSemaphore, nullptr);
-    drawSmPipelineContext.swapchainIdx = drawQuadPipelineContext.swapchainIdx = index;
-    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&drawSmPipelineContext);
-    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&drawQuadPipelineContext);
+    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    SemaphoreRef waitSemaphore;
+    uint32 index = windowCanvas->requestNextImage(&waitSemaphore, nullptr);
+    drawQuadPipelineContext.swapchainIdx = index;
+    rendererModule->getRenderManager()->preparePipelineContext(&drawQuadPipelineContext);
 
-    drawGoochPipelineContext.rtTextures[0] = frameResources[index].lightingPassRt;
-    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&drawGoochPipelineContext);
-    resolveLightRtPipelineContext.rtTextures[0] = frameResources[index].lightingPassResolved;
-    getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
+    rendererModule->getRenderManager()->preparePipelineContext(&drawSmPipelineContext, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index));
+    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { frameResources[index].lightingPassRt });
+    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { frameResources[index].lightingPassResolved });
 
     GraphicsPipelineQueryParams queryParam;
     queryParam.cullingMode = ECullingMode::BackFace;
@@ -1270,12 +1290,12 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
     scissor.minBound = { 0, 0 };
     scissor.maxBound = EngineSettings::screenSize.get();
 
-    String cmdName = "FrameRender" + String::toString(index);
+    String cmdName = TCHAR("FrameRender") + String::toString(index);
     cmdList->finishCmd(cmdName);
 
     //{
     //    cmdList->finishCmd(cmdName + "_Comp");
-    //    auto temp = cmdList->startCmd(cmdName + "_Comp", EQueueFunction::Compute, true);
+    //    auto temp = cmdList->startCmd(cmdName + "_Comp"), EQueueFunction::Compute, true);
     //    cmdList->cmdBindComputePipeline(temp, testComputePipelineContext);
     //    cmdList->cmdBindDescriptorsSets(temp, testComputePipelineContext, { testComputeParams.get() });
     //    cmdList->cmdBarrierResources(temp, { testComputeParams.get() });
@@ -1290,7 +1310,6 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
     //    cmdList->submitCmd(EQueuePriority::High, cs2);
     //}
     const GraphicsResource* cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
-    VkCommandBuffer frameCmdBuffer = VulkanGraphicsHelper::getRawCmdBuffer(graphicsInstance, cmdBuffer);
     {
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEngineFrame);
         cmdList->cmdBindComputePipeline(cmdBuffer, testComputePipelineContext);
@@ -1303,16 +1322,16 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
             timeAccum = Math::mod(timeAccum, 2.0f);
         }
         std::vector<std::pair<String, std::any>> pushConsts = {
-            { "time" , { Time::asSeconds(Time::timeNow())} }
-            , { "flags", { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }}
-            , { "srcIndex", { testBindlessTextureIdx }}
+            { TCHAR("time") , { Time::asSeconds(Time::timeNow())} }
+            , { TCHAR("flags"), { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }}
+            , { TCHAR("srcIndex"), { testBindlessTextureIdx }}
         };
         cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, pushConsts);
-        cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, { testComputeParams.get() });
-        cmdList->cmdBarrierResources(cmdBuffer, { testComputeParams.get() });
+        cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, { testComputeParams });
+        cmdList->cmdBarrierResources(cmdBuffer, { testComputeParams });
         cmdList->cmdDispatch(cmdBuffer
-            , writeTexture.image->getTextureSize().x / static_cast<const ComputeShaderConfig*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().x
-            , writeTexture.image->getTextureSize().y / static_cast<const ComputeShaderConfig*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().y
+            , writeTexture->getTextureSize().x / static_cast<const ComputeShaderConfig*>(testComputePipelineContext.getPipeline()->getShaderResource()->getShaderConfig())->getSubGroupSize().x
+            , writeTexture->getTextureSize().y / static_cast<const ComputeShaderConfig*>(testComputePipelineContext.getPipeline()->getShaderResource()->getShaderConfig())->getSubGroupSize().y
         );
 
         cmdList->cmdBeginRenderPass(cmdBuffer, drawSmPipelineContext, scissor, {}, clearValues);
@@ -1338,8 +1357,7 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = EngineSettings::screenSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { quadVertexBuffer }, { 0 });
-        cmdList->cmdBindIndexBuffer(cmdBuffer, quadIndexBuffer);
+        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
         if(frameVisualizeId == 0)
         {
@@ -1352,12 +1370,12 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
                 // Clear resolve first
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, clearQuadPipelineContext, { queryParam });
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, clearQuadPipelineContext, clearInfoParams.get());
-                cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+                cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
             }
             cmdList->cmdEndRenderPass(cmdBuffer);
 
             int32 lightDataIndex = 0;
-            for (const SharedPtr<ShaderParameters>& light : lightData)
+            for (const ShaderParametersRef& light : lightData)
             {
                 cmdList->cmdBeginRenderPass(cmdBuffer, drawGoochPipelineContext, scissor, {}, clearValues);
                 {
@@ -1365,7 +1383,7 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
                     cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGoochPipelineContext, { queryParam });
 
                     cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), *lightTextures, light.get() });
-                    cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+                    cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
                 }
                 cmdList->cmdEndRenderPass(cmdBuffer);
 
@@ -1380,7 +1398,7 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
                         cmdList->cmdBindGraphicsPipeline(cmdBuffer, resolveLightRtPipelineContext, { queryParam });
                         cmdList->cmdBindDescriptorsSets(cmdBuffer, resolveLightRtPipelineContext, *drawLitColorsDescs);
 
-                        cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+                        cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
                     }
                     cmdList->cmdEndRenderPass(cmdBuffer);
                 }                
@@ -1407,8 +1425,7 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
 
             if (drawQuadDescs)
             {
-                resolveLightRtPipelineContext.rtTextures = drawGoochPipelineContext.rtTextures;
-                getRenderManager()->getGlobalRenderingContext()->preparePipelineContext(&resolveLightRtPipelineContext);
+                rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { frameResources[index].lightingPassRt });
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
                 {
@@ -1426,14 +1443,42 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
         // Drawing IMGUI
         ImGuiDrawingContext drawingContext;
         drawingContext.cmdBuffer = cmdBuffer;
-        drawingContext.rtTextures = drawGoochPipelineContext.rtTextures;
-        getRenderManager()->getImGuiManager()->draw(cmdList, graphicsInstance, drawingContext);
+        drawingContext.rtTextures = { frameResources[index].lightingPassRt };
+        imguiManager.draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
+
+        // Drawing text
+        rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { frameResources[index].lightingPassRt });
+        if (!textToRender.empty())
+        {
+            RenderPassAdditionalProps additionalProps;
+            additionalProps.bAllowUndefinedLayout = false;
+            additionalProps.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
+            additionalProps.depthLoadOp = EAttachmentOp::LoadOp::Load;
+            additionalProps.stencilLoadOp = EAttachmentOp::LoadOp::Load;
+
+            QuantizedBox2D textScissor = QuantizedBox2D(
+                Math::clamp(textBB.minBound, Int2D(0), frameResources[index].lightingPassRt->getTextureSize())
+                , Math::clamp(textBB.maxBound, Int2D(0), frameResources[index].lightingPassRt->getTextureSize())
+            );
+            cmdList->cmdSetViewportAndScissor(cmdBuffer, textBB, textScissor);
+            cmdList->cmdBeginRenderPass(cmdBuffer, imguiShaderCntxt, textScissor, additionalProps, clearValues);
+            {
+                SCOPED_CMD_MARKER(cmdList, cmdBuffer, TextRender);
+
+                cmdList->cmdBindGraphicsPipeline(cmdBuffer, imguiShaderCntxt, { queryParam });
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, imguiShaderCntxt, textRenderParams);
+                cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { textVertsBuffer }, { 0 });
+                cmdList->cmdBindIndexBuffer(cmdBuffer, textIndexBuffer);
+                cmdList->cmdDrawIndexed(cmdBuffer, 0, textIdxCount);
+            }
+            cmdList->cmdEndRenderPass(cmdBuffer);
+        }
+
 
         // Drawing final quad        
         viewport.maxBound = scissor.maxBound = EngineSettings::surfaceSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { quadVertexBuffer }, { 0 });
-        cmdList->cmdBindIndexBuffer(cmdBuffer, quadIndexBuffer);
+        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
         RenderPassAdditionalProps renderPassAdditionalProps;
@@ -1445,20 +1490,20 @@ void ExperimentalEngineGoochModel::frameRender(class IRenderCommandList* cmdList
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawQuadPipelineContext, { queryParam });
             cmdList->cmdBindDescriptorsSets(cmdBuffer, drawQuadPipelineContext, *drawLitColorsDescs);
-            cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
+            cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
         }
         cmdList->cmdEndRenderPass(cmdBuffer);
     }
     cmdList->endCmd(cmdBuffer);
 
     CommandSubmitInfo submitInfo;
-    submitInfo.waitOn = { CommandSubmitInfo::WaitInfo{ waitSemaphore, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT } };
+    submitInfo.waitOn = { CommandSubmitInfo::WaitInfo{ waitSemaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage) } };
     submitInfo.signalSemaphores = { frameResources[index].usageWaitSemaphore[0] };
     submitInfo.cmdBuffers = { cmdBuffer };
 
     cmdList->submitCmd(EQueuePriority::High, submitInfo, frameResources[index].recordingFence);
 
-    std::vector<GenericWindowCanvas*> canvases = { getApplicationInstance()->appWindowManager.getWindowCanvas(getApplicationInstance()->appWindowManager.getMainWindow()) };
+    std::vector<WindowCanvasRef> canvases = { windowCanvas };
     std::vector<uint32> indices = { index };
     cmdList->presentImage(canvases, indices, {});
 }
@@ -1468,19 +1513,19 @@ void ExperimentalEngineGoochModel::tickEngine()
     GameEngine::tickEngine();
     updateCameraParams();
 
-    if (getApplicationInstance()->inputSystem()->isKeyPressed(Keys::ONE))
+    if (inputModule->getInputSystem()->isKeyPressed(Keys::ONE))
     {
         frameVisualizeId = 0;
     }
-    else if(getApplicationInstance()->inputSystem()->isKeyPressed(Keys::TWO))
+    else if(inputModule->getInputSystem()->isKeyPressed(Keys::TWO))
     {
         frameVisualizeId = 1;
     }
-    else if (getApplicationInstance()->inputSystem()->isKeyPressed(Keys::THREE))
+    else if (inputModule->getInputSystem()->isKeyPressed(Keys::THREE))
     {
         frameVisualizeId = 2;
     }
-    else if (getApplicationInstance()->inputSystem()->isKeyPressed(Keys::FOUR))
+    else if (inputModule->getInputSystem()->isKeyPressed(Keys::FOUR))
     {
         frameVisualizeId = 3;
     }
@@ -1489,7 +1534,7 @@ void ExperimentalEngineGoochModel::tickEngine()
     {
         ENQUEUE_COMMAND_NODEBUG(WritingDescs,
             {
-                GlobalBuffers::onScreenResized(renderSize);
+                GBuffers::onScreenResized(renderSize);
                 resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
                 EngineSettings::screenSize.set(renderSize);
@@ -1499,7 +1544,7 @@ void ExperimentalEngineGoochModel::tickEngine()
     ENQUEUE_COMMAND_NODEBUG(TickFrame,
         {
             updateShaderParameters(cmdList, graphicsInstance);
-            frameRender(cmdList, graphicsInstance); 
+            frameRender(cmdList, graphicsInstance, graphicsHelper); 
         }, this);
 
     tempTestPerFrame();
@@ -1540,10 +1585,10 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-            const InputAnalogState* rmxState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::RelMouseX);
-            const InputAnalogState* rmyState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::RelMouseY);
-            const InputAnalogState* amxState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::AbsMouseX);
-            const InputAnalogState* amyState = getApplicationInstance()->inputSystem()->analogState(AnalogStates::AbsMouseY);
+            const InputAnalogState* rmxState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX);
+            const InputAnalogState* rmyState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY);
+            const InputAnalogState* amxState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseX);
+            const InputAnalogState* amyState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseY);
             ImGui::Text("Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue, rmyState->currentValue);
 
             if (ImGui::CollapsingHeader("Camera"))
@@ -1617,7 +1662,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
 
                 ImGui::Separator();
                 ImGui::NextColumn();
-                ImGui::Image(writeTexture.image, ImVec2(
+                ImGui::Image(writeTexture, ImVec2(
                     ImGui::GetWindowContentRegionWidth(),
                     ImGui::GetWindowContentRegionWidth()));
                 ImGui::Separator();
@@ -1639,7 +1684,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
                     int32 idx = 0;
                     for (const auto& threadInds : bitonic.perThreadIndices)
                     {
-                        String labelId = "Thread: " + String::toString(idx);
+                        String labelId = TCHAR("Thread: ") + String::toString(idx);
                         ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_Line, LinearColor(threadInds.second));
                         int32 segIdx = 0;
                         for (const TestBitonicSortIndices::LineSegment& seg : threadInds.first)
@@ -1662,7 +1707,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
                     int32 idx = 0;
                     for (const auto& grpInds : bitonic.perGroup)
                     {
-                        String labelId = "Group: " + String::toString(idx);
+                        String labelId = TCHAR("Group: ") + String::toString(idx);
                         ImPlot::PushStyleColor(ImPlotCol_::ImPlotCol_Line, LinearColor(grpInds.second));
                         int32 segIdx = 0;
                         for (const TestBitonicSortIndices::LineSegment& seg : grpInds.first)
@@ -1679,15 +1724,72 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
                 }
             }
 
+            if (ImGui::CollapsingHeader("Rect Packer"))
+            {
+                static std::vector<Color> col;
+                if (boxes.size() > col.size())
+                {
+                    uint32 i = uint32(col.size());
+                    col.resize(boxes.size());
+                    for (; i < col.size(); ++i)
+                    {
+                        col[i] = ColorConst::random(127);
+                    }
+                }
+                drawInterface->drawPackedRectangles(boxes.data(), col.data(), (uint32)(boxes.size()), ShortSizeBox2D::PointType(256), ColorConst::RED);
+            }
+
+            if (ImGui::CollapsingHeader("Font Manager Test"))
+            {
+                bool bAnyModified = false;
+                if (drawInterface->inputTextMultiline("Text", &textToRender, ImVec2(ImGui::GetWindowContentRegionWidth(), 200)
+                    , ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CtrlEnterForNewLine))
+                {
+                    bAnyModified = true;
+                }
+                if (ImGui::ColorEdit4("Color", reinterpret_cast<float*>(&textCol)))
+                {
+                    bAnyModified = true;
+                }
+                if (ImGui::InputInt("Wrap size", &wrapSize, 16))
+                {
+                    bAnyModified = true;
+                }
+                const char* fontHeightOpts[] = { "32", "64" };
+                static int32 fontOpt = 0;
+                if (ImGui::Combo("Font height", &fontOpt, fontHeightOpts, ARRAY_LENGTH(fontHeightOpts)))
+                {
+                    bAnyModified = true;
+                    switch (fontOpt)
+                    {
+                    case 1:
+                        textHeight = 64;
+                        break;
+                    case 0:
+                    default:
+                        textHeight = 32;
+                        break;
+                    }
+                }
+                if (bAnyModified)
+                {
+                    ENQUEUE_COMMAND(UpdateTextData)(
+                        [this](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+                        {
+                            updateTextRenderData(cmdList, graphicsInstance, graphicsHelper);
+                        });
+                }
+            }
+
             ImGui::PopStyleVar();
             ImGui::End();
         }
     }
 }
 
-//GameEngine* GameEngineWrapper::createEngineInstance()
-//{
-//    static ExperimentalEngineGoochModel gameEngine;
-//    return &gameEngine;
-//}
+GameEngine* GameEngineWrapper::createEngineInstance()
+{
+    static ExperimentalEngineGoochModel gameEngine;
+    return &gameEngine;
+}
 #endif

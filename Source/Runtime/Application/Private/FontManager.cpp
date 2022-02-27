@@ -48,6 +48,12 @@ CONST_EXPR static const TChar CRETURN_CHAR = TCHAR('\r'); // Will be skipped
 CONST_EXPR static const TChar QUESTION_CHAR = TCHAR('?');
 CONST_EXPR static const uint32 UNKNOWN_GLYPH = 0xFFFD;
 
+// From https://www.compart.com/en/unicode/category/Zs
+CONST_EXPR static const uint32 UNICODE_SPACES[] = { SPACE_CHAR, TAB_CHAR, NEWLINE_CHAR
+    , 0x00A0/*No Break space*/, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005
+    , 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x3000
+};
+
 CONST_EXPR static const int32 TAB_SIZE = 4;
 CONST_EXPR static const uint16 ATLAS_MAX_SIZE = 2048;
 CONST_EXPR static const uint16 BORDER_SIZE = 1;
@@ -87,6 +93,10 @@ public:
         int32 advance = 0;
         // Pixels to add to offset the glyph from current horizontal point(Scaled)
         int32 lsb = 0;
+        // Number of pixels above baseline this glyph extends(Scaled)
+        int32 ascent = 0;
+        // Number of pixels below baseline this glyph drops(Scaled)
+        int32 descent = 0;
         // Index to texture atlas
         int32 texAtlasIdx = -1;
         int32 texCoordIdx = -1;
@@ -107,6 +117,7 @@ public:
     std::vector<GlyphCoords> allGlyphCoords;
     // We support maximum 2 atlas, now
     ImageResourceRef textureAtlases[2];
+    Size2D atlasSizes[ARRAY_LENGTH(textureAtlases)];
     std::vector<uint8> bitmapCache;
 
     std::unordered_set<GlyphIndex> glyphsPending;
@@ -263,6 +274,14 @@ public:
 
     void updatePendingGlyphs();
 
+    bool isSpaceCode(uint32 codepoint)
+    {
+        for (uint32 i = 0; i < ARRAY_LENGTH(UNICODE_SPACES); ++i)
+        {
+            if (UNICODE_SPACES[i] == codepoint) return true;
+        }
+        return false;
+    }
     // gives advance value for given spaces and return true if one of the handled spaces
     // xAdvance is given out in glyph scaled value
     // yAdvance is scaled to fontToHeightScale value
@@ -293,7 +312,7 @@ public:
         }
         default:
         {
-            alertIf(!std::isspace(codepoint), "Unhandled space %lu", codepoint);
+            alertIf(!isSpaceCode(codepoint), "Unhandled space %lu", codepoint);
             return false;
         }
         };
@@ -354,6 +373,9 @@ void FontManagerContext::updatePendingGlyphs()
         // Will be 0 for space characters
         if (texelsCount != 0)
         {
+            // Since min value is one ascending from baseline
+            glyph.ascent = bitmapBox.minBound.y;
+            glyph.descent = bitmapBox.maxBound.y;
             glyph.bitmapDataIdx = int64(bitmapCache.size());
             glyph.texCoordIdx = uint32(allGlyphCoords.size());
 
@@ -388,7 +410,6 @@ void FontManagerContext::updatePendingGlyphs()
 
     std::vector<PackedRectsBin<ShortSizeBox2D>> packedBins;
     std::vector<std::vector<Color>> atlasTexels;
-    std::vector<ShortSize2D> atlasSizes;
     if (MathGeom::packRectangles(packedBins, ShortSizeBox2D::PointType(ATLAS_MAX_SIZE), packRects))
     {
         alertIf(packedBins.size() <= ARRAY_LENGTH(textureAtlases)
@@ -398,7 +419,7 @@ void FontManagerContext::updatePendingGlyphs()
         {
             const ShortSize2D& atlasSize = packedBins[i].binSize;
 
-            atlasSizes.emplace_back(atlasSize);
+            atlasSizes[i] = atlasSize;
             std::vector<Color>& atlasTexs = atlasTexels.emplace_back();
             atlasTexs.resize(atlasSize.x * atlasSize.y);
             for (ShortSizeBox2D* glyphBox : packedBins[i].rects)
@@ -439,9 +460,9 @@ void FontManagerContext::updatePendingGlyphs()
 
     owner->broadcastPreTextureAtlasUpdate();
     ENQUEUE_COMMAND(UpdateFontGlyphs)(
-        [this, atlasTexels, atlasSizes](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+        [this, atlasTexels](class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
         {
-            for (int32 i = 0; i < atlasSizes.size(); ++i)
+            for (int32 i = 0; i < atlasTexels.size(); ++i)
             {
                 ImageResourceCreateInfo ci
                 {
@@ -576,6 +597,11 @@ void FontManager::addGlyphs(FontIndex font, const ValueRange<uint32>& glyphCodeR
     }
 }
 
+void FontManager::flushUpdates() const
+{
+    context->updatePendingGlyphs();
+}
+
 void FontManager::setupTextureAtlas(ShaderParameters* shaderParams, const String& paramName)
 {
     ENQUEUE_COMMAND(SetupTextureAtlas)(
@@ -623,6 +649,7 @@ uint32 FontManager::calculateRenderWidth(const String& text, FontIndex font, uin
                 maxWidth = Math::max(maxWidth, width);
                 width = 0;
             }
+            lastGlyph = nullptr;
             continue;
         }
 
@@ -685,7 +712,7 @@ uint32 FontManager::calculateRenderHeight(const String& text, FontIndex font, ui
                 outHeight += context->allFonts[font].newLine;
             }
             // If wrap width is small or we do not have any word to wrap then skip wrapping
-            else if (lineWidth > 0 && lastWordWidth > 0 && (lineWidth + lastWordWidth) > wrapWidth)
+            else if (lineWidth > 0 && lastWordWidth > 0 && wrapWidth >= 0 && (lineWidth + lastWordWidth) > wrapWidth)
             {
                 lineWidth = lastWordWidth + (glyphToHeightScale * xAdvance);
                 outHeight += context->allFonts[font].newLine;
@@ -696,6 +723,7 @@ uint32 FontManager::calculateRenderHeight(const String& text, FontIndex font, ui
                 lineWidth += lastWordWidth + (glyphToHeightScale * xAdvance);
             }
             lastWordWidth = 0;
+            lastGlyph = nullptr;
             continue;
         }
 
@@ -713,4 +741,174 @@ uint32 FontManager::calculateRenderHeight(const String& text, FontIndex font, ui
     }
 
     return uint32(fontToHeightScale * outHeight);
+}
+
+void FontManager::draw(std::vector<FontVertex>& outVertices, QuantizedBox2D& outBB, const String& text, FontIndex font, uint32 height, int32 wrapWidth /*= -1*/) const
+{
+    if (context->allFonts.size() <= font)
+    {
+        return;
+    }
+    context->updatePendingGlyphs();
+
+    FontManagerContext::FontHeight contextHeight = FontManagerContext::pixelsToHeight(height);
+    // For font related unscaled value to height scaled value
+    float fontToHeightScale = context->scaleToPixelHeight(font, height);
+    // Glyph will be scaled already and below value can be used to scale glyph scaled values to height scaled value
+    float glyphToHeightScale = FontManagerContext::scaleHeightToPixelHeight(height, contextHeight);
+
+    const FontManagerContext::FontGlyph* spaceGlyph = context->findGlyph(SPACE_CHAR, font, contextHeight);
+    alertIf(spaceGlyph, "Invalid space glyph! Add glyphs to fontmanager for font, height combination");
+
+    outBB.reset(
+        QuantizedBox2D::PointType{ std::numeric_limits<QuantizedBox2D::PointElementType>::max() }
+        , QuantizedBox2D::PointType{ std::numeric_limits<QuantizedBox2D::PointElementType>::min() }
+    );
+
+    // Pixels to shift for each new line
+    int32 newLineH = int32(fontToHeightScale * context->allFonts[font].newLine);
+    // Y offset from 0, Where this line will be rendered
+    int32 baseline = 0;
+    // X offset in each line, Where next letter will be rendered
+    int32 cursorPos = 0;
+    // Last glyph for kerning
+    const FontManagerContext::FontGlyph* lastGlyph = nullptr;
+    // last word's start vertex idx used for wrapping to new line, last word lsb is left side bearing after last word is shifted to new line
+    // Last word width for auto wrapping decision
+    int32 lastWordVertex = -1, lastWordLsb = 0, lastWordWidth = 0;
+    auto wrapLastWord = [&newLineH, &lastWordVertex, &lastWordLsb](std::vector<FontVertex>& vertices, int32& outCursorPos)
+    {
+        if (lastWordVertex >= 0 && lastWordVertex < vertices.size())
+        {
+            outCursorPos = lastWordLsb;
+            int32 oldCursorPos = vertices[lastWordVertex].pos.x;
+            for (uint32 i = lastWordVertex; i < vertices.size(); i += 4)
+            {
+                int32 width = vertices[i + 1].pos.x - vertices[i + 0].pos.x;
+                // Add Current letter's start offset from last letter's old end along X to cursor so we get this letter's new start
+                outCursorPos += (vertices[i + 0].pos.x - oldCursorPos);
+                oldCursorPos = vertices[i + 1].pos.x;
+
+                // Update left edge 0 to 3
+                vertices[i + 0].pos.x = outCursorPos;
+                vertices[i + 0].pos.y += newLineH;
+                vertices[i + 3].pos.x = outCursorPos;
+                vertices[i + 3].pos.y += newLineH;
+                // Offset cursor to right edge
+                outCursorPos += width;
+                // Update right edge 1 to 2
+                vertices[i + 1].pos.x = outCursorPos;
+                vertices[i + 1].pos.y += newLineH;
+                vertices[i + 2].pos.x = outCursorPos;
+                vertices[i + 2].pos.y += newLineH;
+            }
+        }
+    };
+    for (uint32 codepoint : StringCodePoints(text))
+    {
+        int32 xAdvance = 0, yAdvance = 0;
+        if (spaceGlyph && context->advanceSpace(codepoint, font, *spaceGlyph, 1u, xAdvance, yAdvance))
+        {
+            // If wrap width is small or we do not have any word to wrap then skip wrapping
+            if (cursorPos > 0 && lastWordVertex >= 0 && wrapWidth >= 0 && (cursorPos + lastWordWidth) > wrapWidth)
+            {
+                cursorPos = 0;
+                wrapLastWord(outVertices, cursorPos);
+                // New cursor pos after wrapping will have word width added to it
+                // Account for this space alone
+                cursorPos += (glyphToHeightScale * xAdvance);
+                baseline += newLineH;
+            }
+            // No auto wrapping is done just add last word and space to current line width
+            else
+            {
+                cursorPos += lastWordWidth + (glyphToHeightScale * xAdvance);
+            }
+
+            // If this space is a new line then add another new line after auto wrapping/cursor shift
+            if (yAdvance != 0)
+            {
+                // If we advance y it means new line, So set line width to 0 and add to height
+                cursorPos = 0;
+                baseline += newLineH;
+            }
+            lastWordVertex = -1;
+            lastWordWidth = 0;
+            lastWordLsb = 0;
+            lastGlyph = nullptr;
+            continue;
+        }
+
+        const FontManagerContext::FontGlyph* codeGlyph = context->findGlyph(codepoint, font, contextHeight);
+        if (codeGlyph)
+        {
+            if (lastWordVertex < 0)
+            {
+                lastWordVertex = int32(outVertices.size());
+                lastWordLsb = glyphToHeightScale * codeGlyph->lsb;
+                lastWordWidth = 0;
+            }
+            // Kerning must be done before adding this glyph's vertices
+            if (lastGlyph)
+            {
+                lastWordWidth += fontToHeightScale * context->glyphKernAdvance(font, *lastGlyph, *codeGlyph);
+            }
+            // Add vertices
+            // Glyph related caches
+            ShortSizeBox2D glyphTexCoordClipped = context->clipBorder(context->allGlyphCoords[codeGlyph->texCoordIdx].texCoords);
+            const auto& texSize = context->atlasSizes[codeGlyph->texAtlasIdx];
+
+            // Width of this glyph's quad for given height scale
+            int32 glyphLeft = cursorPos + lastWordWidth + glyphToHeightScale * codeGlyph->lsb;
+            int32 glyphRight = glyphLeft + glyphTexCoordClipped.size().x * glyphToHeightScale;
+            int32 glyphTop = baseline + glyphToHeightScale * codeGlyph->ascent;
+            int32 glyphBottom = baseline + glyphToHeightScale * codeGlyph->descent;
+            Rect texCoord {
+                { glyphTexCoordClipped.minBound.x / float(texSize.x), glyphTexCoordClipped.minBound.y / float(texSize.y) }
+                , { glyphTexCoordClipped.maxBound.x / float(texSize.x), glyphTexCoordClipped.maxBound.y / float(texSize.y) }
+            };
+
+            uint32 glyphVert = outVertices.size();
+            outVertices.resize(outVertices.size() + 4);
+            // Add left edge 0 to 3
+            outVertices[glyphVert + 0].atlasIdx = codeGlyph->texAtlasIdx;
+            outVertices[glyphVert + 0].pos = { glyphLeft, glyphTop };
+            outVertices[glyphVert + 0].texCoord = texCoord.minBound;
+            outVertices[glyphVert + 3].atlasIdx = codeGlyph->texAtlasIdx;
+            outVertices[glyphVert + 3].pos = { glyphLeft, glyphBottom };
+            outVertices[glyphVert + 3].texCoord = { texCoord.minBound.x(), texCoord.maxBound.y() };
+            // Add right edge 1 to 2
+            outVertices[glyphVert + 1].atlasIdx = codeGlyph->texAtlasIdx;
+            outVertices[glyphVert + 1].pos = { glyphRight, glyphTop };
+            outVertices[glyphVert + 1].texCoord = { texCoord.maxBound.x(), texCoord.minBound.y() };
+            outVertices[glyphVert + 2].atlasIdx = codeGlyph->texAtlasIdx;
+            outVertices[glyphVert + 2].pos = { glyphRight, glyphBottom };
+            outVertices[glyphVert + 2].texCoord = texCoord.maxBound;
+
+            // Now advance to next word from horizontal start of this glyph
+            lastWordWidth += glyphToHeightScale * codeGlyph->advance;
+            lastGlyph = codeGlyph;
+        }
+    }
+    // If the last word needs to be auto wrapped? Wrapping it here
+    if (cursorPos > 0 && lastWordVertex >= 0 && wrapWidth >= 0 && (cursorPos + lastWordWidth) > wrapWidth)
+    {
+        cursorPos = 0;
+        wrapLastWord(outVertices, cursorPos);
+    }
+    // Below technique does not work as last word might be smaller than others
+    // To grow BB we only have to add top left vertex of first letter and bottom right vertex of last letter
+    //outBB.grow(outVertices[0].pos);
+    //// -2 since 3rd vertex is the bottom right of each letter
+    //outBB.grow(outVertices[outVertices.size() - 2].pos);
+
+    // Adding top left and bottom right of each glyph
+    const uint32 endIdx = outVertices.size() / 4;
+    for (uint32 idx = 0; idx < endIdx; ++idx)
+    {
+        const uint32 glyphVert = idx * 4;
+        // Now add this quad to bounding box
+        outBB.grow(outVertices[glyphVert + 0].pos);
+        outBB.grow(outVertices[glyphVert + 2].pos);
+    }
 }

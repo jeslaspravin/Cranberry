@@ -29,6 +29,10 @@ private:
 public:
     template <Box2DType BoxType>
     void drawPackedRectangles(const BoxType* packedRects, const Color* colors, uint32 rectsCount, const typename BoxType::PointType& packedIn, const Color& packedInRectCol);
+
+    bool inputText(const char* label, String* str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback = nullptr, void* user_data = nullptr);
+    bool inputTextMultiline(const char* label, String* str, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback = nullptr, void* user_data = nullptr);
+    bool inputTextWithHint(const char* label, const char* hint, String* str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback = nullptr, void* user_data = nullptr);
 };
 
 template <Box2DType BoxType> 

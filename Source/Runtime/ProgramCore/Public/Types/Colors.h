@@ -101,24 +101,24 @@ namespace ColorConst
 {
     PROGRAMCORE_EXPORT Color random(uint8 alpha = 255);
 
-    const Color Transparent(255, 255, 255, 0);
-    const Color WHITE(255, 255, 255, 255);
-    const Color GRAY(128, 128, 128, 255);
-    const Color BLACK(0, 0, 0, 255);
-    const Color RED(255, 0, 0, 255);
-    const Color BLUE(0, 0, 255, 255);
-    const Color GREEN(0, 255, 0, 255);
+    extern PROGRAMCORE_EXPORT const Color Transparent;
+    extern PROGRAMCORE_EXPORT const Color WHITE;
+    extern PROGRAMCORE_EXPORT const Color GRAY;
+    extern PROGRAMCORE_EXPORT const Color BLACK;
+    extern PROGRAMCORE_EXPORT const Color RED;
+    extern PROGRAMCORE_EXPORT const Color BLUE;
+    extern PROGRAMCORE_EXPORT const Color GREEN;
 }
 
 namespace LinearColorConst
 {
     PROGRAMCORE_EXPORT LinearColor random(float alpha = 1.0f);
 
-    const LinearColor Transparent(1, 1, 1, 0);
-    const LinearColor WHITE(1, 1, 1, 1);
-    const LinearColor GRAY(0.5, 0.5, 0.5, 1);
-    const LinearColor BLACK(0, 0, 0, 1);
-    const LinearColor RED(1, 0, 0, 1);
-    const LinearColor BLUE(0, 0, 1, 1);
-    const LinearColor GREEN(0, 1, 0, 1);
+    extern PROGRAMCORE_EXPORT const LinearColor Transparent;
+    extern PROGRAMCORE_EXPORT const LinearColor WHITE;
+    extern PROGRAMCORE_EXPORT const LinearColor GRAY;
+    extern PROGRAMCORE_EXPORT const LinearColor BLACK;
+    extern PROGRAMCORE_EXPORT const LinearColor RED;
+    extern PROGRAMCORE_EXPORT const LinearColor BLUE;
+    extern PROGRAMCORE_EXPORT const LinearColor GREEN;
 }
