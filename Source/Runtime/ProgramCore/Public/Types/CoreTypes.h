@@ -49,6 +49,11 @@ typedef PlatformCoreTypes::EncodedType EncodedType;
 typedef PlatformCoreTypes::word word;
 typedef PlatformCoreTypes::dword dword;
 
+typedef PlatformCoreTypes::SizeT SizeT;
+typedef PlatformCoreTypes::SSizeT SSizeT;
+typedef PlatformCoreTypes::UIntPtr UIntPtr;
+typedef PlatformCoreTypes::IntPtr IntPtr;
+
 typedef PlatformCoreTypes::UInt64 UInt64;
 
 // We do not want to clear all previous STATIC_ASSERTS

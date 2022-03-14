@@ -14,6 +14,7 @@
 #include "Modules/IModuleBase.h"
 #include "String/String.h"
 #include "Memory/SmartPointers.h"
+#include "Memory/Memory.h"
 #include "Types/Platform/GenericPlatformTypes.h"
 #include "Types/Delegates/Delegate.h"
 
@@ -33,6 +34,7 @@
     DECLARE_STATIC_LINKED_MODULE(ModuleName, ModuleClass)
 #else // STATIC_LINKED
 #define DECLARE_MODULE(ModuleName, ModuleClass) \
+    CB_GLOBAL_NEWDELETE_OVERRIDES \
     extern "C" \
     { \
         DLL_EXPORT MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass) \

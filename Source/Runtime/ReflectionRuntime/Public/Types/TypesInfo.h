@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "Types/Traits/TypeTraits.h"
-#include "Types/Traits/ValueTraits.h"
+#include "Types/Templates/TypeTraits.h"
+#include "Types/Templates/ValueTraits.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 #include "Types/HashTypes.h"

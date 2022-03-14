@@ -46,11 +46,12 @@ public:
     FontManager() = default;
     // Actual initialization
     FontManager(EInitType);
-    FontManager(const FontManager& otherManager) = default;
     FontManager(FontManager&& otherManager);
-    FontManager& operator=(const FontManager& otherManager) = default;
     FontManager& operator=(FontManager && otherManager);
     ~FontManager();
+    // No copy allowed
+    FontManager(const FontManager& otherManager) = delete;
+    FontManager& operator=(const FontManager& otherManager) = delete;
 
     void broadcastPreTextureAtlasUpdate() const { preTextureAtlasUpdate.invoke(); }
     void broadcastTextureAtlasUpdated() const { textureAltasUpdated.invoke(); }

@@ -51,6 +51,11 @@ private:
     void immediateExecCommand(ImmediateExecuteCommandType&& immediateCmd) const;
     void executeAllCmds();
 public:
+    RenderManager() = default;
+    RenderManager(const RenderManager&) = delete;
+    RenderManager(RenderManager&&) = delete;
+    RenderManager& operator=(const RenderManager&) = delete;
+    RenderManager& operator=(RenderManager&&) = delete;
 
     void initialize(IGraphicsInstance* graphicsInstance);
     void finalizeInit();

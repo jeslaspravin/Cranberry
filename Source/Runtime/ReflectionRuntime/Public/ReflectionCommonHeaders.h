@@ -23,3 +23,6 @@
 
 #include "IReflectionRuntime.h"
 #include "ReflectionMacros.h"
+
+// Since new is overridden for each class and struct
+#include "Memory/Memory.h"

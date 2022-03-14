@@ -1,22 +1,25 @@
 include(${cmake_script_dir}/EngineProjectMacros.cmake)
+include(${cmake_script_dir}/EngineFileUtilities.cmake)
 
 # Since Clang creates more targets
 get_filename_component(directory_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 set (CMAKE_FOLDER Tools/${directory_name})
 
 # Finding LLVM libraries
+make_find_package_hints(LLVM ${llvm_install_path} llvm_hints)
 find_package(LLVM 13
     REQUIRED CONFIG
-    HINTS ${llvm_install_path}/lib/cmake)    
+    HINTS ${llvm_hints})    
 if (DEFINED LLVM_FOUND AND ${LLVM_FOUND})
     message ("-- LLVM found dir ${LLVM_INSTALL_PREFIX}")
 else ()
     message (FATAL_ERROR "LLVM package not found, Make sure to configure \"llvm_install_path\" config CACHE with path to llvm install")
 endif ()
 # Finding Clang libraries
+make_find_package_hints(CLang ${llvm_install_path} clang_hints)
 find_package(Clang
     REQUIRED CONFIG
-    HINTS ${llvm_install_path}/lib/cmake)
+    HINTS ${clang_hints})
 if (DEFINED Clang_FOUND AND ${Clang_FOUND})
     message ("-- Clang include dir ${CLANG_INCLUDE_DIRS}")
 else ()

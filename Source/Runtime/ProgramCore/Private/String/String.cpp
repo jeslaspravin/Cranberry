@@ -1,5 +1,5 @@
 #include "String/String.h"
-#include "Types/Traits/ValueTraits.h"
+#include "Types/Templates/ValueTraits.h"
 #include "Types/Platform/PlatformFunctions.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Logger/Logger.h"
