@@ -39,9 +39,7 @@ void EngineRedererModule::finalizeGraphicsInitialization()
 
 RenderManager* EngineRedererModule::getRenderManager() const
 {
-    // #TODO(Jeslas) : Should this be singleton?
-    static RenderManager singletonRenderManager;
-    return &singletonRenderManager;
+    return renderManager;
 }
 
 DelegateHandle EngineRedererModule::registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback)
@@ -56,6 +54,7 @@ void EngineRedererModule::unregisterToStateEvents(const DelegateHandle& handle)
 
 void EngineRedererModule::init()
 {
+    renderManager = new RenderManager();
     weakRHI = ModuleManager::get()->getOrLoadModule(TCHAR("VulkanRHI"));
     auto rhiModule = weakRHI.lock().get();
 
@@ -65,12 +64,15 @@ void EngineRedererModule::init()
 
 void EngineRedererModule::release()
 {
-    getRenderManager()->destroy();
+    renderManager->destroy();
+    delete renderManager;
+    renderManager = nullptr;
 
-    WeakModulePtr weakRHI = ModuleManager::get()->getOrLoadModule(TCHAR("VulkanRHI"));
-    auto rhiModule = weakRHI.lock().get();
-
-    static_cast<IRHIModule*>(rhiModule)->destroyGraphicsInstance();
+    if (!weakRHI.expired())
+    {
+        auto rhiModule = weakRHI.lock().get();
+        static_cast<IRHIModule*>(rhiModule)->destroyGraphicsInstance();
+    }
     graphicsInstanceCache = nullptr;
     graphicsHelperCache = nullptr;
     ModuleManager::get()->unloadModule(TCHAR("VulkanRHI"));

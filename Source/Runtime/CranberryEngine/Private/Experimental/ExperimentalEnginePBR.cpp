@@ -36,6 +36,7 @@
 #include "Assets/Asset/StaticMeshAsset.h"
 #include "RenderApi/RenderManager.h"
 #include "InputSystem.h"
+#include "Types/TypesInfo.h"
 #include "Math/Math.h"
 #include "Math/MathEasing.h"
 #include "RenderInterface/Shaders/Base/DrawMeshShader.h"
@@ -207,7 +208,7 @@ FORCE_INLINE bool operator<(const GridEntity& lhs, const GridEntity& rhs)
 template <>
 struct std::hash<GridEntity>
 {
-    _NODISCARD size_t operator()(const GridEntity& keyval) const noexcept
+    NODISCARD size_t operator()(const GridEntity& keyval) const noexcept
     {
         size_t outHash = HashUtility::hash(keyval.type);
         HashUtility::hashCombine(outHash, keyval.idx);
@@ -3242,30 +3243,7 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
 
 void ExperimentalEnginePBR::tempTest()
 {
-    Rotation r(10, 45, 20);
-    Quat q(r);
-    Rotation t(q.toRotation());
 
-    RotationMatrix rm(r);
-    Quat q1(rm);
-    Rotation r1(q1.toRotation());
-    RotationMatrix t1(q1.toRotationMatrix());
-
-    Quat q2(Quat(20, Vector3D::UP) * Quat(45, Vector3D::RIGHT) * Quat(10, Vector3D::FWD));
-    Rotation xA(q2.toRotation());
-
-    Vector3D dir1 = q2.rotateVector(Vector3D::FWD);
-    Vector3D dir2 = t1.matrix() * Vector3D::FWD;
-
-    String outStr = UTF16_TO_TCHAR(UTF8_TO_UTF16(UTF32_TO_UTF8(UTF8_TO_UTF32("Hello good sir! How are you?"))));
-    String testStr{ "\x7a\xc3\x9f\xe6\xb0\xb4\xe0\xae\x85\xf0\x9f\x8d\x8c\xe2\x9c\x88\xf0\x9f\x98\x94 \xe0\xae\x95\xe0\xaf\x80\xe0\xae\x8e\xe0\xaf\x80" };
-    uint32 count = 0;
-    for (const uint32& codePt : StringCodePoints(testStr))
-    {
-        LOG("TEST", "0x%x", codePt);
-        count++;
-    }
-    LOG("TEST", "%s %s -> Length %llu", outStr, testStr, testStr.codeCount());
 }
 
 //static uint64 allocationCount = 0;
@@ -3308,9 +3286,9 @@ void ExperimentalEnginePBR::tempTestQuit()
 //    return free(ptr);
 //}
 
-//GameEngine* GameEngineWrapper::createEngineInstance()
-//{
-//    static ExperimentalEnginePBR gameEngine;
-//    return &gameEngine;
-//}
+GameEngine* GameEngineWrapper::createEngineInstance()
+{
+    static ExperimentalEnginePBR gameEngine;
+    return &gameEngine;
+}
 #endif

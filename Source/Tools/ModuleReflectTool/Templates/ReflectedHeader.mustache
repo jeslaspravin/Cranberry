@@ -13,6 +13,7 @@
 {{!For each reflect struct/class types expand below}}
 {{#ReflectTypes}}
 #define {{HeaderFileId}}_{{LineNumber}}_GENERATED_CODES \
+CB_CLASS_NEWDELETE_OVERRIDES({{TypeName}}) \
 public: \
 {{>StaticTypeGetter}} {{#IsClass}}\
 {{>VirtualTypeGetter}}\

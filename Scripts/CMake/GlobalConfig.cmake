@@ -1,3 +1,19 @@
+# 
+# \file GlobalConfig.cmake
+# 
+# \author Jeslas Pravin
+# \date February 2022
+# \copyright
+#  Copyright (C) Jeslas Pravin, Since 2022
+#  @jeslaspravin pravinjeslas@gmail.com
+#  License can be read in LICENSE file at this repository's root
+# 
+
+# Make sure we are targetting 64 bit
+if (NOT ${CMAKE_SIZEOF_VOID_P} EQUAL 8)    
+    message(FATAL_ERROR "Only 64bit platform is supported!")
+endif ()
+
 # Setup project's configurations supported https://gitlab.kitware.com/cmake/community/-/wikis/FAQ#how-can-i-specify-my-own-configurations-for-generators-that-allow-it-
 set(CMAKE_CONFIGURATION_TYPES Debug Development Release RelWithDebInfo)
 set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING

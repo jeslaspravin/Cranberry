@@ -13,7 +13,7 @@
 
 #include "Math/CoreMathTypedefs.h"
 #include "Types/CoreDefines.h"
-#include "Types/Traits/TypeTraits.h"
+#include "Types/Templates/TypeTraits.h"
 #include "ProgramCoreExports.h"
 
 #include <glm/common.hpp>

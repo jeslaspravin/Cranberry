@@ -12,7 +12,7 @@
 #pragma once
 
 #include "String/String.h"
-#include "Types/Traits/TypeTraits.h"
+#include "Types/Templates/TypeTraits.h"
 #include "Types/Delegates/Delegate.h"
 #include "ProgramCoreExports.h"
 

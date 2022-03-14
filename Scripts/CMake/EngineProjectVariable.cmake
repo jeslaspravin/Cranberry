@@ -15,6 +15,7 @@ file(REAL_PATH "Scripts/CMake" cmake_script_dir BASE_DIRECTORY ${PROJECT_SOURCE_
 
 include (${cmake_script_dir}/StringUtilities.cmake)
 
+##### ----CONFIG options start---- #####
 # Setting Global properties
 option (native_main "Whether to use native main function as application entry?" ON)
 option (experimental "Defines EXPERIMENTAL macro for Engine C++ modules" ON)
@@ -27,6 +28,11 @@ set (vulkan_sdk_path $ENV{VULKAN_SDK} CACHE PATH "Vulkan SDK path")
 set (cpp_libs_path $ENV{CPP_LIB} CACHE PATH "Path to CPP libraries")
 # LLVM installed path
 set (llvm_install_path ${cpp_libs_path}/llvm CACHE PATH "LLVM installed path(For libclang)")
+
+option (enable_mimalloc "Compile with mimalloc?" ON)
+set (mimalloc_install_path ${cpp_libs_path}/mimalloc CACHE PATH "mimalloc installed path")
+
+##### ----CONFIG options end---- #####
 
 # Relative to target binary directory
 set (target_generated_path Generated)

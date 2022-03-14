@@ -1743,7 +1743,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
             {
                 bool bAnyModified = false;
                 if (drawInterface->inputTextMultiline("Text", &textToRender, ImVec2(ImGui::GetWindowContentRegionWidth(), 200)
-                    , ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CtrlEnterForNewLine))
+                    , /*ImGuiInputTextFlags_EnterReturnsTrue | */ImGuiInputTextFlags_CtrlEnterForNewLine))
                 {
                     bAnyModified = true;
                 }
@@ -1787,9 +1787,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface* drawInterface)
     }
 }
 
-GameEngine* GameEngineWrapper::createEngineInstance()
-{
-    static ExperimentalEngineGoochModel gameEngine;
-    return &gameEngine;
-}
+//GameEngine* GameEngineWrapper::createEngineInstance()
+//{
+//    static ExperimentalEngineGoochModel gameEngine;
+//    return &gameEngine;
+//}
 #endif

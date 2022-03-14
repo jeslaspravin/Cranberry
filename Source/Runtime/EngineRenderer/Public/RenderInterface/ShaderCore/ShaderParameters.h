@@ -13,8 +13,8 @@
 #include "RenderInterface/ShaderCore/ShaderInputOutput.h"
 #include "Reflections/Fields.h"
 #include "Types/Containers/ArrayView.h"
-#include "Types/Traits/ValueTraits.h"
-#include "Types/Traits/TypeTraits.h"
+#include "Types/Templates/ValueTraits.h"
+#include "Types/Templates/TypeTraits.h"
 
 #include <any>
 

@@ -19,6 +19,8 @@ private:
     IGraphicsInstance* graphicsInstanceCache;
     const GraphicsHelperAPI* graphicsHelperCache;
     WeakModulePtr weakRHI;
+
+    RenderManager* renderManager;
 public:
     RenderStateDelegate renderStateEvents;
 public:
@@ -29,7 +31,7 @@ public:
 
     void initializeGraphics() final;
     void finalizeGraphicsInitialization() final;
-    RenderManager* getRenderManager() const;
+    RenderManager* getRenderManager() const final;
     DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback) final;
     void unregisterToStateEvents(const DelegateHandle& handle) final;
     /* IModuleBase finals */
