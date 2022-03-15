@@ -139,8 +139,8 @@ uint64 WindowsFile::filePointer() const
     if (getFileHandleRaw()) 
     {
         largePointer.LowPart = SetFilePointer(getFileHandleRaw(), largePointer.LowPart, &largePointer.HighPart, FILE_CURRENT);
-        fPointer = largePointer.LowPart == INVALID_SET_FILE_POINTER ? 0 :
-            TypeConversion<LONGLONG, uint64, true>::toUnsigned(largePointer.QuadPart);
+        fPointer = largePointer.LowPart == INVALID_SET_FILE_POINTER ? 0u :
+            (uint64)(largePointer.QuadPart);
     }
     return fPointer;
 }
@@ -347,6 +347,24 @@ TickRep WindowsFile::lastWriteTimeStamp() const
 
     // It is okay to convert to signed as time stamp would not cross signed max
     return Time::fromPlatformTime(int64(timeStamp.quadPart));
+}
+
+bool WindowsFile::setLastWriteTimeStamp(TickRep timeTick) const
+{
+    if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
+    {
+        return false;
+    }
+
+    UInt64 timeStamp;
+    timeStamp.quadPart = uint64(Time::toPlatformTime(timeTick));
+
+    FILETIME writeTime;
+    writeTime.dwLowDateTime = timeStamp.lowPart;
+    writeTime.dwHighDateTime = timeStamp.highPart;
+
+    SetFileTime(getFileHandleRaw(), nullptr, nullptr, &writeTime);
+    return true;
 }
 
 TickRep WindowsFile::createTimeStamp() const 

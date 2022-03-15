@@ -56,7 +56,7 @@ FUNCTION_SPECIFIER void CBMemory::memFree(void* ptr, std::source_location srcLoc
     return GALLOC->memFree(ptr);
 }
 
-FUNCTION_SPECIFIER SizeT CBMemory::getAllocationSize()
+FUNCTION_SPECIFIER SizeT CBMemory::getAllocationSize(void* ptr)
 {
-    return GALLOC->getAllocationSize();
+    return GALLOC->getAllocationSize(ptr);
 }

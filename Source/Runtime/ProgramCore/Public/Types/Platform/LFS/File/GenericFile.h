@@ -105,6 +105,7 @@ public:
     // Operations after file handle is created
 
     virtual TickRep lastWriteTimeStamp() const = 0;
+    virtual bool setLastWriteTimeStamp(TickRep timeTick) const = 0;
     virtual TickRep createTimeStamp() const = 0;
     virtual uint64 fileSize() const = 0;
     virtual uint64 filePointer() const = 0;

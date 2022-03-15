@@ -10,10 +10,46 @@
  */
 
 #include "Memory/Memory.h"
+#include "Types/Platform/PlatformMemory.h"
 
 void* AllocFromBuiltInMalloc::operator new(SizeT size)
 {
     return CBMemory::builtinMalloc(size);
+}
+
+void* AllocFromBuiltInMalloc::operator new(SizeT size, const std::nothrow_t&)
+{
+    return CBMemory::builtinMalloc(size);
+}
+
+void* AllocFromBuiltInMalloc::operator new(SizeT size, SizeT)
+{
+    return CBMemory::builtinMalloc(size);
+}
+
+void* AllocFromBuiltInMalloc::operator new(SizeT size, SizeT, const std::nothrow_t&)
+{
+    return CBMemory::builtinMalloc(size);
+}
+
+void AllocFromBuiltInMalloc::operator delete(void* ptr) noexcept
+{
+    CBMemory::builtinFree(ptr);
+}
+
+void AllocFromBuiltInMalloc::operator delete(void* ptr, const std::nothrow_t&) noexcept
+{
+    CBMemory::builtinFree(ptr);
+}
+
+void AllocFromBuiltInMalloc::operator delete(void* ptr, SizeT) noexcept
+{
+    CBMemory::builtinFree(ptr);
+}
+
+void AllocFromBuiltInMalloc::operator delete(void* ptr, SizeT, const std::nothrow_t&) noexcept
+{
+    CBMemory::builtinFree(ptr);
 }
 
 void* AllocFromBuiltInMalloc::operator new[](SizeT size)
@@ -21,21 +57,46 @@ void* AllocFromBuiltInMalloc::operator new[](SizeT size)
     return CBMemory::builtinMalloc(size);
 }
 
-void AllocFromBuiltInMalloc::operator delete(void* ptr)
+void* AllocFromBuiltInMalloc::operator new[](SizeT size, const std::nothrow_t&)
+{
+    return CBMemory::builtinMalloc(size);
+}
+
+void* AllocFromBuiltInMalloc::operator new[](SizeT size, SizeT)
+{
+    return CBMemory::builtinMalloc(size);
+}
+
+void* AllocFromBuiltInMalloc::operator new[](SizeT size, SizeT, const std::nothrow_t&)
+{
+    return CBMemory::builtinMalloc(size);
+}
+
+void AllocFromBuiltInMalloc::operator delete[](void* ptr) noexcept
 {
     CBMemory::builtinFree(ptr);
 }
 
-void AllocFromBuiltInMalloc::operator delete[](void* ptr)
+void AllocFromBuiltInMalloc::operator delete[](void* ptr, const std::nothrow_t&) noexcept
 {
     CBMemory::builtinFree(ptr);
 }
+
+void AllocFromBuiltInMalloc::operator delete[](void* ptr, SizeT) noexcept
+{
+    CBMemory::builtinFree(ptr);
+}
+
+void AllocFromBuiltInMalloc::operator delete[](void* ptr, SizeT, const std::nothrow_t&) noexcept
+{
+    CBMemory::builtinFree(ptr);
+}
+
 
 // Create and delete policy for CBMemAlloc
 bool CBMemAllocCreatePolicy::create(CBMemAlloc** outAllocator)
 {
-    // #TODO(Jeslas) 
-    *outAllocator = nullptr;
+    *outAllocator = PlatformMemory::createMemAllocator();
 
     // Mark for delete at exit
     struct CBMemAllocDeleter

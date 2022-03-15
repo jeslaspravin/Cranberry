@@ -22,7 +22,7 @@
 
 #define STRINGIFY(...) #__VA_ARGS__
 
-// std::wstring
+// std::string
 using BaseString = std::basic_string<TChar, std::char_traits<TChar>, std::allocator<TChar>>;
 using StringView = std::basic_string_view<BaseString::value_type, BaseString::traits_type>;
 using StringBuffer = std::basic_stringbuf<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;

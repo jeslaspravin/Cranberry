@@ -20,6 +20,8 @@
 // Will be implemented in platform specific TU
 template <typename Resolution>
 TickRep fromPlatformTime(int64 platformTick);
+template <typename Resolution>
+int64 toPlatformTime(TickRep tickValue);
 
 using TimeResolution = std::chrono::microseconds;
 using TimeHighResolution = std::chrono::nanoseconds;
@@ -118,6 +120,11 @@ public:
     {
         return ::fromPlatformTime<Resolution>(platformTick);
     }
+
+    FORCE_INLINE static int64 toPlatformTime(TickRep tickValue)
+    {
+        return ::toPlatformTime<Resolution>(tickValue);
+    }
 };
 
 // namespace Time
@@ -178,6 +185,11 @@ TickRep Time::fromPlatformTime(int64 platformTick)
     return TimeHelper<false>::fromPlatformTime(platformTick);
 }
 
+int64 Time::toPlatformTime(TickRep tickValue)
+{
+    return TimeHelper<false>::toPlatformTime(tickValue);
+}
+
 // namespace HighResolutionTime
 
 TickRep HighResolutionTime::timeNow()
@@ -234,6 +246,11 @@ TickRep HighResolutionTime::addDays(const TickRep& tickValue, TimeConvType days)
 TickRep HighResolutionTime::fromPlatformTime(int64 platformTick)
 {
     return TimeHelper<true>::fromPlatformTime(platformTick);
+}
+
+int64 HighResolutionTime::toPlatformTime(TickRep tickValue)
+{
+    return TimeHelper<true>::toPlatformTime(tickValue);
 }
 
 // Stopwatch

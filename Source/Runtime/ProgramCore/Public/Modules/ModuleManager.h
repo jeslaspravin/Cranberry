@@ -53,11 +53,16 @@ using WeakModulePtr = WeakPtr<IModuleBase>;
 class PROGRAMCORE_EXPORT ModuleManager 
 {
 private:
+    using LoadedLibsMap = std::unordered_map<String
+        , std::pair<LibPointerPtr, LibraryData>>;
+    using LoadedModulesMap = std::unordered_map<String
+        , ModulePtr>;
+
     // Contains modules loaded as shared libraries
-    std::unordered_map<String, std::pair<LibPointerPtr, LibraryData>> loadedLibraries;
+    LoadedLibsMap loadedLibraries;
 
     // Contains module interface implementation provided by a module
-    std::unordered_map<String, ModulePtr> loadedModuleInterfaces;
+    LoadedModulesMap loadedModuleInterfaces;
     // Library paths to look for a library if not found in initial OS environment paths search
     std::vector<String> additionalLibraryPaths;
 private:

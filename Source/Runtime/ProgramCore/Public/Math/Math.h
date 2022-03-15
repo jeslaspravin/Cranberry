@@ -372,7 +372,7 @@ public:
     static float random();
     
     template <std::unsigned_integral Type>
-    static bool isPowOf2(Type value)
+    CONST_EXPR static bool isPowOf2(Type value)
     {
         return ((value - 1) & value) == 0;
     }
@@ -389,11 +389,16 @@ public:
         return Math::pow(2u, Type(Math::floor(Math::log2(value))));
     }
     template <std::unsigned_integral Type>
-    static Type alignBy2(Type value)
+    CONST_EXPR static Type alignBy2(Type value)
     {
         return (value + 1u) & ~1u;
     }
-    // AlignVal has to be a power of 2
+    // AlignVal has to be a power of 2, Undefined behavior if not power of 2
+    template <std::unsigned_integral Type>
+    CONST_EXPR static Type alignByUnsafe(Type value, Type alignVal)
+    {
+        return (value + alignVal - 1) & ~(alignVal - 1);
+    }
     template <std::unsigned_integral Type>
     static Type alignBy(Type value, Type alignVal)
     {

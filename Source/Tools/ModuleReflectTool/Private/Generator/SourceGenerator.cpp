@@ -18,6 +18,11 @@
 #include "GeneratorConsts.h"
 #include "Property/PropertyHelper.h"
 
+FORCE_INLINE std::vector<String> SourceGenerator::getTemplateFiles()
+{
+    return FileSystemFunctions::listFiles(TCHAR(TEMPLATES_DIR), true, TCHAR("*.mustache"));
+}
+
 void SourceGenerator::initialize(const ModuleSources* sources)
 {
     std::vector<const SourceInformation*> parsedSrcs = sources->getParsedSources();
@@ -31,7 +36,7 @@ void SourceGenerator::initialize(const ModuleSources* sources)
 
 void SourceGenerator::writeGeneratedFiles()
 {
-    std::vector<String> templateFiles = FileSystemFunctions::listFiles(TCHAR(TEMPLATES_DIR), true, TCHAR("*.mustache"));
+    std::vector<String> templateFiles = getTemplateFiles();
     std::unordered_map<String, MustacheStringFormatter> sourceGenTemplates;
     sourceGenTemplates.reserve(templateFiles.size());
     for (const String& filePath : templateFiles)
@@ -109,4 +114,28 @@ bool SourceGenerator::generatedSources(std::vector<const SourceInformation*>& ou
         }
     }
     return !(bHasAnyError || bAnyGenFailure);
+}
+
+bool SourceGenerator::isTemplatesModified()
+{
+    std::vector<String> templateFiles = getTemplateFiles();
+
+    TickRep lastModifiedTs = 0;
+    for (const String& templateFile : templateFiles)
+    {
+        TickRep ts = PlatformFile(templateFile).lastWriteTimeStamp();
+        lastModifiedTs = lastModifiedTs < ts ? ts : lastModifiedTs;
+    }
+
+    String templateTs;
+    ProgramCmdLine::get()->getArg(templateTs, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
+    templateTs = PathFunctions::combinePath(templateTs, "Templates.timestamp");
+    PlatformFile templateTsFile(templateTs);
+    // If last modified after last generation
+    if (!templateTsFile.exists() || templateTsFile.lastWriteTimeStamp() < lastModifiedTs)
+    {
+        FileHelper::touchFile(templateTs);
+        return true;
+    }
+    return false;
 }

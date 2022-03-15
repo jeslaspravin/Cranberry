@@ -31,27 +31,46 @@ struct WindowsLibHandle : public LibPointer
     }
 };
 
+
+// as 100ns
+using WindowsTimeDuration = std::chrono::duration<int64, std::ratio<1, 10'000'000>>;
+// From https://stackoverflow.com/questions/6161776/convert-windows-filetime-to-second-in-unix-linux
+// Difference in seconds between epoch time(1st Jan 1970) and windows time(1st Jan 1601)
+#define WIN_2_EPOCH 11644473600ll
+
 /* Time impl functions, No need to enclose in macro as this TU won't be included in other platforms */
 template <typename Resolution>
 TickRep fromPlatformTimeImpl(int64 platformTick)
 {
     using namespace std::chrono;
-    using WindowsTimeDuration = duration<int64, std::ratio<1, 10'000'000>>;
 
-    // From https://stackoverflow.com/questions/6161776/convert-windows-filetime-to-second-in-unix-linux
-    // Difference in seconds between epoch time(1st Jan 1970) and windows time(1st Jan 1601)
-    static const seconds winTimeToEpochDuration(11644473600ll);
+    static const seconds winTimeToEpochDuration(WIN_2_EPOCH);
     return duration_cast<Resolution>(WindowsTimeDuration(platformTick) - winTimeToEpochDuration).count();
 }
+template <typename Resolution>
+int64 toPlatformTimeImpl(TickRep timeTick)
+{
+    using namespace std::chrono;
+
+    static const seconds winTimeToEpochDuration(WIN_2_EPOCH);
+    return duration_cast<WindowsTimeDuration>(Resolution(timeTick) + winTimeToEpochDuration).count();
+}
+#undef WIN_2_EPOCH
 
 template <typename Resolution>
 TickRep fromPlatformTime(int64 platformTick);
+template <typename Resolution>
+int64 toPlatformTime(TickRep timeTick);
 #define SPECIALIZE_FROM_PLATFORM_TIME(TimeResolution) \
 template <> \
-TickRep fromPlatformTime<TimeResolution>(int64 platformTick) { return ::fromPlatformTimeImpl<TimeResolution>(platformTick); }
+TickRep fromPlatformTime<TimeResolution>(int64 platformTick) { return ::fromPlatformTimeImpl<TimeResolution>(platformTick); } \
+template <> \
+int64 toPlatformTime<TimeResolution>(TickRep timeTick) { return ::toPlatformTimeImpl<TimeResolution>(timeTick); }
+
 // std::chrono::microseconds
 SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::microseconds)
 SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::nanoseconds)
+
 #undef SPECIALIZE_FROM_PLATFORM_TIME
 
 LibPointer* WindowsPlatformFunctions::openLibrary(String libName)
