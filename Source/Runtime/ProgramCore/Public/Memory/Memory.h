@@ -16,7 +16,6 @@
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "ProgramCoreExports.h"
 
-#include <new>
 #include <source_location>
 
 template <typename MemAllocType, typename AllocatorCreatePolicy>
@@ -124,7 +123,7 @@ public:
     FUNCTION_SPECIFIER static void* tryRealloc(void* currentPtr, SizeT size, uint32 alignment = CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT, std::source_location srcLoc = std::source_location::current());
     FUNCTION_SPECIFIER static void* memRealloc(void* currentPtr, SizeT size, uint32 alignment = CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT, std::source_location srcLoc = std::source_location::current());
     FUNCTION_SPECIFIER static void memFree(void* ptr, std::source_location srcLoc = std::source_location::current());
-    FUNCTION_SPECIFIER static SizeT getAllocationSize();
+    FUNCTION_SPECIFIER static SizeT getAllocationSize(void* ptr);
 };
 
 #if INLINE_MEMORY_FUNCS
@@ -195,7 +194,7 @@ private: \
         return CBMemory::memAlloc(size); \
     } \
     \
-    static void* ClassName##_Free(void* ptr) \
+    static void ClassName##_Free(void* ptr) \
     { \
         CBMemory::memFree(ptr); \
     } \
@@ -204,3 +203,4 @@ public:  \
     CB_NEW_OPERATOR(ClassName##_Alloc, static, const std::nothrow_t&) \
     CB_DELETE_OPERATOR(ClassName##_Free, static) \
     CB_DELETE_OPERATOR(ClassName##_Free, static, const std::nothrow_t&)
+

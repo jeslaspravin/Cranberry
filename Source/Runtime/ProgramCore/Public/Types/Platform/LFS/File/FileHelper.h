@@ -32,4 +32,6 @@ public:
     // Always writes to new file, overwrites if existing
     static bool writeString(const String& content, const String& fileName);
     static bool writeBytes(std::vector<uint8>& bytes, const String& fileName);
+
+    static bool touchFile(const String& fileName);
 };

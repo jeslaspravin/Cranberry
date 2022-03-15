@@ -13,22 +13,42 @@
 
 #include "Types/CoreTypes.h"
 #include "Types/CoreDefines.h"
+#include "Math/Math.h"
 #include "ProgramCoreExports.h"
+
+#include <new>
 
 // Since we cannot create new memory allocator from out memory allocator itself we rely on in built system allocators to allocate for this object
 class PROGRAMCORE_EXPORT AllocFromBuiltInMalloc
 {
 public:
     void* operator new(SizeT size);
+    void* operator new(SizeT size, const std::nothrow_t&);
+    void* operator new(SizeT size, SizeT);
+    void* operator new(SizeT size, SizeT, const std::nothrow_t&);
+    void operator delete(void* ptr) noexcept;
+    void operator delete(void* ptr, const std::nothrow_t&) noexcept;
+    void operator delete(void* ptr, SizeT) noexcept;
+    void operator delete(void* ptr, SizeT, const std::nothrow_t&) noexcept;
+
     void* operator new[](SizeT size);
-    void operator delete(void* ptr);
-    void operator delete[](void* ptr);
+    void* operator new[](SizeT size, const std::nothrow_t&);
+    void* operator new[](SizeT size, SizeT);
+    void* operator new[](SizeT size, SizeT, const std::nothrow_t&);
+    void operator delete[](void* ptr) noexcept;
+    void operator delete[](void* ptr, const std::nothrow_t&) noexcept;
+    void operator delete[](void* ptr, SizeT) noexcept;
+    void operator delete[](void* ptr, SizeT, const std::nothrow_t&) noexcept;
 };
 
 class PROGRAMCORE_EXPORT CBMemAlloc : public AllocFromBuiltInMalloc
 {
 public:
     CONST_EXPR static const uint32 DEFAULT_ALIGNMENT = 0;
+    FORCE_INLINE static uint32 alignBy(SizeT size, uint32 alignment)
+    {
+         return Math::max((size > 8) ? 16 : 8, alignment);
+    }
 public:
     virtual ~CBMemAlloc() = default;
 
@@ -42,5 +62,5 @@ public:
     virtual void memFree(void* ptr) = 0;
 
     // Allocation size of this allocator
-    virtual SizeT getAllocationSize() const = 0;
+    virtual SizeT getAllocationSize(void* ptr) const = 0;
 };

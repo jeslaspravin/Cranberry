@@ -20,41 +20,41 @@ static_assert(false, "Platform not supported!");
 #endif
 
 
-typedef PlatformCoreTypes::uint8 uint8;
-typedef PlatformCoreTypes::uint16 uint16;
-typedef PlatformCoreTypes::uint32 uint32;
-typedef PlatformCoreTypes::uint64 uint64;
+using uint8 = PlatformCoreTypes::uint8;
+using uint16 = PlatformCoreTypes::uint16;
+using uint32 = PlatformCoreTypes::uint32;
+using uint64 = PlatformCoreTypes::uint64;
 
-typedef PlatformCoreTypes::int8 int8;
-typedef PlatformCoreTypes::int16 int16;
-typedef PlatformCoreTypes::int32 int32;
-typedef PlatformCoreTypes::int64 int64;
+using int8 = PlatformCoreTypes::int8;
+using int16 = PlatformCoreTypes::int16;
+using int32 = PlatformCoreTypes::int32;
+using int64 = PlatformCoreTypes::int64;
 
-typedef PlatformCoreTypes::AChar AChar;// Fixed width
-typedef PlatformCoreTypes::WChar WChar;
-typedef PlatformCoreTypes::TChar TChar;
-typedef PlatformCoreTypes::Utf8 Char8;// Variable width
-typedef PlatformCoreTypes::Utf16 Char16;// Variable width
-typedef PlatformCoreTypes::Utf32 Char32; // Fixed width
-typedef PlatformCoreTypes::Utf8 Utf8;// Variable width
-typedef PlatformCoreTypes::Utf16 Utf16;// Variable width
-typedef PlatformCoreTypes::Utf32 Utf32; // Fixed width
-//typedef PlatformCoreTypes::Ucs2 Ucs2; // Fixed width
-//typedef PlatformCoreTypes::Ucs4 Ucs4; // Fixed width
+using AChar = PlatformCoreTypes::AChar;// Fixed width
+using WChar = PlatformCoreTypes::WChar;
+using TChar = PlatformCoreTypes::TChar;
+using Char8 = PlatformCoreTypes::Utf8;// Variable width
+using Char16 = PlatformCoreTypes::Utf16;// Variable width
+using Char32 = PlatformCoreTypes::Utf32; // Fixed width
+using Utf8 = PlatformCoreTypes::Utf8;// Variable width
+using Utf16 = PlatformCoreTypes::Utf16;// Variable width
+using Utf32 = PlatformCoreTypes::Utf32; // Fixed width
+//using Ucs2 = PlatformCoreTypes::Ucs2; // Fixed width
+//using Ucs4 = PlatformCoreTypes::Ucs4; // Fixed width
 // Encoding used in platform specific WChar type
-typedef PlatformCoreTypes::WCharEncodedType WCharEncodedType;
+using WCharEncodedType = PlatformCoreTypes::WCharEncodedType;
 // Encoding used in engine for this platform
-typedef PlatformCoreTypes::EncodedType EncodedType;
+using EncodedType = PlatformCoreTypes::EncodedType;
 
-typedef PlatformCoreTypes::word word;
-typedef PlatformCoreTypes::dword dword;
+using word = PlatformCoreTypes::word;
+using dword = PlatformCoreTypes::dword;
 
-typedef PlatformCoreTypes::SizeT SizeT;
-typedef PlatformCoreTypes::SSizeT SSizeT;
-typedef PlatformCoreTypes::UIntPtr UIntPtr;
-typedef PlatformCoreTypes::IntPtr IntPtr;
+using SizeT = PlatformCoreTypes::SizeT;
+using SSizeT = PlatformCoreTypes::SSizeT;
+using UIntPtr = PlatformCoreTypes::UIntPtr;
+using IntPtr = PlatformCoreTypes::IntPtr;
 
-typedef PlatformCoreTypes::UInt64 UInt64;
+using UInt64 = PlatformCoreTypes::UInt64;
 
 // We do not want to clear all previous STATIC_ASSERTS
 #pragma push_macro("STATIC_ASSERT")

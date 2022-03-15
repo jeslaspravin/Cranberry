@@ -325,8 +325,9 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     ParserHelper::parseClassMeta(metaFlags, metaData, buildFlags, classMetaStr);
 
     // Why getting from canonical type? Because it gives name with all the scopes prefixed. We do not have to handle parent namespace or types
-    const String structTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
-    const String sanitizedTypeName = PropertyHelper::getValidSymbolName(structTypeName);
+    const String structCanonicalTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
+    const String structTypeName = CXStringWrapper(clang_getCursorSpelling(cursor)).toString();
+    const String sanitizedTypeName = PropertyHelper::getValidSymbolName(structCanonicalTypeName);
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
     uint32 genCodesLineNum = 0;
     clang_getFileLocation(generatedCodesSrcLoc, nullptr, &genCodesLineNum, nullptr, nullptr);
@@ -334,14 +335,15 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext* srcGenContext)
 
     // Setup header context
     headerReflectTypeCntxt.args[GeneratorConsts::ISCLASS_BRANCH_TAG] = false;
-    headerReflectTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = structTypeName;
+    headerReflectTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
+    headerReflectTypeCntxt.args[GeneratorConsts::SIMPLE_TYPENAME_TAG] = structTypeName;
     headerReflectTypeCntxt.args[GeneratorConsts::LINENUMBER_TAG] = genCodesLineNum;
     headerReflectTypeCntxt.args[GeneratorConsts::ISBASETYPE_BRANCH_TAG] = true;// We do not support inheritance in struct
     // If class is explicitly mark NoExport then do not export
     headerReflectTypeCntxt.args[GeneratorConsts::NOEXPORT_BRANCH_TAG] = (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend());
 
     // Setup source contexts
-    allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = structTypeName;
+    allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
@@ -349,14 +351,14 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext* srcGenContext)
 
     setTypeMetaInfo<decltype(GeneratorConsts::TYPEMETADATA_TAG)::Literal, decltype(GeneratorConsts::TYPEMETAFLAGS_TAG)::Literal>(structCntxt, metaData, metaFlags);
     structCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
-    structCntxt.args[GeneratorConsts::TYPENAME_TAG] = structTypeName;
+    structCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
     structCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
 
     // Now fill members
     
     // Class and Struct have constructor and they return there own pointers so we generate class/struct pointer even when not used anywhere yet
-    const String structPtrTypeName = structTypeName + TCHAR(" *");
+    const String structPtrTypeName = structCanonicalTypeName + TCHAR(" *");
     const String structPtrSanitizedName = PropertyHelper::getValidSymbolName(structPtrTypeName);
     if (!srcGenContext->addedSymbols.contains(structPtrSanitizedName))
     {
@@ -400,8 +402,9 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     std::vector<String> metaFlags, metaData, buildFlags;
     ParserHelper::parseClassMeta(metaFlags, metaData, buildFlags, classMetaStr);
 
-    const String classTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
-    const String sanitizedTypeName = PropertyHelper::getValidSymbolName(classTypeName);
+    const String classCanonicalTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
+    const String classTypeName = CXStringWrapper(clang_getCursorSpelling(cursor)).toString();
+    const String sanitizedTypeName = PropertyHelper::getValidSymbolName(classCanonicalTypeName);
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
     uint32 genCodesLineNum = 0;
     clang_getFileLocation(generatedCodesSrcLoc, nullptr, &genCodesLineNum, nullptr, nullptr);
@@ -409,14 +412,15 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext* srcGenContext)
 
     // Setup header context
     headerReflectTypeCntxt.args[GeneratorConsts::ISCLASS_BRANCH_TAG] = true;
-    headerReflectTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = classTypeName;
+    headerReflectTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;
+    headerReflectTypeCntxt.args[GeneratorConsts::SIMPLE_TYPENAME_TAG] = classTypeName;
     headerReflectTypeCntxt.args[GeneratorConsts::LINENUMBER_TAG] = genCodesLineNum;
     headerReflectTypeCntxt.args[GeneratorConsts::ISBASETYPE_BRANCH_TAG] = (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::BASETYPE_FLAG.toString()) != buildFlags.cend());
     // If class is explicitly mark NoExport then do not export
     headerReflectTypeCntxt.args[GeneratorConsts::NOEXPORT_BRANCH_TAG] = (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend());
 
     // Setup source contexts
-    allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = classTypeName;
+    allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
@@ -424,14 +428,14 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext* srcGenContext)
 
     setTypeMetaInfo<decltype(GeneratorConsts::TYPEMETADATA_TAG)::Literal, decltype(GeneratorConsts::TYPEMETAFLAGS_TAG)::Literal>(classCntxt, metaData, metaFlags);
     classCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
-    classCntxt.args[GeneratorConsts::TYPENAME_TAG] = classTypeName;
+    classCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;
     classCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
 
     // Now fill members
 
     // Class and Struct have constructor and they return there own pointers so we generate class/struct pointer even when not used anywhere yet
-    const String classPtrTypeName = classTypeName + TCHAR(" *");
+    const String classPtrTypeName = classCanonicalTypeName + TCHAR(" *");
     const String classPtrSanitizedName = PropertyHelper::getValidSymbolName(classPtrTypeName);
     if (!srcGenContext->addedSymbols.contains(classPtrSanitizedName))
     {

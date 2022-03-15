@@ -1480,8 +1480,8 @@ namespace SampleCode
     {
         CXIndex index = clang_createIndex(0, 0);
         std::string argRefParseDef("-D__REF_PARSE__");
-        std::string argIncludeModulePublic("-ID:/Workspace/VisualStudio/GameEngine/Source/Runtime/ProgramCore/Public");
-        std::string argIncludeModuleGen("-ID:/Workspace/VisualStudio/GameEngine/Build/Source/Runtime/ProgramCore/Generated/Public");
+        std::string argIncludeModulePublic("-ID:/Workspace/VisualStudio/Cranberry/Source/Runtime/ProgramCore/Public");
+        std::string argIncludeModuleGen("-ID:/Workspace/VisualStudio/Cranberry/Source/Runtime/ProgramCore/Generated/Public");
         const AChar* args[] = { argIncludeModuleGen.c_str(), argIncludeModulePublic.c_str(), argRefParseDef.c_str()};
         // Use parse TU functions if need to customize certain options while compiling
         // Header.H - H has to be capital but why?

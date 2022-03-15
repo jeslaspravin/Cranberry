@@ -142,7 +142,7 @@ ModuleSources::~ModuleSources()
     }
 }
 
-bool ModuleSources::compileAllSources()
+bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
 {
     bool bAllClear = true;
     std::vector<String> headerFiles = FileSystemFunctions::listFiles(srcDir, true, TCHAR("*.h"));
@@ -211,7 +211,7 @@ bool ModuleSources::compileAllSources()
         }
 
         // If output is no longer valid to current input file regenerate reflection
-        if (headerTracker->isTargetOutdated(sourceInfo.filePath, { sourceInfo.generatedHeaderPath, sourceInfo.generatedTUPath }))
+        if (bFullCompile || headerTracker->isTargetOutdated(sourceInfo.filePath, { sourceInfo.generatedHeaderPath, sourceInfo.generatedTUPath }))
         {
             // Use parse TU functions if need to customize certain options while compiling
             // Header.H - H has to be capital but why?

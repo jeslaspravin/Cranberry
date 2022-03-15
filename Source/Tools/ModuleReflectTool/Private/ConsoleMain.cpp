@@ -18,6 +18,7 @@
 #include "Generator/SourceGenerator.h"
 #include "CmdLineArgConst.h"
 #include "CmdLine/CmdLine.h"
+#include "Memory/Memory.h"
 
 #include "SampleCode.h"
 
@@ -41,6 +42,9 @@ void initializeCmdArguments()
     Parses the headers in provided module and creates reflection files for them.\n\
     It uses clang libraries and mustache style templates to generate reflection data"));
 }
+
+// Override new and delete
+CB_GLOBAL_NEWDELETE_OVERRIDES
 
 int32 main(int32 argsc, AChar** args)
 {
@@ -79,7 +83,7 @@ int32 main(int32 argsc, AChar** args)
     else
     {
         ModuleSources moduleSrcs;
-        if (!moduleSrcs.compileAllSources())
+        if (!moduleSrcs.compileAllSources(SourceGenerator::isTemplatesModified()))
         {
             LOG_ERROR("ModuleReflectTool", "%s() : Compiling module sources failed", __func__);
             return 1;

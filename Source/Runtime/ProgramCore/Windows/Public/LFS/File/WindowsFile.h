@@ -27,6 +27,7 @@ public:
     bool exists() const override;
 
     TickRep lastWriteTimeStamp() const override;
+    bool setLastWriteTimeStamp(TickRep timeTick) const override;
     TickRep createTimeStamp() const override;
     uint64 fileSize() const override;
     uint64 filePointer() const override;
@@ -52,7 +53,6 @@ protected:
 
     bool dirDelete() const override;
     bool dirClearAndDelete() const override;
-
 };
 
 namespace LFS {

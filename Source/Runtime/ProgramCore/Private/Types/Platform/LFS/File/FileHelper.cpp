@@ -257,3 +257,19 @@ bool FileHelper::writeBytes(std::vector<uint8>& bytes, const String& fileName)
     }
     return false;
 }
+
+bool FileHelper::touchFile(const String& fileName)
+{
+    PlatformFile file(fileName);
+    file.setSharingMode(EFileSharing::ReadOnly);
+    file.setCreationAction(EFileFlags::CreateNew);
+    file.setFileFlags(EFileFlags::Write);
+
+    bool bSuccess = false;
+    if (file.openOrCreate())
+    {
+         bSuccess = file.setLastWriteTimeStamp(Time::clockTimeNow());
+         file.closeFile();
+    }
+    return bSuccess;
+}

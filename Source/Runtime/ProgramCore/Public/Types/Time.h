@@ -40,6 +40,7 @@ namespace Time
     PROGRAMCORE_EXPORT TickRep clockTimeNow();
 
     PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
+    PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
 }
 
 // IN NANOSECONDS PRECISION
@@ -59,6 +60,7 @@ namespace HighResolutionTime
     PROGRAMCORE_EXPORT TickRep clockTimeNow();
 
     PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
+    PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
 }
 
 // Uses High Res Time

@@ -10,12 +10,13 @@ set (private_compile_defs )
 
 # Finding Mimalloc libraries
 if (${enable_mimalloc})
+    set(mimalloc_lib_name mimalloc-static)
     make_find_package_hints(mimalloc ${mimalloc_install_path} mimalloc_hints)
     find_package(mimalloc 1.7
         REQUIRED CONFIG
         HINTS ${mimalloc_hints})
     
-    get_target_property(mimalloc_lib mimalloc IMPORTED_LOCATION_RELEASE)
+    get_target_property(mimalloc_lib ${mimalloc_lib_name} IMPORTED_LOCATION_RELEASE)
     cmake_path(GET mimalloc_lib PARENT_PATH mimalloc_lib_path)
     if (DEFINED MIMALLOC_INCLUDE_DIR)
         message ("-- mimalloc include dir ${MIMALLOC_INCLUDE_DIR} binary dir ${mimalloc_lib_path}")
@@ -23,13 +24,9 @@ if (${enable_mimalloc})
         message (FATAL_ERROR "mimalloc package not found, Make sure to configure \"mimalloc_install_path\" config CACHE with path to mimalloc install")
     endif ()
 
-    list (APPEND private_libraries mimalloc)
+    list (APPEND private_libraries ${mimalloc_lib_name})
     list (APPEND private_includes ${MIMALLOC_INCLUDE_DIR})
-    list (APPEND private_compile_defs 
-        USE_MIMALLOC=1
-        MIMALLOC_BIN_PATH="${mimalloc_lib_path}"
-    )
-    list (APPEND delay_load_dlls mimalloc)
+    list (APPEND private_compile_defs USE_MIMALLOC=1)
 endif (${enable_mimalloc})
 
 # add glm

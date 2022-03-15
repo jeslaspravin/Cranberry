@@ -25,6 +25,7 @@ namespace GeneratorConsts
     // ReflectTypes section inner tags
     CONST_EXPR StringLiteralStore<TCHAR("LineNumber")> LINENUMBER_TAG;
     CONST_EXPR StringLiteralStore<TCHAR("NoExport")> NOEXPORT_BRANCH_TAG;
+    CONST_EXPR StringLiteralStore<TCHAR("SimpleTypeName")> SIMPLE_TYPENAME_TAG;
     CONST_EXPR StringLiteralStore<TCHAR("IsClass")> ISCLASS_BRANCH_TAG;
     CONST_EXPR StringLiteralStore<TCHAR("IsBaseType")> ISBASETYPE_BRANCH_TAG;
 

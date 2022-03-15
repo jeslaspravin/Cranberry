@@ -52,7 +52,7 @@ public:
     ModuleSources();
     ~ModuleSources();
 
-    bool compileAllSources();
+    bool compileAllSources(bool bFullCompile = false);
     // Injects generated TU's into generate module files for build system to compile
     void injectGeneratedFiles(const std::vector<const SourceInformation*>& generatedSrcs);
 
