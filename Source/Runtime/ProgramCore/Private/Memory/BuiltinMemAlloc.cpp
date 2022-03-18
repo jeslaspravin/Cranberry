@@ -13,33 +13,57 @@
 #include "Memory/Memory.h"
 #include "Math/Math.h"
 
-FORCE_INLINE SizeT CBBuiltinMemAlloc::calcExtraWidth(uint32 alignment) const
+FORCE_INLINE SizeT CBEBuiltinMemAlloc::calcHeaderPadding(uint32 alignment) const
 {
-    if (alignment != DEFAULT_ALIGNMENT)
-    {
-        return Math::alignByUnsafe(sizeof(AllocHeader), Math::max(alignof(AllocHeader), alignment));
-    }
+#ifndef PLATFORM_ALIGNED_MALLOC
+    // Since we do manual alignment
     return Math::alignByUnsafe(sizeof(AllocHeader), alignof(AllocHeader));
+#else // PLATFORM_ALIGNED_MALLOC
+    // In case of aligned alloc we have to make header expand to an entire alignment at least so that actualPtr will be aligned as well
+    return Math::alignByUnsafe(sizeof(AllocHeader), (SizeT)(alignment));
+#endif // PLATFORM_ALIGNED_MALLOC
 }
 
-FORCE_INLINE void* CBBuiltinMemAlloc::writeAllocMeta(void* allocatedPtr, SizeT size, uint32 alignment) const
+FORCE_INLINE SizeT CBEBuiltinMemAlloc::calcExtraWidth(uint32 alignment) const
 {
-    void* outPtr = ((uint8*)allocatedPtr) + calcExtraWidth(alignment);
+#ifndef PLATFORM_ALIGNED_MALLOC
+    // + number of extra byte for worst alignment
+    return calcHeaderPadding(alignment) + (alignment - 1);
+#else // PLATFORM_ALIGNED_MALLOC
+    return calcHeaderPadding(alignment);
+#endif // PLATFORM_ALIGNED_MALLOC
+}
+
+FORCE_INLINE void* CBEBuiltinMemAlloc::writeAllocMeta(void* allocatedPtr, SizeT size, uint32 alignment) const
+{
+    void* outPtr = ((uint8*)allocatedPtr) + calcHeaderPadding(alignment);
+#ifndef PLATFORM_ALIGNED_MALLOC
+    void* alignedPtr = (void*)(Math::alignByUnsafe((UIntPtr)(outPtr), alignment));
+    AllocHeader& allocHeader = *(((AllocHeader*)alignedPtr) - 1);
+    allocHeader.offset = (uint32)((UIntPtr)(alignedPtr) - (UIntPtr)(allocatedPtr));
+    outPtr = alignedPtr;
+#else // PLATFORM_ALIGNED_MALLOC
     AllocHeader& allocHeader = *(((AllocHeader*)outPtr) - 1);
+#endif // PLATFORM_ALIGNED_MALLOC
     allocHeader.size = size;
     allocHeader.alignment = alignment;
     return outPtr;
 }
 
-FORCE_INLINE void* CBBuiltinMemAlloc::getAllocationInfo(void* ptr, SizeT& outSize, uint32& outAlignment) const
+FORCE_INLINE void* CBEBuiltinMemAlloc::getAllocationInfo(void* ptr, SizeT& outSize, uint32& outAlignment) const
 {
     AllocHeader& allocHeader = *(((AllocHeader*)ptr) - 1);
     outSize = allocHeader.size;
     outAlignment = allocHeader.alignment;
-    return ((uint8*)ptr) - calcExtraWidth(allocHeader.alignment);
+
+#ifndef PLATFORM_ALIGNED_MALLOC
+    return ((uint8*)ptr) - allocHeader.offset;
+#else // PLATFORM_ALIGNED_MALLOC
+    return ((uint8*)ptr) - calcHeaderPadding(allocHeader.alignment);
+#endif // PLATFORM_ALIGNED_MALLOC
 }
 
-void* CBBuiltinMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void* CBEBuiltinMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     debugAssert(Math::isPowOf2(alignment));
     if (size == 0)
@@ -47,21 +71,27 @@ void* CBBuiltinMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIG
         return nullptr;
     }
 
-    if (void* ptr = CBMemory::builtinMalloc(size + calcExtraWidth(alignment)))
+    alignment = Math::max(alignof(AllocHeader), alignBy(size, alignment));
+
+#ifndef PLATFORM_ALIGNED_MALLOC
+    if (void* ptr = CBEMemory::builtinMalloc(size + calcExtraWidth(alignment)))
+#else // PLATFORM_ALIGNED_MALLOC
+    if (void* ptr = PLATFORM_ALIGNED_MALLOC(size + calcExtraWidth(alignment), alignment))
+#endif // PLATFORM_ALIGNED_MALLOC
     {
         return writeAllocMeta(ptr, size, alignment);
     }
     return nullptr;
 }
 
-void* CBBuiltinMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void* CBEBuiltinMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     void* ptr = tryMalloc(size, alignment);
     fatalAssert(size == 0 || ptr, "Allocation failed!");
     return ptr;
 }
 
-void* CBBuiltinMemAlloc::tryRealloc(void* currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void* CBEBuiltinMemAlloc::tryRealloc(void* currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     debugAssert(Math::isPowOf2(alignment));
 
@@ -70,24 +100,31 @@ void* CBBuiltinMemAlloc::tryRealloc(void* currentPtr, SizeT size, uint32 alignme
 
     if (size == 0)
     {
-        CBMemory::builtinFree(actualPtr);
+        CBEMemory::builtinFree(actualPtr);
         return nullptr;
     }
-    if (void* ptr = CBMemory::builtinRealloc(actualPtr, size + calcExtraWidth(alignment)))
+
+    alignment = Math::max(alignof(AllocHeader), alignBy(size, alignment));
+
+#ifndef PLATFORM_ALIGNED_MALLOC
+    if (void* ptr = CBEMemory::builtinRealloc(actualPtr, size + calcExtraWidth(alignment)))
+#else // PLATFORM_ALIGNED_MALLOC
+    if (void* ptr = PLATFORM_ALIGNED_REALLOC(actualPtr, size + calcExtraWidth(alignment), alignment))
+#endif // PLATFORM_ALIGNED_MALLOC
     {
         return writeAllocMeta(ptr, size, alignment);
     }
     return nullptr;
 }
 
-void* CBBuiltinMemAlloc::memRealloc(void* currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void* CBEBuiltinMemAlloc::memRealloc(void* currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     void* ptr = tryRealloc(currentPtr, size, alignment);
     fatalAssert(size == 0 || ptr, "Reallocation failed!");
     return ptr;
 }
 
-void CBBuiltinMemAlloc::memFree(void* ptr)
+void CBEBuiltinMemAlloc::memFree(void* ptr)
 {
     if (ptr == nullptr)
     {
@@ -102,10 +139,16 @@ void CBBuiltinMemAlloc::memFree(void* ptr)
     // 0 it so that if there is any immediate free calls again with can detect it
     allocHeader.alignment = 0;
     allocHeader.size = 0;
-    CBMemory::builtinFree(actualPtr);
+
+#ifndef PLATFORM_ALIGNED_MALLOC
+    allocHeader.offset = 0;
+    CBEMemory::builtinFree(actualPtr);
+#else // PLATFORM_ALIGNED_MALLOC
+    PLATFORM_ALIGNED_FREE(actualPtr);
+#endif // PLATFORM_ALIGNED_MALLOC
 }
 
-SizeT CBBuiltinMemAlloc::getAllocationSize(void* ptr) const
+SizeT CBEBuiltinMemAlloc::getAllocationSize(void* ptr) const
 {
     if (ptr == nullptr)
     {

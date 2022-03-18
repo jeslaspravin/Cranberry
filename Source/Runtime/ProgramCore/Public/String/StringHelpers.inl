@@ -545,25 +545,36 @@ struct StringCodePoints
 #define CERR std::cerr
 #endif // USING_WIDE_UNICODE
 
-// Pass Char ptr of that type to convert from and AChar is always UTF8 encoded in our case, Do not store reference to returned pointer
-#define TCHAR_TO_ANSI(TCharPtr) StringConv<TChar, AChar>{}.convert((const TChar*)TCharPtr)
-#define TCHAR_TO_UTF8(TCharPtr) TCHAR_TO_ANSI(TCharPtr)
-#define ANSI_TO_TCHAR(AnsiPtr) StringConv<AChar, TChar>{}.convert((const AChar*)AnsiPtr)
-#define UTF8_TO_TCHAR(Utf8Ptr) ANSI_TO_TCHAR(Utf8Ptr)
+// Why typedef? to skip using comma inside macro as there is possiblity for us to chain below macros together
+using StringConvTChar2AChar = StringConv<TChar, AChar>;
+using StringConvAChar2TChar = StringConv<AChar, TChar>;
+using StringConvUtf162AChar = StringConv<Utf16, AChar>;
+using StringConvAChar2Utf16 = StringConv<AChar, Utf16>;
+using StringConvUtf322AChar = StringConv<Utf32, AChar>;
+using StringConvAChar2Utf32 = StringConv<AChar, Utf32>;
 
-#define UTF16_TO_UTF8(Utf16Ptr) StringConv<Utf16, AChar>{}.convert((const Utf16*)Utf16Ptr)
-#define UTF8_TO_UTF16(Utf8Ptr) StringConv<AChar, Utf16>{}.convert((const AChar*)Utf8Ptr)
-#define UTF32_TO_UTF8(Utf32Ptr) StringConv<Utf32, AChar>{}.convert((const Utf32*)Utf32Ptr)
-#define UTF8_TO_UTF32(Utf8Ptr) StringConv<AChar, Utf32>{}.convert((const AChar*)Utf8Ptr)
+using StringConvWChar2TChar = StringConv<WChar, TChar>;
+using StringConvWChar2AChar = StringConv<WChar, AChar>;
+using StringConvAChar2WChar = StringConv<AChar, WChar>;
+// Pass Char ptr of that type to convert from and AChar is always UTF8 encoded in our case, Do not store reference to returned pointer
+#define TCHAR_TO_ANSI(TCharPtr) StringConvTChar2AChar{}.convert((const TChar*)TCharPtr)
+#define TCHAR_TO_UTF8(TCharPtr) TCHAR_TO_ANSI(TCharPtr)
+#define ANSI_TO_TCHAR(AnsiPtr)  StringConvAChar2TChar{}.convert((const AChar*)AnsiPtr)
+#define UTF8_TO_TCHAR(Utf8Ptr)  ANSI_TO_TCHAR(Utf8Ptr)
+
+#define UTF16_TO_UTF8(Utf16Ptr) StringConvUtf162AChar{}.convert((const Utf16*)Utf16Ptr)
+#define UTF8_TO_UTF16(Utf8Ptr)  StringConvAChar2Utf16{}.convert((const AChar*)Utf8Ptr)
+#define UTF32_TO_UTF8(Utf32Ptr) StringConvUtf322AChar{}.convert((const Utf32*)Utf32Ptr)
+#define UTF8_TO_UTF32(Utf8Ptr)  StringConvAChar2Utf32{}.convert((const AChar*)Utf8Ptr)
 
 #if USING_WIDE_UNICODE
 
 #if PLATFORM_WINDOWS
-#define UTF16_TO_TCHAR(Utf16Ptr) StringConv<WChar, TChar>{}.convert((const WChar*)(Utf16Ptr))
+#define UTF16_TO_TCHAR(Utf16Ptr) StringConvWChar2TChar{}.convert((const WChar*)(Utf16Ptr))
 #define UTF32_TO_TCHAR(Utf32Ptr) UTF8_TO_TCHAR(UTF32_TO_UTF8(Utf32Ptr))
 #else // PLATFORM_WINDOWS
 #define UTF16_TO_TCHAR(Utf16Ptr) UTF8_TO_TCHAR(UTF16_TO_UTF8(Utf16Ptr))
-#define UTF32_TO_TCHAR(Utf32Ptr) StringConv<WChar, TChar>{}.convert((const WChar*)(Utf32Ptr))
+#define UTF32_TO_TCHAR(Utf32Ptr) StringConvWChar2TChar{}.convert((const WChar*)(Utf32Ptr))
 #endif // PLATFORM_WINDOWS
 
 #define WCHAR_TO_TCHAR(WCharPtr) WCharPtr
@@ -573,7 +584,7 @@ struct StringCodePoints
 #define UTF16_TO_TCHAR(Utf16Ptr) UTF16_TO_UTF8(Utf16Ptr)
 #define UTF32_TO_TCHAR(Utf32Ptr) UTF32_TO_UTF8(Utf32Ptr)
 
-#define WCHAR_TO_TCHAR(WCharPtr) StringConv<WChar, AChar>{}.convert((const WChar*)(WCharPtr))
-#define TCHAR_TO_WCHAR(TCharPtr) StringConv<AChar, WChar>{}.convert((const TChar*)(TCharPtr))
+#define WCHAR_TO_TCHAR(WCharPtr) StringConvWChar2AChar{}.convert((const WChar*)(WCharPtr))
+#define TCHAR_TO_WCHAR(TCharPtr) StringConvAChar2WChar{}.convert((const TChar*)(TCharPtr))
 
 #endif // USING_WIDE_UNICODE

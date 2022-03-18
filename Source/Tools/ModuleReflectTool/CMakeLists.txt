@@ -7,7 +7,7 @@ set (CMAKE_FOLDER Tools/${directory_name})
 
 # Finding LLVM libraries
 make_find_package_hints(LLVM ${llvm_install_path} llvm_hints)
-find_package(LLVM 13
+find_package(LLVM 14
     REQUIRED CONFIG
     HINTS ${llvm_hints})    
 if (DEFINED LLVM_FOUND AND ${LLVM_FOUND})

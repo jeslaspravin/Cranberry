@@ -226,8 +226,7 @@ struct LambdaFunction
     }
     // End class default constructors and operators
 
-    // Compiler bug? using int as it is working SFINAE within function template, void is always returning false
-    template <typename Callable, typename IsCallable<Callable, int> = 0>
+    template <typename Callable, IsCallable<Callable, int> = 0>
     CONST_EXPR LambdaFunction(Callable &&lambda)
         : lambdaDelegate(std::forward<decltype(lambda)>(lambda))
     {}

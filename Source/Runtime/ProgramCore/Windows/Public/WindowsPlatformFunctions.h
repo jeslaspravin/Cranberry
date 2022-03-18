@@ -38,6 +38,16 @@ public:
 
     static bool wcharToUtf8(std::string& outStr, const WChar* wChar);
     static bool utf8ToWChar(std::wstring& outStr, const AChar* aChar);
+
+    static bool toUpper(AChar* inOutStr);
+    static bool toUpper(WChar* inOutStr);
+    static AChar toUpper(AChar ch);
+    static WChar toUpper(WChar ch);
+
+    static bool toLower(AChar* inOutStr);
+    static bool toLower(WChar* inOutStr);
+    static AChar toLower(AChar ch);
+    static WChar toLower(WChar ch);
 };
 
 namespace GPlatformFunctions 

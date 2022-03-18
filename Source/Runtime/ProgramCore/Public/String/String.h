@@ -35,13 +35,15 @@ using StringStream = std::basic_stringstream<BaseString::value_type, BaseString:
 class String : public BaseString
 {
 public:
+    CONST_EXPR static const bool bIsWide = std::is_same_v<TChar, WChar>;
+public:
     FORCE_INLINE String() : BaseString() {}
     FORCE_INLINE String(const String& otherString) : BaseString(otherString) {}
     FORCE_INLINE String(const String& otherString, size_type pos, size_type len) : BaseString(otherString, pos, len) {}
     FORCE_INLINE String(const TChar* s, size_type n) : BaseString(s, n) {}
     FORCE_INLINE String(const TChar* s) : BaseString(s) {}
     FORCE_INLINE String(size_type n, TChar c) : BaseString(n, c) {}
-    //template<size_t N>
+    //template<size_type N>
     //CONST_EXPR String(const TChar(&str)[N]) : std::string(str) {}
     FORCE_INLINE String(const BaseString& otherString) : BaseString(otherString) {}
     FORCE_INLINE String(BaseString&& otherString) : BaseString(otherString) {}
@@ -56,12 +58,12 @@ public:
     // Count of String's character code points
     FORCE_INLINE uint64 codeCount() const;
 
-    FORCE_INLINE bool findAny(size_t& outIndex, String& outFoundString, const std::vector<String>& findStrgs, size_t offset = 0, bool fromEnd = false) const
+    FORCE_INLINE bool findAny(size_type& outIndex, String& outFoundString, const std::vector<String>& findStrgs, size_type offset = 0, bool fromEnd = false) const
     {
-        size_t foundAt = npos;
+        size_type foundAt = npos;
         for (const String& strg : findStrgs)
         {
-            size_t foundAtNew = fromEnd ? rfind(strg, length() - offset) : find(strg, offset);
+            size_type foundAtNew = fromEnd ? rfind(strg, length() - offset) : find(strg, offset);
             if (foundAtNew != npos) {
                 outIndex = (foundAt == npos 
                     || (fromEnd 
@@ -90,7 +92,7 @@ public:
     FORCE_INLINE String replaceAllCopy(const String& from, const String& to) const
     {
         String newStr{ this->getChar() };
-        size_t replaceAtPos = 0;
+        size_type replaceAtPos = 0;
         while ((replaceAtPos = newStr.find(from, replaceAtPos)) != npos)
         {
             newStr.replace(replaceAtPos, from.length(), to);
@@ -101,7 +103,7 @@ public:
 
     FORCE_INLINE String& replaceAll(const String& from, const String& to)
     {
-        size_t replaceAtPos = 0;
+        size_type replaceAtPos = 0;
         while ((replaceAtPos = find(from, replaceAtPos)) != npos)
         {
             replace(replaceAtPos, from.length(), to);
@@ -323,24 +325,13 @@ public:
 
     template <typename Type>
     FORCE_INLINE static String toString(Type&& value);
-
-    template <typename CharType>
-    FORCE_INLINE static const CharType* recurseToNullEnd(const CharType* start)
-    {
-        const CharType* end = start + 1;
-        while (*end != CharType(0))
-        {
-            end += 1;
-        }
-        return end;
-    }
 };
 
 
 template <>
 struct PROGRAMCORE_EXPORT std::hash<String>
 {
-    NODISCARD size_t operator()(const String& keyval) const noexcept {
+    NODISCARD SizeT operator()(const String& keyval) const noexcept {
         auto stringHash = hash<BaseString>();
         return stringHash(keyval);
     }
@@ -371,49 +362,10 @@ struct IsStringTypes : std::conjunction<IsString<T>...> {};
 template <typename T>
 concept StringType = IsString<T>::value;
 template <typename T>
+concept StringOrView = std::same_as<T, String> || std::same_as<T, StringView>;
+template <typename T>
 concept NonStringType = std::negation_v<IsString<T>>;
 template <typename... T>
 concept StringTypes = IsStringTypes<T...>::value;
-
-
-//
-// Allows using character literals as template parameters like below
-// valPrint<"Test">();
-// 
-// template <StringLiteral Val>
-// void valPrint();
-//
-template<size_t N>
-struct StringLiteral 
-{
-    CONST_EXPR StringLiteral(const TChar (&str)[N])
-    {
-        std::copy_n(str, N, value);
-    }
-
-    TChar value[N];
-};
-
-template <StringLiteral StoreValue>
-struct StringLiteralStore
-{
-    using LiteralType = decltype(StoreValue);
-    CONST_EXPR static const LiteralType Literal = StoreValue;
-
-    CONST_EXPR const TChar* getChar() const
-    {
-        return StoreValue.value;
-    }
-
-    operator String() const
-    {
-        return { StoreValue.value };
-    }
-
-    String toString() const
-    {
-        return { StoreValue.value };
-    }
-};
 
 #include "String/StringHelpers.inl"

@@ -50,7 +50,7 @@ class ContainerPropertyImpl final : public ContainerProperty
 public:
     const BaseProperty * elementProp;
 public:
-    ContainerPropertyImpl(const String& propName, const ReflectTypeInfo* propTypeInfo)
+    ContainerPropertyImpl(const StringID& propName, const ReflectTypeInfo* propTypeInfo)
         : ContainerProperty(propName, ContainerEPropertyType<ContainerType>::type, propTypeInfo)
     {}
 

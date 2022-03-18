@@ -44,7 +44,7 @@ class REFLECTIONRUNTIME_EXPORT CustomProperty : public TypedProperty
 public:
     const PropertyDataRetriever* dataRetriever;
 public:
-    CustomProperty(const String& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo);
+    CustomProperty(const StringID& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo);
     ~CustomProperty();
 
     template <typename ConstructType, typename... CTorArgs>
@@ -113,7 +113,7 @@ public:
     const BaseProperty* valueProp;
 
 public:
-    PairProperty(const String& propName, const ReflectTypeInfo* propTypeInfo)
+    PairProperty(const StringID& propName, const ReflectTypeInfo* propTypeInfo)
         : CustomProperty(propName, EPropertyType::PairType, propTypeInfo)
     {}
 
@@ -228,7 +228,7 @@ public:
     // Element prop will be nullptr unless the type is reflected in function parameters or reflected field
     const BaseProperty* elementProp;
 public:
-    MapProperty(const String& propName, const ReflectTypeInfo* propTypeInfo)
+    MapProperty(const StringID& propName, const ReflectTypeInfo* propTypeInfo)
         : CustomProperty(propName, EPropertyType::MapType, propTypeInfo)
     {}
 
@@ -374,7 +374,7 @@ class REFLECTIONRUNTIME_EXPORT ContainerProperty : public CustomProperty
 public:
     const BaseProperty* elementProp;
 public:
-    ContainerProperty(const String& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo)
+    ContainerProperty(const StringID& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo)
         : CustomProperty(propName, propType, propTypeInfo)
     {}
 

@@ -273,3 +273,47 @@ bool WindowsPlatformFunctions::utf8ToWChar(std::wstring& outStr, const AChar* aC
         return true;
     }
 }
+
+bool WindowsPlatformFunctions::toUpper(WChar* inOutStr)
+{
+    WChar* retVal = ::CharUpperW(inOutStr);
+    return inOutStr == retVal;
+}
+bool WindowsPlatformFunctions::toUpper(AChar* inOutStr)
+{
+    AChar* retVal = ::CharUpperA(inOutStr);
+    return inOutStr == retVal;
+}
+WChar WindowsPlatformFunctions::toUpper(WChar ch)
+{
+    dword processedLen = ::CharUpperBuffW(&ch, 1);
+    return ch;
+}
+AChar WindowsPlatformFunctions::toUpper(AChar ch)
+{
+    dword processedLen = ::CharUpperBuffA(&ch, 1);
+    return ch;
+}
+
+bool WindowsPlatformFunctions::toLower(WChar* inOutStr)
+{
+    WChar* retVal = ::CharLowerW(inOutStr);
+    return inOutStr == retVal;
+}
+bool WindowsPlatformFunctions::toLower(AChar* inOutStr)
+{
+    AChar* retVal = ::CharLowerA(inOutStr);
+    return inOutStr == retVal;
+}
+WChar WindowsPlatformFunctions::toLower(WChar ch)
+{
+    dword processedLen = ::CharLowerBuffW(&ch, 1);
+    // return processedLen == 1;
+    return ch;
+}
+AChar WindowsPlatformFunctions::toLower(AChar ch)
+{
+    dword processedLen = ::CharLowerBuffA(&ch, 1);
+    return ch;
+}
+

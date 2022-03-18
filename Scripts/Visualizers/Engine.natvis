@@ -8,6 +8,8 @@ To enable:
 * or copy in %USERPROFILE%\Documents\Visual Studio XXXX\Visualizers (current user)
 * or copy in %VsInstallDirectory%\Common7\Packages\Debugger\Visualizers (all users)
 
+Schema can be found at %VsInstallDirectory%\2xxx\Community\Xml\Schemas\1033\natvis.xsd
+
 More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2019
 -->
 
@@ -145,5 +147,43 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
   <Type Name="VectorND&lt;*,*&gt;">
     <DisplayString>{cellsCount} {"$T1"}</DisplayString>
   </Type>
+
+  <!-- To display list as tree with condition
+  <TreeItems>
+    <Size>debugStrings-&gt;_List._Mypair._Myval2._Mysize</Size>
+    <HeadPointer>debugStrings-&gt;_List._Mypair._Myval2._Myhead-&gt;_Next</HeadPointer>
+    <LeftPointer>_Prev</LeftPointer>
+    <RightPointer>_Next</RightPointer>
+    <ValueNode>_Myval</ValueNode>
+  </TreeItems>-->
+  <!-- Get from map based on key
+  <CustomListItems>
+    <Variable Name="pNode" InitialValue="debugStrings-&gt;_List._Mypair._Myval2._Myhead-&gt;_Next" />
+    <Size>1</Size>
+    <Loop>
+      <Break Condition="pNode == nullptr" />
+      <If Condition="pNode->_Myval.first == id">
+        <Item>pNode->_Myval</Item>
+      </If>
+      <Exec>pNode = pNode->_Next</Exec>
+    </Loop>
+  </CustomListItems>-->
   
+  <Type Name="StringID" Priority="High">
+    <DisplayString Condition="id == 0">Invalid</DisplayString>
+    <DisplayString>{id}</DisplayString>
+    <Expand HideRawView="1">
+      <CustomListItems Optional="true">
+        <Variable Name="pNode" InitialValue="debugStrings-&gt;_List._Mypair._Myval2._Myhead-&gt;_Next" />
+        <Size>1</Size>
+        <Loop>
+          <Break Condition="pNode == nullptr" />
+          <If Condition="pNode->_Myval.first == id">
+            <Item>pNode->_Myval</Item>
+          </If>
+          <Exec>pNode = pNode->_Next</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>  
 </AutoVisualizer>

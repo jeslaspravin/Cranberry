@@ -368,11 +368,7 @@ private:
     // Since delegatePtr need to be accessible in MultiCastDelegateBase
     friend MultiCastDelegateBase<Params...>;
 
-    using SingleCastDelegateBase<ReturnType, Params...>::DelegateInterface;
-    using SingleCastDelegateBase<ReturnType, Params...>::ObjDelegateType;
-    using SingleCastDelegateBase<ReturnType, Params...>::ConstObjDelegateType;
-    using SingleCastDelegateBase<ReturnType, Params...>::StaticDelegateType;
-    using SingleCastDelegateBase<ReturnType, Params...>::LambdaDelegateType;
+    using Base = SingleCastDelegateBase<ReturnType, Params...>;
     using SingleCastDelegateBase<ReturnType, Params...>::delegatePtr;
 public:
     using SingleCastDelegateBase<ReturnType, Params...>::unbind;
@@ -388,7 +384,7 @@ public:
 
     template<typename ObjectType, typename... Variables>
     static std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, SingleCastDelegate> createObject(ObjectType* object
-        , const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
+        , const typename Base::template ObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
         SingleCastDelegate sDelegate;
         sDelegate.bindObject(object, bindingFunction, std::forward<Variables>(vars)...);
@@ -396,7 +392,8 @@ public:
     }
 
     template<typename ObjectType, typename... Variables>
-    static SingleCastDelegate createObject(const ObjectType* object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
+    static SingleCastDelegate createObject(const ObjectType* object
+        , const typename Base::template ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
         SingleCastDelegate sDelegate;
         sDelegate.bindObject(object, bindingFunction, std::forward<Variables>(vars)...);
@@ -404,7 +401,7 @@ public:
     }
 
     template<typename... Variables>
-    static SingleCastDelegate createStatic(const typename StaticDelegateType<Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
+    static SingleCastDelegate createStatic(const typename Base::template StaticDelegateType<Variables...>::FunctionPtr& bindingFunction, Variables ...vars)
     {
         SingleCastDelegate sDelegate;
         sDelegate.bindStatic(bindingFunction, std::forward<Variables>(vars)...);
@@ -412,7 +409,7 @@ public:
     }
 
     template<typename LambdaType, typename... Variables>
-    static SingleCastDelegate createLambda(typename LambdaType &&lambda, Variables ...vars)
+    static SingleCastDelegate createLambda(LambdaType &&lambda, Variables ...vars)
     {
         SingleCastDelegate sDelegate;
         sDelegate.bindLambda(std::forward<LambdaType&&>(lambda), std::forward<Variables>(vars)...);

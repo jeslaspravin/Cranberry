@@ -34,7 +34,7 @@
     DECLARE_STATIC_LINKED_MODULE(ModuleName, ModuleClass)
 #else // STATIC_LINKED
 #define DECLARE_MODULE(ModuleName, ModuleClass) \
-    CB_GLOBAL_NEWDELETE_OVERRIDES \
+    CBE_GLOBAL_NEWDELETE_OVERRIDES \
     extern "C" \
     { \
         DLL_EXPORT MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass) \

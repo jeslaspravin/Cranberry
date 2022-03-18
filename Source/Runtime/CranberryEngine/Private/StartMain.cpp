@@ -18,7 +18,7 @@
 #include "CmdLine/CmdLine.h"
 #include "Memory/Memory.h"
 
-CB_GLOBAL_NEWDELETE_OVERRIDES
+CBE_GLOBAL_NEWDELETE_OVERRIDES
 
 int appMain(String cmdLine, void* appPlatformInstance)
 {

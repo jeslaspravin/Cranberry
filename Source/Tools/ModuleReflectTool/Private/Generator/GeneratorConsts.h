@@ -10,8 +10,8 @@
  */
 
 #pragma once
-#include "Types/CoreDefines.h"
-#include "Types/CoreTypes.h"
+
+#include "String/TCharString.h"
 
 namespace GeneratorConsts
 {

@@ -15,6 +15,7 @@
 #include "Math/CoreMathTypes.h"
 #include "Types/Colors.h"
 #include "Types/Transform3D.h"
+#include "String/TCharString.h"
 
 template <typename Type, StringLiteral TypeName>
 BaseProperty* createFundamentalProperty()

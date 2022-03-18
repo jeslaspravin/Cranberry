@@ -15,6 +15,7 @@
 #include "Types/TypesInfo.h"
 #include "Property/Property.h"
 #include "Property/PropertyMetaData.h"
+#include "String/String.h"
 
 #include <unordered_set>
 
@@ -38,7 +39,7 @@ IReflectionRuntimeModule* IReflectionRuntimeModule::get()
     return static_cast<IReflectionRuntimeModule*>(appModule.lock().get());
 }
 
-void IReflectionRuntimeModule::registerClassFactory(const String& className, const ReflectTypeInfo* classTypeInfo, const ClassPropertyFactoryCell& factoryCell)
+void IReflectionRuntimeModule::registerClassFactory(const StringID& className, const ReflectTypeInfo* classTypeInfo, const ClassPropertyFactoryCell& factoryCell)
 {
     auto factoryFromTypeInfoItr = ReflectionRuntimeModule::classFactoryFromTypeInfo().find(classTypeInfo);
     auto factoryFromTypeNameItr = ReflectionRuntimeModule::classFactoryFromTypeName().find(className);
@@ -52,7 +53,7 @@ void IReflectionRuntimeModule::registerClassFactory(const String& className, con
     }
 }
 
-void IReflectionRuntimeModule::registerStructFactory(const String& structName, const ReflectTypeInfo* structTypeInfo, const ClassPropertyFactoryCell& factoryCell)
+void IReflectionRuntimeModule::registerStructFactory(const StringID& structName, const ReflectTypeInfo* structTypeInfo, const ClassPropertyFactoryCell& factoryCell)
 {
     auto factoryFromTypeInfoItr = ReflectionRuntimeModule::structFactoryFromTypeInfo().find(structTypeInfo);
     auto factoryFromTypeNameItr = ReflectionRuntimeModule::structFactoryFromTypeName().find(structName);
@@ -66,7 +67,7 @@ void IReflectionRuntimeModule::registerStructFactory(const String& structName, c
     }
 }
 
-void IReflectionRuntimeModule::registerEnumFactory(const String& enumName, const ReflectTypeInfo* enumTypeInfo, const EnumPropertyFactoryCell& factoryCell)
+void IReflectionRuntimeModule::registerEnumFactory(const StringID& enumName, const ReflectTypeInfo* enumTypeInfo, const EnumPropertyFactoryCell& factoryCell)
 {
     auto factoryFromTypeInfoItr = ReflectionRuntimeModule::enumFactoryFromTypeInfo().find(enumTypeInfo);
     auto factoryFromTypeNameItr = ReflectionRuntimeModule::enumFactoryFromTypeName().find(enumName);
@@ -90,14 +91,14 @@ void IReflectionRuntimeModule::registerTypeFactory(const ReflectTypeInfo* typeIn
     }
 }
 
-std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::classFactoryFromTypeInfo()
+std::unordered_map<const ReflectTypeInfo*, std::pair<StringID, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::classFactoryFromTypeInfo()
 {
-    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo*, std::pair<StringID, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
-std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::classFactoryFromTypeName()
+std::unordered_map<StringID, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::classFactoryFromTypeName()
 {
-    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
 const ClassProperty* ReflectionRuntimeModule::createClassProperty(const ReflectTypeInfo* typeInfo)
@@ -126,7 +127,7 @@ const ClassProperty* ReflectionRuntimeModule::createClassProperty(const ReflectT
     }
     return nullptr;
 }
-const ClassProperty* ReflectionRuntimeModule::createClassProperty(const String& typeName)
+const ClassProperty* ReflectionRuntimeModule::createClassProperty(const StringID& typeName)
 {
     auto propertyCreateFactoryItr = classFactoryFromTypeName().find(typeName);
     if (propertyCreateFactoryItr != classFactoryFromTypeName().end() && propertyCreateFactoryItr->second.second.factoryFunc)
@@ -141,8 +142,8 @@ const ClassProperty* ReflectionRuntimeModule::createClassProperty(const String& 
             propertyCreateFactoryItr->second.second.initFunc(prop);
         }
 
-        classFactoryFromTypeName().erase(propertyCreateFactoryItr);
         classFactoryFromTypeInfo().erase(propertyCreateFactoryItr->second.first);
+        classFactoryFromTypeName().erase(propertyCreateFactoryItr);
         return prop;
     }
     else
@@ -152,14 +153,14 @@ const ClassProperty* ReflectionRuntimeModule::createClassProperty(const String& 
     return nullptr;
 }
 
-std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::structFactoryFromTypeInfo()
+std::unordered_map<const ReflectTypeInfo*, std::pair<StringID, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::structFactoryFromTypeInfo()
 {
-    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo*, std::pair<StringID, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
-std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::structFactoryFromTypeName()
+std::unordered_map<StringID, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& ReflectionRuntimeModule::structFactoryFromTypeName()
 {
-    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
 const ClassProperty* ReflectionRuntimeModule::createStructProperty(const ReflectTypeInfo* typeInfo)
@@ -187,7 +188,7 @@ const ClassProperty* ReflectionRuntimeModule::createStructProperty(const Reflect
     }
     return nullptr;
 }
-const ClassProperty* ReflectionRuntimeModule::createStructProperty(const String& typeName)
+const ClassProperty* ReflectionRuntimeModule::createStructProperty(const StringID& typeName)
 {
     auto propertyCreateFactoryItr = structFactoryFromTypeName().find(typeName);
     if (propertyCreateFactoryItr != structFactoryFromTypeName().end() && propertyCreateFactoryItr->second.second.factoryFunc)
@@ -202,8 +203,8 @@ const ClassProperty* ReflectionRuntimeModule::createStructProperty(const String&
             propertyCreateFactoryItr->second.second.initFunc(prop);
         }
 
-        classFactoryFromTypeName().erase(propertyCreateFactoryItr);
         classFactoryFromTypeInfo().erase(propertyCreateFactoryItr->second.first);
+        classFactoryFromTypeName().erase(propertyCreateFactoryItr);
         return prop;
     }
     else
@@ -213,14 +214,14 @@ const ClassProperty* ReflectionRuntimeModule::createStructProperty(const String&
     return nullptr;
 }
 
-std::unordered_map<const ReflectTypeInfo*, std::pair<String, EnumPropertyFactoryCell>>& ReflectionRuntimeModule::enumFactoryFromTypeInfo()
+std::unordered_map<const ReflectTypeInfo*, std::pair<StringID, EnumPropertyFactoryCell>>& ReflectionRuntimeModule::enumFactoryFromTypeInfo()
 {
-    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, EnumPropertyFactoryCell>> singletonFactoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo*, std::pair<StringID, EnumPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
-std::unordered_map<String, std::pair<const ReflectTypeInfo*, EnumPropertyFactoryCell>>& ReflectionRuntimeModule::enumFactoryFromTypeName()
+std::unordered_map<StringID, std::pair<const ReflectTypeInfo*, EnumPropertyFactoryCell>>& ReflectionRuntimeModule::enumFactoryFromTypeName()
 {
-    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, EnumPropertyFactoryCell>> singletonFactoriesRegistry;
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo*, EnumPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
 const EnumProperty* ReflectionRuntimeModule::createEnumProperty(const ReflectTypeInfo* typeInfo)
@@ -248,7 +249,7 @@ const EnumProperty* ReflectionRuntimeModule::createEnumProperty(const ReflectTyp
     }
     return nullptr;
 }
-const EnumProperty* ReflectionRuntimeModule::createEnumProperty(const String& typeName)
+const EnumProperty* ReflectionRuntimeModule::createEnumProperty(const StringID& typeName)
 {
     auto propertyCreateFactoryItr = enumFactoryFromTypeName().find(typeName);
     if (propertyCreateFactoryItr != enumFactoryFromTypeName().end() && propertyCreateFactoryItr->second.second.factoryFunc)
@@ -263,8 +264,8 @@ const EnumProperty* ReflectionRuntimeModule::createEnumProperty(const String& ty
             propertyCreateFactoryItr->second.second.initFunc(prop);
         }
 
-        enumFactoryFromTypeName().erase(propertyCreateFactoryItr);
         enumFactoryFromTypeInfo().erase(propertyCreateFactoryItr->second.first);
+        enumFactoryFromTypeName().erase(propertyCreateFactoryItr);
         return prop;
     }
     else
@@ -314,7 +315,7 @@ const ClassProperty* ReflectionRuntimeModule::getStructType(const ReflectTypeInf
     }
     return retVal;
 }
-const ClassProperty* ReflectionRuntimeModule::getStructType(const String& structName)
+const ClassProperty* ReflectionRuntimeModule::getStructType(const StringID& structName)
 {
     const ClassProperty* retVal = nullptr;
     auto typePropertyItr = dbStructTypesFromName.find(structName);
@@ -343,7 +344,7 @@ const ClassProperty* ReflectionRuntimeModule::getClassType(const ReflectTypeInfo
     }
     return retVal;
 }
-const ClassProperty* ReflectionRuntimeModule::getClassType(const String& className)
+const ClassProperty* ReflectionRuntimeModule::getClassType(const StringID& className)
 {
     const ClassProperty* retVal = nullptr;
     auto typePropertyItr = dbClassTypesFromName.find(className);
@@ -372,7 +373,7 @@ const EnumProperty* ReflectionRuntimeModule::getEnumType(const ReflectTypeInfo* 
     }
     return retVal;
 }
-const EnumProperty* ReflectionRuntimeModule::getEnumType(const String& enumName)
+const EnumProperty* ReflectionRuntimeModule::getEnumType(const StringID& enumName)
 {
     const EnumProperty* retVal = nullptr;
     auto typePropertyItr = dbEnumTypesFromName.find(enumName);

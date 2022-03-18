@@ -44,7 +44,7 @@ void initializeCmdArguments()
 }
 
 // Override new and delete
-CB_GLOBAL_NEWDELETE_OVERRIDES
+CBE_GLOBAL_NEWDELETE_OVERRIDES
 
 int32 main(int32 argsc, AChar** args)
 {
