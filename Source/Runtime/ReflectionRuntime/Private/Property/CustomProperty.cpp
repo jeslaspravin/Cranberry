@@ -11,7 +11,7 @@
 
 #include "Property/CustomProperty.h"
 
-CustomProperty::CustomProperty(const String& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo)
+CustomProperty::CustomProperty(const StringID& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo)
     : TypedProperty(propName, propType, propTypeInfo)
 {}
 

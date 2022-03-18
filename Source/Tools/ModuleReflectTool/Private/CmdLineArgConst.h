@@ -10,8 +10,8 @@
  */
 
 #pragma once
-#include "String/String.h"
 
+#include "String/TCharString.h"
 
 namespace ReflectToolCmdLineConst
 {

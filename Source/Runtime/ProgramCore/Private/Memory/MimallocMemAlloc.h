@@ -15,7 +15,7 @@
 
 #include "Memory/MemAllocator.h"
 
-class MimallocMemAlloc final : public CBMemAlloc
+class MimallocMemAlloc final : public CBEMemAlloc
 {
 private:
 public:

@@ -21,6 +21,7 @@
 #include "Math/CoreMathTypes.h"
 #include "Types/Camera/Camera.h"
 #include "Types/Colors.h"
+#include "String/StringID.h"
 #include "RenderInterface/Rendering/RenderingContexts.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Resources/BufferedResources.h"
@@ -67,6 +68,8 @@
 #include "IApplicationModule.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "Core/GBuffers.h"
+#include "IReflectionRuntime.h"
+#include "Property/Property.h"
 
 #include <array>
 #include <random>
@@ -3243,7 +3246,11 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
 
 void ExperimentalEnginePBR::tempTest()
 {
+    StringID str = STRID("Hello");
+    LOG("test", "%s", str);
 
+    const ClassProperty* classProp = IReflectionRuntimeModule::get()->getClassType(STRID("TestNS::BerryObject"));
+    const ClassProperty* classProp1 = IReflectionRuntimeModule::get()->getClassType(STRID("BerrySecond"));
 }
 
 //static uint64 allocationCount = 0;

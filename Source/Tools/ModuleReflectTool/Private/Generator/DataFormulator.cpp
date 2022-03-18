@@ -94,7 +94,7 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::ENUMPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERENUMFACTORY_FUNC;
 
-    setTypeMetaInfo<decltype(GeneratorConsts::TYPEMETADATA_TAG)::Literal, decltype(GeneratorConsts::TYPEMETAFLAGS_TAG)::Literal>(enumCntxt, metaData, metaFlags);
+    setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(enumCntxt, metaData, metaFlags);
     enumCntxt.args[GeneratorConsts::TYPENAME_TAG] = enumTypeName;
     enumCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
@@ -130,8 +130,7 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext* srcGenContext)
                 MustacheContext& enumConstContext = localCntxt->parentContext->sectionContexts[GeneratorConsts::ENUMFIELDS_SECTION_TAG].emplace_back();
                 enumConstContext.args[GeneratorConsts::ENUMFIELDNAME_TAG] = cursorName;
                 enumConstContext.args[GeneratorConsts::ENUMFIELDVALUE_TAG] = enumVal;
-                setTypeMetaInfo<decltype(GeneratorConsts::ENUMFIELDMETADATA_TAG)::Literal
-                    , decltype(GeneratorConsts::ENUMFIELDMETAFLAGS_TAG)::Literal>
+                setTypeMetaInfo<GeneratorConsts::ENUMFIELDMETADATA_TAG.Literal, GeneratorConsts::ENUMFIELDMETAFLAGS_TAG.Literal>
                     (enumConstContext, enumConstMetaData, enumConstMetaFlags);
 
                 // Check and set if can be used as flags, Only if each enum const value has one flag set and it does not overlap with any other flags it can be used as flags
@@ -186,7 +185,7 @@ void visitMemberField(CXCursor cursor, LocalContext& localCntxt)
     MustacheContext& context = (clang_getCursorKind(cursor) == CXCursor_FieldDecl)
         ? localCntxt.parentContext->sectionContexts[GeneratorConsts::MEMBERFIELDS_SECTION_TAG].emplace_back()
         : localCntxt.parentContext->sectionContexts[GeneratorConsts::STATICFIELDS_SECTION_TAG].emplace_back();
-    setTypeMetaInfo<decltype(GeneratorConsts::FIELDMETADATA_TAG)::Literal, decltype(GeneratorConsts::FIELDMETAFLAGS_TAG)::Literal>(context, metaData, metaFlags);
+    setTypeMetaInfo<GeneratorConsts::FIELDMETADATA_TAG.Literal, GeneratorConsts::FIELDMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
     context.args[GeneratorConsts::FIELDNAME_TAG] = fieldName;
     context.args[GeneratorConsts::FIELDTYPENAME_TAG] = typeName;
     context.args[GeneratorConsts::ACCESSSPECIFIER_TAG] = ParserHelper::accessSpecifierName(cursor);
@@ -235,7 +234,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext& localCntxt)
     if (clang_getCursorKind(cursor) == CXCursor_Constructor)
     {
         MustacheContext& context = localCntxt.parentContext->sectionContexts[GeneratorConsts::CONSTRUCTORS_SECTION_TAG].emplace_back();
-        setTypeMetaInfo<decltype(GeneratorConsts::CONSTRUCTORMETADATA_TAG)::Literal, decltype(GeneratorConsts::CONSTRUCTORMETAFLAGS_TAG)::Literal>(context, metaData, metaFlags);
+        setTypeMetaInfo<GeneratorConsts::CONSTRUCTORMETADATA_TAG.Literal, GeneratorConsts::CONSTRUCTORMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
 
         contextPtr = &context;
     }
@@ -252,7 +251,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext& localCntxt)
         MustacheContext& context = (bIsStatic)
             ? localCntxt.parentContext->sectionContexts[GeneratorConsts::STATICFUNCS_SECTION_TAG].emplace_back()
             : localCntxt.parentContext->sectionContexts[GeneratorConsts::MEMBERFUNCS_SECTION_TAG].emplace_back();
-        setTypeMetaInfo<decltype(GeneratorConsts::FUNCMETADATA_TAG)::Literal, decltype(GeneratorConsts::FUNCMETAFLAGS_TAG)::Literal>(context, metaData, metaFlags);
+        setTypeMetaInfo<GeneratorConsts::FUNCMETADATA_TAG.Literal, GeneratorConsts::FUNCMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
         context.args[GeneratorConsts::FUNCTIONNAME_TAG] = funcName;
         context.args[GeneratorConsts::FUNCCONST_BRANCH_TAG] = bIsConst;
         context.args[GeneratorConsts::RETURNTYPENAME_TAG] = returnTypeName;
@@ -349,7 +348,7 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERSTRUCTFACTORY_FUNC;
 
-    setTypeMetaInfo<decltype(GeneratorConsts::TYPEMETADATA_TAG)::Literal, decltype(GeneratorConsts::TYPEMETAFLAGS_TAG)::Literal>(structCntxt, metaData, metaFlags);
+    setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(structCntxt, metaData, metaFlags);
     structCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
     structCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
     structCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
@@ -426,7 +425,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERCLASSFACTORY_FUNC;
 
-    setTypeMetaInfo<decltype(GeneratorConsts::TYPEMETADATA_TAG)::Literal, decltype(GeneratorConsts::TYPEMETAFLAGS_TAG)::Literal>(classCntxt, metaData, metaFlags);
+    setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(classCntxt, metaData, metaFlags);
     classCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
     classCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;
     classCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;

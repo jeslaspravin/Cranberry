@@ -11,8 +11,8 @@
 
 #pragma once
 
-#ifndef FUNCTION_SPECIFIER
-#define FUNCTION_SPECIFIER
+#ifndef FUNCTION_QUALIFIER
+#define FUNCTION_QUALIFIER
 #endif
 
 #ifndef INLINE_MEMORY_FUNCS
@@ -20,43 +20,39 @@
 #endif
 
 #if !INLINE_MEMORY_FUNCS
-CBMemAllocWrapper CBMemory::GAlloc;
+CBEMemAllocWrapper CBEMemory::GAlloc;
 #endif
 
-FUNCTION_SPECIFIER  void* CBMemory::tryMalloc(SizeT size
-    , uint32 alignment /*= CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/
-    , std::source_location srcLoc /*= std::source_location::current()*/)
+FUNCTION_QUALIFIER  void* CBEMemory::tryMalloc(SizeT size
+    , uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/)
 {
     return GALLOC->tryMalloc(size, alignment);
 }
 
-FUNCTION_SPECIFIER void* CBMemory::memAlloc(SizeT size
-    , uint32 alignment /*= CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/
-    , std::source_location srcLoc /*= std::source_location::current()*/)
+FUNCTION_QUALIFIER void* CBEMemory::memAlloc(SizeT size
+    , uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/)
 {
     return GALLOC->memAlloc(size, alignment);
 }
 
-FUNCTION_SPECIFIER void* CBMemory::tryRealloc(void* currentPtr, SizeT size
-    , uint32 alignment /*= CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/
-    , std::source_location srcLoc /*= std::source_location::current()*/)
+FUNCTION_QUALIFIER void* CBEMemory::tryRealloc(void* currentPtr, SizeT size
+    , uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/)
 {
     return GALLOC->tryRealloc(currentPtr, size, alignment);
 }
 
-FUNCTION_SPECIFIER void* CBMemory::memRealloc(void* currentPtr, SizeT size
-    , uint32 alignment /*= CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/
-    , std::source_location srcLoc /*= std::source_location::current()*/)
+FUNCTION_QUALIFIER void* CBEMemory::memRealloc(void* currentPtr, SizeT size
+    , uint32 alignment /*= CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT*/)
 {
     return GALLOC->memRealloc(currentPtr, size, alignment);
 }
 
-FUNCTION_SPECIFIER void CBMemory::memFree(void* ptr, std::source_location srcLoc /*= std::source_location::current()*/)
+FUNCTION_QUALIFIER void CBEMemory::memFree(void* ptr)
 {
     return GALLOC->memFree(ptr);
 }
 
-FUNCTION_SPECIFIER SizeT CBMemory::getAllocationSize(void* ptr)
+FUNCTION_QUALIFIER SizeT CBEMemory::getAllocationSize(void* ptr)
 {
     return GALLOC->getAllocationSize(ptr);
 }

@@ -34,10 +34,16 @@ set (mimalloc_install_path ${cpp_libs_path}/mimalloc CACHE PATH "mimalloc instal
 
 ##### ----CONFIG options end---- #####
 
+include (TestBigEndian)
+TEST_BIG_ENDIAN(is_big_endian)
+
 # Relative to target binary directory
 set (target_generated_path Generated)
 set (experimental_def $<IF:$<BOOL:${experimental}>,EXPERIMENTAL=1,EXPERIMENTAL=0>)
-set (engine_def RENDERAPI_VULKAN=1 ENGINE_VERSION=0 ENGINE_MINOR_VERSION=1 ENGINE_PATCH_VERSION=0 ENGINE_NAME=${CMAKE_PROJECT_NAME})
+set (engine_def RENDERAPI_VULKAN=1 ENGINE_VERSION=0 ENGINE_MINOR_VERSION=1 ENGINE_PATCH_VERSION=0 
+    ENGINE_NAME=${CMAKE_PROJECT_NAME}
+    $<IF:${is_big_endian},BIG_ENDIAN=1,LITTLE_ENDIAN=1>
+    )
 set (configure_file_folder ConfigureFiles)
 
 # Platform related, We define platforms but make them boolean for use with generator expressions easily, UNIX will be skipped instead define more specialized platforms like LINUX

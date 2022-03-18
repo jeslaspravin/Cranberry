@@ -15,12 +15,12 @@
 #include "Memory/BuiltinMemAlloc.h"
 #include "Memory/MimallocMemAlloc.h"
 
-CBMemAlloc* GenericPlatformMemory::createMemAllocator()
+CBEMemAlloc* GenericPlatformMemory::createMemAllocator()
 {
 #if USE_MIMALLOC
     return new MimallocMemAlloc();
 #endif
 
     // fallback mem allocator
-    return new CBBuiltinMemAlloc();
+    return new CBEBuiltinMemAlloc();
 }

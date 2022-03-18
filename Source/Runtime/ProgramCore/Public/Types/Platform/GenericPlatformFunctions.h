@@ -96,4 +96,38 @@ public:
     {
         return PlatformClass::utf8ToWChar(outStr, aChar);
     }
+
+    static bool toUpper(AChar* inOutStr)
+    {
+        return PlatformClass::toUpper(inOutStr);
+    }
+    static bool toUpper(WChar* inOutStr)
+    {
+        return PlatformClass::toUpper(inOutStr);
+    }
+    static AChar toUpper(AChar ch)
+    {
+        return PlatformClass::toUpper(ch);
+    }
+    static WChar toUpper(WChar ch)
+    {
+        return PlatformClass::toUpper(ch);
+    }
+
+    static bool toLower(AChar* inOutStr)
+    {
+        return PlatformClass::toLower(inOutStr);
+    }
+    static bool toLower(WChar* inOutStr)
+    {
+        return PlatformClass::toLower(inOutStr);
+    }
+    static AChar toLower(AChar ch)
+    {
+        return PlatformClass::toLower(ch);
+    }
+    static WChar toLower(WChar ch)
+    {
+        return PlatformClass::toLower(ch);
+    }
 };

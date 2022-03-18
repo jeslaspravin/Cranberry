@@ -1843,13 +1843,13 @@ namespace SampleCode
             IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::set<uint64>>()
                 , { &ThisType::createstd__set_uint64_Property, &ThisType::initstd__set_uint64_Property });
 
-            IReflectionRuntimeModule::get()->registerClassFactory(TCHAR("TestPropertyClass"), typeInfoFrom<TestPropertyClass>()
+            IReflectionRuntimeModule::get()->registerClassFactory(STRID("TestPropertyClass"), typeInfoFrom<TestPropertyClass>()
                 , { &ThisType::createTestPropertyClassProperty, &ThisType::initTestPropertyClassProperty });
         }
 
         static BaseProperty* createTestPropertyClassPtrProperty()
         {
-            QualifiedProperty* prop = (new QualifiedProperty(TCHAR("TestPropertyClass*"), typeInfoFrom<TestPropertyClass*>()));
+            QualifiedProperty* prop = (new QualifiedProperty(STRID("TestPropertyClass*"), typeInfoFrom<TestPropertyClass*>()));
             return prop;
         }
         static void initTestPropertyClassPtrProperty(BaseProperty* prop)
@@ -1860,7 +1860,7 @@ namespace SampleCode
 
         static BaseProperty* createstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property()
         {
-            BaseProperty* prop = new PairProperty(TCHAR("std::pair<const int32, TestPropertyClass::TestInnerStruct>"), typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>());
+            BaseProperty* prop = new PairProperty(STRID("std::pair<const int32, TestPropertyClass::TestInnerStruct>"), typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>());
             return prop;
         }
         static void initstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property(BaseProperty* prop)
@@ -1873,7 +1873,7 @@ namespace SampleCode
 
         static BaseProperty* createstd__set_uint64_Property()
         {
-            BaseProperty* prop = new ContainerPropertyImpl<std::set<uint64>>(TCHAR("std::set<uint64>"), typeInfoFrom<std::set<uint64>>());
+            BaseProperty* prop = new ContainerPropertyImpl<std::set<uint64>>(STRID("std::set<uint64>"), typeInfoFrom<std::set<uint64>>());
             return prop;
         }
         static void initstd__set_uint64_Property(BaseProperty* prop)
@@ -1885,7 +1885,7 @@ namespace SampleCode
 
         static BaseProperty* createstd__map_int32__TestPropertyClass__TestInnerStruct_Property()
         {
-            BaseProperty* prop = new MapProperty(TCHAR("std::map<int32, TestPropertyClass::TestInnerStruct>"), typeInfoFrom<std::map<int32, TestPropertyClass::TestInnerStruct>>());
+            BaseProperty* prop = new MapProperty(STRID("std::map<int32, TestPropertyClass::TestInnerStruct>"), typeInfoFrom<std::map<int32, TestPropertyClass::TestInnerStruct>>());
             return prop;
         }
         static void initstd__map_int32__TestPropertyClass__TestInnerStruct_Property(BaseProperty* prop)
@@ -1903,7 +1903,7 @@ namespace SampleCode
         }
         static ClassProperty* createTestPropertyClassProperty()
         {
-            ClassProperty* prop = (new ClassProperty(TCHAR("TestPropertyClass"), typeInfoFrom<TestPropertyClass>()));
+            ClassProperty* prop = (new ClassProperty(STRID("TestPropertyClass"), typeInfoFrom<TestPropertyClass>()));
             return prop;
         }
         static void initTestPropertyClassProperty(ClassProperty* prop)
@@ -1911,34 +1911,34 @@ namespace SampleCode
             prop->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<TestPropertyClass*>())
-                ->addFunctionParamProperty(TCHAR("newName"), IReflectionRuntimeModule::getType<String>())
+                ->addFunctionParamProperty(STRID("newName"), IReflectionRuntimeModule::getType<String>())
                 ->constructFuncPointer<GlobalFunctionWrapperImpl<TestPropertyClass*, String>>(&ThisType::TestPropertyClassCtor);
-            prop->addMemberFunc(TCHAR("printNewNameStr"))
+            prop->addMemberFunc(STRID("printNewNameStr"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void>())
                 ->constructFuncPointer<MemberFunctionWrapperImpl<const TestPropertyClass, void>>(&TestPropertyClass::printNewNameStr);
 
-            prop->addStaticField(TCHAR("staticInteger"))
+            prop->addStaticField(STRID("staticInteger"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<int32>())
                 ->constructFieldPtr<GlobalFieldWrapperImpl<int32>>(&TestPropertyClass::staticInteger);
             
-            prop->addMemberField(TCHAR("idToSection"))
+            prop->addMemberField(STRID("idToSection"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<std::map<int32, TestPropertyClass::TestInnerStruct>>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, std::map<int32, TestPropertyClass::TestInnerStruct>>>(&TestPropertyClass::idToSection);
 
-            prop->addMemberField(TCHAR("newNameStr"))
+            prop->addMemberField(STRID("newNameStr"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<String>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, String>>(&TestPropertyClass::newNameStr);
 
-            prop->addMemberField(TCHAR("nextClass"))
+            prop->addMemberField(STRID("nextClass"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<TestPropertyClass*>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, TestPropertyClass*>>(&TestPropertyClass::nextClass);
 
-            prop->addMemberField(TCHAR("handles"))
+            prop->addMemberField(STRID("handles"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<std::set<uint64>>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, std::set<uint64>>>(&TestPropertyClass::handles);
@@ -1953,13 +1953,13 @@ namespace SampleCode
             IReflectionRuntimeModule::get()->registerTypeFactory(typeInfoFrom<std::vector<String>>()
                 , { &ThisType::createstd_vector_StringProperty, &ThisType::initstd_vector_StringProperty });
 
-            IReflectionRuntimeModule::get()->registerClassFactory(TCHAR("TestPropertyClass::TestInnerStruct"), typeInfoFrom<TestPropertyClass::TestInnerStruct>()
+            IReflectionRuntimeModule::get()->registerClassFactory(STRID("TestPropertyClass::TestInnerStruct"), typeInfoFrom<TestPropertyClass::TestInnerStruct>()
                 , { &ThisType::createTestPropertyClass_TestInnerStructProperty, &ThisType::initTestPropertyClass_TestInnerStructProperty });
         }
 
         static BaseProperty* createstd_vector_StringProperty()
         {
-            BaseProperty* prop = new ContainerPropertyImpl<std::vector<String>>(TCHAR("std::vector<String>"), typeInfoFrom<std::vector<String>>());
+            BaseProperty* prop = new ContainerPropertyImpl<std::vector<String>>(STRID("std::vector<String>"), typeInfoFrom<std::vector<String>>());
             return prop;
         }
         static void initstd_vector_StringProperty(BaseProperty* prop)
@@ -1971,17 +1971,17 @@ namespace SampleCode
 
         static ClassProperty* createTestPropertyClass_TestInnerStructProperty()
         {
-            ClassProperty* prop = (new ClassProperty(TCHAR("TestPropertyClass::TestInnerStruct"), typeInfoFrom<TestPropertyClass::TestInnerStruct>()));
+            ClassProperty* prop = (new ClassProperty(STRID("TestPropertyClass::TestInnerStruct"), typeInfoFrom<TestPropertyClass::TestInnerStruct>()));
             return prop;
         }
         static void initTestPropertyClass_TestInnerStructProperty(ClassProperty* prop)
         {
-            prop->addMemberField(TCHAR("names"))
+            prop->addMemberField(STRID("names"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<std::vector<String>>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass::TestInnerStruct, std::vector<String>>>(&TestPropertyClass::TestInnerStruct::names);
 
-            prop->addMemberField(TCHAR("numNames"))
+            prop->addMemberField(STRID("numNames"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setField(IReflectionRuntimeModule::getType<uint32>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass::TestInnerStruct, uint32>>(&TestPropertyClass::TestInnerStruct::numNames);
@@ -1996,10 +1996,10 @@ namespace SampleCode
             String args;
             if (!ctor->funcParamsProp.empty())
             {
-                args += ctor->funcParamsProp[0].second->name + TCHAR(" ") + ctor->funcParamsProp[0].first;
+                args += ctor->funcParamsProp[0].second->name.toString() + TCHAR(" ") + ctor->funcParamsProp[0].first.toString();
                 for (int32 i = 1; i < ctor->funcParamsProp.size(); ++i)
                 {
-                    args += TCHAR(", ") + ctor->funcParamsProp[i].second->name + TCHAR(" ") + ctor->funcParamsProp[i].first;
+                    args += TCHAR(", ") + ctor->funcParamsProp[i].second->name.toString() + TCHAR(" ") + ctor->funcParamsProp[i].first.toString();
                 }
             }
             LOG("Test", "Class %s: CTor %s(%s)", prop->name, ctor->name, args);
@@ -2009,10 +2009,10 @@ namespace SampleCode
             String args;
             if (!memFunc->funcParamsProp.empty())
             {
-                args += memFunc->funcParamsProp[0].second->name + TCHAR(" ") + memFunc->funcParamsProp[0].first;
+                args += memFunc->funcParamsProp[0].second->name.toString() + TCHAR(" ") + memFunc->funcParamsProp[0].first.toString();
                 for (int32 i = 1; i < memFunc->funcParamsProp.size(); ++i)
                 {
-                    args += TCHAR(", ") + memFunc->funcParamsProp[i].second->name + TCHAR(" ") + memFunc->funcParamsProp[i].first;
+                    args += TCHAR(", ") + memFunc->funcParamsProp[i].second->name.toString() + TCHAR(" ") + memFunc->funcParamsProp[i].first.toString();
                 }
             }
             LOG("Test", "Class %s: Func %s %s(%s)", prop->name, memFunc->funcReturnProp->name, memFunc->name, args);

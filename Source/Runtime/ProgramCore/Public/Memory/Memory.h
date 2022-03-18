@@ -16,8 +16,6 @@
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "ProgramCoreExports.h"
 
-#include <source_location>
-
 template <typename MemAllocType, typename AllocatorCreatePolicy>
 class MemAllocatorWrapper
 {
@@ -49,42 +47,42 @@ public:
 };
 
 
-struct CBMemAllocCreatePolicy
+struct CBEMemAllocCreatePolicy
 {
-    static bool create(CBMemAlloc** outAllocator);
-    static void destroy(CBMemAlloc* allocator);
+    static bool create(CBEMemAlloc** outAllocator);
+    static void destroy(CBEMemAlloc* allocator);
 };
 
 // If want to override to custom memory allocator define CUSTOM_MEM_ALLOCATOR_WRAPPER with allocator type's wrapper
-// Allocator must follow same interface as CBMemAlloc
+// Allocator must follow same interface as CBEMemAlloc
 #ifndef CUSTOM_MEM_ALLOCATOR_WRAPPER
 #define INLINE_MEMORY_FUNCS 0
-#define FUNCTION_SPECIFIER PROGRAMCORE_EXPORT
-#define GALLOC CBMemory::GAlloc
-using CBMemAllocWrapper = MemAllocatorWrapper<CBMemAlloc, CBMemAllocCreatePolicy>;
+#define FUNCTION_QUALIFIER PROGRAMCORE_EXPORT
+#define GALLOC CBEMemory::GAlloc
+using CBEMemAllocWrapper = MemAllocatorWrapper<CBEMemAlloc, CBEMemAllocCreatePolicy>;
 #else
 #define INLINE_MEMORY_FUNCS 1
-#define FUNCTION_SPECIFIER FORCE_INLINE
-#define GALLOC CBMemory::GAlloc()
-using CBMemAllocWrapper = CUSTOM_MEM_ALLOCATOR_WRAPPER;
+#define FUNCTION_QUALIFIER FORCE_INLINE
+#define GALLOC CBEMemory::GAlloc()
+using CBEMemAllocWrapper = CUSTOM_MEM_ALLOCATOR_WRAPPER;
 #endif
 
 
-class CBMemory
+class CBEMemory
 {
 #if !INLINE_MEMORY_FUNCS
 public:
-    PROGRAMCORE_EXPORT static CBMemAllocWrapper GAlloc;
+    PROGRAMCORE_EXPORT static CBEMemAllocWrapper GAlloc;
 #else // !INLINE_FMEMORY_OPERATION
 private:
-    FORCE_INLINE void CBMemAllocWrapper& GAlloc()
+    FORCE_INLINE void CBEMemAllocWrapper& GAlloc()
     {
-        static CBMemAllocWrapper gallocWrapper;
+        static CBEMemAllocWrapper gallocWrapper;
         return gallocWrapper;
     }
 #endif // !INLINE_FMEMORY_OPERATION
 private:
-    CBMemory() = default;
+    CBEMemory() = default;
 public:
 
     // To bring all memory copies to single spot
@@ -118,12 +116,12 @@ public:
         ::free(ptr);
     }
 
-    FUNCTION_SPECIFIER static void* tryMalloc(SizeT size, uint32 alignment = CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT, std::source_location srcLoc = std::source_location::current());
-    FUNCTION_SPECIFIER static void* memAlloc(SizeT size, uint32 alignment = CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT, std::source_location srcLoc = std::source_location::current());
-    FUNCTION_SPECIFIER static void* tryRealloc(void* currentPtr, SizeT size, uint32 alignment = CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT, std::source_location srcLoc = std::source_location::current());
-    FUNCTION_SPECIFIER static void* memRealloc(void* currentPtr, SizeT size, uint32 alignment = CBMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT, std::source_location srcLoc = std::source_location::current());
-    FUNCTION_SPECIFIER static void memFree(void* ptr, std::source_location srcLoc = std::source_location::current());
-    FUNCTION_SPECIFIER static SizeT getAllocationSize(void* ptr);
+    FUNCTION_QUALIFIER static void* tryMalloc(SizeT size, uint32 alignment = CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT);
+    FUNCTION_QUALIFIER static void* memAlloc(SizeT size, uint32 alignment = CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT);
+    FUNCTION_QUALIFIER static void* tryRealloc(void* currentPtr, SizeT size, uint32 alignment = CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT);
+    FUNCTION_QUALIFIER static void* memRealloc(void* currentPtr, SizeT size, uint32 alignment = CBEMemAllocWrapper::AllocType::DEFAULT_ALIGNMENT);
+    FUNCTION_QUALIFIER static void memFree(void* ptr);
+    FUNCTION_QUALIFIER static SizeT getAllocationSize(void* ptr);
 };
 
 #if INLINE_MEMORY_FUNCS
@@ -131,76 +129,76 @@ public:
 #endif
 
 #undef INLINE_MEMORY_FUNCS
-#undef FUNCTION_SPECIFIER
+#undef FUNCTION_QUALIFIER
 
 
-#define CB_NEW_OPERATOR(MemAllocFunc, FuncSpecifier, ...) \
-    NODISCARD FuncSpecifier void* operator new (size_t size, __VA_ARGS__) \
+#define CBE_NEW_OPERATOR(MemAllocFunc, FuncQual, ...) \
+    NODISCARD FuncQual void* operator new (size_t size, __VA_ARGS__) \
     { \
         return MemAllocFunc((SizeT)size); \
     } \
     \
-    NODISCARD FuncSpecifier void* operator new[] (size_t size, __VA_ARGS__) \
+    NODISCARD FuncQual void* operator new[] (size_t size, __VA_ARGS__) \
     { \
         return MemAllocFunc((SizeT)size); \
     } \
     \
-    NODISCARD FuncSpecifier void* operator new (size_t size, std::align_val_t alignment, __VA_ARGS__) \
+    NODISCARD FuncQual void* operator new (size_t size, std::align_val_t alignment, __VA_ARGS__) \
     { \
         return MemAllocFunc((SizeT)size, (uint32)alignment); \
     } \
     \
-    NODISCARD FuncSpecifier void* operator new[] (size_t size, std::align_val_t alignment, __VA_ARGS__) \
+    NODISCARD FuncQual void* operator new[] (size_t size, std::align_val_t alignment, __VA_ARGS__) \
     { \
         return MemAllocFunc((SizeT)size, (uint32)alignment); \
     }
 
-#define CB_DELETE_OPERATOR(MemAllocFunc, FuncSpecifier, ...) \
-    FuncSpecifier void operator delete (void* ptr, __VA_ARGS__) noexcept \
+#define CBE_DELETE_OPERATOR(MemFreeFunc, FuncQual, ...) \
+    FuncQual void operator delete (void* ptr, __VA_ARGS__) noexcept \
     { \
-        MemAllocFunc(ptr); \
+        MemFreeFunc(ptr); \
     } \
     \
-    FuncSpecifier void operator delete[] (void* ptr, __VA_ARGS__) noexcept \
+    FuncQual void operator delete[] (void* ptr, __VA_ARGS__) noexcept \
     { \
-        MemAllocFunc(ptr); \
+        MemFreeFunc(ptr); \
     } \
     \
-    FuncSpecifier void operator delete (void* ptr, std::align_val_t, __VA_ARGS__) noexcept \
+    FuncQual void operator delete (void* ptr, std::align_val_t, __VA_ARGS__) noexcept \
     { \
-        MemAllocFunc(ptr); \
+        MemFreeFunc(ptr); \
     } \
     \
-    FuncSpecifier void operator delete[] (void* ptr, std::align_val_t, __VA_ARGS__) noexcept \
+    FuncQual void operator delete[] (void* ptr, std::align_val_t, __VA_ARGS__) noexcept \
     { \
-        MemAllocFunc(ptr); \
+        MemFreeFunc(ptr); \
     }
 
-#define CB_GLOBAL_NEWDELETE_OVERRIDES \
-    CB_NEW_OPERATOR(CBMemory::memAlloc,) \
-    CB_NEW_OPERATOR(CBMemory::memAlloc,,const std::nothrow_t&) \
-    CB_DELETE_OPERATOR(CBMemory::memFree,) \
-    CB_DELETE_OPERATOR(CBMemory::memFree,,const std::nothrow_t&)
+#define CBE_GLOBAL_NEWDELETE_OVERRIDES \
+    CBE_NEW_OPERATOR(CBEMemory::memAlloc,) \
+    CBE_NEW_OPERATOR(CBEMemory::memAlloc,,const std::nothrow_t&) \
+    CBE_DELETE_OPERATOR(CBEMemory::memFree,) \
+    CBE_DELETE_OPERATOR(CBEMemory::memFree,,const std::nothrow_t&)
 
-#define CB_CLASS_NEWDELETE_OVERRIDES(ClassName) \
+#define CBE_CLASS_NEWDELETE_OVERRIDES(ClassName) \
 private: \
     static void* ClassName##_Alloc(SizeT size, uint32 alignment) \
     { \
-        return CBMemory::memAlloc(size, alignment); \
+        return CBEMemory::memAlloc(size, alignment); \
     } \
     \
     static void* ClassName##_Alloc(SizeT size) \
     { \
-        return CBMemory::memAlloc(size); \
+        return CBEMemory::memAlloc(size); \
     } \
     \
     static void ClassName##_Free(void* ptr) \
     { \
-        CBMemory::memFree(ptr); \
+        CBEMemory::memFree(ptr); \
     } \
 public:  \
-    CB_NEW_OPERATOR(ClassName##_Alloc, static) \
-    CB_NEW_OPERATOR(ClassName##_Alloc, static, const std::nothrow_t&) \
-    CB_DELETE_OPERATOR(ClassName##_Free, static) \
-    CB_DELETE_OPERATOR(ClassName##_Free, static, const std::nothrow_t&)
+    CBE_NEW_OPERATOR(ClassName##_Alloc, static) \
+    CBE_NEW_OPERATOR(ClassName##_Alloc, static, const std::nothrow_t&) \
+    CBE_DELETE_OPERATOR(ClassName##_Free, static) \
+    CBE_DELETE_OPERATOR(ClassName##_Free, static, const std::nothrow_t&)
 
