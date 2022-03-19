@@ -38,14 +38,6 @@
 #define PLATFORM_ALIGNED_FREE _aligned_free
 #endif
 
-#ifndef LITTLE_ENDIAN
-#define LITTLE_ENDIAN 1
-#endif
-
-#ifndef BIG_ENDIAN
-#define BIG_ENDIAN 0
-#endif
-
 // Windows has no library prefix
 #ifndef LIB_PREFIX
 #define LIB_PREFIX TCHAR("")

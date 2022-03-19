@@ -14,7 +14,7 @@
 #if DEV_BUILD
 std::unordered_map<StringID::IDType, String>& StringID::debugStringDB()
 {
-    static std::unordered_map<StringID::IDType, String> stringDB;
-    return stringDB;
+    static std::unordered_map<StringID::IDType, String> singletonStringDB;
+    return singletonStringDB;
 }
 #endif // DEV_BUILD

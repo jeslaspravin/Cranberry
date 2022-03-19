@@ -58,13 +58,13 @@ struct StringLiteralStore
     }
 };
 
+template <typename CharType>
+using CharStringView = std::basic_string_view<CharType, std::char_traits<CharType>>;
+
 // Some helper functions for null terminated string
 // Right now does not handle multiple byte chars as that seems unnecessary to handle that for raw strings
 namespace TCharStr
 {
-    template <typename CharType>
-    using CharStringView = std::basic_string_view<CharType, std::char_traits<CharType>>;
-
     template <typename CharType>
     NODISCARD CONST_EXPR const CharType* recurseToNullEnd(const CharType* start)
     {
@@ -391,5 +391,52 @@ namespace TCharStr
     {
         StringViewType retView = trimL(str);
         return trimR(&*retView.cbegin());
+    }
+}
+
+namespace TCharUtils
+{
+    template <typename CharType, std::integral OutType>
+    CONST_EXPR bool parseHex(OutType& outVal, CharStringView<CharType> strView)
+    {
+        if (strView.empty())
+        {
+            return false;
+        }
+
+        // If starting with 0x then skip them
+        if (*strView.cbegin() == '0' && strView.cbegin()[1] == 'x')
+        {
+            strView.remove_prefix(2);
+        }
+
+        OutType retVal = 0;
+        OutType placeValue = 1;
+        for (auto itr = strView.cbegin(); itr != strView.cend(); ++itr)
+        {
+            CharType diff = *itr - '0';
+            // If not a digit then check for accepted char
+            if (diff < 0 || diff > 9)
+            {
+                CharType subtrahend = (*itr >= 'a') ? 'a' : 'A';
+                // Add 10 to skip to 10 in hex
+                diff = *itr - subtrahend + 10;
+                // If not in valid alphabet range then stop parsing
+                if (diff < 10 || diff > 15)
+                {
+                    return false;
+                }
+            }
+            retVal = retVal * 16 + diff;
+        }
+
+        outVal = retVal;
+        return true;
+    }
+
+    template <typename CharType, std::integral OutType>
+    CONST_EXPR bool parseHex(OutType& outVal, const CharType* str)
+    {
+        return parseHex(outVal, CharStringView<CharType>(str, TCharStr::length(str)));
     }
 }

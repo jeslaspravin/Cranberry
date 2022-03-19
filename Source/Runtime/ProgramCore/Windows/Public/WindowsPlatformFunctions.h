@@ -36,6 +36,8 @@ public:
     static uint32 getSetBitCount(const uint32& value);
     static uint32 getSetBitCount(const uint64& value);
 
+    static bool createGUID(CBEGuid& outGuid);
+
     static bool wcharToUtf8(std::string& outStr, const WChar* wChar);
     static bool utf8ToWChar(std::wstring& outStr, const AChar* aChar);
 
