@@ -130,6 +130,10 @@ public:
         return id == rhs.id;
     }
 
+    /**
+     * toString will return id integer as string in release build
+     * NOTE : Do not use this toString for any purpose other than debug logging
+     */
     FORCE_INLINE String toString() const
     {
 #if DEV_BUILD

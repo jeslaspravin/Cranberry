@@ -68,6 +68,7 @@
 #include "IApplicationModule.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "Core/GBuffers.h"
+#include "Types/Uid/Guid.h"
 #include "IReflectionRuntime.h"
 #include "Property/Property.h"
 
@@ -3251,6 +3252,13 @@ void ExperimentalEnginePBR::tempTest()
 
     const ClassProperty* classProp = IReflectionRuntimeModule::get()->getClassType(STRID("TestNS::BerryObject"));
     const ClassProperty* classProp1 = IReflectionRuntimeModule::get()->getClassType(STRID("BerrySecond"));
+
+    CBEGuid id = CBEGuid::create();
+    for (uint32 i = CBEGuid::DigitsOnly; i <= CBEGuid::DWordWithHyphen; ++i)
+    {
+        String uid = id.toString(CBEGuid::EGuidFormat(i));
+        LOG("test", "Size %d, Is same %d, %s", sizeof(id), CBEGuid::parse(uid) == id,uid);
+    }
 }
 
 //static uint64 allocationCount = 0;

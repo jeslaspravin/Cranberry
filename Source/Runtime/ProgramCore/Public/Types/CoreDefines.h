@@ -41,6 +41,14 @@
 #define DEBUG_INLINE inline
 #endif
 
+#ifndef LITTLE_ENDIAN
+#define LITTLE_ENDIAN 1
+#endif
+
+#ifndef BIG_ENDIAN
+#define BIG_ENDIAN 0
+#endif
+
 #ifndef LIB_PREFIX
 #define LIB_PREFIX
 #endif
@@ -70,7 +78,7 @@
 
 // Math defines
 #ifndef IS_FINITE
-#define  IS_FINITE std::isfinite
+#define IS_FINITE std::isfinite
 #endif
 
 // Other non platform defines

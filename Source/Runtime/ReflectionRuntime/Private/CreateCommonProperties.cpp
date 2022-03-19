@@ -20,19 +20,19 @@
 template <typename Type, StringLiteral TypeName>
 BaseProperty* createFundamentalProperty()
 {
-    return new TypedProperty(TypeName.value, EPropertyType::FundamentalType, typeInfoFrom<Type>());
+    return new TypedProperty(TypeName.value, TypeName.value, EPropertyType::FundamentalType, typeInfoFrom<Type>());
 }
 
 template <typename Type, StringLiteral TypeName>
 BaseProperty* createSpecialProperty()
 {
-    return new TypedProperty(TypeName.value, EPropertyType::SpecialType, typeInfoFrom<Type>());
+    return new TypedProperty(TypeName.value, TypeName.value, EPropertyType::SpecialType, typeInfoFrom<Type>());
 }
 
 template <typename Type, StringLiteral TypeName>
 BaseProperty* createQualifiedProperty()
 {
-    return new QualifiedProperty(TypeName.value, typeInfoFrom<Type>());
+    return new QualifiedProperty(TypeName.value, TypeName.value, typeInfoFrom<Type>());
 }
 template <typename Type>
 void initQualifiedProperty(BaseProperty* prop)

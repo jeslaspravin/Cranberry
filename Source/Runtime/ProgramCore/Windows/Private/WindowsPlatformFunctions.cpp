@@ -240,6 +240,14 @@ uint32 WindowsPlatformFunctions::getSetBitCount(const uint64& value)
     return uint32(::__popcnt64(value));
 }
 
+bool WindowsPlatformFunctions::createGUID(CBEGuid& outGuid)
+{
+    // GUID uses unsigned long which is of size 8 in GCC and Clang, Will that be a problem?
+    // MSVC unsigned long is 4 bytes so doing below static assert
+    static_assert(sizeof(GUID) == 16, "GUID is 16byte in current compiler");
+    return ::CoCreateGuid((GUID*)(&outGuid)) == S_OK;
+}
+
 bool WindowsPlatformFunctions::wcharToUtf8(std::string& outStr, const WChar* wChar)
 {
     int32 bufLen = ::WideCharToMultiByte(CP_UTF8, 0, wChar, -1, NULL, 0, NULL, NULL);

@@ -14,6 +14,8 @@
 #include "String/String.h"
 #include "Types/Platform/GenericPlatformTypes.h"
 
+struct CBEGuid;
+
 template <typename PlatformClass>
 class GenericPlatformFunctions
 {
@@ -79,12 +81,15 @@ public:
 
     // Utilities 
 
-    template<typename UnsignedType>
-    static std::enable_if_t
-        <std::conjunction_v<std::is_integral<UnsignedType>, std::is_unsigned<UnsignedType>>
-        , uint32> getSetBitCount(const UnsignedType& value)
+    template<std::unsigned_integral UnsignedType>
+    static uint32 getSetBitCount(const UnsignedType& value)
     {
         return PlatformClass::getSetBitCount(value);
+    }
+
+    static void createGUID(CBEGuid& outGuid)
+    {
+        PlatformClass::createGUID(outGuid);
     }
 
     static bool wcharToUtf8(std::string& outStr, const WChar* wChar)

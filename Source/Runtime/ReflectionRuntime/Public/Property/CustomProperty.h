@@ -44,7 +44,7 @@ class REFLECTIONRUNTIME_EXPORT CustomProperty : public TypedProperty
 public:
     const PropertyDataRetriever* dataRetriever;
 public:
-    CustomProperty(const StringID& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo);
+    CustomProperty(const StringID& propNameID, const String& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo);
     ~CustomProperty();
 
     template <typename ConstructType, typename... CTorArgs>
@@ -113,8 +113,8 @@ public:
     const BaseProperty* valueProp;
 
 public:
-    PairProperty(const StringID& propName, const ReflectTypeInfo* propTypeInfo)
-        : CustomProperty(propName, EPropertyType::PairType, propTypeInfo)
+    PairProperty(const StringID& propNameID, const String& propName, const ReflectTypeInfo* propTypeInfo)
+        : CustomProperty(propNameID, propName, EPropertyType::PairType, propTypeInfo)
     {}
 
     FORCE_INLINE PairProperty* setFirstProperty(const BaseProperty* firstProperty)
@@ -228,8 +228,8 @@ public:
     // Element prop will be nullptr unless the type is reflected in function parameters or reflected field
     const BaseProperty* elementProp;
 public:
-    MapProperty(const StringID& propName, const ReflectTypeInfo* propTypeInfo)
-        : CustomProperty(propName, EPropertyType::MapType, propTypeInfo)
+    MapProperty(const StringID& propNameID, const String& propName, const ReflectTypeInfo* propTypeInfo)
+        : CustomProperty(propNameID, propName, EPropertyType::MapType, propTypeInfo)
     {}
 
     FORCE_INLINE MapProperty* setKeyProperty(const BaseProperty* keyProperty)
@@ -374,8 +374,8 @@ class REFLECTIONRUNTIME_EXPORT ContainerProperty : public CustomProperty
 public:
     const BaseProperty* elementProp;
 public:
-    ContainerProperty(const StringID& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo)
-        : CustomProperty(propName, propType, propTypeInfo)
+    ContainerProperty(const StringID& propNameID, const String& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo)
+        : CustomProperty(propNameID, propName, propType, propTypeInfo)
     {}
 
     FORCE_INLINE ContainerProperty* setElementProperty(const BaseProperty* elementProperty)
