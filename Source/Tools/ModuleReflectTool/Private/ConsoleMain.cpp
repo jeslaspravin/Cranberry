@@ -49,6 +49,7 @@ CBE_GLOBAL_NEWDELETE_OVERRIDES
 int32 main(int32 argsc, AChar** args)
 {
     UnexpectedErrorHandler::getHandler()->registerFilter();
+    SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug | Logger::Log);
 
     ModuleManager* moduleManager = ModuleManager::get();
     moduleManager->loadModule(TCHAR("ProgramCore"));
@@ -68,6 +69,8 @@ int32 main(int32 argsc, AChar** args)
     // Loading other libraries
     moduleManager->loadModule(TCHAR("ReflectionRuntime"));
     moduleManager->getOrLoadLibrary(PathFunctions::combinePath(TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"), String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION));
+
+    Logger::flushStream();
 
     if (ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::SAMPLE_CODE))
     {

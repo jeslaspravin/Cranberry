@@ -98,15 +98,16 @@ bool CBEMemAllocCreatePolicy::create(CBEMemAlloc** outAllocator)
 {
     *outAllocator = PlatformMemory::createMemAllocator();
 
+    // Clean up is unnecessary here as everything will be cleared when program exits and this memory allocator exists till end
     // Mark for delete at exit
-    struct CBEMemAllocDeleter
-    {
-        static void deleteCBEMemAlloc()
-        {
-            GALLOC.destroy();
-        }
-    };
-    atexit(CBEMemAllocDeleter::deleteCBEMemAlloc);
+    //struct CBEMemAllocDeleter
+    //{
+    //    static void deleteCBEMemAlloc()
+    //    {
+    //        GALLOC.destroy();
+    //    }
+    //};
+    // atexit(CBEMemAllocDeleter::deleteCBEMemAlloc);
     return *outAllocator != nullptr;
 }
 

@@ -2,4 +2,6 @@
 { \
 {{#IsClass}}    return IReflectionRuntimeModule::getClassType<{{TypeName}}>();{{/IsClass}} \
 {{^IsClass}}    return IReflectionRuntimeModule::getStructType<{{TypeName}}>();{{/IsClass}} \
-}
+}\
+\{{! Generate constructor if not present in class(No need for export as it can be inlined) }}
+{{#IsClass}}{{#IfGenerateCtor}}{{SimpleTypeName}}(){}{{/IfGenerateCtor}}{{/IsClass}}

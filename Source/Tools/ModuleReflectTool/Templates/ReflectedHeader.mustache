@@ -13,12 +13,13 @@
 {{!For each reflect struct/class types expand below}}
 {{#ReflectTypes}}
 #define {{HeaderFileId}}_{{LineNumber}}_GENERATED_CODES \
-CBE_CLASS_NEWDELETE_OVERRIDES({{SimpleTypeName}}) \
-public: \
-{{>StaticTypeGetter}} {{#IsClass}}\
+public:\
+{{>StaticFunctions}}{{#IsClass}}\
 {{>VirtualTypeGetter}}\
-friend struct HEADER_FILE_ID;
-{{/IsClass}}
+friend struct HEADER_FILE_ID;\
+{{/IsClass}}\
+{{#IsBaseType}}{{#DefineCtorPolicy}}OVERRIDE_CONSTRUCTION_POLICY(DefaultConstructionPolicy);{{/DefineCtorPolicy}}{{/IsBaseType}}\
+CBE_CLASS_NEWDELETE_OVERRIDES({{SimpleTypeName}})
 {{/ReflectTypes}}
 
 #endif // ifndef __REF_PARSE__

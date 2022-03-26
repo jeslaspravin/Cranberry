@@ -27,7 +27,9 @@ namespace GeneratorConsts
     CONST_EXPR StringLiteralStore<TCHAR("NoExport")> NOEXPORT_BRANCH_TAG;
     CONST_EXPR StringLiteralStore<TCHAR("SimpleTypeName")> SIMPLE_TYPENAME_TAG;
     CONST_EXPR StringLiteralStore<TCHAR("IsClass")> ISCLASS_BRANCH_TAG;
+    CONST_EXPR StringLiteralStore<TCHAR("IfGenerateCtor")> IFGENERATECTOR_BRANCH_TAG;
     CONST_EXPR StringLiteralStore<TCHAR("IsBaseType")> ISBASETYPE_BRANCH_TAG;
+    CONST_EXPR StringLiteralStore<TCHAR("DefineCtorPolicy")> DEFINECTORPOLICY_BRANCH_TAG;
 
     // Source tags
     CONST_EXPR StringLiteralStore<TCHAR("HeaderInclude")> INCLUDEHEADER_TAG;

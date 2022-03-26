@@ -58,7 +58,7 @@ void PipelineCacheBase::writeCache() const
 
     cacheFile.openOrCreate();
     std::vector<uint8> pipelineCacheData = getRawToWrite();
-    cacheFile.write({ pipelineCacheData });
+    cacheFile.write({ pipelineCacheData.data(), pipelineCacheData.size() });
     cacheFile.closeFile();
 }
 

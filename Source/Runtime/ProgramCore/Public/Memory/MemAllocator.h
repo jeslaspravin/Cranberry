@@ -22,19 +22,23 @@
 class PROGRAMCORE_EXPORT AllocFromBuiltInMalloc
 {
 public:
-    void* operator new(SizeT size);
-    void* operator new(SizeT size, const std::nothrow_t&);
-    void* operator new(SizeT size, SizeT);
-    void* operator new(SizeT size, SizeT, const std::nothrow_t&);
+    NODISCARD void* operator new(SizeT size);
+    NODISCARD void* operator new(SizeT size, const std::nothrow_t&);
+    NODISCARD void* operator new(SizeT size, SizeT);
+    NODISCARD void* operator new(SizeT size, SizeT, const std::nothrow_t&);
+    NODISCARD void* operator new(std::size_t count, void* allocatedPtr) { return allocatedPtr; }
+    NODISCARD void* operator new(std::size_t count, std::align_val_t al, void* allocatedPtr) { return allocatedPtr; }
     void operator delete(void* ptr) noexcept;
     void operator delete(void* ptr, const std::nothrow_t&) noexcept;
     void operator delete(void* ptr, SizeT) noexcept;
     void operator delete(void* ptr, SizeT, const std::nothrow_t&) noexcept;
 
-    void* operator new[](SizeT size);
-    void* operator new[](SizeT size, const std::nothrow_t&);
-    void* operator new[](SizeT size, SizeT);
-    void* operator new[](SizeT size, SizeT, const std::nothrow_t&);
+    NODISCARD void* operator new[](SizeT size);
+    NODISCARD void* operator new[](SizeT size, const std::nothrow_t&);
+    NODISCARD void* operator new[](SizeT size, SizeT);
+    NODISCARD void* operator new[](SizeT size, SizeT, const std::nothrow_t&);
+    NODISCARD void* operator new[](std::size_t count, void* allocatedPtr) { return allocatedPtr; }
+    NODISCARD void* operator new[](std::size_t count, std::align_val_t al, void* allocatedPtr) { return allocatedPtr; }
     void operator delete[](void* ptr) noexcept;
     void operator delete[](void* ptr, const std::nothrow_t&) noexcept;
     void operator delete[](void* ptr, SizeT) noexcept;

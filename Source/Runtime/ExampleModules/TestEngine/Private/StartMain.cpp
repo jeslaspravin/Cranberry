@@ -23,7 +23,8 @@ CBE_GLOBAL_NEWDELETE_OVERRIDES
 int appMain(String cmdLine, void* appPlatformInstance)
 {
     AppInstanceCreateInfo appCI;
-    appCI.applicationName = TCHAR(MACRO_TO_STRING(ENGINE_NAME));
+    //appCI.applicationName = TCHAR(MACRO_TO_STRING(ENGINE_NAME));
+    appCI.applicationName = TCHAR("TestEngine");
     appCI.cmdLine = cmdLine;
     appCI.majorVersion = ENGINE_VERSION;
     appCI.minorVersion = ENGINE_MINOR_VERSION;

@@ -28,6 +28,7 @@ endif ()
 
 set(private_libraries
     libclang
+    clangAST # Contains implementations for AST, Necessary to implement some custom parse function that are not exposed in libclang
 )
 set(private_includes
     ${CLANG_INCLUDE_DIRS}

@@ -177,6 +177,32 @@ public:
         }
         return true;
     }
+
+    template <typename ObjectType, typename ReturnType, typename... Args>
+    ReturnType invokeUnsafe(ObjectType&& object, Args&&... params) const
+    {
+        if (BIT_SET(memberOfType->qualifiers, EReflectTypeQualifiers::Constant))
+        {
+            ClassFunction<true, CleanType<ObjectType>, ReturnType, Args...>* functionPtr
+                = (ClassFunction<true, CleanType<ObjectType>, ReturnType, Args...>*)(functionAccessor());
+
+            return (*functionPtr)(std::forward<ObjectType>(object), std::forward<Args>(params)...);
+        }
+        else
+        {
+            ClassFunction<false, CleanType<ObjectType>, ReturnType, Args...>* functionPtr
+                = (ClassFunction<false, CleanType<ObjectType>, ReturnType, Args...>*)(functionAccessor());
+
+            if CONST_EXPR(std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
+            {
+                fatalAssert(!std::is_const_v<UnderlyingTypeWithConst<ObjectType>>, "Const type cannot invoke non const object member function");
+            }
+            else
+            {
+                return (*functionPtr)(std::forward<ObjectType>(object), std::forward<Args>(params)...);
+            }
+        }
+    }
 };
 
 class GlobalFunctionWrapper : public BaseFunctionWrapper
@@ -220,6 +246,15 @@ public:
         (*functionPtr)(std::forward<Args>(params)...);
 
         return true;
+    }
+
+    template <typename ReturnType, typename... Args>
+    ReturnType invokeUnsafe(Args&&... params) const
+    {
+        const Function<ReturnType, Args...>* functionPtr
+            = (const Function<ReturnType, Args...>*)(functionAccessor());
+
+        return (*functionPtr)(std::forward<Args>(params)...);
     }
 };
 

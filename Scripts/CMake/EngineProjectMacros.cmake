@@ -478,8 +478,6 @@ macro (generate_engine_library)
         generate_cpp_shared_lib()
     endif ()
     engine_module_dependencies()
-    set_target_properties(${target_name} PROPERTIES 
-        FOLDER ${CMAKE_PROJECT_NAME})
 endmacro()
 
 ########################################################################################################
@@ -530,7 +528,7 @@ endmacro()
 # Shader related functions
 ########################################################################################################
 
-function(shader_outputs)    
+function(shader_outputs)
     set(one_value_args OUTPUT_DIR OUTPUTS)
     set(multi_value_args SOURCES)
     cmake_parse_arguments(shader_outputs "" "${one_value_args}" "${multi_value_args}" ${ARGN})

@@ -21,10 +21,10 @@ struct EmptyType
 {};
 
 // Types to differentiate function overload signatures
-template <int IntValue>
+template <size_t IntValue>
 struct IntToType
 {
-    CONST_EXPR static const int value = IntValue;
+    CONST_EXPR static const size_t value = IntValue;
 };
 
 template <typename Type>

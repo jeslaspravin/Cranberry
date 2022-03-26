@@ -220,7 +220,9 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
             CXTranslationUnit unit = clang_parseTranslationUnit(
                 index,
                 TCHAR_TO_ANSI(headerPath.getChar())
-                , argsPtrs.data(), int32(argsPtrs.size()), nullptr, 0, CXTranslationUnit_KeepGoing);
+                , argsPtrs.data(), int32(argsPtrs.size()), nullptr, 0
+                // Skipping function bodies for now, Enable if we are doing more that declaration parsing in future
+                , CXTranslationUnit_KeepGoing | CXTranslationUnit_SkipFunctionBodies);
 
             if (unit == nullptr)
             {

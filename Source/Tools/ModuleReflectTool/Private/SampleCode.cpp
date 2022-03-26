@@ -1943,7 +1943,7 @@ namespace SampleCode
                 ->setField(IReflectionRuntimeModule::getType<std::set<uint64>>())
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass, std::set<uint64>>>(&TestPropertyClass::handles);
         }
-    } __zzz__RegisterPropertyFactory_TestPropertyClass;
+    };
 
     struct RegisterPropertyFactory_TestPropertyClass_TestInnerStruct
     {
@@ -1987,9 +1987,12 @@ namespace SampleCode
                 ->constructFieldPtr<MemberFieldWrapperImpl<TestPropertyClass::TestInnerStruct, uint32>>(&TestPropertyClass::TestInnerStruct::numNames);
         }
 
-    } __zzz__RegisterPropertyFactory_TestPropertyClass_TestInnerStruct;
+    };
     void testPropertySystem()
     {
+        RegisterPropertyFactory_TestPropertyClass __zzz__RegisterPropertyFactory_TestPropertyClass;
+        RegisterPropertyFactory_TestPropertyClass_TestInnerStruct __zzz__RegisterPropertyFactory_TestPropertyClass_TestInnerStruct;
+
         const ClassProperty* prop = IReflectionRuntimeModule::getClassType<TestPropertyClass>();
         for (const FunctionProperty* ctor : prop->constructors)
         {

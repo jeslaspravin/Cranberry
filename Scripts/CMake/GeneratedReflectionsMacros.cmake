@@ -40,58 +40,72 @@ function (determine_reflect_gen_files out_generated target_name target_src_dir t
     if (${num_gen_remainder} EQUAL 0)
         math (EXPR num_gen_files "${num_gen_files} - 1" OUTPUT_FORMAT DECIMAL)
     endif ()
-    foreach (file_idx RANGE 0 ${num_gen_files})
-        list (APPEND out_gen_files "${target_binary_dir}/${target_generated_path}/Private/${target_name}.gen_${file_idx}.cpp")
-    endforeach ()
+    # Condition is needed in case of 0 files needs to be generated
+    if (${num_gen_files} GREATER_EQUAL 0)
+        foreach (file_idx RANGE 0 ${num_gen_files})
+            list (APPEND out_gen_files "${target_binary_dir}/${target_generated_path}/Private/${target_name}.gen_${file_idx}.cpp")
+        endforeach ()
+    endif ()
 
     set (${out_generated} ${out_gen_files} PARENT_SCOPE)
 endfunction ()
 
-macro (generate_reflection)
-    # ${CMAKE_CURRENT_SOURCE_DIR}; ${CMAKE_CURRENT_LIST_DIR} both points to same in this case
-    determine_reflect_gen_files(gen_files ${target_name} "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
+function (reflect_target)    
+    set(one_value_args TARGET_NAME)
+    set(multi_value_args GEN_FILES)
+    cmake_parse_arguments(reflect_target "" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
     set(gen_files_arg "")
-    foreach (gen_file ${gen_files})
+    foreach (gen_file ${reflect_target_GEN_FILES})
         string (APPEND gen_files_arg "\"${gen_file}\" ")
     endforeach ()
     
     # Why generate in first place? Some defines has quoted strings and they cannot be passed as commandline args and also sometime cmdline becomes huge because of these two properties
     # Generating intermediate files that store compile definitions and include directories for reflection generator tool
     # It is okay to be configure generate only as content written is only change when editing cmake files and it in turn regenerates new list
-    file (GENERATE OUTPUT $<CONFIG>/${target_name}_incls.list
+    file (GENERATE OUTPUT $<CONFIG>/${reflect_target_TARGET_NAME}_incls.list
         CONTENT "$<TARGET_PROPERTY:INCLUDE_DIRECTORIES>"
-        TARGET ${target_name}
+        TARGET ${reflect_target_TARGET_NAME}
     )
-    file (GENERATE OUTPUT $<CONFIG>/${target_name}_defs.list
+    file (GENERATE OUTPUT $<CONFIG>/${reflect_target_TARGET_NAME}_defs.list
         CONTENT "$<TARGET_PROPERTY:COMPILE_DEFINITIONS>"
-        TARGET ${target_name}
+        TARGET ${reflect_target_TARGET_NAME}
     )
     # Did not used file(GENERATE) with custom dependency via custom target as it was dirty(Shows up as a project in solution), Maybe find a way to create target without showing in solution
-    add_custom_command(TARGET ${target_name} PRE_BUILD
+    add_custom_command(TARGET ${reflect_target_TARGET_NAME} PRE_BUILD
         COMMAND ModuleReflectTool   --generatedList ${gen_files_arg} --filterDiagnostics
                                     --generatedDir "${CMAKE_CURRENT_BINARY_DIR}/${target_generated_path}" 
                                     --moduleSrcDir "${CMAKE_CURRENT_LIST_DIR}" 
-                                    --moduleExportMacro $<UPPER_CASE:${target_name}>_EXPORT
+                                    --moduleExportMacro $<UPPER_CASE:${reflect_target_TARGET_NAME}>_EXPORT
                                     --intermediateDir "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>" 
-                                    --includeList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${target_name}_incls.list" 
-                                    --compileDefList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${target_name}_defs.list"
+                                    --includeList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${reflect_target_TARGET_NAME}_incls.list" 
+                                    --compileDefList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${reflect_target_TARGET_NAME}_defs.list"
+                                    --logFileName ${reflect_target_TARGET_NAME}
         BYPRODUCTS ${gen_files}
         USES_TERMINAL
         # VERBATIM not needed as we took care of quotes manually
-        COMMENT "${target_name} : Generating reflection codes ..."
+        COMMENT "${reflect_target_TARGET_NAME} : Generating reflection codes ..."
     )
 
     # Public is already included along with export header generation, It is okay however
-    target_include_directories(${target_name}
+    target_include_directories(${reflect_target_TARGET_NAME}
         PRIVATE
             ${CMAKE_CURRENT_BINARY_DIR}/${target_generated_path}/Private
         PUBLIC
             ${CMAKE_CURRENT_BINARY_DIR}/${target_generated_path}/Public
     )
     # add generated files to target_sources
-    target_sources(${target_name}
+    target_sources(${reflect_target_TARGET_NAME}
         PRIVATE
             ${gen_files}
     )
+endfunction()
+
+macro (generate_reflection)
+    # ${CMAKE_CURRENT_SOURCE_DIR}; ${CMAKE_CURRENT_LIST_DIR} both points to same in this case
+    determine_reflect_gen_files(gen_files ${target_name} "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
+    list (LENGTH gen_files gen_files_count)
+    if (${gen_files_count} GREATER 0)
+        reflect_target(TARGET_NAME ${target_name} GEN_FILES ${gen_files})
+    endif ()
 endmacro ()
