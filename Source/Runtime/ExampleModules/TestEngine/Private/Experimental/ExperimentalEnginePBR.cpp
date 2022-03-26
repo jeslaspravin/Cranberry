@@ -21,6 +21,7 @@
 #include "Math/CoreMathTypes.h"
 #include "Types/Camera/Camera.h"
 #include "Types/Colors.h"
+#include "Types/CompilerDefines.h"
 #include "String/StringID.h"
 #include "RenderInterface/Rendering/RenderingContexts.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
@@ -68,15 +69,21 @@
 #include "IApplicationModule.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "Core/GBuffers.h"
-#include "Types/Uid/Guid.h"
-#include "IReflectionRuntime.h"
-#include "Property/Property.h"
 
 #include <array>
 #include <random>
 #include <map>
 #include <unordered_set>
 #include <source_location>
+
+#include "Types/Uid/Guid.h"
+#include "IReflectionRuntime.h"
+#include "Property/Property.h"
+#include "Types/FunctionTypes.h"
+#include "TestReflectionGen.h"
+#include "Serialization/FileArchiveStream.h"
+#include "Serialization/TextArchive.h"
+#include "Serialization/BinaryArchive.h"
 
 struct PBRSceneEntity
 {
@@ -3250,15 +3257,16 @@ void ExperimentalEnginePBR::tempTest()
     StringID str = STRID("Hello");
     LOG("test", "%s", str);
 
-    const ClassProperty* classProp = IReflectionRuntimeModule::get()->getClassType(STRID("TestNS::BerryObject"));
+    ModuleManager::get()->loadModule("RTTIExample");
+
+    const ClassProperty* classProp = IReflectionRuntimeModule::get()->getClassType(STRID("TestNS::BerryFirst"));
     const ClassProperty* classProp1 = IReflectionRuntimeModule::get()->getClassType(STRID("BerrySecond"));
 
-    CBEGuid id = CBEGuid::create();
-    for (uint32 i = CBEGuid::DigitsOnly; i <= CBEGuid::DWordWithHyphen; ++i)
-    {
-        String uid = id.toString(CBEGuid::EGuidFormat(i));
-        LOG("test", "Size %d, Is same %d, %s", sizeof(id), CBEGuid::parse(uid) == id,uid);
-    }
+    TestNS::BerryObject* berry = static_cast<const GlobalFunctionWrapper*>(classProp->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryFirst*>();
+    BerrySecond* berryS = static_cast<const GlobalFunctionWrapper*>(classProp1->constructors[0]->funcPtr)->invokeUnsafe<BerrySecond*>();
+
+    delete berry;
+    delete berryS;
 }
 
 //static uint64 allocationCount = 0;

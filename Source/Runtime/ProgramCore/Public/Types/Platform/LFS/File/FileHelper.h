@@ -26,6 +26,11 @@ public:
     static bool isUtf32LEBom(const std::vector<uint8>& byteStream);
     static bool isUtf32BEBom(const std::vector<uint8>& byteStream);
 
+    static uint16 bytesSwap(uint16 value);
+    static uint32 bytesSwap(uint32 value);
+    static uint64 bytesSwap(uint64 value);
+    static void bytesSwap(void* ptr, SizeT length);
+
     static bool readString(String& outStr, const String& fileName);
     static bool readUtf8String(std::string& outStr, const String& fileName);
     static bool readBytes(std::vector<uint8>& outBytes, const String& fileName);

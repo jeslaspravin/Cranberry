@@ -103,22 +103,47 @@ public:
     template <typename AsType, typename ObjectType>
     FieldValuePtr<AsType> getAsType(ObjectType&& object) const
     {
-        // TODO : Change the constness logic for pointer types
-        static_assert(std::disjunction_v<std::is_pointer<ObjectType>, std::is_reference<ObjectType>>, "Must be a pointer or a reference type");
-
-        // Const-ness can be determined in non const type
-        const ReflectTypeInfo* objectTypeInfo = typeInfoFrom<std::remove_pointer_t<ObjectType>>();
         if (isMemberOfSameType<CleanType<ObjectType>>() && isSameType<AsType>())
         {
+            return getAsTypeUnsafe<AsType>(std::forward<ObjectType>(object));
+        }
+        return {};
+    }
+    template <typename FromType, typename ObjectType>
+    bool setFromType(FromType&& value, ObjectType&& object) const
+    {
+        using MemberType = std::remove_cvref_t<FromType>;
+        
+        if (isMemberOfSameType<CleanType<ObjectType>>() && isSameType<MemberType>())
+        {
+            return setFromTypeUnsafe<FromType>(std::forward<FromType>(value), std::forward<ObjectType>(object));
+        }
+        return false;
+    }
+
+    template <typename AsType, typename ObjectType>
+    FieldValuePtr<AsType> getAsTypeUnsafe(ObjectType&& object) const
+    {
+        if CONST_EXPR(std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
+        {
+            const AsType* retVal = nullptr;
+            const ClassMemberField<true, CleanType<ObjectType>, AsType>* memberFieldPtr
+                = (const ClassMemberField<true, CleanType<ObjectType>, AsType>*)(propertyAccessor());
+
+            debugAssert(memberFieldPtr);
+            retVal = &memberFieldPtr->get(std::forward<ObjectType>(object));
+            return retVal;
+        }
+        else
+        {
             // If constant then we use const MemberDataPointer or if object is const
-            if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant) 
-                || BIT_SET(objectTypeInfo->qualifiers, EReflectTypeQualifiers::Constant))
+            if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
             {
                 const AsType* retVal = nullptr;
                 const ClassMemberField<true, CleanType<ObjectType>, AsType>* memberFieldPtr
                     = (const ClassMemberField<true, CleanType<ObjectType>, AsType>*)(propertyAccessor());
 
-                fatalAssert(memberFieldPtr, "%s() : Invalid member pointer", __func__);
+                debugAssert(memberFieldPtr);
                 retVal = &memberFieldPtr->get(std::forward<ObjectType>(object));
                 return retVal;
             }
@@ -128,25 +153,26 @@ public:
                 const ClassMemberField<false, CleanType<ObjectType>, AsType>* memberFieldPtr
                     = (const ClassMemberField<false, CleanType<ObjectType>, AsType>*)(propertyAccessor());
 
-                fatalAssert(memberFieldPtr, "%s() : Invalid member pointer", __func__);
+                debugAssert(memberFieldPtr);
                 retVal = &memberFieldPtr->get(std::forward<ObjectType>(object));
                 return retVal;
             }
         }
-        return {};
     }
 
     template <typename FromType, typename ObjectType>
-    bool setFromType(FromType&& value, ObjectType&& object) const
+    bool setFromTypeUnsafe(FromType&& value, ObjectType&& object) const
     {
         using MemberType = std::remove_cvref_t<FromType>;
 
-        const ReflectTypeInfo* objectTypeInfo = typeInfoFrom<std::remove_pointer_t<ObjectType>>();
-        if (isMemberOfSameType<CleanType<ObjectType>>() && isSameType<MemberType>())
+        if CONST_EXPR(std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
+        {
+            LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+        }
+        else
         {
             // If constant then we use const MemberDataPointer
-            if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant)
-                || BIT_SET(objectTypeInfo->qualifiers, EReflectTypeQualifiers::Constant))
+            if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
             {
                 LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
             }
@@ -155,7 +181,7 @@ public:
                 const ClassMemberField<false, CleanType<ObjectType>, MemberType>* memberFieldPtr
                     = (const ClassMemberField<false, CleanType<ObjectType>, MemberType>*)(propertyAccessor());
 
-                fatalAssert(memberFieldPtr, "%s() : Invalid member pointer", __func__);
+                debugAssert(memberFieldPtr);
                 memberFieldPtr->set(std::forward<ObjectType>(object), std::forward<FromType>(value));
                 return true;
             }
@@ -175,56 +201,70 @@ public:
 
     // Will return pointer to value else null
     template <typename AsType>
-    FieldValuePtr<AsType> getAsType()
+    FieldValuePtr<AsType> getAsType() const
     {
         if (isSameType<AsType>())
         {
-            // If constant then we use const MemberDataPointer
-            if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
-            {
-                const AsType* retVal = nullptr;
-                const GlobalField<true, AsType>* memberFieldPtr
-                    = (const GlobalField<true, AsType>*)(propertyAccessor());
-
-                fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
-                retVal = &memberFieldPtr->get();
-                return retVal;
-            }
-            else
-            {
-                AsType* retVal = nullptr;
-                const GlobalField<false, AsType>* memberFieldPtr
-                    = (const GlobalField<false, AsType>*)(propertyAccessor());
-
-                fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
-                retVal = &memberFieldPtr->get();
-                return retVal;
-            }
+            return getAsTypeUnsafe<AsType>();
         }
         return {};
     }
 
     template <typename FromType>
-    bool setFromType(FromType&& value)
+    bool setFromType(FromType&& value) const
     {
         using MemberType = std::remove_cvref_t<FromType>;
 
         if (isSameType<MemberType>())
         {
-            // If constant then we use const MemberDataPointer
-            if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
-            {
-                LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
-            }
-            else
-            {
-                const GlobalField<false, MemberType>* memberFieldPtr
-                    = (const GlobalField<false, MemberType>*)(propertyAccessor());
+            return setFromTypeUnsafe(std::forward<FromType>(value));
+        }
+        return false;
+    }
 
-                fatalAssert(memberFieldPtr, "%s() : Invalid member pointer", __func__);
-                memberFieldPtr->set(std::forward<FromType>(value));
-                return true;
-            }
+    template <typename AsType>
+    FieldValuePtr<AsType> getAsTypeUnsafe() const
+    {
+        // If constant then we use const MemberDataPointer
+        if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
+        {
+            const AsType* retVal = nullptr;
+            const GlobalField<true, AsType>* memberFieldPtr
+                = (const GlobalField<true, AsType>*)(propertyAccessor());
+
+            fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
+            retVal = &memberFieldPtr->get();
+            return retVal;
+        }
+        else
+        {
+            AsType* retVal = nullptr;
+            const GlobalField<false, AsType>* memberFieldPtr
+                = (const GlobalField<false, AsType>*)(propertyAccessor());
+
+            fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
+            retVal = &memberFieldPtr->get();
+            return retVal;
+        }
+    }
+    template <typename FromType>
+    bool setFromTypeUnsafe(FromType&& value) const
+    {
+        using MemberType = std::remove_cvref_t<FromType>;
+
+        // If constant then we use const MemberDataPointer
+        if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
+        {
+            LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+        }
+        else
+        {
+            const GlobalField<false, MemberType>* memberFieldPtr
+                = (const GlobalField<false, MemberType>*)(propertyAccessor());
+
+            fatalAssert(memberFieldPtr, "%s() : Invalid member pointer", __func__);
+            memberFieldPtr->set(std::forward<FromType>(value));
+            return true;
         }
         return false;
     }

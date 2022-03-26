@@ -106,7 +106,7 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(EnumProperty* typeProperty)
 template <typename... Args>
 static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(Args&&... args)
 {
-    return new {{TypeName}}(std::forward<Args>(args)...);
+    return CtorPolicyHelper::constructObject<typename {{TypeName}}::CONSTRUCTION_POLICY_TYPEDEF_NAME, {{TypeName}}, Args...>(std::forward<Args>(args)...);
 }{{/IsAbstract}}
 
 ClassProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
@@ -125,7 +125,7 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
                 ->setPropertyMetaData({ {{CtorMetaData}} }, {{CtorMetaFlags}})
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}}*, {{ParamsList}}>>(&ThisType::{{SanitizedName}}_CTor<{{ParamsList}}>);
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}}*{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&ThisType::{{SanitizedName}}_CTor<{{ParamsList}}>);{{!Section ParamList is used to skip `,` in template ParamList}}
 {{/Ctors}}{{^Ctors}}{{!If no ctors then just create default ctor}}
     typeProperty->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
@@ -137,14 +137,14 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{ReturnTypeName}}>())
                 ->setPropertyMetaData({ {{FuncMetaData}} }, {{FuncMetaFlags}})
-                ->constructFuncPointer<MemberFunctionWrapperImpl<{{#FuncConst}}const {{/FuncConst}}{{TypeName}}, {{ReturnTypeName}}, {{ParamsList}}>>(&{{TypeName}}::{{FunctionName}});
+                ->constructFuncPointer<MemberFunctionWrapperImpl<{{#FuncConst}}const {{/FuncConst}}{{TypeName}}, {{ReturnTypeName}}{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&{{TypeName}}::{{FunctionName}});{{!Section ParamList is used to skip `,` in template ParamList}}
 {{/MemberFuncs}}{{#StaticFuncs}}
     typeProperty->addStaticFunc(STRID("{{FunctionName}}"), TCHAR("{{FunctionName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{ReturnTypeName}}>())
                 ->setPropertyMetaData({ {{FuncMetaData}} }, {{FuncMetaFlags}})
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{ReturnTypeName}}, {{ParamsList}}>>(&{{TypeName}}::{{FunctionName}});
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{ReturnTypeName}}{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&{{TypeName}}::{{FunctionName}});{{!Section ParamList is used to skip `,` in template ParamList}}
 {{/StaticFuncs}}
 {{#MemberFields}}
     typeProperty->addMemberField(STRID("{{FieldName}}"), TCHAR("{{FieldName}}"))

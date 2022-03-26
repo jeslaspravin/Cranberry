@@ -11,18 +11,22 @@ set (private_compile_defs )
 # Finding Mimalloc libraries
 if (${enable_mimalloc})
     set(mimalloc_lib_name mimalloc-static)
+    # Manually set the Debug libraries path in mimalloc-debug.cmake file, Since mimalloc is not properly configured for static library in multi config mode
+    # Also added development config to mimalloc cmake configs
+    # Maybe I can move it to dll use once module manage is ready with malloc or may I can directly use platform library loader skipping module manager
     make_find_package_hints(mimalloc ${mimalloc_install_path} mimalloc_hints)
     find_package(mimalloc 1.7
         REQUIRED CONFIG
-        HINTS ${mimalloc_hints})
+        HINTS ${mimalloc_hints} ${mimalloc_debug_hints})
     
-    get_target_property(mimalloc_lib ${mimalloc_lib_name} IMPORTED_LOCATION_RELEASE)
-    cmake_path(GET mimalloc_lib PARENT_PATH mimalloc_lib_path)
-    if (DEFINED MIMALLOC_INCLUDE_DIR)
-        message ("-- mimalloc include dir ${MIMALLOC_INCLUDE_DIR} binary dir ${mimalloc_lib_path}")
+    get_target_property(lib_path ${mimalloc_lib_name} IMPORTED_LOCATION_RELEASE)
+    get_target_property(dbg_lib_path ${mimalloc_lib_name} IMPORTED_LOCATION_DEBUG)
+    if (DEFINED mimalloc_FOUND AND ${mimalloc_FOUND} AND DEFINED MIMALLOC_INCLUDE_DIR)
+        message ("-- mimalloc include dir ${MIMALLOC_INCLUDE_DIR} release location ${lib_path} debug location ${dbg_lib_path}")
     else ()
         message (FATAL_ERROR "mimalloc package not found, Make sure to configure \"mimalloc_install_path\" config CACHE with path to mimalloc install")
     endif ()
+
 
     list (APPEND private_libraries ${mimalloc_lib_name})
     list (APPEND private_includes ${MIMALLOC_INCLUDE_DIR})

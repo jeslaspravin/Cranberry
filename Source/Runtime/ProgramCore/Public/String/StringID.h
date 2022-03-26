@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Types/xxHash/xxHashInclude.hpp"
+#include "Serialization/ArchiveBase.h"
 
 #if DEV_BUILD
 #define STRINGID_FUNCQUALIFIER FORCE_INLINE
@@ -29,6 +30,8 @@ inline namespace Literals
 {
     NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid(const TChar * str, SizeT len) noexcept;
 }
+template <IsArchiveType ArchiveType>
+ArchiveType& operator<<(ArchiveType& archive, StringID& value);
 
 class PROGRAMCORE_EXPORT StringID
 {
@@ -38,6 +41,8 @@ private:
     IDType id;
 
     friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid(const TChar * str, SizeT len) noexcept;
+    template <IsArchiveType ArchiveType>
+    friend ArchiveType& operator<<(ArchiveType& archive, StringID& value);
 
     CONST_INIT static const IDType Seed = STRINGID_HASHFUNC(TCHAR("Cranberry_StringID"), IDType(0));
 private:
@@ -137,7 +142,12 @@ public:
     FORCE_INLINE String toString() const
     {
 #if DEV_BUILD
-        return debugStringDB().find(id)->second;
+        auto itr = debugStringDB().find(id);
+        if (itr == debugStringDB().cend())
+        {
+            return String::toString(id);
+        }
+        return itr->second;
 #else // DEV_BUILD
         return String::toString(id);
 #endif // DEV_BUILD
@@ -179,5 +189,12 @@ struct PROGRAMCORE_EXPORT std::hash<StringID>
         return keyval.getID();
     }
 };
+
+template <IsArchiveType ArchiveType>
+ArchiveType& operator<<(ArchiveType& archive, StringID& value)
+{
+    return archive << value.id;
+}
+
 
 #undef STRINGID_FUNCQUALIFIER

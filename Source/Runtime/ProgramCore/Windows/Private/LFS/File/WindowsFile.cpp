@@ -76,8 +76,9 @@ WindowsFile::~WindowsFile()
 
 void WindowsFile::flush() const 
 {
-    if (getFileHandleRaw()) {
-        FlushFileBuffers(getFileHandleRaw());
+    if (getFileHandleRaw())
+    {
+        ::FlushFileBuffers(getFileHandleRaw());
     }
 }
 
@@ -88,7 +89,7 @@ bool WindowsFile::exists() const
         return false;
     }
 
-    dword fType = GetFileAttributes(getFullPath().getChar());
+    dword fType = ::GetFileAttributes(getFullPath().getChar());
 
     if (fType == INVALID_FILE_ATTRIBUTES)
     {
@@ -110,13 +111,13 @@ uint64 WindowsFile::fileSize() const
 
     if (getFileHandleRaw()) 
     {
-        fSize.lowPart = GetFileSize(getFileHandleRaw(), &fSize.highPart);
+        fSize.lowPart = ::GetFileSize(getFileHandleRaw(), &fSize.highPart);
     }
     else 
     {
 
         WIN32_FIND_DATA data;
-        HANDLE fHandle = FindFirstFile(getFullPath().getChar(), &data);
+        HANDLE fHandle = ::FindFirstFile(getFullPath().getChar(), &data);
         if (fHandle != INVALID_HANDLE_VALUE) 
         {
             fSize.lowPart = data.nFileSizeLow;
@@ -138,7 +139,7 @@ uint64 WindowsFile::filePointer() const
     largePointer.QuadPart = 0;
     if (getFileHandleRaw()) 
     {
-        largePointer.LowPart = SetFilePointer(getFileHandleRaw(), largePointer.LowPart, &largePointer.HighPart, FILE_CURRENT);
+        largePointer.LowPart = ::SetFilePointer(getFileHandleRaw(), largePointer.LowPart, &largePointer.HighPart, FILE_CURRENT);
         fPointer = largePointer.LowPart == INVALID_SET_FILE_POINTER ? 0u :
             (uint64)(largePointer.QuadPart);
     }
@@ -149,7 +150,7 @@ void WindowsFile::seekEnd() const
 {
     if (getFileHandleRaw())
     {
-        SetFilePointer(getFileHandleRaw(), 0, nullptr, FILE_END);
+        ::SetFilePointer(getFileHandleRaw(), 0, nullptr, FILE_END);
         debugAssert(filePointer() == fileSize());
     }
 }
@@ -158,7 +159,7 @@ void WindowsFile::seekBegin() const
 {
     if (getFileHandleRaw()) 
     {
-        SetFilePointer(getFileHandleRaw(), 0, nullptr, FILE_BEGIN);
+        ::SetFilePointer(getFileHandleRaw(), 0, nullptr, FILE_BEGIN);
         debugAssert(filePointer() == 0);
     }
 }
@@ -170,7 +171,7 @@ void WindowsFile::seek(const int64& pointer) const
         LARGE_INTEGER newPointer;
         newPointer.QuadPart = pointer;
 
-        SetFilePointer(getFileHandleRaw(), newPointer.LowPart,&newPointer.HighPart, FILE_BEGIN);
+        ::SetFilePointer(getFileHandleRaw(), newPointer.LowPart,&newPointer.HighPart, FILE_BEGIN);
     }
 }
 
@@ -181,7 +182,7 @@ void WindowsFile::offsetCursor(const int64& offset) const
         LARGE_INTEGER newOffset;
         newOffset.QuadPart = offset;
 
-        SetFilePointer(getFileHandleRaw(), newOffset.LowPart, &newOffset.HighPart, FILE_CURRENT);
+        ::SetFilePointer(getFileHandleRaw(), newOffset.LowPart, &newOffset.HighPart, FILE_CURRENT);
     }
 }
 
@@ -196,7 +197,7 @@ bool WindowsFile::setFileSize(const int64& newSize) const
     seek(newSize);
     
     bool bResized = false;
-    if (SetEndOfFile((HANDLE)getFileHandleRaw()) == TRUE)
+    if (::SetEndOfFile((HANDLE)getFileHandleRaw()) == TRUE)
     {
         filePointerCache = Math::min(newSize, filePointerCache);
         bResized = true;
@@ -240,7 +241,7 @@ void WindowsFile::read(uint8* readTo, const uint32& bytesToRead) const
     dword bytesLastRead = 0;
     while (bytesLeftToRead > 0)
     {
-        ReadFile(getFileHandleRaw(), readTo + filePointerOffset, (bytesLeftToRead > readBufferSize)
+        ::ReadFile(getFileHandleRaw(), readTo + filePointerOffset, (bytesLeftToRead > readBufferSize)
             ? readBufferSize : bytesLeftToRead
             , &bytesLastRead, nullptr);
 
@@ -252,7 +253,7 @@ void WindowsFile::read(uint8* readTo, const uint32& bytesToRead) const
     seek(filePointerCache);
 }
 
-void WindowsFile::write(const ArrayView<uint8>& writeBytes) const
+void WindowsFile::write(const ArrayView<const uint8>& writeBytes) const
 {
     if (!getFileHandleRaw() || BIT_NOT_SET(fileFlags, EFileFlags::Write))
     {
@@ -270,7 +271,7 @@ void WindowsFile::write(const ArrayView<uint8>& writeBytes) const
     while (sizeLeft > 0)
     {
         writeSize = writeBufferSize > sizeLeft ? (uint32)sizeLeft : writeBufferSize;
-        WriteFile(getFileHandleRaw(), pData + writeFrom, writeSize, &bytesWritten, nullptr);
+        ::WriteFile(getFileHandleRaw(), pData + writeFrom, writeSize, &bytesWritten, nullptr);
 
         writeFrom += bytesWritten;
         sizeLeft -= bytesWritten;
@@ -280,10 +281,11 @@ void WindowsFile::write(const ArrayView<uint8>& writeBytes) const
 
 bool WindowsFile::deleteFile()
 {
-    if (getFileHandle() && getFileHandleRaw()) {
+    if (getFileHandle() && getFileHandleRaw()) 
+    {
         closeFile();
     }
-    return DeleteFile(getFullPath().getChar());
+    return ::DeleteFile(getFullPath().getChar());
 }
 
 bool WindowsFile::renameFile(String newName)
@@ -319,7 +321,7 @@ bool WindowsFile::createDirectory() const
         hostDirectoryFile.createDirectory();
     }
 
-    return CreateDirectory(getFullPath().getChar(),nullptr);
+    return ::CreateDirectory(getFullPath().getChar(),nullptr);
 }
 
 TickRep WindowsFile::lastWriteTimeStamp() const
@@ -329,19 +331,19 @@ TickRep WindowsFile::lastWriteTimeStamp() const
     if (getFileHandleRaw())
     {
         FILETIME writeTime;
-        GetFileTime(getFileHandleRaw(), nullptr, nullptr, &writeTime);
+        ::GetFileTime(getFileHandleRaw(), nullptr, nullptr, &writeTime);
         timeStamp.lowPart = writeTime.dwLowDateTime;
         timeStamp.highPart = writeTime.dwHighDateTime;
     }
     else 
     {
         WIN32_FIND_DATA data;
-        HANDLE fHandle = FindFirstFile(getFullPath().getChar(), &data);
+        HANDLE fHandle = ::FindFirstFile(getFullPath().getChar(), &data);
         if (fHandle != INVALID_HANDLE_VALUE) 
         {
             timeStamp.lowPart = data.ftLastWriteTime.dwLowDateTime;
             timeStamp.highPart = data.ftLastWriteTime.dwHighDateTime;
-            FindClose(fHandle);
+            ::FindClose(fHandle);
         }
     }
 
@@ -363,7 +365,7 @@ bool WindowsFile::setLastWriteTimeStamp(TickRep timeTick) const
     writeTime.dwLowDateTime = timeStamp.lowPart;
     writeTime.dwHighDateTime = timeStamp.highPart;
 
-    SetFileTime(getFileHandleRaw(), nullptr, nullptr, &writeTime);
+    ::SetFileTime(getFileHandleRaw(), nullptr, nullptr, &writeTime);
     return true;
 }
 
@@ -374,19 +376,19 @@ TickRep WindowsFile::createTimeStamp() const
     if (getFileHandleRaw())
     {
         FILETIME createdTime;
-        GetFileTime(getFileHandleRaw(), &createdTime, nullptr, nullptr);
+        ::GetFileTime(getFileHandleRaw(), &createdTime, nullptr, nullptr);
         timeStamp.lowPart = createdTime.dwLowDateTime;
         timeStamp.highPart = createdTime.dwHighDateTime;
     }
     else
     {
         WIN32_FIND_DATA data;
-        HANDLE fHandle = FindFirstFile(getFullPath().getChar(), &data);
+        HANDLE fHandle = ::FindFirstFile(getFullPath().getChar(), &data);
         if (fHandle != INVALID_HANDLE_VALUE)
         {
             timeStamp.lowPart = data.ftCreationTime.dwLowDateTime;
             timeStamp.highPart = data.ftCreationTime.dwHighDateTime;
-            FindClose(fHandle);
+            ::FindClose(fHandle);
         }
     }
     // It is okay to convert to signed as time stamp would not cross signed max
@@ -400,31 +402,26 @@ GenericFileHandle* WindowsFile::openOrCreateImpl()
     {
         hostDirectoryFile.createDirectory();
     }
-
-    WindowsFileHandle* fHandle = new WindowsFileHandle(fileFlags, sharingMode, attributes, advancedFlags);
-    bool openSuccess = false;
-    if ((fileFlags & (EFileFlags::CreateNew | EFileFlags::OpenExisting | EFileFlags::ClearExisting)) > 0 && exists())
+    bool bExists = exists();
+    // If exists CreateNew is the only flag that fails
+    if (bExists)
     {
-        if (fileFlags & EFileFlags::CreateNew)
+        if (BIT_SET(fileFlags, EFileFlags::CreateNew))
         {
-            setCreationAction(EFileFlags::CreateAlways);
-        }
-        else
-        {
-            openSuccess = fHandle->openFile(getFullPath());
+            setCreationAction(EFileFlags::OpenExisting);
+            LOG_WARN("WindowsFile", "CreateNew is set on existing file %s", getFullPath());
         }
     }
-    else
+    else // In this case OpenExisting and ClearExisting fails check and replace them
     {
-        openSuccess = fHandle->openFile(getFullPath());
+        if (ANY_BIT_SET(fileFlags, (EFileFlags::OpenExisting | EFileFlags::ClearExisting)))
+        {
+            setCreationAction(EFileFlags::CreateNew);
+            LOG_WARN("WindowsFile", "OpenExisting | ClearExisting is set on non-existing file %s", getFullPath());
+        }
     }
 
-    if (!openSuccess)
-    {
-        delete fHandle;
-        fHandle = nullptr;
-    }
-    return fHandle;
+    return openImpl();
 }
 
 GenericFileHandle* WindowsFile::openImpl() const
@@ -457,7 +454,7 @@ bool WindowsFile::dirClearAndDelete() const
     std::vector<String> filesPath = FileSystemFunctions::listAllFiles(isDirectory() ? getFullPath() : getHostDirectory(), true);    
     for (const String& filePath : filesPath)
     {
-        if (!DeleteFile(filePath.getChar()))
+        if (!::DeleteFile(filePath.getChar()))
         {
             return false;
         }

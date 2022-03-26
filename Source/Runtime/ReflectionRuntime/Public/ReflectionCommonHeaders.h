@@ -13,6 +13,7 @@
 
 #include "ReflectionRuntimeExports.h"
 
+#include "Types/DefaultPolicies.h"
 #include "Types/TypesInfo.h"
 
 #include "Types/FunctionTypes.h"
