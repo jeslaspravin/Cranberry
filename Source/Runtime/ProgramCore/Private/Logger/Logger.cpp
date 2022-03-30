@@ -58,8 +58,8 @@ GenericFile* Logger::getLogFile()
         if (checkFile.exists()) 
         {
             uint64 lastWrite = checkFile.lastWriteTimeStamp();
-            logFilePath = checkFile.getFullPath();
-            checkFile.renameFile(logFileName.append(TCHAR("-")).append(String::toString(lastWrite)).append(TCHAR(".log")));
+            String renameTo = StringFormat::format(TCHAR("%s-%llu.log"), logFileName, lastWrite);
+            checkFile.renameFile(renameTo);
 
             // Remove or clear old logs
             std::vector<String> oldLogFiles = FileSystemFunctions::listFiles(logFolderPath, false, logFileName + TCHAR("-*.log"));

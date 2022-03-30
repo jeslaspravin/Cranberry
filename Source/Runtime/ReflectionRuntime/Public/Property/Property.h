@@ -199,6 +199,8 @@ public:
 class REFLECTIONRUNTIME_EXPORT ClassProperty final : public TypedProperty
 {
 public:
+    const FunctionProperty* allocFunc;
+    const FunctionProperty* destructor;
     std::vector<const FunctionProperty*> constructors;
 
     std::vector<const FieldProperty*> memberFields;
@@ -219,6 +221,22 @@ public:
     {
         FunctionProperty* funcProp = (new FunctionProperty(name, nameString))->setOwnerProperty(this);
         constructors.emplace_back(funcProp);
+        return funcProp;
+    }
+    FORCE_INLINE FunctionProperty* constructDtorPtr()
+    {
+        FunctionProperty* funcProp = (new FunctionProperty(name, nameString))
+            ->setOwnerProperty(this)
+            ->setFieldAccessor(EPropertyAccessSpecifier::Public);
+        destructor = funcProp;
+        return funcProp;
+    }
+    FORCE_INLINE FunctionProperty* constructAllocFuncPtr()
+    {
+        FunctionProperty* funcProp = (new FunctionProperty(name, nameString))
+            ->setOwnerProperty(this)
+            ->setFieldAccessor(EPropertyAccessSpecifier::Public);
+        allocFunc = funcProp;
         return funcProp;
     }
 

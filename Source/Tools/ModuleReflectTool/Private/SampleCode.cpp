@@ -1640,8 +1640,8 @@ namespace SampleCode
             , *globalValProp.getAsType<String>().vPtr
         );
 
-        int32 q;
-        int32 r;
+        int32 q = 0;
+        int32 r = 0;
         modFunc.invoke(q, r, 4, 3);
         LOG("Test", "Quotient %d, Remainder %d, Dividend %d, Divisor %d", q, r, 4, 3);
     }

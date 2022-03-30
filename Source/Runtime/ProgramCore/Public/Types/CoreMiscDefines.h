@@ -63,6 +63,14 @@
 // If no bits of check bits is set in this unsigned integer
 #define NO_BITS_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == 0)
 #define INDEX_TO_FLAG_MASK(Idx) (1 << (Idx))
+// Sets all bits that are set in value and mask or already set
+#define SET_BITS_MASKED(SetTo, ValueFlags, FlagsMask) (SetTo) |= ((ValueFlags) & (FlagsMask))
+#define SET_BITS(SetTo, FlagsMask) (SetTo) |= (FlagsMask)
+#define CLEAR_BITS(SetTo, FlagsMask) (SetTo) &= ~(FlagsMask)
+#define SET_BIT_AT(SetTo, AtIdx) (SetTo) |= INDEX_TO_FLAG_MASK(AtIdx)
+#define CLEAR_BIT_AT(SetTo, AtIdx) (SetTo) &= ~INDEX_TO_FLAG_MASK(AtIdx)
+// Replaces all masked region with provided value, Unmasked bits are not touched
+#define REPLACE_BITS_MASKED(SetTo, ValueFlags, FlagsMask) (SetTo) = ((SetTo) & ~(FlagsMask)) | ((ValueFlags) & (FlagsMask))
 
 #define MAKE_INITIALIZER_internal(...) { __VA_ARGS__ }
 #define FIRST_internal(X,...) X

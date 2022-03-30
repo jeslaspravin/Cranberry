@@ -28,19 +28,19 @@ private:
 public:
     /* Iterator traits skipped difference_type as it does not makes sense */
     using value_type = KeyType;
-    using reference = KeyType;
-    using pointer = KeyType*;
+    using reference = const KeyType&;
+    using pointer = const KeyType*;
     using iterator_category = std::forward_iterator_tag;
 
     InputStateIterator() = default;
     InputStateIterator(Iterator itr) : iterator(itr) {}
 
-    const KeyType* operator->() const
+    pointer operator->() const
     {
         return &iterator->first;
     }
 
-    const KeyType& operator*() const
+    reference operator*() const
     {
         return iterator->first;
     }

@@ -57,6 +57,7 @@ struct Function
         staticDelegate = functionPointer;
     }
 
+    // Not using perfect forwarding as it not necessary for function ptr calls
     ReturnType operator()(Parameters... params) const
     {
         return (*staticDelegate)(std::forward<Parameters>(params)...);
@@ -296,7 +297,7 @@ struct CapturedFunctor
         data = nullptr;
     }
 
-    RetType operator()(Params&&... params) const
+    RetType operator()(Params... params) const
     {
         return (*trampolineFunc)(*this, std::forward<Params>(params)...);
     }

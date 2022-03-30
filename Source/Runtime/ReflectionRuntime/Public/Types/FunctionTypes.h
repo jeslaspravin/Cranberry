@@ -98,7 +98,7 @@ public:
     {}
 
     template <typename ObjectType, typename ReturnType, typename... Args>
-    bool invoke(ObjectType&& object, ReturnType& returnVal, Args&&... params) const
+    bool invoke(ObjectType&& object, ReturnType& returnVal, Args... params) const
     {
         if (!(isSameReturnType<ReturnType>() && isSameArgsType<Args...>()))
         {
@@ -138,7 +138,7 @@ public:
     }
 
     template <typename ObjectType, typename... Args>
-    bool invokeVoid(ObjectType&& object, Args&&... params) const
+    bool invokeVoid(ObjectType&& object, Args... params) const
     {
         if (!(isSameReturnType<void>() && isSameArgsType<Args...>()))
         {
@@ -179,7 +179,7 @@ public:
     }
 
     template <typename ObjectType, typename ReturnType, typename... Args>
-    ReturnType invokeUnsafe(ObjectType&& object, Args&&... params) const
+    ReturnType invokeUnsafe(ObjectType&& object, Args... params) const
     {
         if (BIT_SET(memberOfType->qualifiers, EReflectTypeQualifiers::Constant))
         {
@@ -216,7 +216,7 @@ public:
     {}
 
     template <typename ReturnType, typename... Args>
-    bool invoke(ReturnType& returnVal, Args&&... params) const
+    bool invoke(ReturnType& returnVal, Args... params) const
     {
         if (!(isSameReturnType<ReturnType>() && isSameArgsType<Args...>()))
         {
@@ -232,7 +232,7 @@ public:
         return true;
     }
     template <typename... Args>
-    bool invokeVoid(Args&&... params) const
+    bool invokeVoid(Args... params) const
     {
         if (!(isSameReturnType<void>() && isSameArgsType<Args...>()))
         {
@@ -249,7 +249,7 @@ public:
     }
 
     template <typename ReturnType, typename... Args>
-    ReturnType invokeUnsafe(Args&&... params) const
+    ReturnType invokeUnsafe(Args... params) const
     {
         const Function<ReturnType, Args...>* functionPtr
             = (const Function<ReturnType, Args...>*)(functionAccessor());

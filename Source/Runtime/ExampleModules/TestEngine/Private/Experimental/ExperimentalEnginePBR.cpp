@@ -81,9 +81,8 @@
 #include "Property/Property.h"
 #include "Types/FunctionTypes.h"
 #include "TestReflectionGen.h"
-#include "Serialization/FileArchiveStream.h"
-#include "Serialization/TextArchive.h"
-#include "Serialization/BinaryArchive.h"
+#include "CBEObject.h"
+#include "Types/Containers/FlatTree.h"
 
 struct PBRSceneEntity
 {
@@ -3261,12 +3260,42 @@ void ExperimentalEnginePBR::tempTest()
 
     const ClassProperty* classProp = IReflectionRuntimeModule::get()->getClassType(STRID("TestNS::BerryFirst"));
     const ClassProperty* classProp1 = IReflectionRuntimeModule::get()->getClassType(STRID("BerrySecond"));
+    const ClassProperty* objectClass = IReflectionRuntimeModule::get()->getClassType(STRID("CBE::Object"));
 
-    TestNS::BerryObject* berry = static_cast<const GlobalFunctionWrapper*>(classProp->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryFirst*>();
-    BerrySecond* berryS = static_cast<const GlobalFunctionWrapper*>(classProp1->constructors[0]->funcPtr)->invokeUnsafe<BerrySecond*>();
+    void* ptr = static_cast<const GlobalFunctionWrapper*>(classProp->allocFunc->funcPtr)->invokeUnsafe<void*>();
+    TestNS::BerryFirst* berry = static_cast<const GlobalFunctionWrapper*>(classProp->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryFirst*>(ptr);
+    ptr = static_cast<const GlobalFunctionWrapper*>(classProp1->allocFunc->funcPtr)->invokeUnsafe<void*>();
+    TestNS::BerryObject* berryS = static_cast<const GlobalFunctionWrapper*>(classProp1->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(ptr);
 
-    delete berry;
-    delete berryS;
+    static_cast<const GlobalFunctionWrapper*>(classProp->destructor->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(berry);
+    static_cast<const GlobalFunctionWrapper*>(classProp1->destructor->funcPtr)->invokeUnsafe<void*>(berryS);
+
+    ptr = static_cast<const GlobalFunctionWrapper*>(objectClass->allocFunc->funcPtr)->invokeUnsafe<void*>();
+    CBE::Object* obj = static_cast<const GlobalFunctionWrapper*>(objectClass->constructors[0]->funcPtr)->invokeUnsafe<CBE::Object*>(ptr);
+
+    static_cast<const GlobalFunctionWrapper*>(objectClass->destructor->funcPtr)->invokeUnsafe<void*>(obj);
+
+    FlatTree<uint32> tree;
+    uint32 v1 = tree.add(1);
+    uint32 v2 = tree.add(2, v1);
+    uint32 v3 = tree.add(3, v2);
+    uint32 v4 = tree.add(4, v1);
+    uint32 v5 = tree.add(4);
+    uint32 v6 = tree.add(5, v5);
+    uint32 v7 = tree.add(5);
+    uint32 v8 = tree.add(5, v2);
+    uint32 v9 = tree.add(5, v2);
+    uint32 v10 = tree.add(5, v5);
+    uint32 v11 = tree.add(v7, v7);
+    uint32 v12 = tree.add(v7, v7);
+
+    LOG("Test", "Tree : %s", tree);
+    tree.relinkTo(v7, v6);
+    tree.relinkTo(v8, v3);
+    tree.relinkTo(v9, v3);
+    LOG("Test", "After linking Tree : %s", tree);
+    tree.remove(v3);
+    LOG("Test", "After removing 2 Tree : %s", tree);
 }
 
 //static uint64 allocationCount = 0;
