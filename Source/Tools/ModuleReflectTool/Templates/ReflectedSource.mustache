@@ -14,6 +14,18 @@ struct HEADER_FILE_ID
 {
     using ThisType = HEADER_FILE_ID;
     HEADER_FILE_ID();
+
+    // Destructor for all ClassProperties
+    template <typename ClassType>
+    static void COMBINE(HEADER_FILE_ID, _DTor)(void* ptr)
+    {
+        CtorPolicyHelper::destructObject<typename COMBINE(ClassType::, CONSTRUCTION_POLICY_TYPEDEF_NAME), ClassType>(ptr);
+    }
+    template <typename ClassType>
+    static void* COMBINE(HEADER_FILE_ID, _AllocFunc)()
+    {
+        return CtorPolicyHelper::allocateObject<typename COMBINE(ClassType::, CONSTRUCTION_POLICY_TYPEDEF_NAME), ClassType>();
+    }
     
     {{#AllRegisterTypes}}
     static {{PropertyTypeName}}* create_{{SanitizedName}}();{{^NoInit}}
@@ -22,7 +34,7 @@ struct HEADER_FILE_ID
     
     {{#Classes}}{{^IsAbstract}}
     template <typename... Args>
-    static {{TypeName}}* {{SanitizedName}}_CTor(Args&&... args);{{/IsAbstract}}{{/Classes}}
+    static {{TypeName}}* {{SanitizedName}}_CTor(void* ptr, Args&&... args);{{/IsAbstract}}{{/Classes}}
 } COMBINE(HEADER_FILE_ID, _autoinit);
 
 HEADER_FILE_ID::HEADER_FILE_ID()
@@ -104,9 +116,9 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(EnumProperty* typeProperty)
 
 {{#Classes}}{{^IsAbstract}}
 template <typename... Args>
-static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(Args&&... args)
+static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(void* ptr, Args&&... args)
 {
-    return CtorPolicyHelper::constructObject<typename {{TypeName}}::CONSTRUCTION_POLICY_TYPEDEF_NAME, {{TypeName}}, Args...>(std::forward<Args>(args)...);
+    return CtorPolicyHelper::constructObject<typename COMBINE({{TypeName}}::, CONSTRUCTION_POLICY_TYPEDEF_NAME), {{TypeName}}, Args...>(ptr, std::forward<Args>(args)...);
 }{{/IsAbstract}}
 
 ClassProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
@@ -125,13 +137,20 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
                 ->setPropertyMetaData({ {{CtorMetaData}} }, {{CtorMetaFlags}})
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}}*{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&ThisType::{{SanitizedName}}_CTor<{{ParamsList}}>);{{!Section ParamList is used to skip `,` in template ParamList}}
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}} *, void *{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&ThisType::{{SanitizedName}}_CTor<{{ParamsList}}>);{{!Section ParamList is used to skip `,` in template ParamList}}
 {{/Ctors}}{{^Ctors}}{{!If no ctors then just create default ctor}}
     typeProperty->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}}*>>(&ThisType::{{SanitizedName}}_CTor<>);
-{{/Ctors}}{{/IsAbstract}}{{#MemberFuncs}}
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}} *, void *>>(&ThisType::{{SanitizedName}}_CTor<>);
+{{/Ctors}}
+    typeProperty->constructDtorPtr()
+                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void>())
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<void, void *>>(&ThisType::COMBINE(HEADER_FILE_ID, _DTor)<{{TypeName}}>);
+    typeProperty->constructAllocFuncPtr()
+                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void *>())
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<void *>>(&ThisType::COMBINE(HEADER_FILE_ID, _AllocFunc)<{{TypeName}}>);
+{{/IsAbstract}}{{#MemberFuncs}}
     typeProperty->addMemberFunc(STRID("{{FunctionName}}"), TCHAR("{{FunctionName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
                 ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}

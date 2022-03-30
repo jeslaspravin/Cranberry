@@ -30,21 +30,24 @@ public:
     {
         return CBEMemory::memAlloc(sizeof(Type), alignof(Type));
     }
-    // Called for new Type(...) allocation if raw allocation failed
-    template <typename Type, typename... CtorArgs>
-    static Type* newObject(CtorArgs&&... args)
-    {
-        return new Type(std::forward<CtorArgs>(args)...);
-    }
+    template <typename Type>
+    static bool canDeallocate(void* ptr) { return true; }
+    template <typename Type>
+    static void deallocate(void* ptr) { CBEMemory::memFree(ptr); }
 
-    // Policy available function used only in case of above raw allocation being successful
-    template <typename Type, typename... CtorArgs>
-    static void preConstruct(void* allocatedPtr, CtorArgs&&... args);
     // Must call the constructor in this function for your custom policy
     template <typename Type, typename... CtorArgs>
     static Type* construct(void* allocatedPtr, CtorArgs&&... args);
+    // Must call the destructor in this function for your custom policy
+    template <typename Type>
+    static void destruct(void* ptr);
+
+    // Unwanted impls
+    // Called for new Type(...) allocation if raw allocation failed
     template <typename Type, typename... CtorArgs>
-    static void postConstruct(Type* object, CtorArgs&&... args) {}
+    static Type* newObject(CtorArgs&&... args) { fatalAssert(false, "newObject is not supported interface and must not happen"); return nullptr; }
+    template <typename Type>
+    static void deleteObject(Type* ptr) { fatalAssert(false, "deleteObject is not supported interface and must not happen"); }
 };
 
 COMPILER_PRAGMA(COMPILER_PUSH_WARNING)
@@ -151,19 +154,20 @@ public:
     BerrySecond() {};
 };
 
-
 template <typename Type, typename... CtorArgs>
-void TestConstructionPolicy::preConstruct(void* allocatedPtr, CtorArgs&&... args)
+Type* TestConstructionPolicy::construct(void* allocatedPtr, CtorArgs&&... args)
 {
     CBEMemory::memZero(allocatedPtr, sizeof(Type));
     TestNS::BerryObject* obj = (TestNS::BerryObject*)(allocatedPtr);
     obj->id = 20;
     obj->strID = STRID("ReflectObj");
+
+    return new (allocatedPtr)Type(std::forward<CtorArgs>(args)...);
 }
 
-
-template <typename Type, typename... CtorArgs>
-Type* TestConstructionPolicy::construct(void* allocatedPtr, CtorArgs&&... args)
+template <typename Type>
+void TestConstructionPolicy::destruct(void* ptr)
 {
-    return new (allocatedPtr)Type(std::forward<CtorArgs>(args)...);
+    // Always pass in base type as the destructing ptr, As other derived types are somewhere after base type and destruction will not be called properly
+    static_cast<Type*>(((TestNS::BerryObject*)ptr))->~Type();
 }

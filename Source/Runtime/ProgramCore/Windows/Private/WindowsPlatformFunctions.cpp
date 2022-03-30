@@ -220,22 +220,22 @@ bool WindowsPlatformFunctions::setClipboard(const String& text)
     return true;
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(const uint8& value)
+uint32 WindowsPlatformFunctions::getSetBitCount(uint8 value)
 {
     return uint32(::__popcnt16(uint16(value)));
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(const uint16& value)
+uint32 WindowsPlatformFunctions::getSetBitCount(uint16 value)
 {
     return uint32(::__popcnt16(value));
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(const uint32& value)
+uint32 WindowsPlatformFunctions::getSetBitCount(uint32 value)
 {
     return uint32(::__popcnt(value));
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(const uint64& value)
+uint32 WindowsPlatformFunctions::getSetBitCount(uint64 value)
 {
     return uint32(::__popcnt64(value));
 }

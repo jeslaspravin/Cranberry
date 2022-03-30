@@ -148,6 +148,26 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
     <DisplayString>{cellsCount} {"$T1"}</DisplayString>
   </Type>
 
+  <!-- BitArray as individual bits below might be too long to debug, So using binary representation of each word
+  <Type Name="BitArray&lt;*&gt;">
+    <DisplayString>size={bitsCount}</DisplayString>
+    <Expand>
+      <IndexListItems>
+        <Size>bitsCount</Size>
+        <ValueNode>(bits._Mypair._Myval2._Myfirst[$i / BITS_PER_ELEMENT] &gt;&gt; ($i % BITS_PER_ELEMENT)) &amp; 1,d</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type> -->
+  <Type Name="BitArray&lt;*&gt;">
+    <DisplayString>size={bitsCount}</DisplayString>
+    <Expand HideRawView="1">
+      <IndexListItems>
+        <Size>bits._Mypair._Myval2._Mylast - bits._Mypair._Myval2._Myfirst</Size>
+        <ValueNode>bits._Mypair._Myval2._Myfirst[$i],b</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
+
   <!-- To display list as tree with condition
   <TreeItems>
     <Size>debugStrings-&gt;_List._Mypair._Myval2._Mysize</Size>

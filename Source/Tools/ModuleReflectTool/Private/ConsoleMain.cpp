@@ -31,7 +31,7 @@ void initializeCmdArguments()
     CmdLineArgument moduleSrcDir(TCHAR("Directory to search and parse source headers from for this module."), ReflectToolCmdLineConst::MODULE_SRC_DIR);
     CmdLineArgument moduleExpMacro(TCHAR("Name of API export macro for this module."), ReflectToolCmdLineConst::MODULE_EXP_MACRO);
     CmdLineArgument intermediateDir(TCHAR("Directory where intermediate files can be dropped/created.\n\
-    This must unique per configuration to track last generated timestamps for files etc,."), ReflectToolCmdLineConst::INTERMEDIATE_DIR);
+    This must be unique per configuration to track last generated timestamps for files etc,."), ReflectToolCmdLineConst::INTERMEDIATE_DIR);
     CmdLineArgument includeDirList(TCHAR("File path that contains list of include directories for this module semicolon(;) separated."), ReflectToolCmdLineConst::INCLUDE_LIST_FILE, TCHAR("--I"));
     CmdLineArgument compileDefList(TCHAR("File path that contains list of compile definitions for this module semicolon(;) separated."), ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE, TCHAR("--D"));
     CmdLineArgument exeSampleCode(TCHAR("Executes sample code instead of actual application"), ReflectToolCmdLineConst::SAMPLE_CODE);
@@ -49,7 +49,7 @@ CBE_GLOBAL_NEWDELETE_OVERRIDES
 int32 main(int32 argsc, AChar** args)
 {
     UnexpectedErrorHandler::getHandler()->registerFilter();
-    SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug | Logger::Log);
+    Logger::pushMuteSeverities(Logger::Debug | Logger::Log);
 
     ModuleManager* moduleManager = ModuleManager::get();
     moduleManager->loadModule(TCHAR("ProgramCore"));

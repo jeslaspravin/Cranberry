@@ -409,7 +409,7 @@ GenericFileHandle* WindowsFile::openOrCreateImpl()
         if (BIT_SET(fileFlags, EFileFlags::CreateNew))
         {
             setCreationAction(EFileFlags::OpenExisting);
-            LOG_WARN("WindowsFile", "CreateNew is set on existing file %s", getFullPath());
+            LOG_WARN("WindowsFile", "EFileFlags::CreateNew is set on existing file %s", getFullPath());
         }
     }
     else // In this case OpenExisting and ClearExisting fails check and replace them
@@ -417,7 +417,7 @@ GenericFileHandle* WindowsFile::openOrCreateImpl()
         if (ANY_BIT_SET(fileFlags, (EFileFlags::OpenExisting | EFileFlags::ClearExisting)))
         {
             setCreationAction(EFileFlags::CreateNew);
-            LOG_WARN("WindowsFile", "OpenExisting | ClearExisting is set on non-existing file %s", getFullPath());
+            LOG_WARN("WindowsFile", "EFileFlags::OpenExisting | EFileFlags::ClearExisting is set on non-existing file %s", getFullPath());
         }
     }
 

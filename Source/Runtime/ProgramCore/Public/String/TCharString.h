@@ -68,12 +68,11 @@ namespace TCharStr
     template <typename CharType>
     NODISCARD CONST_EXPR const CharType* recurseToNullEnd(const CharType* start)
     {
-        const CharType* end = start + 1;
-        while (*end != CharType(0))
+        while (*start != CharType(0))
         {
-            end += 1;
+            start += 1;
         }
-        return end;
+        return start;
     }
 
     template <typename CharType>
@@ -391,6 +390,61 @@ namespace TCharStr
     {
         StringViewType retView = trimL(str);
         return trimR(&*retView.cbegin());
+    }
+
+    template <typename CharType, typename StringViewType = CharStringView<CharType>>
+    NODISCARD CONST_EXPR std::vector<StringViewType> splitLines(const CharType* str)
+    {
+        const CharType* strEnd = recurseToNullEnd(str);
+
+        std::vector<StringViewType> outStrs;
+
+        uint64 foundAtPos = 0;
+        uint64 offsetPos = 0;
+        while (find(str, '\n', &foundAtPos, offsetPos))
+        {
+            // If previous char is valid and it is carriage return(\r) then we have to consider that as part of CR-LF
+            if (foundAtPos != 0 || str[foundAtPos - 1] == TCHAR('\r'))
+            {
+                outStrs.emplace_back(StringViewType(str + offsetPos, str + (foundAtPos - 1)));
+            }
+            else
+            {
+                // Since offsetPos is end of last separator and foundAtPos is where this separator is found, Whatever in between is what we need
+                outStrs.emplace_back(StringViewType(str + offsetPos, str + foundAtPos));
+            }
+            // Post CR-LF char
+            offsetPos = foundAtPos + 1;
+        }
+        // After final separator the suffix has to be added if there is any char after final CR-LF
+        if ((str + offsetPos) != strEnd)
+        {
+            outStrs.emplace_back(StringViewType(str + offsetPos, strEnd));
+        }
+        return outStrs;
+    }
+
+    template <typename CharType, typename StringViewType = CharStringView<CharType>>
+    NODISCARD CONST_EXPR std::vector<StringViewType> split(const CharType* str, const CharType* separator)
+    {
+        const CharType* strEnd = recurseToNullEnd(str);
+        SizeT separatorLen = length(separator);
+
+        std::vector<StringViewType> outStrs;
+
+        uint64 foundAtPos = 0;
+        uint64 offsetPos = 0;
+        while (find(str, separator, &foundAtPos, offsetPos))
+        {
+            outStrs.emplace_back(StringViewType(str + offsetPos, str + foundAtPos));
+            offsetPos = foundAtPos + separatorLen;
+        }
+        // After final separator the suffix has to be added if there is any char after final CR-LF
+        if ((str + offsetPos) != strEnd)
+        {
+            outStrs.emplace_back(StringViewType(str + offsetPos, strEnd));
+        }
+        return outStrs;
     }
 }
 

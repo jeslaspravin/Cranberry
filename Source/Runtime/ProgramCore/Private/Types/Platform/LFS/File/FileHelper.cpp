@@ -288,7 +288,7 @@ bool FileHelper::touchFile(const String& fileName)
 {
     PlatformFile file(fileName);
     file.setSharingMode(EFileSharing::ReadOnly);
-    file.setCreationAction(EFileFlags::CreateNew);
+    file.setCreationAction(EFileFlags::OpenAlways);
     file.setFileFlags(EFileFlags::Write);
 
     bool bSuccess = false;
