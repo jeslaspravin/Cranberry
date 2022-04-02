@@ -55,22 +55,35 @@ namespace CBE
     public:
         OVERRIDE_CONSTRUCTION_POLICY(CBEObjectConstructionPolicy);
     private:
+        friend PrivateObjectCoreAccessors;
         friend CBEObjectConstructionPolicy;
 
         String objectName;
         Object* objOuter;
-        // Sid is from object's full path name
+        EObjectFlags flags;
         StringID sid;
-        ObjectAllocatorBase::AllocIdx allocIdx;
+        ObjectAllocIdx allocIdx;
     public:
-
         Object()
             : objectName(objectName)
             , objOuter(objOuter)
+            , flags(flags)
             , sid(sid)
             , allocIdx(allocIdx)
         {}
-        virtual ~Object() = default;
+#ifndef __REF_PARSE__ 
+        // We could handle constructor deleting in ModuleReflect tool, However it is not allowed in any reflected object so we can remove this while parsing alone
+        Object(Object&&) = delete;
+        Object(const Object&) = delete;
+#endif
+
+        virtual ~Object();
+
+        FORCE_INLINE Object* getOuter() const { return objOuter; }
+        FORCE_INLINE EObjectFlags getFlags() const { return flags; }
+        FORCE_INLINE const String& getName() const { return objectName; }
+        FORCE_INLINE StringID getStringID() const { return sid; }
+        String getFullPath() const;
     };
 }
 
@@ -80,7 +93,7 @@ COMPILER_PRAGMA(COMPILER_POP_WARNING)
 template <typename Type>
 void* CBEObjectConstructionPolicy::allocate()
 {
-    CBE::ObjectAllocatorBase::AllocIdx allocIdx;
+    ObjectAllocIdx allocIdx;
     Type* ptr = (Type*)CBE::getObjAllocator<Type>().allocate(allocIdx);
     CBEMemory::memZero(ptr, sizeof(Type));
 

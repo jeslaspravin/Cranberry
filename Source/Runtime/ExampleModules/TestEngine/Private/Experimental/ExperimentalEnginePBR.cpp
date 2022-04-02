@@ -83,6 +83,7 @@
 #include "TestReflectionGen.h"
 #include "CBEObject.h"
 #include "Types/Containers/FlatTree.h"
+#include "Reflections/FunctionParamsStack.h"
 
 struct PBRSceneEntity
 {
@@ -3251,51 +3252,106 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
     }
 }
 
+
+int func1()
+{
+    LOG("Test", "No param");
+    return 1;
+}
+void func2(std::string val)
+{
+    LOG("Test", "Str param %s\n", val);
+    val = "Setup";
+    LOG("Test", "Str param %s\n", val);
+}
+int func3(int32_t v1, float v2)
+{
+    LOG("Test", "2 param %d %f", v1, v2);
+    return 1;
+}
+void func4(void* valPtr, int32_t& v2, int64_t& v3)
+{
+    LOG("Test", "3 param 0x%s %d %lld\n", valPtr, v2, v3);
+    v2 += 3;
+    v3 += 4;
+    LOG("Test", "3 param 0x%s %d %lld\n", valPtr, v2, v3);
+    *reinterpret_cast<int32_t*>(valPtr) += 5;
+}
+
 void ExperimentalEnginePBR::tempTest()
 {
-    StringID str = STRID("Hello");
-    LOG("test", "%s", str);
+    {
 
-    ModuleManager::get()->loadModule("RTTIExample");
+        ModuleManager::get()->loadModule("RTTIExample");
 
-    const ClassProperty* classProp = IReflectionRuntimeModule::get()->getClassType(STRID("TestNS::BerryFirst"));
-    const ClassProperty* classProp1 = IReflectionRuntimeModule::get()->getClassType(STRID("BerrySecond"));
-    const ClassProperty* objectClass = IReflectionRuntimeModule::get()->getClassType(STRID("CBE::Object"));
+        const ClassProperty* classProp = IReflectionRuntimeModule::get()->getClassType(STRID("TestNS::BerryFirst"));
+        const ClassProperty* classProp1 = IReflectionRuntimeModule::get()->getClassType(STRID("BerrySecond"));
+        const ClassProperty* objectClass = IReflectionRuntimeModule::get()->getClassType(STRID("CBE::Object"));
 
-    void* ptr = static_cast<const GlobalFunctionWrapper*>(classProp->allocFunc->funcPtr)->invokeUnsafe<void*>();
-    TestNS::BerryFirst* berry = static_cast<const GlobalFunctionWrapper*>(classProp->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryFirst*>(ptr);
-    ptr = static_cast<const GlobalFunctionWrapper*>(classProp1->allocFunc->funcPtr)->invokeUnsafe<void*>();
-    TestNS::BerryObject* berryS = static_cast<const GlobalFunctionWrapper*>(classProp1->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(ptr);
+        void* ptr = static_cast<const GlobalFunctionWrapper*>(classProp->allocFunc->funcPtr)->invokeUnsafe<void*>();
+        TestNS::BerryFirst* berry = static_cast<const GlobalFunctionWrapper*>(classProp->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryFirst*>(ptr);
+        ptr = static_cast<const GlobalFunctionWrapper*>(classProp1->allocFunc->funcPtr)->invokeUnsafe<void*>();
+        TestNS::BerryObject* berryS = static_cast<const GlobalFunctionWrapper*>(classProp1->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(ptr);
 
-    static_cast<const GlobalFunctionWrapper*>(classProp->destructor->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(berry);
-    static_cast<const GlobalFunctionWrapper*>(classProp1->destructor->funcPtr)->invokeUnsafe<void*>(berryS);
+        static_cast<const GlobalFunctionWrapper*>(classProp->destructor->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(berry);
+        static_cast<const GlobalFunctionWrapper*>(classProp1->destructor->funcPtr)->invokeUnsafe<void*>(berryS);
 
-    ptr = static_cast<const GlobalFunctionWrapper*>(objectClass->allocFunc->funcPtr)->invokeUnsafe<void*>();
-    CBE::Object* obj = static_cast<const GlobalFunctionWrapper*>(objectClass->constructors[0]->funcPtr)->invokeUnsafe<CBE::Object*>(ptr);
+        ptr = static_cast<const GlobalFunctionWrapper*>(objectClass->allocFunc->funcPtr)->invokeUnsafe<void*>();
+        CBE::Object* obj = static_cast<const GlobalFunctionWrapper*>(objectClass->constructors[0]->funcPtr)->invokeUnsafe<CBE::Object*>(ptr);
 
-    static_cast<const GlobalFunctionWrapper*>(objectClass->destructor->funcPtr)->invokeUnsafe<void*>(obj);
+        static_cast<const GlobalFunctionWrapper*>(objectClass->destructor->funcPtr)->invokeUnsafe<void*>(obj);
+    }
+    {
 
-    FlatTree<uint32> tree;
-    uint32 v1 = tree.add(1);
-    uint32 v2 = tree.add(2, v1);
-    uint32 v3 = tree.add(3, v2);
-    uint32 v4 = tree.add(4, v1);
-    uint32 v5 = tree.add(4);
-    uint32 v6 = tree.add(5, v5);
-    uint32 v7 = tree.add(5);
-    uint32 v8 = tree.add(5, v2);
-    uint32 v9 = tree.add(5, v2);
-    uint32 v10 = tree.add(5, v5);
-    uint32 v11 = tree.add(v7, v7);
-    uint32 v12 = tree.add(v7, v7);
+        FlatTree<uint32> tree;
+        uint32 v1 = tree.add(1);
+        uint32 v2 = tree.add(2, v1);
+        uint32 v3 = tree.add(3, v2);
+        uint32 v4 = tree.add(4, v1);
+        uint32 v5 = tree.add(4);
+        uint32 v6 = tree.add(5, v5);
+        uint32 v7 = tree.add(5);
+        uint32 v8 = tree.add(5, v2);
+        uint32 v9 = tree.add(5, v2);
+        uint32 v10 = tree.add(5, v5);
+        uint32 v11 = tree.add(v7, v7);
+        uint32 v12 = tree.add(v7, v7);
 
-    LOG("Test", "Tree : %s", tree);
-    tree.relinkTo(v7, v6);
-    tree.relinkTo(v8, v3);
-    tree.relinkTo(v9, v3);
-    LOG("Test", "After linking Tree : %s", tree);
-    tree.remove(v3);
-    LOG("Test", "After removing 2 Tree : %s", tree);
+        LOG("Test", "Tree : %s", tree);
+        tree.relinkTo(v7, v6);
+        tree.relinkTo(v7, v6);
+        tree.relinkTo(v8, v3);
+        tree.relinkTo(v8, v3);
+        tree.relinkTo(v9, v3);
+        tree.relinkTo(v9, v3);
+        LOG("Test", "After linking Tree : %s", tree);
+        tree.remove(v3);
+        LOG("Test", "After removing 2 Tree : %s", tree);
+    }
+
+    FunctionParamsStack::ParamsStackData<sizeof(std::string)> ds;
+    memset(&ds, 0, sizeof(ds));
+    std::string s = "Hhhhh";
+    std::string& dsRef = *reinterpret_cast<std::string*>(&ds);
+    new (&dsRef)std::string(s);
+    LOG("Test","%d %d\n", alignof(decltype(ds)), alignof(std::string));
+
+    Function<void, std::string> fn = &func2;
+    void* fnPtr = (void*)&fn;
+    Function<void, decltype(ds)>& fnRef = *reinterpret_cast<Function<void, decltype(ds)>*>(fnPtr);
+    fnRef(ds);
+    LOG("Test","Str param %s\n", s);
+
+    // Reference type 
+    int32_t a = 0, b = 2; int64_t c = 1;
+    auto ds1 = FunctionParamsStack::pushToStackedData<void*, int32_t&, int64_t&>(&a, b, c);
+    Function<void, void*, int32_t&, int64_t&> fn2 = &func4;
+    FunctionParamsStack::invoke(fn2, (uint8*)&ds1, sizeof(ds1));
+    LOG("Test","%d(0x%s) %d %lld\n", a, &a, b, c);
+
+    auto ds2 = FunctionParamsStack::pushToStackedData();
+    Function<int> fn3 = &func1;
+    FunctionParamsStack::invoke(fn3, (uint8*)&ds2, sizeof(ds2));
 }
 
 //static uint64 allocationCount = 0;

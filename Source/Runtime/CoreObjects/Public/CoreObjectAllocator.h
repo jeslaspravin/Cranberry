@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "Types/CoreTypes.h"
+#include "CBEObjectTypes.h"
 #include "Memory/SlotAllocator.h"
 #include "Types/Containers/BitArray.h"
 #include "CoreObjectsExports.h"
@@ -31,7 +31,7 @@ namespace CBE
         // We are not going to have same object type more than max of uint32
         BitArray<uint32> allocValidity;
     public:
-        using AllocIdx = uint32;
+        using AllocIdx = ObjectAllocIdx;
     protected:
         virtual void* getAllocAt(AllocIdx idx) const = 0;
     public:
@@ -114,6 +114,24 @@ namespace CBE
                 }
             }
         }
+    public:
+        ObjectAllocator()
+        {
+            SET_BITS(PrivateObjectCoreAccessors::getFlags(&defaultObj), EObjectFlagBits::Default);
+        }
+
+        ~ObjectAllocator()
+        {
+            emptyAllocator = nullptr;
+            for (SlotAllocatorType* slotAlloc : allocators)
+            {
+                if (slotAlloc)
+                {
+                    delete slotAlloc;
+                }
+            }
+            allocators.clear();
+        }
 
         /* ObjectAllocatorBase overrides */
     protected:
@@ -190,19 +208,6 @@ namespace CBE
             }
         }
         /* Overrides ends */
-
-        ~ObjectAllocator()
-        {
-            emptyAllocator = nullptr;
-            for (SlotAllocatorType* slotAlloc : allocators)
-            {
-                if (slotAlloc)
-                {
-                    delete slotAlloc;
-                }
-            }
-            allocators.clear();
-        }
     };
     template <typename ClassType>
     FORCE_INLINE SizeT ObjectAllocator<ClassType>::findAllocator()

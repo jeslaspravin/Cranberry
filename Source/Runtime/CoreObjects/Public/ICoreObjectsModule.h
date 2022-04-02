@@ -1,5 +1,5 @@
 /*!
- * \file CoreObjectsModule.h
+ * \file ICoreObjectsModule.h
  *
  * \author Jeslas
  * \date March 2022
@@ -14,15 +14,11 @@
 #include "Modules/IModuleBase.h"
 #include "CoreObjectsExports.h"
 
-class COREOBJECTS_EXPORT CoreObjectsModule : public IModuleBase
+class CoreObjectsDB;
+
+class COREOBJECTS_EXPORT ICoreObjectsModule : public IModuleBase
 {
-
 public:
-	/* IModuleBase overrides */
-	void init() override;
-	void release() override;
-
-    /* Overrides ends */
-
-	static CoreObjectsModule* get();
+	virtual const CoreObjectsDB& getObjectsDB() const = 0;
+	static ICoreObjectsModule* get();
 };

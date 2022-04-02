@@ -16,7 +16,7 @@
 #include "String/TCharString.h"
 
 template <typename Type>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntToType<1>)
+FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<1>)
 {
     if (archive.isLoading())
     {
@@ -28,7 +28,7 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntT
     }
 }
 template <typename Type>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntToType<2>)
+FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<2>)
 {
     if (archive.isLoading())
     {
@@ -44,7 +44,7 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntT
     }
 }
 template <typename Type>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntToType<4>)
+FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<4>)
 {
     if (archive.isLoading())
     {
@@ -60,7 +60,7 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntT
     }
 }
 template <typename Type>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntToType<8>)
+FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<8>)
 {
     if (archive.isLoading())
     {
@@ -78,7 +78,7 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntT
 
 // Generic implementation
 template <typename Type, SizeT TypeSize>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntToType<TypeSize>)
+FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<TypeSize>)
 {
     if (archive.isLoading())
     {
@@ -96,7 +96,7 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, IntT
 template <typename Type, SizeT TypeSize = sizeof(Type)>
 FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive)
 {
-    serializeBytesSwapped(data, archive, IntToType<TypeSize>{});
+    serializeBytesSwapped(data, archive, UIntToType<TypeSize>{});
 }
 
 template <typename Type>
