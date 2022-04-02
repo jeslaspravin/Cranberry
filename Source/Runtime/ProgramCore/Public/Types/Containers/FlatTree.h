@@ -17,12 +17,12 @@
 
 // Inspired from book 3D graphics rendering cook book - Chapter 7 Using data oriented design for a scene graph(https://www.packtpub.com/product/3d-graphics-rendering-cookbook/9781838986193)
 // Each node contains index to its first child and a sibling(who will be child of node's parent)
-template <typename DataType>
+template <typename DataType, typename IndexType = SizeT>
 class FlatTree
 {
 public:
     using ValueType = DataType;
-    using SizeType = uint32;
+    using SizeType = IndexType;
     using NodeIdx = SizeType;
 
     using value_type = ValueType;
@@ -233,7 +233,7 @@ public:
 
     void relinkTo(NodeIdx nodeIdx, NodeIdx newParent = InvalidIdx)
     {
-        if (!isValid(nodeIdx))
+        if (!isValid(nodeIdx) || nodes[nodeIdx].parent == newParent)
             return;
 
         Node& node = nodes[nodeIdx];
@@ -262,8 +262,8 @@ public:
     }
 };
 
-template <typename DataType>
-void FlatTree<DataType>::printTree(OutputStream& stream, NodeIdx parent, const String& prefix) const
+template <typename DataType, typename IndexType>
+void FlatTree<DataType, IndexType>::printTree(OutputStream& stream, NodeIdx parent, const String& prefix) const
 {
     stream << prefix << parent << '\n';
     String newPrefix(prefix + TCHAR("|    "));

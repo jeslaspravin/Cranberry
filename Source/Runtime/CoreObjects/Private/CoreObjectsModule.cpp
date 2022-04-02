@@ -15,6 +15,12 @@
 
 DECLARE_MODULE(CoreObjects, CoreObjectsModule)
 
+ICoreObjectsModule* ICoreObjectsModule::get()
+{
+    static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("CoreObjects")));
+    return weakRiModule.expired() ? nullptr : static_cast<CoreObjectsModule*>(weakRiModule.lock().get());
+}
+
 void CoreObjectsModule::init()
 {
     CBE::initializeObjectAllocators();
@@ -25,8 +31,7 @@ void CoreObjectsModule::release()
 
 }
 
-CoreObjectsModule* CoreObjectsModule::get()
+const CoreObjectsDB& CoreObjectsModule::getObjectsDB() const
 {
-    static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("CoreObjects")));
-    return weakRiModule.expired() ? nullptr : static_cast<CoreObjectsModule*>(weakRiModule.lock().get());
+    throw std::logic_error("The method or operation is not implemented.");
 }

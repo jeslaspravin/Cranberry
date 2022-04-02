@@ -21,11 +21,11 @@
 
 DECLARE_MODULE(ReflectionRuntime, ReflectionRuntimeModule)
 
-const ReflectTypeInfo* ReflectTypeInfo::createTypeInfo(const std::type_info& cleanTypeInfo, const ReflectTypeInfo* innerTypeInfo, uint32 inQualifiers)
+const ReflectTypeInfo* ReflectTypeInfo::createTypeInfo(const std::type_info& cleanTypeInfo, const ReflectTypeInfo* innerTypeInfo, SizeT size, uint32 alignment, uint32 inQualifiers)
 {
     static std::unordered_set<ReflectTypeInfo> dbTypeInfo;
 
-    std::pair<std::unordered_set<ReflectTypeInfo>::iterator, bool> insertResult = dbTypeInfo.insert(ReflectTypeInfo{ cleanTypeInfo, innerTypeInfo, inQualifiers });
+    std::pair<std::unordered_set<ReflectTypeInfo>::iterator, bool> insertResult = dbTypeInfo.insert(ReflectTypeInfo{ cleanTypeInfo, innerTypeInfo, size, alignment, inQualifiers });
     return &(*insertResult.first);
 }
 

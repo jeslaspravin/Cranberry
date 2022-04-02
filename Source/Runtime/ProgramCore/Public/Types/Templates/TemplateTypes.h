@@ -13,6 +13,8 @@
 
 #include "Types/CoreDefines.h"
 
+#include <concepts>
+
 // Just some common types
 struct NullType
 {};
@@ -21,11 +23,19 @@ struct EmptyType
 {};
 
 // Types to differentiate function overload signatures
-template <size_t IntValue>
-struct IntToType
+template <std::integral T, T Value>
+struct IntegralToType
 {
-    CONST_EXPR static const size_t value = IntValue;
+    using type = T;
+    CONST_EXPR static const T value = Value;
 };
+
+template <uint64_t IntValue>
+struct UIntToType : IntegralToType<uint64_t, IntValue>
+{};
+template <int64_t IntValue>
+struct IntToType : IntegralToType<int64_t, IntValue>
+{};
 
 template <typename Type>
 struct TypeToType

@@ -69,7 +69,7 @@ private:
     {}
 
     template <typename StrType>
-    void insertDbgStr(StrType&&){}
+    CONST_EXPR void insertDbgStr(StrType&&){}
 #endif
 
     STRINGID_FUNCQUALIFIER void initFromAChar(const AChar* str)

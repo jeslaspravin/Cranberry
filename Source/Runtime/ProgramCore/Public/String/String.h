@@ -290,8 +290,8 @@ public:
         return outStrs;
     }
 
-    template <typename IteratorType>
-    static String join(IteratorType begin, IteratorType end, const String&& separator)
+    template <typename IteratorType, typename StrType>
+    static String join(IteratorType begin, IteratorType end, StrType&& separator)
     {
         String s;
         if (begin == end)

@@ -45,8 +45,7 @@ int appMain(String cmdLine, void* appPlatformInstance)
         ProgramCmdLine::get()->printCommandLine();
     }
 
-    float fltTMin = -FLT_TRUE_MIN;
-    LOG("Engine", "%s() : Engine start %u", __func__, *reinterpret_cast<uint32*>(&fltTMin));
+    LOG("Engine", "%s() : Engine start", __func__);
     gEngine->startup(appCI);
 
     Logger::flushStream();

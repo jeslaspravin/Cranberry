@@ -37,12 +37,28 @@
 
 #include "Types/Templates/TemplateTypes.h"
 
+#include <type_traits>
+
+
 template <typename ThisType, typename NextType>
 struct TypeList
 {
     using Type = ThisType;
     using Next = NextType;
 };
+
+template <typename T>
+struct IsTypeListType : std::false_type{};
+
+template <typename Type, typename Next>
+struct IsTypeListType<TypeList<Type, Next>>
+{
+    // This is typelist, now make sure the chain is typelist as well
+    CONST_EXPR static const bool value = std::disjunction_v<IsTypeListType<Next>, std::is_same<Next, NullType>>;
+};
+
+template <typename T>
+concept TypeListType = IsTypeListType<T>::value;
 
 namespace TL
 {
@@ -185,11 +201,16 @@ namespace TL
     struct AtIndex <TypeList<ThisType, NextType>, 0>
     {
         using type = ThisType;
+        using Next = NextType;
+        using TList = TypeList<type, Next>;
     };
     template <typename ThisType, typename NextType, int Index>
     struct AtIndex <TypeList<ThisType, NextType>, Index>
     {
-        using type = typename AtIndex<NextType, Index - 1>::type;
+        using AtIndexTList = AtIndex<NextType, Index - 1>;
+        using type = typename AtIndexTList::type;
+        using Next = typename AtIndexTList::Next;
+        using TList = TypeList<type, Next>;
     };
 
     // Finds the first index of the type in typelist
@@ -264,15 +285,34 @@ namespace TL
 
     // For each type in the type list invokes the template struct callable
     // 
+    // 
+    // void printTypeInfo(const std::type_info& ti)
+    // {
+    //     fmt::print("Type : {}\n", ti.name());
+    // }
+    //
+    // template <typename Type, typename UserType>
+    // struct PrintValue
+    // {
+    //     void operator()(UserType*) const
+    //     {
+    //         fmt::print("Value : {}\n", Type::value);
+    //     }
+    // };
+    // 
     // Below callable struct can be used as DoForEach<TL, PrintTypeInfo>::call() 
-    //  template <typename Type>
+    //  template <typename Type, typename UserType>
     //  struct PrintTypeInfo
     //  {
-    //      void operator()() const
+    //      void operator()(UserType*) const
     //      {
     //          printTypeInfo(typeid(Type));
     //      }
     //  };
+    // 
+    // using T = TL::CreateFromValues<1, 2, 3, 4, 5, 6, 7, 8>::type;
+    // TL::DoForEach<T, PrintValue>::call<void>(nullptr);
+    //
     template <typename TList, template<typename Type, typename UserType> typename Callable>
     struct DoForEach;
 
@@ -304,6 +344,19 @@ namespace TL
         using type = TypeList<Type, typename CreateFrom<Types...>::type>;
     };
 
+    template <typename Type>
+    struct CreateFromSequence;
+    template <std::integral T, T... Values>
+    struct CreateFromSequence<std::integer_sequence<T, Values...>>
+    {
+        using type = typename CreateFrom<IntegralToType<T, Values>...>::type;
+    };
+    template <uint64_t... Values>
+    struct CreateFromUInts : public CreateFromSequence<std::integer_sequence<uint64_t, Values...>>
+    {};
+    template <int64_t... Values>
+    struct CreateFromInts : public CreateFromSequence<std::integer_sequence<int64_t, Values...>>
+    {};
 
     // 
     template <typename TList, typename... Types>
