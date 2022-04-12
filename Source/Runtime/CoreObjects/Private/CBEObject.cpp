@@ -21,12 +21,12 @@ namespace CBE
         return object->flags;
     }
 
-    ObjectAllocIdx PrivateObjectCoreAccessors::getAllocIdx(Object* object)
+    ObjectAllocIdx PrivateObjectCoreAccessors::getAllocIdx(const Object* object)
     {
         return object->allocIdx;
     }
 
-    void PrivateObjectCoreAccessors::setOuterAndName(Object* object, const String& newName, Object* outer)
+    void PrivateObjectCoreAccessors::setOuterAndName(Object* object, const String& newName, Object* outer, CBEClass clazz /*= nullptr*/)
     {
         fatalAssert(!newName.empty(), "Object name cannot be empty");
         if (outer == object->getOuter() && object->getName() == newName)
@@ -34,26 +34,46 @@ namespace CBE
 
         CoreObjectsDB& objectsDb = CoreObjectsModule::objectsDB();
 
+        // Setting object outer
         object->objOuter = outer;
-        object->objectName = newName;
 
-        StringID newSid(object->getFullPath());
-        if (object->getStringID().isValid() && CoreObjectsModule::objectsDB().hasObject(object->sid))
+        StringID newSid(ObjectPathHelper::getFullPath(newName.getChar(), outer));
+        if (object->getStringID().isValid() && objectsDb.hasObject(object->getStringID()))
         {
+            // Setting object name
+            object->objectName = newName;
             objectsDb.setObject(object->getStringID(), newSid);
-            objectsDb.setObjectParent(newSid, object->getOuter()->getStringID());
+            if (outer)
+            {
+                objectsDb.setObjectParent(newSid, object->getOuter()->getStringID());
+            }
+            else
+            {
+                objectsDb.setObjectParent(newSid, StringID::INVALID);
+            }
         }
         else
         {
+            // constructing object's name
+            new (&object->objectName)String(newName);
+
             CoreObjectsDB::ObjectData objData
             {
-                .clazz = object->getType(),
+                .clazz = (clazz != nullptr? clazz : object->getType()),
                 .allocIdx = object->allocIdx,
                 .sid = newSid
             };
 
-            objectsDb.addObject(newSid, objData, outer->getStringID());
+            if (outer)
+            {
+                objectsDb.addObject(newSid, objData, outer->getStringID());
+            }
+            else
+            {
+                objectsDb.addRootObject(newSid, objData);
+            }
         }
+        // Setting object's new sid
         object->sid = newSid;
     }
 
@@ -114,4 +134,15 @@ FORCE_INLINE String ObjectPathHelper::getFullPath(const CBE::Object* object)
         + String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
 
     return objectPath;
+}
+
+String ObjectPathHelper::getFullPath(const TChar* objectName, const CBE::Object* outerObj)
+{
+    if (outerObj)
+    {
+        return outerObj->getFullPath() 
+            + (outerObj->getOuter()? ObjectPathHelper::ObjectObjectSeparator : ObjectPathHelper::RootObjectSeparator)
+            + objectName;
+    }
+    return objectName;
 }

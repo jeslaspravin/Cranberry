@@ -21,7 +21,7 @@
 class ClassProperty;
 namespace CBE { class ObjectAllocatorBase; }
 
-extern COREOBJECTS_EXPORT std::unordered_map<const ClassProperty*, CBE::ObjectAllocatorBase*>* gCBEObjectAllocators;
+extern COREOBJECTS_EXPORT std::unordered_map<CBEClass, CBE::ObjectAllocatorBase*>* gCBEObjectAllocators;
 
 namespace CBE 
 {
@@ -41,6 +41,12 @@ namespace CBE
         virtual void free(void* ptr, AllocIdx allocIdx) = 0;
         virtual void free(void* ptr) = 0;
 
+        AllocIdx size() const { return static_cast<AllocIdx>(allocValidity.size()); }
+        template <typename AsType>
+        AsType* getAt(AllocIdx idx) const
+        {
+            return (AsType*)(getAllocAt(idx));
+        }
         template <typename AsType>
         std::vector<AsType*> getAllObjects() const
         {
@@ -58,6 +64,7 @@ namespace CBE
             }
             return retVal;
         }
+        FORCE_INLINE bool isValid(AllocIdx idx) const { return allocValidity[idx]; }
     };
 
     // #TODO(Jeslas) : Find a way while freeing to validate proper revision of same allocated ptr free. Now we can avoid that by controlling free manually
@@ -140,7 +147,7 @@ namespace CBE
             SlotIdxType slotIdx;
             SizeT arrayIdx = allocIdxToSlotIdx(slotIdx, idx);
 
-            debugAssert(allocators.size() > arrayIdx && allocators[arrayIdx]);
+            debugAssert(isValid(idx) && allocators.size() > arrayIdx && allocators[arrayIdx]);
             return allocators[arrayIdx]->at(slotIdx);
         }
     public:
@@ -164,7 +171,7 @@ namespace CBE
             if (ptr != getAllocAt(allocIdx))
                 return;
             // Double freeing?
-            debugAssert(allocValidity[allocIdx]);
+            debugAssert(isValid(allocIdx));
 
             SlotIdxType slotIdx;
             SizeT arrayIdx = allocIdxToSlotIdx(slotIdx, allocIdx);
@@ -200,7 +207,7 @@ namespace CBE
             {
                 AllocIdx allocIdx = slotIdxToAllocIdx(ptrAllocator->ptrToSlotIdx(ptr), arrayIdx);
                 // Double freeing?
-                debugAssert(allocValidity[allocIdx]);
+                debugAssert(isValid(allocIdx));
 
                 ptrAllocator->memFree(ptr);
                 allocValidity[allocIdx] = false;
@@ -271,5 +278,5 @@ namespace CBE
         return objAllocator;
     }
 
-    COREOBJECTS_EXPORT ObjectAllocatorBase* getObjAllocator(const ClassProperty* classType);
+    COREOBJECTS_EXPORT ObjectAllocatorBase* getObjAllocator(CBEClass classType);
 }

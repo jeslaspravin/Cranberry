@@ -17,4 +17,7 @@ std::unordered_map<StringID::IDType, String>& StringID::debugStringDB()
     static std::unordered_map<StringID::IDType, String> singletonStringDB;
     return singletonStringDB;
 }
+
+CONST_INIT const StringID StringID::INVALID = StringID(EInitType::InitType_DefaultInit);
+
 #endif // DEV_BUILD

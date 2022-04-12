@@ -217,6 +217,11 @@ namespace TL
     template <typename TList, typename FindType>
     struct TypeIndex;
 
+    template <typename FindType>
+    struct TypeIndex <NullType, FindType>
+    {
+        CONST_EXPR static const int value = -1;
+    };
     template <typename NextType, typename FindType>
     struct TypeIndex <TypeList<NullType, NextType>, FindType>
     {
@@ -232,6 +237,12 @@ namespace TL
     {
         CONST_EXPR static const int foundAt = TypeIndex<NextType, FindType>::value;
         CONST_EXPR static const int value = (foundAt == -1) ? -1 : 1 + foundAt;
+    };
+
+    template <typename TList, typename FindType>
+    struct Contains
+    {
+        CONST_EXPR static const bool value = (TypeIndex<TList, FindType>::value != -1);
     };
 
     // Reverses the Typelist, 

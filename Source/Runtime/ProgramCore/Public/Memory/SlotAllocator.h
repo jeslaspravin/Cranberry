@@ -40,6 +40,7 @@ private:
     SizeType freeTail;
     SizeType freeCount;
 private:
+    // Gives the reference to memory where next free slot after this slot is stored, This reference is also the reference to this slot
     FORCE_INLINE SizeType& nextFree(SizeType slotIdx) const
     {
         return *reinterpret_cast<SizeType*>(reinterpret_cast<uint8*>(slots) + (slotIdx * SlotSize));

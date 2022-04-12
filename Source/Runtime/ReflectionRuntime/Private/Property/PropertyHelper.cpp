@@ -41,3 +41,31 @@ bool PropertyHelper::isValidFunctionCall(const String& inValue)
     static const StringRegex matchPattern(COMBINE(VALID_SYMBOL_REGEX_PATTERN, " *\\(.*\\)[ ;]*"), std::regex_constants::ECMAScript);
     return std::regex_match(inValue, matchPattern);
 }
+
+bool PropertyHelper::isChildOf(const ClassProperty* childClassProp, const ClassProperty* parentClassProp)
+{
+    std::vector<const ClassProperty*> checkClasses;
+    checkClasses.emplace_back(childClassProp);
+    while (!checkClasses.empty())
+    {
+        std::vector<const ClassProperty*> newCheckClasses;
+        for (const ClassProperty* clazz : checkClasses)
+        {
+            if (std::find(clazz->baseClasses.cbegin(), clazz->baseClasses.cend(), parentClassProp) != clazz->baseClasses.cend())
+            {
+                return true;
+            }
+            else
+            {
+                newCheckClasses.insert(newCheckClasses.end(), clazz->baseClasses.cbegin(), clazz->baseClasses.cend());
+            }
+        }
+        checkClasses = std::move(newCheckClasses);
+    }
+    return false;
+}
+
+bool PropertyHelper::isStruct(const ClassProperty* classProp)
+{
+    return IReflectionRuntimeModule::get()->getStructType(classProp->typeInfo) == classProp;
+}

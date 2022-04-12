@@ -25,4 +25,5 @@ public:
     CONST_EXPR static const TChar RootObjectSeparator = ':';
 
     static String getFullPath(const CBE::Object* object);
+    static String getFullPath(const TChar* objectName, const CBE::Object* outerObj);
 };

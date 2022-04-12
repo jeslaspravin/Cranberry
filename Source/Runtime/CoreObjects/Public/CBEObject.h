@@ -49,7 +49,23 @@ COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_UNINITIALIZED))
 
 namespace CBE
 {
-    class META_ANNOTATE_API(COREOBJECTS_EXPORT, BaseType) Object
+    // Just a class to avoid overwriting base properties when constructing
+    // Example string will always be constructed to empty which is not acceptable behavior for us
+    class ObjectBase
+    {
+    protected:
+        String objectName;
+    protected:
+        ObjectBase() = delete;
+        ObjectBase(ObjectBase&&) = delete;
+        ObjectBase(const ObjectBase&) = delete;
+
+        ObjectBase(String inObjectName)
+            : objectName(inObjectName)
+        {}
+    };
+
+    class META_ANNOTATE_API(COREOBJECTS_EXPORT, BaseType) Object : private ObjectBase
     {
         GENERATED_CODES();
     public:
@@ -58,24 +74,18 @@ namespace CBE
         friend PrivateObjectCoreAccessors;
         friend CBEObjectConstructionPolicy;
 
-        String objectName;
         Object* objOuter;
         EObjectFlags flags;
         StringID sid;
         ObjectAllocIdx allocIdx;
     public:
         Object()
-            : objectName(objectName)
+            : ObjectBase(objectName)
             , objOuter(objOuter)
             , flags(flags)
             , sid(sid)
             , allocIdx(allocIdx)
         {}
-#ifndef __REF_PARSE__ 
-        // We could handle constructor deleting in ModuleReflect tool, However it is not allowed in any reflected object so we can remove this while parsing alone
-        Object(Object&&) = delete;
-        Object(const Object&) = delete;
-#endif
 
         virtual ~Object();
 

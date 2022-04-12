@@ -108,10 +108,21 @@ public:
 
         META_ANNOTATE()
         uint32 value;
+
+        bool operator<(const BerrySecondData & other) const noexcept
+        {
+            return value < other.value;
+        }
+        bool operator==(const BerrySecondData& other) const noexcept
+        {
+            return value == other.value;
+        }
     };
 
     META_ANNOTATE()
     BerrySecondData reflectedStruct;
+    META_ANNOTATE()
+    TestNS::BerryObject* ptrObject;
 
     META_ANNOTATE()
     TestNS::BerryObject::ETestEnumClassScoped options;
@@ -120,7 +131,7 @@ public:
     std::map<uint64, BerrySecondData> idxToBerrySec;
     
     META_ANNOTATE()
-    std::vector<BerrySecondData> berries;
+    std::vector<BerrySecondData, std::allocator<BerrySecondData>> berries;
 
     META_ANNOTATE()
     std::set<BerrySecondData> uniqueBerries;
@@ -129,7 +140,13 @@ public:
     std::unordered_map<uint64, BerrySecondData> idxToBerrySec2;
 
     META_ANNOTATE()
-    std::pair<uint32, TestNS::BerryObject*> idxToObjext;
+    static std::pair<uint32, TestNS::BerryObject*> idxToObjext;
+    META_ANNOTATE()
+    static uint32 value;
+    META_ANNOTATE()
+    static TestNS::BerryObject* value1;
+    META_ANNOTATE()
+    static const TestNS::BerryObject* value2;
 
     META_ANNOTATE()
     void testThisFunction(std::pair<uint32, TestNS::BerryObject*>& aValue, const std::unordered_map<uint64, BerrySecondData*>& bValue, uint32 values){}

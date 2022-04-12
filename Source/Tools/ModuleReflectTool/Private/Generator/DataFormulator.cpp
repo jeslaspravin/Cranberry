@@ -38,6 +38,8 @@ void visitTUCusor(CXCursor cursor, SourceGeneratorContext* srcGenContext);
 template <typename FmtType, typename... Args>
 void parseFailed(CXCursor cursor, SourceGeneratorContext* srcGenContext, const TChar* funcName, FmtType&& fmtMsg, Args&&... args)
 {
+    // Just push and pop debug here to enable log level
+    SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
     LOG("SourceGenerator", "%s ERROR %s() : Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName
         , StringFormat::format(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...));
     srcGenContext->bGenerated = false;

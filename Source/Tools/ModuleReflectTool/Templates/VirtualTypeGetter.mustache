@@ -1,4 +1,4 @@
-{{^NoExport}}{{ExportSymbolMacro}} {{/NoExport}}{{#IsBaseType}}virtual {{/IsBaseType}}const ClassProperty* getType() {{^IsBaseType}}override{{/IsBaseType}} \
+{{^NoExport}}{{ExportSymbolMacro}} {{/NoExport}}{{#IsBaseType}}virtual {{/IsBaseType}}const ClassProperty* getType() const {{^IsBaseType}}override{{/IsBaseType}} \
 { \
     return staticType(); \
 }

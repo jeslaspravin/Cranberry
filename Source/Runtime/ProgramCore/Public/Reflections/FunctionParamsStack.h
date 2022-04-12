@@ -141,7 +141,7 @@ namespace FunctionParamsStack
         }
 
         template <SizeT Idx, typename Type = typename TL::AtIndex<TList, Idx>::type>
-        static Type& popAnArg(uint8* data)
+        NODISCARD static Type& popAnArg(uint8* data)
         {
             data = data + CalculateParamsAlignedLayout<typename TL::AtIndex<RTList, Len - 1 - Idx>::TList>::offset;
             if CONST_EXPR(std::is_reference<Type>::value)
@@ -157,15 +157,22 @@ namespace FunctionParamsStack
                 return *reinterpret_cast<Type*>(data);
             }
         }
-        template <typename RetType, typename... Args, SizeT... Indices>
-        static RetType invoke(const Function<RetType, Args...>& func, uint8* data, SizeT size, std::index_sequence<Indices...>)
+        template <template <typename RetType, typename... Params> typename FuncType, typename RetType, typename... Args, SizeT... Indices>
+        static RetType invoke(const FuncType<RetType, Args...>& func, uint8* data, SizeT size, std::index_sequence<Indices...>)
         {
             return func(popAnArg<Indices>(data)...);
+        }
+
+        template <bool bIsConst, typename ClassType, typename ObjectType, typename RetType, typename... Args, SizeT... Indices>
+        static RetType invoke(const ClassFunction<bIsConst, ClassType, RetType, Args...>& func
+            , ObjectType&& object, uint8* data, SizeT size, std::index_sequence<Indices...>)
+        {
+            return func(object, popAnArg<Indices>(data)...);
         }
     };
 
     template <typename... Args>
-    CONST_EXPR auto pushToStackedData(Args... args)
+    NODISCARD CONST_EXPR auto pushToStackedData(Args... args)
     {
         using TypesL = typename TL::CreateFrom<Args...>::type;
         ParamsStackData<
@@ -181,18 +188,39 @@ namespace FunctionParamsStack
         return {};
     }
 
-    template <typename RetType, typename... Args>
-    RetType invoke(const Function<RetType, Args...>& func, uint8* data, SizeT size)
+    // For both lambda and static global functions
+    template <template <typename RetType, typename... Params> typename FuncType, typename RetType, typename... Args>
+    RetType invoke(const FuncType<RetType, Args...>& func, uint8* data, SizeT size)
     {
         using TypesL = typename TL::CreateFrom<Args...>::type;
         // Passed in size must be greater than or  equal to required size
         debugAssert(CalculateParamsAlignedLayout<TypesL>::value <= size);
         return PushPopStackedData<TypesL>
-            ::template invoke<RetType, Args...>(func, data, size, std::make_index_sequence<sizeof...(Args)>{});
+            ::template invoke<FuncType, RetType, Args...>(func, data, size, std::make_index_sequence<sizeof...(Args)>{});
     }
-    template <typename RetType>
-    RetType invoke(const Function<RetType>& func, uint8* data, SizeT size)
+    template <template <typename RetType, typename... Params> typename FuncType, typename RetType>
+    RetType invoke(const FuncType<RetType>& func, uint8* data, SizeT size)
     {
         return func();
+    }
+
+    // For object functions
+    template <bool bIsConst, typename ClassType, typename ObjectType, typename RetType, typename... Args>
+    RetType invoke(const ClassFunction<bIsConst, ClassType, RetType, Args...>& func, ObjectType&& object, uint8* data, SizeT size)
+    {
+        using TypesL = typename TL::CreateFrom<Args...>::type;
+        // Passed in size must be greater than or  equal to required size
+        debugAssert(CalculateParamsAlignedLayout<TypesL>::value <= size);
+        return PushPopStackedData<TypesL>
+            ::template invoke<bIsConst, ClassType, ObjectType, RetType, Args...>(
+                func
+                , std::forward<ObjectType>(object)
+                , data, size
+                , std::make_index_sequence<sizeof...(Args)>{});
+    }
+    template <bool bIsConst, typename ClassType, typename ObjectType, typename RetType>
+    RetType invoke(const ClassFunction<bIsConst, ClassType, RetType>& func, ObjectType&& object, uint8* data, SizeT size)
+    {
+        return func(std::forward<ObjectType>(object));
     }
 }

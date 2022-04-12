@@ -12,6 +12,7 @@
 #include "Parser/ParserHelper.h"
 #include "Parser/ClangWrappers.h"
 #include "ReflectionMacros.h"
+#include "Property/PropertyHelper.h"
 #include "String/StringRegex.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PathFunctions.h"
@@ -207,8 +208,60 @@ bool ParserHelper::isSpecializedType(CXType clangType, CXCursor typeRefCursor)
 bool ParserHelper::isCustomType(CXType clangType, CXCursor typeRefCursor)
 {
     String checkTypeName = getNonConstTypeName(clangType, typeRefCursor);
-    return FOR_EACH_CUSTOM_TYPES_UNIQUE_FIRST_LAST(CHECK_TYPE_FIRST, CHECK_TYPE, CHECK_TYPE);
+
+    auto checkMapSetType = [](CXType clangType)
+    {
+        CXCursor cursor = clang_getTypeDeclaration(clang_getCanonicalType(clangType));
+        return isBuiltinType(clangType)
+            || isSpecializedType(clangType, cursor)
+            || (clangType.kind == CXTypeKind::CXType_Pointer && isValidFieldType(clangType, cursor)) // Support pointer types
+            || (clangType.kind == CXTypeKind::CXType_Record 
+                && (clang_getCursorKind(cursor) == CXCursor_StructDecl 
+                    || clang_getCursorKind(cursor) == CXCursor_ClassDecl 
+                    || clang_getCursorKind(cursor) == CXCursor_ClassTemplate)
+                && isReflectedClass(cursor)); // Support reflected types
+    };
+
+    if (FOR_EACH_MAP_SET_TYPES(CHECK_TYPE_FIRST, CHECK_TYPE, CHECK_TYPE))
+    {
+        CXType keyType;
+        bool bIsValid;
+        if (PropertyHelper::isSetType(checkTypeName))
+        {
+            bIsValid = getContainerElementType(keyType, clangType, typeRefCursor);
+        }
+        else
+        {
+            CXType valType;
+            bIsValid = getMapElementTypes(keyType, valType, clangType, typeRefCursor);
+        }
+        CXCursor keyCursor = clang_getTypeDeclaration(clang_getCanonicalType(keyType));
+        String keyTypeName = getNonConstTypeName(keyType, keyCursor);
+        if (PropertyHelper::isPairType(keyTypeName))
+        {
+            CXType firstType, secType;
+            bIsValid = bIsValid 
+                && getPairElementTypes(firstType, secType, keyType, keyCursor) 
+                && checkMapSetType(firstType) 
+                && checkMapSetType(secType);
+        }
+        else
+        {
+            bIsValid = bIsValid && checkMapSetType(keyType);
+        }
+
+        if (!bIsValid)
+        {
+            LOG_ERROR("ParserHelper", "%s() : Key type %s is not acceptable for reflected fields type %s", __func__, keyTypeName, checkTypeName);
+        }
+        return bIsValid;
+    }
+    else
+    {
+        return FOR_EACH_CUSTOM_TYPES_UNIQUE_FIRST_LAST(CHECK_TYPE_FIRST, CHECK_TYPE, CHECK_TYPE);
+    }
 }
+
 #undef CHECK_TYPE
 #undef CHECK_TYPE_FIRST
 
@@ -340,7 +393,7 @@ bool ParserHelper::getMapElementTypes(CXType& outKeyType, CXType& outValueType, 
     String mapName = getNonConstTypeName(mapType, mapTypeRefCursor);
     CXType referredType = getTypeReferred(mapType, mapTypeRefCursor);
     
-    if (!(mapName.startsWith(TCHAR("std::map")) || mapName.startsWith(TCHAR("std::unordered_map"))))
+    if (!PropertyHelper::isMapType(mapName))
     {
         return false;
     }
@@ -359,7 +412,7 @@ bool ParserHelper::getPairElementTypes(CXType& outKeyType, CXType& outValueType,
     String pairName = getNonConstTypeName(pairType, pairTypeRefCursor);
     CXType referredType = getTypeReferred(pairType, pairTypeRefCursor);
 
-    if (!pairName.startsWith(TCHAR("std::pair")))
+    if (!PropertyHelper::isPairType(pairName))
     {
         return false;
     }
@@ -377,7 +430,7 @@ bool ParserHelper::getContainerElementType(CXType& outType, CXType containerType
     String typeName = getNonConstTypeName(containerType, typeRefCursor);
     CXType referredType = getTypeReferred(containerType, typeRefCursor);
 
-    if (!(typeName.startsWith(TCHAR("std::set")) || typeName.startsWith(TCHAR("std::unordered_set")) || typeName.startsWith(TCHAR("std::vector"))))
+    if (!(PropertyHelper::isSetType(typeName) || PropertyHelper::isArrayType(typeName)))
     {
         return false;
     }

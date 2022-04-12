@@ -45,6 +45,8 @@ private:
     friend ArchiveType& operator<<(ArchiveType& archive, StringID& value);
 
     CONST_INIT static const IDType Seed = STRINGID_HASHFUNC(TCHAR("Cranberry_StringID"), IDType(0));
+public:
+    static const StringID INVALID;
 private:
 
 #if DEV_BUILD
