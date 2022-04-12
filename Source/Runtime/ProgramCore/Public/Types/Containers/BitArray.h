@@ -131,7 +131,7 @@ public:
     BitArray& operator=(BitArray&&) = default;
 
     CONST_EXPR BitArray(SizeT initialSize) noexcept 
-        : bitsCount(initialSize * BITS_PER_ELEMENT), bits(initialSize, 0) 
+        : bitsCount(initialSize), bits(arraySizeForBits(initialSize), 0)
     {}
     CONST_EXPR BitArray(std::initializer_list<value_type> initList) noexcept 
         : bitsCount(initList.size() * BITS_PER_ELEMENT), bits(initList) 

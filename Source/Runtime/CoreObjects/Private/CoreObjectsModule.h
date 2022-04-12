@@ -14,11 +14,13 @@
 #include "ICoreObjectsModule.h"
 #include "Types/CoreDefines.h"
 #include "CoreObjectsDB.h"
+#include "CoreObjectGC.h"
 
 class CoreObjectsModule final : public ICoreObjectsModule
 {
 private:
     CoreObjectsDB objsDb;
+    CoreObjectGC gc;
 public:
     /* IModuleBase overrides */
     void init() override;
@@ -26,7 +28,7 @@ public:
 
     /* ICoreObjectsModule overrides */
     const CoreObjectsDB& getObjectsDB() const override;
-
+    CoreObjectGC& getGC() override;
     /* Overrides ends */
 
     FORCE_INLINE static CoreObjectsModule* get()

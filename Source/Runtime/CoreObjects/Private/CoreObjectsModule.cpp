@@ -28,10 +28,15 @@ void CoreObjectsModule::init()
 
 void CoreObjectsModule::release()
 {
-
+    
 }
 
 const CoreObjectsDB& CoreObjectsModule::getObjectsDB() const
 {
-    throw std::logic_error("The method or operation is not implemented.");
+    return objsDb;
+}
+
+CoreObjectGC& CoreObjectsModule::getGC()
+{
+    return gc;
 }

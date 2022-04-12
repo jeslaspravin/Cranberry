@@ -38,6 +38,8 @@ enum class EPropertyType
     ArrayType
 };
 
+// #TODO(Jeslas) : Property system needs overhaul especially the CustomProperty like map, set, vector. Current impl works and glued to work
+
 // Property that defines or holds the information necessary to access data. This class will not work with the data itself
 class BaseProperty
 {

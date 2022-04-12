@@ -11,13 +11,13 @@
 
 #include "CoreObjectAllocator.h"
 
-std::unordered_map<const ClassProperty*, CBE::ObjectAllocatorBase*>* gCBEObjectAllocators = nullptr;
+std::unordered_map<CBEClass, CBE::ObjectAllocatorBase*>* gCBEObjectAllocators = nullptr;
 
 namespace CBE
 {
-    std::unordered_map<const ClassProperty*, ObjectAllocatorBase*>& createGObjectAllocators()
+    std::unordered_map<CBEClass, ObjectAllocatorBase*>& createGObjectAllocators()
     {
-        static std::unordered_map<const ClassProperty*, ObjectAllocatorBase*> singletonObjectAllocatorsMap;
+        static std::unordered_map<CBEClass, ObjectAllocatorBase*> singletonObjectAllocatorsMap;
         return singletonObjectAllocatorsMap;
     }
 
@@ -29,7 +29,7 @@ namespace CBE
         }
     }
 
-    ObjectAllocatorBase* getObjAllocator(const ClassProperty* classType)
+    ObjectAllocatorBase* getObjAllocator(CBEClass classType)
     {
         if (!gCBEObjectAllocators)
         {

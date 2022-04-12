@@ -79,9 +79,12 @@ BaseProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(BaseProperty* typeProperty)
 {
+    using ReflectType = {{TypeName}};
+    using ValueType = {{TypeName}}::value_type;
     ContainerPropertyImpl<{{TypeName}}>* prop = static_cast<ContainerPropertyImpl<{{TypeName}}>*>(typeProperty);
-    prop->setElementProperty(IReflectionRuntimeModule::getType<{{TypeName}}::value_type>());
+    prop->setElementProperty(IReflectionRuntimeModule::getType<ValueType>());
     prop->constructDataRetriever<ContainerRetrieverImpl<{{TypeName}}>>();
+    CONTAINERTYPE_VALIDATIONS(ReflectType, ValueType);
 }
 {{/ContainerTypes}}
 
@@ -92,11 +95,14 @@ BaseProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(BaseProperty* typeProperty)
 {
+    using ReflectType = {{TypeName}};
+    using KeyType = {{TypeName}}::key_type;
+    using ValueType = {{TypeName}}::mapped_type;
     MapProperty* prop = static_cast<MapProperty*>(typeProperty);
     prop->setElementProperty(IReflectionRuntimeModule::getType<{{TypeName}}::value_type>());
-    prop->setKeyProperty(IReflectionRuntimeModule::getType<{{TypeName}}::key_type>());
-    prop->setValueProperty(IReflectionRuntimeModule::getType<{{TypeName}}::mapped_type>());
+    prop->setKeyValueProperties(IReflectionRuntimeModule::getType<KeyType>(), IReflectionRuntimeModule::getType<ValueType>());
     prop->constructDataRetriever<MapDataRetrieverImpl<{{TypeName}}>>();
+    MAPTYPE_VALIDATIONS(ReflectType, KeyType, ValueType);
 }
 {{/MapTypes}}
 

@@ -1892,8 +1892,7 @@ namespace SampleCode
         {
             MapProperty* p = static_cast<MapProperty*>(prop);
             p->setElementProperty(IReflectionRuntimeModule::getType<std::pair<const int32, TestPropertyClass::TestInnerStruct>>());
-            p->setKeyProperty(IReflectionRuntimeModule::getType<int32>());
-            p->setValueProperty(IReflectionRuntimeModule::getType<TestPropertyClass::TestInnerStruct>());
+            p->setKeyValueProperties(IReflectionRuntimeModule::getType<int32>(), IReflectionRuntimeModule::getType<TestPropertyClass::TestInnerStruct>());
             p->constructDataRetriever<MapDataRetrieverImpl<std::map<int32, TestPropertyClass::TestInnerStruct>>>();
         }
 

@@ -76,14 +76,12 @@
 #include <unordered_set>
 #include <source_location>
 
-#include "Types/Uid/Guid.h"
-#include "IReflectionRuntime.h"
-#include "Property/Property.h"
-#include "Types/FunctionTypes.h"
 #include "TestReflectionGen.h"
 #include "CBEObject.h"
-#include "Types/Containers/FlatTree.h"
-#include "Reflections/FunctionParamsStack.h"
+#include "Visitors/FieldVisitors.h"
+#include "ICoreObjectsModule.h"
+#include "CoreObjectGC.h"
+#include "CBEObjectHelpers.h"
 
 struct PBRSceneEntity
 {
@@ -3252,34 +3250,156 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
     }
 }
 
+struct MapFieldData
+{
+    void* mapData;
+    const MapProperty* mapProp;
+};
 
-int func1()
+template <typename KeyType>
+struct MapValueVisitor
 {
-    LOG("Test", "No param");
-    return 1;
-}
-void func2(std::string val)
+    template <typename ValueType>
+    static void visit(PropertyInfo propInfo, void* userData)
+    {
+
+    }
+};
+
+struct MapKeyVisitor
 {
-    LOG("Test", "Str param %s\n", val);
-    val = "Setup";
-    LOG("Test", "Str param %s\n", val);
-}
-int func3(int32_t v1, float v2)
+    template <IsReflectedSpecial KeyType>
+    static void visit(const PropertyInfo& propInfo, void* userData)
+    {
+        fatalAssert(false, "Special types cannot be used as key");
+    }
+
+    template <IsReflectedFundamental KeyType>
+    static void visit(const PropertyInfo& propInfo, void* userData)
+    {
+        MapFieldData* mapFieldData = (MapFieldData*)userData;
+        PropertyInfo newPropInfo = propInfo;
+        newPropInfo.thisProperty = static_cast<const TypedProperty*>(mapFieldData->mapProp->valueProp);
+        FieldVisitor::visit<MapValueVisitor<KeyType>>(newPropInfo, mapFieldData);
+    }
+
+    static void visit(const PropertyInfo& propInfo, void* userData, TypeToType<void>)
+    {
+        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
+    }
+    static void visit(const PropertyInfo& propInfo, void* userData, TypeToType<const void>)
+    {
+        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
+    }
+
+    static void visit(const PropertyInfo& propInfo, void* userData, TypeToType<void*>)
+    {
+        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
+    }
+    static void visit(const PropertyInfo& propInfo, void* userData, TypeToType<const void*>)
+    {
+        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
+    }
+
+    template <typename AnyType>
+    static void visit(PropertyInfo propInfo, void* userData)
+    {
+        visit(propInfo, userData, TypeToType<AnyType>{});
+    }
+};
+
+struct Visitable
 {
-    LOG("Test", "2 param %d %f", v1, v2);
-    return 1;
-}
-void func4(void* valPtr, int32_t& v2, int64_t& v3)
-{
-    LOG("Test", "3 param 0x%s %d %lld\n", valPtr, v2, v3);
-    v2 += 3;
-    v3 += 4;
-    LOG("Test", "3 param 0x%s %d %lld\n", valPtr, v2, v3);
-    *reinterpret_cast<int32_t*>(valPtr) += 5;
-}
+    template <typename Type>
+    static void visit(Type* val, const PropertyInfo& propInfo, void* userData)
+    {
+        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, *typeInfoFrom<Type>());
+    }
+    static void visit(void* val, const PropertyInfo& propInfo, void* userData)
+    {
+        const BaseProperty* prop = propInfo.thisProperty->type == EPropertyType::QualifiedType
+            ? static_cast<const QualifiedProperty*>(propInfo.thisProperty)->unqualTypeProperty : propInfo.thisProperty;
+        switch (prop->type)
+        {
+        case EPropertyType::MapType:
+        {
+            LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
+            MapFieldData mapData{ val, static_cast<const MapProperty*>(prop) };
+            PropertyInfo newPropInfo = propInfo;
+            newPropInfo.thisProperty = static_cast<const TypedProperty*>(mapData.mapProp->keyProp);
+            FieldVisitor::visit<MapKeyVisitor>(newPropInfo, &mapData);
+            break;
+        }
+        case EPropertyType::SetType:
+        case EPropertyType::ArrayType:
+        case EPropertyType::PairType:
+            LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
+            break;
+        case EPropertyType::ClassType:
+            LOG("Test", "Struct field %s type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
+            FieldVisitor::visitFields<Visitable>(static_cast<const ClassProperty*>(propInfo.thisProperty), val, userData);
+            break;
+        case EPropertyType::EnumType:
+            LOG("Test", "Enum field %s type %s, value %llu", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString, *(uint64*)val);
+            break;
+        }
+    }
+    static void visit(const void* val, const PropertyInfo& propInfo, void* userData)
+    {
+        // No point in having const pointer
+        LOG("Test", "Unhandled const value Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+    }
+    static void visit(void** ptr, const PropertyInfo& propInfo, void* userData)
+    {
+        const BaseProperty* prop = propInfo.thisProperty->type == EPropertyType::QualifiedType
+            ? static_cast<const QualifiedProperty*>(propInfo.thisProperty)->unqualTypeProperty : propInfo.thisProperty;
+        switch (prop->type)
+        {
+        case EPropertyType::ClassType:
+            LOG("Test", "Class ptr field %s type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
+            if (*ptr)
+            {
+                FieldVisitor::visitFields<Visitable>(static_cast<const ClassProperty*>(propInfo.thisProperty), *ptr, userData);
+            }
+            break;
+        case EPropertyType::EnumType:
+        case EPropertyType::MapType:
+        case EPropertyType::SetType:
+        case EPropertyType::ArrayType:
+        case EPropertyType::PairType:
+        default:
+            LOG("Test", "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            break;
+        }
+    }
+    static void visit(const void** ptr, const PropertyInfo& propInfo, void* userData)
+    {
+        const BaseProperty* prop = propInfo.thisProperty->type == EPropertyType::QualifiedType
+            ? static_cast<const QualifiedProperty*>(propInfo.thisProperty)->unqualTypeProperty : propInfo.thisProperty;
+        switch (propInfo.thisProperty->type)
+        {
+        case EPropertyType::ClassType:
+            LOG("Test", "Class ptr field %s type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
+            if (*ptr)
+            {
+                FieldVisitor::visitFields<Visitable>(static_cast<const ClassProperty*>(propInfo.thisProperty), *ptr, userData);
+            }
+            break;
+        case EPropertyType::EnumType:
+        case EPropertyType::MapType:
+        case EPropertyType::SetType:
+        case EPropertyType::ArrayType:
+        case EPropertyType::PairType:
+        default:
+            LOG("Test", "Unhandled ptr to const ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            break;
+        }
+    }
+};
 
 void ExperimentalEnginePBR::tempTest()
 {
+    if (true)
     {
 
         ModuleManager::get()->loadModule("RTTIExample");
@@ -3293,65 +3413,15 @@ void ExperimentalEnginePBR::tempTest()
         ptr = static_cast<const GlobalFunctionWrapper*>(classProp1->allocFunc->funcPtr)->invokeUnsafe<void*>();
         TestNS::BerryObject* berryS = static_cast<const GlobalFunctionWrapper*>(classProp1->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(ptr);
 
+        FieldVisitor::visitFields<Visitable>(classProp1, berryS, nullptr);
+        FieldVisitor::visitFields<Visitable>(classProp, berry, nullptr);
+
+
         static_cast<const GlobalFunctionWrapper*>(classProp->destructor->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(berry);
         static_cast<const GlobalFunctionWrapper*>(classProp1->destructor->funcPtr)->invokeUnsafe<void*>(berryS);
 
-        ptr = static_cast<const GlobalFunctionWrapper*>(objectClass->allocFunc->funcPtr)->invokeUnsafe<void*>();
-        CBE::Object* obj = static_cast<const GlobalFunctionWrapper*>(objectClass->constructors[0]->funcPtr)->invokeUnsafe<CBE::Object*>(ptr);
-
-        static_cast<const GlobalFunctionWrapper*>(objectClass->destructor->funcPtr)->invokeUnsafe<void*>(obj);
+        CBE::Object* obj = CBE::create(objectClass, TCHAR("TestObj"), nullptr);
     }
-    {
-
-        FlatTree<uint32> tree;
-        uint32 v1 = tree.add(1);
-        uint32 v2 = tree.add(2, v1);
-        uint32 v3 = tree.add(3, v2);
-        uint32 v4 = tree.add(4, v1);
-        uint32 v5 = tree.add(4);
-        uint32 v6 = tree.add(5, v5);
-        uint32 v7 = tree.add(5);
-        uint32 v8 = tree.add(5, v2);
-        uint32 v9 = tree.add(5, v2);
-        uint32 v10 = tree.add(5, v5);
-        uint32 v11 = tree.add(v7, v7);
-        uint32 v12 = tree.add(v7, v7);
-
-        LOG("Test", "Tree : %s", tree);
-        tree.relinkTo(v7, v6);
-        tree.relinkTo(v7, v6);
-        tree.relinkTo(v8, v3);
-        tree.relinkTo(v8, v3);
-        tree.relinkTo(v9, v3);
-        tree.relinkTo(v9, v3);
-        LOG("Test", "After linking Tree : %s", tree);
-        tree.remove(v3);
-        LOG("Test", "After removing 2 Tree : %s", tree);
-    }
-
-    FunctionParamsStack::ParamsStackData<sizeof(std::string)> ds;
-    memset(&ds, 0, sizeof(ds));
-    std::string s = "Hhhhh";
-    std::string& dsRef = *reinterpret_cast<std::string*>(&ds);
-    new (&dsRef)std::string(s);
-    LOG("Test","%d %d\n", alignof(decltype(ds)), alignof(std::string));
-
-    Function<void, std::string> fn = &func2;
-    void* fnPtr = (void*)&fn;
-    Function<void, decltype(ds)>& fnRef = *reinterpret_cast<Function<void, decltype(ds)>*>(fnPtr);
-    fnRef(ds);
-    LOG("Test","Str param %s\n", s);
-
-    // Reference type 
-    int32_t a = 0, b = 2; int64_t c = 1;
-    auto ds1 = FunctionParamsStack::pushToStackedData<void*, int32_t&, int64_t&>(&a, b, c);
-    Function<void, void*, int32_t&, int64_t&> fn2 = &func4;
-    FunctionParamsStack::invoke(fn2, (uint8*)&ds1, sizeof(ds1));
-    LOG("Test","%d(0x%s) %d %lld\n", a, &a, b, c);
-
-    auto ds2 = FunctionParamsStack::pushToStackedData();
-    Function<int> fn3 = &func1;
-    FunctionParamsStack::invoke(fn3, (uint8*)&ds2, sizeof(ds2));
 }
 
 //static uint64 allocationCount = 0;
@@ -3364,6 +3434,8 @@ void ExperimentalEnginePBR::tempTestPerFrame()
     //    LOG_DEBUG("MEMALLOC", "Allocated additional %dbytes, Total allocations %d", allocationCount - lastAllocCount, allocationsNum);
     //    lastAllocCount = allocationCount;
     //}
+
+    ICoreObjectsModule::get()->getGC().collect(0.016f);
 }
 
 void ExperimentalEnginePBR::tempTestQuit()

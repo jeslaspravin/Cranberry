@@ -10,6 +10,7 @@
  */
 
 #include "CoreObjectsDB.h"
+#include "CoreObjectAllocator.h"
 
 void CoreObjectsDB::removeObject(StringID objectId)
 {
@@ -25,6 +26,15 @@ CoreObjectsDB::NodeIdxType CoreObjectsDB::addObject(StringID objectId, const Obj
 
     auto parentItr = objectIdToNodeIdx.find(parent);
     NodeIdxType nodeIdx = objectTree.add(objectData, parentItr->second);
+    objectIdToNodeIdx[objectId] = nodeIdx;
+    return nodeIdx;
+}
+
+CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, const ObjectData& objectData)
+{
+    debugAssert(objectId.isValid() && !hasObject(objectId));
+
+    NodeIdxType nodeIdx = objectTree.add(objectData);
     objectIdToNodeIdx[objectId] = nodeIdx;
     return nodeIdx;
 }
@@ -55,5 +65,28 @@ void CoreObjectsDB::setObjectParent(StringID objectId, StringID newParent)
     else
     {
         objectTree.relinkTo(objItr->second);
+    }
+}
+
+CBE::Object* CoreObjectsDB::getObject(NodeIdxType nodeidx) const
+{
+    if (objectTree.isValid(nodeidx))
+    {
+        const ObjectData& objData = objectTree[nodeidx];
+        return CBE::getObjAllocator(objData.clazz)->getAt<CBE::Object>(objData.allocIdx);
+    }
+    return nullptr;
+}
+
+void CoreObjectsDB::getSubobjects(std::vector<CBE::Object*>& subobjs, NodeIdxType nodeidx) const
+{
+    std::vector<NodeIdxType> subObjIndices;
+    objectTree.getChildren(subObjIndices, nodeidx, true);
+    for (NodeIdxType subnodeIdx : subObjIndices)
+    {
+        if (CBE::Object* obj = getObject(subnodeIdx))
+        {
+            subobjs.emplace_back(obj);
+        }
     }
 }

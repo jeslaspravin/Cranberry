@@ -12,7 +12,6 @@
 #pragma once
 
 #include "Types/Platform/PlatformAssertionErrors.h"
-#include "Types/Containers/BitArray.h"
 
 #include <vector>
 

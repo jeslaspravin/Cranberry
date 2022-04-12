@@ -16,8 +16,11 @@
 
 #include "CoreObjectsExports.h"
 
+class ClassProperty;
+
 using ObjectAllocIdx = uint32;
 using EObjectFlags = uint64;
+using CBEClass = const ClassProperty*;
 
 namespace CBE
 {
@@ -25,8 +28,9 @@ namespace CBE
 
     enum EObjectFlagBits : EObjectFlags
     {
-        Deleted = 0x00'00'00'00'00'00'00'01,
-        Default = 0x00'00'00'00'00'00'00'02
+        Default                 = 0x00'00'00'00'00'00'00'01,// Default object that are created as part of CBE::ObjectAllocatorBase creation
+        MarkedForDelete         = 0x00'00'00'00'00'00'00'02,// Object when marked for delete will be deleted during later garbage collection no matter if they are referred or not
+        Deleted                 = 0x00'00'00'00'00'00'00'04 // Object after deleted will be marked as deleted, deleted object remains available until the allocated slot is entirely deleted
     };
 
     // Why separate accessor? Because this accessor will be needed only for some low level carefully orchestrated code and discourage its use for gameplay
@@ -36,11 +40,13 @@ namespace CBE
         PrivateObjectCoreAccessors() = default;
     public:
         static EObjectFlags& getFlags(Object* object);
-        static ObjectAllocIdx getAllocIdx(Object* object);
-        static void setOuterAndName(Object* object, const String& newName, Object* outer);
+        static ObjectAllocIdx getAllocIdx(const Object* object);
+        // clazz is just class property of this object and is used only when creating the object for the first time
+        static void setOuterAndName(Object* object, const String& newName, Object* outer, CBEClass clazz = nullptr);
         // Just some additional helper
         static void setOuter(Object* object, Object* outer);
         static void renameObject(Object* object, const String& newName);
     };
+
 
 }

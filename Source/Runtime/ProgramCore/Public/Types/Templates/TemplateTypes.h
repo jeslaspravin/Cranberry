@@ -31,11 +31,9 @@ struct IntegralToType
 };
 
 template <uint64_t IntValue>
-struct UIntToType : IntegralToType<uint64_t, IntValue>
-{};
+using UIntToType = IntegralToType<uint64_t, IntValue>;
 template <int64_t IntValue>
-struct IntToType : IntegralToType<int64_t, IntValue>
-{};
+using IntToType = IntegralToType<int64_t, IntValue>;
 
 template <typename Type>
 struct TypeToType

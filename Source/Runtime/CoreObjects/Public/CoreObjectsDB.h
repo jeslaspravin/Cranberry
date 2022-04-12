@@ -16,8 +16,6 @@
 #include "CBEObjectTypes.h"
 #include "Types/Containers/FlatTree.h"
 
-class ClassProperty;
-
 /**
  * CoreObjectsDB
  * 
@@ -31,7 +29,7 @@ public:
     struct ObjectData
     {
         // Below 2 can be used to retrieve object from allocator directly
-        const ClassProperty* clazz;
+        CBEClass clazz;
         ObjectAllocIdx allocIdx;
         StringID sid;
     };
@@ -43,7 +41,9 @@ public:
     // Removes object and all its sub-object from db
     void removeObject(StringID objectId);
     NodeIdxType addObject(StringID objectId, const ObjectData& objectData, StringID parent);
+    NodeIdxType addRootObject(StringID objectId, const ObjectData& objectData);
     void setObject(StringID currentId, StringID newId);
+    // Invalid newParent clears current parent
     void setObjectParent(StringID objectId, StringID newParent);
 
     FORCE_INLINE bool hasObject(StringID objectId) const
@@ -65,5 +65,26 @@ public:
             return itr != objectIdToNodeIdx.cend();
         }
         return false;
+    }
+
+    CBE::Object* getObject(NodeIdxType nodeidx) const;
+    FORCE_INLINE CBE::Object* getObject(StringID objectId) const
+    {
+        auto itr = objectIdToNodeIdx.find(objectId);
+        if (itr != objectIdToNodeIdx.cend())
+        {
+            return getObject(itr->second);
+        }
+        return nullptr;
+    }
+
+    void getSubobjects(std::vector<CBE::Object*>& subobjs, NodeIdxType nodeidx) const;
+    FORCE_INLINE void getSubobjects(std::vector<CBE::Object*>& subobjs, StringID objectId) const
+    {
+        auto itr = objectIdToNodeIdx.find(objectId);
+        if (itr != objectIdToNodeIdx.cend())
+        {
+            getSubobjects(subobjs, itr->second);
+        }
     }
 };
