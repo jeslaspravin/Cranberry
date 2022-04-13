@@ -18,6 +18,7 @@
 #include "Generator/SourceGenerator.h"
 #include "CmdLineArgConst.h"
 #include "CmdLine/CmdLine.h"
+#include "Memory/Memory.h"
 
 #include "SampleCode.h"
 
@@ -30,7 +31,7 @@ void initializeCmdArguments()
     CmdLineArgument moduleSrcDir(TCHAR("Directory to search and parse source headers from for this module."), ReflectToolCmdLineConst::MODULE_SRC_DIR);
     CmdLineArgument moduleExpMacro(TCHAR("Name of API export macro for this module."), ReflectToolCmdLineConst::MODULE_EXP_MACRO);
     CmdLineArgument intermediateDir(TCHAR("Directory where intermediate files can be dropped/created.\n\
-    This must unique per configuration to track last generated timestamps for files etc,."), ReflectToolCmdLineConst::INTERMEDIATE_DIR);
+    This must be unique per configuration to track last generated timestamps for files etc,."), ReflectToolCmdLineConst::INTERMEDIATE_DIR);
     CmdLineArgument includeDirList(TCHAR("File path that contains list of include directories for this module semicolon(;) separated."), ReflectToolCmdLineConst::INCLUDE_LIST_FILE, TCHAR("--I"));
     CmdLineArgument compileDefList(TCHAR("File path that contains list of compile definitions for this module semicolon(;) separated."), ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE, TCHAR("--D"));
     CmdLineArgument exeSampleCode(TCHAR("Executes sample code instead of actual application"), ReflectToolCmdLineConst::SAMPLE_CODE);
@@ -42,9 +43,13 @@ void initializeCmdArguments()
     It uses clang libraries and mustache style templates to generate reflection data"));
 }
 
+// Override new and delete
+CBE_GLOBAL_NEWDELETE_OVERRIDES
+
 int32 main(int32 argsc, AChar** args)
 {
     UnexpectedErrorHandler::getHandler()->registerFilter();
+    Logger::pushMuteSeverities(Logger::Debug | Logger::Log);
 
     ModuleManager* moduleManager = ModuleManager::get();
     moduleManager->loadModule(TCHAR("ProgramCore"));
@@ -65,6 +70,8 @@ int32 main(int32 argsc, AChar** args)
     moduleManager->loadModule(TCHAR("ReflectionRuntime"));
     moduleManager->getOrLoadLibrary(PathFunctions::combinePath(TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"), String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION));
 
+    Logger::flushStream();
+
     if (ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::SAMPLE_CODE))
     {
         LOG_DEBUG("CPPReflect", "%s(): Executing sample codes %s", __func__, ENGINE_MODULES_PATH);
@@ -79,7 +86,7 @@ int32 main(int32 argsc, AChar** args)
     else
     {
         ModuleSources moduleSrcs;
-        if (!moduleSrcs.compileAllSources())
+        if (!moduleSrcs.compileAllSources(SourceGenerator::isTemplatesModified()))
         {
             LOG_ERROR("ModuleReflectTool", "%s() : Compiling module sources failed", __func__);
             return 1;

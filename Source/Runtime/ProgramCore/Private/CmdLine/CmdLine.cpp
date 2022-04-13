@@ -286,6 +286,9 @@ void ProgramCmdLineInstance::parseArgElements()
 
 bool ProgramCmdLine::printHelp() const
 {
+    // Remove mute in this scope if log is muted
+    SCOPED_MUTE_LOG_SEVERITIES(0);
+
     const ProgramCmdLineInstance* thisInst = static_cast<const ProgramCmdLineInstance*>(this);
     auto itrHelp = thisInst->cmdArgs.find(TCHAR("--help"));
     if (itrHelp == thisInst->cmdArgs.cend())
@@ -299,11 +302,11 @@ bool ProgramCmdLine::printHelp() const
         {
             if (allowedArg.shortArgName.empty())
             {
-                outHelp += StringFormat::format(TCHAR("\n\"%s\" - %s"), allowedArg.argName, allowedArg.argDescription);
+                outHelp += StringFormat::format(TCHAR("\n\"%s\"\n    - %s"), allowedArg.argName, allowedArg.argDescription);
             }
             else
             {
-                outHelp += StringFormat::format(TCHAR("\n\"%s\", \"%s\" - %s"), allowedArg.argName, allowedArg.shortArgName, allowedArg.argDescription);
+                outHelp += StringFormat::format(TCHAR("\n\"%s\", \"%s\"\n    - %s"), allowedArg.argName, allowedArg.shortArgName, allowedArg.argDescription);
             }
         }
         LOG("CmdLineHelp", "\n%s\n", outHelp);
@@ -314,6 +317,9 @@ bool ProgramCmdLine::printHelp() const
 
 void ProgramCmdLine::printCommandLine() const
 {
+    // Remove mute in this scope if log is muted
+    SCOPED_MUTE_LOG_SEVERITIES(0);
+
     String appName;
     FileSystemFunctions::applicationDirectory(appName);
 

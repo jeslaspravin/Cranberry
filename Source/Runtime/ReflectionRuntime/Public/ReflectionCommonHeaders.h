@@ -13,6 +13,7 @@
 
 #include "ReflectionRuntimeExports.h"
 
+#include "Types/DefaultPolicies.h"
 #include "Types/TypesInfo.h"
 
 #include "Types/FunctionTypes.h"
@@ -23,3 +24,6 @@
 
 #include "IReflectionRuntime.h"
 #include "ReflectionMacros.h"
+
+// Since new is overridden for each class and struct
+#include "Memory/Memory.h"

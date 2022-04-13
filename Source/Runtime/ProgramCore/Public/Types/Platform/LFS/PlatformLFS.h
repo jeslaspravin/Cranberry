@@ -21,5 +21,5 @@ static_assert(false, "Platform not supported!");
 #endif
 #include "File/GenericFileHandle.h"
 
-typedef LFS::FileSystemFunctions FileSystemFunctions;
-typedef LFS::PlatformFile PlatformFile;
+using FileSystemFunctions = LFS::FileSystemFunctions;
+using PlatformFile = LFS::PlatformFile;

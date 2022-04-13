@@ -14,6 +14,7 @@
 #include "String/String.h"
 #include "ProgramCoreExports.h"
 
+// #TODO(Jeslas) : Replace this type of heap allocated handles to raw platform handle here, PlatformFile, Application Instance, Window Instance
 struct PROGRAMCORE_EXPORT LibPointer 
 {
 

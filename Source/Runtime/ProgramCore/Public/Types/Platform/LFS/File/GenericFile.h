@@ -60,6 +60,7 @@ public:
     virtual ~GenericFile() = default;
 
     // Opens only if previous file is properly closed
+    // The goal of this function is to create or open irrespective of setting flags and still maintain the setting to user set if possible
     bool openOrCreate();
     bool openFile();
     // Closes the file if it exists 
@@ -105,6 +106,7 @@ public:
     // Operations after file handle is created
 
     virtual TickRep lastWriteTimeStamp() const = 0;
+    virtual bool setLastWriteTimeStamp(TickRep timeTick) const = 0;
     virtual TickRep createTimeStamp() const = 0;
     virtual uint64 fileSize() const = 0;
     virtual uint64 filePointer() const = 0;
@@ -116,7 +118,7 @@ public:
     virtual bool setFileSize(const int64& newSize) const = 0;
     virtual void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const = 0;
     virtual void read(uint8* readTo, const uint32& bytesToRead) const = 0;
-    virtual void write(const ArrayView<uint8>& writeBytes) const = 0;
+    virtual void write(const ArrayView<const uint8>& writeBytes) const = 0;
 
     virtual bool deleteFile() = 0;
     virtual bool renameFile(String newName) = 0;

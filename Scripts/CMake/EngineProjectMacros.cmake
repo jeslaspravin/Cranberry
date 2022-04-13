@@ -11,6 +11,16 @@
 
 ########################################################################################################
 # C++ related functions
+#
+# Each module is added with common compile options defines as below
+#
+# Compile Defines
+# PLATFORM_WINDOWS in WIN32
+# PLATFORM_LINUX in LINUX
+# PLATFORM_APPLE in APPLE
+# PLATFORM_64 if 64 bit platform
+# PLATFORM_32 if 32 bit platform
+# STATIC_LINKED if we are building as statically linked module
 ########################################################################################################
 
 #
@@ -154,10 +164,12 @@ endfunction ()
 macro (cpp_common_options_and_defines)
     target_compile_definitions(${target_name}
         PRIVATE
-            $<IF:${WIN32},PLATFORM_WINDOWS=1,PLATFORM_WINDOWS=0>
-            $<IF:${LINUX},PLATFORM_LINUX=1,PLATFORM_LINUX=0>
-            $<IF:${APPLE},PLATFORM_APPLE=1,PLATFORM_APPLE=0>
             $<IF:$<BOOL:${engine_static_modules}>,STATIC_LINKED=1,STATIC_LINKED=0>
+            $<${WIN32}:PLATFORM_WINDOWS=1>
+            $<${LINUX}:PLATFORM_LINUX=1>
+            $<${APPLE}:PLATFORM_APPLE=1>
+            $<$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>:PLATFORM_64=1>
+            $<$<EQUAL:${CMAKE_SIZEOF_VOID_P},4>:PLATFORM_32=1>
     )
 
     # POD/Variables in class has to initialized with {} to zero initialize if calling constructors that are not compiler generated
@@ -329,10 +341,15 @@ macro (engine_module_dependencies_includes)
 endmacro ()
 
 macro (mark_delay_loaded_dlls)
+    
+    set(option_args IGNORE_MODULES)
+    cmake_parse_arguments(delay_load_arg "${option_args}" "" "" ${ARGN})
+
     set (delay_load_list )
 
     # If static linked then having engine modules as delay loaded does not makes sense
-    if (NOT ${engine_static_modules})
+    # and if IGNORE_MODULES option is not enabled
+    if (NOT ${engine_static_modules} AND (NOT ${delay_load_arg_IGNORE_MODULES}))
         # Private dependencies
         list (LENGTH private_modules private_modules_count)
         if (${private_modules_count} GREATER 0)
@@ -361,7 +378,7 @@ macro (mark_delay_loaded_dlls)
             # Remove ProgramCore
             list (REMOVE_ITEM delay_load_list ${program_core_module})
         endif (${program_core_idx} GREATER_EQUAL 0)
-    endif (NOT ${engine_static_modules})
+    endif (NOT ${engine_static_modules} AND (NOT ${delay_load_arg_IGNORE_MODULES}))
 
     # delay load dlls
     list (APPEND delay_load_list ${delay_load_dlls})    
@@ -461,8 +478,6 @@ macro (generate_engine_library)
         generate_cpp_shared_lib()
     endif ()
     engine_module_dependencies()
-    set_target_properties(${target_name} PROPERTIES 
-        FOLDER ${CMAKE_PROJECT_NAME})
 endmacro()
 
 ########################################################################################################
@@ -513,7 +528,7 @@ endmacro()
 # Shader related functions
 ########################################################################################################
 
-function(shader_outputs)    
+function(shader_outputs)
     set(one_value_args OUTPUT_DIR OUTPUTS)
     set(multi_value_args SOURCES)
     cmake_parse_arguments(shader_outputs "" "${one_value_args}" "${multi_value_args}" ${ARGN})

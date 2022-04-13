@@ -50,6 +50,7 @@ if(!(Expr)){\
 do{\
 if(!(Expr)){\
     LOG_ERROR("FatalAssertion", "%s() : Assert expression failed ["#Expr"] "#Message,__func__, __VA_ARGS__);\
+    UnexpectedErrorHandler::getHandler()->debugBreak(); \
     UnexpectedErrorHandler::getHandler()->dumpCallStack(true);}\
 }while(0)
 #endif

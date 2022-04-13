@@ -31,27 +31,46 @@ struct WindowsLibHandle : public LibPointer
     }
 };
 
+
+// as 100ns
+using WindowsTimeDuration = std::chrono::duration<int64, std::ratio<1, 10'000'000>>;
+// From https://stackoverflow.com/questions/6161776/convert-windows-filetime-to-second-in-unix-linux
+// Difference in seconds between epoch time(1st Jan 1970) and windows time(1st Jan 1601)
+#define WIN_2_EPOCH 11644473600ll
+
 /* Time impl functions, No need to enclose in macro as this TU won't be included in other platforms */
 template <typename Resolution>
 TickRep fromPlatformTimeImpl(int64 platformTick)
 {
     using namespace std::chrono;
-    using WindowsTimeDuration = duration<int64, std::ratio<1, 10'000'000>>;
 
-    // From https://stackoverflow.com/questions/6161776/convert-windows-filetime-to-second-in-unix-linux
-    // Difference in seconds between epoch time(1st Jan 1970) and windows time(1st Jan 1601)
-    static const seconds winTimeToEpochDuration(11644473600ll);
+    static const seconds winTimeToEpochDuration(WIN_2_EPOCH);
     return duration_cast<Resolution>(WindowsTimeDuration(platformTick) - winTimeToEpochDuration).count();
 }
+template <typename Resolution>
+int64 toPlatformTimeImpl(TickRep timeTick)
+{
+    using namespace std::chrono;
+
+    static const seconds winTimeToEpochDuration(WIN_2_EPOCH);
+    return duration_cast<WindowsTimeDuration>(Resolution(timeTick) + winTimeToEpochDuration).count();
+}
+#undef WIN_2_EPOCH
 
 template <typename Resolution>
 TickRep fromPlatformTime(int64 platformTick);
+template <typename Resolution>
+int64 toPlatformTime(TickRep timeTick);
 #define SPECIALIZE_FROM_PLATFORM_TIME(TimeResolution) \
 template <> \
-TickRep fromPlatformTime<TimeResolution>(int64 platformTick) { return ::fromPlatformTimeImpl<TimeResolution>(platformTick); }
+TickRep fromPlatformTime<TimeResolution>(int64 platformTick) { return ::fromPlatformTimeImpl<TimeResolution>(platformTick); } \
+template <> \
+int64 toPlatformTime<TimeResolution>(TickRep timeTick) { return ::toPlatformTimeImpl<TimeResolution>(timeTick); }
+
 // std::chrono::microseconds
 SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::microseconds)
 SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::nanoseconds)
+
 #undef SPECIALIZE_FROM_PLATFORM_TIME
 
 LibPointer* WindowsPlatformFunctions::openLibrary(String libName)
@@ -201,24 +220,32 @@ bool WindowsPlatformFunctions::setClipboard(const String& text)
     return true;
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(const uint8& value)
+uint32 WindowsPlatformFunctions::getSetBitCount(uint8 value)
 {
     return uint32(::__popcnt16(uint16(value)));
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(const uint16& value)
+uint32 WindowsPlatformFunctions::getSetBitCount(uint16 value)
 {
     return uint32(::__popcnt16(value));
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(const uint32& value)
+uint32 WindowsPlatformFunctions::getSetBitCount(uint32 value)
 {
     return uint32(::__popcnt(value));
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(const uint64& value)
+uint32 WindowsPlatformFunctions::getSetBitCount(uint64 value)
 {
     return uint32(::__popcnt64(value));
+}
+
+bool WindowsPlatformFunctions::createGUID(CBEGuid& outGuid)
+{
+    // GUID uses unsigned long which is of size 8 in GCC and Clang, Will that be a problem?
+    // MSVC unsigned long is 4 bytes so doing below static assert
+    static_assert(sizeof(GUID) == 16, "GUID is 16byte in current compiler");
+    return ::CoCreateGuid((GUID*)(&outGuid)) == S_OK;
 }
 
 bool WindowsPlatformFunctions::wcharToUtf8(std::string& outStr, const WChar* wChar)
@@ -254,3 +281,47 @@ bool WindowsPlatformFunctions::utf8ToWChar(std::wstring& outStr, const AChar* aC
         return true;
     }
 }
+
+bool WindowsPlatformFunctions::toUpper(WChar* inOutStr)
+{
+    WChar* retVal = ::CharUpperW(inOutStr);
+    return inOutStr == retVal;
+}
+bool WindowsPlatformFunctions::toUpper(AChar* inOutStr)
+{
+    AChar* retVal = ::CharUpperA(inOutStr);
+    return inOutStr == retVal;
+}
+WChar WindowsPlatformFunctions::toUpper(WChar ch)
+{
+    dword processedLen = ::CharUpperBuffW(&ch, 1);
+    return ch;
+}
+AChar WindowsPlatformFunctions::toUpper(AChar ch)
+{
+    dword processedLen = ::CharUpperBuffA(&ch, 1);
+    return ch;
+}
+
+bool WindowsPlatformFunctions::toLower(WChar* inOutStr)
+{
+    WChar* retVal = ::CharLowerW(inOutStr);
+    return inOutStr == retVal;
+}
+bool WindowsPlatformFunctions::toLower(AChar* inOutStr)
+{
+    AChar* retVal = ::CharLowerA(inOutStr);
+    return inOutStr == retVal;
+}
+WChar WindowsPlatformFunctions::toLower(WChar ch)
+{
+    dword processedLen = ::CharLowerBuffW(&ch, 1);
+    // return processedLen == 1;
+    return ch;
+}
+AChar WindowsPlatformFunctions::toLower(AChar ch)
+{
+    dword processedLen = ::CharLowerBuffA(&ch, 1);
+    return ch;
+}
+

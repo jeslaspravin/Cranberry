@@ -12,7 +12,7 @@
 #pragma once
 
 #include "String/String.h"
-#include "Types/Traits/TypeTraits.h"
+#include "Types/Templates/TypeTraits.h"
 #include "Types/Delegates/Delegate.h"
 #include "ProgramCoreExports.h"
 
@@ -52,19 +52,19 @@ concept HasOStreamInsertOverrideMethod = NonStringType<Type> && std::is_compound
 template<typename Type, typename CleanType = std::remove_cvref_t<Type>>
 concept StringOrFundamentalTypes = std::disjunction_v<IsString<Type>, std::is_fundamental<CleanType>>;
 
-template<typename Type>
+template<typename Type, typename StringFormatType>
 concept StringConvertibleIteratorType = NonStringType<Type> 
     && requires(Type && val)
     {
         val.cbegin();
         val.cend();
-        { StringFormat::toString(*val.cbegin()) } -> StringOrFundamentalTypes;
+        { StringFormatType::toString(*val.cbegin()) } -> StringOrFundamentalTypes;
     };
 
-template<typename Type>
+template<typename Type, typename StringFormatType>
 concept HasStringFormatToStringImpl = requires(Type && val)
 {
-    { StringFormat::toString(val) } -> StringOrFundamentalTypes;
+    { StringFormatType::toString(val) } -> StringOrFundamentalTypes;
 };
 
 struct PROGRAMCORE_EXPORT FormatArg
@@ -167,14 +167,14 @@ public:
 
     // toString - To String templates
     template<typename Type> requires HasToStringMethod<Type>
-    FORCE_INLINE CONST_EXPR static String toString(const Type& value)
+    FORCE_INLINE static String toString(const Type& value)
     {
         return value.toString();
     }
 
     // Only std::ostream << type exists
     template<typename Type> requires HasOStreamInsertOverrideMethod<Type>
-    FORCE_INLINE CONST_EXPR static BaseString toString(const Type& value)
+    FORCE_INLINE static BaseString toString(const Type& value)
     {
         OStringStream stream;
         stream << value;
@@ -188,16 +188,17 @@ public:
         return std::forward<Type>(value);
     }
     
-    template<HasStringFormatToStringImpl KeyType, HasStringFormatToStringImpl ValueType>
-    FORCE_INLINE CONST_EXPR static String toString(const std::pair<KeyType, ValueType>& pair)
+    template<typename KeyType, typename ValueType> 
+        requires HasStringFormatToStringImpl<KeyType, StringFormat> && HasStringFormatToStringImpl<ValueType, StringFormat>
+    FORCE_INLINE static String toString(const std::pair<KeyType, ValueType>& pair)
     {
         OStringStream stream;
         stream << TCHAR("{ ") << toString(pair.first) << TCHAR(", ") << toString(pair.second) << TCHAR(" }");
         return stream.str();
     }
 
-    template<StringConvertibleIteratorType IterableType>
-    FORCE_INLINE CONST_EXPR static BaseString toString(IterableType&& iterable)
+    template<typename IterableType> requires StringConvertibleIteratorType<IterableType, StringFormat>
+    FORCE_INLINE static BaseString toString(IterableType&& iterable)
     {
         using Type = UnderlyingType<IterableType>;
 
@@ -226,7 +227,7 @@ private:
 #endif
     // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as well, else r-values gets converted to l-values on this call
     template<typename... Args>
-    DEBUG_INLINE CONST_EXPR static String fmtString(const TChar* fmt, Args&&... args)
+    DEBUG_INLINE static String fmtString(const TChar* fmt, Args&&... args)
     {
         int32 size = STRING_PRINTF(nullptr, 0, fmt, getChar<Args>(std::forward<Args>(args))...);
         String fmted;
@@ -242,7 +243,7 @@ private:
 public:
 
     template<typename FmtType, typename... Args>
-    DEBUG_INLINE CONST_EXPR static String format(FmtType&& fmt, Args&&... args)
+    DEBUG_INLINE static String format(FmtType&& fmt, Args&&... args)
     {
         return fmtString(getChar<FmtType>(std::forward<FmtType>(fmt)), toString<Args>(std::forward<Args>(args))...);
     }

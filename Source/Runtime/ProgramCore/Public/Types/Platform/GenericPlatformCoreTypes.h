@@ -42,6 +42,12 @@ public:
     typedef unsigned short word;
     typedef unsigned long dword;
 
+    // Since we support only 64bit
+    typedef size_t SizeT;
+    typedef int64 SSizeT;
+    typedef uint64 UIntPtr;
+    typedef int64 IntPtr;
+
     // This must be reversed in Big Endian
     typedef union _uint64
     {

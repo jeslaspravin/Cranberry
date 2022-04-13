@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "Types/Traits/TypeTraits.h"
-#include "Types/Traits/ValueTraits.h"
+#include "Types/Templates/TypeTraits.h"
+#include "Types/Templates/ValueTraits.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 #include "Types/HashTypes.h"
@@ -42,11 +42,13 @@ struct ReflectTypeInfo
 {
     std::type_index typeID;
     const ReflectTypeInfo* innerType;
+    SizeT size;// sizeof(Type)
+    uint32 alignment;// alignof(Type)
     uint32 qualifiers;
 
     std::strong_ordering operator<=>(const ReflectTypeInfo& otherTypeInfo) const = default;
 
-    REFLECTIONRUNTIME_EXPORT static const ReflectTypeInfo* createTypeInfo(const std::type_info& cleanTypeInfo, const ReflectTypeInfo* innerTypeInfo, uint32 inQualifiers);
+    REFLECTIONRUNTIME_EXPORT static const ReflectTypeInfo* createTypeInfo(const std::type_info& cleanTypeInfo, const ReflectTypeInfo* innerTypeInfo, SizeT size, uint32 alignment, uint32 inQualifiers);
 };
 
 template <typename Type>
@@ -78,7 +80,20 @@ using CleanType = UnderlyingType<Type>;
 //      , typeInfoFrom<const int32*>() == typeInfoFrom<int32 const* const&>()
 //      , typeInfoFrom<int32 const* const&>() == typeInfoFrom<int32 const* const&&>()
 //  );
-// 
+//
+
+template <typename Type>
+struct TypeSizeAndAlignment
+{
+    static SizeT sizeOf() { return sizeof(Type); }
+    static uint32 alignOf() { return alignof(Type); }
+};
+template <typename  T> requires std::is_void_v<T>
+struct TypeSizeAndAlignment<T>
+{
+    static SizeT sizeOf() { return 0; }
+    static uint32 alignOf() { return 0; }
+};
 template <typename Type>
 FORCE_INLINE const ReflectTypeInfo* typeInfoFrom()
 {
@@ -90,7 +105,9 @@ FORCE_INLINE const ReflectTypeInfo* typeInfoFrom()
     static const ReflectTypeInfo* TYPE_INFO = ReflectTypeInfo::createTypeInfo
     (
         typeid(CleanType<Type>),
-        (std::is_same_v<Type, InnerType>? nullptr : typeInfoFrom<InnerType>()),
+        (std::is_same_v<Type, InnerType> ? nullptr : typeInfoFrom<InnerType>()),
+        TypeSizeAndAlignment<Type>::sizeOf(),
+        TypeSizeAndAlignment<Type>::alignOf(),
         {
             ConditionalValue_v<uint32, uint32, std::is_lvalue_reference<Type>, EReflectTypeQualifiers::LReference, 0>
             | ConditionalValue_v<uint32, uint32, std::is_rvalue_reference<Type>, EReflectTypeQualifiers::RReference, 0>
@@ -115,19 +132,21 @@ FORCE_INLINE std::vector<const ReflectTypeInfo*> typeInfoListFrom()
 }
 
 #define REFLECTTYPEQUALIFIER_STR(QualifierEnum) \
-    << (BIT_SET(str.qualifiers, EReflectTypeQualifiers::##QualifierEnum##) ? TCHAR(" "#QualifierEnum) : TCHAR(""))
+    << (BIT_SET(ti.qualifiers, EReflectTypeQualifiers::##QualifierEnum##) ? TCHAR(" "#QualifierEnum) : TCHAR(""))
 // Logger overrides
-FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const ReflectTypeInfo& str)
+FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const ReflectTypeInfo& ti)
 {
-    stream << TCHAR("Type info[0x") << std::hex << &str << std::dec << TCHAR("]");
-    stream << TCHAR("[Name:") << str.typeID.name() << TCHAR(", ");
-    stream << TCHAR("Hash : ") << str.typeID.hash_code() << TCHAR(", ");
+    stream << TCHAR("Type info[0x") << std::hex << &ti << std::dec << TCHAR("]");
+    stream << TCHAR("[Name:") << ti.typeID.name() << TCHAR(", ");
+    stream << TCHAR("Hash : ") << ti.typeID.hash_code() << TCHAR(", ");
+    stream << TCHAR("Size : ") << ti.size << TCHAR(", ");
+    stream << TCHAR("Alignment : ") << ti.alignment << TCHAR(", ");
     stream << TCHAR("Qualifiers :(")
         FOREACH_REFLECTTYPEQUALIFIER(REFLECTTYPEQUALIFIER_STR)
         << TCHAR(" )");
-    if(str.innerType)
+    if(ti.innerType)
     {
-        stream << TCHAR(", Inner type : ") << *str.innerType;
+        stream << TCHAR(", Inner type : ") << *ti.innerType;
     }
     stream << TCHAR("]");
     return stream;
@@ -140,6 +159,7 @@ struct std::hash<ReflectTypeInfo>
     NODISCARD size_t operator()(const ReflectTypeInfo& keyval) const noexcept 
     {
         size_t hashSeed = 0;
+        // we do not have to hash size and alignment as they are just info variables
         HashUtility::hashAllInto(hashSeed, keyval.typeID, keyval.innerType, keyval.qualifiers);
         return hashSeed;
     }

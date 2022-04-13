@@ -14,6 +14,18 @@ struct HEADER_FILE_ID
 {
     using ThisType = HEADER_FILE_ID;
     HEADER_FILE_ID();
+
+    // Destructor for all ClassProperties
+    template <typename ClassType>
+    static void COMBINE(HEADER_FILE_ID, _DTor)(void* ptr)
+    {
+        CtorPolicyHelper::destructObject<typename COMBINE(ClassType::, CONSTRUCTION_POLICY_TYPEDEF_NAME), ClassType>(ptr);
+    }
+    template <typename ClassType>
+    static void* COMBINE(HEADER_FILE_ID, _AllocFunc)()
+    {
+        return CtorPolicyHelper::allocateObject<typename COMBINE(ClassType::, CONSTRUCTION_POLICY_TYPEDEF_NAME), ClassType>();
+    }
     
     {{#AllRegisterTypes}}
     static {{PropertyTypeName}}* create_{{SanitizedName}}();{{^NoInit}}
@@ -22,13 +34,13 @@ struct HEADER_FILE_ID
     
     {{#Classes}}{{^IsAbstract}}
     template <typename... Args>
-    static {{TypeName}}* {{SanitizedName}}_CTor(Args&&... args);{{/IsAbstract}}{{/Classes}}
+    static {{TypeName}}* {{SanitizedName}}_CTor(void* ptr, Args&&... args);{{/IsAbstract}}{{/Classes}}
 } COMBINE(HEADER_FILE_ID, _autoinit);
 
 HEADER_FILE_ID::HEADER_FILE_ID()
 {
     {{#AllRegisterTypes}}
-    IReflectionRuntimeModule::{{RegisterFunctionName}}(TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>()
+    IReflectionRuntimeModule::{{RegisterFunctionName}}(STRID("{{TypeName}}"), typeInfoFrom<{{TypeName}}>()
         , { &ThisType::create_{{SanitizedName}}{{^NoInit}}, &ThisType::init_{{SanitizedName}}{{/NoInit}} }
     );
     {{/AllRegisterTypes}}
@@ -37,7 +49,7 @@ HEADER_FILE_ID::HEADER_FILE_ID()
 {{#QualifiedTypes}}
 BaseProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 {
-    return new QualifiedProperty(TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
+    return new QualifiedProperty(STRID("{{TypeName}}"), TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(BaseProperty* typeProperty)
 {
@@ -49,7 +61,7 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(BaseProperty* typeProperty)
 {{#PairTypes}}
 BaseProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 {
-    return new PairProperty(TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
+    return new PairProperty(STRID("{{TypeName}}"), TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(BaseProperty* typeProperty)
 {
@@ -63,55 +75,61 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(BaseProperty* typeProperty)
 {{#ContainerTypes}}
 BaseProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 {
-    return new ContainerPropertyImpl<{{TypeName}}>(TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
+    return new ContainerPropertyImpl<{{TypeName}}>(STRID("{{TypeName}}"), TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(BaseProperty* typeProperty)
 {
+    using ReflectType = {{TypeName}};
+    using ValueType = {{TypeName}}::value_type;
     ContainerPropertyImpl<{{TypeName}}>* prop = static_cast<ContainerPropertyImpl<{{TypeName}}>*>(typeProperty);
-    prop->setElementProperty(IReflectionRuntimeModule::getType<{{TypeName}}::value_type>());
+    prop->setElementProperty(IReflectionRuntimeModule::getType<ValueType>());
     prop->constructDataRetriever<ContainerRetrieverImpl<{{TypeName}}>>();
+    CONTAINERTYPE_VALIDATIONS(ReflectType, ValueType);
 }
 {{/ContainerTypes}}
 
 {{#MapTypes}}
 BaseProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 {
-    return new MapProperty(TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
+    return new MapProperty(STRID("{{TypeName}}"), TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(BaseProperty* typeProperty)
 {
+    using ReflectType = {{TypeName}};
+    using KeyType = {{TypeName}}::key_type;
+    using ValueType = {{TypeName}}::mapped_type;
     MapProperty* prop = static_cast<MapProperty*>(typeProperty);
     prop->setElementProperty(IReflectionRuntimeModule::getType<{{TypeName}}::value_type>());
-    prop->setKeyProperty(IReflectionRuntimeModule::getType<{{TypeName}}::key_type>());
-    prop->setValueProperty(IReflectionRuntimeModule::getType<{{TypeName}}::mapped_type>());
+    prop->setKeyValueProperties(IReflectionRuntimeModule::getType<KeyType>(), IReflectionRuntimeModule::getType<ValueType>());
     prop->constructDataRetriever<MapDataRetrieverImpl<{{TypeName}}>>();
+    MAPTYPE_VALIDATIONS(ReflectType, KeyType, ValueType);
 }
 {{/MapTypes}}
 
 {{#EnumTypes}}
 EnumProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 {
-    return new EnumProperty(TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>(), {{CanUseAsFlags}});
+    return new EnumProperty(STRID("{{TypeName}}"), TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>(), {{CanUseAsFlags}});
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(EnumProperty* typeProperty)
 {
     typeProperty->setPropertyMetaData({ {{TypeMetaData}} }, {{TypeMetaFlags}});
 {{!Now the Enum's section context contains context for enum fields}}
-{{#EnumFields}}    typeProperty->addEnumField(TCHAR("{{EnumFieldName}}"), {{EnumFieldValue}}, {{EnumFieldMetaFlags}}, { {{EnumFieldMetaData}} });
+{{#EnumFields}}    typeProperty->addEnumField(STRID("{{EnumFieldName}}"), TCHAR("{{EnumFieldName}}"), {{EnumFieldValue}}, {{EnumFieldMetaFlags}}, { {{EnumFieldMetaData}} });
 {{/EnumFields}}    
 }
 {{/EnumTypes}}
 
 {{#Classes}}{{^IsAbstract}}
 template <typename... Args>
-static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(Args&&... args)
+static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(void* ptr, Args&&... args)
 {
-    return new {{TypeName}}(std::forward<Args>(args)...);
+    return CtorPolicyHelper::constructObject<typename COMBINE({{TypeName}}::, CONSTRUCTION_POLICY_TYPEDEF_NAME), {{TypeName}}, Args...>(ptr, std::forward<Args>(args)...);
 }{{/IsAbstract}}
 
 ClassProperty* HEADER_FILE_ID::create_{{SanitizedName}}()
 {
-    return new ClassProperty(TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
+    return new ClassProperty(STRID("{{TypeName}}"), TCHAR("{{TypeName}}"), typeInfoFrom<{{TypeName}}>());
 }
 void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
 {
@@ -122,38 +140,45 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
 {{^IsAbstract}}{{#Ctors}}
     typeProperty->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
-                ->addFunctionParamProperty(TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
+                ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
                 ->setPropertyMetaData({ {{CtorMetaData}} }, {{CtorMetaFlags}})
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}}*, {{ParamsList}}>>(&ThisType::{{SanitizedName}}_CTor<{{ParamsList}}>);
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}} *, void *{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&ThisType::{{SanitizedName}}_CTor<{{ParamsList}}>);{{!Section ParamList is used to skip `,` in template ParamList}}
 {{/Ctors}}{{^Ctors}}{{!If no ctors then just create default ctor}}
     typeProperty->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::Public)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}}*>>(&ThisType::{{SanitizedName}}_CTor<>);
-{{/Ctors}}{{/IsAbstract}}{{#MemberFuncs}}
-    typeProperty->addMemberFunc(TCHAR("{{FunctionName}}"))
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}} *, void *>>(&ThisType::{{SanitizedName}}_CTor<>);
+{{/Ctors}}
+    typeProperty->constructDtorPtr()
+                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void>())
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<void, void *>>(&ThisType::COMBINE(HEADER_FILE_ID, _DTor)<{{TypeName}}>);
+    typeProperty->constructAllocFuncPtr()
+                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void *>())
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<void *>>(&ThisType::COMBINE(HEADER_FILE_ID, _AllocFunc)<{{TypeName}}>);
+{{/IsAbstract}}{{#MemberFuncs}}
+    typeProperty->addMemberFunc(STRID("{{FunctionName}}"), TCHAR("{{FunctionName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
-                ->addFunctionParamProperty(TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
+                ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{ReturnTypeName}}>())
                 ->setPropertyMetaData({ {{FuncMetaData}} }, {{FuncMetaFlags}})
-                ->constructFuncPointer<MemberFunctionWrapperImpl<{{#FuncConst}}const {{/FuncConst}}{{TypeName}}, {{ReturnTypeName}}, {{ParamsList}}>>(&{{TypeName}}::{{FunctionName}});
+                ->constructFuncPointer<MemberFunctionWrapperImpl<{{#FuncConst}}const {{/FuncConst}}{{TypeName}}, {{ReturnTypeName}}{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&{{TypeName}}::{{FunctionName}});{{!Section ParamList is used to skip `,` in template ParamList}}
 {{/MemberFuncs}}{{#StaticFuncs}}
-    typeProperty->addStaticFunc(TCHAR("{{FunctionName}}"))
+    typeProperty->addStaticFunc(STRID("{{FunctionName}}"), TCHAR("{{FunctionName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
-                ->addFunctionParamProperty(TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
+                ->addFunctionParamProperty(STRID("{{ParamName}}"), TCHAR("{{ParamName}}"), IReflectionRuntimeModule::getType<{{ParamTypeName}}>()){{/ParamsListContext}}
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{ReturnTypeName}}>())
                 ->setPropertyMetaData({ {{FuncMetaData}} }, {{FuncMetaFlags}})
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{ReturnTypeName}}, {{ParamsList}}>>(&{{TypeName}}::{{FunctionName}});
+                ->constructFuncPointer<GlobalFunctionWrapperImpl<{{ReturnTypeName}}{{#ParamsList}}, {{ParamsList}}{{/ParamsList}}>>(&{{TypeName}}::{{FunctionName}});{{!Section ParamList is used to skip `,` in template ParamList}}
 {{/StaticFuncs}}
 {{#MemberFields}}
-    typeProperty->addMemberField(TCHAR("{{FieldName}}"))
+    typeProperty->addMemberField(STRID("{{FieldName}}"), TCHAR("{{FieldName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}})
                 ->setField(IReflectionRuntimeModule::getType<{{FieldTypeName}}>())
                 ->setPropertyMetaData({ {{FieldMetaData}} }, {{FieldMetaFlags}})
                 ->constructFieldPtr<MemberFieldWrapperImpl<{{TypeName}}, {{FieldTypeName}}>>(&{{TypeName}}::{{FieldName}});
 {{/MemberFields}}{{#StaticFields}}
-    typeProperty->addStaticField(TCHAR("{{FieldName}}"))
+    typeProperty->addStaticField(STRID("{{FieldName}}"), TCHAR("{{FieldName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}})
                 ->setField(IReflectionRuntimeModule::getType<{{FieldTypeName}}>())
                 ->setPropertyMetaData({ {{FieldMetaData}} }, {{FieldMetaFlags}})

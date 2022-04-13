@@ -13,7 +13,7 @@
 
 #include "Math/CoreMathTypedefs.h"
 #include "Types/CoreDefines.h"
-#include "Types/Traits/TypeTraits.h"
+#include "Types/Templates/TypeTraits.h"
 #include "ProgramCoreExports.h"
 
 #include <glm/common.hpp>
@@ -107,13 +107,11 @@ private:
 
     // Non math helpers
 
-    template <typename Type>
     FORCE_INLINE static bool isEqual(const Type& a, const Type& b, Type epsilon)
     {
         return abs(a - b) <= epsilon;
     }
 
-    template <typename Type>
     FORCE_INLINE static bool isFinite(const Type& value)
     {
         return IS_FINITE(value);
@@ -183,7 +181,6 @@ private:
         a.isSame(b, epsilon);
     }
 
-    template <typename Type>
     FORCE_INLINE static bool isFinite(const Type& value)
     {
         return value.isFinite();
@@ -372,7 +369,7 @@ public:
     static float random();
     
     template <std::unsigned_integral Type>
-    static bool isPowOf2(Type value)
+    CONST_EXPR static bool isPowOf2(Type value)
     {
         return ((value - 1) & value) == 0;
     }
@@ -389,16 +386,26 @@ public:
         return Math::pow(2u, Type(Math::floor(Math::log2(value))));
     }
     template <std::unsigned_integral Type>
-    static Type alignBy2(Type value)
+    CONST_EXPR static Type alignBy2(Type value)
     {
         return (value + 1u) & ~1u;
     }
-    // AlignVal has to be a power of 2
-    template <std::unsigned_integral Type>
-    static Type alignBy(Type value, Type alignVal)
+    // AlignVal has to be a power of 2, Undefined behavior if not power of 2
+    template <std::unsigned_integral Type1, std::unsigned_integral Type2, typename Type = std::common_type_t<Type1, Type2>>
+    CONST_EXPR static Type alignByUnsafe(Type1 value, Type2 alignVal)
+    {
+        return ((Type)value + (Type)alignVal - 1) & ~((Type)alignVal - 1);
+    }
+    template <std::unsigned_integral Type1, std::unsigned_integral Type2, typename Type = std::common_type_t<Type1, Type2>>
+    static Type alignBy(Type1 value, Type2 alignVal)
     {
         Type roundedToPow2 = toHigherPowOf2(alignVal);
-        return (value + roundedToPow2 - 1) & ~(roundedToPow2 - 1);
+        return alignByUnsafe(value, roundedToPow2);
+    }
+    template <std::unsigned_integral Type1, std::unsigned_integral Type2, typename Type = std::common_type_t<Type1, Type2>>
+    CONST_EXPR static bool isAligned(Type1 value, Type2 alignVal)
+    {
+        return ((Type)value & ((Type)alignVal - 1)) == 0;
     }
 
     template <std::integral Type>

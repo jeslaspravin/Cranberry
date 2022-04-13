@@ -31,13 +31,25 @@ public:
     static String getClipboard();
     static bool setClipboard(const String& text);
 
-    static uint32 getSetBitCount(const uint8& value);
-    static uint32 getSetBitCount(const uint16& value);
-    static uint32 getSetBitCount(const uint32& value);
-    static uint32 getSetBitCount(const uint64& value);
+    static uint32 getSetBitCount(uint8 value);
+    static uint32 getSetBitCount(uint16 value);
+    static uint32 getSetBitCount(uint32 value);
+    static uint32 getSetBitCount(uint64 value);
+
+    static bool createGUID(CBEGuid& outGuid);
 
     static bool wcharToUtf8(std::string& outStr, const WChar* wChar);
     static bool utf8ToWChar(std::wstring& outStr, const AChar* aChar);
+
+    static bool toUpper(AChar* inOutStr);
+    static bool toUpper(WChar* inOutStr);
+    static AChar toUpper(AChar ch);
+    static WChar toUpper(WChar ch);
+
+    static bool toLower(AChar* inOutStr);
+    static bool toLower(WChar* inOutStr);
+    static AChar toLower(AChar ch);
+    static WChar toLower(WChar ch);
 };
 
 namespace GPlatformFunctions 

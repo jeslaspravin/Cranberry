@@ -12,10 +12,22 @@
 #include "Parser/ParserHelper.h"
 #include "Parser/ClangWrappers.h"
 #include "ReflectionMacros.h"
+#include "Property/PropertyHelper.h"
 #include "String/StringRegex.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/CompilerDefines.h"
 
+COMPILER_PRAGMA(COMPILER_PUSH_WARNING)
+COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_MISMATCHED_NEW_DELETE))
+COMPILER_PRAGMA(COMPILER_PUSH_WARNING)
+COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_IMPLICIT_DESTRUCTOR_DELETE))
+
+#include <clang/AST/DeclCXX.h>
+#include <llvm/Support/Casting.h>
+
+COMPILER_PRAGMA(COMPILER_POP_WARNING)
+COMPILER_PRAGMA(COMPILER_POP_WARNING)
 
 String ParserHelper::getNonConstTypeName(CXType clangType, CXCursor typeRefCursor)
 {
@@ -196,8 +208,60 @@ bool ParserHelper::isSpecializedType(CXType clangType, CXCursor typeRefCursor)
 bool ParserHelper::isCustomType(CXType clangType, CXCursor typeRefCursor)
 {
     String checkTypeName = getNonConstTypeName(clangType, typeRefCursor);
-    return FOR_EACH_CUSTOM_TYPES_UNIQUE_FIRST_LAST(CHECK_TYPE_FIRST, CHECK_TYPE, CHECK_TYPE);
+
+    auto checkMapSetType = [](CXType clangType)
+    {
+        CXCursor cursor = clang_getTypeDeclaration(clang_getCanonicalType(clangType));
+        return isBuiltinType(clangType)
+            || isSpecializedType(clangType, cursor)
+            || (clangType.kind == CXTypeKind::CXType_Pointer && isValidFieldType(clangType, cursor)) // Support pointer types
+            || (clangType.kind == CXTypeKind::CXType_Record 
+                && (clang_getCursorKind(cursor) == CXCursor_StructDecl 
+                    || clang_getCursorKind(cursor) == CXCursor_ClassDecl 
+                    || clang_getCursorKind(cursor) == CXCursor_ClassTemplate)
+                && isReflectedClass(cursor)); // Support reflected types
+    };
+
+    if (FOR_EACH_MAP_SET_TYPES(CHECK_TYPE_FIRST, CHECK_TYPE, CHECK_TYPE))
+    {
+        CXType keyType;
+        bool bIsValid;
+        if (PropertyHelper::isSetType(checkTypeName))
+        {
+            bIsValid = getContainerElementType(keyType, clangType, typeRefCursor);
+        }
+        else
+        {
+            CXType valType;
+            bIsValid = getMapElementTypes(keyType, valType, clangType, typeRefCursor);
+        }
+        CXCursor keyCursor = clang_getTypeDeclaration(clang_getCanonicalType(keyType));
+        String keyTypeName = getNonConstTypeName(keyType, keyCursor);
+        if (PropertyHelper::isPairType(keyTypeName))
+        {
+            CXType firstType, secType;
+            bIsValid = bIsValid 
+                && getPairElementTypes(firstType, secType, keyType, keyCursor) 
+                && checkMapSetType(firstType) 
+                && checkMapSetType(secType);
+        }
+        else
+        {
+            bIsValid = bIsValid && checkMapSetType(keyType);
+        }
+
+        if (!bIsValid)
+        {
+            LOG_ERROR("ParserHelper", "%s() : Key type %s is not acceptable for reflected fields type %s", __func__, keyTypeName, checkTypeName);
+        }
+        return bIsValid;
+    }
+    else
+    {
+        return FOR_EACH_CUSTOM_TYPES_UNIQUE_FIRST_LAST(CHECK_TYPE_FIRST, CHECK_TYPE, CHECK_TYPE);
+    }
 }
+
 #undef CHECK_TYPE
 #undef CHECK_TYPE_FIRST
 
@@ -256,6 +320,30 @@ bool ParserHelper::isReflectedClass(CXCursor declCursor)
     return bHasAnnotationAndGenCode[0] && bHasAnnotationAndGenCode[1];
 }
 
+bool ParserHelper::hasOverridenCtorPolicy(CXCursor declCursor)
+{
+    if (!clang_isDeclaration(clang_getCursorKind(declCursor)))
+    {
+        return false;
+    }
+
+    bool bHasOverridenCtorPolicy = false;
+    clang_visitChildren(declCursor,
+        [](CXCursor c, CXCursor p, CXClientData clientData)
+        {
+            bool& bValid = *(bool*)(clientData);
+            CXCursorKind cursorKind = clang_getCursorKind(c);
+            // If generated type alias/typedef decl is present
+            if (cursorKind == CXCursor_TypeAliasDecl || cursorKind == CXCursor_TypedefDecl)
+            {
+                bValid = (CXStringWrapper(clang_getCursorSpelling(c)).toString() == TCHAR(MACRO_TO_STRING(OVERRIDEN_CONSTRUCTION_POLICY_ALIAS)));
+            }
+            return CXChildVisit_Continue;
+        }
+    , &bHasOverridenCtorPolicy);
+    return bHasOverridenCtorPolicy;
+}
+
 CXCursor ParserHelper::getGeneratedCodeCursor(CXCursor declCursor)
 {
     CXCursor generatedCodeCursor = clang_getNullCursor();
@@ -305,7 +393,7 @@ bool ParserHelper::getMapElementTypes(CXType& outKeyType, CXType& outValueType, 
     String mapName = getNonConstTypeName(mapType, mapTypeRefCursor);
     CXType referredType = getTypeReferred(mapType, mapTypeRefCursor);
     
-    if (!(mapName.startsWith(TCHAR("std::map")) || mapName.startsWith(TCHAR("std::unordered_map"))))
+    if (!PropertyHelper::isMapType(mapName))
     {
         return false;
     }
@@ -324,7 +412,7 @@ bool ParserHelper::getPairElementTypes(CXType& outKeyType, CXType& outValueType,
     String pairName = getNonConstTypeName(pairType, pairTypeRefCursor);
     CXType referredType = getTypeReferred(pairType, pairTypeRefCursor);
 
-    if (!pairName.startsWith(TCHAR("std::pair")))
+    if (!PropertyHelper::isPairType(pairName))
     {
         return false;
     }
@@ -342,7 +430,7 @@ bool ParserHelper::getContainerElementType(CXType& outType, CXType containerType
     String typeName = getNonConstTypeName(containerType, typeRefCursor);
     CXType referredType = getTypeReferred(containerType, typeRefCursor);
 
-    if (!(typeName.startsWith(TCHAR("std::set")) || typeName.startsWith(TCHAR("std::unordered_set")) || typeName.startsWith(TCHAR("std::vector"))))
+    if (!(PropertyHelper::isSetType(typeName) || PropertyHelper::isArrayType(typeName)))
     {
         return false;
     }
@@ -527,4 +615,46 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
         }
     }
     return bIsValid;
+}
+
+//////////////////////////////////////////////////////////////////////////
+/// Must be in Clang impl codes
+//////////////////////////////////////////////////////////////////////////
+
+
+
+bool ParserHelper::clang_CXXMethod_isUserProvided(CXCursor funcCursor)
+{
+    // We skip template functions here as it cannot be defaulted or deleted and also we are not supporting it yet
+    if (!clang_isDeclaration(funcCursor.kind) && clang_getCursorKind(funcCursor) != CXCursor_FunctionTemplate)
+        return 0;
+
+    using namespace clang;
+
+    // const Decl* D = cxcursor::getCursorDecl(funcCursor); This function shows that Cursor.data[0] as decl type 
+    // From clang_CXXMethod_isDefaulted implementation
+    const Decl* decl = static_cast<const Decl*>(funcCursor.data[0]);
+    // We do not have to getAsFunction() since no template
+    //const CXXMethodDecl* methodDecl =
+    //    decl ? dyn_cast_or_null<CXXMethodDecl>(decl->getAsFunction()) : nullptr;
+    const CXXMethodDecl* methodDecl = decl ? static_cast<const CXXMethodDecl*>(decl) : nullptr;
+    return (methodDecl && methodDecl->isUserProvided()) ? 1 : 0;
+}
+
+bool ParserHelper::clang_CXXMethod_isDeleted(CXCursor funcCursor)
+{
+    // We skip template functions here as it cannot be defaulted or deleted and also we are not supporting it yet
+    if (!clang_isDeclaration(funcCursor.kind) && clang_getCursorKind(funcCursor) != CXCursor_FunctionTemplate)
+        return 0;
+
+    using namespace clang;
+
+    // const Decl* D = cxcursor::getCursorDecl(funcCursor); This function shows that Cursor.data[0] as decl type 
+    // From clang_CXXMethod_isDefaulted implementation
+    const Decl* decl = static_cast<const Decl*>(funcCursor.data[0]);
+    // We do not have to getAsFunction() since no template
+    //const CXXMethodDecl* methodDecl =
+    //    decl ? dyn_cast_or_null<CXXMethodDecl>(decl->getAsFunction()) : nullptr;
+    const CXXMethodDecl* methodDecl = decl ? static_cast<const CXXMethodDecl*>(decl) : nullptr;
+    return (methodDecl && methodDecl->isDeleted()) ? 1 : 0;
 }

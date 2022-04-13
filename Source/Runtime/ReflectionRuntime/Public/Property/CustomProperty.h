@@ -44,7 +44,7 @@ class REFLECTIONRUNTIME_EXPORT CustomProperty : public TypedProperty
 public:
     const PropertyDataRetriever* dataRetriever;
 public:
-    CustomProperty(const String& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo);
+    CustomProperty(const StringID& propNameID, const String& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo);
     ~CustomProperty();
 
     template <typename ConstructType, typename... CTorArgs>
@@ -113,8 +113,8 @@ public:
     const BaseProperty* valueProp;
 
 public:
-    PairProperty(const String& propName, const ReflectTypeInfo* propTypeInfo)
-        : CustomProperty(propName, EPropertyType::PairType, propTypeInfo)
+    PairProperty(const StringID& propNameID, const String& propName, const ReflectTypeInfo* propTypeInfo)
+        : CustomProperty(propNameID, propName, EPropertyType::PairType, propTypeInfo)
     {}
 
     FORCE_INLINE PairProperty* setFirstProperty(const BaseProperty* firstProperty)
@@ -152,6 +152,18 @@ public:
     // Creates a Iterator for the provided object. From the beginning
     // Do not take hold of the returned reference for persistent use as underlying iterator lifetime is not managed
     virtual IteratorElementWrapperRef createIterator(void* object) const = 0;
+    // Add and remove operations for editing, value editing can be done on iterator itself
+    virtual bool add(void* object, const void* data) const = 0;
+    virtual bool remove(void* object, const void* data) const = 0;
+    // For indexable iterators only
+    virtual bool removeAt(void* object, SizeT idx) const = 0;
+    virtual SizeT size(const void* object) const = 0;
+
+    // Helper functions to helper with editing
+    // Copied data useful for cases like map or set as they are restricted by const key
+    virtual void copyTo(const void* data, void* toData) const = 0;
+    // Equals only const part which will be key_type/value_type based on container
+    virtual bool equals(const void* lhs, const void* rhs) const = 0;
 };
 
 // std::map, std::unordered_map
@@ -161,6 +173,7 @@ public:
     virtual const void* key() const = 0;
     virtual void* value() const = 0;
 };
+using MapIteratorWrapperRef = ReferenceCountPtr<MapIteratorWrapper>;
 
 template <typename MapType, typename IteratorType = MapType::iterator>
 class MapIteratorWrapperImpl : public MapIteratorWrapper
@@ -217,6 +230,44 @@ public:
     {
         return IteratorElementWrapperRef(new MapIteratorWrapperImpl<MapType>((MapType*)(object)));
     }
+
+    bool add(void* object, const void* data) const override
+    {
+        MapType* container = reinterpret_cast<MapType*>(object);
+        auto result = container->insert(*reinterpret_cast<const MapType::value_type*>(data));
+        return result.second;
+    }
+
+    bool remove(void* object, const void* data) const override
+    {
+        MapType* container = reinterpret_cast<MapType*>(object);
+        auto itr = container->find(*reinterpret_cast<const MapType::key_type*>(data));
+        if (itr != container->end())
+        {
+            container->erase(itr);
+            return true;
+        }
+        return false;
+    }
+
+    bool removeAt(void* object, SizeT idx) const override
+    {
+        return false;
+    }
+
+    SizeT size(const void* object) const override
+    {
+        return reinterpret_cast<const MapType*>(object)->size();
+    }
+
+    void copyTo(const void* data, void* toData) const override
+    {
+        new (toData)MapType::value_type(*reinterpret_cast<const MapType::value_type*>(data));
+    }
+    bool equals(const void* lhs, const void* rhs) const
+    {
+        return (*reinterpret_cast<const MapType::key_type*>(lhs)) == (*reinterpret_cast<const MapType::key_type*>(rhs));
+    }
 };
 
 class REFLECTIONRUNTIME_EXPORT MapProperty final : public CustomProperty
@@ -227,20 +278,25 @@ public:
     // Will be std::pair<const KeyType, ValueType>
     // Element prop will be nullptr unless the type is reflected in function parameters or reflected field
     const BaseProperty* elementProp;
+    uint32 pairSize;
+    uint32 pairAlignment;
+    uint32 secondOffset;
 public:
-    MapProperty(const String& propName, const ReflectTypeInfo* propTypeInfo)
-        : CustomProperty(propName, EPropertyType::MapType, propTypeInfo)
+    MapProperty(const StringID& propNameID, const String& propName, const ReflectTypeInfo* propTypeInfo)
+        : CustomProperty(propNameID, propName, EPropertyType::MapType, propTypeInfo)
     {}
 
-    FORCE_INLINE MapProperty* setKeyProperty(const BaseProperty* keyProperty)
+    FORCE_INLINE MapProperty* setKeyValueProperties(const BaseProperty* keyProperty, const BaseProperty* valueProperty)
     {
         keyProp = keyProperty;
-        return this;
-    }
-
-    FORCE_INLINE MapProperty* setValueProperty(const BaseProperty* valueProperty)
-    {
         valueProp = valueProperty;
+
+        const TypedProperty* kProp = static_cast<const TypedProperty*>(keyProp);
+        const TypedProperty* vProp = static_cast<const TypedProperty*>(valueProp);
+        pairAlignment = Math::max(kProp->typeInfo->alignment, vProp->typeInfo->alignment);
+        pairSize = secondOffset = Math::alignByUnsafe(kProp->typeInfo->size, vProp->typeInfo->alignment);
+        pairSize = Math::alignByUnsafe(pairSize + vProp->typeInfo->size, pairAlignment);
+
         return this;
     }
 
@@ -274,7 +330,7 @@ public:
     /* IteratorElementWrapper overrides */
     void* getElement() const override
     {
-        if CONST_EXPR (std::is_const_v<UnderlyingTypeWithConst<ContainerType::iterator::reference>>)
+        if CONST_EXPR (std::is_const_v<std::remove_reference_t<ContainerType::iterator::reference>>)
         {
             return nullptr;
         }
@@ -347,25 +403,116 @@ public:
     /* Override ends */
 };
 
-// If indexable then we create indexable iterator
 template <typename ContainerType>
-class ContainerRetrieverImpl : public IterateableDataRetriever
+class ContainerRetrieverImpl;
+
+// If indexable then we create indexable iterator
+template <Indexable ContainerType>
+class ContainerRetrieverImpl<ContainerType> : public IterateableDataRetriever
 {
-private:
-    static IteratorElementWrapperRef createIteratorImpl(void* object)
-        requires Indexable<ContainerType>
-    {
-        return IteratorElementWrapperRef(new IndexableContainerIteratorWrapperImpl<ContainerType>((ContainerType*)(object)));
-    }
-    static IteratorElementWrapperRef createIteratorImpl(void* object) 
-        requires (!Indexable<ContainerType>)
-    {
-        return IteratorElementWrapperRef(new ContainerIteratorWrapperImpl<ContainerType>((ContainerType*)(object)));
-    }
 public:
     IteratorElementWrapperRef createIterator(void* object) const override
     {
-        return createIteratorImpl(object);
+        return IteratorElementWrapperRef(new IndexableContainerIteratorWrapperImpl<ContainerType>((ContainerType*)(object)));
+    }
+
+    bool add(void* object, const void* data) const override
+    {
+        ContainerType* container = reinterpret_cast<ContainerType*>(object);
+        container->emplace_back(*reinterpret_cast<const ContainerType::value_type*>(data));
+        return true;
+    }
+
+    bool remove(void* object, const void* data) const override
+    {
+        ContainerType* container = reinterpret_cast<ContainerType*>(object);
+        if CONST_EXPR(std::equality_comparable<ContainerType::value_type>)
+        {
+            auto itr = std::find(container->begin(), container->end(), *reinterpret_cast<const ContainerType::value_type*>(data));
+            if (itr != container->end())
+            {
+                container->erase(itr);
+                return true;
+            }
+        }
+        alertIf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
+        return false;
+    }
+
+    bool removeAt(void* object, SizeT idx) const override
+    {
+        ContainerType* container = reinterpret_cast<ContainerType*>(object);
+        debugAssert(container && container->size() > idx);
+        container->erase(container->begin() + idx);
+        return true;
+    }
+
+    SizeT size(const void* object) const override
+    {
+        return reinterpret_cast<const ContainerType*>(object)->size();
+    }
+
+    void copyTo(const void* data, void* toData) const override
+    {
+        new (toData)ContainerType::value_type(*reinterpret_cast<const ContainerType::value_type*>(data));
+    }
+    bool equals(const void* lhs, const void* rhs) const
+    {
+        if CONST_EXPR(std::equality_comparable<ContainerType::value_type>)
+        {
+            return (*reinterpret_cast<const ContainerType::value_type*>(lhs)) == (*reinterpret_cast<const ContainerType::value_type*>(rhs));
+        }
+        alertIf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
+        return false;
+    }
+};
+
+// For set/unrodered_set
+template <typename ContainerType> requires (!Indexable<ContainerType>)
+class ContainerRetrieverImpl<ContainerType> : public IterateableDataRetriever
+{
+public:
+    IteratorElementWrapperRef createIterator(void* object) const override
+    {
+        return IteratorElementWrapperRef(new ContainerIteratorWrapperImpl<ContainerType>((ContainerType*)(object)));
+    }
+
+    bool add(void* object, const void* data) const override
+    {
+        ContainerType* container = reinterpret_cast<ContainerType*>(object);
+        auto result = container->insert(*reinterpret_cast<const ContainerType::value_type*>(data));
+        return result.second;
+    }
+
+    bool remove(void* object, const void* data) const override
+    {
+        ContainerType* container = reinterpret_cast<ContainerType*>(object);
+        auto itr = container->find(*reinterpret_cast<const ContainerType::value_type*>(data));
+        if (itr != container->end())
+        {
+            container->erase(itr);
+            return true;
+        }
+        return false;
+    }
+
+    bool removeAt(void* object, SizeT idx) const override
+    {
+        return false;
+    }
+
+    SizeT size(const void* object) const override
+    {
+        return reinterpret_cast<const ContainerType*>(object)->size();
+    }
+
+    void copyTo(const void* data, void* toData) const override
+    {
+        new (toData)ContainerType::value_type(*reinterpret_cast<const ContainerType::value_type*>(data));
+    }
+    bool equals(const void* lhs, const void* rhs) const
+    {
+        return (*reinterpret_cast<const ContainerType::value_type*>(lhs)) == (*reinterpret_cast<const ContainerType::value_type*>(rhs));
     }
 };
 
@@ -374,8 +521,8 @@ class REFLECTIONRUNTIME_EXPORT ContainerProperty : public CustomProperty
 public:
     const BaseProperty* elementProp;
 public:
-    ContainerProperty(const String& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo)
-        : CustomProperty(propName, propType, propTypeInfo)
+    ContainerProperty(const StringID& propNameID, const String& propName, EPropertyType propType, const ReflectTypeInfo* propTypeInfo)
+        : CustomProperty(propNameID, propName, propType, propTypeInfo)
     {}
 
     FORCE_INLINE ContainerProperty* setElementProperty(const BaseProperty* elementProperty)

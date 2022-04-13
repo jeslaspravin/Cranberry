@@ -12,6 +12,11 @@
 #pragma once
 #include "String/String.h"
 #include "ReflectionRuntimeExports.h"
+#include "IReflectionRuntime.h"
+#include "Types/FunctionTypes.h"
+#include "Property/Property.h"
+
+class ClassProperty;
 
 #define VALID_SYMBOL_REGEX_PATTERN TCHAR("^[a-zA-Z_]{1}[a-zA-Z0-9_]*")
 class REFLECTIONRUNTIME_EXPORT PropertyHelper
@@ -34,4 +39,38 @@ public:
     static String getValidSymbolName(const String& inValue);
     static bool isValidSymbolName(const String& inValue);
     static bool isValidFunctionCall(const String& inValue);
+
+    FORCE_INLINE static bool isMapType(const String& typeName) { return typeName.startsWith(TCHAR("std::map")) || typeName.startsWith(TCHAR("std::unordered_map")); }
+    FORCE_INLINE static bool isPairType(const String& typeName) { return typeName.startsWith(TCHAR("std::pair")); }
+    FORCE_INLINE static bool isSetType(const String& typeName) { return typeName.startsWith(TCHAR("std::set")) || typeName.startsWith(TCHAR("std::unordered_set")); }
+    FORCE_INLINE static bool isArrayType(const String& typeName) { return typeName.startsWith(TCHAR("std::vector")); }
+
+    template <typename ChildType, typename ParentType>
+    FORCE_INLINE static bool isChildOf()
+    {
+        IReflectionRuntimeModule* rtti = IReflectionRuntimeModule::get();
+        const ClassProperty* childClassProp = rtti->getClassType(typeInfoFrom<ChildType>());
+        const ClassProperty* parentClassProp = rtti->getClassType(typeInfoFrom<ParentType>());
+        return isChildOf(childClassProp, parentClassProp);
+    }
+    static bool isChildOf(const ClassProperty* childClassProp, const ClassProperty* parentClassProp);
+    static bool isStruct(const ClassProperty* classProp);
+
+    template <typename ClassType, typename... CtorArgs>
+    FORCE_INLINE static const GlobalFunctionWrapper* findMatchingCtor()
+    {
+        return findMatchingCtor<CtorArgs...>(IReflectionRuntimeModule::getClassType<ClassType>());
+    }
+    template <typename... CtorArgs>
+    static const GlobalFunctionWrapper* findMatchingCtor(const ClassProperty* clazz)
+    {
+        for (const FunctionProperty* ctor : clazz->constructors)
+        {
+            if (ctor->funcPtr->isSameArgsType<CtorArgs...>())
+            {
+                return static_cast<const GlobalFunctionWrapper*>(ctor->funcPtr);
+            }
+        }
+        return nullptr;
+    }
 };

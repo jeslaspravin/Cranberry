@@ -24,10 +24,26 @@ struct LocalContext
     MustacheContext* parentRegisterContext = nullptr;
     // Cursors that are in same child level but are not handled needs to be handled separately
     std::vector<CXCursor> unhandledSibilings;
+
     void* pNext = nullptr;
 };
 
+struct ClassParseContext
+{
+    bool bHasConstructor = false;
+};
+
 void visitTUCusor(CXCursor cursor, SourceGeneratorContext* srcGenContext);
+
+template <typename FmtType, typename... Args>
+void parseFailed(CXCursor cursor, SourceGeneratorContext* srcGenContext, const TChar* funcName, FmtType&& fmtMsg, Args&&... args)
+{
+    // Just push and pop debug here to enable log level
+    SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
+    LOG("SourceGenerator", "%s ERROR %s() : Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName
+        , StringFormat::format(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...));
+    srcGenContext->bGenerated = false;
+}
 
 template <StringLiteral MetaDataTag, StringLiteral MetaFlagsTag>
 FORCE_INLINE void setTypeMetaInfo(MustacheContext& typeContext, const std::vector<String>& metaData, const std::vector<String>& metaFlags)
@@ -94,7 +110,7 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::ENUMPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERENUMFACTORY_FUNC;
 
-    setTypeMetaInfo<decltype(GeneratorConsts::TYPEMETADATA_TAG)::Literal, decltype(GeneratorConsts::TYPEMETAFLAGS_TAG)::Literal>(enumCntxt, metaData, metaFlags);
+    setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(enumCntxt, metaData, metaFlags);
     enumCntxt.args[GeneratorConsts::TYPENAME_TAG] = enumTypeName;
     enumCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
@@ -130,8 +146,7 @@ void visitEnums(CXCursor cursor, SourceGeneratorContext* srcGenContext)
                 MustacheContext& enumConstContext = localCntxt->parentContext->sectionContexts[GeneratorConsts::ENUMFIELDS_SECTION_TAG].emplace_back();
                 enumConstContext.args[GeneratorConsts::ENUMFIELDNAME_TAG] = cursorName;
                 enumConstContext.args[GeneratorConsts::ENUMFIELDVALUE_TAG] = enumVal;
-                setTypeMetaInfo<decltype(GeneratorConsts::ENUMFIELDMETADATA_TAG)::Literal
-                    , decltype(GeneratorConsts::ENUMFIELDMETAFLAGS_TAG)::Literal>
+                setTypeMetaInfo<GeneratorConsts::ENUMFIELDMETADATA_TAG.Literal, GeneratorConsts::ENUMFIELDMETAFLAGS_TAG.Literal>
                     (enumConstContext, enumConstMetaData, enumConstMetaFlags);
 
                 // Check and set if can be used as flags, Only if each enum const value has one flag set and it does not overlap with any other flags it can be used as flags
@@ -170,8 +185,8 @@ void visitMemberField(CXCursor cursor, LocalContext& localCntxt)
 
     if (!ParserHelper::isValidFieldType(fieldType, cursor))
     {
-        LOG("SourceGenerator", "%s ERROR %s() : Invalid member field %s", clang_getCursorLocation(cursor), __func__, fieldName);
-        localCntxt.srcGenContext->bGenerated = false;
+        parseFailed(cursor, localCntxt.srcGenContext, __func__
+            , TCHAR("Invalid member field %s"), fieldName);
         return;
     }
 
@@ -186,7 +201,7 @@ void visitMemberField(CXCursor cursor, LocalContext& localCntxt)
     MustacheContext& context = (clang_getCursorKind(cursor) == CXCursor_FieldDecl)
         ? localCntxt.parentContext->sectionContexts[GeneratorConsts::MEMBERFIELDS_SECTION_TAG].emplace_back()
         : localCntxt.parentContext->sectionContexts[GeneratorConsts::STATICFIELDS_SECTION_TAG].emplace_back();
-    setTypeMetaInfo<decltype(GeneratorConsts::FIELDMETADATA_TAG)::Literal, decltype(GeneratorConsts::FIELDMETAFLAGS_TAG)::Literal>(context, metaData, metaFlags);
+    setTypeMetaInfo<GeneratorConsts::FIELDMETADATA_TAG.Literal, GeneratorConsts::FIELDMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
     context.args[GeneratorConsts::FIELDNAME_TAG] = fieldName;
     context.args[GeneratorConsts::FIELDTYPENAME_TAG] = typeName;
     context.args[GeneratorConsts::ACCESSSPECIFIER_TAG] = ParserHelper::accessSpecifierName(cursor);
@@ -204,8 +219,17 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext& localCntxt)
 
     if (!ParserHelper::isValidFunction(cursor))
     {
-        LOG("SourceGenerator", "%s ERROR %s() : Invalid function %s", clang_getCursorLocation(cursor), __func__, funcName);
-        localCntxt.srcGenContext->bGenerated = false;
+        parseFailed(cursor, localCntxt.srcGenContext, __func__
+            , TCHAR("Invalid function %s"), funcName);
+        return;
+    }
+
+    // This is the condition to allow setting up class/struct data before invoking constructor
+    // Default constructors always zero the data before invoking
+    if (clang_CXXMethod_isDefaulted(cursor))
+    {
+        parseFailed(cursor, localCntxt.srcGenContext, __func__
+            , TCHAR("Default functions/Constructors are not allowed for reflected types %s"), funcName);
         return;
     }
 
@@ -235,8 +259,13 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext& localCntxt)
     if (clang_getCursorKind(cursor) == CXCursor_Constructor)
     {
         MustacheContext& context = localCntxt.parentContext->sectionContexts[GeneratorConsts::CONSTRUCTORS_SECTION_TAG].emplace_back();
-        setTypeMetaInfo<decltype(GeneratorConsts::CONSTRUCTORMETADATA_TAG)::Literal, decltype(GeneratorConsts::CONSTRUCTORMETAFLAGS_TAG)::Literal>(context, metaData, metaFlags);
-
+        setTypeMetaInfo<GeneratorConsts::CONSTRUCTORMETADATA_TAG.Literal, GeneratorConsts::CONSTRUCTORMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
+        // For now only class has any valid next pointer, If struct also needs it then we must handle it differently
+        if (localCntxt.pNext != nullptr)
+        {
+            ClassParseContext* classCntx = (ClassParseContext*)localCntxt.pNext;
+            classCntx->bHasConstructor = true;
+        }
         contextPtr = &context;
     }
     else
@@ -252,7 +281,7 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext& localCntxt)
         MustacheContext& context = (bIsStatic)
             ? localCntxt.parentContext->sectionContexts[GeneratorConsts::STATICFUNCS_SECTION_TAG].emplace_back()
             : localCntxt.parentContext->sectionContexts[GeneratorConsts::MEMBERFUNCS_SECTION_TAG].emplace_back();
-        setTypeMetaInfo<decltype(GeneratorConsts::FUNCMETADATA_TAG)::Literal, decltype(GeneratorConsts::FUNCMETAFLAGS_TAG)::Literal>(context, metaData, metaFlags);
+        setTypeMetaInfo<GeneratorConsts::FUNCMETADATA_TAG.Literal, GeneratorConsts::FUNCMETAFLAGS_TAG.Literal>(context, metaData, metaFlags);
         context.args[GeneratorConsts::FUNCTIONNAME_TAG] = funcName;
         context.args[GeneratorConsts::FUNCCONST_BRANCH_TAG] = bIsConst;
         context.args[GeneratorConsts::RETURNTYPENAME_TAG] = returnTypeName;
@@ -283,8 +312,8 @@ void visitClassMember(CXCursor cursor, LocalContext& localCntxt)
         CXCursor baseClass = clang_getTypeDeclaration(clang_getCursorType(cursor));
         if (clang_Cursor_isNull(baseClass))
         {
-            LOG("SourceGenerator", "%s ERROR %s() : Cannot find declaration of base class %s", clang_getCursorLocation(baseClass), __func__, cursorName);
-            localCntxt.srcGenContext->bGenerated = false;
+            parseFailed(cursor, localCntxt.srcGenContext, __func__
+                , TCHAR("Cannot find declaration of base class %s"), cursorName);
         }
         else if (ParserHelper::isReflectedClass(baseClass))
         {
@@ -300,6 +329,7 @@ void visitClassMember(CXCursor cursor, LocalContext& localCntxt)
         break;
     case CXCursor_Constructor:
     case CXCursor_CXXMethod:
+    case CXCursor_FunctionTemplate:
         // All member functions including static member functions
         visitMemberCppMethods(cursor, localCntxt);
         break;
@@ -325,38 +355,43 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     ParserHelper::parseClassMeta(metaFlags, metaData, buildFlags, classMetaStr);
 
     // Why getting from canonical type? Because it gives name with all the scopes prefixed. We do not have to handle parent namespace or types
-    const String structTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
-    const String sanitizedTypeName = PropertyHelper::getValidSymbolName(structTypeName);
+    const String structCanonicalTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
+    const String structTypeName = CXStringWrapper(clang_getCursorSpelling(cursor)).toString();
+    const String sanitizedTypeName = PropertyHelper::getValidSymbolName(structCanonicalTypeName);
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
     uint32 genCodesLineNum = 0;
     clang_getFileLocation(generatedCodesSrcLoc, nullptr, &genCodesLineNum, nullptr, nullptr);
     bool bIsAbstract = !!clang_CXXRecord_isAbstract(cursor);
+    const bool bNoExport = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend();
+    const bool bHasOverridenCtorPolicy = ParserHelper::hasOverridenCtorPolicy(cursor);
 
     // Setup header context
     headerReflectTypeCntxt.args[GeneratorConsts::ISCLASS_BRANCH_TAG] = false;
-    headerReflectTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = structTypeName;
+    headerReflectTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
+    headerReflectTypeCntxt.args[GeneratorConsts::SIMPLE_TYPENAME_TAG] = structTypeName;
     headerReflectTypeCntxt.args[GeneratorConsts::LINENUMBER_TAG] = genCodesLineNum;
     headerReflectTypeCntxt.args[GeneratorConsts::ISBASETYPE_BRANCH_TAG] = true;// We do not support inheritance in struct
+    headerReflectTypeCntxt.args[GeneratorConsts::DEFINECTORPOLICY_BRANCH_TAG] = !bHasOverridenCtorPolicy;
     // If class is explicitly mark NoExport then do not export
-    headerReflectTypeCntxt.args[GeneratorConsts::NOEXPORT_BRANCH_TAG] = (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend());
+    headerReflectTypeCntxt.args[GeneratorConsts::NOEXPORT_BRANCH_TAG] = bNoExport;
 
     // Setup source contexts
-    allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = structTypeName;
+    allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERSTRUCTFACTORY_FUNC;
 
-    setTypeMetaInfo<decltype(GeneratorConsts::TYPEMETADATA_TAG)::Literal, decltype(GeneratorConsts::TYPEMETAFLAGS_TAG)::Literal>(structCntxt, metaData, metaFlags);
+    setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(structCntxt, metaData, metaFlags);
     structCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
-    structCntxt.args[GeneratorConsts::TYPENAME_TAG] = structTypeName;
+    structCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
     structCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
 
     // Now fill members
     
     // Class and Struct have constructor and they return there own pointers so we generate class/struct pointer even when not used anywhere yet
-    const String structPtrTypeName = structTypeName + TCHAR(" *");
+    const String structPtrTypeName = structCanonicalTypeName + TCHAR(" *");
     const String structPtrSanitizedName = PropertyHelper::getValidSymbolName(structPtrTypeName);
     if (!srcGenContext->addedSymbols.contains(structPtrSanitizedName))
     {
@@ -400,51 +435,60 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext* srcGenContext)
     std::vector<String> metaFlags, metaData, buildFlags;
     ParserHelper::parseClassMeta(metaFlags, metaData, buildFlags, classMetaStr);
 
-    const String classTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
-    const String sanitizedTypeName = PropertyHelper::getValidSymbolName(classTypeName);
+    const String classCanonicalTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();
+    const String classTypeName = CXStringWrapper(clang_getCursorSpelling(cursor)).toString();
+    const String sanitizedTypeName = PropertyHelper::getValidSymbolName(classCanonicalTypeName);
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
     uint32 genCodesLineNum = 0;
     clang_getFileLocation(generatedCodesSrcLoc, nullptr, &genCodesLineNum, nullptr, nullptr);
-    bool bIsAbstract = !!clang_CXXRecord_isAbstract(cursor);
+    const bool bIsAbstract = !!clang_CXXRecord_isAbstract(cursor);
+    const bool bIsBaseType = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::BASETYPE_FLAG.toString()) != buildFlags.cend();
+    const bool bNoExport = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend();
+    const bool bHasOverridenCtorPolicy = ParserHelper::hasOverridenCtorPolicy(cursor);
 
     // Setup header context
     headerReflectTypeCntxt.args[GeneratorConsts::ISCLASS_BRANCH_TAG] = true;
-    headerReflectTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = classTypeName;
+    headerReflectTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;
+    headerReflectTypeCntxt.args[GeneratorConsts::SIMPLE_TYPENAME_TAG] = classTypeName;
     headerReflectTypeCntxt.args[GeneratorConsts::LINENUMBER_TAG] = genCodesLineNum;
-    headerReflectTypeCntxt.args[GeneratorConsts::ISBASETYPE_BRANCH_TAG] = (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::BASETYPE_FLAG.toString()) != buildFlags.cend());
+    headerReflectTypeCntxt.args[GeneratorConsts::ISBASETYPE_BRANCH_TAG] = bIsBaseType;
+    headerReflectTypeCntxt.args[GeneratorConsts::DEFINECTORPOLICY_BRANCH_TAG] = !bHasOverridenCtorPolicy;
     // If class is explicitly mark NoExport then do not export
-    headerReflectTypeCntxt.args[GeneratorConsts::NOEXPORT_BRANCH_TAG] = (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend());
+    headerReflectTypeCntxt.args[GeneratorConsts::NOEXPORT_BRANCH_TAG] = bNoExport;
 
     // Setup source contexts
-    allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = classTypeName;
+    allRegisterdTypeCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
     allRegisterdTypeCntxt.args[GeneratorConsts::NOINIT_BRANCH_TAG] = false;
     allRegisterdTypeCntxt.args[GeneratorConsts::PROPERTYTYPENAME_TAG] = GeneratorConsts::CLASSPROPERTY;
     allRegisterdTypeCntxt.args[GeneratorConsts::REGISTERFUNCNAME_TAG] = GeneratorConsts::REGISTERCLASSFACTORY_FUNC;
 
-    setTypeMetaInfo<decltype(GeneratorConsts::TYPEMETADATA_TAG)::Literal, decltype(GeneratorConsts::TYPEMETAFLAGS_TAG)::Literal>(classCntxt, metaData, metaFlags);
+    setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(classCntxt, metaData, metaFlags);
     classCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
-    classCntxt.args[GeneratorConsts::TYPENAME_TAG] = classTypeName;
+    classCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;
     classCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
 
     // Now fill members
 
     // Class and Struct have constructor and they return there own pointers so we generate class/struct pointer even when not used anywhere yet
-    const String classPtrTypeName = classTypeName + TCHAR(" *");
+    const String classPtrTypeName = classCanonicalTypeName + TCHAR(" *");
     const String classPtrSanitizedName = PropertyHelper::getValidSymbolName(classPtrTypeName);
     if (!srcGenContext->addedSymbols.contains(classPtrSanitizedName))
     {
         addQualifiedType(classPtrTypeName, classPtrSanitizedName, srcGenContext);
     }
 
+    ClassParseContext classParseCntx;
     LocalContext classLocalCtx
     {
         .srcGenContext = srcGenContext,
         .parentContext = &classCntxt,
-        .parentRegisterContext = &allRegisterdTypeCntxt
+        .parentRegisterContext = &allRegisterdTypeCntxt,
+        .pNext = &classParseCntx
     };
 
+    // Visit all members
     clang_visitChildren(cursor,
         [](CXCursor c, CXCursor p, CXClientData clientData)
         {
@@ -452,6 +496,8 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext* srcGenContext)
             return CXChildVisit_Continue;
         }
     , &classLocalCtx);
+
+    headerReflectTypeCntxt.args[GeneratorConsts::IFGENERATECTOR_BRANCH_TAG] = !classParseCntx.bHasConstructor;
 
     for (CXCursor c : classLocalCtx.unhandledSibilings)
     {
@@ -593,8 +639,8 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext* srcGenContext)
         }
         else
         {
-            LOG("SourceGenerator", "%s ERROR %s() : Type %s declaration is not reflected", clang_getCursorLocation(typeDecl), __func__, clang_getTypeSpelling(referredType));
-            srcGenContext->bGenerated = false;
+            parseFailed(typeDecl, srcGenContext, __func__
+                , TCHAR("Type %s declaration is not reflected"), clang_getTypeSpelling(referredType));
             return;
         }
     }

@@ -11,7 +11,7 @@
 
 #pragma once
 #include "Types/CoreDefines.h"
-#include "Types/Traits/TypeTraits.h"
+#include "Types/Templates/TypeTraits.h"
 
 template <class T>
 concept SeedType = std::is_same_v<std::remove_cvref_t<T>, size_t>;
