@@ -317,6 +317,9 @@ bool ProgramCmdLine::printHelp() const
 
 void ProgramCmdLine::printCommandLine() const
 {
+    // Remove mute in this scope if log is muted
+    SCOPED_MUTE_LOG_SEVERITIES(0);
+
     String appName;
     FileSystemFunctions::applicationDirectory(appName);
 
