@@ -36,6 +36,6 @@ public:
     // return true if file is actually newer
     bool isTargetOutdated(const String& absPath, const std::vector<String>& outputFiles) const;
     bool updateNewerFile(const String& absPath, const std::vector<String>& outputFiles);
-    // clears files not present in this list from tracked entry
-    void intersectFiles(const std::vector<String>& srcfilePaths);
+    // clears files not present in this list from tracked entry, and returns list of removed files
+    std::vector<String> filterIntersects(const std::vector<String>& srcfilePaths);
 };

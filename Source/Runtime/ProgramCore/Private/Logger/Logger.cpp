@@ -10,6 +10,7 @@
  */
 
 #include "Logger/Logger.h"
+#include "CmdLine/CmdLine.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
 #if LOG_TO_CONSOLE
@@ -26,25 +27,59 @@ OStringStream& Logger::loggerBuffer()
     return buffer;
 }
 
+struct LogFileDeleter
+{
+    void operator()(GenericFile* filePtr) const noexcept
+    {
+        Logger::flushStream();
+        filePtr->closeFile();
+        delete filePtr;
+    }
+};
+using LogFileUniquePtr = UniquePtr<GenericFile, LogFileDeleter>;
+
 GenericFile* Logger::getLogFile()
 {
-    static UniquePtr<GenericFile> logFile;
+    static LogFileUniquePtr logFile;
 
     if (!logFile)
     {
         String logFileName;
-        String logFilePath = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
+        String logFolderPath = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
+        if (ProgramCmdLine::get()->hasArg(TCHAR("--logFileName")))
+        {
+            ProgramCmdLine::get()->getArg(logFileName, TCHAR("--logFileName"));
+        }
+
         logFileName = PathFunctions::stripExtension(logFileName);
-        PlatformFile checkFile{ logFilePath.append(logFileName).append(TCHAR(".log")) };
+        String logFilePath = PathFunctions::combinePath(logFolderPath, logFileName + TCHAR(".log"));
+        PlatformFile checkFile{ logFilePath };
 
         if (checkFile.exists()) 
         {
             uint64 lastWrite = checkFile.lastWriteTimeStamp();
-            logFilePath = checkFile.getFullPath();
-            checkFile.renameFile(logFileName.append(TCHAR("-")).append(String::toString(lastWrite)).append(TCHAR(".log")));
+            String renameTo = StringFormat::format(TCHAR("%s-%llu.log"), logFileName, lastWrite);
+            checkFile.renameFile(renameTo);
+
+            // Remove or clear old logs
+            std::vector<String> oldLogFiles = FileSystemFunctions::listFiles(logFolderPath, false, logFileName + TCHAR("-*.log"));
+            if (oldLogFiles.size() > 10)
+            {
+                for (String& oldFile : oldLogFiles)
+                {
+                    oldFile = PathFunctions::fileOrDirectoryName(oldFile);
+                }
+                std::sort(oldLogFiles.begin(), oldLogFiles.end(), std::greater{});
+
+                for (uint32 i = 10; i < oldLogFiles.size(); ++i)
+                {
+                    PlatformFile(PathFunctions::combinePath(logFolderPath, oldLogFiles[i])).deleteFile();
+                }
+            }
+
         }
 
-        logFile = UniquePtr<GenericFile>(new PlatformFile(logFilePath));
+        logFile = LogFileUniquePtr(new PlatformFile(logFilePath));
         logFile->setFileFlags(EFileFlags::OpenAlways | EFileFlags::Write);
         logFile->setSharingMode(EFileSharing::ReadOnly);
         logFile->setAttributes(EFileAdditionalFlags::Normal);
@@ -147,7 +182,7 @@ void Logger::flushStream()
     if (!str.empty() && logFile)
     {
         std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
-        logFile->write(ArrayView<uint8>(reinterpret_cast<uint8*>(utf8str.data()), uint32(utf8str.length())));
+        logFile->write(ArrayView<const uint8>(reinterpret_cast<uint8*>(utf8str.data()), uint32(utf8str.length())));
         loggerBuffer().str({});
     }
 }

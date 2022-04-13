@@ -53,6 +53,36 @@ bool FileHelper::isUtf32BEBom(const std::vector<uint8>& byteStream)
         && byteStream[2] == 0xFE && byteStream[3] == 0xFF);
 }
 
+// #TODO(Jeslas) : Replace this with compiler intrinsics if available
+uint16 FileHelper::bytesSwap(uint16 value)
+{
+    return (value << 8) | (value >> 8);
+}
+
+uint32 FileHelper::bytesSwap(uint32 value)
+{
+    return (value >> 24) | ((value >> 8) & 0x0000FF00u) | ((value << 8) & 0x00FF0000u) | (value << 24);
+}
+
+uint64 FileHelper::bytesSwap(uint64 value)
+{
+    // Similar to merge sort, first swap smallest components then work your way up
+    value = ((value >> 8) & 0x00FF00FF00FF00FFull) | ((value << 8) & 0xFF00FF00FF00FF00ull);
+    value = ((value >> 16) & 0x0000FFFF0000FFFFull) | ((value << 16) & 0xFFFF0000FFFF0000ull);
+    return (value >> 32) | (value << 32);
+}
+
+void FileHelper::bytesSwap(void* ptr, SizeT length)
+{
+    uint8* bytePtr = (uint8*)ptr;
+    SizeT front = 0;
+    SizeT back = length - 1;
+    while (front < back)
+    {
+        std::swap(bytePtr[front++], bytePtr[back--]);
+    }
+}
+
 bool FileHelper::readString(String& outStr, const String& fileName)
 {
     std::vector<uint8> bytes;
@@ -72,58 +102,56 @@ bool FileHelper::readString(String& outStr, const String& fileName)
 
     if (isUtf16LEBom(bytes))
     {
+#if BIG_ENDIAN
         // If endian do not match swap it
-        if (GPlatformConfigs::PLATFORM_ENDIAN.isBigEndian())
+        for (uint64 i = 0; i < bytes.size(); i += 2)
         {
-            for (uint64 i = 0; i < bytes.size(); i += 2)
-            {
-                std::swap(bytes[i], bytes[i + 1]);
-            }
+            uint16& charRef = *(uint16*)(&bytes[i]);
+            charRef = bytesSwap(charRef);
         }
+#endif
         // Insert 2 null terminated characters
         bytes.insert(bytes.end(), 2, 0);
         outStr = UTF16_TO_TCHAR(&bytes[2]);
     }
     else if (isUtf16BEBom(bytes))
     {
+#if LITTLE_ENDIAN
         // If endian do not match swap it
-        if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
+        for (uint64 i = 0; i < bytes.size(); i += 2)
         {
-            for (uint64 i = 0; i < bytes.size(); i += 2)
-            {
-                std::swap(bytes[i], bytes[i + 1]);
-            }
+            uint16& charRef = *(uint16*)(&bytes[i]);
+            charRef = bytesSwap(charRef);
         }
+#endif
         // Insert 2 null terminated characters
         bytes.insert(bytes.end(), 2, 0);
         outStr = UTF16_TO_TCHAR(&bytes[2]);
     } 
     else if (isUtf32LEBom(bytes)) // Who wants to store in utf32? Right? rightttt?
     {
+#if BIG_ENDIAN
         // If endian do not match swap it
-        if (GPlatformConfigs::PLATFORM_ENDIAN.isBigEndian())
+        for (uint64 i = 0; i < bytes.size(); i += 4)
         {
-            for (uint64 i = 0; i < bytes.size(); i += 4)
-            {
-                std::swap(bytes[i], bytes[i + 3]);
-                std::swap(bytes[i + 1], bytes[i + 2]);
-            }
+            uint32& charRef = *(uint32*)(&bytes[i]);
+            charRef = bytesSwap(charRef);
         }
+#endif
         // Insert 4 null terminated characters
         bytes.insert(bytes.end(), 4, 0);
         outStr = UTF32_TO_TCHAR(&bytes[4]);
     }
-    else if (isUtf32LEBom(bytes)) // Again really?
+    else if (isUtf32BEBom(bytes)) // Again really?
     {
+#if LITTLE_ENDIAN
         // If endian do not match swap it
-        if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
+        for (uint64 i = 0; i < bytes.size(); i += 4)
         {
-            for (uint64 i = 0; i < bytes.size(); i += 4)
-            {
-                std::swap(bytes[i], bytes[i + 3]);
-                std::swap(bytes[i + 1], bytes[i + 2]);
-            }
+            uint32& charRef = *(uint32*)(&bytes[i]);
+            charRef = bytesSwap(charRef);
         }
+#endif
         // Insert 4 null terminated characters
         bytes.insert(bytes.end(), 4, 0);
         outStr = UTF32_TO_TCHAR(&bytes[4]);
@@ -156,52 +184,50 @@ bool FileHelper::readUtf8String(std::string& outStr, const String& fileName)
 
     if (isUtf16LEBom(bytes))
     {
+#if BIG_ENDIAN
         // If endian do not match swap it
-        if (GPlatformConfigs::PLATFORM_ENDIAN.isBigEndian())
+        for (uint64 i = 0; i < bytes.size(); i += 2)
         {
-            for (uint64 i = 0; i < bytes.size(); i += 2)
-            {
-                std::swap(bytes[i], bytes[i + 1]);
-            }
+            uint16& charRef = *(uint16*)(&bytes[i]);
+            charRef = bytesSwap(charRef);
         }
+#endif
         outStr = UTF16_TO_UTF8(&bytes[2]);
     }
     else if (isUtf16BEBom(bytes))
     {
+#if LITTLE_ENDIAN
         // If endian do not match swap it
-        if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
+        for (uint64 i = 0; i < bytes.size(); i += 2)
         {
-            for (uint64 i = 0; i < bytes.size(); i += 2)
-            {
-                std::swap(bytes[i], bytes[i + 1]);
-            }
+            uint16& charRef = *(uint16*)(&bytes[i]);
+            charRef = bytesSwap(charRef);
         }
+#endif
         outStr = UTF16_TO_UTF8(&bytes[2]);
     }
     else if (isUtf32LEBom(bytes)) // Who wants to store in utf32? Right? rightttt?
     {
+#if BIG_ENDIAN
         // If endian do not match swap it
-        if (GPlatformConfigs::PLATFORM_ENDIAN.isBigEndian())
+        for (uint64 i = 0; i < bytes.size(); i += 4)
         {
-            for (uint64 i = 0; i < bytes.size(); i += 4)
-            {
-                std::swap(bytes[i], bytes[i + 3]);
-                std::swap(bytes[i + 1], bytes[i + 2]);
-            }
+            uint32& charRef = *(uint32*)(&bytes[i]);
+            charRef = bytesSwap(charRef);
         }
+#endif
         outStr = UTF32_TO_UTF8(&bytes[4]);
     }
-    else if (isUtf32LEBom(bytes)) // Again really?
+    else if (isUtf32BEBom(bytes)) // Again really?
     {
+#if LITTLE_ENDIAN
         // If endian do not match swap it
-        if (GPlatformConfigs::PLATFORM_ENDIAN.isLittleEndian())
+        for (uint64 i = 0; i < bytes.size(); i += 4)
         {
-            for (uint64 i = 0; i < bytes.size(); i += 4)
-            {
-                std::swap(bytes[i], bytes[i + 3]);
-                std::swap(bytes[i + 1], bytes[i + 2]);
-            }
+            uint32& charRef = *(uint32*)(&bytes[i]);
+            charRef = bytesSwap(charRef);
         }
+#endif
         outStr = UTF32_TO_UTF8(&bytes[4]);
     }
     else
@@ -236,7 +262,7 @@ bool FileHelper::writeString(const String& content, const String& fileName)
     file.setFileFlags(EFileFlags::Write);
     if (file.openOrCreate())
     {
-        file.write(ArrayView<uint8>(reinterpret_cast<uint8*>(utf8Str.data()), utf8Str.size()));
+        file.write(ArrayView<const uint8>(reinterpret_cast<uint8*>(utf8Str.data()), utf8Str.size()));
         file.closeFile();
         return true;
     }
@@ -251,9 +277,25 @@ bool FileHelper::writeBytes(std::vector<uint8>& bytes, const String& fileName)
     file.setFileFlags(EFileFlags::Write);
     if (file.openOrCreate())
     {
-        file.write(ArrayView<uint8>(bytes.data(), bytes.size()));
+        file.write(ArrayView<const uint8>(bytes.data(), bytes.size()));
         file.closeFile();
         return true;
     }
     return false;
+}
+
+bool FileHelper::touchFile(const String& fileName)
+{
+    PlatformFile file(fileName);
+    file.setSharingMode(EFileSharing::ReadOnly);
+    file.setCreationAction(EFileFlags::OpenAlways);
+    file.setFileFlags(EFileFlags::Write);
+
+    bool bSuccess = false;
+    if (file.openOrCreate())
+    {
+         bSuccess = file.setLastWriteTimeStamp(Time::clockTimeNow());
+         file.closeFile();
+    }
+    return bSuccess;
 }

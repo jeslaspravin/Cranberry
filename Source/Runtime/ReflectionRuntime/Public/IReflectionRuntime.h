@@ -21,7 +21,7 @@ struct ReflectTypeInfo;
 class ClassProperty;
 class EnumProperty;
 class BaseProperty;
-class String;
+class StringID;
 class TypedProperty;
 class PropertyMetaDataBase;
 
@@ -92,15 +92,15 @@ class REFLECTIONRUNTIME_EXPORT IReflectionRuntimeModule : public IModuleBase
 public:
     virtual const ClassProperty* getStructType(const ReflectTypeInfo* typeInfo) = 0;
     // Name must be none const plain struct name including namespace and outer class/struct, separated by ::(eg., Namespace1::Class1::structName)
-    virtual const ClassProperty* getStructType(const String& structName) = 0;
+    virtual const ClassProperty* getStructType(const StringID& structName) = 0;
 
     virtual const ClassProperty* getClassType(const ReflectTypeInfo* typeInfo) = 0;
     // Name must be none const plain struct name including namespace and outer class/struct, separated by ::(eg., Namespace1::Class1::structName)
-    virtual const ClassProperty* getClassType(const String& className) = 0;
+    virtual const ClassProperty* getClassType(const StringID& className) = 0;
 
     virtual const EnumProperty* getEnumType(const ReflectTypeInfo* typeInfo) = 0;
     // Name must be none const plain struct name including namespace and outer class/struct, separated by ::(eg., Namespace1::Class1::structName)
-    virtual const EnumProperty* getEnumType(const String& enumName) = 0;
+    virtual const EnumProperty* getEnumType(const StringID& enumName) = 0;
 
     // Any types other than Struct, Class, Enum. This also accounts for const, reference and pointer in type so const int32 is different from int32 and each has its own property 
     virtual const BaseProperty* getType(const ReflectTypeInfo* typeInfo) = 0;
@@ -111,12 +111,12 @@ public:
     virtual uint64 getPropertyMetaFlags(const BaseProperty* prop) const = 0;
 
     static IReflectionRuntimeModule* get();
-    static void registerClassFactory(const String& className, const ReflectTypeInfo* classTypeInfo, const ClassPropertyFactoryCell& factoryCell);
-    static void registerStructFactory(const String& structName, const ReflectTypeInfo* structTypeInfo, const ClassPropertyFactoryCell& factoryCell);
-    static void registerEnumFactory(const String& enumName, const ReflectTypeInfo* enumTypeInfo, const EnumPropertyFactoryCell& factoryCell);
+    static void registerClassFactory(const StringID& className, const ReflectTypeInfo* classTypeInfo, const ClassPropertyFactoryCell& factoryCell);
+    static void registerStructFactory(const StringID& structName, const ReflectTypeInfo* structTypeInfo, const ClassPropertyFactoryCell& factoryCell);
+    static void registerEnumFactory(const StringID& enumName, const ReflectTypeInfo* enumTypeInfo, const EnumPropertyFactoryCell& factoryCell);
     static void registerTypeFactory(const ReflectTypeInfo* typeInfo, const TypedPropertyFactoryCell& factoryCell);
     // Just a function to have same register signature as other factor register functions
-    FORCE_INLINE static void registerTypeFactory(const String& typeName, const ReflectTypeInfo* typeInfo, const TypedPropertyFactoryCell& factoryCell)
+    FORCE_INLINE static void registerTypeFactory(const StringID& typeName, const ReflectTypeInfo* typeInfo, const TypedPropertyFactoryCell& factoryCell)
     {
         registerTypeFactory(typeInfo, factoryCell);
     }

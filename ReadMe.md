@@ -19,4 +19,6 @@ Licenses for third party packages used is placed under `Licenses` folder
 * **`glm`**
 * **`tinyObjloader`**
 * **`stb`**
-* **`LLVM`**(**`CLang`**)
+* **`LLVM`**(**`CLang`**) CMake configs generated required some manual tweaking in LLVM project to support Debug,Development and Release config
+* **`mimalloc`** CMake configs generated required some manual tweaking in mimalloc project to support Debug,Development and Release config
+* **`xxHash`**(Embedded into the project)

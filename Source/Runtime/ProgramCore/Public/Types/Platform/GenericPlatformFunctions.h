@@ -14,6 +14,8 @@
 #include "String/String.h"
 #include "Types/Platform/GenericPlatformTypes.h"
 
+struct CBEGuid;
+
 template <typename PlatformClass>
 class GenericPlatformFunctions
 {
@@ -78,13 +80,58 @@ public:
     }
 
     // Utilities 
-
-    template<typename UnsignedType>
-    static std::enable_if_t
-        <std::conjunction_v<std::is_integral<UnsignedType>, std::is_unsigned<UnsignedType>>
-        , uint32> getSetBitCount(const UnsignedType& value)
+    
+    template <typename UnsignedType> requires std::unsigned_integral<std::remove_cvref_t<UnsignedType>> // We need to remove ref and const here as we use perfect forwarding and type will be either const appended l/r value reference
+    static uint32 getSetBitCount(UnsignedType&& value)
     {
-        return PlatformClass::getSetBitCount(value);
+        // Switch statement is not working as const_expr
+        if CONST_EXPR(sizeof(value) == 1)
+        {
+            return PlatformClass::getSetBitCount(static_cast<uint8>(value));
+        }
+        else if CONST_EXPR(sizeof(value) == 2)
+        {
+            return PlatformClass::getSetBitCount(static_cast<uint16>(value));
+        }
+        else if CONST_EXPR(sizeof(value) == 4)
+        {
+            return PlatformClass::getSetBitCount(static_cast<uint32>(value));
+        } 
+        else if CONST_EXPR(sizeof(value) == 8)
+        {
+            return PlatformClass::getSetBitCount(static_cast<uint64>(value));
+        }
+        else if CONST_EXPR (std::is_lvalue_reference_v<UnsignedType>)
+        {
+            uint32 count = 0;
+            SizeT num = sizeof(value) / sizeof(uint64);
+            const uint64* ptr = reinterpret_cast<const uint64*>(&value);
+            for (SizeT i = 0; i < num; ++i)
+            {
+                count += PlatformClass::getSetBitCount(*ptr);
+                ptr += 1;
+            }
+            if (num = sizeof(value) % sizeof(uint64))
+            {
+                const uint8* bytePtr = reinterpret_cast<const uint8*>(ptr);
+                for (uint32 i = 0; i < num; ++i)
+                {
+                    count += PlatformClass::getSetBitCount(*bytePtr);
+                    bytePtr += 1;
+                }
+            }
+            return count;
+        }
+        else
+        {
+            static_assert(false, "Unsupported type! for getSetBitCount");
+        }
+        return 0;
+    }
+
+    static void createGUID(CBEGuid& outGuid)
+    {
+        PlatformClass::createGUID(outGuid);
     }
 
     static bool wcharToUtf8(std::string& outStr, const WChar* wChar)
@@ -95,5 +142,39 @@ public:
     static bool utf8ToWChar(std::wstring& outStr, const AChar* aChar)
     {
         return PlatformClass::utf8ToWChar(outStr, aChar);
+    }
+
+    static bool toUpper(AChar* inOutStr)
+    {
+        return PlatformClass::toUpper(inOutStr);
+    }
+    static bool toUpper(WChar* inOutStr)
+    {
+        return PlatformClass::toUpper(inOutStr);
+    }
+    static AChar toUpper(AChar ch)
+    {
+        return PlatformClass::toUpper(ch);
+    }
+    static WChar toUpper(WChar ch)
+    {
+        return PlatformClass::toUpper(ch);
+    }
+
+    static bool toLower(AChar* inOutStr)
+    {
+        return PlatformClass::toLower(inOutStr);
+    }
+    static bool toLower(WChar* inOutStr)
+    {
+        return PlatformClass::toLower(inOutStr);
+    }
+    static AChar toLower(AChar ch)
+    {
+        return PlatformClass::toLower(ch);
+    }
+    static WChar toLower(WChar ch)
+    {
+        return PlatformClass::toLower(ch);
     }
 };

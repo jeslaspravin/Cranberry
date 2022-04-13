@@ -142,12 +142,12 @@ ModuleSources::~ModuleSources()
     }
 }
 
-bool ModuleSources::compileAllSources()
+bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
 {
     bool bAllClear = true;
     std::vector<String> headerFiles = FileSystemFunctions::listFiles(srcDir, true, TCHAR("*.h"));
-    // Update to current header lists
-    headerTracker->intersectFiles(headerFiles);
+    // Update to current header lists and do full source parse if any header deleted
+    bool bAnyDeleted = !headerTracker->filterIntersects(headerFiles).empty();
     sources.reserve(headerFiles.size());
 
     if (headerFiles.empty())
@@ -211,7 +211,7 @@ bool ModuleSources::compileAllSources()
         }
 
         // If output is no longer valid to current input file regenerate reflection
-        if (headerTracker->isTargetOutdated(sourceInfo.filePath, { sourceInfo.generatedHeaderPath, sourceInfo.generatedTUPath }))
+        if (bFullCompile || bAnyDeleted || headerTracker->isTargetOutdated(sourceInfo.filePath, {sourceInfo.generatedHeaderPath, sourceInfo.generatedTUPath}))
         {
             // Use parse TU functions if need to customize certain options while compiling
             // Header.H - H has to be capital but why?
@@ -220,7 +220,9 @@ bool ModuleSources::compileAllSources()
             CXTranslationUnit unit = clang_parseTranslationUnit(
                 index,
                 TCHAR_TO_ANSI(headerPath.getChar())
-                , argsPtrs.data(), int32(argsPtrs.size()), nullptr, 0, CXTranslationUnit_KeepGoing);
+                , argsPtrs.data(), int32(argsPtrs.size()), nullptr, 0
+                // Skipping function bodies for now, Enable if we are doing more that declaration parsing in future
+                , CXTranslationUnit_KeepGoing | CXTranslationUnit_SkipFunctionBodies);
 
             if (unit == nullptr)
             {
@@ -282,7 +284,7 @@ void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformati
     // Now generating is done so mark the tracker manifest with generated files
     for (uint32 i = 0; i < generatedSrcs.size(); ++i)
     {
-        if (sources[i].tu != nullptr)
+        if (generatedSrcs[i]->tu != nullptr)
         {
             headerTracker->updateNewerFile(generatedSrcs[i]->filePath, { generatedSrcs[i]->generatedHeaderPath, generatedSrcs[i]->generatedTUPath });
         }

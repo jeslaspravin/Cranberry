@@ -50,7 +50,7 @@ class EngineGlobalConfig : public EngineVar<Type>
 {
 private:
     using base = EngineVar<Type>;
-    using VarType = base::VarType;
+    using VarType = typename base::VarType;
     using base::variable;
 
 public:
@@ -92,7 +92,7 @@ class EngineConstant : public EngineVar<Type>
 private:
     static_assert(std::is_class_v<OwnerType>, "Only class types are allowed as owner to allow modifications");
     using base = EngineVar<Type>;
-    using VarType = base::VarType;
+    using VarType = typename base::VarType;
     using base::variable;
 
     friend OwnerType;

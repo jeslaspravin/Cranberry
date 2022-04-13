@@ -57,6 +57,7 @@ struct Function
         staticDelegate = functionPointer;
     }
 
+    // Not using perfect forwarding as it not necessary for function ptr calls
     ReturnType operator()(Parameters... params) const
     {
         return (*staticDelegate)(std::forward<Parameters>(params)...);
@@ -226,8 +227,7 @@ struct LambdaFunction
     }
     // End class default constructors and operators
 
-    // Compiler bug? using int as it is working SFINAE within function template, void is always returning false
-    template <typename Callable, typename IsCallable<Callable, int> = 0>
+    template <typename Callable, IsCallable<Callable, int> = 0>
     CONST_EXPR LambdaFunction(Callable &&lambda)
         : lambdaDelegate(std::forward<decltype(lambda)>(lambda))
     {}
@@ -258,5 +258,47 @@ struct LambdaFunction
     operator bool() const
     {
         return bool(lambdaDelegate);
+    }
+};
+
+// Working impl for lightweight lambda alternative using trampoline redirection
+// #TODO(Jeslas) : Improve and clean up, Must be renamed to LambdaFunction after matching all signatures
+// #WARNING Not read for usage
+template <typename RetType, typename... Params>
+struct CapturedFunctor
+{
+    unsigned char* data;
+    using TrampolineFunc = RetType(*)(const CapturedFunctor&, Params...);
+    TrampolineFunc trampolineFunc;
+
+    template <typename Callable, typename CallableType = std::remove_cvref_t<Callable>>
+    CapturedFunctor(Callable&& func)
+        : data(nullptr)
+        , trampolineFunc(nullptr)
+    {
+        if (data)
+            delete[] data;
+
+        data = new unsigned char[sizeof(CallableType)];
+        memcpy(data, &func, sizeof(CallableType));
+
+        struct Trampoline
+        {
+            static RetType invoke(const CapturedFunctor& thisFunctor, Params... params)
+            {
+                (*reinterpret_cast<CallableType*>(thisFunctor.data))(std::forward<Params>(params)...);
+            }
+        };
+        trampolineFunc = &Trampoline::invoke;
+    }
+    ~CapturedFunctor()
+    {
+        delete[] data;
+        data = nullptr;
+    }
+
+    RetType operator()(Params... params) const
+    {
+        return (*trampolineFunc)(*this, std::forward<Params>(params)...);
     }
 };

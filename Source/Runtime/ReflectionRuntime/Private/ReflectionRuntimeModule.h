@@ -13,7 +13,7 @@
 
 #include "IReflectionRuntime.h"
 #include "Types/HashTypes.h"
-#include "String/String.h"
+#include "String/StringID.h"
 
 #include <unordered_map>
 
@@ -23,20 +23,20 @@ private:
     friend IReflectionRuntimeModule;
 
     // Property factory registries
-    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>>& classFactoryFromTypeInfo();
-    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& classFactoryFromTypeName();
+    static std::unordered_map<const ReflectTypeInfo*, std::pair<StringID, ClassPropertyFactoryCell>>& classFactoryFromTypeInfo();
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& classFactoryFromTypeName();
     const ClassProperty* createClassProperty(const ReflectTypeInfo* typeInfo);
-    const ClassProperty* createClassProperty(const String& typeName);
+    const ClassProperty* createClassProperty(const StringID& typeName);
 
-    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, ClassPropertyFactoryCell>>& structFactoryFromTypeInfo();
-    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& structFactoryFromTypeName();
+    static std::unordered_map<const ReflectTypeInfo*, std::pair<StringID, ClassPropertyFactoryCell>>& structFactoryFromTypeInfo();
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo*, ClassPropertyFactoryCell>>& structFactoryFromTypeName();
     const ClassProperty* createStructProperty(const ReflectTypeInfo* typeInfo);
-    const ClassProperty* createStructProperty(const String& typeName);
+    const ClassProperty* createStructProperty(const StringID& typeName);
 
-    static std::unordered_map<const ReflectTypeInfo*, std::pair<String, EnumPropertyFactoryCell>>& enumFactoryFromTypeInfo();
-    static std::unordered_map<String, std::pair<const ReflectTypeInfo*, EnumPropertyFactoryCell>>& enumFactoryFromTypeName();
+    static std::unordered_map<const ReflectTypeInfo*, std::pair<StringID, EnumPropertyFactoryCell>>& enumFactoryFromTypeInfo();
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo*, EnumPropertyFactoryCell>>& enumFactoryFromTypeName();
     const EnumProperty* createEnumProperty(const ReflectTypeInfo* typeInfo);
-    const EnumProperty* createEnumProperty(const String& typeName);
+    const EnumProperty* createEnumProperty(const StringID& typeName);
 
     static std::unordered_map<const ReflectTypeInfo*, TypedPropertyFactoryCell>& otherTypesFactories();
     const BaseProperty* createTypedProperty(const ReflectTypeInfo* typeInfo);
@@ -46,13 +46,13 @@ private:
 
     // Property database
     std::unordered_map<const ReflectTypeInfo*, const ClassProperty*> dbClassTypes;
-    std::unordered_map<String, const ClassProperty*> dbClassTypesFromName;
+    std::unordered_map<StringID, const ClassProperty*> dbClassTypesFromName;
 
     std::unordered_map<const ReflectTypeInfo*, const ClassProperty*> dbStructTypes;
-    std::unordered_map<String, const ClassProperty*> dbStructTypesFromName;
+    std::unordered_map<StringID, const ClassProperty*> dbStructTypesFromName;
 
     std::unordered_map<const ReflectTypeInfo*, const EnumProperty*> dbEnumTypes;
-    std::unordered_map<String, const EnumProperty*> dbEnumTypesFromName;
+    std::unordered_map<StringID, const EnumProperty*> dbEnumTypesFromName;
 
     std::unordered_map<const ReflectTypeInfo*, const BaseProperty*> dbOtherTypes;
 
@@ -64,13 +64,13 @@ public:
 
     /* IReflectionRuntimeModule finals */
     const ClassProperty* getStructType(const ReflectTypeInfo* typeInfo) final;
-    const ClassProperty* getStructType(const String& structName) final;
+    const ClassProperty* getStructType(const StringID& structName) final;
 
     const ClassProperty* getClassType(const ReflectTypeInfo* typeInfo) final;
-    const ClassProperty* getClassType(const String& className) final;
+    const ClassProperty* getClassType(const StringID& className) final;
 
     const EnumProperty* getEnumType(const ReflectTypeInfo* typeInfo) final;
-    const EnumProperty* getEnumType(const String& enumName) final;
+    const EnumProperty* getEnumType(const StringID& enumName) final;
 
     const BaseProperty* getType(const ReflectTypeInfo* typeInfo) final;
 

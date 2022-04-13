@@ -12,7 +12,8 @@
 #pragma once
 
 #include "RenderInterface/Resources/MemoryResources.h"
-#include "Types/Containers/MinAllocVector.h"
+#include "Types/Containers/SparseVector.h"
+#include "Types/Containers/BitArray.h"
 #include "VulkanInternals/Resources/IVulkanResources.h"
 #include "String/String.h"
 #include "VulkanInternals/VulkanMacros.h"
@@ -93,7 +94,7 @@ private:
     VulkanCommandPool* genericPool;
     // Map of command buffers to its names that are currently available, Temp buffers wont be stored here as they are freed after usage
     std::map<String, VulkanCmdBufferState> commandBuffers;
-    MinAllocVector<VulkanCmdSubmitSyncInfo> cmdsSyncInfo;
+    SparseVector<VulkanCmdSubmitSyncInfo, BitArraySparsityPolicy> cmdsSyncInfo;
 
     VulkanDevice* vDevice;
 

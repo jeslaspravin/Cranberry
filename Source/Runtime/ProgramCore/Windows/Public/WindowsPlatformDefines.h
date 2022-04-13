@@ -30,12 +30,12 @@
 #endif
 #endif
 
-#ifndef LITTLE_ENDIAN
-#define LITTLE_ENDIAN 1
-#endif
-
-#ifndef BIG_ENDIAN
-#define BIG_ENDIAN 0
+// Aligned platform specific memory allocators macro
+// #TODO(Jeslas) : Check if this is MSVC specific or specific to Windows(Found it in windows sdk so probably windows specific check however)
+#ifndef PLATFORM_ALIGNED_MALLOC
+#define PLATFORM_ALIGNED_MALLOC _aligned_malloc
+#define PLATFORM_ALIGNED_REALLOC _aligned_realloc
+#define PLATFORM_ALIGNED_FREE _aligned_free
 #endif
 
 // Windows has no library prefix

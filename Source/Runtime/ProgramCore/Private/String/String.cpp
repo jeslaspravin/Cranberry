@@ -1,5 +1,6 @@
 #include "String/String.h"
-#include "Types/Traits/ValueTraits.h"
+#include "String/TCharString.h"
+#include "Types/Templates/ValueTraits.h"
 #include "Types/Platform/PlatformFunctions.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Logger/Logger.h"
@@ -10,7 +11,7 @@ template <typename BufferType, typename NonUtf8Type>
 FORCE_INLINE bool convertToUtf8(BufferType& buffer, const NonUtf8Type* start)
 {
     auto& toUtf8 = std::use_facet<std::codecvt<NonUtf8Type, Utf8, std::mbstate_t>>(std::locale());
-    const auto* end = String::recurseToNullEnd(start);
+    const auto* end = TCharStr::recurseToNullEnd(start);
 
     // Convert from UTF-16/UTF-32 to UTF-8
     std::mbstate_t state{};
@@ -37,7 +38,7 @@ template <typename BufferType, typename NonUtf8Type = BufferType::value_type>
 FORCE_INLINE bool convertFromUtf8(BufferType& buffer, const AChar* start)
 {
     auto& fromUtf8 = std::use_facet<std::codecvt<NonUtf8Type, Utf8, std::mbstate_t>>(std::locale());
-    const auto* end = String::recurseToNullEnd(start);
+    const auto* end = TCharStr::recurseToNullEnd(start);
 
     // Convert from UTF-8 to UTF-16/UTF-32
     std::mbstate_t state{};

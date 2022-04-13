@@ -14,6 +14,7 @@
 #include "Modules/IModuleBase.h"
 #include "String/String.h"
 #include "Memory/SmartPointers.h"
+#include "Memory/Memory.h"
 #include "Types/Platform/GenericPlatformTypes.h"
 #include "Types/Delegates/Delegate.h"
 
@@ -33,6 +34,7 @@
     DECLARE_STATIC_LINKED_MODULE(ModuleName, ModuleClass)
 #else // STATIC_LINKED
 #define DECLARE_MODULE(ModuleName, ModuleClass) \
+    CBE_GLOBAL_NEWDELETE_OVERRIDES \
     extern "C" \
     { \
         DLL_EXPORT MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass) \
@@ -51,11 +53,16 @@ using WeakModulePtr = WeakPtr<IModuleBase>;
 class PROGRAMCORE_EXPORT ModuleManager 
 {
 private:
+    using LoadedLibsMap = std::unordered_map<String
+        , std::pair<LibPointerPtr, LibraryData>>;
+    using LoadedModulesMap = std::unordered_map<String
+        , ModulePtr>;
+
     // Contains modules loaded as shared libraries
-    std::unordered_map<String, std::pair<LibPointerPtr, LibraryData>> loadedLibraries;
+    LoadedLibsMap loadedLibraries;
 
     // Contains module interface implementation provided by a module
-    std::unordered_map<String, ModulePtr> loadedModuleInterfaces;
+    LoadedModulesMap loadedModuleInterfaces;
     // Library paths to look for a library if not found in initial OS environment paths search
     std::vector<String> additionalLibraryPaths;
 private:
