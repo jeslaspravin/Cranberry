@@ -82,6 +82,7 @@
 #include "ICoreObjectsModule.h"
 #include "CoreObjectGC.h"
 #include "CBEObjectHelpers.h"
+#include "TestCoreObjectGC.h"
 
 struct PBRSceneEntity
 {
@@ -407,6 +408,14 @@ class ExperimentalEnginePBR : public GameEngine, public IImGuiLayer
     int32 selectedEnv = 0;
 
     String noneString{ TCHAR("None") };
+
+    IReferenceCollector* collector;
+    CBE::Object* rootObj;
+    CBE::Object* objectPtrTest;
+    CBE::Object* objectPtrToValTest;
+    CBE::Object* valToObjectPtrTest;
+    CBE::Object* valToStructTest;
+    CBE::Object* structToValTest;
 protected:
     void onStartUp() override;
     void onQuit() override;
@@ -3401,26 +3410,56 @@ void ExperimentalEnginePBR::tempTest()
 {
     if (true)
     {
-
         ModuleManager::get()->loadModule("RTTIExample");
 
-        const ClassProperty* classProp = IReflectionRuntimeModule::get()->getClassType(STRID("TestNS::BerryFirst"));
-        const ClassProperty* classProp1 = IReflectionRuntimeModule::get()->getClassType(STRID("BerrySecond"));
-        const ClassProperty* objectClass = IReflectionRuntimeModule::get()->getClassType(STRID("CBE::Object"));
+        const ClassProperty* objectClass = IReflectionRuntimeModule::get()->getClassType(STRID("TestCoreObjectGC"));
+        rootObj = CBE::create(objectClass, TCHAR("RootObject"), nullptr);
+        objectPtrTest = CBE::create(objectClass, TCHAR("ObjectPtrTest"), rootObj);
+        objectPtrToValTest = CBE::create(objectClass, TCHAR("objectPtrToValTest"), rootObj);
+        valToObjectPtrTest = CBE::create(objectClass, TCHAR("valToObjectPtrTest"), rootObj);
+        valToStructTest = CBE::create(objectClass, TCHAR("valToStructTest"), rootObj);
+        structToValTest = CBE::create(objectClass, TCHAR("structToValTest"), rootObj);
+        static_cast<TestCoreObjectGC*>(rootObj)->objectPtr = objectPtrTest;
+        static_cast<TestCoreObjectGC*>(rootObj)->objectPtrToVal[objectPtrToValTest] = 1;
+        static_cast<TestCoreObjectGC*>(rootObj)->valToObjectPtr[1] = valToObjectPtrTest;
+        DataStructAnother ds;
+        ds.ptr = valToStructTest;
+        static_cast<TestCoreObjectGC*>(rootObj)->valToStruct[1] = ds;
+        DataStructHashable ds1;
+        ds1.ptr = structToValTest;
+        static_cast<TestCoreObjectGC*>(rootObj)->structToVal[ds1] = 1;
+        // Setting on inner struct
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.objectPtr = objectPtrTest;
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.objectPtrToVal[objectPtrToValTest] = 1;
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.valToObjectPtr[1] = valToObjectPtrTest;
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.valToStruct[1] = ds;
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.structToVal[ds1] = 1;
 
-        void* ptr = static_cast<const GlobalFunctionWrapper*>(classProp->allocFunc->funcPtr)->invokeUnsafe<void*>();
-        TestNS::BerryFirst* berry = static_cast<const GlobalFunctionWrapper*>(classProp->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryFirst*>(ptr);
-        ptr = static_cast<const GlobalFunctionWrapper*>(classProp1->allocFunc->funcPtr)->invokeUnsafe<void*>();
-        TestNS::BerryObject* berryS = static_cast<const GlobalFunctionWrapper*>(classProp1->constructors[0]->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(ptr);
+        class TempRefColl : public IReferenceCollector
+        {
+        private:
+            CBE::Object* root;
+        public:
+            TempRefColl(CBE::Object* obj) : root(obj) {}
 
-        FieldVisitor::visitFields<Visitable>(classProp1, berryS, nullptr);
-        FieldVisitor::visitFields<Visitable>(classProp, berry, nullptr);
+            void clearReferences(const std::vector<CBE::Object*>& deletedObjects) override
+            {
+                if (std::find(deletedObjects.cbegin(), deletedObjects.cend(), root) != deletedObjects.cend())
+                {
+                    root = nullptr;
+                }
+            }
 
+            void collectReferences(std::vector<CBE::Object*>& outObjects) const override
+            {
+                outObjects.emplace_back(root);
+            }
 
-        static_cast<const GlobalFunctionWrapper*>(classProp->destructor->funcPtr)->invokeUnsafe<TestNS::BerryObject*>(berry);
-        static_cast<const GlobalFunctionWrapper*>(classProp1->destructor->funcPtr)->invokeUnsafe<void*>(berryS);
+        };
 
-        CBE::Object* obj = CBE::create(objectClass, TCHAR("TestObj"), nullptr);
+        collector = new TempRefColl(rootObj);
+        ICoreObjectsModule::get()->getGC().registerReferenceCollector(collector);
+
     }
 }
 
@@ -3435,7 +3474,71 @@ void ExperimentalEnginePBR::tempTestPerFrame()
     //    lastAllocCount = allocationCount;
     //}
 
-    ICoreObjectsModule::get()->getGC().collect(0.016f);
+    static uint32 progressCount = 0;
+    if (inputModule->getInputSystem()->keyState(Keys::TAB)->keyWentUp)
+    {
+        progressCount++;
+    }
+    CoreObjectGC& gc = ICoreObjectsModule::get()->getGC();
+
+    if (progressCount == 1 && objectPtrTest)
+    {
+        //static_cast<TestCoreObjectGC*>(rootObj)->objectPtr = nullptr;
+        objectPtrTest->destroy();
+        objectPtrTest = nullptr;
+    }
+    if (progressCount == 2 && objectPtrToValTest)
+    {
+        static_cast<TestCoreObjectGC*>(rootObj)->objectPtrToVal.clear();
+        //objectPtrToValTest->destroy();
+        objectPtrToValTest = nullptr;
+    }
+    if (progressCount == 3 && valToObjectPtrTest)
+    {
+        static_cast<TestCoreObjectGC*>(rootObj)->valToObjectPtr.clear();
+        //valToObjectPtrTest->destroy();
+        valToObjectPtrTest = nullptr;
+    }
+    if (progressCount == 4 && valToStructTest)
+    {
+        static_cast<TestCoreObjectGC*>(rootObj)->valToStruct.clear();
+        //valToStructTest->destroy();
+        valToStructTest = nullptr;
+    }
+    if (progressCount == 5 && structToValTest)
+    {
+        static_cast<TestCoreObjectGC*>(rootObj)->structToVal.clear();
+        //structToValTest->destroy();
+        structToValTest = nullptr;
+    }
+    if (progressCount == 6)
+    {
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.objectPtr = nullptr;
+    }
+    if (progressCount == 7)
+    {
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.objectPtrToVal.clear();
+    }
+    if (progressCount == 8)
+    {
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.valToObjectPtr.clear();
+    }
+    if (progressCount == 9)
+    {
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.valToStruct.clear();
+    }
+    if (progressCount == 10)
+    {
+        static_cast<TestCoreObjectGC*>(rootObj)->ds.structToVal.clear();
+    }
+    if (progressCount == 11 && collector)
+    {
+        gc.unregisterReferenceCollector(collector);
+        delete collector;
+        collector = nullptr;
+    }
+
+    gc.collect(0.016f);
 }
 
 void ExperimentalEnginePBR::tempTestQuit()

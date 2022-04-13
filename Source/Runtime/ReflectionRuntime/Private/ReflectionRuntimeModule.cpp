@@ -170,16 +170,16 @@ const ClassProperty* ReflectionRuntimeModule::createStructProperty(const Reflect
     {
         ClassProperty* prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
-        dbClassTypes[typeInfo] = prop;
-        dbClassTypesFromName[propertyCreateFactoryItr->second.first] = prop;
+        dbStructTypes[typeInfo] = prop;
+        dbStructTypesFromName[propertyCreateFactoryItr->second.first] = prop;
 
         if (propertyCreateFactoryItr->second.second.initFunc)
         {
             propertyCreateFactoryItr->second.second.initFunc(prop);
         }
         
-        classFactoryFromTypeName().erase(propertyCreateFactoryItr->second.first);
-        classFactoryFromTypeInfo().erase(propertyCreateFactoryItr);
+        structFactoryFromTypeName().erase(propertyCreateFactoryItr->second.first);
+        structFactoryFromTypeInfo().erase(propertyCreateFactoryItr);
         return prop;
     }
     else
@@ -195,16 +195,16 @@ const ClassProperty* ReflectionRuntimeModule::createStructProperty(const StringI
     {
         ClassProperty* prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
-        dbClassTypes[propertyCreateFactoryItr->second.first] = prop;
-        dbClassTypesFromName[typeName] = prop;
+        dbStructTypes[propertyCreateFactoryItr->second.first] = prop;
+        dbStructTypesFromName[typeName] = prop;
 
         if (propertyCreateFactoryItr->second.second.initFunc)
         {
             propertyCreateFactoryItr->second.second.initFunc(prop);
         }
 
-        classFactoryFromTypeInfo().erase(propertyCreateFactoryItr->second.first);
-        classFactoryFromTypeName().erase(propertyCreateFactoryItr);
+        structFactoryFromTypeInfo().erase(propertyCreateFactoryItr->second.first);
+        structFactoryFromTypeName().erase(propertyCreateFactoryItr);
         return prop;
     }
     else
