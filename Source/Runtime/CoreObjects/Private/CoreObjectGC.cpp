@@ -97,6 +97,7 @@ void CoreObjectGC::clearUnused(TickRep& budgetTicks)
                 {
                     deleteObject(allocator->getAt<CBE::Object>(allocIdx));
                 }
+                allocIdx++;
             }
         }
         classesLeft.pop_back();
@@ -172,7 +173,7 @@ void CoreObjectGC::collect(TickRep budgetTicks)
 void CoreObjectGC::registerReferenceCollector(IReferenceCollector* collector)
 {
     auto itr = std::find(refCollectors.cbegin(), refCollectors.cend(), collector);
-    if (itr != refCollectors.cend())
+    if (itr == refCollectors.cend())
     {
         refCollectors.emplace_back(collector);
     }
@@ -181,8 +182,11 @@ void CoreObjectGC::registerReferenceCollector(IReferenceCollector* collector)
 void CoreObjectGC::unregisterReferenceCollector(IReferenceCollector* collector)
 {
     auto itr = std::find(refCollectors.begin(), refCollectors.end(), collector);
-    std::iter_swap(itr, refCollectors.end() - 1);
-    refCollectors.pop_back();
+    if (itr != refCollectors.end())
+    {
+        std::iter_swap(itr, refCollectors.end() - 1);
+        refCollectors.pop_back();
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -229,7 +233,7 @@ struct GCObjectFieldVisitable
         case EPropertyType::ArrayType:
         {
             const IterateableDataRetriever* dataRetriever = static_cast<const IterateableDataRetriever*>(static_cast<const ContainerProperty*>(prop)->dataRetriever);
-            const TypedProperty* elemProp = getUnqualified(static_cast<const ContainerProperty*>(prop)->elementProp);
+            const TypedProperty* elemProp = static_cast<const TypedProperty*>(static_cast<const ContainerProperty*>(prop)->elementProp);
 
             for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
             {
@@ -240,8 +244,8 @@ struct GCObjectFieldVisitable
         case EPropertyType::PairType:
         {
             const PairDataRetriever* dataRetriever = static_cast<const PairDataRetriever*>(static_cast<const PairProperty*>(prop)->dataRetriever);
-            const TypedProperty* keyProp = getUnqualified(static_cast<const PairProperty*>(prop)->keyProp);
-            const TypedProperty* valueProp = getUnqualified(static_cast<const PairProperty*>(prop)->valueProp);
+            const TypedProperty* keyProp = static_cast<const TypedProperty*>(static_cast<const PairProperty*>(prop)->keyProp);
+            const TypedProperty* valueProp = static_cast<const TypedProperty*>(static_cast<const PairProperty*>(prop)->valueProp);
 
             void* keyPtr = dataRetriever->first(val);
             void* valPtr = dataRetriever->second(val);
@@ -338,12 +342,12 @@ struct GCObjectFieldVisitable
 void GCObjectFieldVisitable::visitMap(const MapProperty* mapProp, void* val, const PropertyInfo& propInfo, void* userData)
 {
     const IterateableDataRetriever* dataRetriever = static_cast<const IterateableDataRetriever*>(mapProp->dataRetriever);
-    const TypedProperty* keyProp = getUnqualified(mapProp->keyProp);
-    const TypedProperty* valueProp = getUnqualified(mapProp->valueProp);
+    const TypedProperty* keyProp = static_cast<const TypedProperty*>(mapProp->keyProp);
+    const TypedProperty* valueProp = static_cast<const TypedProperty*>(mapProp->valueProp);
 
     // map key can be either fundamental or special or struct or class ptr but it can never be custom types
     // fundamental or special cannot hold pointer to CBE::Object so only struct and pointer is left
-    if (keyProp->type == EPropertyType::ClassType)
+    if (getUnqualified(keyProp)->type == EPropertyType::ClassType)
     {
         // 2 times the data is needed to copy current and new value, to be removed and added later
         uint8* bufferData = (uint8*)CBEMemory::memAlloc(mapProp->pairSize * (dataRetriever->size(val) * 2 + 1), mapProp->pairAlignment);
@@ -406,11 +410,11 @@ void GCObjectFieldVisitable::visitMap(const MapProperty* mapProp, void* val, con
 void GCObjectFieldVisitable::visitSet(const ContainerProperty* setProp, void* val, const PropertyInfo& propInfo, void* userData)
 {
     const IterateableDataRetriever* dataRetriever = static_cast<const IterateableDataRetriever*>(setProp->dataRetriever);
-    const TypedProperty* elementProp = getUnqualified(setProp->elementProp);
+    const TypedProperty* elementProp = static_cast<const TypedProperty*>(setProp->elementProp);
 
     // set key can be either fundamental or special or struct or class ptr but it can never be custom types
     // fundamental or special cannot hold pointer to CBE::Object so only struct and pointer is left
-    if (elementProp->type == EPropertyType::ClassType)
+    if (getUnqualified(elementProp)->type == EPropertyType::ClassType)
     {
         // 2 times the data is needed to copy current and new value, to be removed and added later
         uint8* bufferData = (uint8*)CBEMemory::memAlloc(elementProp->typeInfo->size * (dataRetriever->size(val) * 2 + 1), elementProp->typeInfo->alignment);

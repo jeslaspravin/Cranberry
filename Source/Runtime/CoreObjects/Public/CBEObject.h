@@ -78,6 +78,12 @@ namespace CBE
         EObjectFlags flags;
         StringID sid;
         ObjectAllocIdx allocIdx;
+
+    protected:
+        void markReadyForDestroy()
+        {
+            SET_BITS(flags, EObjectFlagBits::MarkedForDelete);
+        }
     public:
         Object()
             : ObjectBase(objectName)
@@ -88,6 +94,8 @@ namespace CBE
         {}
 
         virtual ~Object();
+
+        void destroy() { markReadyForDestroy(); }
 
         FORCE_INLINE Object* getOuter() const { return objOuter; }
         FORCE_INLINE EObjectFlags getFlags() const { return flags; }

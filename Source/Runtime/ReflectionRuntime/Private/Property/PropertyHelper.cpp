@@ -51,14 +51,12 @@ bool PropertyHelper::isChildOf(const ClassProperty* childClassProp, const ClassP
         std::vector<const ClassProperty*> newCheckClasses;
         for (const ClassProperty* clazz : checkClasses)
         {
-            if (std::find(clazz->baseClasses.cbegin(), clazz->baseClasses.cend(), parentClassProp) != clazz->baseClasses.cend())
+            // If matched property found return, else keep on adding base classes until a match is found or empty
+            if (clazz == parentClassProp)
             {
                 return true;
             }
-            else
-            {
-                newCheckClasses.insert(newCheckClasses.end(), clazz->baseClasses.cbegin(), clazz->baseClasses.cend());
-            }
+            newCheckClasses.insert(newCheckClasses.end(), clazz->baseClasses.cbegin(), clazz->baseClasses.cend());
         }
         checkClasses = std::move(newCheckClasses);
     }
