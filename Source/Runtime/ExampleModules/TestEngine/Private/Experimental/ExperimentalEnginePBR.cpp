@@ -69,20 +69,14 @@
 #include "IApplicationModule.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "Core/GBuffers.h"
+#include "ICoreObjectsModule.h"
+#include "CoreObjectGC.h"
 
 #include <array>
 #include <random>
 #include <map>
 #include <unordered_set>
 #include <source_location>
-
-#include "TestReflectionGen.h"
-#include "CBEObject.h"
-#include "Visitors/FieldVisitors.h"
-#include "ICoreObjectsModule.h"
-#include "CoreObjectGC.h"
-#include "CBEObjectHelpers.h"
-#include "TestCoreObjectGC.h"
 
 struct PBRSceneEntity
 {
@@ -3259,315 +3253,21 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface* drawIn
     }
 }
 
-struct MapFieldData
-{
-    void* mapData;
-    const MapProperty* mapProp;
-};
-
-template <typename KeyType>
-struct MapValueVisitor
-{
-    template <typename ValueType>
-    static void visit(PropertyInfo propInfo, void* userData)
-    {
-
-    }
-};
-
-struct MapKeyVisitor
-{
-    template <IsReflectedSpecial KeyType>
-    static void visit(const PropertyInfo& propInfo, void* userData)
-    {
-        fatalAssert(false, "Special types cannot be used as key");
-    }
-
-    template <IsReflectedFundamental KeyType>
-    static void visit(const PropertyInfo& propInfo, void* userData)
-    {
-        MapFieldData* mapFieldData = (MapFieldData*)userData;
-        PropertyInfo newPropInfo = propInfo;
-        newPropInfo.thisProperty = static_cast<const TypedProperty*>(mapFieldData->mapProp->valueProp);
-        FieldVisitor::visit<MapValueVisitor<KeyType>>(newPropInfo, mapFieldData);
-    }
-
-    static void visit(const PropertyInfo& propInfo, void* userData, TypeToType<void>)
-    {
-        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
-    }
-    static void visit(const PropertyInfo& propInfo, void* userData, TypeToType<const void>)
-    {
-        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
-    }
-
-    static void visit(const PropertyInfo& propInfo, void* userData, TypeToType<void*>)
-    {
-        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
-    }
-    static void visit(const PropertyInfo& propInfo, void* userData, TypeToType<const void*>)
-    {
-        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
-    }
-
-    template <typename AnyType>
-    static void visit(PropertyInfo propInfo, void* userData)
-    {
-        visit(propInfo, userData, TypeToType<AnyType>{});
-    }
-};
-
-struct Visitable
-{
-    template <typename Type>
-    static void visit(Type* val, const PropertyInfo& propInfo, void* userData)
-    {
-        LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, *typeInfoFrom<Type>());
-    }
-    static void visit(void* val, const PropertyInfo& propInfo, void* userData)
-    {
-        const BaseProperty* prop = propInfo.thisProperty->type == EPropertyType::QualifiedType
-            ? static_cast<const QualifiedProperty*>(propInfo.thisProperty)->unqualTypeProperty : propInfo.thisProperty;
-        switch (prop->type)
-        {
-        case EPropertyType::MapType:
-        {
-            LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
-            MapFieldData mapData{ val, static_cast<const MapProperty*>(prop) };
-            PropertyInfo newPropInfo = propInfo;
-            newPropInfo.thisProperty = static_cast<const TypedProperty*>(mapData.mapProp->keyProp);
-            FieldVisitor::visit<MapKeyVisitor>(newPropInfo, &mapData);
-            break;
-        }
-        case EPropertyType::SetType:
-        case EPropertyType::ArrayType:
-        case EPropertyType::PairType:
-            LOG("Test", "Field name %s, type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
-            break;
-        case EPropertyType::ClassType:
-            LOG("Test", "Struct field %s type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
-            FieldVisitor::visitFields<Visitable>(static_cast<const ClassProperty*>(propInfo.thisProperty), val, userData);
-            break;
-        case EPropertyType::EnumType:
-            LOG("Test", "Enum field %s type %s, value %llu", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString, *(uint64*)val);
-            break;
-        }
-    }
-    static void visit(const void* val, const PropertyInfo& propInfo, void* userData)
-    {
-        // No point in having const pointer
-        LOG("Test", "Unhandled const value Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
-    }
-    static void visit(void** ptr, const PropertyInfo& propInfo, void* userData)
-    {
-        const BaseProperty* prop = propInfo.thisProperty->type == EPropertyType::QualifiedType
-            ? static_cast<const QualifiedProperty*>(propInfo.thisProperty)->unqualTypeProperty : propInfo.thisProperty;
-        switch (prop->type)
-        {
-        case EPropertyType::ClassType:
-            LOG("Test", "Class ptr field %s type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
-            if (*ptr)
-            {
-                FieldVisitor::visitFields<Visitable>(static_cast<const ClassProperty*>(propInfo.thisProperty), *ptr, userData);
-            }
-            break;
-        case EPropertyType::EnumType:
-        case EPropertyType::MapType:
-        case EPropertyType::SetType:
-        case EPropertyType::ArrayType:
-        case EPropertyType::PairType:
-        default:
-            LOG("Test", "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
-            break;
-        }
-    }
-    static void visit(const void** ptr, const PropertyInfo& propInfo, void* userData)
-    {
-        const BaseProperty* prop = propInfo.thisProperty->type == EPropertyType::QualifiedType
-            ? static_cast<const QualifiedProperty*>(propInfo.thisProperty)->unqualTypeProperty : propInfo.thisProperty;
-        switch (propInfo.thisProperty->type)
-        {
-        case EPropertyType::ClassType:
-            LOG("Test", "Class ptr field %s type %s", propInfo.fieldProperty->nameString, propInfo.thisProperty->nameString);
-            if (*ptr)
-            {
-                FieldVisitor::visitFields<Visitable>(static_cast<const ClassProperty*>(propInfo.thisProperty), *ptr, userData);
-            }
-            break;
-        case EPropertyType::EnumType:
-        case EPropertyType::MapType:
-        case EPropertyType::SetType:
-        case EPropertyType::ArrayType:
-        case EPropertyType::PairType:
-        default:
-            LOG("Test", "Unhandled ptr to const ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
-            break;
-        }
-    }
-};
-
 void ExperimentalEnginePBR::tempTest()
 {
-    if (true)
-    {
-        ModuleManager::get()->loadModule("RTTIExample");
 
-        const ClassProperty* objectClass = IReflectionRuntimeModule::get()->getClassType(STRID("TestCoreObjectGC"));
-        rootObj = CBE::create(objectClass, TCHAR("RootObject"), nullptr);
-        objectPtrTest = CBE::create(objectClass, TCHAR("ObjectPtrTest"), rootObj);
-        objectPtrToValTest = CBE::create(objectClass, TCHAR("objectPtrToValTest"), rootObj);
-        valToObjectPtrTest = CBE::create(objectClass, TCHAR("valToObjectPtrTest"), rootObj);
-        valToStructTest = CBE::create(objectClass, TCHAR("valToStructTest"), rootObj);
-        structToValTest = CBE::create(objectClass, TCHAR("structToValTest"), rootObj);
-        static_cast<TestCoreObjectGC*>(rootObj)->objectPtr = objectPtrTest;
-        static_cast<TestCoreObjectGC*>(rootObj)->objectPtrToVal[objectPtrToValTest] = 1;
-        static_cast<TestCoreObjectGC*>(rootObj)->valToObjectPtr[1] = valToObjectPtrTest;
-        DataStructAnother ds;
-        ds.ptr = valToStructTest;
-        static_cast<TestCoreObjectGC*>(rootObj)->valToStruct[1] = ds;
-        DataStructHashable ds1;
-        ds1.ptr = structToValTest;
-        static_cast<TestCoreObjectGC*>(rootObj)->structToVal[ds1] = 1;
-        // Setting on inner struct
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.objectPtr = objectPtrTest;
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.objectPtrToVal[objectPtrToValTest] = 1;
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.valToObjectPtr[1] = valToObjectPtrTest;
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.valToStruct[1] = ds;
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.structToVal[ds1] = 1;
-
-        class TempRefColl : public IReferenceCollector
-        {
-        private:
-            CBE::Object* root;
-        public:
-            TempRefColl(CBE::Object* obj) : root(obj) {}
-
-            void clearReferences(const std::vector<CBE::Object*>& deletedObjects) override
-            {
-                if (std::find(deletedObjects.cbegin(), deletedObjects.cend(), root) != deletedObjects.cend())
-                {
-                    root = nullptr;
-                }
-            }
-
-            void collectReferences(std::vector<CBE::Object*>& outObjects) const override
-            {
-                outObjects.emplace_back(root);
-            }
-
-        };
-
-        collector = new TempRefColl(rootObj);
-        ICoreObjectsModule::get()->getGC().registerReferenceCollector(collector);
-
-    }
 }
 
-//static uint64 allocationCount = 0;
-//static uint64 allocationsNum = 0;
 void ExperimentalEnginePBR::tempTestPerFrame()
 {
-    //static uint64 lastAllocCount = 0;
-    //if (allocationCount != lastAllocCount)
-    //{
-    //    LOG_DEBUG("MEMALLOC", "Allocated additional %dbytes, Total allocations %d", allocationCount - lastAllocCount, allocationsNum);
-    //    lastAllocCount = allocationCount;
-    //}
-
-    static uint32 progressCount = 0;
-    if (inputModule->getInputSystem()->keyState(Keys::TAB)->keyWentUp)
-    {
-        progressCount++;
-    }
     CoreObjectGC& gc = ICoreObjectsModule::get()->getGC();
-
-    if (progressCount == 1 && objectPtrTest)
-    {
-        //static_cast<TestCoreObjectGC*>(rootObj)->objectPtr = nullptr;
-        objectPtrTest->destroy();
-        objectPtrTest = nullptr;
-    }
-    if (progressCount == 2 && objectPtrToValTest)
-    {
-        static_cast<TestCoreObjectGC*>(rootObj)->objectPtrToVal.clear();
-        //objectPtrToValTest->destroy();
-        objectPtrToValTest = nullptr;
-    }
-    if (progressCount == 3 && valToObjectPtrTest)
-    {
-        static_cast<TestCoreObjectGC*>(rootObj)->valToObjectPtr.clear();
-        //valToObjectPtrTest->destroy();
-        valToObjectPtrTest = nullptr;
-    }
-    if (progressCount == 4 && valToStructTest)
-    {
-        static_cast<TestCoreObjectGC*>(rootObj)->valToStruct.clear();
-        //valToStructTest->destroy();
-        valToStructTest = nullptr;
-    }
-    if (progressCount == 5 && structToValTest)
-    {
-        static_cast<TestCoreObjectGC*>(rootObj)->structToVal.clear();
-        //structToValTest->destroy();
-        structToValTest = nullptr;
-    }
-    if (progressCount == 6)
-    {
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.objectPtr = nullptr;
-    }
-    if (progressCount == 7)
-    {
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.objectPtrToVal.clear();
-    }
-    if (progressCount == 8)
-    {
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.valToObjectPtr.clear();
-    }
-    if (progressCount == 9)
-    {
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.valToStruct.clear();
-    }
-    if (progressCount == 10)
-    {
-        static_cast<TestCoreObjectGC*>(rootObj)->ds.structToVal.clear();
-    }
-    if (progressCount == 11 && collector)
-    {
-        gc.unregisterReferenceCollector(collector);
-        delete collector;
-        collector = nullptr;
-    }
-
     gc.collect(0.016f);
 }
 
 void ExperimentalEnginePBR::tempTestQuit()
 {
-    //LOG_DEBUG("MEMALLOC", "Deallocs left %d", allocationsNum);
-}
 
-//void* operator new(std::size_t count)
-//{
-//    allocationCount += count;
-//    allocationsNum++;
-//    return malloc(count);
-//}
-//void* operator new[](std::size_t count)
-//{
-//    allocationCount += count;
-//    allocationsNum++;
-//    return malloc(count);
-//}
-//void operator delete(void* ptr)
-//{
-//    allocationsNum--;
-//    return free(ptr);
-//}
-//void operator delete[](void* ptr)
-//{
-//    allocationsNum--;
-//    return free(ptr);
-//}
+}
 
 GameEngine* GameEngineWrapper::createEngineInstance()
 {

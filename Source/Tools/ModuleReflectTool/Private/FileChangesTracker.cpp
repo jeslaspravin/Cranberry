@@ -92,8 +92,10 @@ bool FileChangesTracker::updateNewerFile(const String& absPath, const std::vecto
     return false;
 }
 
-void FileChangesTracker::intersectFiles(const std::vector<String>& srcfilePaths)
+std::vector<String> FileChangesTracker::filterIntersects(const std::vector<String>& srcfilePaths)
 {
+    std::vector<String> deletedSrcs;
+    deletedSrcs.reserve(srcfilePaths.size());
     std::unordered_set<String> relSrcFiles;
     relSrcFiles.reserve(srcfilePaths.size());
     for (const String& srcFilePath : srcfilePaths)
@@ -109,7 +111,9 @@ void FileChangesTracker::intersectFiles(const std::vector<String>& srcfilePaths)
         }
         else
         {
+            deletedSrcs.emplace_back(PathFunctions::toAbsolutePath(itr->first, folderPath));
             fileLastTimestamp.erase(itr++);
         }
     }
+    return deletedSrcs;
 }
