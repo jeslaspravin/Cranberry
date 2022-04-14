@@ -30,17 +30,17 @@ public:
     using value_type = ValueType;
     using size_type = SizeType;
     using difference_type = DifferenceType;
-    using const_reference = const value_type&;
-    using reference = value_type&;
-    using pointer = value_type*;
-    using const_pointer = const value_type*;
+    using const_reference = const value_type &;
+    using reference = value_type &;
+    using pointer = value_type *;
+    using const_pointer = const value_type *;
 
-    //using IteratorType = ;
+    // using IteratorType = ;
 
-    //using iterator = IteratorType<false>;
-    //using const_iterator = IteratorType<true>;
-    //using reverse_iterator = std::reverse_iterator<IteratorType<false>>;
-    //using const_reverse_iterator = std::reverse_iterator<IteratorType<true>>;
+    // using iterator = IteratorType<false>;
+    // using const_iterator = IteratorType<true>;
+    // using reverse_iterator = std::reverse_iterator<IteratorType<false>>;
+    // using const_reverse_iterator = std::reverse_iterator<IteratorType<true>>;
 
     ContainerType elements;
     SparsityPolicy freeSlots;
@@ -62,12 +62,13 @@ private:
             freeSlots.reset(i);
         }
     }
+
 public:
     SparseVector() = default;
-    SparseVector(const SparseVector&) = default;
-    SparseVector(SparseVector&&) = default;
+    SparseVector(const SparseVector &) = default;
+    SparseVector(SparseVector &&) = default;
 
-    SparseVector(SizeType count, const ValueType& value) noexcept
+    SparseVector(SizeType count, const ValueType &value) noexcept
         : elements(count, value)
     {
         markAllFree();
@@ -77,7 +78,7 @@ public:
     {
         markAllOccupied();
     }
-    SparseVector(const std::vector<ValueType>& values) noexcept
+    SparseVector(const std::vector<ValueType> &values) noexcept
         : elements(values)
     {
         markAllOccupied();
@@ -93,13 +94,13 @@ public:
     {
         markAllOccupied();
     }
-    SparseVector& operator=(const std::vector<ValueType>& values) noexcept
+    SparseVector &operator=(const std::vector<ValueType> &values) noexcept
     {
         elements = values;
         markAllOccupied();
         return (*this);
     }
-    SparseVector& operator=(std::initializer_list<ValueType> values) noexcept
+    SparseVector &operator=(std::initializer_list<ValueType> values) noexcept
     {
         elements = values;
         markAllOccupied();
@@ -120,7 +121,7 @@ public:
 
     // Additional functions
     template <class... ConstructArgs>
-    SizeType get(ConstructArgs&&... args)
+    SizeType get(ConstructArgs &&...args)
     {
         SizeType index;
         if (freeSlots.empty())
@@ -133,30 +134,21 @@ public:
         else
         {
             index = freeSlots.pop_free();
-            new(&elements[index]) ElementType(std::forward<ConstructArgs>(args)...);
+            new (&elements[index]) ElementType(std::forward<ConstructArgs>(args)...);
         }
         return index;
     }
 
-    bool isValid(SizeType index) const
-    {
-        return elements.size() > index && !freeSlots.isFree(index);
-    }
-    SizeType size() const
-    {
-        return elements.size() - freeSlots.size();
-    }
+    bool isValid(SizeType index) const { return elements.size() > index && !freeSlots.isFree(index); }
+    SizeType size() const { return elements.size() - freeSlots.size(); }
     // Sum of valid and free elements
-    SizeType totalCount() const
-    {
-        return elements.size();
-    }
+    SizeType totalCount() const { return elements.size(); }
     NODISCARD FORCE_INLINE bool empty() const { return size() == 0; }
 
     void reset(SizeType index)
     {
         fatalAssert(isValid(index), "Index %llu is invalid", index);
-        if CONST_EXPR(std::is_destructible_v<ValueType>)
+        if CONST_EXPR (std::is_destructible_v<ValueType>)
         {
             elements[index].~ElementType();
         }

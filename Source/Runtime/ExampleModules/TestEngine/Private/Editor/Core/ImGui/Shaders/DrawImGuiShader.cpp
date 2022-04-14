@@ -10,13 +10,12 @@
  */
 
 #include "Math/Vector2D.h"
-#include "RenderInterface/ShaderCore/ShaderParameters.h"
+#include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderInterface/ShaderCore/ShaderParameters.h"
 #include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
-#include "RenderInterface/Resources/Pipelines.h"
-
 
 struct UiTransform
 {
@@ -34,20 +33,20 @@ END_BUFFER_DEFINITION();
 class DrawImGui : public UniqueUtilityShaderConfig
 {
     DECLARE_GRAPHICS_RESOURCE(DrawImGui, , UniqueUtilityShaderConfig, );
+
 private:
     DrawImGui();
 
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
+    void bindBufferParamInfo(
+        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static UiTransformBufferParamInfo UI_TRANSFORM_INFO;
-        static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
-        {
+        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
             { TCHAR("uiTransform"), &UI_TRANSFORM_INFO }
         };
 
-
-        for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -69,4 +68,5 @@ DrawImGui::DrawImGui()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(IMGUI_PIPELINE_REGISTER, DRAW_IMGUI, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(IMGUI_PIPELINE_REGISTER, DRAW_IMGUI,
+    &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig);

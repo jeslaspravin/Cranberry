@@ -16,7 +16,6 @@
 #include <set>
 #include <unordered_set>
 
-
 template <typename ContainerType>
 struct ContainerEPropertyType
 {};
@@ -48,13 +47,16 @@ template <typename ContainerType>
 class ContainerPropertyImpl final : public ContainerProperty
 {
 public:
-    const BaseProperty * elementProp;
+    const BaseProperty *elementProp;
+
 public:
-    ContainerPropertyImpl(const StringID& propNameID, const String& propName, const ReflectTypeInfo* propTypeInfo)
-        : ContainerProperty(propNameID, propName, ContainerEPropertyType<ContainerType>::type, propTypeInfo)
+    ContainerPropertyImpl(
+        const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo)
+        : ContainerProperty(
+            propNameID, propName, ContainerEPropertyType<ContainerType>::type, propTypeInfo)
     {}
 
-    FORCE_INLINE ContainerPropertyImpl* setElementProperty(const BaseProperty* elementProperty)
+    FORCE_INLINE ContainerPropertyImpl *setElementProperty(const BaseProperty *elementProperty)
     {
         elementProp = elementProperty;
         return this;

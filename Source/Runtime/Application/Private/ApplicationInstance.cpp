@@ -11,7 +11,7 @@
 
 #include "ApplicationInstance.h"
 
-ApplicationInstance::ApplicationInstance(const AppInstanceCreateInfo& createInfo)
+ApplicationInstance::ApplicationInstance(const AppInstanceCreateInfo &createInfo)
     : applicationName(createInfo.applicationName)
     , majorVersion(createInfo.majorVersion)
     , minorVersion(createInfo.minorVersion)

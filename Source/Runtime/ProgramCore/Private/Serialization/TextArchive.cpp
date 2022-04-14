@@ -17,7 +17,7 @@
 #include <float.h>
 
 // Reads null terminated string from stream into buffer pointed by firstChar and returns length of string
-SizeT readTextFromStream(AChar* firstChar, ArchiveStream& stream)
+SizeT readTextFromStream(AChar *firstChar, ArchiveStream &stream)
 {
     SizeT len = 0;
     while (uint8 byteVal = stream.readForwardAt(len))
@@ -27,7 +27,7 @@ SizeT readTextFromStream(AChar* firstChar, ArchiveStream& stream)
     }
     return len;
 }
-SizeT lengthFromTextStream(ArchiveStream& stream)
+SizeT lengthFromTextStream(ArchiveStream &stream)
 {
     SizeT len = 0;
     while (uint8 byteVal = stream.readForwardAt(len))
@@ -38,11 +38,11 @@ SizeT lengthFromTextStream(ArchiveStream& stream)
 }
 
 template <typename Type>
-void serializeAsText(Type& value, AChar* buffer, SizeT bufferLen, TextArchive& archive)
+void serializeAsText(Type &value, AChar *buffer, SizeT bufferLen, TextArchive &archive)
 {
     if (archive.isLoading())
     {
-        AChar* firstChar = buffer;
+        AChar *firstChar = buffer;
         SizeT len = readTextFromStream(firstChar, *archive.stream());
 
         std::from_chars(firstChar, firstChar + len, value);
@@ -59,7 +59,7 @@ void serializeAsText(Type& value, AChar* buffer, SizeT bufferLen, TextArchive& a
     }
 }
 
-ArchiveBase& TextArchive::serialize(bool& value)
+ArchiveBase &TextArchive::serialize(bool &value)
 {
     if (isLoading())
     {
@@ -90,77 +90,77 @@ ArchiveBase& TextArchive::serialize(bool& value)
 
 // Char buffer length from
 // https://stackoverflow.com/questions/1701055/what-is-the-maximum-length-in-chars-needed-to-represent-any-double-value
-ArchiveBase& TextArchive::serialize(double& value)
+ArchiveBase &TextArchive::serialize(double &value)
 {
     AChar buffer[3 + DBL_MANT_DIG - DBL_MIN_EXP];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(float& value)
+ArchiveBase &TextArchive::serialize(float &value)
 {
     AChar buffer[3 + FLT_MANT_DIG - FLT_MIN_EXP];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(int64& value)
+ArchiveBase &TextArchive::serialize(int64 &value)
 {
     AChar buffer[21];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(uint64& value)
+ArchiveBase &TextArchive::serialize(uint64 &value)
 {
     AChar buffer[21];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(int32& value)
+ArchiveBase &TextArchive::serialize(int32 &value)
 {
     AChar buffer[12];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(uint32& value)
+ArchiveBase &TextArchive::serialize(uint32 &value)
 {
     AChar buffer[12];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(int16& value)
+ArchiveBase &TextArchive::serialize(int16 &value)
 {
     AChar buffer[7];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(uint16& value)
+ArchiveBase &TextArchive::serialize(uint16 &value)
 {
     AChar buffer[7];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(int8& value)
+ArchiveBase &TextArchive::serialize(int8 &value)
 {
     AChar buffer[5];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(uint8& value)
+ArchiveBase &TextArchive::serialize(uint8 &value)
 {
     AChar buffer[5];
     serializeAsText(value, buffer, ARRAY_LENGTH(buffer), *this);
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(TChar* value)
+ArchiveBase &TextArchive::serialize(TChar *value)
 {
     // Up to 512 bytes in stack
     uint8 buffer[512];
@@ -188,7 +188,7 @@ ArchiveBase& TextArchive::serialize(TChar* value)
     return *this;
 }
 
-ArchiveBase& TextArchive::serialize(String& value)
+ArchiveBase &TextArchive::serialize(String &value)
 {
     // Up to 512 bytes in stack
     uint8 buffer[512];

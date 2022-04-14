@@ -11,10 +11,10 @@
 
 #pragma once
 
-#include "Types/CompilerDefines.h"
+#include "CoreObjectAllocator.h"
 #include "CoreObjectsExports.h"
 #include "ReflectionMacros.h"
-#include "CoreObjectAllocator.h"
+#include "Types/CompilerDefines.h"
 
 #include "CBEObject.gen.h"
 
@@ -23,25 +23,35 @@ class CBEObjectConstructionPolicy
 public:
     // Called for raw allocation deallocation has to be handled by yourself
     template <typename Type>
-    static void* allocate();
+    static void *allocate();
     template <typename Type>
-    static bool canDeallocate(void* ptr) { return true; }
+    static bool canDeallocate(void *ptr)
+    {
+        return true;
+    }
     template <typename Type>
-    static void deallocate(void* ptr);
+    static void deallocate(void *ptr);
 
     // Must call the constructor in this function for your custom policy
     template <typename Type, typename... CtorArgs>
-    static Type* construct(void* allocatedPtr, CtorArgs&&... args);
+    static Type *construct(void *allocatedPtr, CtorArgs &&...args);
     // Must call the destructor in this function for your custom policy
     template <typename Type>
-    static void destruct(void* ptr);
+    static void destruct(void *ptr);
 
     // Unwanted impls
     // Called for new Type(...) allocation if raw allocation failed
     template <typename Type, typename... CtorArgs>
-    static Type* newObject(CtorArgs&&... args) { fatalAssert(false, "newObject is not supported interface and must not happen"); return nullptr; }
+    static Type *newObject(CtorArgs &&...args)
+    {
+        fatalAssert(false, "newObject is not supported interface and must not happen");
+        return nullptr;
+    }
     template <typename Type>
-    static void deleteObject(Type* ptr) { fatalAssert(false, "deleteObject is not supported interface and must not happen"); }
+    static void deleteObject(Type *ptr)
+    {
+        fatalAssert(false, "deleteObject is not supported interface and must not happen");
+    }
 };
 
 COMPILER_PRAGMA(COMPILER_PUSH_WARNING)
@@ -49,91 +59,91 @@ COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_UNINITIALIZED))
 
 namespace CBE
 {
-    // Just a class to avoid overwriting base properties when constructing
-    // Example string will always be constructed to empty which is not acceptable behavior for us
-    class ObjectBase
-    {
-    protected:
-        String objectName;
-    protected:
-        ObjectBase() = delete;
-        ObjectBase(ObjectBase&&) = delete;
-        ObjectBase(const ObjectBase&) = delete;
+// Just a class to avoid overwriting base properties when constructing
+// Example string will always be constructed to empty which is not acceptable behavior for us
+class ObjectBase
+{
+protected:
+    String objectName;
 
-        ObjectBase(String inObjectName)
-            : objectName(inObjectName)
-        {}
-    };
+protected:
+    ObjectBase() = delete;
+    ObjectBase(ObjectBase &&) = delete;
+    ObjectBase(const ObjectBase &) = delete;
 
-    class META_ANNOTATE_API(COREOBJECTS_EXPORT, BaseType) Object : private ObjectBase
-    {
-        GENERATED_CODES();
-    public:
-        OVERRIDE_CONSTRUCTION_POLICY(CBEObjectConstructionPolicy);
-    private:
-        friend PrivateObjectCoreAccessors;
-        friend CBEObjectConstructionPolicy;
+    ObjectBase(String inObjectName)
+        : objectName(inObjectName)
+    {}
+};
 
-        Object* objOuter;
-        EObjectFlags flags;
-        StringID sid;
-        ObjectAllocIdx allocIdx;
+class META_ANNOTATE_API(COREOBJECTS_EXPORT, BaseType) Object : private ObjectBase
+{
+    GENERATED_CODES();
 
-    protected:
-        void markReadyForDestroy()
-        {
-            SET_BITS(flags, EObjectFlagBits::MarkedForDelete);
-        }
-    public:
-        Object()
-            : ObjectBase(objectName)
-            , objOuter(objOuter)
-            , flags(flags)
-            , sid(sid)
-            , allocIdx(allocIdx)
-        {}
+public:
+    OVERRIDE_CONSTRUCTION_POLICY(CBEObjectConstructionPolicy);
 
-        virtual ~Object();
+private:
+    friend PrivateObjectCoreAccessors;
+    friend CBEObjectConstructionPolicy;
 
-        void destroy() { markReadyForDestroy(); }
+    Object *objOuter;
+    EObjectFlags flags;
+    StringID sid;
+    ObjectAllocIdx allocIdx;
 
-        FORCE_INLINE Object* getOuter() const { return objOuter; }
-        FORCE_INLINE EObjectFlags getFlags() const { return flags; }
-        FORCE_INLINE const String& getName() const { return objectName; }
-        FORCE_INLINE StringID getStringID() const { return sid; }
-        String getFullPath() const;
-    };
-}
+protected:
+    void markReadyForDestroy() { SET_BITS(flags, EObjectFlagBits::MarkedForDelete); }
+
+public:
+    Object()
+        : ObjectBase(objectName)
+        , objOuter(objOuter)
+        , flags(flags)
+        , sid(sid)
+        , allocIdx(allocIdx)
+    {}
+
+    virtual ~Object();
+
+    void destroy() { markReadyForDestroy(); }
+
+    FORCE_INLINE Object *getOuter() const { return objOuter; }
+    FORCE_INLINE EObjectFlags getFlags() const { return flags; }
+    FORCE_INLINE const String &getName() const { return objectName; }
+    FORCE_INLINE StringID getStringID() const { return sid; }
+    String getFullPath() const;
+};
+} // namespace CBE
 
 COMPILER_PRAGMA(COMPILER_POP_WARNING)
 
-
 template <typename Type>
-void* CBEObjectConstructionPolicy::allocate()
+void *CBEObjectConstructionPolicy::allocate()
 {
     ObjectAllocIdx allocIdx;
-    Type* ptr = (Type*)CBE::getObjAllocator<Type>().allocate(allocIdx);
+    Type *ptr = (Type *)CBE::getObjAllocator<Type>().allocate(allocIdx);
     CBEMemory::memZero(ptr, sizeof(Type));
 
-    CBE::Object* objPtr = static_cast<CBE::Object*>(ptr);
+    CBE::Object *objPtr = static_cast<CBE::Object *>(ptr);
     objPtr->allocIdx = allocIdx;
     return ptr;
 }
 template <typename Type>
-void CBEObjectConstructionPolicy::deallocate(void* ptr)
+void CBEObjectConstructionPolicy::deallocate(void *ptr)
 {
-    CBE::Object* objPtr = static_cast<CBE::Object*>(ptr);
+    CBE::Object *objPtr = static_cast<CBE::Object *>(ptr);
     CBE::getObjAllocator<Type>().free(ptr, objPtr->allocIdx);
 }
 
 template <typename Type, typename... CtorArgs>
-Type* CBEObjectConstructionPolicy::construct(void* allocatedPtr, CtorArgs&&... args)
+Type *CBEObjectConstructionPolicy::construct(void *allocatedPtr, CtorArgs &&...args)
 {
-    return new (allocatedPtr)Type(std::forward<CtorArgs>(args)...);
+    return new (allocatedPtr) Type(std::forward<CtorArgs>(args)...);
 }
 template <typename Type>
-void CBEObjectConstructionPolicy::destruct(void* ptr)
+void CBEObjectConstructionPolicy::destruct(void *ptr)
 {
-    CBE::Object* objPtr = static_cast<CBE::Object*>(ptr);
-    static_cast<Type*>(objPtr)->~Type();
+    CBE::Object *objPtr = static_cast<CBE::Object *>(ptr);
+    static_cast<Type *>(objPtr)->~Type();
 }

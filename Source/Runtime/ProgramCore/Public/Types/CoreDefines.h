@@ -102,11 +102,11 @@
 #endif
 
 #ifndef DEPRECATED
-#define DEPRECATED(Message) [[deprecated( #Message )]]
+#define DEPRECATED(Message) [[deprecated(#Message)]]
 #endif
 
 #ifndef STATIC_LINKED
 #define STATIC_LINKED 0
 #endif
 
- // End CPP language specific
+// End CPP language specific

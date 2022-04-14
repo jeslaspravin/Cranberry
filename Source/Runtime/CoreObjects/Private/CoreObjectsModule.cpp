@@ -10,33 +10,22 @@
  */
 
 #include "CoreObjectsModule.h"
-#include "Modules/ModuleManager.h"
 #include "CoreObjectAllocator.h"
+#include "Modules/ModuleManager.h"
 
 DECLARE_MODULE(CoreObjects, CoreObjectsModule)
 
-ICoreObjectsModule* ICoreObjectsModule::get()
+ICoreObjectsModule *ICoreObjectsModule::get()
 {
     static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("CoreObjects")));
-    return weakRiModule.expired() ? nullptr : static_cast<CoreObjectsModule*>(weakRiModule.lock().get());
+    return weakRiModule.expired() ? nullptr
+                                  : static_cast<CoreObjectsModule *>(weakRiModule.lock().get());
 }
 
-void CoreObjectsModule::init()
-{
-    CBE::initializeObjectAllocators();
-}
+void CoreObjectsModule::init() { CBE::initializeObjectAllocators(); }
 
-void CoreObjectsModule::release()
-{
-    
-}
+void CoreObjectsModule::release() {}
 
-const CoreObjectsDB& CoreObjectsModule::getObjectsDB() const
-{
-    return objsDb;
-}
+const CoreObjectsDB &CoreObjectsModule::getObjectsDB() const { return objsDb; }
 
-CoreObjectGC& CoreObjectsModule::getGC()
-{
-    return gc;
-}
+CoreObjectGC &CoreObjectsModule::getGC() { return gc; }

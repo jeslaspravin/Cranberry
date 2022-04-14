@@ -19,35 +19,39 @@ struct VulkanMemoryBlock;
 class IVulkanMemoryAllocator
 {
 protected:
-    VulkanDevice* device;
-    IVulkanMemoryAllocator(VulkanDevice* vDevice);
+    VulkanDevice *device;
+    IVulkanMemoryAllocator(VulkanDevice *vDevice);
+
 public:
     virtual ~IVulkanMemoryAllocator() = default;
 
-    static SharedPtr<IVulkanMemoryAllocator> createAllocator(VulkanDevice* vDevice);
+    static SharedPtr<IVulkanMemoryAllocator> createAllocator(VulkanDevice *vDevice);
 
     virtual void initAllocator() = 0;
     virtual void destroyAllocator() = 0;
 
-    virtual VulkanMemoryBlock* allocateBuffer(VkBuffer buffer, bool cpuAccessible) = 0;
-    virtual VulkanMemoryBlock* allocateImage(VkImage image, bool cpuAccessible, bool bIsOptimalTiled) = 0;
+    virtual VulkanMemoryBlock *allocateBuffer(VkBuffer buffer, bool cpuAccessible) = 0;
+    virtual VulkanMemoryBlock *allocateImage(VkImage image, bool cpuAccessible, bool bIsOptimalTiled)
+        = 0;
 
-    virtual void deallocateBuffer(VkBuffer buffer, VulkanMemoryBlock* block) = 0;
-    virtual void deallocateImage(VkImage image, VulkanMemoryBlock* block, bool bIsOptimalTiled) = 0;
+    virtual void deallocateBuffer(VkBuffer buffer, VulkanMemoryBlock *block) = 0;
+    virtual void deallocateImage(VkImage image, VulkanMemoryBlock *block, bool bIsOptimalTiled) = 0;
 
-    virtual void mapBuffer(VulkanMemoryBlock* block) = 0;
-    virtual void unmapBuffer(VulkanMemoryBlock* block) = 0;
-    virtual void mapImage(VulkanMemoryBlock* block) = 0;
-    virtual void unmapImage(VulkanMemoryBlock* block) = 0;
+    virtual void mapBuffer(VulkanMemoryBlock *block) = 0;
+    virtual void unmapBuffer(VulkanMemoryBlock *block) = 0;
+    virtual void mapImage(VulkanMemoryBlock *block) = 0;
+    virtual void unmapImage(VulkanMemoryBlock *block) = 0;
 };
 
-namespace std {
-    template<>
-    struct default_delete<IVulkanMemoryAllocator>
+namespace std
+{
+template <>
+struct default_delete<IVulkanMemoryAllocator>
+{
+    void operator()(IVulkanMemoryAllocator *_Ptr) const noexcept
     {
-        void operator()(IVulkanMemoryAllocator* _Ptr) const noexcept {
-            _Ptr->destroyAllocator();
-            delete _Ptr;
-        }
-    };
-}
+        _Ptr->destroyAllocator();
+        delete _Ptr;
+    }
+};
+} // namespace std

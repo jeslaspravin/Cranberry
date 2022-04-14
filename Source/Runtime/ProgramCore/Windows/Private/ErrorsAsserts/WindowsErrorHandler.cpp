@@ -21,7 +21,7 @@
 #include <DbgHelp.h>
 #include <sstream>
 
-class SymbolInfo 
+class SymbolInfo
 {
 
     static const int MAX_BUFFER_LEN = 1024;
@@ -35,7 +35,10 @@ class SymbolInfo
     IMAGEHLP_LINE64 line;
 
 public:
-    SymbolInfo(HANDLE process, uint64 address, dword offset) : symBuff(), line() {
+    SymbolInfo(HANDLE process, uint64 address, dword offset)
+        : symBuff()
+        , line()
+    {
         line.SizeOfStruct = sizeof(line);
         symBuff.symbol.SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
         symBuff.symbol.MaxNameLength = MAX_BUFFER_LEN;
@@ -50,7 +53,8 @@ public:
     }
 
     String name() { return UTF8_TO_TCHAR(symBuff.symbol.Name); }
-    String undecoratedName() {
+    String undecoratedName()
+    {
         String udName;
         if (*symBuff.symbol.Name == '\0')
         {
@@ -60,25 +64,18 @@ public:
         {
             std::string undecName;
             undecName.resize(MAX_BUFFER_LEN, '\0');
-            dword nameLen = UnDecorateSymbolName(symBuff.symbol.Name, undecName.data(), MAX_BUFFER_LEN, UNDNAME_COMPLETE);
+            dword nameLen = UnDecorateSymbolName(
+                symBuff.symbol.Name, undecName.data(), MAX_BUFFER_LEN, UNDNAME_COMPLETE);
             undecName.resize(nameLen);
 
             udName = UTF8_TO_TCHAR(undecName.c_str());
-        }        
+        }
         return udName;
     }
 
-    String fileName()
-    {
-        return line.FileName
-            ? UTF8_TO_TCHAR(line.FileName)
-            : TCHAR("");
-    }
+    String fileName() { return line.FileName ? UTF8_TO_TCHAR(line.FileName) : TCHAR(""); }
 
-    dword lineNumber()
-    {
-        return line.LineNumber;
-    }
+    dword lineNumber() { return line.LineNumber; }
 };
 
 void WindowsUnexpectedErrorHandler::registerFilter()
@@ -101,7 +98,8 @@ void WindowsUnexpectedErrorHandler::debugBreak() const
     bool bIsRunByDebugger = !!IsDebuggerPresent();
     if (CheckRemoteDebuggerPresent(processHandle, &bRemoteDebuggerAvailable) == 0)
     {
-        LOG_ERROR("WindowsUnexpectedErrorHandler", "%s() : Unable to find remoter debugger state", __func__);
+        LOG_ERROR(
+            "WindowsUnexpectedErrorHandler", "%s() : Unable to find remoter debugger state", __func__);
     }
 
     if (!!bRemoteDebuggerAvailable || bIsRunByDebugger)
@@ -115,7 +113,7 @@ void WindowsUnexpectedErrorHandler::unregisterFilter() const
     SetUnhandledExceptionFilter(previousFilter);
 }
 
-void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCloseApp) const
+void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCloseApp) const
 {
     HANDLE processHandle = GetCurrentProcess();
     HANDLE threadHandle = GetCurrentThread();
@@ -123,16 +121,18 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
 
     if (!SymInitialize(processHandle, NULL, TRUE))
     {
-        LOG_ERROR("WindowsUnexpectedErrorHandler", "%s() : Failed loading symbols for initializing stack trace symbols", __func__);
+        LOG_ERROR("WindowsUnexpectedErrorHandler",
+            "%s() : Failed loading symbols for initializing stack trace symbols", __func__);
         return;
     }
     dword symOptions = SymGetOptions();
     symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
     SymSetOptions(symOptions);
 
-    std::vector<std::pair<LibPointerPtr, LibraryData>> modulesDataPairs = ModuleManager::get()->getAllModuleData();
+    std::vector<std::pair<LibPointerPtr, LibraryData>> modulesDataPairs
+        = ModuleManager::get()->getAllModuleData();
 
-    IMAGE_NT_HEADERS* imageHeader = ImageNtHeader(modulesDataPairs[0].second.basePtr);
+    IMAGE_NT_HEADERS *imageHeader = ImageNtHeader(modulesDataPairs[0].second.basePtr);
     dword imageType = imageHeader->FileHeader.Machine;
 
 #ifdef _M_X64
@@ -154,14 +154,14 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
 #endif
 
     StringStream stackTrace;
-    do 
+    do
     {
         if (frame.AddrPC.Offset != 0)
         {
             uint64 moduleBase = SymGetModuleBase64(processHandle, frame.AddrPC.Offset);
             SymbolInfo symInfo = SymbolInfo(processHandle, frame.AddrPC.Offset, symOffset);
             String moduleName;
-            for (const std::pair<const LibPointerPtr, LibraryData>& modulePair : modulesDataPairs)
+            for (const std::pair<const LibPointerPtr, LibraryData> &modulePair : modulesDataPairs)
             {
                 if (moduleBase == (uint64)modulePair.second.basePtr)
                 {
@@ -172,24 +172,26 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT* context, bool bCl
             String fileName = symInfo.fileName();
             fileName = fileName.length() > 0 ? PlatformFile(fileName).getFileName() : fileName;
 
-            stackTrace << moduleName.getChar() << TCHAR(" [0x") << std::hex << frame.AddrPC.Offset << std::dec << TCHAR("] : ")
-                << symInfo.name() << TCHAR("(")
-                << fileName.getChar() << TCHAR("):") << symInfo.lineNumber();
+            stackTrace << moduleName.getChar() << TCHAR(" [0x") << std::hex << frame.AddrPC.Offset
+                       << std::dec << TCHAR("] : ") << symInfo.name() << TCHAR("(") << fileName.getChar()
+                       << TCHAR("):") << symInfo.lineNumber();
         }
         else
         {
             stackTrace << TCHAR("No symbols found");
         }
 
-        if (!StackWalk64(imageType, processHandle, threadHandle, &frame, context, nullptr, SymFunctionTableAccess64,
-            SymGetModuleBase64, nullptr) || frame.AddrReturn.Offset == 0)
+        if (!StackWalk64(imageType, processHandle, threadHandle, &frame, context, nullptr,
+                SymFunctionTableAccess64, SymGetModuleBase64, nullptr)
+            || frame.AddrReturn.Offset == 0)
         {
             break;
         }
         stackTrace << TCHAR("\n");
-    } while (true);
+    }
+    while (true);
     SymCleanup(processHandle);
-    
+
     LOG_ERROR("WindowsUnexpectedErrorHandler", "Error call trace : \n%s", stackTrace.str().c_str());
 
     Logger::flushStream();
@@ -270,25 +272,27 @@ String exceptionCodeMessage(dword ExpCode)
     return retVal;
 }
 
-long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS* exp)
+long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *exp)
 {
     PEXCEPTION_RECORD pExceptionRecord = exp->ExceptionRecord;
 
     StringStream errorStream;
     while (pExceptionRecord != NULL)
     {
-        errorStream << exceptionCodeMessage(pExceptionRecord->ExceptionCode) << TCHAR(" [0x") << std::hex <<
-            pExceptionRecord->ExceptionAddress << TCHAR("]");
+        errorStream << exceptionCodeMessage(pExceptionRecord->ExceptionCode) << TCHAR(" [0x") << std::hex
+                    << pExceptionRecord->ExceptionAddress << TCHAR("]");
         pExceptionRecord = pExceptionRecord->ExceptionRecord;
     }
-    AChar* errorMsg;
+    AChar *errorMsg;
     DWORD dw = GetLastError();
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-        dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),(LPSTR)&errorMsg,0, NULL);
-    
-    LOG_ERROR("WindowsUnexpectedErrorHandler", "Application encountered an error! Error : %s%s",errorMsg,errorStream.str().c_str());
+    FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errorMsg, 0, NULL);
+
+    LOG_ERROR("WindowsUnexpectedErrorHandler", "Application encountered an error! Error : %s%s",
+        errorMsg, errorStream.str().c_str());
     LocalFree(errorMsg);
-    
+
     getHandler()->unregisterFilter();
     getHandler()->dumpStack(exp->ContextRecord, true);
     return EXCEPTION_CONTINUE_SEARCH;

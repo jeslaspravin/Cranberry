@@ -10,47 +10,41 @@
  */
 
 #pragma once
-#include "Types/CoreTypes.h"
-#include "Types/CoreDefines.h"
-#include "String/String.h"
-#include "Types/Time.h"
 #include "EngineInputCoreExports.h"
+#include "String/String.h"
+#include "Types/CoreDefines.h"
+#include "Types/CoreTypes.h"
+#include "Types/Time.h"
 
 #include <map>
 
-template<typename KeyType, typename ValueType>
+template <typename KeyType, typename ValueType>
 class InputStateIterator
 {
 private:
     using Iterator = typename std::initializer_list<std::pair<KeyType, ValueType>>::const_iterator;
 
     Iterator iterator;
+
 public:
     /* Iterator traits skipped difference_type as it does not makes sense */
     using value_type = KeyType;
-    using reference = const KeyType&;
-    using pointer = const KeyType*;
+    using reference = const KeyType &;
+    using pointer = const KeyType *;
     using iterator_category = std::forward_iterator_tag;
 
     InputStateIterator() = default;
-    InputStateIterator(Iterator itr) : iterator(itr) {}
+    InputStateIterator(Iterator itr)
+        : iterator(itr)
+    {}
 
-    pointer operator->() const
-    {
-        return &iterator->first;
-    }
+    pointer operator->() const { return &iterator->first; }
 
-    reference operator*() const
-    {
-        return iterator->first;
-    }
+    reference operator*() const { return iterator->first; }
 
-    bool operator!=(const InputStateIterator& other) const
-    {
-        return **this != *other;
-    }
+    bool operator!=(const InputStateIterator &other) const { return **this != *other; }
 
-    InputStateIterator& operator++()
+    InputStateIterator &operator++()
     {
         ++iterator;
         return *this;
@@ -67,16 +61,11 @@ public:
 template <typename InputType>
 struct InputStateRange
 {
-    using IteratorType = InputStateIterator<typename InputType::StateKeyType, typename InputType::StateInfoType>;
-    IteratorType begin() const
-    {
-        return IteratorType(InputType::STATES_INITIALIZER.begin());
-    }
+    using IteratorType
+        = InputStateIterator<typename InputType::StateKeyType, typename InputType::StateInfoType>;
+    IteratorType begin() const { return IteratorType(InputType::STATES_INITIALIZER.begin()); }
 
-    IteratorType end() const
-    {
-        return IteratorType(InputType::STATES_INITIALIZER.end());
-    }
+    IteratorType end() const { return IteratorType(InputType::STATES_INITIALIZER.end()); }
 };
 
 struct ENGINEINPUTCORE_EXPORT Key
@@ -90,8 +79,8 @@ struct ENGINEINPUTCORE_EXPORT KeyState
 {
     TickRep pressedTick;
     uint8 isPressed : 1;
-    uint8 keyWentUp : 1;// will be high the frame the key went up
-    uint8 keyWentDown : 1;// will be high the frame the key went down
+    uint8 keyWentUp : 1;   // will be high the frame the key went up
+    uint8 keyWentDown : 1; // will be high the frame the key went down
 
     KeyState()
         : pressedTick(-1)
@@ -104,14 +93,16 @@ struct ENGINEINPUTCORE_EXPORT KeyState
 class ENGINEINPUTCORE_EXPORT Keys
 {
 public:
-    using StateKeyType = const Key*;
+    using StateKeyType = const Key *;
     using StateInfoType = KeyState;
     using Range = InputStateRange<Keys>;
+
 private:
     friend Range;
     static std::initializer_list<std::pair<StateKeyType, StateInfoType>> STATES_INITIALIZER;
 
     std::map<StateKeyType, StateInfoType> keyStates;
+
 public:
     const static Key LMB;
     const static Key RMB;
@@ -133,7 +124,7 @@ public:
     const static Key RIGHT;
     const static Key DOWN;
     const static Key INS;
-    const static Key DEL;// Delete
+    const static Key DEL; // Delete
     const static Key ZERO;
     const static Key ONE;
     const static Key TWO;
@@ -237,8 +228,8 @@ public:
 
     Keys();
 
-    const StateInfoType* queryState(const Key& key) const;
-    std::map<StateKeyType, StateInfoType>& getKeyStates();
+    const StateInfoType *queryState(const Key &key) const;
+    std::map<StateKeyType, StateInfoType> &getKeyStates();
     void resetStates();
 
     static bool isKeyboardKey(uint32 keyCode);
@@ -286,8 +277,11 @@ private:
 
 public:
     AnalogStates();
-    FORCE_INLINE static bool isAbsoluteValue(AnalogStates::EStates analogSate) { return analogSate >= EStates::AbsValsStart && analogSate <= EStates::AbsValsEnd; }
-    const StateInfoType* queryState(AnalogStates::EStates analogState) const;
-    std::map<StateKeyType, StateInfoType>& getAnalogStates();
+    FORCE_INLINE static bool isAbsoluteValue(AnalogStates::EStates analogSate)
+    {
+        return analogSate >= EStates::AbsValsStart && analogSate <= EStates::AbsValsEnd;
+    }
+    const StateInfoType *queryState(AnalogStates::EStates analogState) const;
+    std::map<StateKeyType, StateInfoType> &getAnalogStates();
     void resetStates();
 };

@@ -10,16 +10,16 @@
  */
 
 #include "RenderInterface/Resources/DeferredDeleter.h"
-#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/Resources/MemoryResources.h"
+#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 
-FORCE_INLINE void DeferredDeleter::deleteResource(GraphicsResource* res)
+FORCE_INLINE void DeferredDeleter::deleteResource(GraphicsResource *res)
 {
     res->release();
     delete res;
 }
 
-void DeferredDeleter::deferDelete(DeferringData&& deferringInfo)
+void DeferredDeleter::deferDelete(DeferringData &&deferringInfo)
 {
     if (bClearing || deferringInfo.strategy == EDeferredDelStrategy::Immediate)
     {
@@ -27,7 +27,7 @@ void DeferredDeleter::deferDelete(DeferringData&& deferringInfo)
         return;
     }
 
-    for (const DeferringData& res : deletingResources)
+    for (const DeferringData &res : deletingResources)
     {
         if (res.resource == deferringInfo.resource)
         {
@@ -45,20 +45,21 @@ void DeferredDeleter::update()
     }
 
     auto newEnd = std::remove_if(deletingResources.begin(), deletingResources.end(),
-        [this](DeferringData& res)
+        [this](DeferringData &res)
         {
             uint32 references = 0;
             if (res.resource->getType()->isChildOf(MemoryResource::staticType()))
             {
-                references = static_cast<MemoryResource*>(res.resource)->refCount();
+                references = static_cast<MemoryResource *>(res.resource)->refCount();
             }
             else if (res.resource->getType()->isChildOf(ShaderParameters::staticType()))
             {
-                references = static_cast<ShaderParameters*>(res.resource)->refCount();
+                references = static_cast<ShaderParameters *>(res.resource)->refCount();
             }
             else
             {
-                alertIf(false, "Unsupported type(%s) for deferred deletion", res.resource->getType()->getName());
+                alertIf(false, "Unsupported type(%s) for deferred deletion",
+                    res.resource->getType()->getName());
                 deleteResource(res.resource);
                 return true;
             }
@@ -104,7 +105,7 @@ void DeferredDeleter::update()
 void DeferredDeleter::clear()
 {
     bClearing = true;
-    for (const DeferringData& res : deletingResources)
+    for (const DeferringData &res : deletingResources)
     {
         deleteResource(res.resource);
     }

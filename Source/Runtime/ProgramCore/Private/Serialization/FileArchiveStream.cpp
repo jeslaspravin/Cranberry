@@ -12,7 +12,7 @@
 #include "Serialization/FileArchiveStream.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
-FileArchiveStream::FileArchiveStream(const String& filePath, bool bReading)
+FileArchiveStream::FileArchiveStream(const String &filePath, bool bReading)
     : file(new PlatformFile(filePath))
     , fileCursor(0)
     , bIsReadOnly(bReading)
@@ -33,21 +33,22 @@ FileArchiveStream::~FileArchiveStream()
     file = nullptr;
 }
 
-void FileArchiveStream::read(void* toPtr, SizeT len)
+void FileArchiveStream::read(void *toPtr, SizeT len)
 {
-    fatalAssert(file->fileSize() >= fileCursor + len, "Cannot read past file size %ull", file->fileSize());
+    fatalAssert(
+        file->fileSize() >= fileCursor + len, "Cannot read past file size %ull", file->fileSize());
 
-    file->read(reinterpret_cast<uint8*>(toPtr), len);
+    file->read(reinterpret_cast<uint8 *>(toPtr), len);
     file->offsetCursor((int64)len);
     fileCursor += len;
 }
 
-void FileArchiveStream::write(const void* ptr, SizeT len)
+void FileArchiveStream::write(const void *ptr, SizeT len)
 {
     if (bIsReadOnly)
         return;
 
-    file->write({ reinterpret_cast<const uint8*>(ptr), len });
+    file->write({ reinterpret_cast<const uint8 *>(ptr), len });
     fileCursor += len;
 }
 
@@ -75,7 +76,7 @@ void FileArchiveStream::moveBackward(SizeT count)
     if (count == 0)
         return;
 
-    fileCursor = (SizeT)Math::max(0, (int64)(fileCursor)-(int64)(count));
+    fileCursor = (SizeT)Math::max(0, (int64)(fileCursor) - (int64)(count));
     file->seek(fileCursor);
 }
 
@@ -111,7 +112,4 @@ uint8 FileArchiveStream::readBackwardAt(SizeT idx) const
     return outVal;
 }
 
-bool FileArchiveStream::isAvailable() const
-{
-    return file->isFile() && file->exists();
-}
+bool FileArchiveStream::isAvailable() const { return file->isFile() && file->exists(); }

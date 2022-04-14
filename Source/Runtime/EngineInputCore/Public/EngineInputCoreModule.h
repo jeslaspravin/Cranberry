@@ -10,8 +10,8 @@
  */
 
 #pragma once
-#include "Modules/IModuleBase.h"
 #include "InputSystem.h"
+#include "Modules/IModuleBase.h"
 #include "Types/Delegates/Delegate.h"
 
 class ENGINEINPUTCORE_EXPORT EngineInputCoreModule : public IModuleBase
@@ -19,10 +19,12 @@ class ENGINEINPUTCORE_EXPORT EngineInputCoreModule : public IModuleBase
 private:
     InputSystem inputSystem;
     DelegateHandle createdWindowHandle;
+
 private:
-    void createdNewWindow(GenericAppWindow* window) const;
+    void createdNewWindow(GenericAppWindow *window) const;
+
 public:
-    InputSystem* getInputSystem() { return &inputSystem; }
+    InputSystem *getInputSystem() { return &inputSystem; }
     void updateInputs();
 
     /* IModuleBase overrides */

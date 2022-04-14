@@ -10,18 +10,17 @@
  */
 
 #include "Types/Platform/LFS/File/GenericFile.h"
-#include "Types/Platform/LFS/File/GenericFileHandle.h"
-#include "Types/Platform/LFS/PathFunctions.h"
 #include "Logger/Logger.h"
 #include "Types/CoreDefines.h"
+#include "Types/Platform/LFS/File/GenericFileHandle.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
-void* GenericFile::getFileHandleRaw() const
+void *GenericFile::getFileHandleRaw() const
 {
-    return fileHandle?fileHandle->getFileHandle():nullptr;
+    return fileHandle ? fileHandle->getFileHandle() : nullptr;
 }
 
-
-void GenericFile::setPath(const String& fPath)
+void GenericFile::setPath(const String &fPath)
 {
     String fPathTmp = PathFunctions::asGenericPath(fPath);
 
@@ -55,18 +54,16 @@ GenericFile::GenericFile()
     , sharingMode(0)
     , attributes(0)
     , advancedFlags(0)
-{
+{}
 
-}
-
-GenericFile::GenericFile(const String& path)
+GenericFile::GenericFile(const String &path)
     : fileHandle(nullptr)
     , fileFlags(0)
     , sharingMode(0)
     , attributes(0)
     , advancedFlags(0)
 {
-    if(path.length() > 0)
+    if (path.length() > 0)
     {
         setPath(path);
     }
@@ -103,25 +100,13 @@ bool GenericFile::closeFile()
     return false;
 }
 
-bool GenericFile::isDirectory() const
-{
-    return fileName.empty();
-}
+bool GenericFile::isDirectory() const { return fileName.empty(); }
 
-bool GenericFile::isFile() const
-{
-    return !isDirectory();
-}
+bool GenericFile::isFile() const { return !isDirectory(); }
 
-const String& GenericFile::getFileName() const
-{
-    return fileName;
-}
+const String &GenericFile::getFileName() const { return fileName; }
 
-const String& GenericFile::getHostDirectory() const
-{
-    return directoryPath;
-}
+const String &GenericFile::getHostDirectory() const { return directoryPath; }
 
 String GenericFile::getDirectoryName() const
 {
@@ -147,17 +132,14 @@ String GenericFile::getDirectoryName() const
     return dirName;
 }
 
-const String& GenericFile::getFullPath() const
-{
-    return fullPath;
-}
+const String &GenericFile::getFullPath() const { return fullPath; }
 
-void GenericFile::setFileFlags(const uint8& flags)
+void GenericFile::setFileFlags(const uint8 &flags)
 {
     uint8 accessFlags = flags & FileFlags::ACCESS_FLAGS;
     uint8 actionFlags = flags & FileFlags::OPEN_ACTION_FLAGS;
 
-    if (!ONE_BIT_SET(actionFlags)) 
+    if (!ONE_BIT_SET(actionFlags))
     {
         actionFlags = fileFlags & FileFlags::OPEN_ACTION_FLAGS;
     }
@@ -165,11 +147,11 @@ void GenericFile::setFileFlags(const uint8& flags)
     fileFlags = accessFlags | actionFlags;
 }
 
-void GenericFile::setCreationAction(const uint8& creationAction)
+void GenericFile::setCreationAction(const uint8 &creationAction)
 {
     uint8 actionFlags = creationAction & FileFlags::OPEN_ACTION_FLAGS;
 
-    if (!ONE_BIT_SET(actionFlags)) 
+    if (!ONE_BIT_SET(actionFlags))
     {
         actionFlags = fileFlags & FileFlags::OPEN_ACTION_FLAGS;
     }
@@ -181,27 +163,15 @@ void GenericFile::setCreationAction(const uint8& creationAction)
     fileFlags |= actionFlags;
 }
 
-void GenericFile::addAdvancedFlags(const uint64& flags)
-{
-    advancedFlags |= flags;
-}
+void GenericFile::addAdvancedFlags(const uint64 &flags) { advancedFlags |= flags; }
 
-void GenericFile::removeAdvancedFlags(const uint64& flags)
-{
-    advancedFlags &= ~flags;
-}
+void GenericFile::removeAdvancedFlags(const uint64 &flags) { advancedFlags &= ~flags; }
 
-void GenericFile::addSharingFlags(const uint8& sharingFlags)
-{
-    sharingMode |= sharingFlags;
-}
+void GenericFile::addSharingFlags(const uint8 &sharingFlags) { sharingMode |= sharingFlags; }
 
-void GenericFile::removeSharingFlags(const uint8& sharingFlags)
-{
-    sharingMode &= ~sharingFlags;
-}
+void GenericFile::removeSharingFlags(const uint8 &sharingFlags) { sharingMode &= ~sharingFlags; }
 
-void GenericFile::addFileFlags(const uint8& flags)
+void GenericFile::addFileFlags(const uint8 &flags)
 {
     uint8 accessFlags = flags & FileFlags::ACCESS_FLAGS;
     uint8 actionFlags = flags & FileFlags::OPEN_ACTION_FLAGS;
@@ -210,7 +180,7 @@ void GenericFile::addFileFlags(const uint8& flags)
     {
         removeFileFlags(FileFlags::OPEN_ACTION_FLAGS);
     }
-    else 
+    else
     {
         actionFlags = fileFlags & FileFlags::OPEN_ACTION_FLAGS;
     }
@@ -218,17 +188,8 @@ void GenericFile::addFileFlags(const uint8& flags)
     fileFlags |= accessFlags | actionFlags;
 }
 
-void GenericFile::removeFileFlags(const uint8& flags)
-{
-    fileFlags &= ~flags;
-}
+void GenericFile::removeFileFlags(const uint8 &flags) { fileFlags &= ~flags; }
 
-void GenericFile::addAttributes(const uint32& attribs)
-{
-    attributes |= attribs;
-}
+void GenericFile::addAttributes(const uint32 &attribs) { attributes |= attribs; }
 
-void GenericFile::removeAttributes(const uint32& attribs)
-{
-    attributes &= ~attribs;
-}
+void GenericFile::removeAttributes(const uint32 &attribs) { attributes &= ~attribs; }

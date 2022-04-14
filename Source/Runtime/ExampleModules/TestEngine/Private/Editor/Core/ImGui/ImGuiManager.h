@@ -11,14 +11,14 @@
 
 #pragma once
 #include "ImGuiDrawInterface.h"
-#include "Types/CoreTypes.h"
-#include "String/String.h"
 #include "Memory/SmartPointers.h"
-#include "Types/Delegates/Delegate.h"
 #include "RenderInterface/Resources/BufferedResources.h"
 #include "RenderInterface/Resources/MemoryResources.h"
-#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
+#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "String/String.h"
+#include "Types/CoreTypes.h"
+#include "Types/Delegates/Delegate.h"
 
 #include <map>
 #include <queue>
@@ -36,9 +36,9 @@ class InputSystem;
 
 struct ImGuiDrawingContext
 {
-    const GraphicsResource* cmdBuffer;
+    const GraphicsResource *cmdBuffer;
 
-    std::vector<IRenderTargetTexture*> rtTextures;
+    std::vector<IRenderTargetTexture *> rtTextures;
     uint32 swapchainIdx = ~(0u);
 };
 
@@ -49,23 +49,24 @@ private:
     static const String IMGUI_SHADER_NAME;
     // Only parent GUI manager data
     SamplerRef textureSampler;
-    TextureBase* textureAtlas;
+    TextureBase *textureAtlas;
     ShaderParametersRef imguiFontAtlasParams;
 
-    std::map<const TextureBase*, ShaderParametersRef> textureParams;
+    std::map<const TextureBase *, ShaderParametersRef> textureParams;
     // Inactive free texture params
     std::queue<ShaderParametersRef> freeTextureParams;
-    // Texture params accessed last frame, if any from texture params that are not here it goes to inactive free params
+    // Texture params accessed last frame, if any from texture params that are not here it goes to
+    // inactive free params
     std::set<ShaderParametersRef> activeTextureParams;
 
     // Unique per GUI manager
     std::string clipboard;
-    const InputSystem* inputSystem;
+    const InputSystem *inputSystem;
     bool bCaptureInput;
 
-    ImGuiManager* parentGuiManager;
-    ImGuiContext* context;
-    ImPlotContext* implotContext;
+    ImGuiManager *parentGuiManager;
+    ImGuiContext *context;
+    ImPlotContext *implotContext;
     ImGuiDrawInterface drawInterface;
     // Per display size
     ShaderParametersRef imguiTransformParams;
@@ -74,50 +75,55 @@ private:
 
     DelegateHandle textureResizedHnd;
 
-    std::map<int32, std::vector<IImGuiLayer*>, std::greater<int32>> drawLayers;
+    std::map<int32, std::vector<IImGuiLayer *>, std::greater<int32>> drawLayers;
 
     // Per frame data
 
-    // Texture parameters to be used this frame in this GUI manager(Unsafe to use outside frame draw/graphics thread)
-    std::set<const TextureBase*> texturesToCreate;
+    // Texture parameters to be used this frame in this GUI manager(Unsafe to use outside frame
+    // draw/graphics thread)
+    std::set<const TextureBase *> texturesToCreate;
     std::set<ShaderParametersRef> texturesUsed;
-private:
 
-    static void setClipboard(void* userData, const char* text);
-    static const char* getClipboard(void* userData);
+private:
+    static void setClipboard(void *userData, const char *text);
+    static const char *getClipboard(void *userData);
 
     void setupInputs();
     void updateInputs();
     void updateTextureParameters();
 
-    void updateRenderResources(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance
-        , const GraphicsHelperAPI* graphicsHelper, const ImGuiDrawingContext& drawingContext, const class LocalPipelineContext& pipelineContext);
+    void updateRenderResources(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+        const GraphicsHelperAPI *graphicsHelper, const ImGuiDrawingContext &drawingContext,
+        const class LocalPipelineContext &pipelineContext);
 
     void setupRendering();
     void releaseRendering();
     void setShaderData();
     void setCurrentContexts();
+
 protected:
-    TextureBase* getFontTextureAtlas() const;
+    TextureBase *getFontTextureAtlas() const;
     SamplerRef getTextureSampler() const;
     ShaderParametersRef getFontAtlasParam() const;
-    ShaderParametersRef getTextureParam(const TextureBase* textureUsed);
-    ShaderParametersRef createTextureParam(const TextureBase* texture, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper,
-        const class LocalPipelineContext& pipelineContext);
-    ShaderParametersRef findFreeTextureParam(const TextureBase* textureUsed);
+    ShaderParametersRef getTextureParam(const TextureBase *textureUsed);
+    ShaderParametersRef createTextureParam(const TextureBase *texture,
+        IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
+        const class LocalPipelineContext &pipelineContext);
+    ShaderParametersRef findFreeTextureParam(const TextureBase *textureUsed);
 
 public:
     ImGuiManager() = default;
-    ImGuiManager(ImGuiManager* parent);
+    ImGuiManager(ImGuiManager *parent);
 
     void initialize();
-    void updateFrame(const float& deltaTime);
+    void updateFrame(const float &deltaTime);
     void release();
-    void draw(class IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper, const ImGuiDrawingContext& drawingContext);
+    void draw(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+        const GraphicsHelperAPI *graphicsHelper, const ImGuiDrawingContext &drawingContext);
 
-    void addFont(const String& fontAssetPath, float fontSize);
-    void addLayer(IImGuiLayer* layer);
-    void removeLayer(IImGuiLayer* layer);
+    void addFont(const String &fontAssetPath, float fontSize);
+    void addLayer(IImGuiLayer *layer);
+    void removeLayer(IImGuiLayer *layer);
 
     bool capturedInputs() const { return bCaptureInput; }
 };

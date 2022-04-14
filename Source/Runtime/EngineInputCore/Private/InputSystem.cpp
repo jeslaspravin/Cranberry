@@ -10,8 +10,8 @@
  */
 
 #include "InputSystem.h"
-#include "PlatformInputTypes.h"
 #include "KeyToAsciiCharProcessor.h"
+#include "PlatformInputTypes.h"
 
 InputSystem::InputSystem()
 {
@@ -25,7 +25,7 @@ InputSystem::InputSystem()
 InputSystem::~InputSystem()
 {
     delete rawInputBuffer;
-    for (IInputDevice* inputDevice : inputDevices)
+    for (IInputDevice *inputDevice : inputDevices)
     {
         delete inputDevice;
     }
@@ -33,22 +33,13 @@ InputSystem::~InputSystem()
     keyToCharProcessor.reset();
 }
 
-const KeyState* InputSystem::keyState(const Key& key) const
-{
-    return keys.queryState(key);
-}
+const KeyState *InputSystem::keyState(const Key &key) const { return keys.queryState(key); }
 
-bool InputSystem::isKeyPressed(const Key& key) const
-{
-    return keys.queryState(key)->isPressed;
-}
+bool InputSystem::isKeyPressed(const Key &key) const { return keys.queryState(key)->isPressed; }
 
-Utf32 InputSystem::keyChar(const Key& key) const
-{
-    return keyToCharProcessor->keyChar(&key);
-}
+Utf32 InputSystem::keyChar(const Key &key) const { return keyToCharProcessor->keyChar(&key); }
 
-const InputAnalogState* InputSystem::analogState(AnalogStates::EStates stateKey) const
+const InputAnalogState *InputSystem::analogState(AnalogStates::EStates stateKey) const
 {
     return analogStates.queryState(stateKey);
 }
@@ -78,11 +69,10 @@ void InputSystem::setKeyToCharProcessor(SharedPtr<class IKeyToCharProcessor> new
     keyToCharProcessor = newKeyToCharProcessor;
 }
 
-void InputSystem::registerWindow(const class GenericAppWindow* window) const
+void InputSystem::registerWindow(const class GenericAppWindow *window) const
 {
-    for (const IInputDevice* device : inputDevices)
+    for (const IInputDevice *device : inputDevices)
     {
         device->registerWindow(window);
     }
 }
-

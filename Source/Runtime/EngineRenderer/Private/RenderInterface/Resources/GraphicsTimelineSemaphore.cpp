@@ -11,7 +11,6 @@
 
 #include "RenderInterface/Resources/GraphicsSyncResource.h"
 
-
 void GraphicsTimelineSemaphore::waitForSignal() const
 {
     if (currentValue() > 0)
@@ -20,12 +19,6 @@ void GraphicsTimelineSemaphore::waitForSignal() const
     waitForSignal(1);
 }
 
-bool GraphicsTimelineSemaphore::isSignaled() const
-{
-    return isSignaled(1);
-}
+bool GraphicsTimelineSemaphore::isSignaled() const { return isSignaled(1); }
 
-void GraphicsTimelineSemaphore::resetSignal()
-{
-    resetSignal(0);
-}
+void GraphicsTimelineSemaphore::resetSignal() { resetSignal(0); }

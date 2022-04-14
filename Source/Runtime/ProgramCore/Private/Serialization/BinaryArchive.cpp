@@ -10,13 +10,13 @@
  */
 
 #include "Serialization/BinaryArchive.h"
-#include "Types/Templates/TemplateTypes.h"
 #include "Memory/Memory.h"
-#include "Types/Platform/LFS/File/FileHelper.h"
 #include "String/TCharString.h"
+#include "Types/Platform/LFS/File/FileHelper.h"
+#include "Types/Templates/TemplateTypes.h"
 
 template <typename Type>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<1>)
+FORCE_INLINE void serializeBytesSwapped(Type &data, BinaryArchive &archive, UIntToType<1>)
 {
     if (archive.isLoading())
     {
@@ -28,7 +28,7 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UInt
     }
 }
 template <typename Type>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<2>)
+FORCE_INLINE void serializeBytesSwapped(Type &data, BinaryArchive &archive, UIntToType<2>)
 {
     if (archive.isLoading())
     {
@@ -39,12 +39,12 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UInt
     }
     else
     {
-        uint16 writeData = FileHelper::bytesSwap(*reinterpret_cast<uint16*>(&data));
+        uint16 writeData = FileHelper::bytesSwap(*reinterpret_cast<uint16 *>(&data));
         archive.stream()->write(&writeData, sizeof(Type));
     }
 }
 template <typename Type>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<4>)
+FORCE_INLINE void serializeBytesSwapped(Type &data, BinaryArchive &archive, UIntToType<4>)
 {
     if (archive.isLoading())
     {
@@ -55,12 +55,12 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UInt
     }
     else
     {
-        uint32 writeData = FileHelper::bytesSwap(*reinterpret_cast<uint32*>(&data));
+        uint32 writeData = FileHelper::bytesSwap(*reinterpret_cast<uint32 *>(&data));
         archive.stream()->write(&writeData, sizeof(Type));
     }
 }
 template <typename Type>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<8>)
+FORCE_INLINE void serializeBytesSwapped(Type &data, BinaryArchive &archive, UIntToType<8>)
 {
     if (archive.isLoading())
     {
@@ -71,14 +71,14 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UInt
     }
     else
     {
-        uint64 writeData = FileHelper::bytesSwap(*reinterpret_cast<uint64*>(&data));
+        uint64 writeData = FileHelper::bytesSwap(*reinterpret_cast<uint64 *>(&data));
         archive.stream()->write(&writeData, sizeof(Type));
     }
 }
 
 // Generic implementation
 template <typename Type, SizeT TypeSize>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UIntToType<TypeSize>)
+FORCE_INLINE void serializeBytesSwapped(Type &data, BinaryArchive &archive, UIntToType<TypeSize>)
 {
     if (archive.isLoading())
     {
@@ -94,13 +94,13 @@ FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive, UInt
 }
 
 template <typename Type, SizeT TypeSize = sizeof(Type)>
-FORCE_INLINE void serializeBytesSwapped(Type& data, BinaryArchive& archive)
+FORCE_INLINE void serializeBytesSwapped(Type &data, BinaryArchive &archive)
 {
     serializeBytesSwapped(data, archive, UIntToType<TypeSize>{});
 }
 
 template <typename Type>
-FORCE_INLINE void serializeBytesOrdered(Type& data, BinaryArchive& archive)
+FORCE_INLINE void serializeBytesOrdered(Type &data, BinaryArchive &archive)
 {
     if (archive.ifSwapBytes())
     {
@@ -113,7 +113,7 @@ FORCE_INLINE void serializeBytesOrdered(Type& data, BinaryArchive& archive)
     }
 }
 
-ArchiveBase& BinaryArchive::serialize(TChar* value)
+ArchiveBase &BinaryArchive::serialize(TChar *value)
 {
     // Up to 512 bytes in stack
     uint8 buffer[512];
@@ -142,7 +142,7 @@ ArchiveBase& BinaryArchive::serialize(TChar* value)
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(String& value)
+ArchiveBase &BinaryArchive::serialize(String &value)
 {
     // Up to 512 bytes in stack
     uint8 buffer[512];
@@ -170,67 +170,67 @@ ArchiveBase& BinaryArchive::serialize(String& value)
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(uint8& value)
+ArchiveBase &BinaryArchive::serialize(uint8 &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(uint16& value)
+ArchiveBase &BinaryArchive::serialize(uint16 &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(uint32& value)
+ArchiveBase &BinaryArchive::serialize(uint32 &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(uint64& value)
+ArchiveBase &BinaryArchive::serialize(uint64 &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(int8& value)
+ArchiveBase &BinaryArchive::serialize(int8 &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(int16& value)
+ArchiveBase &BinaryArchive::serialize(int16 &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(int32& value)
+ArchiveBase &BinaryArchive::serialize(int32 &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(int64& value)
+ArchiveBase &BinaryArchive::serialize(int64 &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(float& value)
+ArchiveBase &BinaryArchive::serialize(float &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(double& value)
+ArchiveBase &BinaryArchive::serialize(double &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;
 }
 
-ArchiveBase& BinaryArchive::serialize(bool& value)
+ArchiveBase &BinaryArchive::serialize(bool &value)
 {
     serializeBytesOrdered(value, *this);
     return *this;

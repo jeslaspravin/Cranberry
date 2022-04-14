@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "Modules/IModuleBase.h"
 #include "CoreObjectsExports.h"
+#include "Modules/IModuleBase.h"
 
 class CoreObjectsDB;
 class CoreObjectGC;
@@ -20,7 +20,7 @@ class CoreObjectGC;
 class COREOBJECTS_EXPORT ICoreObjectsModule : public IModuleBase
 {
 public:
-    virtual const CoreObjectsDB& getObjectsDB() const = 0;
-    virtual CoreObjectGC& getGC() = 0;
-	static ICoreObjectsModule* get();
+    virtual const CoreObjectsDB &getObjectsDB() const = 0;
+    virtual CoreObjectGC &getGC() = 0;
+    static ICoreObjectsModule *get();
 };

@@ -27,10 +27,11 @@ public:
 
     // Will be sorted ascending, Index lists available
     SparsityContainerType sparsityTags;
+
 private:
     void add(SizeType idx)
     {
-        debugAssert(!isFree(idx));// Double add
+        debugAssert(!isFree(idx)); // Double add
 
         if (sparsityTags.empty() || idx > sparsityTags.front())
         {
@@ -42,6 +43,7 @@ private:
             sparsityTags.emplace_front(idx);
         }
     }
+
 public:
     // Sets the value at idx to be occupied
     void set(SizeType idx)
@@ -50,19 +52,16 @@ public:
         {
             return;
         }
-        // lower_bound gives first itr that is not less than idx(either greater than or equal idx) or end itr
-        // does it using binary search
-        for (auto itr = std::lower_bound(sparsityTags.begin(), sparsityTags.end(), idx)
-            ; itr != sparsityTags.end() && ((*itr) == idx);)
+        // lower_bound gives first itr that is not less than idx(either greater than or equal idx) or end
+        // itr does it using binary search
+        for (auto itr = std::lower_bound(sparsityTags.begin(), sparsityTags.end(), idx);
+             itr != sparsityTags.end() && ((*itr) == idx);)
         {
             itr = sparsityTags.erase_after(itr);
         }
     }
     // Sets the value at idx to be free
-    FORCE_INLINE void reset(SizeType idx)
-    {
-        add(idx);
-    }
+    FORCE_INLINE void reset(SizeType idx) { add(idx); }
 
     FORCE_INLINE SizeT pop_free()
     {
@@ -71,19 +70,13 @@ public:
         sparsityTags.pop_front();
         return idx;
     }
-    FORCE_INLINE void push_free(SizeType idx)
-    {
-        add(idx);
-    }
+    FORCE_INLINE void push_free(SizeType idx) { add(idx); }
     bool isFree(SizeType idx) const
     {
         return std::binary_search(sparsityTags.cbegin(), sparsityTags.cend(), idx);
     }
     // true if not free slots found
-    FORCE_INLINE bool empty() const
-    {
-        return sparsityTags.empty();
-    }
+    FORCE_INLINE bool empty() const { return sparsityTags.empty(); }
     // Number of sparse slots
     CONST_EXPR SizeType size() const
     {

@@ -10,21 +10,21 @@
  */
 
 #pragma once
-#include "RenderInterface/ShaderCore/ShaderInputOutput.h"
 #include "Reflections/Fields.h"
+#include "RenderInterface/ShaderCore/ShaderInputOutput.h"
 #include "Types/Containers/ArrayView.h"
-#include "Types/Templates/ValueTraits.h"
 #include "Types/Templates/TypeTraits.h"
+#include "Types/Templates/ValueTraits.h"
 
 #include <any>
 
 struct ShaderVertexField;
 struct ShaderBufferField;
 
-template<typename ParamType>
+template <typename ParamType>
 struct ShaderParamFieldNode;
 
-template<typename FieldNodeType>
+template <typename FieldNodeType>
 struct ShaderParamInfo;
 
 using ShaderVertexFieldNode = ShaderParamFieldNode<ShaderVertexField>;
@@ -45,22 +45,24 @@ struct ENGINERENDERER_EXPORT ShaderVertexField
     uint32 location = 0;
     EShaderInputAttribFormat::Type format = EShaderInputAttribFormat::Undefined;
 
-    ShaderVertexField(const String& attribName, const uint32& offsetVal);
-    ShaderVertexField(const String& attribName, const uint32& offsetVal, EShaderInputAttribFormat::Type overrideFormat);
+    ShaderVertexField(const String &attribName, const uint32 &offsetVal);
+    ShaderVertexField(const String &attribName, const uint32 &offsetVal,
+        EShaderInputAttribFormat::Type overrideFormat);
 };
 
-template<typename OuterType, typename MemberType>
+template <typename OuterType, typename MemberType>
 struct ShaderVertexMemberField : public ShaderVertexField
 {
     using FieldPtr = ClassMemberField<false, OuterType, MemberType>;
     FieldPtr memberPtr;
 
-    ShaderVertexMemberField(const String& pName, const FieldPtr& fieldPtr, const uint32& offsetVal)
+    ShaderVertexMemberField(const String &pName, const FieldPtr &fieldPtr, const uint32 &offsetVal)
         : ShaderVertexField(pName, offsetVal)
         , memberPtr(fieldPtr)
     {}
 
-    ShaderVertexMemberField(const String& pName, const FieldPtr& fieldPtr, const uint32& offsetVal, EShaderInputAttribFormat::Type overrideFormat)
+    ShaderVertexMemberField(const String &pName, const FieldPtr &fieldPtr, const uint32 &offsetVal,
+        EShaderInputAttribFormat::Type overrideFormat)
         : ShaderVertexField(pName, offsetVal, overrideFormat)
         , memberPtr(fieldPtr)
     {}
@@ -86,18 +88,20 @@ struct ENGINERENDERER_EXPORT ShaderBufferField
     String paramName;
 
     uint8 fieldDecorations = 0;
-    ShaderBufferParamInfo* paramInfo = nullptr;
+    ShaderBufferParamInfo *paramInfo = nullptr;
 
-    ShaderBufferField(const String& pName);
+    ShaderBufferField(const String &pName);
 
-    virtual bool setFieldData(void* outerPtr, const std::any& newValue) const = 0;
-    virtual bool setFieldDataArray(void* outerPtr, const std::any& newValuesPtr) const = 0;
-    virtual bool setFieldDataArray(void* outerPtr, const std::any& newValue, uint32 arrayIndex) const = 0;
-    // returns Pointer to start of element data, if array then pointer to 1st element, If pointer then the pointer itself(not the pointer to pointer)
-    // Element size individual element size in array and will be same as type size in non array
-    virtual void* fieldData(void* outerPtr, uint32* typeSize, uint32* elementSize) const = 0;
+    virtual bool setFieldData(void *outerPtr, const std::any &newValue) const = 0;
+    virtual bool setFieldDataArray(void *outerPtr, const std::any &newValuesPtr) const = 0;
+    virtual bool setFieldDataArray(
+        void *outerPtr, const std::any &newValue, uint32 arrayIndex) const = 0;
+    // returns Pointer to start of element data, if array then pointer to 1st element, If pointer then
+    // the pointer itself(not the pointer to pointer) Element size individual element size in array and
+    // will be same as type size in non array
+    virtual void *fieldData(void *outerPtr, uint32 *typeSize, uint32 *elementSize) const = 0;
     // returns Pointer to field, if array then pointer to 1st element, If pointer then pointer to pointer
-    virtual void* fieldPtr(void* outerPtr) const = 0;
+    virtual void *fieldPtr(void *outerPtr) const = 0;
     FORCE_INLINE bool isIndexAccessible() const
     {
         return ANY_BIT_SET(fieldDecorations, ShaderBufferField::IsArray | ShaderBufferField::IsPointer);
@@ -108,17 +112,21 @@ struct ENGINERENDERER_EXPORT ShaderBufferField
     }
 };
 
-template<typename OuterType>
+template <typename OuterType>
 struct ShaderBufferTypedField : public ShaderBufferField
 {
-    ShaderBufferTypedField(const String& pName) : ShaderBufferField(pName) {}
+    ShaderBufferTypedField(const String &pName)
+        : ShaderBufferField(pName)
+    {}
 
-    // returns Pointer to start of element data, if array then pointer to 1st element, If pointer then the pointer itself(not the pointer to pointer)
-    // Element size individual element size in array and will be same as type size in non array
-    virtual const void* fieldData(const OuterType* outerPtr, uint32* typeSize, uint32* elementSize) const = 0;
+    // returns Pointer to start of element data, if array then pointer to 1st element, If pointer then
+    // the pointer itself(not the pointer to pointer) Element size individual element size in array and
+    // will be same as type size in non array
+    virtual const void *fieldData(
+        const OuterType *outerPtr, uint32 *typeSize, uint32 *elementSize) const = 0;
 };
 
-template<typename OuterType, typename MemberType>
+template <typename OuterType, typename MemberType>
 struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
 {
     using ShaderBufferTypedField<OuterType>::ShaderBufferFieldDecorations;
@@ -131,39 +139,41 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     using FieldPtr = ClassMemberField<false, OuterType, MemberType>;
     FieldPtr memberPtr;
 
-    ShaderBufferMemberField(const String& pName, const FieldPtr& fieldPtr)
+    ShaderBufferMemberField(const String &pName, const FieldPtr &fieldPtr)
         : ShaderBufferTypedField<OuterType>(pName)
         , memberPtr(fieldPtr)
     {
-        fieldDecorations |= std::is_array_v<MemberType> ? ShaderBufferFieldDecorations::IsArray : 0
-            | std::is_pointer_v<MemberType> ? (ShaderBufferFieldDecorations::IsArray | ShaderBufferFieldDecorations::IsPointer) : 0;
+        fieldDecorations
+            |= std::is_array_v<MemberType> ? ShaderBufferFieldDecorations::IsArray
+               : 0 | std::is_pointer_v<MemberType>
+                   ? (ShaderBufferFieldDecorations::IsArray | ShaderBufferFieldDecorations::IsPointer)
+                   : 0;
 
         size = ConditionalValue_v<uint32, uint32, std::is_pointer<MemberType>, 0u, sizeof(MemberType)>;
         stride = sizeof(ArrayType);
     }
 
-    constexpr static uint32 totalArrayElements()
-    {
-        return sizeof(MemberType)/sizeof(ArrayType);
-    }
+    constexpr static uint32 totalArrayElements() { return sizeof(MemberType) / sizeof(ArrayType); }
 
     // #TODO(Jeslas) : Move this to concepts
     template <typename DataType>
-    constexpr static std::enable_if_t<IsIndexable<DataType>::value, IndexableElementType<DataType>>* memberDataPtr(DataType& data)
+    constexpr static std::enable_if_t<IsIndexable<DataType>::value, IndexableElementType<DataType>> *
+        memberDataPtr(DataType &data)
     {
         return &data[0];
     }
 
     template <typename DataType>
-    constexpr static std::enable_if_t<std::negation_v<IsIndexable<DataType>>, DataType>* memberDataPtr(DataType& data)
+    constexpr static std::enable_if_t<std::negation_v<IsIndexable<DataType>>, DataType> *memberDataPtr(
+        DataType &data)
     {
         return &data;
     }
 
-    bool setFieldData(void* outerPtr, const std::any& newValue) const override
+    bool setFieldData(void *outerPtr, const std::any &newValue) const override
     {
-        OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
-        const MemberType* newValuePtr = std::any_cast<MemberType>(&newValue);
+        OuterType *castOuterPtr = reinterpret_cast<OuterType *>(outerPtr);
+        const MemberType *newValuePtr = std::any_cast<MemberType>(&newValue);
 
         if (newValuePtr != nullptr)
         {
@@ -173,37 +183,40 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         return false;
     }
 
-    bool setFieldDataArray(void* outerPtr, const std::any& newValuesPtr) const override
+    bool setFieldDataArray(void *outerPtr, const std::any &newValuesPtr) const override
     {
-        OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
-        ArrayView<ArrayType> const*newValuesViewPtr = std::any_cast<ArrayView<ArrayType>>(&newValuesPtr);
+        OuterType *castOuterPtr = reinterpret_cast<OuterType *>(outerPtr);
+        ArrayView<ArrayType> const *newValuesViewPtr
+            = std::any_cast<ArrayView<ArrayType>>(&newValuesPtr);
 
-        if (ShaderBufferTypedField<OuterType>::isIndexAccessible() && newValuesViewPtr != nullptr && newValuesViewPtr->data() != nullptr)
+        if (ShaderBufferTypedField<OuterType>::isIndexAccessible() && newValuesViewPtr != nullptr
+            && newValuesViewPtr->data() != nullptr)
         {
-            const ArrayType* newValues = newValuesViewPtr->data();
+            const ArrayType *newValues = newValuesViewPtr->data();
             if constexpr (std::is_pointer_v<MemberType>)
             {
                 if (memberPtr.get(castOuterPtr) != nullptr)
                 {
-                    ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+                    ArrayType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
                     memcpy(toValues, newValues, sizeof(ArrayType) * newValuesViewPtr->size());
                     return true;
                 }
             }
             else
             {
-                ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
-                memcpy(toValues, newValues, Math::min(sizeof(MemberType), sizeof(ArrayType) * newValuesViewPtr->size()));
+                ArrayType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+                memcpy(toValues, newValues,
+                    Math::min(sizeof(MemberType), sizeof(ArrayType) * newValuesViewPtr->size()));
                 return true;
             }
         }
         return false;
     }
 
-    bool setFieldDataArray(void* outerPtr, const std::any& newValue, uint32 arrayIndex) const override
+    bool setFieldDataArray(void *outerPtr, const std::any &newValue, uint32 arrayIndex) const override
     {
-        OuterType* castOuterPtr = reinterpret_cast<OuterType*>(outerPtr);
-        const ArrayType* newValuePtr = std::any_cast<ArrayType>(&newValue);
+        OuterType *castOuterPtr = reinterpret_cast<OuterType *>(outerPtr);
+        const ArrayType *newValuePtr = std::any_cast<ArrayType>(&newValue);
 
         bool bCanSet = false;
         if constexpr (IsIndexable<MemberType>::value)
@@ -219,14 +232,14 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         }
         if (bCanSet)
         {
-            ArrayType* toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+            ArrayType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
             (toValues)[arrayIndex] = *newValuePtr;
             return true;
         }
         return false;
     }
 
-    void* fieldData(void* outerPtr, uint32* typeSize, uint32* elementSize) const override
+    void *fieldData(void *outerPtr, uint32 *typeSize, uint32 *elementSize) const override
     {
         if (typeSize)
         {
@@ -236,15 +249,16 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         {
             (*elementSize) = sizeof(ArrayType);
         }
-        return memberDataPtr(memberPtr.get(reinterpret_cast<OuterType*>(outerPtr)));
-    }
-    
-    void* fieldPtr(void* outerPtr) const override
-    {
-        return &memberPtr.get(reinterpret_cast<OuterType*>(outerPtr));
+        return memberDataPtr(memberPtr.get(reinterpret_cast<OuterType *>(outerPtr)));
     }
 
-    const void* fieldData(const OuterType* outerPtr, uint32* typeSize, uint32* elementSize) const override
+    void *fieldPtr(void *outerPtr) const override
+    {
+        return &memberPtr.get(reinterpret_cast<OuterType *>(outerPtr));
+    }
+
+    const void *fieldData(
+        const OuterType *outerPtr, uint32 *typeSize, uint32 *elementSize) const override
     {
         if (typeSize)
         {
@@ -258,7 +272,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     }
 };
 
-template<typename OuterType, typename MemberType>
+template <typename OuterType, typename MemberType>
 struct ShaderBufferStructField : public ShaderBufferMemberField<OuterType, MemberType>
 {
     using ShaderBufferMemberField<OuterType, MemberType>::ShaderBufferFieldDecorations;
@@ -266,7 +280,7 @@ struct ShaderBufferStructField : public ShaderBufferMemberField<OuterType, Membe
     using ShaderBufferMemberField<OuterType, MemberType>::paramInfo;
     using typename ShaderBufferMemberField<OuterType, MemberType>::FieldPtr;
 
-    ShaderBufferStructField(const String& pName, const FieldPtr& fieldPtr, ShaderBufferParamInfo* pInfo)
+    ShaderBufferStructField(const String &pName, const FieldPtr &fieldPtr, ShaderBufferParamInfo *pInfo)
         : ShaderBufferMemberField<OuterType, MemberType>(pName, fieldPtr)
     {
         paramInfo = pInfo;
@@ -277,16 +291,16 @@ struct ShaderBufferStructField : public ShaderBufferMemberField<OuterType, Membe
 //////////////////////////////////////////////////////////////////////////
 //// Nodes form chain to link all of the ShaderParamFields together
 //////////////////////////////////////////////////////////////////////////
-template<typename ParamType>
+template <typename ParamType>
 struct ShaderParamFieldNode
 {
-    ParamType* field = nullptr;
-    ShaderParamFieldNode* nextNode = nullptr;
-    ShaderParamFieldNode* prevNode = nullptr;
+    ParamType *field = nullptr;
+    ShaderParamFieldNode *nextNode = nullptr;
+    ShaderParamFieldNode *prevNode = nullptr;
 
     ShaderParamFieldNode() = default;
 
-    ShaderParamFieldNode(ParamType* paramField, ShaderParamFieldNode* headNode)
+    ShaderParamFieldNode(ParamType *paramField, ShaderParamFieldNode *headNode)
         : nextNode(nullptr)
         , prevNode(nullptr)
     {
@@ -299,15 +313,11 @@ struct ShaderParamFieldNode
         prevNode->field = paramField;
     }
 
-    bool isValid() const
-    {
-        return field != nullptr;
-    }
+    bool isValid() const { return field != nullptr; }
 };
 
-
 // Parameters info for vertex or buffer inputs
-template<typename FieldNodeType>
+template <typename FieldNodeType>
 struct ShaderParamInfo
 {
 public:
@@ -321,7 +331,8 @@ private:
     class IteratorBase
     {
     protected:
-        const FieldNodeType* node;
+        const FieldNodeType *node;
+
     public:
         using FieldType = decltype(std::declval<FieldNodeType>().field);
         static_assert(std::is_pointer_v<FieldType>, "Field type must be pointer type");
@@ -333,33 +344,37 @@ private:
         using iterator_category = std::forward_iterator_tag;
 
         // End constructor, We assume it null rather than iterating through until end
-        IteratorBase() : node(nullptr) {}
-        IteratorBase(const ShaderParamInfo* paramInfo)
+        IteratorBase()
+            : node(nullptr)
+        {}
+        IteratorBase(const ShaderParamInfo *paramInfo)
             : node(&paramInfo->startNode)
         {}
-        IteratorBase(const IteratorBase& itr)
+        IteratorBase(const IteratorBase &itr)
             : node(itr.node)
         {}
-        IteratorBase(IteratorBase&& itr)
+        IteratorBase(IteratorBase &&itr)
             : node(std::move(itr.node))
         {}
     };
+
 public:
     class ConstIterator : public IteratorBase
     {
     private:
         using IteratorBase::node;
+
     public:
         using IteratorBase::FieldType;
 
         ConstIterator() = default;
-        ConstIterator(const ShaderParamInfo* paramInfo)
+        ConstIterator(const ShaderParamInfo *paramInfo)
             : IteratorBase(paramInfo)
         {}
-        ConstIterator(const ConstIterator& itr)
+        ConstIterator(const ConstIterator &itr)
             : IteratorBase(itr)
         {}
-        ConstIterator(ConstIterator&& itr)
+        ConstIterator(ConstIterator &&itr)
             : IteratorBase(std::forward(itr))
         {}
 
@@ -369,19 +384,16 @@ public:
             return node ? node->field : nullptr;
         }
 
-        const FieldType operator*() const
-        {
-            return node ? node->field : nullptr;
-        }
+        const FieldType operator*() const { return node ? node->field : nullptr; }
 
-        bool operator!=(const ConstIterator& other) const
+        bool operator!=(const ConstIterator &other) const
         {
             const bool thisValid = node != nullptr && node->isValid();
             const bool otherValid = other.node != nullptr && other.node->isValid();
             return thisValid != otherValid || **this != *other;
         }
 
-        ConstIterator& operator++()
+        ConstIterator &operator++()
         {
             if (node)
             {
@@ -402,17 +414,18 @@ public:
     {
     private:
         using IteratorBase::node;
+
     public:
         using IteratorBase::FieldType;
 
         Iterator() = default;
-        Iterator(const ShaderParamInfo* paramInfo)
+        Iterator(const ShaderParamInfo *paramInfo)
             : IteratorBase(paramInfo)
         {}
-        Iterator(const Iterator& itr)
+        Iterator(const Iterator &itr)
             : IteratorBase(itr)
         {}
-        Iterator(Iterator&& itr)
+        Iterator(Iterator &&itr)
             : IteratorBase(std::forward(itr))
         {}
 
@@ -422,19 +435,16 @@ public:
             return node ? node->field : nullptr;
         }
 
-        FieldType operator*() const
-        {
-            return node ? node->field : nullptr;
-        }
+        FieldType operator*() const { return node ? node->field : nullptr; }
 
-        bool operator!=(const Iterator& other) const
+        bool operator!=(const Iterator &other) const
         {
             const bool thisValid = node != nullptr && node->isValid();
             const bool otherValid = other.node != nullptr && other.node->isValid();
             return thisValid != otherValid || **this != *other;
         }
 
-        Iterator& operator++()
+        Iterator &operator++()
         {
             if (node)
             {
@@ -451,24 +461,12 @@ public:
         }
     };
 
-    ConstIterator begin() const
-    {
-        return ConstIterator(this);
-    }
+    ConstIterator begin() const { return ConstIterator(this); }
 
-    ConstIterator end() const
-    {
-        return ConstIterator();
-    }
-    Iterator begin()
-    {
-        return Iterator(this);
-    }
+    ConstIterator end() const { return ConstIterator(); }
+    Iterator begin() { return Iterator(this); }
 
-    Iterator end()
-    {
-        return Iterator();
-    }
+    Iterator end() { return Iterator(); }
 };
 
 struct ENGINERENDERER_EXPORT ShaderVertexParamInfo : public ShaderParamInfo<ShaderVertexFieldNode>
@@ -477,47 +475,50 @@ public:
     virtual EShaderInputFrequency::Type inputFrequency() const = 0;
 };
 
-#define BEGIN_BUFFER_DEFINITION(BufferType) \
-struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo \
-{ \
-    typedef BufferType BufferDataType; \
-    uint32 stride = sizeof(BufferDataType); \
-    uint32 paramStride() const { return stride; } \
-    uint32 paramNativeStride() const { return sizeof(BufferDataType); } \
-    void setStride(uint32 newStride) { stride = newStride; }
+#define BEGIN_BUFFER_DEFINITION(BufferType)                                                             \
+    struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo                             \
+    {                                                                                                   \
+        typedef BufferType BufferDataType;                                                              \
+        uint32 stride = sizeof(BufferDataType);                                                         \
+        uint32 paramStride() const { return stride; }                                                   \
+        uint32 paramNativeStride() const { return sizeof(BufferDataType); }                             \
+        void setStride(uint32 newStride) { stride = newStride; }
 
-#define END_BUFFER_DEFINITION() \
-}
+#define END_BUFFER_DEFINITION() }
 
-#define ADD_BUFFER_TYPED_FIELD(FieldName) \
-    ShaderBufferMemberField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { TCHAR(#FieldName), &BufferDataType::##FieldName }; \
+#define ADD_BUFFER_TYPED_FIELD(FieldName)                                                               \
+    ShaderBufferMemberField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field   \
+        = { TCHAR(#FieldName), &BufferDataType::##FieldName };                                          \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 // NOTE : Right now supporting : Buffer with any alignment
-// but in case of inner struct only with proper alignment with respect to GPU(Alignment correction on copying to GPU is only done for first level of variables)  
-#define ADD_BUFFER_STRUCT_FIELD(FieldName, FieldType) \
-    FieldType##BufferParamInfo FieldName##ParamInfo; \
-    ShaderBufferStructField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field = { TCHAR(#FieldName), &BufferDataType::##FieldName##, &##FieldName##ParamInfo }; \
+// but in case of inner struct only with proper alignment with respect to GPU(Alignment correction on
+// copying to GPU is only done for first level of variables)
+#define ADD_BUFFER_STRUCT_FIELD(FieldName, FieldType)                                                   \
+    FieldType##BufferParamInfo FieldName##ParamInfo;                                                    \
+    ShaderBufferStructField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field   \
+        = { TCHAR(#FieldName), &BufferDataType::##FieldName##, &##FieldName##ParamInfo };               \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
+#define BEGIN_VERTEX_DEFINITION(VertexType, InputFrequency)                                             \
+    struct VertexType##VertexParamInfo final : public ShaderVertexParamInfo                             \
+    {                                                                                                   \
+        typedef VertexType VertexDataType;                                                              \
+        const EShaderInputFrequency::Type vertexInputFreq = InputFrequency;                             \
+        uint32 paramStride() const final { return sizeof(VertexDataType); }                             \
+        uint32 paramNativeStride() const final { return sizeof(VertexDataType); }                       \
+        void setStride(uint32 newStride) final {}                                                       \
+        EShaderInputFrequency::Type inputFrequency() const final { return vertexInputFreq; }
 
-#define BEGIN_VERTEX_DEFINITION(VertexType, InputFrequency) \
-struct VertexType##VertexParamInfo final : public ShaderVertexParamInfo \
-{ \
-    typedef VertexType VertexDataType; \
-    const EShaderInputFrequency::Type vertexInputFreq =  InputFrequency; \
-    uint32 paramStride() const final { return sizeof(VertexDataType); } \
-    uint32 paramNativeStride() const final { return sizeof(VertexDataType); } \
-    void setStride(uint32 newStride) final {} \
-    EShaderInputFrequency::Type inputFrequency() const final { return  vertexInputFreq; }
-
-#define ADD_VERTEX_FIELD(FieldName) \
-    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName) }; \
+#define ADD_VERTEX_FIELD(FieldName)                                                                     \
+    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field   \
+        = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName) };     \
     ShaderVertexFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
-#define ADD_VERTEX_FIELD_AND_FORMAT(FieldName, OverrideFormat) \
-    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName), OverrideFormat }; \
+#define ADD_VERTEX_FIELD_AND_FORMAT(FieldName, OverrideFormat)                                          \
+    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field   \
+        = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName),       \
+              OverrideFormat };                                                                         \
     ShaderVertexFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
-#define END_VERTEX_DEFINITION() \
-}
+#define END_VERTEX_DEFINITION() }

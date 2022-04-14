@@ -10,20 +10,20 @@
  */
 
 #include "Assets/AssetLoader/StaticMeshLoader.h"
-#include "String/String.h"
-#include "Logger/Logger.h"
-#include "Assets/AssetLoaderLibrary.h"
 #include "Assets/Asset/StaticMeshAsset.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector2D.h"
-#include "Math/Math.h"
+#include "Assets/AssetLoaderLibrary.h"
+#include "Logger/Logger.h"
 #include "Math/Box.h"
+#include "Math/Math.h"
+#include "Math/Vector2D.h"
+#include "Math/Vector3D.h"
+#include "String/String.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
-#include <unordered_map>
-#include <set>
-#include <array>
 #include <algorithm>
+#include <array>
+#include <set>
+#include <unordered_map>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -41,9 +41,11 @@ struct MeshLoaderData
 };
 
 template <>
-struct std::hash<tinyobj::index_t> {
+struct std::hash<tinyobj::index_t>
+{
 
-    size_t operator()(const tinyobj::index_t keyval) const noexcept {
+    size_t operator()(const tinyobj::index_t keyval) const noexcept
+    {
         size_t hashVal = std::hash<int32>{}(keyval.vertex_index);
         HashUtility::hashCombine(hashVal, keyval.texcoord_index);
         HashUtility::hashCombine(hashVal, keyval.normal_index);
@@ -51,16 +53,18 @@ struct std::hash<tinyobj::index_t> {
     }
 };
 template <>
-struct std::equal_to<tinyobj::index_t> {
-    constexpr bool operator()(const tinyobj::index_t& lhs, const tinyobj::index_t& rhs) const {
-        return lhs.vertex_index == rhs.vertex_index && lhs.normal_index == rhs.normal_index && lhs.vertex_index == rhs.vertex_index;
+struct std::equal_to<tinyobj::index_t>
+{
+    constexpr bool operator()(const tinyobj::index_t &lhs, const tinyobj::index_t &rhs) const
+    {
+        return lhs.vertex_index == rhs.vertex_index && lhs.normal_index == rhs.normal_index
+               && lhs.vertex_index == rhs.vertex_index;
     }
 };
 
-
-bool hasSmoothedNormals(const tinyobj::shape_t& mesh)
+bool hasSmoothedNormals(const tinyobj::shape_t &mesh)
 {
-    for (const uint32& smoothingGrpIdx : mesh.mesh.smoothing_group_ids)
+    for (const uint32 &smoothingGrpIdx : mesh.mesh.smoothing_group_ids)
     {
         if (smoothingGrpIdx > 0)
         {
@@ -80,14 +84,17 @@ bool hasSmoothedNormals(const tinyobj::shape_t& mesh)
 //  |     v0/_________/
 //  |
 //   ------------ u --> Tangent
-//  
+//
 //  v0 to v1 (v1 - v0) = (u1 - u0) * T + (v1 - v0) * B
 //  Solve the same for other pair v0, v2
 //
-void calcTangent(MeshLoaderData& loaderData, StaticMeshVertex& vertexData, const StaticMeshVertex& other1, const StaticMeshVertex& other2)
+void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData,
+    const StaticMeshVertex &other1, const StaticMeshVertex &other2)
 {
-    const Vector2D uv10{ other1.position.w() - vertexData.position.w(), other1.normal.w() - vertexData.normal.w() };
-    const Vector2D uv20{ other2.position.w() - vertexData.position.w(), other2.normal.w() - vertexData.normal.w() };
+    const Vector2D uv10{ other1.position.w() - vertexData.position.w(),
+        other1.normal.w() - vertexData.normal.w() };
+    const Vector2D uv20{ other2.position.w() - vertexData.position.w(),
+        other2.normal.w() - vertexData.normal.w() };
 
     const Vector3D p10 = Vector3D(other1.position) - Vector3D(vertexData.position);
     const Vector3D p20 = Vector3D(other2.position) - Vector3D(vertexData.position);
@@ -99,7 +106,8 @@ void calcTangent(MeshLoaderData& loaderData, StaticMeshVertex& vertexData, const
     float invDet = uv10.x() * uv20.y() - uv20.x() * uv10.y();
     if (invDet == 0.0f)
     {
-        LOG_DEBUG("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents", __func__);
+        LOG_DEBUG("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents",
+            __func__);
 
         Rotation tbnFrame = RotationMatrix::fromZ(normal).asRotation();
         tangent = tbnFrame.fwdVector();
@@ -115,7 +123,8 @@ void calcTangent(MeshLoaderData& loaderData, StaticMeshVertex& vertexData, const
 
         bitangent = invDet * (uv10.x() * p20 - uv20.x() * p10);
         // Gram-Schmidt orthogonalize
-        bitangent = (bitangent - (bitangent | normal) * normal - (bitangent | tangent) * tangent).normalized();
+        bitangent
+            = (bitangent - (bitangent | normal) * normal - (bitangent | tangent) * tangent).normalized();
 
         //
         // Handedness - dot(cross(normal(z) ^ tangent(x)), bitangent) must be positive
@@ -126,7 +135,7 @@ void calcTangent(MeshLoaderData& loaderData, StaticMeshVertex& vertexData, const
         }
     }
 
-    //vertexData.bitangent = Vector4D(bitangent, 0);
+    // vertexData.bitangent = Vector4D(bitangent, 0);
     vertexData.tangent = Vector4D(tangent, 0);
 
 #if DEV_BUILD
@@ -158,48 +167,47 @@ void calcTangent(MeshLoaderData& loaderData, StaticMeshVertex& vertexData, const
 #endif
 }
 
-void fillVertexInfo(StaticMeshVertex& vertexData, const tinyobj::attrib_t& attrib, const tinyobj::index_t& index)
+void fillVertexInfo(
+    StaticMeshVertex &vertexData, const tinyobj::attrib_t &attrib, const tinyobj::index_t &index)
 {
     // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
-    Vector2D uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
+    Vector2D uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0],
+        (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
     uvCoord = Math::clamp(uvCoord, Vector2D::ZERO, Vector2D::ONE);
 
-    vertexData.position = Vector4D(
-        attrib.vertices[index.vertex_index * 3]
-        , attrib.vertices[index.vertex_index * 3 + 1]
-        , attrib.vertices[index.vertex_index * 3 + 2]
-        , uvCoord.x());
-    Vector3D normal { 
-        attrib.normals[index.normal_index * 3]
-        , attrib.normals[index.normal_index * 3 + 1]
-        , attrib.normals[index.normal_index * 3 + 2]
-    };
+    vertexData.position
+        = Vector4D(attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1],
+            attrib.vertices[index.vertex_index * 3 + 2], uvCoord.x());
+    Vector3D normal{ attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
+        attrib.normals[index.normal_index * 3 + 2] };
 
     vertexData.normal = Vector4D(normal.normalized(), uvCoord.y());
-    //vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1]
-    //    , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
+    // vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3],
+    // attrib.colors[index.vertex_index * 3 + 1]
+    //     , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
 }
 
-Vector3D StaticMeshLoader::getFaceNormal(const uint32& index0, const uint32& index1, const uint32& index2, const std::vector<StaticMeshVertex>& verticesData) const
+Vector3D StaticMeshLoader::getFaceNormal(const uint32 &index0, const uint32 &index1,
+    const uint32 &index2, const std::vector<StaticMeshVertex> &verticesData) const
 {
     Vector4D temp1 = verticesData[index1].position - verticesData[index0].position;
     Vector4D temp2 = verticesData[index2].position - verticesData[index0].position;
 
     Vector3D dir1(temp1.x(), temp1.y(), temp1.z());
     Vector3D dir2(temp2.x(), temp2.y(), temp2.z());
-    
+
     return (dir1 ^ dir2).normalized();
 }
 
-void StaticMeshLoader::addNormal(StaticMeshVertex& vertex, Vector3D& normal) const
+void StaticMeshLoader::addNormal(StaticMeshVertex &vertex, Vector3D &normal) const
 {
-    Vector4D& encodedNormal = vertex.normal;
+    Vector4D &encodedNormal = vertex.normal;
     encodedNormal.x() += normal.x();
     encodedNormal.y() += normal.y();
     encodedNormal.z() += normal.z();
 }
 
-void StaticMeshLoader::normalize(Vector4D& normal) const
+void StaticMeshLoader::normalize(Vector4D &normal) const
 {
     Vector3D newNormal(normal);
     newNormal = newNormal.normalized();
@@ -208,9 +216,10 @@ void StaticMeshLoader::normalize(Vector4D& normal) const
     normal.z() = newNormal.z();
 }
 
-void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials)
+void StaticMeshLoader::load(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib,
+    const std::vector<tinyobj::material_t> &materials)
 {
-    MeshLoaderData& meshLoaderData = loadedMeshes[UTF8_TO_TCHAR(mesh.name.c_str())];
+    MeshLoaderData &meshLoaderData = loadedMeshes[UTF8_TO_TCHAR(mesh.name.c_str())];
     meshLoaderData.indices.resize(mesh.mesh.indices.size());
 
     uint32 faceCount = uint32(mesh.mesh.indices.size() / 3);
@@ -222,9 +231,9 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
         std::unordered_map<tinyobj::index_t, uint32> indexToNewVert;
         for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
         {
-            const tinyobj::index_t& idx0 = mesh.mesh.indices[faceIdx * 3 + 0];
-            const tinyobj::index_t& idx1 = mesh.mesh.indices[faceIdx * 3 + 1];
-            const tinyobj::index_t& idx2 = mesh.mesh.indices[faceIdx * 3 + 2];
+            const tinyobj::index_t &idx0 = mesh.mesh.indices[faceIdx * 3 + 0];
+            const tinyobj::index_t &idx1 = mesh.mesh.indices[faceIdx * 3 + 1];
+            const tinyobj::index_t &idx2 = mesh.mesh.indices[faceIdx * 3 + 2];
             uint32 newVertIdx0;
             uint32 newVertIdx1;
             uint32 newVertIdx2;
@@ -240,7 +249,7 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
 
                 if (idx0NewVertItr == indexToNewVert.end())
                 {
-                    uint32& vertexIdx = indexToNewVert[idx0];
+                    uint32 &vertexIdx = indexToNewVert[idx0];
                     vertexIdx = uint32(meshLoaderData.vertices.size());
 
                     newVertIdx0 = vertexIdx;
@@ -254,7 +263,7 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
                 }
                 if (idx1NewVertItr == indexToNewVert.end())
                 {
-                    uint32& vertexIdx = indexToNewVert[idx1];
+                    uint32 &vertexIdx = indexToNewVert[idx1];
                     vertexIdx = uint32(meshLoaderData.vertices.size());
 
                     newVertIdx1 = vertexIdx;
@@ -268,7 +277,7 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
                 }
                 if (idx2NewVertItr == indexToNewVert.end())
                 {
-                    uint32& vertexIdx = indexToNewVert[idx2];
+                    uint32 &vertexIdx = indexToNewVert[idx2];
                     vertexIdx = uint32(meshLoaderData.vertices.size());
 
                     newVertIdx2 = vertexIdx;
@@ -284,25 +293,22 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
                 // Since we need all three vertex for tangent and bi-tangent calculations
                 if (idx0NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx0]
-                        , meshLoaderData.vertices[newVertIdx1]
-                        , meshLoaderData.vertices[newVertIdx2]);
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx0],
+                        meshLoaderData.vertices[newVertIdx1], meshLoaderData.vertices[newVertIdx2]);
                 }
                 if (idx1NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx1]
-                        , meshLoaderData.vertices[newVertIdx2]
-                        , meshLoaderData.vertices[newVertIdx0]);
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx1],
+                        meshLoaderData.vertices[newVertIdx2], meshLoaderData.vertices[newVertIdx0]);
                 }
                 if (idx2NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx2]
-                        , meshLoaderData.vertices[newVertIdx0]
-                        , meshLoaderData.vertices[newVertIdx1]);
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx2],
+                        meshLoaderData.vertices[newVertIdx0], meshLoaderData.vertices[newVertIdx1]);
                 }
             }
 
-            //makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
+            // makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
 
             meshLoaderData.indices[faceIdx * 3 + 0] = newVertIdx0;
             meshLoaderData.indices[faceIdx * 3 + 1] = newVertIdx1;
@@ -313,16 +319,17 @@ void StaticMeshLoader::load(const tinyobj::shape_t& mesh, const tinyobj::attrib_
     splitMeshBatches(meshLoaderData, faceMaterialId, materials, uint32(uniqueMatIds.size()), faceCount);
 
     // Normalizing all the vertex normals
-    for (StaticMeshVertex& vertex : meshLoaderData.vertices)
+    for (StaticMeshVertex &vertex : meshLoaderData.vertices)
     {
         normalize(vertex.normal);
     }
 }
 
-void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj::attrib_t& attrib, const std::vector<tinyobj::material_t>& materials)
+void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib,
+    const std::vector<tinyobj::material_t> &materials)
 {
     const float smoothingThreshold = Math::cos(Math::deg2Rad(smoothingAngle));
-    MeshLoaderData& meshLoaderData = loadedMeshes[UTF8_TO_TCHAR(mesh.name.c_str())];
+    MeshLoaderData &meshLoaderData = loadedMeshes[UTF8_TO_TCHAR(mesh.name.c_str())];
     meshLoaderData.indices.resize(mesh.mesh.indices.size());
 
     uint32 faceCount = uint32(mesh.mesh.indices.size() / 3);
@@ -338,9 +345,9 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
 
         for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
         {
-            const tinyobj::index_t& idx0 = mesh.mesh.indices[faceIdx * 3 + 0];
-            const tinyobj::index_t& idx1 = mesh.mesh.indices[faceIdx * 3 + 1];
-            const tinyobj::index_t& idx2 = mesh.mesh.indices[faceIdx * 3 + 2];
+            const tinyobj::index_t &idx0 = mesh.mesh.indices[faceIdx * 3 + 0];
+            const tinyobj::index_t &idx1 = mesh.mesh.indices[faceIdx * 3 + 1];
+            const tinyobj::index_t &idx2 = mesh.mesh.indices[faceIdx * 3 + 2];
             uint32 newVertIdx0;
             uint32 newVertIdx1;
             uint32 newVertIdx2;
@@ -357,7 +364,7 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
 
                 if (idx0NewVertItr == indexToNewVert.end())
                 {
-                    uint32& vertexIdx = indexToNewVert[idx0];
+                    uint32 &vertexIdx = indexToNewVert[idx0];
                     vertexIdx = uint32(meshLoaderData.vertices.size());
 
                     newVertIdx0 = vertexIdx;
@@ -372,7 +379,7 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
                 }
                 if (idx1NewVertItr == indexToNewVert.end())
                 {
-                    uint32& vertexIdx = indexToNewVert[idx1];
+                    uint32 &vertexIdx = indexToNewVert[idx1];
                     vertexIdx = uint32(meshLoaderData.vertices.size());
 
                     newVertIdx1 = vertexIdx;
@@ -387,7 +394,7 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
                 }
                 if (idx2NewVertItr == indexToNewVert.end())
                 {
-                    uint32& vertexIdx = indexToNewVert[idx2];
+                    uint32 &vertexIdx = indexToNewVert[idx2];
                     vertexIdx = uint32(meshLoaderData.vertices.size());
 
                     newVertIdx2 = vertexIdx;
@@ -404,31 +411,29 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
                 // Since we need all three vertex for tangent and bi-tangent calculations
                 if (idx0NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx0]
-                        , meshLoaderData.vertices[newVertIdx1]
-                        , meshLoaderData.vertices[newVertIdx2]);
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx0],
+                        meshLoaderData.vertices[newVertIdx1], meshLoaderData.vertices[newVertIdx2]);
                 }
                 if (idx1NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx1]
-                        , meshLoaderData.vertices[newVertIdx2]
-                        , meshLoaderData.vertices[newVertIdx0]);
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx1],
+                        meshLoaderData.vertices[newVertIdx2], meshLoaderData.vertices[newVertIdx0]);
                 }
                 if (idx2NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx2]
-                        , meshLoaderData.vertices[newVertIdx0]
-                        , meshLoaderData.vertices[newVertIdx1]);
+                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx2],
+                        meshLoaderData.vertices[newVertIdx0], meshLoaderData.vertices[newVertIdx1]);
                 }
             }
 
-            //makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
+            // makeCCW(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
 
             meshLoaderData.indices[faceIdx * 3 + 0] = newVertIdx0;
             meshLoaderData.indices[faceIdx * 3 + 1] = newVertIdx1;
             meshLoaderData.indices[faceIdx * 3 + 2] = newVertIdx2;
 
-            faceNormals[faceIdx] = getFaceNormal(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
+            faceNormals[faceIdx]
+                = getFaceNormal(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
 
             // Fill vertex pair's(Edge's) faces adjacency
             {
@@ -508,14 +513,16 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
         {
             std::vector<std::set<uint32>> faceGroups;
 
-            for (const std::pair<const uint32, std::vector<uint32>>& adjacentFaces : vertexFaceAdjacency[vertIdx])
+            for (const std::pair<const uint32, std::vector<uint32>> &adjacentFaces :
+                vertexFaceAdjacency[vertIdx])
             {
                 float dotVal = 1;
                 bool isSameSmoothing = true;
                 if (adjacentFaces.second.size() == 2)
                 {
                     dotVal = faceNormals[adjacentFaces.second[0]] | faceNormals[adjacentFaces.second[1]];
-                    isSameSmoothing = faceSmoothingId[adjacentFaces.second[0]] == faceSmoothingId[adjacentFaces.second[1]];
+                    isSameSmoothing = faceSmoothingId[adjacentFaces.second[0]]
+                                      == faceSmoothingId[adjacentFaces.second[1]];
                 }
 
                 if (dotVal >= smoothingThreshold && isSameSmoothing) // Is same face group
@@ -526,10 +533,13 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
                     std::set<uint32> faceGrpsFound;
                     for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
                     {
-                        std::vector<uint32> intersectSet(Math::min(faceIndices.size(), faceGroups[faceGrpIdx].size()));
-                        auto intersectItr = std::set_intersection(faceIndices.cbegin(), faceIndices.cend(), faceGroups[faceGrpIdx].cbegin(), faceGroups[faceGrpIdx].cend()
-                            , intersectSet.begin());
-                        if ((intersectItr - intersectSet.begin()) > 0)// If any face idx is already in group add to that group
+                        std::vector<uint32> intersectSet(
+                            Math::min(faceIndices.size(), faceGroups[faceGrpIdx].size()));
+                        auto intersectItr = std::set_intersection(faceIndices.cbegin(),
+                            faceIndices.cend(), faceGroups[faceGrpIdx].cbegin(),
+                            faceGroups[faceGrpIdx].cend(), intersectSet.begin());
+                        if ((intersectItr - intersectSet.begin())
+                            > 0) // If any face idx is already in group add to that group
                         {
                             faceGrpsFound.insert(faceGrpIdx);
                         }
@@ -541,24 +551,28 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
                     }
                     else if (faceGrpsFound.size() == 1)
                     {
-                        faceGroups[*faceGrpsFound.begin()].insert(faceIndices.begin(), faceIndices.end());
+                        faceGroups[*faceGrpsFound.begin()].insert(
+                            faceIndices.begin(), faceIndices.end());
                     }
                     else
                     {
                         auto faceGrpIdxItr = --faceGrpsFound.end();
                         do
                         {
-                            faceGroups[*faceGrpsFound.begin()].insert(faceGroups[*faceGrpIdxItr].begin(), faceGroups[*faceGrpIdxItr].end());
+                            faceGroups[*faceGrpsFound.begin()].insert(
+                                faceGroups[*faceGrpIdxItr].begin(), faceGroups[*faceGrpIdxItr].end());
                             faceGroups.erase(faceGroups.begin() + *faceGrpIdxItr);
                             --faceGrpIdxItr;
-                        } while (faceGrpIdxItr != faceGrpsFound.begin());
+                        }
+                        while (faceGrpIdxItr != faceGrpsFound.begin());
 
-                        faceGroups[*faceGrpsFound.begin()].insert(faceIndices.begin(), faceIndices.end());
+                        faceGroups[*faceGrpsFound.begin()].insert(
+                            faceIndices.begin(), faceIndices.end());
                     }
                 }
                 else // Non smoothing cases happen only if there is 2 adjacent faces
                 {
-                    {// For adjacent face at 0
+                    { // For adjacent face at 0
                         bool bIsInserted = false;
                         for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
                         {
@@ -573,7 +587,7 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
                             faceGroups.push_back({ adjacentFaces.second[0] });
                         }
                     }
-                    {// For adjacent face at 1
+                    { // For adjacent face at 1
                         bool bIsInserted = false;
                         for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
                         {
@@ -592,7 +606,7 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
             }
 
             auto faceGrpsItr = faceGroups.begin();
-            for (const uint32& faceIdx : *faceGrpsItr)
+            for (const uint32 &faceIdx : *faceGrpsItr)
             {
                 uint32 faceStartIndex = faceIdx * 3;
                 for (uint32 i = 0; i < 3; ++i)
@@ -610,7 +624,7 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
                 uint32 newVertIndex = uint32(meshLoaderData.vertices.size());
                 meshLoaderData.vertices.push_back(meshLoaderData.vertices[vertIdx]);
 
-                for (const uint32& faceIdx : *faceGrpsItr)
+                for (const uint32 &faceIdx : *faceGrpsItr)
                 {
                     uint32 faceStartIndex = faceIdx * 3;
                     for (uint32 i = 0; i < 3; ++i)
@@ -631,14 +645,15 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t& mesh, const tinyobj
     splitMeshBatches(meshLoaderData, faceMaterialId, materials, uint32(uniqueMatIds.size()), faceCount);
 
     // Normalizing all the vertex normals
-    for (StaticMeshVertex& vertex : meshLoaderData.vertices)
+    for (StaticMeshVertex &vertex : meshLoaderData.vertices)
     {
         normalize(vertex.normal);
     }
 }
 
-void StaticMeshLoader::splitMeshBatches(MeshLoaderData& meshLoaderData, const std::vector<int32> &faceMaterialId
-    , const std::vector<tinyobj::material_t>& materials, uint32 uniqueMatCount, uint32 faceCount)
+void StaticMeshLoader::splitMeshBatches(MeshLoaderData &meshLoaderData,
+    const std::vector<int32> &faceMaterialId, const std::vector<tinyobj::material_t> &materials,
+    uint32 uniqueMatCount, uint32 faceCount)
 {
     // Splitting based on face material IDs
     if (uniqueMatCount > 1)
@@ -647,7 +662,7 @@ void StaticMeshLoader::splitMeshBatches(MeshLoaderData& meshLoaderData, const st
 
         for (uint32 faceIdx = 0; faceIdx < faceCount; ++faceIdx)
         {
-            std::vector<uint32>& indices = materialIdToIndices[faceMaterialId[faceIdx]];
+            std::vector<uint32> &indices = materialIdToIndices[faceMaterialId[faceIdx]];
 
             uint32 faceStartIndex = faceIdx * 3;
             for (uint32 i = 0; i < 3; ++i)
@@ -660,13 +675,15 @@ void StaticMeshLoader::splitMeshBatches(MeshLoaderData& meshLoaderData, const st
         meshLoaderData.indices.reserve(faceCount * 3);
         meshLoaderData.meshBatches.clear();
         meshLoaderData.meshBatches.reserve(materialIdToIndices.size());
-        for (const std::pair<const uint32, std::vector<uint32>>& matIdIndices : materialIdToIndices)
+        for (const std::pair<const uint32, std::vector<uint32>> &matIdIndices : materialIdToIndices)
         {
             MeshVertexView vertexBatchView;
             vertexBatchView.startIndex = uint32(meshLoaderData.indices.size());
             vertexBatchView.numOfIndices = uint32(matIdIndices.second.size());
-            vertexBatchView.name = String(UTF8_TO_TCHAR(materials[matIdIndices.first].name.c_str())).trimCopy();
-            meshLoaderData.indices.insert(meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
+            vertexBatchView.name
+                = String(UTF8_TO_TCHAR(materials[matIdIndices.first].name.c_str())).trimCopy();
+            meshLoaderData.indices.insert(
+                meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
             meshLoaderData.meshBatches.push_back(vertexBatchView);
         }
     }
@@ -679,7 +696,7 @@ void StaticMeshLoader::splitMeshBatches(MeshLoaderData& meshLoaderData, const st
     }
 }
 
-StaticMeshLoader::StaticMeshLoader(const String& assetPath)
+StaticMeshLoader::StaticMeshLoader(const String &assetPath)
     : bIsSuccessful(false)
 {
     tinyobj::attrib_t attrib;
@@ -688,19 +705,20 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
 
     std::string warning;
     std::string error;
-    bIsSuccessful = tinyobj::LoadObj(&attrib, &meshes, &materials, &warning, &error, TCHAR_TO_ANSI(assetPath.getChar())
-        , TCHAR_TO_ANSI(PlatformFile(assetPath).getHostDirectory().getChar()));
+    bIsSuccessful = tinyobj::LoadObj(&attrib, &meshes, &materials, &warning, &error,
+        TCHAR_TO_ANSI(assetPath.getChar()),
+        TCHAR_TO_ANSI(PlatformFile(assetPath).getHostDirectory().getChar()));
     if (!warning.empty())
     {
         LOG_WARN("StaticMeshLoader", "Tiny obj loader %s", UTF8_TO_TCHAR(warning.c_str()));
     }
     if (!error.empty())
     {
-        LOG_ERROR("StaticMeshLoader", "Tiny obj loader %s",UTF8_TO_TCHAR(error.c_str()));
+        LOG_ERROR("StaticMeshLoader", "Tiny obj loader %s", UTF8_TO_TCHAR(error.c_str()));
         return;
     }
 
-    for (tinyobj::shape_t& mesh : meshes)
+    for (tinyobj::shape_t &mesh : meshes)
     {
         const bool hasSmoothing = hasSmoothedNormals(mesh);
 
@@ -716,14 +734,14 @@ StaticMeshLoader::StaticMeshLoader(const String& assetPath)
 }
 #undef TINYOBJLOADER_IMPLEMENTATION
 
-bool StaticMeshLoader::fillAssetInformation(const std::vector<StaticMeshAsset*>& assets) const
+bool StaticMeshLoader::fillAssetInformation(const std::vector<StaticMeshAsset *> &assets) const
 {
     if (bIsSuccessful)
     {
         uint32 idx = 0;
-        for (const std::pair<const String, MeshLoaderData>& meshDataPair : loadedMeshes)
+        for (const std::pair<const String, MeshLoaderData> &meshDataPair : loadedMeshes)
         {
-            StaticMeshAsset* staticMesh = assets[idx];
+            StaticMeshAsset *staticMesh = assets[idx];
             staticMesh->setAssetName(meshDataPair.first);
             staticMesh->vertices = meshDataPair.second.vertices;
             staticMesh->indices = meshDataPair.second.indices;
@@ -739,18 +757,14 @@ bool StaticMeshLoader::fillAssetInformation(const std::vector<StaticMeshAsset*>&
     return bIsSuccessful;
 }
 
+uint32 StaticMeshLoader::getMeshNum() const { return uint32(loadedMeshes.size()); }
 
-uint32 StaticMeshLoader::getMeshNum() const
-{
-    return uint32(loadedMeshes.size());
-}
-
-void AssetLoaderLibrary::loadStaticMesh(const String& assetPath, std::vector<AssetBase*>& staticMeshes)
+void AssetLoaderLibrary::loadStaticMesh(const String &assetPath, std::vector<AssetBase *> &staticMeshes)
 {
     StaticMeshLoader loader(assetPath);
-    std::vector<StaticMeshAsset*> meshes(loader.getMeshNum());
+    std::vector<StaticMeshAsset *> meshes(loader.getMeshNum());
 
-    for (StaticMeshAsset*& mesh : meshes)
+    for (StaticMeshAsset *&mesh : meshes)
     {
         mesh = new StaticMeshAsset();
     }
@@ -764,7 +778,7 @@ void AssetLoaderLibrary::loadStaticMesh(const String& assetPath, std::vector<Ass
         }
         return;
     }
-    for (StaticMeshAsset*& mesh : meshes)
+    for (StaticMeshAsset *&mesh : meshes)
     {
         delete mesh;
     }

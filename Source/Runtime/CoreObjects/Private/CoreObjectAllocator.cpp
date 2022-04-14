@@ -11,32 +11,32 @@
 
 #include "CoreObjectAllocator.h"
 
-std::unordered_map<CBEClass, CBE::ObjectAllocatorBase*>* gCBEObjectAllocators = nullptr;
+std::unordered_map<CBEClass, CBE::ObjectAllocatorBase *> *gCBEObjectAllocators = nullptr;
 
 namespace CBE
 {
-    std::unordered_map<CBEClass, ObjectAllocatorBase*>& createGObjectAllocators()
-    {
-        static std::unordered_map<CBEClass, ObjectAllocatorBase*> singletonObjectAllocatorsMap;
-        return singletonObjectAllocatorsMap;
-    }
-
-    void initializeObjectAllocators()
-    {
-        if (gCBEObjectAllocators == nullptr)
-        {
-            gCBEObjectAllocators = &createGObjectAllocators();
-        }
-    }
-
-    ObjectAllocatorBase* getObjAllocator(CBEClass classType)
-    {
-        if (!gCBEObjectAllocators)
-        {
-            initializeObjectAllocators();
-        }
-        auto itr = gCBEObjectAllocators->find(classType);
-        return itr != gCBEObjectAllocators->end() ? itr->second : nullptr;
-    }
-
+std::unordered_map<CBEClass, ObjectAllocatorBase *> &createGObjectAllocators()
+{
+    static std::unordered_map<CBEClass, ObjectAllocatorBase *> singletonObjectAllocatorsMap;
+    return singletonObjectAllocatorsMap;
 }
+
+void initializeObjectAllocators()
+{
+    if (gCBEObjectAllocators == nullptr)
+    {
+        gCBEObjectAllocators = &createGObjectAllocators();
+    }
+}
+
+ObjectAllocatorBase *getObjAllocator(CBEClass classType)
+{
+    if (!gCBEObjectAllocators)
+    {
+        initializeObjectAllocators();
+    }
+    auto itr = gCBEObjectAllocators->find(classType);
+    return itr != gCBEObjectAllocators->end() ? itr->second : nullptr;
+}
+
+} // namespace CBE

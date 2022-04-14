@@ -15,7 +15,6 @@
 
 #include <map>
 
-
 class FileChangesTracker
 {
 private:
@@ -24,18 +23,18 @@ private:
     String trackerManifestName;
     String folderPath;
     String writePath;
-    // Folder relative path to 
+    // Folder relative path to
     std::map<String, TickRep> fileLastTimestamp;
 
 public:
     // Files in directory to check
-    FileChangesTracker(const String name, const String& directory, const String& intermediateDir);
+    FileChangesTracker(const String name, const String &directory, const String &intermediateDir);
 
     ~FileChangesTracker();
 
     // return true if file is actually newer
-    bool isTargetOutdated(const String& absPath, const std::vector<String>& outputFiles) const;
-    bool updateNewerFile(const String& absPath, const std::vector<String>& outputFiles);
+    bool isTargetOutdated(const String &absPath, const std::vector<String> &outputFiles) const;
+    bool updateNewerFile(const String &absPath, const std::vector<String> &outputFiles);
     // clears files not present in this list from tracked entry, and returns list of removed files
-    std::vector<String> filterIntersects(const std::vector<String>& srcfilePaths);
+    std::vector<String> filterIntersects(const std::vector<String> &srcfilePaths);
 };

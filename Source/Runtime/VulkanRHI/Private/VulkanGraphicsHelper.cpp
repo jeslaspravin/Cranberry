@@ -10,74 +10,75 @@
  */
 
 // Including on top to avoid redefinition warning on vector and set
-#include <vector>
 #include <set>
+#include <vector>
 
-#include "VulkanGraphicsHelper.h"
-#include "VulkanGraphicsInstance.h"
-#include "VulkanInternals/VulkanDevice.h"
-#include "VulkanInternals/VulkanMacros.h"
-#include "VulkanInternals/Resources/VulkanBufferResources.h"
-#include "VulkanInternals/Resources/VulkanImageResources.h"
-#include "VulkanInternals/Resources/VulkanWindowCanvas.h"
-#include "VulkanInternals/Resources/VulkanQueueResource.h"
-#include "VulkanInternals/Resources/VulkanSyncResource.h"
-#include "VulkanInternals/Resources/VulkanSampler.h"
-#include "VulkanInternals/Resources/VulkanPipelines.h"
-#include "VulkanInternals/Resources/VulkanShaderResources.h"
-#include "VulkanInternals/Rendering/VulkanRenderingContexts.h"
-#include "VulkanInternals/VulkanMemoryAllocator.h"
-#include "VulkanInternals/VulkanFunctions.h"
-#include "VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
-#include "VulkanInternals/VulkanDescriptorAllocator.h"
-#include "VulkanInternals/VulkanGraphicsTypes.h"
-#include "RenderInterface/Resources/QueueResource.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Engine/Config/EngineGlobalConfigs.h"
 #include "Math/Math.h"
+#include "RenderInterface/Resources/QueueResource.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
+#include "VulkanGraphicsHelper.h"
+#include "VulkanGraphicsInstance.h"
+#include "VulkanInternals/Rendering/VulkanRenderingContexts.h"
+#include "VulkanInternals/Resources/VulkanBufferResources.h"
+#include "VulkanInternals/Resources/VulkanImageResources.h"
+#include "VulkanInternals/Resources/VulkanPipelines.h"
+#include "VulkanInternals/Resources/VulkanQueueResource.h"
+#include "VulkanInternals/Resources/VulkanSampler.h"
+#include "VulkanInternals/Resources/VulkanShaderResources.h"
+#include "VulkanInternals/Resources/VulkanSyncResource.h"
+#include "VulkanInternals/Resources/VulkanWindowCanvas.h"
+#include "VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
+#include "VulkanInternals/VulkanDescriptorAllocator.h"
+#include "VulkanInternals/VulkanDevice.h"
+#include "VulkanInternals/VulkanFunctions.h"
+#include "VulkanInternals/VulkanGraphicsTypes.h"
+#include "VulkanInternals/VulkanMacros.h"
+#include "VulkanInternals/VulkanMemoryAllocator.h"
 
 #if EXPERIMENTAL
 // Only in experimental branch
-class VulkanDevice* VulkanGraphicsHelper::getVulkanDevice(class IGraphicsInstance* graphicsInstance)
+class VulkanDevice *VulkanGraphicsHelper::getVulkanDevice(class IGraphicsInstance *graphicsInstance)
 {
-    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    VulkanGraphicsInstance *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     return &gInstance->selectedDevice;
 }
 
 #endif
 
-template <EQueueFunction QueueFunction> VulkanQueueResource<QueueFunction>* getQueue(const VulkanDevice* device);
+template <EQueueFunction QueueFunction>
+VulkanQueueResource<QueueFunction> *getQueue(const VulkanDevice *device);
 
-VkInstance VulkanGraphicsHelper::getInstance(class IGraphicsInstance* graphicsInstance)
+VkInstance VulkanGraphicsHelper::getInstance(class IGraphicsInstance *graphicsInstance)
 {
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     return gInstance->vulkanInstance;
 }
 
-
-VkDevice VulkanGraphicsHelper::getDevice(const class VulkanDevice* vulkanDevice)
+VkDevice VulkanGraphicsHelper::getDevice(const class VulkanDevice *vulkanDevice)
 {
     return vulkanDevice->logicalDevice;
 }
 
-const VulkanDebugGraphics* VulkanGraphicsHelper::debugGraphics(class IGraphicsInstance* graphicsInstance)
+const VulkanDebugGraphics *VulkanGraphicsHelper::debugGraphics(class IGraphicsInstance *graphicsInstance)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     return device->debugGraphics();
 }
 
-class VulkanDescriptorsSetAllocator* VulkanGraphicsHelper::getDescriptorsSetAllocator(class IGraphicsInstance* graphicsInstance)
+class VulkanDescriptorsSetAllocator *VulkanGraphicsHelper::getDescriptorsSetAllocator(
+    class IGraphicsInstance *graphicsInstance)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     return gInstance->descriptorsSetAllocator.get();
 }
 
-VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* graphicsInstance, 
-    const GenericWindowCanvas* windowCanvas, struct SwapchainInfo* swapchainInfo)
+VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance *graphicsInstance,
+    const GenericWindowCanvas *windowCanvas, struct SwapchainInfo *swapchainInfo)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     if (!device->isValidDevice())
     {
@@ -92,22 +93,25 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
     }
 
     CREATE_SWAPCHAIN_INFO(swapchainCreateInfo);
-    swapchainCreateInfo.surface = static_cast<const VulkanWindowCanvas*>(windowCanvas)->surface();
+    swapchainCreateInfo.surface = static_cast<const VulkanWindowCanvas *>(windowCanvas)->surface();
     swapchainCreateInfo.minImageCount = device->choosenImageCount;
     swapchainCreateInfo.imageFormat = device->swapchainFormat.format;
     swapchainCreateInfo.imageColorSpace = device->swapchainFormat.colorSpace;
     swapchainCreateInfo.presentMode = device->globalPresentMode;
-    swapchainCreateInfo.oldSwapchain = static_cast<const VulkanWindowCanvas*>(windowCanvas)->swapchain();
+    swapchainCreateInfo.oldSwapchain
+        = static_cast<const VulkanWindowCanvas *>(windowCanvas)->swapchain();
     swapchainCreateInfo.imageArrayLayers = 1;
     swapchainCreateInfo.clipped = VK_FALSE;
     swapchainCreateInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     swapchainCreateInfo.imageUsage = device->swapchainImgUsage;
 
-    VulkanQueueResource<EQueueFunction::Present>* presentQueue = getQueue<EQueueFunction::Present>(device);
-    VulkanQueueResource<EQueueFunction::Graphics>* graphicsQueue = getQueue<EQueueFunction::Graphics>(device);
+    VulkanQueueResource<EQueueFunction::Present> *presentQueue
+        = getQueue<EQueueFunction::Present>(device);
+    VulkanQueueResource<EQueueFunction::Graphics> *graphicsQueue
+        = getQueue<EQueueFunction::Graphics>(device);
 
-    fatalAssert(presentQueue && graphicsQueue,"presenting queue or graphics queue cannot be null");
+    fatalAssert(presentQueue && graphicsQueue, "presenting queue or graphics queue cannot be null");
 
     if (presentQueue->queueFamilyIndex() == graphicsQueue->queueFamilyIndex())
     {
@@ -118,22 +122,23 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
     else
     {
         swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        std::vector<uint32> queueFamilyIndices = { graphicsQueue->queueFamilyIndex(),presentQueue->queueFamilyIndex() };
+        std::vector<uint32> queueFamilyIndices
+            = { graphicsQueue->queueFamilyIndex(), presentQueue->queueFamilyIndex() };
         swapchainCreateInfo.queueFamilyIndexCount = (uint32_t)queueFamilyIndices.size();
         swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices.data();
     }
 
     /* Updating other necessary values */
     VkSurfaceCapabilitiesKHR swapchainCapabilities;
-    Vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->physicalDevice, swapchainCreateInfo.surface, &swapchainCapabilities);
+    Vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        device->physicalDevice, swapchainCreateInfo.surface, &swapchainCapabilities);
     VkExtent2D surfaceSize = swapchainCapabilities.currentExtent;
-    if (surfaceSize.height == 0xFFFFFFFF
-        || surfaceSize.width == 0xFFFFFFFF)
+    if (surfaceSize.height == 0xFFFFFFFF || surfaceSize.width == 0xFFFFFFFF)
     {
-        surfaceSize.height = Math::clamp<uint32>(EngineSettings::screenSize.get().x, swapchainCapabilities.minImageExtent.height,
-            swapchainCapabilities.maxImageExtent.height);
-        surfaceSize.width = Math::clamp<uint32>(EngineSettings::screenSize.get().y, swapchainCapabilities.minImageExtent.width,
-            swapchainCapabilities.maxImageExtent.width);
+        surfaceSize.height = Math::clamp<uint32>(EngineSettings::screenSize.get().x,
+            swapchainCapabilities.minImageExtent.height, swapchainCapabilities.maxImageExtent.height);
+        surfaceSize.width = Math::clamp<uint32>(EngineSettings::screenSize.get().y,
+            swapchainCapabilities.minImageExtent.width, swapchainCapabilities.maxImageExtent.width);
         EngineSettings::screenSize.set(Size2D(surfaceSize.width, surfaceSize.height));
     }
     swapchainCreateInfo.imageExtent = surfaceSize;
@@ -149,14 +154,15 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(class IGraphicsInstance* gr
     return swapchain;
 }
 
-void VulkanGraphicsHelper::fillSwapchainImages(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain, std::vector<VkImage>* images, std::vector<VkImageView>* imageViews)
+void VulkanGraphicsHelper::fillSwapchainImages(class IGraphicsInstance *graphicsInstance,
+    VkSwapchainKHR swapchain, std::vector<VkImage> *images, std::vector<VkImageView> *imageViews)
 {
     if (!images || !imageViews)
     {
         return;
     }
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     uint32 imageCount;
     device->vkGetSwapchainImagesKHR(device->logicalDevice, swapchain, &imageCount, nullptr);
@@ -167,13 +173,8 @@ void VulkanGraphicsHelper::fillSwapchainImages(class IGraphicsInstance* graphics
 
     IMAGE_VIEW_CREATE_INFO(imgViewCreateInfo);
     imgViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    imgViewCreateInfo.subresourceRange = {
-        VK_IMAGE_ASPECT_COLOR_BIT,
-        0,
-        VK_REMAINING_MIP_LEVELS,
-        0,
-        VK_REMAINING_ARRAY_LAYERS
-    };
+    imgViewCreateInfo.subresourceRange
+        = { VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
     imgViewCreateInfo.format = device->swapchainFormat.format;
     for (uint32 i = 0; i < imageCount; ++i)
     {
@@ -182,10 +183,11 @@ void VulkanGraphicsHelper::fillSwapchainImages(class IGraphicsInstance* graphics
     }
 }
 
-void VulkanGraphicsHelper::destroySwapchain(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain)
+void VulkanGraphicsHelper::destroySwapchain(
+    class IGraphicsInstance *graphicsInstance, VkSwapchainKHR swapchain)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     if (!device->isValidDevice())
     {
@@ -193,24 +195,28 @@ void VulkanGraphicsHelper::destroySwapchain(class IGraphicsInstance* graphicsIns
         return;
     }
 
-    device->vkDestroySwapchainKHR(device->logicalDevice, swapchain,nullptr);
+    device->vkDestroySwapchainKHR(device->logicalDevice, swapchain, nullptr);
 }
 
-uint32 VulkanGraphicsHelper::getNextSwapchainImage(class IGraphicsInstance* graphicsInstance, VkSwapchainKHR swapchain, 
-    SemaphoreRef* waitOnSemaphore, FenceRef* waitOnFence /*= nullptr*/)
+uint32 VulkanGraphicsHelper::getNextSwapchainImage(class IGraphicsInstance *graphicsInstance,
+    VkSwapchainKHR swapchain, SemaphoreRef *waitOnSemaphore, FenceRef *waitOnFence /*= nullptr*/)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     uint32 imageIndex;
-    VkSemaphore semaphore = (waitOnSemaphore && waitOnSemaphore->isValid()) ?
-        static_cast<VulkanSemaphore*>(waitOnSemaphore->reference())->semaphore : VK_NULL_HANDLE;
-    VkFence fence = (waitOnFence && waitOnFence->isValid())?
-        static_cast<VulkanFence*>(waitOnFence->reference())->fence : VK_NULL_HANDLE;
-    VkResult result = device->vkAcquireNextImageKHR(device->logicalDevice, swapchain, 2000000000, semaphore, fence, &imageIndex);
+    VkSemaphore semaphore = (waitOnSemaphore && waitOnSemaphore->isValid())
+                                ? static_cast<VulkanSemaphore *>(waitOnSemaphore->reference())->semaphore
+                                : VK_NULL_HANDLE;
+    VkFence fence = (waitOnFence && waitOnFence->isValid())
+                        ? static_cast<VulkanFence *>(waitOnFence->reference())->fence
+                        : VK_NULL_HANDLE;
+    VkResult result = device->vkAcquireNextImageKHR(
+        device->logicalDevice, swapchain, 2000000000, semaphore, fence, &imageIndex);
 
     if (result == VK_TIMEOUT)
     {
-        LOG_ERROR("VulkanSwapchain", "%s() : Timed out waiting to acquire next swapchain image", __func__);
+        LOG_ERROR(
+            "VulkanSwapchain", "%s() : Timed out waiting to acquire next swapchain image", __func__);
         return -1;
     }
     else if (result == VK_NOT_READY)
@@ -221,14 +227,15 @@ uint32 VulkanGraphicsHelper::getNextSwapchainImage(class IGraphicsInstance* grap
     return imageIndex;
 }
 
-void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstance, const std::vector<WindowCanvasRef>* canvases
-    , const std::vector<uint32>* imageIndex, const std::vector<SemaphoreRef>* waitOnSemaphores)
+void VulkanGraphicsHelper::presentImage(class IGraphicsInstance *graphicsInstance,
+    const std::vector<WindowCanvasRef> *canvases, const std::vector<uint32> *imageIndex,
+    const std::vector<SemaphoreRef> *waitOnSemaphores)
 {
     if (!canvases || !imageIndex || canvases->size() != imageIndex->size())
         return;
 
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkSwapchainKHR> swapchains(canvases->size());
     std::vector<VkResult> results(canvases->size());
@@ -248,11 +255,12 @@ void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstanc
     presentInfo.pSwapchains = swapchains.data();
     presentInfo.swapchainCount = (uint32)swapchains.size();
     presentInfo.pResults = results.data();
-    presentInfo.pWaitSemaphores = semaphores.size() > 0?semaphores.data():nullptr;
+    presentInfo.pWaitSemaphores = semaphores.size() > 0 ? semaphores.data() : nullptr;
     presentInfo.waitSemaphoreCount = (uint32)semaphores.size();
 
-    VkResult result = device->vkQueuePresentKHR(getQueue<EQueueFunction::Present>(device)
-        ->getQueueOfPriority<EQueuePriority::SuperHigh>(), &presentInfo);
+    VkResult result = device->vkQueuePresentKHR(
+        getQueue<EQueueFunction::Present>(device)->getQueueOfPriority<EQueuePriority::SuperHigh>(),
+        &presentInfo);
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
@@ -271,36 +279,40 @@ void VulkanGraphicsHelper::presentImage(class IGraphicsInstance* graphicsInstanc
     }
 }
 
-SemaphoreRef VulkanGraphicsHelper::createSemaphore(class IGraphicsInstance* graphicsInstance, const TChar* semaphoreName) const
+SemaphoreRef VulkanGraphicsHelper::createSemaphore(
+    class IGraphicsInstance *graphicsInstance, const TChar *semaphoreName) const
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
-    auto* semaphore = new VulkanSemaphore(device);
+    auto *semaphore = new VulkanSemaphore(device);
     semaphore->setResourceName(semaphoreName);
     return SemaphoreRef(semaphore);
 }
 
-TimelineSemaphoreRef VulkanGraphicsHelper::createTimelineSemaphore(class IGraphicsInstance* graphicsInstance, const TChar* semaphoreName) const
+TimelineSemaphoreRef VulkanGraphicsHelper::createTimelineSemaphore(
+    class IGraphicsInstance *graphicsInstance, const TChar *semaphoreName) const
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
-    auto* tSemaphore = new VulkanTimelineSemaphore(device);
+    auto *tSemaphore = new VulkanTimelineSemaphore(device);
     tSemaphore->setResourceName(semaphoreName);
     return TimelineSemaphoreRef(tSemaphore);
 }
 
-void VulkanGraphicsHelper::waitTimelineSemaphores(class IGraphicsInstance* graphicsInstance, std::vector<TimelineSemaphoreRef>* semaphores, std::vector<uint64>* waitForValues) const
+void VulkanGraphicsHelper::waitTimelineSemaphores(class IGraphicsInstance *graphicsInstance,
+    std::vector<TimelineSemaphoreRef> *semaphores, std::vector<uint64> *waitForValues) const
 {
-    fatalAssert(semaphores->size() <= waitForValues->size(), "Cannot wait on semaphores if the wait for values is less than waiting semaphors count");
+    fatalAssert(semaphores->size() <= waitForValues->size(),
+        "Cannot wait on semaphores if the wait for values is less than waiting semaphors count");
 
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkSemaphore> deviceSemaphores;
     deviceSemaphores.reserve(semaphores->size());
-    for (const TimelineSemaphoreRef& semaphore : *semaphores)
+    for (const TimelineSemaphoreRef &semaphore : *semaphores)
     {
         deviceSemaphores.push_back(semaphore.reference<VulkanTimelineSemaphore>()->semaphore);
     }
@@ -310,51 +322,57 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(class IGraphicsInstance* graph
     waitInfo.semaphoreCount = (uint32)deviceSemaphores.size();
     waitInfo.pValues = waitForValues->data();
 
-    device->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(device->logicalDevice, &waitInfo, 2000000000/*2 Seconds*/);
+    device->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(
+        device->logicalDevice, &waitInfo, 2000000000 /*2 Seconds*/);
 }
 
-FenceRef VulkanGraphicsHelper::createFence(class IGraphicsInstance* graphicsInstance, const TChar* fenceName, bool bIsSignaled /*= false*/) const
+FenceRef VulkanGraphicsHelper::createFence(class IGraphicsInstance *graphicsInstance,
+    const TChar *fenceName, bool bIsSignaled /*= false*/) const
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
-    VulkanFence* fence = new VulkanFence(device, bIsSignaled);
+    VulkanFence *fence = new VulkanFence(device, bIsSignaled);
     fence->setResourceName(fenceName);
     return FenceRef(fence);
 }
 
-void VulkanGraphicsHelper::waitFences(class IGraphicsInstance* graphicsInstance, std::vector<FenceRef>* fences, bool waitAll) const
+void VulkanGraphicsHelper::waitFences(
+    class IGraphicsInstance *graphicsInstance, std::vector<FenceRef> *fences, bool waitAll) const
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkFence> deviceFences;
     deviceFences.reserve(fences->size());
-    for (const FenceRef& fence : *fences)
+    for (const FenceRef &fence : *fences)
     {
         deviceFences.push_back(fence.reference<VulkanFence>()->fence);
     }
 
-    device->vkWaitForFences(device->logicalDevice, (uint32)deviceFences.size(), deviceFences.data(), waitAll ? VK_TRUE : VK_FALSE
-        , 2000000000/*2 Seconds*/);
+    device->vkWaitForFences(device->logicalDevice, (uint32)deviceFences.size(), deviceFences.data(),
+        waitAll ? VK_TRUE : VK_FALSE, 2000000000 /*2 Seconds*/);
 }
 
-VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsInstance, const VkBufferCreateInfo& bufferCreateInfo
-    , EPixelDataFormat::Type bufferDataFormat)
+VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance *graphicsInstance,
+    const VkBufferCreateInfo &bufferCreateInfo, EPixelDataFormat::Type bufferDataFormat)
 {
     VkBuffer buffer = nullptr;
 
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
-
-    VkFormatFeatureFlags requiredFeatures = (bufferCreateInfo.usage & VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT) > 0 ?
-        VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT : 0;
-    requiredFeatures |= (bufferCreateInfo.usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) > 0 ?
-        VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT : 0;
+    VkFormatFeatureFlags requiredFeatures
+        = (bufferCreateInfo.usage & VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT) > 0
+              ? VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+              : 0;
+    requiredFeatures |= (bufferCreateInfo.usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) > 0
+                            ? VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+                            : 0;
     if (requiredFeatures > 0)
     {
-        const EPixelDataFormat::PixelFormatInfo* imageFormatInfo = EPixelDataFormat::getFormatInfo(bufferDataFormat);
+        const EPixelDataFormat::PixelFormatInfo *imageFormatInfo
+            = EPixelDataFormat::getFormatInfo(bufferDataFormat);
         if (bufferDataFormat == EPixelDataFormat::Undefined || !imageFormatInfo)
         {
             LOG_ERROR("NewBufferCreation", "%s() : Invalid expected pixel format for buffer", __func__);
@@ -362,12 +380,14 @@ VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsIns
         }
 
         VkFormatProperties formatProps;
-        Vk::vkGetPhysicalDeviceFormatProperties(device->physicalDevice, EngineToVulkanAPI::vulkanDataFormat(bufferDataFormat), &formatProps);
+        Vk::vkGetPhysicalDeviceFormatProperties(
+            device->physicalDevice, EngineToVulkanAPI::vulkanDataFormat(bufferDataFormat), &formatProps);
 
         if ((formatProps.bufferFeatures & requiredFeatures) != requiredFeatures)
         {
-            LOG_ERROR("NewBufferCreation", "%s() : Required format %s for buffer is not supported by device"
-                , __func__, imageFormatInfo->formatName.getChar());
+            LOG_ERROR("NewBufferCreation",
+                "%s() : Required format %s for buffer is not supported by device", __func__,
+                imageFormatInfo->formatName.getChar());
             return buffer;
         }
     }
@@ -380,44 +400,46 @@ VkBuffer VulkanGraphicsHelper::createBuffer(class IGraphicsInstance* graphicsIns
     return buffer;
 }
 
-void VulkanGraphicsHelper::destroyBuffer(class IGraphicsInstance* graphicsInstance, VkBuffer buffer)
+void VulkanGraphicsHelper::destroyBuffer(class IGraphicsInstance *graphicsInstance, VkBuffer buffer)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyBuffer(device->logicalDevice, buffer, nullptr);
 }
 
-bool VulkanGraphicsHelper::allocateBufferResource(class IGraphicsInstance* graphicsInstance, 
-    class IVulkanMemoryResources* memoryResource, bool cpuAccessible)
+bool VulkanGraphicsHelper::allocateBufferResource(class IGraphicsInstance *graphicsInstance,
+    class IVulkanMemoryResources *memoryResource, bool cpuAccessible)
 {
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    auto* resource = static_cast<VulkanBufferResource*>(memoryResource);
-    VulkanMemoryBlock* block = gInstance->memoryAllocator->allocateBuffer(resource->buffer,cpuAccessible);
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    auto *resource = static_cast<VulkanBufferResource *>(memoryResource);
+    VulkanMemoryBlock *block
+        = gInstance->memoryAllocator->allocateBuffer(resource->buffer, cpuAccessible);
     if (block)
     {
         memoryResource->setMemoryData(block);
-        gInstance->selectedDevice.vkBindBufferMemory(gInstance->selectedDevice.logicalDevice, resource->buffer, 
-            memoryResource->getDeviceMemory(), memoryResource->allocationOffset());
+        gInstance->selectedDevice.vkBindBufferMemory(gInstance->selectedDevice.logicalDevice,
+            resource->buffer, memoryResource->getDeviceMemory(), memoryResource->allocationOffset());
         return true;
     }
     return false;
 }
 
-void VulkanGraphicsHelper::deallocateBufferResource(class IGraphicsInstance* graphicsInstance,
-    class IVulkanMemoryResources* memoryResource)
+void VulkanGraphicsHelper::deallocateBufferResource(
+    class IGraphicsInstance *graphicsInstance, class IVulkanMemoryResources *memoryResource)
 {
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    auto* resource = static_cast<VulkanBufferResource*>(memoryResource);
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    auto *resource = static_cast<VulkanBufferResource *>(memoryResource);
     if (memoryResource->getMemoryData())
     {
         gInstance->memoryAllocator->deallocateBuffer(resource->buffer, memoryResource->getMemoryData());
     }
 }
 
-void VulkanGraphicsHelper::mapResource(class IGraphicsInstance* graphicsInstance, BufferResourceRef& buffer) const
+void VulkanGraphicsHelper::mapResource(
+    class IGraphicsInstance *graphicsInstance, BufferResourceRef &buffer) const
 {
-    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    IVulkanMemoryResources* memoryResource = static_cast<VulkanBufferResource*>(buffer.reference());
+    VulkanGraphicsInstance *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    IVulkanMemoryResources *memoryResource = static_cast<VulkanBufferResource *>(buffer.reference());
 
     if (memoryResource->getMappedMemory() == nullptr)
     {
@@ -425,10 +447,11 @@ void VulkanGraphicsHelper::mapResource(class IGraphicsInstance* graphicsInstance
     }
 }
 
-void VulkanGraphicsHelper::unmapResource(class IGraphicsInstance* graphicsInstance, BufferResourceRef& buffer) const
+void VulkanGraphicsHelper::unmapResource(
+    class IGraphicsInstance *graphicsInstance, BufferResourceRef &buffer) const
 {
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    IVulkanMemoryResources* memoryResource = static_cast<VulkanBufferResource*>(buffer.reference());
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    IVulkanMemoryResources *memoryResource = static_cast<VulkanBufferResource *>(buffer.reference());
 
     if (memoryResource->getMappedMemory() != nullptr)
     {
@@ -436,10 +459,11 @@ void VulkanGraphicsHelper::unmapResource(class IGraphicsInstance* graphicsInstan
     }
 }
 
-void VulkanGraphicsHelper::mapResource(class IGraphicsInstance* graphicsInstance, ImageResourceRef& image) const
+void VulkanGraphicsHelper::mapResource(
+    class IGraphicsInstance *graphicsInstance, ImageResourceRef &image) const
 {
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    IVulkanMemoryResources* memoryResource = static_cast<VulkanImageResource*>(image.reference());
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    IVulkanMemoryResources *memoryResource = static_cast<VulkanImageResource *>(image.reference());
 
     if (memoryResource->getMappedMemory() == nullptr && image->isStagingResource())
     {
@@ -447,10 +471,11 @@ void VulkanGraphicsHelper::mapResource(class IGraphicsInstance* graphicsInstance
     }
 }
 
-void VulkanGraphicsHelper::unmapResource(class IGraphicsInstance* graphicsInstance, ImageResourceRef& image) const
+void VulkanGraphicsHelper::unmapResource(
+    class IGraphicsInstance *graphicsInstance, ImageResourceRef &image) const
 {
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    IVulkanMemoryResources* memoryResource = static_cast<VulkanImageResource*>(image.reference());
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    IVulkanMemoryResources *memoryResource = static_cast<VulkanImageResource *>(image.reference());
 
     if (memoryResource->getMappedMemory() != nullptr && image->isStagingResource())
     {
@@ -458,10 +483,11 @@ void VulkanGraphicsHelper::unmapResource(class IGraphicsInstance* graphicsInstan
     }
 }
 
-VkBufferView VulkanGraphicsHelper::createBufferView(class IGraphicsInstance* graphicsInstance, const VkBufferViewCreateInfo& viewCreateInfo)
+VkBufferView VulkanGraphicsHelper::createBufferView(
+    class IGraphicsInstance *graphicsInstance, const VkBufferViewCreateInfo &viewCreateInfo)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     VkBufferView view;
     if (device->vkCreateBufferView(device->logicalDevice, &viewCreateInfo, nullptr, &view) != VK_SUCCESS)
     {
@@ -471,117 +497,141 @@ VkBufferView VulkanGraphicsHelper::createBufferView(class IGraphicsInstance* gra
     return view;
 }
 
-void VulkanGraphicsHelper::destroyBufferView(class IGraphicsInstance* graphicsInstance, VkBufferView view)
+void VulkanGraphicsHelper::destroyBufferView(
+    class IGraphicsInstance *graphicsInstance, VkBufferView view)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyBufferView(device->logicalDevice, view, nullptr);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyBuffer(
+    class IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rBuffer = new VulkanRBuffer(bufferStride, bufferCount);
     return BufferResourceRef(rBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createWriteOnlyBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createWriteOnlyBuffer(
+    class IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto wBuffer = new VulkanWBuffer(bufferStride, bufferCount);
     return BufferResourceRef(wBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadWriteBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadWriteBuffer(
+    class IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rwBuffer = new VulkanRWBuffer(bufferStride, bufferCount);
     return BufferResourceRef(rwBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyTexels(class IGraphicsInstance *graphicsInstance,
+    EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
 {
     auto rTexels = new VulkanRTexelBuffer(texelFormat, bufferCount);
     return BufferResourceRef(rTexels);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createWriteOnlyTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createWriteOnlyTexels(class IGraphicsInstance *graphicsInstance,
+    EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
 {
     auto wTexels = new VulkanWTexelBuffer(texelFormat, bufferCount);
     return BufferResourceRef(wTexels);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadWriteTexels(class IGraphicsInstance* graphicsInstance, EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadWriteTexels(class IGraphicsInstance *graphicsInstance,
+    EPixelDataFormat::Type texelFormat, uint32 bufferCount /*= 1*/) const
 {
     auto rwTexels = new VulkanRWTexelBuffer(texelFormat, bufferCount);
     return BufferResourceRef(rwTexels);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyIndexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyIndexBuffer(
+    class IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rIndexBuffer = new VulkanIndexBuffer(bufferStride, bufferCount);
     return BufferResourceRef(rIndexBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyVertexBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyVertexBuffer(
+    class IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rVertexBuffer = new VulkanVertexBuffer(bufferStride, bufferCount);
     return BufferResourceRef(rVertexBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createReadOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createReadOnlyIndirectBuffer(
+    class IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto rIndirectBuffer = new VulkanRIndirectBuffer(bufferStride, bufferCount);
     return BufferResourceRef(rIndirectBuffer);
 }
 
-BufferResourceRef VulkanGraphicsHelper::createWriteOnlyIndirectBuffer(class IGraphicsInstance* graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
+BufferResourceRef VulkanGraphicsHelper::createWriteOnlyIndirectBuffer(
+    class IGraphicsInstance *graphicsInstance, uint32 bufferStride, uint32 bufferCount /*= 1*/) const
 {
     auto wIndirectBuffer = new VulkanWIndirectBuffer(bufferStride, bufferCount);
     return BufferResourceRef(wIndirectBuffer);
 }
 
-VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInstance, VkImageCreateInfo& createInfo
-    , VkFormatFeatureFlags& requiredFeatures)
+VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance *graphicsInstance,
+    VkImageCreateInfo &createInfo, VkFormatFeatureFlags &requiredFeatures)
 {
     VkImage image = nullptr;
 
-    const VulkanGraphicsInstance* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
-    
-    if(requiredFeatures > 0)
+    const VulkanGraphicsInstance *gInstance
+        = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
+
+    if (requiredFeatures > 0)
     {
         VkFormatProperties pixelFormatProperties;
-        Vk::vkGetPhysicalDeviceFormatProperties(device->physicalDevice, createInfo.format, &pixelFormatProperties);
-        VkFormatFeatureFlags availableFeatures = createInfo.tiling == VK_IMAGE_TILING_LINEAR ?
-            pixelFormatProperties.linearTilingFeatures : pixelFormatProperties.optimalTilingFeatures;
+        Vk::vkGetPhysicalDeviceFormatProperties(
+            device->physicalDevice, createInfo.format, &pixelFormatProperties);
+        VkFormatFeatureFlags availableFeatures = createInfo.tiling == VK_IMAGE_TILING_LINEAR
+                                                     ? pixelFormatProperties.linearTilingFeatures
+                                                     : pixelFormatProperties.optimalTilingFeatures;
         if ((availableFeatures & requiredFeatures) != requiredFeatures)
         {
-            LOG_ERROR("NewImageCreation", "%s() : Required format for image is not supported by device", __func__);
+            LOG_ERROR("NewImageCreation", "%s() : Required format for image is not supported by device",
+                __func__);
             return image;
         }
     }
 
     VkImageFormatProperties imageFormatProperties;
-    Vk::vkGetPhysicalDeviceImageFormatProperties(device->physicalDevice, createInfo.format, createInfo.imageType
-        , createInfo.tiling, createInfo.usage, createInfo.flags, &imageFormatProperties);
-    if (imageFormatProperties.maxExtent.width < createInfo.extent.width || imageFormatProperties.maxExtent.height < createInfo.extent.height
+    Vk::vkGetPhysicalDeviceImageFormatProperties(device->physicalDevice, createInfo.format,
+        createInfo.imageType, createInfo.tiling, createInfo.usage, createInfo.flags,
+        &imageFormatProperties);
+    if (imageFormatProperties.maxExtent.width < createInfo.extent.width
+        || imageFormatProperties.maxExtent.height < createInfo.extent.height
         || imageFormatProperties.maxExtent.depth < createInfo.extent.depth)
     {
-        LOG_ERROR("NewImageCreation", "%s() : Image size (%d, %d, %d) is exceeding the maximum size (%d, %d, %d) supported by device"
-            , __func__, createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth, imageFormatProperties.maxExtent.width
-            , imageFormatProperties.maxExtent.height, imageFormatProperties.maxExtent.depth);
+        LOG_ERROR("NewImageCreation",
+            "%s() : Image size (%d, %d, %d) is exceeding the maximum size (%d, %d, %d) supported by "
+            "device",
+            __func__, createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth,
+            imageFormatProperties.maxExtent.width, imageFormatProperties.maxExtent.height,
+            imageFormatProperties.maxExtent.depth);
         return image;
     }
 
     if (createInfo.arrayLayers > imageFormatProperties.maxArrayLayers)
     {
-        LOG_WARN("NewImageCreation", "%s() : Image layer count %d is exceeding the maximum layer count %d supported by device, using max limit"
-            , __func__,createInfo.arrayLayers,imageFormatProperties.maxArrayLayers );
+        LOG_WARN("NewImageCreation",
+            "%s() : Image layer count %d is exceeding the maximum layer count %d supported by "
+            "device, using max limit",
+            __func__, createInfo.arrayLayers, imageFormatProperties.maxArrayLayers);
         createInfo.arrayLayers = imageFormatProperties.maxArrayLayers;
     }
 
     if (createInfo.mipLevels > imageFormatProperties.maxMipLevels)
     {
-        LOG_WARN("NewImageCreation", "%s() : Image mip levels %d is exceeding the maximum mip levels %d supported by device, using max limit"
-            , __func__, createInfo.mipLevels, imageFormatProperties.maxMipLevels);
+        LOG_WARN("NewImageCreation",
+            "%s() : Image mip levels %d is exceeding the maximum mip levels %d supported by device, "
+            "using max limit",
+            __func__, createInfo.mipLevels, imageFormatProperties.maxMipLevels);
         createInfo.mipLevels = imageFormatProperties.maxMipLevels;
     }
 
@@ -592,47 +642,48 @@ VkImage VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInsta
     return image;
 }
 
-void VulkanGraphicsHelper::destroyImage(class IGraphicsInstance* graphicsInstance, VkImage image)
+void VulkanGraphicsHelper::destroyImage(class IGraphicsInstance *graphicsInstance, VkImage image)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyImage(device->logicalDevice, image, nullptr);
 }
 
-bool VulkanGraphicsHelper::allocateImageResource(class IGraphicsInstance* graphicsInstance
-    , class IVulkanMemoryResources* memoryResource, bool cpuAccessible)
+bool VulkanGraphicsHelper::allocateImageResource(class IGraphicsInstance *graphicsInstance,
+    class IVulkanMemoryResources *memoryResource, bool cpuAccessible)
 {
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    auto* resource = static_cast<VulkanImageResource*>(memoryResource);
-    VulkanMemoryBlock* block = gInstance->memoryAllocator->allocateImage(resource->image, cpuAccessible, 
-        !resource->isStagingResource());// Every image apart from staging image are optimal
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    auto *resource = static_cast<VulkanImageResource *>(memoryResource);
+    VulkanMemoryBlock *block = gInstance->memoryAllocator->allocateImage(resource->image, cpuAccessible,
+        !resource->isStagingResource()); // Every image apart from staging image are optimal
 
     if (block)
     {
         memoryResource->setMemoryData(block);
-        gInstance->selectedDevice.vkBindImageMemory(gInstance->selectedDevice.logicalDevice, resource->image,
-            memoryResource->getDeviceMemory(), memoryResource->allocationOffset());
+        gInstance->selectedDevice.vkBindImageMemory(gInstance->selectedDevice.logicalDevice,
+            resource->image, memoryResource->getDeviceMemory(), memoryResource->allocationOffset());
         return true;
     }
     return false;
 }
 
-void VulkanGraphicsHelper::deallocateImageResource(class IGraphicsInstance* graphicsInstance
-    , class IVulkanMemoryResources* memoryResource)
+void VulkanGraphicsHelper::deallocateImageResource(
+    class IGraphicsInstance *graphicsInstance, class IVulkanMemoryResources *memoryResource)
 {
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    auto* resource = static_cast<VulkanImageResource*>(memoryResource);
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    auto *resource = static_cast<VulkanImageResource *>(memoryResource);
     if (memoryResource->getMemoryData())
     {
         gInstance->memoryAllocator->deallocateImage(resource->image, memoryResource->getMemoryData(),
-            !resource->isStagingResource());// Every image apart from staging image are optimal
+            !resource->isStagingResource()); // Every image apart from staging image are optimal
     }
 }
 
-VkImageView VulkanGraphicsHelper::createImageView(class IGraphicsInstance* graphicsInstance, const VkImageViewCreateInfo& viewCreateInfo)
+VkImageView VulkanGraphicsHelper::createImageView(
+    class IGraphicsInstance *graphicsInstance, const VkImageViewCreateInfo &viewCreateInfo)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     VkImageView view;
     if (device->vkCreateImageView(device->logicalDevice, &viewCreateInfo, nullptr, &view) != VK_SUCCESS)
     {
@@ -642,54 +693,60 @@ VkImageView VulkanGraphicsHelper::createImageView(class IGraphicsInstance* graph
     return view;
 }
 
-void VulkanGraphicsHelper::destroyImageView(class IGraphicsInstance* graphicsInstance, VkImageView view)
+void VulkanGraphicsHelper::destroyImageView(class IGraphicsInstance *graphicsInstance, VkImageView view)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyImageView(device->logicalDevice, view, nullptr);
 }
 
-ImageResourceRef VulkanGraphicsHelper::createImage(class IGraphicsInstance* graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging /*= false*/) const
+ImageResourceRef VulkanGraphicsHelper::createImage(class IGraphicsInstance *graphicsInstance,
+    ImageResourceCreateInfo createInfo, bool bIsStaging /*= false*/) const
 {
     return ImageResourceRef(new VulkanImageResource(createInfo, bIsStaging));
 }
 
-ImageResourceRef VulkanGraphicsHelper::createCubeImage(class IGraphicsInstance* graphicsInstance, ImageResourceCreateInfo createInfo, bool bIsStaging /*= false*/) const
+ImageResourceRef VulkanGraphicsHelper::createCubeImage(class IGraphicsInstance *graphicsInstance,
+    ImageResourceCreateInfo createInfo, bool bIsStaging /*= false*/) const
 {
     return ImageResourceRef(new VulkanCubeImageResource(createInfo, bIsStaging));
 }
 
-ImageResourceRef VulkanGraphicsHelper::createRTImage(class IGraphicsInstance* graphicsInstance, ImageResourceCreateInfo createInfo
-    , EPixelSampleCount::Type sampleCount /*= EPixelSampleCount::SampleCount1*/) const
+ImageResourceRef VulkanGraphicsHelper::createRTImage(class IGraphicsInstance *graphicsInstance,
+    ImageResourceCreateInfo createInfo,
+    EPixelSampleCount::Type sampleCount /*= EPixelSampleCount::SampleCount1*/) const
 {
     auto rtImage = new VulkanRenderTargetResource(createInfo);
     rtImage->setSampleCounts(sampleCount);
     return ImageResourceRef(rtImage);
 }
 
-ImageResourceRef VulkanGraphicsHelper::createCubeRTImage(class IGraphicsInstance* graphicsInstance, ImageResourceCreateInfo createInfo
-    , EPixelSampleCount::Type sampleCount /*= EPixelSampleCount::SampleCount1*/) const
+ImageResourceRef VulkanGraphicsHelper::createCubeRTImage(class IGraphicsInstance *graphicsInstance,
+    ImageResourceCreateInfo createInfo,
+    EPixelSampleCount::Type sampleCount /*= EPixelSampleCount::SampleCount1*/) const
 {
     auto rtImage = new VulkanCubeRTImageResource(createInfo);
     rtImage->setSampleCounts(sampleCount);
     return ImageResourceRef(rtImage);
 }
 
-SamplerRef VulkanGraphicsHelper::createSampler(class IGraphicsInstance* graphicsInstance, SamplerCreateInfo createInfo) const
+SamplerRef VulkanGraphicsHelper::createSampler(
+    class IGraphicsInstance *graphicsInstance, SamplerCreateInfo createInfo) const
 {
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    VulkanSampler* sampler = new VulkanSampler(&gInstance->selectedDevice, createInfo);
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    VulkanSampler *sampler = new VulkanSampler(&gInstance->selectedDevice, createInfo);
     return SamplerRef(sampler);
 }
 
-ESamplerFiltering::Type VulkanGraphicsHelper::clampFiltering(class IGraphicsInstance* graphicsInstance, ESamplerFiltering::Type sampleFiltering, EPixelDataFormat::Type imageFormat) const
+ESamplerFiltering::Type VulkanGraphicsHelper::clampFiltering(class IGraphicsInstance *graphicsInstance,
+    ESamplerFiltering::Type sampleFiltering, EPixelDataFormat::Type imageFormat) const
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     VkFormatProperties formatProps;
-    Vk::vkGetPhysicalDeviceFormatProperties(device->physicalDevice, EngineToVulkanAPI::vulkanDataFormat(imageFormat)
-        , &formatProps);
+    Vk::vkGetPhysicalDeviceFormatProperties(
+        device->physicalDevice, EngineToVulkanAPI::vulkanDataFormat(imageFormat), &formatProps);
     ESamplerFiltering::Type choosenFiltering = sampleFiltering;
 
     // Since filtering is done currently only on optimal tiled data
@@ -702,14 +759,16 @@ ESamplerFiltering::Type VulkanGraphicsHelper::clampFiltering(class IGraphicsInst
             requiredFeature |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
             break;
         case ESamplerFiltering::Linear:
-            requiredFeature |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+            requiredFeature
+                |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
             break;
         case ESamplerFiltering::Cubic:
-            requiredFeature |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG;
+            requiredFeature
+                |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG;
             break;
         default:
-            LOG_ERROR("VulkanGraphicsHelper", "%s() : not supported filtering mode %s", __func__
-                , ESamplerFiltering::filterName(choosenFiltering).getChar());
+            LOG_ERROR("VulkanGraphicsHelper", "%s() : not supported filtering mode %s", __func__,
+                ESamplerFiltering::filterName(choosenFiltering).getChar());
             choosenFiltering = ESamplerFiltering::Type(choosenFiltering - 1);
             continue;
         }
@@ -726,14 +785,16 @@ ESamplerFiltering::Type VulkanGraphicsHelper::clampFiltering(class IGraphicsInst
     return choosenFiltering;
 }
 
-WindowCanvasRef VulkanGraphicsHelper::createWindowCanvas(class IGraphicsInstance* graphicsInstance, GenericAppWindow* fromWindow) const
+WindowCanvasRef VulkanGraphicsHelper::createWindowCanvas(
+    class IGraphicsInstance *graphicsInstance, GenericAppWindow *fromWindow) const
 {
     return WindowCanvasRef(new VulkanWindowCanvas(fromWindow));
 }
 
-void VulkanGraphicsHelper::cacheSurfaceProperties(class IGraphicsInstance* graphicsInstance, const WindowCanvasRef& windowCanvas) const
+void VulkanGraphicsHelper::cacheSurfaceProperties(
+    class IGraphicsInstance *graphicsInstance, const WindowCanvasRef &windowCanvas) const
 {
-    VulkanGraphicsInstance* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
+    VulkanGraphicsInstance *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
 
     if (!gInstance->selectedDevice.isValidDevice())
     {
@@ -743,28 +804,31 @@ void VulkanGraphicsHelper::cacheSurfaceProperties(class IGraphicsInstance* graph
     gInstance->selectedDevice.cacheGlobalSurfaceProperties(windowCanvas);
 }
 
-void* VulkanGraphicsHelper::borrowMappedPtr(class IGraphicsInstance* graphicsInstance, ImageResourceRef& resource) const
+void *VulkanGraphicsHelper::borrowMappedPtr(
+    class IGraphicsInstance *graphicsInstance, ImageResourceRef &resource) const
 {
-    auto* imgRes = static_cast<VulkanImageResource*>(resource.reference());
+    auto *imgRes = static_cast<VulkanImageResource *>(resource.reference());
     mapResource(graphicsInstance, resource);
     return imgRes->getMappedMemory();
 }
 
-void VulkanGraphicsHelper::returnMappedPtr(class IGraphicsInstance* graphicsInstance, ImageResourceRef& resource) const
+void VulkanGraphicsHelper::returnMappedPtr(
+    class IGraphicsInstance *graphicsInstance, ImageResourceRef &resource) const
 {
     unmapResource(graphicsInstance, resource);
 }
 
-void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<ImageResourceRef>& resources) const
+void VulkanGraphicsHelper::flushMappedPtr(
+    class IGraphicsInstance *graphicsInstance, const std::vector<ImageResourceRef> &resources) const
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkMappedMemoryRange> memRanges;
     memRanges.reserve(resources.size());
-    for (auto& resource : resources)
+    for (auto &resource : resources)
     {
-        IVulkanMemoryResources* memRes = static_cast<VulkanImageResource*>(resource.reference());
+        IVulkanMemoryResources *memRes = static_cast<VulkanImageResource *>(resource.reference());
 
         MAPPED_MEMORY_RANGE(memRange);
         memRange.memory = memRes->getDeviceMemory();
@@ -775,7 +839,8 @@ void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInsta
 
     if (!memRanges.empty())
     {
-        VkResult result = device->vkFlushMappedMemoryRanges(device->logicalDevice, uint32(memRanges.size()), memRanges.data());
+        VkResult result = device->vkFlushMappedMemoryRanges(
+            device->logicalDevice, uint32(memRanges.size()), memRanges.data());
         if (result != VK_SUCCESS)
         {
             LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
@@ -783,28 +848,31 @@ void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInsta
     }
 }
 
-void* VulkanGraphicsHelper::borrowMappedPtr(class IGraphicsInstance* graphicsInstance, BufferResourceRef& resource) const
+void *VulkanGraphicsHelper::borrowMappedPtr(
+    class IGraphicsInstance *graphicsInstance, BufferResourceRef &resource) const
 {
-    auto* bufferRes = static_cast<VulkanBufferResource*>(resource.reference());
+    auto *bufferRes = static_cast<VulkanBufferResource *>(resource.reference());
     mapResource(graphicsInstance, resource);
     return bufferRes->getMappedMemory();
 }
 
-void VulkanGraphicsHelper::returnMappedPtr(class IGraphicsInstance* graphicsInstance, BufferResourceRef& resource) const
+void VulkanGraphicsHelper::returnMappedPtr(
+    class IGraphicsInstance *graphicsInstance, BufferResourceRef &resource) const
 {
     unmapResource(graphicsInstance, resource);
 }
 
-void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInstance, const std::vector<BufferResourceRef>& resources) const
+void VulkanGraphicsHelper::flushMappedPtr(
+    class IGraphicsInstance *graphicsInstance, const std::vector<BufferResourceRef> &resources) const
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkMappedMemoryRange> memRanges;
     memRanges.reserve(resources.size());
-    for (auto& resource : resources)
+    for (auto &resource : resources)
     {
-        IVulkanMemoryResources* memRes = static_cast<VulkanBufferResource*>(resource.reference());
+        IVulkanMemoryResources *memRes = static_cast<VulkanBufferResource *>(resource.reference());
 
         MAPPED_MEMORY_RANGE(memRange);
         memRange.memory = memRes->getDeviceMemory();
@@ -815,7 +883,8 @@ void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInsta
 
     if (!memRanges.empty())
     {
-        VkResult result = device->vkFlushMappedMemoryRanges(device->logicalDevice, uint32(memRanges.size()), memRanges.data());
+        VkResult result = device->vkFlushMappedMemoryRanges(
+            device->logicalDevice, uint32(memRanges.size()), memRanges.data());
         if (result != VK_SUCCESS)
         {
             LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in flushing mapped memories", __func__);
@@ -823,17 +892,15 @@ void VulkanGraphicsHelper::flushMappedPtr(class IGraphicsInstance* graphicsInsta
     }
 }
 
-void VulkanGraphicsHelper::markForDeletion(class IGraphicsInstance* graphicsInstance, GraphicsResource* resource, EDeferredDelStrategy deleteStrategy, TickRep duration /*= 1*/) const
+void VulkanGraphicsHelper::markForDeletion(class IGraphicsInstance *graphicsInstance,
+    GraphicsResource *resource, EDeferredDelStrategy deleteStrategy, TickRep duration /*= 1*/) const
 {
 #if DEFER_DELETION
-    auto* gInstance = static_cast<VulkanGraphicsInstance*>(graphicsInstance);
-    VulkanDevice* device = &gInstance->selectedDevice;
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    VulkanDevice *device = &gInstance->selectedDevice;
 
-    DeferredDeleter::DeferringData deferInfo
-    {
-        .resource = resource,
-        .elapsedDuration = 0,
-        .strategy = deleteStrategy
+    DeferredDeleter::DeferringData deferInfo{
+        .resource = resource, .elapsedDuration = 0, .strategy = deleteStrategy
     };
     switch (deleteStrategy)
     {
@@ -852,70 +919,79 @@ void VulkanGraphicsHelper::markForDeletion(class IGraphicsInstance* graphicsInst
         break;
     }
     getDeferredDeleter(graphicsInstance)->deferDelete(std::move(deferInfo));
-#else // DEFER_DELETION
+#else  // DEFER_DELETION
     resource->release();
     delete resource;
 #endif // DEFER_DELETION
 }
 
-VkShaderModule VulkanGraphicsHelper::createShaderModule(class IGraphicsInstance* graphicsInstance, const uint8* code, uint32 size)
+VkShaderModule VulkanGraphicsHelper::createShaderModule(
+    class IGraphicsInstance *graphicsInstance, const uint8 *code, uint32 size)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     SHADER_MODULE_CREATE_INFO(createInfo);
     createInfo.codeSize = size;
-    createInfo.pCode = reinterpret_cast<const uint32*>(code);
+    createInfo.pCode = reinterpret_cast<const uint32 *>(code);
 
     VkShaderModule shaderModule;
-    if (device->vkCreateShaderModule(device->logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
+    if (device->vkCreateShaderModule(device->logicalDevice, &createInfo, nullptr, &shaderModule)
+        != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in creating shader module[Shader size : %d]", __func__, size);
+        LOG_ERROR("VulkanGraphicsHelper", "%s() : failure in creating shader module[Shader size : %d]",
+            __func__, size);
         shaderModule = nullptr;
     }
     return shaderModule;
 }
 
-void VulkanGraphicsHelper::destroyShaderModule(class IGraphicsInstance* graphicsInstance, VkShaderModule shaderModule)
+void VulkanGraphicsHelper::destroyShaderModule(
+    class IGraphicsInstance *graphicsInstance, VkShaderModule shaderModule)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyShaderModule(device->logicalDevice, shaderModule, nullptr);
 }
 
-void VulkanGraphicsHelper::destroyRenderPass(class IGraphicsInstance* graphicsInstance, VkRenderPass renderPass)
+void VulkanGraphicsHelper::destroyRenderPass(
+    class IGraphicsInstance *graphicsInstance, VkRenderPass renderPass)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyRenderPass(device->logicalDevice, renderPass, nullptr);
 }
 
-void VulkanGraphicsHelper::createFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebufferCreateInfo& fbCreateInfo, VkFramebuffer* framebuffer)
+void VulkanGraphicsHelper::createFramebuffer(class IGraphicsInstance *graphicsInstance,
+    VkFramebufferCreateInfo &fbCreateInfo, VkFramebuffer *framebuffer)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice; 
-    if (device->vkCreateFramebuffer(device->logicalDevice, &fbCreateInfo, nullptr, framebuffer) != VK_SUCCESS)
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
+    if (device->vkCreateFramebuffer(device->logicalDevice, &fbCreateInfo, nullptr, framebuffer)
+        != VK_SUCCESS)
     {
         LOG_ERROR("VulkanGraphicsHelper", "%s() : Failed creating framebuffer", __func__);
         (*framebuffer) = nullptr;
     }
 }
 
-void VulkanGraphicsHelper::destroyFramebuffer(class IGraphicsInstance* graphicsInstance, VkFramebuffer framebuffer)
+void VulkanGraphicsHelper::destroyFramebuffer(
+    class IGraphicsInstance *graphicsInstance, VkFramebuffer framebuffer)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyFramebuffer(device->logicalDevice, framebuffer, nullptr);
 }
 
-VkDescriptorSetLayout VulkanGraphicsHelper::createDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance
-    , const VkDescriptorSetLayoutCreateInfo& layoutCreateInfo)
+VkDescriptorSetLayout VulkanGraphicsHelper::createDescriptorsSetLayout(
+    class IGraphicsInstance *graphicsInstance, const VkDescriptorSetLayoutCreateInfo &layoutCreateInfo)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     VkDescriptorSetLayout layout;
-    if (device->vkCreateDescriptorSetLayout(device->logicalDevice, &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS)
+    if (device->vkCreateDescriptorSetLayout(device->logicalDevice, &layoutCreateInfo, nullptr, &layout)
+        != VK_SUCCESS)
     {
         LOG_ERROR("VulkanGraphicsHelper", "%s : Failed creating descriptor set layout", __func__);
         layout = nullptr;
@@ -923,9 +999,10 @@ VkDescriptorSetLayout VulkanGraphicsHelper::createDescriptorsSetLayout(class IGr
     return layout;
 }
 
-VkDescriptorSetLayout VulkanGraphicsHelper::getEmptyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance)
+VkDescriptorSetLayout VulkanGraphicsHelper::getEmptyDescriptorsSetLayout(
+    class IGraphicsInstance *graphicsInstance)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
 
     static VkDescriptorSetLayout layout = nullptr;
     if (!layout)
@@ -935,36 +1012,40 @@ VkDescriptorSetLayout VulkanGraphicsHelper::getEmptyDescriptorsSetLayout(class I
     return layout;
 }
 
-void VulkanGraphicsHelper::destroyDescriptorsSetLayout(class IGraphicsInstance* graphicsInstance
-    , VkDescriptorSetLayout descriptorsSetLayout)
+void VulkanGraphicsHelper::destroyDescriptorsSetLayout(
+    class IGraphicsInstance *graphicsInstance, VkDescriptorSetLayout descriptorsSetLayout)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyDescriptorSetLayout(device->logicalDevice, descriptorsSetLayout, nullptr);
 }
 
-void VulkanGraphicsHelper::updateDescriptorsSet(class IGraphicsInstance* graphicsInstance, const std::vector<VkWriteDescriptorSet>& writingDescriptors, const std::vector<VkCopyDescriptorSet>& copyingDescsSets)
+void VulkanGraphicsHelper::updateDescriptorsSet(class IGraphicsInstance *graphicsInstance,
+    const std::vector<VkWriteDescriptorSet> &writingDescriptors,
+    const std::vector<VkCopyDescriptorSet> &copyingDescsSets)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
-    device->vkUpdateDescriptorSets(device->logicalDevice, uint32(writingDescriptors.size()), writingDescriptors.data()
-        , uint32(copyingDescsSets.size()), copyingDescsSets.data());
+    device->vkUpdateDescriptorSets(device->logicalDevice, uint32(writingDescriptors.size()),
+        writingDescriptors.data(), uint32(copyingDescsSets.size()), copyingDescsSets.data());
 }
 
-void VulkanGraphicsHelper::destroyPipelineLayout(class IGraphicsInstance* graphicsInstance, const VkPipelineLayout pipelineLayout)
+void VulkanGraphicsHelper::destroyPipelineLayout(
+    class IGraphicsInstance *graphicsInstance, const VkPipelineLayout pipelineLayout)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     device->vkDestroyPipelineLayout(device->logicalDevice, pipelineLayout, nullptr);
 }
 
-VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstance* graphicsInstance, const std::vector<uint8>& cacheData)
+VkPipelineCache VulkanGraphicsHelper::createPipelineCache(
+    class IGraphicsInstance *graphicsInstance, const std::vector<uint8> &cacheData)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
-    
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
+
     PIPELINE_CACHE_CREATE_INFO(cacheCreateInfo);
     if (!cacheData.empty())
     {
@@ -973,7 +1054,8 @@ VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstanc
     }
 
     VkPipelineCache pipelineCache;
-    if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
+    if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache)
+        != VK_SUCCESS)
     {
         LOG_ERROR("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
         pipelineCache = nullptr;
@@ -981,15 +1063,16 @@ VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstanc
     return pipelineCache;
 }
 
-VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstance* graphicsInstance)
+VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstance *graphicsInstance)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     PIPELINE_CACHE_CREATE_INFO(cacheCreateInfo);
 
     VkPipelineCache pipelineCache;
-    if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS)
+    if (device->vkCreatePipelineCache(device->logicalDevice, &cacheCreateInfo, nullptr, &pipelineCache)
+        != VK_SUCCESS)
     {
         LOG_ERROR("VulkanGraphicsHelper", "%s : Pipeline cache creation failed", __func__);
         pipelineCache = nullptr;
@@ -997,104 +1080,118 @@ VkPipelineCache VulkanGraphicsHelper::createPipelineCache(class IGraphicsInstanc
     return pipelineCache;
 }
 
-void VulkanGraphicsHelper::destroyPipelineCache(class IGraphicsInstance* graphicsInstance, VkPipelineCache pipelineCache)
+void VulkanGraphicsHelper::destroyPipelineCache(
+    class IGraphicsInstance *graphicsInstance, VkPipelineCache pipelineCache)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyPipelineCache(device->logicalDevice, pipelineCache, nullptr);
 }
 
-void VulkanGraphicsHelper::mergePipelineCaches(class IGraphicsInstance* graphicsInstance, VkPipelineCache dstCache
-    , const std::vector<VkPipelineCache>& srcCaches)
+void VulkanGraphicsHelper::mergePipelineCaches(class IGraphicsInstance *graphicsInstance,
+    VkPipelineCache dstCache, const std::vector<VkPipelineCache> &srcCaches)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
-    if (device->vkMergePipelineCaches(device->logicalDevice, dstCache, uint32(srcCaches.size()), srcCaches.data()) != VK_SUCCESS)
+    if (device->vkMergePipelineCaches(
+            device->logicalDevice, dstCache, uint32(srcCaches.size()), srcCaches.data())
+        != VK_SUCCESS)
     {
         LOG_ERROR("VulkanGraphicsHelper", "%s : Merging pipeline caches failed", __func__);
     }
 }
 
-void VulkanGraphicsHelper::getPipelineCacheData(class IGraphicsInstance* graphicsInstance, VkPipelineCache pipelineCache
-    , std::vector<uint8>& cacheData)
+void VulkanGraphicsHelper::getPipelineCacheData(class IGraphicsInstance *graphicsInstance,
+    VkPipelineCache pipelineCache, std::vector<uint8> &cacheData)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     uint64 cacheDataSize;
     device->vkGetPipelineCacheData(device->logicalDevice, pipelineCache, &cacheDataSize, nullptr);
     if (cacheDataSize > 0)
     {
         cacheData.resize(cacheDataSize);
-        device->vkGetPipelineCacheData(device->logicalDevice, pipelineCache, &cacheDataSize, cacheData.data());
+        device->vkGetPipelineCacheData(
+            device->logicalDevice, pipelineCache, &cacheDataSize, cacheData.data());
     }
 }
 
 VkPipelineStageFlags2KHR VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32 shaderStageFlags)
 {
-    static VkShaderStageFlagBits shaderStages[] = 
-    {
-        VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_ALL ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV ,
-        VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV
-    };
+    static VkShaderStageFlagBits shaderStages[] = { VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS, VkShaderStageFlagBits::VK_SHADER_STAGE_ALL,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV,
+        VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV };
 
     if (shaderStageFlags == 0)
         return 0;
     uint32 temp = shaderStageFlags;
 
     VkPipelineStageFlags2KHR pipelineStageFlags = 0;
-    for (const VkShaderStageFlagBits& shaderStage : shaderStages)
+    for (const VkShaderStageFlagBits &shaderStage : shaderStages)
     {
         if (BIT_SET(shaderStageFlags, shaderStage))
         {
             switch (shaderStage)
             {
             case VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT; break;
+                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT; break;
+                pipelineStageFlags
+                    |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT; break;
+                pipelineStageFlags
+                    |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT; break;
+                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; break;
+                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; break;
+                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT; break;
+                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_ALL:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT; break;
+                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR:
             case VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
             case VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
             case VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR:
             case VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
             case VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR; break;
+                pipelineStageFlags
+                    |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV; break;
+                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV;
+                break;
             case VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV:
-                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV; break;
+                pipelineStageFlags |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV;
+                break;
             }
 
             temp &= ~shaderStage;
-            if(temp == 0)
+            if (temp == 0)
                 break;
         }
     }
@@ -1103,61 +1200,68 @@ VkPipelineStageFlags2KHR VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32
 
 VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint32 pipelineStageFlags)
 {
-    VkPipelineStageFlagBits pipelineStages[] =
-    {
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV ,
-        VkPipelineStageFlagBits::VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV
-    };
+    VkPipelineStageFlagBits pipelineStages[]
+        = { VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV,
+              VkPipelineStageFlagBits::VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV };
     if (pipelineStageFlags == 0)
         return 0;
 
     uint32 temp = pipelineStageFlags;
 
     VkShaderStageFlags shaderStageFlags = 0;
-    for (const VkPipelineStageFlagBits& pipelineStage : pipelineStages)
+    for (const VkPipelineStageFlagBits &pipelineStage : pipelineStages)
     {
         if (BIT_SET(pipelineStageFlags, pipelineStage))
         {
             switch (pipelineStage)
             {
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_ALL_GRAPHICS;
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_ALL; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR:
-                shaderStageFlags |= (
-                    VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR |
-                    VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR |
-                    VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR |
-                    VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR |
-                    VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR |
-                    VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR
-                    ); break;
+                shaderStageFlags |= (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR
+                                     | VkShaderStageFlagBits::VK_SHADER_STAGE_ANY_HIT_BIT_KHR
+                                     | VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+                                     | VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR
+                                     | VkShaderStageFlagBits::VK_SHADER_STAGE_INTERSECTION_BIT_KHR
+                                     | VkShaderStageFlagBits::VK_SHADER_STAGE_CALLABLE_BIT_KHR);
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_TASK_BIT_NV;
+                break;
             case VkPipelineStageFlagBits::VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV:
-                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV; break;
+                shaderStageFlags |= VkShaderStageFlagBits::VK_SHADER_STAGE_MESH_BIT_NV;
+                break;
             }
 
             temp &= ~pipelineStage;
@@ -1168,73 +1272,87 @@ VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint32 pipel
     return shaderStageFlags;
 }
 
-std::vector<VkPipeline> VulkanGraphicsHelper::createGraphicsPipeline(class IGraphicsInstance* graphicsInstance,
-    const std::vector<VkGraphicsPipelineCreateInfo>& graphicsPipelineCI, VkPipelineCache pipelineCache)
+std::vector<VkPipeline> VulkanGraphicsHelper::createGraphicsPipeline(
+    class IGraphicsInstance *graphicsInstance,
+    const std::vector<VkGraphicsPipelineCreateInfo> &graphicsPipelineCI, VkPipelineCache pipelineCache)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkPipeline> pipelines(graphicsPipelineCI.size());
-    fatalAssert(device->vkCreateGraphicsPipelines(device->logicalDevice, pipelineCache, uint32(graphicsPipelineCI.size())
-        , graphicsPipelineCI.data(), nullptr, pipelines.data()) == VK_SUCCESS, "Graphics pipeline creation failed");
+    fatalAssert(
+        device->vkCreateGraphicsPipelines(device->logicalDevice, pipelineCache,
+            uint32(graphicsPipelineCI.size()), graphicsPipelineCI.data(), nullptr, pipelines.data())
+            == VK_SUCCESS,
+        "Graphics pipeline creation failed");
 
     return pipelines;
 }
 
-std::vector<VkPipeline> VulkanGraphicsHelper::createComputePipeline(class IGraphicsInstance* graphicsInstance,
-    const std::vector<VkComputePipelineCreateInfo>& computePipelineCI, VkPipelineCache pipelineCache)
+std::vector<VkPipeline> VulkanGraphicsHelper::createComputePipeline(
+    class IGraphicsInstance *graphicsInstance,
+    const std::vector<VkComputePipelineCreateInfo> &computePipelineCI, VkPipelineCache pipelineCache)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkPipeline> pipelines(computePipelineCI.size());
-    fatalAssert(device->vkCreateComputePipelines(device->logicalDevice, pipelineCache, uint32(computePipelineCI.size())
-        , computePipelineCI.data(), nullptr, pipelines.data()) == VK_SUCCESS, "Compute pipeline creation failed");
+    fatalAssert(
+        device->vkCreateComputePipelines(device->logicalDevice, pipelineCache,
+            uint32(computePipelineCI.size()), computePipelineCI.data(), nullptr, pipelines.data())
+            == VK_SUCCESS,
+        "Compute pipeline creation failed");
 
     return pipelines;
 }
 
-void VulkanGraphicsHelper::destroyPipeline(class IGraphicsInstance* graphicsInstance, VkPipeline pipeline)
+void VulkanGraphicsHelper::destroyPipeline(
+    class IGraphicsInstance *graphicsInstance, VkPipeline pipeline)
 {
-    const auto* gInstance = static_cast<const VulkanGraphicsInstance*>(graphicsInstance);
-    const VulkanDevice* device = &gInstance->selectedDevice;
+    const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
+    const VulkanDevice *device = &gInstance->selectedDevice;
     device->vkDestroyPipeline(device->logicalDevice, pipeline, nullptr);
 }
 
-PipelineBase* VulkanGraphicsHelper::createGraphicsPipeline(class IGraphicsInstance* graphicsInstance, const PipelineBase* parent) const
+PipelineBase *VulkanGraphicsHelper::createGraphicsPipeline(
+    class IGraphicsInstance *graphicsInstance, const PipelineBase *parent) const
 {
-    return new VulkanGraphicsPipeline(static_cast<const GraphicsPipelineBase*>(parent));
+    return new VulkanGraphicsPipeline(static_cast<const GraphicsPipelineBase *>(parent));
 }
 
-PipelineBase* VulkanGraphicsHelper::createGraphicsPipeline(class IGraphicsInstance* graphicsInstance, const GraphicsPipelineConfig& config) const
+PipelineBase *VulkanGraphicsHelper::createGraphicsPipeline(
+    class IGraphicsInstance *graphicsInstance, const GraphicsPipelineConfig &config) const
 {
-    auto* graphicsPipeline = new VulkanGraphicsPipeline();
+    auto *graphicsPipeline = new VulkanGraphicsPipeline();
     graphicsPipeline->setPipelineConfig(config);
     return graphicsPipeline;
 }
 
-PipelineBase* VulkanGraphicsHelper::createComputePipeline(class IGraphicsInstance* graphicsInstance, const PipelineBase* parent) const
+PipelineBase *VulkanGraphicsHelper::createComputePipeline(
+    class IGraphicsInstance *graphicsInstance, const PipelineBase *parent) const
 {
-    return new VulkanComputePipeline(static_cast<const ComputePipelineBase*>(parent));
+    return new VulkanComputePipeline(static_cast<const ComputePipelineBase *>(parent));
 }
 
-PipelineBase* VulkanGraphicsHelper::createComputePipeline(class IGraphicsInstance* graphicsInstance) const
+PipelineBase *VulkanGraphicsHelper::createComputePipeline(
+    class IGraphicsInstance *graphicsInstance) const
 {
     return new VulkanComputePipeline();
 }
 
-GlobalRenderingContextBase* VulkanGraphicsHelper::createGlobalRenderingContext() const
+GlobalRenderingContextBase *VulkanGraphicsHelper::createGlobalRenderingContext() const
 {
     return new VulkanGlobalRenderingContext();
 }
 
-ShaderResource* VulkanGraphicsHelper::createShaderResource(const ShaderConfigCollector* inConfig) const
+ShaderResource *VulkanGraphicsHelper::createShaderResource(const ShaderConfigCollector *inConfig) const
 {
     return new VulkanShaderResource(inConfig);
 }
 
-ShaderParametersRef VulkanGraphicsHelper::createShaderParameters(class IGraphicsInstance* graphicsInstance
-    , const class GraphicsResource* paramLayout, const std::set<uint32>& ignoredSetIds /*= {}*/) const
+ShaderParametersRef VulkanGraphicsHelper::createShaderParameters(
+    class IGraphicsInstance *graphicsInstance, const class GraphicsResource *paramLayout,
+    const std::set<uint32> &ignoredSetIds /*= {}*/) const
 {
     ShaderParametersRef shaderParameter;
     if (paramLayout->getType()->isChildOf<ShaderSetParametersLayout>())
@@ -1248,72 +1366,72 @@ ShaderParametersRef VulkanGraphicsHelper::createShaderParameters(class IGraphics
     return shaderParameter;
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::readOnlyBufferType() const
+const GraphicsResourceType *VulkanGraphicsHelper::readOnlyBufferType() const
 {
     return VulkanRBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::writeOnlyBufferType() const
+const GraphicsResourceType *VulkanGraphicsHelper::writeOnlyBufferType() const
 {
     return VulkanWBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::readWriteBufferType() const
+const GraphicsResourceType *VulkanGraphicsHelper::readWriteBufferType() const
 {
     return VulkanRWBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::readOnlyTexelsType() const
+const GraphicsResourceType *VulkanGraphicsHelper::readOnlyTexelsType() const
 {
     return VulkanRTexelBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::writeOnlyTexelsType() const
+const GraphicsResourceType *VulkanGraphicsHelper::writeOnlyTexelsType() const
 {
     return VulkanWTexelBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::readWriteTexelsType() const
+const GraphicsResourceType *VulkanGraphicsHelper::readWriteTexelsType() const
 {
     return VulkanRWTexelBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::readOnlyIndexBufferType() const
+const GraphicsResourceType *VulkanGraphicsHelper::readOnlyIndexBufferType() const
 {
     return VulkanIndexBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::readOnlyVertexBufferType() const
+const GraphicsResourceType *VulkanGraphicsHelper::readOnlyVertexBufferType() const
 {
     return VulkanVertexBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::readOnlyIndirectBufferType() const
+const GraphicsResourceType *VulkanGraphicsHelper::readOnlyIndirectBufferType() const
 {
     return VulkanRIndirectBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::writeOnlyIndirectBufferType() const
+const GraphicsResourceType *VulkanGraphicsHelper::writeOnlyIndirectBufferType() const
 {
     return VulkanWIndirectBuffer::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::imageType() const
+const GraphicsResourceType *VulkanGraphicsHelper::imageType() const
 {
     return VulkanImageResource::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::cubeImageType() const
+const GraphicsResourceType *VulkanGraphicsHelper::cubeImageType() const
 {
     return VulkanCubeImageResource::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::rtImageType() const
+const GraphicsResourceType *VulkanGraphicsHelper::rtImageType() const
 {
     return VulkanRenderTargetResource::staticType();
 }
 
-const GraphicsResourceType* VulkanGraphicsHelper::cubeRTImageType() const
+const GraphicsResourceType *VulkanGraphicsHelper::cubeRTImageType() const
 {
     return VulkanCubeRTImageResource::staticType();
 }

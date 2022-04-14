@@ -9,21 +9,21 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
+#include "Assets/AssetsManager.h"
+#include "CmdLine/CmdLine.h"
 #include "Engine/GameEngine.h"
 #include "Logger/Logger.h"
+#include "Memory/Memory.h"
+#include "Modules/ModuleManager.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
-#include "Assets/AssetsManager.h"
-#include "Modules/ModuleManager.h"
-#include "CmdLine/CmdLine.h"
-#include "Memory/Memory.h"
 
 CBE_GLOBAL_NEWDELETE_OVERRIDES
 
-int appMain(String cmdLine, void* appPlatformInstance)
+int appMain(String cmdLine, void *appPlatformInstance)
 {
     AppInstanceCreateInfo appCI;
-    //appCI.applicationName = TCHAR(MACRO_TO_STRING(ENGINE_NAME));
+    // appCI.applicationName = TCHAR(MACRO_TO_STRING(ENGINE_NAME));
     appCI.applicationName = TCHAR("TestEngine");
     appCI.cmdLine = cmdLine;
     appCI.majorVersion = ENGINE_VERSION;
@@ -33,8 +33,8 @@ int appMain(String cmdLine, void* appPlatformInstance)
 
     // Main Core
     bool bMandatoryModulesLoaded = ModuleManager::get()->loadModule(TCHAR("ProgramCore"))
-        && ModuleManager::get()->loadModule(TCHAR("ReflectionRuntime"))
-        && ModuleManager::get()->loadModule(TCHAR("CoreObjects"));
+                                   && ModuleManager::get()->loadModule(TCHAR("ReflectionRuntime"))
+                                   && ModuleManager::get()->loadModule(TCHAR("CoreObjects"));
     fatalAssert(bMandatoryModulesLoaded, "Loading mandatory modules failed");
 
     UnexpectedErrorHandler::getHandler()->registerFilter();
@@ -55,7 +55,7 @@ int appMain(String cmdLine, void* appPlatformInstance)
     LOG("Engine", "%s() : Engine quit", __func__);
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
     Logger::flushStream();
-    
+
     return 0;
 }
 

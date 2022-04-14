@@ -12,15 +12,15 @@
 #pragma once
 
 #include "Math/CoreMathTypedefs.h"
-#include "Types/Containers/ArrayView.h"
 #include "Math/Math.h"
+#include "Types/Containers/ArrayView.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 class Vector2D;
 class Vector3D;
 
 // Usage AABB
-template<class T,uint32 d>
+template <class T, uint32 d>
 class Box
 {
 public:
@@ -29,23 +29,24 @@ public:
     CONST_EXPR static const uint32 Dim = d;
 
     using value_type = PointType;
+
 public:
     T minBound;
     T maxBound;
 
     Box() = default;
 
-    Box(const T& min, const T& max)
+    Box(const T &min, const T &max)
         : minBound(min)
         , maxBound(max)
     {}
 
-    explicit Box(const T& value)
+    explicit Box(const T &value)
         : minBound(value)
         , maxBound(value)
     {}
 
-    Box(const ArrayView<T>& points)
+    Box(const ArrayView<T> &points)
         : minBound(0)
         , maxBound(0)
     {
@@ -58,24 +59,24 @@ public:
         fixAABB();
     }
 
-    Box(const Box<T, d>& other)
+    Box(const Box<T, d> &other)
         : minBound(other.minBound)
         , maxBound(other.maxBound)
     {}
 
-    Box(Box<T, d>&& other)
+    Box(Box<T, d> &&other)
         : minBound(std::move(other.minBound))
         , maxBound(std::move(other.maxBound))
     {}
 
-    Box<T, d>& operator=(const Box<T, d>& other)
+    Box<T, d> &operator=(const Box<T, d> &other)
     {
         minBound = other.minBound;
         maxBound = other.maxBound;
         return *this;
     }
 
-    Box<T, d> operator+(const Box<T, d>& other)
+    Box<T, d> operator+(const Box<T, d> &other)
     {
         Box<T, d> newBox;
         for (uint32 i = 0; i < d; i++)
@@ -86,7 +87,7 @@ public:
         return newBox;
     }
 
-    Box<T, d> operator+(const T& offset)
+    Box<T, d> operator+(const T &offset)
     {
         Box<T, d> newBox;
         for (uint32 i = 0; i < d; i++)
@@ -97,31 +98,24 @@ public:
         return newBox;
     }
 
-    void operator+=(const Box<T, d>& other)
-    {
-        grow(other);
-    }
+    void operator+=(const Box<T, d> &other) { grow(other); }
 
-    void operator+=(const T& dx)
-    {
-        offset(dx);
-    }
+    void operator+=(const T &dx) { offset(dx); }
 
-
-    Box<T, d>& operator=(Box<T, d>&& other)
+    Box<T, d> &operator=(Box<T, d> &&other)
     {
         minBound = std::move(other.minBound);
         maxBound = std::move(other.maxBound);
         return *this;
     }
 
-    void reset(const T& min, const T& max)
+    void reset(const T &min, const T &max)
     {
         minBound = min;
         maxBound = max;
     }
 
-    void offset(const T& offset)
+    void offset(const T &offset)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -130,7 +124,7 @@ public:
         }
     }
 
-    void grow(const Box<T, d>& other) 
+    void grow(const Box<T, d> &other)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -138,7 +132,7 @@ public:
             maxBound[i] = maxBound[i] < other.maxBound[i] ? other.maxBound[i] : maxBound[i];
         }
     }
-    void grow(const T& point)
+    void grow(const T &point)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -146,19 +140,20 @@ public:
             maxBound[i] = maxBound[i] < point[i] ? point[i] : maxBound[i];
         }
     }
-    
-    bool intersect(const Box<T, d>& other) const 
+
+    bool intersect(const Box<T, d> &other) const
     {
         for (uint32 i = 0; i < d; i++)
         {
-            // If min point of one is larger than max point of another or vice versa then box never intersects
+            // If min point of one is larger than max point of another or vice versa then box never
+            // intersects
             if (other.maxBound[i] < minBound[i] || other.minBound[i] > maxBound[i])
                 return false;
         }
         return true;
     }
 
-    Box<T, d> getIntersectionBox(const Box<T, d>& other,bool checkAA=true) const
+    Box<T, d> getIntersectionBox(const Box<T, d> &other, bool checkAA = true) const
     {
         Box<T, d> regionBox;
         for (uint32 i = 0; i < d; i++)
@@ -167,7 +162,8 @@ public:
             regionBox.maxBound[i] = maxBound[i] < other.maxBound[i] ? maxBound[i] : other.maxBound[i];
         }
 
-        if (checkAA) {
+        if (checkAA)
+        {
             regionBox.fixAABB();
         }
         return regionBox;
@@ -197,7 +193,7 @@ public:
         }
     }
 
-    bool contains(const T& point) const
+    bool contains(const T &point) const
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -208,11 +204,12 @@ public:
         }
         return true;
     }
-    bool contains(const Box<T, d>& other)
+    bool contains(const Box<T, d> &other)
     {
         for (uint32 i = 0; i < d; i++)
         {
-            // If any min bound is less than this or if max bound is greater than this it means that box cannot be contained in this box
+            // If any min bound is less than this or if max bound is greater than this it means that
+            // box cannot be contained in this box
             if (other.minBound[i] < minBound[i] || other.maxBound[i] > maxBound[i])
             {
                 return false;
@@ -221,8 +218,9 @@ public:
         return true;
     }
 
-    // Returns 0 if this cannot contain, 1 if is within this, 2 if other is exactly on the border or is matching the box exactly
-    uint8 encloses(const T& point) const
+    // Returns 0 if this cannot contain, 1 if is within this, 2 if other is exactly on the border or is
+    // matching the box exactly
+    uint8 encloses(const T &point) const
     {
         bool bIsOnBorder = false;
         for (uint32 i = 0; i < d; i++)
@@ -232,13 +230,12 @@ public:
                 return 0;
             }
             // If even one axis in on border, point is in border
-            bIsOnBorder = bIsOnBorder 
-                || Math::isEqual(point[i], minBound[i]) 
-                || Math::isEqual(point[i], maxBound[i]);
+            bIsOnBorder = bIsOnBorder || Math::isEqual(point[i], minBound[i])
+                          || Math::isEqual(point[i], maxBound[i]);
         }
-        return bIsOnBorder? 2u : 1u;
+        return bIsOnBorder ? 2u : 1u;
     }
-    uint8 encloses(const Box<T, d>& other)
+    uint8 encloses(const Box<T, d> &other)
     {
         PointElementType thisVolume = 1, otherVolume = 1;
         for (uint32 i = 0; i < d; i++)
@@ -250,23 +247,18 @@ public:
             thisVolume *= (maxBound[i] - minBound[i]);
             otherVolume *= (other.maxBound[i] - other.minBound[i]);
         }
-        return Math::isEqual(thisVolume, otherVolume)? 2u : 1u;
+        return Math::isEqual(thisVolume, otherVolume) ? 2u : 1u;
     }
 
-    T size() const
-    {
-        return maxBound - minBound;
-    }
+    T size() const { return maxBound - minBound; }
 
-    T center() const
-    {
-        return (maxBound + minBound) * 0.5f;
-    }
+    T center() const { return (maxBound + minBound) * 0.5f; }
 
-    void boundCorners(ArrayView<T>& corners) const
+    void boundCorners(ArrayView<T> &corners) const
     {
         uint32 totalCorners = Math::pow(2, d);
-        fatalAssert(corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
+        fatalAssert(
+            corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
 
         const T boundCenter = center();
         const T boundHalfExtend = size() * 0.5f;
@@ -296,8 +288,8 @@ public:
 
     // Ensure start point is outside the box
     // Out Lengths are portion of ray segment to reach the point
-    bool raycast(const T& startPoint, const T& dir, const float& length, float& invLength, float& outEnterLength,
-        T& outEnterPoint, float& outExitLength, T& outExitPoint) const
+    bool raycast(const T &startPoint, const T &dir, const float &length, float &invLength,
+        float &outEnterLength, T &outEnterPoint, float &outExitLength, T &outExitPoint) const
     {
         bool parallel[d];
         T invDir;
@@ -305,14 +297,16 @@ public:
         for (uint32 i = 0; i < d; i++)
         {
             parallel[i] = (dir[i] == 0);
-            invDir[i] = parallel[i] ? 0 : 1/dir[i];
+            invDir[i] = parallel[i] ? 0 : 1 / dir[i];
         }
 
-        return raycastFast(startPoint, dir, invDir, length, invLength, &parallel[0], outEnterLength, outEnterPoint, outExitLength, outExitPoint);
+        return raycastFast(startPoint, dir, invDir, length, invLength, &parallel[0], outEnterLength,
+            outEnterPoint, outExitLength, outExitPoint);
     }
 
-    bool raycastFast(const T& startPoint, const T& dir,const T& invDir, const float& length, float& invLength,const bool* const parallel,
-        float& outEnterLength,T& outEnterPoint, float& outExitLength, T& outExitPoint) const
+    bool raycastFast(const T &startPoint, const T &dir, const T &invDir, const float &length,
+        float &invLength, const bool *const parallel, float &outEnterLength, T &outEnterPoint,
+        float &outExitLength, T &outExitPoint) const
     {
         T s2Min = minBound - startPoint;
         T s2Max = maxBound - startPoint;
@@ -329,12 +323,14 @@ public:
                 {
                     return false;
                 }
-                else {
+                else
+                {
                     t2 = FLT_MAX;
                     t1 = 0;
                 }
             }
-            else {
+            else
+            {
                 t1 = s2Min[axis] * invDir[axis];
                 t2 = s2Max[axis] * invDir[axis];
             }
@@ -365,7 +361,7 @@ public:
     }
 };
 
-template<class T>
+template <class T>
 class Box<T, 1>
 {
 public:
@@ -374,38 +370,39 @@ public:
     CONST_EXPR static const uint32 Dim = 1;
 
     using value_type = PointType;
+
 public:
     T minBound;
     T maxBound;
 
     Box() = default;
 
-    Box(const T& min, const T& max)
+    Box(const T &min, const T &max)
     {
         minBound = min;
         maxBound = max;
     }
 
-    Box(const Box<T, 1>& other)
+    Box(const Box<T, 1> &other)
     {
         minBound = other.minBound;
         maxBound = other.maxBound;
     }
 
-    Box(Box<T, 1>&& other)
+    Box(Box<T, 1> &&other)
     {
         minBound = std::move(other.minBound);
         maxBound = std::move(other.maxBound);
     }
 
-    Box<T, 1>& operator=(const Box<T, 1>& other)
+    Box<T, 1> &operator=(const Box<T, 1> &other)
     {
         minBound = other.minBound;
         maxBound = other.maxBound;
         return *this;
     }
 
-    Box<T, 1> operator+(const Box<T, 1>& other)
+    Box<T, 1> operator+(const Box<T, 1> &other)
     {
         Box<T, 1> newBox;
         newBox.minBound = minBound > other.minBound ? other.minBound : minBound;
@@ -413,7 +410,7 @@ public:
         return newBox;
     }
 
-    Box<T, 1> operator+(const T& offset)
+    Box<T, 1> operator+(const T &offset)
     {
         Box<T, 1> newBox;
         newBox.minBound = minBound + offset;
@@ -421,69 +418,59 @@ public:
         return newBox;
     }
 
-    void operator+=(const Box<T, 1>& other)
-    {
-        grow(other);
-    }
+    void operator+=(const Box<T, 1> &other) { grow(other); }
 
-    void operator+=(const T& dx)
-    {
-        offset(dx);
-    }
+    void operator+=(const T &dx) { offset(dx); }
 
-
-    Box<T, 1>& operator=(Box<T, 1>&& other)
+    Box<T, 1> &operator=(Box<T, 1> &&other)
     {
         minBound = std::move(other.minBound);
         maxBound = std::move(other.maxBound);
         return *this;
     }
 
-    void reset(const T& min, const T& max)
+    void reset(const T &min, const T &max)
     {
         minBound = min;
         maxBound = max;
     }
 
-    void offset(const T& offset)
+    void offset(const T &offset)
     {
         minBound += offset;
         maxBound += offset;
     }
 
-    void grow(const Box<T, 1>& other)
+    void grow(const Box<T, 1> &other)
     {
         minBound = minBound > other.minBound ? other.minBound : minBound;
         maxBound = maxBound < other.maxBound ? other.maxBound : maxBound;
     }
-    void grow(const T& point)
+    void grow(const T &point)
     {
         minBound = minBound > point ? point : minBound;
         maxBound = maxBound < point ? point : maxBound;
     }
 
-    bool intersect(const Box<T, 1>& other) const
+    bool intersect(const Box<T, 1> &other) const
     {
         return !(other.maxBound < minBound || other.minBound > maxBound);
     }
 
-    Box<T, 1> getIntersectionBox(const Box<T, 1>& other, bool checkAA = true) const
+    Box<T, 1> getIntersectionBox(const Box<T, 1> &other, bool checkAA = true) const
     {
         Box<T, 1> regionBox;
         regionBox.minBound = minBound > other.minBound ? minBound : other.minBound;
         regionBox.maxBound = maxBound < other.maxBound ? maxBound : other.maxBound;
 
-        if (checkAA) 
+        if (checkAA)
         {
             regionBox.fixAABB();
         }
         return regionBox;
     }
 
-    bool isValidAABB() const
-    {
-        return minBound <= maxBound;
-    }
+    bool isValidAABB() const { return minBound <= maxBound; }
 
     void fixAABB()
     {
@@ -494,40 +481,32 @@ public:
         }
     }
 
-    bool contains(const T& point) const
-    {
-        return point >= minBound && point <= maxBound;
-    }
-    bool contains(const Box<T, 1>& other) const
+    bool contains(const T &point) const { return point >= minBound && point <= maxBound; }
+    bool contains(const Box<T, 1> &other) const
     {
         return other.minBound >= minBound && other.maxBound <= maxBound;
     }
-    uint8 encloses(const T& point) const
+    uint8 encloses(const T &point) const
     {
         if (point < minBound || point > maxBound)
             return 0;
-        
-        return (Math::isEqual(point, minBound) || Math::isEqual(point,maxBound))? 2u : 1u;
+
+        return (Math::isEqual(point, minBound) || Math::isEqual(point, maxBound)) ? 2u : 1u;
     }
-    uint8 encloses(const Box<T, 1>& other) const
+    uint8 encloses(const Box<T, 1> &other) const
     {
         if (other.minBound < minBound || other.maxBound > maxBound)
             return 0;
-        return (Math::isEqual(other.minBound, minBound) && Math::isEqual(other.maxBound, maxBound)) ? 2u : 1u;
+        return (Math::isEqual(other.minBound, minBound) && Math::isEqual(other.maxBound, maxBound)) ? 2u
+                                                                                                    : 1u;
     }
 
-    T size() const
-    {
-        return maxBound - minBound;
-    }
+    T size() const { return maxBound - minBound; }
 
-    T center() const
-    {
-        return (maxBound + minBound) * 0.5f;
-    }
+    T center() const { return (maxBound + minBound) * 0.5f; }
 };
 
-template<typename T>
+template <typename T>
 using ValueRange = Box<T, 1>;
 
 using SizeBox2D = Box<Size2D, 2>;

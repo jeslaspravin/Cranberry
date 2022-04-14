@@ -22,7 +22,7 @@ struct SourceInformation
     String headerIncl;
     String generatedHeaderPath;
     String generatedTUPath;
-    // TU will be parsed and be valid only if this source's reflection data is outdated. 
+    // TU will be parsed and be valid only if this source's reflection data is outdated.
     // Failing to parse will lead to termination. So this must be valid if this source is parsed
     CXTranslationUnit tu = nullptr;
     // File size used for sorting
@@ -30,8 +30,8 @@ struct SourceInformation
 };
 
 /*
-* This class processes each of the header in the module.
-*/
+ * This class processes each of the header in the module.
+ */
 class ModuleSources
 {
 private:
@@ -45,16 +45,20 @@ private:
     FileChangesTracker *headerTracker;
     CXIndex index;
     std::vector<SourceInformation> sources;
+
 private:
     void printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptions, uint32 idx);
-    void addAdditionalCompileOpts(std::vector<std::string>& compilerArgs);
+    void addAdditionalCompileOpts(std::vector<std::string> &compilerArgs);
+    // Deleted all generated files for each header
+    void clearGenerated(const std::vector<String> &headers) const;
+
 public:
     ModuleSources();
     ~ModuleSources();
 
     bool compileAllSources(bool bFullCompile = false);
     // Injects generated TU's into generate module files for build system to compile
-    void injectGeneratedFiles(const std::vector<const SourceInformation*>& generatedSrcs);
+    void injectGeneratedFiles(const std::vector<const SourceInformation *> &generatedSrcs);
 
-    std::vector<const SourceInformation*> getParsedSources() const;
+    std::vector<const SourceInformation *> getParsedSources() const;
 };

@@ -14,31 +14,31 @@
 #include "Math/Matrix4.h"
 #include "Types/CoreDefines.h"
 
-
 class PROGRAMCORE_EXPORT RotationMatrix
 {
 private:
     Matrix3 rotationMatrix;
-    FORCE_INLINE void fromRotation(const class Rotation& rotation);
+    FORCE_INLINE void fromRotation(const class Rotation &rotation);
     void verifyMatrix() const;
+
 public:
     RotationMatrix();
-    RotationMatrix(const RotationMatrix& other);
-    RotationMatrix(RotationMatrix&& other);
-    RotationMatrix(const Matrix3& rotMatrix);
-    RotationMatrix(const Matrix4& rotMatrix);
-    RotationMatrix(const class Rotation& rotation);
+    RotationMatrix(const RotationMatrix &other);
+    RotationMatrix(RotationMatrix &&other);
+    RotationMatrix(const Matrix3 &rotMatrix);
+    RotationMatrix(const Matrix4 &rotMatrix);
+    RotationMatrix(const class Rotation &rotation);
 
     Rotation asRotation() const;
-    const Matrix3& matrix() const;
+    const Matrix3 &matrix() const;
 
     void orthogonalize();
 
-    static RotationMatrix fromX(const Vector3D& x);
-    static RotationMatrix fromY(const Vector3D& y);
-    static RotationMatrix fromZ(const Vector3D& z);
-    static RotationMatrix fromXY(const Vector3D& x, const Vector3D& y);
-    static RotationMatrix fromYZ(const Vector3D& y, const Vector3D& z);
-    static RotationMatrix fromZX(const Vector3D& z, const Vector3D& x);
-    static RotationMatrix fromXYZ(const Vector3D& x, const Vector3D& y, const Vector3D& z);
+    static RotationMatrix fromX(const Vector3D &x);
+    static RotationMatrix fromY(const Vector3D &y);
+    static RotationMatrix fromZ(const Vector3D &z);
+    static RotationMatrix fromXY(const Vector3D &x, const Vector3D &y);
+    static RotationMatrix fromYZ(const Vector3D &y, const Vector3D &z);
+    static RotationMatrix fromZX(const Vector3D &z, const Vector3D &x);
+    static RotationMatrix fromXYZ(const Vector3D &x, const Vector3D &y, const Vector3D &z);
 };

@@ -21,31 +21,33 @@ class ArrayView
 {
 public:
     using value_type = ElementType;
-    using pointer = ElementType*;
-    using reference = ElementType&;
+    using pointer = ElementType *;
+    using reference = ElementType &;
 
     template <bool bIsConst>
     class Iterator
     {
     public:
         using value_type = std::conditional_t<bIsConst, const ElementType, ElementType>;
-        using reference = value_type&;
-        using pointer = value_type*;
+        using reference = value_type &;
+        using pointer = value_type *;
         using difference_type = int64;
         using iterator_concept = std::contiguous_iterator_tag;
         using iterator_category = std::random_access_iterator_tag;
 
     private:
-        const ArrayView* arrayView;
+        const ArrayView *arrayView;
         SizeT idx;
-    public:
 
+    public:
         Iterator() = delete;
-        Iterator(const Iterator&) = default;
-        Iterator(Iterator&&) = default;
-        Iterator& operator=(const Iterator&) = default;
-        Iterator& operator=(Iterator&&) = default;
-        Iterator(const ArrayView& view, SizeT itrIdx) : arrayView(&view), idx(itrIdx)
+        Iterator(const Iterator &) = default;
+        Iterator(Iterator &&) = default;
+        Iterator &operator=(const Iterator &) = default;
+        Iterator &operator=(Iterator &&) = default;
+        Iterator(const ArrayView &view, SizeT itrIdx)
+            : arrayView(&view)
+            , idx(itrIdx)
         {
             fatalAssert(arrayView && idx >= 0 && arrayView->length >= idx, "Invalid iterator data");
         }
@@ -62,12 +64,12 @@ public:
             return *(arrayView->dataPtr + arrayView->offset + idx);
         }
 
-        bool operator!=(const Iterator& other) const noexcept
+        bool operator!=(const Iterator &other) const noexcept
         {
             return arrayView != other.arrayView || idx != other.idx;
         }
 
-        Iterator& operator++() noexcept
+        Iterator &operator++() noexcept
         {
             ++idx;
             return *this;
@@ -80,7 +82,7 @@ public:
             return retVal;
         }
 
-        Iterator& operator--() noexcept
+        Iterator &operator--() noexcept
         {
             --idx;
             return *this;
@@ -93,7 +95,7 @@ public:
             return retVal;
         }
 
-        Iterator& operator+=(const difference_type off) noexcept
+        Iterator &operator+=(const difference_type off) noexcept
         {
             idx += off;
             return *this;
@@ -104,7 +106,7 @@ public:
             return Iterator(*arrayView, idx + off);
         }
 
-        Iterator& operator-=(const difference_type off) noexcept
+        Iterator &operator-=(const difference_type off) noexcept
         {
             idx -= off;
             return *this;
@@ -126,33 +128,33 @@ public:
     using const_iterator = Iterator<true>;
     using reverse_iterator = std::reverse_iterator<Iterator<false>>;
     using const_reverse_iterator = std::reverse_iterator<Iterator<true>>;
+
 private:
     pointer dataPtr;
     SizeT offset;
     SizeT length;
 
 public:
-
     ArrayView()
         : dataPtr(nullptr)
         , offset(0)
         , length(0)
     {}
 
-    ArrayView(std::vector<value_type>& parent, SizeT inOffset = 0)
+    ArrayView(std::vector<value_type> &parent, SizeT inOffset = 0)
     {
         dataPtr = parent.data();
         offset = Math::min(inOffset, SizeT(parent.size() - 1));
         length = SizeT(parent.size() - offset);
     }
 
-    ArrayView(std::vector<value_type>& parent, SizeT inLength, SizeT inOffset = 0)
+    ArrayView(std::vector<value_type> &parent, SizeT inLength, SizeT inOffset = 0)
     {
         dataPtr = parent.data();
         offset = Math::min(inOffset, SizeT(parent.size() - 1));
         length = Math::min(inLength, SizeT(parent.size() - offset));
     }
-    
+
     ArrayView(pointer parentData, SizeT parentSize, SizeT inOffset = 0)
     {
         dataPtr = parentData;
@@ -160,25 +162,13 @@ public:
         length = parentSize - offset;
     }
 
-    SizeT size() const
-    {
-        return length;
-    }
+    SizeT size() const { return length; }
 
-    NODISCARD bool empty() const
-    {
-        return length == 0;
-    }
+    NODISCARD bool empty() const { return length == 0; }
 
-    pointer data()
-    {
-        return dataPtr + offset;
-    }
+    pointer data() { return dataPtr + offset; }
 
-    const pointer data() const
-    {
-        return dataPtr + offset;
-    }
+    const pointer data() const { return dataPtr + offset; }
 
     reference operator[](SizeT idx)
     {

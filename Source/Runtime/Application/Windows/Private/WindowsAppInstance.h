@@ -12,20 +12,20 @@
 #pragma once
 #include "PlatformAppInstanceBase.h"
 
-class WindowsAppInstance : public PlatformAppInstanceBase 
+class WindowsAppInstance : public PlatformAppInstanceBase
 {
 private:
-    void* windowsInstance;
+    void *windowsInstance;
+
 public:
-    WindowsAppInstance(void* appPlatformInstance)
+    WindowsAppInstance(void *appPlatformInstance)
         : windowsInstance(appPlatformInstance)
     {}
 
-    void* getPlatformAppInstance() const override;
-
+    void *getPlatformAppInstance() const override;
 };
 
-namespace GPlatformInstances 
+namespace GPlatformInstances
 {
-    typedef WindowsAppInstance PlatformAppInstance;
+typedef WindowsAppInstance PlatformAppInstance;
 }

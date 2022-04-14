@@ -11,10 +11,10 @@
 
 #pragma once
 
-#include "Types/CoreTypes.h"
+#include "ApplicationExports.h"
 #include "FontManager.h"
 #include "String/String.h"
-#include "ApplicationExports.h"
+#include "Types/CoreTypes.h"
 
 class PlatformAppInstanceBase;
 
@@ -28,30 +28,30 @@ struct AppInstanceCreateInfo
     // This cmdLine will be used as reference inside ProgramCmdLine
     String cmdLine;
 
-    void* platformAppHandle;
+    void *platformAppHandle;
 };
 
-class APPLICATION_EXPORT ApplicationInstance 
+class APPLICATION_EXPORT ApplicationInstance
 {
 private:
     String applicationName;
-    
+
     int32 majorVersion;
     int32 minorVersion;
     int32 patchVersion;
     String cmdLine;
 
 public:
-    PlatformAppInstanceBase* platformApp;
+    PlatformAppInstanceBase *platformApp;
     FontManager fontManager;
+
 public:
     ApplicationInstance() = default;
-    ApplicationInstance(const AppInstanceCreateInfo& createInfo);
+    ApplicationInstance(const AppInstanceCreateInfo &createInfo);
 
-
-    const String& getAppName() const { return applicationName; }
-    void getVersion(int32& majorVer, int32& minorVer, int32& patchVer) const 
-    { 
+    const String &getAppName() const { return applicationName; }
+    void getVersion(int32 &majorVer, int32 &minorVer, int32 &patchVer) const
+    {
         majorVer = majorVersion;
         minorVer = minorVersion;
         patchVer = patchVersion;

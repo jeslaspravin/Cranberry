@@ -16,12 +16,13 @@
 class CBEMemory;
 class CBEMemAlloc;
 
-// Why not use platform functions class? Platform function class does not allow default generic impl, for memory though we need it
+// Why not use platform functions class? Platform function class does not allow default generic impl, for
+// memory though we need it
 class PROGRAMCORE_EXPORT GenericPlatformMemory
 {
 private:
     GenericPlatformMemory() = default;
-public:
 
-    static CBEMemAlloc* createMemAllocator();
+public:
+    static CBEMemAlloc *createMemAllocator();
 };

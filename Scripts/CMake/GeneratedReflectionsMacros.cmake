@@ -84,7 +84,7 @@ function (reflect_target)
         BYPRODUCTS ${gen_files}
         USES_TERMINAL
         # VERBATIM not needed as we took care of quotes manually
-        COMMENT "${reflect_target_TARGET_NAME} : Generating reflection codes ..."
+        COMMENT "${reflect_target_TARGET_NAME} : Generating reflection codes..."
     )
 
     # Public is already included along with export header generation, It is okay however

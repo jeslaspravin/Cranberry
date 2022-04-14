@@ -16,43 +16,40 @@
 #include <functional>
 
 template <typename ReturnType, typename... Parameters>
-struct Function 
+struct Function
 {
 
-    typedef ReturnType(*StaticDelegate)(Parameters...);
+    typedef ReturnType (*StaticDelegate)(Parameters...);
 
     StaticDelegate staticDelegate = nullptr;
 
     // Class default constructors and operators
     Function() = default;
-    Function(const Function& otherFuncPtr)
+    Function(const Function &otherFuncPtr)
         : staticDelegate(otherFuncPtr.staticDelegate)
     {}
-    void operator=(const Function& otherFuncPtr)
-    {
-        staticDelegate = otherFuncPtr.staticDelegate;
-    }
-    Function(Function&& otherFuncPtr)
+    void operator=(const Function &otherFuncPtr) { staticDelegate = otherFuncPtr.staticDelegate; }
+    Function(Function &&otherFuncPtr)
         : staticDelegate(std::move(otherFuncPtr.staticDelegate))
     {
         otherFuncPtr.staticDelegate = nullptr;
     }
-    void operator=(Function&& otherFuncPtr)
+    void operator=(Function &&otherFuncPtr)
     {
         staticDelegate = std::move(otherFuncPtr.staticDelegate);
         otherFuncPtr.staticDelegate = nullptr;
     }
-    bool operator==(const Function& otherFuncPtr)
+    bool operator==(const Function &otherFuncPtr)
     {
         return staticDelegate == otherFuncPtr.staticDelegate;
     }
     // End class default constructors and operators
 
-    CONST_EXPR Function(const StaticDelegate& functionPointer)
+    CONST_EXPR Function(const StaticDelegate &functionPointer)
         : staticDelegate(functionPointer)
     {}
 
-    CONST_EXPR void operator=(const StaticDelegate& functionPointer)
+    CONST_EXPR void operator=(const StaticDelegate &functionPointer)
     {
         staticDelegate = functionPointer;
     }
@@ -63,18 +60,14 @@ struct Function
         return (*staticDelegate)(std::forward<Parameters>(params)...);
     }
 
-    operator bool() const
-    {
-        return staticDelegate != nullptr;
-    }
+    operator bool() const { return staticDelegate != nullptr; }
 };
 
-
-template <bool IsConst,typename ClassType, typename ReturnType, typename... Parameters>
+template <bool IsConst, typename ClassType, typename ReturnType, typename... Parameters>
 struct ClassFunction;
 
-template <typename ClassType,typename ReturnType, typename... Parameters>
-struct ClassFunction<false, ClassType, ReturnType, Parameters...> 
+template <typename ClassType, typename ReturnType, typename... Parameters>
+struct ClassFunction<false, ClassType, ReturnType, Parameters...>
 {
     typedef ReturnType (ClassType::*ClassDelegate)(Parameters...);
 
@@ -82,110 +75,92 @@ struct ClassFunction<false, ClassType, ReturnType, Parameters...>
 
     // Class default constructors and operators
     ClassFunction() = default;
-    ClassFunction(const ClassFunction & otherFuncPtr)
+    ClassFunction(const ClassFunction &otherFuncPtr)
         : classDelegate(otherFuncPtr.classDelegate)
     {}
-    void operator=(const ClassFunction & otherFuncPtr)
-    {
-        classDelegate = otherFuncPtr.classDelegate;
-    }
-    ClassFunction(ClassFunction && otherFuncPtr)
+    void operator=(const ClassFunction &otherFuncPtr) { classDelegate = otherFuncPtr.classDelegate; }
+    ClassFunction(ClassFunction &&otherFuncPtr)
         : classDelegate(std::move(otherFuncPtr.classDelegate))
     {
         otherFuncPtr.classDelegate = nullptr;
     }
-    void operator=(ClassFunction && otherFuncPtr)
+    void operator=(ClassFunction &&otherFuncPtr)
     {
         classDelegate = std::move(otherFuncPtr.classDelegate);
         otherFuncPtr.classDelegate = nullptr;
     }
-    bool operator==(const ClassFunction& otherFuncPtr)
+    bool operator==(const ClassFunction &otherFuncPtr)
     {
         return classDelegate == otherFuncPtr.classDelegate;
     }
     // End class default constructors and operators
 
-    CONST_EXPR ClassFunction(const ClassDelegate& functionPointer)
+    CONST_EXPR ClassFunction(const ClassDelegate &functionPointer)
         : classDelegate(functionPointer)
     {}
 
-    CONST_EXPR void operator=(const ClassDelegate& functionPointer)
-    {
-        classDelegate = functionPointer;
-    }
+    CONST_EXPR void operator=(const ClassDelegate &functionPointer) { classDelegate = functionPointer; }
 
-    ReturnType operator()(ClassType* object,Parameters... params) const
+    ReturnType operator()(ClassType *object, Parameters... params) const
     {
         return (object->*classDelegate)(std::forward<Parameters>(params)...);
     }
 
-    ReturnType operator()(ClassType& object, Parameters... params) const
+    ReturnType operator()(ClassType &object, Parameters... params) const
     {
         return (object.*classDelegate)(std::forward<Parameters>(params)...);
     }
 
-    operator bool() const
-    {
-        return classDelegate != nullptr;
-    }
+    operator bool() const { return classDelegate != nullptr; }
 };
 
 template <typename ClassType, typename ReturnType, typename... Parameters>
-struct ClassFunction<true, ClassType, ReturnType, Parameters...> {
-    typedef ReturnType(ClassType::* ClassDelegate)(Parameters...) const;
+struct ClassFunction<true, ClassType, ReturnType, Parameters...>
+{
+    typedef ReturnType (ClassType::*ClassDelegate)(Parameters...) const;
 
     ClassDelegate classDelegate = nullptr;
 
     // Class default constructors and operators
     ClassFunction() = default;
-    ClassFunction(const ClassFunction& otherFuncPtr)
+    ClassFunction(const ClassFunction &otherFuncPtr)
         : classDelegate(otherFuncPtr.classDelegate)
     {}
-    void operator=(const ClassFunction& otherFuncPtr)
-    {
-        classDelegate = otherFuncPtr.classDelegate;
-    }
-    ClassFunction(ClassFunction&& otherFuncPtr)
+    void operator=(const ClassFunction &otherFuncPtr) { classDelegate = otherFuncPtr.classDelegate; }
+    ClassFunction(ClassFunction &&otherFuncPtr)
         : classDelegate(std::move(otherFuncPtr.classDelegate))
     {
         otherFuncPtr.classDelegate = nullptr;
     }
-    void operator=(ClassFunction&& otherFuncPtr)
+    void operator=(ClassFunction &&otherFuncPtr)
     {
         classDelegate = std::move(otherFuncPtr.classDelegate);
         otherFuncPtr.classDelegate = nullptr;
     }
-    bool operator==(const ClassFunction& otherFuncPtr)
+    bool operator==(const ClassFunction &otherFuncPtr)
     {
         return classDelegate == otherFuncPtr.classDelegate;
     }
     // End class default constructors and operators
 
-    CONST_EXPR ClassFunction(const ClassDelegate& functionPointer)
+    CONST_EXPR ClassFunction(const ClassDelegate &functionPointer)
         : classDelegate(functionPointer)
     {}
 
-    CONST_EXPR void operator=(const ClassDelegate& functionPointer)
-    {
-        classDelegate = functionPointer;
-    }
+    CONST_EXPR void operator=(const ClassDelegate &functionPointer) { classDelegate = functionPointer; }
 
-    ReturnType operator()(const ClassType* object, Parameters... params) const
+    ReturnType operator()(const ClassType *object, Parameters... params) const
     {
         return (object->*classDelegate)(std::forward<Parameters>(params)...);
     }
 
-    ReturnType operator()(const ClassType& object, Parameters... params) const
+    ReturnType operator()(const ClassType &object, Parameters... params) const
     {
         return (object.*classDelegate)(std::forward<Parameters>(params)...);
     }
 
-    operator bool() const
-    {
-        return classDelegate != nullptr;
-    }
+    operator bool() const { return classDelegate != nullptr; }
 };
-
 
 template <typename ReturnType, typename... Parameters>
 struct LambdaFunction
@@ -193,10 +168,11 @@ struct LambdaFunction
     typedef std::function<ReturnType(Parameters...)> LambdaDelegate;
 
     template <typename Callable, typename Type = void>
-    using IsCallable = std::enable_if_t<std::conjunction_v<
-        std::negation<std::is_same<std::decay_t<Callable>, LambdaFunction>>
-        , std::negation<std::is_same<std::decay_t<Callable>, LambdaDelegate>>
-        , std::is_invocable_r<ReturnType, Callable, Parameters...>>, Type>;
+    using IsCallable = std::enable_if_t<
+        std::conjunction_v<std::negation<std::is_same<std::decay_t<Callable>, LambdaFunction>>,
+            std::negation<std::is_same<std::decay_t<Callable>, LambdaDelegate>>,
+            std::is_invocable_r<ReturnType, Callable, Parameters...>>,
+        Type>;
 
     LambdaDelegate lambdaDelegate = nullptr;
 
@@ -211,17 +187,14 @@ struct LambdaFunction
         otherFuncPtr.lambdaDelegate = nullptr;
     }
 
-    void operator=(const LambdaFunction& otherFuncPtr)
-    {
-        lambdaDelegate = otherFuncPtr.lambdaDelegate;
-    }
+    void operator=(const LambdaFunction &otherFuncPtr) { lambdaDelegate = otherFuncPtr.lambdaDelegate; }
     void operator=(LambdaFunction &&otherFuncPtr)
     {
         lambdaDelegate = std::move(otherFuncPtr.lambdaDelegate);
         otherFuncPtr.lambdaDelegate = nullptr;
     }
 
-    bool operator==(const LambdaFunction& otherFuncPtr)
+    bool operator==(const LambdaFunction &otherFuncPtr)
     {
         return lambdaDelegate == otherFuncPtr.lambdaDelegate;
     }
@@ -240,10 +213,7 @@ struct LambdaFunction
         : lambdaDelegate(std::forward<LambdaDelegate>(functionPointer))
     {}
 
-    void operator=(const LambdaDelegate& functionPointer)
-    {
-        lambdaDelegate = functionPointer;
-    }
+    void operator=(const LambdaDelegate &functionPointer) { lambdaDelegate = functionPointer; }
 
     void operator=(LambdaDelegate &&functionPointer)
     {
@@ -255,10 +225,7 @@ struct LambdaFunction
         return lambdaDelegate(std::forward<Parameters>(params)...);
     }
 
-    operator bool() const
-    {
-        return bool(lambdaDelegate);
-    }
+    operator bool() const { return bool(lambdaDelegate); }
 };
 
 // Working impl for lightweight lambda alternative using trampoline redirection
@@ -267,12 +234,12 @@ struct LambdaFunction
 template <typename RetType, typename... Params>
 struct CapturedFunctor
 {
-    unsigned char* data;
-    using TrampolineFunc = RetType(*)(const CapturedFunctor&, Params...);
+    unsigned char *data;
+    using TrampolineFunc = RetType (*)(const CapturedFunctor &, Params...);
     TrampolineFunc trampolineFunc;
 
     template <typename Callable, typename CallableType = std::remove_cvref_t<Callable>>
-    CapturedFunctor(Callable&& func)
+    CapturedFunctor(Callable &&func)
         : data(nullptr)
         , trampolineFunc(nullptr)
     {
@@ -284,9 +251,9 @@ struct CapturedFunctor
 
         struct Trampoline
         {
-            static RetType invoke(const CapturedFunctor& thisFunctor, Params... params)
+            static RetType invoke(const CapturedFunctor &thisFunctor, Params... params)
             {
-                (*reinterpret_cast<CallableType*>(thisFunctor.data))(std::forward<Params>(params)...);
+                (*reinterpret_cast<CallableType *>(thisFunctor.data))(std::forward<Params>(params)...);
             }
         };
         trampolineFunc = &Trampoline::invoke;

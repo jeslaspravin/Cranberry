@@ -11,32 +11,30 @@
 
 #pragma once
 
+#include "CoreObjectGC.h"
+#include "CoreObjectsDB.h"
 #include "ICoreObjectsModule.h"
 #include "Types/CoreDefines.h"
-#include "CoreObjectsDB.h"
-#include "CoreObjectGC.h"
 
 class CoreObjectsModule final : public ICoreObjectsModule
 {
 private:
     CoreObjectsDB objsDb;
     CoreObjectGC gc;
+
 public:
     /* IModuleBase overrides */
     void init() override;
     void release() override;
 
     /* ICoreObjectsModule overrides */
-    const CoreObjectsDB& getObjectsDB() const override;
-    CoreObjectGC& getGC() override;
+    const CoreObjectsDB &getObjectsDB() const override;
+    CoreObjectGC &getGC() override;
     /* Overrides ends */
 
-    FORCE_INLINE static CoreObjectsModule* get()
+    FORCE_INLINE static CoreObjectsModule *get()
     {
-        return static_cast<CoreObjectsModule*>(ICoreObjectsModule::get());
+        return static_cast<CoreObjectsModule *>(ICoreObjectsModule::get());
     }
-    FORCE_INLINE static CoreObjectsDB& objectsDB()
-    {
-        return get()->objsDb;
-    }
+    FORCE_INLINE static CoreObjectsDB &objectsDB() { return get()->objsDb; }
 };

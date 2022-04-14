@@ -12,14 +12,12 @@
 #include "Assets/Asset/TextureAsset.h"
 #include "Core/Types/Textures/Texture2D.h"
 
-ICleanupAsset* TextureAsset::cleanableAsset()
-{
-    return this;
-}
+ICleanupAsset *TextureAsset::cleanableAsset() { return this; }
 
 void TextureAsset::initAsset()
 {
-    // TODO(Jeslas) : Check the data and categorize the texture as normal map or height map or color texture etc...
+    // TODO(Jeslas) : Check the data and categorize the texture as normal map or height map or color
+    // texture etc...
     Texture2DCreateParams createParams;
     createParams.filtering = ESamplerFiltering::Linear;
     createParams.mipCount = 0;
@@ -40,28 +38,12 @@ void TextureAsset::clearAsset()
     texture = nullptr;
 }
 
-void TextureAsset::setTempPixelData(const std::vector<Color>& pixelData)
-{
-    tempPixelData = pixelData;
-}
+void TextureAsset::setTempPixelData(const std::vector<Color> &pixelData) { tempPixelData = pixelData; }
 
-void TextureAsset::setTextureSize(const Size2D& dimension)
-{
-    textureDimension = dimension;
-}
+void TextureAsset::setTextureSize(const Size2D &dimension) { textureDimension = dimension; }
 
-void TextureAsset::setNormalMap(bool bIsNormal)
-{
-    bIsNormalMap = bIsNormal;
-}
+void TextureAsset::setNormalMap(bool bIsNormal) { bIsNormalMap = bIsNormal; }
 
-void TextureAsset::setChannelCount(uint8 count)
-{
-    componentsCount = count;
-}
+void TextureAsset::setChannelCount(uint8 count) { componentsCount = count; }
 
-TextureBase* TextureAsset::getTexture() const
-{
-    return texture;
-}
-
+TextureBase *TextureAsset::getTexture() const { return texture; }

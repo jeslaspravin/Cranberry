@@ -19,30 +19,29 @@ template <typename Type>
 class EngineVar
 {
 private:
-    static_assert(std::is_default_constructible_v<Type>, "The type for engine variable/constant should be default constructible");
+    static_assert(std::is_default_constructible_v<Type>,
+        "The type for engine variable/constant should be default constructible");
 
 public:
     using VarType = Type;
+
 protected:
     VarType variable;
+
 public:
-    EngineVar(const EngineVar&) = delete;
-    EngineVar(EngineVar&&) = delete;
-    void operator=(const EngineVar&) = delete;
-    void operator=(EngineVar&&) = delete;
+    EngineVar(const EngineVar &) = delete;
+    EngineVar(EngineVar &&) = delete;
+    void operator=(const EngineVar &) = delete;
+    void operator=(EngineVar &&) = delete;
 
     EngineVar() = default;
-    EngineVar(const VarType& defaultVal) : variable(defaultVal){}
+    EngineVar(const VarType &defaultVal)
+        : variable(defaultVal)
+    {}
 
-    const VarType& get() const
-    {
-        return variable;
-    }
+    const VarType &get() const { return variable; }
 
-    operator VarType() const
-    {
-        return variable;
-    }
+    operator VarType() const { return variable; }
 };
 
 template <typename Type>
@@ -61,11 +60,12 @@ private:
     GlobalConfigChanged onValueChanged;
 
 public:
-
     EngineGlobalConfig() = default;
-    EngineGlobalConfig(const VarType& defaultVal) : base(defaultVal){}
+    EngineGlobalConfig(const VarType &defaultVal)
+        : base(defaultVal)
+    {}
 
-    void set(const VarType& newValue)
+    void set(const VarType &newValue)
     {
         if (!(variable == newValue))
         {
@@ -75,27 +75,23 @@ public:
         }
     }
 
-    void operator=(const VarType& newValue)
-    {
-        set(newValue);
-    }
+    void operator=(const VarType &newValue) { set(newValue); }
 
-    GlobalConfigChanged& onConfigChanged()
-    {
-        return onValueChanged;
-    }
+    GlobalConfigChanged &onConfigChanged() { return onValueChanged; }
 };
 
-template <typename Type,typename OwnerType>
+template <typename Type, typename OwnerType>
 class EngineConstant : public EngineVar<Type>
 {
 private:
-    static_assert(std::is_class_v<OwnerType>, "Only class types are allowed as owner to allow modifications");
+    static_assert(
+        std::is_class_v<OwnerType>, "Only class types are allowed as owner to allow modifications");
     using base = EngineVar<Type>;
     using VarType = typename base::VarType;
     using base::variable;
 
     friend OwnerType;
+
 public:
     using ConstantChanged = Event<EngineConstant<VarType, OwnerType>, VarType, VarType>;
 
@@ -103,7 +99,7 @@ private:
     ConstantChanged onValueChanged;
 
 private:
-    void set(const VarType& newValue)
+    void set(const VarType &newValue)
     {
         if (!(variable == newValue))
         {
@@ -113,16 +109,13 @@ private:
         }
     }
 
-    void operator=(const VarType& newValue)
-    {
-        set(newValue);
-    }
+    void operator=(const VarType &newValue) { set(newValue); }
+
 public:
     EngineConstant() = default;
-    EngineConstant(const VarType & defaultVal) : base(defaultVal) {}
+    EngineConstant(const VarType &defaultVal)
+        : base(defaultVal)
+    {}
 
-    ConstantChanged& onChanged()
-    {
-        return onValueChanged;
-    }
+    ConstantChanged &onChanged() { return onValueChanged; }
 };

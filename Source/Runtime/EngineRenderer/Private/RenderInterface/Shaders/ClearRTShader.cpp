@@ -9,12 +9,12 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
-#include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
-#include "RenderInterface/ShaderCore/ShaderParameters.h"
-#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/Resources/Pipelines.h"
+#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderInterface/ShaderCore/ShaderParameters.h"
+#include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
+#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 
 #define CLEAR_RT TCHAR("ClearRT")
 
@@ -30,19 +30,19 @@ END_BUFFER_DEFINITION();
 class ClearRT : public UniqueUtilityShaderConfig
 {
     DECLARE_GRAPHICS_RESOURCE(ClearRT, , UniqueUtilityShaderConfig, );
+
 private:
     ClearRT();
+
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
+    void bindBufferParamInfo(
+        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static ClearRTClearInfoBufferParamInfo CLEAR_INFO;
-        static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
-        {
-            { TCHAR("clearInfo"), &CLEAR_INFO }
-        };
+        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ { TCHAR("clearInfo"),
+            &CLEAR_INFO } };
 
-
-        for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -65,4 +65,5 @@ ClearRT::ClearRT()
 
 // Registrar
 
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(CLEAR_RT_PIPELINE_REGISTER, CLEAR_RT, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    CLEAR_RT_PIPELINE_REGISTER, CLEAR_RT, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);

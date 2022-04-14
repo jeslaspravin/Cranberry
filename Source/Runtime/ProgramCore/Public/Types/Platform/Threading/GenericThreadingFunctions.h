@@ -17,7 +17,8 @@ template <typename PlatformType>
 class GenericThreadingFunctions
 {
 public:
-    static void* createProcess(const String& applicationPath, const String& cmdLine, const String& environment, const String& workingDirectory)
+    static void *createProcess(const String &applicationPath, const String &cmdLine,
+        const String &environment, const String &workingDirectory)
     {
         return PlatformType::createProcess(applicationPath, cmdLine, environment, workingDirectory);
     }

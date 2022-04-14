@@ -12,21 +12,22 @@
 #pragma once
 #include <atomic>
 
-#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/CoreDefines.h"
 #include "Types/HashTypes.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 
 template <typename PtrType>
 class ReferenceCountPtr
 {
 private:
-    PtrType* refPtr;
+    PtrType *refPtr;
+
 public:
     ReferenceCountPtr()
         : refPtr(nullptr)
     {}
 
-    ReferenceCountPtr(PtrType* ptr)
+    ReferenceCountPtr(PtrType *ptr)
     {
         if ((refPtr = ptr))
         {
@@ -34,13 +35,14 @@ public:
         }
     }
 
-    // Explicit copy and move constructor needed as compiler generates them without matching template constructors
-    ReferenceCountPtr(ReferenceCountPtr&& refCountPtr)
+    // Explicit copy and move constructor needed as compiler generates them without matching template
+    // constructors
+    ReferenceCountPtr(ReferenceCountPtr &&refCountPtr)
     {
         refPtr = refCountPtr.reference();
         refCountPtr.refPtr = nullptr;
     }
-    ReferenceCountPtr(const ReferenceCountPtr& refCountPtr)
+    ReferenceCountPtr(const ReferenceCountPtr &refCountPtr)
     {
         if ((refPtr = refCountPtr.reference()))
         {
@@ -48,15 +50,15 @@ public:
         }
     }
     template <class InPtrType>
-    ReferenceCountPtr(ReferenceCountPtr<InPtrType>&& refCountPtr)
+    ReferenceCountPtr(ReferenceCountPtr<InPtrType> &&refCountPtr)
     {
-        refPtr = static_cast<PtrType*>(refCountPtr.reference());
+        refPtr = static_cast<PtrType *>(refCountPtr.reference());
         refCountPtr.detachRef();
     }
     template <class InPtrType>
-    ReferenceCountPtr(const ReferenceCountPtr<InPtrType>& refCountPtr)
+    ReferenceCountPtr(const ReferenceCountPtr<InPtrType> &refCountPtr)
     {
-        if ((refPtr = static_cast<PtrType*>(refCountPtr.reference())))
+        if ((refPtr = static_cast<PtrType *>(refCountPtr.reference())))
         {
             refPtr->addRef();
         }
@@ -71,9 +73,9 @@ public:
         }
     }
 
-    ReferenceCountPtr& operator=(PtrType* ptr)
+    ReferenceCountPtr &operator=(PtrType *ptr)
     {
-        PtrType* oldRef = refPtr;
+        PtrType *oldRef = refPtr;
 
         if ((refPtr = ptr))
         {
@@ -87,12 +89,13 @@ public:
         return *this;
     }
 
-    // Explicit copy and move assignment needed as compiler generates them without matching template assignments
-    FORCE_INLINE ReferenceCountPtr& operator=(ReferenceCountPtr&& refCountPtr)
+    // Explicit copy and move assignment needed as compiler generates them without matching template
+    // assignments
+    FORCE_INLINE ReferenceCountPtr &operator=(ReferenceCountPtr &&refCountPtr)
     {
         if (this != &refCountPtr)
         {
-            PtrType* oldRef = refPtr;
+            PtrType *oldRef = refPtr;
 
             refPtr = refCountPtr.reference();
             if (oldRef)
@@ -103,16 +106,16 @@ public:
         }
         return *this;
     }
-    FORCE_INLINE ReferenceCountPtr& operator=(const ReferenceCountPtr& refCountPtr)
+    FORCE_INLINE ReferenceCountPtr &operator=(const ReferenceCountPtr &refCountPtr)
     {
         return *this = refCountPtr.reference();
     }
     template <class InPtrType>
-    FORCE_INLINE ReferenceCountPtr& operator=(ReferenceCountPtr<InPtrType>&& refCountPtr)
+    FORCE_INLINE ReferenceCountPtr &operator=(ReferenceCountPtr<InPtrType> &&refCountPtr)
     {
-        if(this != &refCountPtr)
+        if (this != &refCountPtr)
         {
-            PtrType* oldRef = refPtr;
+            PtrType *oldRef = refPtr;
 
             refPtr = refCountPtr.reference();
             if (oldRef)
@@ -124,79 +127,60 @@ public:
         return *this;
     }
     template <class InPtrType>
-    FORCE_INLINE ReferenceCountPtr& operator=(const ReferenceCountPtr<InPtrType>& refCountPtr)
+    FORCE_INLINE ReferenceCountPtr &operator=(const ReferenceCountPtr<InPtrType> &refCountPtr)
     {
         return *this = refCountPtr.reference();
     }
 
+    FORCE_INLINE PtrType *operator->() const { return refPtr; }
 
-    FORCE_INLINE PtrType* operator->() const
-    {
-        return refPtr;
-    }
-
-    FORCE_INLINE bool operator!=(const ReferenceCountPtr& rhs) const
+    FORCE_INLINE bool operator!=(const ReferenceCountPtr &rhs) const
     {
         return reference() != rhs.reference();
     }
-    template<typename RefType>
-    FORCE_INLINE bool operator!=(const ReferenceCountPtr<RefType>& rhs) const
+    template <typename RefType>
+    FORCE_INLINE bool operator!=(const ReferenceCountPtr<RefType> &rhs) const
     {
         return reference() != rhs.reference();
     }
-    FORCE_INLINE bool operator==(const ReferenceCountPtr& rhs) const
+    FORCE_INLINE bool operator==(const ReferenceCountPtr &rhs) const
     {
         return reference() == rhs.reference();
     }
-    template<typename RefType>
-    FORCE_INLINE bool operator==(const ReferenceCountPtr<RefType>& rhs) const
+    template <typename RefType>
+    FORCE_INLINE bool operator==(const ReferenceCountPtr<RefType> &rhs) const
     {
         return reference() == rhs.reference();
     }
-    template<typename RefType>
-    FORCE_INLINE bool operator==(RefType* rhs) const
+    template <typename RefType>
+    FORCE_INLINE bool operator==(RefType *rhs) const
     {
         return reference() == rhs;
     }
 
-    FORCE_INLINE bool operator<(const ReferenceCountPtr& rhs) const
+    FORCE_INLINE bool operator<(const ReferenceCountPtr &rhs) const
     {
         return this->reference() < rhs.reference();
     }
-    template<typename RefType>
-    FORCE_INLINE bool operator<(const ReferenceCountPtr<RefType>& rhs) const
+    template <typename RefType>
+    FORCE_INLINE bool operator<(const ReferenceCountPtr<RefType> &rhs) const
     {
         return this->reference() < rhs.reference();
     }
 
-    FORCE_INLINE PtrType** ptrToReference() const
-    {
-        return &refPtr;
-    }
+    FORCE_INLINE PtrType **ptrToReference() const { return &refPtr; }
 
-    FORCE_INLINE PtrType* reference() const
-    {
-        return refPtr;
-    }
+    FORCE_INLINE PtrType *reference() const { return refPtr; }
     template <typename AsType>
-    FORCE_INLINE AsType* reference() const
+    FORCE_INLINE AsType *reference() const
     {
-        return static_cast<AsType*>(refPtr);
+        return static_cast<AsType *>(refPtr);
     }
     // For compliance with SharedPtr
-    FORCE_INLINE PtrType* get() const
-    {
-        return refPtr;
-    }
+    FORCE_INLINE PtrType *get() const { return refPtr; }
 
-    FORCE_INLINE bool isValid() const
-    {
-        return refPtr != nullptr;
-    }
-    FORCE_INLINE operator bool() const
-    {
-        return refPtr != nullptr;
-    }
+    FORCE_INLINE bool isValid() const { return refPtr != nullptr; }
+    FORCE_INLINE operator bool() const { return refPtr != nullptr; }
 
     FORCE_INLINE uint32 refCount() const
     {
@@ -209,27 +193,21 @@ public:
         return cnt;
     }
 
-    FORCE_INLINE void swap(ReferenceCountPtr<PtrType>& refCountPtr)
+    FORCE_INLINE void swap(ReferenceCountPtr<PtrType> &refCountPtr)
     {
-        PtrType* oldRef = refPtr;
+        PtrType *oldRef = refPtr;
         refPtr = refCountPtr.refPtr;
         refCountPtr.refPtr = oldRef;
     }
 
-    FORCE_INLINE void reset()
-    {
-        (*this) = nullptr;
-    }
+    FORCE_INLINE void reset() { (*this) = nullptr; }
 
     // Detaches current ref counted resource without decrementing ref counter, Do not use it
-    FORCE_INLINE void detachRef()
-    {
-        refPtr = nullptr;
-    }
+    FORCE_INLINE void detachRef() { refPtr = nullptr; }
 };
 
-template<typename RefType, typename ReferencedType>
-FORCE_INLINE bool operator==(RefType* lhs, const ReferenceCountPtr<ReferencedType>& rhs)
+template <typename RefType, typename ReferencedType>
+FORCE_INLINE bool operator==(RefType *lhs, const ReferenceCountPtr<ReferencedType> &rhs)
 {
     return lhs == rhs.reference();
 }
@@ -237,7 +215,7 @@ FORCE_INLINE bool operator==(RefType* lhs, const ReferenceCountPtr<ReferencedTyp
 template <typename RefType>
 struct std::hash<ReferenceCountPtr<RefType>>
 {
-    NODISCARD size_t operator()(const ReferenceCountPtr<RefType>& refCountPtr) const noexcept
+    NODISCARD size_t operator()(const ReferenceCountPtr<RefType> &refCountPtr) const noexcept
     {
         return HashUtility::hash(refCountPtr.reference());
     }
@@ -250,20 +228,20 @@ class RefCountable
 {
 private:
     std::atomic<uint32> refCounter;
+
 public:
     virtual ~RefCountable() = default;
 
     /* ReferenceCountPtr implementation */
-    void addRef()
-    {
-        refCounter.fetch_add(1);
-    }
+    void addRef() { refCounter.fetch_add(1); }
 
     void removeRef()
-    {        
-        // TODO(Jeslas) : fetch_sub loads the old value relaxed meaning no memory ordering in cache coherency protocol/instruction reordering(out of order execution) barrier is enforced
-        // This is still not thread safe as preemptive concurrency or multi threading can still add a new reference before delete
-        // , To avoid that never assign a raw pointer after initially creating ReferenceCountPtr
+    {
+        // TODO(Jeslas) : fetch_sub loads the old value relaxed meaning no memory ordering in cache
+        // coherency protocol/instruction reordering(out of order execution) barrier is enforced This is
+        // still not thread safe as preemptive concurrency or multi threading can still add a new
+        // reference before delete , To avoid that never assign a raw pointer after initially creating
+        // ReferenceCountPtr
         uint32 count = refCounter.fetch_sub(1);
         if (count == 1)
         {
@@ -271,10 +249,7 @@ public:
         }
     }
 
-    uint32 refCount() const
-    {
-        return refCounter.load();
-    }
+    uint32 refCount() const { return refCounter.load(); }
 
     /* end overrides */
     template <typename AsType>

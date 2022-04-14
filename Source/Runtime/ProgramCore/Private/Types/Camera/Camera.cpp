@@ -10,17 +10,17 @@
  */
 
 #include "Types/Camera/Camera.h"
-#include "Types/Transform3D.h"
-#include "Math/RotationMatrix.h"
 #include "Math/Math.h"
+#include "Math/RotationMatrix.h"
 #include "Math/Vector2D.h"
 #include "Math/Vector4D.h"
+#include "Types/Transform3D.h"
 
 const float Camera::MAX_FOV(175.f);
 const float Camera::MIN_NEAR_FAR_DIFF(1.f);
 const float Camera::MIN_NEAR(0.1f);
 
-void Camera::orthographicMatrix(Matrix4& matrix, float halfWidth, float halfHeight) const
+void Camera::orthographicMatrix(Matrix4 &matrix, float halfWidth, float halfHeight) const
 {
     const float nMinusfInv = 1 / (nearClip - farClip);
 
@@ -29,15 +29,11 @@ void Camera::orthographicMatrix(Matrix4& matrix, float halfWidth, float halfHeig
     //  r0(c1)  r1(c1)  r2(c1)  r3(c1)
     //  r0(c2)  r1(c2)  r2(c2)  r3(c2)
     //  r0(c3)  r1(c3)  r2(c3)  r3(c3)
-    matrix = Matrix4(
-        1 / halfWidth, 0, 0, 0,
-        0, 1 / halfHeight, 0, 0,
-        0, 0, nMinusfInv, 0,
-        0, 0, -farClip * nMinusfInv, 1
-    );
+    matrix = Matrix4(1 / halfWidth, 0, 0, 0, 0, 1 / halfHeight, 0, 0, 0, 0, nMinusfInv, 0, 0, 0,
+        -farClip * nMinusfInv, 1);
 }
 
-void Camera::orthographicMatrix(Matrix4& matrix, float left, float right, float top, float bottom) const
+void Camera::orthographicMatrix(Matrix4 &matrix, float left, float right, float top, float bottom) const
 {
     const float nMinusfInv = 1 / (nearClip - farClip);
     const float rMinuslInv = 1 / (right - left);
@@ -48,20 +44,16 @@ void Camera::orthographicMatrix(Matrix4& matrix, float left, float right, float 
     //  r0(c1)  r1(c1)  r2(c1)  r3(c1)
     //  r0(c2)  r1(c2)  r2(c2)  r3(c2)
     //  r0(c3)  r1(c3)  r2(c3)  r3(c3)
-    matrix = Matrix4(
-        2 * rMinuslInv, 0, 0, 0,
-        0, 2 * bMinustInv, 0, 0,
-        0, 0, nMinusfInv, 0,
-        -(right + left) * rMinuslInv, -(bottom + top) * bMinustInv, -farClip * nMinusfInv, 1
-    );
+    matrix = Matrix4(2 * rMinuslInv, 0, 0, 0, 0, 2 * bMinustInv, 0, 0, 0, 0, nMinusfInv, 0,
+        -(right + left) * rMinuslInv, -(bottom + top) * bMinustInv, -farClip * nMinusfInv, 1);
 }
 
-void Camera::orthographicMatrix(Matrix4& matrix) const
+void Camera::orthographicMatrix(Matrix4 &matrix) const
 {
     orthographicMatrix(matrix, orthoSize.x * 0.5f, orthoSize.y * 0.5f);
 }
 
-void Camera::perspectiveMatrix(Matrix4& matrix, float halfWidth, float halfHeight) const
+void Camera::perspectiveMatrix(Matrix4 &matrix, float halfWidth, float halfHeight) const
 {
     const float nMinusfInv = 1 / (nearClip - farClip);
 
@@ -70,15 +62,11 @@ void Camera::perspectiveMatrix(Matrix4& matrix, float halfWidth, float halfHeigh
     //  r0(c1)  r1(c1)  r2(c1)  r3(c1)
     //  r0(c2)  r1(c2)  r2(c2)  r3(c2)
     //  r0(c3)  r1(c3)  r2(c3)  r3(c3)
-    matrix = Matrix4(
-        nearClip / halfWidth, 0, 0, 0,
-        0, nearClip / halfHeight, 0, 0,
-        0, 0, nearClip * nMinusfInv, 1,
-        0, 0, -nearClip * farClip * nMinusfInv, 0
-    );
+    matrix = Matrix4(nearClip / halfWidth, 0, 0, 0, 0, nearClip / halfHeight, 0, 0, 0, 0,
+        nearClip * nMinusfInv, 1, 0, 0, -nearClip * farClip * nMinusfInv, 0);
 }
 
-void Camera::perspectiveMatrix(Matrix4& matrix, float left, float right, float top, float bottom) const
+void Camera::perspectiveMatrix(Matrix4 &matrix, float left, float right, float top, float bottom) const
 {
     const float nMinusfInv = 1 / (nearClip - farClip);
     const float rMinuslInv = 1 / (right - left);
@@ -89,15 +77,12 @@ void Camera::perspectiveMatrix(Matrix4& matrix, float left, float right, float t
     //  r0(c1)  r1(c1)  r2(c1)  r3(c1)
     //  r0(c2)  r1(c2)  r2(c2)  r3(c2)
     //  r0(c3)  r1(c3)  r2(c3)  r3(c3)
-    matrix = Matrix4(
-        2 * nearClip * rMinuslInv, 0, 0, 0,
-        0, 2 * nearClip * bMinustInv, 0, 0,
-        -(right + left) * rMinuslInv, -(bottom + top) * bMinustInv, nearClip * nMinusfInv, 1,
-        0, 0, -nearClip * farClip * nMinusfInv, 0
-    );
+    matrix = Matrix4(2 * nearClip * rMinuslInv, 0, 0, 0, 0, 2 * nearClip * bMinustInv, 0, 0,
+        -(right + left) * rMinuslInv, -(bottom + top) * bMinustInv, nearClip * nMinusfInv, 1, 0, 0,
+        -nearClip * farClip * nMinusfInv, 0);
 }
 
-void Camera::perspectiveMatrix(Matrix4& matrix) const
+void Camera::perspectiveMatrix(Matrix4 &matrix) const
 {
     float halfWidth = Math::tan(Math::deg2Rad(hFov * 0.5f)) * nearClip;
     float halfHeight = Math::tan(Math::deg2Rad(vFov * 0.5f)) * nearClip;
@@ -111,10 +96,7 @@ void Camera::setFOV(float horizontal, float vertical)
     vFov = Math::min(Math::abs(vertical), MAX_FOV);
 }
 
-void Camera::setOrthoSize(const Size2D& orthographicSize)
-{
-    orthoSize = orthographicSize;
-}
+void Camera::setOrthoSize(const Size2D &orthographicSize) { orthoSize = orthographicSize; }
 
 void Camera::setClippingPlane(float near, float far)
 {
@@ -122,27 +104,15 @@ void Camera::setClippingPlane(float near, float far)
     farClip = Math::max(far, nearClip + MIN_NEAR_FAR_DIFF);
 }
 
-void Camera::setCustomProjection(Matrix4 projMatrix)
-{
-    customProjMatrix = projMatrix;
-}
+void Camera::setCustomProjection(Matrix4 projMatrix) { customProjMatrix = projMatrix; }
 
-void Camera::clearCustomProjection()
-{
-    customProjMatrix.reset();
-}
+void Camera::clearCustomProjection() { customProjMatrix.reset(); }
 
-void Camera::setTranslation(const Vector3D& newLocation)
-{
-    camTranslation = newLocation;
-}
+void Camera::setTranslation(const Vector3D &newLocation) { camTranslation = newLocation; }
 
-void Camera::setRotation(const Rotation& newRotation)
-{
-    camRotation = newRotation;
-}
+void Camera::setRotation(const Rotation &newRotation) { camRotation = newRotation; }
 
-void Camera::frustumCorners(Vector3D* corners, Vector3D* center /*= nullptr*/) const
+void Camera::frustumCorners(Vector3D *corners, Vector3D *center /*= nullptr*/) const
 {
     Matrix4 ndcToWorld = viewMatrix() * projectionMatrix().inverse();
     Vector3D frustumMid(0);
@@ -168,15 +138,16 @@ void Camera::frustumCorners(Vector3D* corners, Vector3D* center /*= nullptr*/) c
     }
 }
 
-void Camera::lookAt(const Vector3D& lookAtTarget)
+void Camera::lookAt(const Vector3D &lookAtTarget)
 {
     RotationMatrix rotMatrix = RotationMatrix::fromX(lookAtTarget - camTranslation);
     setRotation(rotMatrix.asRotation());
 }
 
-Vector3D Camera::screenToWorld(const Vector2D& screenPos) const
+Vector3D Camera::screenToWorld(const Vector2D &screenPos) const
 {
-    // Fliping y since Quad draw uses vulkan screen coord top left -1,-1 bottom right 1,1. But our view/projection y coordinate is from bottom(-1) to top(1)
+    // Fliping y since Quad draw uses vulkan screen coord top left -1,-1 bottom right 1,1. But our
+    // view/projection y coordinate is from bottom(-1) to top(1)
     Vector4D ndcCoord{ ((screenPos.x() - 0.5f) * 2), (-(screenPos.y() - 0.5f) * 2), 1, 1 };
     Vector4D worldCoord = projectionMatrix().inverse() * ndcCoord;
     worldCoord /= worldCoord.w();
@@ -184,7 +155,7 @@ Vector3D Camera::screenToWorld(const Vector2D& screenPos) const
     return { worldCoord };
 }
 
-Vector3D Camera::screenToWorldFwd(const Vector2D& screenPos) const
+Vector3D Camera::screenToWorldFwd(const Vector2D &screenPos) const
 {
     return (screenToWorld(screenPos) - camTranslation).safeNormalize();
 }

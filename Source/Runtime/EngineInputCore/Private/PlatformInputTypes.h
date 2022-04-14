@@ -25,7 +25,7 @@ static_assert(false, "Platform not supported!");
 #endif
 #include "MakeBreakKeyCodes.h"
 
-//using EKeyCode = KeyCode::EKeyCode;
+// using EKeyCode = KeyCode::EKeyCode;
 using EKeyCode = MakeBreakKeyCodes::EKeyCode;
 
 using MouseDevice = InputDevices::MouseDevice;

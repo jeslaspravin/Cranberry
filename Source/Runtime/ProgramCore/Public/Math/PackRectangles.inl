@@ -16,17 +16,17 @@
 template <Box2DType RectType>
 struct PackedRectsBin
 {
-    std::vector<RectType*> rects;
+    std::vector<RectType *> rects;
     RectType::PointType binSize;
 };
-
 
 #define RECT_TYPE_SIZE(RectVal) ((RectVal).maxBound)
 #define RECT_TYPE_AREA(RectVal) (RECT_TYPE_SIZE(RectVal).x * RECT_TYPE_SIZE(RectVal).x)
 #define RECT_SIZE_AREA(RectSize) ((RectSize).x * (RectSize).y)
 
 // Based on https://blackpawn.com/texts/lightmaps/default.html
-// and inspiration from https://github.com/turanszkij/WickedEngine/blob/master/WickedEngine/wiRectPacker.cpp#L48 
+// and inspiration from
+// https://github.com/turanszkij/WickedEngine/blob/master/WickedEngine/wiRectPacker.cpp#L48
 template <Box2DType RectType>
 class RectPacker
 {
@@ -42,11 +42,11 @@ private:
         // If child[0] is not null then child[1] must be not null
         // If both are null it means that rectangle is free to be filled
         // If child[0] is null and child[1] is not null then this node is taken and cannot insert
-        Node* childs[2] = { nullptr, nullptr };
+        Node *childs[2] = { nullptr, nullptr };
         RectType rect;
 
-        const Node* insert(const RectPointType& inRectSize);
-        void reset(const RectPointType& rectSize)
+        const Node *insert(const RectPointType &inRectSize);
+        void reset(const RectPointType &rectSize)
         {
             rect.minBound = RectPointType(0);
             rect.maxBound = rectSize;
@@ -68,47 +68,49 @@ private:
         }
     };
 
-    static bool areaCompare(const RectType* lhs, const RectType* rhs)
+    static bool areaCompare(const RectType *lhs, const RectType *rhs)
     {
         return RECT_TYPE_AREA(*lhs) > RECT_TYPE_AREA(*rhs);
     }
-    static bool widthCompare(const RectType* lhs, const RectType* rhs)
+    static bool widthCompare(const RectType *lhs, const RectType *rhs)
     {
         return RECT_TYPE_SIZE(*lhs).x > RECT_TYPE_SIZE(*rhs).x;
     }
-    static bool heightCompare(const RectType* lhs, const RectType* rhs)
+    static bool heightCompare(const RectType *lhs, const RectType *rhs)
     {
         return RECT_TYPE_SIZE(*lhs).y > RECT_TYPE_SIZE(*rhs).y;
     }
-    static bool maxSideCompare(const RectType* lhs, const RectType* rhs)
+    static bool maxSideCompare(const RectType *lhs, const RectType *rhs)
     {
-        return (Math::max(RECT_TYPE_SIZE(*lhs).x, RECT_TYPE_SIZE(*lhs).y) > Math::max(RECT_TYPE_SIZE(*rhs).x, RECT_TYPE_SIZE(*rhs).y));
+        return (Math::max(RECT_TYPE_SIZE(*lhs).x, RECT_TYPE_SIZE(*lhs).y)
+                > Math::max(RECT_TYPE_SIZE(*rhs).x, RECT_TYPE_SIZE(*rhs).y));
     }
 
-    using CompareRectFuncType = Function<bool, const RectType*, const RectType*>;
-    CONST_EXPR static const CompareRectFuncType COMPARE_FUNCS[] = {
-        &areaCompare
-        , &widthCompare
-        , &heightCompare
-        , &maxSideCompare
-    };
-    // when there is successful packing, This will be the minimum step at which further smaller packing will be stopped
+    using CompareRectFuncType = Function<bool, const RectType *, const RectType *>;
+    CONST_EXPR static const CompareRectFuncType COMPARE_FUNCS[]
+        = { &areaCompare, &widthCompare, &heightCompare, &maxSideCompare };
+    // when there is successful packing, This will be the minimum step at which further smaller packing
+    // will be stopped
     CONST_EXPR static const RectCompType DISCARD_AT_STEP = 128 * 128;
     // Tries to pack all the given rectangles within given bin rectangle and returns true if successful
     // or false if no packing can be done in that limit
-    // outBestBinRect contains best successfully packed rectangle and outMaxPackedArea gives max packable area for given bin rectangle 
-    static bool getBestPackProps(RectPointType& outBestBinRect, RectCompType& outMaxPackedArea
-        , const ArrayView<RectType*>& inRects, const RectPointType& maxBinRect);
+    // outBestBinRect contains best successfully packed rectangle and outMaxPackedArea gives max packable
+    // area for given bin rectangle
+    static bool getBestPackProps(RectPointType &outBestBinRect, RectCompType &outMaxPackedArea,
+        const ArrayView<RectType *> &inRects, const RectPointType &maxBinRect);
+
 public:
     // inRects must be at origin, so maxBound will be its size
-    static void pack(PackedRectsBin<RectType>& outBin, std::vector<RectType*>& failedRects, std::vector<RectType*>& inRects, const RectPointType& maxBinRect);
+    static void pack(PackedRectsBin<RectType> &outBin, std::vector<RectType *> &failedRects,
+        std::vector<RectType *> &inRects, const RectPointType &maxBinRect);
 };
 
 template <typename Type, Box2DType RectType /*= Box<Type, 2>*/>
-bool MathGeom::packRectangles(std::vector<PackedRectsBin<RectType>>& outPackedBins, const Type& maxBinRect, const std::vector<RectType*>& packRects)
+bool MathGeom::packRectangles(std::vector<PackedRectsBin<RectType>> &outPackedBins,
+    const Type &maxBinRect, const std::vector<RectType *> &packRects)
 {
     RectType binRect(RectType::PointType(0), maxBinRect);
-    for (const RectType* rect : packRects)
+    for (const RectType *rect : packRects)
     {
         if (!binRect.contains(*rect))
         {
@@ -116,15 +118,15 @@ bool MathGeom::packRectangles(std::vector<PackedRectsBin<RectType>>& outPackedBi
         }
     }
 
-    std::vector<RectType*> rects0, rects1, * rectsToPack, * failedRects;
+    std::vector<RectType *> rects0, rects1, *rectsToPack, *failedRects;
     rects1.reserve(packRects.size());
     rects0.resize(packRects.size());
-    memcpy(rects0.data(), packRects.data(), sizeof(RectType*) * packRects.size());
+    memcpy(rects0.data(), packRects.data(), sizeof(RectType *) * packRects.size());
     rectsToPack = &rects0;
     failedRects = &rects1;
     while (true)
     {
-        PackedRectsBin<RectType>& packBin = outPackedBins.emplace_back();
+        PackedRectsBin<RectType> &packBin = outPackedBins.emplace_back();
         RectPacker<RectType>::pack(packBin, *failedRects, *rectsToPack, maxBinRect);
 
         std::swap(failedRects, rectsToPack);
@@ -142,19 +144,20 @@ bool MathGeom::packRectangles(std::vector<PackedRectsBin<RectType>>& outPackedBi
 /// RectPacker<RectType> implementations
 //////////////////////////////////////////////////////////////////////////
 
-// Should we insert all rect top down vs doing bottom up as per https://blackpawn.com/texts/lightmaps/default.html 
-// Top down inserts rectangles from left top(0, 0) of rectangle
-// Bottom up inserts rectangles from right bottom(1, 1) of rectangle
-// Both creates similar insert flow and fragmentations
+// Should we insert all rect top down vs doing bottom up as per
+// https://blackpawn.com/texts/lightmaps/default.html Top down inserts rectangles from left top(0, 0) of
+// rectangle Bottom up inserts rectangles from right bottom(1, 1) of rectangle Both creates similar
+// insert flow and fragmentations
 #define RECT_PACKER_INSERT_TOPDOWN 1
 
 template <Box2DType RectType>
-const typename RectPacker<RectType>::Node* RectPacker<RectType>::Node::insert(const RectPointType& inRectSize)
+const typename RectPacker<RectType>::Node *RectPacker<RectType>::Node::insert(
+    const RectPointType &inRectSize)
 {
     // Children are present try inserting to them instead
     if (childs[0] != nullptr)
     {
-        if (const Node* retVal = childs[0]->insert(inRectSize))
+        if (const Node *retVal = childs[0]->insert(inRectSize))
         {
             return retVal;
         }
@@ -180,64 +183,49 @@ const typename RectPacker<RectType>::Node* RectPacker<RectType>::Node::insert(co
     if (enclosable == 2)
     {
         childs[0] = nullptr;
-        childs[1] = (Node*)(0xFF);// Just some random none 0 value that we are not going to dereference
+        childs[1] = (Node *)(0xFF); // Just some random none 0 value that we are not going to dereference
         rect = inRect;
         return this;
     }
 
     childs[0] = new Node;
     childs[1] = new Node;
-    // Why diff and not use inRectSize? If inRectSize is a square then the split always goes in one way and causes infinite recursion
+    // Why diff and not use inRectSize? If inRectSize is a square then the split always goes in one way
+    // and causes infinite recursion
     RectPointType diff = rect.size() - inRectSize;
 #if RECT_PACKER_INSERT_TOPDOWN
     if (diff.x > diff.y)
     {
-        // Remaining width is larger than remaining height so splitting along width to get small fitting area in child 0
-        childs[0]->rect = RectType{
-            rect.minBound
-            , RectPointType{ inRect.maxBound.x, rect.maxBound.y }
-        };
-        childs[1]->rect = RectType{
-            RectPointType{ inRect.maxBound.x, rect.minBound.y }
-            , rect.maxBound
-        };
+        // Remaining width is larger than remaining height so splitting along width to get small
+        // fitting area in child 0
+        childs[0]->rect = RectType{ rect.minBound, RectPointType{ inRect.maxBound.x, rect.maxBound.y } };
+        childs[1]->rect = RectType{ RectPointType{ inRect.maxBound.x, rect.minBound.y }, rect.maxBound };
     }
     else
     {
-        // Remaining height is larger than remaining width so splitting along height to get small fitting area in child 0
-        childs[0]->rect = RectType{
-            rect.minBound
-            , RectPointType{ rect.maxBound.x, inRect.maxBound.y }
-        };
-        childs[1]->rect = RectType{
-            RectPointType{ rect.minBound.x, inRect.maxBound.y }
-            , rect.maxBound
-        };
+        // Remaining height is larger than remaining width so splitting along height to get small
+        // fitting area in child 0
+        childs[0]->rect = RectType{ rect.minBound, RectPointType{ rect.maxBound.x, inRect.maxBound.y } };
+        childs[1]->rect = RectType{ RectPointType{ rect.minBound.x, inRect.maxBound.y }, rect.maxBound };
     }
-#else // RECT_PACKER_INSERT_TOPDOWN
+#else  // RECT_PACKER_INSERT_TOPDOWN
     if (diff.x > diff.y)
     {
-        // Remaining width is larger than remaining height so splitting along width and making right rectangle as small fitting area in child 0
-        childs[0]->rect = RectType{
-            RectPointType{ rect.maxBound.x - inRectSize.x, rect.minBound.y }
-            , rect.maxBound
-        };
-        childs[1]->rect = RectType{
-            rect.minBound
-            , RectPointType{ rect.maxBound.x - inRectSize.x, rect.maxBound.y }
-        };
+        // Remaining width is larger than remaining height so splitting along width and making right
+        // rectangle as small fitting area in child 0
+        childs[0]->rect = RectType{ RectPointType{ rect.maxBound.x - inRectSize.x, rect.minBound.y },
+            rect.maxBound };
+        childs[1]->rect = RectType{ rect.minBound,
+            RectPointType{ rect.maxBound.x - inRectSize.x, rect.maxBound.y } };
     }
     else
     {
-        // Remaining height is larger than remaining width so splitting along height and making bottom rect as small fitting area in child 0
-        childs[0]->rect = RectType{
-            RectPointType{ rect.minBound.x, rect.maxBound.y - inRectSize.y }
-            , rect.maxBound
-        };
-        childs[1]->rect = RectType{
-            rect.minBound
-            , RectPointType{ rect.maxBound.x, rect.maxBound.y - inRectSize.y }
-        };
+        // Remaining height is larger than remaining width so splitting along height and making
+        // bottom rect as small fitting area in child 0
+        childs[0]->rect = RectType{ RectPointType{ rect.minBound.x, rect.maxBound.y - inRectSize.y },
+            rect.maxBound };
+        childs[1]->rect = RectType{ rect.minBound,
+            RectPointType{ rect.maxBound.x, rect.maxBound.y - inRectSize.y } };
     }
 #endif // RECT_PACKER_INSERT_TOPDOWN
     return childs[0]->insert(inRectSize);
@@ -246,10 +234,10 @@ const typename RectPacker<RectType>::Node* RectPacker<RectType>::Node::insert(co
 #undef RECT_PACKER_INSERT_TOPDOWN
 
 template <Box2DType RectType>
-void RectPacker<RectType>::pack(PackedRectsBin<RectType>& outBin, std::vector<RectType*>& failedRects
-    , std::vector<RectType*>& inRects, const RectPointType& maxBinRect)
+void RectPacker<RectType>::pack(PackedRectsBin<RectType> &outBin, std::vector<RectType *> &failedRects,
+    std::vector<RectType *> &inRects, const RectPointType &maxBinRect)
 {
-    Node root{ .rect = { RectPointType{0}, maxBinRect } };
+    Node root{ .rect = { RectPointType{ 0 }, maxBinRect } };
 #if 0 // Basic insert
     for (RectType* rect : inRects)
     {
@@ -264,15 +252,15 @@ void RectPacker<RectType>::pack(PackedRectsBin<RectType>& outBin, std::vector<Re
             failedRects.emplace_back(rect);
         }
     }
-#endif 
-    RectType** bestSortedRects = nullptr;
+#endif
+    RectType **bestSortedRects = nullptr;
     // Find sorting with best packing
     {
-        std::array<RectType**, ARRAY_LENGTH(COMPARE_FUNCS)> sortedRects;
+        std::array<RectType **, ARRAY_LENGTH(COMPARE_FUNCS)> sortedRects;
         for (int32 i = 0; i < ARRAY_LENGTH(COMPARE_FUNCS); ++i)
         {
-            sortedRects[i] = new RectType * [inRects.size()];
-            memcpy(sortedRects[i], inRects.data(), sizeof(RectType*) * inRects.size());
+            sortedRects[i] = new RectType *[inRects.size()];
+            memcpy(sortedRects[i], inRects.data(), sizeof(RectType *) * inRects.size());
             std::sort(sortedRects[i], sortedRects[i] + inRects.size(), COMPARE_FUNCS[i]);
         }
 
@@ -287,10 +275,8 @@ void RectPacker<RectType>::pack(PackedRectsBin<RectType>& outBin, std::vector<Re
         {
             RectPointType binSize;
             RectCompType packedArea;
-            bool bSuccess = getBestPackProps(binSize
-                , packedArea
-                , ArrayView<RectType*>(sortedRects[i], inRects.size())
-                , bestBinSize);
+            bool bSuccess = getBestPackProps(
+                binSize, packedArea, ArrayView<RectType *>(sortedRects[i], inRects.size()), bestBinSize);
             if (bSuccess && (RECT_SIZE_AREA(bestBinSize) > RECT_SIZE_AREA(binSize)))
             {
                 bestFunc = i;
@@ -319,9 +305,9 @@ void RectPacker<RectType>::pack(PackedRectsBin<RectType>& outBin, std::vector<Re
     outBin.binSize = RECT_TYPE_SIZE(root.rect);
     for (uint32 rectIdx = 0; rectIdx < inRects.size(); ++rectIdx)
     {
-        RectType* rect = bestSortedRects[rectIdx];
+        RectType *rect = bestSortedRects[rectIdx];
 
-        const Node* insertedNode = root.insert(RECT_TYPE_SIZE(*rect));
+        const Node *insertedNode = root.insert(RECT_TYPE_SIZE(*rect));
         if (insertedNode)
         {
             (*rect) = insertedNode->rect;
@@ -336,14 +322,16 @@ void RectPacker<RectType>::pack(PackedRectsBin<RectType>& outBin, std::vector<Re
 }
 
 template <Box2DType RectType>
-bool RectPacker<RectType>::getBestPackProps(RectPointType& outBestBinRect
-    , RectCompType& outMaxPackedArea, const ArrayView<RectType*>& inRects, const RectPointType& maxBinRect)
+bool RectPacker<RectType>::getBestPackProps(RectPointType &outBestBinRect,
+    RectCompType &outMaxPackedArea, const ArrayView<RectType *> &inRects,
+    const RectPointType &maxBinRect)
 {
     outBestBinRect = RectPointType(0);
     outMaxPackedArea = 0;
 
-    Node root{ .rect = { RectPointType{0}, maxBinRect } };
-    // step will be abs size to step either up or down based on if packing is successful into certain rectangle
+    Node root{ .rect = { RectPointType{ 0 }, maxBinRect } };
+    // step will be abs size to step either up or down based on if packing is successful into certain
+    // rectangle
     RectPointType step{ maxBinRect / RectCompType(2) };
 
     bool bSuccess = true;
@@ -357,7 +345,7 @@ bool RectPacker<RectType>::getBestPackProps(RectPointType& outBestBinRect
 
             for (uint32 i = 0; i < inRects.size(); ++i)
             {
-                RectType* rect = inRects[i];
+                RectType *rect = inRects[i];
                 if (root.insert(RECT_TYPE_SIZE(*rect)))
                 {
                     outMaxPackedArea += RECT_TYPE_AREA(*rect);
@@ -370,7 +358,7 @@ bool RectPacker<RectType>::getBestPackProps(RectPointType& outBestBinRect
         bool packed = true;
         for (uint32 i = 0; i < inRects.size(); ++i)
         {
-            RectType* rect = inRects[i];
+            RectType *rect = inRects[i];
             // If we failed try increasing the bin rect
             if (!root.insert(RECT_TYPE_SIZE(*rect)))
             {
@@ -379,7 +367,8 @@ bool RectPacker<RectType>::getBestPackProps(RectPointType& outBestBinRect
             }
         }
 
-        // If we succeeded this packing and if step dropped below threshold, We force quit to avoid ping pong up to 1
+        // If we succeeded this packing and if step dropped below threshold, We force quit to avoid
+        // ping pong up to 1
         if (packed && RECT_SIZE_AREA(step) < DISCARD_AT_STEP)
         {
             outBestBinRect = RECT_TYPE_SIZE(root.rect);

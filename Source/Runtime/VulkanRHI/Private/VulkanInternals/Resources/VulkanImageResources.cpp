@@ -17,7 +17,8 @@
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanRenderTargetResource, VK_OBJECT_TYPE_IMAGE)
 
-VulkanRenderTargetResource::VulkanRenderTargetResource() : BaseType()
+VulkanRenderTargetResource::VulkanRenderTargetResource()
+    : BaseType()
 {
     isRenderTarget = true;
     shaderUsage = 0;
@@ -34,10 +35,10 @@ VulkanRenderTargetResource::VulkanRenderTargetResource(ImageResourceCreateInfo c
 //// Cube map image resource
 //////////////////////////////////////////////////////////////////////////
 
-
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanCubeImageResource, VK_OBJECT_TYPE_IMAGE)
 
-VulkanCubeImageResource::VulkanCubeImageResource() : BaseType()
+VulkanCubeImageResource::VulkanCubeImageResource()
+    : BaseType()
 {
     createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     layerCount = 6;

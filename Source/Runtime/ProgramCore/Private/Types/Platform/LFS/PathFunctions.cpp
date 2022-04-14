@@ -14,23 +14,26 @@
 
 #include <filesystem>
 
-String PathFunctions::toRelativePath(const String& absPath, const String& relToPath)
+String PathFunctions::toRelativePath(const String &absPath, const String &relToPath)
 {
     std::filesystem::path absolutePath(absPath.getChar());
     std::filesystem::path relativeToPath(relToPath.getChar());
-    fatalAssert(relativeToPath.is_absolute(), "%s() : Relative to path %s must be absolute path", __func__, relToPath);
+    fatalAssert(relativeToPath.is_absolute(), "%s() : Relative to path %s must be absolute path",
+        __func__, relToPath);
     if (absolutePath.is_relative())
     {
         return absPath;
     }
-    // Should we implement a toRelativePath platform independent? std::filesystem::relative does that under the hood anyways
+    // Should we implement a toRelativePath platform independent? std::filesystem::relative does that
+    // under the hood anyways
     std::error_code errorCode;
     std::filesystem::path relPath = std::filesystem::relative(absolutePath, relativeToPath, errorCode);
-    fatalAssert(errorCode.value() == 0, "%s() : Error %s when making [%s] as relative to %s", UTF8_TO_TCHAR(errorCode.message().c_str()), absPath, relToPath);
+    fatalAssert(errorCode.value() == 0, "%s() : Error %s when making [%s] as relative to %s",
+        UTF8_TO_TCHAR(errorCode.message().c_str()), absPath, relToPath);
     return WCHAR_TO_TCHAR(relPath.c_str());
 }
 
-String PathFunctions::toAbsolutePath(const String& relPath, const String& basePath)
+String PathFunctions::toAbsolutePath(const String &relPath, const String &basePath)
 {
     // Check if path is relative
     {
@@ -43,7 +46,8 @@ String PathFunctions::toAbsolutePath(const String& relPath, const String& basePa
 
     const String absPath(PathFunctions::combinePath(basePath, relPath));
     // Replace all "//" and split each path elements
-    const std::vector<String> pathElems{ String::split(absPath.replaceAllCopy(TCHAR("\\"), TCHAR("/")), TCHAR("/")) };
+    const std::vector<String> pathElems{ String::split(
+        absPath.replaceAllCopy(TCHAR("\\"), TCHAR("/")), TCHAR("/")) };
     std::vector<String> sanitizedPathElems;
     sanitizedPathElems.reserve(pathElems.size());
 
@@ -71,13 +75,13 @@ String PathFunctions::toAbsolutePath(const String& relPath, const String& basePa
     return String::join(sanitizedPathElems.cbegin(), sanitizedPathElems.cend(), TCHAR("/"));
 }
 
-
-bool PathFunctions::isSubdirectory(const String& checkPath, const String& basePath)
+bool PathFunctions::isSubdirectory(const String &checkPath, const String &basePath)
 {
     const std::vector<String> checkPathElems{ String::split(asGenericPath(checkPath), TCHAR("/")) };
     const std::vector<String> basePathElems{ String::split(asGenericPath(basePath), TCHAR("/")) };
 
-    // If basePath folder count is larger or equal to checkPath then it means basPath can not fit into checkPath. checkPath can never be subdir of basePath
+    // If basePath folder count is larger or equal to checkPath then it means basPath can not fit into
+    // checkPath. checkPath can never be subdir of basePath
     if (basePathElems.size() >= checkPathElems.size())
     {
         return false;
@@ -94,7 +98,7 @@ bool PathFunctions::isSubdirectory(const String& checkPath, const String& basePa
     return true;
 }
 
-String PathFunctions::stripExtension(const String& fileName, String& extension)
+String PathFunctions::stripExtension(const String &fileName, String &extension)
 {
     String::size_type foundAt = fileName.rfind('.', fileName.length());
 
@@ -106,7 +110,7 @@ String PathFunctions::stripExtension(const String& fileName, String& extension)
     }
     return fileName;
 }
-String PathFunctions::stripExtension(const String& fileName)
+String PathFunctions::stripExtension(const String &fileName)
 {
     String::size_type foundAt = fileName.rfind('.', fileName.length());
 
@@ -117,7 +121,7 @@ String PathFunctions::stripExtension(const String& fileName)
     return fileName;
 }
 
-String PathFunctions::fileOrDirectoryName(const String& filePath)
+String PathFunctions::fileOrDirectoryName(const String &filePath)
 {
     String pathTmp = asGenericPath(filePath);
     String fileName;
@@ -131,7 +135,7 @@ String PathFunctions::fileOrDirectoryName(const String& filePath)
     return fileName;
 }
 
-String PathFunctions::asGenericPath(const String& path)
+String PathFunctions::asGenericPath(const String &path)
 {
     String pathTmp = path.replaceAllCopy(TCHAR("\\"), TCHAR("/"));
     pathTmp.trimDuplicates(TCHAR('/'));

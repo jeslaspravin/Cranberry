@@ -13,25 +13,25 @@
 #include <atomic>
 
 #include "GraphicsResources.h"
-#include "Types/CoreTypes.h"
 #include "String/String.h"
 #include "Types/Containers/ReferenceCountPtr.h"
-
+#include "Types/CoreTypes.h"
 
 class ENGINERENDERER_EXPORT GraphicsSyncResource : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(GraphicsSyncResource, , GraphicsResource, )
 private:
     std::atomic<uint32> refCounter;
+
 protected:
     String resourceName;
-public:
 
+public:
     virtual void waitForSignal() const {}
     virtual bool isSignaled() const { return false; }
     virtual void resetSignal() {}
     String getResourceName() const override;
-    void setResourceName(const String& name) override;
+    void setResourceName(const String &name) override;
 
     /* ReferenceCountPtr implementation */
     void addRef();
@@ -50,11 +50,9 @@ class ENGINERENDERER_EXPORT GraphicsTimelineSemaphore : public GraphicsSyncResou
     DECLARE_GRAPHICS_RESOURCE(GraphicsTimelineSemaphore, , GraphicsSyncResource, )
 
 public:
-
     void waitForSignal() const override;
     bool isSignaled() const override;
     void resetSignal() override;
-
 
     virtual void waitForSignal(uint64 value) const {}
     virtual bool isSignaled(uint64 value) const { return false; }
@@ -64,7 +62,7 @@ public:
 
 class ENGINERENDERER_EXPORT GraphicsFence : public GraphicsSyncResource
 {
-    DECLARE_GRAPHICS_RESOURCE(GraphicsFence,,GraphicsSyncResource,)
+    DECLARE_GRAPHICS_RESOURCE(GraphicsFence, , GraphicsSyncResource, )
 };
 using SemaphoreRef = ReferenceCountPtr<GraphicsSemaphore>;
 using TimelineSemaphoreRef = ReferenceCountPtr<GraphicsTimelineSemaphore>;

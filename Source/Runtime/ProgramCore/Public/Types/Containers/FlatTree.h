@@ -11,12 +11,13 @@
 
 #pragma once
 
-#include "Types/CoreDefines.h"
 #include "Types/Containers/BitArray.h"
 #include "Types/Containers/SparseVector.h"
+#include "Types/CoreDefines.h"
 
-// Inspired from book 3D graphics rendering cook book - Chapter 7 Using data oriented design for a scene graph(https://www.packtpub.com/product/3d-graphics-rendering-cookbook/9781838986193)
-// Each node contains index to its first child and a sibling(who will be child of node's parent)
+// Inspired from book 3D graphics rendering cook book - Chapter 7 Using data oriented design for a scene
+// graph(https://www.packtpub.com/product/3d-graphics-rendering-cookbook/9781838986193) Each node
+// contains index to its first child and a sibling(who will be child of node's parent)
 template <typename DataType, typename IndexType = SizeT>
 class FlatTree
 {
@@ -27,10 +28,10 @@ public:
 
     using value_type = ValueType;
     using size_type = SizeType;
-    using reference = value_type&;
-    using const_reference = const value_type&;
-    using pointer = value_type*;
-    using const_pointer = const value_type*;
+    using reference = value_type &;
+    using const_reference = const value_type &;
+    using pointer = value_type *;
+    using const_pointer = const value_type *;
 
     CONST_EXPR static const NodeIdx InvalidIdx = ~(NodeIdx)0;
 
@@ -58,16 +59,17 @@ private:
     // Removes child from parent's child list, Assumes both parent and child idx are valid
     void unlinkChildFrom(NodeIdx parentIdx, NodeIdx childIdx)
     {
-        Node* currNode = &nodes[parentIdx];
+        Node *currNode = &nodes[parentIdx];
         // If parent has no child leave
         if (currNode->firstChild == InvalidIdx)
             return;
         // If first child is the child we are looking for?
         if (currNode->firstChild == childIdx)
         {
-            Node& sibling = nodes[currNode->firstChild];
+            Node &sibling = nodes[currNode->firstChild];
             currNode->firstChild = sibling.nextSibling;
-            sibling.nextSibling = InvalidIdx;// Mark as invalid index, As if we are just changing hierarchy it is important
+            sibling.nextSibling = InvalidIdx; // Mark as invalid index, As if we are just changing
+                                              // hierarchy it is important
             sibling.parent = InvalidIdx;
             return;
         }
@@ -78,9 +80,10 @@ private:
         {
             if (currNode->nextSibling == childIdx)
             {
-                Node& sibling = nodes[currNode->nextSibling];
+                Node &sibling = nodes[currNode->nextSibling];
                 currNode->nextSibling = sibling.nextSibling;
-                sibling.nextSibling = InvalidIdx;// Mark as invalid index, As if we are just changing hierarchy it is important
+                sibling.nextSibling = InvalidIdx; // Mark as invalid index, As if we are just
+                                                  // changing hierarchy it is important
                 sibling.parent = InvalidIdx;
                 return;
             }
@@ -90,9 +93,9 @@ private:
     void linkChildTo(NodeIdx parentIdx, NodeIdx childIdx)
     {
         nodes[childIdx].parent = parentIdx;
-        nodes[childIdx].nextSibling = InvalidIdx;// Just being double secure
+        nodes[childIdx].nextSibling = InvalidIdx; // Just being double secure
 
-        Node* currNode = &nodes[parentIdx];
+        Node *currNode = &nodes[parentIdx];
         // No child for this parent
         if (currNode->firstChild == InvalidIdx)
         {
@@ -108,12 +111,16 @@ private:
         currNode->nextSibling = childIdx;
     }
 
-    void printTree(OutputStream& stream, NodeIdx parent, const String& prefix) const;
+    void printTree(OutputStream &stream, NodeIdx parent, const String &prefix) const;
+
 public:
     // Read functions
     FORCE_INLINE SizeType size() const { return (SizeType)nodes.size(); }
     NODISCARD FORCE_INLINE bool empty() const { return nodes.empty(); }
-    NODISCARD FORCE_INLINE bool isValid(NodeIdx index) const { return index != InvalidIdx && nodes.isValid(index); }
+    NODISCARD FORCE_INLINE bool isValid(NodeIdx index) const
+    {
+        return index != InvalidIdx && nodes.isValid(index);
+    }
 
     FORCE_INLINE reference operator[](NodeIdx index) noexcept
     {
@@ -125,20 +132,20 @@ public:
         fatalAssert(isValid(index), "Index %llu is invalid", index);
         return treeData[index];
     }
-    FORCE_INLINE const Node& getNode(NodeIdx index) const noexcept
+    FORCE_INLINE const Node &getNode(NodeIdx index) const noexcept
     {
         fatalAssert(isValid(index), "Index %llu is invalid", index);
         return nodes[index];
     }
 
-    void getChildren(std::vector<NodeIdx>& children, NodeIdx parent, bool bRecurse = false) const
+    void getChildren(std::vector<NodeIdx> &children, NodeIdx parent, bool bRecurse = false) const
     {
         if (!isValid(parent) || !isValid(nodes[parent].firstChild))
         {
             return;
         }
 
-        const Node* currNode = &nodes[nodes[parent].firstChild];
+        const Node *currNode = &nodes[nodes[parent].firstChild];
         children.emplace_back(currNode->index);
         if (bRecurse)
         {
@@ -162,7 +169,7 @@ public:
     }
 
     // All nodes with not parents
-    void getAllRoots(std::vector<NodeIdx>& roots) const
+    void getAllRoots(std::vector<NodeIdx> &roots) const
     {
         SizeType num = SizeType(nodes.totalCount());
         for (NodeIdx i = 0; i < num; ++i)
@@ -211,20 +218,21 @@ public:
         if (!isValid(nodeIdx))
             return;
 
-        Node& node = nodes[nodeIdx];
+        Node &node = nodes[nodeIdx];
         if (isValid(node.parent))
         {
             unlinkChildFrom(node.parent, nodeIdx);
         }
 
         // Assuming that tree won't be very deep
-        // Since removing firstChild links nextSibling to firstChild we can continue this same condition check until end
+        // Since removing firstChild links nextSibling to firstChild we can continue this same condition
+        // check until end
         while (isValid(node.firstChild))
         {
             remove(node.firstChild);
         }
 
-        if CONST_EXPR(std::is_destructible_v<ValueType>)
+        if CONST_EXPR (std::is_destructible_v<ValueType>)
         {
             treeData[nodeIdx].~ValueType();
         }
@@ -236,7 +244,7 @@ public:
         if (!isValid(nodeIdx) || nodes[nodeIdx].parent == newParent)
             return;
 
-        Node& node = nodes[nodeIdx];
+        Node &node = nodes[nodeIdx];
         if (isValid(node.parent))
         {
             unlinkChildFrom(node.parent, nodeIdx);
@@ -248,7 +256,7 @@ public:
         }
     }
 
-    friend FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const FlatTree& tree)
+    friend FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const FlatTree &tree)
     {
         stream << '\n';
 
@@ -263,7 +271,8 @@ public:
 };
 
 template <typename DataType, typename IndexType>
-void FlatTree<DataType, IndexType>::printTree(OutputStream& stream, NodeIdx parent, const String& prefix) const
+void FlatTree<DataType, IndexType>::printTree(
+    OutputStream &stream, NodeIdx parent, const String &prefix) const
 {
     stream << prefix << parent << '\n';
     String newPrefix(prefix + TCHAR("|    "));

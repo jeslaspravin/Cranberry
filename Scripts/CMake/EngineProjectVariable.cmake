@@ -32,6 +32,8 @@ set (llvm_install_path ${cpp_libs_path}/llvm CACHE PATH "LLVM installed path(For
 option (enable_mimalloc "Compile with mimalloc?" ON)
 set (mimalloc_install_path ${cpp_libs_path}/mimalloc CACHE PATH "mimalloc installed path")
 
+option (enable_clang_format "If enabled, Creates clang formatting sources project" ON)
+
 ##### ----CONFIG options end---- #####
 
 include (TestBigEndian)

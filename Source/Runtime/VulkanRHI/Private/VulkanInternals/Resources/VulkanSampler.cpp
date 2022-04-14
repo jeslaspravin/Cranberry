@@ -10,33 +10,27 @@
  */
 
 #include "VulkanInternals/Resources/VulkanSampler.h"
+#include "Logger/Logger.h"
+#include "Math/Math.h"
+#include "RenderInterface/GlobalRenderVariables.h"
 #include "VulkanGraphicsHelper.h"
+#include "VulkanGraphicsInstance.h"
 #include "VulkanInternals/VulkanDevice.h"
 #include "VulkanInternals/VulkanGraphicsTypes.h"
-#include "Logger/Logger.h"
-#include "VulkanGraphicsInstance.h"
-#include "RenderInterface/GlobalRenderVariables.h"
-#include "Math/Math.h"
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanSampler, VK_OBJECT_TYPE_SAMPLER)
 
-String VulkanSampler::getObjectName() const
-{
-    return getResourceName();
-}
+String VulkanSampler::getObjectName() const { return getResourceName(); }
 
-uint64 VulkanSampler::getDispatchableHandle() const
-{
-    return (uint64)sampler;
-}
+uint64 VulkanSampler::getDispatchableHandle() const { return (uint64)sampler; }
 
-VulkanSampler::VulkanSampler() 
+VulkanSampler::VulkanSampler()
     : BaseType()
     , ownerDevice(nullptr)
     , sampler(nullptr)
 {}
 
-VulkanSampler::VulkanSampler(class VulkanDevice* device, SamplerCreateInfo samplerCI)
+VulkanSampler::VulkanSampler(class VulkanDevice *device, SamplerCreateInfo samplerCI)
     : BaseType(samplerCI)
     , ownerDevice(device)
     , sampler(nullptr)
@@ -60,8 +54,12 @@ void VulkanSampler::reinitResources()
     createInfo.addressModeV = EngineToVulkanAPI::vulkanSamplerAddressing(std::get<1>(config.tilingMode));
     createInfo.addressModeW = EngineToVulkanAPI::vulkanSamplerAddressing(std::get<2>(config.tilingMode));
     createInfo.mipLodBias = 0;
-    createInfo.anisotropyEnable = GlobalRenderVariables::ENABLE_ANISOTROPY.get() && config.filtering != ESamplerFiltering::Cubic? VK_TRUE : VK_FALSE;
-    // TODO(Jeslas) : Check if need to use some sort of asset type specific custom max limit, Instead of hardcoded 8
+    createInfo.anisotropyEnable
+        = GlobalRenderVariables::ENABLE_ANISOTROPY.get() && config.filtering != ESamplerFiltering::Cubic
+              ? VK_TRUE
+              : VK_FALSE;
+    // TODO(Jeslas) : Check if need to use some sort of asset type specific custom max limit, Instead of
+    // hardcoded 8
     createInfo.maxAnisotropy = Math::min(8.f, GlobalRenderVariables::MAX_ANISOTROPY.get());
 
     createInfo.compareEnable = config.useCompareOp;
@@ -75,7 +73,8 @@ void VulkanSampler::reinitResources()
     createInfo.borderColor = (VkBorderColor)borderCol;
 
     VkSampler nextSampler;
-    if (ownerDevice->vkCreateSampler(VulkanGraphicsHelper::getDevice(ownerDevice), &createInfo, nullptr, &nextSampler)
+    if (ownerDevice->vkCreateSampler(
+            VulkanGraphicsHelper::getDevice(ownerDevice), &createInfo, nullptr, &nextSampler)
         == VK_SUCCESS)
     {
         sampler = nextSampler;

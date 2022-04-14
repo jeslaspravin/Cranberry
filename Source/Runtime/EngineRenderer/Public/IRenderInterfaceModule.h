@@ -10,11 +10,11 @@
  */
 
 #pragma once
+#include "EngineRendererExports.h"
 #include "Modules/ModuleManager.h"
 #include "RenderApi/RenderManager.h"
-#include "Types/Delegates/Delegate.h"
-#include "EngineRendererExports.h"
 #include "Types/Containers/ReferenceCountPtr.h"
+#include "Types/Delegates/Delegate.h"
 
 class IGraphicsInstance;
 class GraphicsHelperAPI;
@@ -38,11 +38,12 @@ enum class ERenderStateEvent
     PostFinalizeInit,
     // Before starting executing current frame commands
     PreExecFrameCommands,
-    // Before executing clean up commands 
+    // Before executing clean up commands
     PreCleanupCommands,
     // While destroying
     Cleanup,
-    // After executing clean up commands but before GraphicsInstance and Graphics device destroy, Do not call any enqueue command here
+    // After executing clean up commands but before GraphicsInstance and Graphics device destroy, Do not
+    // call any enqueue command here
     PostCleanupCommands
 };
 
@@ -51,27 +52,29 @@ using RenderStateDelegate = Delegate<ERenderStateEvent>;
 class ENGINERENDERER_EXPORT IRenderInterfaceModule : public IModuleBase
 {
 public:
-    static IRenderInterfaceModule* get();
+    static IRenderInterfaceModule *get();
 
-    virtual IGraphicsInstance* currentGraphicsInstance() const = 0;
-    virtual const GraphicsHelperAPI* currentGraphicsHelper() const = 0;
+    virtual IGraphicsInstance *currentGraphicsInstance() const = 0;
+    virtual const GraphicsHelperAPI *currentGraphicsHelper() const = 0;
 
     virtual void initializeGraphics() = 0;
     virtual void finalizeGraphicsInitialization() = 0;
-    virtual RenderManager* getRenderManager() const = 0;
+    virtual RenderManager *getRenderManager() const = 0;
 
-    virtual DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback) = 0;
-    virtual void unregisterToStateEvents(const DelegateHandle& handle) = 0;
+    virtual DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback)
+        = 0;
+    virtual void unregisterToStateEvents(const DelegateHandle &handle) = 0;
 
     template <typename RenderCmdClass>
-    static void issueRenderCommand(typename RenderCmdClass::RenderCmdFunc&& renderCommandFn);
+    static void issueRenderCommand(typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
 };
 
 template <typename RenderCmdClass>
-void IRenderInterfaceModule::issueRenderCommand(typename RenderCmdClass::RenderCmdFunc&& renderCommandFn)
+void IRenderInterfaceModule::issueRenderCommand(typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
 {
-    if (IRenderInterfaceModule* riModule = get())
+    if (IRenderInterfaceModule *riModule = get())
     {
-        RenderManager::issueRenderCommand<RenderCmdClass>(riModule->getRenderManager(), std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn));
+        RenderManager::issueRenderCommand<RenderCmdClass>(riModule->getRenderManager(),
+            std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn));
     }
 }

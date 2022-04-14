@@ -18,7 +18,18 @@ function(make_find_package_hints package_name base_dir out_hint_paths)
         ${base_dir}/${package_name}/cmake/
         PARENT_SCOPE
     )
-endfunction() 
+endfunction()
+
+function(write_cmdline_args out_file)
+    set(multi_value_args CMDLINE)
+    cmake_parse_arguments(cmdline_args "" "" "${multi_value_args}" ${ARGN})
+
+    set(cmdline_args "")
+    foreach (cmdline_arg ${cmdline_args_CMDLINE})
+        string (APPEND cmdline_args "${cmdline_arg}\n")
+    endforeach ()
+    configure_file(${cmake_script_dir}/ConfigureFiles/CmdLineArgs.in ${out_file} @ONLY)
+endfunction()
 
 # Root must be absolute path
 function(get_first_level_cmake_lists root_dir out_sub_dirs)
@@ -69,7 +80,7 @@ function(get_first_level_cmake_lists root_dir out_sub_dirs)
 endfunction()
 
 # gather source files are done under CMAKE_CURRENT_LIST_DIR directory
-function(get_all_csharp_files out_file_list)
+function(gather_all_csharp_srcs out_file_list)
     file (GLOB_RECURSE file_list 
         LIST_DIRECTORIES false
         RELATIVE ${CMAKE_CURRENT_LIST_DIR}
@@ -78,13 +89,29 @@ function(get_all_csharp_files out_file_list)
     set(${out_file_list} ${file_list} PARENT_SCOPE)
 endfunction()
 
-function(get_all_cpp_files out_file_list)
+function(gather_all_cpp_srcs out_file_list)
     file (GLOB_RECURSE file_list 
         LIST_DIRECTORIES false
         RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         CONFIGURE_DEPENDS
         *.c[px][px] *.c *.hpp *.h *.inl)
     set(${out_file_list} ${file_list} PARENT_SCOPE)
+endfunction()
+function(get_all_cpp_files_in_dirs out_file_list)
+    set(one_value_args RELATIVE)
+    set(multi_value_args DIRS)
+    cmake_parse_arguments(get_cpp_files "" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+    set (all_srcs )
+    foreach(dir_path ${get_cpp_files_DIRS})
+        file (GLOB_RECURSE file_list 
+        RELATIVE ${get_cpp_files_RELATIVE}
+        LIST_DIRECTORIES false
+        ${dir_path}/*.c[px][px] ${dir_path}/*.c ${dir_path}/*.hpp ${dir_path}/*.h ${dir_path}/*.inl)
+        
+        list (APPEND all_srcs ${file_list})
+    endforeach()
+    set(${out_file_list} ${all_srcs} PARENT_SCOPE)
 endfunction()
 
 macro(add_cmake_subdirectories)

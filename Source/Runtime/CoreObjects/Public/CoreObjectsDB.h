@@ -11,16 +11,16 @@
 
 #pragma once
 
+#include "CBEObjectTypes.h"
 #include "CoreObjectsExports.h"
 #include "String/StringID.h"
-#include "CBEObjectTypes.h"
 #include "Types/Containers/FlatTree.h"
 
 /**
  * CoreObjectsDB
- * 
- * Contains objects hierarchy data and object SID, Alloc idx in database separate from class for quick access
- * Possible use is for garbage collector in future
+ *
+ * Contains objects hierarchy data and object SID, Alloc idx in database separate from class for quick
+ * access Possible use is for garbage collector in future
  */
 class COREOBJECTS_EXPORT CoreObjectsDB
 {
@@ -40,8 +40,8 @@ public:
 public:
     // Removes object and all its sub-object from db
     void removeObject(StringID objectId);
-    NodeIdxType addObject(StringID objectId, const ObjectData& objectData, StringID parent);
-    NodeIdxType addRootObject(StringID objectId, const ObjectData& objectData);
+    NodeIdxType addObject(StringID objectId, const ObjectData &objectData, StringID parent);
+    NodeIdxType addRootObject(StringID objectId, const ObjectData &objectData);
     void setObject(StringID currentId, StringID newId);
     // Invalid newParent clears current parent
     void setObjectParent(StringID objectId, StringID newParent);
@@ -67,8 +67,8 @@ public:
         return false;
     }
 
-    CBE::Object* getObject(NodeIdxType nodeidx) const;
-    FORCE_INLINE CBE::Object* getObject(StringID objectId) const
+    CBE::Object *getObject(NodeIdxType nodeidx) const;
+    FORCE_INLINE CBE::Object *getObject(StringID objectId) const
     {
         auto itr = objectIdToNodeIdx.find(objectId);
         if (itr != objectIdToNodeIdx.cend())
@@ -78,8 +78,8 @@ public:
         return nullptr;
     }
 
-    void getSubobjects(std::vector<CBE::Object*>& subobjs, NodeIdxType nodeidx) const;
-    FORCE_INLINE void getSubobjects(std::vector<CBE::Object*>& subobjs, StringID objectId) const
+    void getSubobjects(std::vector<CBE::Object *> &subobjs, NodeIdxType nodeidx) const;
+    FORCE_INLINE void getSubobjects(std::vector<CBE::Object *> &subobjs, StringID objectId) const
     {
         auto itr = objectIdToNodeIdx.find(objectId);
         if (itr != objectIdToNodeIdx.cend())

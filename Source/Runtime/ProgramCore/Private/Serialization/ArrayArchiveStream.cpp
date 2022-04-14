@@ -13,14 +13,14 @@
 #include "Math/Math.h"
 #include "Memory/Memory.h"
 
-void ArrayArchiveStream::read(void* toPtr, SizeT len)
+void ArrayArchiveStream::read(void *toPtr, SizeT len)
 {
     fatalAssert(cursor + len <= buffer.size(), "Cannot read past buffer size %ull", buffer.size());
     CBEMemory::memCopy(toPtr, buffer.data() + cursor, len);
     cursor += len;
 }
 
-void ArrayArchiveStream::write(const void* ptr, SizeT len)
+void ArrayArchiveStream::write(const void *ptr, SizeT len)
 {
     SizeT currCursor = cursor;
     moveForward(len);
@@ -63,7 +63,4 @@ uint8 ArrayArchiveStream::readBackwardAt(SizeT idx) const
     return buffer[cursor - idx];
 }
 
-bool ArrayArchiveStream::isAvailable() const
-{
-    return true;
-}
+bool ArrayArchiveStream::isAvailable() const { return true; }

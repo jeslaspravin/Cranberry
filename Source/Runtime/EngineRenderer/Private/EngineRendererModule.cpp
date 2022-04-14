@@ -11,43 +11,36 @@
 
 #include "EngineRendererModule.h"
 #include "Modules/ModuleManager.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
 #include "RenderInterface/IRHIModule.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 
 DECLARE_MODULE(EngineRenderer, EngineRedererModule)
 
-IGraphicsInstance* EngineRedererModule::currentGraphicsInstance() const
+IGraphicsInstance *EngineRedererModule::currentGraphicsInstance() const
 {
-    debugAssert(getRenderManager()->isExecutingCommands() && "using graphics instance any where outside render commands is not allowed");
+    debugAssert(getRenderManager()->isExecutingCommands()
+                && "using graphics instance any where outside render commands is not allowed");
     return graphicsInstanceCache;
 }
 
-const GraphicsHelperAPI* EngineRedererModule::currentGraphicsHelper() const 
+const GraphicsHelperAPI *EngineRedererModule::currentGraphicsHelper() const
 {
     return graphicsHelperCache;
 }
 
-void EngineRedererModule::initializeGraphics()
-{
-    getRenderManager()->initialize(graphicsInstanceCache);
-}
+void EngineRedererModule::initializeGraphics() { getRenderManager()->initialize(graphicsInstanceCache); }
 
-void EngineRedererModule::finalizeGraphicsInitialization()
-{
-    getRenderManager()->finalizeInit();
-}
+void EngineRedererModule::finalizeGraphicsInitialization() { getRenderManager()->finalizeInit(); }
 
-RenderManager* EngineRedererModule::getRenderManager() const
-{
-    return renderManager;
-}
+RenderManager *EngineRedererModule::getRenderManager() const { return renderManager; }
 
-DelegateHandle EngineRedererModule::registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback)
+DelegateHandle EngineRedererModule::registerToStateEvents(
+    RenderStateDelegate::SingleCastDelegateType callback)
 {
     return renderStateEvents.bind(callback);
 }
 
-void EngineRedererModule::unregisterToStateEvents(const DelegateHandle& handle)
+void EngineRedererModule::unregisterToStateEvents(const DelegateHandle &handle)
 {
     renderStateEvents.unbind(handle);
 }
@@ -58,8 +51,8 @@ void EngineRedererModule::init()
     weakRHI = ModuleManager::get()->getOrLoadModule(TCHAR("VulkanRHI"));
     auto rhiModule = weakRHI.lock().get();
 
-    graphicsInstanceCache = static_cast<IRHIModule*>(rhiModule)->createGraphicsInstance();
-    graphicsHelperCache = static_cast<IRHIModule*>(rhiModule)->getGraphicsHelper();
+    graphicsInstanceCache = static_cast<IRHIModule *>(rhiModule)->createGraphicsInstance();
+    graphicsHelperCache = static_cast<IRHIModule *>(rhiModule)->getGraphicsHelper();
 }
 
 void EngineRedererModule::release()
@@ -71,7 +64,7 @@ void EngineRedererModule::release()
     if (!weakRHI.expired())
     {
         auto rhiModule = weakRHI.lock().get();
-        static_cast<IRHIModule*>(rhiModule)->destroyGraphicsInstance();
+        static_cast<IRHIModule *>(rhiModule)->destroyGraphicsInstance();
     }
     graphicsInstanceCache = nullptr;
     graphicsHelperCache = nullptr;
@@ -80,8 +73,9 @@ void EngineRedererModule::release()
 
 // IRenderInterfaceModule Impl
 
-IRenderInterfaceModule* IRenderInterfaceModule::get()
+IRenderInterfaceModule *IRenderInterfaceModule::get()
 {
     static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer")));
-    return weakRiModule.expired() ? nullptr : static_cast<IRenderInterfaceModule*>(weakRiModule.lock().get());
+    return weakRiModule.expired() ? nullptr
+                                  : static_cast<IRenderInterfaceModule *>(weakRiModule.lock().get());
 }

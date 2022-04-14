@@ -17,24 +17,25 @@
 class VulkanRHIModule final : public IVulkanRHIModule
 {
 private:
-    IGraphicsInstance* graphicsInstance = nullptr;
+    IGraphicsInstance *graphicsInstance = nullptr;
+
 public:
     /* IRHIModule overrides */
-    IGraphicsInstance* createGraphicsInstance() final;
-    const GraphicsHelperAPI* getGraphicsHelper() const final;
+    IGraphicsInstance *createGraphicsInstance() final;
+    const GraphicsHelperAPI *getGraphicsHelper() const final;
 
     /* IModuleBase overrides */
     void init() final;
     void release() final;
     void destroyGraphicsInstance() final;
     /* IVulkanRHIModule overrides */
-    IGraphicsInstance* getGraphicsInstance() const final;
+    IGraphicsInstance *getGraphicsInstance() const final;
     /* End overrides */
 };
 
 DECLARE_MODULE(VulkanRHI, VulkanRHIModule)
 
-IGraphicsInstance* VulkanRHIModule::createGraphicsInstance()
+IGraphicsInstance *VulkanRHIModule::createGraphicsInstance()
 {
     if (graphicsInstance == nullptr)
     {
@@ -52,29 +53,20 @@ void VulkanRHIModule::destroyGraphicsInstance()
     }
 }
 
-const GraphicsHelperAPI* VulkanRHIModule::getGraphicsHelper() const
+const GraphicsHelperAPI *VulkanRHIModule::getGraphicsHelper() const
 {
     static VulkanGraphicsHelper graphicsHelper;
     return &graphicsHelper;
 }
 
-void VulkanRHIModule::init()
-{
+void VulkanRHIModule::init() {}
 
-}
+void VulkanRHIModule::release() { destroyGraphicsInstance(); }
 
-void VulkanRHIModule::release()
-{
-    destroyGraphicsInstance();
-}
+IGraphicsInstance *VulkanRHIModule::getGraphicsInstance() const { return graphicsInstance; }
 
-IGraphicsInstance* VulkanRHIModule::getGraphicsInstance() const
-{
-    return graphicsInstance;
-}
-
-IVulkanRHIModule* IVulkanRHIModule::get()
+IVulkanRHIModule *IVulkanRHIModule::get()
 {
     static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("VulkanRHI")));
-    return weakRiModule.expired() ? nullptr : static_cast<IVulkanRHIModule*>(weakRiModule.lock().get());
+    return weakRiModule.expired() ? nullptr : static_cast<IVulkanRHIModule *>(weakRiModule.lock().get());
 }

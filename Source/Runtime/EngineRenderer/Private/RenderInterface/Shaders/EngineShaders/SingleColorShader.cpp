@@ -10,18 +10,18 @@
  */
 
 #include "RenderInterface/Shaders/EngineShaders/SingleColorShader.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/GBuffersAndTextures.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "Types/CoreDefines.h"
-#include "RenderApi/GBuffersAndTextures.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 #define SINGLECOLOR_SHADER_NAME TCHAR("SingleColor")
 
 struct SingleColorMeshMaterials
 {
-    SingleColorMeshData* meshData;
+    SingleColorMeshData *meshData;
 };
 
 BEGIN_BUFFER_DEFINITION(SingleColorMeshData)
@@ -34,10 +34,11 @@ BEGIN_BUFFER_DEFINITION(SingleColorMeshMaterials)
 ADD_BUFFER_STRUCT_FIELD(meshData, SingleColorMeshData)
 END_BUFFER_DEFINITION();
 
-template<EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
+template <EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
 class SingleColorShader : public DrawMeshShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(SingleColorShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>,DrawMeshShaderConfig,)
+    DECLARE_GRAPHICS_RESOURCE(
+        SingleColorShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>, DrawMeshShaderConfig, )
 protected:
     SingleColorShader()
         : BaseType(SINGLECOLOR_SHADER_NAME)
@@ -46,16 +47,14 @@ protected:
         compatibleVertex = VertexUsage;
     }
 
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
+    void bindBufferParamInfo(
+        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static SingleColorMeshMaterialsBufferParamInfo MESH_DATA_MATERIALS;
-        static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
-        {
-            { TCHAR("materials"), &MESH_DATA_MATERIALS }
-        };
+        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ { TCHAR("materials"),
+            &MESH_DATA_MATERIALS } };
 
-
-        for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -66,8 +65,9 @@ protected:
     }
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(SingleColorShader, <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>
-    , <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(SingleColorShader,
+    <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>,
+    <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
 
 template class SingleColorShader<EVertexType::Simple2, ERenderPassFormat::Multibuffer>;
 template class SingleColorShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffer>;
@@ -76,4 +76,5 @@ template class SingleColorShader<EVertexType::StaticMesh, ERenderPassFormat::Mul
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(SINGLECOLOR_SHADER_PIPELINE_REGISTER, SINGLECOLOR_SHADER_NAME, &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(SINGLECOLOR_SHADER_PIPELINE_REGISTER, SINGLECOLOR_SHADER_NAME,
+    &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig);

@@ -26,12 +26,12 @@ int64 toPlatformTime(TickRep tickValue);
 using TimeResolution = std::chrono::microseconds;
 using TimeHighResolution = std::chrono::nanoseconds;
 
-
 template <bool bIsHighRes = false>
 class TimeHelper
 {
 public:
     using Resolution = std::conditional_t<bIsHighRes, TimeHighResolution, TimeResolution>;
+
 public:
     FORCE_INLINE static TickRep timeNow()
     {
@@ -69,16 +69,16 @@ public:
         return duration_cast<duration<TimeConvType, std::ratio<86400>>>(Resolution(tickValue)).count();
     }
 
-    //FORCE_INLINE static String asString(TickRep tickValue, const String& formatStr)
+    // FORCE_INLINE static String asString(TickRep tickValue, const String& formatStr)
     //{
-    //    using namespace std::chrono;
-    //    steady_clock::time_point tickTimePoint(Resolution(tickValue));
-    //    std::tm timeBuffer;
+    //     using namespace std::chrono;
+    //     steady_clock::time_point tickTimePoint(Resolution(tickValue));
+    //     std::tm timeBuffer;
     //
-    //    std::stringstream outStr;
-    //    outStr << put_time(localtime_s(&tickTimePoint, &timeBuffer), formatStr.getChar());
-    //    return outStr.str();
-    //}
+    //     std::stringstream outStr;
+    //     outStr << put_time(localtime_s(&tickTimePoint, &timeBuffer), formatStr.getChar());
+    //     return outStr.str();
+    // }
 
     FORCE_INLINE static TickRep addSeconds(TickRep tickValue, TimeConvType seconds)
     {
@@ -157,35 +157,17 @@ public:
 
 // namespace Time
 
-TickRep Time::timeNow()
-{
-    return TimeHelper<false>::timeNow();
-}
+TickRep Time::timeNow() { return TimeHelper<false>::timeNow(); }
 
-TickRep Time::clockTimeNow()
-{
-    return TimeHelper<false>::clockTimeNow();
-}
+TickRep Time::clockTimeNow() { return TimeHelper<false>::clockTimeNow(); }
 
-TimeConvType Time::asSeconds(TickRep tickValue)
-{
-    return TimeHelper<false>::asSeconds(tickValue);
-}
+TimeConvType Time::asSeconds(TickRep tickValue) { return TimeHelper<false>::asSeconds(tickValue); }
 
-TimeConvType Time::asMinutes(TickRep tickValue)
-{
-    return TimeHelper<false>::asMinutes(tickValue);
-}
+TimeConvType Time::asMinutes(TickRep tickValue) { return TimeHelper<false>::asMinutes(tickValue); }
 
-TimeConvType Time::asHours(TickRep tickValue)
-{
-    return TimeHelper<false>::asHours(tickValue);
-}
+TimeConvType Time::asHours(TickRep tickValue) { return TimeHelper<false>::asHours(tickValue); }
 
-TimeConvType Time::asDays(TickRep tickValue)
-{
-    return TimeHelper<false>::asDays(tickValue);
-}
+TimeConvType Time::asDays(TickRep tickValue) { return TimeHelper<false>::asDays(tickValue); }
 
 TickRep Time::addSeconds(TickRep tickValue, TimeConvType seconds)
 {
@@ -200,7 +182,6 @@ TickRep Time::addMinutes(TickRep tickValue, TimeConvType minutes)
 TickRep Time::addHours(TickRep tickValue, TimeConvType hours)
 {
     return TimeHelper<false>::addHours(tickValue, hours);
-
 }
 
 TickRep Time::addDays(TickRep tickValue, TimeConvType days)
@@ -208,47 +189,26 @@ TickRep Time::addDays(TickRep tickValue, TimeConvType days)
     return TimeHelper<false>::addDays(tickValue, days);
 }
 
-TickRep Time::fromSeconds(TimeConvType seconds)
-{
-    return TimeHelper<false>::fromSeconds(seconds);
-}
+TickRep Time::fromSeconds(TimeConvType seconds) { return TimeHelper<false>::fromSeconds(seconds); }
 
-TickRep Time::fromMinutes(TimeConvType minutes)
-{
-    return TimeHelper<false>::fromMinutes(minutes);
-}
+TickRep Time::fromMinutes(TimeConvType minutes) { return TimeHelper<false>::fromMinutes(minutes); }
 
-TickRep Time::fromHours(TimeConvType hours)
-{
-    return TimeHelper<false>::fromHours(hours);
-}
+TickRep Time::fromHours(TimeConvType hours) { return TimeHelper<false>::fromHours(hours); }
 
-TickRep Time::fromDays(TimeConvType days)
-{
-    return TimeHelper<false>::fromDays(days);
-}
+TickRep Time::fromDays(TimeConvType days) { return TimeHelper<false>::fromDays(days); }
 
 TickRep Time::fromPlatformTime(int64 platformTick)
 {
     return TimeHelper<false>::fromPlatformTime(platformTick);
 }
 
-int64 Time::toPlatformTime(TickRep tickValue)
-{
-    return TimeHelper<false>::toPlatformTime(tickValue);
-}
+int64 Time::toPlatformTime(TickRep tickValue) { return TimeHelper<false>::toPlatformTime(tickValue); }
 
 // namespace HighResolutionTime
 
-TickRep HighResolutionTime::timeNow()
-{
-    return TimeHelper<true>::timeNow();
-}
+TickRep HighResolutionTime::timeNow() { return TimeHelper<true>::timeNow(); }
 
-TickRep HighResolutionTime::clockTimeNow()
-{
-    return TimeHelper<true>::clockTimeNow();
-}
+TickRep HighResolutionTime::clockTimeNow() { return TimeHelper<true>::clockTimeNow(); }
 
 TimeConvType HighResolutionTime::asSeconds(TickRep tickValue)
 {
@@ -283,7 +243,6 @@ TickRep HighResolutionTime::addMinutes(TickRep tickValue, TimeConvType minutes)
 TickRep HighResolutionTime::addHours(TickRep tickValue, TimeConvType hours)
 {
     return TimeHelper<true>::addHours(tickValue, hours);
-
 }
 
 TickRep HighResolutionTime::fromSeconds(TimeConvType seconds)
@@ -296,15 +255,9 @@ TickRep HighResolutionTime::fromMinutes(TimeConvType minutes)
     return TimeHelper<true>::fromMinutes(minutes);
 }
 
-TickRep HighResolutionTime::fromHours(TimeConvType hours)
-{
-    return TimeHelper<true>::fromHours(hours);
-}
+TickRep HighResolutionTime::fromHours(TimeConvType hours) { return TimeHelper<true>::fromHours(hours); }
 
-TickRep HighResolutionTime::fromDays(TimeConvType days)
-{
-    return TimeHelper<true>::fromDays(days);
-}
+TickRep HighResolutionTime::fromDays(TimeConvType days) { return TimeHelper<true>::fromDays(days); }
 
 TickRep HighResolutionTime::addDays(TickRep tickValue, TimeConvType days)
 {
@@ -333,55 +286,31 @@ StopWatch::StopWatch(bool bStart /*= true*/)
 
 TickRep StopWatch::start()
 {
-    return startTime == 0
-        ? (startTime = HighResolutionTime::timeNow())
-        : startTime;
+    return startTime == 0 ? (startTime = HighResolutionTime::timeNow()) : startTime;
 }
 
 TickRep StopWatch::stop()
 {
-    return stopTime == 0 
-        ? (stopTime = HighResolutionTime::timeNow())
-        : stopTime;
+    return stopTime == 0 ? (stopTime = HighResolutionTime::timeNow()) : stopTime;
 }
 
-TickRep StopWatch::lap()
-{
-    return (lastLapTime = HighResolutionTime::timeNow());
-}
+TickRep StopWatch::lap() { return (lastLapTime = HighResolutionTime::timeNow()); }
 
-TickRep StopWatch::lapTick() const
-{
-    return lastLapTime > startTime
-        ? (lastLapTime - startTime)
-        : 0;
-}
+TickRep StopWatch::lapTick() const { return lastLapTime > startTime ? (lastLapTime - startTime) : 0; }
 
 TickRep StopWatch::thisLapTick() const
 {
-    return lastLapTime > startTime
-        ? (HighResolutionTime::timeNow() - lastLapTime)
-        : (HighResolutionTime::timeNow() - startTime);
+    return lastLapTime > startTime ? (HighResolutionTime::timeNow() - lastLapTime)
+                                   : (HighResolutionTime::timeNow() - startTime);
 }
 
 TickRep StopWatch::durationTick() const
 {
-    return stopTime > startTime
-        ? (stopTime - startTime)
-        : (HighResolutionTime::timeNow() - startTime);
+    return stopTime > startTime ? (stopTime - startTime) : (HighResolutionTime::timeNow() - startTime);
 }
 
-TimeConvType StopWatch::lapTime() const
-{
-    return HighResolutionTime::asSeconds(lapTick());
-}
+TimeConvType StopWatch::lapTime() const { return HighResolutionTime::asSeconds(lapTick()); }
 
-TimeConvType StopWatch::thisLap() const
-{
-    return HighResolutionTime::asSeconds(thisLapTick());
-}
+TimeConvType StopWatch::thisLap() const { return HighResolutionTime::asSeconds(thisLapTick()); }
 
-TimeConvType StopWatch::duration() const
-{
-    return HighResolutionTime::asSeconds(durationTick());
-}
+TimeConvType StopWatch::duration() const { return HighResolutionTime::asSeconds(durationTick()); }

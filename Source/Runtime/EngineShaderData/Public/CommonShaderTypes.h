@@ -15,15 +15,14 @@
 
 struct ReflectBufferShaderField;
 
-
 //////////////////////////////////////////////////////////////////////////
 ///// Common data types
 //////////////////////////////////////////////////////////////////////////
 
 struct ArrayDefinition
 {
-    uint32_t dimension;// Will have specialization constant index if is specialization const is true
-    uint32_t stageIdx = 0;// Will have Index to stage of specialization constant index
+    uint32_t dimension;    // Will have specialization constant index if is specialization const is true
+    uint32_t stageIdx = 0; // Will have Index to stage of specialization constant index
     bool isSpecializationConst = false;
 };
 
@@ -38,9 +37,9 @@ template <typename StructField>
 struct StructInnerFields
 {
     uint32_t offset;
-    uint32_t stride;// Individual primitive/inner struct stride
-    uint32_t totalSize;// This is size of entire array in array field else will be equal to stride
-    std::vector<ArrayDefinition> arraySize;// 1 in case of normal value and n in case of array
+    uint32_t stride;    // Individual primitive/inner struct stride
+    uint32_t totalSize; // This is size of entire array in array field else will be equal to stride
+    std::vector<ArrayDefinition> arraySize; // 1 in case of normal value and n in case of array
     StructField data;
 };
 
@@ -79,7 +78,7 @@ typedef NamedAttribute<StructInnerFields<ReflectBufferShaderField>> ReflectBuffe
 // Currently no AoS only SoA/SoAoS supported
 struct ReflectBufferShaderField
 {
-    uint32_t stride = 0;// struct stride
+    uint32_t stride = 0; // struct stride
     std::vector<ReflectBufferEntry> bufferFields;
     std::vector<ReflectBufferStructEntry> bufferStructFields;
 };

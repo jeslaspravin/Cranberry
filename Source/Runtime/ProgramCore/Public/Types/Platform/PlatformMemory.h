@@ -11,7 +11,6 @@
 
 #pragma once
 
-
 #if PLATFORM_WINDOWS
 
 #include "WindowsPlatformMemory.h"

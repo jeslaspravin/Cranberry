@@ -22,6 +22,7 @@ private:
     uint32 stride;
 
     VulkanRBuffer();
+
 public:
     VulkanRBuffer(uint32 bufferStride, uint32 bufferCount = 1);
 
@@ -44,6 +45,7 @@ private:
     uint32 stride;
 
     VulkanWBuffer();
+
 public:
     VulkanWBuffer(uint32 bufferStride, uint32 bufferCount = 1);
 
@@ -66,6 +68,7 @@ private:
     uint32 stride;
 
     VulkanRWBuffer();
+
 public:
     VulkanRWBuffer(uint32 bufferStride, uint32 bufferCount = 1);
 
@@ -151,6 +154,7 @@ private:
     uint32 stride;
 
     VulkanVertexBuffer();
+
 public:
     VulkanVertexBuffer(uint32 bufferStride, uint32 bufferCount = 1);
 
@@ -173,6 +177,7 @@ private:
     uint32 stride;
 
     VulkanIndexBuffer();
+
 public:
     VulkanIndexBuffer(uint32 bufferStride, uint32 bufferCount = 1);
 
@@ -195,6 +200,7 @@ private:
     uint32 stride;
 
     VulkanRIndirectBuffer();
+
 public:
     VulkanRIndirectBuffer(uint32 bufferStride, uint32 bufferCount = 1);
 
@@ -217,6 +223,7 @@ private:
     uint32 stride;
 
     VulkanWIndirectBuffer();
+
 public:
     VulkanWIndirectBuffer(uint32 bufferStride, uint32 bufferCount = 1);
 
@@ -230,19 +237,20 @@ public:
     /* Overrides ends */
 };
 
-namespace GraphicsTypes {
+namespace GraphicsTypes
+{
 
-    typedef VulkanRBuffer GraphicsRBuffer;
-    typedef VulkanWBuffer GraphicsWBuffer;
-    typedef VulkanRWBuffer GraphicsRWBuffer;
+typedef VulkanRBuffer GraphicsRBuffer;
+typedef VulkanWBuffer GraphicsWBuffer;
+typedef VulkanRWBuffer GraphicsRWBuffer;
 
-    typedef VulkanRTexelBuffer GraphicsRTexelBuffer;
-    typedef VulkanWTexelBuffer GraphicsWTexelBuffer;
-    typedef VulkanRWTexelBuffer GraphicsRWTexelBuffer;
+typedef VulkanRTexelBuffer GraphicsRTexelBuffer;
+typedef VulkanWTexelBuffer GraphicsWTexelBuffer;
+typedef VulkanRWTexelBuffer GraphicsRWTexelBuffer;
 
-    typedef VulkanVertexBuffer GraphicsVertexBuffer;
-    typedef VulkanIndexBuffer GraphicsIndexBuffer;
+typedef VulkanVertexBuffer GraphicsVertexBuffer;
+typedef VulkanIndexBuffer GraphicsIndexBuffer;
 
-    typedef VulkanRIndirectBuffer GraphicsRIndirectBuffer;
-    typedef VulkanWIndirectBuffer GraphicsWIndirectBuffer;
-}
+typedef VulkanRIndirectBuffer GraphicsRIndirectBuffer;
+typedef VulkanWIndirectBuffer GraphicsWIndirectBuffer;
+} // namespace GraphicsTypes

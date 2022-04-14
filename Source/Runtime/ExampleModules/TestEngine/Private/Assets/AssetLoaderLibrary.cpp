@@ -12,8 +12,7 @@
 #include "Assets/AssetLoaderLibrary.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
-
-EAssetType::Type AssetLoaderLibrary::typeFromAssetPath(const String& assetPath)
+EAssetType::Type AssetLoaderLibrary::typeFromAssetPath(const String &assetPath)
 {
     String extension;
     PathFunctions::stripExtension(assetPath, extension);
@@ -23,7 +22,7 @@ EAssetType::Type AssetLoaderLibrary::typeFromAssetPath(const String& assetPath)
         return EAssetType::StaticMesh;
     }
     else if (extension.startsWith(TCHAR("jpg"), false) || extension.startsWith(TCHAR("jpeg"), false)
-        || extension.startsWith(TCHAR("png"), false) || extension.startsWith(TCHAR("tga"), false))
+             || extension.startsWith(TCHAR("png"), false) || extension.startsWith(TCHAR("tga"), false))
     {
         return EAssetType::Texture2D;
     }

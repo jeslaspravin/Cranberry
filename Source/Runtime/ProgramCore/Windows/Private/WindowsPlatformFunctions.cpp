@@ -10,27 +10,30 @@
  */
 
 #include "WindowsPlatformFunctions.h"
-#include "WindowsCommonHeaders.h"
 #include "Types/Time.h"
+#include "WindowsCommonHeaders.h"
+#include <Psapi.h>
 #include <chrono>
+#include <intrin.h>
+#include <libloaderapi.h>
 #include <ratio>
 #include <wtypes.h>
-#include <libloaderapi.h>
-#include <Psapi.h>
-#include <intrin.h>
 
 struct WindowsLibHandle : public LibPointer
 {
     HMODULE libHandle;
     bool bUnload;
-    WindowsLibHandle(HMODULE handle,bool manualUnload) :libHandle(handle),bUnload(manualUnload) {}
+    WindowsLibHandle(HMODULE handle, bool manualUnload)
+        : libHandle(handle)
+        , bUnload(manualUnload)
+    {}
 
-    ~WindowsLibHandle() {
-        if(bUnload)
+    ~WindowsLibHandle()
+    {
+        if (bUnload)
             WindowsPlatformFunctions::releaseLibrary(this);
     }
 };
-
 
 // as 100ns
 using WindowsTimeDuration = std::chrono::duration<int64, std::ratio<1, 10'000'000>>;
@@ -61,11 +64,17 @@ template <typename Resolution>
 TickRep fromPlatformTime(int64 platformTick);
 template <typename Resolution>
 int64 toPlatformTime(TickRep timeTick);
-#define SPECIALIZE_FROM_PLATFORM_TIME(TimeResolution) \
-template <> \
-TickRep fromPlatformTime<TimeResolution>(int64 platformTick) { return ::fromPlatformTimeImpl<TimeResolution>(platformTick); } \
-template <> \
-int64 toPlatformTime<TimeResolution>(TickRep timeTick) { return ::toPlatformTimeImpl<TimeResolution>(timeTick); }
+#define SPECIALIZE_FROM_PLATFORM_TIME(TimeResolution)                                                   \
+    template <>                                                                                         \
+    TickRep fromPlatformTime<TimeResolution>(int64 platformTick)                                        \
+    {                                                                                                   \
+        return ::fromPlatformTimeImpl<TimeResolution>(platformTick);                                    \
+    }                                                                                                   \
+    template <>                                                                                         \
+    int64 toPlatformTime<TimeResolution>(TickRep timeTick)                                              \
+    {                                                                                                   \
+        return ::toPlatformTimeImpl<TimeResolution>(timeTick);                                          \
+    }
 
 // std::chrono::microseconds
 SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::microseconds)
@@ -73,12 +82,12 @@ SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::nanoseconds)
 
 #undef SPECIALIZE_FROM_PLATFORM_TIME
 
-LibPointer* WindowsPlatformFunctions::openLibrary(String libName)
+LibPointer *WindowsPlatformFunctions::openLibrary(String libName)
 {
     // #TODO(Jeslas) : Improve this to handle dependent dlls here, Using
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/february/inside-windows-win32-portable-executable-file-format-in-detail
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/march/inside-windows-an-in-depth-look-into-the-win32-portable-executable-file-format-part-2
-    WindowsLibHandle* handle = new WindowsLibHandle(LoadLibrary(libName.getChar()), true);
+    WindowsLibHandle *handle = new WindowsLibHandle(LoadLibrary(libName.getChar()), true);
 
     if (!handle->libHandle)
     {
@@ -88,21 +97,23 @@ LibPointer* WindowsPlatformFunctions::openLibrary(String libName)
     return handle;
 }
 
-void WindowsPlatformFunctions::releaseLibrary(const LibPointer* libraryHandle)
+void WindowsPlatformFunctions::releaseLibrary(const LibPointer *libraryHandle)
 {
-    HMODULE handle = static_cast<const WindowsLibHandle*>(libraryHandle)->libHandle;
-    if (handle) 
+    HMODULE handle = static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle;
+    if (handle)
     {
         FreeLibrary(handle);
     }
 }
 
-void* WindowsPlatformFunctions::getProcAddress(const LibPointer* libraryHandle, String symName)
+void *WindowsPlatformFunctions::getProcAddress(const LibPointer *libraryHandle, String symName)
 {
-    return GetProcAddress(static_cast<const WindowsLibHandle*>(libraryHandle)->libHandle, TCHAR_TO_UTF8(symName.getChar()));
+    return GetProcAddress(static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle,
+        TCHAR_TO_UTF8(symName.getChar()));
 }
 
-void WindowsPlatformFunctions::getModuleInfo(void* processHandle, LibPointer* libraryHandle, LibraryData& moduleData)
+void WindowsPlatformFunctions::getModuleInfo(
+    void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)
 {
     if (!libraryHandle)
     {
@@ -111,9 +122,9 @@ void WindowsPlatformFunctions::getModuleInfo(void* processHandle, LibPointer* li
 
     String::value_type temp[MAX_PATH];
     MODULEINFO mi;
-    HMODULE module = static_cast<WindowsLibHandle*>(libraryHandle)->libHandle;
+    HMODULE module = static_cast<WindowsLibHandle *>(libraryHandle)->libHandle;
 
-    GetModuleInformation(processHandle,module,&mi, sizeof(mi));
+    GetModuleInformation(processHandle, module, &mi, sizeof(mi));
     moduleData.basePtr = mi.lpBaseOfDll;
     moduleData.moduleSize = mi.SizeOfImage;
 
@@ -123,28 +134,20 @@ void WindowsPlatformFunctions::getModuleInfo(void* processHandle, LibPointer* li
     moduleData.name = temp;
 }
 
-bool WindowsPlatformFunctions::isSame(const LibPointer* leftHandle, const LibPointer* rightHandle)
+bool WindowsPlatformFunctions::isSame(const LibPointer *leftHandle, const LibPointer *rightHandle)
 {
-    return static_cast<const WindowsLibHandle*>(leftHandle)->libHandle == static_cast<const WindowsLibHandle*>
-        (rightHandle)->libHandle;
+    return static_cast<const WindowsLibHandle *>(leftHandle)->libHandle
+           == static_cast<const WindowsLibHandle *>(rightHandle)->libHandle;
 }
 
-void* WindowsPlatformFunctions::getCurrentThreadHandle()
-{
-    return ::GetCurrentThread();
-}
+void *WindowsPlatformFunctions::getCurrentThreadHandle() { return ::GetCurrentThread(); }
 
-void* WindowsPlatformFunctions::getCurrentProcessHandle()
-{
-    return ::GetCurrentProcess();
-}
+void *WindowsPlatformFunctions::getCurrentProcessHandle() { return ::GetCurrentProcess(); }
 
-void WindowsPlatformFunctions::closeProcessHandle(void* handle)
-{
-    ::CloseHandle((HANDLE)handle);
-}
+void WindowsPlatformFunctions::closeProcessHandle(void *handle) { ::CloseHandle((HANDLE)handle); }
 
-void WindowsPlatformFunctions::getAllModules(void* processHandle, LibPointerPtr* modules, uint32& modulesSize)
+void WindowsPlatformFunctions::getAllModules(
+    void *processHandle, LibPointerPtr *modules, uint32 &modulesSize)
 {
     if (modules == nullptr)
     {
@@ -156,13 +159,14 @@ void WindowsPlatformFunctions::getAllModules(void* processHandle, LibPointerPtr*
     else
     {
         std::vector<HMODULE> mods(modulesSize);
-        EnumProcessModulesEx(processHandle, mods.data(), modulesSize, (LPDWORD)&modulesSize, LIST_MODULES_64BIT);
+        EnumProcessModulesEx(
+            processHandle, mods.data(), modulesSize, (LPDWORD)&modulesSize, LIST_MODULES_64BIT);
         uint32 totalInserts = 0;
         for (HMODULE mod : mods)
         {
             if (mod)
             {
-                modules[totalInserts++] = new WindowsLibHandle(mod,false);
+                modules[totalInserts++] = new WindowsLibHandle(mod, false);
             }
         }
         modulesSize = totalInserts;
@@ -179,13 +183,13 @@ String WindowsPlatformFunctions::getClipboard()
         ::CloseClipboard();
         return NULL;
     }
-    String clipboard{ WCHAR_TO_TCHAR((const WChar*)::GlobalLock(clipboardHnd)) };
+    String clipboard{ WCHAR_TO_TCHAR((const WChar *)::GlobalLock(clipboardHnd)) };
     ::GlobalUnlock(clipboardHnd);
     ::CloseClipboard();
     return clipboard;
 }
 
-bool WindowsPlatformFunctions::setClipboard(const String& text)
+bool WindowsPlatformFunctions::setClipboard(const String &text)
 {
     if (!::OpenClipboard(NULL))
         return false;
@@ -225,30 +229,21 @@ uint32 WindowsPlatformFunctions::getSetBitCount(uint8 value)
     return uint32(::__popcnt16(uint16(value)));
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(uint16 value)
-{
-    return uint32(::__popcnt16(value));
-}
+uint32 WindowsPlatformFunctions::getSetBitCount(uint16 value) { return uint32(::__popcnt16(value)); }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(uint32 value)
-{
-    return uint32(::__popcnt(value));
-}
+uint32 WindowsPlatformFunctions::getSetBitCount(uint32 value) { return uint32(::__popcnt(value)); }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(uint64 value)
-{
-    return uint32(::__popcnt64(value));
-}
+uint32 WindowsPlatformFunctions::getSetBitCount(uint64 value) { return uint32(::__popcnt64(value)); }
 
-bool WindowsPlatformFunctions::createGUID(CBEGuid& outGuid)
+bool WindowsPlatformFunctions::createGUID(CBEGuid &outGuid)
 {
     // GUID uses unsigned long which is of size 8 in GCC and Clang, Will that be a problem?
     // MSVC unsigned long is 4 bytes so doing below static assert
     static_assert(sizeof(GUID) == 16, "GUID is 16byte in current compiler");
-    return ::CoCreateGuid((GUID*)(&outGuid)) == S_OK;
+    return ::CoCreateGuid((GUID *)(&outGuid)) == S_OK;
 }
 
-bool WindowsPlatformFunctions::wcharToUtf8(std::string& outStr, const WChar* wChar)
+bool WindowsPlatformFunctions::wcharToUtf8(std::string &outStr, const WChar *wChar)
 {
     int32 bufLen = ::WideCharToMultiByte(CP_UTF8, 0, wChar, -1, NULL, 0, NULL, NULL);
     outStr.resize(bufLen);
@@ -265,7 +260,7 @@ bool WindowsPlatformFunctions::wcharToUtf8(std::string& outStr, const WChar* wCh
     }
 }
 
-bool WindowsPlatformFunctions::utf8ToWChar(std::wstring& outStr, const AChar* aChar)
+bool WindowsPlatformFunctions::utf8ToWChar(std::wstring &outStr, const AChar *aChar)
 {
     int32 bufLen = ::MultiByteToWideChar(CP_UTF8, 0, aChar, -1, NULL, 0);
     outStr.resize(bufLen);
@@ -282,14 +277,14 @@ bool WindowsPlatformFunctions::utf8ToWChar(std::wstring& outStr, const AChar* aC
     }
 }
 
-bool WindowsPlatformFunctions::toUpper(WChar* inOutStr)
+bool WindowsPlatformFunctions::toUpper(WChar *inOutStr)
 {
-    WChar* retVal = ::CharUpperW(inOutStr);
+    WChar *retVal = ::CharUpperW(inOutStr);
     return inOutStr == retVal;
 }
-bool WindowsPlatformFunctions::toUpper(AChar* inOutStr)
+bool WindowsPlatformFunctions::toUpper(AChar *inOutStr)
 {
-    AChar* retVal = ::CharUpperA(inOutStr);
+    AChar *retVal = ::CharUpperA(inOutStr);
     return inOutStr == retVal;
 }
 WChar WindowsPlatformFunctions::toUpper(WChar ch)
@@ -303,14 +298,14 @@ AChar WindowsPlatformFunctions::toUpper(AChar ch)
     return ch;
 }
 
-bool WindowsPlatformFunctions::toLower(WChar* inOutStr)
+bool WindowsPlatformFunctions::toLower(WChar *inOutStr)
 {
-    WChar* retVal = ::CharLowerW(inOutStr);
+    WChar *retVal = ::CharLowerW(inOutStr);
     return inOutStr == retVal;
 }
-bool WindowsPlatformFunctions::toLower(AChar* inOutStr)
+bool WindowsPlatformFunctions::toLower(AChar *inOutStr)
 {
-    AChar* retVal = ::CharLowerA(inOutStr);
+    AChar *retVal = ::CharLowerA(inOutStr);
     return inOutStr == retVal;
 }
 WChar WindowsPlatformFunctions::toLower(WChar ch)
@@ -324,4 +319,3 @@ AChar WindowsPlatformFunctions::toLower(AChar ch)
     dword processedLen = ::CharLowerBuffA(&ch, 1);
     return ch;
 }
-

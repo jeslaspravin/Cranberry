@@ -34,18 +34,21 @@ struct SourceGeneratorContext
 };
 
 class SourceGenerator
-{    
+{
 private:
-    // For each source there will be one entry here to hold all the context necessary to generate reflection header and source
-    std::unordered_map<const SourceInformation*, SourceGeneratorContext> sourceToGenCntxt;
-    // If any generation failed then this will be true, This flags is to continue generating even when some sources fails
+    // For each source there will be one entry here to hold all the context necessary to generate
+    // reflection header and source
+    std::unordered_map<const SourceInformation *, SourceGeneratorContext> sourceToGenCntxt;
+    // If any generation failed then this will be true, This flags is to continue generating even when
+    // some sources fails
     bool bHasAnyError = false;
     FORCE_INLINE static std::vector<String> getTemplateFiles();
+
 public:
-    void initialize(const ModuleSources* sources);
+    void initialize(const ModuleSources *sources);
     void parseSources();
     void writeGeneratedFiles();
     // Return true if no error
-    bool generatedSources(std::vector<const SourceInformation*>& outGeneratedSrcs) const;
+    bool generatedSources(std::vector<const SourceInformation *> &outGeneratedSrcs) const;
     static bool isTemplatesModified();
 };

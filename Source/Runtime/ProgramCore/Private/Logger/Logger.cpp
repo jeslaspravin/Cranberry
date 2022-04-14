@@ -21,7 +21,7 @@
 #define SKIP_CAT_IN_CONSOLE 1
 #endif // LOG_TO_CONSOLE
 
-OStringStream& Logger::loggerBuffer()
+OStringStream &Logger::loggerBuffer()
 {
     static OStringStream buffer(std::ios_base::trunc);
     return buffer;
@@ -29,7 +29,7 @@ OStringStream& Logger::loggerBuffer()
 
 struct LogFileDeleter
 {
-    void operator()(GenericFile* filePtr) const noexcept
+    void operator()(GenericFile *filePtr) const noexcept
     {
         Logger::flushStream();
         filePtr->closeFile();
@@ -38,14 +38,15 @@ struct LogFileDeleter
 };
 using LogFileUniquePtr = UniquePtr<GenericFile, LogFileDeleter>;
 
-GenericFile* Logger::getLogFile()
+GenericFile *Logger::getLogFile()
 {
     static LogFileUniquePtr logFile;
 
     if (!logFile)
     {
         String logFileName;
-        String logFolderPath = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
+        String logFolderPath
+            = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
         if (ProgramCmdLine::get()->hasArg(TCHAR("--logFileName")))
         {
             ProgramCmdLine::get()->getArg(logFileName, TCHAR("--logFileName"));
@@ -55,17 +56,18 @@ GenericFile* Logger::getLogFile()
         String logFilePath = PathFunctions::combinePath(logFolderPath, logFileName + TCHAR(".log"));
         PlatformFile checkFile{ logFilePath };
 
-        if (checkFile.exists()) 
+        if (checkFile.exists())
         {
             uint64 lastWrite = checkFile.lastWriteTimeStamp();
             String renameTo = StringFormat::format(TCHAR("%s-%llu.log"), logFileName, lastWrite);
             checkFile.renameFile(renameTo);
 
             // Remove or clear old logs
-            std::vector<String> oldLogFiles = FileSystemFunctions::listFiles(logFolderPath, false, logFileName + TCHAR("-*.log"));
+            std::vector<String> oldLogFiles
+                = FileSystemFunctions::listFiles(logFolderPath, false, logFileName + TCHAR("-*.log"));
             if (oldLogFiles.size() > 10)
             {
-                for (String& oldFile : oldLogFiles)
+                for (String &oldFile : oldLogFiles)
                 {
                     oldFile = PathFunctions::fileOrDirectoryName(oldFile);
                 }
@@ -76,7 +78,6 @@ GenericFile* Logger::getLogFile()
                     PlatformFile(PathFunctions::combinePath(logFolderPath, oldLogFiles[i])).deleteFile();
                 }
             }
-
         }
 
         logFile = LogFileUniquePtr(new PlatformFile(logFilePath));
@@ -91,13 +92,13 @@ GenericFile* Logger::getLogFile()
     return &(*logFile);
 }
 
-std::vector<uint8>& Logger::muteFlags()
+std::vector<uint8> &Logger::muteFlags()
 {
     static std::vector<uint8> serverityMuteFlags = { 0 };
     return serverityMuteFlags;
 }
 
-void Logger::debugInternal(const TChar* category, const String& message)
+void Logger::debugInternal(const TChar *category, const String &message)
 {
 #if DEV_BUILD
     static const String CATEGORY{ TCHAR("[DEBUG]") };
@@ -106,7 +107,7 @@ void Logger::debugInternal(const TChar* category, const String& message)
         return;
     }
 
-    OStringStream& stream = loggerBuffer();
+    OStringStream &stream = loggerBuffer();
     stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
     COUT
@@ -118,7 +119,7 @@ void Logger::debugInternal(const TChar* category, const String& message)
 #endif // DEV_BUILD
 }
 
-void Logger::logInternal(const TChar* category, const String& message)
+void Logger::logInternal(const TChar *category, const String &message)
 {
     static const String CATEGORY{ TCHAR("[LOG]") };
     if (BIT_SET(muteFlags().back(), ELogServerity::Log))
@@ -126,7 +127,7 @@ void Logger::logInternal(const TChar* category, const String& message)
         return;
     }
 
-    OStringStream& stream = loggerBuffer();
+    OStringStream &stream = loggerBuffer();
     stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
     COUT
@@ -137,7 +138,7 @@ void Logger::logInternal(const TChar* category, const String& message)
 #endif // LOG_TO_CONSOLE
 }
 
-void Logger::warnInternal(const TChar* category, const String& message)
+void Logger::warnInternal(const TChar *category, const String &message)
 {
     static const String CATEGORY{ TCHAR("[WARN]") };
     if (BIT_SET(muteFlags().back(), ELogServerity::Warning))
@@ -145,7 +146,7 @@ void Logger::warnInternal(const TChar* category, const String& message)
         return;
     }
 
-    OStringStream& stream = loggerBuffer();
+    OStringStream &stream = loggerBuffer();
     stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
     CERR
@@ -156,7 +157,7 @@ void Logger::warnInternal(const TChar* category, const String& message)
 #endif // LOG_TO_CONSOLE
 }
 
-void Logger::errorInternal(const TChar* category, const String& message)
+void Logger::errorInternal(const TChar *category, const String &message)
 {
     static const String CATEGORY{ TCHAR("[ERROR]") };
     if (BIT_SET(muteFlags().back(), ELogServerity::Error))
@@ -164,7 +165,7 @@ void Logger::errorInternal(const TChar* category, const String& message)
         return;
     }
 
-    OStringStream& stream = loggerBuffer();
+    OStringStream &stream = loggerBuffer();
     stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
     CERR
@@ -177,20 +178,18 @@ void Logger::errorInternal(const TChar* category, const String& message)
 
 void Logger::flushStream()
 {
-    GenericFile* logFile = getLogFile();
+    GenericFile *logFile = getLogFile();
     auto str = loggerBuffer().str();
     if (!str.empty() && logFile)
     {
         std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
-        logFile->write(ArrayView<const uint8>(reinterpret_cast<uint8*>(utf8str.data()), uint32(utf8str.length())));
+        logFile->write(
+            ArrayView<const uint8>(reinterpret_cast<uint8 *>(utf8str.data()), uint32(utf8str.length())));
         loggerBuffer().str({});
     }
 }
 
-void Logger::pushMuteSeverities(uint8 muteSeverities)
-{
-    muteFlags().push_back(muteSeverities);
-}
+void Logger::pushMuteSeverities(uint8 muteSeverities) { muteFlags().push_back(muteSeverities); }
 
 void Logger::popMuteSeverities()
 {

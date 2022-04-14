@@ -11,9 +11,9 @@
 
 #pragma once
 
+#include "RenderApi/ResourcesInterface/IRenderResource.h"
 #include "TexturesBase.h"
 #include "Types/Colors.h"
-#include "RenderApi/ResourcesInterface/IRenderResource.h"
 
 enum class ECubeTextureFormat
 {
@@ -30,12 +30,15 @@ struct CubeTextureCreateParams : public TextureBaseCreateParams
     uint32 mipCount = 0;
 };
 
-class CubeTexture : public TextureBase, public IRenderMemoryResource
+class CubeTexture
+    : public TextureBase
+    , public IRenderMemoryResource
 {
 private:
 private:
-    static void init(CubeTexture* texture);
-    static void destroy(CubeTexture* texture);
+    static void init(CubeTexture *texture);
+    static void destroy(CubeTexture *texture);
+
 protected:
     CubeTexture() = default;
     ~CubeTexture() = default;
@@ -43,11 +46,12 @@ protected:
     void reinitResources() override;
 
     static EPixelDataFormat::Type determineDataFormat(ECubeTextureFormat dataFormat);
+
 public:
     uint32 getMipCount() const;
 
-    static CubeTexture* createTexture(const CubeTextureCreateParams& createParams);
-    static void destroyTexture(CubeTexture* cubeTexture);
+    static CubeTexture *createTexture(const CubeTextureCreateParams &createParams);
+    static void destroyTexture(CubeTexture *cubeTexture);
 
     /* IRenderMemoryResource overrides */
     ReferenceCountPtr<MemoryResource> renderResource() const final { return { textureResource }; }
@@ -67,14 +71,17 @@ class CubeTextureRW : public CubeTexture
 {
 private:
     bool bWriteOnly = false;
+
 private:
-    static void init(CubeTextureRW* texture);
+    static void init(CubeTextureRW *texture);
+
 protected:
     CubeTextureRW() = default;
     ~CubeTextureRW() = default;
 
     void reinitResources() override;
+
 public:
-    static CubeTextureRW* createTexture(const CubeTextureRWCreateParams& createParams);
-    static void destroyTexture(CubeTextureRW* cubeTexture);
+    static CubeTextureRW *createTexture(const CubeTextureRWCreateParams &createParams);
+    static void destroyTexture(CubeTextureRW *cubeTexture);
 };

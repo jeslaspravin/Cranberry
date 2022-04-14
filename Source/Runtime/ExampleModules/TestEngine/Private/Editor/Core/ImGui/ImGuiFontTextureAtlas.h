@@ -17,19 +17,20 @@ struct ImGuiContext;
 
 struct ImGuiFontTextureParams : public TextureBaseCreateParams
 {
-    ImGuiContext* owningContext;
+    ImGuiContext *owningContext;
 };
 
 // Texture 2Ds are texture that will be static and gets created from certain data
 class ImGuiFontTextureAtlas : public TextureBase
 {
 private:
-    ImGuiContext* owningContext;
+    ImGuiContext *owningContext;
     std::vector<Color> rawData;
 
 public:
-    static ImGuiFontTextureAtlas* createTexture(const ImGuiFontTextureParams& createParams);
-    static void destroyTexture(ImGuiFontTextureAtlas* textureAtlas);
+    static ImGuiFontTextureAtlas *createTexture(const ImGuiFontTextureParams &createParams);
+    static void destroyTexture(ImGuiFontTextureAtlas *textureAtlas);
+
 protected:
     ImGuiFontTextureAtlas() = default;
     ~ImGuiFontTextureAtlas() = default;
@@ -37,8 +38,8 @@ protected:
     void reinitResources() override;
 
 private:
-    static void init(ImGuiFontTextureAtlas* texture);
-    static void destroy(ImGuiFontTextureAtlas* texture);
+    static void init(ImGuiFontTextureAtlas *texture);
+    static void destroy(ImGuiFontTextureAtlas *texture);
 
     void generateImGuiTexture();
 };

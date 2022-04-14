@@ -10,12 +10,13 @@
  */
 
 #include "RenderInterface/ShaderCore/ShaderObjectFactory.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
+#include "RenderInterface/ShaderCore/ShaderObject.h"
 #include "RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
-#include "RenderInterface/ShaderCore/ShaderObject.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 
-ShaderObjectBase* ShaderObjectFactory::create(const String& shaderName, const ShaderResource* shader) const
+ShaderObjectBase *ShaderObjectFactory::create(
+    const String &shaderName, const ShaderResource *shader) const
 {
     if (shader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>())
     {

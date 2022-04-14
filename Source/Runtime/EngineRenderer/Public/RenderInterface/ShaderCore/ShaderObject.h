@@ -14,11 +14,11 @@
 #include <set>
 #include <unordered_map>
 
-#include "String/String.h"
+#include "EngineRendererExports.h"
 #include "RenderApi/VertexData.h"
 #include "RenderInterface/Rendering/FramebufferTypes.h"
 #include "RenderInterface/ShaderCore/ShaderInputOutput.h"
-#include "EngineRendererExports.h"
+#include "String/String.h"
 
 class GraphicsResourceType;
 class ShaderResource;
@@ -38,35 +38,37 @@ private:
     String shaderName;
 
 protected:
-    ShaderObjectBase(const String& sName);
+    ShaderObjectBase(const String &sName);
+
 public:
     virtual ~ShaderObjectBase() = default;
 
-    const String& getShaderName() const { return shaderName; }
+    const String &getShaderName() const { return shaderName; }
 
-    virtual const GraphicsResourceType* baseShaderType() const = 0;
-    virtual void preparePipelineCache(PipelineCacheBase* pipelineCache) const = 0;
+    virtual const GraphicsResourceType *baseShaderType() const = 0;
+    virtual void preparePipelineCache(PipelineCacheBase *pipelineCache) const = 0;
 };
 
 /**
-* DrawMeshShaderObject - Encapsulates a shader's related objects like all shader resource that are this shader
-* but belonging to different vertex type and render passes
-*
-* @author Jeslas Pravin
-*
-* @date June 2020
-*/
+ * DrawMeshShaderObject - Encapsulates a shader's related objects like all shader resource that are this
+ * shader but belonging to different vertex type and render passes
+ *
+ * @author Jeslas Pravin
+ *
+ * @date June 2020
+ */
 class ENGINERENDERER_EXPORT DrawMeshShaderObject final : public ShaderObjectBase
 {
 public:
     struct ShaderResourceInfo
     {
-        const ShaderResource* shader;
-        GraphicsPipelineBase* pipeline;
+        const ShaderResource *shader;
+        GraphicsPipelineBase *pipeline;
         // In set 3
-        GraphicsResource* perVariantParamsLayout;
+        GraphicsResource *perVariantParamsLayout;
     };
     using ShaderResourceList = std::vector<ShaderResourceInfo>;
+
 private:
     using ShaderResourcesIterator = ShaderResourceList::iterator;
     using ShaderResourcesConstIterator = ShaderResourceList::const_iterator;
@@ -78,56 +80,61 @@ private:
     std::unordered_map<FramebufferFormat, std::set<int32>> shadersForRenderPass;
 
 public:
-    DrawMeshShaderObject(const String& sName);
+    DrawMeshShaderObject(const String &sName);
     ~DrawMeshShaderObject();
 
-    const ShaderResource* getShader(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat
-        , GraphicsPipelineBase** outGraphicsPipeline = nullptr) const;
-    GraphicsResource* getVariantUniqueParamsLayout(EVertexType::Type inputVertexType, const FramebufferFormat& outputBufferFormat) const;
-    const ShaderResourceList& getAllShaders() const;
+    const ShaderResource *getShader(EVertexType::Type inputVertexType,
+        const FramebufferFormat &outputBufferFormat,
+        GraphicsPipelineBase **outGraphicsPipeline = nullptr) const;
+    GraphicsResource *getVariantUniqueParamsLayout(
+        EVertexType::Type inputVertexType, const FramebufferFormat &outputBufferFormat) const;
+    const ShaderResourceList &getAllShaders() const;
 
     // Internal use functions
-    void addShader(const ShaderResource* shaderResource);
-    void setPipeline(const ShaderResource* shaderResource, GraphicsPipelineBase* graphicsPipeline);
-    void setVariantParamsLayout(const ShaderResource* shaderResource, GraphicsResource* perVariantParamsLayout);
+    void addShader(const ShaderResource *shaderResource);
+    void setPipeline(const ShaderResource *shaderResource, GraphicsPipelineBase *graphicsPipeline);
+    void setVariantParamsLayout(
+        const ShaderResource *shaderResource, GraphicsResource *perVariantParamsLayout);
 
     /* ShaderObjectBase overrides */
-    const GraphicsResourceType* baseShaderType() const final;
-    void preparePipelineCache(PipelineCacheBase* pipelineCache) const final;
+    const GraphicsResourceType *baseShaderType() const final;
+    void preparePipelineCache(PipelineCacheBase *pipelineCache) const final;
 
     /* Override ends */
 };
 
 /**
-* UniqueUtilityShaderObject - Encapsulates a single permutation shader and all the pipelines that are for this shader
-* but corresponding to different render pass attachment format or multi sample rate
-*
-* @author Jeslas Pravin
-*
-* @date July 2020
-*/
+ * UniqueUtilityShaderObject - Encapsulates a single permutation shader and all the pipelines that are
+ * for this shader but corresponding to different render pass attachment format or multi sample rate
+ *
+ * @author Jeslas Pravin
+ *
+ * @date July 2020
+ */
 class ENGINERENDERER_EXPORT UniqueUtilityShaderObject final : public ShaderObjectBase
 {
 private:
-    const ShaderResource* utilityShader;
+    const ShaderResource *utilityShader;
 
     GenericRenderPassProperties defaultPipelineProps;
-    std::unordered_map<GenericRenderPassProperties, GraphicsPipelineBase*> graphicsPipelines;
+    std::unordered_map<GenericRenderPassProperties, GraphicsPipelineBase *> graphicsPipelines;
+
 public:
-    UniqueUtilityShaderObject(const String& sName, const ShaderResource* shaderResource);
+    UniqueUtilityShaderObject(const String &sName, const ShaderResource *shaderResource);
     ~UniqueUtilityShaderObject();
 
-    const ShaderResource* getShader() const;
-    GraphicsPipelineBase* getPipeline(const GenericRenderPassProperties& renderpassProps) const;
-    GraphicsPipelineBase* getDefaultPipeline() const;
-    std::vector<const GraphicsPipelineBase*> getAllPipelines() const;
+    const ShaderResource *getShader() const;
+    GraphicsPipelineBase *getPipeline(const GenericRenderPassProperties &renderpassProps) const;
+    GraphicsPipelineBase *getDefaultPipeline() const;
+    std::vector<const GraphicsPipelineBase *> getAllPipelines() const;
 
     // Internal use functions
-    void setPipeline(const GenericRenderPassProperties& renderpassProps, GraphicsPipelineBase* graphicsPipeline);
+    void setPipeline(
+        const GenericRenderPassProperties &renderpassProps, GraphicsPipelineBase *graphicsPipeline);
 
     /* ShaderObjectBase overrides */
-    const GraphicsResourceType* baseShaderType() const final;
-    void preparePipelineCache(PipelineCacheBase* pipelineCache) const final;
+    const GraphicsResourceType *baseShaderType() const final;
+    void preparePipelineCache(PipelineCacheBase *pipelineCache) const final;
 
     /* Override ends */
 };
@@ -135,21 +142,22 @@ public:
 class ENGINERENDERER_EXPORT ComputeShaderObject final : public ShaderObjectBase
 {
 private:
-    const ShaderResource* computeShader;
-    ComputePipelineBase* computePipeline;
+    const ShaderResource *computeShader;
+    ComputePipelineBase *computePipeline;
+
 public:
-    ComputeShaderObject(const String& sName, const ShaderResource* shaderResource);
+    ComputeShaderObject(const String &sName, const ShaderResource *shaderResource);
     ~ComputeShaderObject();
 
-    const ShaderResource* getShader() const;
-    ComputePipelineBase* getPipeline() const;
+    const ShaderResource *getShader() const;
+    ComputePipelineBase *getPipeline() const;
 
     // Internal use functions
-    void setPipeline(ComputePipelineBase* pipeline);
+    void setPipeline(ComputePipelineBase *pipeline);
 
     /* ShaderObjectBase overrides */
-    const GraphicsResourceType* baseShaderType() const final;
-    void preparePipelineCache(PipelineCacheBase* pipelineCache) const final;
+    const GraphicsResourceType *baseShaderType() const final;
+    void preparePipelineCache(PipelineCacheBase *pipelineCache) const final;
 
     /* Override ends */
 };

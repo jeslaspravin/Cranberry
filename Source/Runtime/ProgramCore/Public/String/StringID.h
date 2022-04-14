@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "Types/xxHash/xxHashInclude.hpp"
 #include "Serialization/ArchiveBase.h"
+#include "Types/xxHash/xxHashInclude.hpp"
 
 #if DEV_BUILD
 #define STRINGID_FUNCQUALIFIER FORCE_INLINE
@@ -24,43 +24,45 @@
 #define STRINGID_HASHFUNC xxHash::hashString
 #endif // !STRINGID_HASHFUNC
 
-
 class StringID;
 inline namespace Literals
 {
-    NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid(const TChar * str, SizeT len) noexcept;
+NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid(const TChar *str, SizeT len) noexcept;
 }
 template <IsArchiveType ArchiveType>
-ArchiveType& operator<<(ArchiveType& archive, StringID& value);
+ArchiveType &operator<<(ArchiveType &archive, StringID &value);
 
 class PROGRAMCORE_EXPORT StringID
 {
 public:
     using IDType = uint32;
+
 private:
     IDType id;
 
-    friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid(const TChar * str, SizeT len) noexcept;
+    friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid(
+        const TChar *str, SizeT len) noexcept;
     template <IsArchiveType ArchiveType>
-    friend ArchiveType& operator<<(ArchiveType& archive, StringID& value);
+    friend ArchiveType &operator<<(ArchiveType &archive, StringID &value);
 
     CONST_INIT static const IDType Seed = STRINGID_HASHFUNC(TCHAR("Cranberry_StringID"), IDType(0));
+
 public:
     static const StringID INVALID;
-private:
 
+private:
 #if DEV_BUILD
     // Holds pointer to debugStringsDB which will be used by debug to visualize string
-    const std::unordered_map<StringID::IDType, String>* debugStrings = nullptr;
-    static std::unordered_map<IDType, String>& debugStringDB();
+    const std::unordered_map<StringID::IDType, String> *debugStrings = nullptr;
+    static std::unordered_map<IDType, String> &debugStringDB();
     template <typename StrType>
-    void insertDbgStr(StrType&& str)
+    void insertDbgStr(StrType &&str)
     {
         debugStringDB().insert({ id, std::forward<StrType>(str) });
         debugStrings = &debugStringDB();
     }
 
-    StringID(IDType strId, const TChar* debugStr, SizeT len)
+    StringID(IDType strId, const TChar *debugStr, SizeT len)
         : id(strId)
     {
         insertDbgStr(String(debugStr, len));
@@ -71,71 +73,66 @@ private:
     {}
 
     template <typename StrType>
-    CONST_EXPR void insertDbgStr(StrType&&){}
+    CONST_EXPR void insertDbgStr(StrType &&)
+    {}
 #endif
 
-    STRINGID_FUNCQUALIFIER void initFromAChar(const AChar* str)
+    STRINGID_FUNCQUALIFIER void initFromAChar(const AChar *str)
     {
         id = STRINGID_HASHFUNC(str, Seed);
         insertDbgStr(String(UTF8_TO_TCHAR(str)));
     }
+
 public:
     CONST_EXPR StringID() = default;
-    CONST_EXPR StringID(const StringID&) = default;
-    CONST_EXPR StringID(StringID&&) = default;
-    CONST_EXPR StringID& operator=(const StringID&) = default;
-    CONST_EXPR StringID& operator=(StringID&&) = default;
+    CONST_EXPR StringID(const StringID &) = default;
+    CONST_EXPR StringID(StringID &&) = default;
+    CONST_EXPR StringID &operator=(const StringID &) = default;
+    CONST_EXPR StringID &operator=(StringID &&) = default;
 
-    CONST_EXPR explicit StringID(EInitType) : id(0) {}
+    CONST_EXPR explicit StringID(EInitType)
+        : id(0)
+    {}
     // Additional constructors
-    FORCE_INLINE StringID(const String& str)
+    FORCE_INLINE StringID(const String &str)
         : id(STRINGID_HASHFUNC(str, Seed))
     {
         insertDbgStr(str);
     }
     STRINGID_FUNCQUALIFIER
-    StringID(const AChar* str, SizeT len)
-        : id(STRINGID_HASHFUNC(str, IDType(len) , Seed))
+    StringID(const AChar *str, SizeT len)
+        : id(STRINGID_HASHFUNC(str, IDType(len), Seed))
     {
         insertDbgStr(String(str, len));
     }
     STRINGID_FUNCQUALIFIER
-    StringID(const AChar* str)
-    {
-        initFromAChar(str);
-    }
+    StringID(const AChar *str) { initFromAChar(str); }
     STRINGID_FUNCQUALIFIER
-    StringID(const WChar* str)
-    {
-        initFromAChar(TCHAR_TO_UTF8(WCHAR_TO_TCHAR(str)));
-    }
+    StringID(const WChar *str) { initFromAChar(TCHAR_TO_UTF8(WCHAR_TO_TCHAR(str))); }
     // Additional assignments
-    FORCE_INLINE StringID& operator=(const String& str)
+    FORCE_INLINE StringID &operator=(const String &str)
     {
         id = STRINGID_HASHFUNC(str, Seed);
         insertDbgStr(str);
         return *this;
     }
-    STRINGID_FUNCQUALIFIER StringID& operator=(const AChar* str)
+    STRINGID_FUNCQUALIFIER StringID &operator=(const AChar *str)
     {
         initFromAChar(str);
         return *this;
     }
-    STRINGID_FUNCQUALIFIER StringID& operator=(const WChar* str)
+    STRINGID_FUNCQUALIFIER StringID &operator=(const WChar *str)
     {
         initFromAChar(TCHAR_TO_UTF8(WCHAR_TO_TCHAR(str)));
         return *this;
     }
     // Equality
-    CONST_EXPR std::strong_ordering operator<=>(const StringID& rhs) const noexcept
+    CONST_EXPR std::strong_ordering operator<=>(const StringID &rhs) const noexcept
     {
         return id <=> rhs.id;
     }
     // Since the == operator is necessary even though spaceship is defined for hash map
-    CONST_EXPR bool operator==(const StringID& rhs) const noexcept
-    {
-        return id == rhs.id;
-    }
+    CONST_EXPR bool operator==(const StringID &rhs) const noexcept { return id == rhs.id; }
 
     /**
      * toString will return id integer as string in release build
@@ -150,53 +147,40 @@ public:
             return String::toString(id);
         }
         return itr->second;
-#else // DEV_BUILD
+#else  // DEV_BUILD
         return String::toString(id);
 #endif // DEV_BUILD
     }
 
-    FORCE_INLINE IDType getID() const noexcept
-    {
-        return id;
-    }
-    FORCE_INLINE bool isValid() const noexcept
-    {
-        return id != 0;
-    }
-    FORCE_INLINE explicit operator IDType() const noexcept
-    {
-        return id;
-    }
+    FORCE_INLINE IDType getID() const noexcept { return id; }
+    FORCE_INLINE bool isValid() const noexcept { return id != 0; }
+    FORCE_INLINE explicit operator IDType() const noexcept { return id; }
 };
 
-#define STRID(CharStr) TCHAR(CharStr)_sid
+#define STRID(CharStr) COMBINE(TCHAR(CharStr), _sid)
 
 inline namespace Literals
 {
-    NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid(const TChar * str, SizeT len) noexcept
-    {
+NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid(const TChar *str, SizeT len) noexcept
+{
 #if DEV_BUILD
-        return StringID(STRINGID_HASHFUNC(str, StringID::IDType(len), StringID::Seed), str, len);
-#else // DEV_BUILD
-        return StringID(STRINGID_HASHFUNC(str, StringID::IDType(len), StringID::Seed));
+    return StringID(STRINGID_HASHFUNC(str, StringID::IDType(len), StringID::Seed), str, len);
+#else  // DEV_BUILD
+    return StringID(STRINGID_HASHFUNC(str, StringID::IDType(len), StringID::Seed));
 #endif // DEV_BUILD
-    }
 }
+} // namespace Literals
 
 template <>
 struct PROGRAMCORE_EXPORT std::hash<StringID>
 {
-    NODISCARD SizeT operator()(const StringID& keyval) const noexcept 
-    {
-        return keyval.getID();
-    }
+    NODISCARD SizeT operator()(const StringID &keyval) const noexcept { return keyval.getID(); }
 };
 
 template <IsArchiveType ArchiveType>
-ArchiveType& operator<<(ArchiveType& archive, StringID& value)
+ArchiveType &operator<<(ArchiveType &archive, StringID &value)
 {
     return archive << value.id;
 }
-
 
 #undef STRINGID_FUNCQUALIFIER
