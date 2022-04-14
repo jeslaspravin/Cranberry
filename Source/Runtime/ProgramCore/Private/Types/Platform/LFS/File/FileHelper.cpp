@@ -9,55 +9,52 @@
  *  License can be read in LICENSE file at this repository's root
  */
 #include "Types/Platform/LFS/File/FileHelper.h"
+#include "Types/Containers/ArrayView.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/PlatformFunctions.h"
-#include "Types/Containers/ArrayView.h"
 
 // Encoding BOM(Byte Order Mark) https://docs.microsoft.com/en-us/globalization/encoding/byte-order-mark
-bool FileHelper::isUtf8(const std::vector<uint8>& byteStream)
+bool FileHelper::isUtf8(const std::vector<uint8> &byteStream)
 {
     // If BOM marked or is not other choices
-    return isUtf8Bom(byteStream) || !(isUtf16BEBom(byteStream) || isUtf16LEBom(byteStream) 
-        || isUtf32BEBom(byteStream) || isUtf32LEBom(byteStream));
+    return isUtf8Bom(byteStream)
+           || !(isUtf16BEBom(byteStream) || isUtf16LEBom(byteStream) || isUtf32BEBom(byteStream)
+                || isUtf32LEBom(byteStream));
 }
 
-bool FileHelper::isUtf8Bom(const std::vector<uint8>& byteStream)
+bool FileHelper::isUtf8Bom(const std::vector<uint8> &byteStream)
 {
-    return (byteStream.size() > 3 && byteStream[0] == 0xEF && byteStream[1] == 0xBB && byteStream[2] == 0xBF);
+    return (byteStream.size() > 3 && byteStream[0] == 0xEF && byteStream[1] == 0xBB
+            && byteStream[2] == 0xBF);
 }
 
-bool FileHelper::isUtf16LEBom(const std::vector<uint8>& byteStream)
+bool FileHelper::isUtf16LEBom(const std::vector<uint8> &byteStream)
 {
     // Has at least 2 header length and size if not odd
-    return (byteStream.size() > 2 && !(byteStream.size() & 1)
-        && byteStream[0] == 0xFF && byteStream[1] == 0xFE);
+    return (byteStream.size() > 2 && !(byteStream.size() & 1) && byteStream[0] == 0xFF
+            && byteStream[1] == 0xFE);
 }
 
-bool FileHelper::isUtf16BEBom(const std::vector<uint8>& byteStream)
+bool FileHelper::isUtf16BEBom(const std::vector<uint8> &byteStream)
 {
-    return (byteStream.size() > 2 && !(byteStream.size() & 1)
-        && byteStream[0] == 0xFE && byteStream[1] == 0xFF);
+    return (byteStream.size() > 2 && !(byteStream.size() & 1) && byteStream[0] == 0xFE
+            && byteStream[1] == 0xFF);
 }
 
-bool FileHelper::isUtf32LEBom(const std::vector<uint8>& byteStream)
+bool FileHelper::isUtf32LEBom(const std::vector<uint8> &byteStream)
 {
-    return (byteStream.size() > 4 && !(byteStream.size() & 1)
-        && byteStream[0] == 0xFF && byteStream[1] == 0xFE
-        && byteStream[2] == 0x00 && byteStream[3] == 0x00);
+    return (byteStream.size() > 4 && !(byteStream.size() & 1) && byteStream[0] == 0xFF
+            && byteStream[1] == 0xFE && byteStream[2] == 0x00 && byteStream[3] == 0x00);
 }
 
-bool FileHelper::isUtf32BEBom(const std::vector<uint8>& byteStream)
+bool FileHelper::isUtf32BEBom(const std::vector<uint8> &byteStream)
 {
-    return (byteStream.size() > 4 && !(byteStream.size() & 1)
-        && byteStream[0] == 0x00 && byteStream[1] == 0x00
-        && byteStream[2] == 0xFE && byteStream[3] == 0xFF);
+    return (byteStream.size() > 4 && !(byteStream.size() & 1) && byteStream[0] == 0x00
+            && byteStream[1] == 0x00 && byteStream[2] == 0xFE && byteStream[3] == 0xFF);
 }
 
 // #TODO(Jeslas) : Replace this with compiler intrinsics if available
-uint16 FileHelper::bytesSwap(uint16 value)
-{
-    return (value << 8) | (value >> 8);
-}
+uint16 FileHelper::bytesSwap(uint16 value) { return (value << 8) | (value >> 8); }
 
 uint32 FileHelper::bytesSwap(uint32 value)
 {
@@ -72,9 +69,9 @@ uint64 FileHelper::bytesSwap(uint64 value)
     return (value >> 32) | (value << 32);
 }
 
-void FileHelper::bytesSwap(void* ptr, SizeT length)
+void FileHelper::bytesSwap(void *ptr, SizeT length)
 {
-    uint8* bytePtr = (uint8*)ptr;
+    uint8 *bytePtr = (uint8 *)ptr;
     SizeT front = 0;
     SizeT back = length - 1;
     while (front < back)
@@ -83,7 +80,7 @@ void FileHelper::bytesSwap(void* ptr, SizeT length)
     }
 }
 
-bool FileHelper::readString(String& outStr, const String& fileName)
+bool FileHelper::readString(String &outStr, const String &fileName)
 {
     std::vector<uint8> bytes;
     PlatformFile file(fileName);
@@ -106,7 +103,7 @@ bool FileHelper::readString(String& outStr, const String& fileName)
         // If endian do not match swap it
         for (uint64 i = 0; i < bytes.size(); i += 2)
         {
-            uint16& charRef = *(uint16*)(&bytes[i]);
+            uint16 &charRef = *(uint16 *)(&bytes[i]);
             charRef = bytesSwap(charRef);
         }
 #endif
@@ -120,21 +117,21 @@ bool FileHelper::readString(String& outStr, const String& fileName)
         // If endian do not match swap it
         for (uint64 i = 0; i < bytes.size(); i += 2)
         {
-            uint16& charRef = *(uint16*)(&bytes[i]);
+            uint16 &charRef = *(uint16 *)(&bytes[i]);
             charRef = bytesSwap(charRef);
         }
 #endif
         // Insert 2 null terminated characters
         bytes.insert(bytes.end(), 2, 0);
         outStr = UTF16_TO_TCHAR(&bytes[2]);
-    } 
+    }
     else if (isUtf32LEBom(bytes)) // Who wants to store in utf32? Right? rightttt?
     {
 #if BIG_ENDIAN
         // If endian do not match swap it
         for (uint64 i = 0; i < bytes.size(); i += 4)
         {
-            uint32& charRef = *(uint32*)(&bytes[i]);
+            uint32 &charRef = *(uint32 *)(&bytes[i]);
             charRef = bytesSwap(charRef);
         }
 #endif
@@ -148,7 +145,7 @@ bool FileHelper::readString(String& outStr, const String& fileName)
         // If endian do not match swap it
         for (uint64 i = 0; i < bytes.size(); i += 4)
         {
-            uint32& charRef = *(uint32*)(&bytes[i]);
+            uint32 &charRef = *(uint32 *)(&bytes[i]);
             charRef = bytesSwap(charRef);
         }
 #endif
@@ -165,7 +162,7 @@ bool FileHelper::readString(String& outStr, const String& fileName)
     return true;
 }
 
-bool FileHelper::readUtf8String(std::string& outStr, const String& fileName)
+bool FileHelper::readUtf8String(std::string &outStr, const String &fileName)
 {
     std::vector<uint8> bytes;
     PlatformFile file(fileName);
@@ -188,7 +185,7 @@ bool FileHelper::readUtf8String(std::string& outStr, const String& fileName)
         // If endian do not match swap it
         for (uint64 i = 0; i < bytes.size(); i += 2)
         {
-            uint16& charRef = *(uint16*)(&bytes[i]);
+            uint16 &charRef = *(uint16 *)(&bytes[i]);
             charRef = bytesSwap(charRef);
         }
 #endif
@@ -200,7 +197,7 @@ bool FileHelper::readUtf8String(std::string& outStr, const String& fileName)
         // If endian do not match swap it
         for (uint64 i = 0; i < bytes.size(); i += 2)
         {
-            uint16& charRef = *(uint16*)(&bytes[i]);
+            uint16 &charRef = *(uint16 *)(&bytes[i]);
             charRef = bytesSwap(charRef);
         }
 #endif
@@ -212,7 +209,7 @@ bool FileHelper::readUtf8String(std::string& outStr, const String& fileName)
         // If endian do not match swap it
         for (uint64 i = 0; i < bytes.size(); i += 4)
         {
-            uint32& charRef = *(uint32*)(&bytes[i]);
+            uint32 &charRef = *(uint32 *)(&bytes[i]);
             charRef = bytesSwap(charRef);
         }
 #endif
@@ -224,7 +221,7 @@ bool FileHelper::readUtf8String(std::string& outStr, const String& fileName)
         // If endian do not match swap it
         for (uint64 i = 0; i < bytes.size(); i += 4)
         {
-            uint32& charRef = *(uint32*)(&bytes[i]);
+            uint32 &charRef = *(uint32 *)(&bytes[i]);
             charRef = bytesSwap(charRef);
         }
 #endif
@@ -232,12 +229,12 @@ bool FileHelper::readUtf8String(std::string& outStr, const String& fileName)
     }
     else
     {
-        outStr = reinterpret_cast<const AChar*>(&bytes[isUtf8Bom(bytes) ? 3 : 0]);
+        outStr = reinterpret_cast<const AChar *>(&bytes[isUtf8Bom(bytes) ? 3 : 0]);
     }
     return true;
 }
 
-bool FileHelper::readBytes(std::vector<uint8>& outBytes, const String& fileName)
+bool FileHelper::readBytes(std::vector<uint8> &outBytes, const String &fileName)
 {
     PlatformFile file(fileName);
     file.setSharingMode(EFileSharing::ReadOnly);
@@ -252,7 +249,7 @@ bool FileHelper::readBytes(std::vector<uint8>& outBytes, const String& fileName)
     return false;
 }
 
-bool FileHelper::writeString(const String& content, const String& fileName)
+bool FileHelper::writeString(const String &content, const String &fileName)
 {
     std::string utf8Str{ TCHAR_TO_UTF8(content.getChar()) };
 
@@ -262,14 +259,14 @@ bool FileHelper::writeString(const String& content, const String& fileName)
     file.setFileFlags(EFileFlags::Write);
     if (file.openOrCreate())
     {
-        file.write(ArrayView<const uint8>(reinterpret_cast<uint8*>(utf8Str.data()), utf8Str.size()));
+        file.write(ArrayView<const uint8>(reinterpret_cast<uint8 *>(utf8Str.data()), utf8Str.size()));
         file.closeFile();
         return true;
     }
     return false;
 }
 
-bool FileHelper::writeBytes(std::vector<uint8>& bytes, const String& fileName)
+bool FileHelper::writeBytes(std::vector<uint8> &bytes, const String &fileName)
 {
     PlatformFile file(fileName);
     file.setSharingMode(EFileSharing::ReadOnly);
@@ -284,7 +281,7 @@ bool FileHelper::writeBytes(std::vector<uint8>& bytes, const String& fileName)
     return false;
 }
 
-bool FileHelper::touchFile(const String& fileName)
+bool FileHelper::touchFile(const String &fileName)
 {
     PlatformFile file(fileName);
     file.setSharingMode(EFileSharing::ReadOnly);
@@ -294,8 +291,8 @@ bool FileHelper::touchFile(const String& fileName)
     bool bSuccess = false;
     if (file.openOrCreate())
     {
-         bSuccess = file.setLastWriteTimeStamp(Time::clockTimeNow());
-         file.closeFile();
+        bSuccess = file.setLastWriteTimeStamp(Time::clockTimeNow());
+        file.closeFile();
     }
     return bSuccess;
 }

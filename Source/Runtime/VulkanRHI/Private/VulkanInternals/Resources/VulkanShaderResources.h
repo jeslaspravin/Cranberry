@@ -10,22 +10,28 @@
  */
 
 #pragma once
-#include "RenderInterface/Resources/ShaderResources.h"
 #include "IVulkanResources.h"
-#include "VulkanInternals/VulkanMacros.h"
+#include "RenderInterface/Resources/ShaderResources.h"
 #include "ShaderReflected.h"
+#include "VulkanInternals/VulkanMacros.h"
 
-class VulkanShaderCodeResource final : public ShaderCodeResource, public IVulkanResources
+class VulkanShaderCodeResource final
+    : public ShaderCodeResource
+    , public IVulkanResources
 {
-    DECLARE_VK_GRAPHICS_RESOURCE(VulkanShaderCodeResource,,ShaderCodeResource,)
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanShaderCodeResource, , ShaderCodeResource, )
 private:
-    const ShaderStageDescription* stageDescription;
+    const ShaderStageDescription *stageDescription;
+
 public:
     VkShaderModule shaderModule;
+
 protected:
     VulkanShaderCodeResource();
+
 public:
-    VulkanShaderCodeResource(const String& shaderName, const ShaderStageDescription* desc, const uint8* shaderCodePtr);
+    VulkanShaderCodeResource(
+        const String &shaderName, const ShaderStageDescription *desc, const uint8 *shaderCodePtr);
     /* IVulkanResources overrides */
     String getObjectName() const override;
     uint64 getDispatchableHandle() const override;
@@ -37,26 +43,29 @@ public:
     EShaderStage::Type shaderStage() const override;
     /* End overrides */
 
-    const ShaderStageDescription& getStageDesc() const;
+    const ShaderStageDescription &getStageDesc() const;
 };
 
-class VulkanShaderResource : public ShaderResource, public IVulkanResources
+class VulkanShaderResource
+    : public ShaderResource
+    , public IVulkanResources
 {
-    DECLARE_VK_GRAPHICS_RESOURCE(VulkanShaderResource,,ShaderResource,)
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanShaderResource, , ShaderResource, )
 private:
-
     std::vector<uint8> shaderCode;
     ShaderReflected reflectedData;
+
 protected:
     VulkanShaderResource() = default;
+
 public:
-    VulkanShaderResource(const ShaderConfigCollector* inConfig);
+    VulkanShaderResource(const ShaderConfigCollector *inConfig);
 
     /* IVulkanResources overrides */
     String getObjectName() const override;
     uint64 getDispatchableHandle() const override { return 0; }
     /* ShaderResource overrides */
     void init() final;
-    const ShaderReflected* getReflection() const override;
+    const ShaderReflected *getReflection() const override;
     /* End overrides */
 };

@@ -10,12 +10,12 @@
  */
 
 #include "Types/Platform/GenericPlatformMemory.h"
-#include "Modules/ModuleManager.h"
-#include "Types/Platform/LFS/PathFunctions.h"
 #include "Memory/BuiltinMemAlloc.h"
 #include "Memory/MimallocMemAlloc.h"
+#include "Modules/ModuleManager.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
-CBEMemAlloc* GenericPlatformMemory::createMemAllocator()
+CBEMemAlloc *GenericPlatformMemory::createMemAllocator()
 {
 #if USE_MIMALLOC
     return new MimallocMemAlloc();

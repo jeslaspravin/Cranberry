@@ -23,20 +23,22 @@ class PROGRAMCORE_EXPORT Rotation
 private:
     glm::vec3 value;
 
-    Rotation(const glm::vec3& rotValue);
+    Rotation(const glm::vec3 &rotValue);
 
 public:
     Rotation();
-    Rotation(const float& r, const float& p, const float& y);
-    explicit Rotation(const float& allValue);
-    Rotation(const Rotation& other);
-    Rotation(Rotation&& other);
-    Rotation& operator=(const Rotation& other);;
-    Rotation& operator=(Rotation&& other);;
+    Rotation(const float &r, const float &p, const float &y);
+    explicit Rotation(const float &allValue);
+    Rotation(const Rotation &other);
+    Rotation(Rotation &&other);
+    Rotation &operator=(const Rotation &other);
+    ;
+    Rotation &operator=(Rotation &&other);
+    ;
 
-    float& roll();
-    float& pitch();
-    float& yaw();
+    float &roll();
+    float &pitch();
+    float &yaw();
     float roll() const;
     float pitch() const;
     float yaw() const;
@@ -44,36 +46,37 @@ public:
     Vector3D fwdVector() const;
     Vector3D rightVector() const;
     Vector3D upVector() const;
+
 public:
-    bool operator==(const Rotation& b) const;
+    bool operator==(const Rotation &b) const;
     // Component wise operations
-    Rotation operator*(const Rotation& b) const;
-    Rotation& operator*=(const Rotation& b);
-    Rotation operator/(const Rotation& b) const;
-    Rotation& operator/=(const Rotation& b);
-    Rotation operator-(const Rotation& b) const;
-    Rotation& operator-=(const Rotation& b);
-    Rotation operator+(const Rotation& b) const;
-    Rotation& operator+=(const Rotation& b);
-    Rotation operator*(const float& scalar) const;
-    Rotation& operator*=(const float& scalar);
-    Rotation operator/(const float& scalar) const;
-    Rotation& operator/=(const float& scalar);
-    Rotation operator-(const float& scalar) const;
-    Rotation& operator-=(const float& scalar);
-    Rotation operator+(const float& scalar) const;
-    Rotation& operator+=(const float& scalar);
-    bool isSame(const Rotation& b, float epsilon = SMALL_EPSILON) const;
+    Rotation operator*(const Rotation &b) const;
+    Rotation &operator*=(const Rotation &b);
+    Rotation operator/(const Rotation &b) const;
+    Rotation &operator/=(const Rotation &b);
+    Rotation operator-(const Rotation &b) const;
+    Rotation &operator-=(const Rotation &b);
+    Rotation operator+(const Rotation &b) const;
+    Rotation &operator+=(const Rotation &b);
+    Rotation operator*(const float &scalar) const;
+    Rotation &operator*=(const float &scalar);
+    Rotation operator/(const float &scalar) const;
+    Rotation &operator/=(const float &scalar);
+    Rotation operator-(const float &scalar) const;
+    Rotation &operator-=(const float &scalar);
+    Rotation operator+(const float &scalar) const;
+    Rotation &operator+=(const float &scalar);
+    bool isSame(const Rotation &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
 
-    static Rotation clamp(const Rotation& value, const Rotation& min, const Rotation& max);
-    static Rotation min(const Rotation& a, const Rotation& b);
-    static Rotation max(const Rotation& a, const Rotation& b);
-    static Rotation abs(const Rotation& value);
-    static Rotation floor(const Rotation& value);
-    static Rotation ceil(const Rotation& value);
-    static Rotation round(const Rotation& value);
-    static Rotation mod(const Rotation& a, const Rotation& b);
-    static Rotation mod(const Rotation& a, const float& b);
-    static Rotation modf(Rotation& wholePart, const Rotation& value);
+    static Rotation clamp(const Rotation &value, const Rotation &min, const Rotation &max);
+    static Rotation min(const Rotation &a, const Rotation &b);
+    static Rotation max(const Rotation &a, const Rotation &b);
+    static Rotation abs(const Rotation &value);
+    static Rotation floor(const Rotation &value);
+    static Rotation ceil(const Rotation &value);
+    static Rotation round(const Rotation &value);
+    static Rotation mod(const Rotation &a, const Rotation &b);
+    static Rotation mod(const Rotation &a, const float &b);
+    static Rotation modf(Rotation &wholePart, const Rotation &value);
 };

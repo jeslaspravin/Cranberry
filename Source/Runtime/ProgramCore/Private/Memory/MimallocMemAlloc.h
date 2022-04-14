@@ -19,12 +19,12 @@ class MimallocMemAlloc final : public CBEMemAlloc
 {
 private:
 public:
-    void* tryMalloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
-    void* memAlloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
-    void* tryRealloc(void* currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
-    void* memRealloc(void* currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
-    void memFree(void* ptr) final;
+    void *tryMalloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
+    void *memAlloc(SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
+    void *tryRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
+    void *memRealloc(void *currentPtr, SizeT size, uint32 alignment = DEFAULT_ALIGNMENT) final;
+    void memFree(void *ptr) final;
 
-    SizeT getAllocationSize(void* ptr) const;
+    SizeT getAllocationSize(void *ptr) const;
 };
 #endif // USE_MIMALLOC

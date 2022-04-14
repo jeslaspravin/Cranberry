@@ -11,23 +11,23 @@
 
 #pragma once
 
-#include "String/String.h"
 #include "ProgramCoreExports.h"
+#include "String/String.h"
 
-// #TODO(Jeslas) : Replace this type of heap allocated handles to raw platform handle here, PlatformFile, Application Instance, Window Instance
-struct PROGRAMCORE_EXPORT LibPointer 
+// #TODO(Jeslas) : Replace this type of heap allocated handles to raw platform handle here, PlatformFile,
+// Application Instance, Window Instance
+struct PROGRAMCORE_EXPORT LibPointer
 {
 
     virtual ~LibPointer() = default;
-
 };
 
-typedef LibPointer* LibPointerPtr;
+typedef LibPointer *LibPointerPtr;
 
 struct LibraryData
 {
     String name;
     String imgName;
-    void* basePtr;
+    void *basePtr;
     dword moduleSize;
 };

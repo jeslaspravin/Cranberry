@@ -11,9 +11,9 @@
 
 #pragma once
 #include "Assets/Asset/AssetObject.h"
-#include "RenderInterface/Resources/MemoryResources.h"
-#include "Math/CoreMathTypes.h"
 #include "Math/Box.h"
+#include "Math/CoreMathTypes.h"
+#include "RenderInterface/Resources/MemoryResources.h"
 #include "Types/Colors.h"
 
 class BufferResource;
@@ -33,9 +33,11 @@ struct TbnLinePoint
 };
 #endif
 
-class MeshAsset : public AssetBase, public ICleanupAsset
+class MeshAsset
+    : public AssetBase
+    , public ICleanupAsset
 {
-/*protected*/public:// TODO: change this back to protected once proper abstraction is added
+    /*protected*/ public: // TODO: change this back to protected once proper abstraction is added
     BufferResourceRef vertexBuffer = nullptr;
     BufferResourceRef indexBuffer = nullptr;
 
@@ -45,9 +47,10 @@ class MeshAsset : public AssetBase, public ICleanupAsset
 #endif
 
     AABB bounds;
+
 public:
     MeshAsset() = default;
-    ICleanupAsset* cleanableAsset() override;
+    ICleanupAsset *cleanableAsset() override;
 
     BufferResourceRef getVertexBuffer() const;
     BufferResourceRef getIndexBuffer() const;
@@ -56,6 +59,5 @@ public:
     BufferResourceRef getTbnVertexBuffer() const;
 #endif
 
-    const AABB& getMeshBounds() const;
+    const AABB &getMeshBounds() const;
 };
-

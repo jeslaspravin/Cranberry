@@ -26,14 +26,11 @@ struct CXStringWrapper : public RefCountable
         : str(inStr)
     {}
 
-    ~CXStringWrapper()
-    {
-        clang_disposeString(str);
-    }
+    ~CXStringWrapper() { clang_disposeString(str); }
 
     String toString() const
     {
-        if (const AChar* cPtr = clang_getCString(str))
+        if (const AChar *cPtr = clang_getCString(str))
         {
             return UTF8_TO_TCHAR(cPtr);
         }
@@ -42,15 +39,15 @@ struct CXStringWrapper : public RefCountable
 };
 
 // Logger overrides
-FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const CXStringRef& str)
+FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const CXStringRef &str)
 {
     stream << str->toString();
     return stream;
 }
 
-FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const CXString& cxStr)
+FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const CXString &cxStr)
 {
-    if (const AChar* cPtr = clang_getCString(cxStr))
+    if (const AChar *cPtr = clang_getCString(cxStr))
     {
         stream << UTF8_TO_TCHAR(cPtr);
         clang_disposeString(cxStr);
@@ -58,7 +55,7 @@ FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const CXString& cxSt
     return stream;
 }
 
-FORCE_INLINE OutputStream& operator<<(OutputStream& stream, const CXSourceLocation& cxStrLoc)
+FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const CXSourceLocation &cxStrLoc)
 {
     CXFile file;
     uint32 lineNum, colNum;

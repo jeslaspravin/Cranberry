@@ -16,17 +16,22 @@
 
 #include <vulkan_core.h>
 
-class VulkanSampler final : public SamplerInterface, public IVulkanResources
+class VulkanSampler final
+    : public SamplerInterface
+    , public IVulkanResources
 {
-    DECLARE_VK_GRAPHICS_RESOURCE(VulkanSampler,,SamplerInterface,)
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanSampler, , SamplerInterface, )
 private:
-    class VulkanDevice* ownerDevice;
+    class VulkanDevice *ownerDevice;
+
 public:
     VkSampler sampler;
+
 private:
     VulkanSampler();
+
 public:
-    VulkanSampler(class VulkanDevice* device, SamplerCreateInfo samplerCI);
+    VulkanSampler(class VulkanDevice *device, SamplerCreateInfo samplerCI);
 
     /* IVulkanResources Overrides */
     String getObjectName() const override;

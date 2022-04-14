@@ -10,14 +10,17 @@
  */
 
 #pragma once
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
-#include "ShaderReflected.h"
 #include "../SpirV/spirv.hpp"
+#include "ShaderReflected.h"
 
-namespace spirv_cross { class Compiler; }
+namespace spirv_cross
+{
+class Compiler;
+}
 
 class ShaderReflectionProcessor
 {
@@ -27,16 +30,17 @@ private:
     std::string shaderPath;
     std::string shaderFileName;
     std::vector<uint32_t> shaderCode;
-    spirv_cross::Compiler* compiledData;
+    spirv_cross::Compiler *compiledData;
 
     ShaderCodeView codeView;
 
     ShaderStageDescription getStageDesc() const;
-    void injectShaderCode(std::vector<uint32_t>& codeCollector) const;
+    void injectShaderCode(std::vector<uint32_t> &codeCollector) const;
     void setCodeView(uint32_t startIndex, uint32_t size);
+
 public:
     ShaderReflectionProcessor(std::string shaderFilePath);
-    ShaderReflectionProcessor(const std::vector<uint32_t>& code, const ShaderCodeView& view);
+    ShaderReflectionProcessor(const std::vector<uint32_t> &code, const ShaderCodeView &view);
     ~ShaderReflectionProcessor();
 
 public:
@@ -60,20 +64,22 @@ public:
 class PipelineShaderStageProcessor
 {
 private:
-    std::vector<ShaderReflectionProcessor*> shaderStages;
+    std::vector<ShaderReflectionProcessor *> shaderStages;
     std::string reflectionFile;
     std::string shaderFile;
 
     ShaderReflected reflectedData;
     std::vector<uint32_t> allShaderCodes;
 
-    void processStages(std::vector<std::map<uint32_t, uint32_t>>& specConstsMaps);
+    void processStages(std::vector<std::map<uint32_t, uint32_t>> &specConstsMaps);
     void processPipelineIO();
-    void processDescriptorsSets(const std::vector<std::map<uint32_t, uint32_t>>& specConstsMaps);
-    void processPushConstants(const std::vector<std::map<uint32_t, uint32_t>>& specConstsMaps);
+    void processDescriptorsSets(const std::vector<std::map<uint32_t, uint32_t>> &specConstsMaps);
+    void processPushConstants(const std::vector<std::map<uint32_t, uint32_t>> &specConstsMaps);
     void writeMergedShader();
+
 public:
-    PipelineShaderStageProcessor(const std::vector<ShaderReflectionProcessor*>& shaderReflections, std::string refFilePath,std::string shaderFilePath);
+    PipelineShaderStageProcessor(const std::vector<ShaderReflectionProcessor *> &shaderReflections,
+        std::string refFilePath, std::string shaderFilePath);
 
     void processReflections();
     void writeOutput();

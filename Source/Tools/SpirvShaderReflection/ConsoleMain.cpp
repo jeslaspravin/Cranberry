@@ -19,12 +19,12 @@
 
 #if _DEBUG
 
-#include <fstream>
-#include "SpirV/spirv_glsl.hpp"
 #include "SpirV/spirv.hpp"
 #include "SpirV/spirv_common.hpp"
+#include "SpirV/spirv_glsl.hpp"
+#include <fstream>
 
-void printArrayCount(const SPIRV_CROSS_NAMESPACE::SPIRType& type)
+void printArrayCount(const SPIRV_CROSS_NAMESPACE::SPIRType &type)
 {
     printf("\t Array count : ");
     if (type.array.empty())
@@ -35,52 +35,64 @@ void printArrayCount(const SPIRV_CROSS_NAMESPACE::SPIRType& type)
     {
         for (int i = int(type.array.size() - 1); i >= 0; --i)
         {
-            printf("[%d : isSpecConstant : %s]\n", type.array[i],type.array_size_literal[i]? "false": "true" );// SpecConstant is in reverse order of dim array
+            printf("[%d : isSpecConstant : %s]\n", type.array[i],
+                type.array_size_literal[i] ? "false"
+                                           : "true"); // SpecConstant is in reverse order of dim array
         }
     }
 }
 
-void printMembers(const SPIRV_CROSS_NAMESPACE::SPIRType& structType, const SPIRV_CROSS_NAMESPACE::Compiler* compiledData, std::string indent = "\t")
+void printMembers(const SPIRV_CROSS_NAMESPACE::SPIRType &structType,
+    const SPIRV_CROSS_NAMESPACE::Compiler *compiledData, std::string indent = "\t")
 {
     uint32_t index = 0;
-    for (const SPIRV_CROSS_NAMESPACE::TypeID& memberTypeID : structType.member_types)
+    for (const SPIRV_CROSS_NAMESPACE::TypeID &memberTypeID : structType.member_types)
     {
-        const auto& memberType = compiledData->get_type(memberTypeID);
+        const auto &memberType = compiledData->get_type(memberTypeID);
         if (memberType.basetype == SPIRV_CROSS_NAMESPACE::SPIRType::BaseType::Struct)
         {
-            printf("%sStruct : %s Size : %d\n", indent.c_str(), compiledData->get_member_name(structType.self,index).c_str()
-                ,uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
+            printf("%sStruct : %s Size : %d\n", indent.c_str(),
+                compiledData->get_member_name(structType.self, index).c_str(),
+                uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
             if (memberType.array.empty())
             {
-                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(),
+                    uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
             }
             else
             {
-                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_array_stride(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(),
+                    uint32_t(compiledData->type_struct_member_array_stride(structType, index)));
                 printArrayCount(memberType);
             }
-            printf("%sOffset : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_offset(structType, index)));
+            printf("%sOffset : %d\n", indent.c_str(),
+                uint32_t(compiledData->type_struct_member_offset(structType, index)));
             printMembers(memberType, compiledData, indent + "\t");
         }
         else
         {
-            printf("%sMember : %s\n", indent.c_str(), compiledData->get_member_name(structType.self,index).c_str());
-            printf("%sSize : %d\n", indent.c_str(), uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
+            printf("%sMember : %s\n", indent.c_str(),
+                compiledData->get_member_name(structType.self, index).c_str());
+            printf("%sSize : %d\n", indent.c_str(),
+                uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
             if (memberType.columns > 1)
             {
-                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_matrix_stride(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(),
+                    uint32_t(compiledData->type_struct_member_matrix_stride(structType, index)));
             }
-            else if(!memberType.array.empty())
+            else if (!memberType.array.empty())
             {
-                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_array_stride(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(),
+                    uint32_t(compiledData->type_struct_member_array_stride(structType, index)));
                 printArrayCount(memberType);
             }
             else
             {
-                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(),
+                    uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
             }
-            printf("%sOffset : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_offset(structType, index)));
-
+            printf("%sOffset : %d\n", indent.c_str(),
+                uint32_t(compiledData->type_struct_member_offset(structType, index)));
         }
         index++;
     }
@@ -88,15 +100,16 @@ void printMembers(const SPIRV_CROSS_NAMESPACE::SPIRType& structType, const SPIRV
 
 #endif
 /*
-* Arguments must be in order, so that at index 1 to n-3 the file list of all shaders used for this particular processing and graphics pipeline
-* argument at n-2 should be file where the reflected data should be written to
-* argument at n-1 should be file where the combined shader code has to be written to
-*/
-int main(int argc, char* argv[])
+ * Arguments must be in order, so that at index 1 to n-3 the file list of all shaders used for this
+ * particular processing and graphics pipeline argument at n-2 should be file where the reflected data
+ * should be written to argument at n-1 should be file where the combined shader code has to be written
+ * to
+ */
+int main(int argc, char *argv[])
 {
     int shaderMaxIndex = argc - 2;
 
-    std::vector<ShaderReflectionProcessor*> reflectionProcessors(shaderMaxIndex - 1);
+    std::vector<ShaderReflectionProcessor *> reflectionProcessors(shaderMaxIndex - 1);
     for (int i = 1; i < shaderMaxIndex; ++i)
     {
         reflectionProcessors[i - 1] = new ShaderReflectionProcessor(argv[i]);

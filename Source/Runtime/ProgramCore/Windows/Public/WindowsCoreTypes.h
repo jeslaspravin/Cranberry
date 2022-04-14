@@ -15,6 +15,7 @@ class WindowsCoreTypes : public GenericPlatformCoreTypes<WindowsCoreTypes>
 {
 private:
     WindowsCoreTypes() = default;
+
 public:
     // Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore
     typedef AChar TChar;

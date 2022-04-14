@@ -26,20 +26,22 @@ class AssetBase
 {
 private:
     friend class AssetManager;
+
 protected:
     AssetHeader assetHeader;
+
 public:
     virtual ~AssetBase() = default;
-    virtual ICleanupAsset* cleanableAsset() { return nullptr; }
+    virtual ICleanupAsset *cleanableAsset() { return nullptr; }
 
-    void setAssetName(const String& name);
-    const String& assetName() const;
+    void setAssetName(const String &name);
+    const String &assetName() const;
 };
 
 template <bool bAscending>
 struct SortAssetByName
 {
-    constexpr bool operator()(const AssetBase* lhs, const AssetBase* rhs) const
+    constexpr bool operator()(const AssetBase *lhs, const AssetBase *rhs) const
     {
         if constexpr (bAscending)
         {

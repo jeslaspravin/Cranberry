@@ -10,8 +10,8 @@
  */
 
 #pragma once
-#include "String/String.h"
 #include "Math/CoreMathTypedefs.h"
+#include "String/String.h"
 
 class TextureAsset;
 class Color;
@@ -28,11 +28,13 @@ private:
     std::vector<Color> textureTexelData;
 
     bool bLoaded;
-private:
-    bool isNormalTexture(const uint8* texels) const;
-public:
-    TextureLoader(const String& texturePath);
 
-    void fillTextureAsset(TextureAsset* textureAsset) const;
+private:
+    bool isNormalTexture(const uint8 *texels) const;
+
+public:
+    TextureLoader(const String &texturePath);
+
+    void fillTextureAsset(TextureAsset *textureAsset) const;
     bool isLoadSuccess() const;
 };

@@ -20,7 +20,8 @@ void CoreObjectsDB::removeObject(StringID objectId)
     objectIdToNodeIdx.erase(objItr);
 }
 
-CoreObjectsDB::NodeIdxType CoreObjectsDB::addObject(StringID objectId, const ObjectData& objectData, StringID parent)
+CoreObjectsDB::NodeIdxType CoreObjectsDB::addObject(
+    StringID objectId, const ObjectData &objectData, StringID parent)
 {
     debugAssert(objectId.isValid() && !hasObject(objectId) && hasObject(parent));
 
@@ -30,7 +31,7 @@ CoreObjectsDB::NodeIdxType CoreObjectsDB::addObject(StringID objectId, const Obj
     return nodeIdx;
 }
 
-CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, const ObjectData& objectData)
+CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, const ObjectData &objectData)
 {
     debugAssert(objectId.isValid() && !hasObject(objectId));
 
@@ -41,8 +42,8 @@ CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, const
 
 void CoreObjectsDB::setObject(StringID currentId, StringID newId)
 {
-    debugAssert(currentId.isValid() && newId.isValid() && currentId != newId
-        && !hasObject(newId) && hasObject(currentId));
+    debugAssert(currentId.isValid() && newId.isValid() && currentId != newId && !hasObject(newId)
+                && hasObject(currentId));
 
     auto objItr = objectIdToNodeIdx.find(currentId);
     NodeIdxType nodeIdx = objItr->second;
@@ -68,23 +69,23 @@ void CoreObjectsDB::setObjectParent(StringID objectId, StringID newParent)
     }
 }
 
-CBE::Object* CoreObjectsDB::getObject(NodeIdxType nodeidx) const
+CBE::Object *CoreObjectsDB::getObject(NodeIdxType nodeidx) const
 {
     if (objectTree.isValid(nodeidx))
     {
-        const ObjectData& objData = objectTree[nodeidx];
+        const ObjectData &objData = objectTree[nodeidx];
         return CBE::getObjAllocator(objData.clazz)->getAt<CBE::Object>(objData.allocIdx);
     }
     return nullptr;
 }
 
-void CoreObjectsDB::getSubobjects(std::vector<CBE::Object*>& subobjs, NodeIdxType nodeidx) const
+void CoreObjectsDB::getSubobjects(std::vector<CBE::Object *> &subobjs, NodeIdxType nodeidx) const
 {
     std::vector<NodeIdxType> subObjIndices;
     objectTree.getChildren(subObjIndices, nodeidx, true);
     for (NodeIdxType subnodeIdx : subObjIndices)
     {
-        if (CBE::Object* obj = getObject(subnodeIdx))
+        if (CBE::Object *obj = getObject(subnodeIdx))
         {
             subobjs.emplace_back(obj);
         }

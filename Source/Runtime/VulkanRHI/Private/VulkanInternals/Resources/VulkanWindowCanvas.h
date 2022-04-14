@@ -10,12 +10,12 @@
  */
 
 #pragma once
+#include "Math/CoreMathTypedefs.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "RenderInterface/Resources/GraphicsSyncResource.h"
-#include "VulkanInternals/VulkanMacros.h"
-#include "VulkanInternals/Resources/IVulkanResources.h"
 #include "String/String.h"
-#include "Math/CoreMathTypedefs.h"
+#include "VulkanInternals/Resources/IVulkanResources.h"
+#include "VulkanInternals/VulkanMacros.h"
 
 #include <vector>
 
@@ -25,9 +25,11 @@ struct SwapchainInfo
     Size2D size;
 };
 
-class VulkanWindowCanvas final : public GenericWindowCanvas, public IVulkanResources
+class VulkanWindowCanvas final
+    : public GenericWindowCanvas
+    , public IVulkanResources
 {
-    DECLARE_VK_GRAPHICS_RESOURCE(VulkanWindowCanvas,,GenericWindowCanvas,)
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanWindowCanvas, , GenericWindowCanvas, )
 private:
     VkSurfaceKHR surfacePtr;
     VkSwapchainKHR swapchainPtr;
@@ -38,13 +40,15 @@ private:
 
     SemaphoreRef currentSemaphore;
     FenceRef currentFence;
-    
+
     SwapchainInfo swapchainInfo;
     int32 currentSyncIdx = -1;
+
 private:
     VulkanWindowCanvas() = default;
+
 public:
-    VulkanWindowCanvas(GenericAppWindow* window)
+    VulkanWindowCanvas(GenericAppWindow *window)
         : BaseType(window)
         , surfacePtr(nullptr)
         , swapchainPtr(nullptr)
@@ -54,7 +58,7 @@ public:
     void reinitResources() override;
     void release() override;
 
-    uint32 requestNextImage(SemaphoreRef* waitOnSemaphore, FenceRef* waitOnFence = nullptr) override;
+    uint32 requestNextImage(SemaphoreRef *waitOnSemaphore, FenceRef *waitOnFence = nullptr) override;
     EPixelDataFormat::Type windowCanvasFormat() const override;
     int32 imagesCount() const override;
 
@@ -64,5 +68,4 @@ public:
     VkImageView swapchainImageView(uint32 index) const;
 
     String getObjectName() const override;
-
 };

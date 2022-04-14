@@ -13,10 +13,7 @@
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 
-void TextureBase::setFilteringMode(ESamplerFiltering::Type filtering)
-{
-    sampleFiltering = filtering;
-}
+void TextureBase::setFilteringMode(ESamplerFiltering::Type filtering) { sampleFiltering = filtering; }
 
 void TextureBase::reinitResources()
 {
@@ -37,11 +34,12 @@ void TextureBase::markResourceDirty()
     if (!bNeedsUpdate && textureResource.isValid())
     {
         bNeedsUpdate = true;
-        ENQUEUE_COMMAND_NODEBUG(UpdateTexture,
+        ENQUEUE_COMMAND_NODEBUG(
+            UpdateTexture,
             {
                 reinitResources();
                 bNeedsUpdate = false;
-            }
-        , this);
+            },
+            this);
     }
 }

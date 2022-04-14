@@ -13,12 +13,12 @@
 
 #include "Math/Math.h"
 
-template<uint32 d>
+template <uint32 d>
 struct CellIndex
 {
     uint32 idx[d];
 
-    CellIndex() 
+    CellIndex()
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -34,7 +34,7 @@ struct CellIndex
         }
     }
 
-    CellIndex(const CellIndex& other)
+    CellIndex(const CellIndex &other)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -42,7 +42,7 @@ struct CellIndex
         }
     }
 
-    CellIndex(CellIndex&& other)
+    CellIndex(CellIndex &&other)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -50,7 +50,7 @@ struct CellIndex
         }
     }
 
-    FORCE_INLINE void operator=(const CellIndex& other)
+    FORCE_INLINE void operator=(const CellIndex &other)
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -58,8 +58,8 @@ struct CellIndex
         }
     }
 
-    template<class T>
-    FORCE_INLINE T operator*(const T& other) const
+    template <class T>
+    FORCE_INLINE T operator*(const T &other) const
     {
         T newVal;
         for (uint32 i = 0; i < d; i++)
@@ -69,7 +69,7 @@ struct CellIndex
         return newVal;
     }
 
-    FORCE_INLINE CellIndex operator+(const CellIndex& other) const
+    FORCE_INLINE CellIndex operator+(const CellIndex &other) const
     {
         CellIndex c;
         for (uint32 i = 0; i < d; i++)
@@ -80,38 +80,34 @@ struct CellIndex
         return c;
     }
 
-
-    FORCE_INLINE CellIndex operator-(const CellIndex& other) const
+    FORCE_INLINE CellIndex operator-(const CellIndex &other) const
     {
         CellIndex c;
         for (uint32 i = 0; i < d; i++)
         {
-            c.idx[i] = idx[i] < other.idx[i]
-                ? other.idx[i] - idx[i] : idx[i] - other.idx[i];
+            c.idx[i] = idx[i] < other.idx[i] ? other.idx[i] - idx[i] : idx[i] - other.idx[i];
         }
 
         return c;
     }
 
-
-    FORCE_INLINE void operator+=(const CellIndex& other)
+    FORCE_INLINE void operator+=(const CellIndex &other)
     {
         for (uint32 i = 0; i < d; i++)
         {
-             idx[i] += other.idx[i];
+            idx[i] += other.idx[i];
         }
     }
 
-    FORCE_INLINE void operator-=(const CellIndex& other)
+    FORCE_INLINE void operator-=(const CellIndex &other)
     {
         for (uint32 i = 0; i < d; i++)
         {
-            idx[i] = idx[i] < other.idx[i]
-                ? other.idx[i] - idx[i] : idx[i] - other.idx[i];
+            idx[i] = idx[i] < other.idx[i] ? other.idx[i] - idx[i] : idx[i] - other.idx[i];
         }
     }
 
-    FORCE_INLINE uint32 operator[](const uint32& axis) const
+    FORCE_INLINE uint32 operator[](const uint32 &axis) const
     {
         if (axis < d)
         {
@@ -120,12 +116,9 @@ struct CellIndex
         return -1;
     }
 
-    FORCE_INLINE uint32& operator[](const uint32& axis)
-    {
-        return idx[axis];
-    }
+    FORCE_INLINE uint32 &operator[](const uint32 &axis) { return idx[axis]; }
 
-    FORCE_INLINE bool operator==(const CellIndex& other) const
+    FORCE_INLINE bool operator==(const CellIndex &other) const
     {
         bool bIsSame = true;
         for (uint32 i = 0; i < d; i++)
@@ -135,7 +128,7 @@ struct CellIndex
         return bIsSame;
     }
 
-    FORCE_INLINE bool operator!=(const CellIndex& other) const
+    FORCE_INLINE bool operator!=(const CellIndex &other) const
     {
         bool bIsNotSame = false;
         for (uint32 i = 0; i < d; i++)
@@ -156,13 +149,13 @@ struct CellIndex
     }
 };
 
-template<uint32 d>
+template <uint32 d>
 struct CellIndexHash
 {
     using TYPE = CellIndex<d>;
     using RESULT = std::size_t;
 
-    RESULT operator()(const TYPE& cellIndex) const 
+    RESULT operator()(const TYPE &cellIndex) const
     {
         RESULT hashVal = 0;
         for (uint32 i = 0; i < d; i++)
@@ -173,7 +166,7 @@ struct CellIndexHash
     }
 };
 
-template<uint32 d>
+template <uint32 d>
 class CellIndexRangeIterator
 {
 private:
@@ -184,10 +177,11 @@ private:
     CellIndexRangeIterator() = default;
 
     // Ensure that min is less than max in all dimension
-    CellIndexRangeIterator(const CellIndex<d>& minRange, const CellIndex<d>& maxRange)
+    CellIndexRangeIterator(const CellIndex<d> &minRange, const CellIndex<d> &maxRange)
         : lower(minRange)
         // Since we have to do <= with max range for cells
-        // , we make each dimension + 1. So when values reaches end()(which will be value 1 over higher) it ends
+        // , we make each dimension + 1. So when values reaches end()(which will be value 1 over higher)
+        // it ends
         , higher(maxRange + CellIndex<d>(1))
         , currentIdx(minRange)
     {
@@ -196,34 +190,29 @@ private:
             debugAssert(lower[dim] <= higher[dim]);
         }
     }
+
 public:
-    CellIndexRangeIterator(const CellIndexRangeIterator& itr)
+    CellIndexRangeIterator(const CellIndexRangeIterator &itr)
         : lower(itr.lower)
         , higher(itr.higher)
         , currentIdx(itr.currentIdx)
     {}
-    CellIndexRangeIterator(CellIndexRangeIterator&& itr)
+    CellIndexRangeIterator(CellIndexRangeIterator &&itr)
         : lower(std::move(itr.lower))
         , higher(std::move(itr.higher))
         , currentIdx(std::move(itr.currentIdx))
     {}
 
-    FORCE_INLINE const CellIndex<d>& operator->() const
-    {
-        return currentIdx;
-    }
+    FORCE_INLINE const CellIndex<d> &operator->() const { return currentIdx; }
 
-    FORCE_INLINE const CellIndex<d>& operator*() const
-    {
-        return currentIdx;
-    }
+    FORCE_INLINE const CellIndex<d> &operator*() const { return currentIdx; }
 
-    FORCE_INLINE bool operator!=(const CellIndexRangeIterator& other) const
+    FORCE_INLINE bool operator!=(const CellIndexRangeIterator &other) const
     {
         return currentIdx != other.currentIdx;
     }
 
-    FORCE_INLINE CellIndexRangeIterator& operator++()
+    FORCE_INLINE CellIndexRangeIterator &operator++()
     {
         ++currentIdx[0];
         for (uint32 dim = 1; dim < d; ++dim)
@@ -241,47 +230,42 @@ public:
         return retVal;
     }
 
-    static CellIndexRangeIterator beginRange(const CellIndex<d>& minRange, const CellIndex<d>& maxRange)
+    static CellIndexRangeIterator beginRange(const CellIndex<d> &minRange, const CellIndex<d> &maxRange)
     {
         return CellIndexRangeIterator(minRange, maxRange);
     }
 
-    static CellIndexRangeIterator endRange(const CellIndex<d>& minRange, const CellIndex<d>& maxRange)
+    static CellIndexRangeIterator endRange(const CellIndex<d> &minRange, const CellIndex<d> &maxRange)
     {
         CellIndexRangeIterator retVal;
         // Since we have to do <= with max range for cells
-        // , we make each dimension + 1. So when values reaches end()(which will be value 1 over higher) it ends
+        // , we make each dimension + 1. So when values reaches end()(which will be value 1 over higher)
+        // it ends
         retVal.currentIdx = minRange;
         retVal.currentIdx[d - 1] = maxRange[d - 1] + 1;
         return retVal;
     }
 };
 
-template<uint32 d>
+template <uint32 d>
 struct CellIndexRange
 {
     using IteratorType = CellIndexRangeIterator<d>;
     IteratorType beginItr;
     IteratorType endItr;
 
-    CellIndexRange(const CellIndex<d>& minRange, const CellIndex<d>& maxRange)
+    CellIndexRange(const CellIndex<d> &minRange, const CellIndex<d> &maxRange)
         : beginItr(IteratorType::beginRange(minRange, maxRange))
         , endItr(IteratorType::endRange(minRange, maxRange))
     {}
 
-    IteratorType begin() const
-    {
-        return beginItr;
-    }
+    IteratorType begin() const { return beginItr; }
 
-    IteratorType end() const
-    {
-        return endItr;
-    }
+    IteratorType end() const { return endItr; }
 };
 
-template <class T,uint32 d>
-FORCE_INLINE void vectorToCellIdx(T vec, CellIndex<d>& cellIdx)
+template <class T, uint32 d>
+FORCE_INLINE void vectorToCellIdx(T vec, CellIndex<d> &cellIdx)
 {
     for (uint32 i = 0; i < d; i++)
     {
@@ -300,19 +284,17 @@ FORCE_INLINE CellIndex<d> vectorToCellIdx(T vec)
     return cellIdx;
 }
 
-template<class T,uint32 d>
-class UniformGrid 
+template <class T, uint32 d>
+class UniformGrid
 {
 
 private:
-
     T nCells;
     T cellDx;
     T minCorner;
     T maxCorner;
 
 public:
-
     UniformGrid()
         : nCells(0)
         , cellDx(0)
@@ -320,55 +302,44 @@ public:
         , maxCorner(0)
     {}
 
-    DEBUG_INLINE void InitWithCount(const T& min, const T& max, const CellIndex<d>& n);
-    DEBUG_INLINE void InitWithSize(const T& min, const T& max, const T& cellSize);
+    DEBUG_INLINE void InitWithCount(const T &min, const T &max, const CellIndex<d> &n);
+    DEBUG_INLINE void InitWithSize(const T &min, const T &max, const T &cellSize);
 
-    FORCE_INLINE T location(const CellIndex<d>& cell) const
+    FORCE_INLINE T location(const CellIndex<d> &cell) const
     {
-        return cell*cellDx + minCorner + (cellDx * 0.5f);
+        return cell * cellDx + minCorner + (cellDx * 0.5f);
     }
 
-    // Location must be greater than minimum bound to get valid cell index(as -ve values cannot be stored in unsigned grid cell idx)
-    FORCE_INLINE CellIndex<d> cell(const T& location) const
+    // Location must be greater than minimum bound to get valid cell index(as -ve values cannot be stored
+    // in unsigned grid cell idx)
+    FORCE_INLINE CellIndex<d> cell(const T &location) const
     {
         return vectorToCellIdx<T, d>(Math::floor((location - minCorner) / cellDx));
     }
 
     FORCE_INLINE CellIndex<d> getNdIndex(const uint32 index) const;
 
-    FORCE_INLINE T center(const uint32 index) const
-    {
-        return location(getNdIndex(index));
-    }
+    FORCE_INLINE T center(const uint32 index) const { return location(getNdIndex(index)); }
 
-    FORCE_INLINE CellIndex<d> cellCount() const
-    {
-        return vectorToCellIdx<T, d>(nCells);
-    }
+    FORCE_INLINE CellIndex<d> cellCount() const { return vectorToCellIdx<T, d>(nCells); }
 
-    FORCE_INLINE void cellCount(CellIndex<d>& cellCnt) const
-    {
-        vectorToCellIdx<T,d>(nCells, cellCnt);
-    }
+    FORCE_INLINE void cellCount(CellIndex<d> &cellCnt) const { vectorToCellIdx<T, d>(nCells, cellCnt); }
 
-    FORCE_INLINE CellIndex<d> clampCellIndex(const CellIndex<d>& cell) const;
-    FORCE_INLINE T clampLocation(const T& location) const;
-    FORCE_INLINE bool isInside(const T& location) const;
+    FORCE_INLINE CellIndex<d> clampCellIndex(const CellIndex<d> &cell) const;
+    FORCE_INLINE T clampLocation(const T &location) const;
+    FORCE_INLINE bool isInside(const T &location) const;
     FORCE_INLINE bool isInside(const CellIndex<d> cell) const;
 
-    FORCE_INLINE T cellSize() const
-    {
-        return cellDx;
-    }
+    FORCE_INLINE T cellSize() const { return cellDx; }
 
-    FORCE_INLINE void getBound(T& minB, T& maxB) const
+    FORCE_INLINE void getBound(T &minB, T &maxB) const
     {
         minB = minCorner;
         maxB = maxCorner;
     }
 };
 
-template<class T, uint32 d>
+template <class T, uint32 d>
 FORCE_INLINE CellIndex<d> UniformGrid<T, d>::getNdIndex(const uint32 index) const
 {
     CellIndex<d> ndIndex;
@@ -387,8 +358,8 @@ FORCE_INLINE CellIndex<d> UniformGrid<T, d>::getNdIndex(const uint32 index) cons
     return ndIndex;
 }
 
-template<class T, uint32 d>
-FORCE_INLINE CellIndex<d> UniformGrid<T, d>::clampCellIndex(const CellIndex<d>& cell) const
+template <class T, uint32 d>
+FORCE_INLINE CellIndex<d> UniformGrid<T, d>::clampCellIndex(const CellIndex<d> &cell) const
 {
     CellIndex<d> clampedCell;
     for (uint32 i = 0; i < d; i++)
@@ -398,19 +369,19 @@ FORCE_INLINE CellIndex<d> UniformGrid<T, d>::clampCellIndex(const CellIndex<d>& 
     return clampedCell;
 }
 
-template<class T, uint32 d>
-FORCE_INLINE T UniformGrid<T, d>::clampLocation(const T& location) const
+template <class T, uint32 d>
+FORCE_INLINE T UniformGrid<T, d>::clampLocation(const T &location) const
 {
     T clampedLocation;
-    for (uint32 i = 0; i < d; i++) 
+    for (uint32 i = 0; i < d; i++)
     {
         clampedLocation[i] = Math::clamp(location[i], minCorner[i], maxCorner[i]);
     }
     return clampedLocation;
 }
 
-template<class T, uint32 d>
-FORCE_INLINE bool UniformGrid<T, d>::isInside(const T& location) const
+template <class T, uint32 d>
+FORCE_INLINE bool UniformGrid<T, d>::isInside(const T &location) const
 {
     for (uint32 i = 0; i < d; i++)
     {
@@ -422,10 +393,10 @@ FORCE_INLINE bool UniformGrid<T, d>::isInside(const T& location) const
     return true;
 }
 
-template<class T, uint32 d>
+template <class T, uint32 d>
 FORCE_INLINE bool UniformGrid<T, d>::isInside(const CellIndex<d> cell) const
 {
-    for (uint32 i = 0; i < d; i++) 
+    for (uint32 i = 0; i < d; i++)
     {
         if (cell[i] >= (uint32)nCells[i] || cell[i] < 0)
         {
@@ -435,8 +406,8 @@ FORCE_INLINE bool UniformGrid<T, d>::isInside(const CellIndex<d> cell) const
     return true;
 }
 
-template<class T, uint32 d>
-DEBUG_INLINE void UniformGrid<T, d>::InitWithSize(const T& min, const T& max, const T& cellSize)
+template <class T, uint32 d>
+DEBUG_INLINE void UniformGrid<T, d>::InitWithSize(const T &min, const T &max, const T &cellSize)
 {
     minCorner = min;
     maxCorner = max;
@@ -460,8 +431,8 @@ DEBUG_INLINE void UniformGrid<T, d>::InitWithSize(const T& min, const T& max, co
     maxCorner = minCorner + nCells * cellDx;
 }
 
-template<class T, uint32 d>
-DEBUG_INLINE void UniformGrid<T, d>::InitWithCount(const T& min, const T& max, const CellIndex<d>& n)
+template <class T, uint32 d>
+DEBUG_INLINE void UniformGrid<T, d>::InitWithCount(const T &min, const T &max, const CellIndex<d> &n)
 {
     minCorner = min;
     maxCorner = max;
@@ -478,4 +449,3 @@ DEBUG_INLINE void UniformGrid<T, d>::InitWithCount(const T& min, const T& max, c
     T diff = maxCorner - minCorner;
     cellDx = diff / nCells;
 }
-

@@ -13,8 +13,8 @@
 
 #include "ApplicationInstance.h"
 #include "Assets/AssetsManager.h"
-#include "IRenderInterfaceModule.h"
 #include "Editor/Core/ImGui/ImGuiManager.h"
+#include "IRenderInterfaceModule.h"
 
 class EngineInputCoreModule;
 class IApplicationModule;
@@ -54,22 +54,26 @@ private:
 
     DelegateHandle renderStateChangeHandle;
     DelegateHandle exitAppHandle;
-protected:
-    IRenderInterfaceModule* rendererModule;
-    IApplicationModule* applicationModule;
-    EngineInputCoreModule* inputModule;
 
-    ApplicationInstance* application;
+protected:
+    IRenderInterfaceModule *rendererModule;
+    IApplicationModule *applicationModule;
+    EngineInputCoreModule *inputModule;
+
+    ApplicationInstance *application;
     ImGuiManager imguiManager;
     AssetManager assetManager;
     EngineTime timeData;
+
 private:
     void onRenderStateChange(ERenderStateEvent state);
     void tryExitApp();
+
 protected:
     virtual void onStartUp();
     virtual void onQuit();
     virtual void tickEngine();
+
 public:
     virtual ~GameEngine() = default;
 
@@ -80,46 +84,30 @@ public:
     void requestExit();
     bool isExiting() { return bExitNextFrame; }
 
-    AssetManager& getAssetManager() { return assetManager; }
-    ImGuiManager& getImGuiManager() { return imguiManager; }
+    AssetManager &getAssetManager() { return assetManager; }
+    ImGuiManager &getImGuiManager() { return imguiManager; }
 };
 
 class GameEngineWrapper final
 {
 private:
-    GameEngine* gEngine = nullptr;
+    GameEngine *gEngine = nullptr;
 
-    GameEngine* createEngineInstance();
+    GameEngine *createEngineInstance();
 
 public:
+    GameEngineWrapper() { gEngine = createEngineInstance(); }
 
-    GameEngineWrapper()
-    {
-        gEngine = createEngineInstance();
-    }
+    ~GameEngineWrapper() { gEngine = nullptr; }
 
-    ~GameEngineWrapper()
-    {
-        gEngine = nullptr;
-    }
+    GameEngine *operator->() const { return gEngine; }
 
-    GameEngine* operator->() const
-    {
-        return gEngine;
-    }
+    GameEngine *operator*() const { return gEngine; }
 
-    GameEngine* operator*() const
-    {
-        return gEngine;
-    }
+    operator bool() const { return gEngine != nullptr; }
 
-    operator bool() const
-    {
-        return gEngine != nullptr;
-    }
-
-    void operator = (const GameEngineWrapper&) = delete;
-    void operator = (GameEngineWrapper&&) = delete;
+    void operator=(const GameEngineWrapper &) = delete;
+    void operator=(GameEngineWrapper &&) = delete;
 };
 
 inline GameEngineWrapper gEngine;

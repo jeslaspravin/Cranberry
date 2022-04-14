@@ -19,7 +19,6 @@ static_assert(false, "Platform not supported!");
 static_assert(false, "Platform not supported!");
 #endif
 
-
 using uint8 = PlatformCoreTypes::uint8;
 using uint16 = PlatformCoreTypes::uint16;
 using uint32 = PlatformCoreTypes::uint32;
@@ -30,18 +29,18 @@ using int16 = PlatformCoreTypes::int16;
 using int32 = PlatformCoreTypes::int32;
 using int64 = PlatformCoreTypes::int64;
 
-using AChar = PlatformCoreTypes::AChar;// Fixed width
+using AChar = PlatformCoreTypes::AChar; // Fixed width
 using WChar = PlatformCoreTypes::WChar;
 using TChar = PlatformCoreTypes::TChar;
-using Char8 = PlatformCoreTypes::Utf8;// Variable width
-using Char16 = PlatformCoreTypes::Utf16;// Variable width
+using Char8 = PlatformCoreTypes::Utf8;   // Variable width
+using Char16 = PlatformCoreTypes::Utf16; // Variable width
 using Char32 = PlatformCoreTypes::Utf32; // Fixed width
-using Utf8 = PlatformCoreTypes::Utf8;// Variable width
-using Utf16 = PlatformCoreTypes::Utf16;// Variable width
-using Utf32 = PlatformCoreTypes::Utf32; // Fixed width
-//using Ucs2 = PlatformCoreTypes::Ucs2; // Fixed width
-//using Ucs4 = PlatformCoreTypes::Ucs4; // Fixed width
-// Encoding used in platform specific WChar type
+using Utf8 = PlatformCoreTypes::Utf8;    // Variable width
+using Utf16 = PlatformCoreTypes::Utf16;  // Variable width
+using Utf32 = PlatformCoreTypes::Utf32;  // Fixed width
+// using Ucs2 = PlatformCoreTypes::Ucs2; // Fixed width
+// using Ucs4 = PlatformCoreTypes::Ucs4; // Fixed width
+//  Encoding used in platform specific WChar type
 using WCharEncodedType = PlatformCoreTypes::WCharEncodedType;
 // Encoding used in engine for this platform
 using EncodedType = PlatformCoreTypes::EncodedType;
@@ -86,20 +85,13 @@ STATIC_ASSERT(sizeof(UInt64) == 8);
 #undef STATIC_ASSERT
 #pragma pop_macro("STATIC_ASSERT")
 
-#define FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName) \
-    FirstMacroName(uint8) \
-    MacroName(uint16)\
-    MacroName(uint32)\
-    MacroName(uint64)\
-    MacroName(int8) \
-    MacroName(int16)\
-    MacroName(int32)\
-    MacroName(int64)\
-    MacroName(float) \
-    MacroName(double)\
-    LastMacroName(bool)
+#define FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)                 \
+    FirstMacroName(uint8) MacroName(uint16) MacroName(uint32) MacroName(uint64) MacroName(int8)         \
+        MacroName(int16) MacroName(int32) MacroName(int64) MacroName(float) MacroName(double)           \
+            LastMacroName(bool)
 
-#define FOR_EACH_CORE_TYPES(MacroName) FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
+#define FOR_EACH_CORE_TYPES(MacroName)                                                                  \
+    FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
 
 #define DECLARE_CORE_TYPE_VAR(Type) Type Type##Val;
 union CoreTypesUnion

@@ -15,19 +15,19 @@
 class WindowsUnexpectedErrorHandler : public UnexpectedErrorHandler
 {
 private:
-    typedef long (*PreviousFilterFunc)(struct _EXCEPTION_POINTERS* ExceptionInfo);
+    typedef long (*PreviousFilterFunc)(struct _EXCEPTION_POINTERS *ExceptionInfo);
     PreviousFilterFunc previousFilter;
 
-    void dumpStack(struct _CONTEXT* context, bool bCloseApp) const;
+    void dumpStack(struct _CONTEXT *context, bool bCloseApp) const;
+
 public:
-    
-    static WindowsUnexpectedErrorHandler* getHandler()
+    static WindowsUnexpectedErrorHandler *getHandler()
     {
         static WindowsUnexpectedErrorHandler handler;
         return &handler;
     }
 
-    static long handlerFilter(struct _EXCEPTION_POINTERS* exp);
+    static long handlerFilter(struct _EXCEPTION_POINTERS *exp);
 
     /* UnexpectedErrorHandler Implementation */
     void registerFilter() override;
@@ -36,6 +36,5 @@ public:
     void debugBreak() const override;
     /* Ends */
 };
-
 
 typedef WindowsUnexpectedErrorHandler PlatformUnexpectedErrorHandler;

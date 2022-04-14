@@ -10,19 +10,19 @@
  */
 
 #include "Property/Property.h"
-#include "Types/TypesInfo.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
 #include "IReflectionRuntime.h"
 #include "Property/PropertyMetaData.h"
 #include "ReflectionRuntimeModule.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
+#include "Types/TypesInfo.h"
 
-BaseProperty::BaseProperty(const StringID& propNameID, const String& propName, EPropertyType propType)
+BaseProperty::BaseProperty(const StringID &propNameID, const String &propName, EPropertyType propType)
     : name(propNameID)
     , nameString(propName)
     , type(propType)
 {}
 
-const PropertyMetaDataBase* BaseProperty::getMetaData(const ReflectTypeInfo * typeInfo) const
+const PropertyMetaDataBase *BaseProperty::getMetaData(const ReflectTypeInfo *typeInfo) const
 {
     return IReflectionRuntimeModule::get()->getPropertyMetaData(this, typeInfo);
 }
@@ -32,16 +32,18 @@ FORCE_INLINE uint64 BaseProperty::getMetaFlags() const
     return IReflectionRuntimeModule::get()->getPropertyMetaFlags(this);
 }
 
-void BaseProperty::setMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+void BaseProperty::setMetaData(
+    const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags)
 {
-    static_cast<ReflectionRuntimeModule*>(IReflectionRuntimeModule::get())->setMetaData(this, propertyMeta, propertyMetaFlags);
+    static_cast<ReflectionRuntimeModule *>(IReflectionRuntimeModule::get())
+        ->setMetaData(this, propertyMeta, propertyMetaFlags);
 }
 
 //////////////////////////////////////////////////////////////////////////
 /// FieldProperty
 //////////////////////////////////////////////////////////////////////////
 
-FieldProperty::FieldProperty(const StringID& propNameID, const String& propName)
+FieldProperty::FieldProperty(const StringID &propNameID, const String &propName)
     : BaseProperty(propNameID, propName, EPropertyType::FieldType)
     , ownerProperty(nullptr)
     , field(nullptr)
@@ -54,22 +56,20 @@ FieldProperty::~FieldProperty()
     fieldPtr = nullptr;
 }
 
-FieldProperty* FieldProperty::setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+FieldProperty *FieldProperty::setPropertyMetaData(
+    const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags)
 {
     setMetaData(propertyMeta, propertyMetaFlags);
     return this;
 }
 
-uint64 FieldProperty::getPropertyMetaFlags() const
-{
-    return getMetaFlags();
-}
+uint64 FieldProperty::getPropertyMetaFlags() const { return getMetaFlags(); }
 
 //////////////////////////////////////////////////////////////////////////
 /// FunctionProperty
 //////////////////////////////////////////////////////////////////////////
 
-FunctionProperty::FunctionProperty(const StringID& propNameID, const String& propName)
+FunctionProperty::FunctionProperty(const StringID &propNameID, const String &propName)
     : BaseProperty(propNameID, propName, EPropertyType::Function)
     , ownerProperty(nullptr)
     , funcPtr(nullptr)
@@ -81,46 +81,45 @@ FunctionProperty::~FunctionProperty()
     funcPtr = nullptr;
 }
 
-FunctionProperty* FunctionProperty::setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+FunctionProperty *FunctionProperty::setPropertyMetaData(
+    const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags)
 {
     setMetaData(propertyMeta, propertyMetaFlags);
     return this;
 }
 
-uint64 FunctionProperty::getPropertyMetaFlags() const
-{
-    return getMetaFlags();
-}
+uint64 FunctionProperty::getPropertyMetaFlags() const { return getMetaFlags(); }
 
 //////////////////////////////////////////////////////////////////////////
 /// ClassProperty
 //////////////////////////////////////////////////////////////////////////
 
-ClassProperty::ClassProperty(const StringID& propNameID, const String& propName, const ReflectTypeInfo* classTypeInfo)
+ClassProperty::ClassProperty(
+    const StringID &propNameID, const String &propName, const ReflectTypeInfo *classTypeInfo)
     : TypedProperty(propNameID, propName, EPropertyType::ClassType, classTypeInfo)
 {}
 
 ClassProperty::~ClassProperty()
 {
-    for (const FunctionProperty* ctor : constructors)
+    for (const FunctionProperty *ctor : constructors)
     {
         delete ctor;
     }
 
-    for (const FieldProperty* mbrField : memberFields)
+    for (const FieldProperty *mbrField : memberFields)
     {
         delete mbrField;
     }
-    for (const FunctionProperty* mbrFunc : memberFunctions)
+    for (const FunctionProperty *mbrFunc : memberFunctions)
     {
         delete mbrFunc;
     }
 
-    for (const FieldProperty* staticField : staticFields)
+    for (const FieldProperty *staticField : staticFields)
     {
         delete staticField;
     }
-    for (const FunctionProperty* staticFunc : staticFunctions)
+    for (const FunctionProperty *staticFunc : staticFunctions)
     {
         delete staticFunc;
     }
@@ -132,55 +131,56 @@ ClassProperty::~ClassProperty()
     staticFunctions.clear();
 }
 
-ClassProperty* ClassProperty::setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+ClassProperty *ClassProperty::setPropertyMetaData(
+    const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags)
 {
     setMetaData(propertyMeta, propertyMetaFlags);
     return this;
 }
 
-uint64 ClassProperty::getPropertyMetaFlags() const
-{
-    return getMetaFlags();
-}
+uint64 ClassProperty::getPropertyMetaFlags() const { return getMetaFlags(); }
 
 //////////////////////////////////////////////////////////////////////////
 /// EnumProperty
 //////////////////////////////////////////////////////////////////////////
 
-EnumProperty::EnumProperty(const StringID& propNameID, const String& propName, const ReflectTypeInfo* enumTypeInfo, bool bCanBeUsedAsFlags)
+EnumProperty::EnumProperty(const StringID &propNameID, const String &propName,
+    const ReflectTypeInfo *enumTypeInfo, bool bCanBeUsedAsFlags)
     : TypedProperty(propNameID, propName, EPropertyType::EnumType, enumTypeInfo)
     , bIsFlags(bCanBeUsedAsFlags)
 {}
 
-EnumProperty* EnumProperty::addEnumField(const StringID& fieldNameID, const String& fieldName, uint64 fieldValue, uint64 metaFlags, std::vector<const PropertyMetaDataBase*> fieldMetaData)
+EnumProperty *EnumProperty::addEnumField(const StringID &fieldNameID, const String &fieldName,
+    uint64 fieldValue, uint64 metaFlags, std::vector<const PropertyMetaDataBase *> fieldMetaData)
 {
     fields.emplace_back(EnumField{ fieldValue, metaFlags, fieldName, fieldNameID });
-    for (const PropertyMetaDataBase* metaData : fieldMetaData)
+    for (const PropertyMetaDataBase *metaData : fieldMetaData)
     {
         fieldsMeta.insert({ { fieldValue, metaData->metaType() }, metaData });
     }
     return this;
 }
 
-EnumProperty* EnumProperty::setPropertyMetaData(const std::vector<const PropertyMetaDataBase*>& propertyMeta, uint64 propertyMetaFlags)
+EnumProperty *EnumProperty::setPropertyMetaData(
+    const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags)
 {
     setMetaData(propertyMeta, propertyMetaFlags);
     return this;
 }
 
-uint64 EnumProperty::getPropertyMetaFlags() const
-{
-    return getMetaFlags();
-}
+uint64 EnumProperty::getPropertyMetaFlags() const { return getMetaFlags(); }
 
 //////////////////////////////////////////////////////////////////////////
 /// PointerProperty
 //////////////////////////////////////////////////////////////////////////
 
-QualifiedProperty::QualifiedProperty(const StringID& propNameID, const String& propName, const ReflectTypeInfo* propTypeInfo)
+QualifiedProperty::QualifiedProperty(
+    const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo)
     : TypedProperty(propNameID, propName, EPropertyType::QualifiedType, propTypeInfo)
     , unqualTypeProperty(nullptr)
 {
-    // Only const type can have no inner type as const int can be qualified type. This case is not a useful one, and so we throw error here.
-    fatalAssert(typeInfo->innerType, "%s() : Inner type cannot be nullptr for a qualified type type %s", __func__, propName);
+    // Only const type can have no inner type as const int can be qualified type. This case is not a
+    // useful one, and so we throw error here.
+    fatalAssert(typeInfo->innerType, "%s() : Inner type cannot be nullptr for a qualified type type %s",
+        __func__, propName);
 }

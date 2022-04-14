@@ -16,10 +16,10 @@ class RenderSceneBase;
 class RendererBase
 {
 private:
-    RenderSceneBase* renderingScene;
+    RenderSceneBase *renderingScene;
 
 protected:
-    RendererBase(RenderSceneBase* scene)
+    RendererBase(RenderSceneBase *scene)
         : renderingScene(scene)
     {}
 };

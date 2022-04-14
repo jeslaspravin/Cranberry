@@ -24,4 +24,3 @@ float Math::random()
 
     return distribution(generator);
 }
-

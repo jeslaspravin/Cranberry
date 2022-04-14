@@ -396,7 +396,7 @@ endmacro ()
 
 macro (generate_cpp_console_project)
     get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
-    get_all_cpp_files(src_files)
+    gather_all_cpp_srcs(src_files)
 
     source_group(TREE ${CMAKE_CURRENT_LIST_DIR} PREFIX Sources FILES ${src_files})
 
@@ -418,7 +418,7 @@ macro (generate_cpp_static_lib)
     include(GenerateExportHeader)
 
     get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
-    get_all_cpp_files(src_files)
+    gather_all_cpp_srcs(src_files)
 
     source_group(TREE ${CMAKE_CURRENT_LIST_DIR} PREFIX Sources FILES ${src_files})
 
@@ -448,7 +448,7 @@ macro (generate_cpp_shared_lib)
     include(GenerateExportHeader)
 
     get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
-    get_all_cpp_files(src_files)
+    gather_all_cpp_srcs(src_files)
 
     source_group(TREE ${CMAKE_CURRENT_LIST_DIR} PREFIX Sources FILES ${src_files})
     
@@ -488,11 +488,8 @@ macro(generate_csharp_console_project)
 
     get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
-    file (GLOB_RECURSE file_list 
-        LIST_DIRECTORIES false
-        RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        CONFIGURE_DEPENDS
-        *)
+    gather_all_csharp_srcs(file_list)
+
     add_executable(${target_name}
         ${file_list}
     )

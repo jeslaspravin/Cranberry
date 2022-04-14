@@ -24,10 +24,10 @@ void Quat::fromRotationImpl(Rotation rotation)
     // Attitude is Pitch
     // Bank is Yaw
     // Not suitable for engine's rotation order roll-pitch-yaw
-    //x = s.roll() * s.pitch() * c.yaw() + c.roll() * c.pitch() * s.yaw();
-    //y = s.roll() * c.pitch() * c.yaw() + c.roll() * s.pitch() * s.yaw();
-    //z = c.roll() * s.pitch() * c.yaw() - s.roll() * c.pitch() * s.yaw();
-    //w = c.roll() * c.pitch() * c.yaw() - s.roll() * s.pitch() * s.yaw();
+    // x = s.roll() * s.pitch() * c.yaw() + c.roll() * c.pitch() * s.yaw();
+    // y = s.roll() * c.pitch() * c.yaw() + c.roll() * s.pitch() * s.yaw();
+    // z = c.roll() * s.pitch() * c.yaw() - s.roll() * c.pitch() * s.yaw();
+    // w = c.roll() * c.pitch() * c.yaw() - s.roll() * s.pitch() * s.yaw();
 
     // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Euler_angles_to_quaternion_conversion
     x = s.roll() * c.pitch() * c.yaw() - c.roll() * s.pitch() * s.yaw();
@@ -49,9 +49,9 @@ Rotation Quat::toRotation() const
     float qwz(w * z);
 
     // http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/index.htm
-    //float roll = Math::atan(2 * (qwy - qxz), 1.0f - 2 * (qyy + qzz));
-    //float pitch = Math::asin(2 * (qxy + qwz));
-    //float yaw = Math::atan(2 * (qwx - qyz), 1.0f - 2 * (qxx + qzz));
+    // float roll = Math::atan(2 * (qwy - qxz), 1.0f - 2 * (qyy + qzz));
+    // float pitch = Math::asin(2 * (qxy + qwz));
+    // float yaw = Math::atan(2 * (qwx - qyz), 1.0f - 2 * (qxx + qzz));
 
     // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_conversion
     float roll = Math::atan(2 * (qwx + qyz), 1.0f - 2 * (qxx + qyy));
@@ -64,9 +64,9 @@ Rotation Quat::toRotation() const
 // Is same as in wikipedia
 // https://en.wikipedia.org/wiki/Rotation_matrix#Quaternion
 // Matrix transposed from row major to column major
-void Quat::fromRotationMatImpl(const RotationMatrix& rotationMatrix)
+void Quat::fromRotationMatImpl(const RotationMatrix &rotationMatrix)
 {
-    const Matrix3& rotMat = rotationMatrix.matrix();
+    const Matrix3 &rotMat = rotationMatrix.matrix();
     const float trace = rotMat[0][0] + rotMat[1][1] + rotMat[2][2];
 
     if (trace > 0.0f)
@@ -83,8 +83,10 @@ void Quat::fromRotationMatImpl(const RotationMatrix& rotationMatrix)
     {
         // Find largest in trace
         int32 i = 0;
-        if (rotMat[1][1] > rotMat[0][0]) i = 1;
-        if (rotMat[2][2] > rotMat[i][i]) i = 2;
+        if (rotMat[1][1] > rotMat[0][0])
+            i = 1;
+        if (rotMat[2][2] > rotMat[i][i])
+            i = 2;
 
         const static int32 NEXTS[] = { 1, 2, 0 };
         int32 j = NEXTS[i];
@@ -118,10 +120,13 @@ RotationMatrix Quat::toRotationMatrix() const
     float qwz(w * z);
 
     Matrix3 rotMat(
-        /* Column 1 */  0.5f - qyy - qzz, qxy + qwz         , qxz - qwy
-        /* Column 2 */, qxy - qwz       , 0.5f - qxx - qzz  , qyz + qwx
-        /* Column 3 */, qxz + qwy       , qyz - qwx         , 0.5f - qxx - qyy 
-    );
+        /* Column 1 */ 0.5f - qyy - qzz, qxy + qwz,
+        qxz - qwy
+        /* Column 2 */,
+        qxy - qwz, 0.5f - qxx - qzz,
+        qyz + qwx
+        /* Column 3 */,
+        qxz + qwy, qyz - qwx, 0.5f - qxx - qyy);
     rotMat *= 2;
 
     return RotationMatrix(rotMat);
@@ -145,43 +150,27 @@ void Quat::fromAngleAxisImpl(float angle, Vector3D axis)
     w = Math::cos(hAngleRad);
 }
 
-Vector3D Quat::rotateVector(const Vector3D& vector) const
+Vector3D Quat::rotateVector(const Vector3D &vector) const
 {
-    Vector3D q{ x,y,z };
-    return (w * w - q.sqrlength()) * vector
-        + 2 * ((q | vector) * q + w * (q ^ vector));
+    Vector3D q{ x, y, z };
+    return (w * w - q.sqrlength()) * vector + 2 * ((q | vector) * q + w * (q ^ vector));
 }
 
-float Quat::dot(const Quat& a, const Quat& b)
-{
-    return a | b;
-}
+float Quat::dot(const Quat &a, const Quat &b) { return a | b; }
 
-float Quat::operator[](uint32 index) const
-{
-    return (&this->x)[index];
-}
+float Quat::operator[](uint32 index) const { return (&this->x)[index]; }
 
-float& Quat::operator[](uint32 index)
-{
-    return (&this->x)[index];
-}
+float &Quat::operator[](uint32 index) { return (&this->x)[index]; }
 
-float Quat::operator|(const Quat& b) const
-{
-    return (x * b.x)
-        + (y * b.y)
-        + (z * b.z)
-        + (w * b.w);
-}
+float Quat::operator|(const Quat &b) const { return (x * b.x) + (y * b.y) + (z * b.z) + (w * b.w); }
 
-Quat Quat::operator*(const Quat& b) const
+Quat Quat::operator*(const Quat &b) const
 {
     Quat ret(*this);
     return ret *= b;
 }
 
-Quat& Quat::operator*=(const Quat& b)
+Quat &Quat::operator*=(const Quat &b)
 {
     Quat a(*this);
     this->x = a.x * b.w + a.w * b.x + a.y * b.z - a.z * b.y;
@@ -193,12 +182,12 @@ Quat& Quat::operator*=(const Quat& b)
     return (*this);
 }
 
-Quat Quat::operator*(const float& scalar) const
+Quat Quat::operator*(const float &scalar) const
 {
     return Quat(x * scalar, y * scalar, z * scalar, w * scalar);
 }
 
-Quat& Quat::operator*=(const float& scalar)
+Quat &Quat::operator*=(const float &scalar)
 {
     x *= scalar;
     y *= scalar;
@@ -207,12 +196,12 @@ Quat& Quat::operator*=(const float& scalar)
     return *this;
 }
 
-Quat Quat::operator/(const float& scalar) const
+Quat Quat::operator/(const float &scalar) const
 {
     return Quat(x / scalar, y / scalar, z / scalar, w / scalar);
 }
 
-Quat& Quat::operator/=(const float& scalar)
+Quat &Quat::operator/=(const float &scalar)
 {
     x /= scalar;
     y /= scalar;
@@ -221,12 +210,9 @@ Quat& Quat::operator/=(const float& scalar)
     return *this;
 }
 
-Quat Quat::operator-(const Quat& b) const
-{
-    return Quat(x - b.x, y - b.y, z - b.z, w - b.w);
-}
+Quat Quat::operator-(const Quat &b) const { return Quat(x - b.x, y - b.y, z - b.z, w - b.w); }
 
-Quat& Quat::operator-=(const Quat& b)
+Quat &Quat::operator-=(const Quat &b)
 {
     x -= b.x;
     y -= b.y;
@@ -235,12 +221,12 @@ Quat& Quat::operator-=(const Quat& b)
     return *this;
 }
 
-Quat Quat::operator-(const float& scalar) const
+Quat Quat::operator-(const float &scalar) const
 {
     return Quat(x - scalar, y - scalar, z - scalar, w - scalar);
 }
 
-Quat& Quat::operator-=(const float& scalar)
+Quat &Quat::operator-=(const float &scalar)
 {
     x -= scalar;
     y -= scalar;
@@ -249,17 +235,11 @@ Quat& Quat::operator-=(const float& scalar)
     return *this;
 }
 
-Quat Quat::operator-() const
-{
-    return Quat(-x, -y, -z, -w);
-}
+Quat Quat::operator-() const { return Quat(-x, -y, -z, -w); }
 
-Quat Quat::operator+(const Quat& b) const
-{
-    return Quat(x + b.x, y + b.y, z + b.z, w + b.w);
-}
+Quat Quat::operator+(const Quat &b) const { return Quat(x + b.x, y + b.y, z + b.z, w + b.w); }
 
-Quat& Quat::operator+=(const Quat& b)
+Quat &Quat::operator+=(const Quat &b)
 {
     x += b.x;
     y += b.y;
@@ -268,12 +248,12 @@ Quat& Quat::operator+=(const Quat& b)
     return *this;
 }
 
-Quat Quat::operator+(const float& scalar) const
+Quat Quat::operator+(const float &scalar) const
 {
     return Quat(x + scalar, y + scalar, z + scalar, w + scalar);
 }
 
-Quat& Quat::operator+=(const float& scalar)
+Quat &Quat::operator+=(const float &scalar)
 {
     x += scalar;
     y += scalar;
@@ -282,34 +262,24 @@ Quat& Quat::operator+=(const float& scalar)
     return *this;
 }
 
-bool Quat::operator==(const Quat& b) const
+bool Quat::operator==(const Quat &b) const
 {
-    return Math::isEqual(x, b.x)
-        && Math::isEqual(y, b.y)
-        && Math::isEqual(z, b.z)
-        && Math::isEqual(w, b.w);
+    return Math::isEqual(x, b.x) && Math::isEqual(y, b.y) && Math::isEqual(z, b.z)
+           && Math::isEqual(w, b.w);
 }
 
-bool Quat::isSame(const Quat& b, float epsilon /*= SMALL_EPSILON*/) const
+bool Quat::isSame(const Quat &b, float epsilon /*= SMALL_EPSILON*/) const
 {
-    return Math::isEqual(x, b.x, epsilon) 
-        && Math::isEqual(y, b.y, epsilon) 
-        && Math::isEqual(z, b.z, epsilon) 
-        && Math::isEqual(w, b.w, epsilon);
+    return Math::isEqual(x, b.x, epsilon) && Math::isEqual(y, b.y, epsilon)
+           && Math::isEqual(z, b.z, epsilon) && Math::isEqual(w, b.w, epsilon);
 }
 
 bool Quat::isFinite() const
 {
-    return Math::isFinite(x)
-        && Math::isFinite(y)
-        && Math::isFinite(z)
-        && Math::isFinite(w);
+    return Math::isFinite(x) && Math::isFinite(y) && Math::isFinite(z) && Math::isFinite(w);
 }
 
-Quat Quat::normalized() const
-{
-    return (*this) * Math::invSqrt(sqrlength());
-}
+Quat Quat::normalized() const { return (*this) * Math::invSqrt(sqrlength()); }
 
 Quat Quat::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
 {
@@ -334,38 +304,27 @@ Quat Quat::inverse() const
     return retVal;
 }
 
-float Quat::length() const
+float Quat::length() const { return Math::sqrt(sqrlength()); }
+
+float Quat::sqrlength() const { return (x * x) + (y * y) + (z * z) + (w * w); }
+
+Quat Quat::clamp(const Quat &value, const Quat &min, const Quat &max)
 {
-    return Math::sqrt(sqrlength());
+    return Quat(Math::clamp(value.x, min.x, max.x), Math::clamp(value.y, min.y, max.y),
+        Math::clamp(value.z, min.z, max.z), Math::clamp(value.w, min.w, max.w));
 }
 
-float Quat::sqrlength() const
-{
-    return (x * x)
-        + (y * y)
-        + (z * z)
-        + (w * w);
-}
-
-Quat Quat::clamp(const Quat& value, const Quat& min, const Quat& max)
-{
-    return Quat(Math::clamp(value.x, min.x, max.x)
-        , Math::clamp(value.y, min.y, max.y)
-        , Math::clamp(value.z, min.z, max.z)
-        , Math::clamp(value.w, min.w, max.w));
-}
-
-Quat Quat::floor(const Quat& value)
+Quat Quat::floor(const Quat &value)
 {
     return Quat(Math::floor(value.x), Math::floor(value.y), Math::floor(value.z), Math::floor(value.w));
 }
 
-Quat Quat::ceil(const Quat& value)
+Quat Quat::ceil(const Quat &value)
 {
     return Quat(Math::ceil(value.x), Math::ceil(value.y), Math::ceil(value.z), Math::ceil(value.w));
 }
 
-Quat Quat::round(const Quat& value)
+Quat Quat::round(const Quat &value)
 {
     return Quat(Math::round(value.x), Math::round(value.y), Math::round(value.z), Math::round(value.w));
 }

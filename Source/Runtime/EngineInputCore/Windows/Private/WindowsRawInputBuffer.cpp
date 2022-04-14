@@ -10,18 +10,15 @@
  */
 
 #include "WindowsRawInputBuffer.h"
-#include "Logger/Logger.h"
 #include "InputDevice.h"
+#include "Logger/Logger.h"
 #include "WindowsCommonHeaders.h"
 
-WindowsRawInputBuffer::~WindowsRawInputBuffer()
-{
-    clearBuffer();
-}
+WindowsRawInputBuffer::~WindowsRawInputBuffer() { clearBuffer(); }
 
-void WindowsRawInputBuffer::processInputs(const ProcessInputsParam& params) const
+void WindowsRawInputBuffer::processInputs(const ProcessInputsParam &params) const
 {
-    RAWINPUT* rawInput = reinterpret_cast<RAWINPUT*>(rawBuffer);
+    RAWINPUT *rawInput = reinterpret_cast<RAWINPUT *>(rawBuffer);
 
     for (int32 blockIdx = 0; blockIdx < inputBlocksNum; ++blockIdx)
     {
@@ -55,7 +52,7 @@ void WindowsRawInputBuffer::update()
     std::vector<uint8> bufferedRawInput;
     int32 currentBlocksNum = 0, totalBlocksNum = 0;
 
-    while(true)
+    while (true)
     {
         const uint32 currRawSize = uint32(bufferedRawInput.size());
 
@@ -75,7 +72,7 @@ void WindowsRawInputBuffer::update()
         }
 
         bufferedRawInput.resize(currRawSize + bufferSize);
-        RAWINPUT* rawInput = reinterpret_cast<RAWINPUT*>(&bufferedRawInput[currRawSize]);
+        RAWINPUT *rawInput = reinterpret_cast<RAWINPUT *>(&bufferedRawInput[currRawSize]);
         currentBlocksNum = GetRawInputBuffer(rawInput, &bufferSize, sizeof(RAWINPUTHEADER));
         totalBlocksNum += currentBlocksNum;
         if (currentBlocksNum == -1)
@@ -111,4 +108,3 @@ void WindowsRawInputBuffer::resize(uint32 newSize)
         rawBuffer = new uint8[currentBufferSize];
     }
 }
-

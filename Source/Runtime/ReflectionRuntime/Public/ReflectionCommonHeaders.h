@@ -19,8 +19,8 @@
 #include "Types/FunctionTypes.h"
 #include "Types/PropertyTypes.h"
 
-#include "Property/PropertyMetaData.h"
 #include "Property/Property.h"
+#include "Property/PropertyMetaData.h"
 
 #include "IReflectionRuntime.h"
 #include "ReflectionMacros.h"

@@ -14,7 +14,6 @@
 #include "MeshAsset.h"
 #include "RenderApi/VertexData.h"
 
-
 class StaticMeshAsset : public MeshAsset
 {
 public:

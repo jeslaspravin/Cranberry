@@ -16,12 +16,14 @@ class PROGRAMCORE_EXPORT WindowsFile final : public GenericFile
 {
 
 public:
-    WindowsFile(const String& path = TCHAR("")):GenericFile(path){}
-    WindowsFile(WindowsFile&& otherFile);
-    WindowsFile(const WindowsFile& otherFile);
+    WindowsFile(const String &path = TCHAR(""))
+        : GenericFile(path)
+    {}
+    WindowsFile(WindowsFile &&otherFile);
+    WindowsFile(const WindowsFile &otherFile);
     ~WindowsFile();
-    void operator=(const WindowsFile& otherFile);
-    void operator=(WindowsFile&& otherFile);
+    void operator=(const WindowsFile &otherFile);
+    void operator=(WindowsFile &&otherFile);
 
     void flush() const override;
     bool exists() const override;
@@ -33,13 +35,13 @@ public:
     uint64 filePointer() const override;
     void seekEnd() const override;
     void seekBegin() const override;
-    void seek(const int64& pointer) const override;
-    void offsetCursor(const int64& offset) const override;
+    void seek(const int64 &pointer) const override;
+    void offsetCursor(const int64 &offset) const override;
 
-    bool setFileSize(const int64& newSize) const override;
-    void read(std::vector<uint8>& readTo, const uint32& bytesToRead = (~0u)) const override;
-    void read(uint8* readTo, const uint32& bytesToRead) const override;
-    void write(const ArrayView<const uint8>& writeBytes) const override;
+    bool setFileSize(const int64 &newSize) const override;
+    void read(std::vector<uint8> &readTo, const uint32 &bytesToRead = (~0u)) const override;
+    void read(uint8 *readTo, const uint32 &bytesToRead) const override;
+    void write(const ArrayView<const uint8> &writeBytes) const override;
 
     bool deleteFile() override;
     bool renameFile(String newName) override;
@@ -47,14 +49,15 @@ public:
     bool createDirectory() const override;
 
 protected:
-    virtual GenericFileHandle* openOrCreateImpl() override;
-    virtual GenericFileHandle* openImpl()  const override;
+    virtual GenericFileHandle *openOrCreateImpl() override;
+    virtual GenericFileHandle *openImpl() const override;
     virtual bool closeImpl() const override;
 
     bool dirDelete() const override;
     bool dirClearAndDelete() const override;
 };
 
-namespace LFS {
-    typedef WindowsFile PlatformFile;
+namespace LFS
+{
+typedef WindowsFile PlatformFile;
 }

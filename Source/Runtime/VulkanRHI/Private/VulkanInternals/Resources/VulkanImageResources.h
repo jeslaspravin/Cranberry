@@ -14,10 +14,11 @@
 
 class VulkanRenderTargetResource : public VulkanImageResource
 {
-    DECLARE_VK_GRAPHICS_RESOURCE(VulkanRenderTargetResource,,VulkanImageResource,)
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanRenderTargetResource, , VulkanImageResource, )
 
 private:
     VulkanRenderTargetResource();
+
 public:
     VulkanRenderTargetResource(ImageResourceCreateInfo createInfo);
 };
@@ -28,6 +29,7 @@ class VulkanCubeImageResource : public VulkanImageResource
 
 protected:
     VulkanCubeImageResource();
+
 public:
     VulkanCubeImageResource(ImageResourceCreateInfo createInfo, bool cpuAccessible = false);
 };
@@ -38,14 +40,15 @@ class VulkanCubeRTImageResource : public VulkanCubeImageResource
 
 private:
     VulkanCubeRTImageResource();
+
 public:
     VulkanCubeRTImageResource(ImageResourceCreateInfo createInfo);
 };
 
 namespace GraphicsTypes
 {
-    typedef VulkanRenderTargetResource GraphicsRenderTargetResource;
-    typedef VulkanCubeImageResource GraphicsCubeImageResource;
-    typedef VulkanCubeRTImageResource GraphicsCubeRTImageResource;
-    typedef VulkanImageResource GraphicsImageResource;
-}
+typedef VulkanRenderTargetResource GraphicsRenderTargetResource;
+typedef VulkanCubeImageResource GraphicsCubeImageResource;
+typedef VulkanCubeRTImageResource GraphicsCubeRTImageResource;
+typedef VulkanImageResource GraphicsImageResource;
+} // namespace GraphicsTypes

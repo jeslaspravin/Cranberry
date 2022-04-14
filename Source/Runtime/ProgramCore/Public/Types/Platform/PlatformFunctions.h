@@ -43,5 +43,5 @@ using PlatformFunctions = GPlatformFunctions::PlatformFunctions;
 
 namespace GPlatformConfigs
 {
-    PROGRAMCORE_EXPORT extern PlatformEndian PLATFORM_ENDIAN;
+PROGRAMCORE_EXPORT extern PlatformEndian PLATFORM_ENDIAN;
 }

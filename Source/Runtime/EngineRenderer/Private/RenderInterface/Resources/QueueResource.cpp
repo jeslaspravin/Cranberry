@@ -18,4 +18,3 @@ void QueueResourceBase::init()
     BaseType::init();
     reinitResources();
 }
-

@@ -16,24 +16,25 @@
 class EngineRedererModule final : public IRenderInterfaceModule
 {
 private:
-    IGraphicsInstance* graphicsInstanceCache;
-    const GraphicsHelperAPI* graphicsHelperCache;
+    IGraphicsInstance *graphicsInstanceCache;
+    const GraphicsHelperAPI *graphicsHelperCache;
     WeakModulePtr weakRHI;
 
-    RenderManager* renderManager;
+    RenderManager *renderManager;
+
 public:
     RenderStateDelegate renderStateEvents;
-public:
 
+public:
     /* IRenderInterfaceModule finals */
-    IGraphicsInstance* currentGraphicsInstance() const final;
-    const GraphicsHelperAPI* currentGraphicsHelper() const final;
+    IGraphicsInstance *currentGraphicsInstance() const final;
+    const GraphicsHelperAPI *currentGraphicsHelper() const final;
 
     void initializeGraphics() final;
     void finalizeGraphicsInitialization() final;
-    RenderManager* getRenderManager() const final;
+    RenderManager *getRenderManager() const final;
     DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback) final;
-    void unregisterToStateEvents(const DelegateHandle& handle) final;
+    void unregisterToStateEvents(const DelegateHandle &handle) final;
     /* IModuleBase finals */
     void init() final;
     void release() final;

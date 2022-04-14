@@ -10,12 +10,12 @@
  */
 
 #pragma once
-#include "RenderInterface/Rendering/FramebufferTypes.h"
-#include "Math/CoreMathTypedefs.h"
 #include "EngineRendererExports.h"
+#include "Math/CoreMathTypedefs.h"
+#include "RenderInterface/Rendering/FramebufferTypes.h"
 
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 class IGraphicsInstance;
 class IRenderCommandList;
@@ -25,7 +25,8 @@ class ENGINERENDERER_EXPORT GlobalBuffers
 {
 private:
     // Attachment formats for GBuffers render pass types
-    static std::unordered_map<ERenderPassFormat::Type, FramebufferFormat::AttachmentsFormatList> GBUFFERS_ATTACHMENT_FORMATS;
+    static std::unordered_map<ERenderPassFormat::Type, FramebufferFormat::AttachmentsFormatList>
+        GBUFFERS_ATTACHMENT_FORMATS;
 
     static ImageResourceRef dummyBlackTexture;
     static ImageResourceRef dummyWhiteTexture;
@@ -38,22 +39,28 @@ private:
     static std::pair<BufferResourceRef, BufferResourceRef> quadRectVertsInds;
     static std::pair<BufferResourceRef, BufferResourceRef> lineGizmoVertxInds;
 
-    static void createTextureCubes(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
+    static void createTextureCubes(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+        const GraphicsHelperAPI *graphicsHelper);
     static void destroyTextureCubes();
 
-    static void createTexture2Ds(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
+    static void createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+        const GraphicsHelperAPI *graphicsHelper);
     // Generates using shaders or some other pipeline based technics
     static void generateTexture2Ds();
     static void destroyTexture2Ds();
 
-    static void createVertIndBuffers(IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper);
+    static void createVertIndBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+        const GraphicsHelperAPI *graphicsHelper);
     static void destroyVertIndBuffers();
+
 public:
     static void initialize();
     static void destroy();
 
-    static GenericRenderPassProperties getFramebufferRenderpassProps(ERenderPassFormat::Type renderpassFormat);
-    static const FramebufferFormat::AttachmentsFormatList& getGBufferAttachmentFormat(ERenderPassFormat::Type renderpassFormat);
+    static GenericRenderPassProperties getFramebufferRenderpassProps(
+        ERenderPassFormat::Type renderpassFormat);
+    static const FramebufferFormat::AttachmentsFormatList &getGBufferAttachmentFormat(
+        ERenderPassFormat::Type renderpassFormat);
 
     static ImageResourceRef dummyWhite2D() { return dummyWhiteTexture; }
     static ImageResourceRef dummyBlack2D() { return dummyBlackTexture; }
@@ -62,6 +69,12 @@ public:
     static ImageResourceRef integratedBrdfLUT() { return integratedBRDF; }
 
     static const BufferResourceRef getQuadTriVertexBuffer() { return quadTriVerts; }
-    static std::pair<const BufferResourceRef, const BufferResourceRef> getQuadRectVertexIndexBuffers() { return quadRectVertsInds; }
-    static std::pair<const BufferResourceRef, const BufferResourceRef> getLineGizmoVertexIndexBuffers() { return lineGizmoVertxInds; }
+    static std::pair<const BufferResourceRef, const BufferResourceRef> getQuadRectVertexIndexBuffers()
+    {
+        return quadRectVertsInds;
+    }
+    static std::pair<const BufferResourceRef, const BufferResourceRef> getLineGizmoVertexIndexBuffers()
+    {
+        return lineGizmoVertxInds;
+    }
 };

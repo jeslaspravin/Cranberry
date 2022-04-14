@@ -16,7 +16,7 @@
 class IVulkanRHIModule : public IRHIModule
 {
 public:
-    virtual IGraphicsInstance* getGraphicsInstance() const = 0;
+    virtual IGraphicsInstance *getGraphicsInstance() const = 0;
 
-    static IVulkanRHIModule* get();
+    static IVulkanRHIModule *get();
 };

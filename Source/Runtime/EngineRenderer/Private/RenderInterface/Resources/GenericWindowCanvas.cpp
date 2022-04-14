@@ -14,15 +14,13 @@
 
 DEFINE_GRAPHICS_RESOURCE(GenericWindowCanvas)
 
-uint32 GenericWindowCanvas::requestNextImage(SemaphoreRef* waitOnSemaphore, FenceRef* waitOnFence/*= nullptr*/)
+uint32 GenericWindowCanvas::requestNextImage(
+    SemaphoreRef *waitOnSemaphore, FenceRef *waitOnFence /*= nullptr*/)
 {
     return 0;
 }
 
-void GenericWindowCanvas::addRef()
-{
-    refCounter.fetch_add(1);
-}
+void GenericWindowCanvas::addRef() { refCounter.fetch_add(1); }
 
 void GenericWindowCanvas::removeRef()
 {
@@ -34,10 +32,7 @@ void GenericWindowCanvas::removeRef()
     }
 }
 
-uint32 GenericWindowCanvas::refCount() const
-{
-    return refCounter.load();
-}
+uint32 GenericWindowCanvas::refCount() const { return refCounter.load(); }
 
 String GenericWindowCanvas::getResourceName() const
 {

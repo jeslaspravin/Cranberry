@@ -15,20 +15,24 @@
 
 #include <unordered_set>
 
-FileChangesTracker::FileChangesTracker(const String name, const String& directory, const String& intermediateDir)
+FileChangesTracker::FileChangesTracker(
+    const String name, const String &directory, const String &intermediateDir)
     : trackerManifestName(name + FILE_NAME)
     , folderPath(directory)
     , writePath(intermediateDir)
 {
-    fatalAssert(PlatformFile(folderPath).exists(), "%s() : Tracking base directory %s is not valid", __func__, folderPath);
+    fatalAssert(PlatformFile(folderPath).exists(), "%s() : Tracking base directory %s is not valid",
+        __func__, folderPath);
     String manifestContent;
-    if (FileHelper::readString(manifestContent, PathFunctions::combinePath(writePath, trackerManifestName)))
+    if (FileHelper::readString(
+            manifestContent, PathFunctions::combinePath(writePath, trackerManifestName)))
     {
         std::vector<StringView> readLines = manifestContent.splitLines();
-        for(String line : readLines)
+        for (String line : readLines)
         {
             std::vector<String> fileEntry = String::split(line, TCHAR("="));
-            fatalAssert(fileEntry.size() == 2, "%s() : Cannot parse file timestamp from %s", __func__, line);
+            fatalAssert(
+                fileEntry.size() == 2, "%s() : Cannot parse file timestamp from %s", __func__, line);
             fileLastTimestamp[fileEntry[0]] = std::stoll(fileEntry[1]);
         }
     }
@@ -38,17 +42,20 @@ FileChangesTracker::~FileChangesTracker()
 {
     std::vector<String> manifestEntries(fileLastTimestamp.size());
     int32 i = 0;
-    for (const auto& fileEntry : fileLastTimestamp)
+    for (const auto &fileEntry : fileLastTimestamp)
     {
         manifestEntries[i] = StringFormat::format(TCHAR("%s=%lld"), fileEntry.first, fileEntry.second);
         ++i;
     }
 
-    String manifestFileContent = String::join(manifestEntries.cbegin(), manifestEntries.cend(), LINE_FEED_CHAR);
-    FileHelper::writeString(manifestFileContent, PathFunctions::combinePath(writePath, trackerManifestName));
+    String manifestFileContent
+        = String::join(manifestEntries.cbegin(), manifestEntries.cend(), LINE_FEED_CHAR);
+    FileHelper::writeString(
+        manifestFileContent, PathFunctions::combinePath(writePath, trackerManifestName));
 }
 
-bool FileChangesTracker::isTargetOutdated(const String& absPath, const std::vector<String>& outputFiles) const
+bool FileChangesTracker::isTargetOutdated(
+    const String &absPath, const std::vector<String> &outputFiles) const
 {
     PlatformFile srcFile(absPath);
     if (!srcFile.exists())
@@ -59,16 +66,15 @@ bool FileChangesTracker::isTargetOutdated(const String& absPath, const std::vect
     std::map<String, TickRep>::const_iterator itr = fileLastTimestamp.find(relPath);
     if (itr != fileLastTimestamp.end())
     {
-        const std::pair<const String, TickRep>& fileEntry = (*itr);
+        const std::pair<const String, TickRep> &fileEntry = (*itr);
 
         // Output file must be newer than src file
         bool bIsAllOutsValid = true;
-        for (const String& targetFilePath : outputFiles)
+        for (const String &targetFilePath : outputFiles)
         {
             PlatformFile targetFile(targetFilePath);
-            bIsAllOutsValid = bIsAllOutsValid
-                && targetFile.exists()
-                && targetFile.lastWriteTimeStamp() > ts;
+            bIsAllOutsValid
+                = bIsAllOutsValid && targetFile.exists() && targetFile.lastWriteTimeStamp() > ts;
         }
 
         if (fileEntry.second >= ts && bIsAllOutsValid)
@@ -79,7 +85,7 @@ bool FileChangesTracker::isTargetOutdated(const String& absPath, const std::vect
     return true;
 }
 
-bool FileChangesTracker::updateNewerFile(const String& absPath, const std::vector<String>& outputFiles)
+bool FileChangesTracker::updateNewerFile(const String &absPath, const std::vector<String> &outputFiles)
 {
     if (isTargetOutdated(absPath, outputFiles))
     {
@@ -92,18 +98,18 @@ bool FileChangesTracker::updateNewerFile(const String& absPath, const std::vecto
     return false;
 }
 
-std::vector<String> FileChangesTracker::filterIntersects(const std::vector<String>& srcfilePaths)
+std::vector<String> FileChangesTracker::filterIntersects(const std::vector<String> &srcfilePaths)
 {
     std::vector<String> deletedSrcs;
     deletedSrcs.reserve(srcfilePaths.size());
     std::unordered_set<String> relSrcFiles;
     relSrcFiles.reserve(srcfilePaths.size());
-    for (const String& srcFilePath : srcfilePaths)
+    for (const String &srcFilePath : srcfilePaths)
     {
         relSrcFiles.insert(PathFunctions::toRelativePath(srcFilePath, folderPath));
     }
 
-    for (auto itr = fileLastTimestamp.begin(); itr != fileLastTimestamp.end(); )
+    for (auto itr = fileLastTimestamp.begin(); itr != fileLastTimestamp.end();)
     {
         if (relSrcFiles.contains(itr->first))
         {

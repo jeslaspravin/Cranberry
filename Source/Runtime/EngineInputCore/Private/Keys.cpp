@@ -134,186 +134,166 @@ const Key Keys::NUMENTER{ EKeyCode::KEY_NUMENTER, TCHAR("Enter") };
 const Key Keys::EQUAL{ EKeyCode::KEY_EQUAL, TCHAR("=") };
 const Key Keys::FWDDEL{ EKeyCode::KEY_FWDDEL, TCHAR("\b") };
 
-
-
-std::initializer_list<std::pair<const Key*, KeyState>> Keys::STATES_INITIALIZER
-{
-    { &LMB, KeyState()},
-    { &RMB, KeyState()},
-    { &MMB, KeyState()},
-    { &X1MB, KeyState()},
-    { &X2MB, KeyState()},
-    { &BACKSPACE, KeyState()},
-    { &TAB, KeyState()},
-    { &CAPS, KeyState()},
-    { &ESC, KeyState()},
-    { &ENTER, KeyState()},
-    { &SPACE, KeyState()},
-    { &PAGEUP, KeyState()},
-    { &PAGEDOWN, KeyState()},
-    { &END, KeyState()},
-    { &HOME, KeyState()},
-    { &LEFT, KeyState()},
-    { &UP, KeyState()},
-    { &RIGHT, KeyState()},
-    { &DOWN, KeyState()},
-    { &INS, KeyState()},
-    { &DEL, KeyState()},
-    { &ZERO, KeyState()},
-    { &ONE, KeyState()},
-    { &TWO, KeyState()},
-    { &THREE, KeyState()},
-    { &FOUR, KeyState()},
-    { &FIVE, KeyState()},
-    { &SIX, KeyState()},
-    { &SEVEN, KeyState()},
-    { &EIGHT, KeyState()},
-    { &NINE, KeyState()},
-    { &A, KeyState()},
-    { &B, KeyState()},
-    { &C, KeyState()},
-    { &D, KeyState()},
-    { &E, KeyState()},
-    { &F, KeyState()},
-    { &G, KeyState()},
-    { &H, KeyState()},
-    { &I, KeyState()},
-    { &J, KeyState()},
-    { &K, KeyState()},
-    { &L, KeyState()},
-    { &M, KeyState()},
-    { &N, KeyState()},
-    { &O, KeyState()},
-    { &P, KeyState()},
-    { &Q, KeyState()},
-    { &R, KeyState()},
-    { &S, KeyState()},
-    { &T, KeyState()},
-    { &U, KeyState()},
-    { &V, KeyState()},
-    { &W, KeyState()},
-    { &X, KeyState()},
-    { &Y, KeyState()},
-    { &Z, KeyState()},
-    { &NUM0, KeyState()},
-    { &NUM1, KeyState()},
-    { &NUM2, KeyState()},
-    { &NUM3, KeyState()},
-    { &NUM4, KeyState()},
-    { &NUM5, KeyState()},
-    { &NUM6, KeyState()},
-    { &NUM7, KeyState()},
-    { &NUM8, KeyState()},
-    { &NUM9, KeyState()},
-    { &ASTERICK, KeyState()},
-    { &PLUS, KeyState()},
-    { &NUMMINUS, KeyState()},
-    { &NUMFULLSTOP, KeyState()},
-    { &NUMFWDSLASH, KeyState()},
-    { &F1, KeyState()},
-    { &F2, KeyState()},
-    { &F3, KeyState()},
-    { &F4, KeyState()},
-    { &F5, KeyState()},
-    { &F6, KeyState()},
-    { &F7, KeyState()},
-    { &F8, KeyState()},
-    { &F9, KeyState()},
-    { &F10, KeyState()},
-    { &F11, KeyState()},
-    { &F12, KeyState()},
-    { &LWIN, KeyState()},
-    { &RWIN, KeyState()},
-    { &MENU, KeyState()},
-    { &F16, KeyState()},
-    { &F17, KeyState()},
-    { &F18, KeyState()},
-    { &F19, KeyState()},
-    { &F20, KeyState()},
-    { &F21, KeyState()},
-    { &F22, KeyState()},
-    { &F23, KeyState()},
-    { &F24, KeyState()},
-    { &NUMLOCK, KeyState()},
-    { &SCRLLOCK, KeyState()},
-    { &PAUSE, KeyState()},
-    { &LSHIFT, KeyState()},
-    { &RSHIFT, KeyState()},
-    { &LCTRL, KeyState()},
-    { &RCTRL, KeyState()},
-    { &LALT, KeyState()},
+std::initializer_list<std::pair<const Key *, KeyState>> Keys::STATES_INITIALIZER{
+    { &LMB, KeyState() },
+    { &RMB, KeyState() },
+    { &MMB, KeyState() },
+    { &X1MB, KeyState() },
+    { &X2MB, KeyState() },
+    { &BACKSPACE, KeyState() },
+    { &TAB, KeyState() },
+    { &CAPS, KeyState() },
+    { &ESC, KeyState() },
+    { &ENTER, KeyState() },
+    { &SPACE, KeyState() },
+    { &PAGEUP, KeyState() },
+    { &PAGEDOWN, KeyState() },
+    { &END, KeyState() },
+    { &HOME, KeyState() },
+    { &LEFT, KeyState() },
+    { &UP, KeyState() },
+    { &RIGHT, KeyState() },
+    { &DOWN, KeyState() },
+    { &INS, KeyState() },
+    { &DEL, KeyState() },
+    { &ZERO, KeyState() },
+    { &ONE, KeyState() },
+    { &TWO, KeyState() },
+    { &THREE, KeyState() },
+    { &FOUR, KeyState() },
+    { &FIVE, KeyState() },
+    { &SIX, KeyState() },
+    { &SEVEN, KeyState() },
+    { &EIGHT, KeyState() },
+    { &NINE, KeyState() },
+    { &A, KeyState() },
+    { &B, KeyState() },
+    { &C, KeyState() },
+    { &D, KeyState() },
+    { &E, KeyState() },
+    { &F, KeyState() },
+    { &G, KeyState() },
+    { &H, KeyState() },
+    { &I, KeyState() },
+    { &J, KeyState() },
+    { &K, KeyState() },
+    { &L, KeyState() },
+    { &M, KeyState() },
+    { &N, KeyState() },
+    { &O, KeyState() },
+    { &P, KeyState() },
+    { &Q, KeyState() },
+    { &R, KeyState() },
+    { &S, KeyState() },
+    { &T, KeyState() },
+    { &U, KeyState() },
+    { &V, KeyState() },
+    { &W, KeyState() },
+    { &X, KeyState() },
+    { &Y, KeyState() },
+    { &Z, KeyState() },
+    { &NUM0, KeyState() },
+    { &NUM1, KeyState() },
+    { &NUM2, KeyState() },
+    { &NUM3, KeyState() },
+    { &NUM4, KeyState() },
+    { &NUM5, KeyState() },
+    { &NUM6, KeyState() },
+    { &NUM7, KeyState() },
+    { &NUM8, KeyState() },
+    { &NUM9, KeyState() },
+    { &ASTERICK, KeyState() },
+    { &PLUS, KeyState() },
+    { &NUMMINUS, KeyState() },
+    { &NUMFULLSTOP, KeyState() },
+    { &NUMFWDSLASH, KeyState() },
+    { &F1, KeyState() },
+    { &F2, KeyState() },
+    { &F3, KeyState() },
+    { &F4, KeyState() },
+    { &F5, KeyState() },
+    { &F6, KeyState() },
+    { &F7, KeyState() },
+    { &F8, KeyState() },
+    { &F9, KeyState() },
+    { &F10, KeyState() },
+    { &F11, KeyState() },
+    { &F12, KeyState() },
+    { &LWIN, KeyState() },
+    { &RWIN, KeyState() },
+    { &MENU, KeyState() },
+    { &F16, KeyState() },
+    { &F17, KeyState() },
+    { &F18, KeyState() },
+    { &F19, KeyState() },
+    { &F20, KeyState() },
+    { &F21, KeyState() },
+    { &F22, KeyState() },
+    { &F23, KeyState() },
+    { &F24, KeyState() },
+    { &NUMLOCK, KeyState() },
+    { &SCRLLOCK, KeyState() },
+    { &PAUSE, KeyState() },
+    { &LSHIFT, KeyState() },
+    { &RSHIFT, KeyState() },
+    { &LCTRL, KeyState() },
+    { &RCTRL, KeyState() },
+    { &LALT, KeyState() },
     { &RALT, KeyState() },
-    { &SEMICOLON, KeyState()},
-    { &COMMA, KeyState()},
-    { &FULLSTOP, KeyState()},
-    { &FWDSLASH, KeyState()},
-    { &MINUS, KeyState()},
-    { &BACKTICK, KeyState()},
-    { &OPENSQR, KeyState()},
-    { &CLOSESQR, KeyState()},
-    { &BACKSLASH, KeyState()},
-    { &APOSTROPHE, KeyState()},
-    { &PA1, KeyState()},
-    { &CLR, KeyState()},
-    { &LEFTBACKSLASH, KeyState()},
-    { &NUMENTER, KeyState()},
-    { &EQUAL, KeyState()},
-    { &FWDDEL, KeyState()},
+    { &SEMICOLON, KeyState() },
+    { &COMMA, KeyState() },
+    { &FULLSTOP, KeyState() },
+    { &FWDSLASH, KeyState() },
+    { &MINUS, KeyState() },
+    { &BACKTICK, KeyState() },
+    { &OPENSQR, KeyState() },
+    { &CLOSESQR, KeyState() },
+    { &BACKSLASH, KeyState() },
+    { &APOSTROPHE, KeyState() },
+    { &PA1, KeyState() },
+    { &CLR, KeyState() },
+    { &LEFTBACKSLASH, KeyState() },
+    { &NUMENTER, KeyState() },
+    { &EQUAL, KeyState() },
+    { &FWDDEL, KeyState() },
 };
-
 
 Keys::Keys()
     : keyStates(STATES_INITIALIZER.begin(), STATES_INITIALIZER.end())
-{
+{}
 
-}
+const Keys::StateInfoType *Keys::queryState(const Key &key) const { return &keyStates.at(&key); }
 
-const Keys::StateInfoType* Keys::queryState(const Key& key) const
-{
-    return &keyStates.at(&key);
-}
-
-std::map<Keys::StateKeyType, Keys::StateInfoType>& Keys::getKeyStates()
-{
-    return keyStates;
-}
+std::map<Keys::StateKeyType, Keys::StateInfoType> &Keys::getKeyStates() { return keyStates; }
 
 void Keys::resetStates()
 {
-    for (std::pair<const StateKeyType, StateInfoType>& keyStatePair : keyStates)
+    for (std::pair<const StateKeyType, StateInfoType> &keyStatePair : keyStates)
     {
-        keyStatePair.second.isPressed = keyStatePair.second.keyWentUp = keyStatePair.second.keyWentDown = 0;
+        keyStatePair.second.isPressed = keyStatePair.second.keyWentUp = keyStatePair.second.keyWentDown
+            = 0;
     }
 }
 
-bool Keys::isKeyboardKey(uint32 keyCode)
-{
-    return !isMouseKey(keyCode);
-}
+bool Keys::isKeyboardKey(uint32 keyCode) { return !isMouseKey(keyCode); }
 
 bool Keys::isMouseKey(uint32 keyCode)
 {
     return EKeyCode::MOUSE_START <= keyCode && EKeyCode::MOUSE_END >= keyCode;
 }
 
-std::initializer_list<std::pair<AnalogStates::EStates, InputAnalogState>> AnalogStates::STATES_INITIALIZER
-{
-    { RelMouseX, InputAnalogState() },
-    { RelMouseY, InputAnalogState() },
-    { AbsMouseX, InputAnalogState() },
-    { AbsMouseY, InputAnalogState() },
-    { ScrollWheelX, InputAnalogState() },
-    { ScrollWheelY, InputAnalogState() },
-    { CapsLock, InputAnalogState() },
-    { NumLock, InputAnalogState() },
-    { ScrollLock, InputAnalogState() }
-};
+std::initializer_list<std::pair<AnalogStates::EStates, InputAnalogState>>
+    AnalogStates::STATES_INITIALIZER{ { RelMouseX, InputAnalogState() },
+        { RelMouseY, InputAnalogState() }, { AbsMouseX, InputAnalogState() },
+        { AbsMouseY, InputAnalogState() }, { ScrollWheelX, InputAnalogState() },
+        { ScrollWheelY, InputAnalogState() }, { CapsLock, InputAnalogState() },
+        { NumLock, InputAnalogState() }, { ScrollLock, InputAnalogState() } };
 
 AnalogStates::AnalogStates()
     : analogStates(STATES_INITIALIZER.begin(), STATES_INITIALIZER.end())
 {}
 
-const AnalogStates::StateInfoType* AnalogStates::queryState(EStates analogState) const
+const AnalogStates::StateInfoType *AnalogStates::queryState(EStates analogState) const
 {
     auto stateItr = analogStates.find(analogState);
     if (stateItr != analogStates.cend())
@@ -323,16 +303,16 @@ const AnalogStates::StateInfoType* AnalogStates::queryState(EStates analogState)
     return nullptr;
 }
 
-std::map<AnalogStates::StateKeyType, AnalogStates::StateInfoType>& AnalogStates::getAnalogStates()
+std::map<AnalogStates::StateKeyType, AnalogStates::StateInfoType> &AnalogStates::getAnalogStates()
 {
     return analogStates;
 }
 
 void AnalogStates::resetStates()
 {
-    for (std::pair<const EStates, InputAnalogState>& analogStatePair : analogStates)
+    for (std::pair<const EStates, InputAnalogState> &analogStatePair : analogStates)
     {
-        analogStatePair.second.acceleration = analogStatePair.second.currentValue = analogStatePair.second.startedThisFrame =
-            analogStatePair.second.startedThisFrame = 0;
+        analogStatePair.second.acceleration = analogStatePair.second.currentValue
+            = analogStatePair.second.startedThisFrame = analogStatePair.second.startedThisFrame = 0;
     }
 }

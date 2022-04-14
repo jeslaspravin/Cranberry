@@ -10,9 +10,9 @@
  */
 
 #pragma once
-#include "Math/Vector3D.h"
-#include "Math/Rotation.h"
 #include "Math/Matrix4.h"
+#include "Math/Rotation.h"
+#include "Math/Vector3D.h"
 #include "ProgramCoreExports.h"
 
 #include <optional>
@@ -41,44 +41,44 @@ private:
     static const float MAX_FOV;
     static const float MIN_NEAR_FAR_DIFF;
     static const float MIN_NEAR;
-public:
 
+public:
     ECameraProjection cameraProjection;
 
 private:
-    void orthographicMatrix(Matrix4& matrix, float halfWidth, float halfHeight) const;
-    void orthographicMatrix(Matrix4& matrix, float left, float right, float top, float bottom) const;
-    void orthographicMatrix(Matrix4& matrix) const;
+    void orthographicMatrix(Matrix4 &matrix, float halfWidth, float halfHeight) const;
+    void orthographicMatrix(Matrix4 &matrix, float left, float right, float top, float bottom) const;
+    void orthographicMatrix(Matrix4 &matrix) const;
 
-    void perspectiveMatrix(Matrix4& matrix, float halfWidth, float halfHeight) const;
-    void perspectiveMatrix(Matrix4& matrix, float left, float right, float top, float bottom) const;
-    void perspectiveMatrix(Matrix4& matrix) const;
+    void perspectiveMatrix(Matrix4 &matrix, float halfWidth, float halfHeight) const;
+    void perspectiveMatrix(Matrix4 &matrix, float left, float right, float top, float bottom) const;
+    void perspectiveMatrix(Matrix4 &matrix) const;
+
 public:
-
     void setFOV(float horizontal, float vertical);
-    void setOrthoSize(const Size2D& orthographicSize);
+    void setOrthoSize(const Size2D &orthographicSize);
     void setClippingPlane(float near, float far);
 
     void setCustomProjection(Matrix4 projMatrix);
     void clearCustomProjection();
 
-    void setTranslation(const Vector3D& newLocation);
+    void setTranslation(const Vector3D &newLocation);
     Vector3D translation() const { return camTranslation; }
-    void setRotation(const Rotation& newRotation);
+    void setRotation(const Rotation &newRotation);
     Rotation rotation() const { return camRotation; }
     float farPlane() const { return farClip; }
     float nearPlane() const { return nearClip; }
-    void frustumCorners(Vector3D* corners, Vector3D* center = nullptr) const;
+    void frustumCorners(Vector3D *corners, Vector3D *center = nullptr) const;
 
-    void lookAt(const Vector3D& lookAtTarget);
+    void lookAt(const Vector3D &lookAtTarget);
     // Expected pos input
     // (0,0) ----------------
     //      |                |
     //      |                |
     //      |                |
     //       ----------------  (1, 1)
-    Vector3D screenToWorld(const Vector2D& screenPos) const;
-    Vector3D screenToWorldFwd(const Vector2D& screenPos) const;
+    Vector3D screenToWorld(const Vector2D &screenPos) const;
+    Vector3D screenToWorldFwd(const Vector2D &screenPos) const;
 
     Matrix4 viewMatrix() const;
     Matrix4 projectionMatrix() const;

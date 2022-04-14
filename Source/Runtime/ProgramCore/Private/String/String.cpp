@@ -1,29 +1,28 @@
 #include "String/String.h"
-#include "String/TCharString.h"
-#include "Types/Templates/ValueTraits.h"
-#include "Types/Platform/PlatformFunctions.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Logger/Logger.h"
+#include "String/TCharString.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
+#include "Types/Platform/PlatformFunctions.h"
+#include "Types/Templates/ValueTraits.h"
 
 #include <locale>
 
 template <typename BufferType, typename NonUtf8Type>
-FORCE_INLINE bool convertToUtf8(BufferType& buffer, const NonUtf8Type* start)
+FORCE_INLINE bool convertToUtf8(BufferType &buffer, const NonUtf8Type *start)
 {
-    auto& toUtf8 = std::use_facet<std::codecvt<NonUtf8Type, Utf8, std::mbstate_t>>(std::locale());
-    const auto* end = TCharStr::recurseToNullEnd(start);
+    auto &toUtf8 = std::use_facet<std::codecvt<NonUtf8Type, Utf8, std::mbstate_t>>(std::locale());
+    const auto *end = TCharStr::recurseToNullEnd(start);
 
     // Convert from UTF-16/UTF-32 to UTF-8
     std::mbstate_t state{};
-    const NonUtf8Type* nextFrom = nullptr;
-    Utf8* nextTo = nullptr;
+    const NonUtf8Type *nextFrom = nullptr;
+    Utf8 *nextTo = nullptr;
 
     buffer.resize(toUtf8.max_length() * (end - start), TCHAR('\0'));
-    Utf8* outData = reinterpret_cast<Utf8*>(buffer.data());
+    Utf8 *outData = reinterpret_cast<Utf8 *>(buffer.data());
 
-    std::codecvt_base::result status = toUtf8.out(state
-        , reinterpret_cast<const NonUtf8Type*>(start), reinterpret_cast<const NonUtf8Type*>(end), nextFrom
-        , outData, outData + buffer.size(), nextTo);
+    std::codecvt_base::result status = toUtf8.out(state, reinterpret_cast<const NonUtf8Type *>(start),
+        reinterpret_cast<const NonUtf8Type *>(end), nextFrom, outData, outData + buffer.size(), nextTo);
     buffer.resize(nextTo - outData);
     if (status != std::codecvt_base::ok)
     {
@@ -35,21 +34,20 @@ FORCE_INLINE bool convertToUtf8(BufferType& buffer, const NonUtf8Type* start)
 }
 
 template <typename BufferType, typename NonUtf8Type = BufferType::value_type>
-FORCE_INLINE bool convertFromUtf8(BufferType& buffer, const AChar* start)
+FORCE_INLINE bool convertFromUtf8(BufferType &buffer, const AChar *start)
 {
-    auto& fromUtf8 = std::use_facet<std::codecvt<NonUtf8Type, Utf8, std::mbstate_t>>(std::locale());
-    const auto* end = TCharStr::recurseToNullEnd(start);
+    auto &fromUtf8 = std::use_facet<std::codecvt<NonUtf8Type, Utf8, std::mbstate_t>>(std::locale());
+    const auto *end = TCharStr::recurseToNullEnd(start);
 
     // Convert from UTF-8 to UTF-16/UTF-32
     std::mbstate_t state{};
-    const Utf8* nextFrom = nullptr;
-    NonUtf8Type* nextTo = nullptr;
+    const Utf8 *nextFrom = nullptr;
+    NonUtf8Type *nextTo = nullptr;
 
     buffer.resize(end - start, TCHAR('\0'));
-    NonUtf8Type* outData = reinterpret_cast<NonUtf8Type*>(buffer.data());
-    std::codecvt_base::result status = fromUtf8.in(state
-        , reinterpret_cast<const Utf8*>(start), reinterpret_cast<const Utf8*>(end), nextFrom
-        , outData, outData + buffer.size(), nextTo);
+    NonUtf8Type *outData = reinterpret_cast<NonUtf8Type *>(buffer.data());
+    std::codecvt_base::result status = fromUtf8.in(state, reinterpret_cast<const Utf8 *>(start),
+        reinterpret_cast<const Utf8 *>(end), nextFrom, outData, outData + buffer.size(), nextTo);
     buffer.resize(nextTo - outData);
     if (status != std::codecvt_base::ok)
     {
@@ -60,7 +58,7 @@ FORCE_INLINE bool convertFromUtf8(BufferType& buffer, const AChar* start)
     return true;
 }
 
-const AChar* StringConv<WChar, AChar>::convert(const WChar* start)
+const AChar *StringConv<WChar, AChar>::convert(const WChar *start)
 {
     if (!(PlatformFunctions::wcharToUtf8(str, start) || convertToUtf8(str, start)))
     {
@@ -68,7 +66,7 @@ const AChar* StringConv<WChar, AChar>::convert(const WChar* start)
     }
     return str.c_str();
 }
-const WChar* StringConv<AChar, WChar>::convert(const AChar* start)
+const WChar *StringConv<AChar, WChar>::convert(const AChar *start)
 {
     if (!(PlatformFunctions::utf8ToWChar(str, start) || convertFromUtf8(str, start)))
     {
@@ -77,7 +75,7 @@ const WChar* StringConv<AChar, WChar>::convert(const AChar* start)
     return str.c_str();
 }
 
-const Utf16* StlStringConv<AChar, Utf16>::convert(const AChar* start)
+const Utf16 *StlStringConv<AChar, Utf16>::convert(const AChar *start)
 {
     if (!convertFromUtf8(str, start))
     {
@@ -85,7 +83,7 @@ const Utf16* StlStringConv<AChar, Utf16>::convert(const AChar* start)
     }
     return str.c_str();
 }
-const AChar* StlStringConv<Utf16, AChar>::convert(const Utf16* start)
+const AChar *StlStringConv<Utf16, AChar>::convert(const Utf16 *start)
 {
     if (!convertToUtf8(str, start))
     {
@@ -94,7 +92,7 @@ const AChar* StlStringConv<Utf16, AChar>::convert(const Utf16* start)
     return str.c_str();
 }
 
-const Utf32* StlStringConv<AChar, Utf32>::convert(const AChar* start)
+const Utf32 *StlStringConv<AChar, Utf32>::convert(const AChar *start)
 {
     if (!convertFromUtf8(str, start))
     {
@@ -102,7 +100,7 @@ const Utf32* StlStringConv<AChar, Utf32>::convert(const AChar* start)
     }
     return str.c_str();
 }
-const AChar* StlStringConv<Utf32, AChar>::convert(const Utf32* start)
+const AChar *StlStringConv<Utf32, AChar>::convert(const Utf32 *start)
 {
     if (!convertToUtf8(str, start))
     {

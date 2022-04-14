@@ -9,22 +9,24 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
-#include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
 #include "RenderInterface/Resources/Pipelines.h"
+#include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
+#include "RenderInterface/Shaders/Base/UtilityShaders.h"
 
 #define DRAW_QUAD_FROM_INPUT_ATTACHMENT TCHAR("DrawQuadFromInputAttachment")
 
-class DrawQuadFromInputAttachment : public ShaderConfigCollector/* UniqueUtilityShader Once support for input attachments are introduced */
+class DrawQuadFromInputAttachment : public ShaderConfigCollector /* UniqueUtilityShader Once support for
+                                                                    input attachments are introduced */
 {
     DECLARE_GRAPHICS_RESOURCE(DrawQuadFromInputAttachment, , ShaderConfigCollector, );
+
 private:
     DrawQuadFromInputAttachment();
 };
 
 DEFINE_GRAPHICS_RESOURCE(DrawQuadFromInputAttachment);
 
-DrawQuadFromInputAttachment::DrawQuadFromInputAttachment() 
+DrawQuadFromInputAttachment::DrawQuadFromInputAttachment()
     : BaseType(DRAW_QUAD_FROM_INPUT_ATTACHMENT)
 {}
 
@@ -33,4 +35,5 @@ DrawQuadFromInputAttachment::DrawQuadFromInputAttachment()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(QUAD_FROM_INPUT_ATTACHMENT_PIPELINE_REGISTER, DRAW_QUAD_FROM_INPUT_ATTACHMENT, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(QUAD_FROM_INPUT_ATTACHMENT_PIPELINE_REGISTER,
+    DRAW_QUAD_FROM_INPUT_ATTACHMENT, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);

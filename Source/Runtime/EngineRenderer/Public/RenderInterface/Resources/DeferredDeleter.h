@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include "Types/Time.h"
-#include "Types/CoreDefines.h"
 #include "EngineRendererExports.h"
+#include "Types/CoreDefines.h"
+#include "Types/Time.h"
 
 #include <vector>
 
@@ -21,9 +21,9 @@ class GraphicsResource;
 
 enum class EDeferredDelStrategy
 {
-    FrameCount, // Tries deleting a resource after given frame count
+    FrameCount,     // Tries deleting a resource after given frame count
     SwapchainCount, // Tries deleting after swapchain count of frame
-    TimePeriod, // Tries to delete after a time period
+    TimePeriod,     // Tries to delete after a time period
     Immediate
 };
 
@@ -32,7 +32,7 @@ class ENGINERENDERER_EXPORT DeferredDeleter
 public:
     struct DeferringData
     {
-        GraphicsResource* resource;
+        GraphicsResource *resource;
 
         // Defer duration in time tick or frame count
         TickRep deferDuration;
@@ -45,10 +45,12 @@ private:
     std::vector<DeferringData> deletingResources;
     // Used in case when clearing all clears an indirect resource which in turn adds to defer delete
     bool bClearing = false;
+
 private:
-    FORCE_INLINE void deleteResource(GraphicsResource* res);
+    FORCE_INLINE void deleteResource(GraphicsResource *res);
+
 public:
-    void deferDelete(DeferringData&& deferringInfo);
+    void deferDelete(DeferringData &&deferringInfo);
     void update();
     // Clears and deletes any pending resources
     void clear();

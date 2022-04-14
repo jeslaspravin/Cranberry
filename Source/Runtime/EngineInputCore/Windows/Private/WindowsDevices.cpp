@@ -9,15 +9,14 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-
-#include "WindowsKeyboardDevice.h"
-#include "WindowsMouseDevice.h"
-#include "WindowsCommonHeaders.h"
 #include "GenericAppWindow.h"
+#include "Keys.h"
 #include "Logger/Logger.h"
 #include "Math/Math.h"
-#include "Keys.h"
 #include "PlatformInputTypes.h"
+#include "WindowsCommonHeaders.h"
+#include "WindowsKeyboardDevice.h"
+#include "WindowsMouseDevice.h"
 
 #include <hidusage.h>
 
@@ -31,34 +30,44 @@ WindowsMouseDevice::WindowsMouseDevice()
     analogRawStates[AnalogStates::ScrollWheelX] = analogRawStates[AnalogStates::ScrollWheelY] = 0;
 }
 
-bool WindowsMouseDevice::sendInRaw(const void* rawInput)
+bool WindowsMouseDevice::sendInRaw(const void *rawInput)
 {
-    const RAWINPUT* winRawInput = reinterpret_cast<const RAWINPUT*>(rawInput);
+    const RAWINPUT *winRawInput = reinterpret_cast<const RAWINPUT *>(rawInput);
     if (winRawInput->header.dwType != RIM_TYPEMOUSE)
     {
         return false;
     }
 
-    const RAWMOUSE& mouseData = winRawInput->data.mouse;
-    if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_1_DOWN | RI_MOUSE_BUTTON_1_UP)) != 0)// LMB
+    const RAWMOUSE &mouseData = winRawInput->data.mouse;
+    if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_1_DOWN | RI_MOUSE_BUTTON_1_UP)) != 0) // LMB
     {
-        buttonRawStates[EKeyCode::MOUSE_LEFT] = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) == RI_MOUSE_BUTTON_1_DOWN ? DOWN_STATE : UP_STATE;
+        buttonRawStates[EKeyCode::MOUSE_LEFT]
+            = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_1_DOWN) == RI_MOUSE_BUTTON_1_DOWN ? DOWN_STATE
+                                                                                           : UP_STATE;
     }
-    else if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_2_DOWN | RI_MOUSE_BUTTON_2_UP)) != 0)// RMB
+    else if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_2_DOWN | RI_MOUSE_BUTTON_2_UP)) != 0) // RMB
     {
-        buttonRawStates[EKeyCode::MOUSE_RIGHT] = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_2_DOWN) == RI_MOUSE_BUTTON_2_DOWN ? DOWN_STATE : UP_STATE;
+        buttonRawStates[EKeyCode::MOUSE_RIGHT]
+            = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_2_DOWN) == RI_MOUSE_BUTTON_2_DOWN ? DOWN_STATE
+                                                                                           : UP_STATE;
     }
-    else if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_3_DOWN | RI_MOUSE_BUTTON_3_UP)) != 0)// MMB
+    else if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_3_DOWN | RI_MOUSE_BUTTON_3_UP)) != 0) // MMB
     {
-        buttonRawStates[EKeyCode::MOUSE_MID] = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_3_DOWN) == RI_MOUSE_BUTTON_3_DOWN ? DOWN_STATE : UP_STATE;
+        buttonRawStates[EKeyCode::MOUSE_MID]
+            = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_3_DOWN) == RI_MOUSE_BUTTON_3_DOWN ? DOWN_STATE
+                                                                                           : UP_STATE;
     }
-    else if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_5_DOWN | RI_MOUSE_BUTTON_4_UP)) != 0)// X1MB
+    else if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_5_DOWN | RI_MOUSE_BUTTON_4_UP)) != 0) // X1MB
     {
-        buttonRawStates[EKeyCode::MOUSE_X1] = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) == RI_MOUSE_BUTTON_5_DOWN ? DOWN_STATE : UP_STATE;
+        buttonRawStates[EKeyCode::MOUSE_X1]
+            = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) == RI_MOUSE_BUTTON_5_DOWN ? DOWN_STATE
+                                                                                           : UP_STATE;
     }
-    else if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_5_DOWN | RI_MOUSE_BUTTON_5_UP)) != 0)// X2MB
+    else if ((mouseData.usButtonFlags & (RI_MOUSE_BUTTON_5_DOWN | RI_MOUSE_BUTTON_5_UP)) != 0) // X2MB
     {
-        buttonRawStates[EKeyCode::MOUSE_X2] = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) == RI_MOUSE_BUTTON_5_DOWN ? DOWN_STATE : UP_STATE;
+        buttonRawStates[EKeyCode::MOUSE_X2]
+            = (mouseData.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) == RI_MOUSE_BUTTON_5_DOWN ? DOWN_STATE
+                                                                                           : UP_STATE;
     }
     else if ((mouseData.usButtonFlags & RI_MOUSE_WHEEL) == RI_MOUSE_WHEEL)
     {
@@ -82,7 +91,7 @@ bool WindowsMouseDevice::sendInRaw(const void* rawInput)
     return true;
 }
 
-bool WindowsMouseDevice::registerWindow(const GenericAppWindow* window) const
+bool WindowsMouseDevice::registerWindow(const GenericAppWindow *window) const
 {
     RAWINPUTDEVICE mouseDevice;
     mouseDevice.usUsage = HID_USAGE_GENERIC_MOUSE;
@@ -92,15 +101,16 @@ bool WindowsMouseDevice::registerWindow(const GenericAppWindow* window) const
 
     if (!RegisterRawInputDevices(&mouseDevice, 1, sizeof(decltype(mouseDevice))))
     {
-        LOG_WARN("WindowsMouseDevice", "%s : Failed registering mouse for window %s", __func__, window->getWindowName().getChar());
+        LOG_WARN("WindowsMouseDevice", "%s : Failed registering mouse for window %s", __func__,
+            window->getWindowName().getChar());
         return false;
     }
     return true;
 }
 
-void WindowsMouseDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* analogStates)
+void WindowsMouseDevice::pullProcessedInputs(Keys *keyStates, AnalogStates *analogStates)
 {
-    for (std::pair<Key const* const, KeyState>& keyState : keyStates->getKeyStates())
+    for (std::pair<Key const *const, KeyState> &keyState : keyStates->getKeyStates())
     {
         const EKeyCode keyCode = EKeyCode(keyState.first->keyCode);
         if (!Keys::isMouseKey(keyCode))
@@ -114,7 +124,8 @@ void WindowsMouseDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* anal
         auto rawKeyState = buttonRawStates.find(keyCode);
         if (rawKeyState != buttonRawStates.end())
         {
-            // Not checking current pressed or release state before setting key went up/down to allow OS's key press repeat after delay
+            // Not checking current pressed or release state before setting key went up/down to
+            // allow OS's key press repeat after delay
             switch (rawKeyState->second)
             {
             case UP_STATE:
@@ -126,8 +137,8 @@ void WindowsMouseDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* anal
             }
             case DOWN_STATE:
             {
-                keyState.second.pressedTick = keyState.second.isPressed ?
-                    keyState.second.pressedTick : Time::timeNow();
+                keyState.second.pressedTick
+                    = keyState.second.isPressed ? keyState.second.pressedTick : Time::timeNow();
                 keyState.second.isPressed = 1;
                 keyState.second.keyWentDown = 1;
                 break;
@@ -142,21 +153,23 @@ void WindowsMouseDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* anal
     }
 
     // Filling direct accessible analog states
-    POINT cursorPos{ 0,0 };
+    POINT cursorPos{ 0, 0 };
     if (GetCursorPos(&cursorPos))
     {
         analogRawStates[AnalogStates::AbsMouseX] = float(cursorPos.x);
         analogRawStates[AnalogStates::AbsMouseY] = float(cursorPos.y);
     }
 
-    std::map<AnalogStates::EStates, InputAnalogState>& analogStatesMap = analogStates->getAnalogStates();
-    for (std::pair<const uint32, float>& rawAnalogState : analogRawStates)
+    std::map<AnalogStates::EStates, InputAnalogState> &analogStatesMap = analogStates->getAnalogStates();
+    for (std::pair<const uint32, float> &rawAnalogState : analogRawStates)
     {
-        InputAnalogState& outAnalogState = analogStatesMap[AnalogStates::EStates(rawAnalogState.first)];
-        outAnalogState.startedThisFrame = (Math::isEqual(outAnalogState.currentValue, 0.0f) && rawAnalogState.second != 0.0f)
-            ? 1 : 0;
-        outAnalogState.stoppedThisFrame = (Math::isEqual(rawAnalogState.second, 0.0f) && outAnalogState.currentValue != 0.0f)
-            ? 1 : 0;
+        InputAnalogState &outAnalogState = analogStatesMap[AnalogStates::EStates(rawAnalogState.first)];
+        outAnalogState.startedThisFrame
+            = (Math::isEqual(outAnalogState.currentValue, 0.0f) && rawAnalogState.second != 0.0f) ? 1
+                                                                                                  : 0;
+        outAnalogState.stoppedThisFrame
+            = (Math::isEqual(rawAnalogState.second, 0.0f) && outAnalogState.currentValue != 0.0f) ? 1
+                                                                                                  : 0;
         outAnalogState.acceleration = rawAnalogState.second - outAnalogState.currentValue;
         outAnalogState.currentValue = rawAnalogState.second;
         rawAnalogState.second = 0;
@@ -167,22 +180,24 @@ void WindowsMouseDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* anal
 // Keyboard device
 //////////////////////////////////////////////////////////////////////////
 
-bool WindowsKeyboardDevice::sendInRaw(const void* rawInput)
+bool WindowsKeyboardDevice::sendInRaw(const void *rawInput)
 {
-    const RAWINPUT* winRawInput = reinterpret_cast<const RAWINPUT*>(rawInput);
+    const RAWINPUT *winRawInput = reinterpret_cast<const RAWINPUT *>(rawInput);
     if (winRawInput->header.dwType != RIM_TYPEKEYBOARD)
     {
         return false;
     }
-    const uint8 keyState = (winRawInput->data.keyboard.Flags & RI_KEY_BREAK) == RI_KEY_BREAK ? UP_STATE : DOWN_STATE;
+    const uint8 keyState
+        = (winRawInput->data.keyboard.Flags & RI_KEY_BREAK) == RI_KEY_BREAK ? UP_STATE : DOWN_STATE;
     /*
-    * This is happening whenever multi-byte mapped keys are pressed
-    * Currently we are not handling those keys properly
-    */
+     * This is happening whenever multi-byte mapped keys are pressed
+     * Currently we are not handling those keys properly
+     */
     if (winRawInput->data.keyboard.VKey == 0xFF)
     {
-        LOG_WARN("WindowsKeyboardDevice", "%s() : Possible multibyte key that is not handled properly : %d, Flags : %d", __func__
-            , winRawInput->data.keyboard.MakeCode, winRawInput->data.keyboard.Flags);
+        LOG_WARN("WindowsKeyboardDevice",
+            "%s() : Possible multibyte key that is not handled properly : %d, Flags : %d", __func__,
+            winRawInput->data.keyboard.MakeCode, winRawInput->data.keyboard.Flags);
         return true;
     }
     // If E1 flag is there then it is pause/break
@@ -202,7 +217,7 @@ bool WindowsKeyboardDevice::sendInRaw(const void* rawInput)
     return true;
 }
 
-bool WindowsKeyboardDevice::registerWindow(const GenericAppWindow* window) const
+bool WindowsKeyboardDevice::registerWindow(const GenericAppWindow *window) const
 {
     RAWINPUTDEVICE keyboardDevice;
     keyboardDevice.usUsage = HID_USAGE_GENERIC_KEYBOARD;
@@ -212,15 +227,16 @@ bool WindowsKeyboardDevice::registerWindow(const GenericAppWindow* window) const
 
     if (!RegisterRawInputDevices(&keyboardDevice, 1, sizeof(decltype(keyboardDevice))))
     {
-        LOG_WARN("WindowsKeyboardDevice", "%s() : Failed registering keyboard for window %s", __func__, window->getWindowName().getChar());
+        LOG_WARN("WindowsKeyboardDevice", "%s() : Failed registering keyboard for window %s", __func__,
+            window->getWindowName().getChar());
         return false;
     }
     return true;
 }
 
-void WindowsKeyboardDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* analogStates)
+void WindowsKeyboardDevice::pullProcessedInputs(Keys *keyStates, AnalogStates *analogStates)
 {
-    for (std::pair<Key const* const, KeyState>& keyState : keyStates->getKeyStates())
+    for (std::pair<Key const *const, KeyState> &keyState : keyStates->getKeyStates())
     {
         const EKeyCode keyCode = EKeyCode(keyState.first->keyCode);
         if (!Keys::isKeyboardKey(keyCode))
@@ -234,7 +250,8 @@ void WindowsKeyboardDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* a
         auto rawKeyState = rawKeyStates.find(keyCode);
         if (rawKeyState != rawKeyStates.end())
         {
-            // Not checking current pressed or release state before setting key went up/down to allow OS's key press repeat after delay
+            // Not checking current pressed or release state before setting key went up/down to
+            // allow OS's key press repeat after delay
             switch (rawKeyState->second)
             {
             case UP_STATE:
@@ -246,8 +263,8 @@ void WindowsKeyboardDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* a
             }
             case DOWN_STATE:
             {
-                keyState.second.pressedTick = keyState.second.isPressed ?
-                    keyState.second.pressedTick : Time::timeNow();
+                keyState.second.pressedTick
+                    = keyState.second.isPressed ? keyState.second.pressedTick : Time::timeNow();
                 keyState.second.isPressed = 1;
                 keyState.second.keyWentDown = 1;
                 break;
@@ -266,14 +283,14 @@ void WindowsKeyboardDevice::pullProcessedInputs(Keys* keyStates, AnalogStates* a
     analogRawStates[AnalogStates::NumLock] = GetKeyState(VK_NUMLOCK) & 0x0001;
     analogRawStates[AnalogStates::ScrollLock] = GetKeyState(VK_SCROLL) & 0x0001;
 
-    std::map<AnalogStates::EStates, InputAnalogState>& analogStatesMap = analogStates->getAnalogStates();
-    for (std::pair<const uint32, int8>& rawAnalogState : analogRawStates)
+    std::map<AnalogStates::EStates, InputAnalogState> &analogStatesMap = analogStates->getAnalogStates();
+    for (std::pair<const uint32, int8> &rawAnalogState : analogRawStates)
     {
-        InputAnalogState& outAnalogState = analogStatesMap[AnalogStates::EStates(rawAnalogState.first)];
-        outAnalogState.startedThisFrame = (!(outAnalogState.currentValue > 0.0f) && rawAnalogState.second != 0)
-            ? 1 : 0;
-        outAnalogState.stoppedThisFrame = (rawAnalogState.second == 0 && outAnalogState.currentValue > 0.0f)
-            ? 1 : 0;
+        InputAnalogState &outAnalogState = analogStatesMap[AnalogStates::EStates(rawAnalogState.first)];
+        outAnalogState.startedThisFrame
+            = (!(outAnalogState.currentValue > 0.0f) && rawAnalogState.second != 0) ? 1 : 0;
+        outAnalogState.stoppedThisFrame
+            = (rawAnalogState.second == 0 && outAnalogState.currentValue > 0.0f) ? 1 : 0;
         outAnalogState.acceleration = rawAnalogState.second - outAnalogState.currentValue;
         outAnalogState.currentValue = rawAnalogState.second;
         rawAnalogState.second = 0;

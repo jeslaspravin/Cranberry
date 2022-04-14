@@ -14,23 +14,20 @@
 
 #include "GraphicsResources.h"
 #include "Math/CoreMathTypedefs.h"
-#include "String/String.h"
-#include "Types/HashTypes.h"
-#include "Types/CoreDefines.h"
 #include "RenderInterface/CoreGraphicsTypes.h"
+#include "String/String.h"
 #include "Types/Containers/ReferenceCountPtr.h"
+#include "Types/CoreDefines.h"
+#include "Types/HashTypes.h"
 
 struct ENGINERENDERER_EXPORT BufferViewInfo
 {
     uint64 startOffset = 0;
-    uint64 size = (~0ULL);/* VK_WHOLE_SIZE */
+    uint64 size = (~0ULL); /* VK_WHOLE_SIZE */
 
-    bool operator<(const BufferViewInfo& otherViewInfo) const
-    {
-        return size < otherViewInfo.size;
-    }
+    bool operator<(const BufferViewInfo &otherViewInfo) const { return size < otherViewInfo.size; }
 
-    bool operator==(const BufferViewInfo& otherViewInfo) const
+    bool operator==(const BufferViewInfo &otherViewInfo) const
     {
         return size == otherViewInfo.size && startOffset == otherViewInfo.startOffset;
     }
@@ -39,14 +36,14 @@ struct ENGINERENDERER_EXPORT BufferViewInfo
 template <>
 struct ENGINERENDERER_EXPORT std::hash<BufferViewInfo>
 {
-    _NODISCARD size_t operator()(const BufferViewInfo& keyval) const noexcept {
+    _NODISCARD size_t operator()(const BufferViewInfo &keyval) const noexcept
+    {
         hash<uint64> uint64Hasher;
         size_t seed = uint64Hasher(keyval.startOffset);
         HashUtility::hashCombine(seed, uint64Hasher(keyval.size));
         return seed;
     }
 };
-
 
 struct ENGINERENDERER_EXPORT ImageSubresource
 {
@@ -55,17 +52,16 @@ struct ENGINERENDERER_EXPORT ImageSubresource
     uint32 baseLayer = 0;
     uint32 layersCount = (~0U);
 
-    bool operator<(const ImageSubresource& otherSubresource) const
+    bool operator<(const ImageSubresource &otherSubresource) const
     {
-        return layersCount == otherSubresource.layersCount
-            ? mipCount < otherSubresource.mipCount
-            : layersCount < otherSubresource.layersCount;
+        return layersCount == otherSubresource.layersCount ? mipCount < otherSubresource.mipCount
+                                                           : layersCount < otherSubresource.layersCount;
     }
 
-    bool operator==(const ImageSubresource& otherSubresource) const
+    bool operator==(const ImageSubresource &otherSubresource) const
     {
         return baseLayer == otherSubresource.baseLayer && baseMip == otherSubresource.baseMip
-            && mipCount == otherSubresource.mipCount && layersCount == otherSubresource.layersCount;
+               && mipCount == otherSubresource.mipCount && layersCount == otherSubresource.layersCount;
     }
 };
 
@@ -78,9 +74,10 @@ struct ENGINERENDERER_EXPORT ImageViewInfo
         EPixelComponentMapping::Type b = EPixelComponentMapping::SameComponent;
         EPixelComponentMapping::Type a = EPixelComponentMapping::SameComponent;
 
-        bool operator==(const ImageComponentMapping& otherCompMapping) const
+        bool operator==(const ImageComponentMapping &otherCompMapping) const
         {
-            return r == otherCompMapping.r && g == otherCompMapping.g && b == otherCompMapping.b && a == otherCompMapping.a;
+            return r == otherCompMapping.r && g == otherCompMapping.g && b == otherCompMapping.b
+                   && a == otherCompMapping.a;
         }
     };
 
@@ -90,15 +87,16 @@ struct ENGINERENDERER_EXPORT ImageViewInfo
     // Used only in case of depth and stencil textures
     bool bUseStencil = false;
 
-    bool operator<(const ImageViewInfo& otherViewInfo) const
+    bool operator<(const ImageViewInfo &otherViewInfo) const
     {
         return viewSubresource < otherViewInfo.viewSubresource;
     }
 
-    bool operator==(const ImageViewInfo& otherViewInfo) const
+    bool operator==(const ImageViewInfo &otherViewInfo) const
     {
-        return bUseStencil == otherViewInfo.bUseStencil && componentMapping == otherViewInfo.componentMapping
-            && viewSubresource == otherViewInfo.viewSubresource;
+        return bUseStencil == otherViewInfo.bUseStencil
+               && componentMapping == otherViewInfo.componentMapping
+               && viewSubresource == otherViewInfo.viewSubresource;
     }
 };
 using ImageViewTypeAndInfo = std::pair<int32, ImageViewInfo>;
@@ -106,7 +104,7 @@ using ImageViewTypeAndInfo = std::pair<int32, ImageViewInfo>;
 template <>
 struct ENGINERENDERER_EXPORT std::hash<ImageViewInfo::ImageComponentMapping>
 {
-    _NODISCARD size_t operator()(const ImageViewInfo::ImageComponentMapping& keyval) const noexcept 
+    _NODISCARD size_t operator()(const ImageViewInfo::ImageComponentMapping &keyval) const noexcept
     {
         hash<uint32> uint32Hasher;
         size_t seed = uint32Hasher(keyval.r);
@@ -120,7 +118,7 @@ struct ENGINERENDERER_EXPORT std::hash<ImageViewInfo::ImageComponentMapping>
 template <>
 struct ENGINERENDERER_EXPORT std::hash<ImageSubresource>
 {
-    _NODISCARD size_t operator()(const ImageSubresource& keyval) const noexcept 
+    _NODISCARD size_t operator()(const ImageSubresource &keyval) const noexcept
     {
         hash<uint32> uint32Hasher;
         size_t seed = uint32Hasher(keyval.baseLayer);
@@ -134,7 +132,7 @@ struct ENGINERENDERER_EXPORT std::hash<ImageSubresource>
 template <>
 struct ENGINERENDERER_EXPORT std::hash<ImageViewInfo>
 {
-    _NODISCARD size_t operator()(const ImageViewInfo& keyval) const noexcept 
+    _NODISCARD size_t operator()(const ImageViewInfo &keyval) const noexcept
     {
         size_t seed = hash<bool>{}(keyval.bUseStencil);
         HashUtility::hashCombine(seed, keyval.componentMapping);
@@ -146,7 +144,7 @@ struct ENGINERENDERER_EXPORT std::hash<ImageViewInfo>
 template <>
 struct ENGINERENDERER_EXPORT std::hash<ImageViewTypeAndInfo>
 {
-    _NODISCARD size_t operator()(const ImageViewTypeAndInfo& keyval) const noexcept 
+    _NODISCARD size_t operator()(const ImageViewTypeAndInfo &keyval) const noexcept
     {
         size_t seed = hash<int32>{}(keyval.first);
         HashUtility::hashCombine(seed, keyval.second);
@@ -154,18 +152,18 @@ struct ENGINERENDERER_EXPORT std::hash<ImageViewTypeAndInfo>
     }
 };
 
-
 class ENGINERENDERER_EXPORT MemoryResource : public GraphicsResource
 {
     DECLARE_GRAPHICS_RESOURCE(MemoryResource, , GraphicsResource, )
 private:
     std::atomic<uint32> refCounter;
+
 protected:
     // For image this is always used for buffer this is used only in special cases
     EPixelDataFormat::Type dataFormat;
     bool bIsStagingResource, bDeferDelete;
 
-    MemoryResource(EPixelDataFormat::Type resourceFormat = EPixelDataFormat::Undefined) 
+    MemoryResource(EPixelDataFormat::Type resourceFormat = EPixelDataFormat::Undefined)
         : BaseType()
         , dataFormat(resourceFormat)
         , bIsStagingResource(false)
@@ -189,7 +187,7 @@ public:
     uint32 refCount() const;
     /* GraphicsResource overrides */
     String getResourceName() const override;
-    void setResourceName(const String& name) override;
+    void setResourceName(const String &name) override;
     /* overrides ends */
 };
 using MemoryResourceRef = ReferenceCountPtr<MemoryResource>;
@@ -214,7 +212,7 @@ using BufferResourceRef = ReferenceCountPtr<BufferResource>;
 struct ImageResourceCreateInfo
 {
     EPixelDataFormat::Type imageFormat;
-    Size3D dimensions{ 256,256,1 };
+    Size3D dimensions{ 256, 256, 1 };
     uint32 numOfMips{ 0 };
     uint32 layerCount{ 1 };
 };
@@ -224,7 +222,7 @@ class ENGINERENDERER_EXPORT ImageResource : public MemoryResource
     DECLARE_GRAPHICS_RESOURCE(ImageResource, , MemoryResource, )
 
 protected:
-    Size3D dimensions = { 256,256,1 };
+    Size3D dimensions = { 256, 256, 1 };
     uint32 numOfMips = 0;
     uint32 layerCount = 1;
     EPixelSampleCount::Type sampleCounts = EPixelSampleCount::SampleCount1;
@@ -234,6 +232,7 @@ protected:
     ImageResource() = default;
 
     uint32 mipCountFromDim();
+
 public:
     ImageResource(ImageResourceCreateInfo createInfo);
 
@@ -243,11 +242,11 @@ public:
     void setNumOfMips(uint32 mipCount);
 
     void setShaderUsage(uint32 usage);
-    void setImageSize(const Size3D& imageSize);
+    void setImageSize(const Size3D &imageSize);
 
     FORCE_INLINE uint32 getLayerCount() const { return layerCount; }
     FORCE_INLINE uint32 getNumOfMips() const { return numOfMips; };
-    FORCE_INLINE const Size3D& getImageSize() const { return dimensions; }
+    FORCE_INLINE const Size3D &getImageSize() const { return dimensions; }
     FORCE_INLINE EPixelDataFormat::Type imageFormat() const { return dataFormat; }
     FORCE_INLINE EPixelSampleCount::Type sampleCount() const { return sampleCounts; }
     FORCE_INLINE bool isShaderRead() const { return (shaderUsage & EImageShaderUsage::Sampling) > 0; }
@@ -274,7 +273,7 @@ struct BatchCopyBufferData
 {
     BufferResourceRef dst;
     uint32 dstOffset;
-    const void* dataToCopy;
+    const void *dataToCopy;
     uint32 size;
 };
 
@@ -300,7 +299,7 @@ struct CopyImageInfo
 
     ImageSubresource subres;
 
-    FORCE_INLINE bool isCopyCompatible(const CopyImageInfo& rhs) const
+    FORCE_INLINE bool isCopyCompatible(const CopyImageInfo &rhs) const
     {
         return extent == rhs.extent && subres == rhs.subres;
     }

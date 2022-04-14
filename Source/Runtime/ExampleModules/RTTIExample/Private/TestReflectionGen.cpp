@@ -11,11 +11,10 @@
 
 #include "TestReflectionGen.h"
 
-std::pair<uint32, TestNS::BerryObject*> BerrySecond::idxToObjext;
+std::pair<uint32, TestNS::BerryObject *> BerrySecond::idxToObjext;
 
 uint32 BerrySecond::value;
 
-TestNS::BerryObject* BerrySecond::value1;
+TestNS::BerryObject *BerrySecond::value1;
 
-const TestNS::BerryObject* BerrySecond::value2;
-
+const TestNS::BerryObject *BerrySecond::value2;

@@ -11,72 +11,91 @@
 
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <type_traits>
 #include <vector>
-#include <algorithm>
 
-#include "Types/CoreTypes.h"
-#include "Types/CoreDefines.h"
 #include "ProgramCoreExports.h"
+#include "Types/CoreDefines.h"
+#include "Types/CoreTypes.h"
 
 #define STRINGIFY(...) #__VA_ARGS__
 
 // std::string
 using BaseString = std::basic_string<TChar, std::char_traits<TChar>, std::allocator<TChar>>;
 using StringView = std::basic_string_view<BaseString::value_type, BaseString::traits_type>;
-using StringBuffer = std::basic_stringbuf<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
+using StringBuffer
+    = std::basic_stringbuf<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
 using InputStream = std::basic_istream<BaseString::value_type, BaseString::traits_type>;
 using OutputStream = std::basic_ostream<BaseString::value_type, BaseString::traits_type>;
-using IStringStream = std::basic_istringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
-using OStringStream = std::basic_ostringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
-using StringStream = std::basic_stringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
+using IStringStream = std::basic_istringstream<BaseString::value_type, BaseString::traits_type,
+    BaseString::allocator_type>;
+using OStringStream = std::basic_ostringstream<BaseString::value_type, BaseString::traits_type,
+    BaseString::allocator_type>;
+using StringStream = std::basic_stringstream<BaseString::value_type, BaseString::traits_type,
+    BaseString::allocator_type>;
 
 class String : public BaseString
 {
 public:
     CONST_EXPR static const bool bIsWide = std::is_same_v<TChar, WChar>;
-public:
-    FORCE_INLINE String() : BaseString() {}
-    FORCE_INLINE String(const String& otherString) : BaseString(otherString) {}
-    FORCE_INLINE String(const String& otherString, size_type pos, size_type len) : BaseString(otherString, pos, len) {}
-    FORCE_INLINE String(const TChar* s, size_type n) : BaseString(s, n) {}
-    FORCE_INLINE String(const TChar* s) : BaseString(s) {}
-    FORCE_INLINE String(size_type n, TChar c) : BaseString(n, c) {}
-    //template<size_type N>
-    //CONST_EXPR String(const TChar(&str)[N]) : std::string(str) {}
-    FORCE_INLINE String(const BaseString& otherString) : BaseString(otherString) {}
-    FORCE_INLINE String(BaseString&& otherString) : BaseString(otherString) {}
-    FORCE_INLINE String(BaseString::const_iterator start, BaseString::const_iterator end) : BaseString(start, end) {}
-    FORCE_INLINE String(const StringView& strView) : BaseString(strView) {}
 
-    FORCE_INLINE const TChar* getChar() const
-    {
-        return c_str();
-    }
+public:
+    FORCE_INLINE String()
+        : BaseString()
+    {}
+    FORCE_INLINE String(const String &otherString)
+        : BaseString(otherString)
+    {}
+    FORCE_INLINE String(const String &otherString, size_type pos, size_type len)
+        : BaseString(otherString, pos, len)
+    {}
+    FORCE_INLINE String(const TChar *s, size_type n)
+        : BaseString(s, n)
+    {}
+    FORCE_INLINE String(const TChar *s)
+        : BaseString(s)
+    {}
+    FORCE_INLINE String(size_type n, TChar c)
+        : BaseString(n, c)
+    {}
+    // template<size_type N>
+    // CONST_EXPR String(const TChar(&str)[N]) : std::string(str) {}
+    FORCE_INLINE String(const BaseString &otherString)
+        : BaseString(otherString)
+    {}
+    FORCE_INLINE String(BaseString &&otherString)
+        : BaseString(otherString)
+    {}
+    FORCE_INLINE String(BaseString::const_iterator start, BaseString::const_iterator end)
+        : BaseString(start, end)
+    {}
+    FORCE_INLINE String(const StringView &strView)
+        : BaseString(strView)
+    {}
+
+    FORCE_INLINE const TChar *getChar() const { return c_str(); }
 
     // Count of String's character code points
     FORCE_INLINE uint64 codeCount() const;
 
-    FORCE_INLINE bool findAny(size_type& outIndex, String& outFoundString, const std::vector<String>& findStrgs, size_type offset = 0, bool fromEnd = false) const
+    FORCE_INLINE bool findAny(size_type &outIndex, String &outFoundString,
+        const std::vector<String> &findStrgs, size_type offset = 0, bool fromEnd = false) const
     {
         size_type foundAt = npos;
-        for (const String& strg : findStrgs)
+        for (const String &strg : findStrgs)
         {
             size_type foundAtNew = fromEnd ? rfind(strg, length() - offset) : find(strg, offset);
-            if (foundAtNew != npos) {
-                outIndex = (foundAt == npos 
-                    || (fromEnd 
-                        ? foundAt < foundAtNew 
-                        : foundAt > foundAtNew)) 
-                    ? foundAtNew 
-                    : foundAt;
-                outFoundString = (foundAt == npos 
-                    || (fromEnd 
-                        ? foundAt < foundAtNew 
-                        : foundAt > foundAtNew)) 
-                    ? strg 
-                    : outFoundString;
+            if (foundAtNew != npos)
+            {
+                outIndex = (foundAt == npos || (fromEnd ? foundAt < foundAtNew : foundAt > foundAtNew))
+                               ? foundAtNew
+                               : foundAt;
+                outFoundString
+                    = (foundAt == npos || (fromEnd ? foundAt < foundAtNew : foundAt > foundAtNew))
+                          ? strg
+                          : outFoundString;
                 foundAt = outIndex;
             }
         }
@@ -89,7 +108,7 @@ public:
         return false;
     }
 
-    FORCE_INLINE String replaceAllCopy(const String& from, const String& to) const
+    FORCE_INLINE String replaceAllCopy(const String &from, const String &to) const
     {
         String newStr{ this->getChar() };
         size_type replaceAtPos = 0;
@@ -101,7 +120,7 @@ public:
         return newStr;
     }
 
-    FORCE_INLINE String& replaceAll(const String& from, const String& to)
+    FORCE_INLINE String &replaceAll(const String &from, const String &to)
     {
         size_type replaceAtPos = 0;
         while ((replaceAtPos = find(from, replaceAtPos)) != npos)
@@ -112,7 +131,7 @@ public:
         return *this;
     }
 
-    FORCE_INLINE bool startsWith(const String& match, bool bMatchCase = true) const
+    FORCE_INLINE bool startsWith(const String &match, bool bMatchCase = true) const
     {
         if (length() < match.length())
             return false;
@@ -122,11 +141,8 @@ public:
             return match == String(*this, 0, match.length());
         }
 
-        const_iterator it = std::search(cbegin(), cbegin() + match.length(), match.cbegin(), match.cend()
-            , [](auto c1, auto c2)
-            {
-                return std::toupper(c1) == std::toupper(c2);
-            });
+        const_iterator it = std::search(cbegin(), cbegin() + match.length(), match.cbegin(),
+            match.cend(), [](auto c1, auto c2) { return std::toupper(c1) == std::toupper(c2); });
 
         return cbegin() == it;
     }
@@ -141,7 +157,7 @@ public:
         return std::toupper(*begin()) == std::toupper(match);
     }
 
-    FORCE_INLINE bool endsWith(const String& match, bool bMatchCase = true) const
+    FORCE_INLINE bool endsWith(const String &match, bool bMatchCase = true) const
     {
         if (length() < match.length())
             return false;
@@ -152,39 +168,26 @@ public:
         }
 
         const_iterator searchFrom = cbegin() + (length() - match.length());
-        const_iterator it = std::search(searchFrom, cend(), match.cbegin(), match.cend()
-            , [](auto c1, auto c2)
-            {
-                return std::toupper(c1) == std::toupper(c2);
-            });
+        const_iterator it = std::search(searchFrom, cend(), match.cbegin(), match.cend(),
+            [](auto c1, auto c2) { return std::toupper(c1) == std::toupper(c2); });
 
         return it == searchFrom;
     }
 
-    FORCE_INLINE String& trimL()
+    FORCE_INLINE String &trimL()
     {
-        erase(begin(), std::find_if(begin(), end(),
-            [](const TChar& ch)
-            {
-                return !std::isspace(ch);
-            })
-        );
+        erase(begin(), std::find_if(begin(), end(), [](const TChar &ch) { return !std::isspace(ch); }));
         return *this;
     }
 
-    FORCE_INLINE String& trimR()
+    FORCE_INLINE String &trimR()
     {
-        erase(std::find_if(rbegin(), rend(),
-            [](const TChar& ch)
-            {
-                return !std::isspace(ch);
-            }).base()
-            , end()
-        );
+        erase(std::find_if(rbegin(), rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(),
+            end());
         return *this;
     }
 
-    FORCE_INLINE String& trim()
+    FORCE_INLINE String &trim()
     {
         trimL();
         trimR();
@@ -193,7 +196,7 @@ public:
 
     // Removes consequently duplicated chars
     // **NOTE** Only works for characters that can be represented in sizeof(TChar)
-    FORCE_INLINE String& trimDuplicates(TChar duplicateChar, uint64 offset = 0)
+    FORCE_INLINE String &trimDuplicates(TChar duplicateChar, uint64 offset = 0)
     {
         uint64 foundAt = find(duplicateChar, offset);
         while (foundAt != npos)
@@ -221,25 +224,17 @@ public:
     FORCE_INLINE String trimLCopy() const
     {
         String s(*this);
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-            [](const TChar& ch)
-            {
-                return !std::isspace(ch);
-            })
-        );
+        s.erase(s.begin(),
+            std::find_if(s.begin(), s.end(), [](const TChar &ch) { return !std::isspace(ch); }));
         return s;
     }
 
     FORCE_INLINE String trimRCopy() const
     {
         String s(*this);
-        s.erase(std::find_if(s.rbegin(), s.rend(),
-            [](const TChar& ch)
-            {
-                return !std::isspace(ch);
-            }).base()
-                , s.end()
-                );
+        s.erase(
+            std::find_if(s.rbegin(), s.rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(),
+            s.end());
         return s;
     }
 
@@ -260,8 +255,8 @@ public:
     }
 
     /*
-    * Splits given string into list of line views
-    */
+     * Splits given string into list of line views
+     */
     std::vector<StringView> splitLines() const
     {
         std::vector<StringView> outStrs;
@@ -269,14 +264,16 @@ public:
         uint64 offsetPos = 0;
         while ((foundAtPos = find(TCHAR('\n'), offsetPos)) != npos)
         {
-            // If previous char is valid and it is carriage return(\r) then we have to consider that as part of CR-LF
+            // If previous char is valid and it is carriage return(\r) then we have to consider that
+            // as part of CR-LF
             if (foundAtPos != 0 || cbegin()[foundAtPos - 1] == TCHAR('\r'))
             {
                 outStrs.emplace_back(StringView(cbegin() + offsetPos, cbegin() + (foundAtPos - 1)));
             }
             else
             {
-                // Since offsetPos is end of last separator and foundAtPos is where this separator is found, Whatever in between is what we need
+                // Since offsetPos is end of last separator and foundAtPos is where this
+                // separator is found, Whatever in between is what we need
                 outStrs.emplace_back(StringView(cbegin() + offsetPos, cbegin() + foundAtPos));
             }
             // Post CR-LF char
@@ -291,7 +288,7 @@ public:
     }
 
     template <typename IteratorType, typename StrType>
-    static String join(IteratorType begin, IteratorType end, StrType&& separator)
+    static String join(IteratorType begin, IteratorType end, StrType &&separator)
     {
         String s;
         if (begin == end)
@@ -307,14 +304,15 @@ public:
         return s;
     }
 
-    static std::vector<String> split(const String& inStr, const String&& separator)
+    static std::vector<String> split(const String &inStr, const String &&separator)
     {
         std::vector<String> outStrs;
         uint64 foundAtPos = 0;
         uint64 offsetPos = 0;
         while ((foundAtPos = inStr.find(separator, offsetPos)) != npos)
         {
-            // Since offsetPos is end of last separator and foundAtPos is where this separator is found, Whatever in between is what we need
+            // Since offsetPos is end of last separator and foundAtPos is where this separator is
+            // found, Whatever in between is what we need
             outStrs.emplace_back(String(inStr.cbegin() + offsetPos, inStr.cbegin() + foundAtPos));
             offsetPos = foundAtPos + separator.length();
         }
@@ -324,40 +322,47 @@ public:
     }
 
     template <typename Type>
-    FORCE_INLINE static String toString(Type&& value);
+    FORCE_INLINE static String toString(Type &&value);
 };
-
 
 template <>
 struct PROGRAMCORE_EXPORT std::hash<String>
 {
-    NODISCARD SizeT operator()(const String& keyval) const noexcept {
+    NODISCARD SizeT operator()(const String &keyval) const noexcept
+    {
         auto stringHash = hash<BaseString>();
         return stringHash(keyval);
     }
 };
 
-template<typename T>
-struct IsStringUnqualified : std::false_type {};
-template<>
-struct IsStringUnqualified<String> : std::true_type {};
-template<>
-struct IsStringUnqualified<BaseString> : std::true_type {};
-template<>
-struct IsStringUnqualified<TChar> : std::true_type {};
+template <typename T>
+struct IsStringUnqualified : std::false_type
+{};
+template <>
+struct IsStringUnqualified<String> : std::true_type
+{};
+template <>
+struct IsStringUnqualified<BaseString> : std::true_type
+{};
+template <>
+struct IsStringUnqualified<TChar> : std::true_type
+{};
 // For char[] arrays
-template<typename T, uint32 Num>
-struct IsStringUnqualified<T[Num]> : IsStringUnqualified<std::remove_cvref_t<T>> {};
+template <typename T, uint32 Num>
+struct IsStringUnqualified<T[Num]> : IsStringUnqualified<std::remove_cvref_t<T>>
+{};
 // for char* pointers
-template<typename T>
-struct IsStringUnqualified<T*> : IsStringUnqualified<std::remove_cvref_t<T>> {};
+template <typename T>
+struct IsStringUnqualified<T *> : IsStringUnqualified<std::remove_cvref_t<T>>
+{};
 
-template<typename T>
-struct IsString : IsStringUnqualified<std::remove_cvref_t<T>> {};
+template <typename T>
+struct IsString : IsStringUnqualified<std::remove_cvref_t<T>>
+{};
 
 template <typename... T>
-struct IsStringTypes : std::conjunction<IsString<T>...> {};
-
+struct IsStringTypes : std::conjunction<IsString<T>...>
+{};
 
 template <typename T>
 concept StringType = IsString<T>::value;

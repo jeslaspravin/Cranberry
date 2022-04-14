@@ -25,4 +25,3 @@
 
 #include "Math/Rotation.h"
 #include "Math/RotationMatrix.h"
-

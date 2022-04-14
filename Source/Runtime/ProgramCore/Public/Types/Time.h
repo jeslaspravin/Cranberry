@@ -10,8 +10,8 @@
  */
 
 #pragma once
-#include "Types/CoreTypes.h"
 #include "ProgramCoreExports.h"
+#include "Types/CoreTypes.h"
 
 class String;
 
@@ -26,52 +26,52 @@ using TickRep = int64;
 // IN MILLISECONDS PRECISION
 namespace Time
 {
-    PROGRAMCORE_EXPORT TickRep addSeconds(TickRep tickValue, TimeConvType seconds);
-    PROGRAMCORE_EXPORT TickRep addMinutes(TickRep tickValue, TimeConvType minutes);
-    PROGRAMCORE_EXPORT TickRep addHours(TickRep tickValue, TimeConvType hours);
-    PROGRAMCORE_EXPORT TickRep addDays(TickRep tickValue, TimeConvType days);
+PROGRAMCORE_EXPORT TickRep addSeconds(TickRep tickValue, TimeConvType seconds);
+PROGRAMCORE_EXPORT TickRep addMinutes(TickRep tickValue, TimeConvType minutes);
+PROGRAMCORE_EXPORT TickRep addHours(TickRep tickValue, TimeConvType hours);
+PROGRAMCORE_EXPORT TickRep addDays(TickRep tickValue, TimeConvType days);
 
-    PROGRAMCORE_EXPORT TickRep fromSeconds(TimeConvType seconds);
-    PROGRAMCORE_EXPORT TickRep fromMinutes(TimeConvType minutes);
-    PROGRAMCORE_EXPORT TickRep fromHours(TimeConvType hours);
-    PROGRAMCORE_EXPORT TickRep fromDays(TimeConvType days);
+PROGRAMCORE_EXPORT TickRep fromSeconds(TimeConvType seconds);
+PROGRAMCORE_EXPORT TickRep fromMinutes(TimeConvType minutes);
+PROGRAMCORE_EXPORT TickRep fromHours(TimeConvType hours);
+PROGRAMCORE_EXPORT TickRep fromDays(TimeConvType days);
 
-    PROGRAMCORE_EXPORT TimeConvType asSeconds(TickRep tickValue);
-    PROGRAMCORE_EXPORT TimeConvType asMinutes(TickRep tickValue);
-    PROGRAMCORE_EXPORT TimeConvType asHours(TickRep tickValue);
-    PROGRAMCORE_EXPORT TimeConvType asDays(TickRep tickValue);
+PROGRAMCORE_EXPORT TimeConvType asSeconds(TickRep tickValue);
+PROGRAMCORE_EXPORT TimeConvType asMinutes(TickRep tickValue);
+PROGRAMCORE_EXPORT TimeConvType asHours(TickRep tickValue);
+PROGRAMCORE_EXPORT TimeConvType asDays(TickRep tickValue);
 
-    PROGRAMCORE_EXPORT TickRep timeNow();
-    PROGRAMCORE_EXPORT TickRep clockTimeNow();
+PROGRAMCORE_EXPORT TickRep timeNow();
+PROGRAMCORE_EXPORT TickRep clockTimeNow();
 
-    PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
-    PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
-}
+PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
+PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
+} // namespace Time
 
 // IN NANOSECONDS PRECISION
 namespace HighResolutionTime
 {
-    PROGRAMCORE_EXPORT TickRep addSeconds(TickRep tickValue, TimeConvType seconds);
-    PROGRAMCORE_EXPORT TickRep addMinutes(TickRep tickValue, TimeConvType minutes);
-    PROGRAMCORE_EXPORT TickRep addHours(TickRep tickValue, TimeConvType hours);
-    PROGRAMCORE_EXPORT TickRep addDays(TickRep tickValue, TimeConvType days);
+PROGRAMCORE_EXPORT TickRep addSeconds(TickRep tickValue, TimeConvType seconds);
+PROGRAMCORE_EXPORT TickRep addMinutes(TickRep tickValue, TimeConvType minutes);
+PROGRAMCORE_EXPORT TickRep addHours(TickRep tickValue, TimeConvType hours);
+PROGRAMCORE_EXPORT TickRep addDays(TickRep tickValue, TimeConvType days);
 
-    PROGRAMCORE_EXPORT TickRep fromSeconds(TimeConvType seconds);
-    PROGRAMCORE_EXPORT TickRep fromMinutes(TimeConvType minutes);
-    PROGRAMCORE_EXPORT TickRep fromHours(TimeConvType hours);
-    PROGRAMCORE_EXPORT TickRep fromDays(TimeConvType days);
+PROGRAMCORE_EXPORT TickRep fromSeconds(TimeConvType seconds);
+PROGRAMCORE_EXPORT TickRep fromMinutes(TimeConvType minutes);
+PROGRAMCORE_EXPORT TickRep fromHours(TimeConvType hours);
+PROGRAMCORE_EXPORT TickRep fromDays(TimeConvType days);
 
-    PROGRAMCORE_EXPORT TimeConvType asSeconds(TickRep tickValue);
-    PROGRAMCORE_EXPORT TimeConvType asMinutes(TickRep tickValue);
-    PROGRAMCORE_EXPORT TimeConvType asHours(TickRep tickValue);
-    PROGRAMCORE_EXPORT TimeConvType asDays(TickRep tickValue);
+PROGRAMCORE_EXPORT TimeConvType asSeconds(TickRep tickValue);
+PROGRAMCORE_EXPORT TimeConvType asMinutes(TickRep tickValue);
+PROGRAMCORE_EXPORT TimeConvType asHours(TickRep tickValue);
+PROGRAMCORE_EXPORT TimeConvType asDays(TickRep tickValue);
 
-    PROGRAMCORE_EXPORT TickRep timeNow();
-    PROGRAMCORE_EXPORT TickRep clockTimeNow();
+PROGRAMCORE_EXPORT TickRep timeNow();
+PROGRAMCORE_EXPORT TickRep clockTimeNow();
 
-    PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
-    PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
-}
+PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
+PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
+} // namespace HighResolutionTime
 
 // Uses High Res Time
 struct PROGRAMCORE_EXPORT StopWatch
@@ -80,6 +80,7 @@ private:
     TickRep startTime = 0;
     TickRep lastLapTime = 0;
     TickRep stopTime = 0;
+
 public:
     StopWatch(bool bStart = true);
     ~StopWatch() = default;

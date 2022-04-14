@@ -10,19 +10,19 @@
  */
 
 #include "ImGuiFontTextureAtlas.h"
-#include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "ImGuiLib/imgui.h"
 #include "RenderInterface/GraphicsHelper.h"
+#include "RenderInterface/Rendering/IRenderCommandList.h"
 
-ImGuiFontTextureAtlas* ImGuiFontTextureAtlas::createTexture(const ImGuiFontTextureParams& createParams)
+ImGuiFontTextureAtlas *ImGuiFontTextureAtlas::createTexture(const ImGuiFontTextureParams &createParams)
 {
-    ImGuiFontTextureAtlas* texture = new ImGuiFontTextureAtlas();
+    ImGuiFontTextureAtlas *texture = new ImGuiFontTextureAtlas();
 
     texture->owningContext = createParams.owningContext;
     texture->textureName = createParams.textureName;
     texture->dataFormat = EPixelDataFormat::R_U8_Norm;
     // Dependent values
-    texture->setSampleCount(EPixelSampleCount::SampleCount1);// MS not possible for read only textures
+    texture->setSampleCount(EPixelSampleCount::SampleCount1); // MS not possible for read only textures
     texture->setFilteringMode(createParams.filtering);
     texture->generateImGuiTexture();
 
@@ -30,7 +30,7 @@ ImGuiFontTextureAtlas* ImGuiFontTextureAtlas::createTexture(const ImGuiFontTextu
     return texture;
 }
 
-void ImGuiFontTextureAtlas::destroyTexture(ImGuiFontTextureAtlas* textureAtlas)
+void ImGuiFontTextureAtlas::destroyTexture(ImGuiFontTextureAtlas *textureAtlas)
 {
     ImGuiFontTextureAtlas::destroy(textureAtlas);
     delete textureAtlas;
@@ -39,8 +39,8 @@ void ImGuiFontTextureAtlas::destroyTexture(ImGuiFontTextureAtlas* textureAtlas)
 void ImGuiFontTextureAtlas::generateImGuiTexture()
 {
     ImGui::SetCurrentContext(owningContext);
-    ImFontAtlas* fontAtlas = ImGui::GetIO().Fonts;
-    uint8* alphaVals;
+    ImFontAtlas *fontAtlas = ImGui::GetIO().Fonts;
+    uint8 *alphaVals;
     int32 textureSizeX, textureSizeY;
     fontAtlas->GetTexDataAsAlpha8(&alphaVals, &textureSizeX, &textureSizeY);
 
@@ -58,8 +58,10 @@ void ImGuiFontTextureAtlas::reinitResources()
     TextureBase::reinitResources();
     generateImGuiTexture();
 
-    ENQUEUE_COMMAND(ReinitImGuiFontTextureAtlas)(
-        [this](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+    ENQUEUE_COMMAND(ReinitImGuiFontTextureAtlas)
+    (
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+            const GraphicsHelperAPI *graphicsHelper)
         {
             if (textureResource->isValid())
             {
@@ -73,17 +75,16 @@ void ImGuiFontTextureAtlas::reinitResources()
         });
 }
 
-void ImGuiFontTextureAtlas::init(ImGuiFontTextureAtlas* texture)
+void ImGuiFontTextureAtlas::init(ImGuiFontTextureAtlas *texture)
 {
-    ImageResourceCreateInfo imageCI
-    {
-        .imageFormat = texture->dataFormat,
+    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat,
         .dimensions = texture->textureSize,
-        .numOfMips = texture->mipCount
-    };
+        .numOfMips = texture->mipCount };
 
-    ENQUEUE_COMMAND(InitImGuiFontTextureAtlas)(
-        [texture, imageCI](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
+    ENQUEUE_COMMAND(InitImGuiFontTextureAtlas)
+    (
+        [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+            const GraphicsHelperAPI *graphicsHelper)
         {
             texture->textureResource = graphicsHelper->createImage(graphicsInstance, imageCI);
             texture->textureResource->setResourceName(texture->textureName);
@@ -93,17 +94,14 @@ void ImGuiFontTextureAtlas::init(ImGuiFontTextureAtlas* texture)
             texture->textureResource->init();
             cmdList->copyToImage(texture->textureResource, texture->rawData);
         });
-
 }
 
-void ImGuiFontTextureAtlas::destroy(ImGuiFontTextureAtlas* texture)
+void ImGuiFontTextureAtlas::destroy(ImGuiFontTextureAtlas *texture)
 {
     ImageResourceRef textureResource = texture->textureResource;
-    ENQUEUE_COMMAND(DestroyImGuiFontTextureAtlas)(
-        [textureResource](IRenderCommandList* cmdList, IGraphicsInstance* graphicsInstance, const GraphicsHelperAPI* graphicsHelper)
-        {
-            textureResource->release();
-        });
+    ENQUEUE_COMMAND(DestroyImGuiFontTextureAtlas)
+    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+         const GraphicsHelperAPI *graphicsHelper) { textureResource->release(); });
 
     texture->textureResource.reset();
 }

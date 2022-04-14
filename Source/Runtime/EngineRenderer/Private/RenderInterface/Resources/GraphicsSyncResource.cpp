@@ -13,10 +13,7 @@
 
 DEFINE_GRAPHICS_RESOURCE(GraphicsSyncResource)
 
-void GraphicsSyncResource::addRef()
-{
-    refCounter.fetch_add(1);
-}
+void GraphicsSyncResource::addRef() { refCounter.fetch_add(1); }
 
 void GraphicsSyncResource::removeRef()
 {
@@ -28,22 +25,12 @@ void GraphicsSyncResource::removeRef()
     }
 }
 
-uint32 GraphicsSyncResource::refCount() const
-{
-    return refCounter.load();
-}
+uint32 GraphicsSyncResource::refCount() const { return refCounter.load(); }
 
-String GraphicsSyncResource::getResourceName() const
-{
-    return resourceName;
-}
+String GraphicsSyncResource::getResourceName() const { return resourceName; }
 
-void GraphicsSyncResource::setResourceName(const String& name)
-{
-    resourceName = name;
-}
+void GraphicsSyncResource::setResourceName(const String &name) { resourceName = name; }
 
 DEFINE_GRAPHICS_RESOURCE(GraphicsFence)
 DEFINE_GRAPHICS_RESOURCE(GraphicsSemaphore)
 DEFINE_GRAPHICS_RESOURCE(GraphicsTimelineSemaphore)
-

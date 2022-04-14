@@ -22,6 +22,5 @@ static_assert(false, "Platform not supported!");
 static_assert(false, "Platform not supported!");
 #endif
 
-
 typedef GPlatformInstances::PlatformAppInstance PlatformAppInstance;
 typedef GPlatformInstances::PlatformAppWindow PlatformAppWindow;

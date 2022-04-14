@@ -13,8 +13,9 @@
 
 #include <unordered_map>
 
-bool GenericRenderPassProperties::operator==(const GenericRenderPassProperties& otherProperties) const
+bool GenericRenderPassProperties::operator==(const GenericRenderPassProperties &otherProperties) const
 {
-    return renderpassAttachmentFormat == otherProperties.renderpassAttachmentFormat && multisampleCount == otherProperties.multisampleCount
-        && bOneRtPerFormat == otherProperties.bOneRtPerFormat;
+    return renderpassAttachmentFormat == otherProperties.renderpassAttachmentFormat
+           && multisampleCount == otherProperties.multisampleCount
+           && bOneRtPerFormat == otherProperties.bOneRtPerFormat;
 }

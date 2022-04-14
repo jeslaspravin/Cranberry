@@ -24,24 +24,22 @@ enum class EQueueFunction : uint8
 
 namespace EQueuePriority
 {
-    enum Enum : uint8
-    {
-        Low = 0,
-        Medium,
-        High,
-        SuperHigh,
-        MaxPriorityEnum
-    };
-}
+enum Enum : uint8
+{
+    Low = 0,
+    Medium,
+    High,
+    SuperHigh,
+    MaxPriorityEnum
+};
+} // namespace EQueuePriority
 
 class ENGINERENDERER_EXPORT QueueResourceBase : public GraphicsResource
 {
-    DECLARE_GRAPHICS_RESOURCE(QueueResourceBase,, GraphicsResource,)
+    DECLARE_GRAPHICS_RESOURCE(QueueResourceBase, , GraphicsResource, )
 
 public:
-
     virtual bool isValidQueue() const { return false; }
 
     void init() override;
-
 };

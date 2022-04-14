@@ -11,46 +11,50 @@
 
 #pragma once
 
-#include "Types/CoreTypes.h"
-#include "Types/CoreDefines.h"
 #include "Math/Math.h"
 #include "Memory/Memory.h"
+#include "Types/CoreDefines.h"
+#include "Types/CoreTypes.h"
 
-
-// uint32 to allow minimum size of 4bytes, and 4bytes alignment. If alignment or size is below 4bytes they will be aligned to be 4bytes
-// uint64 needs 8bytes as min alignment
+// uint32 to allow minimum size of 4bytes, and 4bytes alignment. If alignment or size is below 4bytes
+// they will be aligned to be 4bytes uint64 needs 8bytes as min alignment
 template <uint32 ElementSize, uint32 ElementAlignment, uint32 SlotsCount>
 class SlotAllocator
 {
 public:
     using SizeType = uint32;
 
-    CONST_EXPR static const SizeType SlotAlignment = (ElementAlignment > sizeof(SizeType) ? ElementAlignment : (SizeType)sizeof(SizeType));
+    CONST_EXPR static const SizeType SlotAlignment
+        = (ElementAlignment > sizeof(SizeType) ? ElementAlignment : (SizeType)sizeof(SizeType));
     CONST_EXPR static const SizeType SlotSize = Math::alignByUnsafe(ElementSize, SlotAlignment);
     CONST_EXPR static const SizeType InvalidSize = ~(SizeType)(0);
 
-    static_assert(SlotsCount < InvalidSize, "SlotsCount must less than max of unsigned integer, This is necessary for identifying free slots");
+    static_assert(SlotsCount < InvalidSize, "SlotsCount must less than max of unsigned integer, This is "
+                                            "necessary for identifying free slots");
     // Number of slots
     CONST_EXPR static const uint32 Size = SlotsCount;
+
 private:
-    void* slots;
+    void *slots;
     // Each free slot stores index of next free slot
     // If InvalidSize then no slots are available
     SizeType freeHead;
     SizeType freeTail;
     SizeType freeCount;
+
 private:
-    // Gives the reference to memory where next free slot after this slot is stored, This reference is also the reference to this slot
-    FORCE_INLINE SizeType& nextFree(SizeType slotIdx) const
+    // Gives the reference to memory where next free slot after this slot is stored, This reference is
+    // also the reference to this slot
+    FORCE_INLINE SizeType &nextFree(SizeType slotIdx) const
     {
-        return *reinterpret_cast<SizeType*>(reinterpret_cast<uint8*>(slots) + (slotIdx * SlotSize));
+        return *reinterpret_cast<SizeType *>(reinterpret_cast<uint8 *>(slots) + (slotIdx * SlotSize));
     }
-    FORCE_INLINE bool isDoubleFreeing(void* ptr) const
+    FORCE_INLINE bool isDoubleFreeing(void *ptr) const
     {
         SizeType nextSlot = freeHead;
         while (nextSlot != InvalidSize)
         {
-            SizeType& slot = nextFree(nextSlot);
+            SizeType &slot = nextFree(nextSlot);
             if (&slot == ptr)
             {
                 return true;
@@ -59,6 +63,7 @@ private:
         }
         return false;
     }
+
 public:
     SlotAllocator()
         : freeHead(0)
@@ -73,23 +78,20 @@ public:
         nextFree(freeTail) = InvalidSize;
     }
 
-    ~SlotAllocator()
+    ~SlotAllocator() { CBEMemory::memFree(slots); }
+
+    FORCE_INLINE bool isOwningMemory(void *ptr) const
     {
-        CBEMemory::memFree(slots);
+        IntPtr diff = (IntPtr)(ptr) - (IntPtr)(slots);
+        return diff >= 0 && diff < (SlotSize * Size);
     }
 
-    FORCE_INLINE bool isOwningMemory(void* ptr) const
+    FORCE_INLINE SizeType ptrToSlotIdx(void *ptr) const
     {
-        IntPtr diff = (IntPtr)(ptr)-(IntPtr)(slots);
-        return diff >= 0 && diff < (SlotSize* Size);
+        return ((UIntPtr)(ptr) - (UIntPtr)(slots)) / SlotSize;
     }
 
-    FORCE_INLINE SizeType ptrToSlotIdx(void* ptr) const
-    {
-        return ((UIntPtr)(ptr)-(UIntPtr)(slots)) / SlotSize;
-    }
-
-    void* memAlloc(SizeT size, uint32 alignment = SlotAlignment)
+    void *memAlloc(SizeT size, uint32 alignment = SlotAlignment)
     {
         debugAssert(alignment <= SlotAlignment && size <= SlotSize);
         // No free slot
@@ -98,18 +100,18 @@ public:
             return nullptr;
         }
 
-        SizeType& freeSlot = nextFree(freeHead);
+        SizeType &freeSlot = nextFree(freeHead);
         freeHead = freeSlot;
         --freeCount;
         return &freeSlot;
     }
-    void memFree(void* ptr)
+    void memFree(void *ptr)
     {
         if (ptr && isOwningMemory(ptr))
         {
             debugAssert(!isDoubleFreeing(ptr));
 
-            SizeType& currTail = nextFree(freeTail);
+            SizeType &currTail = nextFree(freeTail);
             freeTail = ptrToSlotIdx(ptr);
             currTail = freeTail;
             nextFree(freeTail) = InvalidSize;
@@ -117,7 +119,7 @@ public:
         }
     }
 
-    void* at(SizeType idx) const
+    void *at(SizeType idx) const
     {
         debugAssert(idx < Size);
         return &nextFree(idx);
@@ -126,8 +128,5 @@ public:
     /**
      * Returns true if no objects are allocated/used so all slots as free
      */
-    bool empty() const
-    {
-        return freeCount == Size;
-    }
+    bool empty() const { return freeCount == Size; }
 };

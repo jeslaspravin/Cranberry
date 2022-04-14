@@ -13,7 +13,8 @@
 
 // String defines
 #ifndef USING_WIDE_UNICODE
-#define USING_WIDE_UNICODE 0 // Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore
+#define USING_WIDE_UNICODE                                                                              \
+    0 // Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore
 #endif
 #ifndef TCHAR_inner
 //#define TCHAR_inner(x) L##x
@@ -31,7 +32,8 @@
 #endif
 
 // Aligned platform specific memory allocators macro
-// #TODO(Jeslas) : Check if this is MSVC specific or specific to Windows(Found it in windows sdk so probably windows specific check however)
+// #TODO(Jeslas) : Check if this is MSVC specific or specific to Windows(Found it in windows sdk so
+// probably windows specific check however)
 #ifndef PLATFORM_ALIGNED_MALLOC
 #define PLATFORM_ALIGNED_MALLOC _aligned_malloc
 #define PLATFORM_ALIGNED_REALLOC _aligned_realloc

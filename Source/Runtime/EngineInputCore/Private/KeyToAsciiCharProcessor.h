@@ -13,7 +13,6 @@
 
 #include "IKeyToCharProcessor.h"
 
-
 class KeyToAsciiCharProcessor : public IKeyToCharProcessor
 {
     struct KeyCharInfo
@@ -31,7 +30,7 @@ public:
     KeyToAsciiCharProcessor();
 
     /* IKeyToCharProcessor implementations */
-    void updateCharacters(class Keys* keyStates, class AnalogStates* analogStates) override;
+    void updateCharacters(class Keys *keyStates, class AnalogStates *analogStates) override;
     Utf32 keyChar(Keys::StateKeyType key) const override;
     /* Overrides ends */
 };

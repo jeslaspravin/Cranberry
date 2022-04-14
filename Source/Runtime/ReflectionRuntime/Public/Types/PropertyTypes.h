@@ -10,28 +10,26 @@
  */
 
 #pragma once
-#include "Types/TypesInfo.h"
-#include "Reflections/Fields.h"
 #include "Logger/Logger.h"
-
+#include "Reflections/Fields.h"
+#include "Types/TypesInfo.h"
 
 class BaseFieldWrapper
 {
 private:
-    const ReflectTypeInfo* propertyTypeInfo;
+    const ReflectTypeInfo *propertyTypeInfo;
+
 protected:
-    virtual const void* propertyAccessor() const = 0;
+    virtual const void *propertyAccessor() const = 0;
+
 public:
-    BaseFieldWrapper(const ReflectTypeInfo* propertyType)
+    BaseFieldWrapper(const ReflectTypeInfo *propertyType)
         : propertyTypeInfo(propertyType)
     {}
 
     virtual ~BaseFieldWrapper() = default;
 
-    const ReflectTypeInfo* getPropertyTypeInfo() const
-    {
-        return propertyTypeInfo;
-    }
+    const ReflectTypeInfo *getPropertyTypeInfo() const { return propertyTypeInfo; }
 
     // Including all CV-Ref qualifiers
     template <typename CheckType>
@@ -52,15 +50,15 @@ public:
 template <typename PropertyType>
 union FieldValuePtr
 {
-    PropertyType* vPtr;
-    const PropertyType* constVPtr;
-    void* ptr;
+    PropertyType *vPtr;
+    const PropertyType *constVPtr;
+    void *ptr;
 
-    FieldValuePtr(PropertyType* nonConstCtor)
+    FieldValuePtr(PropertyType *nonConstCtor)
         : vPtr(nonConstCtor)
     {}
 
-    FieldValuePtr(const PropertyType* constCtor)
+    FieldValuePtr(const PropertyType *constCtor)
         : constVPtr(constCtor)
     {}
 
@@ -68,40 +66,34 @@ union FieldValuePtr
         : ptr(nullptr)
     {}
 
-    operator bool() const
-    {
-        return (ptr != nullptr);
-    }
+    operator bool() const { return (ptr != nullptr); }
 };
-
 
 class MemberFieldWrapper : public BaseFieldWrapper
 {
 private:
-    const ReflectTypeInfo* memberOfType;
+    const ReflectTypeInfo *memberOfType;
+
 public:
-    MemberFieldWrapper(const ReflectTypeInfo* outerClassType, const ReflectTypeInfo* propertyType)
+    MemberFieldWrapper(const ReflectTypeInfo *outerClassType, const ReflectTypeInfo *propertyType)
         : BaseFieldWrapper(propertyType)
         , memberOfType(outerClassType)
     {}
 
-    FORCE_INLINE const ReflectTypeInfo* getMemberOfType() const
-    {
-        return memberOfType;
-    }
+    FORCE_INLINE const ReflectTypeInfo *getMemberOfType() const { return memberOfType; }
 
     template <typename CheckType>
     FORCE_INLINE bool isMemberOfSameType() const
     {
         return memberOfType == typeInfoFrom<CheckType>();
     }
-    
-    virtual void* get(void* object) const = 0;
-    virtual const void* get(const void* object) const = 0;
+
+    virtual void *get(void *object) const = 0;
+    virtual const void *get(const void *object) const = 0;
 
     // Will return pointer to value else null
     template <typename AsType, typename ObjectType>
-    FieldValuePtr<AsType> getAsType(ObjectType&& object) const
+    FieldValuePtr<AsType> getAsType(ObjectType &&object) const
     {
         if (isMemberOfSameType<CleanType<ObjectType>>() && isSameType<AsType>())
         {
@@ -110,25 +102,26 @@ public:
         return {};
     }
     template <typename FromType, typename ObjectType>
-    bool setFromType(FromType&& value, ObjectType&& object) const
+    bool setFromType(FromType &&value, ObjectType &&object) const
     {
         using MemberType = std::remove_cvref_t<FromType>;
-        
+
         if (isMemberOfSameType<CleanType<ObjectType>>() && isSameType<MemberType>())
         {
-            return setFromTypeUnsafe<FromType>(std::forward<FromType>(value), std::forward<ObjectType>(object));
+            return setFromTypeUnsafe<FromType>(
+                std::forward<FromType>(value), std::forward<ObjectType>(object));
         }
         return false;
     }
 
     template <typename AsType, typename ObjectType>
-    FieldValuePtr<AsType> getAsTypeUnsafe(ObjectType&& object) const
+    FieldValuePtr<AsType> getAsTypeUnsafe(ObjectType &&object) const
     {
-        if CONST_EXPR(std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
+        if CONST_EXPR (std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
         {
-            const AsType* retVal = nullptr;
-            const ClassMemberField<true, CleanType<ObjectType>, AsType>* memberFieldPtr
-                = (const ClassMemberField<true, CleanType<ObjectType>, AsType>*)(propertyAccessor());
+            const AsType *retVal = nullptr;
+            const ClassMemberField<true, CleanType<ObjectType>, AsType> *memberFieldPtr
+                = (const ClassMemberField<true, CleanType<ObjectType>, AsType> *)(propertyAccessor());
 
             debugAssert(memberFieldPtr);
             retVal = &memberFieldPtr->get(std::forward<ObjectType>(object));
@@ -139,9 +132,10 @@ public:
             // If constant then we use const MemberDataPointer or if object is const
             if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
             {
-                const AsType* retVal = nullptr;
-                const ClassMemberField<true, CleanType<ObjectType>, AsType>* memberFieldPtr
-                    = (const ClassMemberField<true, CleanType<ObjectType>, AsType>*)(propertyAccessor());
+                const AsType *retVal = nullptr;
+                const ClassMemberField<true, CleanType<ObjectType>, AsType> *memberFieldPtr
+                    = (const ClassMemberField<true, CleanType<ObjectType>, AsType>
+                            *)(propertyAccessor());
 
                 debugAssert(memberFieldPtr);
                 retVal = &memberFieldPtr->get(std::forward<ObjectType>(object));
@@ -149,9 +143,10 @@ public:
             }
             else
             {
-                AsType* retVal = nullptr;
-                const ClassMemberField<false, CleanType<ObjectType>, AsType>* memberFieldPtr
-                    = (const ClassMemberField<false, CleanType<ObjectType>, AsType>*)(propertyAccessor());
+                AsType *retVal = nullptr;
+                const ClassMemberField<false, CleanType<ObjectType>, AsType> *memberFieldPtr
+                    = (const ClassMemberField<false, CleanType<ObjectType>, AsType>
+                            *)(propertyAccessor());
 
                 debugAssert(memberFieldPtr);
                 retVal = &memberFieldPtr->get(std::forward<ObjectType>(object));
@@ -161,11 +156,11 @@ public:
     }
 
     template <typename FromType, typename ObjectType>
-    bool setFromTypeUnsafe(FromType&& value, ObjectType&& object) const
+    bool setFromTypeUnsafe(FromType &&value, ObjectType &&object) const
     {
         using MemberType = std::remove_cvref_t<FromType>;
 
-        if CONST_EXPR(std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
+        if CONST_EXPR (std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
         {
             LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
         }
@@ -178,8 +173,9 @@ public:
             }
             else
             {
-                const ClassMemberField<false, CleanType<ObjectType>, MemberType>* memberFieldPtr
-                    = (const ClassMemberField<false, CleanType<ObjectType>, MemberType>*)(propertyAccessor());
+                const ClassMemberField<false, CleanType<ObjectType>, MemberType> *memberFieldPtr
+                    = (const ClassMemberField<false, CleanType<ObjectType>, MemberType>
+                            *)(propertyAccessor());
 
                 debugAssert(memberFieldPtr);
                 memberFieldPtr->set(std::forward<ObjectType>(object), std::forward<FromType>(value));
@@ -193,7 +189,7 @@ public:
 class GlobalFieldWrapper : public BaseFieldWrapper
 {
 public:
-    GlobalFieldWrapper(const ReflectTypeInfo* propertyType)
+    GlobalFieldWrapper(const ReflectTypeInfo *propertyType)
         : BaseFieldWrapper(propertyType)
     {}
 
@@ -211,7 +207,7 @@ public:
     }
 
     template <typename FromType>
-    bool setFromType(FromType&& value) const
+    bool setFromType(FromType &&value) const
     {
         using MemberType = std::remove_cvref_t<FromType>;
 
@@ -228,9 +224,9 @@ public:
         // If constant then we use const MemberDataPointer
         if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
         {
-            const AsType* retVal = nullptr;
-            const GlobalField<true, AsType>* memberFieldPtr
-                = (const GlobalField<true, AsType>*)(propertyAccessor());
+            const AsType *retVal = nullptr;
+            const GlobalField<true, AsType> *memberFieldPtr
+                = (const GlobalField<true, AsType> *)(propertyAccessor());
 
             fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
             retVal = &memberFieldPtr->get();
@@ -238,9 +234,9 @@ public:
         }
         else
         {
-            AsType* retVal = nullptr;
-            const GlobalField<false, AsType>* memberFieldPtr
-                = (const GlobalField<false, AsType>*)(propertyAccessor());
+            AsType *retVal = nullptr;
+            const GlobalField<false, AsType> *memberFieldPtr
+                = (const GlobalField<false, AsType> *)(propertyAccessor());
 
             fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
             retVal = &memberFieldPtr->get();
@@ -248,7 +244,7 @@ public:
         }
     }
     template <typename FromType>
-    bool setFromTypeUnsafe(FromType&& value) const
+    bool setFromTypeUnsafe(FromType &&value) const
     {
         using MemberType = std::remove_cvref_t<FromType>;
 
@@ -259,8 +255,8 @@ public:
         }
         else
         {
-            const GlobalField<false, MemberType>* memberFieldPtr
-                = (const GlobalField<false, MemberType>*)(propertyAccessor());
+            const GlobalField<false, MemberType> *memberFieldPtr
+                = (const GlobalField<false, MemberType> *)(propertyAccessor());
 
             fatalAssert(memberFieldPtr, "%s() : Invalid member pointer", __func__);
             memberFieldPtr->set(std::forward<FromType>(value));
@@ -278,9 +274,11 @@ class MemberFieldWrapperImpl : public MemberFieldWrapper
 private:
     // Member property must not be a reference
     static_assert(!std::is_reference_v<MemberType>);
-    using MemberFieldType = ClassMemberField<std::is_const_v<CleanType<MemberType>>, ObjectType, MemberType>;
+    using MemberFieldType
+        = ClassMemberField<std::is_const_v<CleanType<MemberType>>, ObjectType, MemberType>;
 
     MemberFieldType memberField;
+
 public:
     MemberFieldWrapperImpl(MemberFieldType::MemberFieldPtr memberPtr)
         : MemberFieldWrapper(typeInfoFrom<ObjectType>(), typeInfoFrom<MemberType>())
@@ -289,29 +287,27 @@ public:
 
     /* BaseFieldWrapper overrides */
 protected:
-    const void* propertyAccessor() const override
-    {
-        return &memberField;
-    }
+    const void *propertyAccessor() const override { return &memberField; }
     /* MemberFieldWrapper overrides */
 public:
-    void* get(void* object) const override
+    void *get(void *object) const override
     {
-        if CONST_EXPR(std::is_const_v<MemberType>)
+        if CONST_EXPR (std::is_const_v<MemberType>)
         {
-            LOG_ERROR("MemberFieldWrapperImpl", "%s() : Use const object function to retrieve const value", __func__);
+            LOG_ERROR("MemberFieldWrapperImpl",
+                "%s() : Use const object function to retrieve const value", __func__);
             return nullptr;
         }
         else
         {
-            ObjectType* outerObject = (ObjectType*)(object);
+            ObjectType *outerObject = (ObjectType *)(object);
             return &memberField.get(outerObject);
         }
     }
 
-    const void* get(const void* object) const override
+    const void *get(const void *object) const override
     {
-        const ObjectType* outerObject = (const ObjectType*)(object);
+        const ObjectType *outerObject = (const ObjectType *)(object);
         return &memberField.get(outerObject);
     }
     /* Override ends */
@@ -326,6 +322,7 @@ private:
     using FieldType = GlobalField<std::is_const_v<CleanType<MemberType>>, MemberType>;
 
     FieldType field;
+
 public:
     GlobalFieldWrapperImpl(FieldType::GlobalFieldPtr fieldPtr)
         : GlobalFieldWrapper(typeInfoFrom<MemberType>())
@@ -334,16 +331,10 @@ public:
 
     /* BaseFieldWrapper overrides */
 protected:
-    const void* propertyAccessor() const override
-    {
-        return &field;
-    }
+    const void *propertyAccessor() const override { return &field; }
     /* GlobalFieldWrapper overrides */
 public:
-    FieldValuePtr<void> get() const override
-    {
-        return &field.get();
-    }
+    FieldValuePtr<void> get() const override { return &field.get(); }
 
     /* Override ends */
 };

@@ -11,13 +11,13 @@
 
 #pragma once
 
-#include "Types/CoreDefines.h"
-#include "Types/CoreTypes.h"
 #include "String/String.h"
 #include "String/TCharString.h"
+#include "Types/CoreDefines.h"
+#include "Types/CoreTypes.h"
 
 #if BIG_ENDIAN
-#define XXH32_BIG_ENDIAN 
+#define XXH32_BIG_ENDIAN
 #include "Types/xxHash/xxh32.hpp"
 #undef XXH32_BIG_ENDIAN
 
@@ -32,47 +32,47 @@
 
 namespace xxHash
 {
-    template <typename CharType>
-    CONST_EXPR uint32 hashString(const CharType* str, uint32 seed)
-    {
-        return xxh32::hash(str, TCharStr::length(str) * sizeof(CharType), seed);
-    }
-    template <typename CharType>
-    CONST_EXPR uint64 hashString(const CharType* str, uint64 seed)
-    {
-        return xxh64::hash(str, TCharStr::length(str) * sizeof(CharType), seed);
-    }
-    template <typename CharType>
-    CONST_EXPR uint32 hashString(const CharType* str, uint32 len, uint32 seed)
-    {
-        return xxh32::hash(str, len * sizeof(CharType), seed);
-    }
-    template <typename CharType>
-    CONST_EXPR uint64 hashString(const CharType* str, uint64 len, uint64 seed)
-    {
-        return xxh64::hash(str, len * sizeof(CharType), seed);
-    }
+template <typename CharType>
+CONST_EXPR uint32 hashString(const CharType *str, uint32 seed)
+{
+    return xxh32::hash(str, TCharStr::length(str) * sizeof(CharType), seed);
+}
+template <typename CharType>
+CONST_EXPR uint64 hashString(const CharType *str, uint64 seed)
+{
+    return xxh64::hash(str, TCharStr::length(str) * sizeof(CharType), seed);
+}
+template <typename CharType>
+CONST_EXPR uint32 hashString(const CharType *str, uint32 len, uint32 seed)
+{
+    return xxh32::hash(str, len * sizeof(CharType), seed);
+}
+template <typename CharType>
+CONST_EXPR uint64 hashString(const CharType *str, uint64 len, uint64 seed)
+{
+    return xxh64::hash(str, len * sizeof(CharType), seed);
+}
 
-    FORCE_INLINE uint32 hashString(const String& str, uint32 seed)
+FORCE_INLINE uint32 hashString(const String &str, uint32 seed)
+{
+    if CONST_EXPR (String::bIsWide)
     {
-        if CONST_EXPR(String::bIsWide)
-        {
-            return hashString(TCHAR_TO_UTF8(str.getChar()), seed);
-        }
-        else
-        {
-            return xxh32::hash(str.getChar(), str.length() * sizeof(String::value_type), seed);
-        }
+        return hashString(TCHAR_TO_UTF8(str.getChar()), seed);
     }
-    FORCE_INLINE uint64 hashString(const String& str, uint64 seed)
+    else
     {
-        if CONST_EXPR(String::bIsWide)
-        {
-            return hashString(TCHAR_TO_UTF8(str.getChar()), seed);
-        }
-        else
-        {
-            return xxh64::hash(str.getChar(), str.length() * sizeof(String::value_type), seed);
-        }
+        return xxh32::hash(str.getChar(), str.length() * sizeof(String::value_type), seed);
     }
 }
+FORCE_INLINE uint64 hashString(const String &str, uint64 seed)
+{
+    if CONST_EXPR (String::bIsWide)
+    {
+        return hashString(TCHAR_TO_UTF8(str.getChar()), seed);
+    }
+    else
+    {
+        return xxh64::hash(str.getChar(), str.length() * sizeof(String::value_type), seed);
+    }
+}
+} // namespace xxHash

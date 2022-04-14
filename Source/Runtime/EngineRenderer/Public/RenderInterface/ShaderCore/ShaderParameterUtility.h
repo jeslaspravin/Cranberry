@@ -10,8 +10,8 @@
  */
 
 #pragma once
-#include "ShaderDataTypes.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
+#include "ShaderDataTypes.h"
 
 #include <map>
 
@@ -24,70 +24,82 @@ public:
     constexpr static uint32 INSTANCE_UNIQ_SET = 2;
     constexpr static uint32 SHADER_UNIQ_SET = 3;
     constexpr static uint32 SHADER_VARIANT_UNIQ_SET = 4;
+
 private:
     ShaderParameterUtility() = default;
+
 public:
-    
     /**
-    * ShaderParameterUtility::filRefToBufParamInfo - - Fills the buffer field's offset, size, stride into buffer param info field nodes
-    *
-    * Access:    public static 
-    *
-    * @param ShaderBufferParamInfo & bufferParamInfo - Buffer info to fill the data into
-    * @param const ReflectBufferShaderField & bufferField - reflect buffer field data
-    * @param const std::vector<std::vector<SpecializationConstantEntry>>& stageSpecializationConsts - Per stage specialization constants
-    *
-    * @return bool
-    */
-    static bool fillRefToBufParamInfo(ShaderBufferParamInfo& bufferParamInfo, const ReflectBufferShaderField& bufferField
-        , const std::vector<std::vector<SpecializationConstantEntry>>& stageSpecializationConsts);
+     * ShaderParameterUtility::filRefToBufParamInfo - - Fills the buffer field's offset, size, stride
+     * into buffer param info field nodes
+     *
+     * Access:    public static
+     *
+     * @param ShaderBufferParamInfo & bufferParamInfo - Buffer info to fill the data into
+     * @param const ReflectBufferShaderField & bufferField - reflect buffer field data
+     * @param const std::vector<std::vector<SpecializationConstantEntry>>& stageSpecializationConsts -
+     * Per stage specialization constants
+     *
+     * @return bool
+     */
+    static bool fillRefToBufParamInfo(ShaderBufferParamInfo &bufferParamInfo,
+        const ReflectBufferShaderField &bufferField,
+        const std::vector<std::vector<SpecializationConstantEntry>> &stageSpecializationConsts);
 
     /**
-    * ShaderParameterUtility::filRefToVertexParamInfo - Fills the vertex attributes location and format into vertexParamInfo
-    *
-    * Access:    public static 
-    *
-    * @param ShaderVertexParamInfo & vertexParamInfo - Vertex info to fill the data into
-    * @param const std::vector<ReflectInputOutput> & inputEntries - reflect vertex input attributes to shader
-    *
-    * @return bool
-    */
-    static bool fillRefToVertexParamInfo(ShaderVertexParamInfo& vertexParamInfo, const std::vector<ReflectInputOutput>& inputEntries);
+     * ShaderParameterUtility::filRefToVertexParamInfo - Fills the vertex attributes location and format
+     * into vertexParamInfo
+     *
+     * Access:    public static
+     *
+     * @param ShaderVertexParamInfo & vertexParamInfo - Vertex info to fill the data into
+     * @param const std::vector<ReflectInputOutput> & inputEntries - reflect vertex input attributes to
+     * shader
+     *
+     * @return bool
+     */
+    static bool fillRefToVertexParamInfo(
+        ShaderVertexParamInfo &vertexParamInfo, const std::vector<ReflectInputOutput> &inputEntries);
 
     /**
-    * ShaderParameterUtility::convertNamedSpecConstsToPerStage - Converts named specialization constants into specialization const per stages
-    *
-    * Access: public static  
-    *
-    * @param std::vector<std::vector<SpecializationConstantEntry>> & stageSpecializationConsts 
-    * @param const std::map<String, SpecializationConstantEntry> & namedSpecializationConsts 
-    * @param const ShaderReflected * shaderReflection 
-    *
-    * @return uint32 - total specialization const across all stages
-    */
-    static uint32 convertNamedSpecConstsToPerStage(std::vector<std::vector<SpecializationConstantEntry>>& stageSpecializationConsts
-        , const std::map<String, SpecializationConstantEntry>& namedSpecializationConsts, const struct ShaderReflected* shaderReflection);
+     * ShaderParameterUtility::convertNamedSpecConstsToPerStage - Converts named specialization constants
+     * into specialization const per stages
+     *
+     * Access: public static
+     *
+     * @param std::vector<std::vector<SpecializationConstantEntry>> & stageSpecializationConsts
+     * @param const std::map<String, SpecializationConstantEntry> & namedSpecializationConsts
+     * @param const ShaderReflected * shaderReflection
+     *
+     * @return uint32 - total specialization const across all stages
+     */
+    static uint32 convertNamedSpecConstsToPerStage(
+        std::vector<std::vector<SpecializationConstantEntry>> &stageSpecializationConsts,
+        const std::map<String, SpecializationConstantEntry> &namedSpecializationConsts,
+        const struct ShaderReflected *shaderReflection);
 
-    static std::map<String, uint32>& unboundArrayResourcesCount();
+    static std::map<String, uint32> &unboundArrayResourcesCount();
 
     /**
-    * ShaderParameterUtility::getArrayElementCount - converts the array dimension into linear count, subtitutes unbound array length if needed
-    *   MaxDimension is to specify whether Array is 1D or nD
-    *
-    * Access: public static  
-    *
-    * @param const std::vector<ArrayDefinition>& arraySize 
-    *
-    * @return uint32
-    */
-    template <uint32 MaxDimension> 
-    static constexpr uint32 getArrayElementCount(const String& paramName, const std::vector<ArrayDefinition>& arraySize
-        , const std::vector<std::vector<SpecializationConstantEntry>>& specializationConsts);
+     * ShaderParameterUtility::getArrayElementCount - converts the array dimension into linear count,
+     * subtitutes unbound array length if needed MaxDimension is to specify whether Array is 1D or nD
+     *
+     * Access: public static
+     *
+     * @param const std::vector<ArrayDefinition>& arraySize
+     *
+     * @return uint32
+     */
+    template <uint32 MaxDimension>
+    static constexpr uint32 getArrayElementCount(const String &paramName,
+        const std::vector<ArrayDefinition> &arraySize,
+        const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts);
 };
 
-template <uint32 MaxDimension>  
-uint32 constexpr ShaderParameterUtility::getArrayElementCount(const String& paramName, const std::vector<ArrayDefinition>& arraySize
-    , const std::vector<std::vector<SpecializationConstantEntry>>& specializationConsts)
+template <uint32 MaxDimension>
+uint32 constexpr ShaderParameterUtility::getArrayElementCount(const String &paramName,
+    const std::vector<ArrayDefinition> &arraySize,
+    const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts)
 {
     if (arraySize.empty())
         return 0;
@@ -100,9 +112,11 @@ uint32 constexpr ShaderParameterUtility::getArrayElementCount(const String& para
         {
             count = arraySize[i].dimension;
         }
-        else if (!SpecializationConstUtility::asValue(count, specializationConsts[arraySize[i].stageIdx][arraySize[i].dimension]))
+        else if (!SpecializationConstUtility::asValue(
+                     count, specializationConsts[arraySize[i].stageIdx][arraySize[i].dimension]))
         {
-            LOG_ERROR("ShaderParameters", "%s() : Specialized %s array count is invalid", __func__, paramName.getChar());
+            LOG_ERROR("ShaderParameters", "%s() : Specialized %s array count is invalid", __func__,
+                paramName.getChar());
         }
 
         linearCount *= count;
@@ -112,8 +126,8 @@ uint32 constexpr ShaderParameterUtility::getArrayElementCount(const String& para
     if (linearCount == 0)
     {
         auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(paramName);
-        linearCount = (itr == ShaderParameterUtility::unboundArrayResourcesCount().cend())
-            ? 0 : itr->second;
+        linearCount
+            = (itr == ShaderParameterUtility::unboundArrayResourcesCount().cend()) ? 0 : itr->second;
     }
     return linearCount;
 }

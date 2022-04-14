@@ -10,15 +10,15 @@
  */
 
 #include "RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
-#include "Types/CoreDefines.h"
 #include "RenderApi/GBuffersAndTextures.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
-#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "RenderInterface/GlobalRenderVariables.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "RenderApi/Scene/RenderScene.h"
-#include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
+#include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Resources/Pipelines.h"
+#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
+#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "Types/CoreDefines.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 
 BEGIN_BUFFER_DEFINITION(GoochModelLightCommon)
 ADD_BUFFER_TYPED_FIELD(lightsCount)
@@ -46,20 +46,19 @@ protected:
     GoochModelShader()
         : BaseType(GOOCH_SHADER_NAME)
     {}
+
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType*>& bindingBuffers) const override
+    void bindBufferParamInfo(
+        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static GoochModelLightCommonBufferParamInfo LIGHTCOMMON_INFO;
         static GoochModelLightArrayBufferParamInfo LIGHTDATA_INFO;
-        static const std::map<String, ShaderBufferParamInfo*> SHADER_PARAMS_INFO
-        {
-            { TCHAR("lightCommon"), &LIGHTCOMMON_INFO },
-            { TCHAR("lightArray"), &LIGHTDATA_INFO },
+        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+            { TCHAR("lightCommon"), &LIGHTCOMMON_INFO }, { TCHAR("lightArray"), &LIGHTDATA_INFO },
             { TCHAR("viewData"), RenderSceneBase::sceneViewParamInfo().at(TCHAR("viewData")) }
         };
 
-
-        for (const std::pair<const String, ShaderBufferParamInfo*>& bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -76,5 +75,5 @@ DEFINE_GRAPHICS_RESOURCE(GoochModelShader)
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(GOOCHMODEL_SHADER_PIPELINE_REGISTER, GOOCH_SHADER_NAME, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(GOOCHMODEL_SHADER_PIPELINE_REGISTER, GOOCH_SHADER_NAME,
+    &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);

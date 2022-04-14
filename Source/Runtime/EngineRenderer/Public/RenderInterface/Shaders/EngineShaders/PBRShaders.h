@@ -10,23 +10,23 @@
  */
 
 #pragma once
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector2D.h"
 #include "Math/Matrix4.h"
+#include "Math/Vector2D.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
 
 struct PbrSpotLight
 {
-    Vector4D sptLightColor_lumen;// Color and lumen
-    Vector4D sptPos_radius;// Position and radius
-    Vector4D sptDirection;// empty w
-    Vector2D sptCone;// inner, outer cone
+    Vector4D sptLightColor_lumen; // Color and lumen
+    Vector4D sptPos_radius;       // Position and radius
+    Vector4D sptDirection;        // empty w
+    Vector2D sptCone;             // inner, outer cone
 };
 
 struct PbrPointLight
 {
-    Vector4D ptLightColor_lumen;// Color and lumen
-    Vector4D ptPos_radius;// Position and radius
+    Vector4D ptLightColor_lumen; // Color and lumen
+    Vector4D ptPos_radius;       // Position and radius
 };
 
 struct PbrDirectionalLight
@@ -35,11 +35,10 @@ struct PbrDirectionalLight
     Vector3D direction;
 };
 
-
 struct PBRLightArray
 {
     uint32 count;
-    
+
     PbrSpotLight spotLits[8];
     PbrPointLight ptLits[8];
     PbrDirectionalLight dirLit;
@@ -53,11 +52,11 @@ struct ColorCorrection
 
 namespace PBRShadowFlags
 {
-    enum Flags
-    {
-        DrawingBackface = 1,
-    };
-}
+enum Flags
+{
+    DrawingBackface = 1,
+};
+} // namespace PBRShadowFlags
 
 struct ShadowData
 {

@@ -17,40 +17,42 @@
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Time.h"
 
-void AssetManager::loadUnderPath(const String& scanPath)
+void AssetManager::loadUnderPath(const String &scanPath)
 {
     LOG_DEBUG("AssetManager", "%s(): Initial asset loaded started", __func__);
     StopWatch loadTime;
-    std::vector<String> foundFiles = FileSystemFunctions::listAllFiles(scanPath,true);
-    for (const String& filePath : foundFiles)
+    std::vector<String> foundFiles = FileSystemFunctions::listAllFiles(scanPath, true);
+    for (const String &filePath : foundFiles)
     {
         AssetHeader header;
         header.assetPath = PathFunctions::asGenericPath(filePath);
         header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
         loadAsset(header);
-        LOG_DEBUG("AssetManager", "%s(): Loaded asset %s in %0.3f Seconds(not including gpu copy)", __func__, header.assetPath.getChar(), loadTime.thisLap());
+        LOG_DEBUG("AssetManager", "%s(): Loaded asset %s in %0.3f Seconds(not including gpu copy)",
+            __func__, header.assetPath.getChar(), loadTime.thisLap());
         loadTime.lap();
     }
     loadTime.stop();
-    LOG_DEBUG("AssetManager", "%s(): Loaded all assets in %0.3f Seconds(not including gpu copy)", __func__, loadTime.duration());
+    LOG_DEBUG("AssetManager", "%s(): Loaded all assets in %0.3f Seconds(not including gpu copy)",
+        __func__, loadTime.duration());
 }
 
-std::vector<AssetBase*> AssetManager::loadAsset(const AssetHeader& header)
+std::vector<AssetBase *> AssetManager::loadAsset(const AssetHeader &header)
 {
-    std::vector<AssetBase*> loadedAssets;
+    std::vector<AssetBase *> loadedAssets;
     switch (header.type)
     {
     case EAssetType::StaticMesh:
         AssetLoaderLibrary::loadStaticMesh(header.assetPath, loadedAssets);
         break;
     case EAssetType::Texture2D:
-        if (AssetBase* loadedTextureAsset = AssetLoaderLibrary::loadTexture(header.assetPath))
+        if (AssetBase *loadedTextureAsset = AssetLoaderLibrary::loadTexture(header.assetPath))
         {
             loadedAssets.emplace_back(loadedTextureAsset);
         }
         break;
     case EAssetType::CubeMap:
-        if (AssetBase* loadedCubeMapAsset = AssetLoaderLibrary::loadCubeMap(header.assetPath))
+        if (AssetBase *loadedCubeMapAsset = AssetLoaderLibrary::loadCubeMap(header.assetPath))
         {
             loadedAssets.emplace_back(loadedCubeMapAsset);
         }
@@ -59,7 +61,7 @@ std::vector<AssetBase*> AssetManager::loadAsset(const AssetHeader& header)
     default:
         break;
     }
-    for (AssetBase* asset : loadedAssets)
+    for (AssetBase *asset : loadedAssets)
     {
         asset->assetHeader.assetPath = header.assetPath;
         asset->assetHeader.type = header.type;
@@ -78,7 +80,7 @@ void AssetManager::load()
     appPath = FileSystemFunctions::applicationDirectory(appPath);
     // Default path
     addPathsToScan(TCHAR("Assets"));
-    for (const String& scanPath : preloadingPaths)
+    for (const String &scanPath : preloadingPaths)
     {
         String scanFullPath = PathFunctions::combinePath(appPath, scanPath);
         loadUnderPath(scanFullPath);
@@ -87,7 +89,7 @@ void AssetManager::load()
 
 void AssetManager::unload()
 {
-    for (std::pair<const AssetHeader, AssetBase*>& assetPair : assetsRegistered)
+    for (std::pair<const AssetHeader, AssetBase *> &assetPair : assetsRegistered)
     {
         if (assetPair.second->cleanableAsset())
         {
@@ -98,14 +100,14 @@ void AssetManager::unload()
 
 void AssetManager::clearToDestroy()
 {
-    for (const std::pair<const AssetHeader, AssetBase*>& assetPair : assetsRegistered)
+    for (const std::pair<const AssetHeader, AssetBase *> &assetPair : assetsRegistered)
     {
         delete assetPair.second;
     }
     assetsRegistered.clear();
 }
 
-void AssetManager::addPathsToScan(const String& scanPath)
+void AssetManager::addPathsToScan(const String &scanPath)
 {
     preloadingPaths.push_back(scanPath);
     if (bIsLoaded)
@@ -114,12 +116,13 @@ void AssetManager::addPathsToScan(const String& scanPath)
     }
 }
 
-AssetBase* AssetManager::getOrLoadAsset(const String& relAssetPath)
+AssetBase *AssetManager::getOrLoadAsset(const String &relAssetPath)
 {
     String newRelPath = PathFunctions::asGenericPath(relAssetPath);
     String appName;
     AssetHeader header;
-    header.assetPath = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(appName), TCHAR("Assets"), newRelPath);
+    header.assetPath = PathFunctions::combinePath(
+        FileSystemFunctions::applicationDirectory(appName), TCHAR("Assets"), newRelPath);
     header.type = AssetLoaderLibrary::typeFromAssetPath(newRelPath);
     header.assetName = PlatformFile(header.assetPath).getFileName();
     header.assetName = PathFunctions::stripExtension(header.assetName);
@@ -127,7 +130,7 @@ AssetBase* AssetManager::getOrLoadAsset(const String& relAssetPath)
     return getOrLoadAsset(header);
 }
 
-AssetBase* AssetManager::getOrLoadAsset(const AssetHeader& header)
+AssetBase *AssetManager::getOrLoadAsset(const AssetHeader &header)
 {
     AssetHeader newHeader = header;
     newHeader.assetPath = PathFunctions::asGenericPath(header.assetPath);
@@ -138,9 +141,9 @@ AssetBase* AssetManager::getOrLoadAsset(const AssetHeader& header)
         return headerItr->second;
     }
 
-    std::vector<AssetBase*> assets = loadAsset(newHeader);
-    AssetBase* returnVal = nullptr; 
-    for (AssetBase* asset : assets)
+    std::vector<AssetBase *> assets = loadAsset(newHeader);
+    AssetBase *returnVal = nullptr;
+    for (AssetBase *asset : assets)
     {
         if (asset->assetHeader.assetName == newHeader.assetName)
         {
@@ -151,9 +154,9 @@ AssetBase* AssetManager::getOrLoadAsset(const AssetHeader& header)
     return returnVal;
 }
 
-AssetBase* AssetManager::getAsset(const String& assetName) const
+AssetBase *AssetManager::getAsset(const String &assetName) const
 {
-    for (const std::pair<const AssetHeader, AssetBase*>& asset : assetsRegistered)
+    for (const std::pair<const AssetHeader, AssetBase *> &asset : assetsRegistered)
     {
         if (asset.first.assetName == assetName)
         {

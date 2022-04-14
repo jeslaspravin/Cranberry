@@ -15,14 +15,14 @@
 
 namespace EAssetType
 {
-    enum Type
-    {
-        InvalidType,
-        StaticMesh,
-        Texture2D,
-        CubeMap
-    };
-}
+enum Type
+{
+    InvalidType,
+    StaticMesh,
+    Texture2D,
+    CubeMap
+};
+} // namespace EAssetType
 
 struct AssetHeader
 {
@@ -31,16 +31,18 @@ struct AssetHeader
     String assetPath;
     String assetName;
 
-    bool operator==(const AssetHeader& other) const
+    bool operator==(const AssetHeader &other) const
     {
         return type == other.type && assetPath == other.assetPath && assetName == other.assetName;
     }
 };
 
 template <>
-struct std::hash<AssetHeader> {
+struct std::hash<AssetHeader>
+{
 
-    _NODISCARD size_t operator()(const AssetHeader keyval) const noexcept {
+    _NODISCARD size_t operator()(const AssetHeader keyval) const noexcept
+    {
         size_t hashVal = hash<EAssetType::Type>{}(keyval.type);
         HashUtility::hashCombine(hashVal, keyval.assetPath);
         HashUtility::hashCombine(hashVal, keyval.assetName);

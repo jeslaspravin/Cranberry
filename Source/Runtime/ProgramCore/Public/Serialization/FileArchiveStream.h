@@ -18,18 +18,19 @@ class GenericFile;
 class PROGRAMCORE_EXPORT FileArchiveStream : public ArchiveStream
 {
 private:
-    GenericFile* file;
+    GenericFile *file;
     uint64 fileCursor;
     bool bIsReadOnly;
+
 public:
-    FileArchiveStream(const String& filePath, bool bReading);
-    FileArchiveStream(FileArchiveStream&&) = delete;
-    FileArchiveStream(const FileArchiveStream&) = delete;
+    FileArchiveStream(const String &filePath, bool bReading);
+    FileArchiveStream(FileArchiveStream &&) = delete;
+    FileArchiveStream(const FileArchiveStream &) = delete;
     ~FileArchiveStream();
 
     /* FileArchiveStream overrides */
-    void read(void* toPtr, SizeT len) override;
-    void write(const void* ptr, SizeT len) override;
+    void read(void *toPtr, SizeT len) override;
+    void write(const void *ptr, SizeT len) override;
     void moveForward(SizeT count) override;
     void moveBackward(SizeT count) override;
     bool allocate(SizeT count) override;

@@ -15,6 +15,5 @@
 class APPLICATION_EXPORT PlatformAppInstanceBase
 {
 public:
-    virtual void* getPlatformAppInstance() const = 0;
+    virtual void *getPlatformAppInstance() const = 0;
 };
-

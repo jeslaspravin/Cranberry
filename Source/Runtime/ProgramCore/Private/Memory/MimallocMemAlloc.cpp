@@ -16,8 +16,7 @@
 
 #include <mimalloc.h>
 
-
-void* MimallocMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *MimallocMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     debugAssert(Math::isPowOf2(alignment));
     if (size == 0)
@@ -28,14 +27,15 @@ void* MimallocMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGN
     return mi_malloc_aligned(size, alignment);
 }
 
-void* MimallocMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *MimallocMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
-    void* ptr = tryMalloc(size, alignment);
+    void *ptr = tryMalloc(size, alignment);
     fatalAssert(size == 0 || ptr, "Allocation failed!");
     return ptr;
 }
 
-void* MimallocMemAlloc::tryRealloc(void* currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *MimallocMemAlloc::tryRealloc(
+    void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     debugAssert(Math::isPowOf2(alignment));
     if (size == 0)
@@ -52,14 +52,15 @@ void* MimallocMemAlloc::tryRealloc(void* currentPtr, SizeT size, uint32 alignmen
     return mi_realloc_aligned(currentPtr, size, alignment);
 }
 
-void* MimallocMemAlloc::memRealloc(void* currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *MimallocMemAlloc::memRealloc(
+    void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
-    void* ptr = tryRealloc(currentPtr, size, alignment);
+    void *ptr = tryRealloc(currentPtr, size, alignment);
     fatalAssert(size == 0 || ptr, "Reallocation failed!");
     return ptr;
 }
 
-void MimallocMemAlloc::memFree(void* ptr)
+void MimallocMemAlloc::memFree(void *ptr)
 {
     if (ptr == nullptr)
     {
@@ -68,7 +69,7 @@ void MimallocMemAlloc::memFree(void* ptr)
     mi_free(ptr);
 }
 
-SizeT MimallocMemAlloc::getAllocationSize(void* ptr) const
+SizeT MimallocMemAlloc::getAllocationSize(void *ptr) const
 {
     if (ptr == nullptr)
     {

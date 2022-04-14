@@ -12,3 +12,11 @@
 #pragma once
 
 #include "TestReflectionGen.h"
+
+namespace TestFunctions
+{
+class Test1
+{
+    uint32 *const *a;
+};
+} // namespace TestFunctions

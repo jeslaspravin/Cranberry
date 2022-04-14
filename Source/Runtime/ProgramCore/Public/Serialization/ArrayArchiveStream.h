@@ -18,14 +18,15 @@ class PROGRAMCORE_EXPORT ArrayArchiveStream : public ArchiveStream
 private:
     std::vector<uint8> buffer;
     SizeT cursor;
+
 public:
     ArrayArchiveStream() = default;
-    ArrayArchiveStream(ArrayArchiveStream&&) = delete;
-    ArrayArchiveStream(const ArrayArchiveStream&) = delete;
+    ArrayArchiveStream(ArrayArchiveStream &&) = delete;
+    ArrayArchiveStream(const ArrayArchiveStream &) = delete;
 
     /* ArrayArchiveStream overrides */
-    void read(void* toPtr, SizeT len) override;
-    void write(const void* ptr, SizeT len) override;
+    void read(void *toPtr, SizeT len) override;
+    void write(const void *ptr, SizeT len) override;
     void moveForward(SizeT count) override;
     void moveBackward(SizeT count) override;
     bool allocate(SizeT count) override;
