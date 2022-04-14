@@ -43,6 +43,7 @@ if (${enable_clang_format})
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/Source
             COMMENT "Formatting ${len} engine sources using clang-format..."
             VERBATIM
+            SOURCES ${CMAKE_SOURCE_DIR}/.clang-format
         )
 
         # Exclude from build all

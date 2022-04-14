@@ -84,14 +84,14 @@ ProgramCmdLine *ProgramCmdLine::get()
     return &singletonProgramCmdLine;
 }
 
-bool ProgramCmdLine::parseViews(const std::vector<StringView> &strViews) 
+bool ProgramCmdLine::parseViews(const std::vector<StringView> &strViews)
 {
     bool bSuccess = true;
 
     // Parse from each view
     cmdLineElements.clear();
     cmdLineElements.reserve(strViews.size());
-    for (const StringView& cmdArgView : strViews)
+    for (const StringView &cmdArgView : strViews)
     {
         // Do not need to trim spaces as they must already trimmed before reaching this point
         // Parse from file
