@@ -67,11 +67,11 @@ ObjectArchive &PackageLoader::serialize(CBE::Object *&obj)
         CLEAR_BITS(tableIdx, DEPENDENT_OBJECT_FLAG);
         debugAssert(dependentObjects.size() > tableIdx);
 
-        if (!dependentObjects[tableIdx].object)
+        if (!CBE::isValid(dependentObjects[tableIdx].object))
         {
             CBE::Object *depObj = CBE::getOrLoad(dependentObjects[tableIdx].objectFullPath);
             fatalAssert(
-                depObj->getType() == IReflectionRuntimeModule::get()->getClassType(dependentObjects[tableIdx].className),
+                depObj && depObj->getType() == IReflectionRuntimeModule::get()->getClassType(dependentObjects[tableIdx].className),
                 "Invalid dependent object[%s] in package %s", dependentObjects[tableIdx].objectFullPath, package->getName()
             );
             dependentObjects[tableIdx].object = depObj;
@@ -86,7 +86,7 @@ ObjectArchive &PackageLoader::serialize(CBE::Object *&obj)
     return *this;
 }
 
-void PackageLoader::prepareLoader() 
+void PackageLoader::prepareLoader()
 {
     FileArchiveStream fileStream{ packageFilePath, true };
     fatalAssert(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
@@ -113,7 +113,7 @@ void PackageLoader::prepareLoader()
     alertIf(!containedObjects.empty(), "Empty package %s at %s", package->getName(), packageFilePath);
 }
 
-bool PackageLoader::load() 
+bool PackageLoader::load()
 {
     FileArchiveStream fileStream{ packageFilePath, true };
     fatalAssert(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
@@ -121,9 +121,9 @@ bool PackageLoader::load()
     packageArchive.setStream(&fileStream);
 
     bool bSuccess = true;
-    for (PackageContainedData& containedData : containedObjects)
+    for (PackageContainedData &containedData : containedObjects)
     {
-        if (!containedData.object)
+        if (!CBE::isValid(containedData.object))
         {
             createContainedObject(containedData);
         }
@@ -137,6 +137,8 @@ bool PackageLoader::load()
             fileStream.moveForward(containedData.streamStart - fileStream.cursorPos());
         }
         containedData.object->serialize(*this);
+        CLEAR_BITS(CBE::PrivateObjectCoreAccessors::getFlags(containedData.object), CBE::EObjectFlagBits::PackageLoadPending);
+
         SizeT serializedSize = fileStream.cursorPos() - containedData.streamStart;
         if (serializedSize != containedData.streamSize)
         {
@@ -148,5 +150,6 @@ bool PackageLoader::load()
             bSuccess = false;
         }
     }
-    return bSuccess; 
+    CLEAR_BITS(CBE::PrivateObjectCoreAccessors::getFlags(package), CBE::EObjectFlagBits::PackageLoadPending);
+    return bSuccess;
 }
