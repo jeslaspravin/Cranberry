@@ -69,7 +69,7 @@ void PackageSaver::savePackage()
     for (PackageContainedData &containedObjData : containedObjects)
     {
         containedObjData.streamStart = archiveCounter.cursorPos();
-        (*this) << containedObjData.object;
+        containedObjData.object->serialize(*this);
         containedObjData.streamSize = archiveCounter.cursorPos() - containedObjData.streamStart;
         // We must have custom version setup if present, Custom version keys must be from class property name
         containedObjData.classVersion = getCustomVersion(uint32(containedObjData.object->getType()->name));
@@ -105,7 +105,7 @@ void PackageSaver::savePackage()
     (*static_cast<ObjectArchive *>(this)) << dependentObjects;
     for (PackageContainedData &containedObjData : containedObjects)
     {
-        (*this) << containedObjData.object;
+        containedObjData.object->serialize(*this);
     }
     packageArchive.setStream(nullptr);
 }
