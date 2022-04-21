@@ -60,10 +60,7 @@ Matrix2Col &Matrix2::operator[](uint32 colIndex) { return value[colIndex]; }
 
 Matrix2Col Matrix2::operator[](uint32 colIndex) const { return value[colIndex]; }
 
-Vector2D Matrix2::operator*(const Vector2D &transformingVector) const
-{
-    return Vector2D(value * transformingVector.value);
-}
+Vector2D Matrix2::operator*(const Vector2D &transformingVector) const { return Vector2D(value * transformingVector.value); }
 
 Matrix2 Matrix2::operator*(const Matrix2 &b) const { return value * b.value; }
 

@@ -45,15 +45,14 @@ struct FunctionExecutor
     struct ExeHelper
     {
         template <size_t... Indices>
-        ReturnType execute(const FunctionType &function, Params... params, const Tuple &varStore,
-            std::index_sequence<Indices...>) const
+        ReturnType execute(const FunctionType &function, Params... params, const Tuple &varStore, std::index_sequence<Indices...>) const
         {
             return function(std::forward<Params>(params)..., std::get<Indices>(varStore)...);
         }
 
         template <typename ObjectType, size_t... Indices>
-        ReturnType execute(ObjectType *object, const FunctionType &function, Params... params,
-            const Tuple &varStore, std::index_sequence<Indices...>)
+        ReturnType
+            execute(ObjectType *object, const FunctionType &function, Params... params, const Tuple &varStore, std::index_sequence<Indices...>)
         {
             return function(object, std::forward<Params>(params)..., std::get<Indices>(varStore)...);
         }
@@ -70,14 +69,14 @@ struct FunctionExecutor
     template <typename ReturnType, typename FunctionType, typename... Params>
     ReturnType execute(const FunctionType &function, Params... params) const
     {
-        return ExeHelper<FunctionType, ReturnType, Params...>{}.execute(
-            function, std::forward<Params>(params)..., varStore, IndexSeq{});
+        return ExeHelper<FunctionType, ReturnType, Params...>{}.execute(function, std::forward<Params>(params)..., varStore, IndexSeq{});
     }
     template <typename ReturnType, typename FunctionType, typename ObjectType, typename... Params>
     ReturnType execute(const FunctionType &function, ObjectType *object, Params... params) const
     {
         return ExeHelper<FunctionType, ReturnType, Params...>{}.execute<ObjectType>(
-            object, function, std::forward<Params>(params)..., varStore, IndexSeq{});
+            object, function, std::forward<Params>(params)..., varStore, IndexSeq{}
+        );
     }
 };
 
@@ -102,8 +101,7 @@ template <bool IsConst, typename ObjectType, typename FuncSignature, typename...
 class ObjectDelegate;
 
 template <typename ObjectType, typename ReturnType, typename... Params, typename... Variables>
-class ObjectDelegate<false, ObjectType, ReturnType(Params...), Variables...> final
-    : public IDelegate<ReturnType, Params...>
+class ObjectDelegate<false, ObjectType, ReturnType(Params...), Variables...> final : public IDelegate<ReturnType, Params...>
 {
 public:
     using FunctionPtr = ClassFunction<false, ObjectType, ReturnType, Params..., Variables...>;
@@ -123,7 +121,8 @@ public:
     {
         // Has to send full Params variadic types as l-value references are getting lost
         return executor.execute<ReturnType, FunctionPtr, decltype(delegateData.objectPtr), Params...>(
-            delegateData.functionPtr, delegateData.objectPtr, std::forward<Params>(params)...);
+            delegateData.functionPtr, delegateData.objectPtr, std::forward<Params>(params)...
+        );
     }
 
     bool hasSameObject(const void *object) const override { return delegateData.objectPtr == object; }
@@ -158,8 +157,7 @@ private:
 };
 
 template <typename ObjectType, typename ReturnType, typename... Params, typename... Variables>
-class ObjectDelegate<true, ObjectType, ReturnType(Params...), Variables...> final
-    : public IDelegate<ReturnType, Params...>
+class ObjectDelegate<true, ObjectType, ReturnType(Params...), Variables...> final : public IDelegate<ReturnType, Params...>
 {
 public:
     using FunctionPtr = ClassFunction<true, ObjectType, ReturnType, Params..., Variables...>;
@@ -179,7 +177,8 @@ public:
     {
         // Has to send full Params variadic types as l-value references are getting lost
         return executor.execute<ReturnType, FunctionPtr, decltype(delegateData.objectPtr), Params...>(
-            delegateData.functionPtr, delegateData.objectPtr, std::forward<Params>(params)...);
+            delegateData.functionPtr, delegateData.objectPtr, std::forward<Params>(params)...
+        );
     }
 
     bool hasSameObject(const void *object) const override { return delegateData.objectPtr == object; }
@@ -317,45 +316,39 @@ protected:
 
 public:
     template <typename ObjectType, typename... Variables>
-    std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, void> bindObject(ObjectType *object,
-        const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction,
-        Variables... vars)
+    std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, void> bindObject(
+        ObjectType *object, const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars
+    )
     {
-        delegatePtr.reset(new ObjDelegateType<ObjectType, Variables...>(
-            object, bindingFunction, std::forward<Variables>(vars)...));
+        delegatePtr.reset(new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...));
     }
 
     template <typename ObjectType, typename... Variables>
-    void bindObject(const ObjectType *object,
-        const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction,
-        Variables... vars)
+    void bindObject(
+        const ObjectType *object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars
+    )
     {
-        delegatePtr.reset(new ConstObjDelegateType<ObjectType, Variables...>(
-            object, bindingFunction, std::forward<Variables>(vars)...));
+        delegatePtr.reset(new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...));
     }
 
     template <typename... Variables>
-    void bindStatic(
-        const typename StaticDelegateType<Variables...>::FunctionPtr &bindingFunction, Variables... vars)
+    void bindStatic(const typename StaticDelegateType<Variables...>::FunctionPtr &bindingFunction, Variables... vars)
     {
-        delegatePtr.reset(
-            new StaticDelegateType<Variables...>(bindingFunction, std::forward<Variables>(vars)...));
+        delegatePtr.reset(new StaticDelegateType<Variables...>(bindingFunction, std::forward<Variables>(vars)...));
     }
 
     template <typename... Variables>
-    void bindLambda(
-        const typename LambdaDelegateType<Variables...>::FunctionPtr &lambda, Variables... vars)
+    void bindLambda(const typename LambdaDelegateType<Variables...>::FunctionPtr &lambda, Variables... vars)
     {
-        delegatePtr.reset(
-            new LambdaDelegateType<Variables...>(lambda, std::forward<Variables>(vars)...));
+        delegatePtr.reset(new LambdaDelegateType<Variables...>(lambda, std::forward<Variables>(vars)...));
     }
 
     template <typename LambdaType, typename... Variables>
     void bindLambda(LambdaType &&lambda, Variables... vars)
     {
         delegatePtr.reset(new LambdaDelegateType<Variables...>(
-            LambdaDelegateType<Variables...>::FunctionPtr(std::forward<LambdaType &&>(lambda)),
-            std::forward<Variables>(vars)...));
+            LambdaDelegateType<Variables...>::FunctionPtr(std::forward<LambdaType &&>(lambda)), std::forward<Variables>(vars)...
+        ));
     }
 
     void unbind() { delegatePtr.reset(); }
@@ -387,17 +380,13 @@ public:
     using SingleCastDelegateBase<ReturnType, Params...>::unbind;
     ~SingleCastDelegate() { unbind(); }
 
-    ReturnType invoke(Params... params) const
-    {
-        return delegatePtr->invoke(std::forward<Params>(params)...);
-    }
+    ReturnType invoke(Params... params) const { return delegatePtr->invoke(std::forward<Params>(params)...); }
 
     template <typename ObjectType, typename... Variables>
     static std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, SingleCastDelegate> createObject(
-        ObjectType *object,
-        const typename Base::template ObjDelegateType<ObjectType, Variables...>::FunctionPtr
-            &bindingFunction,
-        Variables... vars)
+        ObjectType *object, const typename Base::template ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction,
+        Variables... vars
+    )
     {
         SingleCastDelegate sDelegate;
         sDelegate.bindObject(object, bindingFunction, std::forward<Variables>(vars)...);
@@ -405,10 +394,10 @@ public:
     }
 
     template <typename ObjectType, typename... Variables>
-    static SingleCastDelegate createObject(const ObjectType *object,
-        const typename Base::template ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr
-            &bindingFunction,
-        Variables... vars)
+    static SingleCastDelegate createObject(
+        const ObjectType *object, const typename Base::template ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction,
+        Variables... vars
+    )
     {
         SingleCastDelegate sDelegate;
         sDelegate.bindObject(object, bindingFunction, std::forward<Variables>(vars)...);
@@ -416,9 +405,8 @@ public:
     }
 
     template <typename... Variables>
-    static SingleCastDelegate createStatic(
-        const typename Base::template StaticDelegateType<Variables...>::FunctionPtr &bindingFunction,
-        Variables... vars)
+    static SingleCastDelegate
+        createStatic(const typename Base::template StaticDelegateType<Variables...>::FunctionPtr &bindingFunction, Variables... vars)
     {
         SingleCastDelegate sDelegate;
         sDelegate.bindStatic(bindingFunction, std::forward<Variables>(vars)...);
@@ -444,10 +432,7 @@ private:
 
     friend OwnerType;
 
-    ReturnType invoke(Params... params) const
-    {
-        return delegatePtr->invoke(std::forward<Params>(params)...);
-    }
+    ReturnType invoke(Params... params) const { return delegatePtr->invoke(std::forward<Params>(params)...); }
 
 public:
     using SingleCastDelegateBase<ReturnType, Params...>::unbind;
@@ -497,13 +482,12 @@ protected:
 public:
     template <typename ObjectType, typename... Variables>
     std::enable_if_t<std::negation_v<std::is_const<ObjectType>>, DelegateHandle> bindObject(
-        ObjectType *object,
-        const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction,
-        Variables... vars)
+        ObjectType *object, const typename ObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars
+    )
     {
-        SharedPtr<DelegateInterface> ptr
-            = SharedPtr<DelegateInterface>(new ObjDelegateType<ObjectType, Variables...>(
-                object, bindingFunction, std::forward<Variables>(vars)...));
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(
+            new ObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...)
+        );
         DelegateHandle handle;
         getNextId(handle.value);
         allDelegates[handle.value] = ptr;
@@ -511,13 +495,24 @@ public:
     }
 
     template <typename ObjectType, typename... Variables>
-    DelegateHandle bindObject(const ObjectType *object,
-        const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction,
-        Variables... vars)
+    DelegateHandle bindObject(
+        const ObjectType *object, const typename ConstObjDelegateType<ObjectType, Variables...>::FunctionPtr &bindingFunction, Variables... vars
+    )
+    {
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(
+            new ConstObjDelegateType<ObjectType, Variables...>(object, bindingFunction, std::forward<Variables>(vars)...)
+        );
+        DelegateHandle handle;
+        getNextId(handle.value);
+        allDelegates[handle.value] = ptr;
+        return handle;
+    }
+
+    template <typename... Variables>
+    DelegateHandle bindStatic(const typename StaticDelegateType<Variables...>::FunctionPtr &bindingFunction, Variables... vars)
     {
         SharedPtr<DelegateInterface> ptr
-            = SharedPtr<DelegateInterface>(new ConstObjDelegateType<ObjectType, Variables...>(
-                object, bindingFunction, std::forward<Variables>(vars)...));
+            = SharedPtr<DelegateInterface>(new StaticDelegateType<Variables...>(bindingFunction, std::forward<Variables>(vars)...));
         DelegateHandle handle;
         getNextId(handle.value);
         allDelegates[handle.value] = ptr;
@@ -525,23 +520,10 @@ public:
     }
 
     template <typename... Variables>
-    DelegateHandle bindStatic(
-        const typename StaticDelegateType<Variables...>::FunctionPtr &bindingFunction, Variables... vars)
+    DelegateHandle bindLambda(const typename LambdaDelegateType<Variables...>::FunctionPtr &lambda, Variables... vars)
     {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(
-            new StaticDelegateType<Variables...>(bindingFunction, std::forward<Variables>(vars)...));
-        DelegateHandle handle;
-        getNextId(handle.value);
-        allDelegates[handle.value] = ptr;
-        return handle;
-    }
-
-    template <typename... Variables>
-    DelegateHandle bindLambda(
-        const typename LambdaDelegateType<Variables...>::FunctionPtr &lambda, Variables... vars)
-    {
-        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(
-            new LambdaDelegateType<Variables...>(lambda, std::forward<Variables>(vars)...));
+        SharedPtr<DelegateInterface> ptr
+            = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(lambda, std::forward<Variables>(vars)...));
         DelegateHandle handle;
         getNextId(handle.value);
         allDelegates[handle.value] = ptr;
@@ -551,10 +533,9 @@ public:
     template <typename LambdaType, typename... Variables>
     DelegateHandle bindLambda(LambdaType &&lambda, Variables... vars)
     {
-        SharedPtr<DelegateInterface> ptr
-            = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(
-                LambdaDelegateType<Variables...>::FunctionPtr(std::forward<LambdaType>(lambda)),
-                std::forward<Variables>(vars)...));
+        SharedPtr<DelegateInterface> ptr = SharedPtr<DelegateInterface>(new LambdaDelegateType<Variables...>(
+            LambdaDelegateType<Variables...>::FunctionPtr(std::forward<LambdaType>(lambda)), std::forward<Variables>(vars)...
+        ));
         DelegateHandle handle;
         getNextId(handle.value);
         allDelegates[handle.value] = ptr;
@@ -562,15 +543,13 @@ public:
     }
 
     // Returns list of pair of old to new DelegateHandle
-    std::vector<std::pair<DelegateHandle, DelegateHandle>> bind(
-        const MultiCastDelegateBase &fromDelegate)
+    std::vector<std::pair<DelegateHandle, DelegateHandle>> bind(const MultiCastDelegateBase &fromDelegate)
     {
         std::vector<std::pair<DelegateHandle, DelegateHandle>> retHandles;
 
         int32 nextId;
         bool bSeqEnd = getNextId(nextId);
-        for (auto fromItr = fromDelegate.allDelegates.begin();
-             fromItr != fromDelegate.allDelegates.end(); ++fromItr)
+        for (auto fromItr = fromDelegate.allDelegates.begin(); fromItr != fromDelegate.allDelegates.end(); ++fromItr)
         {
             DelegateHandle handle;
             handle.value = nextId;
@@ -582,8 +561,7 @@ public:
             {
                 bSeqEnd = getNextId(nextId);
             }
-            retHandles.emplace_back(
-                std::pair<DelegateHandle, DelegateHandle>{ { fromItr->first }, handle });
+            retHandles.emplace_back(std::pair<DelegateHandle, DelegateHandle>{ { fromItr->first }, handle });
             allDelegates[handle.value] = fromItr->second;
         }
         return retHandles;

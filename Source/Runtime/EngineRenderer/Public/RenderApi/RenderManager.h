@@ -29,8 +29,7 @@ private:
     GlobalRenderingContextBase *globalContext;
     IGraphicsInstance *graphicsInstanceCache;
 
-    using ImmediateExecuteCommandType = SingleCastDelegate<void, class IRenderCommandList *,
-        IGraphicsInstance *, const GraphicsHelperAPI *>;
+    using ImmediateExecuteCommandType = SingleCastDelegate<void, class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *>;
     class IRenderCommandList *renderCmds;
     std::queue<class IRenderCommand *> commands;
 
@@ -43,8 +42,7 @@ private:
     // Helpers
     //
     // Get generic render pass properties from Render targets
-    GenericRenderPassProperties renderpassPropsFromRTs(
-        const std::vector<IRenderTargetTexture *> &rtTextures) const;
+    GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<IRenderTargetTexture *> &rtTextures) const;
 
     void createSingletons();
 
@@ -68,34 +66,30 @@ public:
 
     // Fills pipelineContext with info necessary to render using this particular requested pipeline, with
     // given framebuffer attachments
-    void preparePipelineContext(class LocalPipelineContext *pipelineContext,
-        const std::vector<IRenderTargetTexture *> &rtTextures);
+    void preparePipelineContext(class LocalPipelineContext *pipelineContext, const std::vector<IRenderTargetTexture *> &rtTextures);
     void preparePipelineContext(class LocalPipelineContext *pipelineContext);
     // Hint on render pass format in case of non generic renderpass is necessary
-    void clearExternInitRtsFramebuffer(const std::vector<IRenderTargetTexture *> &rtTextures,
-        ERenderPassFormat::Type rpFormat = ERenderPassFormat::Generic);
+    void clearExternInitRtsFramebuffer(
+        const std::vector<IRenderTargetTexture *> &rtTextures, ERenderPassFormat::Type rpFormat = ERenderPassFormat::Generic
+    );
 
     void waitOnCommands();
     // If initializing we assume it is executing as well
     bool isExecutingCommands() const { return bIsInsideRenderCommand; }
 
     template <typename RenderCmdClass>
-    static void issueRenderCommand(
-        RenderManager *renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
+    static void issueRenderCommand(RenderManager *renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn);
 };
 
 template <typename RenderCmdClass>
-void RenderManager::issueRenderCommand(
-    RenderManager *renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
+void RenderManager::issueRenderCommand(RenderManager *renderApi, typename RenderCmdClass::RenderCmdFunc &&renderCommandFn)
 {
     if (renderApi->bIsInsideRenderCommand)
     {
-        renderApi->immediateExecCommand(ImmediateExecuteCommandType::createLambda(
-            std::forward<decltype(renderCommandFn)>(renderCommandFn)));
+        renderApi->immediateExecCommand(ImmediateExecuteCommandType::createLambda(std::forward<decltype(renderCommandFn)>(renderCommandFn)));
     }
     else
     {
-        renderApi->enqueueCommand(
-            new RenderCmdClass(std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn)));
+        renderApi->enqueueCommand(new RenderCmdClass(std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn)));
     }
 }

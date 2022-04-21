@@ -12,14 +12,15 @@
 #include "CoreObjectsModule.h"
 #include "CoreObjectAllocator.h"
 #include "Modules/ModuleManager.h"
+#include "CBEObjectHelpers.h"
+#include "CBEPackage.h"
 
 DECLARE_MODULE(CoreObjects, CoreObjectsModule)
 
 ICoreObjectsModule *ICoreObjectsModule::get()
 {
     static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("CoreObjects")));
-    return weakRiModule.expired() ? nullptr
-                                  : static_cast<CoreObjectsModule *>(weakRiModule.lock().get());
+    return weakRiModule.expired() ? nullptr : static_cast<CoreObjectsModule *>(weakRiModule.lock().get());
 }
 
 void CoreObjectsModule::init() { CBE::initializeObjectAllocators(); }

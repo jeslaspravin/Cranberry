@@ -18,15 +18,11 @@ DECLARE_MODULE(EngineRenderer, EngineRedererModule)
 
 IGraphicsInstance *EngineRedererModule::currentGraphicsInstance() const
 {
-    debugAssert(getRenderManager()->isExecutingCommands()
-                && "using graphics instance any where outside render commands is not allowed");
+    debugAssert(getRenderManager()->isExecutingCommands() && "using graphics instance any where outside render commands is not allowed");
     return graphicsInstanceCache;
 }
 
-const GraphicsHelperAPI *EngineRedererModule::currentGraphicsHelper() const
-{
-    return graphicsHelperCache;
-}
+const GraphicsHelperAPI *EngineRedererModule::currentGraphicsHelper() const { return graphicsHelperCache; }
 
 void EngineRedererModule::initializeGraphics() { getRenderManager()->initialize(graphicsInstanceCache); }
 
@@ -34,16 +30,12 @@ void EngineRedererModule::finalizeGraphicsInitialization() { getRenderManager()-
 
 RenderManager *EngineRedererModule::getRenderManager() const { return renderManager; }
 
-DelegateHandle EngineRedererModule::registerToStateEvents(
-    RenderStateDelegate::SingleCastDelegateType callback)
+DelegateHandle EngineRedererModule::registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback)
 {
     return renderStateEvents.bind(callback);
 }
 
-void EngineRedererModule::unregisterToStateEvents(const DelegateHandle &handle)
-{
-    renderStateEvents.unbind(handle);
-}
+void EngineRedererModule::unregisterToStateEvents(const DelegateHandle &handle) { renderStateEvents.unbind(handle); }
 
 void EngineRedererModule::init()
 {
@@ -76,6 +68,5 @@ void EngineRedererModule::release()
 IRenderInterfaceModule *IRenderInterfaceModule::get()
 {
     static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer")));
-    return weakRiModule.expired() ? nullptr
-                                  : static_cast<IRenderInterfaceModule *>(weakRiModule.lock().get());
+    return weakRiModule.expired() ? nullptr : static_cast<IRenderInterfaceModule *>(weakRiModule.lock().get());
 }

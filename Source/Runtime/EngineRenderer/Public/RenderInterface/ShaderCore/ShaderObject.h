@@ -83,18 +83,16 @@ public:
     DrawMeshShaderObject(const String &sName);
     ~DrawMeshShaderObject();
 
-    const ShaderResource *getShader(EVertexType::Type inputVertexType,
-        const FramebufferFormat &outputBufferFormat,
-        GraphicsPipelineBase **outGraphicsPipeline = nullptr) const;
-    GraphicsResource *getVariantUniqueParamsLayout(
-        EVertexType::Type inputVertexType, const FramebufferFormat &outputBufferFormat) const;
+    const ShaderResource *getShader(
+        EVertexType::Type inputVertexType, const FramebufferFormat &outputBufferFormat, GraphicsPipelineBase **outGraphicsPipeline = nullptr
+    ) const;
+    GraphicsResource *getVariantUniqueParamsLayout(EVertexType::Type inputVertexType, const FramebufferFormat &outputBufferFormat) const;
     const ShaderResourceList &getAllShaders() const;
 
     // Internal use functions
     void addShader(const ShaderResource *shaderResource);
     void setPipeline(const ShaderResource *shaderResource, GraphicsPipelineBase *graphicsPipeline);
-    void setVariantParamsLayout(
-        const ShaderResource *shaderResource, GraphicsResource *perVariantParamsLayout);
+    void setVariantParamsLayout(const ShaderResource *shaderResource, GraphicsResource *perVariantParamsLayout);
 
     /* ShaderObjectBase overrides */
     const GraphicsResourceType *baseShaderType() const final;
@@ -129,8 +127,7 @@ public:
     std::vector<const GraphicsPipelineBase *> getAllPipelines() const;
 
     // Internal use functions
-    void setPipeline(
-        const GenericRenderPassProperties &renderpassProps, GraphicsPipelineBase *graphicsPipeline);
+    void setPipeline(const GenericRenderPassProperties &renderpassProps, GraphicsPipelineBase *graphicsPipeline);
 
     /* ShaderObjectBase overrides */
     const GraphicsResourceType *baseShaderType() const final;

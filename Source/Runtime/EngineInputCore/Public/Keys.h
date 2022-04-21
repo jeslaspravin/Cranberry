@@ -61,8 +61,7 @@ public:
 template <typename InputType>
 struct InputStateRange
 {
-    using IteratorType
-        = InputStateIterator<typename InputType::StateKeyType, typename InputType::StateInfoType>;
+    using IteratorType = InputStateIterator<typename InputType::StateKeyType, typename InputType::StateInfoType>;
     IteratorType begin() const { return IteratorType(InputType::STATES_INITIALIZER.begin()); }
 
     IteratorType end() const { return IteratorType(InputType::STATES_INITIALIZER.end()); }

@@ -17,8 +17,7 @@
 
 #include <filesystem>
 
-StaticModuleInitializerRegistrant::StaticModuleInitializerRegistrant(
-    String moduleName, SingleCastDelegate<IModuleBase *> functionPtr)
+StaticModuleInitializerRegistrant::StaticModuleInitializerRegistrant(String moduleName, SingleCastDelegate<IModuleBase *> functionPtr)
 {
     ModuleManager::getModuleInitializerList()[moduleName] = functionPtr;
 }
@@ -39,11 +38,9 @@ LibPointer *ModuleManager::loadFromAdditionalPaths(String modulePath) const
     }
 
     // append prefix name if not present
-    if (!String(LIB_PREFIX).empty()
-        && !String(WCHAR_TO_TCHAR(moduleFullPath.filename().c_str())).startsWith(LIB_PREFIX, true))
+    if (!String(LIB_PREFIX).empty() && !String(WCHAR_TO_TCHAR(moduleFullPath.filename().c_str())).startsWith(LIB_PREFIX, true))
     {
-        moduleFullPath.replace_filename(
-            LIB_PREFIX + String(WCHAR_TO_TCHAR(moduleFullPath.filename().c_str())));
+        moduleFullPath.replace_filename(LIB_PREFIX + String(WCHAR_TO_TCHAR(moduleFullPath.filename().c_str())));
     }
     // Add extensions
     if (!moduleFullPath.has_extension())
@@ -54,15 +51,13 @@ LibPointer *ModuleManager::loadFromAdditionalPaths(String modulePath) const
     String relativeModulePath(WCHAR_TO_TCHAR(moduleFullPath.c_str()));
     for (const String &lookAtPath : additionalLibraryPaths)
     {
-        if (LibPointer *library
-            = PlatformFunctions::openLibrary(PathFunctions::combinePath(lookAtPath, relativeModulePath)))
+        if (LibPointer *library = PlatformFunctions::openLibrary(PathFunctions::combinePath(lookAtPath, relativeModulePath)))
         {
             return library;
         }
         else
         {
-            LOG_WARN("ModuleManager", "%s() : Searched for %s library at %s", __func__, modulePath,
-                lookAtPath);
+            LOG_WARN("ModuleManager", "%s() : Searched for %s library at %s", __func__, modulePath, lookAtPath);
         }
     }
     return nullptr;
@@ -83,8 +78,10 @@ ModuleManager::ModuleManager()
     {
         LibraryData data;
         PlatformFunctions::getModuleInfo(procHandle, libPtr, data);
-        LOG_DEBUG("ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d",
-            __func__, data.name.getChar(), data.imgName.getChar(), data.moduleSize);
+        LOG_DEBUG(
+            "ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d", __func__, data.name.getChar(),
+            data.imgName.getChar(), data.moduleSize
+        );
         loadedLibraries[data.name].first = libPtr;
         loadedLibraries[data.name].second = data;
     }
@@ -113,10 +110,7 @@ ModuleManager *ModuleManager::get()
     return &singletonManager;
 }
 
-bool ModuleManager::isLibraryLoaded(String moduleName) const
-{
-    return loadedLibraries.find(moduleName) != loadedLibraries.end();
-}
+bool ModuleManager::isLibraryLoaded(String moduleName) const { return loadedLibraries.find(moduleName) != loadedLibraries.end(); }
 
 LibPointer *ModuleManager::getLibrary(String moduleName) const
 {
@@ -145,12 +139,12 @@ LibPointer *ModuleManager::getOrLoadLibrary(String modulePath)
         }
         if (library)
         {
-            LOG_DEBUG(
-                "ModuleManager", "%s() : Loaded Library %s from %s", __func__, moduleName, modulePath);
+            LOG_DEBUG("ModuleManager", "%s() : Loaded Library %s from %s", __func__, moduleName, modulePath);
 
             loadedLibraries[moduleName].first = library;
-            PlatformFunctions::getModuleInfo(PlatformFunctions::getCurrentProcessHandle(),
-                loadedLibraries[moduleName].first, loadedLibraries[moduleName].second);
+            PlatformFunctions::getModuleInfo(
+                PlatformFunctions::getCurrentProcessHandle(), loadedLibraries[moduleName].first, loadedLibraries[moduleName].second
+            );
             return library;
         }
         return nullptr;
@@ -159,10 +153,7 @@ LibPointer *ModuleManager::getOrLoadLibrary(String modulePath)
     return getLibrary(moduleName);
 }
 
-bool ModuleManager::isModuleLoaded(String moduleName) const
-{
-    return loadedModuleInterfaces.find(moduleName) != loadedModuleInterfaces.cend();
-}
+bool ModuleManager::isModuleLoaded(String moduleName) const { return loadedModuleInterfaces.find(moduleName) != loadedModuleInterfaces.cend(); }
 
 WeakModulePtr ModuleManager::getModule(String moduleName) const
 {
@@ -188,15 +179,13 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
         auto staticInitializerItr = getModuleInitializerList().find(moduleName);
         if (staticInitializerItr != getModuleInitializerList().end())
         {
-            fatalAssert(staticInitializerItr->second.isBound(),
-                "%s() : Static initializer must be bound", __func__);
+            fatalAssert(staticInitializerItr->second.isBound(), "%s() : Static initializer must be bound", __func__);
             retModule = ModulePtr(staticInitializerItr->second.invoke());
         }
 #if STATIC_LINKED
         else
         {
-            fatalAssert(
-                !"Module initializer not found", "%s() : Module initializer not found", __func__);
+            fatalAssert(!"Module initializer not found", "%s() : Module initializer not found", __func__);
             return existingModule;
         }
 #else  // STATIC_LINKED
@@ -207,11 +196,9 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
             // Check other paths for modules
             fatalAssert(libPtr, "%s() : Failed loading module %s", __func__, moduleName);
 
-            Function<IModuleBase *> createFuncPtr(
-                (Function<IModuleBase *>::StaticDelegate)PlatformFunctions::getProcAddress(
-                    libPtr, TCHAR("createModule_") + moduleName));
-            fatalAssert(createFuncPtr, "%s() : Failed find module create function for module %s",
-                __func__, moduleName);
+            Function<IModuleBase *> createFuncPtr((Function<IModuleBase *>::StaticDelegate
+            )PlatformFunctions::getProcAddress(libPtr, TCHAR("createModule_") + moduleName));
+            fatalAssert(createFuncPtr, "%s() : Failed find module create function for module %s", __func__, moduleName);
 
             retModule = ModulePtr(createFuncPtr());
         }
@@ -263,8 +250,10 @@ std::vector<std::pair<LibPointerPtr, LibraryData>> ModuleManager::getAllModuleDa
         if (loadedLibraries.find(data.name) != loadedLibraries.end())
             continue;
 
-        LOG_DEBUG("ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d",
-            __func__, data.name.getChar(), data.imgName.getChar(), data.moduleSize);
+        LOG_DEBUG(
+            "ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d", __func__, data.name.getChar(),
+            data.imgName.getChar(), data.moduleSize
+        );
         loadedLibraries[data.name].first = libPtr;
         loadedLibraries[data.name].second = data;
     }

@@ -33,5 +33,6 @@ public:
     uint8 readForwardAt(SizeT idx) const override;
     uint8 readBackwardAt(SizeT idx) const override;
     bool isAvailable() const override;
+    uint64 cursorPos() const override;
     /* Overrides ends */
 };

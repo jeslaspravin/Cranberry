@@ -60,8 +60,7 @@ void ImGuiFontTextureAtlas::reinitResources()
 
     ENQUEUE_COMMAND(ReinitImGuiFontTextureAtlas)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             if (textureResource->isValid())
             {
@@ -72,19 +71,17 @@ void ImGuiFontTextureAtlas::reinitResources()
             {
                 ImGuiFontTextureAtlas::init(this);
             }
-        });
+        }
+    );
 }
 
 void ImGuiFontTextureAtlas::init(ImGuiFontTextureAtlas *texture)
 {
-    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat,
-        .dimensions = texture->textureSize,
-        .numOfMips = texture->mipCount };
+    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount };
 
     ENQUEUE_COMMAND(InitImGuiFontTextureAtlas)
     (
-        [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             texture->textureResource = graphicsHelper->createImage(graphicsInstance, imageCI);
             texture->textureResource->setResourceName(texture->textureName);
@@ -93,15 +90,16 @@ void ImGuiFontTextureAtlas::init(ImGuiFontTextureAtlas *texture)
 
             texture->textureResource->init();
             cmdList->copyToImage(texture->textureResource, texture->rawData);
-        });
+        }
+    );
 }
 
 void ImGuiFontTextureAtlas::destroy(ImGuiFontTextureAtlas *texture)
 {
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(DestroyImGuiFontTextureAtlas)
-    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-         const GraphicsHelperAPI *graphicsHelper) { textureResource->release(); });
+    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+     { textureResource->release(); });
 
     texture->textureResource.reset();
 }

@@ -43,8 +43,8 @@ public:
      * @return NODISCARD bool
      */
     template <typename Type, Box2DType RectType = Box<Type, 2>>
-    NODISCARD static bool packRectangles(std::vector<PackedRectsBin<RectType>> &outPackedBins,
-        const Type &maxBinRect, const std::vector<RectType *> &packRects);
+    NODISCARD static bool
+        packRectangles(std::vector<PackedRectsBin<RectType>> &outPackedBins, const Type &maxBinRect, const std::vector<RectType *> &packRects);
 };
 
 #include "Math/PackRectangles.inl"

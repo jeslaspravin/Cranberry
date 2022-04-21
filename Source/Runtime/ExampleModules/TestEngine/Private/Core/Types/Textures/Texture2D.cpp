@@ -24,8 +24,7 @@ void Texture2D::setData(const std::vector<class Color> &newData, const Color &de
 
     dataFormat = EPixelDataFormat::BGRA_U8_Norm;
     memcpy(rawData.data(), newData.data(), newData.size() * sizeof(Color));
-    for (uint32 copyIndex = uint32(newData.size()); copyIndex < static_cast<uint32>(rawData.size());
-         ++copyIndex)
+    for (uint32 copyIndex = uint32(newData.size()); copyIndex < static_cast<uint32>(rawData.size()); ++copyIndex)
     {
         rawData[copyIndex] = defaultColor;
     }
@@ -39,8 +38,7 @@ bool Texture2D::isSrgb() const
            || dataFormat == EPixelDataFormat::R_U8_SRGB;
 }
 
-EPixelDataFormat::Type Texture2D::determineDataFormat(
-    bool bIsSrgb, bool bIsNormalMap, uint8 componentCount)
+EPixelDataFormat::Type Texture2D::determineDataFormat(bool bIsSrgb, bool bIsNormalMap, uint8 componentCount)
 {
     EPixelDataFormat::Type dataFormat;
     if (bIsNormalMap)
@@ -79,10 +77,9 @@ Texture2D *Texture2D::createTexture(const Texture2DCreateParams &createParams)
     if (createParams.mipCount != 0)
     {
         texture->mipCount = Math::min(
-            (uint32)(1
-                     + Math::floor(Math::log2(
-                         (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
-            createParams.mipCount);
+            (uint32)(1 + Math::floor(Math::log2((float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
+            createParams.mipCount
+        );
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
@@ -91,8 +88,7 @@ Texture2D *Texture2D::createTexture(const Texture2DCreateParams &createParams)
     texture->setSampleCount(EPixelSampleCount::SampleCount1); // MS not possible for read only textures
     texture->setFilteringMode(createParams.filtering);
 
-    Texture2D::init(
-        texture, createParams.bIsNormalMap, createParams.bIsSrgb, createParams.componentsCount);
+    Texture2D::init(texture, createParams.bIsNormalMap, createParams.bIsSrgb, createParams.componentsCount);
     return texture;
 }
 
@@ -109,11 +105,9 @@ void Texture2D::reinitResources()
 
     ENQUEUE_COMMAND(ReinitTexture2D)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
-            const EPixelDataFormat::PixelFormatInfo *formatInfo
-                = EPixelDataFormat::getFormatInfo(dataFormat);
+            const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
             bool bIsNormalMap = (formatInfo->componentSize[uint8(EPixelComponent::R)] > 8);
             if (textureResource->isValid())
             {
@@ -131,22 +125,21 @@ void Texture2D::reinitResources()
             {
                 Texture2D::init(this, bIsNormalMap, isSrgb(), formatInfo->componentCount);
             }
-        });
+        }
+    );
 }
 
 void Texture2D::init(Texture2D *texture, bool bIsNormalMap, bool bIsSrgb, uint8 componentCount)
 {
-    EPixelDataFormat::Type dataFormat
-        = Texture2D::determineDataFormat(bIsSrgb, bIsNormalMap, componentCount);
-    ImageResourceCreateInfo imageCI{ .imageFormat = dataFormat,
-        .dimensions = texture->textureSize,
-        .numOfMips = texture->mipCount,
-        .layerCount = 1 };
+    EPixelDataFormat::Type dataFormat = Texture2D::determineDataFormat(bIsSrgb, bIsNormalMap, componentCount);
+    ImageResourceCreateInfo imageCI{
+        .imageFormat = dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount, .layerCount = 1
+    };
 
     ENQUEUE_COMMAND(InitTexture2D)
     (
-        [texture, bIsNormalMap, imageCI](IRenderCommandList *cmdList,
-            IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [texture, bIsNormalMap,
+         imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             texture->textureResource = graphicsHelper->createImage(graphicsInstance, imageCI);
             texture->textureResource->setResourceName(texture->textureName);
@@ -162,15 +155,16 @@ void Texture2D::init(Texture2D *texture, bool bIsNormalMap, bool bIsSrgb, uint8 
             {
                 cmdList->copyToImage(texture->textureResource, texture->rawData);
             }
-        });
+        }
+    );
 }
 
 void Texture2D::destroy(Texture2D *texture)
 {
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(DestroyTexture2D)
-    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-         const GraphicsHelperAPI *graphicsHelper) { textureResource->release(); });
+    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+     { textureResource->release(); });
 
     texture->textureResource.reset();
 }
@@ -183,39 +177,38 @@ void Texture2DRW::destroy(Texture2DRW *texture)
 {
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(DestroyTexture2D)
-    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-         const GraphicsHelperAPI *graphicsHelper) { textureResource->release(); });
+    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+     { textureResource->release(); });
 
     texture->textureResource = nullptr;
 }
 
 void Texture2DRW::init(Texture2DRW *texture)
 {
-    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat,
-        .dimensions = texture->textureSize,
-        .numOfMips = texture->mipCount,
-        .layerCount = 1 };
+    ImageResourceCreateInfo imageCI{
+        .imageFormat = texture->dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount, .layerCount = 1
+    };
 
     ENQUEUE_COMMAND(InitTexture2D)
     (
-        [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             texture->textureResource = graphicsHelper->createImage(graphicsInstance, imageCI);
             texture->textureResource->setResourceName(texture->textureName);
             texture->textureResource->setShaderUsage(
-                texture->bIsWriteOnly ? EImageShaderUsage::Writing
-                                      : EImageShaderUsage::Sampling | EImageShaderUsage::Writing);
+                texture->bIsWriteOnly ? EImageShaderUsage::Writing : EImageShaderUsage::Sampling | EImageShaderUsage::Writing
+            );
             texture->textureResource->setSampleCounts(texture->getSampleCount());
             texture->textureResource->init();
             cmdList->setupInitialLayout(texture->textureResource);
             // #TODO(Jeslas) : Should we copy linear mapped for floats?
             if (!(texture->bIsWriteOnly || EPixelDataFormat::isDepthFormat(texture->dataFormat)
-                    || EPixelDataFormat::isFloatingFormat(texture->dataFormat)))
+                  || EPixelDataFormat::isFloatingFormat(texture->dataFormat)))
             {
                 cmdList->copyToImage(texture->textureResource, texture->rawData);
             }
-        });
+        }
+    );
 }
 
 void Texture2DRW::reinitResources()
@@ -224,16 +217,14 @@ void Texture2DRW::reinitResources()
 
     ENQUEUE_COMMAND(ReinitTexture2D)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             if (textureResource->isValid())
             {
                 textureResource->reinitResources();
                 cmdList->setupInitialLayout(textureResource);
                 // #TODO(Jeslas) : Should we copy linear mapped for floats?
-                if (!(bIsWriteOnly || EPixelDataFormat::isDepthFormat(dataFormat)
-                        || EPixelDataFormat::isFloatingFormat(dataFormat)))
+                if (!(bIsWriteOnly || EPixelDataFormat::isDepthFormat(dataFormat) || EPixelDataFormat::isFloatingFormat(dataFormat)))
                 {
                     cmdList->copyToImage(textureResource, rawData);
                 }
@@ -242,7 +233,8 @@ void Texture2DRW::reinitResources()
             {
                 Texture2DRW::init(this);
             }
-        });
+        }
+    );
 }
 
 void Texture2DRW::destroyTexture(Texture2DRW *texture2D)
@@ -263,10 +255,9 @@ Texture2DRW *Texture2DRW::createTexture(const Texture2DRWCreateParams &createPar
     if (createParams.mipCount == 0)
     {
         texture->mipCount = Math::min(
-            (uint32)(1
-                     + Math::floor(Math::log2(
-                         (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
-            createParams.mipCount);
+            (uint32)(1 + Math::floor(Math::log2((float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
+            createParams.mipCount
+        );
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
@@ -281,8 +272,7 @@ Texture2DRW *Texture2DRW::createTexture(const Texture2DRWCreateParams &createPar
     return texture;
 }
 
-void Texture2DRW::setData(
-    const std::vector<class Color> &newData, const Color &defaultColor, bool bIsSrgb)
+void Texture2DRW::setData(const std::vector<class Color> &newData, const Color &defaultColor, bool bIsSrgb)
 {
     rawData.resize(Math::max((uint32)newData.size(), textureSize.x * textureSize.y));
 

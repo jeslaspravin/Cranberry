@@ -25,11 +25,11 @@
 #define IS_TYPE_SAME(TypeName) , std::is_same<Type, TypeName>
 
 template <typename Type>
-concept IsReflectedFundamental_Internal = std::disjunction_v<FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(
-    IS_TYPE_SAME_FIRST, IS_TYPE_SAME, IS_TYPE_SAME)>;
+concept IsReflectedFundamental_Internal
+    = std::disjunction_v<FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(IS_TYPE_SAME_FIRST, IS_TYPE_SAME, IS_TYPE_SAME)>;
 template <typename Type>
-concept IsReflectedSpecial_Internal = std::disjunction_v<FOR_EACH_SPECIAL_TYPES_UNIQUE_FIRST_LAST(
-    IS_TYPE_SAME_FIRST, IS_TYPE_SAME, IS_TYPE_SAME)>;
+concept IsReflectedSpecial_Internal
+    = std::disjunction_v<FOR_EACH_SPECIAL_TYPES_UNIQUE_FIRST_LAST(IS_TYPE_SAME_FIRST, IS_TYPE_SAME, IS_TYPE_SAME)>;
 
 template <typename Type>
 concept IsReflectedFundamental = IsReflectedFundamental_Internal<UnderlyingType<Type>>;
@@ -81,21 +81,18 @@ private:
     {
         // Qualified type cannot have more than 1 inner type as that means double or more
         // reference/pointer combination
-        fatalAssert(propInfo.thisProperty->typeInfo->innerType == nullptr
-                        || propInfo.thisProperty->typeInfo->innerType->innerType == nullptr,
-            "Qualification for property %s is not allowed for field types in field %s",
-            propInfo.thisProperty->nameString, propInfo.fieldProperty->nameString);
+        fatalAssert(
+            propInfo.thisProperty->typeInfo->innerType == nullptr || propInfo.thisProperty->typeInfo->innerType->innerType == nullptr,
+            "Qualification for property %s is not allowed for field types in field %s", propInfo.thisProperty->nameString,
+            propInfo.fieldProperty->nameString
+        );
 
         bool bIsInnerConst = propInfo.thisProperty->typeInfo->innerType
-                             && BIT_SET(propInfo.thisProperty->typeInfo->innerType->qualifiers,
-                                 EReflectTypeQualifiers::Constant);
-        bool bIsPtr
-            = BIT_SET(propInfo.thisProperty->typeInfo->qualifiers, EReflectTypeQualifiers::Pointer);
-        bool bIsConstPtr
-            = BIT_SET(propInfo.thisProperty->typeInfo->qualifiers, EReflectTypeQualifiers::Constant);
+                             && BIT_SET(propInfo.thisProperty->typeInfo->innerType->qualifiers, EReflectTypeQualifiers::Constant);
+        bool bIsPtr = BIT_SET(propInfo.thisProperty->typeInfo->qualifiers, EReflectTypeQualifiers::Pointer);
+        bool bIsConstPtr = BIT_SET(propInfo.thisProperty->typeInfo->qualifiers, EReflectTypeQualifiers::Constant);
         const TypedProperty *parentProp = propInfo.parentProperty;
-        auto typeQualifierVisitor = [bIsInnerConst, bIsPtr, bIsConstPtr, parentProp,
-                                        &visitor]<typename Type>(PropertyInfo propInfo)
+        auto typeQualifierVisitor = [bIsInnerConst, bIsPtr, bIsConstPtr, parentProp, &visitor]<typename Type>(PropertyInfo propInfo)
         {
             propInfo.thisProperty = propInfo.parentProperty;
             propInfo.parentProperty = parentProp;
@@ -109,16 +106,15 @@ private:
             }
         };
         propInfo.parentProperty = propInfo.thisProperty;
-        propInfo.thisProperty = static_cast<const TypedProperty *>(
-            static_cast<const QualifiedProperty *>(propInfo.parentProperty)->unqualTypeProperty);
-        visit<std::remove_cvref_t<decltype(typeQualifierVisitor)>, EPropertyType::QualifiedType>(
-            propInfo, std::move(typeQualifierVisitor));
+        propInfo.thisProperty
+            = static_cast<const TypedProperty *>(static_cast<const QualifiedProperty *>(propInfo.parentProperty)->unqualTypeProperty);
+        visit<std::remove_cvref_t<decltype(typeQualifierVisitor)>, EPropertyType::QualifiedType>(propInfo, std::move(typeQualifierVisitor));
     }
-#define CHECK_FIELD_TYPE(CheckTypeName)                                                                 \
-    if (propInfo.thisProperty->typeInfo == typeInfoFrom<CheckTypeName>())                               \
-    {                                                                                                   \
-        visitor.operator()<CheckTypeName>(propInfo);                                                    \
-        return;                                                                                         \
+#define CHECK_FIELD_TYPE(CheckTypeName)                                                                                                        \
+    if (propInfo.thisProperty->typeInfo == typeInfoFrom<CheckTypeName>())                                                                      \
+    {                                                                                                                                          \
+        visitor.operator()<CheckTypeName>(propInfo);                                                                                           \
+        return;                                                                                                                                \
     }
 
     template <typename Visitable>
@@ -145,8 +141,7 @@ private:
         switch (propInfo.thisProperty->type)
         {
         case EPropertyType::QualifiedType:
-            if CONST_EXPR (!TL::Contains<IgnoredProps,
-                               UIntToType<(uint64)(EPropertyType::QualifiedType)>>::value)
+            if CONST_EXPR (!TL::Contains<IgnoredProps, UIntToType<(uint64)(EPropertyType::QualifiedType)>>::value)
             {
                 visitQualifiedField(propInfo, std::forward<Visitable>(visitor));
             }
@@ -205,8 +200,7 @@ public:
             }
             else
             {
-                value = static_cast<const GlobalFieldWrapper *>(propInfo.fieldProperty->fieldPtr)
-                            ->getAsTypeUnsafe<Type>();
+                value = static_cast<const GlobalFieldWrapper *>(propInfo.fieldProperty->fieldPtr)->getAsTypeUnsafe<Type>();
             }
 
             if (BIT_SET(propInfo.thisProperty->typeInfo->qualifiers, EReflectTypeQualifiers::Constant))
@@ -236,8 +230,7 @@ public:
 
         auto memberVisitor = [userData, rootObject]<typename Type>(PropertyInfo propInfo)
         {
-            void *value = static_cast<const MemberFieldWrapper *>(propInfo.fieldProperty->fieldPtr)
-                              ->get(rootObject);
+            void *value = static_cast<const MemberFieldWrapper *>(propInfo.fieldProperty->fieldPtr)->get(rootObject);
             Visitable::visit(reinterpret_cast<Type *>(value), propInfo, userData);
         };
 
@@ -258,8 +251,7 @@ public:
 
         auto memberVisitor = [userData, rootObject]<typename Type>(PropertyInfo propInfo)
         {
-            const void *value = static_cast<const MemberFieldWrapper *>(propInfo.fieldProperty->fieldPtr)
-                                    ->get(rootObject);
+            const void *value = static_cast<const MemberFieldWrapper *>(propInfo.fieldProperty->fieldPtr)->get(rootObject);
             Visitable::visit(reinterpret_cast<const Type *>(value), propInfo, userData);
         };
 
@@ -275,8 +267,7 @@ public:
     template <typename Visitable>
     static void visit(const PropertyInfo &propInfo, void *userData)
     {
-        auto typeVisitor = [userData]<typename Type>(PropertyInfo propInfo)
-        { Visitable::template visit<Type>(propInfo, userData); };
+        auto typeVisitor = [userData]<typename Type>(PropertyInfo propInfo) { Visitable::template visit<Type>(propInfo, userData); };
         visit(propInfo, typeVisitor);
     }
 
@@ -284,8 +275,8 @@ public:
     template <typename Visitable>
     static void visit(const TypedProperty *prop, void *val, void *userData)
     {
-        auto typeVisitor = [val, userData]<typename Type>(PropertyInfo propInfo)
-        { Visitable::visit(reinterpret_cast<Type *>(val), propInfo, userData); };
+        auto typeVisitor
+            = [val, userData]<typename Type>(PropertyInfo propInfo) { Visitable::visit(reinterpret_cast<Type *>(val), propInfo, userData); };
         PropertyInfo propInfo;
         propInfo.thisProperty = prop;
         visit(propInfo, typeVisitor);

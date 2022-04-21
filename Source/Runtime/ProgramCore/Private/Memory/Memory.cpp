@@ -14,65 +14,35 @@
 
 void *AllocFromBuiltInMalloc::operator new(SizeT size) { return CBEMemory::builtinMalloc(size); }
 
-void *AllocFromBuiltInMalloc::operator new(SizeT size, const std::nothrow_t &)
-{
-    return CBEMemory::builtinMalloc(size);
-}
+void *AllocFromBuiltInMalloc::operator new(SizeT size, const std::nothrow_t &) { return CBEMemory::builtinMalloc(size); }
 
 void *AllocFromBuiltInMalloc::operator new(SizeT size, SizeT) { return CBEMemory::builtinMalloc(size); }
 
-void *AllocFromBuiltInMalloc::operator new(SizeT size, SizeT, const std::nothrow_t &)
-{
-    return CBEMemory::builtinMalloc(size);
-}
+void *AllocFromBuiltInMalloc::operator new(SizeT size, SizeT, const std::nothrow_t &) { return CBEMemory::builtinMalloc(size); }
 
 void AllocFromBuiltInMalloc::operator delete(void *ptr) noexcept { CBEMemory::builtinFree(ptr); }
 
-void AllocFromBuiltInMalloc::operator delete(void *ptr, const std::nothrow_t &) noexcept
-{
-    CBEMemory::builtinFree(ptr);
-}
+void AllocFromBuiltInMalloc::operator delete(void *ptr, const std::nothrow_t &) noexcept { CBEMemory::builtinFree(ptr); }
 
 void AllocFromBuiltInMalloc::operator delete(void *ptr, SizeT) noexcept { CBEMemory::builtinFree(ptr); }
 
-void AllocFromBuiltInMalloc::operator delete(void *ptr, SizeT, const std::nothrow_t &) noexcept
-{
-    CBEMemory::builtinFree(ptr);
-}
+void AllocFromBuiltInMalloc::operator delete(void *ptr, SizeT, const std::nothrow_t &) noexcept { CBEMemory::builtinFree(ptr); }
 
 void *AllocFromBuiltInMalloc::operator new[](SizeT size) { return CBEMemory::builtinMalloc(size); }
 
-void *AllocFromBuiltInMalloc::operator new[](SizeT size, const std::nothrow_t &)
-{
-    return CBEMemory::builtinMalloc(size);
-}
+void *AllocFromBuiltInMalloc::operator new[](SizeT size, const std::nothrow_t &) { return CBEMemory::builtinMalloc(size); }
 
-void *AllocFromBuiltInMalloc::operator new[](SizeT size, SizeT)
-{
-    return CBEMemory::builtinMalloc(size);
-}
+void *AllocFromBuiltInMalloc::operator new[](SizeT size, SizeT) { return CBEMemory::builtinMalloc(size); }
 
-void *AllocFromBuiltInMalloc::operator new[](SizeT size, SizeT, const std::nothrow_t &)
-{
-    return CBEMemory::builtinMalloc(size);
-}
+void *AllocFromBuiltInMalloc::operator new[](SizeT size, SizeT, const std::nothrow_t &) { return CBEMemory::builtinMalloc(size); }
 
 void AllocFromBuiltInMalloc::operator delete[](void *ptr) noexcept { CBEMemory::builtinFree(ptr); }
 
-void AllocFromBuiltInMalloc::operator delete[](void *ptr, const std::nothrow_t &) noexcept
-{
-    CBEMemory::builtinFree(ptr);
-}
+void AllocFromBuiltInMalloc::operator delete[](void *ptr, const std::nothrow_t &) noexcept { CBEMemory::builtinFree(ptr); }
 
-void AllocFromBuiltInMalloc::operator delete[](void *ptr, SizeT) noexcept
-{
-    CBEMemory::builtinFree(ptr);
-}
+void AllocFromBuiltInMalloc::operator delete[](void *ptr, SizeT) noexcept { CBEMemory::builtinFree(ptr); }
 
-void AllocFromBuiltInMalloc::operator delete[](void *ptr, SizeT, const std::nothrow_t &) noexcept
-{
-    CBEMemory::builtinFree(ptr);
-}
+void AllocFromBuiltInMalloc::operator delete[](void *ptr, SizeT, const std::nothrow_t &) noexcept { CBEMemory::builtinFree(ptr); }
 
 // Create and delete policy for CBEMemAlloc
 bool CBEMemAllocCreatePolicy::create(CBEMemAlloc **outAllocator)

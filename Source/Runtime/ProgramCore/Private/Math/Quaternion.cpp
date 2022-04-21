@@ -126,7 +126,8 @@ RotationMatrix Quat::toRotationMatrix() const
         qxy - qwz, 0.5f - qxx - qzz,
         qyz + qwx
         /* Column 3 */,
-        qxz + qwy, qyz - qwx, 0.5f - qxx - qyy);
+        qxz + qwy, qyz - qwx, 0.5f - qxx - qyy
+    );
     rotMat *= 2;
 
     return RotationMatrix(rotMat);
@@ -182,10 +183,7 @@ Quat &Quat::operator*=(const Quat &b)
     return (*this);
 }
 
-Quat Quat::operator*(const float &scalar) const
-{
-    return Quat(x * scalar, y * scalar, z * scalar, w * scalar);
-}
+Quat Quat::operator*(const float &scalar) const { return Quat(x * scalar, y * scalar, z * scalar, w * scalar); }
 
 Quat &Quat::operator*=(const float &scalar)
 {
@@ -196,10 +194,7 @@ Quat &Quat::operator*=(const float &scalar)
     return *this;
 }
 
-Quat Quat::operator/(const float &scalar) const
-{
-    return Quat(x / scalar, y / scalar, z / scalar, w / scalar);
-}
+Quat Quat::operator/(const float &scalar) const { return Quat(x / scalar, y / scalar, z / scalar, w / scalar); }
 
 Quat &Quat::operator/=(const float &scalar)
 {
@@ -221,10 +216,7 @@ Quat &Quat::operator-=(const Quat &b)
     return *this;
 }
 
-Quat Quat::operator-(const float &scalar) const
-{
-    return Quat(x - scalar, y - scalar, z - scalar, w - scalar);
-}
+Quat Quat::operator-(const float &scalar) const { return Quat(x - scalar, y - scalar, z - scalar, w - scalar); }
 
 Quat &Quat::operator-=(const float &scalar)
 {
@@ -248,10 +240,7 @@ Quat &Quat::operator+=(const Quat &b)
     return *this;
 }
 
-Quat Quat::operator+(const float &scalar) const
-{
-    return Quat(x + scalar, y + scalar, z + scalar, w + scalar);
-}
+Quat Quat::operator+(const float &scalar) const { return Quat(x + scalar, y + scalar, z + scalar, w + scalar); }
 
 Quat &Quat::operator+=(const float &scalar)
 {
@@ -264,20 +253,15 @@ Quat &Quat::operator+=(const float &scalar)
 
 bool Quat::operator==(const Quat &b) const
 {
-    return Math::isEqual(x, b.x) && Math::isEqual(y, b.y) && Math::isEqual(z, b.z)
-           && Math::isEqual(w, b.w);
+    return Math::isEqual(x, b.x) && Math::isEqual(y, b.y) && Math::isEqual(z, b.z) && Math::isEqual(w, b.w);
 }
 
 bool Quat::isSame(const Quat &b, float epsilon /*= SMALL_EPSILON*/) const
 {
-    return Math::isEqual(x, b.x, epsilon) && Math::isEqual(y, b.y, epsilon)
-           && Math::isEqual(z, b.z, epsilon) && Math::isEqual(w, b.w, epsilon);
+    return Math::isEqual(x, b.x, epsilon) && Math::isEqual(y, b.y, epsilon) && Math::isEqual(z, b.z, epsilon) && Math::isEqual(w, b.w, epsilon);
 }
 
-bool Quat::isFinite() const
-{
-    return Math::isFinite(x) && Math::isFinite(y) && Math::isFinite(z) && Math::isFinite(w);
-}
+bool Quat::isFinite() const { return Math::isFinite(x) && Math::isFinite(y) && Math::isFinite(z) && Math::isFinite(w); }
 
 Quat Quat::normalized() const { return (*this) * Math::invSqrt(sqrlength()); }
 
@@ -310,23 +294,16 @@ float Quat::sqrlength() const { return (x * x) + (y * y) + (z * z) + (w * w); }
 
 Quat Quat::clamp(const Quat &value, const Quat &min, const Quat &max)
 {
-    return Quat(Math::clamp(value.x, min.x, max.x), Math::clamp(value.y, min.y, max.y),
-        Math::clamp(value.z, min.z, max.z), Math::clamp(value.w, min.w, max.w));
+    return Quat(
+        Math::clamp(value.x, min.x, max.x), Math::clamp(value.y, min.y, max.y), Math::clamp(value.z, min.z, max.z),
+        Math::clamp(value.w, min.w, max.w)
+    );
 }
 
-Quat Quat::floor(const Quat &value)
-{
-    return Quat(Math::floor(value.x), Math::floor(value.y), Math::floor(value.z), Math::floor(value.w));
-}
+Quat Quat::floor(const Quat &value) { return Quat(Math::floor(value.x), Math::floor(value.y), Math::floor(value.z), Math::floor(value.w)); }
 
-Quat Quat::ceil(const Quat &value)
-{
-    return Quat(Math::ceil(value.x), Math::ceil(value.y), Math::ceil(value.z), Math::ceil(value.w));
-}
+Quat Quat::ceil(const Quat &value) { return Quat(Math::ceil(value.x), Math::ceil(value.y), Math::ceil(value.z), Math::ceil(value.w)); }
 
-Quat Quat::round(const Quat &value)
-{
-    return Quat(Math::round(value.x), Math::round(value.y), Math::round(value.z), Math::round(value.w));
-}
+Quat Quat::round(const Quat &value) { return Quat(Math::round(value.x), Math::round(value.y), Math::round(value.z), Math::round(value.w)); }
 
 const Quat Quat::IDENTITY(0, 0, 0, 1);

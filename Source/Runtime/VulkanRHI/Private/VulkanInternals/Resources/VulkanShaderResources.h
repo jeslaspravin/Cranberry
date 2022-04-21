@@ -30,8 +30,7 @@ protected:
     VulkanShaderCodeResource();
 
 public:
-    VulkanShaderCodeResource(
-        const String &shaderName, const ShaderStageDescription *desc, const uint8 *shaderCodePtr);
+    VulkanShaderCodeResource(const String &shaderName, const ShaderStageDescription *desc, const uint8 *shaderCodePtr);
     /* IVulkanResources overrides */
     String getObjectName() const override;
     uint64 getDispatchableHandle() const override;

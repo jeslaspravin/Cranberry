@@ -34,8 +34,7 @@ void *MimallocMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNM
     return ptr;
 }
 
-void *MimallocMemAlloc::tryRealloc(
-    void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *MimallocMemAlloc::tryRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     debugAssert(Math::isPowOf2(alignment));
     if (size == 0)
@@ -52,8 +51,7 @@ void *MimallocMemAlloc::tryRealloc(
     return mi_realloc_aligned(currentPtr, size, alignment);
 }
 
-void *MimallocMemAlloc::memRealloc(
-    void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *MimallocMemAlloc::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     void *ptr = tryRealloc(currentPtr, size, alignment);
     fatalAssert(size == 0 || ptr, "Reallocation failed!");

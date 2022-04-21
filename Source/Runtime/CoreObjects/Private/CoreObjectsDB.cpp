@@ -20,8 +20,7 @@ void CoreObjectsDB::removeObject(StringID objectId)
     objectIdToNodeIdx.erase(objItr);
 }
 
-CoreObjectsDB::NodeIdxType CoreObjectsDB::addObject(
-    StringID objectId, const ObjectData &objectData, StringID parent)
+CoreObjectsDB::NodeIdxType CoreObjectsDB::addObject(StringID objectId, const ObjectData &objectData, StringID parent)
 {
     debugAssert(objectId.isValid() && !hasObject(objectId) && hasObject(parent));
 
@@ -42,8 +41,7 @@ CoreObjectsDB::NodeIdxType CoreObjectsDB::addRootObject(StringID objectId, const
 
 void CoreObjectsDB::setObject(StringID currentId, StringID newId)
 {
-    debugAssert(currentId.isValid() && newId.isValid() && currentId != newId && !hasObject(newId)
-                && hasObject(currentId));
+    debugAssert(currentId.isValid() && newId.isValid() && currentId != newId && !hasObject(newId) && hasObject(currentId));
 
     auto objItr = objectIdToNodeIdx.find(currentId);
     NodeIdxType nodeIdx = objItr->second;
@@ -69,6 +67,15 @@ void CoreObjectsDB::setObjectParent(StringID objectId, StringID newParent)
     }
 }
 
+bool CoreObjectsDB::hasChild(NodeIdxType nodeidx) const
+{
+    if (objectTree.isValid(nodeidx))
+    {
+        return !objectTree.getChildren(nodeidx).empty();
+    }
+    return false;
+}
+
 CBE::Object *CoreObjectsDB::getObject(NodeIdxType nodeidx) const
 {
     if (objectTree.isValid(nodeidx))
@@ -88,6 +95,20 @@ void CoreObjectsDB::getSubobjects(std::vector<CBE::Object *> &subobjs, NodeIdxTy
         if (CBE::Object *obj = getObject(subnodeIdx))
         {
             subobjs.emplace_back(obj);
+        }
+    }
+}
+
+void CoreObjectsDB::getChildren(std::vector<CBE::Object *> &children, NodeIdxType nodeidx) const
+{
+    std::vector<NodeIdxType> childIndices;
+    objectTree.getChildren(childIndices, nodeidx);
+    children.reserve(children.size() + childIndices.size());
+    for (NodeIdxType subnodeIdx : childIndices)
+    {
+        if (CBE::Object *obj = getObject(subnodeIdx))
+        {
+            children.emplace_back(obj);
         }
     }
 }

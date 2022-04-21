@@ -66,10 +66,7 @@ enum Type : uint8
     A
 };
 
-ENGINERENDERER_EXPORT constexpr Type fromImageComponent(EPixelComponent component)
-{
-    return Type(uint32(component) + uint32(Type::R));
-}
+ENGINERENDERER_EXPORT constexpr Type fromImageComponent(EPixelComponent component) { return Type(uint32(component) + uint32(Type::R)); }
 } // namespace EPixelComponentMapping
 
 namespace EPixelDataFormat
@@ -422,22 +419,14 @@ struct AttachmentBlendState
 
     ENGINERENDERER_EXPORT bool usesBlendConstant() const
     {
-        return srcColorFactor == EBlendFactor::ConstColor
-               || srcColorFactor == EBlendFactor::OneMinusConstColor
-               || srcColorFactor == EBlendFactor::ConstAlpha
-               || srcColorFactor == EBlendFactor::ConstColor
-               || dstColorFactor == EBlendFactor::ConstColor
-               || dstColorFactor == EBlendFactor::OneMinusConstColor
-               || dstColorFactor == EBlendFactor::ConstAlpha
-               || dstColorFactor == EBlendFactor::ConstColor
-               || srcAlphaFactor == EBlendFactor::ConstColor
-               || srcAlphaFactor == EBlendFactor::OneMinusConstColor
-               || srcAlphaFactor == EBlendFactor::ConstAlpha
-               || srcAlphaFactor == EBlendFactor::ConstColor
-               || dstAlphaFactor == EBlendFactor::ConstColor
-               || dstAlphaFactor == EBlendFactor::OneMinusConstColor
-               || dstAlphaFactor == EBlendFactor::ConstAlpha
-               || dstAlphaFactor == EBlendFactor::ConstColor;
+        return srcColorFactor == EBlendFactor::ConstColor || srcColorFactor == EBlendFactor::OneMinusConstColor
+               || srcColorFactor == EBlendFactor::ConstAlpha || srcColorFactor == EBlendFactor::ConstColor
+               || dstColorFactor == EBlendFactor::ConstColor || dstColorFactor == EBlendFactor::OneMinusConstColor
+               || dstColorFactor == EBlendFactor::ConstAlpha || dstColorFactor == EBlendFactor::ConstColor
+               || srcAlphaFactor == EBlendFactor::ConstColor || srcAlphaFactor == EBlendFactor::OneMinusConstColor
+               || srcAlphaFactor == EBlendFactor::ConstAlpha || srcAlphaFactor == EBlendFactor::ConstColor
+               || dstAlphaFactor == EBlendFactor::ConstColor || dstAlphaFactor == EBlendFactor::OneMinusConstColor
+               || dstAlphaFactor == EBlendFactor::ConstAlpha || dstAlphaFactor == EBlendFactor::ConstColor;
     }
 };
 
@@ -461,16 +450,13 @@ enum class StoreOp
 };
 } // namespace EAttachmentOp
 
-#define EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)            \
-    FirstMacroName(Top) MacroName(DrawIndirect) MacroName(VertexInput) MacroName(VertexShaderStage)     \
-        MacroName(TessellationControlShaderStage) MacroName(TessallationEvalShaderStage)                \
-            MacroName(GeometryShaderStage) MacroName(FragmentShaderStage) MacroName(EarlyFragTest)      \
-                MacroName(LateFragTest) MacroName(ColorAttachmentOutput) MacroName(ComputeShaderStage)  \
-                    MacroName(Transfer) MacroName(Bottom) MacroName(Host) MacroName(AllGraphics)        \
-                        LastMacroName(AllCommands)
+#define EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)                                                   \
+    FirstMacroName(Top) MacroName(DrawIndirect) MacroName(VertexInput) MacroName(VertexShaderStage) MacroName(TessellationControlShaderStage)  \
+        MacroName(TessallationEvalShaderStage) MacroName(GeometryShaderStage) MacroName(FragmentShaderStage) MacroName(EarlyFragTest)          \
+            MacroName(LateFragTest) MacroName(ColorAttachmentOutput) MacroName(ComputeShaderStage) MacroName(Transfer) MacroName(Bottom)       \
+                MacroName(Host) MacroName(AllGraphics) LastMacroName(AllCommands)
 
-#define EPIPELINESTAGES_FOR_EACH(MacroName)                                                             \
-    EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
+#define EPIPELINESTAGES_FOR_EACH(MacroName) EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
 
 namespace EPipelineStages
 {
@@ -479,8 +465,7 @@ namespace EPipelineStages
 #define EPIPELINESTAGES_LAST(Stage) Stage
 enum Type
 {
-    EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(
-        EPIPELINESTAGES_FIRST, EPIPELINESTAGES, EPIPELINESTAGES_LAST),
+    EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(EPIPELINESTAGES_FIRST, EPIPELINESTAGES, EPIPELINESTAGES_LAST),
     PipelineStageMax
 };
 #undef EPIPELINESTAGES_FIRST
@@ -507,7 +492,6 @@ enum Type
 
 ENGINERENDERER_EXPORT String toString(ERenderPassFormat::Type renderpassFormat);
 
-#define FOR_EACH_RENDERPASS_FORMAT(OpMacro)                                                             \
-    OpMacro(Generic) OpMacro(Multibuffer) OpMacro(Depth) OpMacro(PointLightDepth)                       \
-        OpMacro(DirectionalLightDepth)
+#define FOR_EACH_RENDERPASS_FORMAT(OpMacro)                                                                                                    \
+    OpMacro(Generic) OpMacro(Multibuffer) OpMacro(Depth) OpMacro(PointLightDepth) OpMacro(DirectionalLightDepth)
 } // namespace ERenderPassFormat

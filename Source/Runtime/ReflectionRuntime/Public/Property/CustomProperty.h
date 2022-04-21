@@ -47,15 +47,13 @@ public:
     const PropertyDataRetriever *dataRetriever;
 
 public:
-    CustomProperty(const StringID &propNameID, const String &propName, EPropertyType propType,
-        const ReflectTypeInfo *propTypeInfo);
+    CustomProperty(const StringID &propNameID, const String &propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo);
     ~CustomProperty();
 
     template <typename ConstructType, typename... CTorArgs>
     FORCE_INLINE ConstructType *constructDataRetriever(CTorArgs &&...args)
     {
-        ConstructType *retriever = static_cast<ConstructType *>(
-            (new ConstructType(std::forward<CTorArgs>(args)...))->setOwnerProperty(this));
+        ConstructType *retriever = static_cast<ConstructType *>((new ConstructType(std::forward<CTorArgs>(args)...))->setOwnerProperty(this));
         dataRetriever = retriever;
         return retriever;
     }
@@ -228,10 +226,7 @@ public:
 
     bool removeAt(void *object, SizeT idx) const override { return false; }
 
-    SizeT size(const void *object) const override
-    {
-        return reinterpret_cast<const MapType *>(object)->size();
-    }
+    SizeT size(const void *object) const override { return reinterpret_cast<const MapType *>(object)->size(); }
 
     void copyTo(const void *data, void *toData) const override
     {
@@ -239,8 +234,7 @@ public:
     }
     bool equals(const void *lhs, const void *rhs) const
     {
-        return (*reinterpret_cast<const MapType::key_type *>(lhs))
-               == (*reinterpret_cast<const MapType::key_type *>(rhs));
+        return (*reinterpret_cast<const MapType::key_type *>(lhs)) == (*reinterpret_cast<const MapType::key_type *>(rhs));
     }
 };
 
@@ -262,8 +256,7 @@ public:
         : CustomProperty(propNameID, propName, EPropertyType::MapType, propTypeInfo)
     {}
 
-    FORCE_INLINE MapProperty *setKeyValueProperties(
-        const BaseProperty *keyProperty, const BaseProperty *valueProperty)
+    FORCE_INLINE MapProperty *setKeyValueProperties(const BaseProperty *keyProperty, const BaseProperty *valueProperty)
     {
         keyProp = keyProperty;
         valueProp = valueProperty;
@@ -363,8 +356,7 @@ class ContainerRetrieverImpl<ContainerType> : public IterateableDataRetriever
 public:
     IteratorElementWrapperRef createIterator(void *object) const override
     {
-        return IteratorElementWrapperRef(
-            new IndexableContainerIteratorWrapperImpl<ContainerType>((ContainerType *)(object)));
+        return IteratorElementWrapperRef(new IndexableContainerIteratorWrapperImpl<ContainerType>((ContainerType *)(object)));
     }
 
     bool add(void *object, const void *data) const override
@@ -379,16 +371,14 @@ public:
         ContainerType *container = reinterpret_cast<ContainerType *>(object);
         if CONST_EXPR (std::equality_comparable<ContainerType::value_type>)
         {
-            auto itr = std::find(container->begin(), container->end(),
-                *reinterpret_cast<const ContainerType::value_type *>(data));
+            auto itr = std::find(container->begin(), container->end(), *reinterpret_cast<const ContainerType::value_type *>(data));
             if (itr != container->end())
             {
                 container->erase(itr);
                 return true;
             }
         }
-        alertIf(std::equality_comparable<ContainerType::value_type>,
-            "LOGICAL ERROR: Type does not have equality check!");
+        alertIf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
         return false;
     }
 
@@ -400,39 +390,31 @@ public:
         return true;
     }
 
-    SizeT size(const void *object) const override
-    {
-        return reinterpret_cast<const ContainerType *>(object)->size();
-    }
+    SizeT size(const void *object) const override { return reinterpret_cast<const ContainerType *>(object)->size(); }
 
     void copyTo(const void *data, void *toData) const override
     {
-        new (toData)
-            ContainerType::value_type(*reinterpret_cast<const ContainerType::value_type *>(data));
+        new (toData) ContainerType::value_type(*reinterpret_cast<const ContainerType::value_type *>(data));
     }
     bool equals(const void *lhs, const void *rhs) const
     {
         if CONST_EXPR (std::equality_comparable<ContainerType::value_type>)
         {
-            return (*reinterpret_cast<const ContainerType::value_type *>(lhs))
-                   == (*reinterpret_cast<const ContainerType::value_type *>(rhs));
+            return (*reinterpret_cast<const ContainerType::value_type *>(lhs)) == (*reinterpret_cast<const ContainerType::value_type *>(rhs));
         }
-        alertIf(std::equality_comparable<ContainerType::value_type>,
-            "LOGICAL ERROR: Type does not have equality check!");
+        alertIf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
         return false;
     }
 };
 
 // For set/unrodered_set
 template <typename ContainerType>
-requires(!Indexable<ContainerType>) class ContainerRetrieverImpl<ContainerType>
-    : public IterateableDataRetriever
+requires(!Indexable<ContainerType>) class ContainerRetrieverImpl<ContainerType> : public IterateableDataRetriever
 {
 public:
     IteratorElementWrapperRef createIterator(void *object) const override
     {
-        return IteratorElementWrapperRef(
-            new ContainerIteratorWrapperImpl<ContainerType>((ContainerType *)(object)));
+        return IteratorElementWrapperRef(new ContainerIteratorWrapperImpl<ContainerType>((ContainerType *)(object)));
     }
 
     bool add(void *object, const void *data) const override
@@ -456,20 +438,15 @@ public:
 
     bool removeAt(void *object, SizeT idx) const override { return false; }
 
-    SizeT size(const void *object) const override
-    {
-        return reinterpret_cast<const ContainerType *>(object)->size();
-    }
+    SizeT size(const void *object) const override { return reinterpret_cast<const ContainerType *>(object)->size(); }
 
     void copyTo(const void *data, void *toData) const override
     {
-        new (toData)
-            ContainerType::value_type(*reinterpret_cast<const ContainerType::value_type *>(data));
+        new (toData) ContainerType::value_type(*reinterpret_cast<const ContainerType::value_type *>(data));
     }
     bool equals(const void *lhs, const void *rhs) const
     {
-        return (*reinterpret_cast<const ContainerType::value_type *>(lhs))
-               == (*reinterpret_cast<const ContainerType::value_type *>(rhs));
+        return (*reinterpret_cast<const ContainerType::value_type *>(lhs)) == (*reinterpret_cast<const ContainerType::value_type *>(rhs));
     }
 };
 
@@ -479,8 +456,7 @@ public:
     const BaseProperty *elementProp;
 
 public:
-    ContainerProperty(const StringID &propNameID, const String &propName, EPropertyType propType,
-        const ReflectTypeInfo *propTypeInfo)
+    ContainerProperty(const StringID &propNameID, const String &propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo)
         : CustomProperty(propNameID, propName, propType, propTypeInfo)
     {}
 

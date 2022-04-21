@@ -11,6 +11,7 @@
 
 #include "CoreObjectGC.h"
 #include "CBEObject.h"
+#include "CBEPackage.h"
 #include "CBEObjectTypes.h"
 #include "CoreObjectsModule.h"
 #include "Property/PropertyHelper.h"
@@ -28,8 +29,8 @@ void CoreObjectGC::deleteObject(CBE::Object *obj) const
         for (CBE::Object *subObj : subObjs)
         {
             CBEClass clazz = subObj->getType();
-            static_cast<const GlobalFunctionWrapper *>(clazz->destructor->funcPtr)
-                ->invokeUnsafe<void>(subObj);
+            obj->destroyObject();
+            static_cast<const GlobalFunctionWrapper *>(clazz->destructor->funcPtr)->invokeUnsafe<void>(subObj);
         }
     }
 }
@@ -70,6 +71,49 @@ void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
     budgetTicks -= collectionSW.durationTick();
 #if COREOBJCTGC_METRICS
     gcRefCollectorsTicks += collectionSW.durationTick();
+#endif
+}
+
+void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
+{
+    debugAssert(state == EGCState::Collecting);
+    StopWatch nonTransientMarker;
+
+    CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
+    for (CBEClass clazz : classesLeft)
+    {
+        BitArray<uint64> &classObjsFlag = objUsedFlags[clazz];
+
+        auto allocatorItr = gCBEObjectAllocators->find(classesLeft.back());
+        debugAssert(allocatorItr != gCBEObjectAllocators->end());
+
+        for (CBE::Object *obj : allocatorItr->second->getAllObjects<CBE::Object>())
+        {
+            // Only mark as valid if object not marked for delete already and
+            // If object is marked explicitly as root then we must not delete it
+            if (BIT_NOT_SET(obj->getFlags(), CBE::EObjectFlagBits::MarkedForDelete)
+                && BIT_SET(obj->getFlags(), CBE::EObjectFlagBits::RootObject))
+            {
+                classObjsFlag[CBE::PrivateObjectCoreAccessors::getAllocIdx(obj)] = true;
+            }
+        }
+    }
+    // Mark all packages as valid if it has any subobject
+    {
+        BitArray<uint64> &packagesFlag = objUsedFlags[CBE::Package::staticType()];
+        for (CBE::Package *package : (*gCBEObjectAllocators)[CBE::Package::staticType()]->getAllObjects<CBE::Package>())
+        {
+            if (BIT_NOT_SET(package->getFlags(), CBE::EObjectFlagBits::MarkedForDelete) && objsDb.hasChild(package->getStringID()))
+            {
+                packagesFlag[CBE::PrivateObjectCoreAccessors::getAllocIdx(package)] = true;
+            }
+        }
+    }
+
+    nonTransientMarker.stop();
+    budgetTicks -= nonTransientMarker.durationTick();
+#if COREOBJCTGC_METRICS
+    gcMarkNonTransientTicks += nonTransientMarker.durationTick();
 #endif
 }
 
@@ -130,8 +174,7 @@ void CoreObjectGC::startNewGC(TickRep &budgetTicks)
     classesLeft.clear();
     objUsedFlags.reserve(gCBEObjectAllocators->size());
     classesLeft.reserve(gCBEObjectAllocators->size());
-    for (const std::pair<CBEClass const, CBE::ObjectAllocatorBase *> &classAllocator :
-        *gCBEObjectAllocators)
+    for (const std::pair<CBEClass const, CBE::ObjectAllocatorBase *> &classAllocator : *gCBEObjectAllocators)
     {
         objUsedFlags[classAllocator.first].resize(classAllocator.second->size());
         classesLeft.emplace_back(classAllocator.first);
@@ -207,17 +250,14 @@ struct GCObjectVisitableUserData
 FORCE_INLINE const TypedProperty *getUnqualified(const BaseProperty *prop)
 {
     return static_cast<const TypedProperty *>(
-        prop->type == EPropertyType::QualifiedType
-            ? static_cast<const QualifiedProperty *>(prop)->unqualTypeProperty
-            : prop);
+        prop->type == EPropertyType::QualifiedType ? static_cast<const QualifiedProperty *>(prop)->unqualTypeProperty : prop
+    );
 }
 
 struct GCObjectFieldVisitable
 {
-    static void visitMap(
-        const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData);
-    static void visitSet(
-        const ContainerProperty *setProp, void *val, const PropertyInfo &propInfo, void *userData);
+    static void visitMap(const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData);
+    static void visitSet(const ContainerProperty *setProp, void *val, const PropertyInfo &propInfo, void *userData);
 
     // Ignore fundamental and special types, we need none const custom types or pointers
     template <typename Type>
@@ -241,13 +281,10 @@ struct GCObjectFieldVisitable
         case EPropertyType::ArrayType:
         {
             const IterateableDataRetriever *dataRetriever
-                = static_cast<const IterateableDataRetriever *>(
-                    static_cast<const ContainerProperty *>(prop)->dataRetriever);
-            const TypedProperty *elemProp = static_cast<const TypedProperty *>(
-                static_cast<const ContainerProperty *>(prop)->elementProp);
+                = static_cast<const IterateableDataRetriever *>(static_cast<const ContainerProperty *>(prop)->dataRetriever);
+            const TypedProperty *elemProp = static_cast<const TypedProperty *>(static_cast<const ContainerProperty *>(prop)->elementProp);
 
-            for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid();
-                 itrPtr->iterateFwd())
+            for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
             {
                 FieldVisitor::visit<GCObjectFieldVisitable>(elemProp, itrPtr->getElement(), userData);
             }
@@ -255,12 +292,10 @@ struct GCObjectFieldVisitable
         }
         case EPropertyType::PairType:
         {
-            const PairDataRetriever *dataRetriever = static_cast<const PairDataRetriever *>(
-                static_cast<const PairProperty *>(prop)->dataRetriever);
-            const TypedProperty *keyProp
-                = static_cast<const TypedProperty *>(static_cast<const PairProperty *>(prop)->keyProp);
-            const TypedProperty *valueProp
-                = static_cast<const TypedProperty *>(static_cast<const PairProperty *>(prop)->valueProp);
+            const PairDataRetriever *dataRetriever
+                = static_cast<const PairDataRetriever *>(static_cast<const PairProperty *>(prop)->dataRetriever);
+            const TypedProperty *keyProp = static_cast<const TypedProperty *>(static_cast<const PairProperty *>(prop)->keyProp);
+            const TypedProperty *valueProp = static_cast<const TypedProperty *>(static_cast<const PairProperty *>(prop)->valueProp);
 
             void *keyPtr = dataRetriever->first(val);
             void *valPtr = dataRetriever->second(val);
@@ -289,8 +324,7 @@ struct GCObjectFieldVisitable
         {
         case EPropertyType::ClassType:
         {
-            debugAssert(
-                PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
 
             GCObjectVisitableUserData *gcUserData = (GCObjectVisitableUserData *)(userData);
             CBE::Object **objPtrPtr = reinterpret_cast<CBE::Object **>(ptr);
@@ -303,9 +337,7 @@ struct GCObjectFieldVisitable
                 }
                 else
                 {
-                    (*gcUserData->objUsedFlags)[objPtr->getType()]
-                                               [CBE::PrivateObjectCoreAccessors::getAllocIdx(objPtr)]
-                        = true;
+                    (*gcUserData->objUsedFlags)[objPtr->getType()][CBE::PrivateObjectCoreAccessors::getAllocIdx(objPtr)] = true;
                 }
             }
             break;
@@ -316,8 +348,7 @@ struct GCObjectFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(false, "Unhandled ptr to ptr Field name %s, type %s",
-                propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            alertIf(false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
             break;
         }
     }
@@ -328,8 +359,7 @@ struct GCObjectFieldVisitable
         {
         case EPropertyType::ClassType:
         {
-            debugAssert(
-                PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
 
             GCObjectVisitableUserData *gcUserData = (GCObjectVisitableUserData *)(userData);
             const CBE::Object **objPtrPtr = reinterpret_cast<const CBE::Object **>(ptr);
@@ -342,9 +372,7 @@ struct GCObjectFieldVisitable
                 }
                 else
                 {
-                    (*gcUserData->objUsedFlags)[objPtr->getType()]
-                                               [CBE::PrivateObjectCoreAccessors::getAllocIdx(objPtr)]
-                        = true;
+                    (*gcUserData->objUsedFlags)[objPtr->getType()][CBE::PrivateObjectCoreAccessors::getAllocIdx(objPtr)] = true;
                 }
             }
             break;
@@ -355,18 +383,17 @@ struct GCObjectFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(false, "Unhandled ptr to const ptr Field name %s, type %s",
-                propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            alertIf(
+                false, "Unhandled ptr to const ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
             break;
         }
     }
 };
 
-void GCObjectFieldVisitable::visitMap(
-    const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData)
+void GCObjectFieldVisitable::visitMap(const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData)
 {
-    const IterateableDataRetriever *dataRetriever
-        = static_cast<const IterateableDataRetriever *>(mapProp->dataRetriever);
+    const IterateableDataRetriever *dataRetriever = static_cast<const IterateableDataRetriever *>(mapProp->dataRetriever);
     const TypedProperty *keyProp = static_cast<const TypedProperty *>(mapProp->keyProp);
     const TypedProperty *valueProp = static_cast<const TypedProperty *>(mapProp->valueProp);
 
@@ -375,8 +402,7 @@ void GCObjectFieldVisitable::visitMap(
     if (getUnqualified(keyProp)->type == EPropertyType::ClassType)
     {
         // 2 times the data is needed to copy current and new value, to be removed and added later
-        uint8 *bufferData = (uint8 *)CBEMemory::memAlloc(
-            mapProp->pairSize * (dataRetriever->size(val) * 2 + 1), mapProp->pairAlignment);
+        uint8 *bufferData = (uint8 *)CBEMemory::memAlloc(mapProp->pairSize * (dataRetriever->size(val) * 2 + 1), mapProp->pairAlignment);
         uint8 *tempData = bufferData;
         bufferData += mapProp->pairSize;
 
@@ -411,8 +437,7 @@ void GCObjectFieldVisitable::visitMap(
                 // Copy new key and value
                 dataRetriever->copyTo(tempData, originalToNewPairs.second);
                 // visit the value
-                FieldVisitor::visit<GCObjectFieldVisitable>(
-                    valueProp, originalToNewPairs.second + mapProp->secondOffset, userData);
+                FieldVisitor::visit<GCObjectFieldVisitable>(valueProp, originalToNewPairs.second + mapProp->secondOffset, userData);
 
                 editedKeys.emplace_back(std::move(originalToNewPairs));
             }
@@ -430,17 +455,14 @@ void GCObjectFieldVisitable::visitMap(
     {
         for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
         {
-            FieldVisitor::visit<GCObjectFieldVisitable>(
-                valueProp, static_cast<MapIteratorWrapper *>(itrPtr.get())->value(), userData);
+            FieldVisitor::visit<GCObjectFieldVisitable>(valueProp, static_cast<MapIteratorWrapper *>(itrPtr.get())->value(), userData);
         }
     }
 }
 
-void GCObjectFieldVisitable::visitSet(
-    const ContainerProperty *setProp, void *val, const PropertyInfo &propInfo, void *userData)
+void GCObjectFieldVisitable::visitSet(const ContainerProperty *setProp, void *val, const PropertyInfo &propInfo, void *userData)
 {
-    const IterateableDataRetriever *dataRetriever
-        = static_cast<const IterateableDataRetriever *>(setProp->dataRetriever);
+    const IterateableDataRetriever *dataRetriever = static_cast<const IterateableDataRetriever *>(setProp->dataRetriever);
     const TypedProperty *elementProp = static_cast<const TypedProperty *>(setProp->elementProp);
 
     // set key can be either fundamental or special or struct or class ptr but it can never be custom
@@ -448,9 +470,8 @@ void GCObjectFieldVisitable::visitSet(
     if (getUnqualified(elementProp)->type == EPropertyType::ClassType)
     {
         // 2 times the data is needed to copy current and new value, to be removed and added later
-        uint8 *bufferData = (uint8 *)CBEMemory::memAlloc(
-            elementProp->typeInfo->size * (dataRetriever->size(val) * 2 + 1),
-            elementProp->typeInfo->alignment);
+        uint8 *bufferData
+            = (uint8 *)CBEMemory::memAlloc(elementProp->typeInfo->size * (dataRetriever->size(val) * 2 + 1), elementProp->typeInfo->alignment);
         uint8 *tempData = bufferData;
         bufferData += elementProp->typeInfo->size;
 
@@ -518,7 +539,8 @@ void CoreObjectGC::collectObjects(TickRep &budgetTicks)
     while (!classesLeft.empty())
     {
         auto allocatorItr = gCBEObjectAllocators->find(classesLeft.back());
-        if (allocatorItr != gCBEObjectAllocators->end())
+        debugAssert(allocatorItr != gCBEObjectAllocators->end());
+        // Collect
         {
             CBE::ObjectAllocatorBase *allocator = allocatorItr->second;
 
@@ -534,8 +556,7 @@ void CoreObjectGC::collectObjects(TickRep &budgetTicks)
                 if (BIT_NOT_SET(obj->getFlags(), CBE::EObjectFlagBits::MarkedForDelete))
                 {
                     userData.thisObj = obj;
-                    FieldVisitor::visitFields<GCObjectFieldVisitable>(
-                        classesLeft.back(), obj, &userData);
+                    FieldVisitor::visitFields<GCObjectFieldVisitable>(classesLeft.back(), obj, &userData);
                 }
             }
             userData.thisObj = nullptr;

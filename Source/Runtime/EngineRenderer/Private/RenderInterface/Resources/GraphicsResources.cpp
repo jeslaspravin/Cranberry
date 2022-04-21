@@ -14,8 +14,8 @@
 #include "String/String.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-ResourceTypesGraph::TypeNode recursivelyInsert(const GraphicsResourceType *type,
-    const GraphicsResourceType *upUntil, ResourceTypesGraph::TypeNode *childNode = nullptr)
+ResourceTypesGraph::TypeNode
+    recursivelyInsert(const GraphicsResourceType *type, const GraphicsResourceType *upUntil, ResourceTypesGraph::TypeNode *childNode = nullptr)
 {
     ResourceTypesGraph::TypeNode newNode;
     newNode.type = type;
@@ -30,10 +30,7 @@ ResourceTypesGraph::TypeNode recursivelyInsert(const GraphicsResourceType *type,
     return newNode;
 }
 
-void ResourceTypesGraph::lazyInsert(const GraphicsResourceType *type)
-{
-    insertWaitQueue.push_back(type);
-}
+void ResourceTypesGraph::lazyInsert(const GraphicsResourceType *type) { insertWaitQueue.push_back(type); }
 
 void ResourceTypesGraph::insertType(const GraphicsResourceType *type, TypeNode *fromNode /*= nullptr*/)
 {
@@ -61,13 +58,11 @@ void ResourceTypesGraph::insertType(const GraphicsResourceType *type, TypeNode *
         // Add nodes from type to furthest parent
         TypeNode nodeToMerge = recursivelyInsert(type, fromNode->type);
         debugAssert(nodeToMerge.type == fromNode->type);
-        fromNode->childs.insert(
-            fromNode->childs.end(), nodeToMerge.childs.cbegin(), nodeToMerge.childs.cend());
+        fromNode->childs.insert(fromNode->childs.end(), nodeToMerge.childs.cbegin(), nodeToMerge.childs.cend());
     }
 }
 
-void ResourceTypesGraph::graphAllChilds(
-    TypeNode *fromNode, std::vector<const GraphicsResourceType *> &outChilds, bool bRecursively) const
+void ResourceTypesGraph::graphAllChilds(TypeNode *fromNode, std::vector<const GraphicsResourceType *> &outChilds, bool bRecursively) const
 {
     outChilds.reserve(outChilds.size() + fromNode->childs.size());
     for (TypeNode &child : fromNode->childs)
@@ -83,8 +78,7 @@ void ResourceTypesGraph::graphAllChilds(
     }
 }
 
-void ResourceTypesGraph::graphAllLeafChilds(
-    TypeNode *fromNode, std::vector<const GraphicsResourceType *> &outChilds, bool bRecursively) const
+void ResourceTypesGraph::graphAllLeafChilds(TypeNode *fromNode, std::vector<const GraphicsResourceType *> &outChilds, bool bRecursively) const
 {
     outChilds.reserve(outChilds.size() + fromNode->childs.size());
     for (TypeNode &child : fromNode->childs)
@@ -103,9 +97,10 @@ void ResourceTypesGraph::graphAllLeafChilds(
     }
 }
 
-void ResourceTypesGraph::findChildsOf(const GraphicsResourceType *type,
-    std::vector<const GraphicsResourceType *> &outChilds, bool bRecursively /*= false*/,
-    bool bOnlyLeafChilds /*= false*/)
+void ResourceTypesGraph::findChildsOf(
+    const GraphicsResourceType *type, std::vector<const GraphicsResourceType *> &outChilds, bool bRecursively /*= false*/,
+    bool bOnlyLeafChilds /*= false*/
+)
 {
     // TODO(Jeslas) : Remove this to some sort of latent task at engine startup and make this function
     // const
@@ -146,28 +141,25 @@ void GraphicsResourceType::registerResource(GraphicsResource *resource)
     registeredResources.push_front(resource);
 }
 
-void GraphicsResourceType::unregisterResource(GraphicsResource *resource)
-{
-    registeredResources.remove(resource);
-}
+void GraphicsResourceType::unregisterResource(GraphicsResource *resource) { registeredResources.remove(resource); }
 
-void GraphicsResourceType::allRegisteredResources(std::vector<GraphicsResource *> &outResources,
-    bool bRecursively /*= false*/, bool bOnlyLeaf /*= false*/) const
+void GraphicsResourceType::
+    allRegisteredResources(std::vector<GraphicsResource *> &outResources, bool bRecursively /*= false*/, bool bOnlyLeaf /*= false*/) const
 {
     std::vector<const GraphicsResourceType *> childResourceTypes;
     getTypeGraph().findChildsOf(this, childResourceTypes, bRecursively, bOnlyLeaf);
 
     for (const GraphicsResourceType *type : childResourceTypes)
     {
-        outResources.insert(
-            outResources.end(), type->registeredResources.cbegin(), type->registeredResources.cend());
+        outResources.insert(outResources.end(), type->registeredResources.cbegin(), type->registeredResources.cend());
     }
 }
 
-void GraphicsResourceType::allChildDefaultResources(std::vector<GraphicsResource *> &outResources,
-    bool bRecursively /*= false*/
+void GraphicsResourceType::allChildDefaultResources(
+    std::vector<GraphicsResource *> &outResources, bool bRecursively /*= false*/
     ,
-    bool bOnlyLeaf /*= false*/) const
+    bool bOnlyLeaf /*= false*/
+) const
 {
     std::vector<const GraphicsResourceType *> childResourceTypes;
     getTypeGraph().findChildsOf(this, childResourceTypes, bRecursively, bOnlyLeaf);
@@ -179,10 +171,7 @@ void GraphicsResourceType::allChildDefaultResources(std::vector<GraphicsResource
     }
 }
 
-bool GraphicsResourceType::isChildOf(const GraphicsResourceType *otherType) const
-{
-    return this == otherType || verifyParent(otherType);
-}
+bool GraphicsResourceType::isChildOf(const GraphicsResourceType *otherType) const { return this == otherType || verifyParent(otherType); }
 
 ResourceTypesGraph &GraphicsResourceType::getTypeGraph() const
 {
@@ -190,8 +179,7 @@ ResourceTypesGraph &GraphicsResourceType::getTypeGraph() const
     return singletonTypeGraph;
 }
 
-GraphicsResourceType::GraphicsResourceType(
-    GraphicsResource *resource, DeleteFn deleteFunc, const String &resTypeName)
+GraphicsResourceType::GraphicsResourceType(GraphicsResource *resource, DeleteFn deleteFunc, const String &resTypeName)
     : typeName(resTypeName)
     , defaultResource(resource)
     , deleteResource(deleteFunc)

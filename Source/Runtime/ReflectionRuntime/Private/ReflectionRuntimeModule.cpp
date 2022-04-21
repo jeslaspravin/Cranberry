@@ -21,13 +21,14 @@
 
 DECLARE_MODULE(ReflectionRuntime, ReflectionRuntimeModule)
 
-const ReflectTypeInfo *ReflectTypeInfo::createTypeInfo(const std::type_info &cleanTypeInfo,
-    const ReflectTypeInfo *innerTypeInfo, SizeT size, uint32 alignment, uint32 inQualifiers)
+const ReflectTypeInfo *ReflectTypeInfo::createTypeInfo(
+    const std::type_info &cleanTypeInfo, const ReflectTypeInfo *innerTypeInfo, SizeT size, uint32 alignment, uint32 inQualifiers
+)
 {
     static std::unordered_set<ReflectTypeInfo> dbTypeInfo;
 
-    std::pair<std::unordered_set<ReflectTypeInfo>::iterator, bool> insertResult = dbTypeInfo.insert(
-        ReflectTypeInfo{ cleanTypeInfo, innerTypeInfo, size, alignment, inQualifiers });
+    std::pair<std::unordered_set<ReflectTypeInfo>::iterator, bool> insertResult
+        = dbTypeInfo.insert(ReflectTypeInfo{ cleanTypeInfo, innerTypeInfo, size, alignment, inQualifiers });
     return &(*insertResult.first);
 }
 
@@ -41,16 +42,17 @@ IReflectionRuntimeModule *IReflectionRuntimeModule::get()
     return static_cast<IReflectionRuntimeModule *>(appModule.lock().get());
 }
 
-void IReflectionRuntimeModule::registerClassFactory(const StringID &className,
-    const ReflectTypeInfo *classTypeInfo, const ClassPropertyFactoryCell &factoryCell)
+void IReflectionRuntimeModule::registerClassFactory(
+    const StringID &className, const ReflectTypeInfo *classTypeInfo, const ClassPropertyFactoryCell &factoryCell
+)
 {
-    auto factoryFromTypeInfoItr
-        = ReflectionRuntimeModule::classFactoryFromTypeInfo().find(classTypeInfo);
+    auto factoryFromTypeInfoItr = ReflectionRuntimeModule::classFactoryFromTypeInfo().find(classTypeInfo);
     auto factoryFromTypeNameItr = ReflectionRuntimeModule::classFactoryFromTypeName().find(className);
     // Make sure that both factory function registries are in sync
     debugAssert(
         (factoryFromTypeInfoItr == ReflectionRuntimeModule::classFactoryFromTypeInfo().end())
-        == (factoryFromTypeNameItr == ReflectionRuntimeModule::classFactoryFromTypeName().end()));
+        == (factoryFromTypeNameItr == ReflectionRuntimeModule::classFactoryFromTypeName().end())
+    );
 
     if (factoryFromTypeInfoItr == ReflectionRuntimeModule::classFactoryFromTypeInfo().end())
     {
@@ -59,34 +61,36 @@ void IReflectionRuntimeModule::registerClassFactory(const StringID &className,
     }
 }
 
-void IReflectionRuntimeModule::registerStructFactory(const StringID &structName,
-    const ReflectTypeInfo *structTypeInfo, const ClassPropertyFactoryCell &factoryCell)
+void IReflectionRuntimeModule::registerStructFactory(
+    const StringID &structName, const ReflectTypeInfo *structTypeInfo, const ClassPropertyFactoryCell &factoryCell
+)
 {
-    auto factoryFromTypeInfoItr
-        = ReflectionRuntimeModule::structFactoryFromTypeInfo().find(structTypeInfo);
+    auto factoryFromTypeInfoItr = ReflectionRuntimeModule::structFactoryFromTypeInfo().find(structTypeInfo);
     auto factoryFromTypeNameItr = ReflectionRuntimeModule::structFactoryFromTypeName().find(structName);
     // Make sure that both factory function registries are in sync
     debugAssert(
         (factoryFromTypeInfoItr == ReflectionRuntimeModule::structFactoryFromTypeInfo().end())
-        == (factoryFromTypeNameItr == ReflectionRuntimeModule::structFactoryFromTypeName().end()));
+        == (factoryFromTypeNameItr == ReflectionRuntimeModule::structFactoryFromTypeName().end())
+    );
 
     if (factoryFromTypeInfoItr == ReflectionRuntimeModule::structFactoryFromTypeInfo().end())
     {
-        ReflectionRuntimeModule::structFactoryFromTypeInfo()[structTypeInfo]
-            = { structName, factoryCell };
-        ReflectionRuntimeModule::structFactoryFromTypeName()[structName]
-            = { structTypeInfo, factoryCell };
+        ReflectionRuntimeModule::structFactoryFromTypeInfo()[structTypeInfo] = { structName, factoryCell };
+        ReflectionRuntimeModule::structFactoryFromTypeName()[structName] = { structTypeInfo, factoryCell };
     }
 }
 
-void IReflectionRuntimeModule::registerEnumFactory(const StringID &enumName,
-    const ReflectTypeInfo *enumTypeInfo, const EnumPropertyFactoryCell &factoryCell)
+void IReflectionRuntimeModule::registerEnumFactory(
+    const StringID &enumName, const ReflectTypeInfo *enumTypeInfo, const EnumPropertyFactoryCell &factoryCell
+)
 {
     auto factoryFromTypeInfoItr = ReflectionRuntimeModule::enumFactoryFromTypeInfo().find(enumTypeInfo);
     auto factoryFromTypeNameItr = ReflectionRuntimeModule::enumFactoryFromTypeName().find(enumName);
     // Make sure that both factory function registries are in sync
-    debugAssert((factoryFromTypeInfoItr == ReflectionRuntimeModule::enumFactoryFromTypeInfo().end())
-                == (factoryFromTypeNameItr == ReflectionRuntimeModule::enumFactoryFromTypeName().end()));
+    debugAssert(
+        (factoryFromTypeInfoItr == ReflectionRuntimeModule::enumFactoryFromTypeInfo().end())
+        == (factoryFromTypeNameItr == ReflectionRuntimeModule::enumFactoryFromTypeName().end())
+    );
 
     if (factoryFromTypeInfoItr == ReflectionRuntimeModule::enumFactoryFromTypeInfo().end())
     {
@@ -95,8 +99,7 @@ void IReflectionRuntimeModule::registerEnumFactory(const StringID &enumName,
     }
 }
 
-void IReflectionRuntimeModule::registerTypeFactory(
-    const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell)
+void IReflectionRuntimeModule::registerTypeFactory(const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell)
 {
     auto factoryFromTypeInfoItr = ReflectionRuntimeModule::otherTypesFactories().find(typeInfo);
 
@@ -106,25 +109,20 @@ void IReflectionRuntimeModule::registerTypeFactory(
     }
 }
 
-std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &
-    ReflectionRuntimeModule::classFactoryFromTypeInfo()
+std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &ReflectionRuntimeModule::classFactoryFromTypeInfo()
 {
-    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>>
-        singletonFactoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
-std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &
-    ReflectionRuntimeModule::classFactoryFromTypeName()
+std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &ReflectionRuntimeModule::classFactoryFromTypeName()
 {
-    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>>
-        singletonFactoriesRegistry;
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
 const ClassProperty *ReflectionRuntimeModule::createClassProperty(const ReflectTypeInfo *typeInfo)
 {
     auto propertyCreateFactoryItr = classFactoryFromTypeInfo().find(typeInfo);
-    if (propertyCreateFactoryItr != classFactoryFromTypeInfo().end()
-        && propertyCreateFactoryItr->second.second.factoryFunc)
+    if (propertyCreateFactoryItr != classFactoryFromTypeInfo().end() && propertyCreateFactoryItr->second.second.factoryFunc)
     {
         ClassProperty *prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
@@ -143,16 +141,14 @@ const ClassProperty *ReflectionRuntimeModule::createClassProperty(const ReflectT
     }
     else
     {
-        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating class property failed for type %s",
-            __func__, *typeInfo);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating class property failed for type %s", __func__, *typeInfo);
     }
     return nullptr;
 }
 const ClassProperty *ReflectionRuntimeModule::createClassProperty(const StringID &typeName)
 {
     auto propertyCreateFactoryItr = classFactoryFromTypeName().find(typeName);
-    if (propertyCreateFactoryItr != classFactoryFromTypeName().end()
-        && propertyCreateFactoryItr->second.second.factoryFunc)
+    if (propertyCreateFactoryItr != classFactoryFromTypeName().end() && propertyCreateFactoryItr->second.second.factoryFunc)
     {
         ClassProperty *prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
@@ -170,31 +166,25 @@ const ClassProperty *ReflectionRuntimeModule::createClassProperty(const StringID
     }
     else
     {
-        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating class property failed for type %s",
-            __func__, typeName);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating class property failed for type %s", __func__, typeName);
     }
     return nullptr;
 }
 
-std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &
-    ReflectionRuntimeModule::structFactoryFromTypeInfo()
+std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &ReflectionRuntimeModule::structFactoryFromTypeInfo()
 {
-    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>>
-        singletonFactoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
-std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &
-    ReflectionRuntimeModule::structFactoryFromTypeName()
+std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &ReflectionRuntimeModule::structFactoryFromTypeName()
 {
-    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>>
-        singletonFactoriesRegistry;
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
 const ClassProperty *ReflectionRuntimeModule::createStructProperty(const ReflectTypeInfo *typeInfo)
 {
     auto propertyCreateFactoryItr = structFactoryFromTypeInfo().find(typeInfo);
-    if (propertyCreateFactoryItr != structFactoryFromTypeInfo().end()
-        && propertyCreateFactoryItr->second.second.factoryFunc)
+    if (propertyCreateFactoryItr != structFactoryFromTypeInfo().end() && propertyCreateFactoryItr->second.second.factoryFunc)
     {
         ClassProperty *prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
@@ -212,16 +202,14 @@ const ClassProperty *ReflectionRuntimeModule::createStructProperty(const Reflect
     }
     else
     {
-        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating struct property failed for type %s",
-            __func__, *typeInfo);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating struct property failed for type %s", __func__, *typeInfo);
     }
     return nullptr;
 }
 const ClassProperty *ReflectionRuntimeModule::createStructProperty(const StringID &typeName)
 {
     auto propertyCreateFactoryItr = structFactoryFromTypeName().find(typeName);
-    if (propertyCreateFactoryItr != structFactoryFromTypeName().end()
-        && propertyCreateFactoryItr->second.second.factoryFunc)
+    if (propertyCreateFactoryItr != structFactoryFromTypeName().end() && propertyCreateFactoryItr->second.second.factoryFunc)
     {
         ClassProperty *prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
@@ -239,31 +227,25 @@ const ClassProperty *ReflectionRuntimeModule::createStructProperty(const StringI
     }
     else
     {
-        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating struct property failed for type %s",
-            __func__, typeName);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating struct property failed for type %s", __func__, typeName);
     }
     return nullptr;
 }
 
-std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, EnumPropertyFactoryCell>> &
-    ReflectionRuntimeModule::enumFactoryFromTypeInfo()
+std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, EnumPropertyFactoryCell>> &ReflectionRuntimeModule::enumFactoryFromTypeInfo()
 {
-    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, EnumPropertyFactoryCell>>
-        singletonFactoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, EnumPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
-std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, EnumPropertyFactoryCell>> &
-    ReflectionRuntimeModule::enumFactoryFromTypeName()
+std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, EnumPropertyFactoryCell>> &ReflectionRuntimeModule::enumFactoryFromTypeName()
 {
-    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, EnumPropertyFactoryCell>>
-        singletonFactoriesRegistry;
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, EnumPropertyFactoryCell>> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
 const EnumProperty *ReflectionRuntimeModule::createEnumProperty(const ReflectTypeInfo *typeInfo)
 {
     auto propertyCreateFactoryItr = enumFactoryFromTypeInfo().find(typeInfo);
-    if (propertyCreateFactoryItr != enumFactoryFromTypeInfo().end()
-        && propertyCreateFactoryItr->second.second.factoryFunc)
+    if (propertyCreateFactoryItr != enumFactoryFromTypeInfo().end() && propertyCreateFactoryItr->second.second.factoryFunc)
     {
         EnumProperty *prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
@@ -281,16 +263,14 @@ const EnumProperty *ReflectionRuntimeModule::createEnumProperty(const ReflectTyp
     }
     else
     {
-        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating enum property failed for type %s",
-            __func__, *typeInfo);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating enum property failed for type %s", __func__, *typeInfo);
     }
     return nullptr;
 }
 const EnumProperty *ReflectionRuntimeModule::createEnumProperty(const StringID &typeName)
 {
     auto propertyCreateFactoryItr = enumFactoryFromTypeName().find(typeName);
-    if (propertyCreateFactoryItr != enumFactoryFromTypeName().end()
-        && propertyCreateFactoryItr->second.second.factoryFunc)
+    if (propertyCreateFactoryItr != enumFactoryFromTypeName().end() && propertyCreateFactoryItr->second.second.factoryFunc)
     {
         EnumProperty *prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
@@ -308,24 +288,20 @@ const EnumProperty *ReflectionRuntimeModule::createEnumProperty(const StringID &
     }
     else
     {
-        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating enum property failed for type %s",
-            __func__, typeName);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating enum property failed for type %s", __func__, typeName);
     }
     return nullptr;
 }
 
-std::unordered_map<const ReflectTypeInfo *, TypedPropertyFactoryCell> &
-    ReflectionRuntimeModule::otherTypesFactories()
+std::unordered_map<const ReflectTypeInfo *, TypedPropertyFactoryCell> &ReflectionRuntimeModule::otherTypesFactories()
 {
-    static std::unordered_map<const ReflectTypeInfo *, TypedPropertyFactoryCell>
-        singletonFactoriesRegistry;
+    static std::unordered_map<const ReflectTypeInfo *, TypedPropertyFactoryCell> singletonFactoriesRegistry;
     return singletonFactoriesRegistry;
 }
 const BaseProperty *ReflectionRuntimeModule::createTypedProperty(const ReflectTypeInfo *typeInfo)
 {
     auto propertyCreateFactoryItr = otherTypesFactories().find(typeInfo);
-    if (propertyCreateFactoryItr != otherTypesFactories().end()
-        && propertyCreateFactoryItr->second.factoryFunc)
+    if (propertyCreateFactoryItr != otherTypesFactories().end() && propertyCreateFactoryItr->second.factoryFunc)
     {
         BaseProperty *typeProperty = propertyCreateFactoryItr->second.factoryFunc();
         dbOtherTypes[typeInfo] = typeProperty;
@@ -338,8 +314,7 @@ const BaseProperty *ReflectionRuntimeModule::createTypedProperty(const ReflectTy
     }
     else
     {
-        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating typed property failed for type %s",
-            __func__, *typeInfo);
+        LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating typed property failed for type %s", __func__, *typeInfo);
     }
     return nullptr;
 }
@@ -460,14 +435,18 @@ const BaseProperty *ReflectionRuntimeModule::getType(const ReflectTypeInfo *type
     return retVal;
 }
 
-void ReflectionRuntimeModule::setMetaData(const BaseProperty *forProperty,
-    const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags)
+void ReflectionRuntimeModule::setMetaData(
+    const BaseProperty *forProperty, const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags
+)
 {
     std::vector<std::pair<PropertyMetaDataKey, const PropertyMetaDataBase *>> initializerList;
     initializerList.reserve(propertyMeta.size());
     for (const PropertyMetaDataBase *metaData : propertyMeta)
     {
-        initializerList.push_back({ { forProperty, metaData->metaType() }, metaData });
+        initializerList.push_back({
+            {forProperty, metaData->metaType()},
+            metaData
+        });
     }
     if (!initializerList.empty())
     {
@@ -479,8 +458,7 @@ void ReflectionRuntimeModule::setMetaData(const BaseProperty *forProperty,
     }
 }
 
-std::vector<const PropertyMetaDataBase *> ReflectionRuntimeModule::getPropertyMetaData(
-    const BaseProperty *prop) const
+std::vector<const PropertyMetaDataBase *> ReflectionRuntimeModule::getPropertyMetaData(const BaseProperty *prop) const
 {
     std::vector<const PropertyMetaDataBase *> retVal;
     for (const auto &metaData : propertiesMetaData)
@@ -493,8 +471,7 @@ std::vector<const PropertyMetaDataBase *> ReflectionRuntimeModule::getPropertyMe
     return retVal;
 }
 
-const PropertyMetaDataBase *ReflectionRuntimeModule::getPropertyMetaData(
-    const BaseProperty *prop, const ReflectTypeInfo *typeInfo) const
+const PropertyMetaDataBase *ReflectionRuntimeModule::getPropertyMetaData(const BaseProperty *prop, const ReflectTypeInfo *typeInfo) const
 {
     auto itr = propertiesMetaData.find({ prop, typeInfo });
     if (itr != propertiesMetaData.cend())

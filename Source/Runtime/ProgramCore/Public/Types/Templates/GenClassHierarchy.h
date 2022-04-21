@@ -109,8 +109,7 @@ template <typename TList, template <typename Type> typename InheritClassType>
 class GenScatteredHierarchy;
 
 template <typename LastType, template <typename Type> typename InheritClassType>
-class GenScatteredHierarchy<TypeList<LastType, NullType>, InheritClassType>
-    : public InheritClassType<LastType>
+class GenScatteredHierarchy<TypeList<LastType, NullType>, InheritClassType> : public InheritClassType<LastType>
 {
 public:
     using ThisTypeList = TypeList<LastType, NullType>;
@@ -127,21 +126,17 @@ public:
 
 // Inherits all the types in order one one top of another
 // GenLinearHierarchy inherits all the types in TList and last element in TList inherits from RootType
-template <typename TList, template <typename Type, typename BaseType> typename InheritClassType,
-    typename RootType = EmptyType>
+template <typename TList, template <typename Type, typename BaseType> typename InheritClassType, typename RootType = EmptyType>
 class GenLinearHierarchy;
 
-template <typename LastType, template <typename Type, typename BaseType> typename InheritClassType,
-    typename RootType>
-class GenLinearHierarchy<TypeList<LastType, NullType>, InheritClassType, RootType>
-    : public InheritClassType<LastType, RootType>
+template <typename LastType, template <typename Type, typename BaseType> typename InheritClassType, typename RootType>
+class GenLinearHierarchy<TypeList<LastType, NullType>, InheritClassType, RootType> : public InheritClassType<LastType, RootType>
 {
 public:
     using ThisTypeList = TypeList<LastType, NullType>;
 };
 
-template <typename ThisType, typename NextType,
-    template <typename Type, typename BaseType> typename InheritClassType, typename RootType>
+template <typename ThisType, typename NextType, template <typename Type, typename BaseType> typename InheritClassType, typename RootType>
 class GenLinearHierarchy<TypeList<ThisType, NextType>, InheritClassType, RootType>
     : public InheritClassType<ThisType, GenLinearHierarchy<NextType, InheritClassType, RootType>>
 {

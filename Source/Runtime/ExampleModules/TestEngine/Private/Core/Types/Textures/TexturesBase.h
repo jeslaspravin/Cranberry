@@ -54,15 +54,13 @@ public:
 
     // Each type of texture has to provide an implementation for this template
     template <typename TextureType, typename CreateParamType>
-    static std::enable_if_t<std::is_base_of_v<TextureBase, TextureType>, TextureType> *createTexture(
-        const CreateParamType &createParam)
+    static std::enable_if_t<std::is_base_of_v<TextureBase, TextureType>, TextureType> *createTexture(const CreateParamType &createParam)
     {
         return TextureType::createTexture(createParam);
     }
     // Each type of texture has to provide an implementation for this template
     template <typename TextureType>
-    static std::enable_if_t<std::is_base_of_v<TextureBase, TextureType>, void> destroyTexture(
-        TextureBase *texture)
+    static std::enable_if_t<std::is_base_of_v<TextureBase, TextureType>, void> destroyTexture(TextureBase *texture)
     {
         return TextureType::destroyTexture(static_cast<TextureType *>(texture));
     }

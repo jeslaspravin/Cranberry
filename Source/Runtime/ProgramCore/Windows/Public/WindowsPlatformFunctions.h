@@ -13,8 +13,7 @@
 #include "Types/Platform/GenericPlatformFunctions.h"
 #include "Types/Platform/GenericPlatformTypes.h"
 
-class PROGRAMCORE_EXPORT WindowsPlatformFunctions
-    : public GenericPlatformFunctions<WindowsPlatformFunctions>
+class PROGRAMCORE_EXPORT WindowsPlatformFunctions : public GenericPlatformFunctions<WindowsPlatformFunctions>
 {
 
 public:

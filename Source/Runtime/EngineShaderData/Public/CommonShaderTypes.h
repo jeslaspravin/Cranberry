@@ -37,8 +37,8 @@ template <typename StructField>
 struct StructInnerFields
 {
     uint32_t offset;
-    uint32_t stride;    // Individual primitive/inner struct stride
-    uint32_t totalSize; // This is size of entire array in array field else will be equal to stride
+    uint32_t stride;                        // Individual primitive/inner struct stride
+    uint32_t totalSize;                     // This is size of entire array in array field else will be equal to stride
     std::vector<ArrayDefinition> arraySize; // 1 in case of normal value and n in case of array
     StructField data;
 };

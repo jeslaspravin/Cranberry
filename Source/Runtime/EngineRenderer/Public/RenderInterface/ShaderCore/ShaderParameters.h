@@ -46,8 +46,7 @@ struct ENGINERENDERER_EXPORT ShaderVertexField
     EShaderInputAttribFormat::Type format = EShaderInputAttribFormat::Undefined;
 
     ShaderVertexField(const String &attribName, const uint32 &offsetVal);
-    ShaderVertexField(const String &attribName, const uint32 &offsetVal,
-        EShaderInputAttribFormat::Type overrideFormat);
+    ShaderVertexField(const String &attribName, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat);
 };
 
 template <typename OuterType, typename MemberType>
@@ -61,8 +60,9 @@ struct ShaderVertexMemberField : public ShaderVertexField
         , memberPtr(fieldPtr)
     {}
 
-    ShaderVertexMemberField(const String &pName, const FieldPtr &fieldPtr, const uint32 &offsetVal,
-        EShaderInputAttribFormat::Type overrideFormat)
+    ShaderVertexMemberField(
+        const String &pName, const FieldPtr &fieldPtr, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat
+    )
         : ShaderVertexField(pName, offsetVal, overrideFormat)
         , memberPtr(fieldPtr)
     {}
@@ -94,8 +94,7 @@ struct ENGINERENDERER_EXPORT ShaderBufferField
 
     virtual bool setFieldData(void *outerPtr, const std::any &newValue) const = 0;
     virtual bool setFieldDataArray(void *outerPtr, const std::any &newValuesPtr) const = 0;
-    virtual bool setFieldDataArray(
-        void *outerPtr, const std::any &newValue, uint32 arrayIndex) const = 0;
+    virtual bool setFieldDataArray(void *outerPtr, const std::any &newValue, uint32 arrayIndex) const = 0;
     // returns Pointer to start of element data, if array then pointer to 1st element, If pointer then
     // the pointer itself(not the pointer to pointer) Element size individual element size in array and
     // will be same as type size in non array
@@ -106,10 +105,7 @@ struct ENGINERENDERER_EXPORT ShaderBufferField
     {
         return ANY_BIT_SET(fieldDecorations, ShaderBufferField::IsArray | ShaderBufferField::IsPointer);
     }
-    FORCE_INLINE bool isPointer() const
-    {
-        return BIT_SET(fieldDecorations, ShaderBufferField::IsPointer);
-    }
+    FORCE_INLINE bool isPointer() const { return BIT_SET(fieldDecorations, ShaderBufferField::IsPointer); }
 };
 
 template <typename OuterType>
@@ -122,8 +118,7 @@ struct ShaderBufferTypedField : public ShaderBufferField
     // returns Pointer to start of element data, if array then pointer to 1st element, If pointer then
     // the pointer itself(not the pointer to pointer) Element size individual element size in array and
     // will be same as type size in non array
-    virtual const void *fieldData(
-        const OuterType *outerPtr, uint32 *typeSize, uint32 *elementSize) const = 0;
+    virtual const void *fieldData(const OuterType *outerPtr, uint32 *typeSize, uint32 *elementSize) const = 0;
 };
 
 template <typename OuterType, typename MemberType>
@@ -143,11 +138,10 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         : ShaderBufferTypedField<OuterType>(pName)
         , memberPtr(fieldPtr)
     {
-        fieldDecorations
-            |= std::is_array_v<MemberType> ? ShaderBufferFieldDecorations::IsArray
-               : 0 | std::is_pointer_v<MemberType>
-                   ? (ShaderBufferFieldDecorations::IsArray | ShaderBufferFieldDecorations::IsPointer)
-                   : 0;
+        fieldDecorations |= std::is_array_v<MemberType> ? ShaderBufferFieldDecorations::IsArray
+                            : 0 | std::is_pointer_v<MemberType>
+                                ? (ShaderBufferFieldDecorations::IsArray | ShaderBufferFieldDecorations::IsPointer)
+                                : 0;
 
         size = ConditionalValue_v<uint32, uint32, std::is_pointer<MemberType>, 0u, sizeof(MemberType)>;
         stride = sizeof(ArrayType);
@@ -157,15 +151,13 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
 
     // #TODO(Jeslas) : Move this to concepts
     template <typename DataType>
-    constexpr static std::enable_if_t<IsIndexable<DataType>::value, IndexableElementType<DataType>> *
-        memberDataPtr(DataType &data)
+    constexpr static std::enable_if_t<IsIndexable<DataType>::value, IndexableElementType<DataType>> *memberDataPtr(DataType &data)
     {
         return &data[0];
     }
 
     template <typename DataType>
-    constexpr static std::enable_if_t<std::negation_v<IsIndexable<DataType>>, DataType> *memberDataPtr(
-        DataType &data)
+    constexpr static std::enable_if_t<std::negation_v<IsIndexable<DataType>>, DataType> *memberDataPtr(DataType &data)
     {
         return &data;
     }
@@ -186,11 +178,9 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     bool setFieldDataArray(void *outerPtr, const std::any &newValuesPtr) const override
     {
         OuterType *castOuterPtr = reinterpret_cast<OuterType *>(outerPtr);
-        ArrayView<ArrayType> const *newValuesViewPtr
-            = std::any_cast<ArrayView<ArrayType>>(&newValuesPtr);
+        ArrayView<ArrayType> const *newValuesViewPtr = std::any_cast<ArrayView<ArrayType>>(&newValuesPtr);
 
-        if (ShaderBufferTypedField<OuterType>::isIndexAccessible() && newValuesViewPtr != nullptr
-            && newValuesViewPtr->data() != nullptr)
+        if (ShaderBufferTypedField<OuterType>::isIndexAccessible() && newValuesViewPtr != nullptr && newValuesViewPtr->data() != nullptr)
         {
             const ArrayType *newValues = newValuesViewPtr->data();
             if constexpr (std::is_pointer_v<MemberType>)
@@ -205,8 +195,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
             else
             {
                 ArrayType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
-                memcpy(toValues, newValues,
-                    Math::min(sizeof(MemberType), sizeof(ArrayType) * newValuesViewPtr->size()));
+                memcpy(toValues, newValues, Math::min(sizeof(MemberType), sizeof(ArrayType) * newValuesViewPtr->size()));
                 return true;
             }
         }
@@ -252,13 +241,9 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         return memberDataPtr(memberPtr.get(reinterpret_cast<OuterType *>(outerPtr)));
     }
 
-    void *fieldPtr(void *outerPtr) const override
-    {
-        return &memberPtr.get(reinterpret_cast<OuterType *>(outerPtr));
-    }
+    void *fieldPtr(void *outerPtr) const override { return &memberPtr.get(reinterpret_cast<OuterType *>(outerPtr)); }
 
-    const void *fieldData(
-        const OuterType *outerPtr, uint32 *typeSize, uint32 *elementSize) const override
+    const void *fieldData(const OuterType *outerPtr, uint32 *typeSize, uint32 *elementSize) const override
     {
         if (typeSize)
         {
@@ -475,50 +460,49 @@ public:
     virtual EShaderInputFrequency::Type inputFrequency() const = 0;
 };
 
-#define BEGIN_BUFFER_DEFINITION(BufferType)                                                             \
-    struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo                             \
-    {                                                                                                   \
-        typedef BufferType BufferDataType;                                                              \
-        uint32 stride = sizeof(BufferDataType);                                                         \
-        uint32 paramStride() const { return stride; }                                                   \
-        uint32 paramNativeStride() const { return sizeof(BufferDataType); }                             \
+#define BEGIN_BUFFER_DEFINITION(BufferType)                                                                                                    \
+    struct BufferType##BufferParamInfo final : public ShaderBufferParamInfo                                                                    \
+    {                                                                                                                                          \
+        typedef BufferType BufferDataType;                                                                                                     \
+        uint32 stride = sizeof(BufferDataType);                                                                                                \
+        uint32 paramStride() const { return stride; }                                                                                          \
+        uint32 paramNativeStride() const { return sizeof(BufferDataType); }                                                                    \
         void setStride(uint32 newStride) { stride = newStride; }
 
 #define END_BUFFER_DEFINITION() }
 
-#define ADD_BUFFER_TYPED_FIELD(FieldName)                                                               \
-    ShaderBufferMemberField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field   \
-        = { TCHAR(#FieldName), &BufferDataType::##FieldName };                                          \
+#define ADD_BUFFER_TYPED_FIELD(FieldName)                                                                                                      \
+    ShaderBufferMemberField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field                                          \
+        = { TCHAR(#FieldName), &BufferDataType::##FieldName };                                                                                 \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 // NOTE : Right now supporting : Buffer with any alignment
 // but in case of inner struct only with proper alignment with respect to GPU(Alignment correction on
 // copying to GPU is only done for first level of variables)
-#define ADD_BUFFER_STRUCT_FIELD(FieldName, FieldType)                                                   \
-    FieldType##BufferParamInfo FieldName##ParamInfo;                                                    \
-    ShaderBufferStructField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field   \
-        = { TCHAR(#FieldName), &BufferDataType::##FieldName##, &##FieldName##ParamInfo };               \
+#define ADD_BUFFER_STRUCT_FIELD(FieldName, FieldType)                                                                                          \
+    FieldType##BufferParamInfo FieldName##ParamInfo;                                                                                           \
+    ShaderBufferStructField<BufferDataType, decltype(BufferDataType::##FieldName##)> FieldName##Field                                          \
+        = { TCHAR(#FieldName), &BufferDataType::##FieldName##, &##FieldName##ParamInfo };                                                      \
     ShaderBufferFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
-#define BEGIN_VERTEX_DEFINITION(VertexType, InputFrequency)                                             \
-    struct VertexType##VertexParamInfo final : public ShaderVertexParamInfo                             \
-    {                                                                                                   \
-        typedef VertexType VertexDataType;                                                              \
-        const EShaderInputFrequency::Type vertexInputFreq = InputFrequency;                             \
-        uint32 paramStride() const final { return sizeof(VertexDataType); }                             \
-        uint32 paramNativeStride() const final { return sizeof(VertexDataType); }                       \
-        void setStride(uint32 newStride) final {}                                                       \
+#define BEGIN_VERTEX_DEFINITION(VertexType, InputFrequency)                                                                                    \
+    struct VertexType##VertexParamInfo final : public ShaderVertexParamInfo                                                                    \
+    {                                                                                                                                          \
+        typedef VertexType VertexDataType;                                                                                                     \
+        const EShaderInputFrequency::Type vertexInputFreq = InputFrequency;                                                                    \
+        uint32 paramStride() const final { return sizeof(VertexDataType); }                                                                    \
+        uint32 paramNativeStride() const final { return sizeof(VertexDataType); }                                                              \
+        void setStride(uint32 newStride) final {}                                                                                              \
         EShaderInputFrequency::Type inputFrequency() const final { return vertexInputFreq; }
 
-#define ADD_VERTEX_FIELD(FieldName)                                                                     \
-    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field   \
-        = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName) };     \
+#define ADD_VERTEX_FIELD(FieldName)                                                                                                            \
+    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field                                          \
+        = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName) };                                            \
     ShaderVertexFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
-#define ADD_VERTEX_FIELD_AND_FORMAT(FieldName, OverrideFormat)                                          \
-    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field   \
-        = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName),       \
-              OverrideFormat };                                                                         \
+#define ADD_VERTEX_FIELD_AND_FORMAT(FieldName, OverrideFormat)                                                                                 \
+    ShaderVertexMemberField<VertexDataType, decltype(VertexDataType::##FieldName##)> FieldName##Field                                          \
+        = { TCHAR(#FieldName), &VertexDataType::##FieldName, offsetof(VertexDataType, FieldName), OverrideFormat };                            \
     ShaderVertexFieldNode FieldName##Node = { &##FieldName##Field, &startNode };
 
 #define END_VERTEX_DEFINITION() }

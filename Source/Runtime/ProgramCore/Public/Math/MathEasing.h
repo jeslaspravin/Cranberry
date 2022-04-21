@@ -30,8 +30,7 @@ public:
     static Type slerp(const Type &a, const Type &b, float t)
     {
         // Ensure we are operating in unit vectors
-        debugAssert(Math::isEqual(a.sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
-                    && Math::isEqual(b.sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON));
+        debugAssert(Math::isEqual(a.sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON) && Math::isEqual(b.sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON));
 
         float dotVal = Type::dot(a, b);
         // Magic number as LERP vs SLERP are mush less noticeable in such a small delta
@@ -65,10 +64,7 @@ public:
     // http://www.demofox.org/bezquad1d.html
     // C acts as middle control point in quadratic curve
     // Index : 3
-    FORCE_INLINE static float quadraticCurve(float t, float c)
-    {
-        return 2 * c * t * (1 - t) + quadraticIn(t);
-    }
+    FORCE_INLINE static float quadraticCurve(float t, float c) { return 2 * c * t * (1 - t) + quadraticIn(t); }
     // Index : 4
     FORCE_INLINE static float cubicIn(float t) { return t * t * t; }
     // Index : 5
@@ -88,10 +84,7 @@ public:
     // Index : 12
     FORCE_INLINE static float expIn(float t) { return (t == 0.0f) ? 0.0f : Math::pow(1024, t - 1); }
     // Index : 13
-    FORCE_INLINE static float expOut(float t)
-    {
-        return Math::isEqual(t, 1.0f) ? 1.0f : (1 - Math::pow(2, -10 * t));
-    }
+    FORCE_INLINE static float expOut(float t) { return Math::isEqual(t, 1.0f) ? 1.0f : (1 - Math::pow(2, -10 * t)); }
     // Index : 14
     FORCE_INLINE static float circularIn(float t) { return 1.0f - Math::sqrt(1 - t * t); }
     // Index : 15

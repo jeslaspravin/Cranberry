@@ -20,8 +20,7 @@ ShaderVertexField::ShaderVertexField(const String &attribName, const uint32 &off
     , offset(offsetVal)
 {}
 
-ShaderVertexField::ShaderVertexField(
-    const String &attribName, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat)
+ShaderVertexField::ShaderVertexField(const String &attribName, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat)
     : attributeName(attribName)
     , offset(offsetVal)
     , format(overrideFormat)

@@ -24,15 +24,14 @@ namespace EngineToVulkanAPI
 #define COMPARE_OP_INFO_PAIR(EnumTypeValue, RelevantApiFormat) RelevantApiFormat
 VkCompareOp vulkanCompareOp(CoreGraphicsTypes::ECompareOp::Type compareOp)
 {
-    static const VkCompareOp ENGINE_TO_VK_COMPARE_OP[]
-        = { COMPARE_OP_INFO_PAIR(ECompareOp::Never, VK_COMPARE_OP_NEVER),
-              COMPARE_OP_INFO_PAIR(ECompareOp::Less, VK_COMPARE_OP_LESS),
-              COMPARE_OP_INFO_PAIR(ECompareOp::Equal, VK_COMPARE_OP_EQUAL),
-              COMPARE_OP_INFO_PAIR(ECompareOp::EqualOrLess, VK_COMPARE_OP_LESS_OR_EQUAL),
-              COMPARE_OP_INFO_PAIR(ECompareOp::Greater, VK_COMPARE_OP_GREATER),
-              COMPARE_OP_INFO_PAIR(ECompareOp::NotEqual, VK_COMPARE_OP_NOT_EQUAL),
-              COMPARE_OP_INFO_PAIR(ECompareOp::EqualOrGreater, VK_COMPARE_OP_GREATER_OR_EQUAL),
-              COMPARE_OP_INFO_PAIR(ECompareOp::Always, VK_COMPARE_OP_ALWAYS) };
+    static const VkCompareOp ENGINE_TO_VK_COMPARE_OP[] = { COMPARE_OP_INFO_PAIR(ECompareOp::Never, VK_COMPARE_OP_NEVER),
+                                                           COMPARE_OP_INFO_PAIR(ECompareOp::Less, VK_COMPARE_OP_LESS),
+                                                           COMPARE_OP_INFO_PAIR(ECompareOp::Equal, VK_COMPARE_OP_EQUAL),
+                                                           COMPARE_OP_INFO_PAIR(ECompareOp::EqualOrLess, VK_COMPARE_OP_LESS_OR_EQUAL),
+                                                           COMPARE_OP_INFO_PAIR(ECompareOp::Greater, VK_COMPARE_OP_GREATER),
+                                                           COMPARE_OP_INFO_PAIR(ECompareOp::NotEqual, VK_COMPARE_OP_NOT_EQUAL),
+                                                           COMPARE_OP_INFO_PAIR(ECompareOp::EqualOrGreater, VK_COMPARE_OP_GREATER_OR_EQUAL),
+                                                           COMPARE_OP_INFO_PAIR(ECompareOp::Always, VK_COMPARE_OP_ALWAYS) };
 
     return ENGINE_TO_VK_COMPARE_OP[uint32(compareOp)];
 }
@@ -42,40 +41,26 @@ VkCompareOp vulkanCompareOp(CoreGraphicsTypes::ECompareOp::Type compareOp)
 // bit N...0 Bit
 #define PREPEND_COMP(X)
 #define MAKE_COMPS(...)
-#define IMG_FORMAT_INFO_PAIR(PixelFormat, RelevantApiFormat, DataSize, ComponentSize, ...)              \
-    {                                                                                                   \
-        EPixelDataFormat::##PixelFormat, RelevantApiFormat                                              \
+#define IMG_FORMAT_INFO_PAIR(PixelFormat, RelevantApiFormat, DataSize, ComponentSize, ...)                                                     \
+    {                                                                                                                                          \
+        EPixelDataFormat::##PixelFormat, RelevantApiFormat                                                                                     \
     }
 const std::map<EPixelDataFormat::Type, VkFormat> PIXEL_DATA_FORMAT_TO_API_FORMAT = {
     IMG_FORMAT_INFO_PAIR(Undefined, VK_FORMAT_UNDEFINED, 0, MAKE_INITIALIZER(0, 0, 0, 0)),
-    IMG_FORMAT_INFO_PAIR(
-        BGR_U8_Norm, VK_FORMAT_B8G8R8_UNORM, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        BGR_S8_Norm, VK_FORMAT_B8G8R8_SNORM, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(BGR_U8_Scaled, VK_FORMAT_B8G8R8_USCALED, 3, MAKE_INITIALIZER(8, 8, 8, 0),
-        MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(BGR_S8_Scaled, VK_FORMAT_B8G8R8_SSCALED, 3, MAKE_INITIALIZER(8, 8, 8, 0),
-        MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        BGR_UI8, VK_FORMAT_B8G8R8_UINT, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        BGR_SI8, VK_FORMAT_B8G8R8_SINT, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        BGR_U8_SRGB, VK_FORMAT_B8G8R8_SRGB, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        BGRA_U8_Norm, VK_FORMAT_B8G8R8A8_UNORM, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        BGRA_S8_Norm, VK_FORMAT_B8G8R8A8_SNORM, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(BGRA_U8_Scaled, VK_FORMAT_B8G8R8A8_USCALED, 4, MAKE_INITIALIZER(8, 8, 8, 8),
-        MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(BGRA_S8_Scaled, VK_FORMAT_B8G8R8A8_SSCALED, 4, MAKE_INITIALIZER(8, 8, 8, 8),
-        MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        BGRA_UI8, VK_FORMAT_B8G8R8A8_UINT, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        BGRA_SI8, VK_FORMAT_B8G8R8A8_SINT, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        BGRA_U8_SRGB, VK_FORMAT_B8G8R8A8_SRGB, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGR_U8_Norm, VK_FORMAT_B8G8R8_UNORM, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGR_S8_Norm, VK_FORMAT_B8G8R8_SNORM, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGR_U8_Scaled, VK_FORMAT_B8G8R8_USCALED, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGR_S8_Scaled, VK_FORMAT_B8G8R8_SSCALED, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGR_UI8, VK_FORMAT_B8G8R8_UINT, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGR_SI8, VK_FORMAT_B8G8R8_SINT, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGR_U8_SRGB, VK_FORMAT_B8G8R8_SRGB, 3, MAKE_INITIALIZER(8, 8, 8, 0), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGRA_U8_Norm, VK_FORMAT_B8G8R8A8_UNORM, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGRA_S8_Norm, VK_FORMAT_B8G8R8A8_SNORM, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGRA_U8_Scaled, VK_FORMAT_B8G8R8A8_USCALED, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGRA_S8_Scaled, VK_FORMAT_B8G8R8A8_SSCALED, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGRA_UI8, VK_FORMAT_B8G8R8A8_UINT, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGRA_SI8, VK_FORMAT_B8G8R8A8_SINT, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(BGRA_U8_SRGB, VK_FORMAT_B8G8R8A8_SRGB, 4, MAKE_INITIALIZER(8, 8, 8, 8), MAKE_COMPS(B, G, R, A)),
     IMG_FORMAT_INFO_PAIR(R_U8_Norm, VK_FORMAT_R8_UNORM, 1, MAKE_INITIALIZER(8, 0, 0, 0)),
     IMG_FORMAT_INFO_PAIR(R_S8_Norm, VK_FORMAT_R8_SNORM, 1, MAKE_INITIALIZER(8, 0, 0, 0)),
     IMG_FORMAT_INFO_PAIR(R_U8_Scaled, VK_FORMAT_R8_USCALED, 1, MAKE_INITIALIZER(8, 0, 0, 0)),
@@ -118,20 +103,14 @@ const std::map<EPixelDataFormat::Type, VkFormat> PIXEL_DATA_FORMAT_TO_API_FORMAT
     IMG_FORMAT_INFO_PAIR(RG_SI16, VK_FORMAT_R16G16_SINT, 4, MAKE_INITIALIZER(16, 16, 0, 0)),
     IMG_FORMAT_INFO_PAIR(RGB_U16_Norm, VK_FORMAT_R16G16B16_UNORM, 6, MAKE_INITIALIZER(16, 16, 16, 0)),
     IMG_FORMAT_INFO_PAIR(RGB_S16_Norm, VK_FORMAT_R16G16B16_SNORM, 6, MAKE_INITIALIZER(16, 16, 16, 0)),
-    IMG_FORMAT_INFO_PAIR(
-        RGB_U16_Scaled, VK_FORMAT_R16G16B16_USCALED, 6, MAKE_INITIALIZER(16, 16, 16, 0)),
-    IMG_FORMAT_INFO_PAIR(
-        RGB_S16_Scaled, VK_FORMAT_R16G16B16_SSCALED, 6, MAKE_INITIALIZER(16, 16, 16, 0)),
+    IMG_FORMAT_INFO_PAIR(RGB_U16_Scaled, VK_FORMAT_R16G16B16_USCALED, 6, MAKE_INITIALIZER(16, 16, 16, 0)),
+    IMG_FORMAT_INFO_PAIR(RGB_S16_Scaled, VK_FORMAT_R16G16B16_SSCALED, 6, MAKE_INITIALIZER(16, 16, 16, 0)),
     IMG_FORMAT_INFO_PAIR(RGB_UI16, VK_FORMAT_R16G16B16_UINT, 6, MAKE_INITIALIZER(16, 16, 16, 0)),
     IMG_FORMAT_INFO_PAIR(RGB_SI16, VK_FORMAT_R16G16B16_SINT, 6, MAKE_INITIALIZER(16, 16, 16, 0)),
-    IMG_FORMAT_INFO_PAIR(
-        RGBA_U16_Norm, VK_FORMAT_R16G16B16A16_UNORM, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
-    IMG_FORMAT_INFO_PAIR(
-        RGBA_S16_Norm, VK_FORMAT_R16G16B16A16_SNORM, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
-    IMG_FORMAT_INFO_PAIR(
-        RGBA_U16_Scaled, VK_FORMAT_R16G16B16A16_USCALED, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
-    IMG_FORMAT_INFO_PAIR(
-        RGBA_S16_Scaled, VK_FORMAT_R16G16B16A16_SSCALED, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
+    IMG_FORMAT_INFO_PAIR(RGBA_U16_Norm, VK_FORMAT_R16G16B16A16_UNORM, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
+    IMG_FORMAT_INFO_PAIR(RGBA_S16_Norm, VK_FORMAT_R16G16B16A16_SNORM, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
+    IMG_FORMAT_INFO_PAIR(RGBA_U16_Scaled, VK_FORMAT_R16G16B16A16_USCALED, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
+    IMG_FORMAT_INFO_PAIR(RGBA_S16_Scaled, VK_FORMAT_R16G16B16A16_SSCALED, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
     IMG_FORMAT_INFO_PAIR(RGBA_UI16, VK_FORMAT_R16G16B16A16_UINT, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
     IMG_FORMAT_INFO_PAIR(RGBA_SI16, VK_FORMAT_R16G16B16A16_SINT, 8, MAKE_INITIALIZER(16, 16, 16, 16)),
     IMG_FORMAT_INFO_PAIR(R_UI32, VK_FORMAT_R32_UINT, 4, MAKE_INITIALIZER(32, 0, 0, 0)),
@@ -162,53 +141,39 @@ const std::map<EPixelDataFormat::Type, VkFormat> PIXEL_DATA_FORMAT_TO_API_FORMAT
     IMG_FORMAT_INFO_PAIR(RG_SF64, VK_FORMAT_R64G64_SFLOAT, 16, MAKE_INITIALIZER(64, 64, 0, 0)),
     IMG_FORMAT_INFO_PAIR(RGB_SF64, VK_FORMAT_R64G64B64_SFLOAT, 24, MAKE_INITIALIZER(64, 64, 64, 0)),
     IMG_FORMAT_INFO_PAIR(RGBA_SF64, VK_FORMAT_R64G64B64A64_SFLOAT, 32, MAKE_INITIALIZER(64, 64, 64, 64)),
+    IMG_FORMAT_INFO_PAIR(ABGR8_U32_NormPacked, VK_FORMAT_A8B8G8R8_UNORM_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
+    IMG_FORMAT_INFO_PAIR(ABGR8_S32_NormPacked, VK_FORMAT_A8B8G8R8_SNORM_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
+    IMG_FORMAT_INFO_PAIR(ABGR8_U32_ScaledPacked, VK_FORMAT_A8B8G8R8_USCALED_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
+    IMG_FORMAT_INFO_PAIR(ABGR8_S32_ScaledPacked, VK_FORMAT_A8B8G8R8_SSCALED_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
+    IMG_FORMAT_INFO_PAIR(ABGR8_UI32_Packed, VK_FORMAT_A8B8G8R8_UINT_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
+    IMG_FORMAT_INFO_PAIR(ABGR8_SI32_Packed, VK_FORMAT_A8B8G8R8_SINT_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
+    IMG_FORMAT_INFO_PAIR(ABGR8_U32_SrgbPacked, VK_FORMAT_A8B8G8R8_SRGB_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
     IMG_FORMAT_INFO_PAIR(
-        ABGR8_U32_NormPacked, VK_FORMAT_A8B8G8R8_UNORM_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
+        A2RGB10_U32_NormPacked, VK_FORMAT_A2R10G10B10_UNORM_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)
+    ),
     IMG_FORMAT_INFO_PAIR(
-        ABGR8_S32_NormPacked, VK_FORMAT_A8B8G8R8_SNORM_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
+        A2RGB10_S32_NormPacked, VK_FORMAT_A2R10G10B10_SNORM_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)
+    ),
     IMG_FORMAT_INFO_PAIR(
-        ABGR8_U32_ScaledPacked, VK_FORMAT_A8B8G8R8_USCALED_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
+        A2RGB10_U32_ScaledPacked, VK_FORMAT_A2R10G10B10_USCALED_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)
+    ),
     IMG_FORMAT_INFO_PAIR(
-        ABGR8_S32_ScaledPacked, VK_FORMAT_A8B8G8R8_SSCALED_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
-    IMG_FORMAT_INFO_PAIR(
-        ABGR8_UI32_Packed, VK_FORMAT_A8B8G8R8_UINT_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
-    IMG_FORMAT_INFO_PAIR(
-        ABGR8_SI32_Packed, VK_FORMAT_A8B8G8R8_SINT_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
-    IMG_FORMAT_INFO_PAIR(
-        ABGR8_U32_SrgbPacked, VK_FORMAT_A8B8G8R8_SRGB_PACK32, 4, MAKE_INITIALIZER(8, 8, 8, 8)),
-    IMG_FORMAT_INFO_PAIR(A2RGB10_U32_NormPacked, VK_FORMAT_A2R10G10B10_UNORM_PACK32, 4,
-        MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(A2RGB10_S32_NormPacked, VK_FORMAT_A2R10G10B10_SNORM_PACK32, 4,
-        MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(A2RGB10_U32_ScaledPacked, VK_FORMAT_A2R10G10B10_USCALED_PACK32, 4,
-        MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(A2RGB10_S32_ScaledPacked, VK_FORMAT_A2R10G10B10_SSCALED_PACK32, 4,
-        MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(A2RGB10_UI32_Packed, VK_FORMAT_A2R10G10B10_UINT_PACK32, 4,
-        MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(A2RGB10_SI32_Packed, VK_FORMAT_A2R10G10B10_SINT_PACK32, 4,
-        MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)),
-    IMG_FORMAT_INFO_PAIR(
-        A2BGR10_U32_NormPacked, VK_FORMAT_A2B10G10R10_UNORM_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
-    IMG_FORMAT_INFO_PAIR(
-        A2BGR10_S32_NormPacked, VK_FORMAT_A2B10G10R10_SNORM_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
-    IMG_FORMAT_INFO_PAIR(A2BGR10_U32_ScaledPacked, VK_FORMAT_A2B10G10R10_USCALED_PACK32, 4,
-        MAKE_INITIALIZER(10, 10, 10, 2)),
-    IMG_FORMAT_INFO_PAIR(A2BGR10_S32_ScaledPacked, VK_FORMAT_A2B10G10R10_SSCALED_PACK32, 4,
-        MAKE_INITIALIZER(10, 10, 10, 2)),
-    IMG_FORMAT_INFO_PAIR(
-        A2BGR10_UI32_Packed, VK_FORMAT_A2B10G10R10_UINT_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
-    IMG_FORMAT_INFO_PAIR(
-        A2BGR10_SI32_Packed, VK_FORMAT_A2B10G10R10_SINT_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
-    IMG_FORMAT_INFO_PAIR(
-        D24X8_U32_NormPacked, VK_FORMAT_X8_D24_UNORM_PACK32, 4, MAKE_INITIALIZER(24, 8, 0, 0)),
+        A2RGB10_S32_ScaledPacked, VK_FORMAT_A2R10G10B10_SSCALED_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)
+    ),
+    IMG_FORMAT_INFO_PAIR(A2RGB10_UI32_Packed, VK_FORMAT_A2R10G10B10_UINT_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(A2RGB10_SI32_Packed, VK_FORMAT_A2R10G10B10_SINT_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2), MAKE_COMPS(B, G, R, A)),
+    IMG_FORMAT_INFO_PAIR(A2BGR10_U32_NormPacked, VK_FORMAT_A2B10G10R10_UNORM_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
+    IMG_FORMAT_INFO_PAIR(A2BGR10_S32_NormPacked, VK_FORMAT_A2B10G10R10_SNORM_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
+    IMG_FORMAT_INFO_PAIR(A2BGR10_U32_ScaledPacked, VK_FORMAT_A2B10G10R10_USCALED_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
+    IMG_FORMAT_INFO_PAIR(A2BGR10_S32_ScaledPacked, VK_FORMAT_A2B10G10R10_SSCALED_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
+    IMG_FORMAT_INFO_PAIR(A2BGR10_UI32_Packed, VK_FORMAT_A2B10G10R10_UINT_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
+    IMG_FORMAT_INFO_PAIR(A2BGR10_SI32_Packed, VK_FORMAT_A2B10G10R10_SINT_PACK32, 4, MAKE_INITIALIZER(10, 10, 10, 2)),
+    IMG_FORMAT_INFO_PAIR(D24X8_U32_NormPacked, VK_FORMAT_X8_D24_UNORM_PACK32, 4, MAKE_INITIALIZER(24, 8, 0, 0)),
     IMG_FORMAT_INFO_PAIR(D_U16_Norm, VK_FORMAT_D16_UNORM, 2, MAKE_INITIALIZER(16, 0, 0, 0)),
     IMG_FORMAT_INFO_PAIR(D_SF32, VK_FORMAT_D32_SFLOAT, 4, MAKE_INITIALIZER(32, 0, 0, 0)),
     IMG_FORMAT_INFO_PAIR(D32S8_SF32_UI8, VK_FORMAT_D32_SFLOAT_S8_UINT, 5, MAKE_INITIALIZER(32, 8, 0, 0)),
-    IMG_FORMAT_INFO_PAIR(
-        D16S8_U24_DNorm_SInt, VK_FORMAT_D16_UNORM_S8_UINT, 3, MAKE_INITIALIZER(16, 8, 0, 0)),
-    IMG_FORMAT_INFO_PAIR(
-        D24S8_U32_DNorm_SInt, VK_FORMAT_D24_UNORM_S8_UINT, 4, MAKE_INITIALIZER(24, 8, 0, 0))
+    IMG_FORMAT_INFO_PAIR(D16S8_U24_DNorm_SInt, VK_FORMAT_D16_UNORM_S8_UINT, 3, MAKE_INITIALIZER(16, 8, 0, 0)),
+    IMG_FORMAT_INFO_PAIR(D24S8_U32_DNorm_SInt, VK_FORMAT_D24_UNORM_S8_UINT, 4, MAKE_INITIALIZER(24, 8, 0, 0))
 };
 #undef IMG_FORMAT_INFO_PAIR
 #undef MAKE_COMPS
@@ -227,8 +192,7 @@ VkFormat vulkanDataFormat(EPixelDataFormat::Type dataFormat)
 
 EPixelDataFormat::Type vulkanToEngineDataFormat(VkFormat dataFormat)
 {
-    for (const std::pair<const EPixelDataFormat::Type, VkFormat> &formatPair :
-        PIXEL_DATA_FORMAT_TO_API_FORMAT)
+    for (const std::pair<const EPixelDataFormat::Type, VkFormat> &formatPair : PIXEL_DATA_FORMAT_TO_API_FORMAT)
     {
         if (formatPair.second == dataFormat)
         {
@@ -244,62 +208,49 @@ struct FilterInfoData
     VkSamplerMipmapMode mipFilter;
 };
 
-#define SAMPLE_FILTER_INFO_PAIR(FilteringType, RelevantApiFormat, RelevantMipApiFormat)                 \
-    {                                                                                                   \
-        RelevantApiFormat, RelevantMipApiFormat                                                         \
+#define SAMPLE_FILTER_INFO_PAIR(FilteringType, RelevantApiFormat, RelevantMipApiFormat)                                                        \
+    {                                                                                                                                          \
+        RelevantApiFormat, RelevantMipApiFormat                                                                                                \
     }
-const FilterInfoData FILTER_TYPE_TO_API_FILTER[]
-    = { SAMPLE_FILTER_INFO_PAIR(Nearest, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST),
-          SAMPLE_FILTER_INFO_PAIR(Linear, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR),
-          SAMPLE_FILTER_INFO_PAIR(Cubic, VK_FILTER_CUBIC_IMG, VK_SAMPLER_MIPMAP_MODE_NEAREST) };
+const FilterInfoData FILTER_TYPE_TO_API_FILTER[] = { SAMPLE_FILTER_INFO_PAIR(Nearest, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST),
+                                                     SAMPLE_FILTER_INFO_PAIR(Linear, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR),
+                                                     SAMPLE_FILTER_INFO_PAIR(Cubic, VK_FILTER_CUBIC_IMG, VK_SAMPLER_MIPMAP_MODE_NEAREST) };
 #undef SAMPLE_FILTER_INFO_PAIR
-VkFilter vulkanFilter(ESamplerFiltering::Type filter)
-{
-    return FILTER_TYPE_TO_API_FILTER[uint32(filter)].filter;
-}
+VkFilter vulkanFilter(ESamplerFiltering::Type filter) { return FILTER_TYPE_TO_API_FILTER[uint32(filter)].filter; }
 
-VkSamplerMipmapMode vulkanSamplerMipFilter(ESamplerFiltering::Type filter)
-{
-    return FILTER_TYPE_TO_API_FILTER[uint32(filter)].mipFilter;
-}
+VkSamplerMipmapMode vulkanSamplerMipFilter(ESamplerFiltering::Type filter) { return FILTER_TYPE_TO_API_FILTER[uint32(filter)].mipFilter; }
 
-VkSamplerAddressMode vulkanSamplerAddressing(ESamplerTilingMode::Type tilingMode)
-{
-    return VkSamplerAddressMode(tilingMode);
-}
+VkSamplerAddressMode vulkanSamplerAddressing(ESamplerTilingMode::Type tilingMode) { return VkSamplerAddressMode(tilingMode); }
 
-#define COMP_MAP_INFO_PAIR(ComponentMappingValue, RelevantApiFormat)                                    \
-    {                                                                                                   \
-        EPixelComponentMapping::##ComponentMappingValue, RelevantApiFormat                              \
+#define COMP_MAP_INFO_PAIR(ComponentMappingValue, RelevantApiFormat)                                                                           \
+    {                                                                                                                                          \
+        EPixelComponentMapping::##ComponentMappingValue, RelevantApiFormat                                                                     \
     }
 const std::map<EPixelComponentMapping::Type, VkComponentSwizzle> COMP_MAPPING_TO_API_COMP_SWIZZLE
     = { COMP_MAP_INFO_PAIR(SameComponent, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY),
-          COMP_MAP_INFO_PAIR(AlwaysOne, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_ONE),
-          COMP_MAP_INFO_PAIR(AlwaysZero, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_ZERO),
-          COMP_MAP_INFO_PAIR(R, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_R),
-          COMP_MAP_INFO_PAIR(G, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_G),
-          COMP_MAP_INFO_PAIR(B, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_B),
-          COMP_MAP_INFO_PAIR(A, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_A) };
+        COMP_MAP_INFO_PAIR(AlwaysOne, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_ONE),
+        COMP_MAP_INFO_PAIR(AlwaysZero, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_ZERO),
+        COMP_MAP_INFO_PAIR(R, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_R),
+        COMP_MAP_INFO_PAIR(G, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_G),
+        COMP_MAP_INFO_PAIR(B, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_B),
+        COMP_MAP_INFO_PAIR(A, VkComponentSwizzle::VK_COMPONENT_SWIZZLE_A) };
 #undef COMP_MAP_INFO_PAIR
 VkComponentSwizzle vulkanComponentSwizzle(EPixelComponentMapping::Type mapping)
 {
     return COMP_MAPPING_TO_API_COMP_SWIZZLE.find(mapping)->second;
 }
 
-#define SHADER_STAGE_TO_API_PAIR(ShaderStage, RelevantApiStage, EntryPointName, ShortName)              \
-    RelevantApiStage
+#define SHADER_STAGE_TO_API_PAIR(ShaderStage, RelevantApiStage, EntryPointName, ShortName) RelevantApiStage
 VkShaderStageFlagBits vulkanShaderStage(EShaderStage::Type shaderStage)
 {
     // Using here because this will be accessed while static initialization so it will available always.
     static const VkShaderStageFlagBits SHADER_STAGE_TO_API_STAGE[]
         = { SHADER_STAGE_TO_API_PAIR(Compute, VK_SHADER_STAGE_COMPUTE_BIT, "mainComp", "comp"),
-              SHADER_STAGE_TO_API_PAIR(Vertex, VK_SHADER_STAGE_VERTEX_BIT, "mainVS", "vert"),
-              SHADER_STAGE_TO_API_PAIR(
-                  TessellationControl, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "mainTC", "tesc"),
-              SHADER_STAGE_TO_API_PAIR(
-                  TessellatonEvaluate, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "mainTE", "tese"),
-              SHADER_STAGE_TO_API_PAIR(Geometry, VK_SHADER_STAGE_GEOMETRY_BIT, "mainGeo", "geom"),
-              SHADER_STAGE_TO_API_PAIR(Fragment, VK_SHADER_STAGE_FRAGMENT_BIT, "mainFS", "frag") };
+            SHADER_STAGE_TO_API_PAIR(Vertex, VK_SHADER_STAGE_VERTEX_BIT, "mainVS", "vert"),
+            SHADER_STAGE_TO_API_PAIR(TessellationControl, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "mainTC", "tesc"),
+            SHADER_STAGE_TO_API_PAIR(TessellatonEvaluate, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "mainTE", "tese"),
+            SHADER_STAGE_TO_API_PAIR(Geometry, VK_SHADER_STAGE_GEOMETRY_BIT, "mainGeo", "geom"),
+            SHADER_STAGE_TO_API_PAIR(Fragment, VK_SHADER_STAGE_FRAGMENT_BIT, "mainFS", "frag") };
     return SHADER_STAGE_TO_API_STAGE[shaderStage];
 }
 #undef SHADER_STAGE_TO_API_PAIR
@@ -323,16 +274,13 @@ VkPipelineStageFlagBits2KHR vulkanPipelineStage(EPipelineStages::Type pipelineSt
         PIPELINE_STAGE_TO_API_PAIR(DrawIndirect, VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(VertexInput, VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(VertexShaderStage, VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR),
-        PIPELINE_STAGE_TO_API_PAIR(
-            TessellationControlShaderStage, VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT_KHR),
-        PIPELINE_STAGE_TO_API_PAIR(
-            TessallationEvalShaderStage, VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT_KHR),
+        PIPELINE_STAGE_TO_API_PAIR(TessellationControlShaderStage, VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT_KHR),
+        PIPELINE_STAGE_TO_API_PAIR(TessallationEvalShaderStage, VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(GeometryShaderStage, VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(FragmentShaderStage, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(EarlyFragTest, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(LateFragTest, VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT_KHR),
-        PIPELINE_STAGE_TO_API_PAIR(
-            ColorAttachmentOutput, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR),
+        PIPELINE_STAGE_TO_API_PAIR(ColorAttachmentOutput, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(ComputeShaderStage, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(Transfer, VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(Bottom, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR),

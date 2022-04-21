@@ -51,12 +51,12 @@ public:
         : BaseType(Byte3D(16, 16, 1), TESTCOMPUTE_SHADER_NAME)
     {}
 
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static TestAOSBufferParamInfo TESTAOS_INFO;
-        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ { TCHAR("inData"),
-            &TESTAOS_INFO } };
+        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+            {TCHAR("inData"), &TESTAOS_INFO}
+        };
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {

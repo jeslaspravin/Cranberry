@@ -38,10 +38,7 @@ public:
         , bitMask(mask)
     {}
 
-    CONST_EXPR operator bool() const noexcept
-    {
-        return bitElement ? BIT_SET(*bitElement, bitMask) : false;
-    }
+    CONST_EXPR operator bool() const noexcept { return bitElement ? BIT_SET(*bitElement, bitMask) : false; }
 
     CONST_EXPR BitReference &operator=(bool bValue) noexcept
     {
@@ -114,10 +111,7 @@ private:
         return retVal;
     }
     // Unsigned version where both arrayIdx and bitIdx are valid indices
-    CONST_EXPR static SizeT arrayIdxToBitIdx(ArraySizeType arrayIdx, uint8 bitIdx)
-    {
-        return (arrayIdx << ARRAY_IDX_SHIFT) + bitIdx;
-    }
+    CONST_EXPR static SizeT arrayIdxToBitIdx(ArraySizeType arrayIdx, uint8 bitIdx) { return (arrayIdx << ARRAY_IDX_SHIFT) + bitIdx; }
     // Signed version where arrayIdx or bitIdx is negative difference
     CONST_EXPR static ArrayDiffType arrayIdxToBitIdx(ArrayDiffType arrayDiff, BitIdxDiffType bitIdxDiff)
     {
@@ -292,8 +286,7 @@ public:
                 REPLACE_BITS_MASKED(bits[arrayIdx], value << bitStartIdx, ~oldValueMask);
                 // shift right by bits set to previous element to remove number of bits that are
                 // already added and old value mask is all bits left to add
-                REPLACE_BITS_MASKED(
-                    bits[arrayIdx + 1], value >> (BITS_PER_ELEMENT - bitStartIdx), oldValueMask);
+                REPLACE_BITS_MASKED(bits[arrayIdx + 1], value >> (BITS_PER_ELEMENT - bitStartIdx), oldValueMask);
             }
         }
     }
@@ -319,15 +312,9 @@ public:
     NODISCARD CONST_EXPR const_iterator end() const noexcept;
 
     NODISCARD CONST_EXPR reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
-    NODISCARD CONST_EXPR const_reverse_iterator rbegin() const noexcept
-    {
-        return const_reverse_iterator(end());
-    }
+    NODISCARD CONST_EXPR const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
     NODISCARD CONST_EXPR reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
-    NODISCARD CONST_EXPR const_reverse_iterator rend() const noexcept
-    {
-        return const_reverse_iterator(begin());
-    }
+    NODISCARD CONST_EXPR const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
     NODISCARD CONST_EXPR const_iterator cbegin() const noexcept { return begin(); }
     NODISCARD CONST_EXPR const_iterator cend() const noexcept { return end(); }
     NODISCARD CONST_EXPR const_reverse_iterator crbegin() const noexcept { return rbegin(); }
@@ -515,18 +502,9 @@ public:
     {}
 
     CONST_EXPR pointer operator->() noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
-    NODISCARD CONST_EXPR reference operator*() noexcept
-    {
-        return Traits::getValue(bitElemItr, bitRefIdx);
-    }
-    CONST_EXPR const_pointer operator->() const noexcept
-    {
-        return Traits::getValue(bitElemItr, bitRefIdx);
-    }
-    NODISCARD CONST_EXPR const_reference operator*() const noexcept
-    {
-        return Traits::getValue(bitElemItr, bitRefIdx);
-    }
+    NODISCARD CONST_EXPR reference operator*() noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
+    CONST_EXPR const_pointer operator->() const noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
+    NODISCARD CONST_EXPR const_reference operator*() const noexcept { return Traits::getValue(bitElemItr, bitRefIdx); }
 
     CONST_EXPR bool operator!=(const BitArrayIterator &other) const noexcept
     {
@@ -616,8 +594,7 @@ NODISCARD CONST_EXPR typename BitArray<ElementType>::iterator BitArray<ElementTy
 }
 
 template <std::unsigned_integral ElementType>
-NODISCARD CONST_EXPR typename BitArray<ElementType>::const_iterator
-    BitArray<ElementType>::begin() const noexcept
+NODISCARD CONST_EXPR typename BitArray<ElementType>::const_iterator BitArray<ElementType>::begin() const noexcept
 {
     return const_iterator(bits.cbegin(), 0);
 }
@@ -631,8 +608,7 @@ NODISCARD CONST_EXPR typename BitArray<ElementType>::iterator BitArray<ElementTy
 }
 
 template <std::unsigned_integral ElementType>
-NODISCARD CONST_EXPR typename BitArray<ElementType>::const_iterator
-    BitArray<ElementType>::end() const noexcept
+NODISCARD CONST_EXPR typename BitArray<ElementType>::const_iterator BitArray<ElementType>::end() const noexcept
 {
     BitIdxType bitOffset;
     ArraySizeType arrayIdx = bitIdxToArrayIdx(bitOffset, bitsCount);

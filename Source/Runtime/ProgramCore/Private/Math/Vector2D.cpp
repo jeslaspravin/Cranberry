@@ -81,10 +81,7 @@ bool Vector2D::operator==(const Vector2D &b) const { return isSame(b); }
 
 float Vector2D::operator|(const Vector2D &b) const { return glm::dot(value, b.value); }
 
-float Vector2D::operator^(const Vector2D &b) const
-{
-    return glm::cross(glm::vec3(value, 0), glm::vec3(b.value, 0)).z;
-}
+float Vector2D::operator^(const Vector2D &b) const { return glm::cross(glm::vec3(value, 0), glm::vec3(b.value, 0)).z; }
 
 Vector2D Vector2D::operator*(const Vector2D &b) const { return Vector2D(value * b.value); }
 
@@ -196,15 +193,9 @@ Vector2D Vector2D::clamp(const Vector2D &value, const Vector2D &min, const Vecto
     return Vector2D(glm::clamp(value.value, min.value, max.value));
 }
 
-Vector2D Vector2D::min(const Vector2D &a, const Vector2D &b)
-{
-    return Vector2D(glm::min(a.value, b.value));
-}
+Vector2D Vector2D::min(const Vector2D &a, const Vector2D &b) { return Vector2D(glm::min(a.value, b.value)); }
 
-Vector2D Vector2D::max(const Vector2D &a, const Vector2D &b)
-{
-    return Vector2D(glm::max(a.value, b.value));
-}
+Vector2D Vector2D::max(const Vector2D &a, const Vector2D &b) { return Vector2D(glm::max(a.value, b.value)); }
 
 Vector2D Vector2D::abs(const Vector2D &value) { return Vector2D(glm::abs(value.value)); }
 
@@ -214,14 +205,8 @@ Vector2D Vector2D::ceil(const Vector2D &value) { return Vector2D(glm::ceil(value
 
 Vector2D Vector2D::round(const Vector2D &value) { return Vector2D(glm::round(value.value)); }
 
-Vector2D Vector2D::mod(const Vector2D &a, const Vector2D &b)
-{
-    return Vector2D(glm::mod(a.value, b.value));
-}
+Vector2D Vector2D::mod(const Vector2D &a, const Vector2D &b) { return Vector2D(glm::mod(a.value, b.value)); }
 
 Vector2D Vector2D::mod(const Vector2D &a, const float &b) { return Vector2D(glm::mod(a.value, b)); }
 
-Vector2D Vector2D::modf(Vector2D &wholePart, const Vector2D &value)
-{
-    return Vector2D(glm::modf(value.value, wholePart.value));
-}
+Vector2D Vector2D::modf(Vector2D &wholePart, const Vector2D &value) { return Vector2D(glm::modf(value.value, wholePart.value)); }

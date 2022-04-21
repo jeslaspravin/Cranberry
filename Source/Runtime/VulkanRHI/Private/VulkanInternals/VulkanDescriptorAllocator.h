@@ -29,10 +29,10 @@ struct DescriptorPoolSizeLessThan
 
 struct DescriptorsSetQueryLessThan
 {
-    bool recursivelyCompare(std::set<VkDescriptorPoolSize>::const_iterator &lhsItr,
-        std::set<VkDescriptorPoolSize>::const_iterator &lhsEnd,
-        std::set<VkDescriptorPoolSize>::const_iterator &rhsItr,
-        std::set<VkDescriptorPoolSize>::const_iterator &rhsEnd) const;
+    bool recursivelyCompare(
+        std::set<VkDescriptorPoolSize>::const_iterator &lhsItr, std::set<VkDescriptorPoolSize>::const_iterator &lhsEnd,
+        std::set<VkDescriptorPoolSize>::const_iterator &rhsItr, std::set<VkDescriptorPoolSize>::const_iterator &rhsEnd
+    ) const;
 
     bool operator()(const DescriptorsSetQuery &lhs, const DescriptorsSetQuery &rhs) const;
 };
@@ -55,11 +55,10 @@ struct VulkanDescriptorsSetAllocatorInfo
     uint32 maxSets;
 
     VkDescriptorPool pool;
-    std::set<VkDescriptorSet> availableSets; // availableSets.size() < allocatedCount always , when it
-                                             // become == pool reset and destroy timer begins
+    std::set<VkDescriptorSet> availableSets;                      // availableSets.size() < allocatedCount always , when it
+                                                                  // become == pool reset and destroy timer begins
     std::map<VkDescriptorSet, DescriptorsSetQuery> allocatedSets; // allocatedCount <= maxSets
-    std::map<VkDescriptorType, uint32>
-        typeCountMap; // Maps each type and the maximum count in each type that can be allocated
+    std::map<VkDescriptorType, uint32> typeCountMap;              // Maps each type and the maximum count in each type that can be allocated
 };
 
 class VulkanDescriptorsSetAllocator
@@ -67,8 +66,7 @@ class VulkanDescriptorsSetAllocator
 private:
     constexpr static uint32 DESCRIPTORS_SET_POOL_MAX_SETS = 20;
     constexpr static uint32 DESCRIPTORS_COUNT_PER_SET = 8;
-    const float MAX_IDLING_DURATION
-        = 30; // Duration in seconds after which the descriptor set will be reset(not destroyed)
+    const float MAX_IDLING_DURATION = 30; // Duration in seconds after which the descriptor set will be reset(not destroyed)
     VulkanDevice *ownerDevice;
     //// Pool that accommodates all the descriptors type and considerable amount of set counts.
     // VulkanDescriptorsSetAllocatorInfo globalPool;
@@ -77,22 +75,22 @@ private:
     VkDescriptorPool emptyPool;
     VkDescriptorSet emptyDescriptor;
 
-    std::map<DescriptorsSetQuery, std::vector<VulkanDescriptorsSetAllocatorInfo>,
-        DescriptorsSetQueryLessThan>
-        availablePools;
-    std::vector<VulkanDescriptorsSetAllocatorInfo *> findInAvailablePool(
-        const DescriptorsSetQuery &query);
+    std::map<DescriptorsSetQuery, std::vector<VulkanDescriptorsSetAllocatorInfo>, DescriptorsSetQueryLessThan> availablePools;
+    std::vector<VulkanDescriptorsSetAllocatorInfo *> findInAvailablePool(const DescriptorsSetQuery &query);
 
-    bool isSupportedPool(std::vector<VkDescriptorSet> &availableSets,
-        const VulkanDescriptorsSetAllocatorInfo &allocationPool, const DescriptorsSetQuery &query,
-        const uint32 &setsCount) const;
-    VkDescriptorSet allocateSetFromPool(VulkanDescriptorsSetAllocatorInfo &allocationPool,
-        const VkDescriptorSetLayout &descriptorsSetLayout) const;
-    bool allocateSetsFromPool(std::vector<VkDescriptorSet> &allocatedSets,
-        VulkanDescriptorsSetAllocatorInfo &allocationPool,
-        const std::vector<VkDescriptorSetLayout> &layouts) const;
-    VulkanDescriptorsSetAllocatorInfo &createNewPool(const DescriptorsSetQuery &query,
-        const uint32 &setsCount, std::vector<VulkanDescriptorsSetAllocatorInfo> &poolGroup) const;
+    bool isSupportedPool(
+        std::vector<VkDescriptorSet> &availableSets, const VulkanDescriptorsSetAllocatorInfo &allocationPool, const DescriptorsSetQuery &query,
+        const uint32 &setsCount
+    ) const;
+    VkDescriptorSet
+        allocateSetFromPool(VulkanDescriptorsSetAllocatorInfo &allocationPool, const VkDescriptorSetLayout &descriptorsSetLayout) const;
+    bool allocateSetsFromPool(
+        std::vector<VkDescriptorSet> &allocatedSets, VulkanDescriptorsSetAllocatorInfo &allocationPool,
+        const std::vector<VkDescriptorSetLayout> &layouts
+    ) const;
+    VulkanDescriptorsSetAllocatorInfo &createNewPool(
+        const DescriptorsSetQuery &query, const uint32 &setsCount, std::vector<VulkanDescriptorsSetAllocatorInfo> &poolGroup
+    ) const;
     /*
      * If allocation pool is found with requested available sets then that allocation pool is returned
      * with number of requested available sets filled. If allocation pools are found with partial number
@@ -100,14 +98,13 @@ private:
      * returned. So good usage will be to check if requested amount of sets are returned and only
      * allocated remaining amount from returned allocation pool.
      */
-    VulkanDescriptorsSetAllocatorInfo &findOrCreateAllocPool(std::vector<VkDescriptorSet> &availableSets,
-        const DescriptorsSetQuery &query, const uint32 &setsCount);
+    VulkanDescriptorsSetAllocatorInfo &
+        findOrCreateAllocPool(std::vector<VkDescriptorSet> &availableSets, const DescriptorsSetQuery &query, const uint32 &setsCount);
     /*
      * Similar to above method but never uses available sets.
      * Useful in case of sets with varying layouts
      */
-    VulkanDescriptorsSetAllocatorInfo &findOrCreateAllocPool(
-        const DescriptorsSetQuery &query, const uint32 &setsCount);
+    VulkanDescriptorsSetAllocatorInfo &findOrCreateAllocPool(const DescriptorsSetQuery &query, const uint32 &setsCount);
     void resetAllocationPool(VulkanDescriptorsSetAllocatorInfo &allocationPool) const;
 
 public:
@@ -115,14 +112,15 @@ public:
     ~VulkanDescriptorsSetAllocator();
 
     VkDescriptorSetLayout getEmptyLayout() const { return emptyLayout; }
-    VkDescriptorSet allocDescriptorsSet(
-        const DescriptorsSetQuery &query, const VkDescriptorSetLayout &descriptorsSetLayout);
+    VkDescriptorSet allocDescriptorsSet(const DescriptorsSetQuery &query, const VkDescriptorSetLayout &descriptorsSetLayout);
     // Batch allocate descriptor sets from same pool or from different pool but with same layout, does
     // not allocate from global pool(sets will be resized before allocating)
-    bool allocDescriptorsSets(std::vector<VkDescriptorSet> &sets, const DescriptorsSetQuery &query,
-        const std::vector<VkDescriptorSetLayout> &layouts);
-    bool allocDescriptorsSets(std::vector<VkDescriptorSet> &sets, const DescriptorsSetQuery &query,
-        const VkDescriptorSetLayout &layout, const uint32 &setsCount);
+    bool allocDescriptorsSets(
+        std::vector<VkDescriptorSet> &sets, const DescriptorsSetQuery &query, const std::vector<VkDescriptorSetLayout> &layouts
+    );
+    bool allocDescriptorsSets(
+        std::vector<VkDescriptorSet> &sets, const DescriptorsSetQuery &query, const VkDescriptorSetLayout &layout, const uint32 &setsCount
+    );
     void releaseDescriptorsSet(VkDescriptorSet descriptorSet);
 
     void tick(const float &deltaTime);

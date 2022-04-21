@@ -20,30 +20,29 @@
 
 #include <unordered_map>
 
-#define MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                             \
+#define MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                                                                    \
     IModuleBase *createModule_##ModuleName() { return new ModuleClass(); }
 
-#define DECLARE_STATIC_LINKED_MODULE(ModuleName, ModuleClass)                                           \
-    MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                                 \
-    static StaticModuleInitializerRegistrant staticModuleInitializerRegistrant_##ModuleName{            \
-        TCHAR(#ModuleName), SingleCastDelegate<IModuleBase *>::createStatic(&createModule_##ModuleName) \
+#define DECLARE_STATIC_LINKED_MODULE(ModuleName, ModuleClass)                                                                                  \
+    MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                                                                        \
+    static StaticModuleInitializerRegistrant staticModuleInitializerRegistrant_##ModuleName{                                                   \
+        TCHAR(#ModuleName), SingleCastDelegate<IModuleBase *>::createStatic(&createModule_##ModuleName)                                        \
     };
 
 #if STATIC_LINKED
 #define DECLARE_MODULE(ModuleName, ModuleClass) DECLARE_STATIC_LINKED_MODULE(ModuleName, ModuleClass)
 #else // STATIC_LINKED
-#define DECLARE_MODULE(ModuleName, ModuleClass)                                                         \
-    CBE_GLOBAL_NEWDELETE_OVERRIDES                                                                      \
-    extern "C"                                                                                          \
-    {                                                                                                   \
-        DLL_EXPORT MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                  \
+#define DECLARE_MODULE(ModuleName, ModuleClass)                                                                                                \
+    CBE_GLOBAL_NEWDELETE_OVERRIDES                                                                                                             \
+    extern "C"                                                                                                                                 \
+    {                                                                                                                                          \
+        DLL_EXPORT MODULE_CREATE_FUNCTION_CPP(ModuleName, ModuleClass)                                                                         \
     }
 #endif // STATIC_LINKED
 
 struct StaticModuleInitializerRegistrant
 {
-    StaticModuleInitializerRegistrant(
-        String moduleName, SingleCastDelegate<IModuleBase *> factoryFuncPtr);
+    StaticModuleInitializerRegistrant(String moduleName, SingleCastDelegate<IModuleBase *> factoryFuncPtr);
 };
 using StaticModuleInitializerList = std::unordered_map<String, SingleCastDelegate<IModuleBase *>>;
 

@@ -108,17 +108,17 @@ Rotation RotationMatrix::asRotation() const
 {
 #if ROTATIONORDER_YPR
     glm::vec3 numerator(-rotationMatrix[2][1], rotationMatrix[2][0], -rotationMatrix[1][0]);
-    glm::vec3 denominator(rotationMatrix[2][2],
-        Math::sqrt(
-            rotationMatrix[2][1] * rotationMatrix[2][1] + rotationMatrix[2][2] * rotationMatrix[2][2]),
-        rotationMatrix[0][0]);
+    glm::vec3 denominator(
+        rotationMatrix[2][2], Math::sqrt(rotationMatrix[2][1] * rotationMatrix[2][1] + rotationMatrix[2][2] * rotationMatrix[2][2]),
+        rotationMatrix[0][0]
+    );
 
 #elif ROTATIONORDER_RPY
     glm::vec3 numerator(rotationMatrix[1][2], -rotationMatrix[0][2], rotationMatrix[0][1]);
-    glm::vec3 denominator(rotationMatrix[2][2],
-        Math::sqrt(
-            rotationMatrix[1][2] * rotationMatrix[1][2] + rotationMatrix[2][2] * rotationMatrix[2][2]),
-        rotationMatrix[0][0]);
+    glm::vec3 denominator(
+        rotationMatrix[2][2], Math::sqrt(rotationMatrix[1][2] * rotationMatrix[1][2] + rotationMatrix[2][2] * rotationMatrix[2][2]),
+        rotationMatrix[0][0]
+    );
 
 #endif
     numerator = Math::rad2Deg(Math::atan(numerator, denominator));
@@ -140,8 +140,10 @@ RotationMatrix::RotationMatrix(const Matrix3 &rotMatrix)
 }
 
 RotationMatrix::RotationMatrix(const Matrix4 &rotMatrix)
-    : rotationMatrix(rotMatrix[0].x, rotMatrix[0].y, rotMatrix[0].z, rotMatrix[1].x, rotMatrix[1].y,
-        rotMatrix[1].z, rotMatrix[2].x, rotMatrix[2].y, rotMatrix[2].z)
+    : rotationMatrix(
+        rotMatrix[0].x, rotMatrix[0].y, rotMatrix[0].z, rotMatrix[1].x, rotMatrix[1].y, rotMatrix[1].z, rotMatrix[2].x, rotMatrix[2].y,
+        rotMatrix[2].z
+    )
 {
     verifyMatrix();
 }
@@ -156,10 +158,12 @@ RotationMatrix::RotationMatrix(RotationMatrix &&other)
 
 void RotationMatrix::verifyMatrix() const
 {
-    alertIf(Math::isEqual(Vector3D(rotationMatrix[0]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
-                && Math::isEqual(Vector3D(rotationMatrix[1]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
-                && Math::isEqual(Vector3D(rotationMatrix[2]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON),
-        "Matrix4's rotation matrix must be orthogonal");
+    alertIf(
+        Math::isEqual(Vector3D(rotationMatrix[0]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
+            && Math::isEqual(Vector3D(rotationMatrix[1]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
+            && Math::isEqual(Vector3D(rotationMatrix[2]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON),
+        "Matrix4's rotation matrix must be orthogonal"
+    );
 }
 
 const Matrix3 &RotationMatrix::matrix() const { return rotationMatrix; }

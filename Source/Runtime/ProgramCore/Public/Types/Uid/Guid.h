@@ -107,17 +107,13 @@ public:
         {
             if (components[i] != rhs.components[i])
             {
-                return components[i] < rhs.components[i] ? std::strong_ordering::less
-                                                         : std::strong_ordering::greater;
+                return components[i] < rhs.components[i] ? std::strong_ordering::less : std::strong_ordering::greater;
             }
         }
         return std::strong_ordering::equal;
     }
     // Better than xor based equality
-    CONST_EXPR bool operator==(const CBEGuid &rhs) const noexcept
-    {
-        return a == rhs.a && b == rhs.b && c == rhs.c && d == rhs.d;
-    }
+    CONST_EXPR bool operator==(const CBEGuid &rhs) const noexcept { return a == rhs.a && b == rhs.b && c == rhs.c && d == rhs.d; }
     FORCE_INLINE bool isValid() const { return (a | b | c | d) > 0; };
 
     String toString(EGuidFormat format = DWordWithHyphen) const;
@@ -139,9 +135,10 @@ public:
         case 36:
             return ParseFromFormat<DigitsWithHyphen, CharType>{}(str, len);
         case 38:
-            return (TCharStr::startsWith(str, '{', true)
-                        ? ParseFromFormat<DigitsInBraces, CharType>{}(str, len)
-                        : ParseFromFormat<DigitsInParans, CharType>{}(str, len));
+            return (
+                TCharStr::startsWith(str, '{', true) ? ParseFromFormat<DigitsInBraces, CharType>{}(str, len)
+                                                     : ParseFromFormat<DigitsInParans, CharType>{}(str, len)
+            );
         case 68:
             return ParseFromFormat<HexValues, CharType>{}(str, len);
         default:

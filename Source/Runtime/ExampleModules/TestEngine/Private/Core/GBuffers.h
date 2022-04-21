@@ -32,8 +32,6 @@ public:
 
     static void onScreenResized(Size2D newSize);
 
-    static std::vector<class IRenderTargetTexture *> getGbufferRts(
-        ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
-    static std::vector<ImageResourceRef> getGbufferAttachments(
-        ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
+    static std::vector<class IRenderTargetTexture *> getGbufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
+    static std::vector<ImageResourceRef> getGbufferAttachments(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
 };

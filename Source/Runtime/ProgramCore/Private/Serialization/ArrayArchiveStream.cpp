@@ -36,10 +36,7 @@ void ArrayArchiveStream::moveForward(SizeT count)
     }
 }
 
-void ArrayArchiveStream::moveBackward(SizeT count)
-{
-    cursor = Math::max((int64)cursor - (int64)count, 0);
-}
+void ArrayArchiveStream::moveBackward(SizeT count) { cursor = Math::max((int64)cursor - (int64)count, 0); }
 
 bool ArrayArchiveStream::allocate(SizeT count)
 {
@@ -64,3 +61,5 @@ uint8 ArrayArchiveStream::readBackwardAt(SizeT idx) const
 }
 
 bool ArrayArchiveStream::isAvailable() const { return true; }
+
+uint64 ArrayArchiveStream::cursorPos() const { return cursor; }

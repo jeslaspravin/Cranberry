@@ -158,19 +158,23 @@ public:
     static const TestNS::BerryObject *value2;
 
     META_ANNOTATE()
-    void testThisFunction(std::pair<uint32, TestNS::BerryObject *> &aValue,
-        const std::unordered_map<uint64, BerrySecondData *> &bValue, uint32 values)
+    void testThisFunction(
+        std::pair<uint32, TestNS::BerryObject *> &aValue, const std::unordered_map<uint64, BerrySecondData *> &bValue, uint32 values
+    )
     {}
 
     META_ANNOTATE()
-    void testConstFunction(std::vector<std::pair<uint32, TestNS::BerryObject *>> &aValues,
-        const std::unordered_map<uint64, TestNS::BerryObject *> &bValue, uint32 values) const
+    void testConstFunction(
+        std::vector<std::pair<uint32, TestNS::BerryObject *>> &aValues, const std::unordered_map<uint64, TestNS::BerryObject *> &bValue,
+        uint32 values
+    ) const
     {}
 
     META_ANNOTATE()
     static std::set<std::pair<uint32, TestNS::BerryObject *>> testStaticFunc(
-        std::vector<std::pair<uint32, TestNS::BerryObject *>> *&aValues,
-        const std::unordered_map<uint64, TestNS::BerryObject *> &bValue, uint32 values)
+        std::vector<std::pair<uint32, TestNS::BerryObject *>> *&aValues, const std::unordered_map<uint64, TestNS::BerryObject *> &bValue,
+        uint32 values
+    )
     {
         return {};
     }

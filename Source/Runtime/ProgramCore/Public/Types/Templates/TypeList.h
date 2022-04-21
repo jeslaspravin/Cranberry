@@ -54,8 +54,7 @@ template <typename Type, typename Next>
 struct IsTypeListType<TypeList<Type, Next>>
 {
     // This is typelist, now make sure the chain is typelist as well
-    CONST_EXPR static const bool value
-        = std::disjunction_v<IsTypeListType<Next>, std::is_same<Next, NullType>>;
+    CONST_EXPR static const bool value = std::disjunction_v<IsTypeListType<Next>, std::is_same<Next, NullType>>;
 };
 
 template <typename T>
@@ -170,8 +169,7 @@ struct RemoveDuplicates<NullType>
 template <typename ThisType, typename NextType>
 struct RemoveDuplicates<TypeList<ThisType, NextType>>
 {
-    using type = TypeList<ThisType,
-        typename RemoveDuplicates<typename EraseAll<NextType, ThisType>::type>::type>;
+    using type = TypeList<ThisType, typename RemoveDuplicates<typename EraseAll<NextType, ThisType>::type>::type>;
 };
 
 // Finds length of type list
@@ -269,8 +267,7 @@ template <typename ThisType, typename NextType, typename BaseType>
 struct MostDerived<TypeList<ThisType, NextType>, BaseType>
 {
     using MostDerivedType = typename MostDerived<NextType, BaseType>::type;
-    using type = std::conditional_t<std::is_convertible_v<ThisType, MostDerivedType>, ThisType,
-        MostDerivedType>;
+    using type = std::conditional_t<std::is_convertible_v<ThisType, MostDerivedType>, ThisType, MostDerivedType>;
 };
 
 // Deepest inherited type will be brought to index 0 and highest parent will be brough to Length - 1
@@ -330,8 +327,7 @@ struct DoForEach<NullType, Callable>
     template <typename UserType>
     static void call(UserType *userData){};
 };
-template <typename ThisType, typename NextType,
-    template <typename Type, typename UserType> typename Callable>
+template <typename ThisType, typename NextType, template <typename Type, typename UserType> typename Callable>
 struct DoForEach<TypeList<ThisType, NextType>, Callable>
 {
     template <typename UserType>
@@ -401,8 +397,7 @@ struct ApplyAll<NullType, ToType, Types...>
 {
     using type = ToType<Types...>;
 };
-template <typename ThisType, typename NextType, template <typename...> typename ToType,
-    typename... Types>
+template <typename ThisType, typename NextType, template <typename...> typename ToType, typename... Types>
 struct ApplyAll<TypeList<ThisType, NextType>, ToType, Types...>
 {
     using type = typename ApplyAll<NextType, ToType, Types..., ThisType>::type;

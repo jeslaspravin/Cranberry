@@ -39,10 +39,7 @@ void SamplerInterface::getMipLod(float &fineMipLod, float &poorMipLod)
     poorMipLod = config.mipLodRange.maxBound;
 }
 
-void SamplerInterface::setMipFiltering(ESamplerFiltering::Type samplerFiltering)
-{
-    config.mipFiltering = samplerFiltering;
-}
+void SamplerInterface::setMipFiltering(ESamplerFiltering::Type samplerFiltering) { config.mipFiltering = samplerFiltering; }
 
 ESamplerFiltering::Type SamplerInterface::getMipFiltering() { return config.mipFiltering; }
 
@@ -60,21 +57,16 @@ bool SamplerInterface::getCompareOp(CoreGraphicsTypes::ECompareOp::Type &compare
     return config.useCompareOp;
 }
 
-void SamplerInterface::setBorderColor(uint8 samplerBorderColFlags)
-{
-    config.borderColorFlags = samplerBorderColFlags;
-}
+void SamplerInterface::setBorderColor(uint8 samplerBorderColFlags) { config.borderColorFlags = samplerBorderColFlags; }
 
-void SamplerInterface::setTilingMode(
-    ESamplerTilingMode::Type u, ESamplerTilingMode::Type v, ESamplerTilingMode::Type w)
+void SamplerInterface::setTilingMode(ESamplerTilingMode::Type u, ESamplerTilingMode::Type v, ESamplerTilingMode::Type w)
 {
     std::get<0>(config.tilingMode) = u;
     std::get<1>(config.tilingMode) = v;
     std::get<2>(config.tilingMode) = w;
 }
 
-void SamplerInterface::getTilingMode(
-    ESamplerTilingMode::Type &u, ESamplerTilingMode::Type &v, ESamplerTilingMode::Type &w)
+void SamplerInterface::getTilingMode(ESamplerTilingMode::Type &u, ESamplerTilingMode::Type &v, ESamplerTilingMode::Type &w)
 {
     u = std::get<0>(config.tilingMode);
     v = std::get<1>(config.tilingMode);

@@ -19,8 +19,7 @@ template <typename Type>
 class EngineVar
 {
 private:
-    static_assert(std::is_default_constructible_v<Type>,
-        "The type for engine variable/constant should be default constructible");
+    static_assert(std::is_default_constructible_v<Type>, "The type for engine variable/constant should be default constructible");
 
 public:
     using VarType = Type;
@@ -84,8 +83,7 @@ template <typename Type, typename OwnerType>
 class EngineConstant : public EngineVar<Type>
 {
 private:
-    static_assert(
-        std::is_class_v<OwnerType>, "Only class types are allowed as owner to allow modifications");
+    static_assert(std::is_class_v<OwnerType>, "Only class types are allowed as owner to allow modifications");
     using base = EngineVar<Type>;
     using VarType = typename base::VarType;
     using base::variable;

@@ -39,10 +39,7 @@ bool InputSystem::isKeyPressed(const Key &key) const { return keys.queryState(ke
 
 Utf32 InputSystem::keyChar(const Key &key) const { return keyToCharProcessor->keyChar(&key); }
 
-const InputAnalogState *InputSystem::analogState(AnalogStates::EStates stateKey) const
-{
-    return analogStates.queryState(stateKey);
-}
+const InputAnalogState *InputSystem::analogState(AnalogStates::EStates stateKey) const { return analogStates.queryState(stateKey); }
 
 void InputSystem::resetStates()
 {

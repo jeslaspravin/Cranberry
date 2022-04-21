@@ -38,8 +38,8 @@ ShaderBufferParamInfo *PointShadowDepthViews::paramInfo()
 // Doing explicit negation over unary negation to avoid unwanted rotation when doing atan2
 Rotation PointShadowDepthViews::VIEW_DIRECTIONS[6]
     = { RotationMatrix::fromZX(Vector3D::UP, Vector3D::RIGHT).asRotation(),
-          RotationMatrix::fromZX(Vector3D::UP, Vector3D(0, -1, 0) /*-Vector3D::RIGHT*/).asRotation(),
-          RotationMatrix::fromZX(Vector3D(-1, 0, 0) /*-Vector3D::FWD*/, Vector3D::UP).asRotation(),
-          RotationMatrix::fromZX(Vector3D::FWD, Vector3D(0, 0, -1) /*-Vector3D::UP*/).asRotation(),
-          RotationMatrix::fromZX(Vector3D::UP, Vector3D::FWD).asRotation(),
-          RotationMatrix::fromZX(Vector3D::UP, Vector3D(-1, 0, 0) /*-Vector3D::FWD*/).asRotation() };
+        RotationMatrix::fromZX(Vector3D::UP, Vector3D(0, -1, 0) /*-Vector3D::RIGHT*/).asRotation(),
+        RotationMatrix::fromZX(Vector3D(-1, 0, 0) /*-Vector3D::FWD*/, Vector3D::UP).asRotation(),
+        RotationMatrix::fromZX(Vector3D::FWD, Vector3D(0, 0, -1) /*-Vector3D::UP*/).asRotation(),
+        RotationMatrix::fromZX(Vector3D::UP, Vector3D::FWD).asRotation(),
+        RotationMatrix::fromZX(Vector3D::UP, Vector3D(-1, 0, 0) /*-Vector3D::FWD*/).asRotation() };

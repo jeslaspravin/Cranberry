@@ -26,8 +26,7 @@ TextureLoader::TextureLoader(const String &texturePath)
 {
     PlatformFile textureFile(texturePath);
     textureFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
-    textureName = PathFunctions::stripExtension(
-        textureFile.getFileName()); // Extension is passed in as dummy(same textureName)
+    textureName = PathFunctions::stripExtension(textureFile.getFileName()); // Extension is passed in as dummy(same textureName)
     if (textureFile.exists() && textureFile.openFile())
     {
         std::vector<uint8> fileData;
@@ -36,13 +35,11 @@ TextureLoader::TextureLoader(const String &texturePath)
 
         int32 dimX;
         int32 dimY;
-        uint8 *texelData = STB::loadFromMemory(
-            fileData.data(), int32(fileData.size()), &dimX, &dimY, &channelsCount, CHANNEL_NUM);
+        uint8 *texelData = STB::loadFromMemory(fileData.data(), int32(fileData.size()), &dimX, &dimY, &channelsCount, CHANNEL_NUM);
 
         if (texelData == nullptr)
         {
-            LOG_ERROR("Texture Loader", "%s() : Failed loading image[%s] - %s", __func__,
-                textureName.getChar(), STB::lastFailure());
+            LOG_ERROR("Texture Loader", "%s() : Failed loading image[%s] - %s", __func__, textureName.getChar(), STB::lastFailure());
             bLoaded = false;
         }
         else
@@ -73,8 +70,7 @@ TextureLoader::TextureLoader(const String &texturePath)
     }
     else
     {
-        LOG_ERROR("Texture Loader", "%s() : Failed opening texture file - %s", __func__,
-            textureFile.getFileName().getChar());
+        LOG_ERROR("Texture Loader", "%s() : Failed opening texture file - %s", __func__, textureFile.getFileName().getChar());
         bLoaded = false;
     }
 }
@@ -86,8 +82,10 @@ bool TextureLoader::isNormalTexture(const uint8 *texels) const
 
     // New way based on histogram
     std::array<float, 32> histogram[3];
-    ImageUtils::calcHistogramRGB(histogram[0].data(), histogram[1].data(), histogram[2].data(),
-        uint32(histogram[0].size()), texels, textureDimension.x, textureDimension.y, CHANNEL_NUM);
+    ImageUtils::calcHistogramRGB(
+        histogram[0].data(), histogram[1].data(), histogram[2].data(), uint32(histogram[0].size()), texels, textureDimension.x,
+        textureDimension.y, CHANNEL_NUM
+    );
 
     float rgMaxWeight = 0;
     uint32 rgMaxLum = 0;
@@ -149,10 +147,12 @@ bool TextureLoader::isNormalTexture(const uint8 *texels) const
     if (!isNormal && textureName.endsWith(TCHAR("_N"), false))
     {
         isNormal = true;
-        LOG_DEBUG("Texture Loader",
+        LOG_DEBUG(
+            "Texture Loader",
             "%s() : Texture %s is determined as normal texture based on suffix _N, Please rename "
             "texture if not intended",
-            __func__, textureName.getChar());
+            __func__, textureName.getChar()
+        );
     }
     return isNormal;
 }

@@ -25,16 +25,12 @@
 // std::string
 using BaseString = std::basic_string<TChar, std::char_traits<TChar>, std::allocator<TChar>>;
 using StringView = std::basic_string_view<BaseString::value_type, BaseString::traits_type>;
-using StringBuffer
-    = std::basic_stringbuf<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
+using StringBuffer = std::basic_stringbuf<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
 using InputStream = std::basic_istream<BaseString::value_type, BaseString::traits_type>;
 using OutputStream = std::basic_ostream<BaseString::value_type, BaseString::traits_type>;
-using IStringStream = std::basic_istringstream<BaseString::value_type, BaseString::traits_type,
-    BaseString::allocator_type>;
-using OStringStream = std::basic_ostringstream<BaseString::value_type, BaseString::traits_type,
-    BaseString::allocator_type>;
-using StringStream = std::basic_stringstream<BaseString::value_type, BaseString::traits_type,
-    BaseString::allocator_type>;
+using IStringStream = std::basic_istringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
+using OStringStream = std::basic_ostringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
+using StringStream = std::basic_stringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
 
 class String : public BaseString
 {
@@ -80,8 +76,9 @@ public:
     // Count of String's character code points
     FORCE_INLINE uint64 codeCount() const;
 
-    FORCE_INLINE bool findAny(size_type &outIndex, String &outFoundString,
-        const std::vector<String> &findStrgs, size_type offset = 0, bool fromEnd = false) const
+    FORCE_INLINE bool findAny(
+        size_type &outIndex, String &outFoundString, const std::vector<String> &findStrgs, size_type offset = 0, bool fromEnd = false
+    ) const
     {
         size_type foundAt = npos;
         for (const String &strg : findStrgs)
@@ -89,13 +86,8 @@ public:
             size_type foundAtNew = fromEnd ? rfind(strg, length() - offset) : find(strg, offset);
             if (foundAtNew != npos)
             {
-                outIndex = (foundAt == npos || (fromEnd ? foundAt < foundAtNew : foundAt > foundAtNew))
-                               ? foundAtNew
-                               : foundAt;
-                outFoundString
-                    = (foundAt == npos || (fromEnd ? foundAt < foundAtNew : foundAt > foundAtNew))
-                          ? strg
-                          : outFoundString;
+                outIndex = (foundAt == npos || (fromEnd ? foundAt < foundAtNew : foundAt > foundAtNew)) ? foundAtNew : foundAt;
+                outFoundString = (foundAt == npos || (fromEnd ? foundAt < foundAtNew : foundAt > foundAtNew)) ? strg : outFoundString;
                 foundAt = outIndex;
             }
         }
@@ -141,8 +133,10 @@ public:
             return match == String(*this, 0, match.length());
         }
 
-        const_iterator it = std::search(cbegin(), cbegin() + match.length(), match.cbegin(),
-            match.cend(), [](auto c1, auto c2) { return std::toupper(c1) == std::toupper(c2); });
+        const_iterator it = std::search(
+            cbegin(), cbegin() + match.length(), match.cbegin(), match.cend(),
+            [](auto c1, auto c2) { return std::toupper(c1) == std::toupper(c2); }
+        );
 
         return cbegin() == it;
     }
@@ -168,8 +162,9 @@ public:
         }
 
         const_iterator searchFrom = cbegin() + (length() - match.length());
-        const_iterator it = std::search(searchFrom, cend(), match.cbegin(), match.cend(),
-            [](auto c1, auto c2) { return std::toupper(c1) == std::toupper(c2); });
+        const_iterator it = std::search(
+            searchFrom, cend(), match.cbegin(), match.cend(), [](auto c1, auto c2) { return std::toupper(c1) == std::toupper(c2); }
+        );
 
         return it == searchFrom;
     }
@@ -182,8 +177,7 @@ public:
 
     FORCE_INLINE String &trimR()
     {
-        erase(std::find_if(rbegin(), rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(),
-            end());
+        erase(std::find_if(rbegin(), rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(), end());
         return *this;
     }
 
@@ -224,17 +218,14 @@ public:
     FORCE_INLINE String trimLCopy() const
     {
         String s(*this);
-        s.erase(s.begin(),
-            std::find_if(s.begin(), s.end(), [](const TChar &ch) { return !std::isspace(ch); }));
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](const TChar &ch) { return !std::isspace(ch); }));
         return s;
     }
 
     FORCE_INLINE String trimRCopy() const
     {
         String s(*this);
-        s.erase(
-            std::find_if(s.rbegin(), s.rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(),
-            s.end());
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(), s.end());
         return s;
     }
 

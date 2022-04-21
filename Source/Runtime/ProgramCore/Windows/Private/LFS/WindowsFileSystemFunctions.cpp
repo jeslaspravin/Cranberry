@@ -15,8 +15,7 @@
 
 #include <queue>
 
-FORCE_INLINE std::vector<String> WindowsFileSystemFunctions::listFiles(
-    const String &directory, bool bRecursive, const String &wildcard)
+FORCE_INLINE std::vector<String> WindowsFileSystemFunctions::listFiles(const String &directory, bool bRecursive, const String &wildcard)
 {
     std::vector<String> fileList;
     {
@@ -45,8 +44,7 @@ FORCE_INLINE std::vector<String> WindowsFileSystemFunctions::listFiles(
         }
 
         WIN32_FIND_DATA data;
-        HANDLE fHandle
-            = ::FindFirstFile(PathFunctions::combinePath(currentDir, wildcard).c_str(), &data);
+        HANDLE fHandle = ::FindFirstFile(PathFunctions::combinePath(currentDir, wildcard).c_str(), &data);
 
         if (fHandle != INVALID_HANDLE_VALUE)
         {
@@ -85,8 +83,7 @@ std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String &direc
         directories.pop();
 
         WIN32_FIND_DATA data;
-        HANDLE fHandle
-            = ::FindFirstFile(PathFunctions::combinePath(currentDir, TCHAR("*")).c_str(), &data);
+        HANDLE fHandle = ::FindFirstFile(PathFunctions::combinePath(currentDir, TCHAR("*")).c_str(), &data);
 
         if (fHandle != INVALID_HANDLE_VALUE)
         {
@@ -112,8 +109,7 @@ std::vector<String> WindowsFileSystemFunctions::listAllFiles(const String &direc
     return fileList;
 }
 
-std::vector<String> WindowsFileSystemFunctions::listAllDirectories(
-    const String &directory, bool bRecursive)
+std::vector<String> WindowsFileSystemFunctions::listAllDirectories(const String &directory, bool bRecursive)
 {
     std::vector<String> folderList;
     {
@@ -133,8 +129,7 @@ std::vector<String> WindowsFileSystemFunctions::listAllDirectories(
         directories.pop();
 
         WIN32_FIND_DATA data;
-        HANDLE fHandle
-            = ::FindFirstFile(PathFunctions::combinePath(currentDir, TCHAR("*")).c_str(), &data);
+        HANDLE fHandle = ::FindFirstFile(PathFunctions::combinePath(currentDir, TCHAR("*")).c_str(), &data);
 
         if (fHandle != INVALID_HANDLE_VALUE)
         {
@@ -183,10 +178,10 @@ bool WindowsFileSystemFunctions::copyFile(GenericFile *copyFrom, GenericFile *co
     return ::CopyFile(copyFrom->getFullPath().getChar(), copyTo->getFullPath().getChar(), true);
 }
 
-bool WindowsFileSystemFunctions::replaceFile(
-    GenericFile *replaceWith, GenericFile *replacing, GenericFile *backupFile)
+bool WindowsFileSystemFunctions::replaceFile(GenericFile *replaceWith, GenericFile *replacing, GenericFile *backupFile)
 {
-    return ::ReplaceFile(replacing->getFullPath().getChar(), replaceWith->getFullPath().getChar(),
-        backupFile ? backupFile->getFullPath().getChar() : nullptr,
-        REPLACEFILE_IGNORE_ACL_ERRORS | REPLACEFILE_IGNORE_MERGE_ERRORS, nullptr, nullptr);
+    return ::ReplaceFile(
+        replacing->getFullPath().getChar(), replaceWith->getFullPath().getChar(), backupFile ? backupFile->getFullPath().getChar() : nullptr,
+        REPLACEFILE_IGNORE_ACL_ERRORS | REPLACEFILE_IGNORE_MERGE_ERRORS, nullptr, nullptr
+    );
 }

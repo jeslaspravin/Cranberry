@@ -15,8 +15,7 @@
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-ShaderObjectBase *ShaderObjectFactory::create(
-    const String &shaderName, const ShaderResource *shader) const
+ShaderObjectBase *ShaderObjectFactory::create(const String &shaderName, const ShaderResource *shader) const
 {
     if (shader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>())
     {

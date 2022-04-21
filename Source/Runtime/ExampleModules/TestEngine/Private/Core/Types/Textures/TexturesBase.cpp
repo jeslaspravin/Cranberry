@@ -40,6 +40,7 @@ void TextureBase::markResourceDirty()
                 reinitResources();
                 bNeedsUpdate = false;
             },
-            this);
+            this
+        );
     }
 }

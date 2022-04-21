@@ -72,25 +72,22 @@ protected:
     {}
 
 public:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static PBRLightArrayBufferParamInfo LIGHTDATA_INFO;
         static ColorCorrectionBufferParamInfo COLOR_CORRECTION_INFO;
         static ShadowDataBufferParamInfo SHADOW_DATA_INFO;
         auto ShaderParamInfoInit = []
         {
-            std::map<String, ShaderBufferParamInfo *> paramInfo{ { TCHAR("lightArray"),
-                                                                     &LIGHTDATA_INFO },
-                { TCHAR("colorCorrection"), &COLOR_CORRECTION_INFO },
-                { TCHAR("shadowData"), &SHADOW_DATA_INFO } };
-            paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(),
-                RenderSceneBase::sceneViewParamInfo().cend());
+            std::map<String, ShaderBufferParamInfo *> paramInfo{
+                {     TCHAR("lightArray"),        &LIGHTDATA_INFO},
+                {TCHAR("colorCorrection"), &COLOR_CORRECTION_INFO},
+                {     TCHAR("shadowData"),      &SHADOW_DATA_INFO}
+            };
+            paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
             return paramInfo;
         };
-        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-            ShaderParamInfoInit()
-        };
+        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ ShaderParamInfoInit() };
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
@@ -128,15 +125,11 @@ protected:
     {}
 
 public:
-    void getSpecializationConsts(
-        std::map<String, struct SpecializationConstantEntry> &specializationConst) const override
+    void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const override
     {
-        specializationConst[TCHAR("PCF_KERNEL_SIZE")]
-            = SpecializationConstUtility::fromValue(EngineSettings::pcfKernelSize.get());
-        specializationConst[TCHAR("POINT_PCF_SAMPLES")]
-            = SpecializationConstUtility::fromValue(EngineSettings::pointPcfKernelSize.get());
-        specializationConst[TCHAR("POINT_PCF_KERNEL_EXTEND")]
-            = SpecializationConstUtility::fromValue(0.2f);
+        specializationConst[TCHAR("PCF_KERNEL_SIZE")] = SpecializationConstUtility::fromValue(EngineSettings::pcfKernelSize.get());
+        specializationConst[TCHAR("POINT_PCF_SAMPLES")] = SpecializationConstUtility::fromValue(EngineSettings::pointPcfKernelSize.get());
+        specializationConst[TCHAR("POINT_PCF_KERNEL_EXTEND")] = SpecializationConstUtility::fromValue(0.2f);
     }
 };
 
@@ -146,7 +139,9 @@ DEFINE_GRAPHICS_RESOURCE(PBRLightsWithShadowShader)
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(PBRNOSHADOW_SHADER_PIPELINE_REGISTER, PBRLIGHTSNOSHADOW_SHADER_NAME,
-    &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(PBRWITHSHADOW_SHADER_PIPELINE_REGISTER,
-    PBRLIGHTSWITHSHADOW_SHADER_NAME, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    PBRNOSHADOW_SHADER_PIPELINE_REGISTER, PBRLIGHTSNOSHADOW_SHADER_NAME, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig
+);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    PBRWITHSHADOW_SHADER_PIPELINE_REGISTER, PBRLIGHTSWITHSHADOW_SHADER_NAME, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig
+);

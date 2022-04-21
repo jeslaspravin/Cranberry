@@ -70,8 +70,7 @@ NODISCARD CONST_EXPR SizeT length(const CharType *start)
 }
 
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool find(
-    const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+CONST_EXPR bool find(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
 {
     StringViewType strView(findIn);
     SizeT foundAt = strView.find(findStr, findFrom);
@@ -82,8 +81,7 @@ CONST_EXPR bool find(
     return foundAt != StringViewType::npos;
 }
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool find(
-    const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+CONST_EXPR bool find(const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
 {
     StringViewType strView(findIn);
     SizeT foundAt = strView.find(findCh, findFrom);
@@ -95,8 +93,7 @@ CONST_EXPR bool find(
 }
 
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool rfind(
-    const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+CONST_EXPR bool rfind(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
 {
     StringViewType strView(findIn);
     SizeT foundAt = strView.rfind(findStr, findFrom);
@@ -107,8 +104,7 @@ CONST_EXPR bool rfind(
     return foundAt != StringViewType::npos;
 }
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool rfind(
-    const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+CONST_EXPR bool rfind(const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
 {
     StringViewType strView(findIn);
     SizeT foundAt = strView.rfind(findCh, findFrom);
@@ -147,8 +143,7 @@ NODISCARD CONST_EXPR SizeT findCount(const CharType *findIn, const CharType *fin
 }
 
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR void replaceInPlace(
-    CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const CharType *replaceWith)
+CONST_EXPR void replaceInPlace(CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const CharType *replaceWith)
 {
     if (replaceLen <= 0 || replaceIn == nullptr || replaceWith == nullptr)
     {
@@ -168,8 +163,8 @@ CONST_EXPR void replaceInPlace(
 
 // Allocated char array must be cleared including null terminated character as count
 template <typename CharType, typename AllocatorType>
-NODISCARD CONST_EXPR CharType *replace(const CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen,
-    const CharType *replaceWith, AllocatorType &allocator)
+NODISCARD CONST_EXPR CharType *
+    replace(const CharType *replaceIn, SizeT replaceFrom, SizeT replaceLen, const CharType *replaceWith, AllocatorType &allocator)
 {
     if (replaceLen <= 0 || replaceIn == nullptr || replaceWith == nullptr)
     {
@@ -190,8 +185,7 @@ NODISCARD CONST_EXPR CharType *replace(const CharType *replaceIn, SizeT replaceF
     // Replaced section
     CBEMemory::memCopy(retVal + replaceFrom, replaceWith, replaceWithLen);
     // Last section
-    CBEMemory::memCopy(retVal + replaceFrom + replaceWithLen, replaceIn + replaceFrom + replaceLen,
-        replaceInLen - (replaceLen + replaceFrom));
+    CBEMemory::memCopy(retVal + replaceFrom + replaceWithLen, replaceIn + replaceFrom + replaceLen, replaceInLen - (replaceLen + replaceFrom));
     // Set null termination
     retVal[finalLen] = 0;
     return retVal;
@@ -223,8 +217,7 @@ CONST_EXPR void replaceAllInPlace(CharType *replaceIn, const CharType *from, con
 // Allocated char array must be cleared including null terminated character as count
 // Returns null if nothing is replaced, so you can use the original str as it is
 template <typename CharType, typename AllocatorType>
-NODISCARD CONST_EXPR CharType *replaceAll(
-    const CharType *replaceIn, const CharType *from, const CharType *to, AllocatorType &allocator)
+NODISCARD CONST_EXPR CharType *replaceAll(const CharType *replaceIn, const CharType *from, const CharType *to, AllocatorType &allocator)
 {
     if (replaceIn == nullptr || from == nullptr || to == nullptr)
     {
@@ -260,8 +253,7 @@ NODISCARD CONST_EXPR CharType *replaceAll(
         originalStrIdx += (replaceAtPos - retValStrIdx) + replaceFromLen;
         retValStrIdx = replaceAtPos + replaceToLen;
         // Copy rest of str to new search point to replace next from str
-        CBEMemory::memCopy(
-            retVal + retValStrIdx, replaceIn + originalStrIdx, replaceInLen - originalStrIdx);
+        CBEMemory::memCopy(retVal + retValStrIdx, replaceIn + originalStrIdx, replaceInLen - originalStrIdx);
     }
     return retVal;
 }
@@ -297,9 +289,10 @@ NODISCARD bool startsWith(const CharType *matchIn, const CharType *match, bool b
         return matchInView == matchView;
     }
 
-    auto it = std::search(matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
-        [](CharType c1, CharType c2)
-        { return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2); });
+    auto it = std::search(
+        matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
+        [](CharType c1, CharType c2) { return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2); }
+    );
 
     return matchInView.cbegin() == it;
 }
@@ -335,9 +328,10 @@ NODISCARD bool endsWith(const CharType *matchIn, const CharType *match, bool bMa
         return matchInView == matchView;
     }
 
-    auto it = std::search(matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
-        [](CharType c1, CharType c2)
-        { return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2); });
+    auto it = std::search(
+        matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
+        [](CharType c1, CharType c2) { return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2); }
+    );
 
     return matchInView.cbegin() == it;
 }
@@ -345,8 +339,7 @@ NODISCARD bool endsWith(const CharType *matchIn, const CharType *match, bool bMa
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
 NODISCARD CONST_EXPR StringViewType trimL(StringViewType strView)
 {
-    auto itr
-        = std::find_if(strView.cbegin(), strView.cend(), [](CharType ch) { return !std::isspace(ch); });
+    auto itr = std::find_if(strView.cbegin(), strView.cend(), [](CharType ch) { return !std::isspace(ch); });
 
     if (itr == strView.cend())
     {
@@ -359,8 +352,7 @@ NODISCARD CONST_EXPR StringViewType trimL(StringViewType strView)
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
 NODISCARD CONST_EXPR StringViewType trimR(StringViewType strView)
 {
-    auto itr = std::find_if(
-        strView.crbegin(), strView.crend(), [](CharType ch) { return !std::isspace(ch); });
+    auto itr = std::find_if(strView.crbegin(), strView.crend(), [](CharType ch) { return !std::isspace(ch); });
 
     if (itr == strView.cend())
     {

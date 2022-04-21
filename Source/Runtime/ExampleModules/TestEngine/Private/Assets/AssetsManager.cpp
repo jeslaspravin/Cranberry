@@ -28,13 +28,14 @@ void AssetManager::loadUnderPath(const String &scanPath)
         header.assetPath = PathFunctions::asGenericPath(filePath);
         header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
         loadAsset(header);
-        LOG_DEBUG("AssetManager", "%s(): Loaded asset %s in %0.3f Seconds(not including gpu copy)",
-            __func__, header.assetPath.getChar(), loadTime.thisLap());
+        LOG_DEBUG(
+            "AssetManager", "%s(): Loaded asset %s in %0.3f Seconds(not including gpu copy)", __func__, header.assetPath.getChar(),
+            loadTime.thisLap()
+        );
         loadTime.lap();
     }
     loadTime.stop();
-    LOG_DEBUG("AssetManager", "%s(): Loaded all assets in %0.3f Seconds(not including gpu copy)",
-        __func__, loadTime.duration());
+    LOG_DEBUG("AssetManager", "%s(): Loaded all assets in %0.3f Seconds(not including gpu copy)", __func__, loadTime.duration());
 }
 
 std::vector<AssetBase *> AssetManager::loadAsset(const AssetHeader &header)
@@ -121,8 +122,7 @@ AssetBase *AssetManager::getOrLoadAsset(const String &relAssetPath)
     String newRelPath = PathFunctions::asGenericPath(relAssetPath);
     String appName;
     AssetHeader header;
-    header.assetPath = PathFunctions::combinePath(
-        FileSystemFunctions::applicationDirectory(appName), TCHAR("Assets"), newRelPath);
+    header.assetPath = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(appName), TCHAR("Assets"), newRelPath);
     header.type = AssetLoaderLibrary::typeFromAssetPath(newRelPath);
     header.assetName = PlatformFile(header.assetPath).getFileName();
     header.assetName = PathFunctions::stripExtension(header.assetName);

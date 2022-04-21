@@ -14,6 +14,7 @@
 #include "ProgramCoreExports.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
+#include "Types/Templates/TemplateTypes.h"
 
 #include <map>
 #include <set>
@@ -51,9 +52,30 @@ public:
     // Reads byte at idx backward from current byte, Does not modify the stream cursor
     virtual uint8 readBackwardAt(SizeT idx) const = 0;
 
+    virtual uint64 cursorPos() const = 0;
+
     virtual bool isAvailable() const = 0;
 
     virtual ~ArchiveStream() = default;
+};
+
+class PROGRAMCORE_EXPORT ArchiveSizeCounterStream final : public ArchiveStream
+{
+private:
+    uint64 cursor;
+
+public:
+    /* ArchiveStream overrides */
+    void read(void *toPtr, SizeT len) override;
+    FORCE_INLINE void write(const void *ptr, SizeT len) override { cursor += len; }
+    FORCE_INLINE void moveForward(SizeT count) override { cursor += count; }
+    FORCE_INLINE void moveBackward(SizeT count) override { cursor += count; }
+    FORCE_INLINE bool allocate(SizeT count) override { return false; }
+    uint8 readForwardAt(SizeT idx) const override;
+    uint8 readBackwardAt(SizeT idx) const override;
+    FORCE_INLINE uint64 cursorPos() const override { return cursor; }
+    FORCE_INLINE bool isAvailable() const override { return true; }
+    /* overrides ends */
 };
 
 #define SERIALIZE_VIRTUAL(TypeName) virtual ArchiveBase &serialize(TypeName &value) = 0;
@@ -61,12 +83,24 @@ public:
 class PROGRAMCORE_EXPORT ArchiveBase
 {
 private:
+    constexpr static const uint32 ARCHIVE_VERSION = 0;
+    /*
+     * Lowest version supported
+     */
+    constexpr static const uint32 CUTOFF_VERSION = 0;
+
+    // Custom versions that will be serialized in/from this archive
+    std::map<uint32, uint32> customVersions;
+
     // If byte swapping is necessary for this archive?
     bool bShouldSwapBytes = false;
     bool bIsLoading = false;
 
-    // Borrowed stream(Ownership must below to creator)
+    // Borrowed stream(Ownership must belong to creator)
     ArchiveStream *archiveStream = nullptr;
+
+private:
+    void serializeArchiveMeta();
 
 public:
     FORCE_INLINE bool ifSwapBytes() const { return bShouldSwapBytes; }
@@ -74,7 +108,40 @@ public:
     FORCE_INLINE bool isLoading() const { return bIsLoading; }
     FORCE_INLINE void setLoading(bool bLoad) { bIsLoading = bLoad; }
     FORCE_INLINE ArchiveStream *stream() const { return archiveStream; }
-    FORCE_INLINE void setStream(ArchiveStream *inStream) { archiveStream = inStream; }
+    FORCE_INLINE void setStream(ArchiveStream *inStream)
+    {
+        if (archiveStream == inStream)
+        {
+            return;
+        }
+
+        archiveStream = inStream;
+        if (archiveStream)
+        {
+            uint64 currCursor = archiveStream->cursorPos();
+            if (currCursor != 0)
+            {
+                archiveStream->moveBackward(currCursor);
+            }
+            serializeArchiveMeta();
+            if (currCursor != 0)
+            {
+                archiveStream->moveForward(currCursor);
+            }
+        }
+    }
+    FORCE_INLINE void setCustomVersion(uint32 customId, uint32 version) { customVersions[customId] = version; }
+    FORCE_INLINE uint32 getCustomVersion(uint32 customId) const
+    {
+        auto itr = customVersions.find(customId);
+        if (itr != customVersions.cend())
+        {
+            return itr->second;
+        }
+        return 0;
+    }
+    FORCE_INLINE const std::map<uint32, uint32> &getCustomVersions() const { return customVersions; }
+    FORCE_INLINE void clearCustomVersions() { customVersions.clear(); }
 
     FOR_EACH_CORE_TYPES(SERIALIZE_VIRTUAL)
 
@@ -90,14 +157,24 @@ concept IsArchiveType = std::is_base_of_v<ArchiveBase, Type>;
 template <IsArchiveType ArchiveType, typename ValueType>
 ArchiveType &operator<<(ArchiveType &archive, ValueType &value)
 {
-    return static_cast<ArchiveType &>(archive.serialize(value));
+    // This is added to support writing keys of maps and sets
+    // #TODO(Jeslas) : Should I handle const here or just handle directly in special cases line set or map elements?
+    if constexpr (std::is_const_v<ValueType>)
+    {
+        return static_cast<ArchiveType &>(archive.serialize(*const_cast<std::remove_const_t<ValueType> *>(&value)));
+    }
+    else
+    {
+        return static_cast<ArchiveType &>(archive.serialize(value));
+    }
 }
 
 template <IsArchiveType ArchiveType, typename ValueType>
 ArchiveType &operator<<(ArchiveType &archive, ValueType *value)
 {
-    static_assert(false,
-        "Pointer type serialization is not supported! Specialize and provide your own serialization");
+    static_assert(
+        DependentFalseTypeValue<ValueType>, "Pointer type serialization is not supported! Specialize and provide your own serialization"
+    );
     return archive;
 }
 
@@ -142,7 +219,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::set<KeyType, Types...> &value
     }
     else
     {
-        for (const auto &val : value)
+        for (KeyType val : value)
         {
             archive << val;
         }
@@ -168,7 +245,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::unordered_set<KeyType, Types.
     }
     else
     {
-        for (const auto &val : value)
+        for (KeyType val : value)
         {
             archive << val;
         }
@@ -195,7 +272,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::map<KeyType, ValueType, Types
     }
     else
     {
-        for (const auto &pair : value)
+        for (const std::pair<KeyType, ValueType> &pair : value)
         {
             archive << pair.first << pair.second;
         }
@@ -222,7 +299,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::unordered_map<KeyType, ValueT
     }
     else
     {
-        for (const auto &pair : value)
+        for (const std::pair<KeyType, ValueType> &pair : value)
         {
             archive << pair.first << pair.second;
         }

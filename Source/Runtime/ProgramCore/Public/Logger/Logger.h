@@ -27,8 +27,7 @@ public:
         Error = 8
     };
 
-    static const uint8 AllServerity
-        = ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
+    static const uint8 AllServerity = ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
 
 private:
     Logger() = default;
@@ -48,33 +47,37 @@ public:
     template <typename CatType, typename FmtType, typename... Args>
     DEBUG_INLINE CONST_EXPR static void debug(CatType &&category, FmtType &&fmt, Args &&...args)
     {
-        debugInternal(StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::format<FmtType, Args...>(
-                std::forward<FmtType>(fmt), std::forward<Args>(args)...));
+        debugInternal(
+            StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+        );
     }
 
     template <typename CatType, typename FmtType, typename... Args>
     DEBUG_INLINE CONST_EXPR static void log(CatType &&category, FmtType &&fmt, Args &&...args)
     {
-        logInternal(StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::format<FmtType, Args...>(
-                std::forward<FmtType>(fmt), std::forward<Args>(args)...));
+        logInternal(
+            StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+        );
     }
 
     template <typename CatType, typename FmtType, typename... Args>
     DEBUG_INLINE CONST_EXPR static void warn(CatType &&category, FmtType &&fmt, Args &&...args)
     {
-        warnInternal(StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::format<FmtType, Args...>(
-                std::forward<FmtType>(fmt), std::forward<Args>(args)...));
+        warnInternal(
+            StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+        );
     }
 
     template <typename CatType, typename FmtType, typename... Args>
     DEBUG_INLINE CONST_EXPR static void error(CatType &&category, FmtType &&fmt, Args &&...args)
     {
-        errorInternal(StringFormat::getChar<CatType>(std::forward<CatType>(category)),
-            StringFormat::format<FmtType, Args...>(
-                std::forward<FmtType>(fmt), std::forward<Args>(args)...));
+        errorInternal(
+            StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+        );
     }
 
     static void flushStream();
@@ -93,5 +96,5 @@ struct ScopedMuteLogServerity
 
     ~ScopedMuteLogServerity() { Logger::popMuteSeverities(); }
 };
-#define SCOPED_MUTE_LOG_SEVERITIES(SeverityFlags)                                                       \
+#define SCOPED_MUTE_LOG_SEVERITIES(SeverityFlags)                                                                                              \
     ScopedMuteLogServerity COMBINE(__zzzz__muteSeverities_, __LINE__) { SeverityFlags }

@@ -162,8 +162,7 @@ bool Vector4D::isSame(const Vector4D &b, float epsilon /*= SMALL_EPSILON*/) cons
 
 bool Vector4D::isFinite() const
 {
-    return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z)
-           && Math::isFinite(value.w);
+    return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z) && Math::isFinite(value.w);
 }
 
 Vector4D Vector4D::normalized() const { return Vector4D(glm::normalize(value)); }
@@ -180,10 +179,7 @@ Vector4D Vector4D::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
 
 float Vector4D::length() const { return glm::length(value); }
 
-float Vector4D::sqrlength() const
-{
-    return Math::pow2(value.x) + Math::pow2(value.y) + Math::pow2(value.z) + Math::pow2(value.w);
-}
+float Vector4D::sqrlength() const { return Math::pow2(value.x) + Math::pow2(value.y) + Math::pow2(value.z) + Math::pow2(value.w); }
 
 Vector4D Vector4D::projectTo(const Vector4D &b) const { return Vector4D(b * (*this | b) / (b | b)); }
 
@@ -199,15 +195,9 @@ Vector4D Vector4D::clamp(const Vector4D &value, const Vector4D &min, const Vecto
     return Vector4D(glm::clamp(value.value, min.value, max.value));
 }
 
-Vector4D Vector4D::min(const Vector4D &a, const Vector4D &b)
-{
-    return Vector4D(glm::min(a.value, b.value));
-}
+Vector4D Vector4D::min(const Vector4D &a, const Vector4D &b) { return Vector4D(glm::min(a.value, b.value)); }
 
-Vector4D Vector4D::max(const Vector4D &a, const Vector4D &b)
-{
-    return Vector4D(glm::max(a.value, b.value));
-}
+Vector4D Vector4D::max(const Vector4D &a, const Vector4D &b) { return Vector4D(glm::max(a.value, b.value)); }
 
 Vector4D Vector4D::abs(const Vector4D &value) { return Vector4D(glm::abs(value.value)); }
 
@@ -217,14 +207,8 @@ Vector4D Vector4D::ceil(const Vector4D &value) { return Vector4D(glm::ceil(value
 
 Vector4D Vector4D::round(const Vector4D &value) { return Vector4D(glm::round(value.value)); }
 
-Vector4D Vector4D::mod(const Vector4D &a, const Vector4D &b)
-{
-    return Vector4D(glm::mod(a.value, b.value));
-}
+Vector4D Vector4D::mod(const Vector4D &a, const Vector4D &b) { return Vector4D(glm::mod(a.value, b.value)); }
 
 Vector4D Vector4D::mod(const Vector4D &a, const float &b) { return Vector4D(glm::mod(a.value, b)); }
 
-Vector4D Vector4D::modf(Vector4D &wholePart, const Vector4D &value)
-{
-    return Vector4D(glm::modf(value.value, wholePart.value));
-}
+Vector4D Vector4D::modf(Vector4D &wholePart, const Vector4D &value) { return Vector4D(glm::modf(value.value, wholePart.value)); }

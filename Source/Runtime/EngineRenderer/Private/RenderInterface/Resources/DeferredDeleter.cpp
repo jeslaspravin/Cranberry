@@ -44,7 +44,8 @@ void DeferredDeleter::update()
         return;
     }
 
-    auto newEnd = std::remove_if(deletingResources.begin(), deletingResources.end(),
+    auto newEnd = std::remove_if(
+        deletingResources.begin(), deletingResources.end(),
         [this](DeferringData &res)
         {
             uint32 references = 0;
@@ -58,8 +59,7 @@ void DeferredDeleter::update()
             }
             else
             {
-                alertIf(false, "Unsupported type(%s) for deferred deletion",
-                    res.resource->getType()->getName());
+                alertIf(false, "Unsupported type(%s) for deferred deletion", res.resource->getType()->getName());
                 deleteResource(res.resource);
                 return true;
             }
@@ -98,7 +98,8 @@ void DeferredDeleter::update()
                 break;
             }
             return bRemove;
-        });
+        }
+    );
     deletingResources.erase(newEnd, deletingResources.end());
 }
 

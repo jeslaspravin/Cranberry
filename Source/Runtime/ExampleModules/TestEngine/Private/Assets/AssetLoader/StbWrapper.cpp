@@ -22,14 +22,12 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-uint8 *STB::loadFromMemory(
-    uint8 const *buffer, int32 bufferLen, int32 *x, int32 *y, int32 *channelsInFile, int desiredChannels)
+uint8 *STB::loadFromMemory(uint8 const *buffer, int32 bufferLen, int32 *x, int32 *y, int32 *channelsInFile, int desiredChannels)
 {
     return stbi_load_from_memory(buffer, bufferLen, x, y, channelsInFile, desiredChannels);
 }
 
-float *STB::loadFloatFromMemory(
-    uint8 const *buffer, int32 bufferLen, int32 *x, int32 *y, int32 *channelsInFile, int desiredChannels)
+float *STB::loadFloatFromMemory(uint8 const *buffer, int32 bufferLen, int32 *x, int32 *y, int32 *channelsInFile, int desiredChannels)
 {
     return stbi_loadf_from_memory(buffer, bufferLen, x, y, channelsInFile, desiredChannels);
 }

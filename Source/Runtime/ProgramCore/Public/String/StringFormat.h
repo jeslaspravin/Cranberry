@@ -48,8 +48,7 @@ concept HasToStringMethod = NonStringType<Type> && std::is_compound_v<CleanType>
 };
 
 template <typename Type, typename CleanType = std::remove_cvref_t<Type>>
-concept HasOStreamInsertOverrideMethod
-    = NonStringType<Type> && std::is_compound_v<CleanType> && requires(Type &&val)
+concept HasOStreamInsertOverrideMethod = NonStringType<Type> && std::is_compound_v<CleanType> && requires(Type &&val)
 {
     {
         std::declval<OutputStream &>() << std::declval<Type>()
@@ -201,8 +200,7 @@ class StringFormat
 public:
     // getChar - String to TChar* and primitive types pass templates
     template <typename StrType>
-    requires HasValidCStrMethod<StrType> FORCE_INLINE CONST_EXPR static const TChar *getChar(
-        const StrType &value)
+    requires HasValidCStrMethod<StrType> FORCE_INLINE CONST_EXPR static const TChar *getChar(const StrType &value)
     {
         return static_cast<const TChar *>(value.c_str());
     }
@@ -215,29 +213,21 @@ public:
     }
 
     template <typename StrType>
-    requires std::convertible_to<StrType, const TChar *> FORCE_INLINE CONST_EXPR static const TChar *
-        getChar(StrType &&value)
+    requires std::convertible_to<StrType, const TChar *> FORCE_INLINE CONST_EXPR static const TChar *getChar(StrType &&value)
     {
         return static_cast<const TChar *>(value);
     }
 
     template <typename StrType>
-    requires NonStringType<StrType> FORCE_INLINE CONST_EXPR static StrType getChar(StrType &&value)
-    {
-        return std::forward<StrType>(value);
-    }
+    requires NonStringType<StrType> FORCE_INLINE CONST_EXPR static StrType getChar(StrType &&value) { return std::forward<StrType>(value); }
 
     // toString - To String templates
     template <typename Type>
-    requires HasToStringMethod<Type> FORCE_INLINE static String toString(const Type &value)
-    {
-        return value.toString();
-    }
+    requires HasToStringMethod<Type> FORCE_INLINE static String toString(const Type &value) { return value.toString(); }
 
     // Only std::ostream << type exists
     template <typename Type>
-    requires HasOStreamInsertOverrideMethod<Type> FORCE_INLINE static BaseString toString(
-        const Type &value)
+    requires HasOStreamInsertOverrideMethod<Type> FORCE_INLINE static BaseString toString(const Type &value)
     {
         OStringStream stream;
         stream << value;
@@ -246,25 +236,19 @@ public:
 
     // All string and primitive(fundamental) type
     template <typename Type>
-    requires StringOrFundamentalTypes<Type> FORCE_INLINE CONST_EXPR static Type toString(Type &&value)
-    {
-        return std::forward<Type>(value);
-    }
+    requires StringOrFundamentalTypes<Type> FORCE_INLINE CONST_EXPR static Type toString(Type &&value) { return std::forward<Type>(value); }
 
     template <typename KeyType, typename ValueType>
-    requires HasStringFormatToStringImpl<KeyType, StringFormat> && HasStringFormatToStringImpl<ValueType,
-        StringFormat>
+    requires HasStringFormatToStringImpl<KeyType, StringFormat> && HasStringFormatToStringImpl<ValueType, StringFormat>
         FORCE_INLINE static String toString(const std::pair<KeyType, ValueType> &pair)
     {
         OStringStream stream;
-        stream << TCHAR("{ ") << toString(pair.first) << TCHAR(", ") << toString(pair.second)
-               << TCHAR(" }");
+        stream << TCHAR("{ ") << toString(pair.first) << TCHAR(", ") << toString(pair.second) << TCHAR(" }");
         return stream.str();
     }
 
     template <typename IterableType>
-    requires StringConvertibleIteratorType<IterableType, StringFormat> FORCE_INLINE static BaseString
-        toString(IterableType &&iterable)
+    requires StringConvertibleIteratorType<IterableType, StringFormat> FORCE_INLINE static BaseString toString(IterableType &&iterable)
     {
         using Type = UnderlyingType<IterableType>;
 
@@ -311,8 +295,7 @@ public:
     template <typename FmtType, typename... Args>
     DEBUG_INLINE static String format(FmtType &&fmt, Args &&...args)
     {
-        return fmtString(
-            getChar<FmtType>(std::forward<FmtType>(fmt)), toString<Args>(std::forward<Args>(args))...);
+        return fmtString(getChar<FmtType>(std::forward<FmtType>(fmt)), toString<Args>(std::forward<Args>(args))...);
     }
 
     PROGRAMCORE_EXPORT static String formatMustache(const String &fmt, const FormatArgsMap &formatArgs);

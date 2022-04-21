@@ -132,10 +132,7 @@ bool Rotation::isSame(const Rotation &b, float epsilon /*= SMALL_EPSILON*/) cons
            && Math::isEqual(value.z, b.value.z, epsilon);
 }
 
-bool Rotation::isFinite() const
-{
-    return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z);
-}
+bool Rotation::isFinite() const { return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z); }
 
 Rotation Math::deg2Rad(const Rotation &value)
 {
@@ -198,15 +195,9 @@ Rotation Rotation::clamp(const Rotation &value, const Rotation &min, const Rotat
     return Rotation(glm::clamp(value.value, min.value, max.value));
 }
 
-Rotation Rotation::min(const Rotation &a, const Rotation &b)
-{
-    return Rotation(glm::min(a.value, b.value));
-}
+Rotation Rotation::min(const Rotation &a, const Rotation &b) { return Rotation(glm::min(a.value, b.value)); }
 
-Rotation Rotation::max(const Rotation &a, const Rotation &b)
-{
-    return Rotation(glm::max(a.value, b.value));
-}
+Rotation Rotation::max(const Rotation &a, const Rotation &b) { return Rotation(glm::max(a.value, b.value)); }
 
 Rotation Rotation::abs(const Rotation &value) { return Rotation(glm::abs(value.value)); }
 
@@ -216,14 +207,8 @@ Rotation Rotation::ceil(const Rotation &value) { return Rotation(glm::ceil(value
 
 Rotation Rotation::round(const Rotation &value) { return Rotation(glm::round(value.value)); }
 
-Rotation Rotation::mod(const Rotation &a, const Rotation &b)
-{
-    return Rotation(glm::mod(a.value, b.value));
-}
+Rotation Rotation::mod(const Rotation &a, const Rotation &b) { return Rotation(glm::mod(a.value, b.value)); }
 
 Rotation Rotation::mod(const Rotation &a, const float &b) { return Rotation(glm::mod(a.value, b)); }
 
-Rotation Rotation::modf(Rotation &wholePart, const Rotation &value)
-{
-    return Rotation(glm::modf(value.value, wholePart.value));
-}
+Rotation Rotation::modf(Rotation &wholePart, const Rotation &value) { return Rotation(glm::modf(value.value, wholePart.value)); }

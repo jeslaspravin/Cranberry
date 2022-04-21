@@ -28,8 +28,10 @@ Matrix3::Matrix3(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3)
     : value(c1.x(), c1.y(), c1.z(), c2.x(), c2.y(), c2.z(), c3.x(), c3.y(), c3.z())
 {}
 
-Matrix3::Matrix3(const float &c1x, const float &c1y, const float &c1z, const float &c2x,
-    const float &c2y, const float &c2z, const float &c3x, const float &c3y, const float &c3z)
+Matrix3::Matrix3(
+    const float &c1x, const float &c1y, const float &c1z, const float &c2x, const float &c2y, const float &c2z, const float &c3x,
+    const float &c3y, const float &c3z
+)
     : value(c1x, c1y, c1z, c2x, c2y, c2z, c3x, c3y, c3z)
 {}
 
@@ -61,10 +63,7 @@ Matrix3Col &Matrix3::operator[](uint32 colIndex) { return value[colIndex]; }
 
 Matrix3Col Matrix3::operator[](uint32 colIndex) const { return value[colIndex]; }
 
-Vector3D Matrix3::operator*(const Vector3D &transformingVector) const
-{
-    return Vector3D(value * transformingVector.value);
-}
+Vector3D Matrix3::operator*(const Vector3D &transformingVector) const { return Vector3D(value * transformingVector.value); }
 
 Matrix3 Matrix3::operator*(const Matrix3 &b) const { return value * b.value; }
 

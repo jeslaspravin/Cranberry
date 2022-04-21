@@ -23,24 +23,18 @@ private:
     friend IReflectionRuntimeModule;
 
     // Property factory registries
-    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &
-        classFactoryFromTypeInfo();
-    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &
-        classFactoryFromTypeName();
+    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &classFactoryFromTypeInfo();
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &classFactoryFromTypeName();
     const ClassProperty *createClassProperty(const ReflectTypeInfo *typeInfo);
     const ClassProperty *createClassProperty(const StringID &typeName);
 
-    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &
-        structFactoryFromTypeInfo();
-    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &
-        structFactoryFromTypeName();
+    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &structFactoryFromTypeInfo();
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &structFactoryFromTypeName();
     const ClassProperty *createStructProperty(const ReflectTypeInfo *typeInfo);
     const ClassProperty *createStructProperty(const StringID &typeName);
 
-    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, EnumPropertyFactoryCell>> &
-        enumFactoryFromTypeInfo();
-    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, EnumPropertyFactoryCell>> &
-        enumFactoryFromTypeName();
+    static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, EnumPropertyFactoryCell>> &enumFactoryFromTypeInfo();
+    static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, EnumPropertyFactoryCell>> &enumFactoryFromTypeName();
     const EnumProperty *createEnumProperty(const ReflectTypeInfo *typeInfo);
     const EnumProperty *createEnumProperty(const StringID &typeName);
 
@@ -67,8 +61,7 @@ private:
     std::unordered_map<const BaseProperty *, uint64> propertiesMetaFlags;
 
 public:
-    void setMetaData(const BaseProperty *forProperty,
-        const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    void setMetaData(const BaseProperty *forProperty, const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
 
     /* IReflectionRuntimeModule finals */
     const ClassProperty *getStructType(const ReflectTypeInfo *typeInfo) final;
@@ -83,8 +76,7 @@ public:
     const BaseProperty *getType(const ReflectTypeInfo *typeInfo) final;
 
     std::vector<const PropertyMetaDataBase *> getPropertyMetaData(const BaseProperty *prop) const final;
-    const PropertyMetaDataBase *getPropertyMetaData(
-        const BaseProperty *prop, const ReflectTypeInfo *typeInfo) const final;
+    const PropertyMetaDataBase *getPropertyMetaData(const BaseProperty *prop, const ReflectTypeInfo *typeInfo) const final;
     uint64 getPropertyMetaFlags(const BaseProperty *prop) const final;
 
     /* IModuleBase finals */

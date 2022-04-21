@@ -19,6 +19,8 @@ class COREOBJECTS_EXPORT ObjectPathHelper
 private:
     ObjectPathHelper() = default;
 
+    FORCE_INLINE static String getOuterPathAndObjectName(String &outObjectName, const TChar *objectPath);
+
 public:
     // Object paths will be "RootObjName:OuterMostObjName/OuterObjName/ObjName"
     // Why? This will in long term will be helpful to manage all objects under one root/sub-objects and
@@ -28,4 +30,22 @@ public:
 
     static String getFullPath(const CBE::Object *object);
     static String getFullPath(const TChar *objectName, const CBE::Object *outerObj);
+    static String getObjectPath(const CBE::Object *object, const CBE::Object *stopAt);
+
+    static String getPackagePath(const TChar *objFullPath);
+    /**
+     * ObjectPathHelper::getPathComponents
+     *
+     * Access: public static
+     *
+     * @param String & outOuterObjectPath - Outer Object path without root/package path
+     * @param const TChar * objFullPath - In full path
+     *
+     * @return String - Package name/path
+     */
+    static String getPathComponents(String &outOuterObjectPath, String &outObjectName, const TChar *objFullPath);
+    static String combinePathComponents(const String &packagePath, const String &outerObjectPath, const String &objectName);
+
+    // Just helper to split package host path and package's name
+    static String splitPackageNameAndPath(String &outName, const TChar *path);
 };

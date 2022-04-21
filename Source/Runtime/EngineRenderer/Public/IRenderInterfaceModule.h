@@ -61,8 +61,7 @@ public:
     virtual void finalizeGraphicsInitialization() = 0;
     virtual RenderManager *getRenderManager() const = 0;
 
-    virtual DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback)
-        = 0;
+    virtual DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback) = 0;
     virtual void unregisterToStateEvents(const DelegateHandle &handle) = 0;
 
     template <typename RenderCmdClass>
@@ -74,7 +73,8 @@ void IRenderInterfaceModule::issueRenderCommand(typename RenderCmdClass::RenderC
 {
     if (IRenderInterfaceModule *riModule = get())
     {
-        RenderManager::issueRenderCommand<RenderCmdClass>(riModule->getRenderManager(),
-            std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn));
+        RenderManager::issueRenderCommand<RenderCmdClass>(
+            riModule->getRenderManager(), std::forward<typename RenderCmdClass::RenderCmdFunc>(renderCommandFn)
+        );
     }
 }

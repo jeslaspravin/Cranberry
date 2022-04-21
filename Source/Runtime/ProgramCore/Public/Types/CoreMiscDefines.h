@@ -68,12 +68,11 @@
 #define SET_BIT_AT(SetTo, AtIdx) (SetTo) |= INDEX_TO_FLAG_MASK(AtIdx)
 #define CLEAR_BIT_AT(SetTo, AtIdx) (SetTo) &= ~INDEX_TO_FLAG_MASK(AtIdx)
 // Replaces all masked region with provided value, Unmasked bits are not touched
-#define REPLACE_BITS_MASKED(SetTo, ValueFlags, FlagsMask)                                               \
-    (SetTo) = ((SetTo) & ~(FlagsMask)) | ((ValueFlags) & (FlagsMask))
+#define REPLACE_BITS_MASKED(SetTo, ValueFlags, FlagsMask) (SetTo) = ((SetTo) & ~(FlagsMask)) | ((ValueFlags) & (FlagsMask))
 
-#define MAKE_INITIALIZER_internal(...)                                                                  \
-    {                                                                                                   \
-        __VA_ARGS__                                                                                     \
+#define MAKE_INITIALIZER_internal(...)                                                                                                         \
+    {                                                                                                                                          \
+        __VA_ARGS__                                                                                                                            \
     }
 #define FIRST_internal(X, ...) X
 #define TUPLE_TAIL_internal(X, ...) __VA_ARGS__
@@ -89,21 +88,13 @@
 #define COMBINE(X, Y) COMBINE_internal(X, Y)
 
 #define TRANSFORM_1(Callable, ...) Callable(FIRST(__VA_ARGS__))
-#define TRANSFORM_2(Callable, ...)                                                                      \
-    Callable(FIRST(__VA_ARGS__)), TRANSFORM_1(Callable, TUPLE_TAIL(__VA_ARGS__))
-#define TRANSFORM_3(Callable, ...)                                                                      \
-    Callable(FIRST(__VA_ARGS__)), TRANSFORM_2(Callable, TUPLE_TAIL(__VA_ARGS__))
-#define TRANSFORM_4(Callable, ...)                                                                      \
-    Callable(FIRST(__VA_ARGS__)), TRANSFORM_3(Callable, TUPLE_TAIL(__VA_ARGS__))
-#define TRANSFORM_5(Callable, ...)                                                                      \
-    Callable(FIRST(__VA_ARGS__)), TRANSFORM_4(Callable, TUPLE_TAIL(__VA_ARGS__))
-#define TRANSFORM_6(Callable, ...)                                                                      \
-    Callable(FIRST(__VA_ARGS__)), TRANSFORM_5(Callable, TUPLE_TAIL(__VA_ARGS__))
-#define TRANSFORM_7(Callable, ...)                                                                      \
-    Callable(FIRST(__VA_ARGS__)), TRANSFORM_6(Callable, TUPLE_TAIL(__VA_ARGS__))
-#define TRANSFORM_8(Callable, ...)                                                                      \
-    Callable(FIRST(__VA_ARGS__)), TRANSFORM_7(Callable, TUPLE_TAIL(__VA_ARGS__))
-#define TRANSFORM_9(Callable, ...)                                                                      \
-    Callable(FIRST(__VA_ARGS__)), TRANSFORM_8(Callable, TUPLE_TAIL(__VA_ARGS__))
+#define TRANSFORM_2(Callable, ...) Callable(FIRST(__VA_ARGS__)), TRANSFORM_1(Callable, TUPLE_TAIL(__VA_ARGS__))
+#define TRANSFORM_3(Callable, ...) Callable(FIRST(__VA_ARGS__)), TRANSFORM_2(Callable, TUPLE_TAIL(__VA_ARGS__))
+#define TRANSFORM_4(Callable, ...) Callable(FIRST(__VA_ARGS__)), TRANSFORM_3(Callable, TUPLE_TAIL(__VA_ARGS__))
+#define TRANSFORM_5(Callable, ...) Callable(FIRST(__VA_ARGS__)), TRANSFORM_4(Callable, TUPLE_TAIL(__VA_ARGS__))
+#define TRANSFORM_6(Callable, ...) Callable(FIRST(__VA_ARGS__)), TRANSFORM_5(Callable, TUPLE_TAIL(__VA_ARGS__))
+#define TRANSFORM_7(Callable, ...) Callable(FIRST(__VA_ARGS__)), TRANSFORM_6(Callable, TUPLE_TAIL(__VA_ARGS__))
+#define TRANSFORM_8(Callable, ...) Callable(FIRST(__VA_ARGS__)), TRANSFORM_7(Callable, TUPLE_TAIL(__VA_ARGS__))
+#define TRANSFORM_9(Callable, ...) Callable(FIRST(__VA_ARGS__)), TRANSFORM_8(Callable, TUPLE_TAIL(__VA_ARGS__))
 // Can support up to 9 Items only
 #define TRANSFORM_ALL(Callable, ...) COMBINE(TRANSFORM_, VAR_COUNT(__VA_ARGS__))(Callable, __VA_ARGS__)

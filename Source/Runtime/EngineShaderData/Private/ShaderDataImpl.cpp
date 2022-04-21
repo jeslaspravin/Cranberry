@@ -17,8 +17,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 template <typename ArchiveType>
-std::enable_if_t<!std::is_pointer_v<ArchiveType>, void> operator<<(
-    ShaderArchive &archive, ArchiveType &typeData)
+std::enable_if_t<!std::is_pointer_v<ArchiveType>, void> operator<<(ShaderArchive &archive, ArchiveType &typeData)
 {
     uint32_t currentPtr = archive.archivePtr;
     if (archive.moveFwd(sizeof(decltype(typeData))))
@@ -98,8 +97,7 @@ void operator<< <ReflectBufferShaderField>(ShaderArchive &archive, ReflectBuffer
 }
 
 template <>
-void operator<< <ReflectTexelBufferShaderField>(
-    ShaderArchive &archive, ReflectTexelBufferShaderField &typeData)
+void operator<< <ReflectTexelBufferShaderField>(ShaderArchive &archive, ReflectTexelBufferShaderField &typeData)
 {
     archive << typeData.arraySize;
     archive << typeData.format;
@@ -143,8 +141,7 @@ void operator<< <ShaderReflected>(ShaderArchive &archive, ShaderReflected &typeD
 }
 
 template <typename Type>
-std::enable_if_t<std::is_integral_v<Type>, void> operator<<(
-    ShaderArchive &archive, std::vector<Type> &typeData)
+std::enable_if_t<std::is_integral_v<Type>, void> operator<<(ShaderArchive &archive, std::vector<Type> &typeData)
 {
     uint32_t dataSize = uint32_t(typeData.size());
     archive << dataSize;
@@ -173,8 +170,7 @@ std::enable_if_t<std::is_integral_v<Type>, void> operator<<(
 }
 
 template <typename Type>
-std::enable_if_t<!std::is_integral_v<Type>, void> operator<<(
-    ShaderArchive &archive, std::vector<Type> &typeData)
+std::enable_if_t<!std::is_integral_v<Type>, void> operator<<(ShaderArchive &archive, std::vector<Type> &typeData)
 {
     uint32_t dataSize = uint32_t(typeData.size());
     archive << dataSize;

@@ -13,14 +13,12 @@
 
 #include <fstream>
 
-bool CommonFunctions::writeToFile(
-    const std::string &writeFile, const std::vector<unsigned char> &dataToWrite)
+bool CommonFunctions::writeToFile(const std::string &writeFile, const std::vector<unsigned char> &dataToWrite)
 {
     std::ofstream file = std::ofstream(writeFile, std::ios::binary | std::ios::out);
     if (file.is_open())
     {
-        file.write(reinterpret_cast<const char *>(dataToWrite.data()),
-            dataToWrite.size() * sizeof(decltype(dataToWrite[0])));
+        file.write(reinterpret_cast<const char *>(dataToWrite.data()), dataToWrite.size() * sizeof(decltype(dataToWrite[0])));
         file.close();
         return true;
     }
@@ -32,8 +30,7 @@ bool CommonFunctions::writeToFile(const std::string &writeFile, const std::vecto
     std::ofstream file = std::ofstream(writeFile, std::ios::binary | std::ios::out);
     if (file.is_open())
     {
-        file.write(reinterpret_cast<const char *>(dataToWrite.data()),
-            dataToWrite.size() * sizeof(decltype(dataToWrite[0])));
+        file.write(reinterpret_cast<const char *>(dataToWrite.data()), dataToWrite.size() * sizeof(decltype(dataToWrite[0])));
         file.close();
         return true;
     }

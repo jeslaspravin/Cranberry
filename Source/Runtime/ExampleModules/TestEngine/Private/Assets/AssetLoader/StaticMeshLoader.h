@@ -49,18 +49,18 @@ private:
 
     std::map<String, struct MeshLoaderData> loadedMeshes;
 
-    Vector3D getFaceNormal(const uint32 &index0, const uint32 &index1, const uint32 &index2,
-        const std::vector<StaticMeshVertex> &verticesData) const;
+    Vector3D getFaceNormal(const uint32 &index0, const uint32 &index1, const uint32 &index2, const std::vector<StaticMeshVertex> &verticesData)
+        const;
     void addNormal(StaticMeshVertex &vertex, Vector3D &normal) const;
     void normalize(Vector4D &normal) const;
 
-    void load(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib,
-        const std::vector<tinyobj::material_t> &materials);
-    void smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib,
-        const std::vector<tinyobj::material_t> &materials);
+    void load(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib, const std::vector<tinyobj::material_t> &materials);
+    void smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib, const std::vector<tinyobj::material_t> &materials);
     // Splits loaded mesh into batches based on material IDs
-    void splitMeshBatches(MeshLoaderData &meshLoaderData, const std::vector<int32> &faceMaterialId,
-        const std::vector<tinyobj::material_t> &materials, uint32 uniqueMatCount, uint32 faceCount);
+    void splitMeshBatches(
+        MeshLoaderData &meshLoaderData, const std::vector<int32> &faceMaterialId, const std::vector<tinyobj::material_t> &materials,
+        uint32 uniqueMatCount, uint32 faceCount
+    );
 
 public:
     StaticMeshLoader(const String &assetPath);

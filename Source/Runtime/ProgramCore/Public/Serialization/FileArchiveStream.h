@@ -36,6 +36,7 @@ public:
     bool allocate(SizeT count) override;
     uint8 readForwardAt(SizeT idx) const override;
     uint8 readBackwardAt(SizeT idx) const override;
+    uint64 cursorPos() const override;
     bool isAvailable() const override;
     /* Overrides ends */
 };

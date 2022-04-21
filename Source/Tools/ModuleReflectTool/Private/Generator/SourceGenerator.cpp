@@ -44,9 +44,8 @@ void SourceGenerator::writeGeneratedFiles()
         String fileContent;
         if (FileHelper::readString(fileContent, filePath) && !fileContent.empty())
         {
-            sourceGenTemplates.insert(
-                { PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(filePath)),
-                    MustacheStringFormatter(fileContent) });
+            sourceGenTemplates.insert({ PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(filePath)),
+                                        MustacheStringFormatter(fileContent) });
         }
     }
     String moduleExpMacro;
@@ -66,16 +65,16 @@ void SourceGenerator::writeGeneratedFiles()
         // Generate header file
         MustacheContext headerContext;
         headerContext.args[GeneratorConsts::HEADERFILEID_TAG] = headerFileID;
-        headerContext.sectionContexts[GeneratorConsts::REFLECTTYPES_SECTION_TAG]
-            = srcGenCntxt.headerReflectTypes;
+        headerContext.sectionContexts[GeneratorConsts::REFLECTTYPES_SECTION_TAG] = srcGenCntxt.headerReflectTypes;
         headerContext.args[GeneratorConsts::EXPORT_SYMBOL_MACRO] = moduleExpMacro;
 
-        String headerContent = sourceGenTemplates[GeneratorConsts::REFLECTHEADER_TEMPLATE].render(
-            headerContext, sourceGenTemplates);
+        String headerContent = sourceGenTemplates[GeneratorConsts::REFLECTHEADER_TEMPLATE].render(headerContext, sourceGenTemplates);
         if (!FileHelper::writeString(headerContent, srcInfo->generatedHeaderPath))
         {
-            LOG_ERROR("SourceGenerator", "%s() : Could not write generated header(%s) for header %s",
-                __func__, srcInfo->generatedHeaderPath, srcInfo->headerIncl);
+            LOG_ERROR(
+                "SourceGenerator", "%s() : Could not write generated header(%s) for header %s", __func__, srcInfo->generatedHeaderPath,
+                srcInfo->headerIncl
+            );
             bHasAnyError = true;
             continue;
         }
@@ -84,23 +83,21 @@ void SourceGenerator::writeGeneratedFiles()
         MustacheContext sourceContext;
         sourceContext.args[GeneratorConsts::HEADERFILEID_TAG] = headerFileID;
         sourceContext.args[GeneratorConsts::INCLUDEHEADER_TAG] = srcInfo->headerIncl;
-        sourceContext.sectionContexts[GeneratorConsts::ALLREGISTERTYPES_SECTION_TAG]
-            = srcGenCntxt.allRegisteredypes;
-        sourceContext.sectionContexts[GeneratorConsts::QUALIFIEDTYPES_SECTION_TAG]
-            = srcGenCntxt.qualifiedTypes;
+        sourceContext.sectionContexts[GeneratorConsts::ALLREGISTERTYPES_SECTION_TAG] = srcGenCntxt.allRegisteredypes;
+        sourceContext.sectionContexts[GeneratorConsts::QUALIFIEDTYPES_SECTION_TAG] = srcGenCntxt.qualifiedTypes;
         sourceContext.sectionContexts[GeneratorConsts::PAIRTYPES_SECTION_TAG] = srcGenCntxt.pairTypes;
         sourceContext.sectionContexts[GeneratorConsts::MAPTYPES_SECTION_TAG] = srcGenCntxt.mapTypes;
-        sourceContext.sectionContexts[GeneratorConsts::CONTAINERTYPES_SECTION_TAG]
-            = srcGenCntxt.containerTypes;
+        sourceContext.sectionContexts[GeneratorConsts::CONTAINERTYPES_SECTION_TAG] = srcGenCntxt.containerTypes;
         sourceContext.sectionContexts[GeneratorConsts::ENUMTYPES_SECTION_TAG] = srcGenCntxt.enumTypes;
         sourceContext.sectionContexts[GeneratorConsts::CLASSTYPES_SECTION_TAG] = srcGenCntxt.classTypes;
 
-        String sourceContent = sourceGenTemplates[GeneratorConsts::REFLECTSOURCE_TEMPLATE].render(
-            sourceContext, sourceGenTemplates);
+        String sourceContent = sourceGenTemplates[GeneratorConsts::REFLECTSOURCE_TEMPLATE].render(sourceContext, sourceGenTemplates);
         if (!FileHelper::writeString(sourceContent, srcInfo->generatedTUPath))
         {
-            LOG_ERROR("SourceGenerator", "%s() : Could not write generated sources(%s) for header %s",
-                __func__, srcInfo->generatedTUPath, srcInfo->headerIncl);
+            LOG_ERROR(
+                "SourceGenerator", "%s() : Could not write generated sources(%s) for header %s", __func__, srcInfo->generatedTUPath,
+                srcInfo->headerIncl
+            );
             bHasAnyError = true;
             continue;
         }

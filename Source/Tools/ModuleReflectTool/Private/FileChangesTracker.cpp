@@ -15,24 +15,20 @@
 
 #include <unordered_set>
 
-FileChangesTracker::FileChangesTracker(
-    const String name, const String &directory, const String &intermediateDir)
+FileChangesTracker::FileChangesTracker(const String name, const String &directory, const String &intermediateDir)
     : trackerManifestName(name + FILE_NAME)
     , folderPath(directory)
     , writePath(intermediateDir)
 {
-    fatalAssert(PlatformFile(folderPath).exists(), "%s() : Tracking base directory %s is not valid",
-        __func__, folderPath);
+    fatalAssert(PlatformFile(folderPath).exists(), "%s() : Tracking base directory %s is not valid", __func__, folderPath);
     String manifestContent;
-    if (FileHelper::readString(
-            manifestContent, PathFunctions::combinePath(writePath, trackerManifestName)))
+    if (FileHelper::readString(manifestContent, PathFunctions::combinePath(writePath, trackerManifestName)))
     {
         std::vector<StringView> readLines = manifestContent.splitLines();
         for (String line : readLines)
         {
             std::vector<String> fileEntry = String::split(line, TCHAR("="));
-            fatalAssert(
-                fileEntry.size() == 2, "%s() : Cannot parse file timestamp from %s", __func__, line);
+            fatalAssert(fileEntry.size() == 2, "%s() : Cannot parse file timestamp from %s", __func__, line);
             fileLastTimestamp[fileEntry[0]] = std::stoll(fileEntry[1]);
         }
     }
@@ -48,14 +44,11 @@ FileChangesTracker::~FileChangesTracker()
         ++i;
     }
 
-    String manifestFileContent
-        = String::join(manifestEntries.cbegin(), manifestEntries.cend(), LINE_FEED_CHAR);
-    FileHelper::writeString(
-        manifestFileContent, PathFunctions::combinePath(writePath, trackerManifestName));
+    String manifestFileContent = String::join(manifestEntries.cbegin(), manifestEntries.cend(), LINE_FEED_CHAR);
+    FileHelper::writeString(manifestFileContent, PathFunctions::combinePath(writePath, trackerManifestName));
 }
 
-bool FileChangesTracker::isTargetOutdated(
-    const String &absPath, const std::vector<String> &outputFiles) const
+bool FileChangesTracker::isTargetOutdated(const String &absPath, const std::vector<String> &outputFiles) const
 {
     PlatformFile srcFile(absPath);
     if (!srcFile.exists())
@@ -73,8 +66,7 @@ bool FileChangesTracker::isTargetOutdated(
         for (const String &targetFilePath : outputFiles)
         {
             PlatformFile targetFile(targetFilePath);
-            bIsAllOutsValid
-                = bIsAllOutsValid && targetFile.exists() && targetFile.lastWriteTimeStamp() > ts;
+            bIsAllOutsValid = bIsAllOutsValid && targetFile.exists() && targetFile.lastWriteTimeStamp() > ts;
         }
 
         if (fileEntry.second >= ts && bIsAllOutsValid)

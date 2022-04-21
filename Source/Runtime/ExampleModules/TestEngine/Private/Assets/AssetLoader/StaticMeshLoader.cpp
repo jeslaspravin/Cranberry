@@ -57,8 +57,7 @@ struct std::equal_to<tinyobj::index_t>
 {
     constexpr bool operator()(const tinyobj::index_t &lhs, const tinyobj::index_t &rhs) const
     {
-        return lhs.vertex_index == rhs.vertex_index && lhs.normal_index == rhs.normal_index
-               && lhs.vertex_index == rhs.vertex_index;
+        return lhs.vertex_index == rhs.vertex_index && lhs.normal_index == rhs.normal_index && lhs.vertex_index == rhs.vertex_index;
     }
 };
 
@@ -88,13 +87,10 @@ bool hasSmoothedNormals(const tinyobj::shape_t &mesh)
 //  v0 to v1 (v1 - v0) = (u1 - u0) * T + (v1 - v0) * B
 //  Solve the same for other pair v0, v2
 //
-void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData,
-    const StaticMeshVertex &other1, const StaticMeshVertex &other2)
+void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData, const StaticMeshVertex &other1, const StaticMeshVertex &other2)
 {
-    const Vector2D uv10{ other1.position.w() - vertexData.position.w(),
-        other1.normal.w() - vertexData.normal.w() };
-    const Vector2D uv20{ other2.position.w() - vertexData.position.w(),
-        other2.normal.w() - vertexData.normal.w() };
+    const Vector2D uv10{ other1.position.w() - vertexData.position.w(), other1.normal.w() - vertexData.normal.w() };
+    const Vector2D uv20{ other2.position.w() - vertexData.position.w(), other2.normal.w() - vertexData.normal.w() };
 
     const Vector3D p10 = Vector3D(other1.position) - Vector3D(vertexData.position);
     const Vector3D p20 = Vector3D(other2.position) - Vector3D(vertexData.position);
@@ -106,8 +102,7 @@ void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData,
     float invDet = uv10.x() * uv20.y() - uv20.x() * uv10.y();
     if (invDet == 0.0f)
     {
-        LOG_DEBUG("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents",
-            __func__);
+        LOG_DEBUG("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents", __func__);
 
         Rotation tbnFrame = RotationMatrix::fromZ(normal).asRotation();
         tangent = tbnFrame.fwdVector();
@@ -123,8 +118,7 @@ void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData,
 
         bitangent = invDet * (uv10.x() * p20 - uv20.x() * p10);
         // Gram-Schmidt orthogonalize
-        bitangent
-            = (bitangent - (bitangent | normal) * normal - (bitangent | tangent) * tangent).normalized();
+        bitangent = (bitangent - (bitangent | normal) * normal - (bitangent | tangent) * tangent).normalized();
 
         //
         // Handedness - dot(cross(normal(z) ^ tangent(x)), bitangent) must be positive
@@ -167,19 +161,18 @@ void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData,
 #endif
 }
 
-void fillVertexInfo(
-    StaticMeshVertex &vertexData, const tinyobj::attrib_t &attrib, const tinyobj::index_t &index)
+void fillVertexInfo(StaticMeshVertex &vertexData, const tinyobj::attrib_t &attrib, const tinyobj::index_t &index)
 {
     // Inverting Y since UV origin is at left bottom of image and Graphics API's UV origin is at left top
-    Vector2D uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0],
-        (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
+    Vector2D uvCoord{ attrib.texcoords[index.texcoord_index * 2 + 0], (1.0f - attrib.texcoords[index.texcoord_index * 2 + 1]) };
     uvCoord = Math::clamp(uvCoord, Vector2D::ZERO, Vector2D::ONE);
 
-    vertexData.position
-        = Vector4D(attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1],
-            attrib.vertices[index.vertex_index * 3 + 2], uvCoord.x());
+    vertexData.position = Vector4D(
+        attrib.vertices[index.vertex_index * 3], attrib.vertices[index.vertex_index * 3 + 1], attrib.vertices[index.vertex_index * 3 + 2],
+        uvCoord.x()
+    );
     Vector3D normal{ attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
-        attrib.normals[index.normal_index * 3 + 2] };
+                     attrib.normals[index.normal_index * 3 + 2] };
 
     vertexData.normal = Vector4D(normal.normalized(), uvCoord.y());
     // vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3],
@@ -187,8 +180,9 @@ void fillVertexInfo(
     //     , attrib.colors[index.vertex_index * 3 + 2], 1.0f);
 }
 
-Vector3D StaticMeshLoader::getFaceNormal(const uint32 &index0, const uint32 &index1,
-    const uint32 &index2, const std::vector<StaticMeshVertex> &verticesData) const
+Vector3D StaticMeshLoader::getFaceNormal(
+    const uint32 &index0, const uint32 &index1, const uint32 &index2, const std::vector<StaticMeshVertex> &verticesData
+) const
 {
     Vector4D temp1 = verticesData[index1].position - verticesData[index0].position;
     Vector4D temp2 = verticesData[index2].position - verticesData[index0].position;
@@ -216,8 +210,7 @@ void StaticMeshLoader::normalize(Vector4D &normal) const
     normal.z() = newNormal.z();
 }
 
-void StaticMeshLoader::load(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib,
-    const std::vector<tinyobj::material_t> &materials)
+void StaticMeshLoader::load(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib, const std::vector<tinyobj::material_t> &materials)
 {
     MeshLoaderData &meshLoaderData = loadedMeshes[UTF8_TO_TCHAR(mesh.name.c_str())];
     meshLoaderData.indices.resize(mesh.mesh.indices.size());
@@ -293,18 +286,24 @@ void StaticMeshLoader::load(const tinyobj::shape_t &mesh, const tinyobj::attrib_
                 // Since we need all three vertex for tangent and bi-tangent calculations
                 if (idx0NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx0],
-                        meshLoaderData.vertices[newVertIdx1], meshLoaderData.vertices[newVertIdx2]);
+                    calcTangent(
+                        meshLoaderData, meshLoaderData.vertices[newVertIdx0], meshLoaderData.vertices[newVertIdx1],
+                        meshLoaderData.vertices[newVertIdx2]
+                    );
                 }
                 if (idx1NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx1],
-                        meshLoaderData.vertices[newVertIdx2], meshLoaderData.vertices[newVertIdx0]);
+                    calcTangent(
+                        meshLoaderData, meshLoaderData.vertices[newVertIdx1], meshLoaderData.vertices[newVertIdx2],
+                        meshLoaderData.vertices[newVertIdx0]
+                    );
                 }
                 if (idx2NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx2],
-                        meshLoaderData.vertices[newVertIdx0], meshLoaderData.vertices[newVertIdx1]);
+                    calcTangent(
+                        meshLoaderData, meshLoaderData.vertices[newVertIdx2], meshLoaderData.vertices[newVertIdx0],
+                        meshLoaderData.vertices[newVertIdx1]
+                    );
                 }
             }
 
@@ -325,8 +324,9 @@ void StaticMeshLoader::load(const tinyobj::shape_t &mesh, const tinyobj::attrib_
     }
 }
 
-void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib,
-    const std::vector<tinyobj::material_t> &materials)
+void StaticMeshLoader::smoothAndLoad(
+    const tinyobj::shape_t &mesh, const tinyobj::attrib_t &attrib, const std::vector<tinyobj::material_t> &materials
+)
 {
     const float smoothingThreshold = Math::cos(Math::deg2Rad(smoothingAngle));
     MeshLoaderData &meshLoaderData = loadedMeshes[UTF8_TO_TCHAR(mesh.name.c_str())];
@@ -411,18 +411,24 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj
                 // Since we need all three vertex for tangent and bi-tangent calculations
                 if (idx0NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx0],
-                        meshLoaderData.vertices[newVertIdx1], meshLoaderData.vertices[newVertIdx2]);
+                    calcTangent(
+                        meshLoaderData, meshLoaderData.vertices[newVertIdx0], meshLoaderData.vertices[newVertIdx1],
+                        meshLoaderData.vertices[newVertIdx2]
+                    );
                 }
                 if (idx1NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx1],
-                        meshLoaderData.vertices[newVertIdx2], meshLoaderData.vertices[newVertIdx0]);
+                    calcTangent(
+                        meshLoaderData, meshLoaderData.vertices[newVertIdx1], meshLoaderData.vertices[newVertIdx2],
+                        meshLoaderData.vertices[newVertIdx0]
+                    );
                 }
                 if (idx2NewVertItr == indexToNewVert.end())
                 {
-                    calcTangent(meshLoaderData, meshLoaderData.vertices[newVertIdx2],
-                        meshLoaderData.vertices[newVertIdx0], meshLoaderData.vertices[newVertIdx1]);
+                    calcTangent(
+                        meshLoaderData, meshLoaderData.vertices[newVertIdx2], meshLoaderData.vertices[newVertIdx0],
+                        meshLoaderData.vertices[newVertIdx1]
+                    );
                 }
             }
 
@@ -432,8 +438,7 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj
             meshLoaderData.indices[faceIdx * 3 + 1] = newVertIdx1;
             meshLoaderData.indices[faceIdx * 3 + 2] = newVertIdx2;
 
-            faceNormals[faceIdx]
-                = getFaceNormal(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
+            faceNormals[faceIdx] = getFaceNormal(newVertIdx0, newVertIdx1, newVertIdx2, meshLoaderData.vertices);
 
             // Fill vertex pair's(Edge's) faces adjacency
             {
@@ -513,16 +518,14 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj
         {
             std::vector<std::set<uint32>> faceGroups;
 
-            for (const std::pair<const uint32, std::vector<uint32>> &adjacentFaces :
-                vertexFaceAdjacency[vertIdx])
+            for (const std::pair<const uint32, std::vector<uint32>> &adjacentFaces : vertexFaceAdjacency[vertIdx])
             {
                 float dotVal = 1;
                 bool isSameSmoothing = true;
                 if (adjacentFaces.second.size() == 2)
                 {
                     dotVal = faceNormals[adjacentFaces.second[0]] | faceNormals[adjacentFaces.second[1]];
-                    isSameSmoothing = faceSmoothingId[adjacentFaces.second[0]]
-                                      == faceSmoothingId[adjacentFaces.second[1]];
+                    isSameSmoothing = faceSmoothingId[adjacentFaces.second[0]] == faceSmoothingId[adjacentFaces.second[1]];
                 }
 
                 if (dotVal >= smoothingThreshold && isSameSmoothing) // Is same face group
@@ -533,13 +536,12 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj
                     std::set<uint32> faceGrpsFound;
                     for (uint32 faceGrpIdx = 0; faceGrpIdx < faceGroups.size(); ++faceGrpIdx)
                     {
-                        std::vector<uint32> intersectSet(
-                            Math::min(faceIndices.size(), faceGroups[faceGrpIdx].size()));
-                        auto intersectItr = std::set_intersection(faceIndices.cbegin(),
-                            faceIndices.cend(), faceGroups[faceGrpIdx].cbegin(),
-                            faceGroups[faceGrpIdx].cend(), intersectSet.begin());
-                        if ((intersectItr - intersectSet.begin())
-                            > 0) // If any face idx is already in group add to that group
+                        std::vector<uint32> intersectSet(Math::min(faceIndices.size(), faceGroups[faceGrpIdx].size()));
+                        auto intersectItr = std::set_intersection(
+                            faceIndices.cbegin(), faceIndices.cend(), faceGroups[faceGrpIdx].cbegin(), faceGroups[faceGrpIdx].cend(),
+                            intersectSet.begin()
+                        );
+                        if ((intersectItr - intersectSet.begin()) > 0) // If any face idx is already in group add to that group
                         {
                             faceGrpsFound.insert(faceGrpIdx);
                         }
@@ -551,23 +553,20 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj
                     }
                     else if (faceGrpsFound.size() == 1)
                     {
-                        faceGroups[*faceGrpsFound.begin()].insert(
-                            faceIndices.begin(), faceIndices.end());
+                        faceGroups[*faceGrpsFound.begin()].insert(faceIndices.begin(), faceIndices.end());
                     }
                     else
                     {
                         auto faceGrpIdxItr = --faceGrpsFound.end();
                         do
                         {
-                            faceGroups[*faceGrpsFound.begin()].insert(
-                                faceGroups[*faceGrpIdxItr].begin(), faceGroups[*faceGrpIdxItr].end());
+                            faceGroups[*faceGrpsFound.begin()].insert(faceGroups[*faceGrpIdxItr].begin(), faceGroups[*faceGrpIdxItr].end());
                             faceGroups.erase(faceGroups.begin() + *faceGrpIdxItr);
                             --faceGrpIdxItr;
                         }
                         while (faceGrpIdxItr != faceGrpsFound.begin());
 
-                        faceGroups[*faceGrpsFound.begin()].insert(
-                            faceIndices.begin(), faceIndices.end());
+                        faceGroups[*faceGrpsFound.begin()].insert(faceIndices.begin(), faceIndices.end());
                     }
                 }
                 else // Non smoothing cases happen only if there is 2 adjacent faces
@@ -651,9 +650,10 @@ void StaticMeshLoader::smoothAndLoad(const tinyobj::shape_t &mesh, const tinyobj
     }
 }
 
-void StaticMeshLoader::splitMeshBatches(MeshLoaderData &meshLoaderData,
-    const std::vector<int32> &faceMaterialId, const std::vector<tinyobj::material_t> &materials,
-    uint32 uniqueMatCount, uint32 faceCount)
+void StaticMeshLoader::splitMeshBatches(
+    MeshLoaderData &meshLoaderData, const std::vector<int32> &faceMaterialId, const std::vector<tinyobj::material_t> &materials,
+    uint32 uniqueMatCount, uint32 faceCount
+)
 {
     // Splitting based on face material IDs
     if (uniqueMatCount > 1)
@@ -680,10 +680,8 @@ void StaticMeshLoader::splitMeshBatches(MeshLoaderData &meshLoaderData,
             MeshVertexView vertexBatchView;
             vertexBatchView.startIndex = uint32(meshLoaderData.indices.size());
             vertexBatchView.numOfIndices = uint32(matIdIndices.second.size());
-            vertexBatchView.name
-                = String(UTF8_TO_TCHAR(materials[matIdIndices.first].name.c_str())).trimCopy();
-            meshLoaderData.indices.insert(
-                meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
+            vertexBatchView.name = String(UTF8_TO_TCHAR(materials[matIdIndices.first].name.c_str())).trimCopy();
+            meshLoaderData.indices.insert(meshLoaderData.indices.end(), matIdIndices.second.cbegin(), matIdIndices.second.cend());
             meshLoaderData.meshBatches.push_back(vertexBatchView);
         }
     }
@@ -705,9 +703,10 @@ StaticMeshLoader::StaticMeshLoader(const String &assetPath)
 
     std::string warning;
     std::string error;
-    bIsSuccessful = tinyobj::LoadObj(&attrib, &meshes, &materials, &warning, &error,
-        TCHAR_TO_ANSI(assetPath.getChar()),
-        TCHAR_TO_ANSI(PlatformFile(assetPath).getHostDirectory().getChar()));
+    bIsSuccessful = tinyobj::LoadObj(
+        &attrib, &meshes, &materials, &warning, &error, TCHAR_TO_ANSI(assetPath.getChar()),
+        TCHAR_TO_ANSI(PlatformFile(assetPath).getHostDirectory().getChar())
+    );
     if (!warning.empty())
     {
         LOG_WARN("StaticMeshLoader", "Tiny obj loader %s", UTF8_TO_TCHAR(warning.c_str()));

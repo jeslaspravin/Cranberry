@@ -25,13 +25,13 @@ void MemoryResource::removeRef()
     {
         ENQUEUE_COMMAND(DeleteMemoryResource)
         (
-            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-                const GraphicsHelperAPI *graphicsHelper)
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
-                graphicsHelper->markForDeletion(graphicsInstance, this,
-                    bDeferDelete ? EDeferredDelStrategy::SwapchainCount
-                                 : EDeferredDelStrategy::Immediate);
-            });
+                graphicsHelper->markForDeletion(
+                    graphicsInstance, this, bDeferDelete ? EDeferredDelStrategy::SwapchainCount : EDeferredDelStrategy::Immediate
+                );
+            }
+        );
     }
 }
 
@@ -53,8 +53,7 @@ ImageResource::ImageResource(ImageResourceCreateInfo createInfo)
 
 uint32 ImageResource::mipCountFromDim()
 {
-    return (
-        uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y, dimensions.z))));
+    return (uint32)(1 + Math::floor(Math::log2((float)Math::max(dimensions.x, dimensions.y, dimensions.z))));
 }
 
 void ImageResource::setLayerCount(uint32 count) { layerCount = Math::max<uint32>(count, 1); }
@@ -69,18 +68,15 @@ void ImageResource::setImageSize(const Size3D &imageSize) { dimensions = imageSi
 
 bool EPixelDataFormat::isDepthFormat(Type dataFormat)
 {
-    return EPixelDataFormat::DepthFormatBegin <= dataFormat
-           && EPixelDataFormat::DepthFormatEnd >= dataFormat;
+    return EPixelDataFormat::DepthFormatBegin <= dataFormat && EPixelDataFormat::DepthFormatEnd >= dataFormat;
 }
 
 bool EPixelDataFormat::isStencilFormat(Type dataFormat)
 {
-    return EPixelDataFormat::StencilDepthEnd <= dataFormat
-           && EPixelDataFormat::StencilDepthEnd >= dataFormat;
+    return EPixelDataFormat::StencilDepthEnd <= dataFormat && EPixelDataFormat::StencilDepthEnd >= dataFormat;
 }
 
 bool EPixelDataFormat::isFloatingFormat(Type dataFormat)
 {
-    return EPixelDataFormat::FloatFormatBegin <= dataFormat
-           && EPixelDataFormat::FloatFormatEnd >= dataFormat;
+    return EPixelDataFormat::FloatFormatBegin <= dataFormat && EPixelDataFormat::FloatFormatEnd >= dataFormat;
 }

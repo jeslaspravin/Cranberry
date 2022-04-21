@@ -21,8 +21,7 @@ private:
 
 public:
     template <typename FirstType, typename LastType>
-    requires StringTypes<FirstType, LastType> CONST_EXPR static String combinePath(
-        FirstType &&firstPath, LastType &&lastPath)
+    requires StringTypes<FirstType, LastType> CONST_EXPR static String combinePath(FirstType &&firstPath, LastType &&lastPath)
     {
         String returnPath(std::forward<FirstType>(firstPath));
         returnPath.append(FS_PATH_SEPARATOR);
@@ -31,8 +30,7 @@ public:
     }
 
     template <typename BaseType, typename... Paths>
-    requires StringTypes<BaseType, Paths...> CONST_EXPR static String combinePath(
-        BaseType &&basePath, Paths &&...paths)
+    requires StringTypes<BaseType, Paths...> CONST_EXPR static String combinePath(BaseType &&basePath, Paths &&...paths)
     {
         String returnPath(std::forward<BaseType>(basePath));
         returnPath.append(FS_PATH_SEPARATOR);

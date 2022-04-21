@@ -146,15 +146,11 @@ public:
     // Parameter: GraphicsFence * cmdsCompleteFence - Fence that gets signalled when all of the commands
     // submitted are complete
     //************************************
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands,
-        FenceRef &cmdsCompleteFence);
-    void submitCmd(
-        EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef &cmdsCompleteFence);
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands, FenceRef &cmdsCompleteFence);
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef &cmdsCompleteFence);
 
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands,
-        VulkanResourcesTracker *resourceTracker);
-    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command,
-        VulkanResourcesTracker *resourceTracker);
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands, VulkanResourcesTracker *resourceTracker);
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command, VulkanResourcesTracker *resourceTracker);
 };
 
 /// <summary>
@@ -197,41 +193,39 @@ private:
 
 public:
     const std::vector<CommandResUsageInfo> *getCmdBufferDeps(const GraphicsResource *cmdBuffer) const;
-    std::vector<const GraphicsResource *> getCmdBufferResourceDeps(
-        const MemoryResourceRef &resource) const;
+    std::vector<const GraphicsResource *> getCmdBufferResourceDeps(const MemoryResourceRef &resource) const;
     void clearCmdBufferDeps(const GraphicsResource *cmdBuffer);
     void clearFinishedCmd(const GraphicsResource *cmdBuffer);
     void clearResource(const MemoryResourceRef &resource);
     void clearUnwanted();
 
     /* Reading resources functions */
-    std::optional<ResourceBarrierInfo> readOnlyBuffers(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> readOnlyImages(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> readOnlyTexels(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> readFromWriteBuffers(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> readFromWriteImages(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> readFromWriteTexels(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        readOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        readOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        readOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        readFromWriteBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        readFromWriteImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        readFromWriteTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
 
     /* Writing resources functions */
-    std::optional<ResourceBarrierInfo> writeReadOnlyBuffers(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> writeReadOnlyImages(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> writeReadOnlyTexels(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> writeBuffers(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> writeImages(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
-    std::optional<ResourceBarrierInfo> writeTexels(const GraphicsResource *cmdBuffer,
-        const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        writeReadOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        writeReadOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        writeReadOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+    std::optional<ResourceBarrierInfo>
+        writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
 
-    std::optional<ResourceBarrierInfo> imageToGeneralLayout(
-        const GraphicsResource *cmdBuffer, const ImageResourceRef resource);
+    std::optional<ResourceBarrierInfo> imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef resource);
 };

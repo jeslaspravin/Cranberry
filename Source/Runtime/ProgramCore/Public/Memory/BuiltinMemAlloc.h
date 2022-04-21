@@ -66,15 +66,11 @@ public:
 
     CONST_EXPR void deallocate(Type *const ptr, const SizeT size) { allocator.memFree(ptr); }
 
-    NODISCARD CONST_EXPR Type *allocate(const SizeT size)
-    {
-        return static_cast<Type *>(allocator.memAlloc(size));
-    }
+    NODISCARD CONST_EXPR Type *allocate(const SizeT size) { return static_cast<Type *>(allocator.memAlloc(size)); }
 };
 
 template <typename T1, typename T2>
-FORCE_INLINE CONST_EXPR bool operator==(
-    const CBEStlMallocAllocator<T1> &lhs, const CBEStlMallocAllocator<T2> &rhs) noexcept
+FORCE_INLINE CONST_EXPR bool operator==(const CBEStlMallocAllocator<T1> &lhs, const CBEStlMallocAllocator<T2> &rhs) noexcept
 {
     // All are equal due to malloc usage
     return true;

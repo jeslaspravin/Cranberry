@@ -42,10 +42,12 @@ Color::Color(const LinearColor &linearColor, bool bAsSrgb /*= false*/)
     }
     else
     {
-        colorValue = Byte4D(Math::clamp<uint8>(uint8(Math::round(linearColor.r() * 255)), 0u, 255u),
+        colorValue = Byte4D(
+            Math::clamp<uint8>(uint8(Math::round(linearColor.r() * 255)), 0u, 255u),
             Math::clamp<uint8>(uint8(Math::round(linearColor.g() * 255)), 0u, 255u),
             Math::clamp<uint8>(uint8(Math::round(linearColor.b() * 255)), 0u, 255u),
-            Math::clamp<uint8>(uint8(Math::round(linearColor.a() * 255)), 0u, 255u));
+            Math::clamp<uint8>(uint8(Math::round(linearColor.a() * 255)), 0u, 255u)
+        );
     }
 }
 
@@ -71,47 +73,30 @@ Color Color::toSrgb() const
     glm::vec3 value = NORMALIZE_COLOR_COMP(glm::vec3(colorValue));
 
     return Color(
-        uint8(Math::round(255
-                          * (value.r > 0.0031308f ? (1.055f * Math::pow(value.r, 1 / 2.4f)) - 0.055f
-                                                  : value.r * 12.92f))),
-        uint8(Math::round(255
-                          * (value.g > 0.0031308f ? (1.055f * Math::pow(value.g, 1 / 2.4f)) - 0.055f
-                                                  : value.g * 12.92f))),
-        uint8(Math::round(255
-                          * (value.b > 0.0031308f ? (1.055f * Math::pow(value.b, 1 / 2.4f)) - 0.055f
-                                                  : value.b * 12.92f))),
-        colorValue.a);
+        uint8(Math::round(255 * (value.r > 0.0031308f ? (1.055f * Math::pow(value.r, 1 / 2.4f)) - 0.055f : value.r * 12.92f))),
+        uint8(Math::round(255 * (value.g > 0.0031308f ? (1.055f * Math::pow(value.g, 1 / 2.4f)) - 0.055f : value.g * 12.92f))),
+        uint8(Math::round(255 * (value.b > 0.0031308f ? (1.055f * Math::pow(value.b, 1 / 2.4f)) - 0.055f : value.b * 12.92f))), colorValue.a
+    );
 }
 
 Color Color::toLinear() const
 {
     glm::vec3 value = NORMALIZE_COLOR_COMP(glm::vec3(colorValue));
 
-    return Color(uint8(Math::round(255
-                                   * (value.r > 0.04045f ? Math::pow((value.r + 0.055f) / 1.055f, 2.4f)
-                                                         : value.r / 12.92f))),
-        uint8(Math::round(
-            255
-            * (value.g > 0.04045f ? Math::pow((value.g + 0.055f) / 1.055f, 2.4f) : value.g / 12.92f))),
-        uint8(Math::round(
-            255
-            * (value.b > 0.04045f ? Math::pow((value.b + 0.055f) / 1.055f, 2.4f) : value.b / 12.92f))),
-        colorValue.a);
+    return Color(
+        uint8(Math::round(255 * (value.r > 0.04045f ? Math::pow((value.r + 0.055f) / 1.055f, 2.4f) : value.r / 12.92f))),
+        uint8(Math::round(255 * (value.g > 0.04045f ? Math::pow((value.g + 0.055f) / 1.055f, 2.4f) : value.g / 12.92f))),
+        uint8(Math::round(255 * (value.b > 0.04045f ? Math::pow((value.b + 0.055f) / 1.055f, 2.4f) : value.b / 12.92f))), colorValue.a
+    );
 }
 
 uint8 Color::operator[](uint32 idx) const { return colorValue[idx]; }
 
 Color::operator uint32() const { return *reinterpret_cast<const uint32 *>(this); }
 
-Color Color::fromHsl(const Vector3D &hsl, uint8 alpha /*= 255*/)
-{
-    return Color(LinearColor::fromHsl(hsl), NORMALIZE_COLOR_COMP(alpha));
-}
+Color Color::fromHsl(const Vector3D &hsl, uint8 alpha /*= 255*/) { return Color(LinearColor::fromHsl(hsl), NORMALIZE_COLOR_COMP(alpha)); }
 
-LinearColor Color::fromHsv(const Vector3D &hsv, uint8 alpha /*= 255*/)
-{
-    return Color(LinearColor::fromHsv(hsv), NORMALIZE_COLOR_COMP(alpha));
-}
+LinearColor Color::fromHsv(const Vector3D &hsv, uint8 alpha /*= 255*/) { return Color(LinearColor::fromHsv(hsv), NORMALIZE_COLOR_COMP(alpha)); }
 
 Vector3D Color::toHsv() const { return LinearColor(*this).toHsv(); }
 
@@ -237,8 +222,14 @@ Vector3D LinearColor::toHsv() const
 
 void hsxToRGBSwizzled(LinearColor &color, int32 swizzleIdx, const float *toRGB)
 {
-    static const int32 rgbSwizzle[6][3]
-        = { { 2, 0, 3 }, { 1, 2, 3 }, { 3, 2, 0 }, { 3, 1, 2 }, { 0, 3, 2 }, { 2, 3, 1 } };
+    static const int32 rgbSwizzle[6][3] = {
+        {2, 0, 3},
+        {1, 2, 3},
+        {3, 2, 0},
+        {3, 1, 2},
+        {0, 3, 2},
+        {2, 3, 1}
+    };
 
     color.setR(toRGB[rgbSwizzle[swizzleIdx][0]]);
     color.setG(toRGB[rgbSwizzle[swizzleIdx][1]]);
@@ -356,13 +347,10 @@ LinearColor LinearColor::fromHsv(const Vector3D &hsv, float alpha /*= 1.0f*/)
         const float hx6Frac = Math::frac(hx6);
         const int32 hx6floor = int32(Math::floor(hx6));
         float toRGB[4]{
-            v * (1 - s * (1 - hx6Frac)) // m + x (even hx6)
-            ,
-            v * (1 - s * hx6Frac) // m + x (odd hx6)
-            ,
-            v // m + c
-            ,
-            v * (1 - s) // m
+            v * (1 - s * (1 - hx6Frac)), // m + x (even hx6)
+            v * (1 - s * hx6Frac),       // m + x (odd hx6)
+            v,                           // m + c
+            v * (1 - s)                  // m
         };
 
         hsxToRGBSwizzled(retColor, hx6floor, toRGB);
@@ -372,17 +360,11 @@ LinearColor LinearColor::fromHsv(const Vector3D &hsv, float alpha /*= 1.0f*/)
 
 void LinearColor::operator=(LinearColor &&otherColor) { colorValue = otherColor.colorValue; }
 
-void LinearColor::operator=(const LinearColor &otherColor)
-{
-    colorValue = std::move(otherColor.colorValue);
-}
+void LinearColor::operator=(const LinearColor &otherColor) { colorValue = std::move(otherColor.colorValue); }
 
 namespace ColorConst
 {
-Color random(uint8 alpha /*= 255*/)
-{
-    return Color(LinearColorConst::random(NORMALIZE_COLOR_COMP(alpha)));
-}
+Color random(uint8 alpha /*= 255*/) { return Color(LinearColorConst::random(NORMALIZE_COLOR_COMP(alpha))); }
 
 const Color Transparent(255, 255, 255, 0);
 const Color WHITE(255, 255, 255, 255);

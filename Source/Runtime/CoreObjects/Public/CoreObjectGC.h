@@ -67,6 +67,7 @@ private:
 
 #if COREOBJCTGC_METRICS
     TickRep gcRefCollectorsTicks = 0;
+    TickRep gcMarkNonTransientTicks = 0;
     TickRep gcCollectionTicks = 0;
     TickRep gcClearTicks = 0;
 #endif
@@ -75,6 +76,7 @@ private:
     void deleteObject(CBE::Object *obj) const;
 
     void collectFromRefCollectors(TickRep &budgetTicks);
+    void markObjectsAsValid(TickRep &budgetTicks);
     void collectObjects(TickRep &budgetTicks);
     void clearUnused(TickRep &budgetTicks);
     void startNewGC(TickRep &budgetTicks);

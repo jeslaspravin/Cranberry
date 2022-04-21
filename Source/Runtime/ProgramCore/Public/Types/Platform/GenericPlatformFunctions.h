@@ -25,20 +25,14 @@ public:
     // Extensions are auto appended by api to platform default
     static LibPointer *openLibrary(String libName) { return PlatformClass::openLibrary(libName); }
 
-    static void releaseLibrary(const LibPointer *libraryHandle)
-    {
-        PlatformClass::releaseLibrary(libraryHandle);
-    }
+    static void releaseLibrary(const LibPointer *libraryHandle) { PlatformClass::releaseLibrary(libraryHandle); }
 
     static void *getProcAddress(const LibPointer *libraryHandle, String symName)
     {
         return PlatformClass::getProcAddress(libraryHandle, symName);
     }
 
-    static bool isSame(const LibPointer *leftHandle, const LibPointer *rightHandle)
-    {
-        return PlatformClass::isSame(leftHandle, rightHandle);
-    }
+    static bool isSame(const LibPointer *leftHandle, const LibPointer *rightHandle) { return PlatformClass::isSame(leftHandle, rightHandle); }
 
     static void *getCurrentThreadHandle() { return PlatformClass::getCurrentThreadHandle(); }
 
@@ -63,10 +57,11 @@ public:
 
     // Utilities
 
+    /*
+     * We need to remove ref and const here as we use perfect forwarding and type will be either const appended l/r value reference
+     */
     template <typename UnsignedType>
-    requires std::unsigned_integral<std::remove_cvref_t<
-        UnsignedType>> // We need to remove ref and const here as we use perfect forwarding and type will
-                       // be either const appended l/r value reference
+    requires std::unsigned_integral<std::remove_cvref_t<UnsignedType>>
     static uint32 getSetBitCount(UnsignedType &&value)
     {
         // Switch statement is not working as const_expr
@@ -89,17 +84,17 @@ public:
         else if CONST_EXPR (std::is_lvalue_reference_v<UnsignedType>)
         {
             uint32 count = 0;
-            SizeT num = sizeof(value) / sizeof(uint64);
+            constexpr SizeT numOf64bits = sizeof(value) / sizeof(uint64);
             const uint64 *ptr = reinterpret_cast<const uint64 *>(&value);
-            for (SizeT i = 0; i < num; ++i)
+            for (SizeT i = 0; i < numOf64bits; ++i)
             {
                 count += PlatformClass::getSetBitCount(*ptr);
                 ptr += 1;
             }
-            if (num = sizeof(value) % sizeof(uint64))
+            if (constexpr SizeT fracOf64bits = (sizeof(value) % sizeof(uint64)))
             {
                 const uint8 *bytePtr = reinterpret_cast<const uint8 *>(ptr);
-                for (uint32 i = 0; i < num; ++i)
+                for (uint32 i = 0; i < fracOf64bits; ++i)
                 {
                     count += PlatformClass::getSetBitCount(*bytePtr);
                     bytePtr += 1;
@@ -109,22 +104,16 @@ public:
         }
         else
         {
-            static_assert(false, "Unsupported type! for getSetBitCount");
+            static_assert(DependentFalseTypeValue<UnsignedType>, "Unsupported type! for getSetBitCount");
         }
         return 0;
     }
 
     static void createGUID(CBEGuid &outGuid) { PlatformClass::createGUID(outGuid); }
 
-    static bool wcharToUtf8(std::string &outStr, const WChar *wChar)
-    {
-        return PlatformClass::wcharToUtf8(outStr, wChar);
-    }
+    static bool wcharToUtf8(std::string &outStr, const WChar *wChar) { return PlatformClass::wcharToUtf8(outStr, wChar); }
 
-    static bool utf8ToWChar(std::wstring &outStr, const AChar *aChar)
-    {
-        return PlatformClass::utf8ToWChar(outStr, aChar);
-    }
+    static bool utf8ToWChar(std::wstring &outStr, const AChar *aChar) { return PlatformClass::utf8ToWChar(outStr, aChar); }
 
     static bool toUpper(AChar *inOutStr) { return PlatformClass::toUpper(inOutStr); }
     static bool toUpper(WChar *inOutStr) { return PlatformClass::toUpper(inOutStr); }

@@ -14,6 +14,7 @@
 #include "CoreObjectAllocator.h"
 #include "CoreObjectsExports.h"
 #include "ReflectionMacros.h"
+#include "Serialization/ObjectArchive.h"
 #include "Types/CompilerDefines.h"
 
 #include "CBEObject.gen.h"
@@ -106,13 +107,26 @@ public:
 
     virtual ~Object();
 
-    void destroy() { markReadyForDestroy(); }
+    void destroyObject() { destroy(); }
+    void beginDestroy() { markReadyForDestroy(); }
 
     FORCE_INLINE Object *getOuter() const { return objOuter; }
+    FORCE_INLINE Object *getOuterMost() const
+    {
+        Object *outer = this->getOuter();
+        while (outer && outer->getOuter())
+        {
+            outer = outer->getOuter();
+        }
+        return outer;
+    }
     FORCE_INLINE EObjectFlags getFlags() const { return flags; }
     FORCE_INLINE const String &getName() const { return objectName; }
     FORCE_INLINE StringID getStringID() const { return sid; }
     String getFullPath() const;
+
+    virtual void destroy() {}
+    virtual ObjectArchive &serialize(ObjectArchive &ar) { return ar; }
 };
 } // namespace CBE
 

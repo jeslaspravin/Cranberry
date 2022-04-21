@@ -135,16 +135,14 @@ ResourceType *SwapchainBufferedResource<RefCountType<ResourceType>>::operator*()
 }
 
 template <template <typename> typename RefCountType, typename ResourceType>
-void SwapchainBufferedResource<RefCountType<ResourceType>>::set(
-    const RefCountType<ResourceType> &resource, uint32 atIdx)
+void SwapchainBufferedResource<RefCountType<ResourceType>>::set(const RefCountType<ResourceType> &resource, uint32 atIdx)
 {
     debugAssert(resources.size() > atIdx);
     resources[atIdx] = resource;
 }
 
 template <template <typename> typename RefCountType, typename ResourceType>
-void SwapchainBufferedResource<RefCountType<ResourceType>>::setNewSwapchain(
-    WindowCanvasRef swapchainCanvas)
+void SwapchainBufferedResource<RefCountType<ResourceType>>::setNewSwapchain(WindowCanvasRef swapchainCanvas)
 {
     if (basedOnSwapchain != swapchainCanvas)
     {
@@ -165,8 +163,7 @@ void SwapchainBufferedResource<RefCountType<ResourceType>>::swapchainChanged()
 }
 
 template <template <typename> typename RefCountType, typename ResourceType>
-SwapchainBufferedResource<RefCountType<ResourceType>>::SwapchainBufferedResource(
-    WindowCanvasRef swapchainCanvas)
+SwapchainBufferedResource<RefCountType<ResourceType>>::SwapchainBufferedResource(WindowCanvasRef swapchainCanvas)
     : basedOnSwapchain(swapchainCanvas)
 {
     swapchainChanged();
@@ -237,8 +234,7 @@ ResourceType *SwapchainBufferedResource<ResourceType>::operator*() const
 
 template <typename ResourceType>
 template <typename... ConstructParamTypes>
-void SwapchainBufferedResource<ResourceType>::setNewSwapchain(
-    WindowCanvasRef swapchainCanvas, ConstructParamTypes... constructParams)
+void SwapchainBufferedResource<ResourceType>::setNewSwapchain(WindowCanvasRef swapchainCanvas, ConstructParamTypes... constructParams)
 {
     if (basedOnSwapchain != swapchainCanvas)
     {
@@ -270,8 +266,7 @@ void SwapchainBufferedResource<ResourceType>::swapchainChanged(ConstructParamTyp
 
 template <typename ResourceType>
 template <typename... ConstructParamTypes>
-SwapchainBufferedResource<ResourceType>::SwapchainBufferedResource(
-    WindowCanvasRef swapchainCanvas, ConstructParamTypes... constructParams)
+SwapchainBufferedResource<ResourceType>::SwapchainBufferedResource(WindowCanvasRef swapchainCanvas, ConstructParamTypes... constructParams)
     : basedOnSwapchain(swapchainCanvas)
 {
     swapchainChanged<ConstructParamTypes...>(std::forward<ConstructParamTypes>(constructParams)...);

@@ -167,10 +167,7 @@ bool Vector3D::isSame(const Vector3D &b, float epsilon /*= SMALL_EPSILON*/) cons
            && Math::isEqual(value.z, b.value.z, epsilon);
 }
 
-bool Vector3D::isFinite() const
-{
-    return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z);
-}
+bool Vector3D::isFinite() const { return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z); }
 
 Vector3D Vector3D::normalized() const { return Vector3D(glm::normalize(value)); }
 
@@ -186,10 +183,7 @@ Vector3D Vector3D::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
 
 float Vector3D::length() const { return glm::length(value); }
 
-float Vector3D::sqrlength() const
-{
-    return Math::pow2(value.x) + Math::pow2(value.y) + Math::pow2(value.z);
-}
+float Vector3D::sqrlength() const { return Math::pow2(value.x) + Math::pow2(value.y) + Math::pow2(value.z); }
 
 Vector3D Vector3D::projectTo(const Vector3D &b) const { return Vector3D(b * (*this | b) / (b | b)); }
 
@@ -214,15 +208,9 @@ Vector3D Vector3D::clamp(const Vector3D &value, const Vector3D &min, const Vecto
     return Vector3D(glm::clamp(value.value, min.value, max.value));
 }
 
-Vector3D Vector3D::min(const Vector3D &a, const Vector3D &b)
-{
-    return Vector3D(glm::min(a.value, b.value));
-}
+Vector3D Vector3D::min(const Vector3D &a, const Vector3D &b) { return Vector3D(glm::min(a.value, b.value)); }
 
-Vector3D Vector3D::max(const Vector3D &a, const Vector3D &b)
-{
-    return Vector3D(glm::max(a.value, b.value));
-}
+Vector3D Vector3D::max(const Vector3D &a, const Vector3D &b) { return Vector3D(glm::max(a.value, b.value)); }
 
 Vector3D Vector3D::abs(const Vector3D &value) { return Vector3D(glm::abs(value.value)); }
 
@@ -232,14 +220,8 @@ Vector3D Vector3D::ceil(const Vector3D &value) { return Vector3D(glm::ceil(value
 
 Vector3D Vector3D::round(const Vector3D &value) { return Vector3D(glm::round(value.value)); }
 
-Vector3D Vector3D::mod(const Vector3D &a, const Vector3D &b)
-{
-    return Vector3D(glm::mod(a.value, b.value));
-}
+Vector3D Vector3D::mod(const Vector3D &a, const Vector3D &b) { return Vector3D(glm::mod(a.value, b.value)); }
 
 Vector3D Vector3D::mod(const Vector3D &a, const float &b) { return Vector3D(glm::mod(a.value, b)); }
 
-Vector3D Vector3D::modf(Vector3D &wholePart, const Vector3D &value)
-{
-    return Vector3D(glm::modf(value.value, wholePart.value));
-}
+Vector3D Vector3D::modf(Vector3D &wholePart, const Vector3D &value) { return Vector3D(glm::modf(value.value, wholePart.value)); }

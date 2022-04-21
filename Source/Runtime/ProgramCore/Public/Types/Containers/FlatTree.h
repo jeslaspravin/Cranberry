@@ -117,10 +117,7 @@ public:
     // Read functions
     FORCE_INLINE SizeType size() const { return (SizeType)nodes.size(); }
     NODISCARD FORCE_INLINE bool empty() const { return nodes.empty(); }
-    NODISCARD FORCE_INLINE bool isValid(NodeIdx index) const
-    {
-        return index != InvalidIdx && nodes.isValid(index);
-    }
+    NODISCARD FORCE_INLINE bool isValid(NodeIdx index) const { return index != InvalidIdx && nodes.isValid(index); }
 
     FORCE_INLINE reference operator[](NodeIdx index) noexcept
     {
@@ -271,8 +268,7 @@ public:
 };
 
 template <typename DataType, typename IndexType>
-void FlatTree<DataType, IndexType>::printTree(
-    OutputStream &stream, NodeIdx parent, const String &prefix) const
+void FlatTree<DataType, IndexType>::printTree(OutputStream &stream, NodeIdx parent, const String &prefix) const
 {
     stream << prefix << parent << '\n';
     String newPrefix(prefix + TCHAR("|    "));

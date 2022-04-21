@@ -21,7 +21,4 @@ static_assert(false, "Platform not supported!");
 static_assert(false, "Platform not supported!");
 #endif
 
-UnexpectedErrorHandler *UnexpectedErrorHandler::getHandler()
-{
-    return PlatformUnexpectedErrorHandler::getHandler();
-}
+UnexpectedErrorHandler *UnexpectedErrorHandler::getHandler() { return PlatformUnexpectedErrorHandler::getHandler(); }

@@ -54,14 +54,13 @@ struct ENGINERENDERER_EXPORT ImageSubresource
 
     bool operator<(const ImageSubresource &otherSubresource) const
     {
-        return layersCount == otherSubresource.layersCount ? mipCount < otherSubresource.mipCount
-                                                           : layersCount < otherSubresource.layersCount;
+        return layersCount == otherSubresource.layersCount ? mipCount < otherSubresource.mipCount : layersCount < otherSubresource.layersCount;
     }
 
     bool operator==(const ImageSubresource &otherSubresource) const
     {
-        return baseLayer == otherSubresource.baseLayer && baseMip == otherSubresource.baseMip
-               && mipCount == otherSubresource.mipCount && layersCount == otherSubresource.layersCount;
+        return baseLayer == otherSubresource.baseLayer && baseMip == otherSubresource.baseMip && mipCount == otherSubresource.mipCount
+               && layersCount == otherSubresource.layersCount;
     }
 };
 
@@ -76,8 +75,7 @@ struct ENGINERENDERER_EXPORT ImageViewInfo
 
         bool operator==(const ImageComponentMapping &otherCompMapping) const
         {
-            return r == otherCompMapping.r && g == otherCompMapping.g && b == otherCompMapping.b
-                   && a == otherCompMapping.a;
+            return r == otherCompMapping.r && g == otherCompMapping.g && b == otherCompMapping.b && a == otherCompMapping.a;
         }
     };
 
@@ -87,15 +85,11 @@ struct ENGINERENDERER_EXPORT ImageViewInfo
     // Used only in case of depth and stencil textures
     bool bUseStencil = false;
 
-    bool operator<(const ImageViewInfo &otherViewInfo) const
-    {
-        return viewSubresource < otherViewInfo.viewSubresource;
-    }
+    bool operator<(const ImageViewInfo &otherViewInfo) const { return viewSubresource < otherViewInfo.viewSubresource; }
 
     bool operator==(const ImageViewInfo &otherViewInfo) const
     {
-        return bUseStencil == otherViewInfo.bUseStencil
-               && componentMapping == otherViewInfo.componentMapping
+        return bUseStencil == otherViewInfo.bUseStencil && componentMapping == otherViewInfo.componentMapping
                && viewSubresource == otherViewInfo.viewSubresource;
     }
 };
@@ -299,8 +293,5 @@ struct CopyImageInfo
 
     ImageSubresource subres;
 
-    FORCE_INLINE bool isCopyCompatible(const CopyImageInfo &rhs) const
-    {
-        return extent == rhs.extent && subres == rhs.subres;
-    }
+    FORCE_INLINE bool isCopyCompatible(const CopyImageInfo &rhs) const { return extent == rhs.extent && subres == rhs.subres; }
 };

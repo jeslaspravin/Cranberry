@@ -38,8 +38,7 @@ void EngineTime::progressFrame()
 
     frameTick = Time::timeNow();
     deltaTime = Time::asSeconds(frameTick - lastFrameTick);
-    if (deltaTime
-        > 2) // if Delta time is greater than 2 seconds we might have been in break so reset to old delta
+    if (deltaTime > 2) // if Delta time is greater than 2 seconds we might have been in break so reset to old delta
     {
         deltaTime = lastDeltaTime;
     }
@@ -54,17 +53,14 @@ float EngineTime::getDeltaTime() { return deltaTime * timeDilation; }
 void GameEngine::startup(const AppInstanceCreateInfo appInstanceCI)
 {
     timeData.engineStart();
-    rendererModule = static_cast<IRenderInterfaceModule *>(
-        ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer")).lock().get());
+    rendererModule = static_cast<IRenderInterfaceModule *>(ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer")).lock().get());
     renderStateChangeHandle = rendererModule->registerToStateEvents(
-        RenderStateDelegate::SingleCastDelegateType::createObject(
-            this, &GameEngine::onRenderStateChange));
-    applicationModule = static_cast<IApplicationModule *>(
-        ModuleManager::get()->getOrLoadModule(TCHAR("Application")).lock().get());
-    exitAppHandle = applicationModule->registerAllWindowDestroyed(
-        SimpleDelegate::SingleCastDelegateType::createObject(this, &GameEngine::tryExitApp));
-    inputModule = static_cast<EngineInputCoreModule *>(
-        ModuleManager::get()->getOrLoadModule(TCHAR("EngineInputCore")).lock().get());
+        RenderStateDelegate::SingleCastDelegateType::createObject(this, &GameEngine::onRenderStateChange)
+    );
+    applicationModule = static_cast<IApplicationModule *>(ModuleManager::get()->getOrLoadModule(TCHAR("Application")).lock().get());
+    exitAppHandle
+        = applicationModule->registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType::createObject(this, &GameEngine::tryExitApp));
+    inputModule = static_cast<EngineInputCoreModule *>(ModuleManager::get()->getOrLoadModule(TCHAR("EngineInputCore")).lock().get());
 
     application = applicationModule->createApplication(appInstanceCI);
     rendererModule->initializeGraphics();
@@ -90,15 +86,13 @@ void GameEngine::quit()
 
     assetManager.clearToDestroy();
 
-    LOG("GameEngine", "%s() : Engine run time in %.3f minutes", __func__,
-        Time::asMinutes(Time::timeNow() - timeData.startTick));
+    LOG("GameEngine", "%s() : Engine run time in %.3f minutes", __func__, Time::asMinutes(Time::timeNow() - timeData.startTick));
 }
 
 void GameEngine::engineLoop()
 {
     timeData.tickStart();
-    LOG("GameEngine", "%s() : Engine initialized in %0.3f seconds", __func__,
-        Time::asSeconds(timeData.initEndTick - timeData.startTick));
+    LOG("GameEngine", "%s() : Engine initialized in %0.3f seconds", __func__, Time::asSeconds(timeData.initEndTick - timeData.startTick));
 
     while (!isExiting())
     {

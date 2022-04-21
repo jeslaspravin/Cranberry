@@ -38,14 +38,11 @@ String PipelineCacheBase::getResourceName() const { return cacheName; }
 void PipelineCacheBase::setResourceName(const String &name)
 {
     cacheName = name;
-    cacheFileName = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(cacheFileName),
-        TCHAR("Cache"), cacheName + TCHAR(".cache"));
+    cacheFileName
+        = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(cacheFileName), TCHAR("Cache"), cacheName + TCHAR(".cache"));
 }
 
-void PipelineCacheBase::addPipelineToCache(const class PipelineBase *pipeline)
-{
-    pipelinesToCache.emplace_back(pipeline);
-}
+void PipelineCacheBase::addPipelineToCache(const class PipelineBase *pipeline) { pipelinesToCache.emplace_back(pipeline); }
 
 void PipelineCacheBase::writeCache() const
 {
@@ -97,15 +94,9 @@ void PipelineBase::setParamLayoutAtSet(const GraphicsResource *paramLayout, int3
     }
 }
 
-void PipelineBase::setPipelineCache(const PipelineCacheBase *pipelineCache)
-{
-    parentCache = pipelineCache;
-}
+void PipelineBase::setPipelineCache(const PipelineCacheBase *pipelineCache) { parentCache = pipelineCache; }
 
-const GraphicsResource *PipelineBase::getParamLayoutAtSet(int32 setIdx) const
-{
-    return shaderParamLayouts[setIdx];
-}
+const GraphicsResource *PipelineBase::getParamLayoutAtSet(int32 setIdx) const { return shaderParamLayouts[setIdx]; }
 
 //////////////////////////////////////////////////////////////////////////
 /// Graphics pipeline
@@ -156,26 +147,28 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
 
     // Draw mode
     polyDeg /= int32(config.allowedDrawModes.size());
-    while (tempIdx < config.allowedDrawModes.size()
-           && config.allowedDrawModes[tempIdx] != queryParam.drawMode)
+    while (tempIdx < config.allowedDrawModes.size() && config.allowedDrawModes[tempIdx] != queryParam.drawMode)
         ++tempIdx;
     if (tempIdx >= config.allowedDrawModes.size())
     {
-        LOG_WARN("GraphicsPipeline", "%s() : Not supported draw mode %d for pipeline of shader %s",
-            __func__, tempIdx, pipelineShader->getResourceName().getChar());
+        LOG_WARN(
+            "GraphicsPipeline", "%s() : Not supported draw mode %d for pipeline of shader %s", __func__, tempIdx,
+            pipelineShader->getResourceName().getChar()
+        );
     }
     idx += (tempIdx % config.allowedDrawModes.size()) * polyDeg;
 
     // Culling mode
     polyDeg /= int32(config.supportedCullings.size());
     tempIdx = 0;
-    while (tempIdx < config.supportedCullings.size()
-           && config.supportedCullings[tempIdx] != queryParam.cullingMode)
+    while (tempIdx < config.supportedCullings.size() && config.supportedCullings[tempIdx] != queryParam.cullingMode)
         ++tempIdx;
     if (tempIdx >= config.supportedCullings.size())
     {
-        LOG_WARN("GraphicsPipeline", "%s() : Not supported culling mode %d for pipeline of shader %s",
-            __func__, tempIdx, pipelineShader->getResourceName().getChar());
+        LOG_WARN(
+            "GraphicsPipeline", "%s() : Not supported culling mode %d for pipeline of shader %s", __func__, tempIdx,
+            pipelineShader->getResourceName().getChar()
+        );
     }
     idx += (tempIdx % config.supportedCullings.size()) * polyDeg;
 
@@ -196,16 +189,15 @@ ComputePipelineBase::ComputePipelineBase(const ComputePipelineBase *parent)
 // PipelineFactory
 //////////////////////////////////////////////////////////////////////////
 
-GraphicsPipelineFactoryRegistrant::GraphicsPipelineFactoryRegistrant(
-    const String &shaderName, GraphicsPipelineConfigGetter configGetter)
+GraphicsPipelineFactoryRegistrant::GraphicsPipelineFactoryRegistrant(const String &shaderName, GraphicsPipelineConfigGetter configGetter)
     : getter(configGetter)
 {
     PipelineFactory::graphicsPipelineFactoriesRegistry().insert({ shaderName, *this });
 }
 
 FORCE_INLINE PipelineBase *GraphicsPipelineFactoryRegistrant::operator()(
-    IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
-    const PipelineFactoryArgs &args) const
+    IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args
+) const
 {
     PipelineBase *pipeline;
     if (args.parentPipeline != nullptr)
@@ -214,11 +206,12 @@ FORCE_INLINE PipelineBase *GraphicsPipelineFactoryRegistrant::operator()(
     }
     else
     {
-        fatalAssert(getter.isBound(), "%s() : Invalid GraphicsPipelineConfig getter for shader %s",
-            __func__, args.pipelineShader->getResourceName().getChar());
+        fatalAssert(
+            getter.isBound(), "%s() : Invalid GraphicsPipelineConfig getter for shader %s", __func__,
+            args.pipelineShader->getResourceName().getChar()
+        );
         String pipelineName;
-        pipeline = graphicsHelper->createGraphicsPipeline(
-            graphicsInstance, getter.invoke(pipelineName, args.pipelineShader));
+        pipeline = graphicsHelper->createGraphicsPipeline(graphicsInstance, getter.invoke(pipelineName, args.pipelineShader));
         pipeline->setResourceName(pipelineName);
         pipeline->setPipelineShader(args.pipelineShader);
     }
@@ -231,8 +224,8 @@ ComputePipelineFactoryRegistrant::ComputePipelineFactoryRegistrant(const String 
 }
 
 FORCE_INLINE PipelineBase *ComputePipelineFactoryRegistrant::operator()(
-    IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
-    const PipelineFactoryArgs &args) const
+    IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args
+) const
 {
     PipelineBase *pipeline;
     if (args.parentPipeline != nullptr)
@@ -261,28 +254,28 @@ std::map<String, ComputePipelineFactoryRegistrant> &PipelineFactory::computePipe
     return singletonPipelineFactoriesRegistry;
 }
 
-PipelineBase *PipelineFactory::create(IGraphicsInstance *graphicsInstance,
-    const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const
+PipelineBase *
+    PipelineFactory::create(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const
 {
     fatalAssert(args.pipelineShader, "Pipeline shader cannot be null");
     if (args.pipelineShader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>()
         || args.pipelineShader->getShaderConfig()->getType()->isChildOf<UniqueUtilityShaderConfig>())
     {
-        auto factoryItr
-            = graphicsPipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
-        fatalAssert(factoryItr != graphicsPipelineFactoriesRegistry().end(),
-            "Failed finding factory to create graphics pipeline for shader %s",
-            args.pipelineShader->getResourceName().getChar());
+        auto factoryItr = graphicsPipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
+        fatalAssert(
+            factoryItr != graphicsPipelineFactoriesRegistry().end(), "Failed finding factory to create graphics pipeline for shader %s",
+            args.pipelineShader->getResourceName().getChar()
+        );
 
         return (factoryItr->second)(graphicsInstance, graphicsHelper, args);
     }
     else if (args.pipelineShader->getShaderConfig()->getType()->isChildOf<ComputeShaderConfig>())
     {
-        auto factoryItr
-            = computePipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
-        fatalAssert(factoryItr != computePipelineFactoriesRegistry().end(),
-            "Failed finding factory to create compute pipeline for shader %s",
-            args.pipelineShader->getResourceName().getChar());
+        auto factoryItr = computePipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
+        fatalAssert(
+            factoryItr != computePipelineFactoriesRegistry().end(), "Failed finding factory to create compute pipeline for shader %s",
+            args.pipelineShader->getResourceName().getChar()
+        );
 
         return (factoryItr->second)(graphicsInstance, graphicsHelper, args);
     }

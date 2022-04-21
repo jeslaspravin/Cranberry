@@ -6,8 +6,8 @@ DisableFormat:   false
 # The extra indent or outdent of access modifiers, e.g. public:.
 AccessModifierOffset: -4
 # aligns content inside bracket once max allowed line length is reached
-AlignAfterOpenBracket: DontAlign
-# AlignArrayOfStructures: None
+AlignAfterOpenBracket: BlockIndent
+AlignArrayOfStructures: Right
 # Following aligns respective statements together for clean look
 AlignConsecutiveMacros: None
 AlignConsecutiveAssignments: None
@@ -63,7 +63,7 @@ BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: BeforeComma
 BreakStringLiterals: true
-ColumnLimit:     105
+ColumnLimit:     144
 CommentPragmas:  '^ IWYU pragma:'
 # QualifierAlignment: Leave
 CompactNamespaces: false

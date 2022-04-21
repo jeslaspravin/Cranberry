@@ -21,15 +21,15 @@
 
 const char *PFN_Win32SurfaceKHR::EXT_NAME = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
 
-void PFN_Win32SurfaceKHR::setInstanceWindow(
-    const ApplicationInstance *instance, const GenericAppWindow *window)
+void PFN_Win32SurfaceKHR::setInstanceWindow(const ApplicationInstance *instance, const GenericAppWindow *window)
 {
     hInstance = instance->platformApp->getPlatformAppInstance();
     hWindow = window->getWindowHandle();
 }
 
-void PFN_Win32SurfaceKHR::operator()(VkInstance instance, const void *pNext,
-    const VkAllocationCallbacks *allocatorCallback, VkSurfaceKHR *surface) const
+void PFN_Win32SurfaceKHR::operator()(
+    VkInstance instance, const void *pNext, const VkAllocationCallbacks *allocatorCallback, VkSurfaceKHR *surface
+) const
 {
     if (!hInstance || !hWindow)
     {
@@ -48,8 +48,10 @@ void PFN_Win32SurfaceKHR::operator()(VkInstance instance, const void *pNext,
         = (PFN_vkCreateWin32SurfaceKHR)Vk::vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR");
     if (win32SurfaceCreate == nullptr)
     {
-        LOG_ERROR("Vulkan", "PFN_Win32SurfaceKHR() : failed fetching Create Surface function "
-                            "vkCreateWin32SurfaceKHR");
+        LOG_ERROR(
+            "Vulkan", "PFN_Win32SurfaceKHR() : failed fetching Create Surface function "
+                      "vkCreateWin32SurfaceKHR"
+        );
         return;
     }
 

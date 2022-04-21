@@ -35,8 +35,7 @@ private:
     FORCE_INLINE void addObject(const StorageType &obj, const GridCellIndex &atIdx);
     FORCE_INLINE void removeObject(const StorageType &obj, const GridCellIndex &atIdx);
 
-    bool isValidBoundIdxs(
-        const GridCellIndex &minBoundIdx, const GridCellIndex &maxBoundIdx, const AABB &box) const;
+    bool isValidBoundIdxs(const GridCellIndex &minBoundIdx, const GridCellIndex &maxBoundIdx, const AABB &box) const;
 
 public:
     BoundingVolume() = default;
@@ -59,18 +58,15 @@ public:
     }
 
     template <typename IntersectionSet = std::set<StorageType>>
-    DEBUG_INLINE void findIntersection(
-        IntersectionSet &intersection, const AABB &box, bool bSkipObjChecks)
+    DEBUG_INLINE void findIntersection(IntersectionSet &intersection, const AABB &box, bool bSkipObjChecks)
     {
         if (!getBounds().intersect(box))
         {
             return;
         }
 
-        GridCellIndex minBoundIdx
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(box.minBound)));
-        GridCellIndex maxBoundIdx
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(box.maxBound)));
+        GridCellIndex minBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(box.minBound)));
+        GridCellIndex maxBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(box.maxBound)));
 #if USE_CELLIDX_RANGE_ITR
         for (const GridCellIndex &currentIdx : GridCellIndexRange(minBoundIdx, maxBoundIdx))
         {
@@ -103,8 +99,7 @@ public:
         {
             for (currentIdx[1] = minBoundIdx.idx[1]; currentIdx[1] <= maxBoundIdx[1]; currentIdx[1]++)
             {
-                for (currentIdx[0] = minBoundIdx.idx[0]; currentIdx[0] <= maxBoundIdx[0];
-                     currentIdx[0]++)
+                for (currentIdx[0] = minBoundIdx.idx[0]; currentIdx[0] <= maxBoundIdx[0]; currentIdx[0]++)
                 {
                     const std::list<StorageType> &objs = grid[currentIdx];
                     if (bSkipObjChecks)
@@ -134,8 +129,9 @@ public:
     }
 #endif // USE_CELLIDX_RANGE_ITR
 
-        bool raycast(const Vector3D &start, const Vector3D &dir, const float &length,
-            std::vector<StorageType> &result, bool bExistOnHit = true);
+        bool raycast(
+            const Vector3D &start, const Vector3D &dir, const float &length, std::vector<StorageType> &result, bool bExistOnHit = true
+        );
 
         bool updateBoundsChecked(const StorageType &object, const AABB &oldBox, const AABB &newBox);
         void updateBounds(const StorageType &object, const AABB &oldBox, const AABB &newBox);
@@ -180,8 +176,8 @@ public:
     }
 
     template <typename StorageType>
-    bool BoundingVolume<StorageType>::isValidBoundIdxs(
-        const GridCellIndex &minBoundIdx, const GridCellIndex &maxBoundIdx, const AABB &box) const
+    bool
+        BoundingVolume<StorageType>::isValidBoundIdxs(const GridCellIndex &minBoundIdx, const GridCellIndex &maxBoundIdx, const AABB &box) const
     {
         // if any dimension is clamped because of being outside the volume bound
         bool bIsAnyDimensionClamped = false;
@@ -190,8 +186,7 @@ public:
         {
             uint32 cellExtend = maxBoundIdx[i] - minBoundIdx[i];
             // Invalid cell extend in volume bound while box is not thin plane
-            bIsAnyDimensionClamped
-                = bIsAnyDimensionClamped || (cellExtend == 0 && !Math::isEqual(boxExtend[i], 0.0f));
+            bIsAnyDimensionClamped = bIsAnyDimensionClamped || (cellExtend == 0 && !Math::isEqual(boxExtend[i], 0.0f));
         }
         return !bIsAnyDimensionClamped;
     }
@@ -205,16 +200,14 @@ public:
     }
 
     template <typename StorageType>
-    BoundingVolume<StorageType>::BoundingVolume(
-        std::list<StorageType> &&objectList, const Vector3D &cellSize)
+    BoundingVolume<StorageType>::BoundingVolume(std::list<StorageType> &&objectList, const Vector3D &cellSize)
     {
         allObjects = objectList;
         reinitialize(cellSize);
     }
 
     template <typename StorageType>
-    BoundingVolume<StorageType>::BoundingVolume(
-        const std::list<StorageType> &objectList, const Vector3D &cellSize)
+    BoundingVolume<StorageType>::BoundingVolume(const std::list<StorageType> &objectList, const Vector3D &cellSize)
     {
         allObjects = objectList;
         reinitialize(cellSize);
@@ -241,14 +234,18 @@ public:
             globalBound.grow(bound);
         }
 
-        LOG_DEBUG("BVH", "%s() : Before correcting cell size global bounding box size is (%f, %f, %f)",
-            __func__, globalBound.size().x(), globalBound.size().y(), globalBound.size().z());
+        LOG_DEBUG(
+            "BVH", "%s() : Before correcting cell size global bounding box size is (%f, %f, %f)", __func__, globalBound.size().x(),
+            globalBound.size().y(), globalBound.size().z()
+        );
 
         volumeGrid.InitWithSize(globalBound.minBound, globalBound.maxBound, cellSize);
         volumeGrid.getBound(globalBound.minBound, globalBound.maxBound);
 
-        LOG_DEBUG("BVH", "%s() : After correcting cell size global bounding box size is (%f, %f, %f)",
-            __func__, globalBound.size().x(), globalBound.size().y(), globalBound.size().z());
+        LOG_DEBUG(
+            "BVH", "%s() : After correcting cell size global bounding box size is (%f, %f, %f)", __func__, globalBound.size().x(),
+            globalBound.size().y(), globalBound.size().z()
+        );
 
         GridCellIndex cellCount = volumeGrid.cellCount();
         grid = VectorND<std::list<StorageType>, 3>(cellCount);
@@ -270,8 +267,7 @@ public:
         {
             for (currentIdx[1] = minBoundIdx.idx[1]; currentIdx[1] <= maxBoundIdx[1]; currentIdx[1]++)
             {
-                for (currentIdx[0] = minBoundIdx.idx[0]; currentIdx[0] <= maxBoundIdx[0];
-                     currentIdx[0]++)
+                for (currentIdx[0] = minBoundIdx.idx[0]; currentIdx[0] <= maxBoundIdx[0]; currentIdx[0]++)
                 {
                     // LOG_DEBUG("BVH", "%s() : Adding %d to (%d,%d,%d)", __func__, obj,
                     // x, y, z);
@@ -284,8 +280,7 @@ public:
     }
 
     template <typename StorageType>
-    void BoundingVolume<StorageType>::reinitialize(
-        const std::list<StorageType> &newObjectList, const Vector3D &cellSize)
+    void BoundingVolume<StorageType>::reinitialize(const std::list<StorageType> &newObjectList, const Vector3D &cellSize)
     {
         allObjects = newObjectList;
         reinitialize(cellSize);
@@ -309,16 +304,14 @@ public:
             {
                 if (objBound.minBound[axis] < currMinCorner[axis])
                 {
-                    uint32 numNewCells = (uint32)((currMinCorner[axis] - objBound.minBound[axis])
-                                                  / volumeGrid.cellSize()[axis]);
+                    uint32 numNewCells = (uint32)((currMinCorner[axis] - objBound.minBound[axis]) / volumeGrid.cellSize()[axis]);
                     newCellCount.idx[axis] += numNewCells;
                     newMinCorner[axis] -= numNewCells * volumeGrid.cellSize()[axis];
                     bChanged = true;
                 }
                 if (objBound.maxBound[axis] > currMaxCorner[axis])
                 {
-                    uint32 numNewCells = (uint32)((objBound.maxBound[axis] - currMaxCorner[axis])
-                                                  / volumeGrid.cellSize()[axis]);
+                    uint32 numNewCells = (uint32)((objBound.maxBound[axis] - currMaxCorner[axis]) / volumeGrid.cellSize()[axis]);
                     newCellCount.idx[axis] += numNewCells;
                     newMaxCorner[axis] += numNewCells * volumeGrid.cellSize()[axis];
                     bChanged = true;
@@ -369,10 +362,8 @@ public:
     {
         const AABB &objBound = object.getBounds();
 
-        GridCellIndex minBoundIdx
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(objBound.minBound)));
-        GridCellIndex maxBoundIdx
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(objBound.maxBound)));
+        GridCellIndex minBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(objBound.minBound)));
+        GridCellIndex maxBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(objBound.maxBound)));
 
 #if USE_CELLIDX_RANGE_ITR
         for (const GridCellIndex &currentIdx : GridCellIndexRange(minBoundIdx, maxBoundIdx))
@@ -397,8 +388,8 @@ public:
     }
 
     template <typename StorageType>
-    bool BoundingVolume<StorageType>::raycast(const Vector3D &start, const Vector3D &dir,
-        const float &length, std::vector<StorageType> &result, bool bExitOnHit /* = true */)
+    bool BoundingVolume<StorageType>::
+        raycast(const Vector3D &start, const Vector3D &dir, const float &length, std::vector<StorageType> &result, bool bExitOnHit /* = true */)
     {
         AABB globalBound;
         volumeGrid.getBound(globalBound.minBound, globalBound.maxBound);
@@ -418,8 +409,9 @@ public:
 
         Vector3D tmpPos;
 
-        bool cellsInPath = globalBound.raycastFast(start, dir, invDir, length, invLength, &parallel[0],
-            enterAtLengthFrac, nextStart, exitAtLengthFrac, nextExit);
+        bool cellsInPath = globalBound.raycastFast(
+            start, dir, invDir, length, invLength, &parallel[0], enterAtLengthFrac, nextStart, exitAtLengthFrac, nextExit
+        );
 
         if (cellsInPath)
         {
@@ -436,8 +428,9 @@ public:
                 {
                     const AABB &objBound = obj.getBounds();
 
-                    if (objBound.raycastFast(start, dir, invDir, length, invLength, &parallel[0],
-                            enterAtLengthFrac, tmpPos, exitAtLengthFrac, nextExit))
+                    if (objBound.raycastFast(
+                            start, dir, invDir, length, invLength, &parallel[0], enterAtLengthFrac, tmpPos, exitAtLengthFrac, nextExit
+                        ))
                     {
                         result.emplace_back(obj);
                     }
@@ -453,8 +446,8 @@ public:
                 {
                     if (!parallel[axis])
                     {
-                        const float crossPlanePt = dir[axis] > 0 ? cellCenter[axis] + halfCellSize[axis]
-                                                                 : cellCenter[axis] - halfCellSize[axis];
+                        const float crossPlanePt
+                            = dir[axis] > 0 ? cellCenter[axis] + halfCellSize[axis] : cellCenter[axis] - halfCellSize[axis];
                         const float distance = crossPlanePt - nextStart[axis];
                         const float time = distance * invDir[axis];
                         timesPerAxis[axis] = time;
@@ -477,9 +470,7 @@ public:
                 {
                     if (parallel[axis])
                         continue;
-                    nextCellIdx.idx[axis] += (timesPerAxis[axis] <= bestTime + SMALL_EPSILON)
-                                                 ? (dir[axis] > 0) ? 1 : -1
-                                                 : 0;
+                    nextCellIdx.idx[axis] += (timesPerAxis[axis] <= bestTime + SMALL_EPSILON) ? (dir[axis] > 0) ? 1 : -1 : 0;
                     if (nextCellIdx[axis] >= volumeGrid.cellCount()[axis] || nextCellIdx[axis] < 0)
                         return result.size() > 0;
                 }
@@ -492,8 +483,7 @@ public:
     }
 
     template <typename StorageType>
-    bool BoundingVolume<StorageType>::updateBoundsChecked(
-        const StorageType &object, const AABB &oldBox, const AABB &newBox)
+    bool BoundingVolume<StorageType>::updateBoundsChecked(const StorageType &object, const AABB &oldBox, const AABB &newBox)
     {
         std::set<StorageType> intersections = findIntersection(newBox);
         intersections.erase(object);
@@ -507,13 +497,10 @@ public:
     }
 
     template <typename StorageType>
-    void BoundingVolume<StorageType>::updateBounds(
-        const StorageType &object, const AABB &oldBox, const AABB &newBox)
+    void BoundingVolume<StorageType>::updateBounds(const StorageType &object, const AABB &oldBox, const AABB &newBox)
     {
-        GridCellIndex minBoundIdx
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(oldBox.minBound)));
-        GridCellIndex maxBoundIdx
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(oldBox.maxBound)));
+        GridCellIndex minBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(oldBox.minBound)));
+        GridCellIndex maxBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(oldBox.maxBound)));
 
 #if USE_CELLIDX_RANGE_ITR
         for (const GridCellIndex &currentIdx : GridCellIndexRange(minBoundIdx, maxBoundIdx))
@@ -536,10 +523,8 @@ public:
 
         if (getBounds().intersect(newBox))
         {
-            minBoundIdx
-                = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(newBox.minBound)));
-            maxBoundIdx
-                = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(newBox.maxBound)));
+            minBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(newBox.minBound)));
+            maxBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(newBox.maxBound)));
 
 #if USE_CELLIDX_RANGE_ITR
             for (const GridCellIndex &currentIdx : GridCellIndexRange(minBoundIdx, maxBoundIdx))
@@ -551,8 +536,7 @@ public:
         {
             for (currentIdx[1] = minBoundIdx.idx[1]; currentIdx[1] <= maxBoundIdx[1]; currentIdx[1]++)
             {
-                for (currentIdx[0] = minBoundIdx.idx[0]; currentIdx[0] <= maxBoundIdx[0];
-                     currentIdx[0]++)
+                for (currentIdx[0] = minBoundIdx.idx[0]; currentIdx[0] <= maxBoundIdx[0]; currentIdx[0]++)
                 {
                     addObject(object, currentIdx);
                 }
@@ -565,15 +549,11 @@ public:
     template <typename StorageType>
     bool BoundingVolume<StorageType>::isSameBounds(const AABB &boxOne, const AABB &boxTwo)
     {
-        GridCellIndex minBoundIdx1
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(boxOne.minBound)));
-        GridCellIndex maxBoundIdx1
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(boxOne.maxBound)));
+        GridCellIndex minBoundIdx1 = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(boxOne.minBound)));
+        GridCellIndex maxBoundIdx1 = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(boxOne.maxBound)));
 
-        GridCellIndex minBoundIdx2
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(boxTwo.minBound)));
-        GridCellIndex maxBoundIdx2
-            = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(boxTwo.maxBound)));
+        GridCellIndex minBoundIdx2 = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(boxTwo.minBound)));
+        GridCellIndex maxBoundIdx2 = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(boxTwo.maxBound)));
 
         return minBoundIdx1 == minBoundIdx2 && maxBoundIdx1 == maxBoundIdx2;
     }

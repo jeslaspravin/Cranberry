@@ -94,10 +94,7 @@ private:
     SizeT lastAllocatedCache = 0;
 
 private:
-    bool lastAllocatedCacheValid() const
-    {
-        return lastAllocatedCache < allocators.size() && allocators[lastAllocatedCache];
-    }
+    bool lastAllocatedCacheValid() const { return lastAllocatedCache < allocators.size() && allocators[lastAllocatedCache]; }
     FORCE_INLINE static SizeT allocIdxToSlotIdx(SlotIdxType &slotIdx, AllocIdx allocIdx)
     {
         slotIdx = (allocIdx % SlotAllocatorType::Size);
@@ -132,10 +129,7 @@ private:
     }
 
 public:
-    ObjectAllocator()
-    {
-        SET_BITS(PrivateObjectCoreAccessors::getFlags(&defaultObj), EObjectFlagBits::Default);
-    }
+    ObjectAllocator() { SET_BITS(PrivateObjectCoreAccessors::getFlags(&defaultObj), EObjectFlagBits::Default); }
 
     ~ObjectAllocator()
     {

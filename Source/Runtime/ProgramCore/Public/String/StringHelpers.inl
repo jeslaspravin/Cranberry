@@ -18,7 +18,7 @@ struct ToStringImpl
     template <typename Type>
     static String toString(Type &&value)
     {
-        static_assert(false, "Unsupported CharType to convert into");
+        static_assert(DependentFalseTypeValue<Type>, "Unsupported CharType to convert into");
         return {};
     }
 };
@@ -53,7 +53,7 @@ struct StringConv
     // End is inclusive of null-terminated character
     const ToCharType *convert(const FromCharType *start)
     {
-        static_assert(false, "Unsupported CharType conversion combination");
+        static_assert(DependentFalseTypeValue<StringConv>, "Unsupported CharType conversion combination");
         return nullptr;
     }
 };
@@ -67,7 +67,7 @@ struct StlStringConv
 {
     const ToCharType *convert(const FromCharType *start)
     {
-        static_assert(false, "Unsupported CharType conversion combination for stl only string conv");
+        static_assert(DependentFalseTypeValue<StlStringConv>, "Unsupported CharType conversion combination for stl only string conv");
         return nullptr;
     }
 };
@@ -148,8 +148,7 @@ FORCE_INLINE uint32 StringCodePointsHelper::utf8ToCode(const Utf8 *firstChar, ui
         // 1st byte - Remove 0b1110xxxx(224u) from first byte and left shift by 12(*4096)
         // 2nd byte - Remove 0b10xxxxxx from second byte and left shift by 6(*64)
         // 3rd byte - Remove 0b10xxxxxx from third byte
-        codePoint
-            = (*firstChar - 224u) * 4096u + (*(firstChar + 1) - 128u) * 64u + (*(firstChar + 2) - 128u);
+        codePoint = (*firstChar - 224u) * 4096u + (*(firstChar + 1) - 128u) * 64u + (*(firstChar + 2) - 128u);
         break;
     case 4:
     default:
@@ -159,8 +158,8 @@ FORCE_INLINE uint32 StringCodePointsHelper::utf8ToCode(const Utf8 *firstChar, ui
         // 2nd byte - Remove 0b10xxxxxx from second byte and left shift by 12(*4096)
         // 3rd byte - Remove 0b10xxxxxx from third byte and left shift by 6(*64)
         // 4th byte - Remove 0b10xxxxxx from fourth byte
-        codePoint = (*firstChar - 240u) * 262144u + (*(firstChar + 1) - 128u) * 4096u
-                    + (*(firstChar + 2) - 128u) * 64u + (*(firstChar + 3) - 128u);
+        codePoint
+            = (*firstChar - 240u) * 262144u + (*(firstChar + 1) - 128u) * 4096u + (*(firstChar + 2) - 128u) * 64u + (*(firstChar + 3) - 128u);
         break;
     }
     return codePoint;
@@ -337,10 +336,7 @@ protected:
 public:
     PROGRAMCORE_EXPORT const AChar *convert(const WChar *start);
     // Just alias for above to allow converting from inherited StringConv<Utf16/32, Utf8>
-    FORCE_INLINE const AChar *convert(const WCharEncodedType *start)
-    {
-        return convert(reinterpret_cast<const WChar *>(start));
-    }
+    FORCE_INLINE const AChar *convert(const WCharEncodedType *start) { return convert(reinterpret_cast<const WChar *>(start)); }
 };
 template <>
 struct StringConv<AChar, WChar>
@@ -392,7 +388,8 @@ public:
 // StringConv specialization for conversion between any encoded char type and UTF-8
 template <typename FromCharType>
 requires(!std::same_as<FromCharType, AChar>) struct StringConv<FromCharType, AChar>
-    : public std::conditional_t<std::is_same_v<FromCharType, WCharEncodedType> // ?
+    : public std::conditional_t<
+          std::is_same_v<FromCharType, WCharEncodedType> // ?
           ,
           StringConv<WChar, AChar> // :
           ,
@@ -400,7 +397,8 @@ requires(!std::same_as<FromCharType, AChar>) struct StringConv<FromCharType, ACh
 {};
 template <typename ToCharType>
 requires(!std::same_as<ToCharType, AChar>) struct StringConv<AChar, ToCharType>
-    : public std::conditional_t<std::is_same_v<ToCharType, WCharEncodedType> // ?
+    : public std::conditional_t<
+          std::is_same_v<ToCharType, WCharEncodedType> // ?
           ,
           StringConv<AChar, WChar> // :
           ,
@@ -465,8 +463,7 @@ public:
 
     bool operator!=(const StringCodePointsIterator &other) const
     {
-        return !(
-            codePoint == other.codePoint && charStart == other.charStart && charEnd == other.charEnd);
+        return !(codePoint == other.codePoint && charStart == other.charStart && charEnd == other.charEnd);
     }
 
     StringCodePointsIterator &operator++()

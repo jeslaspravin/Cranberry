@@ -13,8 +13,7 @@
 
 // String defines
 #ifndef USING_WIDE_UNICODE
-#define USING_WIDE_UNICODE                                                                              \
-    0 // Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore
+#define USING_WIDE_UNICODE 0 // Right now using UTF-8 for windows as windows do not recommend UTF-16 anymore
 #endif
 #ifndef TCHAR_inner
 //#define TCHAR_inner(x) L##x

@@ -28,13 +28,34 @@ class Object;
 
 enum EObjectFlagBits : EObjectFlags
 {
-    Default = 0x00'00'00'00'00'00'00'01, // Default object that are created as part of
-                                         // CBE::ObjectAllocatorBase creation
-    MarkedForDelete
-        = 0x00'00'00'00'00'00'00'02,    // Object when marked for delete will be deleted during later
-                                        // garbage collection no matter if they are referred or not
-    Deleted = 0x00'00'00'00'00'00'00'04 // Object after deleted will be marked as deleted, deleted object
-                                        // remains available until the allocated slot is entirely deleted
+    /*
+     * Default object that are created as part of
+     * CBE::ObjectAllocatorBase creation
+     */
+    Default = 0x00'00'00'00'00'00'00'01,
+    /*
+     * Object when marked for delete will be deleted during later
+     * garbage collection no matter if they are referred or not
+     */
+    MarkedForDelete = 0x00'00'00'00'00'00'00'02,
+    /*
+     * Object after deleted will be marked as deleted, deleted object
+     * remains available until the allocated slot is entirely deleted
+     */
+    Deleted = 0x00'00'00'00'00'00'00'04,
+    /*
+     * Objects marked as root can only be removed if its parent is deleted or if it is manually deleted.
+     * GC skips over objects marked as root
+     */
+    RootObject = 0x00'00'00'00'00'00'00'08,
+    /*
+     * If package is modified and needs to be saved
+     */
+    PackageDirty = 0x00'00'00'00'00'00'00'10,
+    /*
+     * If object of the package is being loaded/needs loading. Once object is loaded this flag will be cleared
+     */
+    PackageLoadPending = 0x00'00'00'00'00'00'00'20
 };
 
 // Why separate accessor? Because this accessor will be needed only for some low level carefully
@@ -49,8 +70,7 @@ public:
     static ObjectAllocIdx getAllocIdx(const Object *object);
     // clazz is just class property of this object and is used only when creating the object for the
     // first time
-    static void setOuterAndName(
-        Object *object, const String &newName, Object *outer, CBEClass clazz = nullptr);
+    static void setOuterAndName(Object *object, const String &newName, Object *outer, CBEClass clazz = nullptr);
     // Just some additional helper
     static void setOuter(Object *object, Object *outer);
     static void renameObject(Object *object, const String &newName);

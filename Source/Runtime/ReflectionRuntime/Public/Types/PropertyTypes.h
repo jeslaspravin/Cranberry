@@ -108,8 +108,7 @@ public:
 
         if (isMemberOfSameType<CleanType<ObjectType>>() && isSameType<MemberType>())
         {
-            return setFromTypeUnsafe<FromType>(
-                std::forward<FromType>(value), std::forward<ObjectType>(object));
+            return setFromTypeUnsafe<FromType>(std::forward<FromType>(value), std::forward<ObjectType>(object));
         }
         return false;
     }
@@ -134,8 +133,7 @@ public:
             {
                 const AsType *retVal = nullptr;
                 const ClassMemberField<true, CleanType<ObjectType>, AsType> *memberFieldPtr
-                    = (const ClassMemberField<true, CleanType<ObjectType>, AsType>
-                            *)(propertyAccessor());
+                    = (const ClassMemberField<true, CleanType<ObjectType>, AsType> *)(propertyAccessor());
 
                 debugAssert(memberFieldPtr);
                 retVal = &memberFieldPtr->get(std::forward<ObjectType>(object));
@@ -145,8 +143,7 @@ public:
             {
                 AsType *retVal = nullptr;
                 const ClassMemberField<false, CleanType<ObjectType>, AsType> *memberFieldPtr
-                    = (const ClassMemberField<false, CleanType<ObjectType>, AsType>
-                            *)(propertyAccessor());
+                    = (const ClassMemberField<false, CleanType<ObjectType>, AsType> *)(propertyAccessor());
 
                 debugAssert(memberFieldPtr);
                 retVal = &memberFieldPtr->get(std::forward<ObjectType>(object));
@@ -174,8 +171,7 @@ public:
             else
             {
                 const ClassMemberField<false, CleanType<ObjectType>, MemberType> *memberFieldPtr
-                    = (const ClassMemberField<false, CleanType<ObjectType>, MemberType>
-                            *)(propertyAccessor());
+                    = (const ClassMemberField<false, CleanType<ObjectType>, MemberType> *)(propertyAccessor());
 
                 debugAssert(memberFieldPtr);
                 memberFieldPtr->set(std::forward<ObjectType>(object), std::forward<FromType>(value));
@@ -225,8 +221,7 @@ public:
         if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
         {
             const AsType *retVal = nullptr;
-            const GlobalField<true, AsType> *memberFieldPtr
-                = (const GlobalField<true, AsType> *)(propertyAccessor());
+            const GlobalField<true, AsType> *memberFieldPtr = (const GlobalField<true, AsType> *)(propertyAccessor());
 
             fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
             retVal = &memberFieldPtr->get();
@@ -235,8 +230,7 @@ public:
         else
         {
             AsType *retVal = nullptr;
-            const GlobalField<false, AsType> *memberFieldPtr
-                = (const GlobalField<false, AsType> *)(propertyAccessor());
+            const GlobalField<false, AsType> *memberFieldPtr = (const GlobalField<false, AsType> *)(propertyAccessor());
 
             fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
             retVal = &memberFieldPtr->get();
@@ -255,8 +249,7 @@ public:
         }
         else
         {
-            const GlobalField<false, MemberType> *memberFieldPtr
-                = (const GlobalField<false, MemberType> *)(propertyAccessor());
+            const GlobalField<false, MemberType> *memberFieldPtr = (const GlobalField<false, MemberType> *)(propertyAccessor());
 
             fatalAssert(memberFieldPtr, "%s() : Invalid member pointer", __func__);
             memberFieldPtr->set(std::forward<FromType>(value));
@@ -274,8 +267,7 @@ class MemberFieldWrapperImpl : public MemberFieldWrapper
 private:
     // Member property must not be a reference
     static_assert(!std::is_reference_v<MemberType>);
-    using MemberFieldType
-        = ClassMemberField<std::is_const_v<CleanType<MemberType>>, ObjectType, MemberType>;
+    using MemberFieldType = ClassMemberField<std::is_const_v<CleanType<MemberType>>, ObjectType, MemberType>;
 
     MemberFieldType memberField;
 
@@ -294,8 +286,7 @@ public:
     {
         if CONST_EXPR (std::is_const_v<MemberType>)
         {
-            LOG_ERROR("MemberFieldWrapperImpl",
-                "%s() : Use const object function to retrieve const value", __func__);
+            LOG_ERROR("MemberFieldWrapperImpl", "%s() : Use const object function to retrieve const value", __func__);
             return nullptr;
         }
         else

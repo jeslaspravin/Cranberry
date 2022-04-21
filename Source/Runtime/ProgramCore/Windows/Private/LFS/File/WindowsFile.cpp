@@ -71,8 +71,7 @@ WindowsFile::~WindowsFile()
 {
     if (getFileHandle() != nullptr)
     {
-        LOG_WARN("WindowsFile", "File %s is not closed, Please close it before destroying",
-            getFullPath().getChar());
+        LOG_WARN("WindowsFile", "File %s is not closed, Please close it before destroying", getFullPath().getChar());
         closeFile();
     }
 }
@@ -87,8 +86,7 @@ void WindowsFile::flush() const
 
 bool WindowsFile::exists() const
 {
-    if (getFileName().compare(TCHAR(".")) == 0
-        || getFileName().compare(TCHAR("..")) == 0) // not valid files or folders
+    if (getFileName().compare(TCHAR(".")) == 0 || getFileName().compare(TCHAR("..")) == 0) // not valid files or folders
     {
         return false;
     }
@@ -143,10 +141,8 @@ uint64 WindowsFile::filePointer() const
     largePointer.QuadPart = 0;
     if (getFileHandleRaw())
     {
-        largePointer.LowPart = ::SetFilePointer(
-            getFileHandleRaw(), largePointer.LowPart, &largePointer.HighPart, FILE_CURRENT);
-        fPointer
-            = largePointer.LowPart == INVALID_SET_FILE_POINTER ? 0u : (uint64)(largePointer.QuadPart);
+        largePointer.LowPart = ::SetFilePointer(getFileHandleRaw(), largePointer.LowPart, &largePointer.HighPart, FILE_CURRENT);
+        fPointer = largePointer.LowPart == INVALID_SET_FILE_POINTER ? 0u : (uint64)(largePointer.QuadPart);
     }
     return fPointer;
 }
@@ -222,8 +218,7 @@ void WindowsFile::read(std::vector<uint8> &readTo, const uint32 &bytesToRead /*=
 
     uint64 filePointerCache = filePointer();
     uint64 availableSizeCanRead = (fileSize() - filePointerCache);
-    dword bytesLeftToRead
-        = (dword)(availableSizeCanRead > bytesToRead ? bytesToRead : availableSizeCanRead);
+    dword bytesLeftToRead = (dword)(availableSizeCanRead > bytesToRead ? bytesToRead : availableSizeCanRead);
     readTo.clear();
     readTo.resize(bytesLeftToRead, 0);
 
@@ -241,16 +236,16 @@ void WindowsFile::read(uint8 *readTo, const uint32 &bytesToRead) const
 
     uint64 filePointerCache = filePointer();
     uint64 availableSizeCanRead = (fileSize() - filePointerCache);
-    dword bytesLeftToRead
-        = (dword)(availableSizeCanRead > bytesToRead ? bytesToRead : availableSizeCanRead);
+    dword bytesLeftToRead = (dword)(availableSizeCanRead > bytesToRead ? bytesToRead : availableSizeCanRead);
 
     uint64 filePointerOffset = 0;
     dword bytesLastRead = 0;
     while (bytesLeftToRead > 0)
     {
-        ::ReadFile(getFileHandleRaw(), readTo + filePointerOffset,
-            (bytesLeftToRead > readBufferSize) ? readBufferSize : bytesLeftToRead, &bytesLastRead,
-            nullptr);
+        ::ReadFile(
+            getFileHandleRaw(), readTo + filePointerOffset, (bytesLeftToRead > readBufferSize) ? readBufferSize : bytesLeftToRead,
+            &bytesLastRead, nullptr
+        );
 
         bytesLeftToRead -= bytesLastRead;
         filePointerOffset += bytesLastRead;
@@ -426,10 +421,12 @@ GenericFileHandle *WindowsFile::openOrCreateImpl()
         if (ANY_BIT_SET(fileFlags, (EFileFlags::OpenExisting | EFileFlags::ClearExisting)))
         {
             setCreationAction(EFileFlags::CreateNew);
-            LOG_WARN("WindowsFile",
+            LOG_WARN(
+                "WindowsFile",
                 "EFileFlags::OpenExisting | EFileFlags::ClearExisting is set on non-existing "
                 "file %s",
-                getFullPath());
+                getFullPath()
+            );
         }
     }
 
@@ -438,8 +435,7 @@ GenericFileHandle *WindowsFile::openOrCreateImpl()
 
 GenericFileHandle *WindowsFile::openImpl() const
 {
-    WindowsFileHandle *fHandle
-        = new WindowsFileHandle(fileFlags, sharingMode, attributes, advancedFlags);
+    WindowsFileHandle *fHandle = new WindowsFileHandle(fileFlags, sharingMode, attributes, advancedFlags);
 
     if (!fHandle->openFile(getFullPath()))
     {
@@ -461,8 +457,7 @@ bool WindowsFile::dirDelete() const { return RemoveDirectory(getFullPath().getCh
 
 bool WindowsFile::dirClearAndDelete() const
 {
-    std::vector<String> filesPath
-        = FileSystemFunctions::listAllFiles(isDirectory() ? getFullPath() : getHostDirectory(), true);
+    std::vector<String> filesPath = FileSystemFunctions::listAllFiles(isDirectory() ? getFullPath() : getHostDirectory(), true);
     for (const String &filePath : filesPath)
     {
         if (!::DeleteFile(filePath.getChar()))

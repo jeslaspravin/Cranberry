@@ -13,6 +13,7 @@
 
 #include "CoreObjectGC.h"
 #include "CoreObjectsDB.h"
+#include "Serialization/CBEPackageManager.h"
 #include "ICoreObjectsModule.h"
 #include "Types/CoreDefines.h"
 
@@ -21,6 +22,7 @@ class CoreObjectsModule final : public ICoreObjectsModule
 private:
     CoreObjectsDB objsDb;
     CoreObjectGC gc;
+    CBEPackageManager packMan;
 
 public:
     /* IModuleBase overrides */
@@ -32,9 +34,7 @@ public:
     CoreObjectGC &getGC() override;
     /* Overrides ends */
 
-    FORCE_INLINE static CoreObjectsModule *get()
-    {
-        return static_cast<CoreObjectsModule *>(ICoreObjectsModule::get());
-    }
+    FORCE_INLINE static CoreObjectsModule *get() { return static_cast<CoreObjectsModule *>(ICoreObjectsModule::get()); }
     FORCE_INLINE static CoreObjectsDB &objectsDB() { return get()->objsDb; }
+    FORCE_INLINE static CBEPackageManager &packageManager() { return get()->packMan; }
 };

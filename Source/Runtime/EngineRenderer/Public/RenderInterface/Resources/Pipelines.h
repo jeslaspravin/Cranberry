@@ -69,8 +69,7 @@ protected:
     const PipelineCacheBase *parentCache;
 
     const ShaderResource *pipelineShader;
-    std::vector<const GraphicsResource *>
-        shaderParamLayouts; // At each set index changes based on mesh draw shader or others
+    std::vector<const GraphicsResource *> shaderParamLayouts; // At each set index changes based on mesh draw shader or others
 
 protected:
     PipelineBase() = default;
@@ -169,17 +168,11 @@ protected:
     GraphicsPipelineQueryParams paramForIdx(int32 idx) const;
     int32 idxFromParam(GraphicsPipelineQueryParams queryParam) const;
 
-    FORCE_INLINE int32 pipelinesCount() const
-    {
-        return int32(config.allowedDrawModes.size() * config.supportedCullings.size());
-    }
+    FORCE_INLINE int32 pipelinesCount() const { return int32(config.allowedDrawModes.size() * config.supportedCullings.size()); }
 
 public:
     void setPipelineConfig(const GraphicsPipelineConfig &newConfig) { config = newConfig; }
-    void setRenderpassProperties(const GenericRenderPassProperties &newProps)
-    {
-        config.renderpassProps = newProps;
-    }
+    void setRenderpassProperties(const GenericRenderPassProperties &newProps) { config.renderpassProps = newProps; }
 
     const GenericRenderPassProperties &getRenderpassProperties() const { return config.renderpassProps; }
 };
@@ -212,34 +205,32 @@ struct PipelineFactoryArgs
 /*
  * Pipeline registration
  */
-#define CREATE_GRAPHICS_PIPELINE_REGISTRANT(Registrant, ShaderName, FunctionPtr)                        \
-    GraphicsPipelineFactoryRegistrant Registrant(ShaderName,                                            \
-        GraphicsPipelineFactoryRegistrant::GraphicsPipelineConfigGetter::createStatic(FunctionPtr))
+#define CREATE_GRAPHICS_PIPELINE_REGISTRANT(Registrant, ShaderName, FunctionPtr)                                                               \
+    GraphicsPipelineFactoryRegistrant Registrant(                                                                                              \
+        ShaderName, GraphicsPipelineFactoryRegistrant::GraphicsPipelineConfigGetter::createStatic(FunctionPtr)                                 \
+    )
 
 struct ENGINERENDERER_EXPORT GraphicsPipelineFactoryRegistrant
 {
-    using GraphicsPipelineConfigGetter
-        = SingleCastDelegate<GraphicsPipelineConfig, String &, const ShaderResource *>;
+    using GraphicsPipelineConfigGetter = SingleCastDelegate<GraphicsPipelineConfig, String &, const ShaderResource *>;
     GraphicsPipelineConfigGetter getter;
 
 public:
-    GraphicsPipelineFactoryRegistrant(
-        const String &shaderName, GraphicsPipelineConfigGetter configGetter);
-    FORCE_INLINE PipelineBase *operator()(IGraphicsInstance *graphicsInstance,
-        const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
+    GraphicsPipelineFactoryRegistrant(const String &shaderName, GraphicsPipelineConfigGetter configGetter);
+    FORCE_INLINE PipelineBase *
+        operator()(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
 };
 
 struct ENGINERENDERER_EXPORT ComputePipelineFactoryRegistrant
 {
 public:
     ComputePipelineFactoryRegistrant(const String &shaderName);
-    FORCE_INLINE PipelineBase *operator()(IGraphicsInstance *graphicsInstance,
-        const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
+    FORCE_INLINE PipelineBase *
+        operator()(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
 };
 
 class ENGINERENDERER_EXPORT PipelineFactory final
-    : public FactoriesBase<PipelineBase *, IGraphicsInstance *, const GraphicsHelperAPI *,
-          const PipelineFactoryArgs &>
+    : public FactoriesBase<PipelineBase *, IGraphicsInstance *, const GraphicsHelperAPI *, const PipelineFactoryArgs &>
 {
 private:
     friend GraphicsPipelineFactoryRegistrant;
@@ -249,6 +240,6 @@ private:
     static std::map<String, ComputePipelineFactoryRegistrant> &computePipelineFactoriesRegistry();
 
 public:
-    PipelineBase *create(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
-        const PipelineFactoryArgs &args) const final;
+    PipelineBase *
+        create(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const final;
 };

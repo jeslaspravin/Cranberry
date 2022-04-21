@@ -35,8 +35,7 @@ FORCE_INLINE SizeT CBEBuiltinMemAlloc::calcExtraWidth(uint32 alignment) const
 #endif // PLATFORM_ALIGNED_MALLOC
 }
 
-FORCE_INLINE void *CBEBuiltinMemAlloc::writeAllocMeta(
-    void *allocatedPtr, SizeT size, uint32 alignment) const
+FORCE_INLINE void *CBEBuiltinMemAlloc::writeAllocMeta(void *allocatedPtr, SizeT size, uint32 alignment) const
 {
     void *outPtr = ((uint8 *)allocatedPtr) + calcHeaderPadding(alignment);
 #ifndef PLATFORM_ALIGNED_MALLOC
@@ -52,8 +51,7 @@ FORCE_INLINE void *CBEBuiltinMemAlloc::writeAllocMeta(
     return outPtr;
 }
 
-FORCE_INLINE void *CBEBuiltinMemAlloc::getAllocationInfo(
-    void *ptr, SizeT &outSize, uint32 &outAlignment) const
+FORCE_INLINE void *CBEBuiltinMemAlloc::getAllocationInfo(void *ptr, SizeT &outSize, uint32 &outAlignment) const
 {
     AllocHeader &allocHeader = *(((AllocHeader *)ptr) - 1);
     outSize = allocHeader.size;
@@ -94,8 +92,7 @@ void *CBEBuiltinMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIG
     return ptr;
 }
 
-void *CBEBuiltinMemAlloc::tryRealloc(
-    void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *CBEBuiltinMemAlloc::tryRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     debugAssert(Math::isPowOf2(alignment));
 
@@ -121,8 +118,7 @@ void *CBEBuiltinMemAlloc::tryRealloc(
     return nullptr;
 }
 
-void *CBEBuiltinMemAlloc::memRealloc(
-    void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
+void *CBEBuiltinMemAlloc::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     void *ptr = tryRealloc(currentPtr, size, alignment);
     fatalAssert(size == 0 || ptr, "Reallocation failed!");
@@ -138,8 +134,7 @@ void CBEBuiltinMemAlloc::memFree(void *ptr)
 
     AllocHeader allocInfo;
     void *actualPtr = getAllocationInfo(ptr, allocInfo.size, allocInfo.alignment);
-    fatalAssert(
-        allocInfo.size > 0 && allocInfo.alignment > 0, "Possible memFree invokation on freed object");
+    fatalAssert(allocInfo.size > 0 && allocInfo.alignment > 0, "Possible memFree invokation on freed object");
 
     AllocHeader &allocHeader = *(((AllocHeader *)ptr) - 1);
     // 0 it so that if there is any immediate free calls again with can detect it

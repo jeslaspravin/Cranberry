@@ -16,12 +16,16 @@
 
 namespace CBE
 {
+
+//////////////////////////////////////////////////////////////////////////
+/// CBE::Object implementations
+//////////////////////////////////////////////////////////////////////////
+
 EObjectFlags &PrivateObjectCoreAccessors::getFlags(Object *object) { return object->flags; }
 
 ObjectAllocIdx PrivateObjectCoreAccessors::getAllocIdx(const Object *object) { return object->allocIdx; }
 
-void PrivateObjectCoreAccessors::setOuterAndName(
-    Object *object, const String &newName, Object *outer, CBEClass clazz /*= nullptr*/)
+void PrivateObjectCoreAccessors::setOuterAndName(Object *object, const String &newName, Object *outer, CBEClass clazz /*= nullptr*/)
 {
     fatalAssert(!newName.empty(), "Object name cannot be empty");
     if (outer == object->getOuter() && object->getName() == newName)
@@ -53,8 +57,8 @@ void PrivateObjectCoreAccessors::setOuterAndName(
         new (&object->objectName) String(newName);
 
         CoreObjectsDB::ObjectData objData{ .clazz = (clazz != nullptr ? clazz : object->getType()),
-            .allocIdx = object->allocIdx,
-            .sid = newSid };
+                                           .allocIdx = object->allocIdx,
+                                           .sid = newSid };
 
         if (outer)
         {
@@ -69,21 +73,14 @@ void PrivateObjectCoreAccessors::setOuterAndName(
     object->sid = newSid;
 }
 
-void PrivateObjectCoreAccessors::setOuter(Object *object, Object *outer)
-{
-    setOuterAndName(object, object->objectName, outer);
-}
+void PrivateObjectCoreAccessors::setOuter(Object *object, Object *outer) { setOuterAndName(object, object->objectName, outer); }
 
-void PrivateObjectCoreAccessors::renameObject(Object *object, const String &newName)
-{
-    setOuterAndName(object, newName, object->objOuter);
-}
+void PrivateObjectCoreAccessors::renameObject(Object *object, const String &newName) { setOuterAndName(object, newName, object->objOuter); }
 
 Object::~Object()
 {
     // Must have entry in object DB if we constructed the objects properly unless object is default
-    debugAssert(
-        CoreObjectsModule::objectsDB().hasObject(sid) || BIT_SET(flags, EObjectFlagBits::Default));
+    debugAssert(CoreObjectsModule::objectsDB().hasObject(sid) || BIT_SET(flags, EObjectFlagBits::Default));
     if (CoreObjectsModule::objectsDB().hasObject(sid))
     {
         CoreObjectsModule::objectsDB().removeObject(sid);
@@ -93,16 +90,57 @@ Object::~Object()
     SET_BITS(flags, EObjectFlagBits::Deleted);
 }
 
-//////////////////////////////////////////////////////////////////////////
-/// CBE::Object implementations
-//////////////////////////////////////////////////////////////////////////
-
 String Object::getFullPath() const { return ObjectPathHelper::getFullPath(this); }
 } // namespace CBE
+
+ObjectArchive &ObjectArchive::serialize(CBE::Object *&obj)
+{
+    fatalAssert(false, "CBE::Object serialization not implemented!");
+    return *this;
+}
 
 //////////////////////////////////////////////////////////////////////////
 /// ObjectPathHelper implementations
 //////////////////////////////////////////////////////////////////////////
+
+FORCE_INLINE String ObjectPathHelper::getOuterPathAndObjectName(String &outObjectName, const TChar *objectPath)
+{
+    debugAssert(!TCharStr::find(objectPath, ObjectPathHelper::RootObjectSeparator));
+
+    SizeT outerObjectSepIdx;
+    if (TCharStr::rfind(objectPath, ObjectPathHelper::ObjectObjectSeparator, &outerObjectSepIdx))
+    {
+        outObjectName = objectPath + outerObjectSepIdx + 1;
+        return { objectPath, outerObjectSepIdx };
+    }
+    return objectPath;
+}
+
+String ObjectPathHelper::getObjectPath(const CBE::Object *object, const CBE::Object *stopAt)
+{
+    debugAssert(stopAt != object);
+
+    if (object->getOuter() == nullptr)
+    {
+        return object->getName();
+    }
+
+    std::vector<String> outers;
+    // Since last path element must be this obj name
+    outers.emplace_back(object->getName());
+    const CBE::Object *outer = object->getOuter();
+    while (outer != stopAt && outer->getOuter())
+    {
+        outers.emplace_back(outer->getName());
+        outer = outer->getOuter();
+    }
+    if (outer != stopAt)
+    {
+        return outer->getName() + ObjectPathHelper::RootObjectSeparator
+               + String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
+    }
+    return String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
+}
 
 FORCE_INLINE String ObjectPathHelper::getFullPath(const CBE::Object *object)
 {
@@ -120,9 +158,8 @@ FORCE_INLINE String ObjectPathHelper::getFullPath(const CBE::Object *object)
         outers.emplace_back(outer->getName());
         outer = outer->getOuter();
     }
-    String objectPath
-        = outer->getName() + ObjectPathHelper::RootObjectSeparator
-          + String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
+    String objectPath = outer->getName() + ObjectPathHelper::RootObjectSeparator
+                        + String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
 
     return objectPath;
 }
@@ -132,9 +169,56 @@ String ObjectPathHelper::getFullPath(const TChar *objectName, const CBE::Object 
     if (outerObj)
     {
         return outerObj->getFullPath()
-               + (outerObj->getOuter() ? ObjectPathHelper::ObjectObjectSeparator
-                                       : ObjectPathHelper::RootObjectSeparator)
-               + objectName;
+               + (outerObj->getOuter() ? ObjectPathHelper::ObjectObjectSeparator : ObjectPathHelper::RootObjectSeparator) + objectName;
     }
     return objectName;
+}
+
+String ObjectPathHelper::getPackagePath(const TChar *objFullPath)
+{
+    SizeT rootObjSepIdx;
+    bool bRootSepFound = TCharStr::find(objFullPath, ObjectPathHelper::RootObjectSeparator, &rootObjSepIdx);
+    debugAssert(bRootSepFound);
+    return { objFullPath, rootObjSepIdx };
+}
+
+String ObjectPathHelper::getPathComponents(String &outOuterObjectPath, String &outObjectName, const TChar *objFullPath)
+{
+    SizeT rootObjSepIdx;
+    bool bRootSepFound = TCharStr::find(objFullPath, ObjectPathHelper::RootObjectSeparator, &rootObjSepIdx);
+
+    if (bRootSepFound)
+    {
+        // Path after RootObjectSeparator is outers... and object name
+        outOuterObjectPath = getOuterPathAndObjectName(outObjectName, String(objFullPath + rootObjSepIdx + 1).getChar());
+        return { objFullPath, rootObjSepIdx };
+    }
+    else
+    {
+        outOuterObjectPath = getOuterPathAndObjectName(outObjectName, objFullPath);
+        return TCHAR("");
+    }
+}
+
+String ObjectPathHelper::combinePathComponents(const String &packagePath, const String &outerObjectPath, const String &objectName)
+{
+    // Ensure that package path is package path without any additional root path and outer object is without any root/package object path
+    debugAssert(
+        !(TCharStr::find(packagePath.getChar(), ObjectPathHelper::RootObjectSeparator)
+          || TCharStr::find(packagePath.getChar(), ObjectPathHelper::RootObjectSeparator))
+    );
+
+    return packagePath + ObjectPathHelper::RootObjectSeparator + outerObjectPath + ObjectPathHelper::ObjectObjectSeparator + objectName;
+}
+
+String ObjectPathHelper::splitPackageNameAndPath(String &outName, const TChar *path)
+{
+    SizeT rootObjSepIdx;
+    bool bRootSepFound = TCharStr::find(path, ObjectPathHelper::RootObjectSeparator, &rootObjSepIdx);
+
+    if (bRootSepFound)
+    {
+        return getOuterPathAndObjectName(outName, String(path, rootObjSepIdx).getChar());
+    }
+    return getOuterPathAndObjectName(outName, path);
 }

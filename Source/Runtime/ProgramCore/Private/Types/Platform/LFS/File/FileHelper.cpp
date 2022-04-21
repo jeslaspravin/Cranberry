@@ -14,43 +14,44 @@
 #include "Types/Platform/PlatformFunctions.h"
 
 // Encoding BOM(Byte Order Mark) https://docs.microsoft.com/en-us/globalization/encoding/byte-order-mark
-bool FileHelper::isUtf8(const std::vector<uint8> &byteStream)
+bool FileHelper::isUtf8(const uint8 *byteStream, SizeT streamSize)
 {
     // If BOM marked or is not other choices
-    return isUtf8Bom(byteStream)
-           || !(isUtf16BEBom(byteStream) || isUtf16LEBom(byteStream) || isUtf32BEBom(byteStream)
-                || isUtf32LEBom(byteStream));
+    return isUtf8Bom(byteStream, streamSize)
+           || !(
+               isUtf16BEBom(byteStream, streamSize) || isUtf16LEBom(byteStream, streamSize) || isUtf32BEBom(byteStream, streamSize)
+               || isUtf32LEBom(byteStream, streamSize)
+           );
 }
 
-bool FileHelper::isUtf8Bom(const std::vector<uint8> &byteStream)
+bool FileHelper::isUtf8Bom(const uint8 *byteStream, SizeT streamSize)
 {
-    return (byteStream.size() > 3 && byteStream[0] == 0xEF && byteStream[1] == 0xBB
-            && byteStream[2] == 0xBF);
+    return (streamSize > 3 && byteStream[0] == 0xEF && byteStream[1] == 0xBB && byteStream[2] == 0xBF);
 }
 
-bool FileHelper::isUtf16LEBom(const std::vector<uint8> &byteStream)
+bool FileHelper::isUtf16LEBom(const uint8 *byteStream, SizeT streamSize)
 {
     // Has at least 2 header length and size if not odd
-    return (byteStream.size() > 2 && !(byteStream.size() & 1) && byteStream[0] == 0xFF
-            && byteStream[1] == 0xFE);
+    return (streamSize > 2 && !(streamSize & 1) && byteStream[0] == 0xFF && byteStream[1] == 0xFE);
 }
 
-bool FileHelper::isUtf16BEBom(const std::vector<uint8> &byteStream)
+bool FileHelper::isUtf16BEBom(const uint8 *byteStream, SizeT streamSize)
 {
-    return (byteStream.size() > 2 && !(byteStream.size() & 1) && byteStream[0] == 0xFE
-            && byteStream[1] == 0xFF);
+    return (streamSize > 2 && !(streamSize & 1) && byteStream[0] == 0xFE && byteStream[1] == 0xFF);
 }
 
-bool FileHelper::isUtf32LEBom(const std::vector<uint8> &byteStream)
+bool FileHelper::isUtf32LEBom(const uint8 *byteStream, SizeT streamSize)
 {
-    return (byteStream.size() > 4 && !(byteStream.size() & 1) && byteStream[0] == 0xFF
-            && byteStream[1] == 0xFE && byteStream[2] == 0x00 && byteStream[3] == 0x00);
+    return (
+        streamSize > 4 && !(streamSize & 1) && byteStream[0] == 0xFF && byteStream[1] == 0xFE && byteStream[2] == 0x00 && byteStream[3] == 0x00
+    );
 }
 
-bool FileHelper::isUtf32BEBom(const std::vector<uint8> &byteStream)
+bool FileHelper::isUtf32BEBom(const uint8 *byteStream, SizeT streamSize)
 {
-    return (byteStream.size() > 4 && !(byteStream.size() & 1) && byteStream[0] == 0x00
-            && byteStream[1] == 0x00 && byteStream[2] == 0xFE && byteStream[3] == 0xFF);
+    return (
+        streamSize > 4 && !(streamSize & 1) && byteStream[0] == 0x00 && byteStream[1] == 0x00 && byteStream[2] == 0xFE && byteStream[3] == 0xFF
+    );
 }
 
 // #TODO(Jeslas) : Replace this with compiler intrinsics if available
@@ -97,7 +98,7 @@ bool FileHelper::readString(String &outStr, const String &fileName)
         return false;
     }
 
-    if (isUtf16LEBom(bytes))
+    if (isUtf16LEBom(bytes.data(), bytes.size()))
     {
 #if BIG_ENDIAN
         // If endian do not match swap it
@@ -111,7 +112,7 @@ bool FileHelper::readString(String &outStr, const String &fileName)
         bytes.insert(bytes.end(), 2, 0);
         outStr = UTF16_TO_TCHAR(&bytes[2]);
     }
-    else if (isUtf16BEBom(bytes))
+    else if (isUtf16BEBom(bytes.data(), bytes.size()))
     {
 #if LITTLE_ENDIAN
         // If endian do not match swap it
@@ -125,7 +126,7 @@ bool FileHelper::readString(String &outStr, const String &fileName)
         bytes.insert(bytes.end(), 2, 0);
         outStr = UTF16_TO_TCHAR(&bytes[2]);
     }
-    else if (isUtf32LEBom(bytes)) // Who wants to store in utf32? Right? rightttt?
+    else if (isUtf32LEBom(bytes.data(), bytes.size())) // Who wants to store in utf32? Right? rightttt?
     {
 #if BIG_ENDIAN
         // If endian do not match swap it
@@ -139,7 +140,7 @@ bool FileHelper::readString(String &outStr, const String &fileName)
         bytes.insert(bytes.end(), 4, 0);
         outStr = UTF32_TO_TCHAR(&bytes[4]);
     }
-    else if (isUtf32BEBom(bytes)) // Again really?
+    else if (isUtf32BEBom(bytes.data(), bytes.size())) // Again really?
     {
 #if LITTLE_ENDIAN
         // If endian do not match swap it
@@ -157,7 +158,7 @@ bool FileHelper::readString(String &outStr, const String &fileName)
     {
         // Insert a null terminated characters
         bytes.emplace_back(0);
-        outStr = UTF8_TO_TCHAR(&bytes[isUtf8Bom(bytes) ? 3 : 0]);
+        outStr = UTF8_TO_TCHAR(&bytes[isUtf8Bom(bytes.data(), bytes.size()) ? 3 : 0]);
     }
     return true;
 }
@@ -179,7 +180,7 @@ bool FileHelper::readUtf8String(std::string &outStr, const String &fileName)
         return false;
     }
 
-    if (isUtf16LEBom(bytes))
+    if (isUtf16LEBom(bytes.data(), bytes.size()))
     {
 #if BIG_ENDIAN
         // If endian do not match swap it
@@ -191,7 +192,7 @@ bool FileHelper::readUtf8String(std::string &outStr, const String &fileName)
 #endif
         outStr = UTF16_TO_UTF8(&bytes[2]);
     }
-    else if (isUtf16BEBom(bytes))
+    else if (isUtf16BEBom(bytes.data(), bytes.size()))
     {
 #if LITTLE_ENDIAN
         // If endian do not match swap it
@@ -203,7 +204,7 @@ bool FileHelper::readUtf8String(std::string &outStr, const String &fileName)
 #endif
         outStr = UTF16_TO_UTF8(&bytes[2]);
     }
-    else if (isUtf32LEBom(bytes)) // Who wants to store in utf32? Right? rightttt?
+    else if (isUtf32LEBom(bytes.data(), bytes.size())) // Who wants to store in utf32? Right? rightttt?
     {
 #if BIG_ENDIAN
         // If endian do not match swap it
@@ -215,7 +216,7 @@ bool FileHelper::readUtf8String(std::string &outStr, const String &fileName)
 #endif
         outStr = UTF32_TO_UTF8(&bytes[4]);
     }
-    else if (isUtf32BEBom(bytes)) // Again really?
+    else if (isUtf32BEBom(bytes.data(), bytes.size())) // Again really?
     {
 #if LITTLE_ENDIAN
         // If endian do not match swap it
@@ -229,7 +230,7 @@ bool FileHelper::readUtf8String(std::string &outStr, const String &fileName)
     }
     else
     {
-        outStr = reinterpret_cast<const AChar *>(&bytes[isUtf8Bom(bytes) ? 3 : 0]);
+        outStr = reinterpret_cast<const AChar *>(&bytes[isUtf8Bom(bytes.data(), bytes.size()) ? 3 : 0]);
     }
     return true;
 }
