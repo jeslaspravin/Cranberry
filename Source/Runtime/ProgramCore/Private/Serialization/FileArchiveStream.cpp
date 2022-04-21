@@ -35,8 +35,7 @@ FileArchiveStream::~FileArchiveStream()
 
 void FileArchiveStream::read(void *toPtr, SizeT len)
 {
-    fatalAssert(
-        file->fileSize() >= fileCursor + len, "Cannot read past file size %ull", file->fileSize());
+    fatalAssert(file->fileSize() >= fileCursor + len, "Cannot read past file size %ull", file->fileSize());
 
     file->read(reinterpret_cast<uint8 *>(toPtr), len);
     file->offsetCursor((int64)len);
@@ -111,5 +110,7 @@ uint8 FileArchiveStream::readBackwardAt(SizeT idx) const
     file->offsetCursor(idx);
     return outVal;
 }
+
+uint64 FileArchiveStream::cursorPos() const { return fileCursor; }
 
 bool FileArchiveStream::isAvailable() const { return file->isFile() && file->exists(); }

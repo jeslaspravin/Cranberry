@@ -29,29 +29,27 @@ void WindowManager::init()
     const ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
     appMainWindow = new PlatformAppWindow();
 
-    appMainWindow->setWindowSize(
-        EngineSettings::screenSize.get().x, EngineSettings::screenSize.get().y, false);
+    appMainWindow->setWindowSize(EngineSettings::screenSize.get().x, EngineSettings::screenSize.get().y, false);
     appMainWindow->setWindowName(appInstance->getAppName());
     appMainWindow->setWindowMode(EngineSettings::fullscreenMode.get());
     appMainWindow->onWindowActivated.bindObject(this, &WindowManager::activateWindow, appMainWindow);
     appMainWindow->onWindowDeactived.bindObject(this, &WindowManager::deactivateWindow, appMainWindow);
     appMainWindow->onResize.bindObject(this, &WindowManager::onWindowResize, appMainWindow);
-    appMainWindow->onDestroyRequested.bindObject(
-        this, &WindowManager::requestDestroyWindow, appMainWindow);
+    appMainWindow->onDestroyRequested.bindObject(this, &WindowManager::requestDestroyWindow, appMainWindow);
     appMainWindow->createWindow(appInstance);
     static_cast<ApplicationModule *>(IApplicationModule::get())->onWindowCreated.invoke(appMainWindow);
 
     ENQUEUE_COMMAND(MainWindowInit)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             ManagerData &data = windowsOpened[appMainWindow];
             data.windowCanvas = graphicsHelper->createWindowCanvas(graphicsInstance, appMainWindow);
             data.windowCanvas->init();
             // Surface created at this point so cache the surface properties in Rendering system
             graphicsHelper->cacheSurfaceProperties(graphicsInstance, data.windowCanvas);
-        });
+        }
+    );
 }
 
 void WindowManager::destroy()
@@ -61,23 +59,19 @@ void WindowManager::destroy()
         WindowCanvasRef windowCanvas = windowData.second.windowCanvas;
         windowData.second.windowCanvas.reset();
 
-        static_cast<ApplicationModule *>(IApplicationModule::get())
-            ->onWindowDestroyed.invoke(windowData.first);
+        static_cast<ApplicationModule *>(IApplicationModule::get())->onWindowDestroyed.invoke(windowData.first);
         windowData.first->destroyWindow();
         delete windowData.first;
 
         ENQUEUE_COMMAND(MainWindowDestroy)
         (
-            [windowCanvas](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-                const GraphicsHelperAPI *graphicsHelper)
+            [windowCanvas](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
                 // Release the canvas before deleting
-                IRenderInterfaceModule::get()
-                    ->getRenderManager()
-                    ->getGlobalRenderingContext()
-                    ->clearWindowCanvasFramebuffer(windowCanvas);
+                IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()->clearWindowCanvasFramebuffer(windowCanvas);
                 windowCanvas->release();
-            });
+            }
+        );
     }
     appMainWindow = nullptr;
     windowsOpened.clear();
@@ -92,8 +86,8 @@ void WindowManager::destroyWindow(GenericAppWindow *window)
         {
             WindowCanvasRef windowCanvas = foundItr->second.windowCanvas;
             ENQUEUE_COMMAND(WindowDestroy)
-            ([windowCanvas](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-                 const GraphicsHelperAPI *graphicsHelper) { windowCanvas->release(); });
+            ([windowCanvas](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+             { windowCanvas->release(); });
 
             auto *appModule = static_cast<ApplicationModule *>(IApplicationModule::get());
             appModule->onWindowDestroyed.invoke(foundItr->first);
@@ -124,8 +118,7 @@ void WindowManager::postInitGraphicCore()
 {
     ENQUEUE_COMMAND(InitWindowCanvas)
     (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             for (std::pair<GenericAppWindow *const, ManagerData> &windowData : windowsOpened)
             {
@@ -133,17 +126,16 @@ void WindowManager::postInitGraphicCore()
                 // And we do not need to free window canvas frame here as it is first init
                 windowData.second.windowCanvas->reinitResources();
             }
-            EngineSettings::surfaceSize.set(
-                Size2D(appMainWindow->windowWidth, appMainWindow->windowHeight));
-        });
+            EngineSettings::surfaceSize.set(Size2D(appMainWindow->windowWidth, appMainWindow->windowHeight));
+        }
+    );
 }
 
 void WindowManager::updateWindowCanvas()
 {
     ENQUEUE_COMMAND(UpdateWindowCanvas)
     (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             auto *appModule = static_cast<ApplicationModule *>(IApplicationModule::get());
             cmdList->flushAllcommands();
@@ -152,14 +144,14 @@ void WindowManager::updateWindowCanvas()
                 appModule->preWindowSurfaceUpdate.invoke(windowData.first);
 
                 // Release the canvas related frame buffers before updating
-                IRenderInterfaceModule::get()
-                    ->getRenderManager()
-                    ->getGlobalRenderingContext()
-                    ->clearWindowCanvasFramebuffer(windowData.second.windowCanvas);
+                IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()->clearWindowCanvasFramebuffer(
+                    windowData.second.windowCanvas
+                );
                 windowData.second.windowCanvas->reinitResources();
                 appModule->onWindowSurfaceUpdated.invoke(windowData.first);
             }
-        });
+        }
+    );
 }
 
 void WindowManager::activateWindow(GenericAppWindow *window)
@@ -215,21 +207,20 @@ bool WindowManager::pollWindows()
     {
         ENQUEUE_COMMAND(WindowsCanvasDestroy)
         (
-            [canvasesToDestroy](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-                const GraphicsHelperAPI *graphicsHelper) mutable
+            [canvasesToDestroy](
+                class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+            ) mutable
             {
                 cmdList->flushAllcommands();
                 for (const WindowCanvasRef &windowCanvas : canvasesToDestroy)
                 {
                     // Release the canvas related frame buffers before updating
-                    IRenderInterfaceModule::get()
-                        ->getRenderManager()
-                        ->getGlobalRenderingContext()
-                        ->clearWindowCanvasFramebuffer(windowCanvas);
+                    IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()->clearWindowCanvasFramebuffer(windowCanvas);
                 }
                 // Clear will release and destroy ref resources
                 canvasesToDestroy.clear();
-            });
+            }
+        );
     }
 
     return activeWindow != nullptr;
@@ -241,11 +232,10 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
     {
         ENQUEUE_COMMAND(WindowResize)
         (
-            [this, window, width, height](class IRenderCommandList *cmdList,
-                IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            [this, window, width,
+             height](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
-                ApplicationModule *appModule
-                    = static_cast<ApplicationModule *>(IApplicationModule::get());
+                ApplicationModule *appModule = static_cast<ApplicationModule *>(IApplicationModule::get());
 
                 cmdList->flushAllcommands();
                 appModule->preWindowSurfaceUpdate.invoke(window);
@@ -257,10 +247,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                 {
                     LOG_DEBUG("WindowsAppWindow", "%s() : Reiniting window canvas", __func__);
                     // Release the canvas before updating
-                    IRenderInterfaceModule::get()
-                        ->getRenderManager()
-                        ->getGlobalRenderingContext()
-                        ->clearWindowCanvasFramebuffer(windowCanvas);
+                    IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()->clearWindowCanvasFramebuffer(windowCanvas);
                     windowCanvas->reinitResources();
                 }
 
@@ -270,7 +257,8 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                     Size2D newSize{ window->windowWidth, window->windowHeight };
                     EngineSettings::surfaceSize.set(newSize);
                 }
-            });
+            }
+        );
     }
 }
 

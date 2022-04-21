@@ -26,10 +26,8 @@ enum Type
     RT_Depth, // signed float
 };
 
-EPixelDataFormat::Type rtFormatToPixelFormat(
-    ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat);
-EPixelDataFormat::Type rtFormatToPixelFormatSrgb(
-    ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat);
+EPixelDataFormat::Type rtFormatToPixelFormat(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat);
+EPixelDataFormat::Type rtFormatToPixelFormatSrgb(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat);
 } // namespace ERenderTargetFormat
 
 struct RenderTextureCreateParams : public TextureBaseCreateParams

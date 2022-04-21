@@ -26,14 +26,18 @@ private:
 
 public:
     static bool shouldReflectHeader(const String &headerFilePath);
-    static void parseClassMeta(std::vector<String> &metaFlags, std::vector<String> &metaData,
-        std::vector<String> &buildFlags, const String &annotatedStr);
-    static void parseFieldMeta(std::vector<String> &metaFlags, std::vector<String> &metaData,
-        std::vector<String> &buildFlags, const String &annotatedStr);
-    static void parseFunctionMeta(std::vector<String> &metaFlags, std::vector<String> &metaData,
-        std::vector<String> &buildFlags, const String &annotatedStr);
-    static void parseEnumMeta(std::vector<String> &metaFlags, std::vector<String> &metaData,
-        std::vector<String> &buildFlags, const String &annotatedStr);
+    static void parseClassMeta(
+        std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
+    );
+    static void parseFieldMeta(
+        std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
+    );
+    static void parseFunctionMeta(
+        std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
+    );
+    static void parseEnumMeta(
+        std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
+    );
 
     // Gets type name without any const attached to it
     // Cursor if available will be used over type to find type-ref from it
@@ -65,10 +69,8 @@ public:
     static CXCursor getGeneratedCodeCursor(CXCursor declCursor);
     static String getCursorMetaString(CXCursor cursor);
 
-    static bool getMapElementTypes(
-        CXType &outKeyType, CXType &outValueType, CXType mapType, CXCursor mapTypeRefCursor);
-    static bool getPairElementTypes(
-        CXType &outKeyType, CXType &outValueType, CXType pairType, CXCursor pairTypeRefCursor);
+    static bool getMapElementTypes(CXType &outKeyType, CXType &outValueType, CXType mapType, CXCursor mapTypeRefCursor);
+    static bool getPairElementTypes(CXType &outKeyType, CXType &outValueType, CXType pairType, CXCursor pairTypeRefCursor);
     static bool getContainerElementType(CXType &outType, CXType containerType, CXCursor typeRefCursor);
 
     static bool isValidFuncParamType(CXType clangType, CXCursor paramCursor);

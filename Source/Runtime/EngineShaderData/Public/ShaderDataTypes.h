@@ -22,9 +22,8 @@ struct ReflectTextureShaderField;
 
 struct TexelComponentFormat
 {
-    EReflectBufferPrimitiveType
-        type; // ReflectPrimitive_uint or ReflectPrimitive_int or ReflectPrimitive_float, if
-              // RelectPrimitive_invalid it means format doesn't matter or not known
+    EReflectBufferPrimitiveType type;           // ReflectPrimitive_uint or ReflectPrimitive_int or ReflectPrimitive_float, if
+                                                // RelectPrimitive_invalid it means format doesn't matter or not known
     uint32_t componentCount;                    // R-1 ,RG-2, RGB-3, RGBA-4
     uint32_t componentSize[4] = { 0, 0, 0, 0 }; // Per component size
     bool bIsNormalized = false;
@@ -100,12 +99,10 @@ struct ReflectDescriptorBody
     std::vector<DescEntryBuffer> buffers;
     std::vector<DescEntryTexelBuffer> samplerBuffers;
     std::vector<DescEntryTexelBuffer> imageBuffers;
-    std::vector<DescEntryTexture>
-        sampledTexAndArrays; // For sampler sampled images , and their array counter part
-    std::vector<DescEntryTexture>
-        textureAndArrays; // For non sampled images and their array counter part
-    std::vector<DescEntrySubpassInput> subpassInputs; // Sub pass input attachments in set
-    std::vector<DescEntryTexture> imagesAndImgArrays; // For storage images and their array counter part
+    std::vector<DescEntryTexture> sampledTexAndArrays; // For sampler sampled images , and their array counter part
+    std::vector<DescEntryTexture> textureAndArrays;    // For non sampled images and their array counter part
+    std::vector<DescEntrySubpassInput> subpassInputs;  // Sub pass input attachments in set
+    std::vector<DescEntryTexture> imagesAndImgArrays;  // For storage images and their array counter part
     std::vector<DescEntrySampler> samplers;
 };
 

@@ -46,11 +46,9 @@ public:
 
     DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) final;
     void unregisterOnWindowCreated(const DelegateHandle &callbackHandle) final;
-    DelegateHandle registerPreWindowSurfaceUpdate(
-        AppWindowDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType callback) final;
     void unregisterPreWindowSurfaceUpdate(const DelegateHandle &callbackHandle) final;
-    DelegateHandle registerOnWindowSurfaceUpdated(
-        AppWindowDelegate::SingleCastDelegateType callback) final;
+    DelegateHandle registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType callback) final;
     void unregisterOnWindowSurfaceUpdated(const DelegateHandle &callbackHandle) final;
     DelegateHandle registerOnWindowDestroyed(AppWindowDelegate::SingleCastDelegateType callback) final;
     void unregisterOnWindowDestroyed(const DelegateHandle &callbackHandle) final;

@@ -139,8 +139,7 @@ template <>
 const std::vector<ShaderVertexParamInfo *> &vertexParamInfo<InstancedSimple3DColor>()
 {
     static VertexInstancedSimple3DColorVertexParamInfo STATIC_VERTEX_PARAM_INFO;
-    static std::vector<ShaderVertexParamInfo *> VERTEX_PARAMS{ &SIMPLE3D_PARAM_INFO,
-        &STATIC_VERTEX_PARAM_INFO };
+    static std::vector<ShaderVertexParamInfo *> VERTEX_PARAMS{ &SIMPLE3D_PARAM_INFO, &STATIC_VERTEX_PARAM_INFO };
     return VERTEX_PARAMS;
 }
 template <>
@@ -212,27 +211,22 @@ template <>
 void vertexSpecConsts<Simple3>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
 {}
 template <>
-void vertexSpecConsts<Simple3DColor>(
-    std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<Simple3DColor>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
 {}
 template <>
-void vertexSpecConsts<BasicMesh>(
-    std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<BasicMesh>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
 {}
 template <>
-void vertexSpecConsts<StaticMesh>(
-    std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<StaticMesh>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
 {}
 template <>
-void vertexSpecConsts<InstancedSimple3DColor>(
-    std::map<String, struct SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts<InstancedSimple3DColor>(std::map<String, struct SpecializationConstantEntry> &specializationConst)
 {}
 template <>
 void vertexSpecConsts<NoVertex>(std::map<String, SpecializationConstantEntry> &specializationConst)
 {}
 
-void vertexSpecConsts(
-    Type vertexType, std::map<String, SpecializationConstantEntry> &specializationConst)
+void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry> &specializationConst)
 {
     switch (vertexType)
     {
@@ -269,15 +263,14 @@ void GlobalBuffers::destroyVertIndBuffers()
     quadRectVertsInds.second.reset();
 }
 
-void GlobalBuffers::createVertIndBuffers(class IRenderCommandList *cmdList,
-    IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+void GlobalBuffers::createVertIndBuffers(
+    class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+)
 {
-    const std::array<Vector3D, 3> quadTriVerts
-        = { Vector3D(-1, -1, 0), Vector3D(3, -1, 0), Vector3D(-1, 3, 0) };
+    const std::array<Vector3D, 3> quadTriVerts = { Vector3D(-1, -1, 0), Vector3D(3, -1, 0), Vector3D(-1, 3, 0) };
     // const std::array<uint32, 3> quadTriIndices = { 0,1,2 };// 3 Per tri of quad
 
-    const std::array<Vector3D, 4> quadRectVerts
-        = { Vector3D(-1, -1, 0), Vector3D(1, -1, 0), Vector3D(-1, 1, 0), Vector3D(1, 1, 0) };
+    const std::array<Vector3D, 4> quadRectVerts = { Vector3D(-1, -1, 0), Vector3D(1, -1, 0), Vector3D(-1, 1, 0), Vector3D(1, 1, 0) };
     const std::array<uint32, 6> quadRectIndices = { 0, 1, 2, 2, 1, 3 };
 
     // 0-17(18) for axis arrows 18-29(12) for letters
@@ -304,17 +297,13 @@ void GlobalBuffers::createVertIndBuffers(class IRenderCommandList *cmdList,
             // Letter X
             const uint32 startVert = 18;
             const uint32 startIdx = 30;
-            gizmoVerts[startVert + 0]
-                = { (axisVector * 120) + (Vector3D::UP * 10) + (Vector3D::RIGHT * 8), color };
-            gizmoVerts[startVert + 1]
-                = { (axisVector * 120) - (Vector3D::UP * 10) - (Vector3D::RIGHT * 8), color };
+            gizmoVerts[startVert + 0] = { (axisVector * 120) + (Vector3D::UP * 10) + (Vector3D::RIGHT * 8), color };
+            gizmoVerts[startVert + 1] = { (axisVector * 120) - (Vector3D::UP * 10) - (Vector3D::RIGHT * 8), color };
             gizmoIndices[startIdx + 0] = startVert;
             gizmoIndices[startIdx + 1] = startVert + 1;
 
-            gizmoVerts[startVert + 2]
-                = { (axisVector * 120) + (Vector3D::UP * 10) - (Vector3D::RIGHT * 8), color };
-            gizmoVerts[startVert + 3]
-                = { (axisVector * 120) - (Vector3D::UP * 10) + (Vector3D::RIGHT * 8), color };
+            gizmoVerts[startVert + 2] = { (axisVector * 120) + (Vector3D::UP * 10) - (Vector3D::RIGHT * 8), color };
+            gizmoVerts[startVert + 3] = { (axisVector * 120) - (Vector3D::UP * 10) + (Vector3D::RIGHT * 8), color };
             gizmoIndices[startIdx + 2] = startVert + 2;
             gizmoIndices[startIdx + 3] = startVert + 3;
             break;
@@ -331,10 +320,8 @@ void GlobalBuffers::createVertIndBuffers(class IRenderCommandList *cmdList,
             const uint32 startIdx = 34;
             gizmoVerts[startVert] = { (axisVector * 120), color };
 
-            gizmoVerts[startVert + 1]
-                = { (axisVector * 120) + (Vector3D::UP * 10) + (Vector3D::FWD * 8), color };
-            gizmoVerts[startVert + 2]
-                = { (axisVector * 120) + (Vector3D::UP * 10) - (Vector3D::FWD * 8), color };
+            gizmoVerts[startVert + 1] = { (axisVector * 120) + (Vector3D::UP * 10) + (Vector3D::FWD * 8), color };
+            gizmoVerts[startVert + 2] = { (axisVector * 120) + (Vector3D::UP * 10) - (Vector3D::FWD * 8), color };
             gizmoVerts[startVert + 3] = { (axisVector * 120) - (Vector3D::UP * 8), color };
 
             gizmoIndices[startIdx + 0] = startVert;
@@ -356,14 +343,10 @@ void GlobalBuffers::createVertIndBuffers(class IRenderCommandList *cmdList,
             const uint32 startVert = 26;
             const uint32 startIdx = 40;
 
-            gizmoVerts[startVert + 0]
-                = { (axisVector * 130) + (Vector3D::UP * 9) + (Vector3D::RIGHT * 7), color };
-            gizmoVerts[startVert + 1]
-                = { (axisVector * 130) + (Vector3D::UP * 9) - (Vector3D::RIGHT * 7), color };
-            gizmoVerts[startVert + 2]
-                = { (axisVector * 130) - (Vector3D::UP * 9) + (Vector3D::RIGHT * 7), color };
-            gizmoVerts[startVert + 3]
-                = { (axisVector * 130) - (Vector3D::UP * 9) - (Vector3D::RIGHT * 7), color };
+            gizmoVerts[startVert + 0] = { (axisVector * 130) + (Vector3D::UP * 9) + (Vector3D::RIGHT * 7), color };
+            gizmoVerts[startVert + 1] = { (axisVector * 130) + (Vector3D::UP * 9) - (Vector3D::RIGHT * 7), color };
+            gizmoVerts[startVert + 2] = { (axisVector * 130) - (Vector3D::UP * 9) + (Vector3D::RIGHT * 7), color };
+            gizmoVerts[startVert + 3] = { (axisVector * 130) - (Vector3D::UP * 9) - (Vector3D::RIGHT * 7), color };
 
             gizmoIndices[startIdx + 0] = startVert;
             gizmoIndices[startIdx + 1] = startVert + 1;
@@ -386,8 +369,8 @@ void GlobalBuffers::createVertIndBuffers(class IRenderCommandList *cmdList,
 
         // Arrow along plane
         // All mid points of arrow
-        gizmoIndices[axis * vertPerAxis + 2] = gizmoIndices[axis * vertPerAxis + 4]
-            = gizmoIndices[axis * vertPerAxis + 6] = gizmoIndices[axis * vertPerAxis + 8] = idx;
+        gizmoIndices[axis * vertPerAxis + 2] = gizmoIndices[axis * vertPerAxis + 4] = gizmoIndices[axis * vertPerAxis + 6]
+            = gizmoIndices[axis * vertPerAxis + 8] = idx;
 
         const Vector3D &startPos = gizmoVerts[idx].position;
         idx = axis * idxPerAxis + 2;
@@ -404,47 +387,45 @@ void GlobalBuffers::createVertIndBuffers(class IRenderCommandList *cmdList,
         gizmoIndices[axis * vertPerAxis + 9] = idx;
     }
 
-    BufferResourceRef lineGizmoVertsBuffer = graphicsHelper->createReadOnlyVertexBuffer(
-        graphicsInstance, sizeof(VertexSimple3DColor), static_cast<uint32>(gizmoVerts.size()));
+    BufferResourceRef lineGizmoVertsBuffer
+        = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(VertexSimple3DColor), static_cast<uint32>(gizmoVerts.size()));
     lineGizmoVertsBuffer->setResourceName(TCHAR("LineGizmosVertices"));
     lineGizmoVertsBuffer->init();
 
-    BufferResourceRef lineGizmoIndicesBuffer = graphicsHelper->createReadOnlyIndexBuffer(
-        graphicsInstance, sizeof(uint32), static_cast<uint32>(gizmoIndices.size()));
+    BufferResourceRef lineGizmoIndicesBuffer
+        = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), static_cast<uint32>(gizmoIndices.size()));
     lineGizmoIndicesBuffer->setResourceName(TCHAR("LineGizmosIndices"));
     lineGizmoIndicesBuffer->init();
 
     GlobalBuffers::lineGizmoVertxInds.first = lineGizmoVertsBuffer;
     GlobalBuffers::lineGizmoVertxInds.second = lineGizmoIndicesBuffer;
 
-    BufferResourceRef quadTriVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(
-        graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadTriVerts.size()));
+    BufferResourceRef quadTriVertexBuffer
+        = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadTriVerts.size()));
     quadTriVertexBuffer->setResourceName(TCHAR("ScreenQuadTriVertices"));
     quadTriVertexBuffer->init();
 
     GlobalBuffers::quadTriVerts = quadTriVertexBuffer;
 
-    BufferResourceRef quadRectVertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(
-        graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadRectVerts.size()));
+    BufferResourceRef quadRectVertexBuffer
+        = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(Vector3D), static_cast<uint32>(quadRectVerts.size()));
     quadRectVertexBuffer->setResourceName(TCHAR("ScreenQuadRectVertices"));
     quadRectVertexBuffer->init();
 
-    BufferResourceRef quadRectIndexBuffer = graphicsHelper->createReadOnlyIndexBuffer(
-        graphicsInstance, sizeof(uint32), static_cast<uint32>(quadRectIndices.size()));
+    BufferResourceRef quadRectIndexBuffer
+        = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), static_cast<uint32>(quadRectIndices.size()));
     quadRectIndexBuffer->setResourceName(TCHAR("ScreenQuadRectIndices"));
     quadRectIndexBuffer->init();
 
     GlobalBuffers::quadRectVertsInds.first = quadRectVertexBuffer;
     GlobalBuffers::quadRectVertsInds.second = quadRectIndexBuffer;
 
-    std::vector<BatchCopyBufferData> copies{ { quadTriVertexBuffer, 0, quadTriVerts.data(),
-                                                 uint32(quadTriVertexBuffer->getResourceSize()) },
-        { quadRectVertexBuffer, 0, quadRectVerts.data(),
-            uint32(quadRectVertexBuffer->getResourceSize()) },
-        { quadRectIndexBuffer, 0, quadRectIndices.data(),
-            uint32(quadRectIndexBuffer->getResourceSize()) },
-        { lineGizmoVertsBuffer, 0, gizmoVerts.data(), uint32(lineGizmoVertsBuffer->getResourceSize()) },
-        { lineGizmoIndicesBuffer, 0, gizmoIndices.data(),
-            uint32(lineGizmoIndicesBuffer->getResourceSize()) } };
+    std::vector<BatchCopyBufferData> copies{
+        {   quadTriVertexBuffer, 0,    quadTriVerts.data(),    uint32(quadTriVertexBuffer->getResourceSize())},
+        {  quadRectVertexBuffer, 0,   quadRectVerts.data(),   uint32(quadRectVertexBuffer->getResourceSize())},
+        {   quadRectIndexBuffer, 0, quadRectIndices.data(),    uint32(quadRectIndexBuffer->getResourceSize())},
+        {  lineGizmoVertsBuffer, 0,      gizmoVerts.data(),   uint32(lineGizmoVertsBuffer->getResourceSize())},
+        {lineGizmoIndicesBuffer, 0,    gizmoIndices.data(), uint32(lineGizmoIndicesBuffer->getResourceSize())}
+    };
     cmdList->copyToBuffer(copies);
 }

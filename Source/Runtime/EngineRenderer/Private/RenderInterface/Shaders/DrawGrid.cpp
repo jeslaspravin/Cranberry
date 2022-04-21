@@ -26,13 +26,11 @@ GraphicsPipelineConfig drawGridPipelineConfig(String &pipelineName, const Shader
     GraphicsPipelineConfig config;
     if constexpr (DepthTest)
     {
-        config = ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendDepthTestedShaderConfig(
-            pipelineName, shaderResource);
+        config = ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendDepthTestedShaderConfig(pipelineName, shaderResource);
     }
     else
     {
-        config = ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig(
-            pipelineName, shaderResource);
+        config = ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig(pipelineName, shaderResource);
     }
 
     // Since grid has to be visible either side
@@ -54,8 +52,7 @@ private:
         : BaseType(String(DRAW_GRID_NAME) + (DepthTest ? TCHAR("DTest") : TCHAR("")))
         , shaderFileName(DRAW_GRID_NAME)
     {
-        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(
-            DRAW_GRID_PIPELINE_REGISTRAR, getResourceName(), &drawGridPipelineConfig<DepthTest>);
+        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_GRID_PIPELINE_REGISTRAR, getResourceName(), &drawGridPipelineConfig<DepthTest>);
     }
 
 protected:
@@ -63,12 +60,9 @@ protected:
     String getShaderFileName() const override { return shaderFileName; }
     /* overrides ends */
 public:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
-        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-            RenderSceneBase::sceneViewParamInfo()
-        };
+        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {

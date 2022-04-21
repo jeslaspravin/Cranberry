@@ -54,9 +54,10 @@ protected:
 public:
     virtual ~ShaderDescriptorParamType() = default;
 
-    static void wrapReflectedDescriptors(std::map<String, ShaderDescriptorParamType *> &descriptorParams,
-        const ReflectDescriptorBody &reflectDescriptors,
-        std::map<String, struct ShaderBufferDescriptorType *> *filterBufferDescriptors = nullptr);
+    static void wrapReflectedDescriptors(
+        std::map<String, ShaderDescriptorParamType *> &descriptorParams, const ReflectDescriptorBody &reflectDescriptors,
+        std::map<String, struct ShaderBufferDescriptorType *> *filterBufferDescriptors = nullptr
+    );
 
     template <typename DescriptorParamType>
     friend const DescriptorParamType *Cast(const ShaderDescriptorParamType *shaderDescriptorType);
@@ -130,8 +131,7 @@ protected:
     ShaderSetParametersLayout(const ShaderResource *shaderResource, uint32 setID);
 
     // Bind buffer info so it can be filled with offset, stride and size informations
-    virtual void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const {};
+    virtual void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const {};
 
 public:
     /* GraphicsResource overrides */
@@ -139,8 +139,7 @@ public:
     virtual void release() override;
     /* Override ends */
 
-    const ShaderDescriptorParamType *parameterDescription(
-        uint32 &outSetIdx, const String &paramName) const;
+    const ShaderDescriptorParamType *parameterDescription(uint32 &outSetIdx, const String &paramName) const;
     const ShaderDescriptorParamType *parameterDescription(const String &paramName) const;
     const std::map<String, ShaderDescriptorParamType *> &allParameterDescriptions() const;
     uint32 getSetID() const { return shaderSetID; }
@@ -173,8 +172,7 @@ public:
 
     virtual bool hasBindless(uint32 setIdx) const { return false; }
 
-    const ShaderDescriptorParamType *parameterDescription(
-        uint32 &outSetIdx, const String &paramName) const;
+    const ShaderDescriptorParamType *parameterDescription(uint32 &outSetIdx, const String &paramName) const;
     const ShaderDescriptorParamType *parameterDescription(const String &paramName) const;
     std::map<String, ShaderDescriptorParamType *> allParameterDescriptions() const;
     uint32 getSetID(const String &paramName) const;
@@ -194,8 +192,7 @@ protected:
         std::vector<struct BatchCopyBufferData> *bufferUpdates;
     };
 
-    using ParamUpdateLambda
-        = LambdaFunction<void, ParamUpdateLambdaOut &, IRenderCommandList *, IGraphicsInstance *>;
+    using ParamUpdateLambda = LambdaFunction<void, ParamUpdateLambdaOut &, IRenderCommandList *, IGraphicsInstance *>;
     struct BufferParameterUpdate
     {
         String bufferName;
@@ -204,8 +201,7 @@ protected:
 
         bool operator==(const BufferParameterUpdate &other) const
         {
-            return bufferName == other.bufferName && paramName == other.paramName
-                   && index == other.index;
+            return bufferName == other.bufferName && paramName == other.paramName && index == other.index;
         }
         struct Hasher
         {
@@ -285,22 +281,23 @@ protected:
     String descriptorSetName;
 
 private:
-    void initBufferParams(BufferParametersData &bufferParamData,
-        const ShaderBufferParamInfo *bufferParamInfo, void *outerPtr,
-        String::const_pointer outerName) const;
+    void initBufferParams(
+        BufferParametersData &bufferParamData, const ShaderBufferParamInfo *bufferParamInfo, void *outerPtr, String::const_pointer outerName
+    ) const;
     // Runtime array related, returns true if runtime array is setup
     bool initRuntimeArrayData(BufferParametersData &bufferParamData) const;
 
     // Init entire param maps uniforms, textures, samplers, images, buffers
-    void initParamsMaps(const std::map<String, ShaderDescriptorParamType *> &paramsDesc,
-        const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts);
+    void initParamsMaps(
+        const std::map<String, ShaderDescriptorParamType *> &paramsDesc,
+        const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts
+    );
     std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *>
         findBufferParam(String &bufferName, const String &paramName) const;
     template <typename FieldType>
     bool setFieldParam(const String &paramName, const FieldType &value, uint32 index);
     template <typename FieldType>
-    bool setFieldParam(
-        const String &paramName, const String &bufferName, const FieldType &value, uint32 index);
+    bool setFieldParam(const String &paramName, const String &bufferName, const FieldType &value, uint32 index);
     template <typename FieldType>
     FieldType getFieldParam(const String &paramName, uint32 index) const;
     template <typename FieldType>
@@ -308,8 +305,7 @@ private:
 
 protected:
     ShaderParameters() = default;
-    ShaderParameters(
-        const GraphicsResource *shaderParamLayout, const std::set<uint32> &ignoredSetIds = {});
+    ShaderParameters(const GraphicsResource *shaderParamLayout, const std::set<uint32> &ignoredSetIds = {});
 
 public:
     /* ReferenceCountPtr implementation */
@@ -326,23 +322,16 @@ public:
     const GraphicsResource *getParamLayout() const { return paramLayout; }
 
     // Read only
-    std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>>
-        getAllReadOnlyTextures() const;
-    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>>
-        getAllReadOnlyBuffers() const;
-    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>>
-        getAllReadOnlyTexels() const;
+    std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> getAllReadOnlyTextures() const;
+    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> getAllReadOnlyBuffers() const;
+    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> getAllReadOnlyTexels() const;
     // Read Write and Write
-    std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>>
-        getAllWriteTextures() const;
-    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>>
-        getAllWriteBuffers() const;
-    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>>
-        getAllWriteTexels() const;
+    std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> getAllWriteTextures() const;
+    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> getAllWriteBuffers() const;
+    std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> getAllWriteTexels() const;
 
     virtual void updateParams(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
-    void pullBufferParamUpdates(std::vector<BatchCopyBufferData> &copies, IRenderCommandList *cmdList,
-        IGraphicsInstance *graphicsInstance);
+    void pullBufferParamUpdates(std::vector<BatchCopyBufferData> &copies, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
     // Resizing must be done at external wrapper buffer name
     void resizeRuntimeBuffer(const String &bufferName, uint32 minSize);
     bool setIntParam(const String &paramName, int32 value, uint32 index = 0);
@@ -354,21 +343,16 @@ public:
     bool setIntParam(const String &paramName, const String &bufferName, int32 value, uint32 index = 0);
     bool setIntParam(const String &paramName, const String &bufferName, uint32 value, uint32 index = 0);
     bool setFloatParam(const String &paramName, const String &bufferName, float value, uint32 index = 0);
-    bool setVector2Param(
-        const String &paramName, const String &bufferName, const Vector2D &value, uint32 index = 0);
-    bool setVector4Param(
-        const String &paramName, const String &bufferName, const Vector4D &value, uint32 index = 0);
-    bool setMatrixParam(
-        const String &paramName, const String &bufferName, const Matrix4 &value, uint32 index = 0);
+    bool setVector2Param(const String &paramName, const String &bufferName, const Vector2D &value, uint32 index = 0);
+    bool setVector4Param(const String &paramName, const String &bufferName, const Vector4D &value, uint32 index = 0);
+    bool setMatrixParam(const String &paramName, const String &bufferName, const Matrix4 &value, uint32 index = 0);
     template <typename BufferType>
     bool setBuffer(const String &paramName, const BufferType &bufferValue, uint32 index = 0);
     bool setBufferResource(const String &bufferName, BufferResourceRef buffer);
     bool setTexelParam(const String &paramName, BufferResourceRef texelBuffer, uint32 index = 0);
     bool setTextureParam(const String &paramName, ImageResourceRef texture, uint32 index = 0);
-    bool setTextureParam(
-        const String &paramName, ImageResourceRef texture, SamplerRef sampler, uint32 index = 0);
-    bool setTextureParamViewInfo(
-        const String &paramName, const ImageViewInfo &textureViewInfo, uint32 index = 0);
+    bool setTextureParam(const String &paramName, ImageResourceRef texture, SamplerRef sampler, uint32 index = 0);
+    bool setTextureParamViewInfo(const String &paramName, const ImageViewInfo &textureViewInfo, uint32 index = 0);
     bool setSamplerParam(const String &paramName, SamplerRef sampler, uint32 index = 0);
 
     int32 getIntParam(const String &paramName, uint32 index = 0) const;
@@ -386,8 +370,7 @@ public:
     BufferResourceRef getBufferResource(const String &paramName);
     BufferResourceRef getTexelParam(const String &paramName, uint32 index = 0) const;
     ImageResourceRef getTextureParam(const String &paramName, uint32 index = 0) const;
-    ImageResourceRef getTextureParam(
-        SamplerRef &outSampler, const String &paramName, uint32 index = 0) const;
+    ImageResourceRef getTextureParam(SamplerRef &outSampler, const String &paramName, uint32 index = 0) const;
     SamplerRef getSamplerParam(const String &paramName, uint32 index = 0) const;
 };
 using ShaderParametersRef = ReferenceCountPtr<ShaderParameters>;

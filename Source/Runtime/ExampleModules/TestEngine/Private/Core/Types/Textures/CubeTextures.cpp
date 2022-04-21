@@ -22,8 +22,7 @@ void CubeTexture::reinitResources()
 
     ENQUEUE_COMMAND(ReinitCubeTexture)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             if (textureResource->isValid())
             {
@@ -33,7 +32,8 @@ void CubeTexture::reinitResources()
             {
                 CubeTexture::init(this);
             }
-        });
+        }
+    );
 }
 
 EPixelDataFormat::Type CubeTexture::determineDataFormat(ECubeTextureFormat dataFormat)
@@ -57,14 +57,11 @@ EPixelDataFormat::Type CubeTexture::determineDataFormat(ECubeTextureFormat dataF
 
 void CubeTexture::init(CubeTexture *texture)
 {
-    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat,
-        .dimensions = texture->textureSize,
-        .numOfMips = texture->mipCount };
+    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount };
 
     ENQUEUE_COMMAND(InitCubeTexture)
     (
-        [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             texture->textureResource = graphicsHelper->createCubeImage(graphicsInstance, imageCI);
             texture->textureResource->setResourceName(texture->textureName);
@@ -73,7 +70,8 @@ void CubeTexture::init(CubeTexture *texture)
 
             texture->textureResource->init();
             cmdList->setupInitialLayout(texture->textureResource);
-        });
+        }
+    );
 }
 
 void CubeTexture::destroy(CubeTexture *texture)
@@ -82,8 +80,8 @@ void CubeTexture::destroy(CubeTexture *texture)
     texture->textureResource.reset();
 
     ENQUEUE_COMMAND(DestroyCubeTexture)
-    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-         const GraphicsHelperAPI *graphicsHelper) { textureResource->release(); });
+    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+     { textureResource->release(); });
 }
 
 CubeTexture *CubeTexture::createTexture(const CubeTextureCreateParams &createParams)
@@ -95,10 +93,9 @@ CubeTexture *CubeTexture::createTexture(const CubeTextureCreateParams &createPar
     if (createParams.mipCount == 0)
     {
         texture->mipCount = Math::min(
-            (uint32)(1
-                     + Math::floor(Math::log2(
-                         (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
-            createParams.mipCount);
+            (uint32)(1 + Math::floor(Math::log2((float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
+            createParams.mipCount
+        );
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
@@ -129,8 +126,7 @@ void CubeTextureRW::reinitResources()
 
     ENQUEUE_COMMAND(ReinitCubeTextureRW)
     (
-        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             if (textureResource->isValid())
             {
@@ -141,29 +137,27 @@ void CubeTextureRW::reinitResources()
             {
                 CubeTextureRW::init(this);
             }
-        });
+        }
+    );
 }
 
 void CubeTextureRW::init(CubeTextureRW *texture)
 {
-    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat,
-        .dimensions = texture->textureSize,
-        .numOfMips = texture->mipCount };
+    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount };
 
     ENQUEUE_COMMAND(InitCubeTextureRW)
     (
-        [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [texture, imageCI](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             texture->textureResource = graphicsHelper->createCubeImage(graphicsInstance, imageCI);
             texture->textureResource->setResourceName(texture->textureName);
-            texture->textureResource->setShaderUsage(
-                EImageShaderUsage::Writing | (texture->bWriteOnly ? 0 : EImageShaderUsage::Sampling));
+            texture->textureResource->setShaderUsage(EImageShaderUsage::Writing | (texture->bWriteOnly ? 0 : EImageShaderUsage::Sampling));
             texture->textureResource->setSampleCounts(texture->getSampleCount());
 
             texture->textureResource->init();
             cmdList->setupInitialLayout(texture->textureResource);
-        });
+        }
+    );
 }
 
 CubeTextureRW *CubeTextureRW::createTexture(const CubeTextureRWCreateParams &createParams)
@@ -175,10 +169,9 @@ CubeTextureRW *CubeTextureRW::createTexture(const CubeTextureRWCreateParams &cre
     if (createParams.mipCount == 0)
     {
         texture->mipCount = Math::min(
-            (uint32)(1
-                     + Math::floor(Math::log2(
-                         (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
-            createParams.mipCount);
+            (uint32)(1 + Math::floor(Math::log2((float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
+            createParams.mipCount
+        );
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
@@ -194,7 +187,4 @@ CubeTextureRW *CubeTextureRW::createTexture(const CubeTextureRWCreateParams &cre
     return texture;
 }
 
-void CubeTextureRW::destroyTexture(CubeTextureRW *cubeTexture)
-{
-    CubeTexture::destroyTexture(cubeTexture);
-}
+void CubeTextureRW::destroyTexture(CubeTextureRW *cubeTexture) { CubeTexture::destroyTexture(cubeTexture); }

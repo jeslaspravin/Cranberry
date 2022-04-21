@@ -32,13 +32,14 @@ class random_device;
 }
 
 template <typename Type>
-concept CustomMathTypes = std::disjunction_v<std::is_same<Type, Vector2D>, std::is_same<Type, Vector3D>,
-    std::is_same<Type, Vector4D>, std::is_same<Type, Rotation>, std::is_same<Type, Quat>>;
+concept CustomMathTypes = std::disjunction_v<
+    std::is_same<Type, Vector2D>, std::is_same<Type, Vector3D>, std::is_same<Type, Vector4D>, std::is_same<Type, Rotation>,
+    std::is_same<Type, Quat>>;
 
 // Types that can be a vector in certain coordinate system
 template <typename Type>
-concept VectorTypes = std::disjunction_v<std::is_same<Type, Vector2D>, std::is_same<Type, Vector3D>,
-    std::is_same<Type, Vector4D>, std::is_same<Type, Quat>>;
+concept VectorTypes
+    = std::disjunction_v<std::is_same<Type, Vector2D>, std::is_same<Type, Vector3D>, std::is_same<Type, Vector4D>, std::is_same<Type, Quat>>;
 
 template <typename Type, typename Enable = void>
 class MathHelper;
@@ -49,10 +50,7 @@ requires(!CustomMathTypes<Type>) class MathHelper<Type>
     friend class Math;
 
 private:
-    FORCE_INLINE static Type clamp(const Type &value, const Type &min, const Type &max)
-    {
-        return glm::clamp(value, min, max);
-    }
+    FORCE_INLINE static Type clamp(const Type &value, const Type &min, const Type &max) { return glm::clamp(value, min, max); }
 
     FORCE_INLINE static Type min(const Type &a, const Type &b) { return glm::min(a, b); }
 
@@ -74,17 +72,11 @@ private:
         return glm::mod(a, b);
     }
 
-    FORCE_INLINE static Type modf(Type &wholePart, const Type &value)
-    {
-        return glm::modf(value, wholePart);
-    }
+    FORCE_INLINE static Type modf(Type &wholePart, const Type &value) { return glm::modf(value, wholePart); }
 
     // Non math helpers
 
-    FORCE_INLINE static bool isEqual(const Type &a, const Type &b, Type epsilon)
-    {
-        return abs(a - b) <= epsilon;
-    }
+    FORCE_INLINE static bool isEqual(const Type &a, const Type &b, Type epsilon) { return abs(a - b) <= epsilon; }
 
     FORCE_INLINE static bool isFinite(const Type &value) { return IS_FINITE(value); }
 };
@@ -95,10 +87,7 @@ class MathHelper<Type>
     friend class Math;
 
 private:
-    FORCE_INLINE static Type clamp(const Type &value, const Type &min, const Type &max)
-    {
-        return Type::clamp(value, min, max);
-    }
+    FORCE_INLINE static Type clamp(const Type &value, const Type &min, const Type &max) { return Type::clamp(value, min, max); }
 
     FORCE_INLINE static Type min(const Type &a, const Type &b) { return Type::min(a, b); }
 
@@ -120,10 +109,7 @@ private:
         return Type::mod(a, b);
     }
 
-    FORCE_INLINE static Type modf(Type &wholePart, const Type &value)
-    {
-        return Type::modf(value, wholePart);
-    }
+    FORCE_INLINE static Type modf(Type &wholePart, const Type &value) { return Type::modf(value, wholePart); }
 
     // Non math helpers
 
@@ -136,8 +122,7 @@ class PROGRAMCORE_EXPORT Math
 {
 public:
     template <typename ClampType, typename ClampType1, typename ClampType2>
-    FORCE_INLINE static ClampType clamp(
-        const ClampType &value, const ClampType1 &min, const ClampType2 &max)
+    FORCE_INLINE static ClampType clamp(const ClampType &value, const ClampType1 &min, const ClampType2 &max)
     {
         return clampInternal<ClampType, ClampType1, ClampType2>(value, min, max);
     }
@@ -148,8 +133,7 @@ public:
         return minInternal<Type1, Type2>(a, b);
     }
 
-    template <typename Type1, typename Type2, typename Type3,
-        typename T = std::common_type_t<Type1, Type2, Type3>>
+    template <typename Type1, typename Type2, typename Type3, typename T = std::common_type_t<Type1, Type2, Type3>>
     FORCE_INLINE static T min(const Type1 &a, const Type2 &b, const Type3 &c)
     {
         return min(min(a, b), c);
@@ -161,8 +145,7 @@ public:
         return maxInternal<Type1, Type2>(a, b);
     }
 
-    template <typename Type1, typename Type2, typename Type3,
-        typename T = std::common_type_t<Type1, Type2, Type3>>
+    template <typename Type1, typename Type2, typename Type3, typename T = std::common_type_t<Type1, Type2, Type3>>
     FORCE_INLINE static T max(const Type1 &a, const Type2 &b, const Type3 &c)
     {
         return max(max(a, b), c);
@@ -230,15 +213,13 @@ public:
         return glm::exp2(value);
     }
 
-    template <typename Type,
-        typename T = std::conditional_t<std::is_floating_point_v<Type>, Type, float>>
+    template <typename Type, typename T = std::conditional_t<std::is_floating_point_v<Type>, Type, float>>
     FORCE_INLINE static T log2(const Type &value)
     {
         return glm::log2(T(value));
     }
 
-    template <typename Type,
-        typename T = std::conditional_t<std::is_floating_point_v<Type>, Type, float>>
+    template <typename Type, typename T = std::conditional_t<std::is_floating_point_v<Type>, Type, float>>
     FORCE_INLINE static T log(const Type &value)
     {
         return glm::log(T(value));
@@ -341,21 +322,18 @@ public:
         return (value + 1u) & ~1u;
     }
     // AlignVal has to be a power of 2, Undefined behavior if not power of 2
-    template <std::unsigned_integral Type1, std::unsigned_integral Type2,
-        typename Type = std::common_type_t<Type1, Type2>>
+    template <std::unsigned_integral Type1, std::unsigned_integral Type2, typename Type = std::common_type_t<Type1, Type2>>
     CONST_EXPR static Type alignByUnsafe(Type1 value, Type2 alignVal)
     {
         return ((Type)value + (Type)alignVal - 1) & ~((Type)alignVal - 1);
     }
-    template <std::unsigned_integral Type1, std::unsigned_integral Type2,
-        typename Type = std::common_type_t<Type1, Type2>>
+    template <std::unsigned_integral Type1, std::unsigned_integral Type2, typename Type = std::common_type_t<Type1, Type2>>
     static Type alignBy(Type1 value, Type2 alignVal)
     {
         Type roundedToPow2 = toHigherPowOf2(alignVal);
         return alignByUnsafe(value, roundedToPow2);
     }
-    template <std::unsigned_integral Type1, std::unsigned_integral Type2,
-        typename Type = std::common_type_t<Type1, Type2>>
+    template <std::unsigned_integral Type1, std::unsigned_integral Type2, typename Type = std::common_type_t<Type1, Type2>>
     CONST_EXPR static bool isAligned(Type1 value, Type2 alignVal)
     {
         return ((Type)value & ((Type)alignVal - 1)) == 0;

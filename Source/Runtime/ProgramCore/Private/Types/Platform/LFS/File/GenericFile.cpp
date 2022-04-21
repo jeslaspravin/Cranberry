@@ -15,10 +15,7 @@
 #include "Types/Platform/LFS/File/GenericFileHandle.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 
-void *GenericFile::getFileHandleRaw() const
-{
-    return fileHandle ? fileHandle->getFileHandle() : nullptr;
-}
+void *GenericFile::getFileHandleRaw() const { return fileHandle ? fileHandle->getFileHandle() : nullptr; }
 
 void GenericFile::setPath(const String &fPath)
 {

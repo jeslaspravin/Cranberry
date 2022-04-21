@@ -64,16 +64,16 @@ template <typename Resolution>
 TickRep fromPlatformTime(int64 platformTick);
 template <typename Resolution>
 int64 toPlatformTime(TickRep timeTick);
-#define SPECIALIZE_FROM_PLATFORM_TIME(TimeResolution)                                                   \
-    template <>                                                                                         \
-    TickRep fromPlatformTime<TimeResolution>(int64 platformTick)                                        \
-    {                                                                                                   \
-        return ::fromPlatformTimeImpl<TimeResolution>(platformTick);                                    \
-    }                                                                                                   \
-    template <>                                                                                         \
-    int64 toPlatformTime<TimeResolution>(TickRep timeTick)                                              \
-    {                                                                                                   \
-        return ::toPlatformTimeImpl<TimeResolution>(timeTick);                                          \
+#define SPECIALIZE_FROM_PLATFORM_TIME(TimeResolution)                                                                                          \
+    template <>                                                                                                                                \
+    TickRep fromPlatformTime<TimeResolution>(int64 platformTick)                                                                               \
+    {                                                                                                                                          \
+        return ::fromPlatformTimeImpl<TimeResolution>(platformTick);                                                                           \
+    }                                                                                                                                          \
+    template <>                                                                                                                                \
+    int64 toPlatformTime<TimeResolution>(TickRep timeTick)                                                                                     \
+    {                                                                                                                                          \
+        return ::toPlatformTimeImpl<TimeResolution>(timeTick);                                                                                 \
     }
 
 // std::chrono::microseconds
@@ -108,12 +108,10 @@ void WindowsPlatformFunctions::releaseLibrary(const LibPointer *libraryHandle)
 
 void *WindowsPlatformFunctions::getProcAddress(const LibPointer *libraryHandle, String symName)
 {
-    return GetProcAddress(static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle,
-        TCHAR_TO_UTF8(symName.getChar()));
+    return GetProcAddress(static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle, TCHAR_TO_UTF8(symName.getChar()));
 }
 
-void WindowsPlatformFunctions::getModuleInfo(
-    void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)
+void WindowsPlatformFunctions::getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)
 {
     if (!libraryHandle)
     {
@@ -136,8 +134,7 @@ void WindowsPlatformFunctions::getModuleInfo(
 
 bool WindowsPlatformFunctions::isSame(const LibPointer *leftHandle, const LibPointer *rightHandle)
 {
-    return static_cast<const WindowsLibHandle *>(leftHandle)->libHandle
-           == static_cast<const WindowsLibHandle *>(rightHandle)->libHandle;
+    return static_cast<const WindowsLibHandle *>(leftHandle)->libHandle == static_cast<const WindowsLibHandle *>(rightHandle)->libHandle;
 }
 
 void *WindowsPlatformFunctions::getCurrentThreadHandle() { return ::GetCurrentThread(); }
@@ -146,8 +143,7 @@ void *WindowsPlatformFunctions::getCurrentProcessHandle() { return ::GetCurrentP
 
 void WindowsPlatformFunctions::closeProcessHandle(void *handle) { ::CloseHandle((HANDLE)handle); }
 
-void WindowsPlatformFunctions::getAllModules(
-    void *processHandle, LibPointerPtr *modules, uint32 &modulesSize)
+void WindowsPlatformFunctions::getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize)
 {
     if (modules == nullptr)
     {
@@ -159,8 +155,7 @@ void WindowsPlatformFunctions::getAllModules(
     else
     {
         std::vector<HMODULE> mods(modulesSize);
-        EnumProcessModulesEx(
-            processHandle, mods.data(), modulesSize, (LPDWORD)&modulesSize, LIST_MODULES_64BIT);
+        EnumProcessModulesEx(processHandle, mods.data(), modulesSize, (LPDWORD)&modulesSize, LIST_MODULES_64BIT);
         uint32 totalInserts = 0;
         for (HMODULE mod : mods)
         {
@@ -224,10 +219,7 @@ bool WindowsPlatformFunctions::setClipboard(const String &text)
     return true;
 }
 
-uint32 WindowsPlatformFunctions::getSetBitCount(uint8 value)
-{
-    return uint32(::__popcnt16(uint16(value)));
-}
+uint32 WindowsPlatformFunctions::getSetBitCount(uint8 value) { return uint32(::__popcnt16(uint16(value))); }
 
 uint32 WindowsPlatformFunctions::getSetBitCount(uint16 value) { return uint32(::__popcnt16(value)); }
 

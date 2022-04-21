@@ -24,13 +24,14 @@ class SlotAllocator
 public:
     using SizeType = uint32;
 
-    CONST_EXPR static const SizeType SlotAlignment
-        = (ElementAlignment > sizeof(SizeType) ? ElementAlignment : (SizeType)sizeof(SizeType));
+    CONST_EXPR static const SizeType SlotAlignment = (ElementAlignment > sizeof(SizeType) ? ElementAlignment : (SizeType)sizeof(SizeType));
     CONST_EXPR static const SizeType SlotSize = Math::alignByUnsafe(ElementSize, SlotAlignment);
     CONST_EXPR static const SizeType InvalidSize = ~(SizeType)(0);
 
-    static_assert(SlotsCount < InvalidSize, "SlotsCount must less than max of unsigned integer, This is "
-                                            "necessary for identifying free slots");
+    static_assert(
+        SlotsCount < InvalidSize, "SlotsCount must less than max of unsigned integer, This is "
+                                  "necessary for identifying free slots"
+    );
     // Number of slots
     CONST_EXPR static const uint32 Size = SlotsCount;
 
@@ -86,10 +87,7 @@ public:
         return diff >= 0 && diff < (SlotSize * Size);
     }
 
-    FORCE_INLINE SizeType ptrToSlotIdx(void *ptr) const
-    {
-        return ((UIntPtr)(ptr) - (UIntPtr)(slots)) / SlotSize;
-    }
+    FORCE_INLINE SizeType ptrToSlotIdx(void *ptr) const { return ((UIntPtr)(ptr) - (UIntPtr)(slots)) / SlotSize; }
 
     void *memAlloc(SizeT size, uint32 alignment = SlotAlignment)
     {

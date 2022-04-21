@@ -17,8 +17,7 @@
 
 namespace ERenderTargetFormat
 {
-EPixelDataFormat::Type rtFormatToPixelFormatSrgb(
-    ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
+EPixelDataFormat::Type rtFormatToPixelFormatSrgb(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
 {
     switch (rtFormat)
     {
@@ -40,8 +39,7 @@ EPixelDataFormat::Type rtFormatToPixelFormatSrgb(
     return EPixelDataFormat::Undefined;
 }
 
-EPixelDataFormat::Type rtFormatToPixelFormat(
-    ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
+EPixelDataFormat::Type rtFormatToPixelFormat(ERenderTargetFormat::Type rtFormat, EPixelDataFormat::Type defaultFormat)
 {
     switch (rtFormat)
     {
@@ -83,8 +81,7 @@ void RenderTargetTexture::reinitResources()
         textureResource->setLayerCount(layerCount);
         ENQUEUE_COMMAND(RtReinitTexture)
         (
-            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-                const GraphicsHelperAPI *graphicsHelper)
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
                 rtResource->reinitResources();
                 cmdList->setupInitialLayout(rtResource);
@@ -93,7 +90,8 @@ void RenderTargetTexture::reinitResources()
                     textureResource->reinitResources();
                     cmdList->setupInitialLayout(textureResource);
                 }
-            });
+            }
+        );
     }
 }
 
@@ -111,10 +109,9 @@ RenderTargetTexture *RenderTargetTexture::createTexture(const RenderTextureCreat
     if (createParams.mipCount == 0)
     {
         texture->mipCount = Math::min(
-            (uint32)(1
-                     + Math::floor(Math::log2(
-                         (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
-            createParams.mipCount);
+            (uint32)(1 + Math::floor(Math::log2((float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
+            createParams.mipCount
+        );
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
@@ -124,17 +121,14 @@ RenderTargetTexture *RenderTargetTexture::createTexture(const RenderTextureCreat
     texture->layerCount = 1;
     if (createParams.bIsSrgb)
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(
-            createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     else
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(
-            createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     // Dependent values
-    texture->setSampleCount(
-        createParams.bSameReadWriteTexture ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
+    texture->setSampleCount(createParams.bSameReadWriteTexture ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
     texture->setFilteringMode(createParams.filtering);
 
     RenderTargetTexture::init(texture);
@@ -150,20 +144,17 @@ void RenderTargetTexture::destroyTexture(RenderTargetTexture *texture)
 void RenderTargetTexture::init(RenderTargetTexture *texture)
 {
     ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat,
-        .dimensions = texture->textureSize,
-        .numOfMips = texture->mipCount,
-        .layerCount = texture->layerCount };
+                                     .dimensions = texture->textureSize,
+                                     .numOfMips = texture->mipCount,
+                                     .layerCount = texture->layerCount };
 
     ENQUEUE_COMMAND(RtInitTexture)
     (
-        [texture, imageCI](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [texture, imageCI](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
-            texture->textureResource = texture->rtResource
-                = graphicsHelper->createRTImage(graphicsInstance, imageCI);
+            texture->textureResource = texture->rtResource = graphicsHelper->createRTImage(graphicsInstance, imageCI);
             texture->rtResource->setResourceName(texture->textureName);
-            texture->rtResource->setShaderUsage(
-                texture->bSameReadWriteTexture ? EImageShaderUsage::Sampling : 0);
+            texture->rtResource->setShaderUsage(texture->bSameReadWriteTexture ? EImageShaderUsage::Sampling : 0);
             texture->rtResource->setSampleCounts(texture->getSampleCount());
 
             if (!texture->bSameReadWriteTexture)
@@ -183,7 +174,8 @@ void RenderTargetTexture::init(RenderTargetTexture *texture)
                 texture->textureResource->init();
                 cmdList->setupInitialLayout(texture->textureResource);
             }
-        });
+        }
+    );
 }
 
 void RenderTargetTexture::release(RenderTargetTexture *texture)
@@ -192,8 +184,8 @@ void RenderTargetTexture::release(RenderTargetTexture *texture)
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(RtDestroyTexture)
     (
-        [rtResource, textureResource](class IRenderCommandList *cmdList,
-            IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [rtResource,
+         textureResource](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             if (textureResource.isValid())
             {
@@ -203,7 +195,8 @@ void RenderTargetTexture::release(RenderTargetTexture *texture)
                     rtResource->release();
                 }
             }
-        });
+        }
+    );
 
     texture->textureResource.reset();
     texture->rtResource.reset();
@@ -229,20 +222,16 @@ void RenderTargetTextureCube::reinitResources()
 
 void RenderTargetTextureCube::init(RenderTargetTextureCube *texture)
 {
-    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat,
-        .dimensions = texture->textureSize,
-        .numOfMips = texture->mipCount };
+    ImageResourceCreateInfo imageCI{ .imageFormat = texture->dataFormat, .dimensions = texture->textureSize, .numOfMips = texture->mipCount };
 
     ENQUEUE_COMMAND(RtInitTexture)
     (
-        [texture, imageCI](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-            const GraphicsHelperAPI *graphicsHelper)
+        [texture, imageCI](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
-            texture->textureResource = texture->rtResource = graphicsHelper->createCubeRTImage(
-                graphicsInstance, imageCI, texture->getSampleCount());
+            texture->textureResource = texture->rtResource
+                = graphicsHelper->createCubeRTImage(graphicsInstance, imageCI, texture->getSampleCount());
             texture->rtResource->setResourceName(texture->textureName);
-            texture->rtResource->setShaderUsage(
-                texture->bSameReadWriteTexture ? EImageShaderUsage::Sampling : 0);
+            texture->rtResource->setShaderUsage(texture->bSameReadWriteTexture ? EImageShaderUsage::Sampling : 0);
             texture->rtResource->setSampleCounts(texture->getSampleCount());
 
             if (!texture->bSameReadWriteTexture)
@@ -262,11 +251,11 @@ void RenderTargetTextureCube::init(RenderTargetTextureCube *texture)
                 texture->textureResource->init();
                 cmdList->setupInitialLayout(texture->textureResource);
             }
-        });
+        }
+    );
 }
 
-RenderTargetTextureCube *RenderTargetTextureCube::createTexture(
-    const RenderTextureCreateParams &createParams)
+RenderTargetTextureCube *RenderTargetTextureCube::createTexture(const RenderTextureCreateParams &createParams)
 {
     RenderTargetTextureCube *texture = new RenderTargetTextureCube();
 
@@ -274,10 +263,9 @@ RenderTargetTextureCube *RenderTargetTextureCube::createTexture(
     if (createParams.mipCount == 0)
     {
         texture->mipCount = Math::min(
-            (uint32)(1
-                     + Math::floor(Math::log2(
-                         (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
-            createParams.mipCount);
+            (uint32)(1 + Math::floor(Math::log2((float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
+            createParams.mipCount
+        );
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
@@ -286,29 +274,23 @@ RenderTargetTextureCube *RenderTargetTextureCube::createTexture(
     texture->rtFormat = createParams.format;
     if (createParams.bIsSrgb)
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(
-            createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     else
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(
-            createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     texture->layerCount = 6;
 
     // Dependent values
-    texture->setSampleCount(
-        createParams.bSameReadWriteTexture ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
+    texture->setSampleCount(createParams.bSameReadWriteTexture ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
     texture->setFilteringMode(createParams.filtering);
 
     RenderTargetTextureCube::init(texture);
     return texture;
 }
 
-void RenderTargetTextureCube::destroyTexture(RenderTargetTextureCube *texture)
-{
-    RenderTargetTexture::destroyTexture(texture);
-}
+void RenderTargetTextureCube::destroyTexture(RenderTargetTextureCube *texture) { RenderTargetTexture::destroyTexture(texture); }
 
 //////////////////////////////////////////////////////////////////////////
 /// RenderTargetTextureArray
@@ -323,13 +305,9 @@ void RenderTargetTextureArray::setLayerCount(uint32 count)
     }
 }
 
-void RenderTargetTextureArray::destroyTexture(RenderTargetTextureArray *texture)
-{
-    RenderTargetTexture::destroyTexture(texture);
-}
+void RenderTargetTextureArray::destroyTexture(RenderTargetTextureArray *texture) { RenderTargetTexture::destroyTexture(texture); }
 
-RenderTargetTextureArray *RenderTargetTextureArray::createTexture(
-    const RenderTextureArrayCreateParams &createParams)
+RenderTargetTextureArray *RenderTargetTextureArray::createTexture(const RenderTextureArrayCreateParams &createParams)
 {
     RenderTargetTextureArray *texture = new RenderTargetTextureArray();
 
@@ -337,10 +315,9 @@ RenderTargetTextureArray *RenderTargetTextureArray::createTexture(
     if (createParams.mipCount == 0)
     {
         texture->mipCount = Math::min(
-            (uint32)(1
-                     + Math::floor(Math::log2(
-                         (float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
-            createParams.mipCount);
+            (uint32)(1 + Math::floor(Math::log2((float)Math::max(createParams.textureSize.x, createParams.textureSize.y)))),
+            createParams.mipCount
+        );
     }
     texture->textureSize = Size3D(createParams.textureSize.x, createParams.textureSize.y, 1);
     texture->textureName = createParams.textureName;
@@ -349,19 +326,16 @@ RenderTargetTextureArray *RenderTargetTextureArray::createTexture(
     texture->rtFormat = createParams.format;
     if (createParams.bIsSrgb)
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(
-            createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormatSrgb(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     else
     {
-        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(
-            createParams.format, EPixelDataFormat::BGRA_U8_Norm);
+        texture->dataFormat = ERenderTargetFormat::rtFormatToPixelFormat(createParams.format, EPixelDataFormat::BGRA_U8_Norm);
     }
     texture->setLayerCount(createParams.layerCount);
 
     // Dependent values
-    texture->setSampleCount(
-        createParams.bSameReadWriteTexture ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
+    texture->setSampleCount(createParams.bSameReadWriteTexture ? EPixelSampleCount::SampleCount1 : createParams.sampleCount);
     texture->setFilteringMode(createParams.filtering);
 
     RenderTargetTexture::init(texture);

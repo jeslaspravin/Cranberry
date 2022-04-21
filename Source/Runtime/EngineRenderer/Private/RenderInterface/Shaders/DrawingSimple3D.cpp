@@ -27,8 +27,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 template <EPrimitiveTopology::Type Topology, bool DepthWrite>
-GraphicsPipelineConfig drawSimple3DPipelineConfig(
-    String &pipelineName, const ShaderResource *shaderResource)
+GraphicsPipelineConfig drawSimple3DPipelineConfig(String &pipelineName, const ShaderResource *shaderResource)
 {
     pipelineName = TCHAR("DrawSimple3D_") + shaderResource->getResourceName();
     GraphicsPipelineConfig config;
@@ -42,10 +41,8 @@ GraphicsPipelineConfig drawSimple3DPipelineConfig(
 
     config.renderpassProps.bOneRtPerFormat = true;
     config.renderpassProps.multisampleCount = EPixelSampleCount::SampleCount1;
-    config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(
-        EPixelDataFormat::BGRA_U8_Norm);
-    config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(
-        EPixelDataFormat::D24S8_U32_DNorm_SInt);
+    config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::BGRA_U8_Norm);
+    config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::D24S8_U32_DNorm_SInt);
     config.renderpassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
 
     config.depthState.bEnableWrite = DepthWrite;
@@ -73,19 +70,18 @@ GraphicsPipelineConfig drawSimple3DPipelineConfig(
 template <EPrimitiveTopology::Type Topology, bool DepthWrite>
 class Draw3DColoredPerVertex : public UniqueUtilityShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(
-        Draw3DColoredPerVertex, <EXPAND_ARGS(Topology, DepthWrite)>, UniqueUtilityShaderConfig, );
+    DECLARE_GRAPHICS_RESOURCE(Draw3DColoredPerVertex, <EXPAND_ARGS(Topology, DepthWrite)>, UniqueUtilityShaderConfig, );
 
 private:
     String shaderFileName;
 
     Draw3DColoredPerVertex()
-        : BaseType(String(DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>()
-                   + (DepthWrite ? TCHAR("DWrite") : TCHAR("")))
+        : BaseType(
+            String(DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite ? TCHAR("DWrite") : TCHAR(""))
+        )
         , shaderFileName(DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
-        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER,
-            getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
+        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
     }
 
 protected:
@@ -93,14 +89,12 @@ protected:
     String getShaderFileName() const override { return shaderFileName; }
     /* overrides ends */
 public:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         auto ShaderParamInfoInit = [this]
         {
             std::map<String, ShaderBufferParamInfo *> paramInfo;
-            paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(),
-                RenderSceneBase::sceneViewParamInfo().cend());
+            paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
 
             // Vertex based instance param info at set 1
             auto instanceParamInfo = MaterialVertexUniforms::bufferParamInfo(vertexUsage());
@@ -119,9 +113,7 @@ public:
         }
     }
 };
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(Draw3DColoredPerVertex,
-    <EXPAND_ARGS(EPrimitiveTopology::Type Topology, bool DepthWrite)>,
-    <EXPAND_ARGS(Topology, DepthWrite)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(Draw3DColoredPerVertex, <EXPAND_ARGS(EPrimitiveTopology::Type Topology, bool DepthWrite)>, <EXPAND_ARGS(Topology, DepthWrite)>)
 template Draw3DColoredPerVertex<EPrimitiveTopology::Triangle, false>;
 template Draw3DColoredPerVertex<EPrimitiveTopology::Line, false>;
 template Draw3DColoredPerVertex<EPrimitiveTopology::Point, false>;
@@ -148,15 +140,11 @@ protected:
     /* overrides ends */
 
 public:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
-        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-            RenderSceneBase::sceneViewParamInfo()
-        };
+        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
 
-        SHADER_PARAMS_INFO.insert(RenderSceneBase::sceneViewParamInfo().cbegin(),
-            RenderSceneBase::sceneViewParamInfo().cend());
+        SHADER_PARAMS_INFO.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
@@ -177,20 +165,19 @@ DEFINE_GRAPHICS_RESOURCE(Draw3DColoredPerInstance)
 template <EPrimitiveTopology::Type Topology, bool DepthWrite>
 class DirectDraw3DColoredPerVertex : public UniqueUtilityShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(
-        DirectDraw3DColoredPerVertex, <EXPAND_ARGS(Topology, DepthWrite)>, UniqueUtilityShaderConfig, );
+    DECLARE_GRAPHICS_RESOURCE(DirectDraw3DColoredPerVertex, <EXPAND_ARGS(Topology, DepthWrite)>, UniqueUtilityShaderConfig, );
 
 private:
     String shaderFileName;
 
     DirectDraw3DColoredPerVertex()
-        : BaseType(String(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME)
-                   + EPrimitiveTopology::getChar<Topology>()
-                   + (DepthWrite ? TCHAR("DWrite") : TCHAR("")))
+        : BaseType(
+            String(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>()
+            + (DepthWrite ? TCHAR("DWrite") : TCHAR(""))
+        )
         , shaderFileName(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
-        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER,
-            getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
+        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
     }
 
 protected:
@@ -198,15 +185,11 @@ protected:
     String getShaderFileName() const override { return shaderFileName; }
     /* overrides ends */
 public:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
-        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-            RenderSceneBase::sceneViewParamInfo()
-        };
+        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
 
-        SHADER_PARAMS_INFO.insert(RenderSceneBase::sceneViewParamInfo().cbegin(),
-            RenderSceneBase::sceneViewParamInfo().cend());
+        SHADER_PARAMS_INFO.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
@@ -218,9 +201,7 @@ public:
         }
     }
 };
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DirectDraw3DColoredPerVertex,
-    <EXPAND_ARGS(EPrimitiveTopology::Type Topology, bool DepthWrite)>,
-    <EXPAND_ARGS(Topology, DepthWrite)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DirectDraw3DColoredPerVertex, <EXPAND_ARGS(EPrimitiveTopology::Type Topology, bool DepthWrite)>, <EXPAND_ARGS(Topology, DepthWrite)>)
 template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Triangle, false>;
 template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Line, false>;
 template DirectDraw3DColoredPerVertex<EPrimitiveTopology::Point, false>;
@@ -242,15 +223,11 @@ private:
     {}
 
 public:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
-        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-            RenderSceneBase::sceneViewParamInfo()
-        };
+        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
 
-        SHADER_PARAMS_INFO.insert(RenderSceneBase::sceneViewParamInfo().cbegin(),
-            RenderSceneBase::sceneViewParamInfo().cend());
+        SHADER_PARAMS_INFO.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
@@ -265,9 +242,5 @@ public:
 DEFINE_GRAPHICS_RESOURCE(DirectDraw3DColoredPerInstance)
 
 // Registrar
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_INSTANCE_REGISTER,
-    DRAW_3D_COLORED_PER_INSTANCE_NAME,
-    &drawSimple3DPipelineConfig<EXPAND_ARGS(EPrimitiveTopology::Triangle, false)>);
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(DIRECT_DRAW_3D_COLORED_PER_INSTANCE_REGISTER,
-    DIRECT_DRAW_3D_COLORED_PER_INSTANCE_NAME,
-    &drawSimple3DPipelineConfig<EXPAND_ARGS(EPrimitiveTopology::Triangle, false)>);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_INSTANCE_REGISTER, DRAW_3D_COLORED_PER_INSTANCE_NAME, &drawSimple3DPipelineConfig<EXPAND_ARGS(EPrimitiveTopology::Triangle, false)>);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(DIRECT_DRAW_3D_COLORED_PER_INSTANCE_REGISTER, DIRECT_DRAW_3D_COLORED_PER_INSTANCE_NAME, &drawSimple3DPipelineConfig<EXPAND_ARGS(EPrimitiveTopology::Triangle, false)>);

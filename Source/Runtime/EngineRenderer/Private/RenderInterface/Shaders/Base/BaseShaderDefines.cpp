@@ -22,12 +22,10 @@ DEFINE_GRAPHICS_RESOURCE(DrawMeshShaderConfig)
 
 String DrawMeshShaderConfig::getShaderFileName() const
 {
-    return getResourceName() + EVertexType::toString(vertexUsage())
-           + ERenderPassFormat::toString(renderpassUsage());
+    return getResourceName() + EVertexType::toString(vertexUsage()) + ERenderPassFormat::toString(renderpassUsage());
 }
 
-void DrawMeshShaderConfig::getSpecializationConsts(
-    std::map<String, struct SpecializationConstantEntry> &specializationConst) const
+void DrawMeshShaderConfig::getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const
 {
     BaseType::getSpecializationConsts(specializationConst);
     RenderSceneBase::sceneViewSpecConsts(specializationConst);
@@ -63,13 +61,10 @@ EVertexType::Type UniqueUtilityShaderConfig::vertexUsage() const
         auto is3DColor = [this]() -> bool
         {
             bool retVal = true;
-            const EShaderInputAttribFormat::Type vertexAttribCheck[]
-                = { EShaderInputAttribFormat::Float3, EShaderInputAttribFormat::Float4 };
+            const EShaderInputAttribFormat::Type vertexAttribCheck[] = { EShaderInputAttribFormat::Float3, EShaderInputAttribFormat::Float4 };
             for (const ReflectInputOutput &refInput : getReflection()->inputs)
             {
-                retVal = retVal
-                         && EShaderInputAttribFormat::getInputFormat(refInput.data.type)
-                                == vertexAttribCheck[refInput.data.location];
+                retVal = retVal && EShaderInputAttribFormat::getInputFormat(refInput.data.type) == vertexAttribCheck[refInput.data.location];
             }
             return retVal;
         };
@@ -85,13 +80,11 @@ EVertexType::Type UniqueUtilityShaderConfig::vertexUsage() const
         auto isUiVertex = [this]() -> bool
         {
             bool retVal = true;
-            const EShaderInputAttribFormat::Type UiAttribCheck[] = { EShaderInputAttribFormat::Float2,
-                EShaderInputAttribFormat::Float2, EShaderInputAttribFormat::Float4 };
+            const EShaderInputAttribFormat::Type UiAttribCheck[]
+                = { EShaderInputAttribFormat::Float2, EShaderInputAttribFormat::Float2, EShaderInputAttribFormat::Float4 };
             for (const ReflectInputOutput &refInput : getReflection()->inputs)
             {
-                retVal = retVal
-                         && EShaderInputAttribFormat::getInputFormat(refInput.data.type)
-                                == UiAttribCheck[refInput.data.location];
+                retVal = retVal && EShaderInputAttribFormat::getInputFormat(refInput.data.type) == UiAttribCheck[refInput.data.location];
             }
             return retVal;
         };
@@ -102,8 +95,7 @@ EVertexType::Type UniqueUtilityShaderConfig::vertexUsage() const
         }
     }
 
-    LOG_ERROR("UniqueUtilityShader", "%s() : not supported vertex format for Utility shader %s",
-        __func__, getResourceName().getChar());
+    LOG_ERROR("UniqueUtilityShader", "%s() : not supported vertex format for Utility shader %s", __func__, getResourceName().getChar());
     return EVertexType::Simple2;
 }
 
@@ -120,8 +112,7 @@ GraphicsPipelineConfig screenSpaceQuadConfig(String &pipelineName, const ShaderR
 
     config.renderpassProps.bOneRtPerFormat = true;
     config.renderpassProps.multisampleCount = EPixelSampleCount::SampleCount1;
-    config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(
-        EPixelDataFormat::BGRA_U8_Norm);
+    config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::BGRA_U8_Norm);
     config.renderpassProps.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
 
     config.depthState.bEnableWrite = false;
@@ -134,8 +125,7 @@ GraphicsPipelineConfig screenSpaceQuadConfig(String &pipelineName, const ShaderR
     return config;
 }
 
-GraphicsPipelineConfig screenSpaceQuadOverBlendConfig(
-    String &pipelineName, const ShaderResource *shaderResource)
+GraphicsPipelineConfig screenSpaceQuadOverBlendConfig(String &pipelineName, const ShaderResource *shaderResource)
 {
     GraphicsPipelineConfig config = screenSpaceQuadConfig(pipelineName, shaderResource);
 
@@ -145,21 +135,18 @@ GraphicsPipelineConfig screenSpaceQuadOverBlendConfig(
     config.attachmentBlendStates[0].srcColorFactor = EBlendFactor::SrcAlpha;
     config.attachmentBlendStates[0].dstColorFactor = EBlendFactor::OneMinusSrcAlpha;
     config.attachmentBlendStates[0].alphaBlendOp = EBlendOp::Add;
-    config.attachmentBlendStates[0].srcAlphaFactor = config.attachmentBlendStates[0].dstAlphaFactor
-        = EBlendFactor::One;
+    config.attachmentBlendStates[0].srcAlphaFactor = config.attachmentBlendStates[0].dstAlphaFactor = EBlendFactor::One;
 
     return config;
 }
 
-GraphicsPipelineConfig screenSpaceQuadOverBlendDepthTestedShaderConfig(
-    String &pipelineName, const ShaderResource *shaderResource)
+GraphicsPipelineConfig screenSpaceQuadOverBlendDepthTestedShaderConfig(String &pipelineName, const ShaderResource *shaderResource)
 {
     GraphicsPipelineConfig config = screenSpaceQuadOverBlendConfig(pipelineName, shaderResource);
 
     pipelineName = TCHAR("OverBlendedSSQuadDepthTested_") + shaderResource->getResourceName();
     // Just add depth attachment and disable depth write
-    config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(
-        EPixelDataFormat::D24S8_U32_DNorm_SInt);
+    config.renderpassProps.renderpassAttachmentFormat.attachments.emplace_back(EPixelDataFormat::D24S8_U32_DNorm_SInt);
 
     config.depthState.bEnableWrite = false;
     config.depthState.compareOp = CoreGraphicsTypes::ECompareOp::Greater;
@@ -170,8 +157,7 @@ GraphicsPipelineConfig screenSpaceQuadOverBlendDepthTestedShaderConfig(
 
 namespace CommonGraphicsPipelineConfigs
 {
-GraphicsPipelineConfig writeGbufferShaderConfig(
-    String &pipelineName, const ShaderResource *shaderResource)
+GraphicsPipelineConfig writeGbufferShaderConfig(String &pipelineName, const ShaderResource *shaderResource)
 {
     pipelineName = shaderResource->getResourceName();
 
@@ -191,7 +177,8 @@ GraphicsPipelineConfig writeGbufferShaderConfig(
 
     bool bHasDepth = false;
     FramebufferFormat fbFormat = GlobalBuffers ::getFramebufferRenderpassProps(
-        static_cast<const DrawMeshShaderConfig *>(shaderResource->getShaderConfig())->renderpassUsage())
+                                     static_cast<const DrawMeshShaderConfig *>(shaderResource->getShaderConfig())->renderpassUsage()
+    )
                                      .renderpassAttachmentFormat;
     config.attachmentBlendStates.reserve(fbFormat.attachments.size());
     for (EPixelDataFormat::Type attachmentFormat : fbFormat.attachments)

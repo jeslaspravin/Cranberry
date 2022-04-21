@@ -29,8 +29,7 @@ public:
         : returnTypeInfo(retType)
         , argsTypeInfo(std::move(argsType))
     {}
-    BaseFunctionWrapper(
-        const ReflectTypeInfo *retType, const std::vector<const ReflectTypeInfo *> &argsType)
+    BaseFunctionWrapper(const ReflectTypeInfo *retType, const std::vector<const ReflectTypeInfo *> &argsType)
         : returnTypeInfo(retType)
         , argsTypeInfo(argsType)
     {}
@@ -84,14 +83,16 @@ private:
     }
 
 public:
-    MemberFunctionWrapper(const ReflectTypeInfo *outerClassType, const ReflectTypeInfo *retType,
-        std::vector<const ReflectTypeInfo *> &&argsType)
+    MemberFunctionWrapper(
+        const ReflectTypeInfo *outerClassType, const ReflectTypeInfo *retType, std::vector<const ReflectTypeInfo *> &&argsType
+    )
         : BaseFunctionWrapper(retType, std::move(argsType))
         , memberOfType(outerClassType)
         , memberOfTypeInner(getInnerMostType(memberOfType))
     {}
-    MemberFunctionWrapper(const ReflectTypeInfo *outerClassType, const ReflectTypeInfo *retType,
-        const std::vector<const ReflectTypeInfo *> &argsType)
+    MemberFunctionWrapper(
+        const ReflectTypeInfo *outerClassType, const ReflectTypeInfo *retType, const std::vector<const ReflectTypeInfo *> &argsType
+    )
         : BaseFunctionWrapper(retType, argsType)
         , memberOfType(outerClassType)
         , memberOfTypeInner(getInnerMostType(memberOfType))
@@ -102,24 +103,21 @@ public:
     {
         if (!(isSameReturnType<ReturnType>() && isSameArgsType<Args...>()))
         {
-            LOG_ERROR("MemberFunctionWrapper",
-                "%s() : Cannot call this function with given return values and arguments", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given return values and arguments", __func__);
             return false;
         }
         // Since type ID of the innermost type must be same with object type's inner most type
         const ReflectTypeInfo *objectInnerMostType = getInnerMostType(typeInfoFrom<ObjectType>());
         if (objectInnerMostType->typeID != memberOfTypeInner->typeID)
         {
-            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given object type",
-                __func__);
+            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given object type", __func__);
             return false;
         }
 
         if (BIT_SET(memberOfType->qualifiers, EReflectTypeQualifiers::Constant))
         {
             ClassFunction<true, CleanType<ObjectType>, ReturnType, Args...> *functionPtr
-                = (ClassFunction<true, CleanType<ObjectType>, ReturnType, Args...>
-                        *)(functionAccessor());
+                = (ClassFunction<true, CleanType<ObjectType>, ReturnType, Args...> *)(functionAccessor());
 
             returnVal = (*functionPtr)(std::forward<ObjectType>(object), std::forward<Args>(params)...);
         }
@@ -133,10 +131,8 @@ public:
             else
             {
                 ClassFunction<false, CleanType<ObjectType>, ReturnType, Args...> *functionPtr
-                    = (ClassFunction<false, CleanType<ObjectType>, ReturnType, Args...>
-                            *)(functionAccessor());
-                returnVal
-                    = (*functionPtr)(std::forward<ObjectType>(object), std::forward<Args>(params)...);
+                    = (ClassFunction<false, CleanType<ObjectType>, ReturnType, Args...> *)(functionAccessor());
+                returnVal = (*functionPtr)(std::forward<ObjectType>(object), std::forward<Args>(params)...);
             }
         }
         return true;
@@ -147,24 +143,21 @@ public:
     {
         if (!(isSameReturnType<void>() && isSameArgsType<Args...>()))
         {
-            LOG_ERROR("MemberFunctionWrapper",
-                "%s() : Cannot call this function with given return values and arguments", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given return values and arguments", __func__);
             return false;
         }
         // Since type ID of the innermost type must be same with object type's inner most type
         const ReflectTypeInfo *objectInnerMostType = getInnerMostType(typeInfoFrom<ObjectType>());
         if (objectInnerMostType->typeID != memberOfTypeInner->typeID)
         {
-            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given object type",
-                __func__);
+            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given object type", __func__);
             return false;
         }
 
         if (BIT_SET(memberOfType->qualifiers, EReflectTypeQualifiers::Constant))
         {
             const ClassFunction<true, CleanType<ObjectType>, void, Args...> *functionPtr
-                = (const ClassFunction<true, CleanType<ObjectType>, void, Args...>
-                        *)(functionAccessor());
+                = (const ClassFunction<true, CleanType<ObjectType>, void, Args...> *)(functionAccessor());
 
             (*functionPtr)(std::forward<ObjectType>(object), std::forward<Args>(params)...);
         }
@@ -178,8 +171,7 @@ public:
             else
             {
                 const ClassFunction<false, CleanType<ObjectType>, void, Args...> *functionPtr
-                    = (const ClassFunction<false, CleanType<ObjectType>, void, Args...>
-                            *)(functionAccessor());
+                    = (const ClassFunction<false, CleanType<ObjectType>, void, Args...> *)(functionAccessor());
 
                 (*functionPtr)(std::forward<ObjectType>(object), std::forward<Args>(params)...);
             }
@@ -193,21 +185,18 @@ public:
         if (BIT_SET(memberOfType->qualifiers, EReflectTypeQualifiers::Constant))
         {
             ClassFunction<true, CleanType<ObjectType>, ReturnType, Args...> *functionPtr
-                = (ClassFunction<true, CleanType<ObjectType>, ReturnType, Args...>
-                        *)(functionAccessor());
+                = (ClassFunction<true, CleanType<ObjectType>, ReturnType, Args...> *)(functionAccessor());
 
             return (*functionPtr)(std::forward<ObjectType>(object), std::forward<Args>(params)...);
         }
         else
         {
             ClassFunction<false, CleanType<ObjectType>, ReturnType, Args...> *functionPtr
-                = (ClassFunction<false, CleanType<ObjectType>, ReturnType, Args...>
-                        *)(functionAccessor());
+                = (ClassFunction<false, CleanType<ObjectType>, ReturnType, Args...> *)(functionAccessor());
 
             if CONST_EXPR (std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
             {
-                fatalAssert(!std::is_const_v<UnderlyingTypeWithConst<ObjectType>>,
-                    "Const type cannot invoke non const object member function");
+                fatalAssert(!std::is_const_v<UnderlyingTypeWithConst<ObjectType>>, "Const type cannot invoke non const object member function");
             }
             else
             {
@@ -220,12 +209,10 @@ public:
 class GlobalFunctionWrapper : public BaseFunctionWrapper
 {
 public:
-    GlobalFunctionWrapper(
-        const ReflectTypeInfo *retType, std::vector<const ReflectTypeInfo *> &&argsType)
+    GlobalFunctionWrapper(const ReflectTypeInfo *retType, std::vector<const ReflectTypeInfo *> &&argsType)
         : BaseFunctionWrapper(retType, std::move(argsType))
     {}
-    GlobalFunctionWrapper(bool modifiesClass, const ReflectTypeInfo *retType,
-        const std::vector<const ReflectTypeInfo *> &argsType)
+    GlobalFunctionWrapper(bool modifiesClass, const ReflectTypeInfo *retType, const std::vector<const ReflectTypeInfo *> &argsType)
         : BaseFunctionWrapper(retType, argsType)
     {}
 
@@ -234,13 +221,11 @@ public:
     {
         if (!(isSameReturnType<ReturnType>() && isSameArgsType<Args...>()))
         {
-            LOG_ERROR("MemberFunctionWrapper",
-                "%s() : Cannot call this function with given return values and arguments", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given return values and arguments", __func__);
             return false;
         }
 
-        const Function<ReturnType, Args...> *functionPtr
-            = (const Function<ReturnType, Args...> *)(functionAccessor());
+        const Function<ReturnType, Args...> *functionPtr = (const Function<ReturnType, Args...> *)(functionAccessor());
 
         returnVal = (*functionPtr)(std::forward<Args>(params)...);
 
@@ -251,13 +236,11 @@ public:
     {
         if (!(isSameReturnType<void>() && isSameArgsType<Args...>()))
         {
-            LOG_ERROR("MemberFunctionWrapper",
-                "%s() : Cannot call this function with given return values and arguments", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given return values and arguments", __func__);
             return false;
         }
 
-        const Function<void, Args...> *functionPtr
-            = (const Function<void, Args...> *)(functionAccessor());
+        const Function<void, Args...> *functionPtr = (const Function<void, Args...> *)(functionAccessor());
 
         (*functionPtr)(std::forward<Args>(params)...);
 
@@ -267,8 +250,7 @@ public:
     template <typename ReturnType, typename... Args>
     ReturnType invokeUnsafe(Args... params) const
     {
-        const Function<ReturnType, Args...> *functionPtr
-            = (const Function<ReturnType, Args...> *)(functionAccessor());
+        const Function<ReturnType, Args...> *functionPtr = (const Function<ReturnType, Args...> *)(functionAccessor());
 
         return (*functionPtr)(std::forward<Args>(params)...);
     }
@@ -280,8 +262,7 @@ template <typename ObjectType, typename ReturnType, typename... Args>
 class MemberFunctionWrapperImpl : public MemberFunctionWrapper
 {
 private:
-    using MemberFunction = ClassFunction<std::is_const_v<ObjectType>, std::remove_const_t<ObjectType>,
-        ReturnType, Args...>;
+    using MemberFunction = ClassFunction<std::is_const_v<ObjectType>, std::remove_const_t<ObjectType>, ReturnType, Args...>;
 
     MemberFunction memberFunc;
 
@@ -290,8 +271,7 @@ protected:
 
 public:
     MemberFunctionWrapperImpl(MemberFunction::ClassDelegate funcPtr)
-        : MemberFunctionWrapper(typeInfoFrom<ObjectType>(), typeInfoFrom<ReturnType>(),
-            std::move(typeInfoListFrom<Args...>()))
+        : MemberFunctionWrapper(typeInfoFrom<ObjectType>(), typeInfoFrom<ReturnType>(), std::move(typeInfoListFrom<Args...>()))
         , memberFunc(funcPtr)
     {}
 };

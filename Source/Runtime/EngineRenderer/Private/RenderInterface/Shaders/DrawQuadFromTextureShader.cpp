@@ -54,8 +54,10 @@ DrawOverBlendedQuadFromTexture::DrawOverBlendedQuadFromTexture()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(QUAD_FROM_TEXTURE_PIPELINE_REGISTER, DRAW_QUAD_FROM_TEXTURE,
-    &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(OVER_BLENDED_QUAD_FROM_TEXTURE_PIPELINE_REGISTER,
-    DRAW_OVER_BLENDED_QUAD_FROM_TEXTURE,
-    &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    QUAD_FROM_TEXTURE_PIPELINE_REGISTER, DRAW_QUAD_FROM_TEXTURE, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig
+);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    OVER_BLENDED_QUAD_FROM_TEXTURE_PIPELINE_REGISTER, DRAW_OVER_BLENDED_QUAD_FROM_TEXTURE,
+    &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig
+);

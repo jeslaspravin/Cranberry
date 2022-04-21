@@ -41,8 +41,9 @@ struct ClassPropertyFactoryCell
 
     ClassPropertyFactoryCell() = default;
 
-    ClassPropertyFactoryCell(ClassPropertyFactoryFunction ::StaticDelegate factoryFuncPtr,
-        ClassPropertyInitFunction::StaticDelegate initFuncPtr)
+    ClassPropertyFactoryCell(
+        ClassPropertyFactoryFunction ::StaticDelegate factoryFuncPtr, ClassPropertyInitFunction::StaticDelegate initFuncPtr
+    )
         : factoryFunc(factoryFuncPtr)
         , initFunc(initFuncPtr)
     {}
@@ -60,8 +61,7 @@ struct EnumPropertyFactoryCell
 
     EnumPropertyFactoryCell() = default;
 
-    EnumPropertyFactoryCell(EnumPropertyFactoryFunction::StaticDelegate factoryFuncPtr,
-        EnumPropertyInitFunction::StaticDelegate initFuncPtr)
+    EnumPropertyFactoryCell(EnumPropertyFactoryFunction::StaticDelegate factoryFuncPtr, EnumPropertyInitFunction::StaticDelegate initFuncPtr)
         : factoryFunc(factoryFuncPtr)
         , initFunc(initFuncPtr)
     {}
@@ -79,8 +79,7 @@ struct TypedPropertyFactoryCell
 
     TypedPropertyFactoryCell() = default;
 
-    TypedPropertyFactoryCell(TypedPropertyFactoryFunction::StaticDelegate factoryFuncPtr,
-        TypedPropertyInitFunction::StaticDelegate initFuncPtr)
+    TypedPropertyFactoryCell(TypedPropertyFactoryFunction::StaticDelegate factoryFuncPtr, TypedPropertyInitFunction::StaticDelegate initFuncPtr)
         : factoryFunc(factoryFuncPtr)
         , initFunc(initFuncPtr)
     {}
@@ -115,24 +114,20 @@ public:
 
     // Using this to get list of all meta data for a property is not efficient(Use search by property and
     // meta data type)
-    virtual std::vector<const PropertyMetaDataBase *> getPropertyMetaData(
-        const BaseProperty *prop) const = 0;
-    virtual const PropertyMetaDataBase *getPropertyMetaData(
-        const BaseProperty *prop, const ReflectTypeInfo *typeInfo) const = 0;
+    virtual std::vector<const PropertyMetaDataBase *> getPropertyMetaData(const BaseProperty *prop) const = 0;
+    virtual const PropertyMetaDataBase *getPropertyMetaData(const BaseProperty *prop, const ReflectTypeInfo *typeInfo) const = 0;
     virtual uint64 getPropertyMetaFlags(const BaseProperty *prop) const = 0;
 
     static IReflectionRuntimeModule *get();
-    static void registerClassFactory(const StringID &className, const ReflectTypeInfo *classTypeInfo,
-        const ClassPropertyFactoryCell &factoryCell);
-    static void registerStructFactory(const StringID &structName, const ReflectTypeInfo *structTypeInfo,
-        const ClassPropertyFactoryCell &factoryCell);
-    static void registerEnumFactory(const StringID &enumName, const ReflectTypeInfo *enumTypeInfo,
-        const EnumPropertyFactoryCell &factoryCell);
-    static void registerTypeFactory(
-        const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell);
+    static void
+        registerClassFactory(const StringID &className, const ReflectTypeInfo *classTypeInfo, const ClassPropertyFactoryCell &factoryCell);
+    static void
+        registerStructFactory(const StringID &structName, const ReflectTypeInfo *structTypeInfo, const ClassPropertyFactoryCell &factoryCell);
+    static void registerEnumFactory(const StringID &enumName, const ReflectTypeInfo *enumTypeInfo, const EnumPropertyFactoryCell &factoryCell);
+    static void registerTypeFactory(const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell);
     // Just a function to have same register signature as other factor register functions
-    FORCE_INLINE static void registerTypeFactory(const StringID &typeName,
-        const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell)
+    FORCE_INLINE static void
+        registerTypeFactory(const StringID &typeName, const ReflectTypeInfo *typeInfo, const TypedPropertyFactoryCell &factoryCell)
     {
         registerTypeFactory(typeInfo, factoryCell);
     }

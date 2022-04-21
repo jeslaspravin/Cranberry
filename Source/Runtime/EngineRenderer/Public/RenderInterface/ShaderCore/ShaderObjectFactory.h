@@ -17,8 +17,7 @@ class ShaderObjectBase;
 class String;
 class ShaderResource;
 
-class ENGINERENDERER_EXPORT ShaderObjectFactory
-    : public FactoriesBase<ShaderObjectBase *, const String &, const ShaderResource *>
+class ENGINERENDERER_EXPORT ShaderObjectFactory : public FactoriesBase<ShaderObjectBase *, const String &, const ShaderResource *>
 {
 
 public:

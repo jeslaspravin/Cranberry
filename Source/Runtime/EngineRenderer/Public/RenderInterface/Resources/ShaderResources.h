@@ -57,8 +57,7 @@ protected:
     ShaderCodeResource() = default;
 
 public:
-    ShaderCodeResource(
-        const String &shaderName, const std::string &entryPointName, const uint8 *shaderCodePtr);
+    ShaderCodeResource(const String &shaderName, const std::string &entryPointName, const uint8 *shaderCodePtr);
 
     /* GraphicsResources overrides */
     void init() override;
@@ -94,15 +93,11 @@ public:
      * Binds BufferParamInfo for each buffer descriptor(Depending upon override corresponding set varies)
      * for eg: DrawMeshShader only binds set 3 using this while others bind all set this way
      */
-    virtual void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
-    {}
+    virtual void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const {}
     /*
      * Fills specialization constants for this shader
      */
-    virtual void getSpecializationConsts(
-        std::map<String, struct SpecializationConstantEntry> &specializationConst) const
-    {}
+    virtual void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const {}
 
     void setShaderConfigured(class ShaderResource *shaderResource) { shaderConfigured = shaderResource; }
 };
@@ -142,13 +137,11 @@ public:
      * Binds BufferParamInfo for each buffer descriptor(Depending upon override corresponding set varies)
      * for eg: DrawMeshShader only binds set 3 using this while others bind all set this way
      */
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const;
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const;
     /*
      * Fills specialization constants for this shader
      */
-    void getSpecializationConsts(
-        std::map<String, struct SpecializationConstantEntry> &specializationConst) const;
+    void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const;
 
     SharedPtr<ShaderCodeResource> getShaderCode(EShaderStage::Type shaderType) const;
     const std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>> &getShaders() const;

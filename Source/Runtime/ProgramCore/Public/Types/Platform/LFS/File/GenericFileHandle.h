@@ -88,8 +88,7 @@ protected:
     uint64 rawFileFlags;
 
 public:
-    GenericFileHandle(uint8 flags, uint8 sharing = (uint8)EFileSharing::ReadOnly, uint32 extraFlags = 0,
-        uint64 advancedFlags = 0)
+    GenericFileHandle(uint8 flags, uint8 sharing = (uint8)EFileSharing::ReadOnly, uint32 extraFlags = 0, uint64 advancedFlags = 0)
         : fileFlags(flags)
         , fileSharing(sharing)
         , fileExtraFlags(extraFlags)

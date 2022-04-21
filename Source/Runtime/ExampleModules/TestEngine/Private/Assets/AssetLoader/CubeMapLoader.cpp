@@ -48,8 +48,7 @@ HDRLoader::HDRLoader(const String &assetPath)
 {
     PlatformFile textureFile(assetPath);
     textureFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
-    textureName = PathFunctions::stripExtension(
-        textureFile.getFileName(), textureName); // Extension is passed in as dummy(same textureName)
+    textureName = PathFunctions::stripExtension(textureFile.getFileName(), textureName); // Extension is passed in as dummy(same textureName)
     if (textureFile.exists() && textureFile.openFile())
     {
         std::vector<uint8> fileData;
@@ -60,14 +59,12 @@ HDRLoader::HDRLoader(const String &assetPath)
         int32 dimY;
         // Since Cartesian to spherical creates coordinates from bottom left to top right
         STB::setLoadVerticalFlipped(true);
-        float *texelData = STB::loadFloatFromMemory(
-            fileData.data(), int32(fileData.size()), &dimX, &dimY, nullptr, CHANNEL_NUM);
+        float *texelData = STB::loadFloatFromMemory(fileData.data(), int32(fileData.size()), &dimX, &dimY, nullptr, CHANNEL_NUM);
         STB::setLoadVerticalFlipped(false);
 
         if (texelData == nullptr)
         {
-            LOG_ERROR("HDRLoader", "%s() : Failed loading image[%s] - %s", __func__,
-                textureName.getChar(), STB::lastFailure());
+            LOG_ERROR("HDRLoader", "%s() : Failed loading image[%s] - %s", __func__, textureName.getChar(), STB::lastFailure());
             bLoaded = false;
         }
         else
@@ -85,8 +82,7 @@ HDRLoader::HDRLoader(const String &assetPath)
     }
     else
     {
-        LOG_ERROR("HDRLoader", "%s() : Failed opening texture file - %s", __func__,
-            textureFile.getFileName().getChar());
+        LOG_ERROR("HDRLoader", "%s() : Failed opening texture file - %s", __func__, textureFile.getFileName().getChar());
         bLoaded = false;
     }
 }

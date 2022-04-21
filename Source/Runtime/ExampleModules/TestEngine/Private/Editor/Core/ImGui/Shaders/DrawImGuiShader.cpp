@@ -38,12 +38,11 @@ private:
     DrawImGui();
 
 public:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static UiTransformBufferParamInfo UI_TRANSFORM_INFO;
         static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-            { TCHAR("uiTransform"), &UI_TRANSFORM_INFO }
+            {TCHAR("uiTransform"), &UI_TRANSFORM_INFO}
         };
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
@@ -68,5 +67,4 @@ DrawImGui::DrawImGui()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(IMGUI_PIPELINE_REGISTER, DRAW_IMGUI,
-    &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(IMGUI_PIPELINE_REGISTER, DRAW_IMGUI, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadOverBlendConfig);

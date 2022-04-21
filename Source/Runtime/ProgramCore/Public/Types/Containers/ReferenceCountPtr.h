@@ -106,10 +106,7 @@ public:
         }
         return *this;
     }
-    FORCE_INLINE ReferenceCountPtr &operator=(const ReferenceCountPtr &refCountPtr)
-    {
-        return *this = refCountPtr.reference();
-    }
+    FORCE_INLINE ReferenceCountPtr &operator=(const ReferenceCountPtr &refCountPtr) { return *this = refCountPtr.reference(); }
     template <class InPtrType>
     FORCE_INLINE ReferenceCountPtr &operator=(ReferenceCountPtr<InPtrType> &&refCountPtr)
     {
@@ -134,19 +131,13 @@ public:
 
     FORCE_INLINE PtrType *operator->() const { return refPtr; }
 
-    FORCE_INLINE bool operator!=(const ReferenceCountPtr &rhs) const
-    {
-        return reference() != rhs.reference();
-    }
+    FORCE_INLINE bool operator!=(const ReferenceCountPtr &rhs) const { return reference() != rhs.reference(); }
     template <typename RefType>
     FORCE_INLINE bool operator!=(const ReferenceCountPtr<RefType> &rhs) const
     {
         return reference() != rhs.reference();
     }
-    FORCE_INLINE bool operator==(const ReferenceCountPtr &rhs) const
-    {
-        return reference() == rhs.reference();
-    }
+    FORCE_INLINE bool operator==(const ReferenceCountPtr &rhs) const { return reference() == rhs.reference(); }
     template <typename RefType>
     FORCE_INLINE bool operator==(const ReferenceCountPtr<RefType> &rhs) const
     {
@@ -158,10 +149,7 @@ public:
         return reference() == rhs;
     }
 
-    FORCE_INLINE bool operator<(const ReferenceCountPtr &rhs) const
-    {
-        return this->reference() < rhs.reference();
-    }
+    FORCE_INLINE bool operator<(const ReferenceCountPtr &rhs) const { return this->reference() < rhs.reference(); }
     template <typename RefType>
     FORCE_INLINE bool operator<(const ReferenceCountPtr<RefType> &rhs) const
     {

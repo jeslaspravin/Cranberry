@@ -16,8 +16,7 @@
 class ShaderResource;
 class GraphicsResource;
 
-class VulkanShaderParametersLayoutFactory final
-    : public FactoriesBase<GraphicsResource *, const ShaderResource *, uint32>
+class VulkanShaderParametersLayoutFactory final : public FactoriesBase<GraphicsResource *, const ShaderResource *, uint32>
 {
 
 public:

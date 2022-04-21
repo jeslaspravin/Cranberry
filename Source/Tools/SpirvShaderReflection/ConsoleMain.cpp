@@ -35,15 +35,17 @@ void printArrayCount(const SPIRV_CROSS_NAMESPACE::SPIRType &type)
     {
         for (int i = int(type.array.size() - 1); i >= 0; --i)
         {
-            printf("[%d : isSpecConstant : %s]\n", type.array[i],
-                type.array_size_literal[i] ? "false"
-                                           : "true"); // SpecConstant is in reverse order of dim array
+            printf(
+                "[%d : isSpecConstant : %s]\n", type.array[i],
+                type.array_size_literal[i] ? "false" : "true"
+            ); // SpecConstant is in reverse order of dim array
         }
     }
 }
 
-void printMembers(const SPIRV_CROSS_NAMESPACE::SPIRType &structType,
-    const SPIRV_CROSS_NAMESPACE::Compiler *compiledData, std::string indent = "\t")
+void printMembers(
+    const SPIRV_CROSS_NAMESPACE::SPIRType &structType, const SPIRV_CROSS_NAMESPACE::Compiler *compiledData, std::string indent = "\t"
+)
 {
     uint32_t index = 0;
     for (const SPIRV_CROSS_NAMESPACE::TypeID &memberTypeID : structType.member_types)
@@ -51,48 +53,40 @@ void printMembers(const SPIRV_CROSS_NAMESPACE::SPIRType &structType,
         const auto &memberType = compiledData->get_type(memberTypeID);
         if (memberType.basetype == SPIRV_CROSS_NAMESPACE::SPIRType::BaseType::Struct)
         {
-            printf("%sStruct : %s Size : %d\n", indent.c_str(),
-                compiledData->get_member_name(structType.self, index).c_str(),
-                uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
+            printf(
+                "%sStruct : %s Size : %d\n", indent.c_str(), compiledData->get_member_name(structType.self, index).c_str(),
+                uint32_t(compiledData->get_declared_struct_member_size(structType, index))
+            );
             if (memberType.array.empty())
             {
-                printf("%sStride : %d\n", indent.c_str(),
-                    uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
             }
             else
             {
-                printf("%sStride : %d\n", indent.c_str(),
-                    uint32_t(compiledData->type_struct_member_array_stride(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_array_stride(structType, index)));
                 printArrayCount(memberType);
             }
-            printf("%sOffset : %d\n", indent.c_str(),
-                uint32_t(compiledData->type_struct_member_offset(structType, index)));
+            printf("%sOffset : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_offset(structType, index)));
             printMembers(memberType, compiledData, indent + "\t");
         }
         else
         {
-            printf("%sMember : %s\n", indent.c_str(),
-                compiledData->get_member_name(structType.self, index).c_str());
-            printf("%sSize : %d\n", indent.c_str(),
-                uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
+            printf("%sMember : %s\n", indent.c_str(), compiledData->get_member_name(structType.self, index).c_str());
+            printf("%sSize : %d\n", indent.c_str(), uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
             if (memberType.columns > 1)
             {
-                printf("%sStride : %d\n", indent.c_str(),
-                    uint32_t(compiledData->type_struct_member_matrix_stride(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_matrix_stride(structType, index)));
             }
             else if (!memberType.array.empty())
             {
-                printf("%sStride : %d\n", indent.c_str(),
-                    uint32_t(compiledData->type_struct_member_array_stride(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_array_stride(structType, index)));
                 printArrayCount(memberType);
             }
             else
             {
-                printf("%sStride : %d\n", indent.c_str(),
-                    uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
+                printf("%sStride : %d\n", indent.c_str(), uint32_t(compiledData->get_declared_struct_member_size(structType, index)));
             }
-            printf("%sOffset : %d\n", indent.c_str(),
-                uint32_t(compiledData->type_struct_member_offset(structType, index)));
+            printf("%sOffset : %d\n", indent.c_str(), uint32_t(compiledData->type_struct_member_offset(structType, index)));
         }
         index++;
     }

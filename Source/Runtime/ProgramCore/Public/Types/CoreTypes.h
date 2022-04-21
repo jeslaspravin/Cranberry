@@ -80,18 +80,33 @@ STATIC_ASSERT(sizeof(WChar) == sizeof(WCharEncodedType));
 STATIC_ASSERT(sizeof(word) == 2);
 STATIC_ASSERT(sizeof(dword) == 4);
 
+STATIC_ASSERT(sizeof(SizeT) == 8);
+STATIC_ASSERT(sizeof(SSizeT) == 8);
+STATIC_ASSERT(sizeof(UIntPtr) == 8);
+STATIC_ASSERT(sizeof(IntPtr) == 8);
+
 STATIC_ASSERT(sizeof(UInt64) == 8);
 
 #undef STATIC_ASSERT
 #pragma pop_macro("STATIC_ASSERT")
 
-#define FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)                 \
-    FirstMacroName(uint8) MacroName(uint16) MacroName(uint32) MacroName(uint64) MacroName(int8)         \
-        MacroName(int16) MacroName(int32) MacroName(int64) MacroName(float) MacroName(double)           \
-            LastMacroName(bool)
+// clang-format off
+#define FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName) \
+    FirstMacroName(uint8)   \
+    MacroName(uint16)       \
+    MacroName(uint32)       \
+    MacroName(uint64)       \
+    MacroName(int8)         \
+    MacroName(int16)        \
+    MacroName(int32)        \
+    MacroName(int64)        \
+    MacroName(float)        \
+    MacroName(double)       \
+    LastMacroName(bool)
 
-#define FOR_EACH_CORE_TYPES(MacroName)                                                                  \
-    FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
+// clang-format on
+
+#define FOR_EACH_CORE_TYPES(MacroName) FOR_EACH_CORE_TYPES_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
 
 #define DECLARE_CORE_TYPE_VAR(Type) Type Type##Val;
 union CoreTypesUnion

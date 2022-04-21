@@ -29,13 +29,11 @@ public:
     AttachmentsFormatList attachments;
     ERenderPassFormat::Type rpFormat;
 
-    explicit FramebufferFormat(
-        AttachmentsFormatList &&frameBuffers, ERenderPassFormat::Type renderpassFormat)
+    explicit FramebufferFormat(AttachmentsFormatList &&frameBuffers, ERenderPassFormat::Type renderpassFormat)
         : attachments(std::move(frameBuffers))
         , rpFormat(renderpassFormat)
     {}
-    explicit FramebufferFormat(
-        const AttachmentsFormatList &frameBuffers, ERenderPassFormat::Type renderpassFormat)
+    explicit FramebufferFormat(const AttachmentsFormatList &frameBuffers, ERenderPassFormat::Type renderpassFormat)
         : attachments(frameBuffers)
         , rpFormat(renderpassFormat)
     {}
@@ -125,12 +123,9 @@ struct ENGINERENDERER_EXPORT RenderPassAdditionalProps
 
     constexpr bool operator==(const RenderPassAdditionalProps &otherProps) const
     {
-        return colorAttachmentLoadOp == otherProps.colorAttachmentLoadOp
-               && colorAttachmentStoreOp == otherProps.colorAttachmentStoreOp
-               && depthLoadOp == otherProps.depthLoadOp && depthStoreOp == otherProps.depthStoreOp
-               && stencilLoadOp == otherProps.stencilLoadOp
-               && stencilStoreOp == otherProps.stencilStoreOp
-               && bAllowUndefinedLayout == otherProps.bAllowUndefinedLayout
+        return colorAttachmentLoadOp == otherProps.colorAttachmentLoadOp && colorAttachmentStoreOp == otherProps.colorAttachmentStoreOp
+               && depthLoadOp == otherProps.depthLoadOp && depthStoreOp == otherProps.depthStoreOp && stencilLoadOp == otherProps.stencilLoadOp
+               && stencilStoreOp == otherProps.stencilStoreOp && bAllowUndefinedLayout == otherProps.bAllowUndefinedLayout
                && bUsedAsPresentSource == otherProps.bUsedAsPresentSource;
     }
 };

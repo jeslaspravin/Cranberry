@@ -59,8 +59,7 @@ protected:
 private:
     static void init(Texture2D *texture, bool bIsNormalMap, bool bIsSrgb, uint8 componentCount);
     static void destroy(Texture2D *texture);
-    static EPixelDataFormat::Type determineDataFormat(
-        bool bIsSrgb, bool bIsNormalMap, uint8 componentCount);
+    static EPixelDataFormat::Type determineDataFormat(bool bIsSrgb, bool bIsNormalMap, uint8 componentCount);
 };
 
 struct Texture2DRWCreateParams : public TextureBaseCreateParams

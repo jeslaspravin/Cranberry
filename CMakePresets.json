@@ -29,7 +29,7 @@
         {
             "name": "Engine-DynamicLinked",
             "description": "Creates dynamically linked engine libraries",
-            "generator": "Visual Studio 16 2019",
+            "generator": "Visual Studio 17 2022",
             "inherits": "BasePreset",
             "architecture":
             {

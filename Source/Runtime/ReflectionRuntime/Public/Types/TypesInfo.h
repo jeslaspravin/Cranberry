@@ -32,8 +32,7 @@ enum Type
     Constant = 8    // Const-ness of Pointer(Not pointed type) or reference(Not referenced type)
 };
 } // namespace EReflectTypeQualifiers
-#define FOREACH_REFLECTTYPEQUALIFIER(MacroFn)                                                           \
-    MacroFn(LReference) MacroFn(RReference) MacroFn(Pointer) MacroFn(Constant)
+#define FOREACH_REFLECTTYPEQUALIFIER(MacroFn) MacroFn(LReference) MacroFn(RReference) MacroFn(Pointer) MacroFn(Constant)
 
 struct ReflectTypeInfo
 {
@@ -46,8 +45,8 @@ struct ReflectTypeInfo
     std::strong_ordering operator<=>(const ReflectTypeInfo &otherTypeInfo) const = default;
 
     REFLECTIONRUNTIME_EXPORT static const ReflectTypeInfo *createTypeInfo(
-        const std::type_info &cleanTypeInfo, const ReflectTypeInfo *innerTypeInfo, SizeT size,
-        uint32 alignment, uint32 inQualifiers);
+        const std::type_info &cleanTypeInfo, const ReflectTypeInfo *innerTypeInfo, SizeT size, uint32 alignment, uint32 inQualifiers
+    );
 };
 
 template <typename Type>
@@ -98,21 +97,21 @@ template <typename Type>
 FORCE_INLINE const ReflectTypeInfo *typeInfoFrom()
 {
     // Pointer can be const reference cannot be const
-    using InnerType = std::conditional_t<std::is_pointer_v<Type>,
-        std::remove_pointer_t<std::remove_const_t<Type>>, std::remove_reference_t<Type>>;
+    using InnerType
+        = std::conditional_t<std::is_pointer_v<Type>, std::remove_pointer_t<std::remove_const_t<Type>>, std::remove_reference_t<Type>>;
 
-    static const ReflectTypeInfo *TYPE_INFO
-        = ReflectTypeInfo::createTypeInfo(typeid(CleanType<Type>),
-            (std::is_same_v<Type, InnerType> ? nullptr : typeInfoFrom<InnerType>()),
-            TypeSizeAndAlignment<Type>::sizeOf(), TypeSizeAndAlignment<Type>::alignOf(),
-            {
-                ConditionalValue_v<uint32, uint32, std::is_lvalue_reference<Type>,
-                    EReflectTypeQualifiers::LReference,
-                    0> | ConditionalValue_v<uint32, uint32, std::is_rvalue_reference<Type>, EReflectTypeQualifiers::RReference, 0> | ConditionalValue_v<uint32, uint32, std::is_const<Type>, EReflectTypeQualifiers::Constant, 0> | ConditionalValue_v<uint32, uint32, std::is_pointer<Type>, EReflectTypeQualifiers::Pointer, 0>
-                //| ConditionalValue_v<uint32, uint32, std::is_class<Type>,
-                // EReflectTypeQualifiers::ClassType, 0> | ConditionalValue_v<uint32, uint32,
-                // std::is_enum<Type>, EReflectTypeQualifiers::EnumType, 0>
-            });
+    static const ReflectTypeInfo *TYPE_INFO = ReflectTypeInfo::createTypeInfo(
+        typeid(CleanType<Type>), (std::is_same_v<Type, InnerType> ? nullptr : typeInfoFrom<InnerType>()), TypeSizeAndAlignment<Type>::sizeOf(),
+        TypeSizeAndAlignment<Type>::alignOf(),
+        {
+            ConditionalValue_v<
+                uint32, uint32, std::is_lvalue_reference<Type>, EReflectTypeQualifiers::LReference,
+                0> | ConditionalValue_v<uint32, uint32, std::is_rvalue_reference<Type>, EReflectTypeQualifiers::RReference, 0> | ConditionalValue_v<uint32, uint32, std::is_const<Type>, EReflectTypeQualifiers::Constant, 0> | ConditionalValue_v<uint32, uint32, std::is_pointer<Type>, EReflectTypeQualifiers::Pointer, 0>
+            //| ConditionalValue_v<uint32, uint32, std::is_class<Type>,
+            // EReflectTypeQualifiers::ClassType, 0> | ConditionalValue_v<uint32, uint32,
+            // std::is_enum<Type>, EReflectTypeQualifiers::EnumType, 0>
+        }
+    );
 
     return TYPE_INFO;
 }
@@ -128,9 +127,8 @@ FORCE_INLINE std::vector<const ReflectTypeInfo *> typeInfoListFrom()
     return retVal;
 }
 
-#define REFLECTTYPEQUALIFIER_STR(QualifierEnum)                                                         \
-    << (BIT_SET(ti.qualifiers, EReflectTypeQualifiers::##QualifierEnum##) ? TCHAR(" " #QualifierEnum)   \
-                                                                          : TCHAR(""))
+#define REFLECTTYPEQUALIFIER_STR(QualifierEnum)                                                                                                \
+    << (BIT_SET(ti.qualifiers, EReflectTypeQualifiers::##QualifierEnum##) ? TCHAR(" " #QualifierEnum) : TCHAR(""))
 // Logger overrides
 FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const ReflectTypeInfo &ti)
 {
@@ -139,8 +137,7 @@ FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const ReflectTypeInf
     stream << TCHAR("Hash : ") << ti.typeID.hash_code() << TCHAR(", ");
     stream << TCHAR("Size : ") << ti.size << TCHAR(", ");
     stream << TCHAR("Alignment : ") << ti.alignment << TCHAR(", ");
-    stream << TCHAR("Qualifiers :(") FOREACH_REFLECTTYPEQUALIFIER(REFLECTTYPEQUALIFIER_STR)
-           << TCHAR(" )");
+    stream << TCHAR("Qualifiers :(") FOREACH_REFLECTTYPEQUALIFIER(REFLECTTYPEQUALIFIER_STR) << TCHAR(" )");
     if (ti.innerType)
     {
         stream << TCHAR(", Inner type : ") << *ti.innerType;

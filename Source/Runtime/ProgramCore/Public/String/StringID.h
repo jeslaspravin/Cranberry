@@ -16,8 +16,10 @@
 
 #if DEV_BUILD
 #define STRINGID_FUNCQUALIFIER FORCE_INLINE
+#define STRINGID_CONSTEXPR
 #else // DEV_BUILD
 #define STRINGID_FUNCQUALIFIER CONST_EXPR
+#define STRINGID_CONSTEXPR CONST_EXPR
 #endif // DEV_BUILD
 
 #ifndef STRINGID_HASHFUNC
@@ -40,8 +42,7 @@ public:
 private:
     IDType id;
 
-    friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid(
-        const TChar *str, SizeT len) noexcept;
+    friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid(const TChar *str, SizeT len) noexcept;
     template <IsArchiveType ArchiveType>
     friend ArchiveType &operator<<(ArchiveType &archive, StringID &value);
 
@@ -127,10 +128,7 @@ public:
         return *this;
     }
     // Equality
-    CONST_EXPR std::strong_ordering operator<=>(const StringID &rhs) const noexcept
-    {
-        return id <=> rhs.id;
-    }
+    CONST_EXPR std::strong_ordering operator<=>(const StringID &rhs) const noexcept { return id <=> rhs.id; }
     // Since the == operator is necessary even though spaceship is defined for hash map
     CONST_EXPR bool operator==(const StringID &rhs) const noexcept { return id == rhs.id; }
 

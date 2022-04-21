@@ -28,8 +28,10 @@ public:
     Matrix3();
     explicit Matrix3(float allValue);
     Matrix3(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3);
-    Matrix3(const float &c1x, const float &c1y, const float &c1z, const float &c2x, const float &c2y,
-        const float &c2z, const float &c3x, const float &c3y, const float &c3z);
+    Matrix3(
+        const float &c1x, const float &c1y, const float &c1z, const float &c2x, const float &c2y, const float &c2z, const float &c3x,
+        const float &c3y, const float &c3z
+    );
     Matrix3(const Matrix3 &other);
     Matrix3(Matrix3 &&other);
     Matrix3(const Vector3D &scale);

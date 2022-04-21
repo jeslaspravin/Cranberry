@@ -45,8 +45,7 @@ GenericFile *Logger::getLogFile()
     if (!logFile)
     {
         String logFileName;
-        String logFolderPath
-            = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
+        String logFolderPath = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
         if (ProgramCmdLine::get()->hasArg(TCHAR("--logFileName")))
         {
             ProgramCmdLine::get()->getArg(logFileName, TCHAR("--logFileName"));
@@ -63,8 +62,7 @@ GenericFile *Logger::getLogFile()
             checkFile.renameFile(renameTo);
 
             // Remove or clear old logs
-            std::vector<String> oldLogFiles
-                = FileSystemFunctions::listFiles(logFolderPath, false, logFileName + TCHAR("-*.log"));
+            std::vector<String> oldLogFiles = FileSystemFunctions::listFiles(logFolderPath, false, logFileName + TCHAR("-*.log"));
             if (oldLogFiles.size() > 10)
             {
                 for (String &oldFile : oldLogFiles)
@@ -183,8 +181,7 @@ void Logger::flushStream()
     if (!str.empty() && logFile)
     {
         std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
-        logFile->write(
-            ArrayView<const uint8>(reinterpret_cast<uint8 *>(utf8str.data()), uint32(utf8str.length())));
+        logFile->write(ArrayView<const uint8>(reinterpret_cast<uint8 *>(utf8str.data()), uint32(utf8str.length())));
         loggerBuffer().str({});
     }
 }

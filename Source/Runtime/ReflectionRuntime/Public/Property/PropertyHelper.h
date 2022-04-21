@@ -43,22 +43,14 @@ public:
 
     FORCE_INLINE static bool isMapType(const String &typeName)
     {
-        return typeName.startsWith(TCHAR("std::map"))
-               || typeName.startsWith(TCHAR("std::unordered_map"));
+        return typeName.startsWith(TCHAR("std::map")) || typeName.startsWith(TCHAR("std::unordered_map"));
     }
-    FORCE_INLINE static bool isPairType(const String &typeName)
-    {
-        return typeName.startsWith(TCHAR("std::pair"));
-    }
+    FORCE_INLINE static bool isPairType(const String &typeName) { return typeName.startsWith(TCHAR("std::pair")); }
     FORCE_INLINE static bool isSetType(const String &typeName)
     {
-        return typeName.startsWith(TCHAR("std::set"))
-               || typeName.startsWith(TCHAR("std::unordered_set"));
+        return typeName.startsWith(TCHAR("std::set")) || typeName.startsWith(TCHAR("std::unordered_set"));
     }
-    FORCE_INLINE static bool isArrayType(const String &typeName)
-    {
-        return typeName.startsWith(TCHAR("std::vector"));
-    }
+    FORCE_INLINE static bool isArrayType(const String &typeName) { return typeName.startsWith(TCHAR("std::vector")); }
 
     template <typename ChildType, typename ParentType>
     FORCE_INLINE static bool isChildOf()

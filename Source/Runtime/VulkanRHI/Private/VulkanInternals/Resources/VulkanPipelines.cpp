@@ -35,10 +35,8 @@ void VulkanPipelineCache::reinitResources()
     release();
     BaseType::reinitResources();
 
-    pipelineCacheRead = VulkanGraphicsHelper::createPipelineCache(
-        IVulkanRHIModule::get()->getGraphicsInstance(), getRawFromFile());
-    VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance())
-        ->markObject(this);
+    pipelineCacheRead = VulkanGraphicsHelper::createPipelineCache(IVulkanRHIModule::get()->getGraphicsInstance(), getRawFromFile());
+    VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance())->markObject(this);
 }
 
 void VulkanPipelineCache::release()
@@ -47,8 +45,7 @@ void VulkanPipelineCache::release()
 
     if (pipelineCacheRead != nullptr)
     {
-        VulkanGraphicsHelper::destroyPipelineCache(
-            IVulkanRHIModule::get()->getGraphicsInstance(), pipelineCacheRead);
+        VulkanGraphicsHelper::destroyPipelineCache(IVulkanRHIModule::get()->getGraphicsInstance(), pipelineCacheRead);
         pipelineCacheRead = nullptr;
     }
 }
@@ -60,13 +57,13 @@ uint64 VulkanPipelineCache::getDispatchableHandle() const { return uint64(pipeli
 std::vector<uint8> VulkanPipelineCache::getRawToWrite() const
 {
     std::vector<uint8> dataToWriteOut;
-    VulkanGraphicsHelper::getMergedCacheData(
-        IVulkanRHIModule::get()->getGraphicsInstance(), dataToWriteOut, pipelinesToCache);
+    VulkanGraphicsHelper::getMergedCacheData(IVulkanRHIModule::get()->getGraphicsInstance(), dataToWriteOut, pipelinesToCache);
     return dataToWriteOut;
 }
 
-void VulkanGraphicsHelper::getMergedCacheData(class IGraphicsInstance *graphicsInstance,
-    std::vector<uint8> &cacheData, const std::vector<const class PipelineBase *> &pipelines)
+void VulkanGraphicsHelper::getMergedCacheData(
+    class IGraphicsInstance *graphicsInstance, std::vector<uint8> &cacheData, const std::vector<const class PipelineBase *> &pipelines
+)
 {
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
@@ -77,8 +74,7 @@ void VulkanGraphicsHelper::getMergedCacheData(class IGraphicsInstance *graphicsI
     {
         if (pipeline->getType()->isChildOf<VulkanGraphicsPipeline>())
         {
-            cachesToMerge.emplace_back(
-                static_cast<const VulkanGraphicsPipeline *>(pipeline)->pipelineLocalCache);
+            cachesToMerge.emplace_back(static_cast<const VulkanGraphicsPipeline *>(pipeline)->pipelineLocalCache);
         }
     }
 
@@ -101,22 +97,19 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineBase *paren
     , compatibleRenderpass(static_cast<const VulkanGraphicsPipeline *>(parent)->compatibleRenderpass)
 {}
 
-void VulkanGraphicsPipeline::fillPipelineStates(
-    VulkanGraphicsPipeline::VulkanPipelineCreateInfo &createInfo) const
+void VulkanGraphicsPipeline::fillPipelineStates(VulkanGraphicsPipeline::VulkanPipelineCreateInfo &createInfo) const
 {
     fillShaderStages(*createInfo.shaderStageCIs);
-    fillSpecializationConsts(*createInfo.shaderStageCIs, *createInfo.specializationConstEntries,
-        *createInfo.specializationConstData, *createInfo.specializationInfo);
-    fillVertexInputState(
-        *createInfo.vertexInputStateCI, *createInfo.vertexInputBindings, *createInfo.vertexInputAttribs);
+    fillSpecializationConsts(
+        *createInfo.shaderStageCIs, *createInfo.specializationConstEntries, *createInfo.specializationConstData, *createInfo.specializationInfo
+    );
+    fillVertexInputState(*createInfo.vertexInputStateCI, *createInfo.vertexInputBindings, *createInfo.vertexInputAttribs);
     fillMultisampleState(*createInfo.multisampleStateCI);
     fillDepthStencilState(*createInfo.depthStencilStateCI, createInfo.dynamicStates);
-    fillColorBlendStates(
-        *createInfo.colorBlendStateCI, *createInfo.colorBlendAttachmentStates, createInfo.dynamicStates);
+    fillColorBlendStates(*createInfo.colorBlendStateCI, *createInfo.colorBlendAttachmentStates, createInfo.dynamicStates);
 
     // Input assembly
-    createInfo.inputAsmStateCI->topology
-        = EngineToVulkanAPI::vulkanPrimitiveTopology(config.primitiveTopology);
+    createInfo.inputAsmStateCI->topology = EngineToVulkanAPI::vulkanPrimitiveTopology(config.primitiveTopology);
     // If line then allow dynamic width
     if (config.primitiveTopology == EPrimitiveTopology::Line)
     {
@@ -132,25 +125,21 @@ void VulkanGraphicsPipeline::fillPipelineStates(
 }
 
 void VulkanGraphicsPipeline::fillVertexInputState(
-    VkPipelineVertexInputStateCreateInfo &vertexInputStateCI,
-    std::vector<VkVertexInputBindingDescription> &bindings,
-    std::vector<VkVertexInputAttributeDescription> &attributes) const
+    VkPipelineVertexInputStateCreateInfo &vertexInputStateCI, std::vector<VkVertexInputBindingDescription> &bindings,
+    std::vector<VkVertexInputAttributeDescription> &attributes
+) const
 {
     EVertexType::Type shaderVertUsage;
     if (pipelineShader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>())
     {
-        shaderVertUsage = static_cast<const DrawMeshShaderConfig *>(pipelineShader->getShaderConfig())
-                              ->vertexUsage();
+        shaderVertUsage = static_cast<const DrawMeshShaderConfig *>(pipelineShader->getShaderConfig())->vertexUsage();
     }
     else if (pipelineShader->getShaderConfig()->getType()->isChildOf<UniqueUtilityShaderConfig>())
     {
-        shaderVertUsage
-            = static_cast<const UniqueUtilityShaderConfig *>(pipelineShader->getShaderConfig())
-                  ->vertexUsage();
+        shaderVertUsage = static_cast<const UniqueUtilityShaderConfig *>(pipelineShader->getShaderConfig())->vertexUsage();
     }
 
-    const std::vector<ShaderVertexParamInfo *> &vertexParamsInfo
-        = EVertexType::vertexParamInfo(shaderVertUsage);
+    const std::vector<ShaderVertexParamInfo *> &vertexParamsInfo = EVertexType::vertexParamInfo(shaderVertUsage);
     bindings.resize(vertexParamsInfo.size());
     attributes.reserve(pipelineShader->getReflection()->inputs.size());
 
@@ -170,8 +159,7 @@ void VulkanGraphicsPipeline::fillVertexInputState(
             {
                 VkVertexInputAttributeDescription attributeDesc;
                 attributeDesc.binding = bindingIdx;
-                attributeDesc.format = EngineToVulkanAPI::vulkanDataFormat(
-                    EPixelDataFormat::Type(attributeField->format));
+                attributeDesc.format = EngineToVulkanAPI::vulkanDataFormat(EPixelDataFormat::Type(attributeField->format));
                 attributeDesc.location = attributeField->location;
                 attributeDesc.offset = attributeField->offset;
 
@@ -192,22 +180,18 @@ void VulkanGraphicsPipeline::fillVertexInputState(
     vertexInputStateCI.pVertexAttributeDescriptions = attributes.data();
 }
 
-void VulkanGraphicsPipeline::fillMultisampleState(
-    VkPipelineMultisampleStateCreateInfo &multisampleStateCI) const
+void VulkanGraphicsPipeline::fillMultisampleState(VkPipelineMultisampleStateCreateInfo &multisampleStateCI) const
 {
-    multisampleStateCI.alphaToCoverageEnable = multisampleStateCI.alphaToOneEnable
-        = multisampleStateCI.sampleShadingEnable = VK_FALSE;
+    multisampleStateCI.alphaToCoverageEnable = multisampleStateCI.alphaToOneEnable = multisampleStateCI.sampleShadingEnable = VK_FALSE;
     multisampleStateCI.pSampleMask = nullptr;
     multisampleStateCI.minSampleShading = 1.0f;
     if (pipelineShader->getType()->isChildOf<DrawMeshShaderConfig>())
     {
-        multisampleStateCI.rasterizationSamples
-            = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
+        multisampleStateCI.rasterizationSamples = VkSampleCountFlagBits(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());
     }
     else if (pipelineShader->getType()->isChildOf<UniqueUtilityShaderConfig>())
     {
-        multisampleStateCI.rasterizationSamples
-            = VkSampleCountFlagBits(config.renderpassProps.multisampleCount);
+        multisampleStateCI.rasterizationSamples = VkSampleCountFlagBits(config.renderpassProps.multisampleCount);
     }
     else
     {
@@ -216,12 +200,11 @@ void VulkanGraphicsPipeline::fillMultisampleState(
 }
 
 void VulkanGraphicsPipeline::fillDepthStencilState(
-    VkPipelineDepthStencilStateCreateInfo &depthStencilStateCI,
-    std::vector<VkDynamicState> &dynamicStates) const
+    VkPipelineDepthStencilStateCreateInfo &depthStencilStateCI, std::vector<VkDynamicState> &dynamicStates
+) const
 {
     depthStencilStateCI.depthBoundsTestEnable = depthStencilStateCI.stencilTestEnable = VK_FALSE;
-    depthStencilStateCI.depthTestEnable
-        = config.depthState.compareOp != CoreGraphicsTypes::ECompareOp::Always ? VK_TRUE : VK_FALSE;
+    depthStencilStateCI.depthTestEnable = config.depthState.compareOp != CoreGraphicsTypes::ECompareOp::Always ? VK_TRUE : VK_FALSE;
     depthStencilStateCI.depthWriteEnable = config.depthState.bEnableWrite ? VK_TRUE : VK_FALSE;
     depthStencilStateCI.depthCompareOp = EngineToVulkanAPI::vulkanCompareOp(config.depthState.compareOp);
     depthStencilStateCI.minDepthBounds = 0.0f;
@@ -229,16 +212,14 @@ void VulkanGraphicsPipeline::fillDepthStencilState(
 
     depthStencilStateCI.front.compareMask = 0xFFFFFFFF;
     depthStencilStateCI.front.writeMask = 0xFFFFFFFF;
-    depthStencilStateCI.front.compareOp
-        = EngineToVulkanAPI::vulkanCompareOp(config.stencilStateFront.compareOp);
+    depthStencilStateCI.front.compareOp = EngineToVulkanAPI::vulkanCompareOp(config.stencilStateFront.compareOp);
     depthStencilStateCI.front.passOp = VkStencilOp(config.stencilStateFront.passOp);
     depthStencilStateCI.front.failOp = VkStencilOp(config.stencilStateFront.failOp);
     depthStencilStateCI.front.depthFailOp = VkStencilOp(config.stencilStateFront.depthFailOp);
 
     depthStencilStateCI.back.compareMask = 0xFFFFFFFF;
     depthStencilStateCI.back.writeMask = 0xFFFFFFFF;
-    depthStencilStateCI.back.compareOp
-        = EngineToVulkanAPI::vulkanCompareOp(config.stencilStateBack.compareOp);
+    depthStencilStateCI.back.compareOp = EngineToVulkanAPI::vulkanCompareOp(config.stencilStateBack.compareOp);
     depthStencilStateCI.back.passOp = VkStencilOp(config.stencilStateBack.passOp);
     depthStencilStateCI.back.failOp = VkStencilOp(config.stencilStateBack.failOp);
     depthStencilStateCI.back.depthFailOp = VkStencilOp(config.stencilStateBack.depthFailOp);
@@ -251,20 +232,17 @@ void VulkanGraphicsPipeline::fillDepthStencilState(
     }
 }
 
-void VulkanGraphicsPipeline::fillShaderStages(
-    std::vector<VkPipelineShaderStageCreateInfo> &shaderStages) const
+void VulkanGraphicsPipeline::fillShaderStages(std::vector<VkPipelineShaderStageCreateInfo> &shaderStages) const
 {
     shaderStages.reserve(pipelineShader->getShaders().size());
 
     for (const ShaderStageDescription &shaderStageDesc : pipelineShader->getReflection()->stages)
     {
-        const SharedPtr<ShaderCodeResource> &shaderCode
-            = pipelineShader->getShaders().at(EShaderStage::Type(shaderStageDesc.stage));
+        const SharedPtr<ShaderCodeResource> &shaderCode = pipelineShader->getShaders().at(EShaderStage::Type(shaderStageDesc.stage));
         PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
         shaderStageCreateInfo.stage = EngineToVulkanAPI::vulkanShaderStage(shaderCode->shaderStage());
         shaderStageCreateInfo.pName = shaderCode->entryPoint().c_str();
-        shaderStageCreateInfo.module
-            = static_cast<VulkanShaderCodeResource *>(shaderCode.get())->shaderModule;
+        shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource *>(shaderCode.get())->shaderModule;
         // filled later
         shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;
 
@@ -273,24 +251,25 @@ void VulkanGraphicsPipeline::fillShaderStages(
 }
 
 void VulkanGraphicsPipeline::fillSpecializationConsts(
-    std::vector<VkPipelineShaderStageCreateInfo> &shaderStages,
-    std::vector<VkSpecializationMapEntry> &specEntries, std::vector<uint8> &specData,
-    std::vector<VkSpecializationInfo> &specializationInfo) const
+    std::vector<VkPipelineShaderStageCreateInfo> &shaderStages, std::vector<VkSpecializationMapEntry> &specEntries,
+    std::vector<uint8> &specData, std::vector<VkSpecializationInfo> &specializationInfo
+) const
 {
     uint32 specConstsCount = 0;
     std::vector<std::vector<SpecializationConstantEntry>> specConstsPerStage;
     {
         std::map<String, SpecializationConstantEntry> specConsts;
         pipelineShader->getSpecializationConsts(specConsts);
-        specConstsCount = ShaderParameterUtility::convertNamedSpecConstsToPerStage(
-            specConstsPerStage, specConsts, pipelineShader->getReflection());
+        specConstsCount
+            = ShaderParameterUtility::convertNamedSpecConstsToPerStage(specConstsPerStage, specConsts, pipelineShader->getReflection());
     }
     if (specConstsCount == 0)
     {
         return;
     }
-    fatalAssert(specConstsPerStage.size() == pipelineShader->getShaders().size(),
-        "Specialization constant stage count does not match shader stages");
+    fatalAssert(
+        specConstsPerStage.size() == pipelineShader->getShaders().size(), "Specialization constant stage count does not match shader stages"
+    );
 
     specEntries.reserve(specConstsCount);
     specData.clear();
@@ -357,9 +336,10 @@ void VulkanGraphicsPipeline::fillSpecializationConsts(
     }
 }
 
-void VulkanGraphicsPipeline::fillColorBlendStates(VkPipelineColorBlendStateCreateInfo &colorBlendStateCI,
-    std::vector<VkPipelineColorBlendAttachmentState> &vulkanAttachmentBlendStates,
-    std::vector<VkDynamicState> &dynamicStates) const
+void VulkanGraphicsPipeline::fillColorBlendStates(
+    VkPipelineColorBlendStateCreateInfo &colorBlendStateCI, std::vector<VkPipelineColorBlendAttachmentState> &vulkanAttachmentBlendStates,
+    std::vector<VkDynamicState> &dynamicStates
+) const
 {
     bool bHasConstant = false;
     vulkanAttachmentBlendStates.reserve(config.attachmentBlendStates.size());
@@ -369,8 +349,7 @@ void VulkanGraphicsPipeline::fillColorBlendStates(VkPipelineColorBlendStateCreat
 
         VkPipelineColorBlendAttachmentState colorBlendState;
         colorBlendState.blendEnable = attachmentBlendState.bBlendEnable ? VK_TRUE : VK_FALSE;
-        colorBlendState.colorWriteMask = VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT
-                                         | VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT
+        colorBlendState.colorWriteMask = VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT | VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT
                                          | VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT
                                          | VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
         colorBlendState.srcColorBlendFactor = VkBlendFactor(attachmentBlendState.srcColorFactor);
@@ -391,8 +370,8 @@ void VulkanGraphicsPipeline::fillColorBlendStates(VkPipelineColorBlendStateCreat
 }
 
 void VulkanGraphicsPipeline::fillDynamicPermutedStates(
-    VulkanGraphicsPipeline::VulkanPipelineCreateInfo &createInfo,
-    const GraphicsPipelineQueryParams &params) const
+    VulkanGraphicsPipeline::VulkanPipelineCreateInfo &createInfo, const GraphicsPipelineQueryParams &params
+) const
 {
     // Rasterization state
     PIPELINE_RASTERIZATION_STATE_CREATE_INFO(rasterizationStateCI);
@@ -428,8 +407,7 @@ void VulkanGraphicsPipeline::validateCreateInfo(VulkanPipelineCreateInfo &create
     createInfo.dynamicStates.erase(newEnd, createInfo.dynamicStates.end());
 }
 
-void VulkanGraphicsPipeline::createPipelines(
-    const std::vector<VulkanGraphicsPipeline::VulkanPipelineCreateInfo> &createInfos)
+void VulkanGraphicsPipeline::createPipelines(const std::vector<VulkanGraphicsPipeline::VulkanPipelineCreateInfo> &createInfos)
 {
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
 
@@ -469,28 +447,31 @@ void VulkanGraphicsPipeline::createPipelines(
         pipelineCIs[createInfoIdx] = graphicsPipelineCI;
     }
 
-    pipelines = VulkanGraphicsHelper::createGraphicsPipeline(
-        graphicsInstance, pipelineCIs, pipelineLocalCache);
+    pipelines = VulkanGraphicsHelper::createGraphicsPipeline(graphicsInstance, pipelineCIs, pipelineLocalCache);
 }
 
 String VulkanGraphicsPipeline::getObjectName() const { return getResourceName(); }
 
 void VulkanGraphicsPipeline::init()
 {
-    fatalAssert(config.attachmentBlendStates.size() == pipelineShader->getReflection()->outputs.size(),
-        "Blend states has to be equivalent to color attachments count");
+    fatalAssert(
+        config.attachmentBlendStates.size() == pipelineShader->getReflection()->outputs.size(),
+        "Blend states has to be equivalent to color attachments count"
+    );
     fatalAssert(
         pipelineShader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>()
             || pipelineShader->getShaderConfig()->getType()->isChildOf<UniqueUtilityShaderConfig>(),
-        "Not supported shader for graphics pipeline");
+        "Not supported shader for graphics pipeline"
+    );
 
     BaseType::init();
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
     pipelineLocalCache = VulkanGraphicsHelper::createPipelineCache(graphicsInstance);
     if (parentCache)
     {
-        VulkanGraphicsHelper::mergePipelineCaches(graphicsInstance, pipelineLocalCache,
-            { static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead });
+        VulkanGraphicsHelper::mergePipelineCaches(
+            graphicsInstance, pipelineLocalCache, { static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead }
+        );
     }
 
     reinitResources();
@@ -532,15 +513,11 @@ void VulkanGraphicsPipeline::reinitResources()
         VulkanPipelineCreateInfo &graphicsPipelineCI = tempPipelineCIs[0];
         // Setting if we will derive from this pipeline or gets derived from something else
         graphicsPipelineCI.pipelineFlags
-            = bCanBeParent || tempPipelineCIs.size() > 1
-                  ? VkPipelineCreateFlagBits::VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
-                  : 0;
+            = bCanBeParent || tempPipelineCIs.size() > 1 ? VkPipelineCreateFlagBits::VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT : 0;
         if (parentPipeline != nullptr)
         {
-            graphicsPipelineCI.pipelineFlags
-                |= VkPipelineCreateFlagBits::VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-            graphicsPipelineCI.basePipelineHandle
-                = static_cast<const VulkanGraphicsPipeline *>(parentPipeline)->pipelines[0];
+            graphicsPipelineCI.pipelineFlags |= VkPipelineCreateFlagBits::VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+            graphicsPipelineCI.basePipelineHandle = static_cast<const VulkanGraphicsPipeline *>(parentPipeline)->pipelines[0];
         }
 
         graphicsPipelineCI.specializationConstEntries = &specializationConstEntries;
@@ -598,10 +575,7 @@ void VulkanGraphicsPipeline::release()
     pipelines.clear();
 }
 
-void VulkanGraphicsPipeline::setCompatibleRenderpass(VkRenderPass renderpass)
-{
-    compatibleRenderpass = renderpass;
-}
+void VulkanGraphicsPipeline::setCompatibleRenderpass(VkRenderPass renderpass) { compatibleRenderpass = renderpass; }
 
 VkPipeline VulkanGraphicsPipeline::getPipeline(const GraphicsPipelineQueryParams &pipelineQuery) const
 {
@@ -620,40 +594,41 @@ VulkanComputePipeline::VulkanComputePipeline(const ComputePipelineBase *parent)
 void VulkanComputePipeline::fillShaderStages(VkPipelineShaderStageCreateInfo &shaderStage) const
 {
     auto computeShaderCodeItr = pipelineShader->getShaders().find(EShaderStage::Compute);
-    fatalAssert(pipelineShader->getShaders().size() == 1
-                    && computeShaderCodeItr != pipelineShader->getShaders().cend(),
-        "Compute shader suppots only one stage | Compute shader is invalid");
+    fatalAssert(
+        pipelineShader->getShaders().size() == 1 && computeShaderCodeItr != pipelineShader->getShaders().cend(),
+        "Compute shader suppots only one stage | Compute shader is invalid"
+    );
 
     PIPELINE_SHADER_STAGE_CREATE_INFO(shaderStageCreateInfo);
-    shaderStageCreateInfo.stage
-        = EngineToVulkanAPI::vulkanShaderStage(computeShaderCodeItr->second->shaderStage());
+    shaderStageCreateInfo.stage = EngineToVulkanAPI::vulkanShaderStage(computeShaderCodeItr->second->shaderStage());
     shaderStageCreateInfo.pName = computeShaderCodeItr->second->entryPoint().c_str();
-    shaderStageCreateInfo.module
-        = static_cast<VulkanShaderCodeResource *>(computeShaderCodeItr->second.get())->shaderModule;
+    shaderStageCreateInfo.module = static_cast<VulkanShaderCodeResource *>(computeShaderCodeItr->second.get())->shaderModule;
     // filled later
     shaderStageCreateInfo.pSpecializationInfo = VK_NULL_HANDLE;
 
     shaderStage = shaderStageCreateInfo;
 }
 
-void VulkanComputePipeline::fillSpecializationConsts(VkPipelineShaderStageCreateInfo &shaderStages,
-    std::vector<VkSpecializationMapEntry> &specEntries, std::vector<uint8> &specData,
-    VkSpecializationInfo &specializationInfo) const
+void VulkanComputePipeline::fillSpecializationConsts(
+    VkPipelineShaderStageCreateInfo &shaderStages, std::vector<VkSpecializationMapEntry> &specEntries, std::vector<uint8> &specData,
+    VkSpecializationInfo &specializationInfo
+) const
 {
     uint32 specConstsCount = 0;
     std::vector<std::vector<SpecializationConstantEntry>> specConstsPerStage;
     {
         std::map<String, SpecializationConstantEntry> specConsts;
         pipelineShader->getSpecializationConsts(specConsts);
-        specConstsCount = ShaderParameterUtility::convertNamedSpecConstsToPerStage(
-            specConstsPerStage, specConsts, pipelineShader->getReflection());
+        specConstsCount
+            = ShaderParameterUtility::convertNamedSpecConstsToPerStage(specConstsPerStage, specConsts, pipelineShader->getReflection());
     }
     if (specConstsCount == 0)
     {
         return;
     }
-    fatalAssert(specConstsPerStage.size() == pipelineShader->getShaders().size(),
-        "Specialization constant stage count does not match shader stages");
+    fatalAssert(
+        specConstsPerStage.size() == pipelineShader->getShaders().size(), "Specialization constant stage count does not match shader stages"
+    );
 
     specEntries.reserve(specConstsCount);
     specData.clear();
@@ -689,10 +664,11 @@ void VulkanComputePipeline::fillSpecializationConsts(VkPipelineShaderStageCreate
         // Since we have work group size spec constant in 1-3
         if (value.constantId >= 1 && value.constantId < 4)
         {
-            memcpy(&specData[entry.offset],
-                &static_cast<const ComputeShaderConfig *>(pipelineShader->getShaderConfig())
-                     ->getSubGroupSize()[value.constantId - 1],
-                entry.size);
+            memcpy(
+                &specData[entry.offset],
+                &static_cast<const ComputeShaderConfig *>(pipelineShader->getShaderConfig())->getSubGroupSize()[value.constantId - 1],
+                entry.size
+            );
         }
         else
         {
@@ -718,8 +694,9 @@ void VulkanComputePipeline::init()
     pipelineLocalCache = VulkanGraphicsHelper::createPipelineCache(graphicsInstance);
     if (parentCache)
     {
-        VulkanGraphicsHelper::mergePipelineCaches(graphicsInstance, pipelineLocalCache,
-            { static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead });
+        VulkanGraphicsHelper::mergePipelineCaches(
+            graphicsInstance, pipelineLocalCache, { static_cast<const VulkanPipelineCache *>(parentCache)->pipelineCacheRead }
+        );
     }
 
     reinitResources();
@@ -741,21 +718,17 @@ void VulkanComputePipeline::reinitResources()
 
     COMPUTE_PIPELINE_CREATE_INFO(createInfo);
 
-    createInfo.flags
-        = bCanBeParent ? VkPipelineCreateFlagBits::VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT : 0;
+    createInfo.flags = bCanBeParent ? VkPipelineCreateFlagBits::VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT : 0;
     if (parentPipeline != nullptr)
     {
         createInfo.flags |= VkPipelineCreateFlagBits::VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-        createInfo.basePipelineHandle
-            = static_cast<const VulkanComputePipeline *>(parentPipeline)->pipeline;
+        createInfo.basePipelineHandle = static_cast<const VulkanComputePipeline *>(parentPipeline)->pipeline;
     }
     fillShaderStages(createInfo.stage);
-    fillSpecializationConsts(
-        createInfo.stage, specializationConstEntries, specializationConstData, specializationInfo);
+    fillSpecializationConsts(createInfo.stage, specializationConstEntries, specializationConstData, specializationInfo);
     createInfo.layout = pipelineLayout;
 
-    pipeline = VulkanGraphicsHelper::createComputePipeline(
-        graphicsInstance, { createInfo }, pipelineLocalCache)[0];
+    pipeline = VulkanGraphicsHelper::createComputePipeline(graphicsInstance, { createInfo }, pipelineLocalCache)[0];
 }
 
 void VulkanComputePipeline::release()

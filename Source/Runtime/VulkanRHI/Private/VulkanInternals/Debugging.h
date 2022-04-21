@@ -30,24 +30,24 @@ private:
     static String messageTypeStr(VkDebugUtilsMessageTypeFlagsEXT messageTypes);
 
     static VkBool32 vkDebugUtilsMessengerCallbackDebug(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData);
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+    );
 
     static VkBool32 vkDebugUtilsMessengerCallbackInfo(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData);
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+    );
 
     static VkBool32 vkDebugUtilsMessengerCallbackWarn(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData);
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+    );
 
     static VkBool32 vkDebugUtilsMessengerCallbackError(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData);
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+    );
 
 public:
     static bool registerDebugLogger(const VkInstance vulkanInstance);
@@ -72,37 +72,28 @@ public:
 
     void markObject(const IVulkanResources *resource) const;
     void markObject(const uint64 &objectHandle, const String &objectName, VkObjectType objectType) const;
-    void beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name,
-        const LinearColor &color = LinearColorConst::WHITE) const;
-    void insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name,
-        const LinearColor &color = LinearColorConst::WHITE) const;
+    void beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name, const LinearColor &color = LinearColorConst::WHITE) const;
+    void insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name, const LinearColor &color = LinearColorConst::WHITE) const;
     void endCmdBufferMarker(VkCommandBuffer commandBuffer) const;
-    void beginQueueMarker(
-        VkQueue queue, const String &name, const LinearColor &color = LinearColorConst::WHITE) const;
-    void insertQueueMarker(
-        VkQueue queue, const String &name, const LinearColor &color = LinearColorConst::WHITE) const;
+    void beginQueueMarker(VkQueue queue, const String &name, const LinearColor &color = LinearColorConst::WHITE) const;
+    void insertQueueMarker(VkQueue queue, const String &name, const LinearColor &color = LinearColorConst::WHITE) const;
     void endQueueMarker(VkQueue queue) const;
 };
 
-#define SCOPED_VULKAN_CMD_MARKER(CommandBuffer, Name)                                                   \
-    ScopedVulkanCommandMarker cmdMarker_##Name(CommandBuffer, #Name)
-#define SCOPED_VULKAN_CMD_COLORMARKER(CommandBuffer, Name, Color)                                       \
-    ScopedVulkanCommandMarker cmdMarker_##Name(CommandBuffer, #Name, Color)
+#define SCOPED_VULKAN_CMD_MARKER(CommandBuffer, Name) ScopedVulkanCommandMarker cmdMarker_##Name(CommandBuffer, #Name)
+#define SCOPED_VULKAN_CMD_COLORMARKER(CommandBuffer, Name, Color) ScopedVulkanCommandMarker cmdMarker_##Name(CommandBuffer, #Name, Color)
 struct ScopedVulkanCommandMarker
 {
     VkCommandBuffer cmdBuffer;
-    ScopedVulkanCommandMarker(VkCommandBuffer commandBuffer, const String &name,
-        const LinearColor &color = LinearColorConst::WHITE);
+    ScopedVulkanCommandMarker(VkCommandBuffer commandBuffer, const String &name, const LinearColor &color = LinearColorConst::WHITE);
     ~ScopedVulkanCommandMarker();
 };
 
 #define SCOPED_VULKAN_QUEUE_MARKER(Queue, Name) ScopedVulkanQueueMarker queueMarker_##Name(Queue, #Name)
-#define SCOPED_VULKAN_QUEUE_COLORMARKER(Queue, Name, Color)                                             \
-    ScopedVulkanQueueMarker queueMarker_##Name(Queue, #Name, Color)
+#define SCOPED_VULKAN_QUEUE_COLORMARKER(Queue, Name, Color) ScopedVulkanQueueMarker queueMarker_##Name(Queue, #Name, Color)
 struct ScopedVulkanQueueMarker
 {
     VkQueue queue;
-    ScopedVulkanQueueMarker(
-        VkQueue q, const String &name, const LinearColor &color = LinearColorConst::WHITE);
+    ScopedVulkanQueueMarker(VkQueue q, const String &name, const LinearColor &color = LinearColorConst::WHITE);
     ~ScopedVulkanQueueMarker();
 };

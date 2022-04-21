@@ -19,19 +19,16 @@
 
 class IntegrateBRDFShader final : public ComputeShaderConfigTemplated<16, 16, 1>
 {
-    DECLARE_GRAPHICS_RESOURCE(
-        IntegrateBRDFShader, , ComputeShaderConfigTemplated, <EXPAND_ARGS(16, 16, 1)>)
+    DECLARE_GRAPHICS_RESOURCE(IntegrateBRDFShader, , ComputeShaderConfigTemplated, <EXPAND_ARGS(16, 16, 1)>)
 
 public:
     IntegrateBRDFShader()
         : BaseType(INTEGRATEBRDF_SHADER_NAME)
     {
-        static ComputePipelineFactoryRegistrant INTEGRATEBRDF_SHADER_PIPELINE_REGISTER(
-            getResourceName());
+        static ComputePipelineFactoryRegistrant INTEGRATEBRDF_SHADER_PIPELINE_REGISTER(getResourceName());
     }
 
-    void getSpecializationConsts(
-        std::map<String, struct SpecializationConstantEntry> &specializationConst) const final
+    void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const final
     {
         specializationConst[SAMPLE_COUNT] = SpecializationConstUtility::fromValue(1024u);
     }
@@ -49,8 +46,7 @@ private:
     DrawIntegrateBRDFShader();
 
 public:
-    void getSpecializationConsts(
-        std::map<String, struct SpecializationConstantEntry> &specializationConst) const final
+    void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const final
     {
         specializationConst[SAMPLE_COUNT] = SpecializationConstUtility::fromValue(1024u);
     }
@@ -67,5 +63,6 @@ DrawIntegrateBRDFShader::DrawIntegrateBRDFShader()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAWINTEGRATEBRDF_PIPELINE_REGISTER, DRAWINTEGRATEBRDF_SHADER_NAME,
-    &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    DRAWINTEGRATEBRDF_PIPELINE_REGISTER, DRAWINTEGRATEBRDF_SHADER_NAME, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig
+);

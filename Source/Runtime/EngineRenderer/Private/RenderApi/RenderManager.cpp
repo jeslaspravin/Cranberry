@@ -22,26 +22,22 @@
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-GenericRenderPassProperties RenderManager::renderpassPropsFromRTs(
-    const std::vector<IRenderTargetTexture *> &rtTextures) const
+GenericRenderPassProperties RenderManager::renderpassPropsFromRTs(const std::vector<IRenderTargetTexture *> &rtTextures) const
 {
     GenericRenderPassProperties renderpassProperties;
     renderpassProperties.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
     if (!rtTextures.empty())
     {
         // Since all the textures in a same framebuffer must have same properties on below two
-        renderpassProperties.bOneRtPerFormat
-            = rtTextures[0]->renderResource() == rtTextures[0]->renderTargetResource();
-        renderpassProperties.multisampleCount
-            = static_cast<ImageResource *>(rtTextures[0]->renderTargetResource().reference())
-                  ->sampleCount();
+        renderpassProperties.bOneRtPerFormat = rtTextures[0]->renderResource() == rtTextures[0]->renderTargetResource();
+        renderpassProperties.multisampleCount = static_cast<ImageResource *>(rtTextures[0]->renderTargetResource().reference())->sampleCount();
 
         renderpassProperties.renderpassAttachmentFormat.attachments.reserve(rtTextures.size());
         for (const IRenderTargetTexture *const &rtTexture : rtTextures)
         {
             renderpassProperties.renderpassAttachmentFormat.attachments.emplace_back(
-                static_cast<ImageResource *>(rtTexture->renderTargetResource().reference())
-                    ->imageFormat());
+                static_cast<ImageResource *>(rtTexture->renderTargetResource().reference())->imageFormat()
+            );
         }
     }
 
@@ -50,8 +46,7 @@ GenericRenderPassProperties RenderManager::renderpassPropsFromRTs(
 
 void RenderManager::createSingletons()
 {
-    globalContext
-        = IRenderInterfaceModule::get()->currentGraphicsHelper()->createGlobalRenderingContext();
+    globalContext = IRenderInterfaceModule::get()->currentGraphicsHelper()->createGlobalRenderingContext();
 }
 
 void RenderManager::initialize(IGraphicsInstance *graphicsInstance)
@@ -68,8 +63,8 @@ void RenderManager::initialize(IGraphicsInstance *graphicsInstance)
 
     ENQUEUE_COMMAND(InitRenderApi)
     (
-        [this, engineRendererModule](class IRenderCommandList *cmdList,
-            IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this,
+         engineRendererModule](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreinitDevice);
             graphicsInstance->updateSurfaceDependents();
@@ -83,7 +78,8 @@ void RenderManager::initialize(IGraphicsInstance *graphicsInstance)
             GlobalBuffers::initialize();
 
             engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostInititialize);
-        });
+        }
+    );
 
     // TODO(Commented) onVsyncChangeHandle = EngineSettings::enableVsync.onConfigChanged().bindLambda(
     // TODO(Commented)     [this](bool oldVal, bool newVal)
@@ -114,14 +110,15 @@ void RenderManager::destroy()
 
     ENQUEUE_COMMAND(DestroyRenderApi)
     (
-        [this, engineRendererModule](class IRenderCommandList *cmdList,
-            IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [this,
+         engineRendererModule](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::Cleanup);
 
             globalContext->clearContext();
             GlobalBuffers::destroy();
-        });
+        }
+    );
 
     // Executing commands one last time
     waitOnCommands();
@@ -131,8 +128,7 @@ void RenderManager::destroy()
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostCleanupCommands);
     if (!commands.empty())
     {
-        LOG_WARN("RenderManager",
-            "%s() : Commands enqueued at post clean up phase, but they will not be executed", __func__);
+        LOG_WARN("RenderManager", "%s() : Commands enqueued at post clean up phase, but they will not be executed", __func__);
     }
 
     graphicsInstanceCache->unload();
@@ -144,8 +140,9 @@ void RenderManager::destroy()
         LOG_ERROR("GraphicsResourceLeak", "%s() : Resource leak detected", __func__);
         for (const GraphicsResource *resource : resourceLeak)
         {
-            LOG_ERROR("GraphicsResourceLeak", "\tType:%s, Resource Name %s",
-                resource->getType()->getName(), resource->getResourceName().getChar());
+            LOG_ERROR(
+                "GraphicsResourceLeak", "\tType:%s, Resource Name %s", resource->getType()->getName(), resource->getResourceName().getChar()
+            );
         }
     }
 }
@@ -166,13 +163,12 @@ void RenderManager::renderFrame(const float &timedelta)
 
 GlobalRenderingContextBase *RenderManager::getGlobalRenderingContext() const
 {
-    debugAssert(bIsInsideRenderCommand
-                && "using non const rendering context any where outside render commands is not allowed");
+    debugAssert(bIsInsideRenderCommand && "using non const rendering context any where outside render commands is not allowed");
     return globalContext;
 }
 
-FORCE_INLINE void rtTexturesToFrameAttachments(const std::vector<IRenderTargetTexture *> &rtTextures,
-    std::vector<ImageResourceRef> &frameAttachments)
+FORCE_INLINE void
+    rtTexturesToFrameAttachments(const std::vector<IRenderTargetTexture *> &rtTextures, std::vector<ImageResourceRef> &frameAttachments)
 {
     frameAttachments.clear();
 
@@ -183,24 +179,19 @@ FORCE_INLINE void rtTexturesToFrameAttachments(const std::vector<IRenderTargetTe
 
         // Since depth formats do not have resolve
         if (bHasResolves
-            && !EPixelDataFormat::isDepthFormat(
-                static_cast<ImageResource *>(rtTexture->renderTargetResource().reference())
-                    ->imageFormat()))
+            && !EPixelDataFormat::isDepthFormat(static_cast<ImageResource *>(rtTexture->renderTargetResource().reference())->imageFormat()))
         {
             frameAttachments.emplace_back(rtTexture->renderResource());
         }
     }
 }
 
-void RenderManager::preparePipelineContext(
-    class LocalPipelineContext *pipelineContext, const std::vector<IRenderTargetTexture *> &rtTextures)
+void RenderManager::preparePipelineContext(class LocalPipelineContext *pipelineContext, const std::vector<IRenderTargetTexture *> &rtTextures)
 {
     GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);
     if (rtTextures.empty())
     {
-        LOG_ERROR("RenderManager",
-            "%s() : RT textures cannot be empty(Necessary to find GenericRenderPassProperties)",
-            __func__);
+        LOG_ERROR("RenderManager", "%s() : RT textures cannot be empty(Necessary to find GenericRenderPassProperties)", __func__);
         return;
     }
 
@@ -213,8 +204,9 @@ void RenderManager::preparePipelineContext(class LocalPipelineContext *pipelineC
     globalContext->preparePipelineContext(pipelineContext, {});
 }
 
-void RenderManager::clearExternInitRtsFramebuffer(const std::vector<IRenderTargetTexture *> &rtTextures,
-    ERenderPassFormat::Type rpFormat /*= ERenderPassFormat::Generic*/)
+void RenderManager::clearExternInitRtsFramebuffer(
+    const std::vector<IRenderTargetTexture *> &rtTextures, ERenderPassFormat::Type rpFormat /*= ERenderPassFormat::Generic*/
+)
 {
     GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);
     renderpassProps.renderpassAttachmentFormat.rpFormat = rpFormat;
@@ -229,8 +221,7 @@ void RenderManager::enqueueCommand(class IRenderCommand *renderCommand)
     if (bIsInsideRenderCommand && renderCmds)
     {
         debugAssert(IRenderInterfaceModule::get());
-        const GraphicsHelperAPI *graphicsHelperApi
-            = IRenderInterfaceModule::get()->currentGraphicsHelper();
+        const GraphicsHelperAPI *graphicsHelperApi = IRenderInterfaceModule::get()->currentGraphicsHelper();
 
         renderCommand->execute(renderCmds, graphicsInstanceCache, graphicsHelperApi);
         delete renderCommand;

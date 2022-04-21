@@ -60,8 +60,7 @@ public:
     void broadcastTextureAtlasUpdated() const { textureAltasUpdated.invoke(); }
 
     APPLICATION_EXPORT FontIndex addFont(const String &fontPath) const;
-    APPLICATION_EXPORT FontIndex addFont(
-        const std::vector<uint8> &fontData, const String &fontName) const;
+    APPLICATION_EXPORT FontIndex addFont(const std::vector<uint8> &fontData, const String &fontName) const;
     /**
      * FontManager::addGlpyhs - Adds glyphs of a font to the glyph build list, This needs to be called
      * and glyphs must be added before querying or drawing any texts/glyphs
@@ -75,22 +74,18 @@ public:
      *
      * @return void
      */
-    APPLICATION_EXPORT void addGlyphs(FontIndex font,
-        const std::vector<ValueRange<uint32>> &glyphCodeRanges,
-        const std::vector<uint32> &heights) const;
-    APPLICATION_EXPORT void addGlyphs(
-        FontIndex font, const ValueRange<uint32> &glyphCodeRange, uint32 height) const;
+    APPLICATION_EXPORT void
+        addGlyphs(FontIndex font, const std::vector<ValueRange<uint32>> &glyphCodeRanges, const std::vector<uint32> &heights) const;
+    APPLICATION_EXPORT void addGlyphs(FontIndex font, const ValueRange<uint32> &glyphCodeRange, uint32 height) const;
 
     // Flushes all pending glyphs and font added
     APPLICATION_EXPORT void flushUpdates() const;
 
     APPLICATION_EXPORT void setupTextureAtlas(ShaderParameters *shaderParams, const String &paramName);
 
-    APPLICATION_EXPORT uint32 calculateRenderWidth(
-        const String &text, FontIndex font, uint32 height) const;
+    APPLICATION_EXPORT uint32 calculateRenderWidth(const String &text, FontIndex font, uint32 height) const;
     // If wrap width is -1 no wrapping will be calculated
-    APPLICATION_EXPORT uint32 calculateRenderHeight(
-        const String &text, FontIndex font, uint32 height, int32 wrapWidth = -1) const;
+    APPLICATION_EXPORT uint32 calculateRenderHeight(const String &text, FontIndex font, uint32 height, int32 wrapWidth = -1) const;
     /**
      * FontManager::draw Vertices will contain quads and each will be ordered clockwise.
      *  0         1
@@ -110,6 +105,7 @@ public:
      *
      * @return void
      */
-    APPLICATION_EXPORT void draw(std::vector<FontVertex> &outVertices, QuantizedBox2D &outBB,
-        const String &text, FontIndex font, uint32 height, int32 wrapWidth = -1) const;
+    APPLICATION_EXPORT void draw(
+        std::vector<FontVertex> &outVertices, QuantizedBox2D &outBB, const String &text, FontIndex font, uint32 height, int32 wrapWidth = -1
+    ) const;
 };

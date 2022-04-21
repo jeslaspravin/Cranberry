@@ -50,8 +50,7 @@ public:
 template <uint32 SizeX, uint32 SizeY, uint32 SizeZ>
 class ComputeShaderConfigTemplated : public ComputeShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(
-        ComputeShaderConfigTemplated, <EXPAND_ARGS(SizeX, SizeY, SizeZ)>, ComputeShaderConfig, )
+    DECLARE_GRAPHICS_RESOURCE(ComputeShaderConfigTemplated, <EXPAND_ARGS(SizeX, SizeY, SizeZ)>, ComputeShaderConfig, )
 private:
     String shaderFileName;
 
@@ -60,9 +59,10 @@ private:
 
 protected:
     ComputeShaderConfigTemplated(const String &name)
-        : BaseType(Size3D(SizeX, SizeY, SizeZ), name + TCHAR("_") + String::toString(SizeX) + TCHAR("x")
-                                                    + String::toString(SizeY) + TCHAR("x")
-                                                    + String::toString(SizeZ))
+        : BaseType(
+            Size3D(SizeX, SizeY, SizeZ),
+            name + TCHAR("_") + String::toString(SizeX) + TCHAR("x") + String::toString(SizeY) + TCHAR("x") + String::toString(SizeZ)
+        )
         , shaderFileName(name)
     {}
 
@@ -73,8 +73,7 @@ public:
     /* End overrides */
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(ComputeShaderConfigTemplated,
-    <EXPAND_ARGS(uint32 SizeX, uint32 SizeY, uint32 SizeZ)>, <EXPAND_ARGS(SizeX, SizeY, SizeZ)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(ComputeShaderConfigTemplated, <EXPAND_ARGS(uint32 SizeX, uint32 SizeY, uint32 SizeZ)>, <EXPAND_ARGS(SizeX, SizeY, SizeZ)>)
 
 template <uint32 SizeX, uint32 SizeY, uint32 SizeZ>
 String ComputeShaderConfigTemplated<SizeX, SizeY, SizeZ>::getShaderFileName() const

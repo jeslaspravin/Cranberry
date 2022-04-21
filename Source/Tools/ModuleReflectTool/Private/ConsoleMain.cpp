@@ -23,37 +23,43 @@
 
 void initializeCmdArguments()
 {
-    CmdLineArgument genFilesList(TCHAR("List of file path that will be consumed by build as generated "
-                                       "reflection translation units"),
-        ReflectToolCmdLineConst::GENERATED_TU_LIST);
-    CmdLineArgument generatedDirector(TCHAR("Directory where the generated files will be dropped.\n\
+    CmdLineArgument genFilesList(
+        TCHAR("List of file path that will be consumed by build as generated "
+              "reflection translation units"),
+        ReflectToolCmdLineConst::GENERATED_TU_LIST
+    );
+    CmdLineArgument generatedDirector(
+        TCHAR("Directory where the generated files will be dropped.\n\
     Generated header for headers under Public folder, will be placed under public folder of this directory and others will be placed under Private\
     "),
-        ReflectToolCmdLineConst::GENERATED_DIR);
+        ReflectToolCmdLineConst::GENERATED_DIR
+    );
     CmdLineArgument moduleSrcDir(
-        TCHAR("Directory to search and parse source headers from for this module."),
-        ReflectToolCmdLineConst::MODULE_SRC_DIR);
-    CmdLineArgument moduleExpMacro(
-        TCHAR("Name of API export macro for this module."), ReflectToolCmdLineConst::MODULE_EXP_MACRO);
-    CmdLineArgument intermediateDir(TCHAR("Directory where intermediate files can be dropped/created.\n\
+        TCHAR("Directory to search and parse source headers from for this module."), ReflectToolCmdLineConst::MODULE_SRC_DIR
+    );
+    CmdLineArgument moduleExpMacro(TCHAR("Name of API export macro for this module."), ReflectToolCmdLineConst::MODULE_EXP_MACRO);
+    CmdLineArgument intermediateDir(
+        TCHAR("Directory where intermediate files can be dropped/created.\n\
     This must be unique per configuration to track last generated timestamps for files etc,."),
-        ReflectToolCmdLineConst::INTERMEDIATE_DIR);
-    CmdLineArgument includeDirList(TCHAR("File path that contains list of include directories for this "
-                                         "module semicolon(;) separated."),
-        ReflectToolCmdLineConst::INCLUDE_LIST_FILE, TCHAR("--I"));
-    CmdLineArgument compileDefList(TCHAR("File path that contains list of compile definitions for this "
-                                         "module semicolon(;) separated."),
-        ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE, TCHAR("--D"));
-    CmdLineArgument exeSampleCode(TCHAR("Executes sample code instead of actual application"),
-        ReflectToolCmdLineConst::SAMPLE_CODE);
+        ReflectToolCmdLineConst::INTERMEDIATE_DIR
+    );
+    CmdLineArgument includeDirList(
+        TCHAR("File path that contains list of include directories for this "
+              "module semicolon(;) separated."),
+        ReflectToolCmdLineConst::INCLUDE_LIST_FILE, TCHAR("--I")
+    );
+    CmdLineArgument compileDefList(
+        TCHAR("File path that contains list of compile definitions for this "
+              "module semicolon(;) separated."),
+        ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE, TCHAR("--D")
+    );
+    CmdLineArgument exeSampleCode(TCHAR("Executes sample code instead of actual application"), ReflectToolCmdLineConst::SAMPLE_CODE);
     CmdLineArgument filterDiagnostics(
-        TCHAR("Filters the diagnostics results and only display what is absolutely necessary"),
-        ReflectToolCmdLineConst::FILTER_DIAGNOSTICS);
-    CmdLineArgument noDiagnostics(
-        TCHAR("No diagnostics will be displayed"), ReflectToolCmdLineConst::NO_DIAGNOSTICS);
+        TCHAR("Filters the diagnostics results and only display what is absolutely necessary"), ReflectToolCmdLineConst::FILTER_DIAGNOSTICS
+    );
+    CmdLineArgument noDiagnostics(TCHAR("No diagnostics will be displayed"), ReflectToolCmdLineConst::NO_DIAGNOSTICS);
 
-    ProgramCmdLine::get()->setProgramDescription(
-        TCHAR("ModuleReflectTool Copyright (C) Jeslas Pravin, Since 2022\n\
+    ProgramCmdLine::get()->setProgramDescription(TCHAR("ModuleReflectTool Copyright (C) Jeslas Pravin, Since 2022\n\
     Parses the headers in provided module and creates reflection files for them.\n\
     It uses clang libraries and mustache style templates to generate reflection data"));
 }
@@ -83,8 +89,9 @@ int32 main(int32 argsc, AChar **args)
 
     // Loading other libraries
     moduleManager->loadModule(TCHAR("ReflectionRuntime"));
-    moduleManager->getOrLoadLibrary(PathFunctions::combinePath(TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"),
-        String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION));
+    moduleManager->getOrLoadLibrary(
+        PathFunctions::combinePath(TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"), String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION)
+    );
 
     Logger::flushStream();
 

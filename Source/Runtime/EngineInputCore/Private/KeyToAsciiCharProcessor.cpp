@@ -87,8 +87,7 @@ KeyToAsciiCharProcessor::KeyToAsciiCharProcessor()
 
 void KeyToAsciiCharProcessor::updateCharacters(class Keys *keyStates, class AnalogStates *analogStates)
 {
-    bool bShiftDown = keyStates->queryState(Keys::LSHIFT)->isPressed
-                      || keyStates->queryState(Keys::RSHIFT)->isPressed;
+    bool bShiftDown = keyStates->queryState(Keys::LSHIFT)->isPressed || keyStates->queryState(Keys::RSHIFT)->isPressed;
     for (std::pair<const Keys::StateKeyType, KeyCharInfo> &keyCharInfo : keyToCharMap)
     {
         if (keyStates->queryState(*keyCharInfo.first)->isPressed)
@@ -96,14 +95,10 @@ void KeyToAsciiCharProcessor::updateCharacters(class Keys *keyStates, class Anal
             bool bKeyShifted = bShiftDown;
             if (keyCharInfo.second.lockStateKey != AnalogStates::None)
             {
-                bKeyShifted
-                    = analogStates->queryState(keyCharInfo.second.lockStateKey)->currentValue > 0.0f
-                          ? !bKeyShifted
-                          : bKeyShifted;
+                bKeyShifted = analogStates->queryState(keyCharInfo.second.lockStateKey)->currentValue > 0.0f ? !bKeyShifted : bKeyShifted;
             }
 
-            keyCharInfo.second.currentChar
-                = bKeyShifted ? keyCharInfo.second.shiftedChar : keyCharInfo.second.baseChar;
+            keyCharInfo.second.currentChar = bKeyShifted ? keyCharInfo.second.shiftedChar : keyCharInfo.second.baseChar;
         }
         else
         {

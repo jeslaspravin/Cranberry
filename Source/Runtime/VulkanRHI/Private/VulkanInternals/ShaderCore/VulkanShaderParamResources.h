@@ -66,8 +66,7 @@ public:
 
     /* ShaderParametersLayout overrides */
 protected:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const final;
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const final;
     /* Override ends */
 };
 
@@ -86,8 +85,7 @@ public:
 
     /* ShaderParametersLayout overrides */
 protected:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const final;
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const final;
     /* Override ends */
 };
 
@@ -106,8 +104,7 @@ public:
 
     /* ShaderParametersLayout overrides */
 protected:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const final;
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const final;
     /* Override ends */
 };
 
@@ -247,8 +244,7 @@ private:
     VulkanShaderParameters() = default;
 
 public:
-    VulkanShaderParameters(
-        const GraphicsResource *shaderParamLayout, const std::set<uint32> &ignoredSetIds)
+    VulkanShaderParameters(const GraphicsResource *shaderParamLayout, const std::set<uint32> &ignoredSetIds)
         : BaseType(shaderParamLayout, ignoredSetIds)
     {}
 

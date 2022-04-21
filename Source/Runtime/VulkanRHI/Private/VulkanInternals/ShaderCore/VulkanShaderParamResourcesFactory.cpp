@@ -15,8 +15,7 @@
 #include "RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
 
-GraphicsResource *VulkanShaderParametersLayoutFactory::create(
-    const ShaderResource *forShader, uint32 descriptorsSetIdx) const
+GraphicsResource *VulkanShaderParametersLayoutFactory::create(const ShaderResource *forShader, uint32 descriptorsSetIdx) const
 {
     if (forShader->getShaderConfig()->getType()->isChildOf(DrawMeshShaderConfig::staticType()))
     {
@@ -32,9 +31,10 @@ GraphicsResource *VulkanShaderParametersLayoutFactory::create(
         case ShaderParameterUtility::SHADER_VARIANT_UNIQ_SET:
             return new VulkanShaderUniqDescLayout(forShader, descriptorsSetIdx);
         default:
-            LOG_ERROR("VulkanShaderParametersLayoutFactory",
-                "%s : Not support descriptor index %d for shader %s", __func__, descriptorsSetIdx,
-                forShader->getResourceName().getChar());
+            LOG_ERROR(
+                "VulkanShaderParametersLayoutFactory", "%s : Not support descriptor index %d for shader %s", __func__, descriptorsSetIdx,
+                forShader->getResourceName().getChar()
+            );
             return nullptr;
         }
     }

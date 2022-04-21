@@ -78,8 +78,9 @@ private:
     void writeMergedShader();
 
 public:
-    PipelineShaderStageProcessor(const std::vector<ShaderReflectionProcessor *> &shaderReflections,
-        std::string refFilePath, std::string shaderFilePath);
+    PipelineShaderStageProcessor(
+        const std::vector<ShaderReflectionProcessor *> &shaderReflections, std::string refFilePath, std::string shaderFilePath
+    );
 
     void processReflections();
     void writeOutput();

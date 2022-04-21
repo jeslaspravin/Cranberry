@@ -54,8 +54,7 @@ public:
         }
         // lower_bound gives first itr that is not less than idx(either greater than or equal idx) or end
         // itr does it using binary search
-        for (auto itr = std::lower_bound(sparsityTags.begin(), sparsityTags.end(), idx);
-             itr != sparsityTags.end() && ((*itr) == idx);)
+        for (auto itr = std::lower_bound(sparsityTags.begin(), sparsityTags.end(), idx); itr != sparsityTags.end() && ((*itr) == idx);)
         {
             itr = sparsityTags.erase_after(itr);
         }
@@ -71,17 +70,11 @@ public:
         return idx;
     }
     FORCE_INLINE void push_free(SizeType idx) { add(idx); }
-    bool isFree(SizeType idx) const
-    {
-        return std::binary_search(sparsityTags.cbegin(), sparsityTags.cend(), idx);
-    }
+    bool isFree(SizeType idx) const { return std::binary_search(sparsityTags.cbegin(), sparsityTags.cend(), idx); }
     // true if not free slots found
     FORCE_INLINE bool empty() const { return sparsityTags.empty(); }
     // Number of sparse slots
-    CONST_EXPR SizeType size() const
-    {
-        return (SizeType)std::distance(sparsityTags.cbegin(), sparsityTags.cend());
-    }
+    CONST_EXPR SizeType size() const { return (SizeType)std::distance(sparsityTags.cbegin(), sparsityTags.cend()); }
 
     // Irrelevant interface functions
     CONST_EXPR void reserve(SizeType count) {}

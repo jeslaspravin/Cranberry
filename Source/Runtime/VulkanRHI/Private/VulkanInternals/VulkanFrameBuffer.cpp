@@ -37,8 +37,7 @@ struct VulkanFrameBuffer final : public Framebuffer
 
 VulkanFrameBuffer::~VulkanFrameBuffer()
 {
-    VulkanGraphicsHelper::destroyFramebuffer(
-        IVulkanRHIModule::get()->getGraphicsInstance(), frameBuffer);
+    VulkanGraphicsHelper::destroyFramebuffer(IVulkanRHIModule::get()->getGraphicsInstance(), frameBuffer);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -52,8 +51,7 @@ VkFramebuffer VulkanGraphicsHelper::getFramebuffer(const struct Framebuffer *app
 
 Framebuffer *VulkanGraphicsHelper::createFbInstance() const { return new VulkanFrameBuffer(); }
 
-void VulkanGraphicsHelper::initializeFb(
-    class IGraphicsInstance *graphicsInstance, Framebuffer *fb, const Size2D &frameSize) const
+void VulkanGraphicsHelper::initializeFb(class IGraphicsInstance *graphicsInstance, Framebuffer *fb, const Size2D &frameSize) const
 {
     auto *vulkanFb = static_cast<VulkanFrameBuffer *>(fb);
     VkRenderPass dummyRenderPass = VulkanGraphicsHelper::createDummyRenderPass(graphicsInstance, fb);
@@ -62,17 +60,14 @@ void VulkanGraphicsHelper::initializeFb(
     imageViews.reserve(fb->textures.size());
     ImageViewInfo imageViewInfo;
 
-    uint32 layers
-        = (fb->textures.empty()
-              || (fb->textures[0]->getImageSize().z == 1 && fb->textures[0]->getLayerCount() == 1))
-              ? 1
-              : fb->textures[0]->getLayerCount();
+    uint32 layers = (fb->textures.empty() || (fb->textures[0]->getImageSize().z == 1 && fb->textures[0]->getLayerCount() == 1))
+                        ? 1
+                        : fb->textures[0]->getLayerCount();
     // if texture is having more layers or 3D then we need view types
     int32 imgViewType = (layers == 1) ? -1 : VkImageViewType::VK_IMAGE_VIEW_TYPE_2D_ARRAY;
     for (ImageResourceRef imgRes : fb->textures)
     {
-        imageViews.push_back(static_cast<VulkanImageResource *>(imgRes.reference())
-                                 ->getImageView(imageViewInfo, imgViewType));
+        imageViews.push_back(static_cast<VulkanImageResource *>(imgRes.reference())->getImageView(imageViewInfo, imgViewType));
     }
 
     FRAMEBUFFER_CREATE_INFO(fbCreateInfo);
@@ -91,12 +86,12 @@ void VulkanGraphicsHelper::initializeFb(
     VulkanGraphicsHelper::destroyRenderPass(graphicsInstance, dummyRenderPass);
 }
 
-void VulkanGraphicsHelper::initializeSwapchainFb(class IGraphicsInstance *graphicsInstance,
-    Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx) const
+void VulkanGraphicsHelper::initializeSwapchainFb(
+    class IGraphicsInstance *graphicsInstance, Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx
+) const
 {
     const auto *vulkanWindowCanvas = static_cast<const VulkanWindowCanvas *>(canvas.reference());
-    ImageResourceRef dummyImageResource(
-        new ImageResource(ImageResourceCreateInfo{ vulkanWindowCanvas->windowCanvasFormat() }));
+    ImageResourceRef dummyImageResource(new ImageResource(ImageResourceCreateInfo{ vulkanWindowCanvas->windowCanvasFormat() }));
 
     auto *vulkanFb = static_cast<VulkanFrameBuffer *>(fb);
     vulkanFb->textures.push_back(dummyImageResource);
@@ -125,8 +120,7 @@ void VulkanGraphicsHelper::initializeSwapchainFb(class IGraphicsInstance *graphi
 // attachments will be used as color attachment only Assumption made : we only use one subpass to make
 // things easier and also one subpass will not consider depth and preserve attachments for compatibility
 // Assumption made : we are never going to use preserve attachments
-VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(
-    class IGraphicsInstance *graphicsInstance, const struct Framebuffer *framebuffer)
+VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance *graphicsInstance, const struct Framebuffer *framebuffer)
 {
     VkRenderPass renderPass;
 
@@ -157,8 +151,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(
         if (EPixelDataFormat::isDepthFormat(resource->imageFormat()))
         {
             fatalAssert(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
-            depthAttachmentRef.push_back(
-                { attachmentIdx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
+            depthAttachmentRef.push_back({ attachmentIdx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
             ++attachmentIdx;
         }
         else
@@ -167,14 +160,11 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(
 
             if (framebuffer->bHasResolves)
             {
-                attachmentDesc.format = EngineToVulkanAPI::vulkanDataFormat(
-                    framebuffer->textures[attachmentIdx + 1]->imageFormat());
-                attachmentDesc.samples
-                    = VkSampleCountFlagBits(framebuffer->textures[attachmentIdx + 1]->sampleCount());
+                attachmentDesc.format = EngineToVulkanAPI::vulkanDataFormat(framebuffer->textures[attachmentIdx + 1]->imageFormat());
+                attachmentDesc.samples = VkSampleCountFlagBits(framebuffer->textures[attachmentIdx + 1]->sampleCount());
 
                 renderPassAttachments.emplace_back(attachmentDesc);
-                resolveAttachmentRefs.push_back(
-                    { attachmentIdx + 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+                resolveAttachmentRefs.push_back({ attachmentIdx + 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
                 attachmentIdx += 2;
             }
@@ -208,8 +198,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
 
-    if (device->vkCreateRenderPass(device->logicalDevice, &renderPassCreateInfo, nullptr, &renderPass)
-        != VK_SUCCESS)
+    if (device->vkCreateRenderPass(device->logicalDevice, &renderPassCreateInfo, nullptr, &renderPass) != VK_SUCCESS)
     {
         LOG_ERROR("VulkanGraphicsHelper", "%s() : Failed creating render pass", __func__);
         renderPass = nullptr;
@@ -217,16 +206,18 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(
     return renderPass;
 }
 
-VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance *graphicsInstance,
-    const struct GenericRenderPassProperties &renderpassProps,
-    const struct RenderPassAdditionalProps &additionalProps)
+VkRenderPass VulkanGraphicsHelper::createRenderPass(
+    class IGraphicsInstance *graphicsInstance, const struct GenericRenderPassProperties &renderpassProps,
+    const struct RenderPassAdditionalProps &additionalProps
+)
 {
     using namespace EAttachmentOp;
-    fatalAssert(!additionalProps.bUsedAsPresentSource
-                    || (renderpassProps.bOneRtPerFormat
-                        && renderpassProps.renderpassAttachmentFormat.attachments.size() == 1),
+    fatalAssert(
+        !additionalProps.bUsedAsPresentSource
+            || (renderpassProps.bOneRtPerFormat && renderpassProps.renderpassAttachmentFormat.attachments.size() == 1),
         "Presentable swapchain attachments cannot have more than one attachments or more than 1 sample "
-        "count");
+        "count"
+    );
 
     VkRenderPass renderPass;
 
@@ -235,14 +226,11 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance *gra
     std::vector<VkAttachmentReference> resolveAttachmentRefs;
     std::vector<VkAttachmentReference> depthAttachmentRef;
 
-    bool bCanInitialLayoutBeUndef
-        = additionalProps.bAllowUndefinedLayout
-          && additionalProps.depthLoadOp != EAttachmentOp::LoadOp::Load
-          && additionalProps.stencilLoadOp != EAttachmentOp::LoadOp::Load
-          && additionalProps.colorAttachmentLoadOp != EAttachmentOp::LoadOp::Load;
+    bool bCanInitialLayoutBeUndef = additionalProps.bAllowUndefinedLayout && additionalProps.depthLoadOp != EAttachmentOp::LoadOp::Load
+                                    && additionalProps.stencilLoadOp != EAttachmentOp::LoadOp::Load
+                                    && additionalProps.colorAttachmentLoadOp != EAttachmentOp::LoadOp::Load;
 
-    for (EPixelDataFormat::Type attachmentFormat :
-        renderpassProps.renderpassAttachmentFormat.attachments)
+    for (EPixelDataFormat::Type attachmentFormat : renderpassProps.renderpassAttachmentFormat.attachments)
     {
         VkAttachmentDescription attachmentDesc;
         attachmentDesc.flags = 0;
@@ -261,33 +249,23 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance *gra
             attachmentDesc.storeOp = EngineToVulkanAPI::vulkanStoreOp(additionalProps.depthStoreOp);
 
             // Since depths are always same texture for both attachments and shader read
-            attachmentDesc.initialLayout = attachmentDesc.finalLayout
-                = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            attachmentDesc.initialLayout = bCanInitialLayoutBeUndef
-                                               ? VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED
-                                               : attachmentDesc.initialLayout;
+            attachmentDesc.initialLayout = attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attachmentDesc.initialLayout = bCanInitialLayoutBeUndef ? VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED : attachmentDesc.initialLayout;
 
-            depthAttachmentRef.push_back({ uint32(renderPassAttachments.size()),
-                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
+            depthAttachmentRef.push_back({ uint32(renderPassAttachments.size()), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
             renderPassAttachments.push_back(attachmentDesc);
         }
         else
         {
-            attachmentDesc.loadOp
-                = EngineToVulkanAPI::vulkanLoadOp(additionalProps.colorAttachmentLoadOp);
-            attachmentDesc.storeOp
-                = EngineToVulkanAPI::vulkanStoreOp(additionalProps.colorAttachmentStoreOp);
+            attachmentDesc.loadOp = EngineToVulkanAPI::vulkanLoadOp(additionalProps.colorAttachmentLoadOp);
+            attachmentDesc.storeOp = EngineToVulkanAPI::vulkanStoreOp(additionalProps.colorAttachmentStoreOp);
             attachmentDesc.initialLayout = attachmentDesc.finalLayout
                 = additionalProps.bUsedAsPresentSource ? VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-                  : renderpassProps.bOneRtPerFormat
-                      ? VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-                      : VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            attachmentDesc.initialLayout = bCanInitialLayoutBeUndef
-                                               ? VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED
-                                               : attachmentDesc.initialLayout;
+                  : renderpassProps.bOneRtPerFormat    ? VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                                                       : VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachmentDesc.initialLayout = bCanInitialLayoutBeUndef ? VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED : attachmentDesc.initialLayout;
 
-            colorAttachmentRefs.push_back(
-                { uint32(renderPassAttachments.size()), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+            colorAttachmentRefs.push_back({ uint32(renderPassAttachments.size()), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
             renderPassAttachments.push_back(attachmentDesc);
 
             if (!renderpassProps.bOneRtPerFormat)
@@ -301,14 +279,11 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance *gra
 
                 // Since resolve attachment has to be shader read only before(if required by
                 // default) and after pass
-                attachmentDesc.initialLayout = attachmentDesc.finalLayout
-                    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                attachmentDesc.initialLayout = bCanInitialLayoutBeUndef
-                                                   ? VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED
-                                                   : attachmentDesc.initialLayout;
+                attachmentDesc.initialLayout = attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                attachmentDesc.initialLayout
+                    = bCanInitialLayoutBeUndef ? VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED : attachmentDesc.initialLayout;
 
-                resolveAttachmentRefs.push_back(
-                    { uint32(renderPassAttachments.size()), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+                resolveAttachmentRefs.push_back({ uint32(renderPassAttachments.size()), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
                 renderPassAttachments.push_back(attachmentDesc);
             }
         }
@@ -328,16 +303,12 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance *gra
 
     // TODO(Jeslas) : Non parallel renderpass modify in future to support async passes.
     std::array<VkSubpassDependency, 2> dependencies;
-    dependencies[0].dependencyFlags = dependencies[1].dependencyFlags
-        = VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT;
+    dependencies[0].dependencyFlags = dependencies[1].dependencyFlags = VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT;
     dependencies[0].dstSubpass = dependencies[1].srcSubpass = 0;
     dependencies[0].srcSubpass = dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[0].srcStageMask = dependencies[1].srcStageMask
-        = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
-    dependencies[0].dstStageMask = dependencies[1].dstStageMask
-        = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    dependencies[0].srcAccessMask = dependencies[1].srcAccessMask = dependencies[0].dstAccessMask
-        = dependencies[1].dstAccessMask = 0;
+    dependencies[0].srcStageMask = dependencies[1].srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+    dependencies[0].dstStageMask = dependencies[1].dstStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    dependencies[0].srcAccessMask = dependencies[1].srcAccessMask = dependencies[0].dstAccessMask = dependencies[1].dstAccessMask = 0;
 
     RENDERPASS_CREATE_INFO(renderPassCreateInfo);
     renderPassCreateInfo.attachmentCount = uint32(renderPassAttachments.size());
@@ -351,8 +322,7 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(class IGraphicsInstance *gra
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
 
-    if (device->vkCreateRenderPass(device->logicalDevice, &renderPassCreateInfo, nullptr, &renderPass)
-        != VK_SUCCESS)
+    if (device->vkCreateRenderPass(device->logicalDevice, &renderPassCreateInfo, nullptr, &renderPass) != VK_SUCCESS)
     {
         LOG_ERROR("VulkanGraphicsHelper", "%s() : Failed creating render pass", __func__);
         renderPass = nullptr;

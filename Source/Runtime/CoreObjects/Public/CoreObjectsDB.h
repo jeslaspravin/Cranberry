@@ -66,6 +66,16 @@ public:
         }
         return false;
     }
+    bool hasChild(NodeIdxType nodeidx) const;
+    FORCE_INLINE bool hasChild(StringID objectId) const
+    {
+        auto itr = objectIdToNodeIdx.find(objectId);
+        if (itr != objectIdToNodeIdx.cend())
+        {
+            return hasChild(itr->second);
+        }
+        return false;
+    }
 
     CBE::Object *getObject(NodeIdxType nodeidx) const;
     FORCE_INLINE CBE::Object *getObject(StringID objectId) const
@@ -78,6 +88,9 @@ public:
         return nullptr;
     }
 
+    /**
+     * All sub objects(Includes entire tree's branch hierarchy under an object
+     */
     void getSubobjects(std::vector<CBE::Object *> &subobjs, NodeIdxType nodeidx) const;
     FORCE_INLINE void getSubobjects(std::vector<CBE::Object *> &subobjs, StringID objectId) const
     {
@@ -85,6 +98,15 @@ public:
         if (itr != objectIdToNodeIdx.cend())
         {
             getSubobjects(subobjs, itr->second);
+        }
+    }
+    void getChildren(std::vector<CBE::Object *> &children, NodeIdxType nodeidx) const;
+    FORCE_INLINE void getChildren(std::vector<CBE::Object *> &children, StringID objectId) const
+    {
+        auto itr = objectIdToNodeIdx.find(objectId);
+        if (itr != objectIdToNodeIdx.cend())
+        {
+            getChildren(children, itr->second);
         }
     }
 };

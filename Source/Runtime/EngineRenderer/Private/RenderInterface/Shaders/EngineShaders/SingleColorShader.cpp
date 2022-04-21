@@ -37,8 +37,7 @@ END_BUFFER_DEFINITION();
 template <EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
 class SingleColorShader : public DrawMeshShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(
-        SingleColorShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>, DrawMeshShaderConfig, )
+    DECLARE_GRAPHICS_RESOURCE(SingleColorShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>, DrawMeshShaderConfig, )
 protected:
     SingleColorShader()
         : BaseType(SINGLECOLOR_SHADER_NAME)
@@ -47,12 +46,12 @@ protected:
         compatibleVertex = VertexUsage;
     }
 
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static SingleColorMeshMaterialsBufferParamInfo MESH_DATA_MATERIALS;
-        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ { TCHAR("materials"),
-            &MESH_DATA_MATERIALS } };
+        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+            {TCHAR("materials"), &MESH_DATA_MATERIALS}
+        };
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
@@ -65,9 +64,7 @@ protected:
     }
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(SingleColorShader,
-    <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>,
-    <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(SingleColorShader, <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
 
 template class SingleColorShader<EVertexType::Simple2, ERenderPassFormat::Multibuffer>;
 template class SingleColorShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffer>;
@@ -76,5 +73,6 @@ template class SingleColorShader<EVertexType::StaticMesh, ERenderPassFormat::Mul
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(SINGLECOLOR_SHADER_PIPELINE_REGISTER, SINGLECOLOR_SHADER_NAME,
-    &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    SINGLECOLOR_SHADER_PIPELINE_REGISTER, SINGLECOLOR_SHADER_NAME, &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig
+);

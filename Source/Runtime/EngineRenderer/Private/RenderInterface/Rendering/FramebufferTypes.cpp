@@ -15,7 +15,6 @@
 
 bool GenericRenderPassProperties::operator==(const GenericRenderPassProperties &otherProperties) const
 {
-    return renderpassAttachmentFormat == otherProperties.renderpassAttachmentFormat
-           && multisampleCount == otherProperties.multisampleCount
+    return renderpassAttachmentFormat == otherProperties.renderpassAttachmentFormat && multisampleCount == otherProperties.multisampleCount
            && bOneRtPerFormat == otherProperties.bOneRtPerFormat;
 }

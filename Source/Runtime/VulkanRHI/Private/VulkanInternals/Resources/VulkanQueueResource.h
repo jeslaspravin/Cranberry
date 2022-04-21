@@ -71,10 +71,8 @@ private:
         case EQueueFunction::Generic:
         case EQueueFunction::Present:
         default:
-            return VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT | VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT
-                   | VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT
-                   | VkQueueFlagBits::VK_QUEUE_SPARSE_BINDING_BIT
-                   | VkQueueFlagBits::VK_QUEUE_PROTECTED_BIT;
+            return VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT | VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT | VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT
+                   | VkQueueFlagBits::VK_QUEUE_SPARSE_BINDING_BIT | VkQueueFlagBits::VK_QUEUE_PROTECTED_BIT;
             break;
         }
     }
@@ -122,17 +120,15 @@ public:
         }
         if (queueFamilyPropIndex != -1)
         {
-            LOG_DEBUG("VulkanQueueResource",
-                "%s() : Selected queue family at index %d for %s processing", __func__,
-                queueFamilyPropIndex, getSupportedQueueName().getChar());
+            LOG_DEBUG(
+                "VulkanQueueResource", "%s() : Selected queue family at index %d for %s processing", __func__, queueFamilyPropIndex,
+                getSupportedQueueName().getChar()
+            );
             familyProperty = properties[queueFamilyPropIndex];
 
-            int32 maxQCountPerPriority
-                = familyProperty.queueCount / (uint32)EQueuePriority::MaxPriorityEnum;
-            maxQCountPerPriority
-                = maxQCountPerPriority > 1
-                      ? maxQCountPerPriority - 1
-                      : maxQCountPerPriority; // Just to leave some queues not to overload device
+            int32 maxQCountPerPriority = familyProperty.queueCount / (uint32)EQueuePriority::MaxPriorityEnum;
+            maxQCountPerPriority = maxQCountPerPriority > 1 ? maxQCountPerPriority - 1
+                                                            : maxQCountPerPriority; // Just to leave some queues not to overload device
 
             int32 totalQueueCount = maxQCountPerPriority * (int32)EQueuePriority::MaxPriorityEnum;
 
@@ -140,15 +136,13 @@ public:
             {
                 totalQueueCount = familyProperty.queueCount;
                 maxQCountPerPriority = 1;
-                queuePointer.minAvailablePriority
-                    = (EQueuePriority::Enum)(EQueuePriority::MaxPriorityEnum - totalQueueCount);
+                queuePointer.minAvailablePriority = (EQueuePriority::Enum)(EQueuePriority::MaxPriorityEnum - totalQueueCount);
             }
             priorities.resize(totalQueueCount);
 
             constexpr float priorityStep = 1 / (float)EQueuePriority::MaxPriorityEnum;
             float priority = 1;
-            for (int32 index = totalQueueCount; index > 0;
-                 index -= maxQCountPerPriority, priority -= priorityStep)
+            for (int32 index = totalQueueCount; index > 0; index -= maxQCountPerPriority, priority -= priorityStep)
             {
                 auto priorityEnd = priorities.begin() + index;
                 auto priorityBegin = priorityEnd - maxQCountPerPriority;
@@ -164,9 +158,10 @@ public:
             }
 
             queuePointer.countPerPriority = maxQCountPerPriority;
-            LOG_DEBUG("VulkanQueueResource",
-                "%s() : Using %d queues per priority and %d Total queues for %s", __func__,
-                maxQCountPerPriority, totalQueueCount, getSupportedQueueName().getChar());
+            LOG_DEBUG(
+                "VulkanQueueResource", "%s() : Using %d queues per priority and %d Total queues for %s", __func__, maxQCountPerPriority,
+                totalQueueCount, getSupportedQueueName().getChar()
+            );
         }
     }
 
@@ -203,17 +198,15 @@ public:
         }
         if (queueFamilyPropIndex != -1)
         {
-            LOG_DEBUG("VulkanQueueResource",
-                "%s() : Selected queue family at index %d for %s processing", __func__,
-                queueFamilyPropIndex, getSupportedQueueName().getChar());
+            LOG_DEBUG(
+                "VulkanQueueResource", "%s() : Selected queue family at index %d for %s processing", __func__, queueFamilyPropIndex,
+                getSupportedQueueName().getChar()
+            );
             familyProperty = *(properties.find(queueFamilyPropIndex)->second);
 
-            int32 maxQCountPerPriority
-                = familyProperty.queueCount / (uint32)EQueuePriority::MaxPriorityEnum;
-            maxQCountPerPriority
-                = maxQCountPerPriority > 1
-                      ? maxQCountPerPriority - 1
-                      : maxQCountPerPriority; // Just to leave some queues not to overload device
+            int32 maxQCountPerPriority = familyProperty.queueCount / (uint32)EQueuePriority::MaxPriorityEnum;
+            maxQCountPerPriority = maxQCountPerPriority > 1 ? maxQCountPerPriority - 1
+                                                            : maxQCountPerPriority; // Just to leave some queues not to overload device
 
             int32 totalQueueCount = maxQCountPerPriority * (int32)EQueuePriority::MaxPriorityEnum;
 
@@ -221,15 +214,13 @@ public:
             {
                 totalQueueCount = familyProperty.queueCount;
                 maxQCountPerPriority = 1;
-                queuePointer.minAvailablePriority
-                    = (EQueuePriority::Enum)(EQueuePriority::MaxPriorityEnum - totalQueueCount);
+                queuePointer.minAvailablePriority = (EQueuePriority::Enum)(EQueuePriority::MaxPriorityEnum - totalQueueCount);
             }
             priorities.resize(totalQueueCount);
 
             constexpr float priorityStep = 1 / (float)EQueuePriority::MaxPriorityEnum;
             float priority = 1;
-            for (int32 index = totalQueueCount; index > 0;
-                 index -= maxQCountPerPriority, priority -= priorityStep)
+            for (int32 index = totalQueueCount; index > 0; index -= maxQCountPerPriority, priority -= priorityStep)
             {
                 auto priorityEnd = priorities.begin() + index;
                 auto priorityBegin = priorityEnd - maxQCountPerPriority;
@@ -241,9 +232,10 @@ public:
             }
 
             queuePointer.countPerPriority = maxQCountPerPriority;
-            LOG_DEBUG("VulkanQueueResource",
-                "%s() : Using %d queues per priority and %d Total queues for %s", __func__,
-                maxQCountPerPriority, totalQueueCount, getSupportedQueueName().getChar());
+            LOG_DEBUG(
+                "VulkanQueueResource", "%s() : Using %d queues per priority and %d Total queues for %s", __func__, maxQCountPerPriority,
+                totalQueueCount, getSupportedQueueName().getChar()
+            );
         }
     }
 
@@ -287,19 +279,19 @@ public:
             funcPtr(logicalDevice, queueFamilyPropIndex, index, &queues[index]);
             if (queues[index] == nullptr)
             {
-                LOG_ERROR("VulkanQueueResource",
-                    "%s() : [%s] Get queue failed for queue family %d at queue index %d", __func__,
-                    getSupportedQueueName().getChar(), queueFamilyPropIndex, index);
+                LOG_ERROR(
+                    "VulkanQueueResource", "%s() : [%s] Get queue failed for queue family %d at queue index %d", __func__,
+                    getSupportedQueueName().getChar(), queueFamilyPropIndex, index
+                );
             }
             VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance())
-                ->markObject((uint64)queues[index],
-                    getObjectName().append(TCHAR("Queue_")).append(String::toString(priorities[index])),
-                    getObjectType());
+                ->markObject(
+                    (uint64)queues[index], getObjectName().append(TCHAR("Queue_")).append(String::toString(priorities[index])), getObjectType()
+                );
         }
 
         int32 qIdx = 0;
-        for (uint8 priority = queuePointer.minAvailablePriority;
-             priority < EQueuePriority::MaxPriorityEnum;
+        for (uint8 priority = queuePointer.minAvailablePriority; priority < EQueuePriority::MaxPriorityEnum;
              ++priority, qIdx += queuePointer.countPerPriority)
         {
             queuePointer.queueBasePointer[priority] = &queues[qIdx];
@@ -316,9 +308,10 @@ public:
         if (Priority < queuePointer.minAvailablePriority)
         {
             PriorityToFetch = queuePointer.minAvailablePriority;
-            LOG_WARN("VulkanQueue",
-                "%s : %s queue requested priority %d is not available using priority %d", __func__,
-                getSupportedQueueName().getChar(), Priority, PriorityToFetch);
+            LOG_WARN(
+                "VulkanQueue", "%s : %s queue requested priority %d is not available using priority %d", __func__,
+                getSupportedQueueName().getChar(), Priority, PriorityToFetch
+            );
         }
         uint32 currentQueueIndex = queuePointer.lastQueueIndex[PriorityToFetch]++;
         queuePointer.lastQueueIndex[PriorityToFetch] %= queuePointer.countPerPriority;
@@ -339,34 +332,39 @@ ReturnType invoke(QueueResourceBase *queueRes, Args... args)
     if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Compute>>())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Compute>>{}(
-            static_cast<VulkanQueueResource<EQueueFunction::Compute> *>(queueRes), args...);
+            static_cast<VulkanQueueResource<EQueueFunction::Compute> *>(queueRes), args...
+        );
     }
     else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Graphics>>())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Graphics>>{}(
-            static_cast<VulkanQueueResource<EQueueFunction::Graphics> *>(queueRes), args...);
+            static_cast<VulkanQueueResource<EQueueFunction::Graphics> *>(queueRes), args...
+        );
     }
     else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Transfer>>())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Transfer>>{}(
-            static_cast<VulkanQueueResource<EQueueFunction::Transfer> *>(queueRes), args...);
+            static_cast<VulkanQueueResource<EQueueFunction::Transfer> *>(queueRes), args...
+        );
     }
     else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Present>>())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Present>>{}(
-            static_cast<VulkanQueueResource<EQueueFunction::Present> *>(queueRes), args...);
+            static_cast<VulkanQueueResource<EQueueFunction::Present> *>(queueRes), args...
+        );
     }
     else if (queueRes->getType()->isChildOf<VulkanQueueResource<EQueueFunction::Generic>>())
     {
         return Functor<VulkanQueueResource<EQueueFunction::Generic>>{}(
-            static_cast<VulkanQueueResource<EQueueFunction::Generic> *>(queueRes), args...);
+            static_cast<VulkanQueueResource<EQueueFunction::Generic> *>(queueRes), args...
+        );
     }
     LOG_ERROR("VulkanQueueResourceInvoker", "%s() : Invoker failed to find a type", __func__);
 
     return Functor<VulkanQueueResource<EQueueFunction::Generic>>{}(
-        static_cast<VulkanQueueResource<EQueueFunction::Generic> *>(queueRes), args...);
+        static_cast<VulkanQueueResource<EQueueFunction::Generic> *>(queueRes), args...
+    );
 }
 } // namespace VulkanQueueResourceInvoker
 
-DEFINE_TEMPLATED_VK_GRAPHICS_RESOURCE(
-    VulkanQueueResource, <EQueueFunction QueueType>, <QueueType>, VK_OBJECT_TYPE_QUEUE)
+DEFINE_TEMPLATED_VK_GRAPHICS_RESOURCE(VulkanQueueResource, <EQueueFunction QueueType>, <QueueType>, VK_OBJECT_TYPE_QUEUE)

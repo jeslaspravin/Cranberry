@@ -96,22 +96,23 @@ public:
 
 private:
     void fillShaderStages(std::vector<VkPipelineShaderStageCreateInfo> &shaderStages) const;
-    void fillSpecializationConsts(std::vector<VkPipelineShaderStageCreateInfo> &shaderStages,
-        std::vector<VkSpecializationMapEntry> &specEntries, std::vector<uint8> &specData,
-        std::vector<VkSpecializationInfo> &specializationInfo) const;
-    void fillVertexInputState(VkPipelineVertexInputStateCreateInfo &vertexInputStateCI,
-        std::vector<VkVertexInputBindingDescription> &bindings,
-        std::vector<VkVertexInputAttributeDescription> &attributes) const;
+    void fillSpecializationConsts(
+        std::vector<VkPipelineShaderStageCreateInfo> &shaderStages, std::vector<VkSpecializationMapEntry> &specEntries,
+        std::vector<uint8> &specData, std::vector<VkSpecializationInfo> &specializationInfo
+    ) const;
+    void fillVertexInputState(
+        VkPipelineVertexInputStateCreateInfo &vertexInputStateCI, std::vector<VkVertexInputBindingDescription> &bindings,
+        std::vector<VkVertexInputAttributeDescription> &attributes
+    ) const;
     void fillMultisampleState(VkPipelineMultisampleStateCreateInfo &multisampleStateCI) const;
-    void fillDepthStencilState(VkPipelineDepthStencilStateCreateInfo &depthStencilStateCI,
-        std::vector<VkDynamicState> &dynamicStates) const;
-    void fillColorBlendStates(VkPipelineColorBlendStateCreateInfo &colorBlendStateCI,
-        std::vector<VkPipelineColorBlendAttachmentState> &blendStates,
-        std::vector<VkDynamicState> &dynamicStates) const;
+    void fillDepthStencilState(VkPipelineDepthStencilStateCreateInfo &depthStencilStateCI, std::vector<VkDynamicState> &dynamicStates) const;
+    void fillColorBlendStates(
+        VkPipelineColorBlendStateCreateInfo &colorBlendStateCI, std::vector<VkPipelineColorBlendAttachmentState> &blendStates,
+        std::vector<VkDynamicState> &dynamicStates
+    ) const;
 
     void fillPipelineStates(VulkanPipelineCreateInfo &createInfo) const;
-    void fillDynamicPermutedStates(
-        VulkanPipelineCreateInfo &createInfo, const GraphicsPipelineQueryParams &params) const;
+    void fillDynamicPermutedStates(VulkanPipelineCreateInfo &createInfo, const GraphicsPipelineQueryParams &params) const;
 
     void validateCreateInfo(VulkanPipelineCreateInfo &createInfo) const;
 
@@ -152,9 +153,10 @@ public:
 
 private:
     void fillShaderStages(VkPipelineShaderStageCreateInfo &shaderStage) const;
-    void fillSpecializationConsts(VkPipelineShaderStageCreateInfo &shaderStages,
-        std::vector<VkSpecializationMapEntry> &specEntries, std::vector<uint8> &specData,
-        VkSpecializationInfo &specializationInfo) const;
+    void fillSpecializationConsts(
+        VkPipelineShaderStageCreateInfo &shaderStages, std::vector<VkSpecializationMapEntry> &specEntries, std::vector<uint8> &specData,
+        VkSpecializationInfo &specializationInfo
+    ) const;
 
 public:
     VulkanComputePipeline(const ComputePipelineBase *parent);

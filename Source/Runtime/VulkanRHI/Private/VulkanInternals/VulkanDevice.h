@@ -29,8 +29,7 @@ private:
     friend class VulkanGraphicsHelper;
     friend class VulkanMemoryAllocator;
 
-    friend const std::vector<VulkanDevice::QueueResourceBasePtr> &getAllQueues(
-        const VulkanDevice *device);
+    friend const std::vector<VulkanDevice::QueueResourceBasePtr> &getAllQueues(const VulkanDevice *device);
 
 private:
     VulkanDebugGraphics graphicsDebug;
@@ -90,8 +89,7 @@ private:
     uint32 choosenImageCount = 1;
     VkImageUsageFlags swapchainImgUsage;
 
-    int32 compareSurfaceCompatibility(
-        const WindowCanvasRef &windowCanvas, const VulkanDevice &otherDevice) const;
+    int32 compareSurfaceCompatibility(const WindowCanvasRef &windowCanvas, const VulkanDevice &otherDevice) const;
     int32 compareMemoryCompatibility(const VulkanDevice &otherDevice) const;
     // Swap chain and surface
 public:
@@ -133,8 +131,5 @@ struct VulkanDeviceCompare
 {
     WindowCanvasRef windowCanvas;
 
-    bool operator()(const VulkanDevice &lhs, const VulkanDevice &rhs)
-    {
-        return lhs.compare(rhs, windowCanvas) >= 0 ? true : false;
-    }
+    bool operator()(const VulkanDevice &lhs, const VulkanDevice &rhs) { return lhs.compare(rhs, windowCanvas) >= 0 ? true : false; }
 };

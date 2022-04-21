@@ -32,26 +32,19 @@ template <EVertexType::Type VertexType>
 const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo();
 
 template <>
-ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &
-    bufferParamInfo<EVertexType::Simple2>();
+ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Simple2>();
 template <>
-ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &
-    bufferParamInfo<EVertexType::UI>();
+ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::UI>();
 template <>
-ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &
-    bufferParamInfo<EVertexType::Simple3>();
+ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Simple3>();
 template <>
-ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &
-    bufferParamInfo<EVertexType::Simple3DColor>();
+ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Simple3DColor>();
 template <>
-ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &
-    bufferParamInfo<EVertexType::BasicMesh>();
+ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::BasicMesh>();
 template <>
-ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &
-    bufferParamInfo<EVertexType::StaticMesh>();
+ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::StaticMesh>();
 template <>
-ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &
-    bufferParamInfo<EVertexType::NoVertex>();
+ENGINERENDERER_EXPORT const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::NoVertex>();
 
 template <EVertexType::Type VertexType>
 const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo()
@@ -60,8 +53,7 @@ const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo()
     return NoInstanceDataForThisVertex;
 }
 
-ENGINERENDERER_EXPORT constexpr const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo(
-    EVertexType::Type vertexType)
+ENGINERENDERER_EXPORT constexpr const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo(EVertexType::Type vertexType)
 {
     switch (vertexType)
     {

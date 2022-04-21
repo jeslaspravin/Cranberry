@@ -230,8 +230,7 @@ public:
                 return 0;
             }
             // If even one axis in on border, point is in border
-            bIsOnBorder = bIsOnBorder || Math::isEqual(point[i], minBound[i])
-                          || Math::isEqual(point[i], maxBound[i]);
+            bIsOnBorder = bIsOnBorder || Math::isEqual(point[i], minBound[i]) || Math::isEqual(point[i], maxBound[i]);
         }
         return bIsOnBorder ? 2u : 1u;
     }
@@ -257,8 +256,7 @@ public:
     void boundCorners(ArrayView<T> &corners) const
     {
         uint32 totalCorners = Math::pow(2, d);
-        fatalAssert(
-            corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
+        fatalAssert(corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
 
         const T boundCenter = center();
         const T boundHalfExtend = size() * 0.5f;
@@ -288,8 +286,10 @@ public:
 
     // Ensure start point is outside the box
     // Out Lengths are portion of ray segment to reach the point
-    bool raycast(const T &startPoint, const T &dir, const float &length, float &invLength,
-        float &outEnterLength, T &outEnterPoint, float &outExitLength, T &outExitPoint) const
+    bool raycast(
+        const T &startPoint, const T &dir, const float &length, float &invLength, float &outEnterLength, T &outEnterPoint, float &outExitLength,
+        T &outExitPoint
+    ) const
     {
         bool parallel[d];
         T invDir;
@@ -300,13 +300,15 @@ public:
             invDir[i] = parallel[i] ? 0 : 1 / dir[i];
         }
 
-        return raycastFast(startPoint, dir, invDir, length, invLength, &parallel[0], outEnterLength,
-            outEnterPoint, outExitLength, outExitPoint);
+        return raycastFast(
+            startPoint, dir, invDir, length, invLength, &parallel[0], outEnterLength, outEnterPoint, outExitLength, outExitPoint
+        );
     }
 
-    bool raycastFast(const T &startPoint, const T &dir, const T &invDir, const float &length,
-        float &invLength, const bool *const parallel, float &outEnterLength, T &outEnterPoint,
-        float &outExitLength, T &outExitPoint) const
+    bool raycastFast(
+        const T &startPoint, const T &dir, const T &invDir, const float &length, float &invLength, const bool *const parallel,
+        float &outEnterLength, T &outEnterPoint, float &outExitLength, T &outExitPoint
+    ) const
     {
         T s2Min = minBound - startPoint;
         T s2Max = maxBound - startPoint;
@@ -452,10 +454,7 @@ public:
         maxBound = maxBound < point ? point : maxBound;
     }
 
-    bool intersect(const Box<T, 1> &other) const
-    {
-        return !(other.maxBound < minBound || other.minBound > maxBound);
-    }
+    bool intersect(const Box<T, 1> &other) const { return !(other.maxBound < minBound || other.minBound > maxBound); }
 
     Box<T, 1> getIntersectionBox(const Box<T, 1> &other, bool checkAA = true) const
     {
@@ -482,10 +481,7 @@ public:
     }
 
     bool contains(const T &point) const { return point >= minBound && point <= maxBound; }
-    bool contains(const Box<T, 1> &other) const
-    {
-        return other.minBound >= minBound && other.maxBound <= maxBound;
-    }
+    bool contains(const Box<T, 1> &other) const { return other.minBound >= minBound && other.maxBound <= maxBound; }
     uint8 encloses(const T &point) const
     {
         if (point < minBound || point > maxBound)
@@ -497,8 +493,7 @@ public:
     {
         if (other.minBound < minBound || other.maxBound > maxBound)
             return 0;
-        return (Math::isEqual(other.minBound, minBound) && Math::isEqual(other.maxBound, maxBound)) ? 2u
-                                                                                                    : 1u;
+        return (Math::isEqual(other.minBound, minBound) && Math::isEqual(other.maxBound, maxBound)) ? 2u : 1u;
     }
 
     T size() const { return maxBound - minBound; }

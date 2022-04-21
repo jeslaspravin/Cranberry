@@ -64,10 +64,7 @@ public:
             return *(arrayView->dataPtr + arrayView->offset + idx);
         }
 
-        bool operator!=(const Iterator &other) const noexcept
-        {
-            return arrayView != other.arrayView || idx != other.idx;
-        }
+        bool operator!=(const Iterator &other) const noexcept { return arrayView != other.arrayView || idx != other.idx; }
 
         Iterator &operator++() noexcept
         {
@@ -101,10 +98,7 @@ public:
             return *this;
         }
 
-        NODISCARD Iterator operator+(const difference_type off) const noexcept
-        {
-            return Iterator(*arrayView, idx + off);
-        }
+        NODISCARD Iterator operator+(const difference_type off) const noexcept { return Iterator(*arrayView, idx + off); }
 
         Iterator &operator-=(const difference_type off) noexcept
         {
@@ -112,10 +106,7 @@ public:
             return *this;
         }
 
-        NODISCARD Iterator operator-(const difference_type off) const noexcept
-        {
-            return Iterator(*arrayView, idx - off);
-        }
+        NODISCARD Iterator operator-(const difference_type off) const noexcept { return Iterator(*arrayView, idx - off); }
 
         NODISCARD reference operator[](const difference_type off) const noexcept
         {

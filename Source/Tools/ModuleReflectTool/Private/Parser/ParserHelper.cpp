@@ -32,8 +32,7 @@ COMPILER_PRAGMA(COMPILER_POP_WARNING)
 String ParserHelper::getNonConstTypeName(CXType clangType, CXCursor typeRefCursor)
 {
     CXType innerType = getTypeReferred(clangType, typeRefCursor);
-    fatalAssert(innerType.kind != CXType_Invalid,
-        "%s() : Type retrieval must not fail here! check the input", __func__);
+    fatalAssert(innerType.kind != CXType_Invalid, "%s() : Type retrieval must not fail here! check the input", __func__);
 
     String typeName = CXStringWrapper(clang_getTypeSpelling(innerType)).toString();
     if (clang_isConstQualifiedType(innerType))
@@ -48,8 +47,7 @@ CXType ParserHelper::getTypeReferred(CXType clangType, CXCursor typeRefCursor)
 {
     CXCursor innerTypeCursor = getTypeRefInCursor(typeRefCursor);
     // If template ref then it is not possible to get the type name from cursor alone so use type for it
-    if (!(clang_Cursor_isNull(innerTypeCursor)
-            || clang_getCursorKind(innerTypeCursor) == CXCursor_TemplateRef))
+    if (!(clang_Cursor_isNull(innerTypeCursor) || clang_getCursorKind(innerTypeCursor) == CXCursor_TemplateRef))
     {
         // We do not have to recurse in cursor derived referred type as it is based on lexical cursor
         // and TypeRef accurately mean referred type
@@ -87,7 +85,8 @@ CXCursor ParserHelper::getTypeRefInCursor(CXCursor cursor)
                 }
                 return CXChildVisit_Continue;
             },
-            &innerTypeCursor);
+            &innerTypeCursor
+        );
     }
     return innerTypeCursor;
 }
@@ -147,8 +146,7 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath)
     String headerFileContent;
     if (!FileHelper::readString(headerFileContent, headerFilePath))
     {
-        LOG_ERROR(
-            "ParserHelper", "%s() : Cannot open header file(%s) to read", __func__, headerFilePath);
+        LOG_ERROR("ParserHelper", "%s() : Cannot open header file(%s) to read", __func__, headerFilePath);
         return false;
     }
 
@@ -160,7 +158,8 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath)
     static const StringRegex searchPattern(
         TCHAR("(#include *[<\"]{1}.*\\.gen\\.h[>\"]{1}|.*META_ANNOTATE.*\\(.*\\)[ \t]*.*|[ "
               "\t]*GENERATED_CODES\\(\\))"),
-        std::regex_constants::ECMAScript);
+        std::regex_constants::ECMAScript
+    );
 
     bool bGenReflection = false;
     std::vector<StringView> lines = headerFileContent.splitLines();
@@ -174,11 +173,8 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath)
     }
     if (bGenReflection)
     {
-        String checkHeader(
-            PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(headerFilePath))
-            + TCHAR(".gen.h"));
-        static const StringRegex includePattern(
-            TCHAR("#include *[<\"]{1}(.*)[>\"]{1}"), std::regex_constants::ECMAScript);
+        String checkHeader(PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(headerFilePath)) + TCHAR(".gen.h"));
+        static const StringRegex includePattern(TCHAR("#include *[<\"]{1}(.*)[>\"]{1}"), std::regex_constants::ECMAScript);
         uint32 genInclLine = std::numeric_limits<uint32>::max();
         uint32 lineNo = 0;
         for (const StringView &codeLine : lines)
@@ -195,10 +191,12 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath)
                 else if (lineNo > genInclLine) // Not gen header but include after gen header
                                                // print error and skip this header file
                 {
-                    LOG_ERROR("ParserHelper",
+                    LOG_ERROR(
+                        "ParserHelper",
                         "%s() : Generated header include(%s:%d) must be last include of "
                         "this header file %s",
-                        __func__, checkHeader, genInclLine, headerFilePath);
+                        __func__, checkHeader, genInclLine, headerFilePath
+                    );
                     bGenReflection = false;
                     break;
                 }
@@ -229,11 +227,9 @@ bool ParserHelper::isCustomType(CXType clangType, CXCursor typeRefCursor)
     {
         CXCursor cursor = clang_getTypeDeclaration(clang_getCanonicalType(clangType));
         return isBuiltinType(clangType) || isSpecializedType(clangType, cursor)
-               || (clangType.kind == CXTypeKind::CXType_Pointer
-                   && isValidFieldType(clangType, cursor)) // Support pointer types
+               || (clangType.kind == CXTypeKind::CXType_Pointer && isValidFieldType(clangType, cursor)) // Support pointer types
                || (clangType.kind == CXTypeKind::CXType_Record
-                   && (clang_getCursorKind(cursor) == CXCursor_StructDecl
-                       || clang_getCursorKind(cursor) == CXCursor_ClassDecl
+                   && (clang_getCursorKind(cursor) == CXCursor_StructDecl || clang_getCursorKind(cursor) == CXCursor_ClassDecl
                        || clang_getCursorKind(cursor) == CXCursor_ClassTemplate)
                    && isReflectedClass(cursor)); // Support reflected types
     };
@@ -256,8 +252,8 @@ bool ParserHelper::isCustomType(CXType clangType, CXCursor typeRefCursor)
         if (PropertyHelper::isPairType(keyTypeName))
         {
             CXType firstType, secType;
-            bIsValid = bIsValid && getPairElementTypes(firstType, secType, keyType, keyCursor)
-                       && checkMapSetType(firstType) && checkMapSetType(secType);
+            bIsValid = bIsValid && getPairElementTypes(firstType, secType, keyType, keyCursor) && checkMapSetType(firstType)
+                       && checkMapSetType(secType);
         }
         else
         {
@@ -266,9 +262,9 @@ bool ParserHelper::isCustomType(CXType clangType, CXCursor typeRefCursor)
 
         if (!bIsValid)
         {
-            LOG_ERROR("ParserHelper",
-                "%s() : Key type %s is not acceptable for reflected fields type %s", __func__,
-                keyTypeName, checkTypeName);
+            LOG_ERROR(
+                "ParserHelper", "%s() : Key type %s is not acceptable for reflected fields type %s", __func__, keyTypeName, checkTypeName
+            );
         }
         return bIsValid;
     }
@@ -302,7 +298,8 @@ bool ParserHelper::isReflectedDecl(CXCursor declCursor)
             }
             return CXChildVisit_Continue;
         },
-        &bHasAnnotation);
+        &bHasAnnotation
+    );
 
     return bHasAnnotation;
 }
@@ -329,13 +326,13 @@ bool ParserHelper::isReflectedClass(CXCursor declCursor)
             // If generated type alias/typedef decl is present
             else if (cursorKind == CXCursor_TypeAliasDecl || cursorKind == CXCursor_TypedefDecl)
             {
-                bValid[1] = bValid[1]
-                            || (CXStringWrapper(clang_getCursorSpelling(c)).toString()
-                                == TCHAR(MACRO_TO_STRING(GENERATED_CODES_ALIAS)));
+                bValid[1]
+                    = bValid[1] || (CXStringWrapper(clang_getCursorSpelling(c)).toString() == TCHAR(MACRO_TO_STRING(GENERATED_CODES_ALIAS)));
             }
             return CXChildVisit_Continue;
         },
-        bHasAnnotationAndGenCode);
+        bHasAnnotationAndGenCode
+    );
 
     return bHasAnnotationAndGenCode[0] && bHasAnnotationAndGenCode[1];
 }
@@ -357,12 +354,13 @@ bool ParserHelper::hasOverridenCtorPolicy(CXCursor declCursor)
             // If generated type alias/typedef decl is present
             if (cursorKind == CXCursor_TypeAliasDecl || cursorKind == CXCursor_TypedefDecl)
             {
-                bValid = (CXStringWrapper(clang_getCursorSpelling(c)).toString()
-                          == TCHAR(MACRO_TO_STRING(OVERRIDEN_CONSTRUCTION_POLICY_ALIAS)));
+                bValid
+                    = (CXStringWrapper(clang_getCursorSpelling(c)).toString() == TCHAR(MACRO_TO_STRING(OVERRIDEN_CONSTRUCTION_POLICY_ALIAS)));
             }
             return CXChildVisit_Continue;
         },
-        &bHasOverridenCtorPolicy);
+        &bHasOverridenCtorPolicy
+    );
     return bHasOverridenCtorPolicy;
 }
 
@@ -381,14 +379,14 @@ CXCursor ParserHelper::getGeneratedCodeCursor(CXCursor declCursor)
             CXCursorKind cursorKind = clang_getCursorKind(c);
             // If generated type alias/typedef decl is present
             if ((cursorKind == CXCursor_TypeAliasDecl || cursorKind == CXCursor_TypedefDecl)
-                && (CXStringWrapper(clang_getCursorSpelling(c)).toString()
-                    == TCHAR(MACRO_TO_STRING(GENERATED_CODES_ALIAS))))
+                && (CXStringWrapper(clang_getCursorSpelling(c)).toString() == TCHAR(MACRO_TO_STRING(GENERATED_CODES_ALIAS))))
             {
                 *(CXCursor *)(clientData) = c;
             }
             return CXChildVisit_Continue;
         },
-        &generatedCodeCursor);
+        &generatedCodeCursor
+    );
 
     return generatedCodeCursor;
 }
@@ -408,13 +406,13 @@ String ParserHelper::getCursorMetaString(CXCursor cursor)
             }
             return CXChildVisit_Continue;
         },
-        &metaStr);
+        &metaStr
+    );
 
     return metaStr;
 }
 
-bool ParserHelper::getMapElementTypes(
-    CXType &outKeyType, CXType &outValueType, CXType mapType, CXCursor mapTypeRefCursor)
+bool ParserHelper::getMapElementTypes(CXType &outKeyType, CXType &outValueType, CXType mapType, CXCursor mapTypeRefCursor)
 {
     String mapName = getNonConstTypeName(mapType, mapTypeRefCursor);
     CXType referredType = getTypeReferred(mapType, mapTypeRefCursor);
@@ -425,8 +423,7 @@ bool ParserHelper::getMapElementTypes(
     }
 
     int32 templatesCount = clang_Type_getNumTemplateArguments(referredType);
-    fatalAssert(templatesCount >= 2, "%s() : Template %d count must be atleast 2 for type %s", __func__,
-        templatesCount, mapName);
+    fatalAssert(templatesCount >= 2, "%s() : Template %d count must be atleast 2 for type %s", __func__, templatesCount, mapName);
 
     outKeyType = clang_Type_getTemplateArgumentAsType(referredType, 0);
     outValueType = clang_Type_getTemplateArgumentAsType(referredType, 1);
@@ -434,8 +431,7 @@ bool ParserHelper::getMapElementTypes(
     return outKeyType.kind != CXType_Invalid && outValueType.kind != CXType_Invalid;
 }
 
-bool ParserHelper::getPairElementTypes(
-    CXType &outKeyType, CXType &outValueType, CXType pairType, CXCursor pairTypeRefCursor)
+bool ParserHelper::getPairElementTypes(CXType &outKeyType, CXType &outValueType, CXType pairType, CXCursor pairTypeRefCursor)
 {
     String pairName = getNonConstTypeName(pairType, pairTypeRefCursor);
     CXType referredType = getTypeReferred(pairType, pairTypeRefCursor);
@@ -446,8 +442,7 @@ bool ParserHelper::getPairElementTypes(
     }
 
     int32 templatesCount = clang_Type_getNumTemplateArguments(referredType);
-    fatalAssert(templatesCount >= 2, "%s() : Template %d count must be atleast 2 for type %s", __func__,
-        templatesCount, pairName);
+    fatalAssert(templatesCount >= 2, "%s() : Template %d count must be atleast 2 for type %s", __func__, templatesCount, pairName);
 
     outKeyType = clang_Type_getTemplateArgumentAsType(referredType, 0);
     outValueType = clang_Type_getTemplateArgumentAsType(referredType, 1);
@@ -465,8 +460,7 @@ bool ParserHelper::getContainerElementType(CXType &outType, CXType containerType
     }
 
     int32 templatesCount = clang_Type_getNumTemplateArguments(referredType);
-    fatalAssert(templatesCount >= 1, "%s() : Template %d count must be atleast 1 for type %s", __func__,
-        templatesCount, typeName);
+    fatalAssert(templatesCount >= 1, "%s() : Template %d count must be atleast 1 for type %s", __func__, templatesCount, typeName);
 
     outType = clang_Type_getTemplateArgumentAsType(referredType, 0);
     return outType.kind != CXType_Invalid;
@@ -474,27 +468,23 @@ bool ParserHelper::getContainerElementType(CXType &outType, CXType containerType
 
 bool ParserHelper::commonTypeValidity(CXType clangType)
 {
-    CXType innerType = (clangType.kind == CXType_Vector) ? clang_getElementType(clangType)
-                                                         : clang_getPointeeType(clangType);
+    CXType innerType = (clangType.kind == CXType_Vector) ? clang_getElementType(clangType) : clang_getPointeeType(clangType);
     bool bIsValid = ParserHelper::isBuiltinType(clangType);
     switch (clangType.kind)
     {
     case CXType_RValueReference:
     case CXType_LValueReference:
         // Reference to ref is not valid
-        bIsValid = (innerType.kind != CXType_LValueReference && innerType.kind != CXType_RValueReference)
-                   && commonTypeValidity(innerType);
+        bIsValid = (innerType.kind != CXType_LValueReference && innerType.kind != CXType_RValueReference) && commonTypeValidity(innerType);
         break;
     case CXType_Pointer:
         // Make sure that this is not pointer chain or pointer to ref which is not valid in language
-        bIsValid = (innerType.kind != CXType_Pointer && innerType.kind != CXType_LValueReference
-                       && innerType.kind != CXType_RValueReference)
+        bIsValid = (innerType.kind != CXType_Pointer && innerType.kind != CXType_LValueReference && innerType.kind != CXType_RValueReference)
                    && commonTypeValidity(innerType);
         break;
     case CXType_Vector:
     {
-        bIsValid = (innerType.kind != CXType_LValueReference && innerType.kind != CXType_RValueReference)
-                   && commonTypeValidity(innerType);
+        bIsValid = (innerType.kind != CXType_LValueReference && innerType.kind != CXType_RValueReference) && commonTypeValidity(innerType);
         break;
     }
     case CXType_Record:
@@ -537,30 +527,24 @@ bool ParserHelper::isValidFuncReturnType(CXType clangType)
 bool ParserHelper::isValidFunction(CXCursor funcCursor)
 {
     CXStringRef functionName(new CXStringWrapper(clang_getCursorSpelling(funcCursor)));
-    if (!(clang_getCursorKind(funcCursor) == CXCursor_FunctionDecl
-            || clang_getCursorKind(funcCursor) == CXCursor_Constructor
-            || clang_getCursorKind(funcCursor) == CXCursor_CXXMethod))
+    if (!(clang_getCursorKind(funcCursor) == CXCursor_FunctionDecl || clang_getCursorKind(funcCursor) == CXCursor_Constructor
+          || clang_getCursorKind(funcCursor) == CXCursor_CXXMethod))
     {
-        LOG_ERROR(
-            "ParserHelper", "%s() : Function %s is not a function declaration", __func__, functionName);
+        LOG_ERROR("ParserHelper", "%s() : Function %s is not a function declaration", __func__, functionName);
         return false;
     }
-    CXRefQualifierKind methodCalledRefKind
-        = clang_Type_getCXXRefQualifier(clang_getCursorType(funcCursor));
+    CXRefQualifierKind methodCalledRefKind = clang_Type_getCXXRefQualifier(clang_getCursorType(funcCursor));
     if (methodCalledRefKind != CXRefQualifier_None)
     {
-        LOG_ERROR("ParserHelper",
-            "%s() : Reference typed only function(%s) is not supported in reflection", __func__,
-            functionName);
+        LOG_ERROR("ParserHelper", "%s() : Reference typed only function(%s) is not supported in reflection", __func__, functionName);
         return false;
     }
 
     CXType funcRetType = clang_getCursorResultType(funcCursor);
     if (!isValidFuncReturnType(funcRetType))
     {
-        LOG("ParserHelper", "%s ERROR %s() : Function %s return type %s is not valid",
-            clang_getCursorLocation(funcCursor), __func__, functionName,
-            clang_getTypeSpelling(funcRetType));
+        LOG("ParserHelper", "%s ERROR %s() : Function %s return type %s is not valid", clang_getCursorLocation(funcCursor), __func__,
+            functionName, clang_getTypeSpelling(funcRetType));
         return false;
     }
 
@@ -572,9 +556,8 @@ bool ParserHelper::isValidFunction(CXCursor funcCursor)
 
         if (!isValidFuncParamType(paramType, paramCursor))
         {
-            LOG("ParserHelper", "%s ERROR %s() : Function %s param %s at %d is not valid type %s",
-                clang_getCursorLocation(paramCursor), __func__, functionName,
-                clang_getCursorSpelling(paramCursor), i, clang_getTypeSpelling(paramType));
+            LOG("ParserHelper", "%s ERROR %s() : Function %s param %s at %d is not valid type %s", clang_getCursorLocation(paramCursor),
+                __func__, functionName, clang_getCursorSpelling(paramCursor), i, clang_getTypeSpelling(paramType));
             return false;
         }
     }
@@ -587,9 +570,7 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
     CXStringRef typeName(new CXStringWrapper(clang_getTypeSpelling(clangType)));
     bool bIsValid = commonTypeValidity(clangType);
     // Only pointer field can hold const type otherwise field type cannot be const
-    bIsValid = bIsValid
-               && (!clang_isConstQualifiedType(getTypeReferred(clangType, fieldCursor))
-                   || clangType.kind == CXType_Pointer);
+    bIsValid = bIsValid && (!clang_isConstQualifiedType(getTypeReferred(clangType, fieldCursor)) || clangType.kind == CXType_Pointer);
     if (bIsValid)
     {
         switch (clangType.kind)
@@ -598,22 +579,22 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
         case CXType_LValueReference:
             // Reference is not valid for field
             bIsValid = false;
-            LOG_ERROR("ParserHelper", "%s() : Reference type[%s] cannot be a field in field %s %s",
-                __func__, typeName, typeName, fieldName);
+            LOG_ERROR("ParserHelper", "%s() : Reference type[%s] cannot be a field in field %s %s", __func__, typeName, typeName, fieldName);
             break;
         case CXType_Pointer:
         {
             CXType innerType = clang_getPointeeType(clangType);
             // Only class type can be a pointer so check that
             CXCursor classDecl = clang_getTypeDeclaration(innerType);
-            bIsValid
-                = clang_getCursorKind(classDecl) == CXCursor_ClassDecl && isReflectedClass(classDecl);
+            bIsValid = clang_getCursorKind(classDecl) == CXCursor_ClassDecl && isReflectedClass(classDecl);
             if (!bIsValid)
             {
-                LOG_ERROR("ParserHelper",
+                LOG_ERROR(
+                    "ParserHelper",
                     "%s() : Pointer type[%s] must be a class that is reflected in field "
                     "%s %s",
-                    __func__, typeName, typeName, fieldName);
+                    __func__, typeName, typeName, fieldName
+                );
             }
             break;
         }
@@ -623,10 +604,12 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
             bIsValid = isValidFieldType(innerType, clang_getNullCursor());
             if (!bIsValid)
             {
-                LOG_ERROR("ParserHelper",
+                LOG_ERROR(
+                    "ParserHelper",
                     "%s() : Vector type[%s] must hold valid type that is reflected in "
                     "field %s %s",
-                    __func__, typeName, typeName, fieldName);
+                    __func__, typeName, typeName, fieldName
+                );
             }
             break;
         }
@@ -639,15 +622,12 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
                 CXCursor typeDecl = clang_getTypeDeclaration(clangType);
                 // Either reflected struct or specialized struct or class templates like
                 // std::vector or class decl like Matrix3 or Vector3D
-                bIsValid = (clang_getCursorKind(typeDecl) == CXCursor_StructDecl
-                               || clang_getCursorKind(typeDecl) == CXCursor_ClassDecl
-                               || clang_getCursorKind(typeDecl) == CXCursor_ClassTemplate)
-                           && (isReflectedClass(typeDecl) || isSpecializedType(clangType, fieldCursor)
-                               || isCustomType(clangType, fieldCursor));
+                bIsValid = (clang_getCursorKind(typeDecl) == CXCursor_StructDecl || clang_getCursorKind(typeDecl) == CXCursor_ClassDecl
+                            || clang_getCursorKind(typeDecl) == CXCursor_ClassTemplate)
+                           && (isReflectedClass(typeDecl) || isSpecializedType(clangType, fieldCursor) || isCustomType(clangType, fieldCursor));
                 if (!bIsValid)
                 {
-                    LOG_ERROR(
-                        "ParserHelper", "%s() : Type %s is not valid field type", __func__, typeName);
+                    LOG_ERROR("ParserHelper", "%s() : Type %s is not valid field type", __func__, typeName);
                 }
             }
             break;
@@ -676,8 +656,7 @@ bool ParserHelper::clang_CXXMethod_isUserProvided(CXCursor funcCursor)
 {
     // We skip template functions here as it cannot be defaulted or deleted and also we are not
     // supporting it yet
-    if (!clang_isDeclaration(funcCursor.kind)
-        && clang_getCursorKind(funcCursor) != CXCursor_FunctionTemplate)
+    if (!clang_isDeclaration(funcCursor.kind) && clang_getCursorKind(funcCursor) != CXCursor_FunctionTemplate)
         return 0;
 
     using namespace clang;
@@ -696,8 +675,7 @@ bool ParserHelper::clang_CXXMethod_isDeleted(CXCursor funcCursor)
 {
     // We skip template functions here as it cannot be defaulted or deleted and also we are not
     // supporting it yet
-    if (!clang_isDeclaration(funcCursor.kind)
-        && clang_getCursorKind(funcCursor) != CXCursor_FunctionTemplate)
+    if (!clang_isDeclaration(funcCursor.kind) && clang_getCursorKind(funcCursor) != CXCursor_FunctionTemplate)
         return 0;
 
     using namespace clang;

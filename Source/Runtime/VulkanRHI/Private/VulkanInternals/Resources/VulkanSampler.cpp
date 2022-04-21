@@ -55,9 +55,7 @@ void VulkanSampler::reinitResources()
     createInfo.addressModeW = EngineToVulkanAPI::vulkanSamplerAddressing(std::get<2>(config.tilingMode));
     createInfo.mipLodBias = 0;
     createInfo.anisotropyEnable
-        = GlobalRenderVariables::ENABLE_ANISOTROPY.get() && config.filtering != ESamplerFiltering::Cubic
-              ? VK_TRUE
-              : VK_FALSE;
+        = GlobalRenderVariables::ENABLE_ANISOTROPY.get() && config.filtering != ESamplerFiltering::Cubic ? VK_TRUE : VK_FALSE;
     // TODO(Jeslas) : Check if need to use some sort of asset type specific custom max limit, Instead of
     // hardcoded 8
     createInfo.maxAnisotropy = Math::min(8.f, GlobalRenderVariables::MAX_ANISOTROPY.get());
@@ -73,9 +71,7 @@ void VulkanSampler::reinitResources()
     createInfo.borderColor = (VkBorderColor)borderCol;
 
     VkSampler nextSampler;
-    if (ownerDevice->vkCreateSampler(
-            VulkanGraphicsHelper::getDevice(ownerDevice), &createInfo, nullptr, &nextSampler)
-        == VK_SUCCESS)
+    if (ownerDevice->vkCreateSampler(VulkanGraphicsHelper::getDevice(ownerDevice), &createInfo, nullptr, &nextSampler) == VK_SUCCESS)
     {
         sampler = nextSampler;
         ownerDevice->debugGraphics()->markObject(this);

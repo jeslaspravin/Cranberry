@@ -37,32 +37,32 @@ DebugMessengerData &VulkanDebugLogger::getData()
 
 String VulkanDebugLogger::messageTypeStr(VkDebugUtilsMessageTypeFlagsEXT messageTypes)
 {
-    String messageType
-        = messageTypes & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-              ? TCHAR("[General]")
-          : messageTypes
-                  & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-              ? TCHAR("[Performance]")
-              : TCHAR("[Validation]");
+    String messageType = messageTypes & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT ? TCHAR("[General]")
+                         : messageTypes & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
+                             ? TCHAR("[Performance]")
+                             : TCHAR("[Validation]");
     return messageType;
 }
 
 VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+)
 {
-    LOG_DEBUG("VulkanDebugUtils", "%s[ID : %d][Name : %s] Message : %s", messageTypeStr(messageTypes),
-        pCallbackData->messageIdNumber, pCallbackData->pMessageIdName, pCallbackData->pMessage);
+    LOG_DEBUG(
+        "VulkanDebugUtils", "%s[ID : %d][Name : %s] Message : %s", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
+        pCallbackData->pMessageIdName, pCallbackData->pMessage
+    );
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
     {
         LOG_DEBUG("VulkanDebugUtils", "Queues -->");
         for (uint32 i = 0; i < pCallbackData->queueLabelCount; i++)
         {
-            LOG_DEBUG("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pQueueLabels[i].pLabelName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pQueueLabels[i].pLabelName);
+            LOG_DEBUG(
+                "VulkanDebugUtils", "        %d : %s", i,
+                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pQueueLabels[i].pLabelName
+            );
         }
     }
 
@@ -71,10 +71,10 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
         LOG_DEBUG("VulkanDebugUtils", "Command Buffers -->");
         for (uint32 i = 0; i < pCallbackData->cmdBufLabelCount; i++)
         {
-            LOG_DEBUG("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pCmdBufLabels[i].pLabelName);
+            LOG_DEBUG(
+                "VulkanDebugUtils", "        %d : %s", i,
+                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pCmdBufLabels[i].pLabelName
+            );
         }
     }
 
@@ -83,10 +83,10 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
         LOG_DEBUG("VulkanDebugUtils", "Objects -->");
         for (uint32 i = 0; i < pCallbackData->objectCount; i++)
         {
-            LOG_DEBUG("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pObjects[i].pObjectName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pObjects[i].pObjectName);
+            LOG_DEBUG(
+                "VulkanDebugUtils", "        %d : %s", i,
+                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName
+            );
         }
     }
 
@@ -95,10 +95,11 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug(
 
 VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+)
 {
-    LOG("VulkanDebugUtils", "%s[ID : %d][Name : %s] Message : %s", messageTypeStr(messageTypes),
-        pCallbackData->messageIdNumber, pCallbackData->pMessageIdName, pCallbackData->pMessage);
+    LOG("VulkanDebugUtils", "%s[ID : %d][Name : %s] Message : %s", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
+        pCallbackData->pMessageIdName, pCallbackData->pMessage);
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
     {
@@ -106,9 +107,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
         for (uint32 i = 0; i < pCallbackData->queueLabelCount; i++)
         {
             LOG("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pQueueLabels[i].pLabelName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pQueueLabels[i].pLabelName);
+                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pQueueLabels[i].pLabelName);
         }
     }
 
@@ -118,9 +117,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
         for (uint32 i = 0; i < pCallbackData->cmdBufLabelCount; i++)
         {
             LOG("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pCmdBufLabels[i].pLabelName);
+                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pCmdBufLabels[i].pLabelName);
         }
     }
 
@@ -130,9 +127,7 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
         for (uint32 i = 0; i < pCallbackData->objectCount; i++)
         {
             LOG("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pObjects[i].pObjectName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pObjects[i].pObjectName);
+                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName);
         }
     }
 
@@ -141,20 +136,23 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo(
 
 VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+)
 {
-    LOG_WARN("VulkanDebugUtils", "%s[ID : %d][Name : %s] Message : %s", messageTypeStr(messageTypes),
-        pCallbackData->messageIdNumber, pCallbackData->pMessageIdName, pCallbackData->pMessage);
+    LOG_WARN(
+        "VulkanDebugUtils", "%s[ID : %d][Name : %s] Message : %s", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
+        pCallbackData->pMessageIdName, pCallbackData->pMessage
+    );
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
     {
         LOG_WARN("VulkanDebugUtils", "Queues -->");
         for (uint32 i = 0; i < pCallbackData->queueLabelCount; i++)
         {
-            LOG_WARN("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pQueueLabels[i].pLabelName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pQueueLabels[i].pLabelName);
+            LOG_WARN(
+                "VulkanDebugUtils", "        %d : %s", i,
+                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pQueueLabels[i].pLabelName
+            );
         }
     }
 
@@ -163,10 +161,10 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
         LOG_WARN("VulkanDebugUtils", "Command Buffers -->");
         for (uint32 i = 0; i < pCallbackData->cmdBufLabelCount; i++)
         {
-            LOG_WARN("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pCmdBufLabels[i].pLabelName);
+            LOG_WARN(
+                "VulkanDebugUtils", "        %d : %s", i,
+                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pCmdBufLabels[i].pLabelName
+            );
         }
     }
 
@@ -175,10 +173,10 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
         LOG_WARN("VulkanDebugUtils", "Objects -->");
         for (uint32 i = 0; i < pCallbackData->objectCount; i++)
         {
-            LOG_WARN("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pObjects[i].pObjectName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pObjects[i].pObjectName);
+            LOG_WARN(
+                "VulkanDebugUtils", "        %d : %s", i,
+                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName
+            );
         }
     }
 
@@ -187,20 +185,23 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn(
 
 VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData
+)
 {
-    LOG_ERROR("VulkanDebugUtils", "%s[ID : %d][Name : %s] Message : %s", messageTypeStr(messageTypes),
-        pCallbackData->messageIdNumber, pCallbackData->pMessageIdName, pCallbackData->pMessage);
+    LOG_ERROR(
+        "VulkanDebugUtils", "%s[ID : %d][Name : %s] Message : %s", messageTypeStr(messageTypes), pCallbackData->messageIdNumber,
+        pCallbackData->pMessageIdName, pCallbackData->pMessage
+    );
 
     if (pCallbackData->queueLabelCount > 0 && pCallbackData->pQueueLabels[0].pLabelName != nullptr)
     {
         LOG_ERROR("VulkanDebugUtils", "Queues -->");
         for (uint32 i = 0; i < pCallbackData->queueLabelCount; i++)
         {
-            LOG_ERROR("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pQueueLabels[i].pLabelName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pQueueLabels[i].pLabelName);
+            LOG_ERROR(
+                "VulkanDebugUtils", "        %d : %s", i,
+                pCallbackData->pQueueLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pQueueLabels[i].pLabelName
+            );
         }
     }
 
@@ -209,10 +210,10 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(
         LOG_ERROR("VulkanDebugUtils", "Command Buffers -->");
         for (uint32 i = 0; i < pCallbackData->cmdBufLabelCount; i++)
         {
-            LOG_ERROR("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pCmdBufLabels[i].pLabelName);
+            LOG_ERROR(
+                "VulkanDebugUtils", "        %d : %s", i,
+                pCallbackData->pCmdBufLabels[i].pLabelName == nullptr ? "NullName" : pCallbackData->pCmdBufLabels[i].pLabelName
+            );
         }
     }
 
@@ -221,10 +222,10 @@ VkBool32 VulkanDebugLogger::vkDebugUtilsMessengerCallbackError(
         LOG_ERROR("VulkanDebugUtils", "Objects -->");
         for (uint32 i = 0; i < pCallbackData->objectCount; i++)
         {
-            LOG_ERROR("VulkanDebugUtils", "        %d : %s", i,
-                pCallbackData->pObjects[i].pObjectName == nullptr
-                    ? "NullName"
-                    : pCallbackData->pObjects[i].pObjectName);
+            LOG_ERROR(
+                "VulkanDebugUtils", "        %d : %s", i,
+                pCallbackData->pObjects[i].pObjectName == nullptr ? "NullName" : pCallbackData->pObjects[i].pObjectName
+            );
         }
     }
 
@@ -237,45 +238,35 @@ bool VulkanDebugLogger::registerDebugLogger(const VkInstance vulkanInstance)
 #if DEV_BUILD & _VERBOSE
     {
         CREATE_DEBUG_UTILS_MESSENGER_INFO(debugCreateInfo);
-        debugCreateInfo.messageSeverity
-            = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-        debugCreateInfo.messageType
-            = VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-              | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-              | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+        debugCreateInfo.messageSeverity = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+        debugCreateInfo.messageType = VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                                      | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
+                                      | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
 
         debugCreateInfo.pfnUserCallback = &VulkanDebugLogger::vkDebugUtilsMessengerCallbackDebug;
 
-        Vk::vkCreateDebugUtilsMessengerEXT(
-            vulkanInstance, &debugCreateInfo, nullptr, &getData().debugMsgrPtr);
+        Vk::vkCreateDebugUtilsMessengerEXT(vulkanInstance, &debugCreateInfo, nullptr, &getData().debugMsgrPtr);
 
-        debugCreateInfo.messageSeverity
-            = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+        debugCreateInfo.messageSeverity = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
         debugCreateInfo.pfnUserCallback = &VulkanDebugLogger::vkDebugUtilsMessengerCallbackInfo;
-        Vk::vkCreateDebugUtilsMessengerEXT(
-            vulkanInstance, &debugCreateInfo, nullptr, &getData().infoMsgrPtr);
+        Vk::vkCreateDebugUtilsMessengerEXT(vulkanInstance, &debugCreateInfo, nullptr, &getData().infoMsgrPtr);
     }
 #endif
 #if DEV_BUILD
     {
         CREATE_DEBUG_UTILS_MESSENGER_INFO(debugCreateInfo);
-        debugCreateInfo.messageSeverity
-            = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
-        debugCreateInfo.messageType
-            = VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-              | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-              | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+        debugCreateInfo.messageSeverity = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+        debugCreateInfo.messageType = VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                                      | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
+                                      | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
 
         debugCreateInfo.pfnUserCallback = &VulkanDebugLogger::vkDebugUtilsMessengerCallbackWarn;
 
-        Vk::vkCreateDebugUtilsMessengerEXT(
-            vulkanInstance, &debugCreateInfo, nullptr, &getData().warnMsgrPtr);
+        Vk::vkCreateDebugUtilsMessengerEXT(vulkanInstance, &debugCreateInfo, nullptr, &getData().warnMsgrPtr);
 
-        debugCreateInfo.messageSeverity
-            = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        debugCreateInfo.messageSeverity = VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         debugCreateInfo.pfnUserCallback = &VulkanDebugLogger::vkDebugUtilsMessengerCallbackError;
-        Vk::vkCreateDebugUtilsMessengerEXT(
-            vulkanInstance, &debugCreateInfo, nullptr, &getData().errorMsgrPtr);
+        Vk::vkCreateDebugUtilsMessengerEXT(vulkanInstance, &debugCreateInfo, nullptr, &getData().errorMsgrPtr);
     }
 #endif
 
@@ -325,15 +316,9 @@ VulkanDebugGraphics::VulkanDebugGraphics(VulkanDebugGraphics &&rValue)
     : ownerDevice(std::move(rValue.ownerDevice))
 {}
 
-void VulkanDebugGraphics::operator=(const VulkanDebugGraphics &other)
-{
-    ownerDevice = other.ownerDevice;
-}
+void VulkanDebugGraphics::operator=(const VulkanDebugGraphics &other) { ownerDevice = other.ownerDevice; }
 
-void VulkanDebugGraphics::operator=(VulkanDebugGraphics &&rValue)
-{
-    ownerDevice = std::move(rValue.ownerDevice);
-}
+void VulkanDebugGraphics::operator=(VulkanDebugGraphics &&rValue) { ownerDevice = std::move(rValue.ownerDevice); }
 
 void VulkanDebugGraphics::markObject(const IVulkanResources *resource) const
 {
@@ -346,12 +331,10 @@ void VulkanDebugGraphics::markObject(const IVulkanResources *resource) const
     std::string name{ TCHAR_TO_UTF8(resource->getObjectName().getChar()) };
     objectNameInfo.pObjectName = name.c_str();
 
-    ownerDevice->vkSetDebugUtilsObjectNameEXT(
-        VulkanGraphicsHelper::getDevice(ownerDevice), &objectNameInfo);
+    ownerDevice->vkSetDebugUtilsObjectNameEXT(VulkanGraphicsHelper::getDevice(ownerDevice), &objectNameInfo);
 }
 
-void VulkanDebugGraphics::markObject(
-    const uint64 &objectHandle, const String &objectName, VkObjectType objectType) const
+void VulkanDebugGraphics::markObject(const uint64 &objectHandle, const String &objectName, VkObjectType objectType) const
 {
     if (objectHandle == 0)
         return;
@@ -362,12 +345,11 @@ void VulkanDebugGraphics::markObject(
     std::string name{ TCHAR_TO_UTF8(objectName.getChar()) };
     objectNameInfo.pObjectName = name.c_str();
 
-    ownerDevice->vkSetDebugUtilsObjectNameEXT(
-        VulkanGraphicsHelper::getDevice(ownerDevice), &objectNameInfo);
+    ownerDevice->vkSetDebugUtilsObjectNameEXT(VulkanGraphicsHelper::getDevice(ownerDevice), &objectNameInfo);
 }
 
-void VulkanDebugGraphics::beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name,
-    const LinearColor &color /*= LinearColorConst::WHITE*/) const
+void VulkanDebugGraphics::
+    beginCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name, const LinearColor &color /*= LinearColorConst::WHITE*/) const
 {
     DEBUG_UTILS_LABEL(label);
     memcpy(&label.color, &color.getColorValue(), sizeof(glm::vec4));
@@ -377,8 +359,8 @@ void VulkanDebugGraphics::beginCmdBufferMarker(VkCommandBuffer commandBuffer, co
     ownerDevice->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, &label);
 }
 
-void VulkanDebugGraphics::insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name,
-    const LinearColor &color /*= LinearColorConst::WHITE*/) const
+void VulkanDebugGraphics::
+    insertCmdBufferMarker(VkCommandBuffer commandBuffer, const String &name, const LinearColor &color /*= LinearColorConst::WHITE*/) const
 {
     DEBUG_UTILS_LABEL(label);
     memcpy(&label.color, &color.getColorValue(), sizeof(glm::vec4));
@@ -388,13 +370,9 @@ void VulkanDebugGraphics::insertCmdBufferMarker(VkCommandBuffer commandBuffer, c
     ownerDevice->vkCmdInsertDebugUtilsLabelEXT(commandBuffer, &label);
 }
 
-void VulkanDebugGraphics::endCmdBufferMarker(VkCommandBuffer commandBuffer) const
-{
-    ownerDevice->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-}
+void VulkanDebugGraphics::endCmdBufferMarker(VkCommandBuffer commandBuffer) const { ownerDevice->vkCmdEndDebugUtilsLabelEXT(commandBuffer); }
 
-void VulkanDebugGraphics::beginQueueMarker(
-    VkQueue queue, const String &name, const LinearColor &color /*= LinearColorConst::WHITE*/) const
+void VulkanDebugGraphics::beginQueueMarker(VkQueue queue, const String &name, const LinearColor &color /*= LinearColorConst::WHITE*/) const
 {
     DEBUG_UTILS_LABEL(label);
     memcpy(&label.color, &color.getColorValue(), sizeof(glm::vec4));
@@ -404,8 +382,7 @@ void VulkanDebugGraphics::beginQueueMarker(
     ownerDevice->vkQueueBeginDebugUtilsLabelEXT(queue, &label);
 }
 
-void VulkanDebugGraphics::insertQueueMarker(
-    VkQueue queue, const String &name, const LinearColor &color /*= LinearColorConst::WHITE*/) const
+void VulkanDebugGraphics::insertQueueMarker(VkQueue queue, const String &name, const LinearColor &color /*= LinearColorConst::WHITE*/) const
 {
     DEBUG_UTILS_LABEL(label);
     memcpy(&label.color, &color.getColorValue(), sizeof(glm::vec4));
@@ -415,39 +392,31 @@ void VulkanDebugGraphics::insertQueueMarker(
     ownerDevice->vkQueueInsertDebugUtilsLabelEXT(queue, &label);
 }
 
-void VulkanDebugGraphics::endQueueMarker(VkQueue queue) const
-{
-    ownerDevice->vkQueueEndDebugUtilsLabelEXT(queue);
-}
+void VulkanDebugGraphics::endQueueMarker(VkQueue queue) const { ownerDevice->vkQueueEndDebugUtilsLabelEXT(queue); }
 
-ScopedVulkanCommandMarker::ScopedVulkanCommandMarker(VkCommandBuffer commandBuffer, const String &name,
-    const LinearColor &color /* = LinearColorConst::WHITE*/)
+ScopedVulkanCommandMarker::
+    ScopedVulkanCommandMarker(VkCommandBuffer commandBuffer, const String &name, const LinearColor &color /* = LinearColorConst::WHITE*/)
 {
     cmdBuffer = commandBuffer;
-    const VulkanDebugGraphics *graphicsDebugger
-        = VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance());
+    const VulkanDebugGraphics *graphicsDebugger = VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance());
     graphicsDebugger->beginCmdBufferMarker(cmdBuffer, name, color);
 }
 
 ScopedVulkanCommandMarker::~ScopedVulkanCommandMarker()
 {
-    const VulkanDebugGraphics *graphicsDebugger
-        = VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance());
+    const VulkanDebugGraphics *graphicsDebugger = VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance());
     graphicsDebugger->endCmdBufferMarker(cmdBuffer);
 }
 
-ScopedVulkanQueueMarker::ScopedVulkanQueueMarker(
-    VkQueue q, const String &name, const LinearColor &color /* = LinearColorConst::WHITE*/)
+ScopedVulkanQueueMarker::ScopedVulkanQueueMarker(VkQueue q, const String &name, const LinearColor &color /* = LinearColorConst::WHITE*/)
 {
     queue = q;
-    const VulkanDebugGraphics *graphicsDebugger
-        = VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance());
+    const VulkanDebugGraphics *graphicsDebugger = VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance());
     graphicsDebugger->beginQueueMarker(queue, name, color);
 }
 
 ScopedVulkanQueueMarker::~ScopedVulkanQueueMarker()
 {
-    const VulkanDebugGraphics *graphicsDebugger
-        = VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance());
+    const VulkanDebugGraphics *graphicsDebugger = VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance());
     graphicsDebugger->endQueueMarker(queue);
 }

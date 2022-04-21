@@ -92,9 +92,10 @@ private:
     void updateInputs();
     void updateTextureParameters();
 
-    void updateRenderResources(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-        const GraphicsHelperAPI *graphicsHelper, const ImGuiDrawingContext &drawingContext,
-        const class LocalPipelineContext &pipelineContext);
+    void updateRenderResources(
+        class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
+        const ImGuiDrawingContext &drawingContext, const class LocalPipelineContext &pipelineContext
+    );
 
     void setupRendering();
     void releaseRendering();
@@ -106,9 +107,10 @@ protected:
     SamplerRef getTextureSampler() const;
     ShaderParametersRef getFontAtlasParam() const;
     ShaderParametersRef getTextureParam(const TextureBase *textureUsed);
-    ShaderParametersRef createTextureParam(const TextureBase *texture,
-        IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
-        const class LocalPipelineContext &pipelineContext);
+    ShaderParametersRef createTextureParam(
+        const TextureBase *texture, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
+        const class LocalPipelineContext &pipelineContext
+    );
     ShaderParametersRef findFreeTextureParam(const TextureBase *textureUsed);
 
 public:
@@ -118,8 +120,10 @@ public:
     void initialize();
     void updateFrame(const float &deltaTime);
     void release();
-    void draw(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-        const GraphicsHelperAPI *graphicsHelper, const ImGuiDrawingContext &drawingContext);
+    void draw(
+        class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
+        const ImGuiDrawingContext &drawingContext
+    );
 
     void addFont(const String &fontAssetPath, float fontSize);
     void addLayer(IImGuiLayer *layer);

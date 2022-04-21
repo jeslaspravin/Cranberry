@@ -28,10 +28,7 @@ public:
     NODISCARD void *operator new(SizeT size, SizeT);
     NODISCARD void *operator new(SizeT size, SizeT, const std::nothrow_t &);
     NODISCARD void *operator new(std::size_t count, void *allocatedPtr) { return allocatedPtr; }
-    NODISCARD void *operator new(std::size_t count, std::align_val_t al, void *allocatedPtr)
-    {
-        return allocatedPtr;
-    }
+    NODISCARD void *operator new(std::size_t count, std::align_val_t al, void *allocatedPtr) { return allocatedPtr; }
     void operator delete(void *ptr) noexcept;
     void operator delete(void *ptr, const std::nothrow_t &) noexcept;
     void operator delete(void *ptr, SizeT) noexcept;
@@ -42,10 +39,7 @@ public:
     NODISCARD void *operator new[](SizeT size, SizeT);
     NODISCARD void *operator new[](SizeT size, SizeT, const std::nothrow_t &);
     NODISCARD void *operator new[](std::size_t count, void *allocatedPtr) { return allocatedPtr; }
-    NODISCARD void *operator new[](std::size_t count, std::align_val_t al, void *allocatedPtr)
-    {
-        return allocatedPtr;
-    }
+    NODISCARD void *operator new[](std::size_t count, std::align_val_t al, void *allocatedPtr) { return allocatedPtr; }
     void operator delete[](void *ptr) noexcept;
     void operator delete[](void *ptr, const std::nothrow_t &) noexcept;
     void operator delete[](void *ptr, SizeT) noexcept;
@@ -56,10 +50,7 @@ class PROGRAMCORE_EXPORT CBEMemAlloc : public AllocFromBuiltInMalloc
 {
 public:
     CONST_EXPR static const uint32 DEFAULT_ALIGNMENT = 0;
-    FORCE_INLINE static uint32 alignBy(SizeT size, uint32 alignment)
-    {
-        return Math::max((size > 8) ? 16 : 8, alignment);
-    }
+    FORCE_INLINE static uint32 alignBy(SizeT size, uint32 alignment) { return Math::max((size > 8) ? 16 : 8, alignment); }
 
 public:
     virtual ~CBEMemAlloc() = default;

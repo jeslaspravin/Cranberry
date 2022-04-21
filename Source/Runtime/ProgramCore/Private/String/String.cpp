@@ -21,8 +21,10 @@ FORCE_INLINE bool convertToUtf8(BufferType &buffer, const NonUtf8Type *start)
     buffer.resize(toUtf8.max_length() * (end - start), TCHAR('\0'));
     Utf8 *outData = reinterpret_cast<Utf8 *>(buffer.data());
 
-    std::codecvt_base::result status = toUtf8.out(state, reinterpret_cast<const NonUtf8Type *>(start),
-        reinterpret_cast<const NonUtf8Type *>(end), nextFrom, outData, outData + buffer.size(), nextTo);
+    std::codecvt_base::result status = toUtf8.out(
+        state, reinterpret_cast<const NonUtf8Type *>(start), reinterpret_cast<const NonUtf8Type *>(end), nextFrom, outData,
+        outData + buffer.size(), nextTo
+    );
     buffer.resize(nextTo - outData);
     if (status != std::codecvt_base::ok)
     {
@@ -46,8 +48,9 @@ FORCE_INLINE bool convertFromUtf8(BufferType &buffer, const AChar *start)
 
     buffer.resize(end - start, TCHAR('\0'));
     NonUtf8Type *outData = reinterpret_cast<NonUtf8Type *>(buffer.data());
-    std::codecvt_base::result status = fromUtf8.in(state, reinterpret_cast<const Utf8 *>(start),
-        reinterpret_cast<const Utf8 *>(end), nextFrom, outData, outData + buffer.size(), nextTo);
+    std::codecvt_base::result status = fromUtf8.in(
+        state, reinterpret_cast<const Utf8 *>(start), reinterpret_cast<const Utf8 *>(end), nextFrom, outData, outData + buffer.size(), nextTo
+    );
     buffer.resize(nextTo - outData);
     if (status != std::codecvt_base::ok)
     {
@@ -109,10 +112,7 @@ const AChar *StlStringConv<Utf32, AChar>::convert(const Utf32 *start)
     return str.c_str();
 }
 
-void StringCodePointsHelper::validateStartCode(AChar startChar)
-{
-    debugAssert((startChar >= 192u) || (startChar < 128u));
-}
+void StringCodePointsHelper::validateStartCode(AChar startChar) { debugAssert((startChar >= 192u) || (startChar < 128u)); }
 
 void StringCodePointsHelper::validateStartCode(WChar startChar)
 {

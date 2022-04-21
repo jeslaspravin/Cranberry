@@ -35,5 +35,6 @@ DrawQuadFromInputAttachment::DrawQuadFromInputAttachment()
 //////////////////////////////////////////////////////////////////////////
 
 // Registrar
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(QUAD_FROM_INPUT_ATTACHMENT_PIPELINE_REGISTER,
-    DRAW_QUAD_FROM_INPUT_ATTACHMENT, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    QUAD_FROM_INPUT_ATTACHMENT_PIPELINE_REGISTER, DRAW_QUAD_FROM_INPUT_ATTACHMENT, &ScreenSpaceQuadPipelineConfigs::screenSpaceQuadConfig
+);

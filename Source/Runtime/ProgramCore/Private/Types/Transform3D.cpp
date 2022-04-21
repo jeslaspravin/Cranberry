@@ -37,8 +37,8 @@ Transform3D::Transform3D(const Matrix4 &transformMatrix)
     // #TODO(Jeslas) : fix cases when non uniform scaled matrix inverse creates invalid Rotation values(
     // May be quaternion will fix it )?
     transformTranslation = Vector3D(transformMatrix[3].x, transformMatrix[3].y, transformMatrix[3].z);
-    transformScale = Vector3D(Vector3D(transformMatrix[0]).length(),
-        Vector3D(transformMatrix[1]).length(), Vector3D(transformMatrix[2]).length());
+    transformScale
+        = Vector3D(Vector3D(transformMatrix[0]).length(), Vector3D(transformMatrix[1]).length(), Vector3D(transformMatrix[2]).length());
 
     Vector3D invScale(invScaleSafe());
     Matrix3 rotMatrix;
@@ -101,8 +101,8 @@ void Transform3D::operator=(Transform3D &&otherTransform)
 void Transform3D::operator=(const Matrix4 &transformMatrix)
 {
     transformTranslation = Vector3D(transformMatrix[3].x, transformMatrix[3].y, transformMatrix[3].z);
-    transformScale = Vector3D(Vector3D(transformMatrix[0]).length(),
-        Vector3D(transformMatrix[1]).length(), Vector3D(transformMatrix[2]).length());
+    transformScale
+        = Vector3D(Vector3D(transformMatrix[0]).length(), Vector3D(transformMatrix[1]).length(), Vector3D(transformMatrix[2]).length());
     transformRotation = RotationMatrix(transformMatrix / Matrix4(transformScale)).asRotation();
     transformMatrixCache = transformMatrix;
     bCachedLatest = true;
@@ -174,8 +174,7 @@ const Matrix4 &Transform3D::getTransformMatrix()
 
         transformMatrixCache *= Matrix4(transformScale);
 
-        transformMatrixCache[3] = Matrix4Col(
-            transformTranslation.x(), transformTranslation.y(), transformTranslation.z(), 1.0);
+        transformMatrixCache[3] = Matrix4Col(transformTranslation.x(), transformTranslation.y(), transformTranslation.z(), 1.0);
 
         bCachedLatest = true;
     }
@@ -197,24 +196,27 @@ Matrix4 Transform3D::getTransformMatrix() const
 
     transformMatrix *= Matrix4(transformScale);
 
-    transformMatrix[3]
-        = Matrix4Col(transformTranslation.x(), transformTranslation.y(), transformTranslation.z(), 1.0);
+    transformMatrix[3] = Matrix4Col(transformTranslation.x(), transformTranslation.y(), transformTranslation.z(), 1.0);
 
     return transformMatrix;
 }
 
 Vector3D Transform3D::invScaleSafe() const
 {
-    return Vector3D(Math::isEqual(transformScale.x(), 0.0f) ? 0.0f : 1.0f / transformScale.x(),
+    return Vector3D(
+        Math::isEqual(transformScale.x(), 0.0f) ? 0.0f : 1.0f / transformScale.x(),
         Math::isEqual(transformScale.y(), 0.0f) ? 0.0f : 1.0f / transformScale.y(),
-        Math::isEqual(transformScale.z(), 0.0f) ? 0.0f : 1.0f / transformScale.z());
+        Math::isEqual(transformScale.z(), 0.0f) ? 0.0f : 1.0f / transformScale.z()
+    );
 }
 
 Vector3D Transform3D::invTranslation() const
 {
-    return Vector3D(Math::isEqual(transformTranslation.x(), 0.0f) ? 0.0f : -transformTranslation.x(),
+    return Vector3D(
+        Math::isEqual(transformTranslation.x(), 0.0f) ? 0.0f : -transformTranslation.x(),
         Math::isEqual(transformTranslation.y(), 0.0f) ? 0.0f : -transformTranslation.y(),
-        Math::isEqual(transformTranslation.z(), 0.0f) ? 0.0f : -transformTranslation.z());
+        Math::isEqual(transformTranslation.z(), 0.0f) ? 0.0f : -transformTranslation.z()
+    );
 }
 
 Vector3D Transform3D::transformNormal(const Vector3D &normal) const
@@ -225,8 +227,7 @@ Vector3D Transform3D::transformNormal(const Vector3D &normal) const
 
 Vector3D Transform3D::invTransformNormal(const Vector3D &normal) const
 {
-    Vector4D transformed
-        = (normalTransformMatrix().inverse()) * Vector4D(normal.x(), normal.y(), normal.z(), 1);
+    Vector4D transformed = (normalTransformMatrix().inverse()) * Vector4D(normal.x(), normal.y(), normal.z(), 1);
     return Vector3D(transformed.x(), transformed.y(), transformed.z());
 }
 
@@ -234,22 +235,17 @@ Vector3D Transform3D::transformPoint(const Vector3D &point) const
 {
     // Vector4D transformed = getTransformMatrix() * Vector4D(point.x(), point.y(), point.z(), 1);
     // return Vector3D(transformed.x(), transformed.y(), transformed.z());
-    return (RotationMatrix(transformRotation).matrix() * (transformScale * point))
-           + transformTranslation;
+    return (RotationMatrix(transformRotation).matrix() * (transformScale * point)) + transformTranslation;
 }
 
 Vector3D Transform3D::invTransformPoint(const Vector3D &point) const
 {
     // Vector4D transformed = (getTransformMatrix().inverse()) * Vector4D(point.x(), point.y(),
     // point.z(), 1); return Vector3D(transformed.x(), transformed.y(), transformed.z());
-    return (RotationMatrix(transformRotation).matrix().transpose() * (point - transformTranslation))
-           * invScaleSafe();
+    return (RotationMatrix(transformRotation).matrix().transpose() * (point - transformTranslation)) * invScaleSafe();
 }
 
-Transform3D Transform3D::transform(const Transform3D &other)
-{
-    return Transform3D{ getTransformMatrix() * other.getTransformMatrix() };
-}
+Transform3D Transform3D::transform(const Transform3D &other) { return Transform3D{ getTransformMatrix() * other.getTransformMatrix() }; }
 
 Transform3D Transform3D::invTransform(const Transform3D &other)
 {
@@ -260,8 +256,7 @@ Transform3D Transform3D::inverse() const
 {
     Matrix3 invRot(RotationMatrix(transformRotation).matrix().transpose());
     Vector3D invScale(invScaleSafe());
-    return Transform3D(
-        (invRot * (invScale * -transformTranslation)), RotationMatrix(invRot).asRotation(), invScale);
+    return Transform3D((invRot * (invScale * -transformTranslation)), RotationMatrix(invRot).asRotation(), invScale);
 }
 
 Transform3D Transform3D::inverseNonUniformScaled() const
@@ -277,8 +272,7 @@ Transform3D Transform3D::inverseNonUniformScaled() const
     transformMatrix[3][3] = 1.0f;
 
     Matrix4 invTranslationMatrx(Vector3D::ONE);
-    invTranslationMatrx[3] = Matrix4Col(
-        -transformTranslation.x(), -transformTranslation.y(), -transformTranslation.z(), 1.0f);
+    invTranslationMatrx[3] = Matrix4Col(-transformTranslation.x(), -transformTranslation.y(), -transformTranslation.z(), 1.0f);
 
     return Transform3D(transformMatrix * invTranslationMatrx);
 }

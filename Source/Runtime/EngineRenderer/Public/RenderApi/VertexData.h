@@ -59,8 +59,7 @@ ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo *> &vertexParamInf
 template <>
 ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo *> &vertexParamInfo<StaticMesh>();
 template <>
-ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo *> &
-    vertexParamInfo<InstancedSimple3DColor>();
+ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo *> &vertexParamInfo<InstancedSimple3DColor>();
 template <>
 ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo *> &vertexParamInfo<NoVertex>();
 
@@ -69,33 +68,23 @@ ENGINERENDERER_EXPORT const std::vector<ShaderVertexParamInfo *> &vertexParamInf
 template <Type VertexType>
 void vertexSpecConsts(std::map<String, SpecializationConstantEntry> &specializationConst);
 template <>
-ENGINERENDERER_EXPORT void vertexSpecConsts<Simple2>(
-    std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts<Simple2>(std::map<String, SpecializationConstantEntry> &specializationConst);
 template <>
-ENGINERENDERER_EXPORT void vertexSpecConsts<UI>(
-    std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts<UI>(std::map<String, SpecializationConstantEntry> &specializationConst);
 template <>
-ENGINERENDERER_EXPORT void vertexSpecConsts<Simple3>(
-    std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts<Simple3>(std::map<String, SpecializationConstantEntry> &specializationConst);
 template <>
-ENGINERENDERER_EXPORT void vertexSpecConsts<Simple3DColor>(
-    std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts<Simple3DColor>(std::map<String, SpecializationConstantEntry> &specializationConst);
 template <>
-ENGINERENDERER_EXPORT void vertexSpecConsts<BasicMesh>(
-    std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts<BasicMesh>(std::map<String, SpecializationConstantEntry> &specializationConst);
 template <>
-ENGINERENDERER_EXPORT void vertexSpecConsts<StaticMesh>(
-    std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry> &specializationConst);
 template <>
-ENGINERENDERER_EXPORT void vertexSpecConsts<StaticMesh>(
-    std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts<StaticMesh>(std::map<String, SpecializationConstantEntry> &specializationConst);
 template <>
-ENGINERENDERER_EXPORT void vertexSpecConsts<InstancedSimple3DColor>(
-    std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts<InstancedSimple3DColor>(std::map<String, SpecializationConstantEntry> &specializationConst);
 template <>
-ENGINERENDERER_EXPORT void vertexSpecConsts<NoVertex>(
-    std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts<NoVertex>(std::map<String, SpecializationConstantEntry> &specializationConst);
 
-ENGINERENDERER_EXPORT void vertexSpecConsts(
-    Type vertexType, std::map<String, SpecializationConstantEntry> &specializationConst);
+ENGINERENDERER_EXPORT void vertexSpecConsts(Type vertexType, std::map<String, SpecializationConstantEntry> &specializationConst);
 } // namespace EVertexType

@@ -15,8 +15,7 @@
 
 #include "VulkanInternals/Platform/GenericVulkanFunctions.h"
 
-struct PFN_Win32SurfaceKHR
-    : PFN_SurfaceKHR<VkInstance, const void *, const VkAllocationCallbacks *, VkSurfaceKHR *>
+struct PFN_Win32SurfaceKHR : PFN_SurfaceKHR<VkInstance, const void *, const VkAllocationCallbacks *, VkSurfaceKHR *>
 {
     void *hInstance;
     void *hWindow;
@@ -28,10 +27,9 @@ struct PFN_Win32SurfaceKHR
         , hWindow(nullptr)
     {}
 
-    void setInstanceWindow(
-        const ApplicationInstance *instance, const class GenericAppWindow *window) override;
-    void operator()(VkInstance instance, const void *pNext,
-        const VkAllocationCallbacks *allocatorCallback, VkSurfaceKHR *surface) const override;
+    void setInstanceWindow(const ApplicationInstance *instance, const class GenericAppWindow *window) override;
+    void operator()(VkInstance instance, const void *pNext, const VkAllocationCallbacks *allocatorCallback, VkSurfaceKHR *surface)
+        const override;
 };
 
 namespace GVulkanPlatform

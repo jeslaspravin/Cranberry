@@ -12,6 +12,7 @@
 #pragma once
 
 #include "CBEObject.h"
+#include "ICoreObjectsModule.h"
 #include "CoreObjectsDB.h"
 #include "ObjectPathHelpers.h"
 #include "Property/PropertyHelper.h"
@@ -19,14 +20,12 @@
 namespace CBE
 {
 template <typename... CtorArgs>
-Object *create(
-    CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
 {
 #if DEV_BUILD
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
     String objectFullPath = ObjectPathHelper::getFullPath(name.getChar(), outerObj);
-    fatalAssert(!objectsDb.hasObject(objectFullPath),
-        "Use createOrGet() object interface in existing object %s", objectFullPath);
+    fatalAssert(!objectsDb.hasObject(objectFullPath), "Use createOrGet() object interface in existing object %s", objectFullPath);
 #endif // DEV_BUILD
 
     // void* is first param of ctor since we pass in object on which construction needs to be executed
@@ -34,27 +33,24 @@ Object *create(
     alertIf(ctor, "Constructor arguments are invalid");
     if (!ctor)
     {
-        LOG_ERROR("CBEObject", "Cannot construct object with given constructor arguments");
+        LOG_ERROR("ObjectHelper", "Cannot construct object with given constructor arguments");
         return nullptr;
     }
 
-    void *objPtr
-        = static_cast<const GlobalFunctionWrapper *>(clazz->allocFunc->funcPtr)->invokeUnsafe<void *>();
+    void *objPtr = static_cast<const GlobalFunctionWrapper *>(clazz->allocFunc->funcPtr)->invokeUnsafe<void *>();
     Object *object = reinterpret_cast<Object *>(objPtr);
 
     // Object's data must be populated even before constructor is called
     PrivateObjectCoreAccessors::getFlags(object) |= flags;
     PrivateObjectCoreAccessors::setOuterAndName(object, name, outerObj, clazz);
 
-    object
-        = ctor->invokeUnsafe<Object *, void *, CtorArgs...>(objPtr, std::forward<CtorArgs>(ctorArgs)...);
+    object = ctor->invokeUnsafe<Object *, void *, CtorArgs...>(objPtr, std::forward<CtorArgs>(ctorArgs)...);
 
     return object;
 }
 
 template <typename... CtorArgs>
-Object *createOrGet(
-    CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+Object *createOrGet(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
 {
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
     StringID objectFullPath = ObjectPathHelper::getFullPath(name.getChar(), outerObj);
@@ -65,9 +61,36 @@ Object *createOrGet(
     return create<CtorArgs...>(clazz, name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...);
 }
 
+template <typename ClassType, typename... CtorArgs>
+ClassType *create(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+{
+    return static_cast<ClassType *>(create(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...));
+}
+
+template <typename ClassType, typename... CtorArgs>
+ClassType *createOrGet(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+{
+    return static_cast<ClassType *>(createOrGet(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...));
+}
+
+FORCE_INLINE Object *get(const TChar *objectFullPath) { return ICoreObjectsModule::get()->getObjectsDB().getObject(objectFullPath); }
+
+template <typename ClassType>
+ClassType *get(const TChar *objectFullPath)
+{
+    Object *obj = get(objectFullPath);
+    if (obj->getType() != ClassType::staticType())
+    {
+        obj = nullptr;
+    }
+    return obj;
+}
+
+COREOBJECTS_EXPORT Object *load(String objectPath);
+COREOBJECTS_EXPORT Object *getOrLoad(String objectPath);
+
 FORCE_INLINE bool isValid(const Object *obj)
 {
-    return obj
-           && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::Deleted | EObjectFlagBits::MarkedForDelete);
+    return obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::Deleted | EObjectFlagBits::MarkedForDelete);
 }
 } // namespace CBE

@@ -35,8 +35,7 @@ protected:
 
     /* ShaderResource overrides */
     String getShaderFileName() const final;
-    virtual void getSpecializationConsts(
-        std::map<String, struct SpecializationConstantEntry> &specializationConst) const override;
+    virtual void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const override;
 
 public:
     EVertexType::Type vertexUsage() const { return compatibleVertex; }
@@ -45,6 +44,5 @@ public:
 
 namespace CommonGraphicsPipelineConfigs
 {
-GraphicsPipelineConfig writeGbufferShaderConfig(
-    String &pipelineName, const ShaderResource *shaderResource);
+GraphicsPipelineConfig writeGbufferShaderConfig(String &pipelineName, const ShaderResource *shaderResource);
 }

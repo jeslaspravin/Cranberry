@@ -25,22 +25,21 @@ concept ArrayElementAssignableFrom = std::is_array_v<MemberType> &&(
         && std::assignable_from<std::remove_all_extents_t<MemberType> &,
             std::remove_all_extents_t<CleanType>>) // Is element assignable
     || std::is_pointer_v<
-           CleanType> && std::assignable_from<std::remove_all_extents_t<MemberType> &, std::remove_pointer_t<CleanType>>); // Is pointer assignable
+           CleanType> && std::assignable_from<std::remove_all_extents_t<MemberType> &, std::remove_pointer_t<CleanType>>); // Is
+                                                                                                                           // pointer
+                                                                                                                           // assignable
 // Array direct assign by array, If array's element type is same
 template <typename MemberType, typename Type, typename CleanType = std::remove_cvref_t<Type>>
-concept ArrayAssignableFrom = std::is_array_v<MemberType> && std::is_array_v<CleanType> && std::
-    is_same_v<std::remove_all_extents_t<MemberType>, std::remove_all_extents_t<CleanType>> &&(
-        sizeof(MemberType) <= sizeof(CleanType));
+concept ArrayAssignableFrom = std::is_array_v<MemberType> && std::is_array_v<CleanType> && std::is_same_v<
+    std::remove_all_extents_t<MemberType>, std::remove_all_extents_t<CleanType>> &&(sizeof(MemberType) <= sizeof(CleanType));
 // Just element assign at an index
 template <typename MemberType, typename Type>
-concept ElementAssignableFrom
-    = std::is_array_v<MemberType> && std::assignable_from < std::remove_all_extents_t<MemberType>
+concept ElementAssignableFrom = std::is_array_v<MemberType> && std::assignable_from < std::remove_all_extents_t<MemberType>
 &, Type > ;
 
 // Not array related concepts
 template <typename MemberType, typename Type>
-concept DirectAssignableFrom
-    = std::negation_v<std::is_array<MemberType>> && std::assignable_from<MemberType &, Type>;
+concept DirectAssignableFrom = std::negation_v<std::is_array<MemberType>> && std::assignable_from<MemberType &, Type>;
 
 template <bool IsConst, typename MemberType>
 class GlobalField;
@@ -97,8 +96,7 @@ public:
     void set(Type &&newValue) const
     {
         // Find element type from pointer or array
-        using AssignFromElementType = std::conditional_t<std::is_pointer_v<Type>,
-            std::remove_pointer_t<Type>, std::remove_all_extents_t<Type>>;
+        using AssignFromElementType = std::conditional_t<std::is_pointer_v<Type>, std::remove_pointer_t<Type>, std::remove_all_extents_t<Type>>;
 
         MemberType &memberValue = *globalFieldPtr;
         const uint32 arrayLen = uint32(ARRAY_LENGTH(memberValue));
@@ -114,17 +112,11 @@ public:
 
     template <typename Type>
     requires ArrayAssignableFrom<MemberType, Type>
-    void set(Type &&newValue) const
-    {
-        memcpy(*globalFieldPtr, std::forward<Type>(newValue), sizeof(MemberType));
-    }
+    void set(Type &&newValue) const { memcpy(*globalFieldPtr, std::forward<Type>(newValue), sizeof(MemberType)); }
 
     template <typename Type>
     requires ElementAssignableFrom<MemberType, Type>
-    void set(Type &&newValue, uint32 index) const
-    {
-        (*globalFieldPtr)[index] = std::forward<Type>(newValue);
-    }
+    void set(Type &&newValue, uint32 index) const { (*globalFieldPtr)[index] = std::forward<Type>(newValue); }
 
     MemberType &get() const { return *globalFieldPtr; }
 };
@@ -218,10 +210,7 @@ public:
 
     template <typename Type>
     requires DirectAssignableFrom<MemberType, Type>
-    void set(ClassType *object, Type &&newValue) const
-    {
-        object->*memberPtr = std::forward<Type>(newValue);
-    }
+    void set(ClassType *object, Type &&newValue) const { object->*memberPtr = std::forward<Type>(newValue); }
     template <typename Type>
     requires DirectAssignableFrom<MemberType, Type>
     void set(ClassType &object, Type &&newValue) const
@@ -235,8 +224,7 @@ public:
     void set(ClassType *object, Type &&newValue) const
     {
         // Find element type from pointer or array
-        using AssignFromElementType = std::conditional_t<std::is_pointer_v<Type>,
-            std::remove_pointer_t<Type>, std::remove_all_extents_t<Type>>;
+        using AssignFromElementType = std::conditional_t<std::is_pointer_v<Type>, std::remove_pointer_t<Type>, std::remove_all_extents_t<Type>>;
 
         MemberType &memberValue = object->*memberPtr;
         const uint32 arrayLen = uint32(ARRAY_LENGTH(memberValue));
@@ -251,30 +239,18 @@ public:
     }
     template <typename Type>
     requires ArrayElementAssignableFrom<MemberType, Type>
-    void set(ClassType &object, Type &&newValue) const
-    {
-        set<Type>(&object, std::forward<Type>(newValue));
-    }
+    void set(ClassType &object, Type &&newValue) const { set<Type>(&object, std::forward<Type>(newValue)); }
 
     template <typename Type>
     requires ArrayAssignableFrom<MemberType, Type>
-    void set(ClassType *object, Type &&newValue) const
-    {
-        memcpy(object->*memberPtr, std::forward<Type>(newValue), sizeof(MemberType));
-    }
+    void set(ClassType *object, Type &&newValue) const { memcpy(object->*memberPtr, std::forward<Type>(newValue), sizeof(MemberType)); }
     template <typename Type>
     requires ArrayAssignableFrom<MemberType, Type>
-    void set(ClassType &object, Type &&newValue) const
-    {
-        set<Type>(&object, std::forward<Type>(newValue));
-    }
+    void set(ClassType &object, Type &&newValue) const { set<Type>(&object, std::forward<Type>(newValue)); }
 
     template <typename Type>
     requires ElementAssignableFrom<MemberType, Type>
-    void set(ClassType *object, Type &&newValue, uint32 index) const
-    {
-        (object->*memberPtr)[index] = std::forward<Type>(newValue);
-    }
+    void set(ClassType *object, Type &&newValue, uint32 index) const { (object->*memberPtr)[index] = std::forward<Type>(newValue); }
     template <typename Type>
     requires ElementAssignableFrom<MemberType, Type>
     void set(ClassType &object, Type &&newValue, uint32 index) const

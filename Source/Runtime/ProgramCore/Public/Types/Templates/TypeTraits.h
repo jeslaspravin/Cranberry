@@ -20,8 +20,8 @@
 template <typename DataType>
 using IsIndexable = std::disjunction<std::is_array<DataType>, std::is_pointer<DataType>>;
 template <typename DataType>
-using IndexableElementType = std::conditional_t<std::is_pointer_v<DataType>,
-    std::remove_pointer_t<DataType>, std::remove_all_extents_t<DataType>>;
+using IndexableElementType
+    = std::conditional_t<std::is_pointer_v<DataType>, std::remove_pointer_t<DataType>, std::remove_all_extents_t<DataType>>;
 
 // Indexable checks for both compound types and dynamic pointer array and native array
 template <typename DataType>
@@ -33,8 +33,7 @@ concept IndexableCompound = requires(DataType val, uint64 idx)
         } -> std::convertible_to<typename DataType::value_type>;
 };
 template <typename DataType>
-concept Indexable = std::disjunction_v<std::is_array<DataType>,
-    std::is_pointer<DataType>> || IndexableCompound<DataType>;
+concept Indexable = std::disjunction_v<std::is_array<DataType>, std::is_pointer<DataType>> || IndexableCompound<DataType>;
 
 template <typename Type, typename... OtherTypes>
 concept IsConvertible = std::conjunction_v<std::is_convertible<Type, OtherTypes>...>;
@@ -47,5 +46,4 @@ concept NotAnIntegral = std::negation_v<std::is_integral<Type>>;
 template <typename Type>
 using UnderlyingType = std::remove_cvref_t<std::remove_pointer_t<std::remove_reference_t<Type>>>;
 template <typename Type>
-using UnderlyingTypeWithConst
-    = std::remove_reference_t<std::remove_pointer_t<std::remove_reference_t<Type>>>;
+using UnderlyingTypeWithConst = std::remove_reference_t<std::remove_pointer_t<std::remove_reference_t<Type>>>;

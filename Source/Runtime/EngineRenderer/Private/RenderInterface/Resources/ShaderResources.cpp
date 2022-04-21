@@ -19,8 +19,7 @@
 
 DEFINE_GRAPHICS_RESOURCE(ShaderCodeResource)
 
-ShaderCodeResource::ShaderCodeResource(
-    const String &shaderName, const std::string &entryPointName, const uint8 *shaderCodePtr)
+ShaderCodeResource::ShaderCodeResource(const String &shaderName, const std::string &entryPointName, const uint8 *shaderCodePtr)
     : BaseType()
     , shaderFileName(shaderName)
     , shaderEntryPoint(entryPointName)
@@ -54,10 +53,7 @@ ShaderConfigCollector::ShaderConfigCollector(const String &name)
     : shaderName(name)
 {}
 
-struct ShaderReflected const *ShaderConfigCollector::getReflection() const
-{
-    return shaderConfigured->getReflection();
-}
+struct ShaderReflected const *ShaderConfigCollector::getReflection() const { return shaderConfigured->getReflection(); }
 
 String ShaderConfigCollector::getShaderFileName() const { return getResourceName(); }
 
@@ -99,14 +95,12 @@ void ShaderResource::release()
 
 String ShaderResource::getResourceName() const { return shaderConfig->getResourceName(); }
 
-void ShaderResource::bindBufferParamInfo(
-    std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
+void ShaderResource::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
 {
     shaderConfig->bindBufferParamInfo(bindingBuffers);
 }
 
-void ShaderResource::getSpecializationConsts(
-    std::map<String, struct SpecializationConstantEntry> &specializationConst) const
+void ShaderResource::getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const
 {
     shaderConfig->getSpecializationConsts(specializationConst);
 }
@@ -121,7 +115,4 @@ SharedPtr<ShaderCodeResource> ShaderResource::getShaderCode(EShaderStage::Type s
     return nullptr;
 }
 
-const std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>> &ShaderResource::getShaders() const
-{
-    return shaders;
-}
+const std::map<EShaderStage::Type, SharedPtr<ShaderCodeResource>> &ShaderResource::getShaders() const { return shaders; }

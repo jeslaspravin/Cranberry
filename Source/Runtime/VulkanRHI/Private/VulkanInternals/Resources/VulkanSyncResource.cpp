@@ -25,10 +25,7 @@ VulkanSemaphore::VulkanSemaphore(const VulkanDevice *deviceInstance)
     , semaphore(nullptr)
 {}
 
-void VulkanSemaphore::waitForSignal() const
-{
-    LOG_WARN("VulkanSemaphore", "%s() : Cannot wait on binary semaphores from host", __func__);
-}
+void VulkanSemaphore::waitForSignal() const { LOG_WARN("VulkanSemaphore", "%s() : Cannot wait on binary semaphores from host", __func__); }
 
 bool VulkanSemaphore::isSignaled() const
 {
@@ -36,10 +33,7 @@ bool VulkanSemaphore::isSignaled() const
     return false;
 }
 
-void VulkanSemaphore::resetSignal()
-{
-    LOG_WARN("VulkanSemaphore", "%s() : Cannot reset state on binary semaphores from host", __func__);
-}
+void VulkanSemaphore::resetSignal() { LOG_WARN("VulkanSemaphore", "%s() : Cannot reset state on binary semaphores from host", __func__); }
 
 void VulkanSemaphore::init()
 {
@@ -55,8 +49,7 @@ void VulkanSemaphore::reinitResources()
     VkSemaphore nextSemaphore;
 
     CREATE_SEMAPHORE_INFO(semaphoreCreateInfo);
-    if (vulkanDevice->vkCreateSemaphore(ownerDevice, &semaphoreCreateInfo, nullptr, &nextSemaphore)
-        == VK_SUCCESS)
+    if (vulkanDevice->vkCreateSemaphore(ownerDevice, &semaphoreCreateInfo, nullptr, &nextSemaphore) == VK_SUCCESS)
     {
         semaphore = nextSemaphore;
         vulkanDevice->debugGraphics()->markObject(this);
@@ -103,8 +96,7 @@ void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
         waitInfo.pSemaphores = &semaphore;
         waitInfo.semaphoreCount = 1;
         waitInfo.pValues = &value;
-        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(
-            ownerDevice, &waitInfo, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
+        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(ownerDevice, &waitInfo, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
     }
 }
 
@@ -120,8 +112,7 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
         signalInfo.semaphore = semaphore;
         signalInfo.value = value;
 
-        if (vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkSignalSemaphore)(ownerDevice, &signalInfo)
-            != VK_SUCCESS)
+        if (vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkSignalSemaphore)(ownerDevice, &signalInfo) != VK_SUCCESS)
         {
             LOG_ERROR("VulkanTimelineSemaphore", "%s() : Signaling to value %d failed", __func__, value);
         }
@@ -133,8 +124,7 @@ uint64 VulkanTimelineSemaphore::currentValue() const
     uint64 counter = 0;
     if (GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get())
     {
-        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkGetSemaphoreCounterValue)(
-            ownerDevice, semaphore, &counter);
+        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkGetSemaphoreCounterValue)(ownerDevice, semaphore, &counter);
     }
     return counter;
 }
@@ -166,8 +156,7 @@ void VulkanTimelineSemaphore::reinitResources()
     CREATE_TYPED_SEMAPHORE_INFO(typedSemaphoreCreateInfo);
     semaphoreCreateInfo.pNext = &typedSemaphoreCreateInfo;
 
-    if (vulkanDevice->vkCreateSemaphore(ownerDevice, &semaphoreCreateInfo, nullptr, &nextSemaphore)
-        == VK_SUCCESS)
+    if (vulkanDevice->vkCreateSemaphore(ownerDevice, &semaphoreCreateInfo, nullptr, &nextSemaphore) == VK_SUCCESS)
     {
         semaphore = nextSemaphore;
         vulkanDevice->debugGraphics()->markObject(this);
@@ -205,8 +194,7 @@ VulkanFence::VulkanFence(const VulkanDevice *deviceInstance, bool bIsSignaled)
 
 void VulkanFence::waitForSignal() const
 {
-    VkResult result = vulkanDevice->vkWaitForFences(
-        ownerDevice, 1, &fence, VK_TRUE, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
+    VkResult result = vulkanDevice->vkWaitForFences(ownerDevice, 1, &fence, VK_TRUE, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
 
     if (result == VK_TIMEOUT)
     {
@@ -214,10 +202,7 @@ void VulkanFence::waitForSignal() const
     }
 }
 
-bool VulkanFence::isSignaled() const
-{
-    return vulkanDevice->vkGetFenceStatus(ownerDevice, fence) == VK_SUCCESS;
-}
+bool VulkanFence::isSignaled() const { return vulkanDevice->vkGetFenceStatus(ownerDevice, fence) == VK_SUCCESS; }
 
 void VulkanFence::resetSignal() { vulkanDevice->vkResetFences(ownerDevice, 1, &fence); }
 

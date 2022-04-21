@@ -29,8 +29,7 @@ void Camera::orthographicMatrix(Matrix4 &matrix, float halfWidth, float halfHeig
     //  r0(c1)  r1(c1)  r2(c1)  r3(c1)
     //  r0(c2)  r1(c2)  r2(c2)  r3(c2)
     //  r0(c3)  r1(c3)  r2(c3)  r3(c3)
-    matrix = Matrix4(1 / halfWidth, 0, 0, 0, 0, 1 / halfHeight, 0, 0, 0, 0, nMinusfInv, 0, 0, 0,
-        -farClip * nMinusfInv, 1);
+    matrix = Matrix4(1 / halfWidth, 0, 0, 0, 0, 1 / halfHeight, 0, 0, 0, 0, nMinusfInv, 0, 0, 0, -farClip * nMinusfInv, 1);
 }
 
 void Camera::orthographicMatrix(Matrix4 &matrix, float left, float right, float top, float bottom) const
@@ -44,14 +43,13 @@ void Camera::orthographicMatrix(Matrix4 &matrix, float left, float right, float 
     //  r0(c1)  r1(c1)  r2(c1)  r3(c1)
     //  r0(c2)  r1(c2)  r2(c2)  r3(c2)
     //  r0(c3)  r1(c3)  r2(c3)  r3(c3)
-    matrix = Matrix4(2 * rMinuslInv, 0, 0, 0, 0, 2 * bMinustInv, 0, 0, 0, 0, nMinusfInv, 0,
-        -(right + left) * rMinuslInv, -(bottom + top) * bMinustInv, -farClip * nMinusfInv, 1);
+    matrix = Matrix4(
+        2 * rMinuslInv, 0, 0, 0, 0, 2 * bMinustInv, 0, 0, 0, 0, nMinusfInv, 0, -(right + left) * rMinuslInv, -(bottom + top) * bMinustInv,
+        -farClip * nMinusfInv, 1
+    );
 }
 
-void Camera::orthographicMatrix(Matrix4 &matrix) const
-{
-    orthographicMatrix(matrix, orthoSize.x * 0.5f, orthoSize.y * 0.5f);
-}
+void Camera::orthographicMatrix(Matrix4 &matrix) const { orthographicMatrix(matrix, orthoSize.x * 0.5f, orthoSize.y * 0.5f); }
 
 void Camera::perspectiveMatrix(Matrix4 &matrix, float halfWidth, float halfHeight) const
 {
@@ -62,8 +60,9 @@ void Camera::perspectiveMatrix(Matrix4 &matrix, float halfWidth, float halfHeigh
     //  r0(c1)  r1(c1)  r2(c1)  r3(c1)
     //  r0(c2)  r1(c2)  r2(c2)  r3(c2)
     //  r0(c3)  r1(c3)  r2(c3)  r3(c3)
-    matrix = Matrix4(nearClip / halfWidth, 0, 0, 0, 0, nearClip / halfHeight, 0, 0, 0, 0,
-        nearClip * nMinusfInv, 1, 0, 0, -nearClip * farClip * nMinusfInv, 0);
+    matrix = Matrix4(
+        nearClip / halfWidth, 0, 0, 0, 0, nearClip / halfHeight, 0, 0, 0, 0, nearClip * nMinusfInv, 1, 0, 0, -nearClip * farClip * nMinusfInv, 0
+    );
 }
 
 void Camera::perspectiveMatrix(Matrix4 &matrix, float left, float right, float top, float bottom) const
@@ -77,9 +76,10 @@ void Camera::perspectiveMatrix(Matrix4 &matrix, float left, float right, float t
     //  r0(c1)  r1(c1)  r2(c1)  r3(c1)
     //  r0(c2)  r1(c2)  r2(c2)  r3(c2)
     //  r0(c3)  r1(c3)  r2(c3)  r3(c3)
-    matrix = Matrix4(2 * nearClip * rMinuslInv, 0, 0, 0, 0, 2 * nearClip * bMinustInv, 0, 0,
-        -(right + left) * rMinuslInv, -(bottom + top) * bMinustInv, nearClip * nMinusfInv, 1, 0, 0,
-        -nearClip * farClip * nMinusfInv, 0);
+    matrix = Matrix4(
+        2 * nearClip * rMinuslInv, 0, 0, 0, 0, 2 * nearClip * bMinustInv, 0, 0, -(right + left) * rMinuslInv, -(bottom + top) * bMinustInv,
+        nearClip * nMinusfInv, 1, 0, 0, -nearClip * farClip * nMinusfInv, 0
+    );
 }
 
 void Camera::perspectiveMatrix(Matrix4 &matrix) const
@@ -155,10 +155,7 @@ Vector3D Camera::screenToWorld(const Vector2D &screenPos) const
     return { worldCoord };
 }
 
-Vector3D Camera::screenToWorldFwd(const Vector2D &screenPos) const
-{
-    return (screenToWorld(screenPos) - camTranslation).safeNormalize();
-}
+Vector3D Camera::screenToWorldFwd(const Vector2D &screenPos) const { return (screenToWorld(screenPos) - camTranslation).safeNormalize(); }
 
 Matrix4 Camera::viewMatrix() const
 {

@@ -24,8 +24,7 @@ private:
 
     // Render passes(different layout or load store op) for each variant of pipeline compatible render
     // pass attachments and sub passes
-    std::unordered_map<GenericRenderPassProperties, std::vector<RenderpassPropsPair>>
-        genericRenderPasses;
+    std::unordered_map<GenericRenderPassProperties, std::vector<RenderpassPropsPair>> genericRenderPasses;
     std::unordered_map<ERenderPassFormat::Type, std::vector<RenderpassPropsPair>> gbufferRenderPasses;
 
     std::unordered_map<const ShaderResource *, VkPipelineLayout> pipelineLayouts;
@@ -34,24 +33,20 @@ private:
     DeferredDeleter resourceDeleter;
 #endif
 private:
-    VkRenderPass createGbufferRenderpass(
-        ERenderPassFormat::Type rpUsageFormat, const RenderPassAdditionalProps &additionalProps) const;
+    VkRenderPass createGbufferRenderpass(ERenderPassFormat::Type rpUsageFormat, const RenderPassAdditionalProps &additionalProps) const;
 
 protected:
     /* GlobalRenderingContextBase overrides */
     void initApiInstances() final;
     void initializeApiContext() final;
     void clearApiContext() final;
-    void initializeGenericGraphicsPipeline(
-        UniqueUtilityShaderObject *shaderObject, PipelineBase *pipeline) final;
+    void initializeGenericGraphicsPipeline(UniqueUtilityShaderObject *shaderObject, PipelineBase *pipeline) final;
 
     /* Override ends */
 
 public:
-    VkRenderPass getRenderPass(
-        ERenderPassFormat::Type renderpassFormat, const RenderPassAdditionalProps &additionalProps);
-    VkRenderPass getRenderPass(const GenericRenderPassProperties &renderpassProps,
-        const RenderPassAdditionalProps &additionalProps);
+    VkRenderPass getRenderPass(ERenderPassFormat::Type renderpassFormat, const RenderPassAdditionalProps &additionalProps);
+    VkRenderPass getRenderPass(const GenericRenderPassProperties &renderpassProps, const RenderPassAdditionalProps &additionalProps);
 
     FORCE_INLINE DeferredDeleter *getDeferredDeleter() { return &resourceDeleter; }
 };

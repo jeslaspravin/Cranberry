@@ -16,6 +16,10 @@
 
 class CoreObjectsDB;
 class CoreObjectGC;
+namespace CBE
+{
+class Package;
+}
 
 class COREOBJECTS_EXPORT ICoreObjectsModule : public IModuleBase
 {

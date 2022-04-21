@@ -86,13 +86,12 @@ public:
     MyClass &operator=(int32 value);
 
     META_ANNOTATE(, Deprecate)
-    virtual void method(const AChar *ch, const int32 &idxRef, Anarchy &outIdx, int32 inNum,
-        int32 *optionalNum) const = 0;
+    virtual void method(const AChar *ch, const int32 &idxRef, Anarchy &outIdx, int32 inNum, int32 *optionalNum) const = 0;
 
     static const int static_field;
-    static int32 const *const static_method(std::map<int32, Anarchy> outMap,
-        const std::vector<int32> &inList, std::pair<int32, Vector3D> &testPair,
-        std::set<int32> &setTest);
+    static int32 const *const static_method(
+        std::map<int32, Anarchy> outMap, const std::vector<int32> &inList, std::pair<int32, Vector3D> &testPair, std::set<int32> &setTest
+    );
 };
 
 int32 global_method();
@@ -108,8 +107,7 @@ struct L1Struct : public Anarchy
 class META_ANNOTATE(, ChildClass) MyChildClass : public MyClass
 {
 public:
-    void method(const AChar *ch, const int32 &idxRef, Anarchy &outIdx, int32 inNum,
-        int32 *optionalNum) const override;
+    void method(const AChar *ch, const int32 &idxRef, Anarchy &outIdx, int32 inNum, int32 *optionalNum) const override;
 };
 
 namespace TestNSL2
@@ -133,8 +131,7 @@ public:
     const std::map<int32, L2Struct *> *idxTol4;
 
 private:
-    void method(const AChar *ch, const int32 &idxRef, Anarchy &outIdx, int32 inNum,
-        int32 *optionalNum) const final;
+    void method(const AChar *ch, const int32 &idxRef, Anarchy &outIdx, int32 inNum, int32 *optionalNum) const final;
 
     auto getUnknown() { return testUnknownType; }
 };

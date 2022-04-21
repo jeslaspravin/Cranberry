@@ -55,8 +55,7 @@ public:
 protected:
     const PropertyMetaDataBase *getMetaData(const ReflectTypeInfo *typeInfo) const;
     uint64 getMetaFlags() const;
-    void setMetaData(
-        const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    void setMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
 
 public:
     BaseProperty(const StringID &propNameID, const String &propName, EPropertyType propType);
@@ -75,8 +74,7 @@ public:
     const ReflectTypeInfo *typeInfo;
 
 public:
-    TypedProperty(const StringID &propNameID, const String &propName, EPropertyType propType,
-        const ReflectTypeInfo *propTypeInfo)
+    TypedProperty(const StringID &propNameID, const String &propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo)
         : BaseProperty(propNameID, propName, propType)
         , typeInfo(propTypeInfo)
     {}
@@ -131,8 +129,7 @@ public:
         return this;
     }
 
-    FieldProperty *setPropertyMetaData(
-        const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    FieldProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>
@@ -178,11 +175,10 @@ public:
         return this;
     }
 
-    FORCE_INLINE FunctionProperty *addFunctionParamProperty(
-        const StringID &paramNameID, const String &paramName, const BaseProperty *funcParamProperty)
+    FORCE_INLINE FunctionProperty *
+        addFunctionParamProperty(const StringID &paramNameID, const String &paramName, const BaseProperty *funcParamProperty)
     {
-        funcParamsProp.emplace_back(
-            decltype(funcParamsProp)::value_type{ funcParamProperty, paramName, paramNameID });
+        funcParamsProp.emplace_back(decltype(funcParamsProp)::value_type{ funcParamProperty, paramName, paramNameID });
         return this;
     }
 
@@ -199,8 +195,7 @@ public:
         return this;
     }
 
-    FunctionProperty *setPropertyMetaData(
-        const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    FunctionProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>
@@ -230,8 +225,7 @@ public:
 
 public:
     // Complete class name including namespace/classes
-    ClassProperty(
-        const StringID &propNameID, const String &propName, const ReflectTypeInfo *classTypeInfo);
+    ClassProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *classTypeInfo);
     ~ClassProperty();
 
     FORCE_INLINE FunctionProperty *addCtorPtr()
@@ -242,17 +236,15 @@ public:
     }
     FORCE_INLINE FunctionProperty *constructDtorPtr()
     {
-        FunctionProperty *funcProp = (new FunctionProperty(name, nameString))
-                                         ->setOwnerProperty(this)
-                                         ->setFieldAccessor(EPropertyAccessSpecifier::Public);
+        FunctionProperty *funcProp
+            = (new FunctionProperty(name, nameString))->setOwnerProperty(this)->setFieldAccessor(EPropertyAccessSpecifier::Public);
         destructor = funcProp;
         return funcProp;
     }
     FORCE_INLINE FunctionProperty *constructAllocFuncPtr()
     {
-        FunctionProperty *funcProp = (new FunctionProperty(name, nameString))
-                                         ->setOwnerProperty(this)
-                                         ->setFieldAccessor(EPropertyAccessSpecifier::Public);
+        FunctionProperty *funcProp
+            = (new FunctionProperty(name, nameString))->setOwnerProperty(this)->setFieldAccessor(EPropertyAccessSpecifier::Public);
         allocFunc = funcProp;
         return funcProp;
     }
@@ -266,8 +258,7 @@ public:
 
     FORCE_INLINE FunctionProperty *addMemberFunc(const StringID &funcNameID, const String &funcName)
     {
-        FunctionProperty *funcProp
-            = (new FunctionProperty(funcNameID, funcName))->setOwnerProperty(this);
+        FunctionProperty *funcProp = (new FunctionProperty(funcNameID, funcName))->setOwnerProperty(this);
         memberFunctions.emplace_back(funcProp);
         return funcProp;
     }
@@ -282,8 +273,7 @@ public:
 
     FORCE_INLINE FunctionProperty *addStaticFunc(const StringID &funcNameID, const String &funcName)
     {
-        FunctionProperty *funcProp
-            = (new FunctionProperty(funcNameID, funcName))->setOwnerProperty(this);
+        FunctionProperty *funcProp = (new FunctionProperty(funcNameID, funcName))->setOwnerProperty(this);
         staticFunctions.emplace_back(funcProp);
         return funcProp;
     }
@@ -294,8 +284,7 @@ public:
         return this;
     }
 
-    ClassProperty *setPropertyMetaData(
-        const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    ClassProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>
@@ -327,13 +316,13 @@ public:
 
 public:
     // Complete class name including namespace/classes
-    EnumProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *enumTypeInfo,
-        bool bCanBeUsedAsFlags);
+    EnumProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *enumTypeInfo, bool bCanBeUsedAsFlags);
 
-    EnumProperty *addEnumField(const StringID &fieldNameID, const String &fieldName, uint64 fieldValue,
-        uint64 metaFlags, std::vector<const PropertyMetaDataBase *> fieldMetaData);
-    EnumProperty *setPropertyMetaData(
-        const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
+    EnumProperty *addEnumField(
+        const StringID &fieldNameID, const String &fieldName, uint64 fieldValue, uint64 metaFlags,
+        std::vector<const PropertyMetaDataBase *> fieldMetaData
+    );
+    EnumProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
 
     // Get functions
     template <class MetaType>
@@ -351,8 +340,7 @@ public:
     const BaseProperty *unqualTypeProperty;
 
 public:
-    QualifiedProperty(
-        const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo);
+    QualifiedProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo);
 
     FORCE_INLINE QualifiedProperty *setUnqualifiedType(const BaseProperty *prop)
     {

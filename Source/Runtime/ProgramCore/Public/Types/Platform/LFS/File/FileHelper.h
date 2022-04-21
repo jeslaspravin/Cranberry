@@ -19,12 +19,12 @@ private:
     FileHelper() = default;
 
 public:
-    static bool isUtf8(const std::vector<uint8> &byteStream);
-    static bool isUtf8Bom(const std::vector<uint8> &byteStream);
-    static bool isUtf16LEBom(const std::vector<uint8> &byteStream);
-    static bool isUtf16BEBom(const std::vector<uint8> &byteStream);
-    static bool isUtf32LEBom(const std::vector<uint8> &byteStream);
-    static bool isUtf32BEBom(const std::vector<uint8> &byteStream);
+    static bool isUtf8(const uint8 *byteStream, SizeT streamSize);
+    static bool isUtf8Bom(const uint8 *byteStream, SizeT streamSize);
+    static bool isUtf16LEBom(const uint8 *byteStream, SizeT streamSize);
+    static bool isUtf16BEBom(const uint8 *byteStream, SizeT streamSize);
+    static bool isUtf32LEBom(const uint8 *byteStream, SizeT streamSize);
+    static bool isUtf32BEBom(const uint8 *byteStream, SizeT streamSize);
 
     static uint16 bytesSwap(uint16 value);
     static uint32 bytesSwap(uint32 value);

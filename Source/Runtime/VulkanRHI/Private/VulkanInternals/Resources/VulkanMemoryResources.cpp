@@ -32,8 +32,7 @@ void VulkanBufferResource::reinitResources()
     BaseType::reinitResources();
     if (getResourceSize() == 0)
     {
-        LOG_ERROR(
-            "VulkanBufferResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanBufferResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
         return;
     }
 
@@ -44,21 +43,19 @@ void VulkanBufferResource::reinitResources()
     bufferCreateInfo.size = requiredSize();
     bufferCreateInfo.usage = bufferUsage;
 
-    VkBuffer nextBuffer
-        = VulkanGraphicsHelper::createBuffer(graphicsInstance, bufferCreateInfo, dataFormat);
+    VkBuffer nextBuffer = VulkanGraphicsHelper::createBuffer(graphicsInstance, bufferCreateInfo, dataFormat);
 
     if (nextBuffer)
     {
         buffer = nextBuffer;
         graphicsDebugger->markObject(this);
         fatalAssert(
-            VulkanGraphicsHelper::allocateBufferResource(graphicsInstance, this, isStagingResource()),
-            "Memory allocation failed for resource");
+            VulkanGraphicsHelper::allocateBufferResource(graphicsInstance, this, isStagingResource()), "Memory allocation failed for resource"
+        );
     }
     else
     {
-        LOG_ERROR("VulkanBufferResource", "%s() : Failed creating buffer %s", __func__,
-            getObjectName().getChar());
+        LOG_ERROR("VulkanBufferResource", "%s() : Failed creating buffer %s", __func__, getObjectName().getChar());
     }
 }
 
@@ -97,8 +94,7 @@ VkBufferView VulkanBufferResource::createBufferView(const BufferViewInfo &viewIn
     bufferViewCreateInfo.offset = viewInfo.startOffset;
     bufferViewCreateInfo.range = viewInfo.size;
 
-    return VulkanGraphicsHelper::createBufferView(
-        IVulkanRHIModule::get()->getGraphicsInstance(), bufferViewCreateInfo);
+    return VulkanGraphicsHelper::createBufferView(IVulkanRHIModule::get()->getGraphicsInstance(), bufferViewCreateInfo);
 }
 
 VkBufferView VulkanBufferResource::getBufferView(const BufferViewInfo &viewInfo)
@@ -131,8 +127,7 @@ VkBufferView VulkanBufferResource::getBufferView(const BufferViewInfo &viewInfo)
 
 DEFINE_VK_GRAPHICS_RESOURCE(VulkanImageResource, VK_OBJECT_TYPE_IMAGE)
 
-VulkanImageResource::VulkanImageResource(
-    ImageResourceCreateInfo createInfo, bool cpuAccessible /*= false*/)
+VulkanImageResource::VulkanImageResource(ImageResourceCreateInfo createInfo, bool cpuAccessible /*= false*/)
     : ImageResource(createInfo)
     , defaultImageUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
     , defaultFeaturesRequired(VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)
@@ -181,10 +176,12 @@ void VulkanImageResource::reinitResources()
             // Then must be cube array
             if (layerCount > 6 && (layerCount % 6 != 0))
             {
-                LOG_WARN("VulkanImageResource",
+                LOG_WARN(
+                    "VulkanImageResource",
                     "%s() : Cube map image %s should have 6 multiple layers, current layer "
                     "count %d",
-                    __func__, getResourceName().getChar(), layerCount);
+                    __func__, getResourceName().getChar(), layerCount
+                );
                 layerCount = ((layerCount / 6) + 1) * 6;
             }
         }
@@ -196,9 +193,7 @@ void VulkanImageResource::reinitResources()
                 viewType = VK_IMAGE_VIEW_TYPE_3D;
             }
             // https://khronos.org/registry/vulkan/specs/1.2-extensions/html/chap12.html#VUID-VkImageViewCreateInfo-image-04970
-            createFlags |= (layerCount == 1)
-                               ? VkImageCreateFlagBits::VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT
-                               : 0;
+            createFlags |= (layerCount == 1) ? VkImageCreateFlagBits::VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT : 0;
         }
     }
 
@@ -206,8 +201,7 @@ void VulkanImageResource::reinitResources()
     {
         imageUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
         featuresRequired = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
-        const EPixelDataFormat::PixelFormatInfo *formatInfo
-            = EPixelDataFormat::getFormatInfo(dataFormat);
+        const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(dataFormat);
 
         if (!formatInfo)
         {
@@ -226,9 +220,7 @@ void VulkanImageResource::reinitResources()
         }
         // In case of using same target as both Render target and shader sampled image
         imageUsage |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
-        featuresRequired |= ((shaderUsage & EImageShaderUsage::Sampling) > 0)
-                                ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
-                                : 0;
+        featuresRequired |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT : 0;
         tiling = VK_IMAGE_TILING_OPTIMAL;
         // In render targets only one mip map is allowed
         numOfMips = 1;
@@ -251,13 +243,9 @@ void VulkanImageResource::reinitResources()
         }
 
         imageUsage |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
-        featuresRequired |= ((shaderUsage & EImageShaderUsage::Sampling) > 0)
-                                ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
-                                : 0;
+        featuresRequired |= ((shaderUsage & EImageShaderUsage::Sampling) > 0) ? VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT : 0;
         imageUsage |= ((shaderUsage & EImageShaderUsage::Writing) > 0) ? VK_IMAGE_USAGE_STORAGE_BIT : 0;
-        featuresRequired |= ((shaderUsage & EImageShaderUsage::Writing) > 0)
-                                ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
-                                : 0;
+        featuresRequired |= ((shaderUsage & EImageShaderUsage::Writing) > 0) ? VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT : 0;
 
         // TODO(Jeslas) : Revisit for cpu accessible image
         if (tiling == VK_IMAGE_TILING_LINEAR)
@@ -272,8 +260,7 @@ void VulkanImageResource::reinitResources()
 
     if (getResourceSize() == 0)
     {
-        LOG_ERROR(
-            "VulkanImageResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanImageResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
         return;
     }
 
@@ -290,11 +277,9 @@ void VulkanImageResource::reinitResources()
     imgCreateInfo.format = EngineToVulkanAPI::vulkanDataFormat(dataFormat);
     imgCreateInfo.arrayLayers = layerCount;
     imgCreateInfo.extent = { dimensions.x, dimensions.y, dimensions.z };
-    imgCreateInfo.initialLayout
-        = tiling == VK_IMAGE_TILING_LINEAR ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED;
+    imgCreateInfo.initialLayout = tiling == VK_IMAGE_TILING_LINEAR ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED;
 
-    VkImage nextImage
-        = VulkanGraphicsHelper::createImage(graphicsInstance, imgCreateInfo, featuresRequired);
+    VkImage nextImage = VulkanGraphicsHelper::createImage(graphicsInstance, imgCreateInfo, featuresRequired);
     setLayerCount(imgCreateInfo.arrayLayers);
     setNumOfMips(imgCreateInfo.mipLevels);
 
@@ -303,13 +288,12 @@ void VulkanImageResource::reinitResources()
         image = nextImage;
         graphicsDebugger->markObject(this);
         fatalAssert(
-            VulkanGraphicsHelper::allocateImageResource(graphicsInstance, this, isStagingResource()),
-            "Memory allocation failed for resource");
+            VulkanGraphicsHelper::allocateImageResource(graphicsInstance, this, isStagingResource()), "Memory allocation failed for resource"
+        );
     }
     else
     {
-        LOG_ERROR("VulkanImageResource", "%s() : Failed creating image %s", __func__,
-            getObjectName().getChar());
+        LOG_ERROR("VulkanImageResource", "%s() : Failed creating image %s", __func__, getObjectName().getChar());
     }
 }
 
@@ -352,16 +336,13 @@ uint64 VulkanImageResource::requiredSize() const { return getResourceSize(); }
 
 bool VulkanImageResource::canAllocateMemory() const { return image && requiredSize() > 0; }
 
-VkImageView VulkanImageResource::createImageView(
-    const ImageViewInfo &viewInfo, VkImageViewType imgViewType)
+VkImageView VulkanImageResource::createImageView(const ImageViewInfo &viewInfo, VkImageViewType imgViewType)
 {
     VkImageAspectFlags viewAspects = 0;
     if (EPixelDataFormat::isDepthFormat(dataFormat))
     {
         viewAspects = VK_IMAGE_ASPECT_DEPTH_BIT;
-        viewAspects |= viewInfo.bUseStencil && EPixelDataFormat::isStencilFormat(dataFormat)
-                           ? VK_IMAGE_ASPECT_STENCIL_BIT
-                           : 0;
+        viewAspects |= viewInfo.bUseStencil && EPixelDataFormat::isStencilFormat(dataFormat) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0;
     }
     else
     {
@@ -372,9 +353,8 @@ VkImageView VulkanImageResource::createImageView(
     imageViewCreateInfo.image = image;
     imageViewCreateInfo.format = EngineToVulkanAPI::vulkanDataFormat(dataFormat);
     imageViewCreateInfo.viewType = imgViewType;
-    imageViewCreateInfo.subresourceRange
-        = { viewAspects, viewInfo.viewSubresource.baseMip, viewInfo.viewSubresource.mipCount,
-              viewInfo.viewSubresource.baseLayer, viewInfo.viewSubresource.layersCount };
+    imageViewCreateInfo.subresourceRange = { viewAspects, viewInfo.viewSubresource.baseMip, viewInfo.viewSubresource.mipCount,
+                                             viewInfo.viewSubresource.baseLayer, viewInfo.viewSubresource.layersCount };
     imageViewCreateInfo.components = {
         EngineToVulkanAPI::vulkanComponentSwizzle(viewInfo.componentMapping.r),
         EngineToVulkanAPI::vulkanComponentSwizzle(viewInfo.componentMapping.g),
@@ -385,13 +365,11 @@ VkImageView VulkanImageResource::createImageView(
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
     VkImageView imgView = VulkanGraphicsHelper::createImageView(graphicsInstance, imageViewCreateInfo);
     VulkanGraphicsHelper::debugGraphics(graphicsInstance)
-        ->markObject(uint64(imgView), getResourceName() + TCHAR("_View"),
-            VkObjectType::VK_OBJECT_TYPE_IMAGE_VIEW);
+        ->markObject(uint64(imgView), getResourceName() + TCHAR("_View"), VkObjectType::VK_OBJECT_TYPE_IMAGE_VIEW);
     return imgView;
 }
 
-VkImageView VulkanImageResource::getImageView(
-    const ImageViewInfo &viewInfo, int32 imageViewType /*= -1*/)
+VkImageView VulkanImageResource::getImageView(const ImageViewInfo &viewInfo, int32 imageViewType /*= -1*/)
 {
     if (!isValid())
     {
@@ -405,19 +383,20 @@ VkImageView VulkanImageResource::getImageView(
         // already checked in outer if
         if (layerCount == 1)
         {
-            debugAssert(viewType != VK_IMAGE_VIEW_TYPE_2D || imageViewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY
-                        || imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY);
             debugAssert(
-                viewType != VK_IMAGE_VIEW_TYPE_3D || imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+                viewType != VK_IMAGE_VIEW_TYPE_2D || imageViewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY
+                || imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY
+            );
+            debugAssert(viewType != VK_IMAGE_VIEW_TYPE_3D || imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY);
         }
         // else cube can be cube array or 3D cannot be 2D array if levels are not 1
         else
         {
+            debugAssert(!(imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY && viewType == VK_IMAGE_VIEW_TYPE_3D));
             debugAssert(
-                !(imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY && viewType == VK_IMAGE_VIEW_TYPE_3D));
-            debugAssert(viewType != VK_IMAGE_VIEW_TYPE_CUBE
-                        || imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY
-                        || imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY);
+                viewType != VK_IMAGE_VIEW_TYPE_CUBE || imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY
+                || imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
+            );
         }
         imgViewType = VkImageViewType(imageViewType);
     }

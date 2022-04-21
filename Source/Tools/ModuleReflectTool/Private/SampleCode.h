@@ -31,8 +31,7 @@ struct SourceParsedInfo
 void printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptions);
 String accessSpecifierStr(CXCursor cursor);
 void printJustTypeInfo(CXType type);
-void printVariableTypeInfo(
-    CXCursor cursor, SourceParsedInfo &srcParsedInfo, CXType fieldType, CXType fieldCanonicalType);
+void printVariableTypeInfo(CXCursor cursor, SourceParsedInfo &srcParsedInfo, CXType fieldType, CXType fieldCanonicalType);
 void printFunctionSignature(CXCursor cursor, SourceParsedInfo &srcParsedInfo);
 
 void visitTUCusor(CXCursor cursor, SourceParsedInfo &srcParsedInfo);

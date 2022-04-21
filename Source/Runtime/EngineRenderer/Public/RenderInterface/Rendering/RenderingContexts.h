@@ -71,16 +71,17 @@ protected:
 
     FactoriesBase<ShaderObjectBase *, const String &, const ShaderResource *> *shaderObjectFactory;
     FactoriesBase<GraphicsResource *, const ShaderResource *, uint32> *shaderParamLayoutsFactory;
-    FactoriesBase<PipelineBase *, IGraphicsInstance *, const GraphicsHelperAPI *,
-        const PipelineFactoryArgs &> *pipelineFactory;
+    FactoriesBase<PipelineBase *, IGraphicsInstance *, const GraphicsHelperAPI *, const PipelineFactoryArgs &> *pipelineFactory;
 
 private:
     void initContext(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void clearContext();
 
     void initShaderResources();
-    void initShaderPipelines(const std::vector<ShaderResource *> &allShaderResources,
-        const std::map<String, std::pair<uint32, ShaderResource *>> &shaderUniqParamShader);
+    void initShaderPipelines(
+        const std::vector<ShaderResource *> &allShaderResources,
+        const std::map<String, std::pair<uint32, ShaderResource *>> &shaderUniqParamShader
+    );
     void destroyShaderResources();
     void writeAndDestroyPipelineCache();
 
@@ -94,9 +95,7 @@ protected:
 
     // Fills necessary render pass info to pipeline(Pipeline render pass properties has to filled before
     // using this) and initializes it
-    virtual void initializeGenericGraphicsPipeline(
-        UniqueUtilityShaderObject *shaderObject, PipelineBase *pipeline)
-        = 0;
+    virtual void initializeGenericGraphicsPipeline(UniqueUtilityShaderObject *shaderObject, PipelineBase *pipeline) = 0;
     // Get generic render pass properties from Render targets, Moved to RenderManager.h
     // GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<RenderTargetTexture*>&
     // rtTextures) const;
@@ -104,24 +103,20 @@ protected:
     GenericRenderPassProperties renderpassPropsFromFb(const Framebuffer *fb) const;
     // Get generic render pass properties from render pass format, Useful in case of using custom RTs
     // with predefined render passes
-    GenericRenderPassProperties renderpassPropsFromRpFormat(
-        ERenderPassFormat::Type renderpassFormat, uint32 frameIdx) const;
-    const Framebuffer *getFramebuffer(const GenericRenderPassProperties &renderpassProps,
-        const std::vector<ImageResourceRef> &frameAttachments) const;
-    const Framebuffer *createNewFramebuffer(const GenericRenderPassProperties &renderpassProps,
-        const std::vector<ImageResourceRef> &frameAttachments) const;
-    const Framebuffer *getOrCreateFramebuffer(const GenericRenderPassProperties &renderpassProps,
-        const std::vector<ImageResourceRef> &frameAttachments);
+    GenericRenderPassProperties renderpassPropsFromRpFormat(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx) const;
+    const Framebuffer *
+        getFramebuffer(const GenericRenderPassProperties &renderpassProps, const std::vector<ImageResourceRef> &frameAttachments) const;
+    const Framebuffer *
+        createNewFramebuffer(const GenericRenderPassProperties &renderpassProps, const std::vector<ImageResourceRef> &frameAttachments) const;
+    const Framebuffer *
+        getOrCreateFramebuffer(const GenericRenderPassProperties &renderpassProps, const std::vector<ImageResourceRef> &frameAttachments);
     // Creates new pipeline based on default pipeline of shader object but with new render pass or
     // different render pass and returns it
-    PipelineBase *createNewPipeline(
-        UniqueUtilityShaderObject *shaderObject, const GenericRenderPassProperties &renderpassProps);
+    PipelineBase *createNewPipeline(UniqueUtilityShaderObject *shaderObject, const GenericRenderPassProperties &renderpassProps);
 
 public:
-    void preparePipelineContext(
-        class LocalPipelineContext *pipelineContext, GenericRenderPassProperties renderpassProps);
-    void clearExternInitRtsFramebuffer(const std::vector<ImageResourceRef> &frameAttachments,
-        GenericRenderPassProperties renderpassProps);
+    void preparePipelineContext(class LocalPipelineContext *pipelineContext, GenericRenderPassProperties renderpassProps);
+    void clearExternInitRtsFramebuffer(const std::vector<ImageResourceRef> &frameAttachments, GenericRenderPassProperties renderpassProps);
     void clearWindowCanvasFramebuffer(WindowCanvasRef windowCanvas);
 };
 

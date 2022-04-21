@@ -20,8 +20,7 @@
 template <EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
 class DefaultShader : public DrawMeshShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(
-        DefaultShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>, DrawMeshShaderConfig, )
+    DECLARE_GRAPHICS_RESOURCE(DefaultShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>, DrawMeshShaderConfig, )
 protected:
     DefaultShader()
         : BaseType(DEFAULT_SHADER_NAME)
@@ -31,11 +30,9 @@ protected:
     }
 
 public:
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
-        if constexpr (RenderpassFormat != ERenderPassFormat::DirectionalLightDepth
-                      && RenderpassFormat != ERenderPassFormat::PointLightDepth)
+        if constexpr (RenderpassFormat != ERenderPassFormat::DirectionalLightDepth && RenderpassFormat != ERenderPassFormat::PointLightDepth)
         {
             return;
         }
@@ -44,7 +41,7 @@ public:
         if constexpr (RenderpassFormat == ERenderPassFormat::DirectionalLightDepth)
         {
             static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-                { TCHAR("lightViews"), DirectionalShadowCascadeViews::paramInfo() }
+                {TCHAR("lightViews"), DirectionalShadowCascadeViews::paramInfo()}
             };
 
             paramInfo = &SHADER_PARAMS_INFO;
@@ -52,7 +49,7 @@ public:
         else if constexpr (RenderpassFormat == ERenderPassFormat::PointLightDepth)
         {
             static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-                { TCHAR("lightViews"), PointShadowDepthViews::paramInfo() }
+                {TCHAR("lightViews"), PointShadowDepthViews::paramInfo()}
             };
 
             paramInfo = &SHADER_PARAMS_INFO;
@@ -72,9 +69,7 @@ public:
     }
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DefaultShader,
-    <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>,
-    <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(DefaultShader, <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
 
 template class DefaultShader<EVertexType::Simple2, ERenderPassFormat::Multibuffer>;
 
@@ -87,5 +82,6 @@ template class DefaultShader<EVertexType::StaticMesh, ERenderPassFormat::Directi
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(DEFAULT_SHADER_PIPELINE_REGISTER, DEFAULT_SHADER_NAME,
-    &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    DEFAULT_SHADER_PIPELINE_REGISTER, DEFAULT_SHADER_NAME, &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig
+);

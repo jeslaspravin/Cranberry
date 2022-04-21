@@ -207,10 +207,7 @@ public:
 
     FORCE_INLINE const CellIndex<d> &operator*() const { return currentIdx; }
 
-    FORCE_INLINE bool operator!=(const CellIndexRangeIterator &other) const
-    {
-        return currentIdx != other.currentIdx;
-    }
+    FORCE_INLINE bool operator!=(const CellIndexRangeIterator &other) const { return currentIdx != other.currentIdx; }
 
     FORCE_INLINE CellIndexRangeIterator &operator++()
     {
@@ -305,17 +302,11 @@ public:
     DEBUG_INLINE void InitWithCount(const T &min, const T &max, const CellIndex<d> &n);
     DEBUG_INLINE void InitWithSize(const T &min, const T &max, const T &cellSize);
 
-    FORCE_INLINE T location(const CellIndex<d> &cell) const
-    {
-        return cell * cellDx + minCorner + (cellDx * 0.5f);
-    }
+    FORCE_INLINE T location(const CellIndex<d> &cell) const { return cell * cellDx + minCorner + (cellDx * 0.5f); }
 
     // Location must be greater than minimum bound to get valid cell index(as -ve values cannot be stored
     // in unsigned grid cell idx)
-    FORCE_INLINE CellIndex<d> cell(const T &location) const
-    {
-        return vectorToCellIdx<T, d>(Math::floor((location - minCorner) / cellDx));
-    }
+    FORCE_INLINE CellIndex<d> cell(const T &location) const { return vectorToCellIdx<T, d>(Math::floor((location - minCorner) / cellDx)); }
 
     FORCE_INLINE CellIndex<d> getNdIndex(const uint32 index) const;
 

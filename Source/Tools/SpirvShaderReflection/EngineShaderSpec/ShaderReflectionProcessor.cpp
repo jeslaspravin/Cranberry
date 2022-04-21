@@ -45,8 +45,7 @@ ShaderReflectionProcessor::ShaderReflectionProcessor(std::string shaderFilePath)
     compiledData = new SPIRV_CROSS_NAMESPACE::CompilerGLSL(shaderCode);
 }
 
-ShaderReflectionProcessor::ShaderReflectionProcessor(
-    const std::vector<uint32_t> &code, const ShaderCodeView &view)
+ShaderReflectionProcessor::ShaderReflectionProcessor(const std::vector<uint32_t> &code, const ShaderCodeView &view)
     : codeView(view)
 {
     shaderCode.resize(codeView.size);
@@ -73,8 +72,7 @@ void ShaderReflectionProcessor::setCodeView(uint32_t startIndex, uint32_t size)
 
 ShaderStageDescription ShaderReflectionProcessor::getStageDesc() const
 {
-    SPIRV_CROSS_NAMESPACE::SmallVector<SPIRV_CROSS_NAMESPACE::EntryPoint> entryPoints
-        = compiledData->get_entry_points_and_stages();
+    SPIRV_CROSS_NAMESPACE::SmallVector<SPIRV_CROSS_NAMESPACE::EntryPoint> entryPoints = compiledData->get_entry_points_and_stages();
     // Since we support only one entry per shader file
     assert(entryPoints.size() == 1);
 
@@ -107,8 +105,7 @@ uint32_t ShaderReflectionProcessor::engineStage(spv::ExecutionModel spirvStage)
         return COMPUTE_STAGE;
     default:
         assert(!"Unsupported shader stage");
-        printf("ERROR: [%s]  Shader stage %d of spv::ExecutionModel is not supported\n", __func__,
-            spirvStage);
+        printf("ERROR: [%s]  Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
         exit(1);
         break;
     }
@@ -129,8 +126,7 @@ uint32_t ShaderReflectionProcessor::pipelineBindPoint(spv::ExecutionModel spirvS
         return VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_COMPUTE;
     default:
         assert(!"Unsupported shader stage");
-        printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__,
-            spirvStage);
+        printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
         exit(1);
         break;
     }
@@ -155,8 +151,7 @@ uint32_t ShaderReflectionProcessor::pipelineStageFlag(spv::ExecutionModel spirvS
         return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     default:
         assert(!"Unsupported pipeline stage");
-        printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__,
-            spirvStage);
+        printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
         exit(1);
         break;
     }
@@ -181,8 +176,7 @@ uint32_t ShaderReflectionProcessor::shaderStageFlag(spv::ExecutionModel spirvSta
         return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
     default:
         assert(!"Unsupported shader stage");
-        printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__,
-            spirvStage);
+        printf("ERROR: [%s] Shader stage %d of spv::ExecutionModel is not supported\n", __func__, spirvStage);
         exit(1);
         break;
     }
@@ -199,16 +193,13 @@ uint32_t ShaderReflectionProcessor::imageViewType(spv::Dim spirvDim, bool bIsArr
     switch (spirvDim)
     {
     case spv::Dim1D:
-        return bIsArray ? VkImageViewType::VK_IMAGE_VIEW_TYPE_1D_ARRAY
-                        : VkImageViewType::VK_IMAGE_VIEW_TYPE_1D;
+        return bIsArray ? VkImageViewType::VK_IMAGE_VIEW_TYPE_1D_ARRAY : VkImageViewType::VK_IMAGE_VIEW_TYPE_1D;
     case spv::Dim2D:
-        return bIsArray ? VkImageViewType::VK_IMAGE_VIEW_TYPE_2D_ARRAY
-                        : VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
+        return bIsArray ? VkImageViewType::VK_IMAGE_VIEW_TYPE_2D_ARRAY : VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
     case spv::Dim3D:
         return VkImageViewType::VK_IMAGE_VIEW_TYPE_3D;
     case spv::DimCube:
-        return bIsArray ? VkImageViewType::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
-                        : VkImageViewType::VK_IMAGE_VIEW_TYPE_CUBE;
+        return bIsArray ? VkImageViewType::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY : VkImageViewType::VK_IMAGE_VIEW_TYPE_CUBE;
     case spv::DimBuffer:
     case spv::DimRect:
     case spv::DimSubpassData:
@@ -226,93 +217,200 @@ TexelComponentFormat ShaderReflectionProcessor::texelFormat(spv::ImageFormat for
     switch (format)
     {
     case spv::ImageFormatR16f:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_float, 1, { 16, 0, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_float, 1, {16, 0, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRg16f:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_float, 2, { 16, 16, 0, 0 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_float, 2, {16, 16, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRgba16f:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_float, 4, { 16, 16, 16, 16 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_float, 4, {16, 16, 16, 16},
+              false, false
+        };
     case spv::ImageFormatR32f:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_float, 1, { 32, 0, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_float, 1, {32, 0, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRg32f:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_float, 2, { 32, 32, 0, 0 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_float, 2, {32, 32, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRgba32f:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_float, 4, { 32, 32, 32, 32 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_float, 4, {32, 32, 32, 32},
+              false, false
+        };
     case spv::ImageFormatR11fG11fB10f:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_float, 3, { 11, 11, 10, 0 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_float, 3, {11, 11, 10, 0},
+              false, false
+        };
     case spv::ImageFormatR8:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, { 8, 0, 0, 0 }, false, true };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, {8, 0, 0, 0},
+              false, true
+        };
     case spv::ImageFormatR8Snorm:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, { 8, 0, 0, 0 }, true, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, {8, 0, 0, 0},
+              true, false
+        };
     case spv::ImageFormatRg8:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, { 8, 8, 0, 0 }, false, true };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, {8, 8, 0, 0},
+              false, true
+        };
     case spv::ImageFormatRg8Snorm:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, { 8, 8, 0, 0 }, true, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, {8, 8, 0, 0},
+              true, false
+        };
     case spv::ImageFormatRgba8:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, { 8, 8, 8, 8 }, false, true };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, {8, 8, 8, 8},
+              false, true
+        };
     case spv::ImageFormatRgba8Snorm:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, { 8, 8, 8, 8 }, true, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, {8, 8, 8, 8},
+              true, false
+        };
     case spv::ImageFormatRgb10A2:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, { 10, 10, 10, 2 }, false, true };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, {10, 10, 10, 2},
+              false, true
+        };
     case spv::ImageFormatR16:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, { 16, 0, 0, 0 }, false, true };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, {16, 0, 0, 0},
+              false, true
+        };
     case spv::ImageFormatR16Snorm:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, { 16, 0, 0, 0 }, true, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, {16, 0, 0, 0},
+              true, false
+        };
     case spv::ImageFormatRg16:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, { 16, 16, 0, 0 }, false, true };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, {16, 16, 0, 0},
+              false, true
+        };
     case spv::ImageFormatRg16Snorm:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, { 16, 16, 0, 0 }, true, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, {16, 16, 0, 0},
+              true, false
+        };
     case spv::ImageFormatRgba16:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, { 16, 16, 16, 16 }, false, true };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, {16, 16, 16, 16},
+              false, true
+        };
     case spv::ImageFormatRgba16Snorm:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, { 16, 16, 16, 16 }, true, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, {16, 16, 16, 16},
+              true, false
+        };
     case spv::ImageFormatR8i:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, { 8, 0, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, {8, 0, 0, 0},
+              false, false
+        };
     case spv::ImageFormatR16i:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, { 16, 0, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, {16, 0, 0, 0},
+              false, false
+        };
     case spv::ImageFormatR32i:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, { 32, 0, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 1, {32, 0, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRg8i:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, { 8, 8, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, {8, 8, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRg16i:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, { 16, 16, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, {16, 16, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRg32i:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, { 32, 32, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 2, {32, 32, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRgba8i:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, { 8, 8, 8, 8 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, {8, 8, 8, 8},
+              false, false
+        };
     case spv::ImageFormatRgba16i:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, { 16, 16, 16, 16 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, {16, 16, 16, 16},
+              false, false
+        };
     case spv::ImageFormatRgba32i:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, { 32, 32, 32, 32 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_int, 4, {32, 32, 32, 32},
+              false, false
+        };
     case spv::ImageFormatR8ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 1, { 8, 0, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 1, {8, 0, 0, 0},
+              false, false
+        };
     case spv::ImageFormatR16ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 1, { 16, 0, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 1, {16, 0, 0, 0},
+              false, false
+        };
     case spv::ImageFormatR32ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 1, { 32, 0, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 1, {32, 0, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRg8ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 2, { 8, 8, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 2, {8, 8, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRg16ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 2, { 16, 16, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 2, {16, 16, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRg32ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 2, { 32, 32, 0, 0 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 2, {32, 32, 0, 0},
+              false, false
+        };
     case spv::ImageFormatRgba8ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 4, { 8, 8, 8, 8 }, false, false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 4, {8, 8, 8, 8},
+              false, false
+        };
     case spv::ImageFormatRgb10a2ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 4, { 10, 10, 10, 2 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 4, {10, 10, 10, 2},
+              false, false
+        };
     case spv::ImageFormatRgba16ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 4, { 16, 16, 16, 16 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 4, {16, 16, 16, 16},
+              false, false
+        };
     case spv::ImageFormatRgba32ui:
-        return { EReflectBufferPrimitiveType::ReflectPrimitive_uint, 4, { 32, 32, 32, 32 }, false,
-            false };
+        return {
+            EReflectBufferPrimitiveType::ReflectPrimitive_uint, 4, {32, 32, 32, 32},
+              false, false
+        };
     case spv::ImageFormatUnknown:
         break;
     case spv::ImageFormatMax:
@@ -322,11 +420,13 @@ TexelComponentFormat ShaderReflectionProcessor::texelFormat(spv::ImageFormat for
         exit(1);
         break;
     }
-    return { EReflectBufferPrimitiveType::RelectPrimitive_invalid, 4, { 0, 0, 0, 0 }, false, false };
+    return {
+        EReflectBufferPrimitiveType::RelectPrimitive_invalid, 4, {0, 0, 0, 0},
+          false, false
+    };
 }
 
-EReflectBufferPrimitiveType getReflectPrimitiveType(
-    const SPIRV_CROSS_NAMESPACE::SPIRType::BaseType &type)
+EReflectBufferPrimitiveType getReflectPrimitiveType(const SPIRV_CROSS_NAMESPACE::SPIRType::BaseType &type)
 {
     switch (type)
     {
@@ -365,9 +465,10 @@ EReflectBufferPrimitiveType getReflectPrimitiveType(
     return EReflectBufferPrimitiveType::RelectPrimitive_invalid;
 }
 
-void setSpecializationConstDefault(SpecializationConstantDefaultValue &value,
-    const SPIRV_CROSS_NAMESPACE::SPIRConstant &constantRef,
-    const SPIRV_CROSS_NAMESPACE::SPIRType &typeRef)
+void setSpecializationConstDefault(
+    SpecializationConstantDefaultValue &value, const SPIRV_CROSS_NAMESPACE::SPIRConstant &constantRef,
+    const SPIRV_CROSS_NAMESPACE::SPIRType &typeRef
+)
 {
     switch (typeRef.basetype)
     {
@@ -391,14 +492,15 @@ void setSpecializationConstDefault(SpecializationConstantDefaultValue &value,
     }
 }
 
-bool validateSpecializationConst(const SPIRV_CROSS_NAMESPACE::SPIRConstant &constantRef,
-    const SPIRV_CROSS_NAMESPACE::SPIRType &typeRef)
+bool validateSpecializationConst(const SPIRV_CROSS_NAMESPACE::SPIRConstant &constantRef, const SPIRV_CROSS_NAMESPACE::SPIRType &typeRef)
 {
     if (!typeRef.array.empty())
     {
-        printf("ERROR: [%s] unsupported specialization constant, cannot use array type in "
-               "specialization constant",
-            __func__);
+        printf(
+            "ERROR: [%s] unsupported specialization constant, cannot use array type in "
+            "specialization constant",
+            __func__
+        );
         return false;
     }
 
@@ -419,9 +521,10 @@ ReflectFieldType getReflectedType(const SPIRV_CROSS_NAMESPACE::SPIRType &baseTyp
     return fieldType;
 }
 
-void fillBufferFieldArrayInfo(std::vector<ArrayDefinition> &arrayDefs,
-    const SPIRV_CROSS_NAMESPACE::SPIRType &type, const std::map<uint32_t, uint32_t> &specConstMap,
-    const uint32_t &stageIdx)
+void fillBufferFieldArrayInfo(
+    std::vector<ArrayDefinition> &arrayDefs, const SPIRV_CROSS_NAMESPACE::SPIRType &type, const std::map<uint32_t, uint32_t> &specConstMap,
+    const uint32_t &stageIdx
+)
 {
     if (type.array.empty())
     {
@@ -447,8 +550,7 @@ void fillBufferFieldArrayInfo(std::vector<ArrayDefinition> &arrayDefs,
                 if (itr == specConstMap.cend())
                 {
                     assert(!"Failed to find specialization const ID in map");
-                    printf(
-                        "ERROR: Failed to find specialization const ID in map for ID %d", type.array[i]);
+                    printf("ERROR: Failed to find specialization const ID in map for ID %d", type.array[i]);
                     exit(1);
                     continue;
                 }
@@ -459,16 +561,15 @@ void fillBufferFieldArrayInfo(std::vector<ArrayDefinition> &arrayDefs,
     }
 }
 
-void fillBufferFields(ReflectBufferShaderField &shaderBufferField,
-    const SPIRV_CROSS_NAMESPACE::SPIRType &structType,
-    const SPIRV_CROSS_NAMESPACE::Compiler *compiledData,
-    const std::map<uint32_t, uint32_t> &specConstMap, const uint32_t &stageIdx)
+void fillBufferFields(
+    ReflectBufferShaderField &shaderBufferField, const SPIRV_CROSS_NAMESPACE::SPIRType &structType,
+    const SPIRV_CROSS_NAMESPACE::Compiler *compiledData, const std::map<uint32_t, uint32_t> &specConstMap, const uint32_t &stageIdx
+)
 {
     uint32_t index = 0;
     // getting max of all comparison as value with max stride is last of buffer struct of all stages
     uint32_t newStride = uint32_t(compiledData->get_declared_struct_size(structType));
-    shaderBufferField.stride
-        = shaderBufferField.stride > newStride ? shaderBufferField.stride : newStride;
+    shaderBufferField.stride = shaderBufferField.stride > newStride ? shaderBufferField.stride : newStride;
     for (const SPIRV_CROSS_NAMESPACE::TypeID &memberTypeID : structType.member_types)
     {
         const SPIRV_CROSS_NAMESPACE::SPIRType &memberType = compiledData->get_type(memberTypeID);
@@ -477,8 +578,7 @@ void fillBufferFields(ReflectBufferShaderField &shaderBufferField,
             ReflectBufferStructEntry innerStruct;
             innerStruct.attributeName = compiledData->get_member_name(structType.self, index);
             // Returns 0 in runtime array
-            innerStruct.data.totalSize
-                = uint32_t(compiledData->get_declared_struct_member_size(structType, index));
+            innerStruct.data.totalSize = uint32_t(compiledData->get_declared_struct_member_size(structType, index));
             if (memberType.array.empty())
             {
                 innerStruct.data.stride = innerStruct.data.data.stride
@@ -489,8 +589,7 @@ void fillBufferFields(ReflectBufferShaderField &shaderBufferField,
                 innerStruct.data.stride = innerStruct.data.data.stride
                     = uint32_t(compiledData->type_struct_member_array_stride(structType, index));
             }
-            innerStruct.data.offset
-                = uint32_t(compiledData->type_struct_member_offset(structType, index));
+            innerStruct.data.offset = uint32_t(compiledData->type_struct_member_offset(structType, index));
             fillBufferFieldArrayInfo(innerStruct.data.arraySize, memberType, specConstMap, stageIdx);
             fillBufferFields(innerStruct.data.data, memberType, compiledData, specConstMap, stageIdx);
 
@@ -501,8 +600,7 @@ void fillBufferFields(ReflectBufferShaderField &shaderBufferField,
             ReflectBufferEntry memberField;
             memberField.attributeName = compiledData->get_member_name(structType.self, index).c_str();
             // Returns 0 in runtime array
-            memberField.data.totalSize = memberField.data.stride
-                = uint32_t(compiledData->get_declared_struct_member_size(structType, index));
+            memberField.data.totalSize = memberField.data.stride = uint32_t(compiledData->get_declared_struct_member_size(structType, index));
 
             // We don't need matrix check here as array stride returns correct value and
             // type_struct_member_matrix_stride returns matrix row/column stride
@@ -514,8 +612,7 @@ void fillBufferFields(ReflectBufferShaderField &shaderBufferField,
             // else
             if (!memberType.array.empty())
             {
-                memberField.data.stride
-                    = compiledData->type_struct_member_array_stride(structType, index);
+                memberField.data.stride = compiledData->type_struct_member_array_stride(structType, index);
             }
             memberField.data.offset = compiledData->type_struct_member_offset(structType, index);
             memberField.data.data.type = getReflectedType(memberType);
@@ -537,8 +634,7 @@ bool markRuntimeArray(ReflectBufferShaderField &shaderBufferField, bool bInner =
         {
             if (bInner)
             {
-                printf("ERROR: [%s] Buffer field %s is not SoA and cannot be runtime array", __func__,
-                    memField.attributeName.c_str());
+                printf("ERROR: [%s] Buffer field %s is not SoA and cannot be runtime array", __func__, memField.attributeName.c_str());
                 bIsValid = false;
                 continue;
             }
@@ -553,9 +649,11 @@ bool markRuntimeArray(ReflectBufferShaderField &shaderBufferField, bool bInner =
         {
             if (bInner)
             {
-                printf("ERROR: [%s] Buffer struct field %s is not SoA and cannot be runtime "
-                       "array",
-                    __func__, structField.attributeName.c_str());
+                printf(
+                    "ERROR: [%s] Buffer struct field %s is not SoA and cannot be runtime "
+                    "array",
+                    __func__, structField.attributeName.c_str()
+                );
                 bIsValid = false;
                 continue;
             }
@@ -578,16 +676,16 @@ void squashDuplicates(ReflectBufferShaderField &shaderBufferField)
         std::vector<ReflectBufferEntry> squashedBufferFields;
         squashedBufferFields.reserve(shaderBufferField.bufferFields.size());
 
-        sort(shaderBufferField.bufferFields.begin(), shaderBufferField.bufferFields.end(),
-            [](const ReflectBufferEntry &rhs, const ReflectBufferEntry &lhs)
-            { return offsetSortFunc(rhs.data, lhs.data); });
+        sort(
+            shaderBufferField.bufferFields.begin(), shaderBufferField.bufferFields.end(),
+            [](const ReflectBufferEntry &rhs, const ReflectBufferEntry &lhs) { return offsetSortFunc(rhs.data, lhs.data); }
+        );
 
         for (uint32_t i = 0; i < shaderBufferField.bufferFields.size();)
         {
             uint32_t j = i + 1;
             for (; j < shaderBufferField.bufferFields.size()
-                   && shaderBufferField.bufferFields[i].data.offset
-                          == shaderBufferField.bufferFields[j].data.offset;
+                   && shaderBufferField.bufferFields[i].data.offset == shaderBufferField.bufferFields[j].data.offset;
                  ++j)
                 ;
 
@@ -606,40 +704,36 @@ void squashDuplicates(ReflectBufferShaderField &shaderBufferField)
         std::vector<ReflectBufferStructEntry> squashedStructFields;
         squashedStructFields.reserve(shaderBufferField.bufferStructFields.size());
 
-        sort(shaderBufferField.bufferStructFields.begin(), shaderBufferField.bufferStructFields.end(),
-            [](const ReflectBufferStructEntry &rhs, const ReflectBufferStructEntry &lhs)
-            { return offsetSortFunc(rhs.data, lhs.data); });
+        sort(
+            shaderBufferField.bufferStructFields.begin(), shaderBufferField.bufferStructFields.end(),
+            [](const ReflectBufferStructEntry &rhs, const ReflectBufferStructEntry &lhs) { return offsetSortFunc(rhs.data, lhs.data); }
+        );
 
         for (uint32_t i = 0; i < shaderBufferField.bufferStructFields.size();)
         {
-            ReflectBufferShaderField &uniqueStructField
-                = shaderBufferField.bufferStructFields[i].data.data;
+            ReflectBufferShaderField &uniqueStructField = shaderBufferField.bufferStructFields[i].data.data;
 
             uint32_t j = i + 1;
             for (; j < shaderBufferField.bufferStructFields.size()
-                   && shaderBufferField.bufferStructFields[i].data.offset
-                          == shaderBufferField.bufferStructFields[j].data.offset;
+                   && shaderBufferField.bufferStructFields[i].data.offset == shaderBufferField.bufferStructFields[j].data.offset;
                  ++j)
             {
-                ReflectBufferShaderField &duplicateStructField
-                    = shaderBufferField.bufferStructFields[j].data.data;
-                uniqueStructField.bufferFields.insert(uniqueStructField.bufferFields.end(),
-                    duplicateStructField.bufferFields.cbegin(),
-                    duplicateStructField.bufferFields.cend());
-                uniqueStructField.bufferStructFields.insert(uniqueStructField.bufferStructFields.end(),
-                    duplicateStructField.bufferStructFields.cbegin(),
-                    duplicateStructField.bufferStructFields.cend());
+                ReflectBufferShaderField &duplicateStructField = shaderBufferField.bufferStructFields[j].data.data;
+                uniqueStructField.bufferFields.insert(
+                    uniqueStructField.bufferFields.end(), duplicateStructField.bufferFields.cbegin(), duplicateStructField.bufferFields.cend()
+                );
+                uniqueStructField.bufferStructFields.insert(
+                    uniqueStructField.bufferStructFields.end(), duplicateStructField.bufferStructFields.cbegin(),
+                    duplicateStructField.bufferStructFields.cend()
+                );
 
                 // If some duplicate has higher stride? use that value, happens when inner struct
                 // is also used selectively between shaders.
-                if (shaderBufferField.bufferStructFields[j].data.stride
-                    > shaderBufferField.bufferStructFields[i].data.stride)
+                if (shaderBufferField.bufferStructFields[j].data.stride > shaderBufferField.bufferStructFields[i].data.stride)
                 {
-                    shaderBufferField.bufferStructFields[i].data.stride
-                        = shaderBufferField.bufferStructFields[i].data.data.stride
+                    shaderBufferField.bufferStructFields[i].data.stride = shaderBufferField.bufferStructFields[i].data.data.stride
                         = shaderBufferField.bufferStructFields[j].data.stride;
-                    shaderBufferField.bufferStructFields[i].data.totalSize
-                        = shaderBufferField.bufferStructFields[j].data.totalSize;
+                    shaderBufferField.bufferStructFields[i].data.totalSize = shaderBufferField.bufferStructFields[j].data.totalSize;
                 }
             }
             // Recursively squash
@@ -656,8 +750,7 @@ void squashDuplicates(ReflectBufferShaderField &shaderBufferField)
     }
 }
 
-void fillSampledImageFormats(
-    TexelComponentFormat &format, const SPIRV_CROSS_NAMESPACE::SPIRType &baseType)
+void fillSampledImageFormats(TexelComponentFormat &format, const SPIRV_CROSS_NAMESPACE::SPIRType &baseType)
 {
     format = ShaderReflectionProcessor::texelFormat(baseType.image.format);
     format.componentCount = 4; // Always four in sampled image
@@ -665,8 +758,7 @@ void fillSampledImageFormats(
 
 // Sort descriptors entry based on binding
 template <typename Type>
-bool sortDescriptors(NamedAttribute<DescriptorSetEntry<Type>> &lhsEntry,
-    NamedAttribute<DescriptorSetEntry<Type>> &rhsEntry)
+bool sortDescriptors(NamedAttribute<DescriptorSetEntry<Type>> &lhsEntry, NamedAttribute<DescriptorSetEntry<Type>> &rhsEntry)
 {
     return lhsEntry.data.binding > rhsEntry.data.binding;
 }
@@ -681,9 +773,7 @@ void squashDuplicates(std::vector<NamedAttribute<DescriptorSetEntry<Type>>> &des
     {
         NamedAttribute<DescriptorSetEntry<Type>> &uniqueDescriptor = descriptorsCollection[i];
         uint32_t j = i + 1;
-        for (; j < descriptorsCollection.size()
-               && uniqueDescriptor.data.binding == descriptorsCollection[j].data.binding;
-             ++j)
+        for (; j < descriptorsCollection.size() && uniqueDescriptor.data.binding == descriptorsCollection[j].data.binding; ++j)
         {
             NamedAttribute<DescriptorSetEntry<Type>> &duplicateDescriptor = descriptorsCollection[j];
             uniqueDescriptor.data.stagesUsed |= duplicateDescriptor.data.stagesUsed;
@@ -701,8 +791,8 @@ void squashDuplicates(std::vector<NamedAttribute<DescriptorSetEntry<Type>>> &des
 }
 
 template <>
-void squashDuplicates<ReflectBufferShaderField>(
-    std::vector<NamedAttribute<DescriptorSetEntry<ReflectBufferShaderField>>> &descriptorsCollection)
+void squashDuplicates<ReflectBufferShaderField>(std::vector<NamedAttribute<DescriptorSetEntry<ReflectBufferShaderField>>> &descriptorsCollection
+)
 {
     std::vector<DescEntryBuffer> squashedBufferFields;
     squashedBufferFields.reserve(descriptorsCollection.size());
@@ -710,20 +800,19 @@ void squashDuplicates<ReflectBufferShaderField>(
     {
         DescEntryBuffer &uniqueBuffer = descriptorsCollection[i];
         uint32_t j = i + 1;
-        for (; j < descriptorsCollection.size()
-               && uniqueBuffer.data.binding == descriptorsCollection[j].data.binding;
-             ++j)
+        for (; j < descriptorsCollection.size() && uniqueBuffer.data.binding == descriptorsCollection[j].data.binding; ++j)
         {
             DescEntryBuffer &duplicateBuffer = descriptorsCollection[j];
 
             uniqueBuffer.data.stagesUsed |= duplicateBuffer.data.stagesUsed;
-            uniqueBuffer.data.data.bufferFields.insert(uniqueBuffer.data.data.bufferFields.end(),
-                duplicateBuffer.data.data.bufferFields.cbegin(),
-                duplicateBuffer.data.data.bufferFields.cend());
+            uniqueBuffer.data.data.bufferFields.insert(
+                uniqueBuffer.data.data.bufferFields.end(), duplicateBuffer.data.data.bufferFields.cbegin(),
+                duplicateBuffer.data.data.bufferFields.cend()
+            );
             uniqueBuffer.data.data.bufferStructFields.insert(
-                uniqueBuffer.data.data.bufferStructFields.end(),
-                duplicateBuffer.data.data.bufferStructFields.cbegin(),
-                duplicateBuffer.data.data.bufferStructFields.cend());
+                uniqueBuffer.data.data.bufferStructFields.end(), duplicateBuffer.data.data.bufferStructFields.cbegin(),
+                duplicateBuffer.data.data.bufferStructFields.cend()
+            );
 
             // If some duplicate has higher stride? use that value, happens when struct is used
             // selectively between shaders.
@@ -747,24 +836,15 @@ void squashDuplicates<ReflectBufferShaderField>(
 
 void squashDuplicates(ReflectDescriptorBody &descriptorsSet)
 {
-    sort(descriptorsSet.uniforms.begin(), descriptorsSet.uniforms.end(),
-        &sortDescriptors<ReflectBufferShaderField>);
-    sort(descriptorsSet.buffers.begin(), descriptorsSet.buffers.end(),
-        &sortDescriptors<ReflectBufferShaderField>);
-    sort(descriptorsSet.samplerBuffers.begin(), descriptorsSet.samplerBuffers.end(),
-        &sortDescriptors<ReflectTexelBufferShaderField>);
-    sort(descriptorsSet.imageBuffers.begin(), descriptorsSet.imageBuffers.end(),
-        &sortDescriptors<ReflectTexelBufferShaderField>);
-    sort(descriptorsSet.sampledTexAndArrays.begin(), descriptorsSet.sampledTexAndArrays.end(),
-        &sortDescriptors<ReflectTextureShaderField>);
-    sort(descriptorsSet.textureAndArrays.begin(), descriptorsSet.textureAndArrays.end(),
-        &sortDescriptors<ReflectTextureShaderField>);
-    sort(descriptorsSet.imagesAndImgArrays.begin(), descriptorsSet.imagesAndImgArrays.end(),
-        &sortDescriptors<ReflectTextureShaderField>);
-    sort(descriptorsSet.subpassInputs.begin(), descriptorsSet.subpassInputs.end(),
-        &sortDescriptors<ReflectSubpassInput>);
-    sort(descriptorsSet.samplers.begin(), descriptorsSet.samplers.end(),
-        &sortDescriptors<ReflectSampler>);
+    sort(descriptorsSet.uniforms.begin(), descriptorsSet.uniforms.end(), &sortDescriptors<ReflectBufferShaderField>);
+    sort(descriptorsSet.buffers.begin(), descriptorsSet.buffers.end(), &sortDescriptors<ReflectBufferShaderField>);
+    sort(descriptorsSet.samplerBuffers.begin(), descriptorsSet.samplerBuffers.end(), &sortDescriptors<ReflectTexelBufferShaderField>);
+    sort(descriptorsSet.imageBuffers.begin(), descriptorsSet.imageBuffers.end(), &sortDescriptors<ReflectTexelBufferShaderField>);
+    sort(descriptorsSet.sampledTexAndArrays.begin(), descriptorsSet.sampledTexAndArrays.end(), &sortDescriptors<ReflectTextureShaderField>);
+    sort(descriptorsSet.textureAndArrays.begin(), descriptorsSet.textureAndArrays.end(), &sortDescriptors<ReflectTextureShaderField>);
+    sort(descriptorsSet.imagesAndImgArrays.begin(), descriptorsSet.imagesAndImgArrays.end(), &sortDescriptors<ReflectTextureShaderField>);
+    sort(descriptorsSet.subpassInputs.begin(), descriptorsSet.subpassInputs.end(), &sortDescriptors<ReflectSubpassInput>);
+    sort(descriptorsSet.samplers.begin(), descriptorsSet.samplers.end(), &sortDescriptors<ReflectSampler>);
 
     // Uniform buffers
     squashDuplicates(descriptorsSet.uniforms);
@@ -780,8 +860,7 @@ void squashDuplicates(ReflectDescriptorBody &descriptorsSet)
 
 // Combines the descriptors usage of list of same typed descriptors
 template <typename Type>
-uint32_t combinedDescritorsUsage(
-    const std::vector<NamedAttribute<DescriptorSetEntry<Type>>> &descriptorsCollection)
+uint32_t combinedDescritorsUsage(const std::vector<NamedAttribute<DescriptorSetEntry<Type>>> &descriptorsCollection)
 {
     uint32_t combinedUsage = 0;
     for (const NamedAttribute<DescriptorSetEntry<Type>> &descriptor : descriptorsCollection)
@@ -793,14 +872,10 @@ uint32_t combinedDescritorsUsage(
 
 uint32_t combinedDescritorsUsage(const ReflectDescriptorBody &descriptorsSet)
 {
-    return combinedDescritorsUsage(descriptorsSet.uniforms)
-           | combinedDescritorsUsage(descriptorsSet.buffers)
-           | combinedDescritorsUsage(descriptorsSet.samplerBuffers)
-           | combinedDescritorsUsage(descriptorsSet.imageBuffers)
-           | combinedDescritorsUsage(descriptorsSet.sampledTexAndArrays)
-           | combinedDescritorsUsage(descriptorsSet.textureAndArrays)
-           | combinedDescritorsUsage(descriptorsSet.imagesAndImgArrays)
-           | combinedDescritorsUsage(descriptorsSet.subpassInputs)
+    return combinedDescritorsUsage(descriptorsSet.uniforms) | combinedDescritorsUsage(descriptorsSet.buffers)
+           | combinedDescritorsUsage(descriptorsSet.samplerBuffers) | combinedDescritorsUsage(descriptorsSet.imageBuffers)
+           | combinedDescritorsUsage(descriptorsSet.sampledTexAndArrays) | combinedDescritorsUsage(descriptorsSet.textureAndArrays)
+           | combinedDescritorsUsage(descriptorsSet.imagesAndImgArrays) | combinedDescritorsUsage(descriptorsSet.subpassInputs)
            | combinedDescritorsUsage(descriptorsSet.samplers);
 }
 
@@ -809,16 +884,14 @@ void printArrayDefs(const std::vector<ArrayDefinition> &arrayDefs, std::string i
     printf("%sArraySize : ", indent.c_str());
     for (const ArrayDefinition &def : arrayDefs)
     {
-        printf(
-            "[%d : %s(%d)]", def.dimension, def.isSpecializationConst ? "true" : "false", def.stageIdx);
+        printf("[%d : %s(%d)]", def.dimension, def.isSpecializationConst ? "true" : "false", def.stageIdx);
     }
     printf("\n");
 }
 
 void printReflectedType(const ReflectFieldType &fieldType, std::string indent)
 {
-    printf("%sPrimitive type : %d[%d][%d]\n", indent.c_str(), fieldType.primitive, fieldType.vecSize,
-        fieldType.colSize);
+    printf("%sPrimitive type : %d[%d][%d]\n", indent.c_str(), fieldType.primitive, fieldType.vecSize, fieldType.colSize);
 }
 
 void printFields(const ReflectBufferShaderField &shaderBufferField, std::string indent)
@@ -827,21 +900,20 @@ void printFields(const ReflectBufferShaderField &shaderBufferField, std::string 
     printf("%sStride : %d\n", indentChar, shaderBufferField.stride);
 
     for (uint32_t bufferIdx = 0, structIdx = 0;
-         bufferIdx < shaderBufferField.bufferFields.size()
-         || structIdx < shaderBufferField.bufferStructFields.size();)
+         bufferIdx < shaderBufferField.bufferFields.size() || structIdx < shaderBufferField.bufferStructFields.size();)
     {
         // valid bufferIdx and either structIdx is invalid or bufferField[bufferIdx] offset is less
         // than that at structIdx
         if (bufferIdx < shaderBufferField.bufferFields.size()
             && (structIdx >= shaderBufferField.bufferStructFields.size()
-                || shaderBufferField.bufferFields[bufferIdx].data.offset
-                       < shaderBufferField.bufferStructFields[structIdx].data.offset))
+                || shaderBufferField.bufferFields[bufferIdx].data.offset < shaderBufferField.bufferStructFields[structIdx].data.offset))
         {
             const ReflectBufferEntry &bufferField = shaderBufferField.bufferFields[bufferIdx];
 
-            printf("%sField : %s\n%s\tStride : %d\n%s\tOffset : %d\n%s\tTotalSize : %d\n", indentChar,
-                bufferField.attributeName.c_str(), indentChar, bufferField.data.stride, indentChar,
-                bufferField.data.offset, indentChar, bufferField.data.totalSize);
+            printf(
+                "%sField : %s\n%s\tStride : %d\n%s\tOffset : %d\n%s\tTotalSize : %d\n", indentChar, bufferField.attributeName.c_str(),
+                indentChar, bufferField.data.stride, indentChar, bufferField.data.offset, indentChar, bufferField.data.totalSize
+            );
             printReflectedType(bufferField.data.data.type, indent + "\t");
             printArrayDefs(bufferField.data.arraySize, indent + "\t");
 
@@ -849,12 +921,12 @@ void printFields(const ReflectBufferShaderField &shaderBufferField, std::string 
         }
         else // Definitely valid structIdx when entering this block
         {
-            const ReflectBufferStructEntry &structField
-                = shaderBufferField.bufferStructFields[structIdx];
+            const ReflectBufferStructEntry &structField = shaderBufferField.bufferStructFields[structIdx];
 
-            printf("%sStruct : %s\n%s\tStride : %d\n%s\tOffset : %d\n%s\tTotalSize : %d\n", indentChar,
-                structField.attributeName.c_str(), indentChar, structField.data.stride, indentChar,
-                structField.data.offset, indentChar, structField.data.totalSize);
+            printf(
+                "%sStruct : %s\n%s\tStride : %d\n%s\tOffset : %d\n%s\tTotalSize : %d\n", indentChar, structField.attributeName.c_str(),
+                indentChar, structField.data.stride, indentChar, structField.data.offset, indentChar, structField.data.totalSize
+            );
             printArrayDefs(structField.data.arraySize, indent + "\t");
             printFields(structField.data.data, indent + '\t');
 
@@ -867,11 +939,12 @@ template <typename Type>
 void printDescriptorDesc(const NamedAttribute<DescriptorSetEntry<Type>> &descriptor, std::string indent)
 {
     const char *indentChar = indent.c_str();
-    printf("  Binding = %d\n%sName : %s\n%sDescriptor Type : %d\n%sPipeline stages used : %d\n%sRead "
-           "Write qualifier : %d\n",
-        descriptor.data.binding, indentChar, descriptor.attributeName.c_str(), indentChar,
-        descriptor.data.type, indentChar, descriptor.data.stagesUsed, indentChar,
-        descriptor.data.readWriteState);
+    printf(
+        "  Binding = %d\n%sName : %s\n%sDescriptor Type : %d\n%sPipeline stages used : %d\n%sRead "
+        "Write qualifier : %d\n",
+        descriptor.data.binding, indentChar, descriptor.attributeName.c_str(), indentChar, descriptor.data.type, indentChar,
+        descriptor.data.stagesUsed, indentChar, descriptor.data.readWriteState
+    );
 }
 
 void printTexelCompFormat(const TexelComponentFormat &componentFormat, std::string indent)
@@ -894,11 +967,9 @@ void printTexelCompFormat(const TexelComponentFormat &componentFormat, std::stri
             printf("[%d]", componentFormat.componentSize[i]);
         }
         printf("\n");
-        if (componentFormat.type
-            != EReflectBufferPrimitiveType::ReflectPrimitive_float) // Only in integers this matters
+        if (componentFormat.type != EReflectBufferPrimitiveType::ReflectPrimitive_float) // Only in integers this matters
         {
-            printf("\n%sIs Normalized : %s\n", indentChar,
-                componentFormat.bIsNormalized ? "true" : "false");
+            printf("\n%sIs Normalized : %s\n", indentChar, componentFormat.bIsNormalized ? "true" : "false");
             printf("\n%sIs Scaled : %s\n", indentChar, componentFormat.bIsNormalized ? "true" : "false");
         }
     }
@@ -906,16 +977,13 @@ void printTexelCompFormat(const TexelComponentFormat &componentFormat, std::stri
 
 void printDescriptorsSet(const ReflectDescriptorBody &descriptorsSet)
 {
-    printf("Descriptors Set = %d Combined stages usage = %d\n", descriptorsSet.set,
-        descriptorsSet.combinedSetUsage);
+    printf("Descriptors Set = %d Combined stages usage = %d\n", descriptorsSet.set, descriptorsSet.combinedSetUsage);
     for (const uint32_t &binding : descriptorsSet.usedBindings)
     {
-        auto finderFunc
-            = [&binding](const auto &descriptor) { return descriptor.data.binding == binding; };
+        auto finderFunc = [&binding](const auto &descriptor) { return descriptor.data.binding == binding; };
 
         {
-            auto itr = std::find_if(
-                descriptorsSet.uniforms.cbegin(), descriptorsSet.uniforms.cend(), finderFunc);
+            auto itr = std::find_if(descriptorsSet.uniforms.cbegin(), descriptorsSet.uniforms.cend(), finderFunc);
             if (itr != descriptorsSet.uniforms.cend())
             {
                 printDescriptorDesc(*itr, "\t");
@@ -924,8 +992,7 @@ void printDescriptorsSet(const ReflectDescriptorBody &descriptorsSet)
             }
         }
         {
-            auto itr = std::find_if(
-                descriptorsSet.buffers.cbegin(), descriptorsSet.buffers.cend(), finderFunc);
+            auto itr = std::find_if(descriptorsSet.buffers.cbegin(), descriptorsSet.buffers.cend(), finderFunc);
             if (itr != descriptorsSet.buffers.cend())
             {
                 printDescriptorDesc(*itr, "\t");
@@ -934,8 +1001,7 @@ void printDescriptorsSet(const ReflectDescriptorBody &descriptorsSet)
             }
         }
         {
-            auto itr = std::find_if(descriptorsSet.samplerBuffers.cbegin(),
-                descriptorsSet.samplerBuffers.cend(), finderFunc);
+            auto itr = std::find_if(descriptorsSet.samplerBuffers.cbegin(), descriptorsSet.samplerBuffers.cend(), finderFunc);
             if (itr != descriptorsSet.samplerBuffers.cend())
             {
                 printDescriptorDesc(*itr, "\t");
@@ -945,8 +1011,7 @@ void printDescriptorsSet(const ReflectDescriptorBody &descriptorsSet)
             }
         }
         {
-            auto itr = std::find_if(
-                descriptorsSet.imageBuffers.cbegin(), descriptorsSet.imageBuffers.cend(), finderFunc);
+            auto itr = std::find_if(descriptorsSet.imageBuffers.cbegin(), descriptorsSet.imageBuffers.cend(), finderFunc);
             if (itr != descriptorsSet.imageBuffers.cend())
             {
                 printDescriptorDesc(*itr, "\t");
@@ -956,47 +1021,49 @@ void printDescriptorsSet(const ReflectDescriptorBody &descriptorsSet)
             }
         }
         {
-            auto itr = std::find_if(descriptorsSet.sampledTexAndArrays.cbegin(),
-                descriptorsSet.sampledTexAndArrays.cend(), finderFunc);
+            auto itr = std::find_if(descriptorsSet.sampledTexAndArrays.cbegin(), descriptorsSet.sampledTexAndArrays.cend(), finderFunc);
             if (itr != descriptorsSet.sampledTexAndArrays.cend())
             {
                 printDescriptorDesc(*itr, "\t");
-                printf("\tImage view type : %d\n\tIs multi sampled : %s\n", itr->data.data.imageViewType,
-                    itr->data.data.bIsMultiSampled ? "true" : "false");
+                printf(
+                    "\tImage view type : %d\n\tIs multi sampled : %s\n", itr->data.data.imageViewType,
+                    itr->data.data.bIsMultiSampled ? "true" : "false"
+                );
                 printTexelCompFormat(itr->data.data.format, "\t");
                 printArrayDefs(itr->data.data.arraySize, "\t");
                 continue;
             }
         }
         {
-            auto itr = std::find_if(descriptorsSet.textureAndArrays.cbegin(),
-                descriptorsSet.textureAndArrays.cend(), finderFunc);
+            auto itr = std::find_if(descriptorsSet.textureAndArrays.cbegin(), descriptorsSet.textureAndArrays.cend(), finderFunc);
             if (itr != descriptorsSet.textureAndArrays.cend())
             {
                 printDescriptorDesc(*itr, "\t");
-                printf("\tImage view type : %d\n\tIs multi sampled : %s\n", itr->data.data.imageViewType,
-                    itr->data.data.bIsMultiSampled ? "true" : "false");
+                printf(
+                    "\tImage view type : %d\n\tIs multi sampled : %s\n", itr->data.data.imageViewType,
+                    itr->data.data.bIsMultiSampled ? "true" : "false"
+                );
                 printTexelCompFormat(itr->data.data.format, "\t");
                 printArrayDefs(itr->data.data.arraySize, "\t");
                 continue;
             }
         }
         {
-            auto itr = std::find_if(descriptorsSet.imagesAndImgArrays.cbegin(),
-                descriptorsSet.imagesAndImgArrays.cend(), finderFunc);
+            auto itr = std::find_if(descriptorsSet.imagesAndImgArrays.cbegin(), descriptorsSet.imagesAndImgArrays.cend(), finderFunc);
             if (itr != descriptorsSet.imagesAndImgArrays.cend())
             {
                 printDescriptorDesc(*itr, "\t");
-                printf("\tImage view type : %d\n\tIs multi sampled : %s\n", itr->data.data.imageViewType,
-                    itr->data.data.bIsMultiSampled ? "true" : "false");
+                printf(
+                    "\tImage view type : %d\n\tIs multi sampled : %s\n", itr->data.data.imageViewType,
+                    itr->data.data.bIsMultiSampled ? "true" : "false"
+                );
                 printTexelCompFormat(itr->data.data.format, "\t");
                 printArrayDefs(itr->data.data.arraySize, "\t");
                 continue;
             }
         }
         {
-            auto itr = std::find_if(
-                descriptorsSet.subpassInputs.cbegin(), descriptorsSet.subpassInputs.cend(), finderFunc);
+            auto itr = std::find_if(descriptorsSet.subpassInputs.cbegin(), descriptorsSet.subpassInputs.cend(), finderFunc);
             if (itr != descriptorsSet.subpassInputs.cend())
             {
                 printDescriptorDesc(*itr, "\t");
@@ -1005,8 +1072,7 @@ void printDescriptorsSet(const ReflectDescriptorBody &descriptorsSet)
             }
         }
         {
-            auto itr = std::find_if(
-                descriptorsSet.samplers.cbegin(), descriptorsSet.samplers.cend(), finderFunc);
+            auto itr = std::find_if(descriptorsSet.samplers.cbegin(), descriptorsSet.samplers.cend(), finderFunc);
             if (itr != descriptorsSet.samplers.cend())
             {
                 printDescriptorDesc(*itr, "\t");
@@ -1020,8 +1086,8 @@ void printDescriptorsSet(const ReflectDescriptorBody &descriptorsSet)
 // Pipeline shader stage processor impl
 
 PipelineShaderStageProcessor::PipelineShaderStageProcessor(
-    const std::vector<ShaderReflectionProcessor *> &shaderReflections, std::string refFilePath,
-    std::string shaderFilePath)
+    const std::vector<ShaderReflectionProcessor *> &shaderReflections, std::string refFilePath, std::string shaderFilePath
+)
     : shaderStages(shaderReflections)
     , reflectionFile(refFilePath)
     , shaderFile(shaderFilePath)
@@ -1074,21 +1140,20 @@ bool PipelineShaderStageProcessor::crossCheckWrittenData()
                 ShaderReflectionProcessor processor(allShaderCode, reflectedShader.stages[i].codeView);
                 ShaderStageDescription stageDescRead = processor.getStageDesc();
                 ShaderStageDescription stageDesc = shaderStages[i]->getStageDesc();
-                if (stageDescRead.stage != stageDesc.stage
-                    || stageDescRead.entryPoint != stageDesc.entryPoint
+                if (stageDescRead.stage != stageDesc.stage || stageDescRead.entryPoint != stageDesc.entryPoint
                     || stageDescRead.pipelineBindPoint != stageDescRead.pipelineBindPoint
-                    || stageDescRead.codeView.size != stageDesc.codeView.size
-                    || stageDescRead.codeView.startIdx != stageDesc.codeView.startIdx)
+                    || stageDescRead.codeView.size != stageDesc.codeView.size || stageDescRead.codeView.startIdx != stageDesc.codeView.startIdx)
                 {
-                    printf("Rereading binary written file failed Reflection file %s "
-                           "shader file %s \n",
-                        reflectionFile.c_str(), shaderFile.c_str());
+                    printf(
+                        "Rereading binary written file failed Reflection file %s "
+                        "shader file %s \n",
+                        reflectionFile.c_str(), shaderFile.c_str()
+                    );
                     bIsSuccess = false;
                 }
                 else
                 {
-                    printf("Successfully parsed written shader %s and reflection %s\n",
-                        shaderFile.c_str(), reflectionFile.c_str());
+                    printf("Successfully parsed written shader %s and reflection %s\n", shaderFile.c_str(), reflectionFile.c_str());
                     bIsSuccess = bIsSuccess && true;
                 }
             }
@@ -1097,8 +1162,7 @@ bool PipelineShaderStageProcessor::crossCheckWrittenData()
     return bIsSuccess;
 }
 
-void PipelineShaderStageProcessor::processStages(
-    std::vector<std::map<uint32_t, uint32_t>> &specConstsMaps)
+void PipelineShaderStageProcessor::processStages(std::vector<std::map<uint32_t, uint32_t>> &specConstsMaps)
 {
     using namespace SPIRV_CROSS_NAMESPACE;
 
@@ -1110,25 +1174,21 @@ void PipelineShaderStageProcessor::processStages(
         uint32_t startIndex = uint32_t(allShaderCodes.size());
         shaderStage->injectShaderCode(allShaderCodes);
         shaderStage->setCodeView(startIndex, uint32_t(allShaderCodes.size() - startIndex));
-        printf("\tInjected shader code of size %d from %d index\n", shaderStage->codeView.size,
-            shaderStage->codeView.startIdx);
+        printf("\tInjected shader code of size %d from %d index\n", shaderStage->codeView.size, shaderStage->codeView.startIdx);
 
         ShaderStageDescription stageDesc = shaderStage->getStageDesc();
 
-        SmallVector<SpecializationConstant> specializationConsts
-            = shaderStage->compiledData->get_specialization_constants();
+        SmallVector<SpecializationConstant> specializationConsts = shaderStage->compiledData->get_specialization_constants();
         stageDesc.stageSpecializationEntries.resize(specializationConsts.size());
         for (uint32_t constIdx = 0; constIdx < specializationConsts.size(); ++constIdx)
         {
-            const SPIRConstant &specEntryType
-                = shaderStage->compiledData->get_constant(specializationConsts[constIdx].id);
+            const SPIRConstant &specEntryType = shaderStage->compiledData->get_constant(specializationConsts[constIdx].id);
             const SPIRType &typeRef = shaderStage->compiledData->get_type(specEntryType.constant_type);
 
             if (validateSpecializationConst(specEntryType, typeRef))
             {
                 ReflectSpecializationConstant reflectConst;
-                reflectConst.attributeName
-                    = shaderStage->compiledData->get_name(specializationConsts[constIdx].id);
+                reflectConst.attributeName = shaderStage->compiledData->get_name(specializationConsts[constIdx].id);
                 reflectConst.data.constantId = specializationConsts[constIdx].constant_id;
                 reflectConst.data.type = getReflectPrimitiveType(typeRef.basetype);
                 setSpecializationConstDefault(reflectConst.data.defaultValue, specEntryType, typeRef);
@@ -1136,9 +1196,10 @@ void PipelineShaderStageProcessor::processStages(
                 specConstsMaps[i][uint32_t(specializationConsts[constIdx].id)] = constIdx;
                 stageDesc.stageSpecializationEntries[constIdx] = reflectConst;
 
-                printf("\tSpecialization constant %s Type ID %d , Primitive type %d\n",
-                    reflectConst.attributeName.c_str(), uint32_t(specializationConsts[constIdx].id),
-                    reflectConst.data.type);
+                printf(
+                    "\tSpecialization constant %s Type ID %d , Primitive type %d\n", reflectConst.attributeName.c_str(),
+                    uint32_t(specializationConsts[constIdx].id), reflectConst.data.type
+                );
             }
         }
 
@@ -1155,13 +1216,11 @@ void PipelineShaderStageProcessor::processPipelineIO()
 
     for (uint32_t i = 0; i < reflectedData.stages.size(); ++i)
     {
-        if (reflectedData.stages[i].stage == ShaderReflectionProcessor::VERTEX_STAGE
-            && vertexStage == nullptr)
+        if (reflectedData.stages[i].stage == ShaderReflectionProcessor::VERTEX_STAGE && vertexStage == nullptr)
         {
             vertexStage = shaderStages[i];
         }
-        else if (reflectedData.stages[i].stage == ShaderReflectionProcessor::FRAGMENT_STAGE
-                 && fragStage == nullptr)
+        else if (reflectedData.stages[i].stage == ShaderReflectionProcessor::FRAGMENT_STAGE && fragStage == nullptr)
         {
             fragStage = shaderStages[i];
         }
@@ -1175,14 +1234,14 @@ void PipelineShaderStageProcessor::processPipelineIO()
 
             ReflectInputOutput reflectedInput;
             reflectedInput.attributeName = resource.name;
-            reflectedInput.data.location = vertexStage->compiledData->get_decoration(
-                resource.id, spv::Decoration::DecorationLocation);
+            reflectedInput.data.location = vertexStage->compiledData->get_decoration(resource.id, spv::Decoration::DecorationLocation);
             reflectedInput.data.type = getReflectedType(baseType);
 
-            printf("Input : %s\n\tLocation : %d\n\tPrimitive type %d[%d][%d]\n",
-                reflectedInput.attributeName.c_str(), reflectedInput.data.location,
-                reflectedInput.data.type.primitive, reflectedInput.data.type.vecSize,
-                reflectedInput.data.type.colSize);
+            printf(
+                "Input : %s\n\tLocation : %d\n\tPrimitive type %d[%d][%d]\n", reflectedInput.attributeName.c_str(),
+                reflectedInput.data.location, reflectedInput.data.type.primitive, reflectedInput.data.type.vecSize,
+                reflectedInput.data.type.colSize
+            );
 
             reflectedData.inputs.push_back(reflectedInput);
         }
@@ -1195,12 +1254,10 @@ void PipelineShaderStageProcessor::processPipelineIO()
 
             ReflectInputOutput reflectedOutput;
             reflectedOutput.attributeName = resource.name;
-            reflectedOutput.data.location = fragStage->compiledData->get_decoration(
-                resource.id, spv::Decoration::DecorationLocation);
+            reflectedOutput.data.location = fragStage->compiledData->get_decoration(resource.id, spv::Decoration::DecorationLocation);
             reflectedOutput.data.type = getReflectedType(baseType);
 
-            printf("Output : %s\n\tLocation : %d\n", reflectedOutput.attributeName.c_str(),
-                reflectedOutput.data.location);
+            printf("Output : %s\n\tLocation : %d\n", reflectedOutput.attributeName.c_str(), reflectedOutput.data.location);
             printReflectedType(reflectedOutput.data.type, "\t");
 
             reflectedData.outputs.push_back(reflectedOutput);
@@ -1208,13 +1265,11 @@ void PipelineShaderStageProcessor::processPipelineIO()
     }
 }
 
-void PipelineShaderStageProcessor::processDescriptorsSets(
-    const std::vector<std::map<uint32_t, uint32_t>> &specConstsMaps)
+void PipelineShaderStageProcessor::processDescriptorsSets(const std::vector<std::map<uint32_t, uint32_t>> &specConstsMaps)
 {
     using namespace SPIRV_CROSS_NAMESPACE;
     std::map<uint32_t, ReflectDescriptorBody> descriptorsSets;
-    std::map<uint32_t, std::set<uint32_t>>
-        descriptorSetsBinding; // List of all bindings used in each descriptors set
+    std::map<uint32_t, std::set<uint32_t>> descriptorSetsBinding; // List of all bindings used in each descriptors set
 
     for (uint32_t i = 0; i < reflectedData.stages.size(); ++i)
     {
@@ -1227,10 +1282,8 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
         {
             const SPIRType &baseType = shaderStage->compiledData->get_type(resource.base_type_id);
             const SPIRType &type = shaderStage->compiledData->get_type(resource.type_id);
-            const uint32_t set
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            const uint32_t binding
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
             if (baseType.image.dim == spv::Dim::DimBuffer)
@@ -1239,12 +1292,10 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
                 resDesc.attributeName = resource.name;
                 resDesc.data.binding = binding;
                 resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
-                resDesc.data.stagesUsed
-                    = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 resDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
                 fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                fillSampledImageFormats(
-                    resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
+                fillSampledImageFormats(resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
 
                 descriptorsSets[set].samplerBuffers.push_back(resDesc);
             }
@@ -1254,14 +1305,11 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
                 resDesc.attributeName = resource.name;
                 resDesc.data.binding = binding;
                 resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
-                resDesc.data.stagesUsed
-                    = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 resDesc.data.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                resDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(
-                    baseType.image.dim, baseType.image.arrayed);
-                fillSampledImageFormats(
-                    resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
+                resDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
+                fillSampledImageFormats(resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
                 resDesc.data.data.bIsMultiSampled = baseType.image.ms;
 
                 descriptorsSets[set].sampledTexAndArrays.push_back(resDesc);
@@ -1274,10 +1322,8 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
         {
             const SPIRType &baseType = shaderStage->compiledData->get_type(resource.base_type_id);
             const SPIRType &type = shaderStage->compiledData->get_type(resource.type_id);
-            const uint32_t set
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            const uint32_t binding
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
             if (baseType.image.dim == spv::Dim::DimBuffer)
@@ -1286,12 +1332,10 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
                 resDesc.attributeName = resource.name;
                 resDesc.data.binding = binding;
                 resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
-                resDesc.data.stagesUsed
-                    = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 resDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
                 fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                fillSampledImageFormats(
-                    resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
+                fillSampledImageFormats(resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
 
                 descriptorsSets[set].samplerBuffers.push_back(resDesc);
             }
@@ -1301,14 +1345,11 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
                 resDesc.attributeName = resource.name;
                 resDesc.data.binding = binding;
                 resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
-                resDesc.data.stagesUsed
-                    = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 resDesc.data.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
                 fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                resDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(
-                    baseType.image.dim, baseType.image.arrayed);
-                fillSampledImageFormats(
-                    resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
+                resDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
+                fillSampledImageFormats(resDesc.data.data.format, shaderStage->compiledData->get_type(baseType.image.type));
                 resDesc.data.data.bIsMultiSampled = baseType.image.ms;
 
                 descriptorsSets[set].textureAndArrays.push_back(resDesc);
@@ -1320,13 +1361,12 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
         {
             const SPIRType &baseType = shaderStage->compiledData->get_type(resource.base_type_id);
             const SPIRType &type = shaderStage->compiledData->get_type(resource.type_id);
-            const uint32_t set
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            const uint32_t binding
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             const uint8_t rwState = ShaderReflectionProcessor::readWriteQualifier(
                 !shaderStage->compiledData->has_decoration(resource.id, spv::DecorationNonReadable),
-                !shaderStage->compiledData->has_decoration(resource.id, spv::DecorationNonWritable));
+                !shaderStage->compiledData->has_decoration(resource.id, spv::DecorationNonWritable)
+            );
             descriptorSetsBinding[set].insert(binding);
 
             if (baseType.image.dim == spv::Dim::DimBuffer)
@@ -1335,8 +1375,7 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
                 resDesc.attributeName = resource.name;
                 resDesc.data.binding = binding;
                 resDesc.data.readWriteState = rwState;
-                resDesc.data.stagesUsed
-                    = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 resDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
                 fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
                 resDesc.data.data.format = ShaderReflectionProcessor::texelFormat(baseType.image.format);
@@ -1349,12 +1388,10 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
                 resDesc.attributeName = resource.name;
                 resDesc.data.binding = binding;
                 resDesc.data.readWriteState = rwState;
-                resDesc.data.stagesUsed
-                    = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+                resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
                 resDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
                 fillBufferFieldArrayInfo(resDesc.data.data.arraySize, type, specConstsMaps[i], i);
-                resDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(
-                    baseType.image.dim, baseType.image.arrayed);
+                resDesc.data.data.imageViewType = ShaderReflectionProcessor::imageViewType(baseType.image.dim, baseType.image.arrayed);
                 resDesc.data.data.format = ShaderReflectionProcessor::texelFormat(baseType.image.format);
                 resDesc.data.data.bIsMultiSampled = baseType.image.ms;
 
@@ -1366,21 +1403,17 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
         for (const Resource &resource : resources.subpass_inputs)
         {
             const SPIRType &type = shaderStage->compiledData->get_type(resource.type_id);
-            const uint32_t set
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            const uint32_t binding
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
             DescEntrySubpassInput resDesc;
             resDesc.attributeName = resource.name;
             resDesc.data.binding = binding;
             resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
-            resDesc.data.stagesUsed
-                = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+            resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
             resDesc.data.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-            resDesc.data.data = shaderStage->compiledData->get_decoration(
-                resource.id, spv::DecorationInputAttachmentIndex);
+            resDesc.data.data = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationInputAttachmentIndex);
 
             descriptorsSets[set].subpassInputs.push_back(resDesc);
         }
@@ -1389,18 +1422,15 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
         for (const Resource &resource : resources.separate_samplers)
         {
             const SPIRType &type = shaderStage->compiledData->get_type(resource.type_id);
-            const uint32_t set
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            const uint32_t binding
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
             DescEntrySampler resDesc;
             resDesc.attributeName = resource.name;
             resDesc.data.binding = binding;
             resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
-            resDesc.data.stagesUsed
-                = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+            resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
             resDesc.data.type = VK_DESCRIPTOR_TYPE_SAMPLER;
             fillBufferFieldArrayInfo(resDesc.data.data, type, specConstsMaps[i], i);
 
@@ -1411,21 +1441,17 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
         for (const Resource &resource : resources.uniform_buffers)
         {
             const SPIRType &baseType = shaderStage->compiledData->get_type(resource.base_type_id);
-            const uint32_t set
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            const uint32_t binding
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             descriptorSetsBinding[set].insert(binding);
 
             DescEntryBuffer resDesc;
             resDesc.attributeName = shaderStage->compiledData->get_name(resource.id);
             resDesc.data.binding = binding;
             resDesc.data.readWriteState = ShaderReflectionProcessor::readWriteQualifier(true, false);
-            resDesc.data.stagesUsed
-                = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+            resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
             resDesc.data.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            fillBufferFields(
-                resDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i], i);
+            fillBufferFields(resDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i], i);
 
             descriptorsSets[set].uniforms.push_back(resDesc);
         }
@@ -1434,28 +1460,23 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
         for (const Resource &resource : resources.storage_buffers)
         {
             const SPIRType &baseType = shaderStage->compiledData->get_type(resource.base_type_id);
-            const uint32_t set
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
-            const uint32_t binding
-                = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
+            const uint32_t set = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationDescriptorSet);
+            const uint32_t binding = shaderStage->compiledData->get_decoration(resource.id, spv::DecorationBinding);
             const uint8_t rwState = ShaderReflectionProcessor::readWriteQualifier(
                 !(shaderStage->compiledData->has_decoration(resource.id, spv::DecorationNonReadable)
-                    || shaderStage->compiledData->get_buffer_block_flags(resource.id)
-                           .get(spv::DecorationNonReadable)),
+                  || shaderStage->compiledData->get_buffer_block_flags(resource.id).get(spv::DecorationNonReadable)),
                 !(shaderStage->compiledData->has_decoration(resource.id, spv::DecorationNonWritable)
-                    || shaderStage->compiledData->get_buffer_block_flags(resource.id)
-                           .get(spv::DecorationNonWritable)));
+                  || shaderStage->compiledData->get_buffer_block_flags(resource.id).get(spv::DecorationNonWritable))
+            );
             descriptorSetsBinding[set].insert(binding);
 
             DescEntryBuffer resDesc;
             resDesc.attributeName = shaderStage->compiledData->get_name(resource.id);
             resDesc.data.binding = binding;
             resDesc.data.readWriteState = rwState;
-            resDesc.data.stagesUsed
-                = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+            resDesc.data.stagesUsed = ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
             resDesc.data.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            fillBufferFields(
-                resDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i], i);
+            fillBufferFields(resDesc.data.data, baseType, shaderStage->compiledData, specConstsMaps[i], i);
             // if Runtime buffer? Then make sure SoA is only Runtime array buffer and mark outer
             // Structure stride 0
             if (!markRuntimeArray(resDesc.data.data))
@@ -1474,19 +1495,17 @@ void PipelineShaderStageProcessor::processDescriptorsSets(
         reflectedData.descriptorsSets[idx] = itr->second;
         reflectedData.descriptorsSets[idx].set = itr->first;
         reflectedData.descriptorsSets[idx].usedBindings.assign(
-            descriptorSetsBinding[itr->first].cbegin(), descriptorSetsBinding[itr->first].cend());
-        sort(reflectedData.descriptorsSets[idx].usedBindings.begin(),
-            reflectedData.descriptorsSets[idx].usedBindings.end());
+            descriptorSetsBinding[itr->first].cbegin(), descriptorSetsBinding[itr->first].cend()
+        );
+        sort(reflectedData.descriptorsSets[idx].usedBindings.begin(), reflectedData.descriptorsSets[idx].usedBindings.end());
 
         squashDuplicates(reflectedData.descriptorsSets[idx]);
-        reflectedData.descriptorsSets[idx].combinedSetUsage
-            = combinedDescritorsUsage(reflectedData.descriptorsSets[idx]);
+        reflectedData.descriptorsSets[idx].combinedSetUsage = combinedDescritorsUsage(reflectedData.descriptorsSets[idx]);
         printDescriptorsSet(reflectedData.descriptorsSets[idx]);
     }
 }
 
-void PipelineShaderStageProcessor::processPushConstants(
-    const std::vector<std::map<uint32_t, uint32_t>> &specConstsMaps)
+void PipelineShaderStageProcessor::processPushConstants(const std::vector<std::map<uint32_t, uint32_t>> &specConstsMaps)
 {
     using namespace SPIRV_CROSS_NAMESPACE;
     reflectedData.pushConstants.data.pushConstantField.stride = 0;
@@ -1501,20 +1520,19 @@ void PipelineShaderStageProcessor::processPushConstants(
         {
             const Resource &resource = resources.push_constant_buffers[0];
             reflectedData.pushConstants.attributeName = shaderStage->compiledData->get_name(resource.id);
-            reflectedData.pushConstants.data.stagesUsed
-                |= ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
+            reflectedData.pushConstants.data.stagesUsed |= ShaderReflectionProcessor::shaderStageFlag(entryPoint.execution_model);
 
-            const SPIRV_CROSS_NAMESPACE::SPIRType &basetype
-                = shaderStage->compiledData->get_type(resource.base_type_id);
-            fillBufferFields(reflectedData.pushConstants.data.pushConstantField, basetype,
-                shaderStage->compiledData, specConstsMaps[i], i);
+            const SPIRV_CROSS_NAMESPACE::SPIRType &basetype = shaderStage->compiledData->get_type(resource.base_type_id);
+            fillBufferFields(reflectedData.pushConstants.data.pushConstantField, basetype, shaderStage->compiledData, specConstsMaps[i], i);
         }
     }
 
     squashDuplicates(reflectedData.pushConstants.data.pushConstantField);
 
-    printf("PushConstant : %s\n\tStages used : %d\n", reflectedData.pushConstants.attributeName.c_str(),
-        reflectedData.pushConstants.data.stagesUsed);
+    printf(
+        "PushConstant : %s\n\tStages used : %d\n", reflectedData.pushConstants.attributeName.c_str(),
+        reflectedData.pushConstants.data.stagesUsed
+    );
     printFields(reflectedData.pushConstants.data.pushConstantField, "\t");
 }
 

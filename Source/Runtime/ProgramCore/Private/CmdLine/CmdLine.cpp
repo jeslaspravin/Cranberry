@@ -74,8 +74,7 @@ public:
 
 CmdLineArgument::CmdLineArgument(String description, String cmdArg, String shortArg /*= ""*/)
 {
-    static_cast<ProgramCmdLineInstance *>(ProgramCmdLine::get())
-        ->addAllowedArg(cmdArg, shortArg, description);
+    static_cast<ProgramCmdLineInstance *>(ProgramCmdLine::get())->addAllowedArg(cmdArg, shortArg, description);
 }
 
 ProgramCmdLine *ProgramCmdLine::get()
@@ -157,8 +156,7 @@ bool ProgramCmdLine::parse(AChar **cmdArgs, uint32 count)
     std::vector<StringView> views(count);
     for (uint32 i = 0; i < count; ++i)
     {
-        views.emplace(views.begin() + i, argsCache.cbegin() + cmdArgIdxRange[i].first,
-            argsCache.cbegin() + cmdArgIdxRange[i].second);
+        views.emplace(views.begin() + i, argsCache.cbegin() + cmdArgIdxRange[i].first, argsCache.cbegin() + cmdArgIdxRange[i].second);
     }
     return parseViews(views);
 }
@@ -215,9 +213,7 @@ bool ProgramCmdLine::parse(const String &cmdLine)
             bSuccess = parseFromFile(String(tokenItr, endTokenItr));
             break;
         }
-        else if ((*endTokenItr) == TCHAR('"')
-                 || (*endTokenItr)
-                        == TCHAR('\'')) // If quoted value then end iterator is at the closing quote
+        else if ((*endTokenItr) == TCHAR('"') || (*endTokenItr) == TCHAR('\'')) // If quoted value then end iterator is at the closing quote
         {
             tokenItr = endTokenItr + 1;
             endTokenItr = IterateTillEndQoute(tokenItr, endTokenItr, cmdLine.cend());
@@ -282,10 +278,11 @@ void ProgramCmdLineInstance::parseArgElements()
                 {
                     String argName = TCHAR("-") + String(1, *flagsItr);
                     // Insert each flags separately prefixed with `-`
-                    addCmdArg(argName,
-                        ArgElementsRange{ .argIdx = int32(currentArgItr - cmdLineElements.cbegin()),
-                            .argValueIdx = -1,
-                            .count = int32(flagsItr - currentArgItr->cbegin()) });
+                    addCmdArg(
+                        argName, ArgElementsRange{ .argIdx = int32(currentArgItr - cmdLineElements.cbegin()),
+                                                   .argValueIdx = -1,
+                                                   .count = int32(flagsItr - currentArgItr->cbegin()) }
+                    );
                 }
                 ++itr;
             }
@@ -316,13 +313,13 @@ bool ProgramCmdLine::printHelp() const
         {
             if (allowedArg.shortArgName.empty())
             {
-                outHelp += StringFormat::format(
-                    TCHAR("\n\"%s\"\n    - %s"), allowedArg.argName, allowedArg.argDescription);
+                outHelp += StringFormat::format(TCHAR("\n\"%s\"\n    - %s"), allowedArg.argName, allowedArg.argDescription);
             }
             else
             {
-                outHelp += StringFormat::format(TCHAR("\n\"%s\", \"%s\"\n    - %s"), allowedArg.argName,
-                    allowedArg.shortArgName, allowedArg.argDescription);
+                outHelp += StringFormat::format(
+                    TCHAR("\n\"%s\", \"%s\"\n    - %s"), allowedArg.argName, allowedArg.shortArgName, allowedArg.argDescription
+                );
             }
         }
         LOG("CmdLineHelp", "\n%s\n", outHelp);
@@ -372,8 +369,10 @@ bool ProgramCmdLine::getArg(std::vector<String> &outValues, const String &argNam
     auto argItr = thisInst->cmdArgs.find(argName);
     if (thisInst->cmdArgs.cend() != argItr && argItr->second.count > 0)
     {
-        outValues.insert(outValues.begin(), cmdLineElements.cbegin() + argItr->second.argValueIdx,
-            cmdLineElements.cbegin() + argItr->second.argValueIdx + argItr->second.count);
+        outValues.insert(
+            outValues.begin(), cmdLineElements.cbegin() + argItr->second.argValueIdx,
+            cmdLineElements.cbegin() + argItr->second.argValueIdx + argItr->second.count
+        );
         return true;
     }
     return false;
@@ -381,8 +380,7 @@ bool ProgramCmdLine::getArg(std::vector<String> &outValues, const String &argNam
 
 String ProgramCmdLine::atIdx(uint32 idx) const
 {
-    fatalAssert(cmdLineElements.size() > idx, "%s() : Cmd line value idx %d out of range %lu", __func__,
-        idx, cmdLineElements.size());
+    fatalAssert(cmdLineElements.size() > idx, "%s() : Cmd line value idx %d out of range %lu", __func__, idx, cmdLineElements.size());
     return cmdLineElements[idx];
 }
 

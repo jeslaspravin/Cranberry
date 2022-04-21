@@ -39,8 +39,7 @@ END_BUFFER_DEFINITION();
 template <EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat>
 class TexturedShader : public DrawMeshShaderConfig
 {
-    DECLARE_GRAPHICS_RESOURCE(
-        TexturedShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>, DrawMeshShaderConfig, )
+    DECLARE_GRAPHICS_RESOURCE(TexturedShader, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>, DrawMeshShaderConfig, )
 protected:
     TexturedShader()
         : BaseType(TEXTURED_SHADER_NAME)
@@ -49,12 +48,12 @@ protected:
         compatibleVertex = VertexUsage;
     }
 
-    void bindBufferParamInfo(
-        std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static TexturedMeshMaterialsBufferParamInfo MESH_MATERIALS_DATA;
-        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ { TCHAR("materials"),
-            &MESH_MATERIALS_DATA } };
+        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+            {TCHAR("materials"), &MESH_MATERIALS_DATA}
+        };
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
@@ -67,9 +66,7 @@ protected:
     }
 };
 
-DEFINE_TEMPLATED_GRAPHICS_RESOURCE(TexturedShader,
-    <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>,
-    <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
+DEFINE_TEMPLATED_GRAPHICS_RESOURCE(TexturedShader, <EXPAND_ARGS(EVertexType::Type VertexUsage, ERenderPassFormat::Type RenderpassFormat)>, <EXPAND_ARGS(VertexUsage, RenderpassFormat)>)
 
 template class TexturedShader<EVertexType::StaticMesh, ERenderPassFormat::Multibuffer>;
 
@@ -77,5 +74,6 @@ template class TexturedShader<EVertexType::StaticMesh, ERenderPassFormat::Multib
 /// Pipeline registration
 //////////////////////////////////////////////////////////////////////////
 
-CREATE_GRAPHICS_PIPELINE_REGISTRANT(TEXTURED_SHADER_PIPELINE_REGISTER, TEXTURED_SHADER_NAME,
-    &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig);
+CREATE_GRAPHICS_PIPELINE_REGISTRANT(
+    TEXTURED_SHADER_PIPELINE_REGISTER, TEXTURED_SHADER_NAME, &CommonGraphicsPipelineConfigs::writeGbufferShaderConfig
+);
