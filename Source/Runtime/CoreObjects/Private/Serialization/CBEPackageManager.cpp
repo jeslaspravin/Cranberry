@@ -171,7 +171,7 @@ void CBEPackageManager::removePackagesFrom(const String &contentDir)
     }
 }
 
-void CBEPackageManager::setupPackage(const String &packageFilePath, const String& contentDir)
+void CBEPackageManager::setupPackage(const String &packageFilePath, const String &contentDir)
 {
     String packagePath = PathFunctions::toRelativePath(packageFilePath, contentDir);
     CBE::Package *package = CBE::createOrGet<CBE::Package>(packagePath, nullptr, CBE::EObjectFlagBits::PackageLoadPending);
@@ -183,7 +183,7 @@ void CBEPackageManager::setupPackage(const String &packageFilePath, const String
     packageToLoader[packagePath] = loader;
     allFoundPackages.emplace_back(packagePath);
     // Add all objects
-    for (const PackageContainedData& containedData : loader->getContainedObjects())
+    for (const PackageContainedData &containedData : loader->getContainedObjects())
     {
         allFoundObjects.emplace_back(packagePath + ObjectPathHelper::RootObjectSeparator + containedData.objectPath);
     }
