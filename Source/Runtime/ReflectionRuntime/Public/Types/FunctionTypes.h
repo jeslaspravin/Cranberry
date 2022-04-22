@@ -270,7 +270,7 @@ protected:
     const void *functionAccessor() const override { return &memberFunc; }
 
 public:
-    MemberFunctionWrapperImpl(MemberFunction::ClassDelegate funcPtr)
+    MemberFunctionWrapperImpl(typename MemberFunction::ClassDelegate funcPtr)
         : MemberFunctionWrapper(typeInfoFrom<ObjectType>(), typeInfoFrom<ReturnType>(), std::move(typeInfoListFrom<Args...>()))
         , memberFunc(funcPtr)
     {}
@@ -288,7 +288,7 @@ protected:
     const void *functionAccessor() const override { return &func; }
 
 public:
-    GlobalFunctionWrapperImpl(GlobalFunction::StaticDelegate funcPtr)
+    GlobalFunctionWrapperImpl(typename GlobalFunction::StaticDelegate funcPtr)
         : GlobalFunctionWrapper(typeInfoFrom<ReturnType>(), std::move(typeInfoListFrom<Args...>()))
         , func(funcPtr)
     {}

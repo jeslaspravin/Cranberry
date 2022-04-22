@@ -31,7 +31,7 @@ inline namespace Literals
 {
 NODISCARD STRINGID_FUNCQUALIFIER StringID operator"" _sid(const TChar *str, SizeT len) noexcept;
 }
-template <IsArchiveType ArchiveType>
+template <ArchiveType ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, StringID &value);
 
 class PROGRAMCORE_EXPORT StringID
@@ -43,7 +43,7 @@ private:
     IDType id;
 
     friend STRINGID_FUNCQUALIFIER StringID Literals::operator"" _sid(const TChar *str, SizeT len) noexcept;
-    template <IsArchiveType ArchiveType>
+    template <ArchiveType ArchiveType>
     friend ArchiveType &operator<<(ArchiveType &archive, StringID &value);
 
     CONST_INIT static const IDType Seed = STRINGID_HASHFUNC(TCHAR("Cranberry_StringID"), IDType(0));
@@ -175,7 +175,7 @@ struct PROGRAMCORE_EXPORT std::hash<StringID>
     NODISCARD SizeT operator()(const StringID &keyval) const noexcept { return keyval.getID(); }
 };
 
-template <IsArchiveType ArchiveType>
+template <ArchiveType ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, StringID &value)
 {
     return archive << value.id;

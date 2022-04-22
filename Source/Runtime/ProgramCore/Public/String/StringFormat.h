@@ -48,10 +48,10 @@ concept HasToStringMethod = NonStringType<Type> && std::is_compound_v<CleanType>
 };
 
 template <typename Type, typename CleanType = std::remove_cvref_t<Type>>
-concept HasOStreamInsertOverrideMethod = NonStringType<Type> && std::is_compound_v<CleanType> && requires(Type &&val)
+concept HasOStreamInsertOverrideMethod = NonStringType<Type> && std::is_compound_v<CleanType> && requires(Type &&val, OutputStream &stream)
 {
     {
-        std::declval<OutputStream &>() << std::declval<Type>()
+        stream << val
         } -> std::same_as<OutputStream &>;
 };
 

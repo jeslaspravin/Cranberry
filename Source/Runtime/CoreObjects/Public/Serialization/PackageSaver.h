@@ -38,7 +38,7 @@ private:
 
 public:
     PackageSaver(CBE::Package *savingPackage);
-    void savePackage();
+    bool savePackage();
 
     /* ObjectArchive overrides */
     ObjectArchive &serialize(CBE::Object *&obj) override;

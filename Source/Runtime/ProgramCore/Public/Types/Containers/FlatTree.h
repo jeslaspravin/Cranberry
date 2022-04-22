@@ -135,13 +135,16 @@ public:
         return nodes[index];
     }
 
+    /**
+     * Out list of children. Will be ordered so that parent of an object will never appear after children
+     */
     void getChildren(std::vector<NodeIdx> &children, NodeIdx parent, bool bRecurse = false) const
     {
         if (!isValid(parent) || !isValid(nodes[parent].firstChild))
         {
             return;
         }
-
+#if 0 // Minimum stack memory foot print but does depth first traversal
         const Node *currNode = &nodes[nodes[parent].firstChild];
         children.emplace_back(currNode->index);
         if (bRecurse)
@@ -157,6 +160,27 @@ public:
             }
             currNode = &nodes[currNode->nextSibling];
         }
+#else // Little more stack memory usage but does breadth first traversal
+        SizeT stageStartIdx = children.size();
+        // Find all children for current parent(all node in this breadth)
+        {
+            const Node *currNode = &nodes[nodes[parent].firstChild];
+            children.emplace_back(currNode->index);
+            while (isValid(currNode->nextSibling))
+            {
+                children.emplace_back(currNode->nextSibling);
+                currNode = &nodes[currNode->nextSibling];
+            }
+        }
+        SizeT stageEndIdx = children.size();
+        if (bRecurse)
+        {
+            for (SizeT idx = stageStartIdx; idx < stageEndIdx; ++idx)
+            {
+                getChildren(children, children[idx], true);
+            }
+        }
+#endif
     }
     FORCE_INLINE std::vector<NodeIdx> getChildren(NodeIdx parent, bool bRecurse = false) const
     {

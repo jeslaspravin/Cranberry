@@ -28,10 +28,7 @@ protected:
     VarType variable;
 
 public:
-    EngineVar(const EngineVar &) = delete;
-    EngineVar(EngineVar &&) = delete;
-    void operator=(const EngineVar &) = delete;
-    void operator=(EngineVar &&) = delete;
+    MAKE_TYPE_NONCOPY_NONMOVE(EngineVar)
 
     EngineVar() = default;
     EngineVar(const VarType &defaultVal)

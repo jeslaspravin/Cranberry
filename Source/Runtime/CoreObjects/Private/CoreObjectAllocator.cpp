@@ -38,5 +38,4 @@ ObjectAllocatorBase *getObjAllocator(CBEClass classType)
     auto itr = gCBEObjectAllocators->find(classType);
     return itr != gCBEObjectAllocators->end() ? itr->second : nullptr;
 }
-
 } // namespace CBE

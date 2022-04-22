@@ -21,11 +21,34 @@ namespace CBE
 /// CBE::Object implementations
 //////////////////////////////////////////////////////////////////////////
 
-EObjectFlags &PrivateObjectCoreAccessors::getFlags(Object *object) { return object->flags; }
+void Object::destroyObject()
+{
+    destroy();
 
-ObjectAllocIdx PrivateObjectCoreAccessors::getAllocIdx(const Object *object) { return object->allocIdx; }
+    // Must have entry in object DB if we constructed the objects properly unless object is default
+    debugAssert(CoreObjectsModule::objectsDB().hasObject(sid) || BIT_SET(flags, EObjectFlagBits::Default));
+    if (CoreObjectsModule::objectsDB().hasObject(sid))
+    {
+        CoreObjectsModule::objectsDB().removeObject(sid);
+    }
+    objOuter = nullptr;
+    sid = StringID();
+    SET_BITS(flags, EObjectFlagBits::Deleted);
+}
 
-void PrivateObjectCoreAccessors::setOuterAndName(Object *object, const String &newName, Object *outer, CBEClass clazz /*= nullptr*/)
+String Object::getFullPath() const { return ObjectPathHelper::getFullPath(this); }
+
+//////////////////////////////////////////////////////////////////////////
+/// PrivateObjectCoreAccessors implementations
+//////////////////////////////////////////////////////////////////////////
+
+EObjectFlags &INTERNAL_ObjectCoreAccessors::getFlags(Object *object) { return object->flags; }
+
+ObjectAllocIdx INTERNAL_ObjectCoreAccessors::getAllocIdx(const Object *object) { return object->allocIdx; }
+
+void INTERNAL_ObjectCoreAccessors::setAllocIdx(Object *object, ObjectAllocIdx allocIdx) { object->allocIdx = allocIdx; }
+
+void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String &newName, Object *outer, CBEClass clazz /*= nullptr*/)
 {
     fatalAssert(!newName.empty(), "Object name cannot be empty");
     if (outer == object->getOuter() && object->getName() == newName)
@@ -73,24 +96,9 @@ void PrivateObjectCoreAccessors::setOuterAndName(Object *object, const String &n
     object->sid = newSid;
 }
 
-void PrivateObjectCoreAccessors::setOuter(Object *object, Object *outer) { setOuterAndName(object, object->objectName, outer); }
+void INTERNAL_ObjectCoreAccessors::setOuter(Object *object, Object *outer) { setOuterAndName(object, object->objectName, outer); }
 
-void PrivateObjectCoreAccessors::renameObject(Object *object, const String &newName) { setOuterAndName(object, newName, object->objOuter); }
-
-Object::~Object()
-{
-    // Must have entry in object DB if we constructed the objects properly unless object is default
-    debugAssert(CoreObjectsModule::objectsDB().hasObject(sid) || BIT_SET(flags, EObjectFlagBits::Default));
-    if (CoreObjectsModule::objectsDB().hasObject(sid))
-    {
-        CoreObjectsModule::objectsDB().removeObject(sid);
-    }
-    objOuter = nullptr;
-    sid = StringID();
-    SET_BITS(flags, EObjectFlagBits::Deleted);
-}
-
-String Object::getFullPath() const { return ObjectPathHelper::getFullPath(this); }
+void INTERNAL_ObjectCoreAccessors::renameObject(Object *object, const String &newName) { setOuterAndName(object, newName, object->objOuter); }
 } // namespace CBE
 
 ObjectArchive &ObjectArchive::serialize(CBE::Object *&obj)
@@ -113,7 +121,8 @@ FORCE_INLINE String ObjectPathHelper::getOuterPathAndObjectName(String &outObjec
         outObjectName = objectPath + outerObjectSepIdx + 1;
         return { objectPath, outerObjectSepIdx };
     }
-    return objectPath;
+    outObjectName = objectPath;
+    return TCHAR("");
 }
 
 String ObjectPathHelper::getObjectPath(const CBE::Object *object, const CBE::Object *stopAt)
@@ -178,8 +187,11 @@ String ObjectPathHelper::getPackagePath(const TChar *objFullPath)
 {
     SizeT rootObjSepIdx;
     bool bRootSepFound = TCharStr::find(objFullPath, ObjectPathHelper::RootObjectSeparator, &rootObjSepIdx);
-    debugAssert(bRootSepFound);
-    return { objFullPath, rootObjSepIdx };
+    if (bRootSepFound)
+    {
+        return { objFullPath, rootObjSepIdx };
+    }
+    return TCHAR("");
 }
 
 String ObjectPathHelper::getPathComponents(String &outOuterObjectPath, String &outObjectName, const TChar *objFullPath)

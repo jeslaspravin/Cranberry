@@ -21,25 +21,20 @@ void PackageSaver::setupContainedObjs()
 {
     const CoreObjectsDB &objsDb = ICoreObjectsModule::get()->getObjectsDB();
 
-    // We peel the onion as parent must be create before child
+    // We peel the onion as parent must be create before child,
+    // The getChildren from FlatTree already returns in ordered manner so we should be good without peeling manually here
     std::vector<CBE::Object *> children;
-    objsDb.getChildren(children, package->getStringID());
-    while (!children.empty())
+    objsDb.getSubobjects(children, package->getStringID());
+    for (CBE::Object *child : children)
     {
-        std::vector<CBE::Object *> newChildren;
-        for (CBE::Object *child : children)
-        {
-            // Package is final class so we just have compare, no need to go through isChild hierarchy
-            fatalAssert(child->getType() != CBE::Package::staticType(), "Package must not contain package object");
-            objsDb.getChildren(newChildren, child->getStringID());
+        // Package is final class so we just have compare, no need to go through isChild hierarchy
+        fatalAssert(child->getType() != CBE::Package::staticType(), "Package must not contain package object");
 
-            objToContObjsIdx[child->getStringID()] = containedObjects.size();
-            PackageContainedData &containedObjData = containedObjects.emplace_back();
-            containedObjData.object = child;
-            containedObjData.objectPath = ObjectPathHelper::getObjectPath(child, package);
-            containedObjData.className = child->getType()->name;
-        }
-        children = std::move(newChildren);
+        objToContObjsIdx[child->getStringID()] = containedObjects.size();
+        PackageContainedData &containedObjData = containedObjects.emplace_back();
+        containedObjData.object = child;
+        containedObjData.objectPath = ObjectPathHelper::getObjectPath(child, package);
+        containedObjData.className = child->getType()->name;
     }
 }
 
@@ -58,7 +53,7 @@ PackageSaver::PackageSaver(CBE::Package *savingPackage)
     setupContainedObjs();
 }
 
-void PackageSaver::savePackage()
+bool PackageSaver::savePackage()
 {
     ArchiveSizeCounterStream archiveCounter;
     packageArchive.setStream(&archiveCounter);
@@ -98,6 +93,11 @@ void PackageSaver::savePackage()
     // Step 5 : Setup file stream to write
     String packagePath = package->getPackageFilePath();
     FileArchiveStream fileStream(packagePath, false);
+    if (!fileStream.isAvailable())
+    {
+        LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getName(), packagePath);
+        return false;
+    }
     packageArchive.setStream(&fileStream);
 
     // Step 6 : Write into archive
@@ -108,10 +108,18 @@ void PackageSaver::savePackage()
         containedObjData.object->serialize(*this);
     }
     packageArchive.setStream(nullptr);
+    return true;
 }
 
 ObjectArchive &PackageSaver::serialize(CBE::Object *&obj)
 {
+    // Push null object index
+    if (!obj)
+    {
+        (*static_cast<ObjectArchive *>(this)) << NULL_OBJECT_FLAG;
+        return (*this);
+    }
+
     auto containedObjItr = objToContObjsIdx.find(obj->getStringID());
     if (containedObjItr != objToContObjsIdx.end())
     {
@@ -121,7 +129,8 @@ ObjectArchive &PackageSaver::serialize(CBE::Object *&obj)
     {
         auto depObjItr = objToDepObjsIdx.find(obj->getStringID());
         SizeT depObjIdx = 0;
-        if (depObjItr != objToDepObjsIdx.end())
+        // If dependent is not there then we must create a new entry and serialize it
+        if (depObjItr == objToDepObjsIdx.end())
         {
             depObjIdx = dependentObjects.size();
             objToDepObjsIdx[obj->getStringID()] = depObjIdx;

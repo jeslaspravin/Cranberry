@@ -52,6 +52,8 @@ int appMain(String cmdLine, void *appPlatformInstance)
     gEngine->engineLoop();
 
     gEngine->quit();
+    ModuleManager::get()->unloadAllModules();
+
     LOG("Engine", "%s() : Engine quit", __func__);
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
     Logger::flushStream();

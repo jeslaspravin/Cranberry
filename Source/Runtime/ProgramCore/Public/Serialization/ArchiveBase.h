@@ -12,6 +12,7 @@
 #pragma once
 
 #include "ProgramCoreExports.h"
+#include "Math/Math.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 #include "Types/Templates/TemplateTypes.h"
@@ -29,6 +30,12 @@ class String;
 // Each read or write pushes the stream forward or backwards
 class PROGRAMCORE_EXPORT ArchiveStream
 {
+public:
+    ArchiveStream() = default;
+    MAKE_TYPE_NONCOPY_NONMOVE(ArchiveStream)
+
+    virtual ~ArchiveStream() = default;
+
 public:
     // reads given length of data from cursor to the passed in pointer, Pointer must be pointing to data
     // with at least len size Moves the stream cursor to start of next data stream
@@ -55,8 +62,6 @@ public:
     virtual uint64 cursorPos() const = 0;
 
     virtual bool isAvailable() const = 0;
-
-    virtual ~ArchiveStream() = default;
 };
 
 class PROGRAMCORE_EXPORT ArchiveSizeCounterStream final : public ArchiveStream
@@ -65,11 +70,15 @@ private:
     uint64 cursor;
 
 public:
+    ArchiveSizeCounterStream()
+        : cursor(0)
+    {}
+
     /* ArchiveStream overrides */
     void read(void *toPtr, SizeT len) override;
     FORCE_INLINE void write(const void *ptr, SizeT len) override { cursor += len; }
     FORCE_INLINE void moveForward(SizeT count) override { cursor += count; }
-    FORCE_INLINE void moveBackward(SizeT count) override { cursor += count; }
+    FORCE_INLINE void moveBackward(SizeT count) override { cursor = Math::max(cursor - count, 0); }
     FORCE_INLINE bool allocate(SizeT count) override { return false; }
     uint8 readForwardAt(SizeT idx) const override;
     uint8 readBackwardAt(SizeT idx) const override;
@@ -152,9 +161,9 @@ public:
 #undef SERIALIZE_VIRTUAL
 
 template <typename Type>
-concept IsArchiveType = std::is_base_of_v<ArchiveBase, Type>;
+concept ArchiveType = std::is_base_of_v<ArchiveBase, Type>;
 
-template <IsArchiveType ArchiveType, typename ValueType>
+template <ArchiveType ArchiveType, typename ValueType>
 ArchiveType &operator<<(ArchiveType &archive, ValueType &value)
 {
     // This is added to support writing keys of maps and sets
@@ -169,22 +178,13 @@ ArchiveType &operator<<(ArchiveType &archive, ValueType &value)
     }
 }
 
-template <IsArchiveType ArchiveType, typename ValueType>
-ArchiveType &operator<<(ArchiveType &archive, ValueType *value)
-{
-    static_assert(
-        DependentFalseTypeValue<ValueType>, "Pointer type serialization is not supported! Specialize and provide your own serialization"
-    );
-    return archive;
-}
-
-template <IsArchiveType ArchiveType, typename KeyType, typename ValueType>
+template <ArchiveType ArchiveType, typename KeyType, typename ValueType>
 ArchiveType &operator<<(ArchiveType &archive, std::pair<KeyType, ValueType> &value)
 {
     return archive << value.first << value.second;
 }
 
-template <IsArchiveType ArchiveType, typename ValueType, typename AllocType>
+template <ArchiveType ArchiveType, typename ValueType, typename AllocType>
 ArchiveType &operator<<(ArchiveType &archive, std::vector<ValueType, AllocType> &value)
 {
     SizeT len = value.size();
@@ -201,7 +201,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::vector<ValueType, AllocType> 
     return archive;
 }
 
-template <IsArchiveType ArchiveType, typename KeyType, typename... Types>
+template <ArchiveType ArchiveType, typename KeyType, typename... Types>
 ArchiveType &operator<<(ArchiveType &archive, std::set<KeyType, Types...> &value)
 {
     SizeT len = value.size();
@@ -226,7 +226,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::set<KeyType, Types...> &value
     }
     return archive;
 }
-template <IsArchiveType ArchiveType, typename KeyType, typename... Types>
+template <ArchiveType ArchiveType, typename KeyType, typename... Types>
 ArchiveType &operator<<(ArchiveType &archive, std::unordered_set<KeyType, Types...> &value)
 {
     SizeT len = value.size();
@@ -253,7 +253,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::unordered_set<KeyType, Types.
     return archive;
 }
 
-template <IsArchiveType ArchiveType, typename KeyType, typename ValueType, typename... Types>
+template <ArchiveType ArchiveType, typename KeyType, typename ValueType, typename... Types>
 ArchiveType &operator<<(ArchiveType &archive, std::map<KeyType, ValueType, Types...> &value)
 {
     SizeT len = value.size();
@@ -279,7 +279,7 @@ ArchiveType &operator<<(ArchiveType &archive, std::map<KeyType, ValueType, Types
     }
     return archive;
 }
-template <IsArchiveType ArchiveType, typename KeyType, typename ValueType, typename... Types>
+template <ArchiveType ArchiveType, typename KeyType, typename ValueType, typename... Types>
 ArchiveType &operator<<(ArchiveType &archive, std::unordered_map<KeyType, ValueType, Types...> &value)
 {
     SizeT len = value.size();

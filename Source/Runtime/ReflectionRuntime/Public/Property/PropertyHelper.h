@@ -18,6 +18,24 @@
 
 class ClassProperty;
 
+template <typename Type>
+concept ReflectClassOrStructType = requires
+{
+    {
+        Type::staticType()
+        } -> std::same_as<const ClassProperty *>;
+};
+template <typename Type>
+concept ReflectClassType = requires(Type *object)
+{
+    {
+        Type::staticType()
+        } -> std::same_as<const ClassProperty *>;
+    {
+        object->getType()
+        } -> std::same_as<const ClassProperty *>;
+};
+
 #define VALID_SYMBOL_REGEX_PATTERN TCHAR("^[a-zA-Z_]{1}[a-zA-Z0-9_]*")
 class REFLECTIONRUNTIME_EXPORT PropertyHelper
 {
@@ -52,7 +70,7 @@ public:
     }
     FORCE_INLINE static bool isArrayType(const String &typeName) { return typeName.startsWith(TCHAR("std::vector")); }
 
-    template <typename ChildType, typename ParentType>
+    template <ReflectClassOrStructType ChildType, ReflectClassOrStructType ParentType>
     FORCE_INLINE static bool isChildOf()
     {
         IReflectionRuntimeModule *rtti = IReflectionRuntimeModule::get();

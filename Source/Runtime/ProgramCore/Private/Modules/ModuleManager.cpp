@@ -87,22 +87,7 @@ ModuleManager::ModuleManager()
     }
 }
 
-ModuleManager::~ModuleManager()
-{
-    for (const std::pair<const String, ModulePtr> &modulePair : loadedModuleInterfaces)
-    {
-        modulePair.second->release();
-        LOG_DEBUG("ModuleManager", "%s() : Unloaded module %s", __func__, modulePair.first);
-    }
-    loadedModuleInterfaces.clear();
-
-    for (const std::pair<const String, std::pair<LibPointerPtr, LibraryData>> &libPair : loadedLibraries)
-    {
-        delete libPair.second.first;
-        LOG_DEBUG("ModuleManager", "%s() : Unloaded library %s", __func__, libPair.first);
-    }
-    loadedLibraries.clear();
-}
+ModuleManager::~ModuleManager() { unloadAllModules(); }
 
 ModuleManager *ModuleManager::get()
 {
@@ -207,6 +192,7 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
 
         retModule->init();
         loadedModuleInterfaces[moduleName] = retModule;
+        moduleLoadedOrder.emplace_back(moduleName);
     }
     return retModule;
 }
@@ -219,6 +205,7 @@ void ModuleManager::unloadModule(String moduleName)
         IModuleBase *moduleInterface = existingModule.lock().get();
         moduleInterface->release();
         loadedModuleInterfaces.erase(moduleName);
+        std::erase(moduleLoadedOrder, moduleName);
         LOG_DEBUG("ModuleManager", "%s() : Unloaded module %s", __func__, moduleName.getChar());
 #if !STATIC_LINKED
         LibPointerPtr libPtr = getLibrary(moduleName);
@@ -230,6 +217,32 @@ void ModuleManager::unloadModule(String moduleName)
         }
 #endif // STATIC_LINKED
     }
+}
+
+void ModuleManager::unloadAllModules()
+{
+    for (auto rItr = moduleLoadedOrder.crbegin(); rItr != moduleLoadedOrder.crend(); ++rItr)
+    {
+        auto moduleItr = loadedModuleInterfaces.find(*rItr);
+        debugAssert(moduleItr != loadedModuleInterfaces.end());
+        moduleItr->second->release();
+        loadedModuleInterfaces.erase(moduleItr);
+        LOG_DEBUG("ModuleManager", "%s() : Unloaded module %s", __func__, *rItr);
+    }
+    moduleLoadedOrder.clear();
+    for (const std::pair<const String, ModulePtr> &modulePair : loadedModuleInterfaces)
+    {
+        modulePair.second->release();
+        LOG_DEBUG("ModuleManager", "%s() : Unloaded module %s", __func__, modulePair.first);
+    }
+    loadedModuleInterfaces.clear();
+
+    for (const std::pair<const String, std::pair<LibPointerPtr, LibraryData>> &libPair : loadedLibraries)
+    {
+        delete libPair.second.first;
+        LOG_DEBUG("ModuleManager", "%s() : Unloaded library %s", __func__, libPair.first);
+    }
+    loadedLibraries.clear();
 }
 
 std::vector<std::pair<LibPointerPtr, LibraryData>> ModuleManager::getAllModuleData()

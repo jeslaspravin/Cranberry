@@ -50,12 +50,18 @@
 #define MACRO_TO_STRING_internal(DefExpanded) #DefExpanded
 #define MACRO_TO_STRING(VarName) MACRO_TO_STRING_internal(VarName)
 
+#define MAKE_TYPE_NONCOPY_NONMOVE(TypeName)                                                                                                    \
+    TypeName(TypeName &&) = delete;                                                                                                            \
+    TypeName(const TypeName &) = delete;                                                                                                       \
+    TypeName &operator=(TypeName &&) = delete;                                                                                                 \
+    TypeName &operator=(const TypeName &) = delete;
+
 // If only one bit set in this unsigned integer
 #define ONE_BIT_SET(FlagStatement) ((FlagStatement) && !((FlagStatement) & ((FlagStatement)-1)))
 // If all check bits is set in this unsigned integer
-#define BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == CheckFlags)
+#define BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == (CheckFlags))
 // If not all check bits is set in this unsigned integer
-#define BIT_NOT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) != CheckFlags)
+#define BIT_NOT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) != (CheckFlags))
 // If any bit of check bits is set in this unsigned integer
 #define ANY_BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) > 0)
 // If no bits of check bits is set in this unsigned integer

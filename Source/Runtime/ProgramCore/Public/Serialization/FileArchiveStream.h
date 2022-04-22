@@ -24,8 +24,6 @@ private:
 
 public:
     FileArchiveStream(const String &filePath, bool bReading);
-    FileArchiveStream(FileArchiveStream &&) = delete;
-    FileArchiveStream(const FileArchiveStream &) = delete;
     ~FileArchiveStream();
 
     /* FileArchiveStream overrides */

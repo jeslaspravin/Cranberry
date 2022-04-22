@@ -77,6 +77,11 @@
 #include <source_location>
 #include <unordered_set>
 
+#include "BasicPackagedObject.h"
+#include "CoreObjectDelegates.h"
+#include "CBEObjectHelpers.h"
+#include "CBEPackage.h"
+
 struct PBRSceneEntity
 {
     struct BatchProperties
@@ -3416,7 +3421,42 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface *drawIn
     }
 }
 
-void ExperimentalEnginePBR::tempTest() {}
+void ExperimentalEnginePBR::tempTest()
+{
+    ModuleManager::get()->loadModule("RTTIExample");
+    String dir;
+    String name;
+    dir = FileSystemFunctions::applicationDirectory(name);
+    name = PathFunctions::stripExtension(name);
+    CoreObjectDelegates::broadcastContentDirectoryAdded(dir);
+    if (BasicPackagedObject *obj = CBE::load<BasicPackagedObject>(name))
+    {
+        LOG("Test", "Loaded object %s nameVal %s", obj->getFullPath(), obj->nameVal);
+    }
+    else
+    {
+        CBE::Package *package = CBE::create<CBE::Package>(name, nullptr);
+        CBE::Package *package2 = CBE::create<CBE::Package>(name + TCHAR("2"), nullptr);
+        package->setPackageRoot(dir);
+        package2->setPackageRoot(dir);
+
+        BasicPackagedObject *packedObj2 = CBE::create<BasicPackagedObject>(name, package2);
+        packedObj2->dt = 0.56;
+        packedObj2->nameVal = TCHAR("Its connected object");
+        BasicPackagedObject *packedObj = CBE::create<BasicPackagedObject>(name, package);
+        packedObj->dt = 0.28;
+        packedObj->id = STRID("Hello Subity & Jeslas");
+        packedObj->nameVal = TCHAR("Its Me Jeslas");
+        packedObj->idxToStr = {
+            {1, TCHAR("Jeslas Pravin")},
+            {2, TCHAR("Subity Jerald")}
+        };
+        packedObj->interLinked = packedObj2;
+
+        CBE::save(packedObj);
+        CBE::save(packedObj2);
+    }
+}
 
 void ExperimentalEnginePBR::tempTestPerFrame()
 {

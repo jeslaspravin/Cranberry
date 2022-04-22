@@ -3,6 +3,7 @@ include(${cmake_script_dir}/GeneratedReflectionsMacros.cmake)
 
 set(private_modules
     ProgramCore
+    CoreObjects
 )
 
 # ReflectionRuntime must be included as target's module

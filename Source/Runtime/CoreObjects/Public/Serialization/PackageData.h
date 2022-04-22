@@ -24,7 +24,8 @@ inline constexpr static const uint32 PACKAGE_SERIALIZER_CUTOFF_VERSION = 0;
 inline STRINGID_CONSTEXPR static const StringID PACKAGE_CUSTOM_VERSION_ID = STRID("PackageSerializer");
 
 // This will be flag set on object index when an object index is serialized to archive
-inline constexpr static const SizeT DEPENDENT_OBJECT_FLAG = 0x80'00'00'00'00'00'00'00;
+inline constexpr static const SizeT DEPENDENT_OBJECT_FLAG = 0x80'00'00'00'00'00'00'00ull;
+inline constexpr static const SizeT NULL_OBJECT_FLAG = ~0ull;
 
 struct PackageDependencyData
 {
@@ -36,7 +37,7 @@ struct PackageDependencyData
     CBE::Object *object = nullptr;
 };
 
-template <IsArchiveType ArchiveType>
+template <ArchiveType ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, PackageDependencyData &value)
 {
     archive << value.objectFullPath;
@@ -59,7 +60,7 @@ struct PackageContainedData
     CBE::Object *object = nullptr;
 };
 
-template <IsArchiveType ArchiveType>
+template <ArchiveType ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, PackageContainedData &value)
 {
     archive << value.objectPath;

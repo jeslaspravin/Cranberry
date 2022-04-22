@@ -71,10 +71,8 @@ protected:
     virtual ~GraphicsResourceType();
 
 public:
-    GraphicsResourceType(const GraphicsResourceType &other) = delete;
     GraphicsResourceType() = delete;
-    void operator=(const GraphicsResourceType &) = delete;
-    void operator=(GraphicsResourceType &&) = delete;
+    MAKE_TYPE_NONCOPY_NONMOVE(GraphicsResourceType)
 
     bool operator==(const GraphicsResourceType &otherType) const { return defaultResource == otherType.defaultResource; }
     bool operator!=(const GraphicsResourceType &otherType) const { return defaultResource != otherType.defaultResource; }

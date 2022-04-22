@@ -14,6 +14,7 @@
 #include "CoreObjectsModule.h"
 #include "CBEObjectHelpers.h"
 #include "Serialization/PackageLoader.h"
+#include "Serialization/PackageSaver.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 
 namespace CBE
@@ -39,7 +40,7 @@ Object *load(String objectPath)
         }
 
         packagePath = ObjectPathHelper::getPackagePath(objPath.getChar());
-        objectPath = packagePath;
+        objectPath = objPath;
     }
 
     PackageLoader *objectPackageLoader = packageManager.getPackageLoader(packagePath);
@@ -61,8 +62,11 @@ Object *load(String objectPath)
     if (BIT_SET(package->getFlags(), EObjectFlagBits::PackageLoadPending))
     {
         bool bPackageLoaded = objectPackageLoader->load();
-        fatalAssert(bPackageLoaded, "Loading package %s failed", package->getName());
-        return nullptr;
+        if (!bPackageLoaded)
+        {
+            fatalAssert(bPackageLoaded, "Loading package %s failed", package->getName());
+            return nullptr;
+        }
     }
 
     StringID objId{ objectPath };
@@ -111,6 +115,34 @@ Object *getOrLoad(String objectPath)
     }
     return obj;
 }
+
+void markDirty(Object *obj)
+{
+    CBE::Package *package = cast<CBE::Package>(obj->getOuterMost());
+    if (package)
+    {
+        SET_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::PackageDirty);
+    }
+}
+
+bool save(Object *obj)
+{
+    CBE::Package *package = cast<CBE::Package>(obj->getOuterMost());
+    if (!package)
+    {
+        LOG_WARN("ObjectHelper", "Object %s cannot be saved due to invalid package", obj->getFullPath());
+        return false;
+    }
+
+    PackageSaver saver(package);
+    if (!saver.savePackage())
+    {
+        LOG_ERROR("ObjectHelper", "Failed to save package %s", package->getName());
+        return false;
+    }
+    CLEAR_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::PackageDirty);
+    return true;
+}
 } // namespace CBE
 
 void CBEPackageManager::readPackagesIn(const String &contentDir)
@@ -122,25 +154,8 @@ void CBEPackageManager::readPackagesIn(const String &contentDir)
     }
 }
 
-void CBEPackageManager::refreshPackages()
-{
-    for (const String &contentDir : contentDirs)
-    {
-        std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + CBE::PACKAGE_EXT);
-        for (const String &packageFile : packageFiles)
-        {
-            String packagePath = PathFunctions::toRelativePath(packageFile, contentDir);
-            if (!packageToLoader.contains(packagePath))
-            {
-                setupPackage(packageFile, contentDir);
-            }
-        }
-    }
-}
-
 void CBEPackageManager::removePackagesFrom(const String &contentDir)
 {
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
     for (auto itr = packageToLoader.begin(); itr != packageToLoader.end();)
     {
         if (itr->second->getPackage()->getPackageRoot() == contentDir)
@@ -171,9 +186,30 @@ void CBEPackageManager::removePackagesFrom(const String &contentDir)
     }
 }
 
+FORCE_INLINE String CBEPackageManager::packagePathFromFilePath(const String &filePath, const String &contentDir)
+{
+    return PathFunctions::stripExtension(PathFunctions::toRelativePath(filePath, contentDir));
+}
+
+void CBEPackageManager::refreshPackages()
+{
+    for (const String &contentDir : contentDirs)
+    {
+        std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + CBE::PACKAGE_EXT);
+        for (const String &packageFilePath : packageFiles)
+        {
+            String packagePath = packagePathFromFilePath(packageFilePath, contentDir);
+            if (!packageToLoader.contains(packagePath))
+            {
+                setupPackage(packageFilePath, contentDir);
+            }
+        }
+    }
+}
+
 void CBEPackageManager::setupPackage(const String &packageFilePath, const String &contentDir)
 {
-    String packagePath = PathFunctions::toRelativePath(packageFilePath, contentDir);
+    String packagePath = packagePathFromFilePath(packageFilePath, contentDir);
     CBE::Package *package = CBE::createOrGet<CBE::Package>(packagePath, nullptr, CBE::EObjectFlagBits::PackageLoadPending);
     package->setPackageRoot(contentDir);
 

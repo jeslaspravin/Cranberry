@@ -52,10 +52,7 @@ private:
 
 public:
     RenderManager() = default;
-    RenderManager(const RenderManager &) = delete;
-    RenderManager(RenderManager &&) = delete;
-    RenderManager &operator=(const RenderManager &) = delete;
-    RenderManager &operator=(RenderManager &&) = delete;
+    MAKE_TYPE_NONCOPY_NONMOVE(RenderManager)
 
     void initialize(IGraphicsInstance *graphicsInstance);
     void finalizeInit();

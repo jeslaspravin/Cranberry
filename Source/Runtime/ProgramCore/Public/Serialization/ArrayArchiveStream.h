@@ -21,8 +21,6 @@ private:
 
 public:
     ArrayArchiveStream() = default;
-    ArrayArchiveStream(ArrayArchiveStream &&) = delete;
-    ArrayArchiveStream(const ArrayArchiveStream &) = delete;
 
     /* ArrayArchiveStream overrides */
     void read(void *toPtr, SizeT len) override;

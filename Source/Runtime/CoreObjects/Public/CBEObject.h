@@ -69,8 +69,7 @@ protected:
 
 protected:
     ObjectBase() = delete;
-    ObjectBase(ObjectBase &&) = delete;
-    ObjectBase(const ObjectBase &) = delete;
+    MAKE_TYPE_NONCOPY_NONMOVE(ObjectBase)
 
     ObjectBase(String inObjectName)
         : objectName(inObjectName)
@@ -85,7 +84,7 @@ public:
     OVERRIDE_CONSTRUCTION_POLICY(CBEObjectConstructionPolicy);
 
 private:
-    friend PrivateObjectCoreAccessors;
+    friend INTERNAL_ObjectCoreAccessors;
     friend CBEObjectConstructionPolicy;
 
     Object *objOuter;
@@ -105,9 +104,9 @@ public:
         , allocIdx(allocIdx)
     {}
 
-    virtual ~Object();
+    virtual ~Object() = default;
 
-    void destroyObject() { destroy(); }
+    void destroyObject();
     void beginDestroy() { markReadyForDestroy(); }
 
     FORCE_INLINE Object *getOuter() const { return objOuter; }
