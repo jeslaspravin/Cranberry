@@ -34,6 +34,7 @@ private:
     void removePackagesFrom(const String &contentDir);
 
     void setupPackage(const String &packageFilePath, const String &contentDir);
+    FORCE_INLINE static String packagePathFromFilePath(const String &filePath, const String &contentDir);
 
 public:
     CBEPackageManager() = default;

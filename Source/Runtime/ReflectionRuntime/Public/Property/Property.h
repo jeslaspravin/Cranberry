@@ -60,8 +60,7 @@ protected:
 public:
     BaseProperty(const StringID &propNameID, const String &propName, EPropertyType propType);
     BaseProperty() = delete;
-    BaseProperty(BaseProperty &&) = delete;
-    BaseProperty(const BaseProperty &) = delete;
+    MAKE_TYPE_NONCOPY_NONMOVE(BaseProperty)
 
     virtual ~BaseProperty() = default;
 };

@@ -14,6 +14,7 @@
 #include "Modules/ModuleManager.h"
 #include "CBEObjectHelpers.h"
 #include "CBEPackage.h"
+#include "CoreObjectDelegates.h"
 
 DECLARE_MODULE(CoreObjects, CoreObjectsModule)
 
@@ -23,10 +24,24 @@ ICoreObjectsModule *ICoreObjectsModule::get()
     return weakRiModule.expired() ? nullptr : static_cast<CoreObjectsModule *>(weakRiModule.lock().get());
 }
 
-void CoreObjectsModule::init() { CBE::initializeObjectAllocators(); }
+void CoreObjectsModule::init()
+{
+    CBE::initializeObjectAllocators();
+    CoreObjectDelegates::onContentDirectoryAdded.bindObject(&packMan, &CBEPackageManager::registerContentRoot);
+    CoreObjectDelegates::onContentDirectoryRemoved.bindObject(&packMan, &CBEPackageManager::registerContentRoot);
+}
 
-void CoreObjectsModule::release() {}
+void CoreObjectsModule::release()
+{
+    CoreObjectDelegates::onContentDirectoryAdded.unbindAll(&packMan);
+    CoreObjectDelegates::onContentDirectoryRemoved.unbindAll(&packMan);
+}
 
 const CoreObjectsDB &CoreObjectsModule::getObjectsDB() const { return objsDb; }
+
+CBE::Package *CoreObjectsModule::getTransientPackage() const
+{
+    return CBE::createOrGet<CBE::Package>(TCHAR("Transient"), nullptr, CBE::EObjectFlagBits::RootObject);
+}
 
 CoreObjectGC &CoreObjectsModule::getGC() { return gc; }

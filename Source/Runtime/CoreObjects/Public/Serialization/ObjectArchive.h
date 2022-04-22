@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Serialization/ArchiveBase.h"
+#include "Property/PropertyHelper.h"
 #include "CoreObjectsExports.h"
 
 namespace CBE
@@ -112,10 +113,16 @@ public:
     /* Overrides ends */
 };
 
-template <IsArchiveType ArchiveType>
-requires std::derived_from<ArchiveType, ObjectArchive> ArchiveType &operator<<(ArchiveType &archive, CBE::Object *&value)
+template <ArchiveType ArchiveType, ReflectClassType ObjectType>
+requires(std::derived_from<ArchiveType, ObjectArchive> &&std::derived_from<ObjectType, CBE::Object>) ArchiveType &
+    operator<<(ArchiveType &archive, ObjectType *&value)
 {
     ObjectArchive &objArchive = static_cast<ObjectArchive &>(archive);
-    objArchive.serialize(value);
+    CBE::Object *obj = value;
+    objArchive.serialize(obj);
+    if (archive.isLoading())
+    {
+        value = static_cast<ObjectType *>(obj);
+    }
     return archive;
 }

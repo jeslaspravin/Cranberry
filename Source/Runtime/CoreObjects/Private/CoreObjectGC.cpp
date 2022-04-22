@@ -17,20 +17,24 @@
 #include "Property/PropertyHelper.h"
 #include "Visitors/FieldVisitors.h"
 
+namespace CBE
+{
+void INTERNAL_destroyCBEObject(CBE::Object *obj);
+}
+
 void CoreObjectGC::deleteObject(CBE::Object *obj) const
 {
     CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
     if (objsDb.hasObject(obj->getStringID()))
     {
-        // Deleting obj and its subobjects
+        // Deleting obj and its sub objects
         std::vector<CBE::Object *> subObjs;
-        objsDb.getSubobjects(subObjs, obj->getStringID());
         subObjs.emplace_back(obj);
-        for (CBE::Object *subObj : subObjs)
+        objsDb.getSubobjects(subObjs, obj->getStringID());
+        // Need to reverse so that children will be destroyed before parent
+        for (auto rItr = subObjs.crbegin(); rItr != subObjs.crend(); ++rItr)
         {
-            CBEClass clazz = subObj->getType();
-            obj->destroyObject();
-            static_cast<const GlobalFunctionWrapper *>(clazz->destructor->funcPtr)->invokeUnsafe<void>(subObj);
+            CBE::INTERNAL_destroyCBEObject(*rItr);
         }
     }
 }
@@ -59,7 +63,7 @@ void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
             {
                 // Assumes that caller ensures that objUsedFlags are populated and available
                 // throughout collection
-                objUsedFlags[obj->getType()][CBE::PrivateObjectCoreAccessors::getAllocIdx(obj)] = true;
+                objUsedFlags[obj->getType()][CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
             }
         }
 
@@ -84,17 +88,17 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
     {
         BitArray<uint64> &classObjsFlag = objUsedFlags[clazz];
 
-        auto allocatorItr = gCBEObjectAllocators->find(classesLeft.back());
+        auto allocatorItr = gCBEObjectAllocators->find(clazz);
         debugAssert(allocatorItr != gCBEObjectAllocators->end());
 
         for (CBE::Object *obj : allocatorItr->second->getAllObjects<CBE::Object>())
         {
             // Only mark as valid if object not marked for delete already and
-            // If object is marked explicitly as root then we must not delete it
+            // If object is marked explicitly as root or default then we must not delete it
             if (BIT_NOT_SET(obj->getFlags(), CBE::EObjectFlagBits::MarkedForDelete)
-                && BIT_SET(obj->getFlags(), CBE::EObjectFlagBits::RootObject))
+                && BIT_SET(obj->getFlags(), CBE::EObjectFlagBits::RootObject | CBE::EObjectFlagBits::Default))
             {
-                classObjsFlag[CBE::PrivateObjectCoreAccessors::getAllocIdx(obj)] = true;
+                classObjsFlag[CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
             }
         }
     }
@@ -105,7 +109,7 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
         {
             if (BIT_NOT_SET(package->getFlags(), CBE::EObjectFlagBits::MarkedForDelete) && objsDb.hasChild(package->getStringID()))
             {
-                packagesFlag[CBE::PrivateObjectCoreAccessors::getAllocIdx(package)] = true;
+                packagesFlag[CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(package)] = true;
             }
         }
     }
@@ -181,6 +185,7 @@ void CoreObjectGC::startNewGC(TickRep &budgetTicks)
     }
 
     state = EGCState::Collecting;
+    markObjectsAsValid(budgetTicks);
     collectFromRefCollectors(budgetTicks);
     collectObjects(budgetTicks);
     // If collecting is done within the given budget start clear as last step for this gc
@@ -337,7 +342,7 @@ struct GCObjectFieldVisitable
                 }
                 else
                 {
-                    (*gcUserData->objUsedFlags)[objPtr->getType()][CBE::PrivateObjectCoreAccessors::getAllocIdx(objPtr)] = true;
+                    (*gcUserData->objUsedFlags)[objPtr->getType()][CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(objPtr)] = true;
                 }
             }
             break;
@@ -372,7 +377,7 @@ struct GCObjectFieldVisitable
                 }
                 else
                 {
-                    (*gcUserData->objUsedFlags)[objPtr->getType()][CBE::PrivateObjectCoreAccessors::getAllocIdx(objPtr)] = true;
+                    (*gcUserData->objUsedFlags)[objPtr->getType()][CBE::INTERNAL_ObjectCoreAccessors::getAllocIdx(objPtr)] = true;
                 }
             }
             break;

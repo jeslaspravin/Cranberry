@@ -16,6 +16,20 @@
 #include <concepts>
 #include <type_traits>
 
+template <typename FromType, typename ToType, typename = ToType>
+struct IsStaticCastable : std::false_type
+{};
+template <typename FromType, typename ToType>
+struct IsStaticCastable<FromType, ToType, decltype(static_cast<ToType>(std::declval<FromType>()))> : std::true_type
+{};
+template <typename FromType, typename ToType>
+concept StaticCastable = requires(FromType value)
+{
+    {
+        static_cast<ToType>(value)
+        } -> std::same_as<ToType>;
+};
+
 // Indexable checks for dynamic pointer array and native array only
 template <typename DataType>
 using IsIndexable = std::disjunction<std::is_array<DataType>, std::is_pointer<DataType>>;

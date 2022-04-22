@@ -44,6 +44,12 @@ bool PropertyHelper::isValidFunctionCall(const String &inValue)
 
 bool PropertyHelper::isChildOf(const ClassProperty *childClassProp, const ClassProperty *parentClassProp)
 {
+    if (!childClassProp || !parentClassProp)
+    {
+        alertIf(childClassProp && parentClassProp, "Null class properties are not valid input for isChildOf function");
+        return false;
+    }
+
     std::vector<const ClassProperty *> checkClasses;
     checkClasses.emplace_back(childClassProp);
     while (!checkClasses.empty())

@@ -38,6 +38,8 @@ public:
     using AllocIdx = ObjectAllocIdx;
 
 protected:
+    void constructDefault(void *objPtr, AllocIdx allocIdx, CBEClass clazz) const;
+
     virtual void *getAllocAt(AllocIdx idx) const = 0;
 
 public:
@@ -83,7 +85,6 @@ private:
     using SlotAllocatorType = SlotAllocator<sizeof(ClassType), alignof(ClassType), 64>;
     using SlotIdxType = typename SlotAllocatorType::SizeType;
 
-    ClassType defaultObj;
     std::vector<SlotAllocatorType *> allocators;
 
     // If we get at least 2 empty allocators then we clear them both, This is to avoid frequent delete on
@@ -92,6 +93,7 @@ private:
     SizeT emptyIdx = 0;
 
     SizeT lastAllocatedCache = 0;
+    AllocIdx defaultAllocIdx = 0;
 
 private:
     bool lastAllocatedCacheValid() const { return lastAllocatedCache < allocators.size() && allocators[lastAllocatedCache]; }
@@ -129,7 +131,13 @@ private:
     }
 
 public:
-    ObjectAllocator() { SET_BITS(PrivateObjectCoreAccessors::getFlags(&defaultObj), EObjectFlagBits::Default); }
+    ObjectAllocator()
+    {
+        // Directly calling allocate and object construction routine to skip getting allocator that happens when constructing using
+        // CBEObjectConstructionPolicy
+        ClassType *objPtr = (ClassType *)allocate(defaultAllocIdx);
+        constructDefault(objPtr, defaultAllocIdx, ClassType::staticType());
+    }
 
     ~ObjectAllocator()
     {
@@ -156,7 +164,7 @@ protected:
     }
 
 public:
-    void *getDefault() override { return &defaultObj; }
+    void *getDefault() override { return getAllocAt(defaultAllocIdx); }
     void *allocate(AllocIdx &outAllocIdx) override
     {
         SizeT allocateFrom = lastAllocatedCacheValid() ? lastAllocatedCache : findAllocator();
@@ -258,10 +266,10 @@ FORCE_INLINE SizeT ObjectAllocator<ClassType>::findAllocator()
     }
 }
 
-void initializeObjectAllocators();
+COREOBJECTS_EXPORT void initializeObjectAllocators();
 
 template <typename ClassType>
-ObjectAllocator<ClassType> &internal_createObjAllocator()
+ObjectAllocator<ClassType> &INTERNAL_createObjAllocator()
 {
     static ObjectAllocator<ClassType> objAllocator;
     if (!gCBEObjectAllocators)
@@ -275,7 +283,7 @@ ObjectAllocator<ClassType> &internal_createObjAllocator()
 template <typename ClassType>
 ObjectAllocator<ClassType> &getObjAllocator()
 {
-    static ObjectAllocator<ClassType> &objAllocator = internal_createObjAllocator<ClassType>();
+    static ObjectAllocator<ClassType> &objAllocator = INTERNAL_createObjAllocator<ClassType>();
     return objAllocator;
 }
 

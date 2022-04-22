@@ -19,8 +19,14 @@ namespace CBE
 
 Package::Package()
 {
-    debugAssert(!getName().empty());
-    packagePath = ObjectPathHelper::splitPackageNameAndPath(packageName, getName().getChar());
+    // #TODO(Jeslas) : Improve default object creation logic or make it so that
+    // debugAssert(!getName().empty() || BIT_SET(getFlags(), EObjectFlagBits::Default));
+
+    // Name will be empty only in default objects now
+    if (!getName().empty())
+    {
+        packagePath = ObjectPathHelper::splitPackageNameAndPath(packageName, getName().getChar());
+    }
 }
 
 String Package::getPackageFilePath() const { return PathFunctions::combinePath(getPackageRoot(), getName() + TCHAR(".") + PACKAGE_EXT); }

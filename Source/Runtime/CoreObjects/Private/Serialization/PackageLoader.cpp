@@ -21,23 +21,34 @@ void PackageLoader::createContainedObject(PackageContainedData &containedData)
     String outerPath;
     ObjectPathHelper::getPathComponents(outerPath, objectName, containedData.objectPath.getChar());
 
-    String outerFullPath = package->getName() + ObjectPathHelper::RootObjectSeparator + outerPath;
-    CBE::Object *outerObj = CBE::get(outerFullPath.getChar());
-
-    alertIf(outerObj, "Outer object being null is unexpected case, Serialization order of objects is outer first to leaf last");
-    if (!outerObj)
+    CBE::Object *outerObj = nullptr;
+    if (!outerPath.empty())
     {
-        auto outerContainedDataItr = std::find_if(
-            containedObjects.begin(), containedObjects.end(),
-            [&outerPath](const PackageContainedData &containedData) { return containedData.objectPath == outerPath; }
-        );
+        String outerFullPath = package->getName() + ObjectPathHelper::RootObjectSeparator + outerPath;
+        outerObj = CBE::get(outerFullPath.getChar());
 
-        debugAssert(outerContainedDataItr != containedObjects.end());
-        createContainedObject(*outerContainedDataItr);
-        outerObj = outerContainedDataItr->object;
+        alertIf(outerObj, "Outer object being null is unexpected case, Serialization order of objects is outer first to leaf last");
+        if (!outerObj)
+        {
+            auto outerContainedDataItr = std::find_if(
+                containedObjects.begin(), containedObjects.end(),
+                [&outerPath](const PackageContainedData &containedData) { return containedData.objectPath == outerPath; }
+            );
+
+            debugAssert(outerContainedDataItr != containedObjects.end());
+            createContainedObject(*outerContainedDataItr);
+            outerObj = outerContainedDataItr->object;
+        }
+    }
+    else
+    {
+        // Empty outer means this is direct child of package
+        outerObj = package;
     }
 
-    CBE::Object *obj = CBE::create(
+    debugAssert(outerObj);
+
+    CBE::Object *obj = CBE::createOrGet(
         IReflectionRuntimeModule::get()->getClassType(containedData.className), objectName, outerObj, CBE::EObjectFlagBits::PackageLoadPending
     );
     fatalAssert(obj, "Package(%s) load failed to create object %s", package->getName(), containedData.objectPath);
@@ -62,9 +73,17 @@ ObjectArchive &PackageLoader::serialize(CBE::Object *&obj)
 {
     SizeT tableIdx;
     (*static_cast<ObjectArchive *>(this)) << tableIdx;
-    if (BIT_SET(tableIdx, DEPENDENT_OBJECT_FLAG))
+
+    const bool bIsDependent = BIT_SET(tableIdx, DEPENDENT_OBJECT_FLAG);
+    CLEAR_BITS(tableIdx, DEPENDENT_OBJECT_FLAG);
+    if (tableIdx == NULL_OBJECT_FLAG || (dependentObjects.size() <= tableIdx && containedObjects.size() <= tableIdx))
     {
-        CLEAR_BITS(tableIdx, DEPENDENT_OBJECT_FLAG);
+        obj = nullptr;
+        return (*this);
+    }
+
+    if (bIsDependent)
+    {
         debugAssert(dependentObjects.size() > tableIdx);
 
         if (!CBE::isValid(dependentObjects[tableIdx].object))
@@ -121,13 +140,18 @@ bool PackageLoader::load()
     packageArchive.setStream(&fileStream);
 
     bool bSuccess = true;
+
+    // Create all object first
     for (PackageContainedData &containedData : containedObjects)
     {
         if (!CBE::isValid(containedData.object))
         {
             createContainedObject(containedData);
         }
+    }
 
+    for (PackageContainedData &containedData : containedObjects)
+    {
         if (fileStream.cursorPos() > containedData.streamStart)
         {
             fileStream.moveBackward(fileStream.cursorPos() - containedData.streamStart);
@@ -137,7 +161,7 @@ bool PackageLoader::load()
             fileStream.moveForward(containedData.streamStart - fileStream.cursorPos());
         }
         containedData.object->serialize(*this);
-        CLEAR_BITS(CBE::PrivateObjectCoreAccessors::getFlags(containedData.object), CBE::EObjectFlagBits::PackageLoadPending);
+        CLEAR_BITS(CBE::INTERNAL_ObjectCoreAccessors::getFlags(containedData.object), CBE::EObjectFlagBits::PackageLoadPending);
 
         SizeT serializedSize = fileStream.cursorPos() - containedData.streamStart;
         if (serializedSize != containedData.streamSize)
@@ -150,6 +174,6 @@ bool PackageLoader::load()
             bSuccess = false;
         }
     }
-    CLEAR_BITS(CBE::PrivateObjectCoreAccessors::getFlags(package), CBE::EObjectFlagBits::PackageLoadPending);
+    CLEAR_BITS(CBE::INTERNAL_ObjectCoreAccessors::getFlags(package), CBE::EObjectFlagBits::PackageLoadPending);
     return bSuccess;
 }

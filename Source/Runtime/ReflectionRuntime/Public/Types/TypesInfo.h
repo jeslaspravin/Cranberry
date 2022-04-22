@@ -128,7 +128,7 @@ FORCE_INLINE std::vector<const ReflectTypeInfo *> typeInfoListFrom()
 }
 
 #define REFLECTTYPEQUALIFIER_STR(QualifierEnum)                                                                                                \
-    << (BIT_SET(ti.qualifiers, EReflectTypeQualifiers::##QualifierEnum##) ? TCHAR(" " #QualifierEnum) : TCHAR(""))
+    << (BIT_SET(ti.qualifiers, EReflectTypeQualifiers::Type::QualifierEnum) ? TCHAR(" " #QualifierEnum) : TCHAR(""))
 // Logger overrides
 FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const ReflectTypeInfo &ti)
 {

@@ -60,6 +60,7 @@ private:
 
     // Contains module interface implementation provided by a module
     LoadedModulesMap loadedModuleInterfaces;
+    std::vector<String> moduleLoadedOrder;
     // Library paths to look for a library if not found in initial OS environment paths search
     std::vector<String> additionalLibraryPaths;
 
@@ -90,6 +91,7 @@ public:
     bool loadModule(String moduleName);
     WeakModulePtr getOrLoadModule(String moduleName);
     void unloadModule(String moduleName);
+    void unloadAllModules();
 
     std::vector<std::pair<LibPointerPtr, struct LibraryData>> getAllModuleData();
 };

@@ -56,6 +56,8 @@ public:
     {}
     ShaderArchive(const ShaderArchive &) = delete;
     ShaderArchive(ShaderArchive &&) = delete;
+    ShaderArchive &operator=(const ShaderArchive &) = delete;
+    ShaderArchive &operator=(ShaderArchive &&) = delete;
 
     inline bool isLoading() const { return bIsLoading; }
     const std::vector<unsigned char> &archiveData() const { return archive; }

@@ -38,11 +38,7 @@ private:
 
 public:
     PackageLoader(CBE::Package *loadingPackage, const String &filePath);
-    // Non copyable
-    PackageLoader(const PackageLoader &) = delete;
-    PackageLoader(PackageLoader &&) = delete;
-    PackageLoader &operator=(const PackageLoader &) = delete;
-    PackageLoader &operator=(PackageLoader &&) = delete;
+    MAKE_TYPE_NONCOPY_NONMOVE(PackageLoader)
 
     /* ObjectArchive overrides */
     ObjectArchive &serialize(CBE::Object *&obj) override;

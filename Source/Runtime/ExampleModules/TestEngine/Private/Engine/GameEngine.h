@@ -106,8 +106,7 @@ public:
 
     operator bool() const { return gEngine != nullptr; }
 
-    void operator=(const GameEngineWrapper &) = delete;
-    void operator=(GameEngineWrapper &&) = delete;
+    MAKE_TYPE_NONCOPY_NONMOVE(GameEngineWrapper)
 };
 
 inline GameEngineWrapper gEngine;

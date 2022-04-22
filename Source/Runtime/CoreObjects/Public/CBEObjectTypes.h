@@ -30,7 +30,7 @@ enum EObjectFlagBits : EObjectFlags
 {
     /*
      * Default object that are created as part of
-     * CBE::ObjectAllocatorBase creation
+     * CBE::ObjectAllocatorBase creation and are not cleared during garbage collection
      */
     Default = 0x00'00'00'00'00'00'00'01,
     /*
@@ -60,14 +60,15 @@ enum EObjectFlagBits : EObjectFlags
 
 // Why separate accessor? Because this accessor will be needed only for some low level carefully
 // orchestrated code and discourage its use for gameplay
-class COREOBJECTS_EXPORT PrivateObjectCoreAccessors
+class COREOBJECTS_EXPORT INTERNAL_ObjectCoreAccessors
 {
 private:
-    PrivateObjectCoreAccessors() = default;
+    INTERNAL_ObjectCoreAccessors() = default;
 
 public:
     static EObjectFlags &getFlags(Object *object);
     static ObjectAllocIdx getAllocIdx(const Object *object);
+    static void setAllocIdx(Object *object, ObjectAllocIdx allocIdx);
     // clazz is just class property of this object and is used only when creating the object for the
     // first time
     static void setOuterAndName(Object *object, const String &newName, Object *outer, CBEClass clazz = nullptr);
