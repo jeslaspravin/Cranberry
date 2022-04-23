@@ -136,6 +136,7 @@ public:
         // Directly calling allocate and object construction routine to skip getting allocator that happens when constructing using
         // CBEObjectConstructionPolicy
         ClassType *objPtr = (ClassType *)allocate(defaultAllocIdx);
+        CBEMemory::memZero(objPtr, sizeof(ClassType));
         constructDefault(objPtr, defaultAllocIdx, ClassType::staticType());
     }
 

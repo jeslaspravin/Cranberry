@@ -19,13 +19,16 @@ void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEC
     // Direct call to object construction routine to skip getting allocator that happens when constructing using CBEObjectConstructionPolicy
     // Default ctor
     const GlobalFunctionWrapper *ctor = PropertyHelper::findMatchingCtor<void *>(clazz);
+    alertIf(ctor, "Default constructor not found to construct defaul object");
 
     Object *object = reinterpret_cast<Object *>(objPtr);
 
     // Object's data must be populated even before constructor is called
     INTERNAL_ObjectCoreAccessors::setAllocIdx(object, allocIdx);
     INTERNAL_ObjectCoreAccessors::getFlags(object) |= EObjectFlagBits::Default | EObjectFlagBits::RootObject;
-    INTERNAL_ObjectCoreAccessors::setOuterAndName(object, clazz->nameString + TCHAR("_Default"), nullptr, clazz);
+    INTERNAL_ObjectCoreAccessors::setOuterAndName(
+        object, PropertyHelper::getValidSymbolName(clazz->nameString) + TCHAR("_Default"), nullptr, clazz
+    );
 
     object = ctor->invokeUnsafe<Object *, void *>(objPtr);
 }

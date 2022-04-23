@@ -3453,6 +3453,8 @@ void ExperimentalEnginePBR::tempTest()
         };
         packedObj->interLinked = packedObj2;
 
+        BasicPackagedObject *testTemp = CBE::create<BasicPackagedObject>(name, package);
+
         CBE::save(packedObj);
         CBE::save(packedObj2);
     }

@@ -41,7 +41,7 @@ const CoreObjectsDB &CoreObjectsModule::getObjectsDB() const { return objsDb; }
 
 CBE::Package *CoreObjectsModule::getTransientPackage() const
 {
-    return CBE::createOrGet<CBE::Package>(TCHAR("Transient"), nullptr, CBE::EObjectFlagBits::RootObject);
+    return CBE::getDefaultObject<CBE::Package>();
 }
 
 CoreObjectGC &CoreObjectsModule::getGC() { return gc; }
