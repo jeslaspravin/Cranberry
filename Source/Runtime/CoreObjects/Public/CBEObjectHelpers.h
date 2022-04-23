@@ -53,11 +53,26 @@ FORCE_INLINE bool INTERNAL_validateCreatedObject(CBE::Object *obj) { return BIT_
 template <typename... CtorArgs>
 Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
 {
-#if DEV_BUILD
-    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-    String objectFullPath = ObjectPathHelper::getFullPath(name.getChar(), outerObj);
-    fatalAssert(!objectsDb.hasObject(objectFullPath), "Use createOrGet() object interface in existing object %s", objectFullPath);
+    // If empty string then try create from class name
+    String objectName = name.empty() ? clazz->nameString : name;
+    // Using valid property name, Change if needed other wise also change in ObjectAllocatorBase::constructDefault
+    if (!PropertyHelper::isValidSymbolName(objectName))
+    {
+        alertIf(false, "Invalid object name! Invalid characters will be replaced with underscore(_)");
+        objectName = PropertyHelper::getValidSymbolName(objectName);
+    }
+    String objectFullPath = ObjectPathHelper::getFullPath(objectName.getChar(), outerObj);
 
+    const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+#if DEV_BUILD
+    if (objectsDb.hasObject(objectFullPath))
+    {
+        LOG_WARN(
+            "ObjectHelper",
+            "Object with path %s already exists, If object path needs to be exactly same use createOrGet() to retrieve existing object",
+            objectFullPath
+        );
+    }
 #endif // DEV_BUILD
 
     /**
@@ -79,8 +94,15 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
     Object *object = reinterpret_cast<Object *>(objPtr);
 
     // Object's data must be populated even before constructor is called
+    if (objectsDb.hasObject(objectFullPath))
+    {
+        // Appending allocation ID and class name will make it unique
+        SizeT uniqueNameId = uint32(clazz->name);
+        HashUtility::combineSeeds(uniqueNameId, INTERNAL_ObjectCoreAccessors::getAllocIdx(object));
+        objectName = StringFormat::format(TCHAR("%s_%llu"), objectName, uniqueNameId);
+    }
     INTERNAL_ObjectCoreAccessors::getFlags(object) |= flags;
-    INTERNAL_ObjectCoreAccessors::setOuterAndName(object, name, outerObj, clazz);
+    INTERNAL_ObjectCoreAccessors::setOuterAndName(object, objectName, outerObj, clazz);
 
     object = ctor->invokeUnsafe<Object *, void *, CtorArgs...>(objPtr, std::forward<CtorArgs>(ctorArgs)...);
 
@@ -148,8 +170,8 @@ COREOBJECTS_EXPORT bool save(Object *obj);
 template <typename ClassType>
 ClassType *getDefaultObject()
 {
-    ObjectAllocatorBase *objAllocator = getObjAllocator<ClassType>();
-    return reinterpret_cast<ClassType *>(objAllocator->getDefault());
+    ObjectAllocator<ClassType> &objAllocator = getObjAllocator<ClassType>();
+    return reinterpret_cast<ClassType *>(objAllocator.getDefault());
 }
 
 FORCE_INLINE CBE::Object *getDefaultObject(CBEClass clazz)
