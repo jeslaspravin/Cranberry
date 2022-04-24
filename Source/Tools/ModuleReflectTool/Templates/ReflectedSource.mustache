@@ -137,6 +137,8 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
 {{!Now the Class's section context contains context for class fields}}
 {{#BaseClasses}}
     typeProperty->addBaseClass(IReflectionRuntimeModule::getType<{{BaseClassTypeName}}>());{{/BaseClasses}}
+{{#InterfaceTypes}}
+    typeProperty->addInterface(TCHAR("{{InterfaceTypeName}}"), MI_VTABLE_OFFSET({{TypeName}}, {{InterfaceTypeName}}), typeInfoFrom<{{InterfaceTypeName}}>());{{/InterfaceTypes}}
 {{^IsAbstract}}{{#Ctors}}
     typeProperty->addCtorPtr()
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}

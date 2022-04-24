@@ -205,6 +205,13 @@ public:
     uint64 getPropertyMetaFlags() const;
 };
 
+struct REFLECTIONRUNTIME_EXPORT InterfaceInfo
+{
+    String typeName;
+    PtrInt offset;
+    const ReflectTypeInfo *interfaceTypeInfo;
+};
+
 class REFLECTIONRUNTIME_EXPORT ClassProperty final : public TypedProperty
 {
 public:
@@ -221,6 +228,8 @@ public:
     std::vector<const FunctionProperty *> staticFunctions;
 
     std::vector<const ClassProperty *> baseClasses;
+    // List of implemented interfaces
+    std::vector<InterfaceInfo> interfaces;
 
 public:
     // Complete class name including namespace/classes
@@ -282,6 +291,11 @@ public:
         baseClasses.emplace_back(static_cast<const ClassProperty *>(baseClassProp));
         return this;
     }
+    FORCE_INLINE ClassProperty *addInterface(const String &interfaceName, PtrInt offset, const ReflectTypeInfo *interfaceTypeInfo)
+    {
+        interfaces.emplace_back(interfaceName, offset, interfaceTypeInfo);
+        return this;
+    }
 
     ClassProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
 
@@ -309,7 +323,7 @@ public:
 
 public:
     std::vector<EnumField> fields;
-    std::map<EnumFieldMetaKey, const PropertyMetaDataBase *> fieldsMeta;
+    std::unordered_map<EnumFieldMetaKey, const PropertyMetaDataBase *> fieldsMeta;
     // If this enum is flags
     bool bIsFlags;
 

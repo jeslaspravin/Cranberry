@@ -83,11 +83,11 @@ public:
 
     FORCE_INLINE bool isOwningMemory(void *ptr) const
     {
-        IntPtr diff = (IntPtr)(ptr) - (IntPtr)(slots);
+        PtrInt diff = (PtrInt)(ptr) - (PtrInt)(slots);
         return diff >= 0 && diff < (SlotSize * Size);
     }
 
-    FORCE_INLINE SizeType ptrToSlotIdx(void *ptr) const { return ((UIntPtr)(ptr) - (UIntPtr)(slots)) / SlotSize; }
+    FORCE_INLINE SizeType ptrToSlotIdx(void *ptr) const { return ((UPtrInt)(ptr) - (UPtrInt)(slots)) / SlotSize; }
 
     void *memAlloc(SizeT size, uint32 alignment = SlotAlignment)
     {

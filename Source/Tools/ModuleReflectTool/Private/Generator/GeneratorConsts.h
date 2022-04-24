@@ -58,6 +58,7 @@ CONST_EXPR StringLiteralStore<TCHAR("EnumFieldMetaFlags")> ENUMFIELDMETAFLAGS_TA
 CONST_EXPR StringLiteralStore<TCHAR("EnumFieldMetaData")> ENUMFIELDMETADATA_TAG;
 // Classes section tags
 CONST_EXPR StringLiteralStore<TCHAR("BaseClasses")> BASECLASSES_SECTION_TAG;
+CONST_EXPR StringLiteralStore<TCHAR("InterfaceTypes")> INTERFACETYPES_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("IsAbstract")> ISABSTRACT_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("Ctors")> CONSTRUCTORS_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("MemberFuncs")> MEMBERFUNCS_SECTION_TAG;
@@ -78,6 +79,8 @@ CONST_EXPR StringLiteralStore<TCHAR("FuncConst")> FUNCCONST_BRANCH_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("FunctionName")> FUNCTIONNAME_TAG;
 // Class section base class section tags
 CONST_EXPR StringLiteralStore<TCHAR("BaseClassTypeName")> BASECLASSTYPENAME_TAG;
+// Class implemented interface section tags
+CONST_EXPR StringLiteralStore<TCHAR("InterfaceTypeName")> INTERFACETYPENAME_TAG;
 // Constructor section tags
 CONST_EXPR StringLiteralStore<TCHAR("CtorMetaFlags")> CONSTRUCTORMETAFLAGS_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("CtorMetaData")> CONSTRUCTORMETADATA_TAG;
@@ -104,4 +107,5 @@ CONST_EXPR StringLiteralStore<TCHAR("ReflectedSource")> REFLECTSOURCE_TEMPLATE;
 // Marks a class type as reflected BaseClass for further extended reflection
 CONST_EXPR StringLiteralStore<TCHAR("BaseType")> BASETYPE_FLAG;
 CONST_EXPR StringLiteralStore<TCHAR("NoExport")> NOEXPORT_FLAG;
+CONST_EXPR StringLiteralStore<TCHAR("Interface")> INTERFACE_FLAG;
 } // namespace GeneratorConsts

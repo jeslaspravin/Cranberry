@@ -14,21 +14,15 @@
 #include "CBEObject.h"
 #include "RTTIExampleExports.h"
 #include "CBEObjectHelpers.h"
+#include "InterfaceExample.h"
 #include "String/String.h"
 
 #include "BasicPackagedObject.gen.h"
 
-class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject : public CBE::Object
+class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject : public CBE::Object, public IInterfaceExample, public IInterfaceExample2
 {
     GENERATED_CODES()
 public:
-    BasicPackagedObject()
-    {
-        if (getOuter() && getOuter()->getType() != staticType())
-        {
-            inner = CBE::create<BasicPackagedObject>(TCHAR("SubObject"), this);
-        }
-    }
     std::map<uint32, String> idxToStr;
     float dt;
     StringID id;
@@ -36,7 +30,15 @@ public:
     BasicPackagedObject *interLinked;
     BasicPackagedObject *inner;
 
-    ObjectArchive &serialize(ObjectArchive &ar)
+    BasicPackagedObject()
+    {
+        if (getOuter() && getOuter()->getType() != staticType())
+        {
+            inner = CBE::create<BasicPackagedObject>(TCHAR("SubObject"), this);
+        }
+    }
+
+    ObjectArchive &serialize(ObjectArchive &ar) override
     {
         ar << idxToStr;
         ar << dt;
@@ -46,4 +48,6 @@ public:
         ar << inner;
         return ar;
     }
+
+    void exampleFunc() const override;
 };

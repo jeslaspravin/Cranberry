@@ -30,6 +30,8 @@ struct LocalContext
 
 struct ClassParseContext
 {
+    // Used to determine any diamond inheritance which we do not allow, This is to support diamond inheritance in interfaces
+    std::unordered_set<CXCursor> baseClasses;
     bool bHasConstructor = false;
 };
 
@@ -61,7 +63,13 @@ FORCE_INLINE void setTypeMetaInfo(MustacheContext &typeContext, const std::vecto
     }
     else
     {
-        typeContext.args[MetaFlagsTag.value] = String::join(metaFlags.cbegin(), metaFlags.cend(), TCHAR(" | "));
+        std::vector<String> metaFlagMasks;
+        metaFlagMasks.reserve(metaFlags.size());
+        for (const String& metaFlag : metaFlags)
+        {
+            metaFlagMasks.emplace_back(StringFormat::format(TCHAR("INDEX_TO_FLAG_MASK(%s)"), metaFlag));
+        }
+        typeContext.args[MetaFlagsTag.value] = String::join(metaFlagMasks.cbegin(), metaFlagMasks.cend(), TCHAR(" | "));
     }
 }
 
@@ -327,6 +335,46 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
                 = localCntxt.parentContext->sectionContexts[GeneratorConsts::BASECLASSES_SECTION_TAG].emplace_back();
             CXStringWrapper baseClassName = CXStringWrapper(clang_getTypeSpelling(clang_getCursorType(baseClass)));
             baseClassCntxt.args[GeneratorConsts::BASECLASSTYPENAME_TAG] = baseClassName;
+
+            // validating there is no multiple inheritance(diamond inheritance)
+            if (localCntxt.pNext)
+            {
+                ClassParseContext *classParseCntxt = (ClassParseContext *)(localCntxt.pNext);
+
+                std::vector<CXCursor> allBases;
+                ParserHelper::getReflectedClassHierarchy(allBases, baseClass);
+                for (CXCursor baseCursor : allBases)
+                {
+                    std::pair<decltype(classParseCntxt->baseClasses)::iterator, bool> insertResult
+                        = classParseCntxt->baseClasses.insert(baseCursor);
+                    if (!insertResult.second)
+                    {
+                        parseFailed(
+                            cursor, localCntxt.srcGenContext, __func__,
+                            TCHAR("Multiple inheritance of %s found! Diamond inheritance is not allowed for reflected classes, Use Interfaces if possible"),
+                            clang_getCursorSpelling(baseCursor)
+                        );
+                    }
+                }
+            }
+        }
+        else if (ParserHelper::isInterfaceClass(baseClass))
+        {
+            std::vector<CXCursor> allInterfaces;
+            if (ParserHelper::getInterfaceHierarchy(allInterfaces, baseClass))
+            {
+                for (CXCursor& interfaceCursor : allInterfaces)
+                {
+                    MustacheContext &interfacesContext
+                        = localCntxt.parentContext->sectionContexts[GeneratorConsts::INTERFACETYPES_SECTION_TAG].emplace_back();
+                    CXStringWrapper interfaceTypeName = CXStringWrapper(clang_getTypeSpelling(clang_getCursorType(interfaceCursor)));
+                    interfacesContext.args[GeneratorConsts::INTERFACETYPENAME_TAG] = interfaceTypeName;
+                }
+            }
+            else
+            {
+                parseFailed(cursor, localCntxt.srcGenContext, __func__, TCHAR("Invalid interface %s"), clang_getCursorSpelling(baseClass));
+            }
         }
         break;
     }
@@ -433,6 +481,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     {
         return;
     }
+
     MustacheContext &headerReflectTypeCntxt = srcGenContext->headerReflectTypes.emplace_back();
 
     MustacheContext &allRegisterdTypeCntxt = srcGenContext->allRegisteredypes.emplace_back();
@@ -441,6 +490,16 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     const String classMetaStr = ParserHelper::getCursorMetaString(cursor);
     std::vector<String> metaFlags, metaData, buildFlags;
     ParserHelper::parseClassMeta(metaFlags, metaData, buildFlags, classMetaStr);
+    // If reflected class then it cannot be an interface. Marking as interface and reflecting must be a mistake
+    if (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::INTERFACE_FLAG.toString()) != buildFlags.cend())
+    {
+        parseFailed(
+            cursor, srcGenContext, __func__,
+            TCHAR("Interface %s must not be reflected, Remove GENERATED_CODES() and remove any field/function META_ANNOTATIONs"),
+            clang_getTypeSpelling(clang_getCursorType(cursor))
+        );
+        return;
+    }
 
     const String classCanonicalTypeName
         = CXStringWrapper(clang_getTypeSpelling(clang_getCanonicalType(clang_getCursorType(cursor)))).toString();

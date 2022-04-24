@@ -74,3 +74,34 @@ bool PropertyHelper::isStruct(const ClassProperty *classProp)
 {
     return IReflectionRuntimeModule::get()->getStructType(classProp->typeInfo) == classProp;
 }
+
+const InterfaceInfo *PropertyHelper::getMatchingInterfaceInfo(const ClassProperty *childClassProp, const ReflectTypeInfo *interfaceType)
+{
+    if (!childClassProp || !interfaceType)
+    {
+        alertIf(childClassProp && interfaceType, "Null class properties are not valid input for implementsInterface function");
+        return nullptr;
+    }
+
+    for (const InterfaceInfo &interfaceInfo : childClassProp->interfaces)
+    {
+        if (interfaceInfo.interfaceTypeInfo == interfaceType)
+        {
+            return &interfaceInfo;
+        }
+    }
+
+    for (const ClassProperty* baseClazz : childClassProp->baseClasses)
+    {
+        if (const InterfaceInfo * interfaceInfo = getMatchingInterfaceInfo(baseClazz, interfaceType))
+        {
+            return interfaceInfo;
+        }
+    }
+    return nullptr;
+}
+
+bool PropertyHelper::implementsInterface(const ClassProperty *childClassProp, const ReflectTypeInfo *interfaceType)
+{
+    return !!getMatchingInterfaceInfo(childClassProp, interfaceType);
+}

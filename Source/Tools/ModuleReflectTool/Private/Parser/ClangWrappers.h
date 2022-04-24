@@ -38,6 +38,14 @@ struct CXStringWrapper : public RefCountable
     }
 };
 
+// Hashing overrides
+FORCE_INLINE bool operator==(const CXCursor &lhs, const CXCursor &rhs) { return clang_equalCursors(lhs, rhs); }
+template <>
+struct std::hash<CXCursor>
+{
+    NODISCARD SizeT operator()(const CXCursor &keyval) const noexcept { return clang_hashCursor(keyval); }
+};
+
 // Logger overrides
 FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const CXStringRef &str)
 {

@@ -11,6 +11,12 @@
 
 #pragma once
 
+// clang-format off
+
+/**
+ * Currently meta flags can be just normal unsigned integer. Starting from 0 to 63
+ */
+
 // Class/Struct meta
 #define FOR_EACH_CLASS_META_FLAGS_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)
 
@@ -22,7 +28,8 @@
 #define FOR_EACH_ENUM_META_FLAGS(MacroName) FOR_EACH_ENUM_META_FLAGS_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
 
 // Field meta
-#define FOR_EACH_FIELD_META_FLAGS_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)
+#define FOR_EACH_FIELD_META_FLAGS_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)   \
+    FirstMacroName(Transient)
 
 #define FOR_EACH_FIELD_META_FLAGS(MacroName) FOR_EACH_FIELD_META_FLAGS_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
 
@@ -30,3 +37,5 @@
 #define FOR_EACH_FUNC_META_FLAGS_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)
 
 #define FOR_EACH_FUNC_META_FLAGS(MacroName) FOR_EACH_FUNC_META_FLAGS_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
+
+// clang-format on
