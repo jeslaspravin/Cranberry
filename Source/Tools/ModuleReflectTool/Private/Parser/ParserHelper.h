@@ -76,7 +76,7 @@ public:
      */
     static bool isInterfaceClass(CXCursor declCursor);
     // Validates if an interface class hierarchy is all interface and valid.
-    static bool getInterfaceHierarchy(std::vector<CXCursor>& allInterfaces, CXCursor declCursor);
+    static bool getInterfaceHierarchy(std::vector<CXCursor> &allInterfaces, CXCursor declCursor);
 
     static bool getMapElementTypes(CXType &outKeyType, CXType &outValueType, CXType mapType, CXCursor mapTypeRefCursor);
     static bool getPairElementTypes(CXType &outKeyType, CXType &outValueType, CXType pairType, CXCursor pairTypeRefCursor);

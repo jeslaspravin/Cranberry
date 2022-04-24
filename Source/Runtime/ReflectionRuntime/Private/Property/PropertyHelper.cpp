@@ -91,9 +91,9 @@ const InterfaceInfo *PropertyHelper::getMatchingInterfaceInfo(const ClassPropert
         }
     }
 
-    for (const ClassProperty* baseClazz : childClassProp->baseClasses)
+    for (const ClassProperty *baseClazz : childClassProp->baseClasses)
     {
-        if (const InterfaceInfo * interfaceInfo = getMatchingInterfaceInfo(baseClazz, interfaceType))
+        if (const InterfaceInfo *interfaceInfo = getMatchingInterfaceInfo(baseClazz, interfaceType))
         {
             return interfaceInfo;
         }
