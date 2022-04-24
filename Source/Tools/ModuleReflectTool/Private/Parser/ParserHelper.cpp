@@ -338,31 +338,6 @@ bool ParserHelper::isReflectedClass(CXCursor declCursor)
     return bHasAnnotationAndGenCode[0] && bHasAnnotationAndGenCode[1];
 }
 
-void ParserHelper::getReflectedClassHierarchy(std::vector<CXCursor> &outClasses, CXCursor declCursor)
-{
-    if (!clang_isDeclaration(clang_getCursorKind(declCursor)))
-    {
-        return;
-    }
-
-    clang_visitChildren(
-        declCursor,
-        [](CXCursor c, CXCursor p, CXClientData clientData)
-        {
-            std::vector<CXCursor> *outClasses = (std::vector<CXCursor> *)(clientData);
-
-            CXCursorKind cursorKind = clang_getCursorKind(c);
-            CXCursor baseClassDecl = clang_getTypeDeclaration(clang_getCursorType(c));
-            if (cursorKind == CXCursor_CXXBaseSpecifier && isReflectedClass(baseClassDecl))
-            {
-                getReflectedClassHierarchy(*outClasses, baseClassDecl);
-            }
-            return CXChildVisit_Continue;
-        },
-        &outClasses
-    );
-}
-
 bool ParserHelper::isInterfaceClass(CXCursor declCursor)
 {
     // Interfaces are allowed only in class declarations

@@ -208,8 +208,8 @@ public:
 struct REFLECTIONRUNTIME_EXPORT InterfaceInfo
 {
     String typeName;
-    PtrInt offset;
-    const ReflectTypeInfo *interfaceTypeInfo;
+    PtrInt offset = 0;
+    const ReflectTypeInfo *interfaceTypeInfo = nullptr;
 };
 
 class REFLECTIONRUNTIME_EXPORT ClassProperty final : public TypedProperty
@@ -217,6 +217,8 @@ class REFLECTIONRUNTIME_EXPORT ClassProperty final : public TypedProperty
 public:
     const FunctionProperty *allocFunc;
     const FunctionProperty *destructor;
+    const ClassProperty *baseClass;
+
     std::vector<const FunctionProperty *> constructors;
 
     std::vector<const FieldProperty *> memberFields;
@@ -226,8 +228,6 @@ public:
     std::vector<const FieldProperty *> staticFields;
     // We do not support function overload for reflect functions(We can but we don't)
     std::vector<const FunctionProperty *> staticFunctions;
-
-    std::vector<const ClassProperty *> baseClasses;
     // List of implemented interfaces
     std::vector<InterfaceInfo> interfaces;
 
@@ -286,9 +286,9 @@ public:
         return funcProp;
     }
 
-    FORCE_INLINE ClassProperty *addBaseClass(const BaseProperty *baseClassProp)
+    FORCE_INLINE ClassProperty *setBaseClass(const BaseProperty *baseClassProp)
     {
-        baseClasses.emplace_back(static_cast<const ClassProperty *>(baseClassProp));
+        baseClass = static_cast<const ClassProperty *>(baseClassProp);
         return this;
     }
     FORCE_INLINE ClassProperty *addInterface(const String &interfaceName, PtrInt offset, const ReflectTypeInfo *interfaceTypeInfo)

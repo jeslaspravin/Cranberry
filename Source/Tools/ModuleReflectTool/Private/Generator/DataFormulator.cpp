@@ -30,8 +30,8 @@ struct LocalContext
 
 struct ClassParseContext
 {
-    // Used to determine any diamond inheritance which we do not allow, This is to support diamond inheritance in interfaces
-    std::unordered_set<CXCursor> baseClasses;
+    // Used to determine any multiple inheritance which we do not allow, This is to support diamond inheritance in interfaces
+    CXCursor baseClass = clang_getNullCursor();
     bool bHasConstructor = false;
 };
 
@@ -331,31 +331,25 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
         }
         else if (ParserHelper::isReflectedClass(baseClass))
         {
-            MustacheContext &baseClassCntxt
-                = localCntxt.parentContext->sectionContexts[GeneratorConsts::BASECLASSES_SECTION_TAG].emplace_back();
-            CXStringWrapper baseClassName = CXStringWrapper(clang_getTypeSpelling(clang_getCursorType(baseClass)));
-            baseClassCntxt.args[GeneratorConsts::BASECLASSTYPENAME_TAG] = baseClassName;
-
             // validating there is no multiple inheritance(diamond inheritance)
             if (localCntxt.pNext)
             {
                 ClassParseContext *classParseCntxt = (ClassParseContext *)(localCntxt.pNext);
 
-                std::vector<CXCursor> allBases;
-                ParserHelper::getReflectedClassHierarchy(allBases, baseClass);
-                for (CXCursor baseCursor : allBases)
+                if (classParseCntxt->baseClass != clang_getNullCursor())
                 {
-                    std::pair<decltype(classParseCntxt->baseClasses)::iterator, bool> insertResult
-                        = classParseCntxt->baseClasses.insert(baseCursor);
-                    if (!insertResult.second)
-                    {
-                        parseFailed(
-                            cursor, localCntxt.srcGenContext, __func__,
-                            TCHAR("Multiple inheritance of %s found! Diamond inheritance is not allowed for reflected classes, Use Interfaces "
-                                  "if possible"),
-                            clang_getCursorSpelling(baseCursor)
-                        );
-                    }
+                    parseFailed(
+                        cursor, localCntxt.srcGenContext, __func__,
+                        TCHAR("Multiple inheritance of %s found! and is not allowed for reflected classes, Use Interfaces "
+                              "if possible"),
+                        clang_getCursorSpelling(baseClass)
+                    );
+                }
+                else
+                {
+                    CXStringWrapper baseClassName = CXStringWrapper(clang_getTypeSpelling(clang_getCursorType(baseClass)));
+                    localCntxt.parentContext->args[GeneratorConsts::BASECLASSTYPENAME_TAG] = baseClassName;
+                    classParseCntxt->baseClass = baseClass;
                 }
             }
         }

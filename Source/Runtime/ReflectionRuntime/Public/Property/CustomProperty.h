@@ -106,6 +106,8 @@ public:
 public:
     PairProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo)
         : CustomProperty(propNameID, propName, EPropertyType::PairType, propTypeInfo)
+        , keyProp(nullptr)
+        , valueProp(nullptr)
     {}
 
     FORCE_INLINE PairProperty *setFirstProperty(const BaseProperty *firstProperty)
@@ -254,6 +256,12 @@ public:
 public:
     MapProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo)
         : CustomProperty(propNameID, propName, EPropertyType::MapType, propTypeInfo)
+        , keyProp(nullptr)
+        , valueProp(nullptr)
+        , elementProp(nullptr)
+        , pairSize(0)
+        , pairAlignment(0)
+        , secondOffset(0)
     {}
 
     FORCE_INLINE MapProperty *setKeyValueProperties(const BaseProperty *keyProperty, const BaseProperty *valueProperty)
@@ -458,6 +466,7 @@ public:
 public:
     ContainerProperty(const StringID &propNameID, const String &propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo)
         : CustomProperty(propNameID, propName, propType, propTypeInfo)
+        , elementProp(nullptr)
     {}
 
     FORCE_INLINE ContainerProperty *setElementProperty(const BaseProperty *elementProperty)

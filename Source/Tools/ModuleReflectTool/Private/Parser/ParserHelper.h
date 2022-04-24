@@ -65,7 +65,6 @@ public:
      * Checks if class/struct is annotated and also has generated codes
      */
     static bool isReflectedClass(CXCursor declCursor);
-    static void getReflectedClassHierarchy(std::vector<CXCursor> &outClasses, CXCursor declCursor);
     static bool hasOverridenCtorPolicy(CXCursor declCursor);
     static CXCursor getGeneratedCodeCursor(CXCursor declCursor);
     static String getCursorMetaString(CXCursor cursor);

@@ -135,8 +135,8 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
 {
     typeProperty->setPropertyMetaData({ {{TypeMetaData}} }, {{TypeMetaFlags}});
 {{!Now the Class's section context contains context for class fields}}
-{{#BaseClasses}}
-    typeProperty->addBaseClass(IReflectionRuntimeModule::getType<{{BaseClassTypeName}}>());{{/BaseClasses}}
+{{#BaseClassTypeName}}
+    typeProperty->setBaseClass(IReflectionRuntimeModule::getType<{{BaseClassTypeName}}>());{{/BaseClassTypeName}}
 {{#InterfaceTypes}}
     typeProperty->addInterface(TCHAR("{{InterfaceTypeName}}"), MI_VTABLE_OFFSET({{TypeName}}, {{InterfaceTypeName}}), typeInfoFrom<{{InterfaceTypeName}}>());{{/InterfaceTypes}}
 {{^IsAbstract}}{{#Ctors}}
