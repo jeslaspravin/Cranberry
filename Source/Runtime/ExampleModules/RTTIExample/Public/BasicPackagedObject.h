@@ -19,7 +19,10 @@
 
 #include "BasicPackagedObject.gen.h"
 
-class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject : public CBE::Object, public IInterfaceExample, public IInterfaceExample2
+class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject
+    : public CBE::Object
+    , public IInterfaceExample
+    , public IInterfaceExample2
 {
     GENERATED_CODES()
 public:

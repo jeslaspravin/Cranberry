@@ -39,9 +39,6 @@ void CoreObjectsModule::release()
 
 const CoreObjectsDB &CoreObjectsModule::getObjectsDB() const { return objsDb; }
 
-CBE::Package *CoreObjectsModule::getTransientPackage() const
-{
-    return CBE::getDefaultObject<CBE::Package>();
-}
+CBE::Package *CoreObjectsModule::getTransientPackage() const { return CBE::getDefaultObject<CBE::Package>(); }
 
 CoreObjectGC &CoreObjectsModule::getGC() { return gc; }

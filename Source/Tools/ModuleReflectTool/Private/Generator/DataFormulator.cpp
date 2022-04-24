@@ -65,7 +65,7 @@ FORCE_INLINE void setTypeMetaInfo(MustacheContext &typeContext, const std::vecto
     {
         std::vector<String> metaFlagMasks;
         metaFlagMasks.reserve(metaFlags.size());
-        for (const String& metaFlag : metaFlags)
+        for (const String &metaFlag : metaFlags)
         {
             metaFlagMasks.emplace_back(StringFormat::format(TCHAR("INDEX_TO_FLAG_MASK(%s)"), metaFlag));
         }
@@ -351,7 +351,8 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
                     {
                         parseFailed(
                             cursor, localCntxt.srcGenContext, __func__,
-                            TCHAR("Multiple inheritance of %s found! Diamond inheritance is not allowed for reflected classes, Use Interfaces if possible"),
+                            TCHAR("Multiple inheritance of %s found! Diamond inheritance is not allowed for reflected classes, Use Interfaces "
+                                  "if possible"),
                             clang_getCursorSpelling(baseCursor)
                         );
                     }
@@ -363,7 +364,7 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
             std::vector<CXCursor> allInterfaces;
             if (ParserHelper::getInterfaceHierarchy(allInterfaces, baseClass))
             {
-                for (CXCursor& interfaceCursor : allInterfaces)
+                for (CXCursor &interfaceCursor : allInterfaces)
                 {
                     MustacheContext &interfacesContext
                         = localCntxt.parentContext->sectionContexts[GeneratorConsts::INTERFACETYPES_SECTION_TAG].emplace_back();

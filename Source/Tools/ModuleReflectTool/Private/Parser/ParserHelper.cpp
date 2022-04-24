@@ -338,7 +338,7 @@ bool ParserHelper::isReflectedClass(CXCursor declCursor)
     return bHasAnnotationAndGenCode[0] && bHasAnnotationAndGenCode[1];
 }
 
-void ParserHelper::getReflectedClassHierarchy(std::vector<CXCursor> &outClasses, CXCursor declCursor) 
+void ParserHelper::getReflectedClassHierarchy(std::vector<CXCursor> &outClasses, CXCursor declCursor)
 {
     if (!clang_isDeclaration(clang_getCursorKind(declCursor)))
     {
@@ -391,7 +391,8 @@ bool ParserHelper::isInterfaceClass(CXCursor declCursor)
             else if (cursorKind == CXCursor_TypeAliasDecl || cursorKind == CXCursor_TypedefDecl)
             {
                 bValid[1]
-                    = bValid[1] || (CXStringWrapper(clang_getCursorSpelling(c)).toString() == TCHAR(MACRO_TO_STRING(GENERATED_INTERFACE_CODES_ALIAS)));
+                    = bValid[1]
+                      || (CXStringWrapper(clang_getCursorSpelling(c)).toString() == TCHAR(MACRO_TO_STRING(GENERATED_INTERFACE_CODES_ALIAS)));
             }
             return CXChildVisit_Continue;
         },
