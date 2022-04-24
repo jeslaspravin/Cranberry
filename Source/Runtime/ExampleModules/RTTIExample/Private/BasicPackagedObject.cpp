@@ -10,3 +10,5 @@
  */
 
 #include "BasicPackagedObject.h"
+
+void BasicPackagedObject::exampleFunc() const { LOG("BasicPackageObject", "Example interface function"); }

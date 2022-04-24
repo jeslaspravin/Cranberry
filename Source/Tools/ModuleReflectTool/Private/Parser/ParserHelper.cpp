@@ -11,6 +11,7 @@
 
 #include "Parser/ParserHelper.h"
 #include "Parser/ClangWrappers.h"
+#include "Generator/GeneratorConsts.h"
 #include "Property/PropertyHelper.h"
 #include "ReflectionMacros.h"
 #include "String/StringRegex.h"
@@ -335,6 +336,112 @@ bool ParserHelper::isReflectedClass(CXCursor declCursor)
     );
 
     return bHasAnnotationAndGenCode[0] && bHasAnnotationAndGenCode[1];
+}
+
+void ParserHelper::getReflectedClassHierarchy(std::vector<CXCursor> &outClasses, CXCursor declCursor) 
+{
+    if (!clang_isDeclaration(clang_getCursorKind(declCursor)))
+    {
+        return;
+    }
+
+    clang_visitChildren(
+        declCursor,
+        [](CXCursor c, CXCursor p, CXClientData clientData)
+        {
+            std::vector<CXCursor> *outClasses = (std::vector<CXCursor> *)(clientData);
+
+            CXCursorKind cursorKind = clang_getCursorKind(c);
+            CXCursor baseClassDecl = clang_getTypeDeclaration(clang_getCursorType(c));
+            if (cursorKind == CXCursor_CXXBaseSpecifier && isReflectedClass(baseClassDecl))
+            {
+                getReflectedClassHierarchy(*outClasses, baseClassDecl);
+            }
+            return CXChildVisit_Continue;
+        },
+        &outClasses
+    );
+}
+
+bool ParserHelper::isInterfaceClass(CXCursor declCursor)
+{
+    // Interfaces are allowed only in class declarations
+    if (clang_getCursorKind(declCursor) != CXCursor_ClassDecl)
+    {
+        return false;
+    }
+
+    bool bHasAnnotationAndGenCodeAndInterfaceFlag[] = { false, false, false };
+    clang_visitChildren(
+        declCursor,
+        [](CXCursor c, CXCursor p, CXClientData clientData)
+        {
+            bool *bValid = (bool *)(clientData);
+            CXCursorKind cursorKind = clang_getCursorKind(c);
+            if (cursorKind == CXCursor_AnnotateAttr)
+            {
+                // If reflected then we must have annotated
+                bValid[0] = true;
+                std::vector<String> metaTemp;
+                std::vector<String> buildFlags;
+                parseClassMeta(metaTemp, metaTemp, buildFlags, CXStringWrapper(clang_getCursorSpelling(c)).toString());
+                bValid[2] = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::INTERFACE_FLAG.toString()) != buildFlags.cend();
+            }
+            // If generated type alias/typedef decl is present
+            else if (cursorKind == CXCursor_TypeAliasDecl || cursorKind == CXCursor_TypedefDecl)
+            {
+                bValid[1]
+                    = bValid[1] || (CXStringWrapper(clang_getCursorSpelling(c)).toString() == TCHAR(MACRO_TO_STRING(GENERATED_INTERFACE_CODES_ALIAS)));
+            }
+            return CXChildVisit_Continue;
+        },
+        bHasAnnotationAndGenCodeAndInterfaceFlag
+    );
+
+    return bHasAnnotationAndGenCodeAndInterfaceFlag[0] && bHasAnnotationAndGenCodeAndInterfaceFlag[1]
+           && bHasAnnotationAndGenCodeAndInterfaceFlag[2];
+}
+
+bool ParserHelper::getInterfaceHierarchy(std::vector<CXCursor> &allInterfaces, CXCursor declCursor)
+{
+    if (!isInterfaceClass(declCursor))
+    {
+        return false;
+    }
+
+    struct InterfaceHierarchyAndValidity
+    {
+        std::vector<CXCursor> *outInterfaces;
+        bool bValid = true;
+    } hierarchy;
+    hierarchy.outInterfaces = &allInterfaces;
+
+    clang_visitChildren(
+        declCursor,
+        [](CXCursor c, CXCursor p, CXClientData clientData)
+        {
+            InterfaceHierarchyAndValidity *hierarchy = (InterfaceHierarchyAndValidity *)(clientData);
+            CXCursorKind cursorKind = clang_getCursorKind(c);
+            CXCursor interfaceDecl = clang_getTypeDeclaration(clang_getCursorType(c));
+            if (cursorKind == CXCursor_CXXBaseSpecifier)
+            {
+                if (getInterfaceHierarchy(*hierarchy->outInterfaces, interfaceDecl))
+                {
+                    hierarchy->outInterfaces->emplace_back(interfaceDecl);
+                }
+                else
+                {
+                    LOG_ERROR("ParserHelper", "Interface %s is not valid!", clang_getCursorSpelling(interfaceDecl));
+                    hierarchy->bValid = false;
+                }
+            }
+            return CXChildVisit_Continue;
+        },
+        &hierarchy
+    );
+
+    allInterfaces.emplace_back(declCursor);
+    return hierarchy.bValid;
 }
 
 bool ParserHelper::hasOverridenCtorPolicy(CXCursor declCursor)

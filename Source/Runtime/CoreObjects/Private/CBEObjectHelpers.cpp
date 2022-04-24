@@ -30,7 +30,10 @@ void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEC
         object, PropertyHelper::getValidSymbolName(clazz->nameString) + TCHAR("_Default"), nullptr, clazz
     );
 
-    object = ctor->invokeUnsafe<Object *, void *>(objPtr);
+    if (ctor)
+    {
+        object = ctor->invokeUnsafe<Object *, void *>(objPtr);
+    }
 }
 
 void INTERNAL_destroyCBEObject(CBE::Object *obj)

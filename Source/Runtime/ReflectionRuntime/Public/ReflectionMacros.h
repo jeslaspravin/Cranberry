@@ -63,6 +63,13 @@
 #define COMBINE_GENERATED_CODES_internal(A, B, C) A##_##B##C
 #define COMBINE_GENERATED_CODES(A, B, C) COMBINE_GENERATED_CODES_internal(A, B, C)
 #define GENERATED_CODES_ALIAS GeneratedCodeLine
+#define GENERATED_INTERFACE_CODES_ALIAS GeneratedInterfaceCodeLine
+
+#define GENERATED_INTERFACE_CODES()                                                                                                            \
+public:                                                                                                                                        \
+    using GENERATED_INTERFACE_CODES_ALIAS = uint32;                                                                                            \
+    virtual const ClassProperty *getType() const = 0;
+
 // If present in base class with Build Flag BaseType then generator will not setup
 // DefaultConstructionPolicy in Base class
 #define OVERRIDEN_CONSTRUCTION_POLICY_ALIAS OverridenCtorPolicy
@@ -70,7 +77,14 @@
 // If parsing reflection we do not have definition for below macro so we ignore it
 #ifdef __REF_PARSE__
 // To allow clang parser to detect generated codes
-#define GENERATED_CODES() using GENERATED_CODES_ALIAS = uint32;
+#define GENERATED_CODES()                                                                                                                      \
+    using GENERATED_CODES_ALIAS = uint32;                                                                                                      \
+    COMPILER_PRAGMA(COMPILER_PUSH_WARNING)                                                                                                     \
+    COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_MISSING_OVERRIDE))                                                                           \
+    /* To not consider Generated class with interface as abstract */                                                                           \
+    const ClassProperty *getType() const { return nullptr; }                                                                                   \
+    COMPILER_PRAGMA(COMPILER_POP_WARNING)
+
 #define OVERRIDE_CONSTRUCTION_POLICY(PolicyTypeName) using OVERRIDEN_CONSTRUCTION_POLICY_ALIAS = uint32;
 
 #define META_ANNOTATE(...) __attribute__((annotate(#__VA_ARGS__)))
@@ -80,4 +94,5 @@
 #define OVERRIDE_CONSTRUCTION_POLICY(PolicyTypeName) typedef PolicyTypeName CONSTRUCTION_POLICY_TYPEDEF_NAME;
 #define META_ANNOTATE(...)
 #define META_ANNOTATE_API(API_EXPORT, ...) API_EXPORT
+
 #endif

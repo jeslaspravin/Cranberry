@@ -36,6 +36,19 @@ concept ReflectClassType = requires(Type *object)
         } -> std::same_as<const ClassProperty *>;
 };
 
+// Has to negate ReflectedClassType possibility as class inheriting interface will inherit same interface structure
+template <typename Type>
+concept InterfaceType
+    = std::same_as<typename Type::GENERATED_INTERFACE_CODES_ALIAS, uint32> && !ReflectClassType<Type> && requires(Type * interfaceObj)
+{
+    {
+        interfaceObj->getType()
+        } -> std::same_as<const ClassProperty *>;
+};
+
+template <typename Type>
+concept ReflectClassOrStructOrInterfaceType = ReflectClassOrStructType<Type> || InterfaceType<Type>;
+
 #define VALID_SYMBOL_REGEX_PATTERN TCHAR("^[a-zA-Z_]{1}[a-zA-Z0-9_]*")
 class REFLECTIONRUNTIME_EXPORT PropertyHelper
 {
@@ -80,6 +93,19 @@ public:
     }
     static bool isChildOf(const ClassProperty *childClassProp, const ClassProperty *parentClassProp);
     static bool isStruct(const ClassProperty *classProp);
+
+    static const InterfaceInfo *getMatchingInterfaceInfo(const ClassProperty *childClassProp, const ReflectTypeInfo *interfaceType);
+    template <ReflectClassType ChildType, InterfaceType ParentType>
+    FORCE_INLINE static bool implementsInterface()
+    {
+        return implementsInterface(ChildType::staticType(), typeInfoFrom<ParentType>());
+    }
+    template <InterfaceType ParentType>
+    FORCE_INLINE static bool implementsInterface(const ClassProperty *childClassProp)
+    {
+        return implementsInterface(childClassProp, typeInfoFrom<ParentType>());
+    }
+    static bool implementsInterface(const ClassProperty *childClassProp, const ReflectTypeInfo *interfaceType);
 
     template <typename ClassType, typename... CtorArgs>
     FORCE_INLINE static const GlobalFunctionWrapper *findMatchingCtor()

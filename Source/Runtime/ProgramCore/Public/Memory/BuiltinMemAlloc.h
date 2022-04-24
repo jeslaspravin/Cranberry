@@ -52,7 +52,7 @@ private:
 public:
     using value_type = Type;
     using size_type = SizeT;
-    using difference_type = IntPtr;
+    using difference_type = PtrInt;
     using propagate_on_container_move_assignment = std::true_type;
 
     CONST_EXPR CBEStlMallocAllocator() noexcept {}

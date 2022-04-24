@@ -50,8 +50,8 @@ using dword = PlatformCoreTypes::dword;
 
 using SizeT = PlatformCoreTypes::SizeT;
 using SSizeT = PlatformCoreTypes::SSizeT;
-using UIntPtr = PlatformCoreTypes::UIntPtr;
-using IntPtr = PlatformCoreTypes::IntPtr;
+using UPtrInt = PlatformCoreTypes::UPtrInt;
+using PtrInt = PlatformCoreTypes::PtrInt;
 
 using UInt64 = PlatformCoreTypes::UInt64;
 
@@ -82,8 +82,8 @@ STATIC_ASSERT(sizeof(dword) == 4);
 
 STATIC_ASSERT(sizeof(SizeT) == 8);
 STATIC_ASSERT(sizeof(SSizeT) == 8);
-STATIC_ASSERT(sizeof(UIntPtr) == 8);
-STATIC_ASSERT(sizeof(IntPtr) == 8);
+STATIC_ASSERT(sizeof(UPtrInt) == 8);
+STATIC_ASSERT(sizeof(PtrInt) == 8);
 
 STATIC_ASSERT(sizeof(UInt64) == 8);
 

@@ -65,9 +65,18 @@ public:
      * Checks if class/struct is annotated and also has generated codes
      */
     static bool isReflectedClass(CXCursor declCursor);
+    static void getReflectedClassHierarchy(std::vector<CXCursor> &outClasses, CXCursor declCursor);
     static bool hasOverridenCtorPolicy(CXCursor declCursor);
     static CXCursor getGeneratedCodeCursor(CXCursor declCursor);
     static String getCursorMetaString(CXCursor cursor);
+
+    /**
+     * If a class is interface. Interface will not have reflection generated. So only annotation is expected generated codes must not be present
+     * if class is marked interface
+     */
+    static bool isInterfaceClass(CXCursor declCursor);
+    // Validates if an interface class hierarchy is all interface and valid.
+    static bool getInterfaceHierarchy(std::vector<CXCursor>& allInterfaces, CXCursor declCursor);
 
     static bool getMapElementTypes(CXType &outKeyType, CXType &outValueType, CXType mapType, CXCursor mapTypeRefCursor);
     static bool getPairElementTypes(CXType &outKeyType, CXType &outValueType, CXType pairType, CXCursor pairTypeRefCursor);

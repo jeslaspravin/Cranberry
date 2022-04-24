@@ -76,6 +76,12 @@
 #define FS_PATH_SEPARATOR TCHAR("/")
 #endif
 
+// From https://stackoverflow.com/questions/35566315/offset-of-type-in-multiple-inheritance using 1 because 0 means nullptr and calculation will
+// be invalid Offset for a class's VTable in case of multiple inheritance
+#ifndef MI_VTABLE_OFFSET
+#define MI_VTABLE_OFFSET(ClassTypeName, OffsetOfClassTypeName) (((PtrInt) static_cast<OffsetOfClassTypeName *>((ClassTypeName *)1)) - 1)
+#endif
+
 // Math defines
 #ifndef IS_FINITE
 #define IS_FINITE std::isfinite

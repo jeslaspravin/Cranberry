@@ -43,8 +43,8 @@ public:
     // Since we support only 64bit
     typedef size_t SizeT;
     typedef int64 SSizeT;
-    typedef uint64 UIntPtr;
-    typedef int64 IntPtr;
+    typedef uint64 UPtrInt;
+    typedef int64 PtrInt;
 
     // This must be reversed in Big Endian
     typedef union _uint64

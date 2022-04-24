@@ -3454,6 +3454,12 @@ void ExperimentalEnginePBR::tempTest()
         packedObj->interLinked = packedObj2;
 
         BasicPackagedObject *testTemp = CBE::create<BasicPackagedObject>(name, package);
+        IInterfaceExample *interface1 = CBE::cast<IInterfaceExample>(static_cast<CBE::Object *>(packedObj));
+        IInterfaceExample2 *interface2 = CBE::cast<IInterfaceExample2>(static_cast<CBE::Object *>(packedObj));
+        IInterfaceExample2 *interface3 = CBE::cast<IInterfaceExample2>(interface1);
+        BasicPackagedObject *ixToClassObj = CBE::cast<BasicPackagedObject>(interface1);
+        CBE::Object *ix1ToClassObj = CBE::cast<CBE::Object>(interface1);
+        CBE::Object *ix2ToClassObj = CBE::cast<CBE::Object>(interface2);
 
         CBE::save(packedObj);
         CBE::save(packedObj2);
