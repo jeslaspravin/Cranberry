@@ -57,7 +57,6 @@ CONST_EXPR StringLiteralStore<TCHAR("EnumFieldValue")> ENUMFIELDVALUE_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("EnumFieldMetaFlags")> ENUMFIELDMETAFLAGS_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("EnumFieldMetaData")> ENUMFIELDMETADATA_TAG;
 // Classes section tags
-CONST_EXPR StringLiteralStore<TCHAR("BaseClasses")> BASECLASSES_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("InterfaceTypes")> INTERFACETYPES_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("IsAbstract")> ISABSTRACT_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("Ctors")> CONSTRUCTORS_SECTION_TAG;
@@ -67,6 +66,7 @@ CONST_EXPR StringLiteralStore<TCHAR("MemberFields")> MEMBERFIELDS_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("StaticFields")> STATICFIELDS_SECTION_TAG;
 // Class section tags common
 CONST_EXPR StringLiteralStore<TCHAR("AccessSpecifier")> ACCESSSPECIFIER_TAG;
+CONST_EXPR StringLiteralStore<TCHAR("BaseClassTypeName")> BASECLASSTYPENAME_TAG;
 // Class section function tags common
 CONST_EXPR StringLiteralStore<TCHAR("ParamsListContext")> PARAMSLISTCONTEXT_SECTION_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("ParamTypeName")> PARAMTYPENAME_TAG;
@@ -77,8 +77,6 @@ CONST_EXPR StringLiteralStore<TCHAR("FuncMetaFlags")> FUNCMETAFLAGS_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("FuncMetaData")> FUNCMETADATA_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("FuncConst")> FUNCCONST_BRANCH_TAG;
 CONST_EXPR StringLiteralStore<TCHAR("FunctionName")> FUNCTIONNAME_TAG;
-// Class section base class section tags
-CONST_EXPR StringLiteralStore<TCHAR("BaseClassTypeName")> BASECLASSTYPENAME_TAG;
 // Class implemented interface section tags
 CONST_EXPR StringLiteralStore<TCHAR("InterfaceTypeName")> INTERFACETYPENAME_TAG;
 // Constructor section tags

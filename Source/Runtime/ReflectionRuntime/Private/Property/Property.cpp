@@ -67,6 +67,7 @@ FunctionProperty::FunctionProperty(const StringID &propNameID, const String &pro
     : BaseProperty(propNameID, propName, EPropertyType::Function)
     , ownerProperty(nullptr)
     , funcPtr(nullptr)
+    , funcReturnProp(nullptr)
 {}
 
 FunctionProperty::~FunctionProperty()
@@ -89,6 +90,9 @@ uint64 FunctionProperty::getPropertyMetaFlags() const { return getMetaFlags(); }
 
 ClassProperty::ClassProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *classTypeInfo)
     : TypedProperty(propNameID, propName, EPropertyType::ClassType, classTypeInfo)
+    , allocFunc(nullptr)
+    , destructor(nullptr)
+    , baseClass(nullptr)
 {}
 
 ClassProperty::~ClassProperty()

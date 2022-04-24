@@ -50,22 +50,14 @@ bool PropertyHelper::isChildOf(const ClassProperty *childClassProp, const ClassP
         return false;
     }
 
-    std::vector<const ClassProperty *> checkClasses;
-    checkClasses.emplace_back(childClassProp);
-    while (!checkClasses.empty())
+    const ClassProperty *checkProp = childClassProp;
+    while (checkProp)
     {
-        std::vector<const ClassProperty *> newCheckClasses;
-        for (const ClassProperty *clazz : checkClasses)
+        if (checkProp == parentClassProp)
         {
-            // If matched property found return, else keep on adding base classes until a match
-            // is found or empty
-            if (clazz == parentClassProp)
-            {
-                return true;
-            }
-            newCheckClasses.insert(newCheckClasses.end(), clazz->baseClasses.cbegin(), clazz->baseClasses.cend());
+            return true;
         }
-        checkClasses = std::move(newCheckClasses);
+        checkProp = checkProp->baseClass;
     }
     return false;
 }
@@ -91,12 +83,9 @@ const InterfaceInfo *PropertyHelper::getMatchingInterfaceInfo(const ClassPropert
         }
     }
 
-    for (const ClassProperty *baseClazz : childClassProp->baseClasses)
+    if (const InterfaceInfo *interfaceInfo = getMatchingInterfaceInfo(childClassProp->baseClass, interfaceType))
     {
-        if (const InterfaceInfo *interfaceInfo = getMatchingInterfaceInfo(baseClazz, interfaceType))
-        {
-            return interfaceInfo;
-        }
+        return interfaceInfo;
     }
     return nullptr;
 }

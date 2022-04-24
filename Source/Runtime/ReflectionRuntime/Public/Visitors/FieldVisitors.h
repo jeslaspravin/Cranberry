@@ -186,9 +186,9 @@ public:
     template <typename Visitable>
     static void visitStaticFields(const ClassProperty *root, void *userData)
     {
-        for (const ClassProperty *baseClass : root->baseClasses)
+        if (root->baseClass)
         {
-            visitStaticFields<Visitable>(baseClass, userData);
+            visitStaticFields<Visitable>(root->baseClass, userData);
         }
         auto staticVisitor = [userData]<typename Type>(PropertyInfo propInfo)
         {
@@ -223,9 +223,9 @@ public:
     template <typename Visitable>
     static void visitFields(const ClassProperty *root, void *rootObject, void *userData)
     {
-        for (const ClassProperty *baseClass : root->baseClasses)
+        if (root->baseClass)
         {
-            visitFields<Visitable>(baseClass, rootObject, userData);
+            visitFields<Visitable>(root->baseClass, rootObject, userData);
         }
 
         auto memberVisitor = [userData, rootObject]<typename Type>(PropertyInfo propInfo)
@@ -244,9 +244,9 @@ public:
     template <typename Visitable>
     static void visitFields(const ClassProperty *root, const void *rootObject, void *userData)
     {
-        for (const ClassProperty *baseClass : root->baseClasses)
+        if (root->baseClass)
         {
-            visitFields<Visitable>(baseClass, rootObject, userData);
+            visitFields<Visitable>(root->baseClass, rootObject, userData);
         }
 
         auto memberVisitor = [userData, rootObject]<typename Type>(PropertyInfo propInfo)
