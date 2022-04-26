@@ -26,6 +26,8 @@ inline STRINGID_CONSTEXPR static const StringID OBJECTFIELD_SER_CUSTOM_VERSION_I
 struct ReadObjectFieldUserData
 {
     ObjectArchive *ar;
+    // End cursor to ensure that read does not go too mush beyond its end limit
+    SizeT fieldEndCursor;
     std::vector<uint8> scratchPad;
 };
 
@@ -46,12 +48,21 @@ struct ReadFieldVisitable
     static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
     {
         ReadObjectFieldUserData *readUserData = (ReadObjectFieldUserData *)(userData);
-        (*readUserData->ar) << (*val);
+        if (readUserData->fieldEndCursor > readUserData->ar->stream()->cursorPos())
+        {
+            (*readUserData->ar) << (*val);
+        }
     }
     static void visit(void *val, const PropertyInfo &propInfo, void *userData)
     {
         const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
         ReadObjectFieldUserData *readUserData = (ReadObjectFieldUserData *)(userData);
+        
+        // If we are already over the limit skip serializing
+        if (readUserData->fieldEndCursor <= readUserData->ar->stream()->cursorPos())
+        {
+            return;
+        }
 
         switch (prop->type)
         {
@@ -74,6 +85,12 @@ struct ReadFieldVisitable
             (*readUserData->ar) << elementCount;
             for (SizeT i = 0; i < elementCount; ++i)
             {
+                // If element count is read from invalid binary stream, Then we must not cross end cursor
+                if (readUserData->fieldEndCursor <= readUserData->ar->stream()->cursorPos())
+                {
+                    break;
+                }
+                // zero and reconstruct for each element to avoid using previous values
                 CBEMemory::memZero(readUserData->scratchPad.data(), readUserData->scratchPad.size());
                 dataRetriever->contruct(readUserData->scratchPad.data());
 
@@ -99,6 +116,12 @@ struct ReadFieldVisitable
             (*readUserData->ar) << containerSize;
             for (SizeT i = 0; i < containerSize; ++i)
             {
+                // If element count is read from invalid binary stream, Then we must not cross end cursor
+                if (readUserData->fieldEndCursor <= readUserData->ar->stream()->cursorPos())
+                {
+                    break;
+                }
+                // zero and reconstruct for each element to avoid using previous values
                 CBEMemory::memZero(readUserData->scratchPad.data(), readUserData->scratchPad.size());
                 dataRetriever->contruct(readUserData->scratchPad.data());
 
@@ -150,6 +173,13 @@ struct ReadFieldVisitable
     }
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
+        ReadObjectFieldUserData *readUserData = (ReadObjectFieldUserData *)(userData);
+        // If we are already over the limit skip serializing
+        if (readUserData->fieldEndCursor <= readUserData->ar->stream()->cursorPos())
+        {
+            return;
+        }
+
         const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
         switch (prop->type)
         {
@@ -157,7 +187,6 @@ struct ReadFieldVisitable
         {
             debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
 
-            ReadObjectFieldUserData *readUserData = (ReadObjectFieldUserData *)(userData);
             CBE::Object **objPtrPtr = reinterpret_cast<CBE::Object **>(ptr);
             (*readUserData->ar) << (*objPtrPtr);
             break;
@@ -375,16 +404,20 @@ ObjectArchive &ObjectSerializationHelpers::serializeAllFields(CBE::Object *obj, 
             {
                 break;
             }
-
             ar << fieldDataSize;
+
             SizeT dataStartCursor = ar.stream()->cursorPos();
+            userData.fieldEndCursor = dataStartCursor + fieldDataSize;
             if (const FieldProperty *fieldProp = PropertyHelper::findField(obj->getType(), fieldNameId))
             {
                 void *val = static_cast<const MemberFieldWrapper *>(fieldProp->fieldPtr)->get(obj);
                 FieldVisitor::visit<ReadFieldVisitable>(static_cast<const TypedProperty *>(fieldProp->field), val, &userData);
             }
+
             // Why would archive stream be moving backward?
             debugAssert(ar.stream()->cursorPos() >= dataStartCursor);
+            // Moving cursor back to end of this field so next field can be serialized. 
+            // Not using already calculated fieldEndCursor as new cursor might end up less that fieldEndCursor which is against above assert
             ar.stream()->moveBackward(ar.stream()->cursorPos() - dataStartCursor);
             ar.stream()->moveForward(fieldDataSize);
         }

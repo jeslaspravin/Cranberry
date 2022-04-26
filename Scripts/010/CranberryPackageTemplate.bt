@@ -1,0 +1,121 @@
+//------------------------------------------------
+//--- 010 Editor v12.0.1 Binary Template
+//
+//      File: CranberryPackage
+//   Authors: Jeslas Pravin
+//   Version: 0.01
+//   Purpose: Parse cranberry engine's binary package headers
+//  Category: EngineObject
+// File Mask: *.berry
+//   History: 
+//------------------------------------------------
+
+// Archive metadata 
+struct VersionPair
+{
+    uint32 versionID;
+    uint32 version;
+};
+
+struct ArchiveMeta 
+{
+    uint64 archiveVersion;
+    uint64 customVersionsLen<hidden=true>;    
+    VersionPair customVersions[customVersionsLen];
+};
+
+// Package data
+struct PackageContainedData
+{
+    uint64 objectPathLen<hidden=true>;
+    char objectPath[objectPathLen];
+    uint32 className;
+    uint32 classVersion;
+    uint64 objectFlags<read = ObjectFlagsDisplay>;
+
+    uint64 streamStart;
+    uint64 streamSize;
+    // Have a local copy of data
+    local int64 cursorPos = FTell();
+    FSeek(streamStart);
+    uchar serializedData[streamSize];
+    FSeek(cursorPos);
+};
+struct PackageDependencyData
+{
+    uint64 objectPathLen<hidden=true>;
+    char objectFullPath[objectPathLen];
+    uint32 className;
+};
+
+// Object flags
+#define OBJECTFLAG_Default 0x0000000000000001
+#define OBJECTFLAG_MarkedForDelete 0x0000000000000002
+#define OBJECTFLAG_Deleted 0x0000000000000004
+#define OBJECTFLAG_RootObject 0x0000000000000008
+#define OBJECTFLAG_PackageDirty 0x0000000000000010
+#define OBJECTFLAG_PackageLoadPending 0x0000000000000020
+
+string ObjectFlagsDisplay(uint64 flags)
+{
+    string retStr;
+    SPrintf(retStr, "%d(%s)", flags, ObjectBitFlagToStr(flags));
+    return retStr;
+}
+
+string ObjectBitFlagToStr(uint64 flags)
+{
+    string fmtStr;
+    if((flags & OBJECTFLAG_Default) != 0)
+    {
+        Strcat(fmtStr, "Default | ");
+    }
+    if((flags & OBJECTFLAG_MarkedForDelete) != 0)
+    {
+        Strcat(fmtStr, "MarkedForDelete | ");
+    }
+    if((flags & OBJECTFLAG_Deleted) != 0)
+    {
+        Strcat(fmtStr, "Deleted | ");
+    }
+    if((flags & OBJECTFLAG_RootObject) != 0)
+    {
+        Strcat(fmtStr, "RootObject | ");
+    }
+    if((flags & OBJECTFLAG_PackageDirty) != 0)
+    {
+        Strcat(fmtStr, "DirtyPackage | ");
+    }
+    if((flags & OBJECTFLAG_PackageLoadPending) != 0)
+    {
+        Strcat(fmtStr, "PendingLoad | ");
+    }
+    uint64 fmtStrLen = Strlen(fmtStr);
+    if(fmtStrLen > 0)
+    {
+        fmtStr = StrDel(fmtStr, fmtStrLen - 3, 3);         
+    }
+    return fmtStr;    
+}
+
+///////////////////
+// Start parsing //
+///////////////////
+
+LittleEndian();
+
+ArchiveMeta archiveMeta;
+
+uint64 containedDataCount<hidden=true>;
+PackageContainedData packagedObjects[containedDataCount]<optimize=false>;
+uint64 dependentDataCount<hidden=true>;
+PackageDependencyData dependentObjects[dependentDataCount]<optimize=false>;
+
+local int32 idx = 0;
+for(idx = 0; idx < containedDataCount; ++idx)
+{
+    struct ObjectBlock
+    {        
+        uchar data[packagedObjects[idx].streamSize];
+    } objectBlock;
+}
