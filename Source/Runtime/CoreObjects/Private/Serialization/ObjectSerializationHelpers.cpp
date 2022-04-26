@@ -57,7 +57,7 @@ struct ReadFieldVisitable
     {
         const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
         ReadObjectFieldUserData *readUserData = (ReadObjectFieldUserData *)(userData);
-        
+
         // If we are already over the limit skip serializing
         if (readUserData->fieldEndCursor <= readUserData->ar->stream()->cursorPos())
         {
@@ -416,7 +416,7 @@ ObjectArchive &ObjectSerializationHelpers::serializeAllFields(CBE::Object *obj, 
 
             // Why would archive stream be moving backward?
             debugAssert(ar.stream()->cursorPos() >= dataStartCursor);
-            // Moving cursor back to end of this field so next field can be serialized. 
+            // Moving cursor back to end of this field so next field can be serialized.
             // Not using already calculated fieldEndCursor as new cursor might end up less that fieldEndCursor which is against above assert
             ar.stream()->moveBackward(ar.stream()->cursorPos() - dataStartCursor);
             ar.stream()->moveForward(fieldDataSize);

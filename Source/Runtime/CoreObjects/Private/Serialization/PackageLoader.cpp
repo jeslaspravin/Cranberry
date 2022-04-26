@@ -49,7 +49,8 @@ void PackageLoader::createContainedObject(PackageContainedData &containedData)
     debugAssert(outerObj);
 
     CBE::Object *obj = CBE::createOrGet(
-        IReflectionRuntimeModule::get()->getClassType(containedData.className), objectName, outerObj, CBE::EObjectFlagBits::PackageLoadPending | containedData.objectFlags
+        IReflectionRuntimeModule::get()->getClassType(containedData.className), objectName, outerObj,
+        CBE::EObjectFlagBits::PackageLoadPending | containedData.objectFlags
     );
     fatalAssert(obj, "Package(%s) load failed to create object %s", package->getName(), containedData.objectPath);
     containedData.object = obj;
