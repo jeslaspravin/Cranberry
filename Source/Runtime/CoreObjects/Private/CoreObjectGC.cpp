@@ -252,13 +252,6 @@ struct GCObjectVisitableUserData
     void *pNext = nullptr;
 };
 
-FORCE_INLINE const TypedProperty *getUnqualified(const BaseProperty *prop)
-{
-    return static_cast<const TypedProperty *>(
-        prop->type == EPropertyType::QualifiedType ? static_cast<const QualifiedProperty *>(prop)->unqualTypeProperty : prop
-    );
-}
-
 struct GCObjectFieldVisitable
 {
     static void visitMap(const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData);
@@ -270,7 +263,7 @@ struct GCObjectFieldVisitable
     {}
     static void visit(void *val, const PropertyInfo &propInfo, void *userData)
     {
-        const TypedProperty *prop = getUnqualified(propInfo.thisProperty);
+        const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
         switch (prop->type)
         {
         case EPropertyType::MapType:
@@ -324,7 +317,7 @@ struct GCObjectFieldVisitable
     static void visit(const void *val, const PropertyInfo &propInfo, void *userData) {}
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
-        const TypedProperty *prop = getUnqualified(propInfo.thisProperty);
+        const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
         switch (prop->type)
         {
         case EPropertyType::ClassType:
@@ -359,7 +352,7 @@ struct GCObjectFieldVisitable
     }
     static void visit(const void **ptr, const PropertyInfo &propInfo, void *userData)
     {
-        const TypedProperty *prop = getUnqualified(propInfo.thisProperty);
+        const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
         switch (propInfo.thisProperty->type)
         {
         case EPropertyType::ClassType:
@@ -404,7 +397,7 @@ void GCObjectFieldVisitable::visitMap(const MapProperty *mapProp, void *val, con
 
     // map key can be either fundamental or special or struct or class ptr but it can never be custom
     // types fundamental or special cannot hold pointer to CBE::Object so only struct and pointer is left
-    if (getUnqualified(keyProp)->type == EPropertyType::ClassType)
+    if (PropertyHelper::getUnqualified(keyProp)->type == EPropertyType::ClassType)
     {
         // 2 times the data is needed to copy current and new value, to be removed and added later
         uint8 *bufferData = (uint8 *)CBEMemory::memAlloc(mapProp->pairSize * (dataRetriever->size(val) * 2 + 1), mapProp->pairAlignment);
@@ -472,7 +465,7 @@ void GCObjectFieldVisitable::visitSet(const ContainerProperty *setProp, void *va
 
     // set key can be either fundamental or special or struct or class ptr but it can never be custom
     // types fundamental or special cannot hold pointer to CBE::Object so only struct and pointer is left
-    if (getUnqualified(elementProp)->type == EPropertyType::ClassType)
+    if (PropertyHelper::getUnqualified(elementProp)->type == EPropertyType::ClassType)
     {
         // 2 times the data is needed to copy current and new value, to be removed and added later
         uint8 *bufferData

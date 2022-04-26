@@ -181,6 +181,7 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
     std::vector<String> deletedHeaders = headerTracker->filterIntersects(headerFiles);
     clearGenerated(deletedHeaders);
     const bool bAnyDeleted = !deletedHeaders.empty();
+    deletedHeaders.clear();
 
     String publicHeadersPath = PathFunctions::combinePath(srcDir, TCHAR("Public"));
     String privateHeadersPath = PathFunctions::combinePath(srcDir, TCHAR("Private"));

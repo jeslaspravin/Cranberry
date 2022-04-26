@@ -148,7 +148,7 @@ public:
     // not managed
     virtual IteratorElementWrapperRef createIterator(void *object) const = 0;
     // Add and remove operations for editing, value editing can be done on iterator itself
-    virtual bool add(void *object, const void *data) const = 0;
+    virtual bool add(void *object, const void *data, bool bTryForced = false) const = 0;
     virtual bool remove(void *object, const void *data) const = 0;
     // For indexable iterators only
     virtual bool removeAt(void *object, SizeT idx) const = 0;
@@ -157,6 +157,7 @@ public:
     // Helper functions to helper with editing
     // Copied data useful for cases like map or set as they are restricted by const key
     virtual void copyTo(const void *data, void *toData) const = 0;
+    virtual void contruct(void *data) const = 0;
     // Equals only const part which will be key_type/value_type based on container
     virtual bool equals(const void *lhs, const void *rhs) const = 0;
 };
@@ -207,11 +208,20 @@ public:
         return IteratorElementWrapperRef(new MapIteratorWrapperImpl<MapType>((MapType *)(object)));
     }
 
-    bool add(void *object, const void *data) const override
+    bool add(void *object, const void *data, bool bTryForced = false) const override
     {
         MapType *container = reinterpret_cast<MapType *>(object);
-        auto result = container->insert(*reinterpret_cast<const MapType::value_type *>(data));
-        return result.second;
+        const MapType::value_type *pairVal = reinterpret_cast<const MapType::value_type *>(data);
+        if (bTryForced)
+        {
+            (*container)[pairVal->first] = pairVal->second;
+            return true;
+        }
+        else
+        {
+            auto result = container->insert(*pairVal);
+            return result.second;
+        }
     }
 
     bool remove(void *object, const void *data) const override
@@ -234,6 +244,7 @@ public:
     {
         new (toData) MapType::value_type(*reinterpret_cast<const MapType::value_type *>(data));
     }
+    void contruct(void *data) const override { new (data) MapType::value_type(); }
     bool equals(const void *lhs, const void *rhs) const
     {
         return (*reinterpret_cast<const MapType::key_type *>(lhs)) == (*reinterpret_cast<const MapType::key_type *>(rhs));
@@ -367,7 +378,7 @@ public:
         return IteratorElementWrapperRef(new IndexableContainerIteratorWrapperImpl<ContainerType>((ContainerType *)(object)));
     }
 
-    bool add(void *object, const void *data) const override
+    bool add(void *object, const void *data, bool bTryForced = false) const override
     {
         ContainerType *container = reinterpret_cast<ContainerType *>(object);
         container->emplace_back(*reinterpret_cast<const ContainerType::value_type *>(data));
@@ -404,6 +415,7 @@ public:
     {
         new (toData) ContainerType::value_type(*reinterpret_cast<const ContainerType::value_type *>(data));
     }
+    void contruct(void *data) const override { new (data) ContainerType::value_type(); }
     bool equals(const void *lhs, const void *rhs) const
     {
         if CONST_EXPR (std::equality_comparable<ContainerType::value_type>)
@@ -425,7 +437,7 @@ public:
         return IteratorElementWrapperRef(new ContainerIteratorWrapperImpl<ContainerType>((ContainerType *)(object)));
     }
 
-    bool add(void *object, const void *data) const override
+    bool add(void *object, const void *data, bool bTryForced = false) const override
     {
         ContainerType *container = reinterpret_cast<ContainerType *>(object);
         auto result = container->insert(*reinterpret_cast<const ContainerType::value_type *>(data));
@@ -452,6 +464,7 @@ public:
     {
         new (toData) ContainerType::value_type(*reinterpret_cast<const ContainerType::value_type *>(data));
     }
+    void contruct(void *data) const override { new (data) ContainerType::value_type(); }
     bool equals(const void *lhs, const void *rhs) const
     {
         return (*reinterpret_cast<const ContainerType::value_type *>(lhs)) == (*reinterpret_cast<const ContainerType::value_type *>(rhs));

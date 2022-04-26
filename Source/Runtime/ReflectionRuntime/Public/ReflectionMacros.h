@@ -26,6 +26,7 @@
     MacroName(Matrix3)              \
     MacroName(Matrix4)              \
     MacroName(Rotation)             \
+    MacroName(Quat)                 \
     LastMacroName(Transform3D)
 
 #define FOR_EACH_SPECIAL_TYPES(MacroName) FOR_EACH_SPECIAL_TYPES_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)

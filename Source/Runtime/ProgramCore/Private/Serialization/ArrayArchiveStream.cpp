@@ -15,9 +15,16 @@
 
 void ArrayArchiveStream::read(void *toPtr, SizeT len)
 {
-    fatalAssert(cursor + len <= buffer.size(), "Cannot read past buffer size %ull", buffer.size());
-    CBEMemory::memCopy(toPtr, buffer.data() + cursor, len);
-    cursor += len;
+    if (hasMoreData(len))
+    {
+        CBEMemory::memCopy(toPtr, buffer.data() + cursor, len);
+        cursor += len;
+    }
+    else
+    {
+        cursor += len;
+        cursor = Math::min(cursor, buffer.size());
+    }
 }
 
 void ArrayArchiveStream::write(const void *ptr, SizeT len)
@@ -61,5 +68,7 @@ uint8 ArrayArchiveStream::readBackwardAt(SizeT idx) const
 }
 
 bool ArrayArchiveStream::isAvailable() const { return true; }
+
+bool ArrayArchiveStream::hasMoreData(SizeT requiredSize) const { return isAvailable() && (cursor + requiredSize) <= buffer.size(); }
 
 uint64 ArrayArchiveStream::cursorPos() const { return cursor; }

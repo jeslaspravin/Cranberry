@@ -83,6 +83,110 @@ public:
     }
     FORCE_INLINE static bool isArrayType(const String &typeName) { return typeName.startsWith(TCHAR("std::vector")); }
 
+    FORCE_INLINE static const TypedProperty *getUnqualified(const BaseProperty *prop)
+    {
+        return static_cast<const TypedProperty *>(
+            prop->type == EPropertyType::QualifiedType ? static_cast<const QualifiedProperty *>(prop)->unqualTypeProperty : prop
+        );
+    }
+
+    FORCE_INLINE static bool isValidEnumValue(SizeT value, const EnumProperty *enumProp)
+    {
+        if (enumProp->fields.empty())
+        {
+            return value == 0;
+        }
+
+        bool bIsValid = false;
+        for (const EnumProperty::EnumField &entry : enumProp->fields)
+        {
+            bIsValid = bIsValid || (entry.value == value);
+        }
+        return bIsValid;
+    }
+    // Returns true if all bits in enum is valid flag
+    FORCE_INLINE static bool isValidEnumFlags(SizeT value, const EnumProperty *enumProp)
+    {
+        if (!enumProp->bIsFlags)
+        {
+            return isValidEnumValue(value, enumProp);
+        }
+
+        // Must be zero after clearing all valid bits
+        SizeT allValidBits = 0;
+        for (const EnumProperty::EnumField &entry : enumProp->fields)
+        {
+            SET_BITS(allValidBits, entry.value);
+        }
+        CLEAR_BITS(value, allValidBits);
+        return (value == 0);
+    }
+    // Clears invalid value and makes it valid, If flags then clears invalid flags only
+    FORCE_INLINE static SizeT clearInvalidEnumValues(SizeT value, const EnumProperty *enumProp)
+    {
+        if (!enumProp->bIsFlags)
+        {
+            return isValidEnumValue(value, enumProp) ? value : enumProp->fields[0].value;
+        }
+
+        SizeT allValidBits = 0;
+        for (const EnumProperty::EnumField &entry : enumProp->fields)
+        {
+            SET_BITS(allValidBits, entry.value);
+        }
+        return value & allValidBits;
+    }
+    FORCE_INLINE static SizeT getValidEnumValue(void *val, const EnumProperty *enumProp)
+    {
+        SizeT enumVal = 0;
+        if (enumProp->typeInfo->size == 1)
+        {
+            enumVal = *reinterpret_cast<uint8 *>(val);
+        }
+        else if (enumProp->typeInfo->size == 2)
+        {
+            enumVal = *reinterpret_cast<uint16 *>(val);
+        }
+        else if (enumProp->typeInfo->size == 4)
+        {
+            enumVal = *reinterpret_cast<uint32 *>(val);
+        }
+        else if (enumProp->typeInfo->size == 8)
+        {
+            enumVal = *reinterpret_cast<uint64 *>(val);
+        }
+        else
+        {
+            fatalAssert(false, "Unsupported size for enum value");
+        }
+        enumVal = clearInvalidEnumValues(enumVal, enumProp);
+        return enumVal;
+    }
+    FORCE_INLINE static void setValidEnumValue(void *val, SizeT enumVal, const EnumProperty *enumProp)
+    {
+        enumVal = clearInvalidEnumValues(enumVal, enumProp);
+        if (enumProp->typeInfo->size == 1)
+        {
+            *reinterpret_cast<uint8 *>(val) = (uint8)(enumVal);
+        }
+        else if (enumProp->typeInfo->size == 2)
+        {
+            *reinterpret_cast<uint16 *>(val) = (uint16)(enumVal);
+        }
+        else if (enumProp->typeInfo->size == 4)
+        {
+            *reinterpret_cast<uint32 *>(val) = (uint32)(enumVal);
+        }
+        else if (enumProp->typeInfo->size == 8)
+        {
+            *reinterpret_cast<uint64 *>(val) = (uint64)(enumVal);
+        }
+        else
+        {
+            fatalAssert(false, "Unsupported size for enum value");
+        }
+    }
+
     template <ReflectClassOrStructType ChildType, ReflectClassOrStructType ParentType>
     FORCE_INLINE static bool isChildOf()
     {
@@ -123,5 +227,21 @@ public:
             }
         }
         return nullptr;
+    }
+    static const FieldProperty *findField(const ClassProperty *clazz, const StringID &fieldName)
+    {
+        auto itr = std::find_if(
+            clazz->memberFields.cbegin(), clazz->memberFields.cend(),
+            [&fieldName](const FieldProperty *prop) { return prop->name == fieldName; }
+        );
+        return (itr == clazz->memberFields.cend()) ? nullptr : *itr;
+    }
+    static const FieldProperty *findStaticField(const ClassProperty *clazz, const StringID &fieldName)
+    {
+        auto itr = std::find_if(
+            clazz->staticFields.cbegin(), clazz->staticFields.cend(),
+            [&fieldName](const FieldProperty *prop) { return prop->name == fieldName; }
+        );
+        return (itr == clazz->staticFields.cend()) ? nullptr : *itr;
     }
 };

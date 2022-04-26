@@ -45,6 +45,17 @@ public:
     virtual ObjectArchive &serialize(CBE::Object *&obj);
 
     /* ArchiveBase overrides */
+
+    bool ifSwapBytes() const override { return innerArchive->ifSwapBytes(); }
+
+    bool isLoading() const override { return innerArchive->isLoading(); }
+
+    ArchiveStream *stream() const override { return innerArchive->stream(); }
+
+    uint32 getCustomVersion(uint32 customId) const override { return innerArchive->getCustomVersion(customId); }
+
+    const std::map<uint32, uint32> &getCustomVersions() const override { return innerArchive->getCustomVersions(); }
+
     ObjectArchive &serialize(bool &value) override
     {
         innerArchive->serialize(value);

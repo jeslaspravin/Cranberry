@@ -13,6 +13,7 @@
 
 #include "String/String.h"
 #include "String/StringID.h"
+#include "CBEObjectTypes.h"
 
 namespace CBE
 {
@@ -52,6 +53,7 @@ struct PackageContainedData
     StringID className;
     // Will also be pushed to archive's custom version, Should we need this?
     uint32 classVersion;
+    EObjectFlags objectFlags;
 
     SizeT streamStart;
     SizeT streamSize;
@@ -66,6 +68,7 @@ ArchiveType &operator<<(ArchiveType &archive, PackageContainedData &value)
     archive << value.objectPath;
     archive << value.className;
     archive << value.classVersion;
+    archive << value.objectFlags;
 
     archive << value.streamStart;
     archive << value.streamSize;

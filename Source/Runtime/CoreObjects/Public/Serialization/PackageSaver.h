@@ -35,6 +35,7 @@ private:
 
 private:
     void setupContainedObjs();
+    void setArchiveStream(ArchiveStream *arStream);
 
 public:
     PackageSaver(CBE::Package *savingPackage);

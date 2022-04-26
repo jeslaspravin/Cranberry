@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Math/CoreMathTypedefs.h"
+#include "Serialization/ArchiveBase.h"
 #include "ProgramCoreExports.h"
 
 #include <glm/ext/matrix_float4x4.hpp>
@@ -83,3 +84,13 @@ public:
 public:
     static const Matrix4 IDENTITY;
 };
+
+template <ArchiveType ArchiveType>
+ArchiveType &operator<<(ArchiveType &archive, Matrix4 &value)
+{
+    archive << value[0].x << value[1].x << value[2].x << value[3].x;
+    archive << value[0].y << value[1].y << value[2].y << value[3].y;
+    archive << value[0].z << value[1].z << value[2].z << value[3].z;
+    archive << value[0].w << value[1].w << value[2].w << value[3].w;
+    return archive;
+}

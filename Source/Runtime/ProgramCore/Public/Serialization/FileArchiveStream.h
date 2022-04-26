@@ -36,5 +36,6 @@ public:
     uint8 readBackwardAt(SizeT idx) const override;
     uint64 cursorPos() const override;
     bool isAvailable() const override;
+    bool hasMoreData(SizeT requiredSize) const override;
     /* Overrides ends */
 };

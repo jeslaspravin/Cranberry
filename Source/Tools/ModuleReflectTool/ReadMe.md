@@ -74,6 +74,8 @@ Currently there are following build flags
 
 > `NoExport` - If passed inside annotation the generated functions that needs export will not be exported, `META_ANNOTATE_API(API_EXPORT_MACRO, ...)` passes this internally to make sure the generated functions are not mark exported when a class is exported already
 
+> `Interface` - If a class needs to act as an interface it needs to be marked with this flag and must add `GENERATED_INTERFACE_CODES()` macro in it. Interface must only have another Interface as its inherited parent.
+
 ## Advanced ##
 ### Constructor ##
 The constructor of any type is invoked via a `Construction policy`. This policy gets defined in the Class marked as `BaseType` to `DefaultConstructionPolicy`. 

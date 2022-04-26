@@ -34,6 +34,7 @@ void PackageSaver::setupContainedObjs()
         PackageContainedData &containedObjData = containedObjects.emplace_back();
         containedObjData.object = child;
         containedObjData.objectPath = ObjectPathHelper::getObjectPath(child, package);
+        containedObjData.objectFlags = child->getFlags();
         containedObjData.className = child->getType()->name;
     }
 }

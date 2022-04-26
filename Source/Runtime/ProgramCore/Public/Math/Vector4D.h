@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Math/CoreMathTypedefs.h"
+#include "Serialization/ArchiveBase.h"
 #include "ProgramCoreExports.h"
 #include "Types/CoreDefines.h"
 
@@ -113,3 +114,9 @@ FORCE_INLINE Vector4D operator-(float n, const Vector4D &d) { return Vector4D(n 
 FORCE_INLINE Vector4D operator*(float n, const Vector4D &d) { return d * n; }
 
 FORCE_INLINE Vector4D operator+(float n, const Vector4D &d) { return d + n; }
+
+template <ArchiveType ArchiveType>
+ArchiveType &operator<<(ArchiveType &archive, Vector4D &value)
+{
+    return archive << value.x() << value.y() << value.z() << value.w();
+}

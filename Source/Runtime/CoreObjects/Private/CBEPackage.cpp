@@ -19,8 +19,7 @@ namespace CBE
 
 Package::Package()
 {
-    // #TODO(Jeslas) : Improve default object creation logic or make it so that
-    // debugAssert(!getName().empty() || BIT_SET(getFlags(), EObjectFlagBits::Default));
+    debugAssert(!getName().empty() || BIT_SET(getFlags(), EObjectFlagBits::Default));
 
     // Name will be empty only in default objects now
     if (!getName().empty())

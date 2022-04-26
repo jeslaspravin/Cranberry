@@ -69,6 +69,7 @@ bool FileChangesTracker::isTargetOutdated(const String &absPath, const std::vect
             bIsAllOutsValid = bIsAllOutsValid && targetFile.exists() && targetFile.lastWriteTimeStamp() > ts;
         }
 
+        // If outputs are valid however It is not recorded we still consider that outdated
         if (fileEntry.second >= ts && bIsAllOutsValid)
         {
             return false;

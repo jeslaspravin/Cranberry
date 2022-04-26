@@ -151,6 +151,12 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath)
         return false;
     }
 
+    std::vector<StringView> lines = headerFileContent.splitLines();
+    return shouldReflectHeader(headerFilePath, lines);
+}
+
+bool ParserHelper::shouldReflectHeader(const String &headerFilePath, const std::vector<StringView> &lines)
+{
     // First match "#include *[<\"]{1}.*\\.gen\\.h[>\"]{1}" checks if generated header file is included
     // Second match ".*META_ANNOTATE.*\\(.*\\)[ \t]*.*" checks if the there is a meta annotated field or
     // declaration Third match "[ \t]*GENERATED_CODES\\(\\)" match if there is a line with
@@ -163,7 +169,6 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath)
     );
 
     bool bGenReflection = false;
-    std::vector<StringView> lines = headerFileContent.splitLines();
     for (const StringView &codeLine : lines)
     {
         if (std::regex_match(codeLine.cbegin(), codeLine.cend(), searchPattern))
@@ -177,7 +182,7 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath)
         String checkHeader(PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(headerFilePath)) + TCHAR(".gen.h"));
         static const StringRegex includePattern(TCHAR("#include *[<\"]{1}(.*)[>\"]{1}"), std::regex_constants::ECMAScript);
         uint32 genInclLine = std::numeric_limits<uint32>::max();
-        uint32 lineNo = 0;
+        uint32 lineNo = 1;
         for (const StringView &codeLine : lines)
         {
             std::match_results<decltype(codeLine.cbegin())> matchResult;
@@ -192,14 +197,13 @@ bool ParserHelper::shouldReflectHeader(const String &headerFilePath)
                 else if (lineNo > genInclLine) // Not gen header but include after gen header
                                                // print error and skip this header file
                 {
-                    LOG_ERROR(
-                        "ParserHelper",
-                        "%s() : Generated header include(%s:%d) must be last include of "
-                        "this header file %s",
-                        __func__, checkHeader, genInclLine, headerFilePath
-                    );
+                    SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
+                    LOG("ParserHelper",
+                        "%s(%d,0): %s() Generated header include %s must be last include of "
+                        "the header file",
+                        headerFilePath, genInclLine, __func__, checkHeader);
                     bGenReflection = false;
-                    break;
+                    std::exit(1);
                 }
             }
             lineNo++;
