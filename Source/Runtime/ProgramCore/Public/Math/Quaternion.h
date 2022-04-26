@@ -13,6 +13,7 @@
 #include "Math/Rotation.h"
 #include "Math/RotationMatrix.h"
 #include "Math/Vector3D.h"
+#include "Serialization/ArchiveBase.h"
 
 class PROGRAMCORE_EXPORT Quat
 {
@@ -103,3 +104,9 @@ FORCE_INLINE Quat operator-(float n, const Quat &d) { return Quat(n - d.x, n - d
 FORCE_INLINE Quat operator*(float n, const Quat &d) { return d * n; }
 
 FORCE_INLINE Quat operator+(float n, const Quat &d) { return d + n; }
+
+template <ArchiveType ArchiveType>
+ArchiveType &operator<<(ArchiveType &archive, Quat &value)
+{
+    return archive << value.x << value.y << value.z << value.w;
+}

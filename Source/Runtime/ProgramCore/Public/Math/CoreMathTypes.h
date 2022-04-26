@@ -25,3 +25,5 @@
 
 #include "Math/Rotation.h"
 #include "Math/RotationMatrix.h"
+
+#include "Math/Quaternion.h"

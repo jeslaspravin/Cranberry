@@ -3453,13 +3453,26 @@ void ExperimentalEnginePBR::tempTest()
         };
         packedObj->interLinked = packedObj2;
 
-        BasicPackagedObject *testTemp = CBE::create<BasicPackagedObject>(name, package);
-        IInterfaceExample *interface1 = CBE::cast<IInterfaceExample>(static_cast<CBE::Object *>(packedObj));
-        IInterfaceExample2 *interface2 = CBE::cast<IInterfaceExample2>(static_cast<CBE::Object *>(packedObj));
+        BasicPackagedObject2 *testTemp = CBE::create<BasicPackagedObject2>(name, package);
+        testTemp->dt = 101.111;
+        testTemp->id = STRID("HEll Let lOsE");
+        testTemp->interLinked = packedObj;
+        testTemp->nameVal = TCHAR("Test All field serialization!");
+        testTemp->idxToStr[10] = {
+            {TCHAR("ABC"), 123},
+            {TCHAR("CBA"), 321}
+        };
+        testTemp->idxToStr[5] = {
+            {TCHAR("XYZ"), 55667788},
+            {TCHAR("ZYX"),     8235}
+        };
+        IInterfaceExample *interface1 = CBE::cast<IInterfaceExample>(static_cast<CBE::Object *>(testTemp));
+        IInterfaceExample2 *interface2 = CBE::cast<IInterfaceExample2>(static_cast<CBE::Object *>(testTemp));
         IInterfaceExample2 *interface3 = CBE::cast<IInterfaceExample2>(interface1);
-        BasicPackagedObject *ixToClassObj = CBE::cast<BasicPackagedObject>(interface1);
+        BasicPackagedObject2 *ixToClassObj = CBE::cast<BasicPackagedObject2>(interface1);
         CBE::Object *ix1ToClassObj = CBE::cast<CBE::Object>(interface1);
         CBE::Object *ix2ToClassObj = CBE::cast<CBE::Object>(interface2);
+        BasicPackagedObject *failingCast = CBE::cast<BasicPackagedObject>(interface1);
 
         CBE::save(packedObj);
         CBE::save(packedObj2);

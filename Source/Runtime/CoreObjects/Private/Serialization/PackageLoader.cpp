@@ -49,7 +49,7 @@ void PackageLoader::createContainedObject(PackageContainedData &containedData)
     debugAssert(outerObj);
 
     CBE::Object *obj = CBE::createOrGet(
-        IReflectionRuntimeModule::get()->getClassType(containedData.className), objectName, outerObj, CBE::EObjectFlagBits::PackageLoadPending
+        IReflectionRuntimeModule::get()->getClassType(containedData.className), objectName, outerObj, CBE::EObjectFlagBits::PackageLoadPending | containedData.objectFlags
     );
     fatalAssert(obj, "Package(%s) load failed to create object %s", package->getName(), containedData.objectPath);
     containedData.object = obj;
@@ -168,8 +168,9 @@ bool PackageLoader::load()
         {
             alertIf(
                 serializedSize == containedData.streamSize,
-                "Corrupted package %s for object %s! Written out size for object %llu is not same as read size %llu", package->getName(),
-                containedData.objectPath, containedData.streamSize, (fileStream.cursorPos() - containedData.streamStart)
+                "Corrupted package %s for object %s consider using Custom version and handle versioning! Written out size for object %llu is "
+                "not same as read size %llu",
+                package->getName(), containedData.objectPath, containedData.streamSize, (fileStream.cursorPos() - containedData.streamStart)
             );
             bSuccess = false;
         }

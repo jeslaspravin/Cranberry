@@ -10,8 +10,10 @@
  */
 
 #pragma once
+
 #include "Math/CoreMathTypes.h"
 #include "Types/CoreTypes.h"
+#include "Serialization/ArchiveBase.h"
 
 class LinearColor;
 
@@ -41,7 +43,7 @@ public:
     Vector3D toHsv() const;
 
     const Byte4D &getColorValue() const { return colorValue; }
-    Byte4D getColorValue() { return colorValue; }
+    Byte4D &getColorValue() { return colorValue; }
     uint8 r() const { return colorValue.r; }
     void setR(uint8 r) { colorValue.r = r; }
     uint8 g() const { return colorValue.g; }
@@ -83,6 +85,7 @@ public:
     Vector3D toHsv() const;
 
     const glm::vec4 &getColorValue() const { return colorValue; }
+    glm::vec4 &getColorValue() { return colorValue; }
     operator Vector4D() const { return Vector4D(colorValue); }
     float r() const { return colorValue.r; }
     void setR(float r) { colorValue.r = r; }
@@ -124,3 +127,15 @@ extern PROGRAMCORE_EXPORT const LinearColor RED;
 extern PROGRAMCORE_EXPORT const LinearColor BLUE;
 extern PROGRAMCORE_EXPORT const LinearColor GREEN;
 } // namespace LinearColorConst
+
+template <ArchiveType ArchiveType>
+ArchiveType &operator<<(ArchiveType &archive, Color &value)
+{
+    return archive << value.getColorValue().r << value.getColorValue().g << value.getColorValue().b << value.getColorValue().a;
+}
+
+template <ArchiveType ArchiveType>
+ArchiveType &operator<<(ArchiveType &archive, LinearColor &value)
+{
+    return archive << value.getColorValue().r << value.getColorValue().g << value.getColorValue().b << value.getColorValue().a;
+}

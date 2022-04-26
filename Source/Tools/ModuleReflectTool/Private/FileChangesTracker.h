@@ -15,6 +15,15 @@
 
 #include <map>
 
+/*!
+ * \class FileChangesTracker - Tracks a list of source files and its last processed timestamp. If a target output is old or if timestamp
+ * recorded is old then target will be considered outdated
+ *
+ * \brief
+ *
+ * \author Jeslas
+ * \date January 2022
+ */
 class FileChangesTracker
 {
 private:

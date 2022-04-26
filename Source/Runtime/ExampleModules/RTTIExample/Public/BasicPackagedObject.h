@@ -16,6 +16,7 @@
 #include "CBEObjectHelpers.h"
 #include "InterfaceExample.h"
 #include "String/String.h"
+#include "Serialization/ObjectSerializationHelpers.h"
 
 #include "BasicPackagedObject.gen.h"
 
@@ -53,4 +54,31 @@ public:
     }
 
     void exampleFunc() const override;
+};
+
+class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject2
+    : public CBE::Object
+    , public IInterfaceExample
+    , public IInterfaceExample2
+{
+    GENERATED_CODES()
+public:
+    META_ANNOTATE() std::map<uint32, std::map<String, uint32>> idxToStr;
+    META_ANNOTATE() float dt;
+    META_ANNOTATE() StringID id;
+    META_ANNOTATE() String nameVal;
+    META_ANNOTATE() BasicPackagedObject *interLinked;
+    META_ANNOTATE() BasicPackagedObject *inner;
+
+    BasicPackagedObject2()
+    {
+        if (getOuter() && getOuter()->getType() != staticType())
+        {
+            inner = CBE::create<BasicPackagedObject>(TCHAR("SubObject"), this);
+        }
+    }
+
+    ObjectArchive &serialize(ObjectArchive &ar) override { return ObjectSerializationHelpers::serializeAllFields(this, ar); }
+
+    void exampleFunc() const override { LOG("BasicPackageObject", "Example interface function"); }
 };

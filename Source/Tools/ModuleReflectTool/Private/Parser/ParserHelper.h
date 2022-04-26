@@ -26,6 +26,7 @@ private:
 
 public:
     static bool shouldReflectHeader(const String &headerFilePath);
+    static bool shouldReflectHeader(const String &headerFilePath, const std::vector<StringView> &lines);
     static void parseClassMeta(
         std::vector<String> &metaFlags, std::vector<String> &metaData, std::vector<String> &buildFlags, const String &annotatedStr
     );

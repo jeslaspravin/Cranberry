@@ -62,6 +62,7 @@ public:
     virtual uint64 cursorPos() const = 0;
 
     virtual bool isAvailable() const = 0;
+    virtual bool hasMoreData(SizeT requiredSize) const = 0;
 };
 
 class PROGRAMCORE_EXPORT ArchiveSizeCounterStream final : public ArchiveStream
@@ -84,6 +85,7 @@ public:
     uint8 readBackwardAt(SizeT idx) const override;
     FORCE_INLINE uint64 cursorPos() const override { return cursor; }
     FORCE_INLINE bool isAvailable() const override { return true; }
+    FORCE_INLINE bool hasMoreData(SizeT requiredSize) const override { return true; }
     /* overrides ends */
 };
 
@@ -112,11 +114,15 @@ private:
     void serializeArchiveMeta();
 
 public:
-    FORCE_INLINE bool ifSwapBytes() const { return bShouldSwapBytes; }
+    /**
+     * All getters are virtual to allow overriding the behavior however setters are not as that needs to taken care by the user directly and set
+     * values to appropriate archives
+     */
+    virtual bool ifSwapBytes() const { return bShouldSwapBytes; }
     FORCE_INLINE void setSwapBytes(bool bSwapBytes) { bShouldSwapBytes = bSwapBytes; }
-    FORCE_INLINE bool isLoading() const { return bIsLoading; }
+    virtual bool isLoading() const { return bIsLoading; }
     FORCE_INLINE void setLoading(bool bLoad) { bIsLoading = bLoad; }
-    FORCE_INLINE ArchiveStream *stream() const { return archiveStream; }
+    virtual ArchiveStream *stream() const { return archiveStream; }
     FORCE_INLINE void setStream(ArchiveStream *inStream)
     {
         if (archiveStream == inStream)
@@ -140,7 +146,7 @@ public:
         }
     }
     FORCE_INLINE void setCustomVersion(uint32 customId, uint32 version) { customVersions[customId] = version; }
-    FORCE_INLINE uint32 getCustomVersion(uint32 customId) const
+    virtual uint32 getCustomVersion(uint32 customId) const
     {
         auto itr = customVersions.find(customId);
         if (itr != customVersions.cend())
@@ -149,7 +155,7 @@ public:
         }
         return 0;
     }
-    FORCE_INLINE const std::map<uint32, uint32> &getCustomVersions() const { return customVersions; }
+    virtual const std::map<uint32, uint32> &getCustomVersions() const { return customVersions; }
     FORCE_INLINE void clearCustomVersions() { customVersions.clear(); }
 
     FOR_EACH_CORE_TYPES(SERIALIZE_VIRTUAL)

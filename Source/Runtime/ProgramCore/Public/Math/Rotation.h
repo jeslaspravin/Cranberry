@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Math/CoreMathTypedefs.h"
+#include "Serialization/ArchiveBase.h"
 #include "ProgramCoreExports.h"
 
 #include <glm/ext/vector_float3.hpp>
@@ -32,9 +33,7 @@ public:
     Rotation(const Rotation &other);
     Rotation(Rotation &&other);
     Rotation &operator=(const Rotation &other);
-    ;
     Rotation &operator=(Rotation &&other);
-    ;
 
     float &roll();
     float &pitch();
@@ -80,3 +79,9 @@ public:
     static Rotation mod(const Rotation &a, const float &b);
     static Rotation modf(Rotation &wholePart, const Rotation &value);
 };
+
+template <ArchiveType ArchiveType>
+ArchiveType &operator<<(ArchiveType &archive, Rotation &value)
+{
+    return archive << value.roll() << value.pitch() << value.yaw();
+}

@@ -24,6 +24,9 @@ private:
     Matrix4 transformMatrixCache;
     bool bCachedLatest;
 
+    template <ArchiveType ArchiveType>
+    friend ArchiveType &operator<<(ArchiveType &archive, Transform3D &value);
+
 private:
     Matrix4 normalTransformMatrix() const;
     Matrix4 getTransformMatrix() const;
@@ -70,3 +73,14 @@ public:
 public:
     static Transform3D ZERO_TRANSFORM;
 };
+
+template <ArchiveType ArchiveType>
+ArchiveType &operator<<(ArchiveType &archive, Transform3D &value)
+{
+    archive << value.transformTranslation << value.transformRotation << value.transformScale;
+    if (archive.isLoading())
+    {
+        value.bCachedLatest = false;
+    }
+    return archive;
+}
