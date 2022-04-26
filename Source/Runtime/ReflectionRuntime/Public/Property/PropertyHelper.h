@@ -126,7 +126,7 @@ public:
     {
         if (!enumProp->bIsFlags)
         {
-            return isValidEnumValue(value, enumProp) ? value : enumProp->fields[0].value;
+            return isValidEnumValue(value, enumProp) ? value : enumProp->fields.empty() ? 0 : enumProp->fields[0].value;
         }
 
         SizeT allValidBits = 0;
