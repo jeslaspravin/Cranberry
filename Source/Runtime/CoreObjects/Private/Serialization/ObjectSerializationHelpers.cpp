@@ -81,6 +81,8 @@ struct ReadFieldVisitable
             // serialization
             ReadObjectFieldUserData newUserData{ *readUserData };
 
+            // Clear existing data
+            dataRetriever->clear(val);
             SizeT elementCount = 0;
             (*readUserData->ar) << elementCount;
             for (SizeT i = 0; i < elementCount; ++i)
@@ -112,6 +114,8 @@ struct ReadFieldVisitable
             // This is to ensure that element visitor do not overwrite the outer scratchPad data, Temp scratch data for element serialization
             ReadObjectFieldUserData newUserData{ *readUserData };
 
+            // Clear existing data
+            dataRetriever->clear(val);
             SizeT containerSize = 0;
             (*readUserData->ar) << containerSize;
             for (SizeT i = 0; i < containerSize; ++i)
