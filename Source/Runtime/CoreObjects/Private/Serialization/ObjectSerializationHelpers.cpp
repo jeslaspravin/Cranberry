@@ -358,6 +358,11 @@ struct StartWriteFieldVisitable
     requires(!std::is_const_v<Type>) static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
     {
         debugAssert(propInfo.fieldProperty);
+        if (BIT_SET(propInfo.fieldProperty->getPropertyMetaFlags(), INDEX_TO_FLAG_MASK(EFieldMetaFlags::FIELDMETA_Transient)))
+        {
+            return;
+        }
+
         WriteObjectFieldUserData *writeUserData = (WriteObjectFieldUserData *)(userData);
 
         StringID fieldNameId = propInfo.fieldProperty->name;

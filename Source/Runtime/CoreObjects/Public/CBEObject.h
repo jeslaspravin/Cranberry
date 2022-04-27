@@ -119,6 +119,7 @@ public:
         }
         return outer;
     }
+    bool hasOuter(Object *checkOuter) const { return getOuter() && (getOuter() == checkOuter || getOuter()->hasOuter(checkOuter)); }
     FORCE_INLINE EObjectFlags getFlags() const { return flags; }
     FORCE_INLINE const String &getName() const { return objectName; }
     FORCE_INLINE StringID getStringID() const { return sid; }
