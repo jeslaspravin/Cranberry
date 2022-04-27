@@ -3453,7 +3453,7 @@ void ExperimentalEnginePBR::tempTest()
         };
         packedObj->interLinked = packedObj2;
 
-        BasicPackagedObject2 *testTemp = CBE::create<BasicPackagedObject2>(name, package);
+        BasicFieldSerializedObject *testTemp = CBE::create<BasicFieldSerializedObject>(name, package);
         testTemp->dt = 101.111;
         testTemp->id = STRID("HEll Let lOsE");
         testTemp->interLinked = packedObj;
@@ -3469,10 +3469,12 @@ void ExperimentalEnginePBR::tempTest()
         IInterfaceExample *interface1 = CBE::cast<IInterfaceExample>(static_cast<CBE::Object *>(testTemp));
         IInterfaceExample2 *interface2 = CBE::cast<IInterfaceExample2>(static_cast<CBE::Object *>(testTemp));
         IInterfaceExample2 *interface3 = CBE::cast<IInterfaceExample2>(interface1);
-        BasicPackagedObject2 *ixToClassObj = CBE::cast<BasicPackagedObject2>(interface1);
+        BasicFieldSerializedObject *ixToClassObj = CBE::cast<BasicFieldSerializedObject>(interface1);
         CBE::Object *ix1ToClassObj = CBE::cast<CBE::Object>(interface1);
         CBE::Object *ix2ToClassObj = CBE::cast<CBE::Object>(interface2);
         BasicPackagedObject *failingCast = CBE::cast<BasicPackagedObject>(interface1);
+
+        BasicFieldSerializedObject *copied = CBE::cast<BasicFieldSerializedObject>(CBE::duplicateObject(testTemp, package));
 
         CBE::save(packedObj);
         CBE::save(packedObj2);

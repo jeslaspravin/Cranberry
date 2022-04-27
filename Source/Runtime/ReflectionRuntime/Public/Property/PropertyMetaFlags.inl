@@ -14,7 +14,7 @@
 // clang-format off
 
 /**
- * Currently meta flags can be just normal unsigned integer. Starting from 0 to 63
+ * Currently meta flags can be just normal unsigned integer. Starting from 0 to 63. When using to check flag bits always use INDEX_TO_FLAG_MASK(EnumVal) to make bit flag
  */
 
 // Class/Struct meta

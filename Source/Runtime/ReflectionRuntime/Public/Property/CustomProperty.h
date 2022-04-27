@@ -153,6 +153,7 @@ public:
     // For indexable iterators only
     virtual bool removeAt(void *object, SizeT idx) const = 0;
     virtual SizeT size(const void *object) const = 0;
+    virtual void clear(void *object) const = 0;
 
     // Helper functions to helper with editing
     // Copied data useful for cases like map or set as they are restricted by const key
@@ -239,6 +240,7 @@ public:
     bool removeAt(void *object, SizeT idx) const override { return false; }
 
     SizeT size(const void *object) const override { return reinterpret_cast<const MapType *>(object)->size(); }
+    void clear(void *object) const override { reinterpret_cast<MapType *>(object)->clear(); }
 
     void copyTo(const void *data, void *toData) const override
     {
@@ -410,6 +412,7 @@ public:
     }
 
     SizeT size(const void *object) const override { return reinterpret_cast<const ContainerType *>(object)->size(); }
+    void clear(void *object) const override { reinterpret_cast<ContainerType *>(object)->clear(); }
 
     void copyTo(const void *data, void *toData) const override
     {
@@ -459,6 +462,7 @@ public:
     bool removeAt(void *object, SizeT idx) const override { return false; }
 
     SizeT size(const void *object) const override { return reinterpret_cast<const ContainerType *>(object)->size(); }
+    void clear(void *object) const override { reinterpret_cast<ContainerType *>(object)->clear(); }
 
     void copyTo(const void *data, void *toData) const override
     {

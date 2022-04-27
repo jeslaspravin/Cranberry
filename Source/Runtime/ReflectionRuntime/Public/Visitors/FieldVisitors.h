@@ -265,9 +265,11 @@ public:
 
     // Just simple visits a visitable with given template typename and passes in userdata
     template <typename Visitable>
-    static void visit(const PropertyInfo &propInfo, void *userData)
+    static void visit(const TypedProperty *prop, void *userData)
     {
         auto typeVisitor = [userData]<typename Type>(PropertyInfo propInfo) { Visitable::template visit<Type>(propInfo, userData); };
+        PropertyInfo propInfo;
+        propInfo.thisProperty = prop;
         visit(propInfo, typeVisitor);
     }
 

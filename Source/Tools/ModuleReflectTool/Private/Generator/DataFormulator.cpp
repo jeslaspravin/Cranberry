@@ -320,6 +320,8 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
     CXCursorKind cursorKind = clang_getCursorKind(cursor);
     CXStringRef cursorName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
 
+    ClassParseContext *classParseCntxt = (ClassParseContext *)(localCntxt.pNext);
+
     switch (cursorKind)
     {
     case CXCursor_CXXBaseSpecifier:
@@ -332,11 +334,9 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
         else if (ParserHelper::isReflectedClass(baseClass))
         {
             // validating there is no multiple inheritance(diamond inheritance)
-            if (localCntxt.pNext)
+            if (classParseCntxt)
             {
-                ClassParseContext *classParseCntxt = (ClassParseContext *)(localCntxt.pNext);
-
-                if (classParseCntxt->baseClass != clang_getNullCursor())
+                if (!clang_Cursor_isNull(classParseCntxt->baseClass))
                 {
                     parseFailed(
                         cursor, localCntxt.srcGenContext, __func__,
@@ -355,6 +355,15 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
         }
         else if (ParserHelper::isInterfaceClass(baseClass))
         {
+            if (classParseCntxt && clang_Cursor_isNull(classParseCntxt->baseClass))
+            {
+                parseFailed(
+                    cursor, localCntxt.srcGenContext, __func__, TCHAR("Base class must be the first extended class[Before any interface %s]"),
+                    clang_getCursorSpelling(baseClass)
+                );
+                break;
+            }
+
             std::vector<CXCursor> allInterfaces;
             if (ParserHelper::getInterfaceHierarchy(allInterfaces, baseClass))
             {
@@ -415,7 +424,7 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     clang_getFileLocation(generatedCodesSrcLoc, nullptr, &genCodesLineNum, nullptr, nullptr);
     bool bIsAbstract = !!clang_CXXRecord_isAbstract(cursor);
     const bool bNoExport = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend();
-    const bool bHasOverridenCtorPolicy = ParserHelper::hasOverridenCtorPolicy(cursor);
+    const bool bHasOverridenCtorPolicy = ParserHelper::hasOverridenCtorPolicy(cursor); // Needed for construction from heap allocated struct
 
     // Setup header context
     headerReflectTypeCntxt.args[GeneratorConsts::ISCLASS_BRANCH_TAG] = false;
@@ -424,6 +433,8 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     headerReflectTypeCntxt.args[GeneratorConsts::LINENUMBER_TAG] = genCodesLineNum;
     headerReflectTypeCntxt.args[GeneratorConsts::ISBASETYPE_BRANCH_TAG] = true; // We do not support inheritance in struct
     headerReflectTypeCntxt.args[GeneratorConsts::DEFINECTORPOLICY_BRANCH_TAG] = !bHasOverridenCtorPolicy;
+    // Struct must always have a default constructor, We do not have to specify this as it is class only option
+    headerReflectTypeCntxt.args[GeneratorConsts::IFGENERATECTOR_BRANCH_TAG] = false;
     // If class is explicitly mark NoExport then do not export
     headerReflectTypeCntxt.args[GeneratorConsts::NOEXPORT_BRANCH_TAG] = bNoExport;
 

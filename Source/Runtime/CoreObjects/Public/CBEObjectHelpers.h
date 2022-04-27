@@ -126,8 +126,8 @@ requires(
 //////////////////////////////////////////////////////////////////////////
 // Object Related helpers
 //////////////////////////////////////////////////////////////////////////
-COREOBJECTS_EXPORT void INTERNAL_destroyCBEObject(CBE::Object *obj);
-FORCE_INLINE bool INTERNAL_validateCreatedObject(CBE::Object *obj) { return BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::Default); }
+COREOBJECTS_EXPORT void INTERNAL_destroyCBEObject(Object *obj);
+FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::Default); }
 
 template <typename... CtorArgs>
 Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
@@ -253,13 +253,45 @@ ClassType *getDefaultObject()
     return reinterpret_cast<ClassType *>(objAllocator.getDefault());
 }
 
-FORCE_INLINE CBE::Object *getDefaultObject(CBEClass clazz)
+FORCE_INLINE Object *getDefaultObject(CBEClass clazz)
 {
     ObjectAllocatorBase *objAllocator = getObjAllocator(clazz);
     if (objAllocator)
     {
-        return reinterpret_cast<CBE::Object *>(objAllocator->getDefault());
+        return reinterpret_cast<Object *>(objAllocator->getDefault());
     }
+    return nullptr;
+}
+
+/**
+ * CBE::deepCopy - copies all reflected data from a object to another object and creates new object for any referenced subobject while copying
+ *
+ * Access: public
+ *
+ * @param Object * fromObject
+ * @param Object * toObject
+ *
+ * @return void
+ */
+COREOBJECTS_EXPORT bool deepCopy(Object *fromObject, Object *toObject);
+FORCE_INLINE Object *duplicateObject(Object *fromObject, Object *newOuter, String newName = "")
+{
+    if (newName.empty())
+    {
+        newName = fromObject->getName();
+    }
+
+    if (!isValid(newOuter))
+    {
+        newOuter = fromObject->getOuter();
+    }
+
+    Object *duplicateObj = create(fromObject->getType(), newName, newOuter, fromObject->getFlags());
+    if (deepCopy(fromObject, duplicateObj))
+    {
+        return duplicateObj;
+    }
+    duplicateObj->beginDestroy();
     return nullptr;
 }
 

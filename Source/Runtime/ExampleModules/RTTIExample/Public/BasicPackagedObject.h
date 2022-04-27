@@ -56,7 +56,7 @@ public:
     void exampleFunc() const override;
 };
 
-class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject2
+class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicFieldSerializedObject
     : public CBE::Object
     , public IInterfaceExample
     , public IInterfaceExample2
@@ -70,7 +70,7 @@ public:
     META_ANNOTATE() BasicPackagedObject *interLinked;
     META_ANNOTATE() BasicPackagedObject *inner;
 
-    BasicPackagedObject2()
+    BasicFieldSerializedObject()
     {
         if (getOuter() && getOuter()->getType() != staticType())
         {
