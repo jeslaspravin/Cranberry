@@ -109,6 +109,8 @@ struct DeepCopyFieldVisitable
             std::pmr::monotonic_buffer_resource memRes(buffer, ARRAY_LENGTH(buffer));
             std::pmr::vector<uint8> perElementData{ mapProp->pairSize, &memRes };
 
+            // Clear existing data
+            dataRetriever->clear(copyUserData->toData);
             DeepCopyUserData newUserData{ *copyUserData };
             for (IteratorElementWrapperRef itr = dataRetriever->createIterator(copyUserData->fromData); itr->isValid(); itr->iterateFwd())
             {
@@ -140,9 +142,10 @@ struct DeepCopyFieldVisitable
             std::pmr::monotonic_buffer_resource memRes(buffer, ARRAY_LENGTH(buffer));
             std::pmr::vector<uint8> perElementData{ elemProp->typeInfo->size, &memRes };
 
+            // Clear existing data
+            dataRetriever->clear(copyUserData->toData);
             DeepCopyUserData newUserData{ *copyUserData };
             newUserData.toData = perElementData.data();
-
             for (IteratorElementWrapperRef itr = dataRetriever->createIterator(copyUserData->fromData); itr->isValid(); itr->iterateFwd())
             {
                 // zero and reconstruct for each element to avoid using previous values
