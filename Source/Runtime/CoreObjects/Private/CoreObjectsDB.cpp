@@ -67,15 +67,6 @@ void CoreObjectsDB::setObjectParent(StringID objectId, StringID newParent)
     }
 }
 
-bool CoreObjectsDB::hasChild(NodeIdxType nodeidx) const
-{
-    if (objectTree.isValid(nodeidx))
-    {
-        return !objectTree.getChildren(nodeidx).empty();
-    }
-    return false;
-}
-
 CBE::Object *CoreObjectsDB::getObject(NodeIdxType nodeidx) const
 {
     if (objectTree.isValid(nodeidx))

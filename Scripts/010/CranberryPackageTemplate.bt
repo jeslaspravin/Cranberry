@@ -49,17 +49,24 @@ struct PackageDependencyData
 };
 
 // Object flags
-#define OBJECTFLAG_Default 0x0000000000000001
-#define OBJECTFLAG_MarkedForDelete 0x0000000000000002
-#define OBJECTFLAG_Deleted 0x0000000000000004
-#define OBJECTFLAG_RootObject 0x0000000000000008
-#define OBJECTFLAG_PackageDirty 0x0000000000000010
-#define OBJECTFLAG_PackageLoadPending 0x0000000000000020
+enum <uint64> ObjectFlagBits
+{
+    OBJECTFLAG_Default= 0x0000000000000001,
+    OBJECTFLAG_MarkedForDelete= 0x0000000000000002,
+    OBJECTFLAG_Deleted= 0x0000000000000004,
+    OBJECTFLAG_RootObject= 0x0000000000000008,
+    OBJECTFLAG_PackageDirty= 0x0000000000000010,
+    OBJECTFLAG_PackageLoadPending= 0x0000000000000020
+};
 
 string ObjectFlagsDisplay(uint64 flags)
 {
     string retStr;
-    SPrintf(retStr, "%d(%s)", flags, ObjectBitFlagToStr(flags));
+    if (Strlen(ObjectBitFlagToStr(flags)) == 0)
+    {
+        return IntToBinaryStr(flags);
+    }
+    SPrintf(retStr, "%s(%s)", IntToBinaryStr(flags),  ObjectBitFlagToStr(flags));
     return retStr;
 }
 
@@ -104,13 +111,15 @@ string ObjectBitFlagToStr(uint64 flags)
 
 LittleEndian();
 
-ArchiveMeta archiveMeta;
+ArchiveMeta archiveMeta<fgcolor=cBlack, bgcolor=cSilver>;
 
 uint64 containedDataCount<hidden=true>;
-PackageContainedData packagedObjects[containedDataCount]<optimize=false>;
-uint64 dependentDataCount<hidden=true>;
-PackageDependencyData dependentObjects[dependentDataCount]<optimize=false>;
+PackageContainedData packagedObjects[containedDataCount]<optimize=false, fgcolor=cLtBlue>;
 
+uint64 dependentDataCount<hidden=true>;
+PackageDependencyData dependentObjects[dependentDataCount]<optimize=false, fgcolor=cDkYellow>;
+
+SetColor(cNone, cNone);
 local int32 idx = 0;
 for(idx = 0; idx < containedDataCount; ++idx)
 {

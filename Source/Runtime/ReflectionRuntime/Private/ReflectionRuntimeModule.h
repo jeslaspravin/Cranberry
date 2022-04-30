@@ -14,8 +14,11 @@
 #include "IReflectionRuntime.h"
 #include "String/StringID.h"
 #include "Types/HashTypes.h"
+#include "Types/Containers/FlatTree.h"
 
 #include <unordered_map>
+
+using ClassTreeType = FlatTree<const ClassProperty *, uint32>;
 
 class ReflectionRuntimeModule final : public IReflectionRuntimeModule
 {
@@ -27,6 +30,7 @@ private:
     static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &classFactoryFromTypeName();
     const ClassProperty *createClassProperty(const ReflectTypeInfo *typeInfo);
     const ClassProperty *createClassProperty(const StringID &typeName);
+    void createAllPendingClasses();
 
     static std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &structFactoryFromTypeInfo();
     static std::unordered_map<StringID, std::pair<const ReflectTypeInfo *, ClassPropertyFactoryCell>> &structFactoryFromTypeName();
@@ -45,8 +49,9 @@ private:
     void initCommonProperties() const;
 
     // Property database
-    std::unordered_map<const ReflectTypeInfo *, const ClassProperty *> dbClassTypes;
-    std::unordered_map<StringID, const ClassProperty *> dbClassTypesFromName;
+    ClassTreeType dbClasses;
+    std::unordered_map<const ReflectTypeInfo *, ClassTreeType::NodeIdx> dbClassTypes;
+    std::unordered_map<StringID, ClassTreeType::NodeIdx> dbClassTypesFromName;
 
     std::unordered_map<const ReflectTypeInfo *, const ClassProperty *> dbStructTypes;
     std::unordered_map<StringID, const ClassProperty *> dbStructTypesFromName;
@@ -67,6 +72,9 @@ public:
     const ClassProperty *getStructType(const ReflectTypeInfo *typeInfo) final;
     const ClassProperty *getStructType(const StringID &structName) final;
 
+    void getChildsOf(
+        const ClassProperty *clazz, std::vector<const ClassProperty *> &outChilds, bool bRecursively = false, bool bOnlyLeafChilds = false
+    ) final;
     const ClassProperty *getClassType(const ReflectTypeInfo *typeInfo) final;
     const ClassProperty *getClassType(const StringID &className) final;
 

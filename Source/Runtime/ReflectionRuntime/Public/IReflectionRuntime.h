@@ -98,6 +98,10 @@ public:
     // ::(eg., Namespace1::Class1::structName)
     virtual const ClassProperty *getStructType(const StringID &structName) = 0;
 
+    // Non-const because we might lazy initialize ClassProperty if any present
+    virtual void getChildsOf(
+        const ClassProperty *clazz, std::vector<const ClassProperty *> &outChilds, bool bRecursively = false, bool bOnlyLeafChilds = false
+    ) = 0;
     virtual const ClassProperty *getClassType(const ReflectTypeInfo *typeInfo) = 0;
     // Name must be none const plain struct name including namespace and outer class/struct, separated by
     // ::(eg., Namespace1::Class1::structName)

@@ -66,7 +66,7 @@ public:
         }
         return false;
     }
-    bool hasChild(NodeIdxType nodeidx) const;
+    FORCE_INLINE bool hasChild(NodeIdxType nodeidx) const { return objectTree.hasChild(nodeidx); }
     FORCE_INLINE bool hasChild(StringID objectId) const
     {
         auto itr = objectIdToNodeIdx.find(objectId);
