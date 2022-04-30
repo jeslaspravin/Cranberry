@@ -126,15 +126,26 @@ const ClassProperty *ReflectionRuntimeModule::createClassProperty(const ReflectT
     {
         ClassProperty *prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
+        // add without parent first, to allow initialization
+        ClassTreeType::NodeIdx classIdx = dbClasses.add(prop);
+        debugAssert(classIdx != ClassTreeType::InvalidIdx);
         // Set the property in db for other property access immediately
-        dbClassTypes[typeInfo] = prop;
-        dbClassTypesFromName[propertyCreateFactoryItr->second.first] = prop;
+        dbClassTypes[typeInfo] = classIdx;
+        dbClassTypesFromName[propertyCreateFactoryItr->second.first] = classIdx;
         // Initialize the property now
         if (propertyCreateFactoryItr->second.second.initFunc)
         {
             propertyCreateFactoryItr->second.second.initFunc(prop);
         }
-        // Not clear the registered factories
+        // Now setup the parent
+        if (prop->baseClass)
+        {
+            auto parentIdxItr = dbClassTypes.find(prop->baseClass->typeInfo);
+            debugAssert(parentIdxItr != dbClassTypes.end());
+            dbClasses.relinkTo(classIdx, parentIdxItr->second);
+        }
+
+        // Now clear the registered factories
         classFactoryFromTypeName().erase(propertyCreateFactoryItr->second.first);
         classFactoryFromTypeInfo().erase(propertyCreateFactoryItr);
         return prop;
@@ -152,12 +163,22 @@ const ClassProperty *ReflectionRuntimeModule::createClassProperty(const StringID
     {
         ClassProperty *prop = propertyCreateFactoryItr->second.second.factoryFunc();
 
-        dbClassTypes[propertyCreateFactoryItr->second.first] = prop;
-        dbClassTypesFromName[typeName] = prop;
+        ClassTreeType::NodeIdx classIdx = dbClasses.add(prop);
+        debugAssert(classIdx != ClassTreeType::InvalidIdx);
+        dbClassTypes[propertyCreateFactoryItr->second.first] = classIdx;
+        dbClassTypesFromName[typeName] = classIdx;
 
         if (propertyCreateFactoryItr->second.second.initFunc)
         {
             propertyCreateFactoryItr->second.second.initFunc(prop);
+        }
+
+        // Now setup the parent
+        if (prop->baseClass)
+        {
+            auto parentIdxItr = dbClassTypes.find(prop->baseClass->typeInfo);
+            debugAssert(parentIdxItr != dbClassTypes.end());
+            dbClasses.relinkTo(classIdx, parentIdxItr->second);
         }
 
         classFactoryFromTypeInfo().erase(propertyCreateFactoryItr->second.first);
@@ -169,6 +190,22 @@ const ClassProperty *ReflectionRuntimeModule::createClassProperty(const StringID
         LOG_ERROR("ReflectionRuntimeModule", "%s() : Creating class property failed for type %s", __func__, typeName);
     }
     return nullptr;
+}
+
+FORCE_INLINE void ReflectionRuntimeModule::createAllPendingClasses()
+{
+    std::vector<const ReflectTypeInfo *> typeInfos;
+    typeInfos.reserve(classFactoryFromTypeInfo().size());
+    for (const std::pair<ReflectTypeInfo const *const, std::pair<StringID, ClassPropertyFactoryCell>> &registeredClass :
+         classFactoryFromTypeInfo())
+    {
+        typeInfos.emplace_back(registeredClass.first);
+    }
+    for (const ReflectTypeInfo *typeInfo : typeInfos)
+    {
+        const ClassProperty *classProp = getClassType(typeInfo);
+        alertIf(classProp, "Failed creating class property for type info %s", *typeInfo);
+    }
 }
 
 std::unordered_map<const ReflectTypeInfo *, std::pair<StringID, ClassPropertyFactoryCell>> &ReflectionRuntimeModule::structFactoryFromTypeInfo()
@@ -348,6 +385,45 @@ const ClassProperty *ReflectionRuntimeModule::getStructType(const StringID &stru
     return retVal;
 }
 
+void ReflectionRuntimeModule::getChildsOf(
+    const ClassProperty *clazz, std::vector<const ClassProperty *> &outChilds, bool bRecursively /*= false*/, bool bOnlyLeafChilds /*= false */
+)
+{
+    if (!clazz)
+    {
+        return;
+    }
+
+    // Create any pending classes registered but not created to get full class tree
+    createAllPendingClasses();
+
+    auto clazzIdxItr = dbClassTypes.find(clazz->typeInfo);
+    debugAssert(clazzIdxItr != dbClassTypes.end());
+
+    std::vector<ClassTreeType::NodeIdx> classChildren;
+    if (bOnlyLeafChilds)
+    {
+        for (ClassTreeType::NodeIdx childIdx : dbClasses.getChildren(clazzIdxItr->second, bRecursively))
+        {
+            if (!dbClasses.hasChild(childIdx))
+            {
+                classChildren.emplace_back(childIdx);
+            }
+        }
+    }
+    else
+    {
+        dbClasses.getChildren(classChildren, clazzIdxItr->second, bRecursively);
+    }
+
+    outChilds.reserve(classChildren.size());
+    for (ClassTreeType::NodeIdx childIdx : classChildren)
+    {
+        outChilds.emplace_back(dbClasses[childIdx]);
+    }
+    // LOG("Test", "Class trees : %s", dbClasses);
+}
+
 const ClassProperty *ReflectionRuntimeModule::getClassType(const ReflectTypeInfo *typeInfo)
 {
     const ClassProperty *retVal = nullptr;
@@ -358,7 +434,7 @@ const ClassProperty *ReflectionRuntimeModule::getClassType(const ReflectTypeInfo
     }
     else
     {
-        retVal = typePropertyItr->second;
+        retVal = dbClasses[typePropertyItr->second];
     }
     return retVal;
 }
@@ -372,7 +448,7 @@ const ClassProperty *ReflectionRuntimeModule::getClassType(const StringID &class
     }
     else
     {
-        retVal = typePropertyItr->second;
+        retVal = dbClasses[typePropertyItr->second];
     }
     return retVal;
 }
@@ -495,9 +571,9 @@ void ReflectionRuntimeModule::init() { initCommonProperties(); }
 
 void ReflectionRuntimeModule::release()
 {
-    for (const auto &typeProperty : dbClassTypes)
+    for (const auto &typePropertyIdx : dbClasses.getAll())
     {
-        delete typeProperty.second;
+        delete dbClasses[typePropertyIdx];
     }
     for (const auto &typeProperty : dbStructTypes)
     {
@@ -511,6 +587,7 @@ void ReflectionRuntimeModule::release()
     {
         delete typeProperty.second;
     }
+    dbClasses.clear();
     dbClassTypes.clear();
     dbClassTypesFromName.clear();
     dbStructTypes.clear();

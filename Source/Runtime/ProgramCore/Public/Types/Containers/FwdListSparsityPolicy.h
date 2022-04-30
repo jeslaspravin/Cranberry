@@ -45,6 +45,8 @@ private:
     }
 
 public:
+    void clear() { sparsityTags.clear(); }
+
     // Sets the value at idx to be occupied
     void set(SizeType idx)
     {

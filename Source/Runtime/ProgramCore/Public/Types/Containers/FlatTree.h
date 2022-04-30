@@ -135,6 +135,7 @@ public:
         return nodes[index];
     }
 
+    FORCE_INLINE bool hasChild(NodeIdx parent) const { return isValid(parent) && isValid(nodes[parent].firstChild); }
     /**
      * Out list of children. Will be ordered so that parent of an object will never appear after children
      */
@@ -188,9 +189,26 @@ public:
         getChildren(children, parent, bRecurse);
         return children;
     }
+    FORCE_INLINE void getAll(std::vector<NodeIdx> &outNodes) const
+    {
+        SizeType num = SizeType(nodes.totalCount());
+        for (NodeIdx i = 0; i < num; ++i)
+        {
+            if (isValid(i))
+            {
+                outNodes.emplace_back(i);
+            }
+        }
+    }
+    FORCE_INLINE std::vector<NodeIdx> getAll() const
+    {
+        std::vector<NodeIdx> outNodes;
+        getAll(outNodes);
+        return outNodes;
+    }
 
     // All nodes with not parents
-    void getAllRoots(std::vector<NodeIdx> &roots) const
+    FORCE_INLINE void getAllRoots(std::vector<NodeIdx> &roots) const
     {
         SizeType num = SizeType(nodes.totalCount());
         for (NodeIdx i = 0; i < num; ++i)

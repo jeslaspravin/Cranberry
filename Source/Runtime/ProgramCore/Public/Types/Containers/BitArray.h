@@ -638,6 +638,7 @@ public:
     SparsityContainerType sparsityTags;
 
 public:
+    CONST_EXPR void clear() { sparsityTags.clear(); }
     CONST_EXPR void reserve(SizeType count) { sparsityTags.reserve(count); }
     CONST_EXPR void resize(SizeType count, bool bSet = 0)
     {
