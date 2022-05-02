@@ -164,7 +164,7 @@ endfunction ()
 macro (cpp_common_options_and_defines)
     target_compile_definitions(${target_name}
         PRIVATE
-            $<IF:$<BOOL:${engine_static_modules}>,STATIC_LINKED=1,STATIC_LINKED=0>
+            $<$<BOOL:${engine_static_modules}>:STATIC_LINKED=1>
             $<${WIN32}:PLATFORM_WINDOWS=1>
             $<${LINUX}:PLATFORM_LINUX=1>
             $<${APPLE}:PLATFORM_APPLE=1>
@@ -478,6 +478,17 @@ macro (generate_engine_library)
         generate_cpp_shared_lib()
     endif ()
     engine_module_dependencies()
+endmacro()
+macro (generate_engine_editor_library)
+    generate_engine_library()
+    
+    # Exclude from all build if we are not building editor target
+    if (NOT ${editor_build})
+        set_target_properties(${target_name} PROPERTIES
+            EXCLUDE_FROM_ALL ON
+            EXCLUDE_FROM_DEFAULT_BUILD ON
+        )
+    endif ()
 endmacro()
 
 ########################################################################################################

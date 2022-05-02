@@ -13,17 +13,17 @@
 
 namespace EngineSettings
 {
-EngineGlobalConfig<Size2D> screenSize(Size2D(1280, 720));
-EngineGlobalConfig<Size2D> surfaceSize;
-EngineGlobalConfig<bool> fullscreenMode(false);
-EngineGlobalConfig<bool> enableVsync(true);
+ProgramGlobalVar<Size2D> screenSize(Size2D(1280, 720));
+ProgramGlobalVar<Size2D> surfaceSize;
+ProgramGlobalVar<bool> fullscreenMode(false);
+ProgramGlobalVar<bool> enableVsync(true);
 
-EngineGlobalConfig<uint32> minSamplingMipLevel(10u);
-EngineGlobalConfig<uint32> maxPrefilteredCubeMiplevels(8u);
-EngineGlobalConfig<uint32> maxEnvMapSize(1024u);
+ProgramGlobalVar<uint32> minSamplingMipLevel(10u);
+ProgramGlobalVar<uint32> maxPrefilteredCubeMiplevels(8u);
+ProgramGlobalVar<uint32> maxEnvMapSize(1024u);
 
-EngineGlobalConfig<int32> pcfKernelSize(3);
-EngineGlobalConfig<int32> pointPcfKernelSize(4);
+ProgramGlobalVar<int32> pcfKernelSize(3);
+ProgramGlobalVar<int32> pointPcfKernelSize(4);
 
-EngineGlobalConfig<uint32> globalSampledTexsSize(128u);
+ProgramGlobalVar<uint32> globalSampledTexsSize(128u);
 } // namespace EngineSettings

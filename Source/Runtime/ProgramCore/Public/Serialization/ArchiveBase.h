@@ -16,6 +16,7 @@
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 #include "Types/Templates/TemplateTypes.h"
+#include "Logger/Logger.h"
 
 #include <map>
 #include <set>
@@ -172,16 +173,7 @@ concept ArchiveType = std::is_base_of_v<ArchiveBase, Type>;
 template <ArchiveType ArchiveType, typename ValueType>
 ArchiveType &operator<<(ArchiveType &archive, ValueType &value)
 {
-    // This is added to support writing keys of maps and sets
-    // #TODO(Jeslas) : Should I handle const here or just handle directly in special cases line set or map elements?
-    if constexpr (std::is_const_v<ValueType>)
-    {
-        return static_cast<ArchiveType &>(archive.serialize(*const_cast<std::remove_const_t<ValueType> *>(&value)));
-    }
-    else
-    {
-        return static_cast<ArchiveType &>(archive.serialize(value));
-    }
+    return static_cast<ArchiveType &>(archive.serialize(value));
 }
 
 template <ArchiveType ArchiveType, typename KeyType, typename ValueType>
@@ -225,9 +217,9 @@ ArchiveType &operator<<(ArchiveType &archive, std::set<KeyType, Types...> &value
     }
     else
     {
-        for (KeyType val : value)
+        for (const KeyType &val : value)
         {
-            archive << val;
+            archive << *const_cast<std::remove_const_t<KeyType> *>(&val);
         }
     }
     return archive;
@@ -251,9 +243,9 @@ ArchiveType &operator<<(ArchiveType &archive, std::unordered_set<KeyType, Types.
     }
     else
     {
-        for (KeyType val : value)
+        for (const KeyType &val : value)
         {
-            archive << val;
+            archive << *const_cast<std::remove_const_t<KeyType> *>(&val);
         }
     }
     return archive;
@@ -278,9 +270,9 @@ ArchiveType &operator<<(ArchiveType &archive, std::map<KeyType, ValueType, Types
     }
     else
     {
-        for (const std::pair<KeyType, ValueType> &pair : value)
+        for (std::pair<const KeyType, ValueType> &pair : value)
         {
-            archive << pair.first << pair.second;
+            archive << *const_cast<std::remove_const_t<KeyType> *>(&pair.first) << pair.second;
         }
     }
     return archive;
@@ -305,9 +297,9 @@ ArchiveType &operator<<(ArchiveType &archive, std::unordered_map<KeyType, ValueT
     }
     else
     {
-        for (const std::pair<KeyType, ValueType> &pair : value)
+        for (std::pair<const KeyType, ValueType> &pair : value)
         {
-            archive << pair.first << pair.second;
+            archive << *const_cast<std::remove_const_t<KeyType> *>(&pair.first) << pair.second;
         }
     }
     return archive;

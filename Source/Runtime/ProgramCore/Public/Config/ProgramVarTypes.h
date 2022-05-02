@@ -1,5 +1,5 @@
 /*!
- * \file EngineVariableTypes.h
+ * \file ProgramVarTypes.h
  *
  * \author Jeslas Pravin
  * \date January 2022
@@ -16,7 +16,7 @@
 #include <type_traits>
 
 template <typename Type>
-class EngineVar
+class ProgramConstant
 {
 private:
     static_assert(std::is_default_constructible_v<Type>, "The type for engine variable/constant should be default constructible");
@@ -28,10 +28,10 @@ protected:
     VarType variable;
 
 public:
-    MAKE_TYPE_NONCOPY_NONMOVE(EngineVar)
+    MAKE_TYPE_NONCOPY_NONMOVE(ProgramConstant)
 
-    EngineVar() = default;
-    EngineVar(const VarType &defaultVal)
+    ProgramConstant() = default;
+    ProgramConstant(const VarType &defaultVal)
         : variable(defaultVal)
     {}
 
@@ -41,23 +41,23 @@ public:
 };
 
 template <typename Type>
-class EngineGlobalConfig : public EngineVar<Type>
+class ProgramGlobalVar : public ProgramConstant<Type>
 {
 private:
-    using base = EngineVar<Type>;
+    using base = ProgramConstant<Type>;
     using VarType = typename base::VarType;
     using base::variable;
 
 public:
     // void *(old, new)
-    using GlobalConfigChanged = Event<EngineGlobalConfig<VarType>, VarType, VarType>;
+    using VariableChanged = Event<ProgramGlobalVar<VarType>, VarType, VarType>;
 
 private:
-    GlobalConfigChanged onValueChanged;
+    VariableChanged onValueChanged;
 
 public:
-    EngineGlobalConfig() = default;
-    EngineGlobalConfig(const VarType &defaultVal)
+    ProgramGlobalVar() = default;
+    ProgramGlobalVar(const VarType &defaultVal)
         : base(defaultVal)
     {}
 
@@ -73,25 +73,25 @@ public:
 
     void operator=(const VarType &newValue) { set(newValue); }
 
-    GlobalConfigChanged &onConfigChanged() { return onValueChanged; }
+    VariableChanged &onConfigChanged() { return onValueChanged; }
 };
 
 template <typename Type, typename OwnerType>
-class EngineConstant : public EngineVar<Type>
+class ProgramOwnedVar : public ProgramConstant<Type>
 {
 private:
     static_assert(std::is_class_v<OwnerType>, "Only class types are allowed as owner to allow modifications");
-    using base = EngineVar<Type>;
+    using base = ProgramConstant<Type>;
     using VarType = typename base::VarType;
     using base::variable;
 
     friend OwnerType;
 
 public:
-    using ConstantChanged = Event<EngineConstant<VarType, OwnerType>, VarType, VarType>;
+    using VariableChanged = Event<ProgramOwnedVar<VarType, OwnerType>, VarType, VarType>;
 
 private:
-    ConstantChanged onValueChanged;
+    VariableChanged onValueChanged;
 
 private:
     void set(const VarType &newValue)
@@ -107,10 +107,10 @@ private:
     void operator=(const VarType &newValue) { set(newValue); }
 
 public:
-    EngineConstant() = default;
-    EngineConstant(const VarType &defaultVal)
+    ProgramOwnedVar() = default;
+    ProgramOwnedVar(const VarType &defaultVal)
         : base(defaultVal)
     {}
 
-    ConstantChanged &onChanged() { return onValueChanged; }
+    VariableChanged &onChanged() { return onValueChanged; }
 };

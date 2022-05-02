@@ -15,6 +15,10 @@
 #include "Types/Delegates/Delegate.h"
 
 class String;
+namespace CBE
+{
+class Object;
+}
 
 class COREOBJECTS_EXPORT CoreObjectDelegates
 {
@@ -22,10 +26,16 @@ private:
     CoreObjectDelegates() = default;
 
 public:
-    using ContentDirectoryDelegate = Event<CoreObjectDelegates, const String &>;
-    static ContentDirectoryDelegate onContentDirectoryAdded;
-    static ContentDirectoryDelegate onContentDirectoryRemoved;
+    using ContentDirectoryEvent = Event<CoreObjectDelegates, const String &>;
+    static ContentDirectoryEvent onContentDirectoryAdded;
+    static ContentDirectoryEvent onContentDirectoryRemoved;
 
     FORCE_INLINE static void broadcastContentDirectoryAdded(const String &contentDir) { onContentDirectoryAdded.invoke(contentDir); }
     FORCE_INLINE static void broadcastContentDirectoryRemoved(const String &contentDir) { onContentDirectoryRemoved.invoke(contentDir); }
+
+    using PackageEvent = Event<CoreObjectDelegates, CBE::Object *>;
+    static PackageEvent onPackageSaved;
+    static PackageEvent onPackageLoaded;
+    FORCE_INLINE static void broadcastPackageSaved(CBE::Object *package) { onPackageSaved.invoke(package); }
+    FORCE_INLINE static void broadcastPackageLoaded(CBE::Object *package) { onPackageLoaded.invoke(package); }
 };

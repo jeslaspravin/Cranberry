@@ -14,6 +14,7 @@
 #include "Serialization/PackageData.h"
 #include "CBEObjectHelpers.h"
 #include "CBEPackage.h"
+#include "CoreObjectDelegates.h"
 
 void PackageLoader::createContainedObject(PackageContainedData &containedData)
 {
@@ -124,6 +125,17 @@ void PackageLoader::prepareLoader()
         package->getName(), packageVersion, PACKAGE_SERIALIZER_CUTOFF_VERSION
     );
 
+    // Try reading the marker
+    {
+        StringID packageMarker;
+        SizeT packageHeaderStart = fileStream.cursorPos();
+        (*static_cast<ObjectArchive *>(this)) << packageMarker;
+        if (packageMarker != PACKAGE_ARCHIVE_MARKER)
+        {
+            LOG_WARN("PackageLoader", "Package marker not found in %s, Trying to load binary stream as marked package!", packageFilePath);
+            fileStream.moveBackward(fileStream.cursorPos() - packageHeaderStart);
+        }
+    }
     (*static_cast<ObjectArchive *>(this)) << containedObjects;
     (*static_cast<ObjectArchive *>(this)) << dependentObjects;
     packageArchive.setStream(nullptr);
@@ -177,5 +189,8 @@ bool PackageLoader::load()
         }
     }
     CLEAR_BITS(CBE::INTERNAL_ObjectCoreAccessors::getFlags(package), CBE::EObjectFlagBits::PackageLoadPending);
+
+    CoreObjectDelegates::broadcastPackageLoaded(package);
+
     return bSuccess;
 }
