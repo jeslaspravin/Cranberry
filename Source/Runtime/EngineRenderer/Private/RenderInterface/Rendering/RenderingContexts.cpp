@@ -10,7 +10,6 @@
  */
 
 #include "RenderInterface/Rendering/RenderingContexts.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "IRenderInterfaceModule.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderInterface/GraphicsHelper.h"
@@ -24,6 +23,7 @@
 #include "ShaderReflected.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
+#include "RenderInterface/GlobalRenderVariables.h"
 
 void GlobalRenderingContextBase::initContext(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
@@ -33,7 +33,7 @@ void GlobalRenderingContextBase::initContext(IGraphicsInstance *graphicsInstance
     std::map<String, uint32> &runtimeResCount = ShaderParameterUtility::unboundArrayResourcesCount();
     // Fill Runtime indexed resources max count over here
     runtimeResCount[TCHAR("srcImages")] = 16u;
-    runtimeResCount[TCHAR("globalSampledTexs")] = EngineSettings::globalSampledTexsSize.get();
+    runtimeResCount[TCHAR("globalSampledTexs")] = GlobalRenderVariables::GLOBAL_SAMPLED_TEX_NUM.get();
 
     initApiInstances();
 

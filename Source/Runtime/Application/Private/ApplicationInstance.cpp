@@ -10,6 +10,21 @@
  */
 
 #include "ApplicationInstance.h"
+#include "ApplicationSettings.h"
+
+namespace ApplicationSettings
+{
+// Rendering resolution and will be used to create window in windowed mode
+ProgramGlobalVar<Size2D> screenSize(Size2D(1280, 720));
+// Size of surface created for window by operating system, This will be updated with values while
+// creating main window
+ProgramOwnedVar<Size2D, WindowManager> surfaceSize;
+
+ProgramOwnedVar<bool, ApplicationInstance> fullscreenMode(false);
+
+ProgramOwnedVar<bool, ApplicationInstance> enableVsync(true);
+
+} // namespace ApplicationSettings
 
 ApplicationInstance::ApplicationInstance(const AppInstanceCreateInfo &createInfo)
     : applicationName(createInfo.applicationName)

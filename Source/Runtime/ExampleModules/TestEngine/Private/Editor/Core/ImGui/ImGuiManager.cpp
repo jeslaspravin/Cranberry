@@ -15,7 +15,6 @@
 #include "Editor/Core/ImGui/ImGuiFontTextureAtlas.h"
 #include "Editor/Core/ImGui/ImGuiLib/imgui.h"
 #include "Editor/Core/ImGui/ImGuiLib/implot.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "EngineInputCoreModule.h"
 #include "GenericAppWindow.h"
 #include "IApplicationModule.h"
@@ -30,6 +29,7 @@
 #include "String/String.h"
 #include "Types/Platform/PlatformFunctions.h"
 #include "WindowManager.h"
+#include "ApplicationSettings.h"
 
 using namespace ImGui;
 
@@ -271,8 +271,8 @@ void ImGuiManager::updateInputs()
     // Resize to screen render size, If using screen size
     // const Vector2D pos = Vector2D(inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
     // inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue) - windowArea.minBound;
-    // io.MousePos = pos * (Vector2D(EngineSettings::screenSize.get()) /
-    // Vector2D(EngineSettings::surfaceSize.get()));
+    // io.MousePos = pos * (Vector2D(ApplicationSettings::screenSize.get()) /
+    // Vector2D(ApplicationSettings::surfaceSize.get()));
 
     bCaptureInput = io.WantCaptureKeyboard | io.WantCaptureMouse;
 }
@@ -446,9 +446,9 @@ void ImGuiManager::setupRendering()
     // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
     float dpiScaleFactor = IApplicationModule::get()->mainWindow()->dpiScale();
     // Using surface size
-    io.DisplaySize = Vector2D(float(EngineSettings::surfaceSize.get().x), float(EngineSettings::surfaceSize.get().y)) * dpiScaleFactor;
+    io.DisplaySize = Vector2D(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) * dpiScaleFactor;
     textureResizedHnd
-        = EngineSettings::surfaceSize.onConfigChanged().bindLambda({ [&io](Size2D oldSize, Size2D newSize)
+        = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda({ [&io](Size2D oldSize, Size2D newSize)
                                                                      {
                                                                          float dpiScaleFactor
                                                                              = IApplicationModule::get()->mainWindow()->dpiScale();
@@ -456,9 +456,9 @@ void ImGuiManager::setupRendering()
                                                                              = Vector2D(float(newSize.x), float(newSize.y)) * dpiScaleFactor;
                                                                      } });
     // Using screen size
-    // io.DisplaySize = Vector2D(float(EngineSettings::screenSize.get().x),
-    // float(EngineSettings::screenSize.get().y)); textureResizedHnd =
-    // EngineSettings::screenSize.onConfigChanged().bindLambda(LambdaFunction<void, Size2D,
+    // io.DisplaySize = Vector2D(float(ApplicationSettings::screenSize.get().x),
+    // float(ApplicationSettings::screenSize.get().y)); textureResizedHnd =
+    // ApplicationSettings::screenSize.onConfigChanged().bindLambda(LambdaFunction<void, Size2D,
     // Size2D>([&io](Size2D oldSize, Size2D newSize)
     //    {
     //        io.DisplaySize = Vector2D(float(newSize.x), float(newSize.y));
@@ -543,8 +543,8 @@ void ImGuiManager::releaseRendering()
         }
     );
 
-    EngineSettings::surfaceSize.onConfigChanged().unbind(textureResizedHnd);
-    // EngineSettings::screenSize.onConfigChanged().unbind(textureResizedHnd);
+    ApplicationSettings::surfaceSize.onConfigChanged().unbind(textureResizedHnd);
+    // ApplicationSettings::screenSize.onConfigChanged().unbind(textureResizedHnd);
 }
 
 void ImGuiManager::draw(

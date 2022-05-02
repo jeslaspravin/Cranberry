@@ -112,5 +112,5 @@ public:
         : base(defaultVal)
     {}
 
-    VariableChanged &onChanged() { return onValueChanged; }
+    VariableChanged &onConfigChanged() { return onValueChanged; }
 };

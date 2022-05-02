@@ -13,7 +13,6 @@
 #include "PlatformInstances.h"
 #include "ApplicationInstance.h"
 #include "ApplicationModule.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "GenericAppWindow.h"
 #include "Logger/Logger.h"
 #include "RenderApi/GBuffersAndTextures.h"
@@ -21,6 +20,7 @@
 #include "RenderInterface/GraphicsIntance.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Rendering/RenderingContexts.h"
+#include "ApplicationSettings.h"
 
 GenericAppWindow *WindowManager::getMainWindow() const { return appMainWindow; }
 
@@ -29,9 +29,9 @@ void WindowManager::init()
     const ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
     appMainWindow = new PlatformAppWindow();
 
-    appMainWindow->setWindowSize(EngineSettings::screenSize.get().x, EngineSettings::screenSize.get().y, false);
+    appMainWindow->setWindowSize(ApplicationSettings::screenSize.get().x, ApplicationSettings::screenSize.get().y, false);
     appMainWindow->setWindowName(appInstance->getAppName());
-    appMainWindow->setWindowMode(EngineSettings::fullscreenMode.get());
+    appMainWindow->setWindowMode(ApplicationSettings::fullscreenMode.get());
     appMainWindow->onWindowActivated.bindObject(this, &WindowManager::activateWindow, appMainWindow);
     appMainWindow->onWindowDeactived.bindObject(this, &WindowManager::deactivateWindow, appMainWindow);
     appMainWindow->onResize.bindObject(this, &WindowManager::onWindowResize, appMainWindow);
@@ -126,7 +126,7 @@ void WindowManager::postInitGraphicCore()
                 // And we do not need to free window canvas frame here as it is first init
                 windowData.second.windowCanvas->reinitResources();
             }
-            EngineSettings::surfaceSize.set(Size2D(appMainWindow->windowWidth, appMainWindow->windowHeight));
+            ApplicationSettings::surfaceSize.set(Size2D(appMainWindow->windowWidth, appMainWindow->windowHeight));
         }
     );
 }
@@ -255,7 +255,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                 if (window == appMainWindow)
                 {
                     Size2D newSize{ window->windowWidth, window->windowHeight };
-                    EngineSettings::surfaceSize.set(newSize);
+                    ApplicationSettings::surfaceSize.set(newSize);
                 }
             }
         );

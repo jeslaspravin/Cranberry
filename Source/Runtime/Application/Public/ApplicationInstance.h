@@ -20,15 +20,15 @@ class PlatformAppInstanceBase;
 
 struct AppInstanceCreateInfo
 {
+    void *platformAppHandle;
+
     String applicationName;
+    // This cmdLine will be used as reference inside ProgramCmdLine
+    String cmdLine;
 
     int32 majorVersion;
     int32 minorVersion;
     int32 patchVersion;
-    // This cmdLine will be used as reference inside ProgramCmdLine
-    String cmdLine;
-
-    void *platformAppHandle;
 };
 
 class APPLICATION_EXPORT ApplicationInstance

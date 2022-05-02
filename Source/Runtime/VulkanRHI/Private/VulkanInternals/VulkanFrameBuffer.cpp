@@ -11,7 +11,6 @@
 
 #include <array>
 
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "Logger/Logger.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderInterface/Rendering/FramebufferTypes.h"

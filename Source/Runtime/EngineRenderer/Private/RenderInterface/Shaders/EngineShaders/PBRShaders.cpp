@@ -10,7 +10,6 @@
  */
 
 #include "RenderInterface/Shaders/EngineShaders/PBRShaders.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderApi/Scene/RenderScene.h"
 #include "RenderInterface/GlobalRenderVariables.h"
@@ -127,8 +126,8 @@ protected:
 public:
     void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const override
     {
-        specializationConst[TCHAR("PCF_KERNEL_SIZE")] = SpecializationConstUtility::fromValue(EngineSettings::pcfKernelSize.get());
-        specializationConst[TCHAR("POINT_PCF_SAMPLES")] = SpecializationConstUtility::fromValue(EngineSettings::pointPcfKernelSize.get());
+        specializationConst[TCHAR("PCF_KERNEL_SIZE")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::PCF_KERNEL_SIZE.get());
+        specializationConst[TCHAR("POINT_PCF_SAMPLES")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::POINT_LIGHT_PCF_KERNEL_SIZE.get());
         specializationConst[TCHAR("POINT_PCF_KERNEL_EXTEND")] = SpecializationConstUtility::fromValue(0.2f);
     }
 };

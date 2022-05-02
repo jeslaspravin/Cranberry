@@ -10,7 +10,7 @@
  */
 
 #include "VulkanInternals/VulkanDevice.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
+#include "ApplicationSettings.h"
 #include "Logger/Logger.h"
 #include "Math/Math.h"
 #include "RenderInterface/GlobalRenderVariables.h"
@@ -316,7 +316,7 @@ void VulkanDevice::cacheGlobalSurfaceProperties(const WindowCanvasRef &windowCan
 
         std::vector<VkPresentModeKHR> presentModes(presentModesCount);
         Vk::vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, canvas->surface(), (uint32_t *)&presentModesCount, presentModes.data());
-        if (EngineSettings::enableVsync.get())
+        if (ApplicationSettings::enableVsync.get())
         {
             fatalAssert(
                 std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR) != presentModes.cend(),
