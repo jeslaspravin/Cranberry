@@ -13,7 +13,7 @@
 #include <set>
 #include <vector>
 
-#include "Engine/Config/EngineGlobalConfigs.h"
+#include "ApplicationSettings.h"
 #include "Math/Math.h"
 #include "RenderInterface/Resources/QueueResource.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
@@ -128,12 +128,12 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
     if (surfaceSize.height == 0xFFFFFFFF || surfaceSize.width == 0xFFFFFFFF)
     {
         surfaceSize.height = Math::clamp<uint32>(
-            EngineSettings::screenSize.get().x, swapchainCapabilities.minImageExtent.height, swapchainCapabilities.maxImageExtent.height
+            ApplicationSettings::screenSize.get().x, swapchainCapabilities.minImageExtent.height, swapchainCapabilities.maxImageExtent.height
         );
         surfaceSize.width = Math::clamp<uint32>(
-            EngineSettings::screenSize.get().y, swapchainCapabilities.minImageExtent.width, swapchainCapabilities.maxImageExtent.width
+            ApplicationSettings::screenSize.get().y, swapchainCapabilities.minImageExtent.width, swapchainCapabilities.maxImageExtent.width
         );
-        EngineSettings::screenSize.set(Size2D(surfaceSize.width, surfaceSize.height));
+        ApplicationSettings::screenSize.set(Size2D(surfaceSize.width, surfaceSize.height));
     }
     swapchainCreateInfo.imageExtent = surfaceSize;
     VkSwapchainKHR swapchain;

@@ -10,7 +10,6 @@
  */
 
 #include "RenderApi/RenderManager.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "EngineRendererModule.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderApi/ResourcesInterface/IRenderResource.h"

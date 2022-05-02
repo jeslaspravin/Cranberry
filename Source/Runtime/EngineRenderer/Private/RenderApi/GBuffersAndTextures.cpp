@@ -10,7 +10,6 @@
  */
 
 #include "RenderApi/GBuffersAndTextures.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "Math/Math.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/GraphicsHelper.h"
@@ -155,7 +154,7 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInsta
     {
         // #TODO(Jeslas) : Create better read only LUT
         imageCI.imageFormat = EPixelDataFormat::RG_SF16;
-        imageCI.dimensions = Size3D(EngineSettings::maxEnvMapSize / 2u, EngineSettings::maxEnvMapSize / 2u, 1);
+        imageCI.dimensions = Size3D(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, 1);
         integratedBRDF = graphicsHelper->createImage(graphicsInstance, imageCI);
         integratedBRDF->setShaderUsage(EImageShaderUsage::Sampling | EImageShaderUsage::Writing);
         integratedBRDF->setResourceName(TCHAR("LUT_IntegratedBRDF"));

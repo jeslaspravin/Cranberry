@@ -24,7 +24,6 @@
 #include "../Editor/Core/ImGui/ImGuiManager.h"
 #include "ApplicationInstance.h"
 #include "Core/GBuffers.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "EngineInputCoreModule.h"
 #include "IApplicationModule.h"
 #include "InputSystem.h"
@@ -59,6 +58,7 @@
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Transform3D.h"
 #include "WindowManager.h"
+#include "ApplicationSettings.h"
 
 #include "Math/MathGeom.h"
 #include "RenderInterface/Resources/Pipelines.h"
@@ -348,7 +348,7 @@ void ExperimentalEngineGoochModel::createImages(IGraphicsInstance *graphicsInsta
         .filtering = ESamplerFiltering::Nearest,
         .mipFiltering = ESamplerFiltering::Nearest,
         .tilingMode = {ESamplerTilingMode::Repeat,                       ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
-        .mipLodRange = {                         0, float(EngineSettings::minSamplingMipLevel.get())                          },
+        .mipLodRange = {                         0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get())                          },
         .resourceName = TCHAR("NearestSampler")
     };
     nearestFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
@@ -924,7 +924,7 @@ void ExperimentalEngineGoochModel::createFrameResources(IGraphicsInstance *graph
     rtCreateParams.filtering = ESamplerFiltering::Linear;
     rtCreateParams.format = ERenderTargetFormat::RT_U8;
     rtCreateParams.sampleCount = EPixelSampleCount::SampleCount1;
-    rtCreateParams.textureSize = EngineSettings::screenSize.get();
+    rtCreateParams.textureSize = ApplicationSettings::screenSize.get();
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
@@ -1126,7 +1126,7 @@ void ExperimentalEngineGoochModel::updateTextRenderData(
     Vector2D scale = 2.0f / Vector2D(textSize.x, textSize.y);
     Vector2D translate{ -1.0f - Vector2D(textBB.minBound) * scale };
     // Now offset transforms so that text will be centered in middle of screen
-    textBB += (Int2D(EngineSettings::screenSize.get()) - textSize) / 2;
+    textBB += (Int2D(ApplicationSettings::screenSize.get()) - textSize) / 2;
 
     textRenderParams->setVector2Param(TCHAR("scale"), scale);
     textRenderParams->setVector2Param(TCHAR("translate"), translate);
@@ -1318,13 +1318,13 @@ void ExperimentalEngineGoochModel::frameRender(
     QuantizedBox2D viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
     viewport.minBound.x = 0;
-    viewport.minBound.y = EngineSettings::screenSize.get().y;
-    viewport.maxBound.x = EngineSettings::screenSize.get().x;
+    viewport.minBound.y = ApplicationSettings::screenSize.get().y;
+    viewport.maxBound.x = ApplicationSettings::screenSize.get().x;
     viewport.maxBound.y = 0;
 
     QuantizedBox2D scissor;
     scissor.minBound = { 0, 0 };
-    scissor.maxBound = EngineSettings::screenSize.get();
+    scissor.maxBound = ApplicationSettings::screenSize.get();
 
     String cmdName = TCHAR("FrameRender") + String::toString(index);
     cmdList->finishCmd(cmdName);
@@ -1405,7 +1405,7 @@ void ExperimentalEngineGoochModel::frameRender(
 
         // Drawing lighting quads
         viewport.minBound = Int2D(0, 0);
-        viewport.maxBound = EngineSettings::screenSize.get();
+        viewport.maxBound = ApplicationSettings::screenSize.get();
 
         cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
@@ -1527,7 +1527,7 @@ void ExperimentalEngineGoochModel::frameRender(
         }
 
         // Drawing final quad
-        viewport.maxBound = scissor.maxBound = EngineSettings::surfaceSize.get();
+        viewport.maxBound = scissor.maxBound = ApplicationSettings::surfaceSize.get();
 
         cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
@@ -1583,7 +1583,7 @@ void ExperimentalEngineGoochModel::tickEngine()
         frameVisualizeId = 3;
     }
 
-    if (renderSize != EngineSettings::screenSize.get())
+    if (renderSize != ApplicationSettings::screenSize.get())
     {
         ENQUEUE_COMMAND_NODEBUG(
             WritingDescs,
@@ -1591,7 +1591,7 @@ void ExperimentalEngineGoochModel::tickEngine()
                 GBuffers::onScreenResized(renderSize);
                 resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
-                EngineSettings::screenSize.set(renderSize);
+                ApplicationSettings::screenSize.set(renderSize);
             },
             this
         );

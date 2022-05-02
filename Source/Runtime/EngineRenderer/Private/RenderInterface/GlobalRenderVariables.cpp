@@ -41,4 +41,16 @@ ProgramGlobalVar<bool> ENABLED_TIMELINE_SEMAPHORE;
 ProgramGlobalVar<uint64> MAX_TIMELINE_OFFSET(0);
 
 ProgramGlobalVar<uint64> MAX_SYNC_RES_WAIT_TIME(500000000); /*500ms*/
+
+/**
+ * 
+ */
+ProgramGlobalVar<uint32> MIN_SAMPLINE_MIP_LEVEL(10u);
+ProgramGlobalVar<uint32> MAX_PREFILTERED_CUBE_MIPS(8u);
+ProgramGlobalVar<uint32> MAX_ENV_MAP_SIZE(1024u);
+
+ProgramGlobalVar<int32> PCF_KERNEL_SIZE(3);
+ProgramGlobalVar<int32> POINT_LIGHT_PCF_KERNEL_SIZE(4);
+
+ProgramGlobalVar<uint32> GLOBAL_SAMPLED_TEX_NUM(128u);
 } // namespace GlobalRenderVariables

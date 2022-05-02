@@ -11,7 +11,7 @@
 
 #include "Core/GBuffers.h"
 #include "Core/Types/Textures/RenderTargetTextures.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
+#include "ApplicationSettings.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
@@ -83,7 +83,7 @@ void GBuffers::onSampleCountChanged(uint32 oldValue, uint32 newValue)
             cmdList->flushAllcommands();
             RenderManager *renderManager = IRenderInterfaceModule::get()->getRenderManager();
 
-            const Size2D &screenSize = EngineSettings::screenSize.get();
+            const Size2D &screenSize = ApplicationSettings::screenSize.get();
             const EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(newValue);
             const bool bCanHaveResolves = sampleCount != EPixelSampleCount::SampleCount1;
 
@@ -154,7 +154,7 @@ void GBuffers::onScreenResized(Size2D newSize)
 
 void GBuffers::initialize(int32 swapchainCount)
 {
-    const Size2D &initialSize = EngineSettings::screenSize.get();
+    const Size2D &initialSize = ApplicationSettings::screenSize.get();
     GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.onConfigChanged().bindStatic(&GBuffers::onSampleCountChanged);
 
     EPixelSampleCount::Type sampleCount = EPixelSampleCount::Type(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get());

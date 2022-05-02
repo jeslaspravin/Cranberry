@@ -19,6 +19,10 @@ class Vector2D;
 
 namespace GlobalRenderVariables
 {
+
+/**
+ * Device specific initialization variables
+ */
 extern ENGINERENDERER_EXPORT ProgramGlobalVar<bool> ENABLE_ANISOTROPY;
 extern ENGINERENDERER_EXPORT ProgramGlobalVar<float> MAX_ANISOTROPY;
 
@@ -46,4 +50,18 @@ extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint64> MAX_SYNC_RES_WAIT_TIME;
 extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> GBUFFER_SAMPLE_COUNT;
 // Filtering for shader read textures of GBuffers
 extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> GBUFFER_FILTERING;
+
+/**
+ * Rendered specific initialization variables
+ */
+extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> MIN_SAMPLINE_MIP_LEVEL;
+extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> MAX_PREFILTERED_CUBE_MIPS;
+extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> MAX_ENV_MAP_SIZE;
+
+extern ENGINERENDERER_EXPORT ProgramGlobalVar<int32> PCF_KERNEL_SIZE;
+extern ENGINERENDERER_EXPORT ProgramGlobalVar<int32> POINT_LIGHT_PCF_KERNEL_SIZE;
+
+// Bindless/descriptor indexing texture count for globalSampledTexs field
+extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> GLOBAL_SAMPLED_TEX_NUM;
+
 } // namespace GlobalRenderVariables

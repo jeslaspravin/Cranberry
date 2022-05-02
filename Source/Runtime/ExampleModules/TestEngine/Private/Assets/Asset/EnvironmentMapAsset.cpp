@@ -12,7 +12,6 @@
 #include "Assets/Asset/EnvironmentMapAsset.h"
 #include "Core/Types/Textures/CubeTextures.h"
 #include "Core/Types/Textures/Texture2D.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
@@ -20,6 +19,7 @@
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderInterface/GlobalRenderVariables.h"
 
 ICleanupAsset *EnvironmentMapAsset::cleanableAsset() { return this; }
 
@@ -55,21 +55,21 @@ void EnvironmentMapAsset::initAsset()
             CubeTextureCreateParams createParams;
             createParams.dataFormat = ECubeTextureFormat::CT_F16;
             createParams.mipCount = 1;
-            createParams.textureSize = Size2D(EngineSettings::maxEnvMapSize);
+            createParams.textureSize = Size2D(GlobalRenderVariables::MAX_ENV_MAP_SIZE);
             createParams.textureName = assetName() + TCHAR("_EnvMap");
             envMap = TextureBase::createTexture<CubeTexture>(createParams);
 
             // Diffuse Irradiance
             createParams.dataFormat = ECubeTextureFormat::CT_F32;
             // 1024/16 = 64, Scaled in this ratio
-            createParams.textureSize = Size2D(EngineSettings::maxEnvMapSize / 16u);
+            createParams.textureSize = Size2D(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 16u);
             createParams.textureName = assetName() + TCHAR("_DifIrrad");
             diffuseIrradMap = TextureBase::createTexture<CubeTexture>(createParams);
 
             // Pre-filtered specular map
             createParams.dataFormat = ECubeTextureFormat::CT_F16;
-            createParams.textureSize = Size2D(EngineSettings::maxEnvMapSize / 2u);
-            createParams.mipCount = EngineSettings::maxPrefilteredCubeMiplevels;
+            createParams.textureSize = Size2D(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u);
+            createParams.mipCount = GlobalRenderVariables::MAX_PREFILTERED_CUBE_MIPS;
             createParams.textureName = assetName() + TCHAR("_FilteredSpec");
             specularIrradMap = TextureBase::createTexture<CubeTexture>(createParams);
 
@@ -93,7 +93,7 @@ void EnvironmentMapAsset::initAsset()
 
                 rwCreateParams.dataFormat = ECubeTextureFormat::CT_F16;
                 rwCreateParams.textureSize = specularIrradMap->getTextureSize();
-                rwCreateParams.mipCount = EngineSettings::maxPrefilteredCubeMiplevels;
+                rwCreateParams.mipCount = GlobalRenderVariables::MAX_PREFILTERED_CUBE_MIPS;
                 rwCreateParams.textureName = TCHAR("SpecularIrradIntermediate");
                 CubeTextureRW *specIrradIntermediate = TextureBase::createTexture<CubeTextureRW>(rwCreateParams);
 

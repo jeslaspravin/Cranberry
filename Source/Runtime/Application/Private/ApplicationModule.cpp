@@ -30,9 +30,16 @@ void ApplicationModule::graphicsInitEvents(ERenderStateEvent renderState)
     switch (renderState)
     {
     case ERenderStateEvent::PreinitDevice:
+        /**
+         * Init needs to be called at pre-init of graphics device so that main window will be created and its surface can be used to cache
+         * present queues in GraphicsDevice
+         */
         windowMan.init();
         break;
     case ERenderStateEvent::PostInitDevice:
+        /**
+         * Post init ensures that windows created before init of graphics device has a chance to create/retrieve swapchain images
+         */
         windowMan.postInitGraphicCore();
         break;
     case ERenderStateEvent::Cleanup:

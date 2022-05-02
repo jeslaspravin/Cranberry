@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Engine/Config/EngineGlobalConfigs.h"
+#include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "ShaderDataTypes.h"
@@ -61,7 +61,7 @@ public:
     void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const final
     {
         specializationConst[SAMPLE_COUNT] = SpecializationConstUtility::fromValue(1024u);
-        specializationConst[TCHAR("MIP_COUNT")] = SpecializationConstUtility::fromValue(EngineSettings::maxPrefilteredCubeMiplevels.get());
+        specializationConst[TCHAR("MIP_COUNT")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::MAX_PREFILTERED_CUBE_MIPS.get());
     }
 };
 

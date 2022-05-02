@@ -25,7 +25,6 @@
 #include "Editor/Core/ImGui/ImGuiLib/imgui.h"
 #include "Editor/Core/ImGui/ImGuiLib/implot.h"
 #include "Editor/Core/ImGui/ImGuiManager.h"
-#include "Engine/Config/EngineGlobalConfigs.h"
 #include "EngineInputCoreModule.h"
 #include "GenericAppWindow.h"
 #include "IApplicationModule.h"
@@ -70,6 +69,7 @@
 #include "Types/Transform3D.h"
 #include "Types/TypesInfo.h"
 #include "WindowManager.h"
+#include "ApplicationSettings.h"
 
 #include <array>
 #include <map>
@@ -490,8 +490,8 @@ void ExperimentalEnginePBR::createImages(IGraphicsInstance *graphicsInstance, co
     SamplerCreateInfo samplerCI{
         .filtering = ESamplerFiltering::Nearest,
         .mipFiltering = ESamplerFiltering::Nearest,
-        .tilingMode = {ESamplerTilingMode::Repeat,                       ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
-        .mipLodRange = {                         0, float(EngineSettings::minSamplingMipLevel.get())                          },
+        .tilingMode = {ESamplerTilingMode::Repeat,                                 ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
+        .mipLodRange = {                         0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get())                          },
         .resourceName = TCHAR("NearestSampler")
     };
     nearestFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
@@ -2068,7 +2068,7 @@ void ExperimentalEnginePBR::createFrameResources(IGraphicsInstance *graphicsInst
     rtCreateParams.filtering = ESamplerFiltering::Linear;
     rtCreateParams.format = ERenderTargetFormat::RT_U8;
     rtCreateParams.sampleCount = EPixelSampleCount::SampleCount1;
-    rtCreateParams.textureSize = EngineSettings::screenSize.get();
+    rtCreateParams.textureSize = ApplicationSettings::screenSize.get();
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
@@ -2435,13 +2435,13 @@ void ExperimentalEnginePBR::frameRender(
     QuantizedBox2D viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
     viewport.minBound.x = 0;
-    viewport.minBound.y = EngineSettings::screenSize.get().y;
-    viewport.maxBound.x = EngineSettings::screenSize.get().x;
+    viewport.minBound.y = ApplicationSettings::screenSize.get().y;
+    viewport.maxBound.x = ApplicationSettings::screenSize.get().x;
     viewport.maxBound.y = 0;
 
     QuantizedBox2D scissor;
     scissor.minBound = { 0, 0 };
-    scissor.maxBound = EngineSettings::screenSize.get();
+    scissor.maxBound = ApplicationSettings::screenSize.get();
 
     String cmdName = TCHAR("FrameRender") + String::toString(index);
     cmdList->finishCmd(cmdName);
@@ -2481,7 +2481,7 @@ void ExperimentalEnginePBR::frameRender(
 
         // Drawing lighting quads
         viewport.minBound = Int2D(0, 0);
-        viewport.maxBound = EngineSettings::screenSize.get();
+        viewport.maxBound = ApplicationSettings::screenSize.get();
 
         cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
@@ -2599,7 +2599,7 @@ void ExperimentalEnginePBR::frameRender(
 
         // Drawing final resolve to presenting surface quad
         viewport.minBound = Int2D(0, 0);
-        viewport.maxBound = scissor.maxBound = EngineSettings::surfaceSize.get();
+        viewport.maxBound = scissor.maxBound = ApplicationSettings::surfaceSize.get();
 
         cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
@@ -2818,13 +2818,13 @@ void ExperimentalEnginePBR::debugFrameRender(
     QuantizedBox2D viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
     viewport.minBound.x = 0;
-    viewport.minBound.y = EngineSettings::screenSize.get().y;
-    viewport.maxBound.x = EngineSettings::screenSize.get().x;
+    viewport.minBound.y = ApplicationSettings::screenSize.get().y;
+    viewport.maxBound.x = ApplicationSettings::screenSize.get().x;
     viewport.maxBound.y = 0;
 
     QuantizedBox2D scissor;
     scissor.minBound = { 0, 0 };
-    scissor.maxBound = EngineSettings::screenSize.get();
+    scissor.maxBound = ApplicationSettings::screenSize.get();
 
     std::vector<IRenderTargetTexture *> backFramebufferRts{ frameResources[swapchainIdx].lightingPassRt,
                                                             GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3] };
@@ -2836,8 +2836,8 @@ void ExperimentalEnginePBR::debugFrameRender(
         PBRSceneEntity &sceneEntity = sceneData[selection.idx];
         // Resetting viewport as we use mvp again
         viewport.minBound.x = 0;
-        viewport.minBound.y = EngineSettings::screenSize.get().y;
-        viewport.maxBound.x = EngineSettings::screenSize.get().x;
+        viewport.minBound.y = ApplicationSettings::screenSize.get().y;
+        viewport.maxBound.x = ApplicationSettings::screenSize.get().x;
         viewport.maxBound.y = 0;
 
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawTBN);
@@ -2868,8 +2868,8 @@ void ExperimentalEnginePBR::debugFrameRender(
     {
         // Resetting viewport as we use mvp again
         viewport.minBound.x = 0;
-        viewport.minBound.y = EngineSettings::screenSize.get().y;
-        viewport.maxBound.x = EngineSettings::screenSize.get().x;
+        viewport.minBound.y = ApplicationSettings::screenSize.get().y;
+        viewport.maxBound.x = ApplicationSettings::screenSize.get().x;
         viewport.maxBound.y = 0;
 
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawGrid);
@@ -2908,8 +2908,8 @@ void ExperimentalEnginePBR::debugFrameRender(
         const Int2D margin(10, 10);
 
         Vector2D viewportSize
-            = (Vector2D(camGizmoColorTexture->getTextureSize()) / Vector2D(3840, 2160)) * Vector2D(EngineSettings::screenSize.get());
-        viewport.minBound = Int2D(0 + margin.x, EngineSettings::screenSize.get().y - int32(viewportSize.y()) - margin.y);
+            = (Vector2D(camGizmoColorTexture->getTextureSize()) / Vector2D(3840, 2160)) * Vector2D(ApplicationSettings::screenSize.get());
+        viewport.minBound = Int2D(0 + margin.x, ApplicationSettings::screenSize.get().y - int32(viewportSize.y()) - margin.y);
         viewport.maxBound = viewport.minBound + Int2D(viewportSize.x(), viewportSize.y());
 
         scissor = viewport;
@@ -2958,7 +2958,7 @@ void ExperimentalEnginePBR::tickEngine()
                                   inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseY)->currentValue
                               )
                               - windowArea.minBound;
-        mouseCoord /= Vector2D(EngineSettings::surfaceSize.get());
+        mouseCoord /= Vector2D(ApplicationSettings::surfaceSize.get());
         LOG_DEBUG("ExperimentalEnginePBR", "%s(): mouse coord (%f, %f)", __func__, mouseCoord.x(), mouseCoord.y());
         if (mouseCoord.x() >= 0 && mouseCoord.x() <= 1.0f && mouseCoord.y() >= 0 && mouseCoord.y() <= 1.0f)
         {
@@ -2975,7 +2975,7 @@ void ExperimentalEnginePBR::tickEngine()
         }
     }
 
-    if (renderSize != EngineSettings::screenSize.get())
+    if (renderSize != ApplicationSettings::screenSize.get())
     {
         ENQUEUE_COMMAND(WritingDescs)
         (
@@ -2984,7 +2984,7 @@ void ExperimentalEnginePBR::tickEngine()
                 GBuffers::onScreenResized(renderSize);
                 resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
-                EngineSettings::screenSize.set(renderSize);
+                ApplicationSettings::screenSize.set(renderSize);
             }
         );
     }
