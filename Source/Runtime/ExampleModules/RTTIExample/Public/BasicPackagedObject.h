@@ -63,6 +63,10 @@ class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicFieldSerializedObject
 {
     GENERATED_CODES()
 public:
+    // Overriding Allocator slot count to 8
+    constexpr static const uint32 AllocSlotCount = 8;
+
+public:
     META_ANNOTATE() std::map<uint32, std::map<String, uint32>> idxToStr;
     META_ANNOTATE() float dt;
     META_ANNOTATE() StringID id;

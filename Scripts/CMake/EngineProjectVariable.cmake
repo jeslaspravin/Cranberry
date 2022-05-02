@@ -20,6 +20,8 @@ include (${cmake_script_dir}/StringUtilities.cmake)
 option (native_main "Whether to use native main function as application entry?" ON)
 option (experimental "Defines EXPERIMENTAL macro for Engine C++ modules" ON)
 # option (multithread "Whether to do multi threaded compilation" ON)
+# Right now editor build is only supported
+option (editor_build "Should be compiled as editor(Enables all editor modules)?" ON)
 option (engine_static_modules "Should compile and link engine modules statically?" OFF)
 option (enable_console_log "Should log write to console as well?" ON)
 
@@ -44,6 +46,7 @@ set (target_generated_path Generated)
 set (experimental_def $<IF:$<BOOL:${experimental}>,EXPERIMENTAL=1,EXPERIMENTAL=0>)
 set (engine_def RENDERAPI_VULKAN=1 ENGINE_VERSION=0 ENGINE_MINOR_VERSION=1 ENGINE_PATCH_VERSION=0 
     ENGINE_NAME=${CMAKE_PROJECT_NAME}
+    $<$<BOOL:${editor_build}>:EDITOR_BUILD=1>
     $<IF:${is_big_endian},BIG_ENDIAN=1,LITTLE_ENDIAN=1>
     )
 set (configure_file_folder ConfigureFiles)

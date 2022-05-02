@@ -10,29 +10,30 @@
  */
 
 #pragma once
-#include "Config/EngineVariableTypes.h"
+#include "Config/ProgramVarTypes.h"
 #include "Math/CoreMathTypedefs.h"
 #include "ProgramCoreExports.h"
 #include "Types/CoreTypes.h"
 
+// #TODO(Jeslas) : move this out of ProgramCore
 namespace EngineSettings
 {
 // Rendering resolution and will be used to create window in windowed mode
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<Size2D> screenSize;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<Size2D> screenSize;
 // Size of surface created for window by operating system, This will be updated with values while
 // creating main window
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<Size2D> surfaceSize;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<Size2D> surfaceSize;
 
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<bool> fullscreenMode;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<bool> fullscreenMode;
 
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<bool> enableVsync;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<bool> enableVsync;
 
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<uint32> minSamplingMipLevel;
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<uint32> maxPrefilteredCubeMiplevels;
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<uint32> maxEnvMapSize;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<uint32> minSamplingMipLevel;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<uint32> maxPrefilteredCubeMiplevels;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<uint32> maxEnvMapSize;
 
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<int32> pcfKernelSize;
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<int32> pointPcfKernelSize;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<int32> pcfKernelSize;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<int32> pointPcfKernelSize;
 
-extern PROGRAMCORE_EXPORT EngineGlobalConfig<uint32> globalSampledTexsSize;
+extern PROGRAMCORE_EXPORT ProgramGlobalVar<uint32> globalSampledTexsSize;
 } // namespace EngineSettings

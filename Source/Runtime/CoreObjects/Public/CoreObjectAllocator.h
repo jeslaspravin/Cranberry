@@ -75,15 +75,42 @@ public:
     FORCE_INLINE bool isValid(AllocIdx idx) const { return allocValidity[idx]; }
 };
 
+/**
+ * SlotAllocatorTraits based on ClassType to allow overriding slot count at per class level
+ * Class is considered to be overriding slot count if it has AllocSlotCount static constexpr value in it and it is greater than 1(default value + at least one instance)
+ */
+template <typename ClassType>
+concept ClassOverridesSlotCount = requires
+{
+    {
+        ClassType::AllocSlotCount
+        } -> std::convertible_to<typename SlotAllocator<sizeof(ClassType), alignof(ClassType), 64>::SizeType>;
+    ClassType::AllocSlotCount > 1;
+};
+template <typename ClassType>
+struct SlotAllocatorTraits
+{
+    // 64 is good enough value?
+    using AllocType = SlotAllocator<sizeof(ClassType), alignof(ClassType), 64>;
+    using SlotIdxType = typename AllocType::SizeType;
+};
+template <ClassOverridesSlotCount ClassType>
+struct SlotAllocatorTraits<ClassType>
+{
+    constexpr static const decltype(ClassType::AllocSlotCount) SlotCount = ClassType::AllocSlotCount; 
+    using AllocType = SlotAllocator<sizeof(ClassType), alignof(ClassType), SlotCount>;
+    using SlotIdxType = typename AllocType::SizeType;
+};
+
 // #TODO(Jeslas) : Find a way while freeing to validate proper revision of same allocated ptr free. Now
 // we can avoid that by controlling free manually
 template <typename ClassType>
 class ObjectAllocator final : public ObjectAllocatorBase
 {
 private:
-    // 64 is good enough value?
-    using SlotAllocatorType = SlotAllocator<sizeof(ClassType), alignof(ClassType), 64>;
-    using SlotIdxType = typename SlotAllocatorType::SizeType;
+    using SlotAllocTraits = SlotAllocatorTraits<ClassType>;
+    using SlotAllocatorType = typename SlotAllocTraits::AllocType;
+    using SlotIdxType = typename SlotAllocTraits::SlotIdxType;
 
     std::vector<SlotAllocatorType *> allocators;
 

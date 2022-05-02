@@ -23,6 +23,7 @@ class Object;
 inline constexpr static const uint32 PACKAGE_SERIALIZER_VERSION = 0;
 inline constexpr static const uint32 PACKAGE_SERIALIZER_CUTOFF_VERSION = 0;
 inline STRINGID_CONSTEXPR static const StringID PACKAGE_CUSTOM_VERSION_ID = STRID("PackageSerializer");
+inline STRINGID_CONSTEXPR static const StringID PACKAGE_ARCHIVE_MARKER = STRID("SerializedCBEPackage");
 
 // This will be flag set on object index when an object index is serialized to archive
 inline constexpr static const SizeT DEPENDENT_OBJECT_FLAG = 0x80'00'00'00'00'00'00'00ull;

@@ -92,7 +92,7 @@ public:                                                                         
 #define META_ANNOTATE_API(API_EXPORT, ...) META_ANNOTATE(NoExport; __VA_ARGS__)
 #else
 #define GENERATED_CODES() COMBINE_GENERATED_CODES(HEADER_FILE_ID, __LINE__, _GENERATED_CODES)
-#define OVERRIDE_CONSTRUCTION_POLICY(PolicyTypeName) typedef PolicyTypeName CONSTRUCTION_POLICY_TYPEDEF_NAME;
+#define OVERRIDE_CONSTRUCTION_POLICY(PolicyTypeName) using CONSTRUCTION_POLICY_TYPEDEF_NAME = PolicyTypeName;
 #define META_ANNOTATE(...)
 #define META_ANNOTATE_API(API_EXPORT, ...) API_EXPORT
 

@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "Config/EngineVariableTypes.h"
+#include "Config/ProgramVarTypes.h"
 #include "GenericPlatformFunctions.h"
 
 #if PLATFORM_WINDOWS
@@ -30,7 +30,7 @@ enum class EndianType
     Little
 };
 
-class PROGRAMCORE_EXPORT PlatformEndian : public EngineVar<EndianType>
+class PROGRAMCORE_EXPORT PlatformEndian : public ProgramConstant<EndianType>
 {
 public:
     PlatformEndian();

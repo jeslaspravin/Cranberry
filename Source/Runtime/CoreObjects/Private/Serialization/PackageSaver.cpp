@@ -16,6 +16,7 @@
 #include "CoreObjectsDB.h"
 #include "ICoreObjectsModule.h"
 #include "CBEPackage.h"
+#include "CoreObjectDelegates.h"
 
 void PackageSaver::setupContainedObjs()
 {
@@ -83,6 +84,7 @@ bool PackageSaver::savePackage()
     packageArchive.setStream(nullptr);
     archiveCounter.moveBackward(archiveCounter.cursorPos());
     packageArchive.setStream(&archiveCounter);
+    (*static_cast<ObjectArchive *>(this)) << *const_cast<StringID *>(&PACKAGE_ARCHIVE_MARKER);
     (*static_cast<ObjectArchive *>(this)) << containedObjects;
     (*static_cast<ObjectArchive *>(this)) << dependentObjects;
     SizeT actualHeaderSize = archiveCounter.cursorPos();
@@ -102,6 +104,7 @@ bool PackageSaver::savePackage()
     packageArchive.setStream(&fileStream);
 
     // Step 6 : Write into archive
+    (*static_cast<ObjectArchive *>(this)) << *const_cast<StringID *>(&PACKAGE_ARCHIVE_MARKER);
     (*static_cast<ObjectArchive *>(this)) << containedObjects;
     (*static_cast<ObjectArchive *>(this)) << dependentObjects;
     for (PackageContainedData &containedObjData : containedObjects)
@@ -109,6 +112,9 @@ bool PackageSaver::savePackage()
         containedObjData.object->serialize(*this);
     }
     packageArchive.setStream(nullptr);
+
+    CoreObjectDelegates::broadcastPackageSaved(package);
+
     return true;
 }
 
@@ -117,7 +123,7 @@ ObjectArchive &PackageSaver::serialize(CBE::Object *&obj)
     // Push null object index
     if (!obj)
     {
-        (*static_cast<ObjectArchive *>(this)) << NULL_OBJECT_FLAG;
+        (*static_cast<ObjectArchive *>(this)) << *const_cast<SizeT *>(&NULL_OBJECT_FLAG);
         return (*this);
     }
 

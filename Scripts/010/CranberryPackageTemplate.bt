@@ -105,6 +105,15 @@ string ObjectBitFlagToStr(uint64 flags)
     return fmtStr;    
 }
 
+#define PACKAGE_MARKER_VALUE 3759085268 
+string PrintPackageMarker(uint32 packageMarkerVal)
+{
+    string retStr;
+    SPrintf(retStr, "%s(%u)"
+        , (packageMarker == PACKAGE_MARKER_VALUE)? "Valid" : "Invalid", packageMarkerVal);
+    return retStr;
+}
+
 ///////////////////
 // Start parsing //
 ///////////////////
@@ -112,6 +121,12 @@ string ObjectBitFlagToStr(uint64 flags)
 LittleEndian();
 
 ArchiveMeta archiveMeta<fgcolor=cBlack, bgcolor=cSilver>;
+
+uint32 packageMarker<read = PrintPackageMarker>;
+if (packageMarker != PACKAGE_MARKER_VALUE)
+{
+    FSkip(-4);
+}
 
 uint64 containedDataCount<hidden=true>;
 PackageContainedData packagedObjects[containedDataCount]<optimize=false, fgcolor=cLtBlue>;

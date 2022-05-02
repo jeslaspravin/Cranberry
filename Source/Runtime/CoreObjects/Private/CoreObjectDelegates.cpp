@@ -11,5 +11,8 @@
 
 #include "CoreObjectDelegates.h"
 
-CoreObjectDelegates::ContentDirectoryDelegate CoreObjectDelegates::onContentDirectoryAdded;
-CoreObjectDelegates::ContentDirectoryDelegate CoreObjectDelegates::onContentDirectoryRemoved;
+CoreObjectDelegates::ContentDirectoryEvent CoreObjectDelegates::onContentDirectoryAdded;
+CoreObjectDelegates::ContentDirectoryEvent CoreObjectDelegates::onContentDirectoryRemoved;
+
+CoreObjectDelegates::PackageEvent CoreObjectDelegates::onPackageSaved;
+CoreObjectDelegates::PackageEvent CoreObjectDelegates::onPackageLoaded;

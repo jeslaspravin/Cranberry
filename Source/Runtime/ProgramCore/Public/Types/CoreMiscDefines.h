@@ -38,6 +38,10 @@
 #define RELEASE_BUILD 0
 #endif
 
+#ifndef EDITOR_BUILD
+#define EDITOR_BUILD 0
+#endif
+
 #ifndef DEBUG_VALIDATIONS
 #define DEBUG_VALIDATIONS 0
 #endif
