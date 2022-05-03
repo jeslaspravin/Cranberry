@@ -12,7 +12,6 @@
 #include "WindowManager.h"
 #include "PlatformInstances.h"
 #include "ApplicationInstance.h"
-#include "ApplicationModule.h"
 #include "GenericAppWindow.h"
 #include "Logger/Logger.h"
 #include "RenderApi/GBuffersAndTextures.h"
@@ -21,6 +20,7 @@
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Rendering/RenderingContexts.h"
 #include "ApplicationSettings.h"
+#include "IApplicationModule.h"
 
 GenericAppWindow *WindowManager::getMainWindow() const { return appMainWindow; }
 
@@ -37,7 +37,7 @@ void WindowManager::init()
     appMainWindow->onResize.bindObject(this, &WindowManager::onWindowResize, appMainWindow);
     appMainWindow->onDestroyRequested.bindObject(this, &WindowManager::requestDestroyWindow, appMainWindow);
     appMainWindow->createWindow(appInstance);
-    static_cast<ApplicationModule *>(IApplicationModule::get())->onWindowCreated.invoke(appMainWindow);
+    IApplicationModule::get()->windowCreated(appMainWindow);
 
     ENQUEUE_COMMAND(MainWindowInit)
     (
@@ -59,7 +59,7 @@ void WindowManager::destroy()
         WindowCanvasRef windowCanvas = windowData.second.windowCanvas;
         windowData.second.windowCanvas.reset();
 
-        static_cast<ApplicationModule *>(IApplicationModule::get())->onWindowDestroyed.invoke(windowData.first);
+        IApplicationModule::get()->windowDestroyed(windowData.first);
         windowData.first->destroyWindow();
         delete windowData.first;
 
@@ -89,8 +89,8 @@ void WindowManager::destroyWindow(GenericAppWindow *window)
             ([windowCanvas](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
              { windowCanvas->release(); });
 
-            auto *appModule = static_cast<ApplicationModule *>(IApplicationModule::get());
-            appModule->onWindowDestroyed.invoke(foundItr->first);
+            auto *appModule = IApplicationModule::get();
+            appModule->windowDestroyed(foundItr->first);
             foundItr->first->destroyWindow();
             delete foundItr->first;
 
@@ -98,7 +98,7 @@ void WindowManager::destroyWindow(GenericAppWindow *window)
 
             if (windowsOpened.empty())
             {
-                appModule->onAllWindowsDestroyed.invoke();
+                appModule->allWindowDestroyed();
             }
         }
     }
@@ -137,18 +137,18 @@ void WindowManager::updateWindowCanvas()
     (
         [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
-            auto *appModule = static_cast<ApplicationModule *>(IApplicationModule::get());
+            auto *appModule = IApplicationModule::get();
             cmdList->flushAllcommands();
             for (std::pair<GenericAppWindow *const, ManagerData> &windowData : windowsOpened)
             {
-                appModule->preWindowSurfaceUpdate.invoke(windowData.first);
+                appModule->preWindowSurfaceUpdate(windowData.first);
 
                 // Release the canvas related frame buffers before updating
                 IRenderInterfaceModule::get()->getRenderManager()->getGlobalRenderingContext()->clearWindowCanvasFramebuffer(
                     windowData.second.windowCanvas
                 );
                 windowData.second.windowCanvas->reinitResources();
-                appModule->onWindowSurfaceUpdated.invoke(windowData.first);
+                appModule->windowSurfaceUpdated(windowData.first);
             }
         }
     );
@@ -184,7 +184,7 @@ bool WindowManager::pollWindows()
 
     std::vector<WindowCanvasRef> canvasesToDestroy;
     canvasesToDestroy.reserve(windowsToDestroy.size());
-    auto *appModule = static_cast<ApplicationModule *>(IApplicationModule::get());
+    auto *appModule = IApplicationModule::get();
     for (GenericAppWindow *window : windowsToDestroy)
     {
         auto foundItr = windowsOpened.find(window);
@@ -192,7 +192,7 @@ bool WindowManager::pollWindows()
         WindowCanvasRef windowCanvas = foundItr->second.windowCanvas;
         canvasesToDestroy.emplace_back(windowCanvas);
 
-        appModule->onWindowDestroyed.invoke(foundItr->first);
+        appModule->windowDestroyed(foundItr->first);
         foundItr->first->destroyWindow();
         delete foundItr->first;
 
@@ -200,7 +200,7 @@ bool WindowManager::pollWindows()
 
         if (windowsOpened.empty())
         {
-            appModule->onAllWindowsDestroyed.invoke();
+            appModule->allWindowDestroyed();
         }
     }
     if (!canvasesToDestroy.empty())
@@ -235,10 +235,10 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
             [this, window, width,
              height](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
-                ApplicationModule *appModule = static_cast<ApplicationModule *>(IApplicationModule::get());
+                IApplicationModule *appModule = IApplicationModule::get();
 
                 cmdList->flushAllcommands();
-                appModule->preWindowSurfaceUpdate.invoke(window);
+                appModule->preWindowSurfaceUpdate(window);
 
                 window->setWindowSize(width, height, true);
                 // Update the canvas
@@ -251,7 +251,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                     windowCanvas->reinitResources();
                 }
 
-                appModule->onWindowSurfaceUpdated.invoke(window);
+                appModule->windowSurfaceUpdated(window);
                 if (window == appMainWindow)
                 {
                     Size2D newSize{ window->windowWidth, window->windowHeight };

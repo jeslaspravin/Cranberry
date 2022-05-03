@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "KeyToAsciiCharProcessor.h"
+#include "InputSystem/KeyToAsciiCharProcessor.h"
 
 KeyToAsciiCharProcessor::KeyToAsciiCharProcessor()
 {

@@ -54,6 +54,10 @@ extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> GBUFFER_FILTERING;
 /**
  * Rendered specific initialization variables
  */
+extern ENGINERENDERER_EXPORT ProgramGlobalVar<bool> GPU_DEVICE_INITIALIZED;
+extern ENGINERENDERER_EXPORT ProgramGlobalVar<bool> PRESENTING_ENABLED;
+extern ENGINERENDERER_EXPORT ProgramGlobalVar<bool> GPU_IS_COMPUTE_ONLY;
+
 extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> MIN_SAMPLINE_MIP_LEVEL;
 extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> MAX_PREFILTERED_CUBE_MIPS;
 extern ENGINERENDERER_EXPORT ProgramGlobalVar<uint32> MAX_ENV_MAP_SIZE;

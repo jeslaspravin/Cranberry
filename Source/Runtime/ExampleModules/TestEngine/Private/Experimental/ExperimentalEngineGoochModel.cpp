@@ -24,10 +24,9 @@
 #include "../Editor/Core/ImGui/ImGuiManager.h"
 #include "ApplicationInstance.h"
 #include "Core/GBuffers.h"
-#include "EngineInputCoreModule.h"
 #include "IApplicationModule.h"
-#include "InputSystem.h"
-#include "Keys.h"
+#include "InputSystem/InputSystem.h"
+#include "InputSystem/Keys.h"
 #include "Math/Math.h"
 #include "Math/RotationMatrix.h"
 #include "Math/Vector3D.h"
@@ -65,6 +64,7 @@
 #include <array>
 #include <map>
 #include <random>
+#include "FontManager.h"
 
 struct AOS
 {
@@ -645,7 +645,9 @@ void ExperimentalEngineGoochModel::createShaderParameters(
     singleColShaderParams->setResourceName(TCHAR("SingleColorShaderParams"));
     sceneShaderUniqParams[&drawSmPipelineContext] = singleColShaderParams;
 
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
+        application->windowManager->getMainWindow()
+    );
     uint32 swapchainCount = windowCanvas->imagesCount();
     lightTextures.setNewSwapchain(windowCanvas);
     drawQuadTextureDescs.setNewSwapchain(windowCanvas);
@@ -738,7 +740,9 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
         lightStartIdx += ARRAY_LENGTH(GoochModelLightArray::lights);
     }
 
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
+        application->windowManager->getMainWindow()
+    );
     uint32 swapchainCount = windowCanvas->imagesCount();
     ImageViewInfo depthImageViewInfo;
     depthImageViewInfo.componentMapping.g = depthImageViewInfo.componentMapping.b = depthImageViewInfo.componentMapping.a
@@ -831,7 +835,9 @@ void ExperimentalEngineGoochModel::updateShaderParameters(class IRenderCommandLi
 
 void ExperimentalEngineGoochModel::reupdateTextureParamsOnResize()
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
+        application->windowManager->getMainWindow()
+    );
     uint32 swapchainCount = windowCanvas->imagesCount();
 
     for (uint32 i = 0; i < swapchainCount; ++i)
@@ -904,7 +910,9 @@ void ExperimentalEngineGoochModel::destroyShaderParameters()
 
 void ExperimentalEngineGoochModel::resizeLightingRts(const Size2D &size)
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
+        application->windowManager->getMainWindow()
+    );
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
@@ -917,7 +925,9 @@ void ExperimentalEngineGoochModel::resizeLightingRts(const Size2D &size)
 
 void ExperimentalEngineGoochModel::createFrameResources(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
+        application->windowManager->getMainWindow()
+    );
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
@@ -961,7 +971,9 @@ void ExperimentalEngineGoochModel::destroyFrameResources()
 
 void ExperimentalEngineGoochModel::getPipelineForSubpass()
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
+        application->windowManager->getMainWindow()
+    );
     auto multibufferRts = GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0);
 
     drawSmPipelineContext.forVertexType = EVertexType::StaticMesh;
@@ -1029,7 +1041,7 @@ void ExperimentalEngineGoochModel::createTextRenderResources(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    FontManager &fontManager = application->fontManager;
+    FontManager &fontManager = *application->fontManager;
     FontManager::FontIndex idx
         = fontManager.addFont(TCHAR("D:/Workspace/VisualStudio/Cranberry/Build/Debug/Assets/Fonts/CascadiaMono-Bold.ttf"));
 
@@ -1069,7 +1081,7 @@ void ExperimentalEngineGoochModel::updateTextRenderData(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    FontManager &fontManager = application->fontManager;
+    FontManager &fontManager = *application->fontManager;
     std::vector<FontVertex> fontVerts;
     fontManager.draw(fontVerts, textBB, textToRender, 0, textHeight, wrapSize);
     Color fontCol{ textCol };
@@ -1136,39 +1148,39 @@ void ExperimentalEngineGoochModel::updateCameraParams()
 {
     ViewData viewDataTemp;
 
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::RMB))
+    if (application->inputSystem->isKeyPressed(Keys::RMB))
     {
         cameraRotation.yaw()
-            += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
+            += application->inputSystem->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
         cameraRotation.pitch()
-            += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
+            += application->inputSystem->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
     }
 
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::A))
+    if (application->inputSystem->isKeyPressed(Keys::A))
     {
         cameraTranslation -= cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::D))
+    if (application->inputSystem->isKeyPressed(Keys::D))
     {
         cameraTranslation += cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::W))
+    if (application->inputSystem->isKeyPressed(Keys::W))
     {
         cameraTranslation += cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::S))
+    if (application->inputSystem->isKeyPressed(Keys::S))
     {
         cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::Q))
+    if (application->inputSystem->isKeyPressed(Keys::Q))
     {
         cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::E))
+    if (application->inputSystem->isKeyPressed(Keys::E))
     {
         cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * 100.f;
     }
-    if (inputModule->getInputSystem()->keyState(Keys::R)->keyWentUp)
+    if (application->inputSystem->keyState(Keys::R)->keyWentUp)
     {
         cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
     }
@@ -1249,7 +1261,9 @@ void ExperimentalEngineGoochModel::startUpRenderInit(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
+        application->windowManager->getMainWindow()
+    );
     frameResources.resize(windowCanvas->imagesCount());
     GBuffers::initialize(windowCanvas->imagesCount());
 
@@ -1293,7 +1307,9 @@ void ExperimentalEngineGoochModel::frameRender(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
+        application->windowManager->getMainWindow()
+    );
     SemaphoreRef waitSemaphore;
     uint32 index = windowCanvas->requestNextImage(&waitSemaphore, nullptr);
     drawQuadPipelineContext.swapchainIdx = index;
@@ -1566,19 +1582,19 @@ void ExperimentalEngineGoochModel::tickEngine()
     GameEngine::tickEngine();
     updateCameraParams();
 
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::ONE))
+    if (application->inputSystem->isKeyPressed(Keys::ONE))
     {
         frameVisualizeId = 0;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::TWO))
+    else if (application->inputSystem->isKeyPressed(Keys::TWO))
     {
         frameVisualizeId = 1;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::THREE))
+    else if (application->inputSystem->isKeyPressed(Keys::THREE))
     {
         frameVisualizeId = 2;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::FOUR))
+    else if (application->inputSystem->isKeyPressed(Keys::FOUR))
     {
         frameVisualizeId = 3;
     }
@@ -1638,10 +1654,10 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-            const InputAnalogState *rmxState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX);
-            const InputAnalogState *rmyState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY);
-            const InputAnalogState *amxState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseX);
-            const InputAnalogState *amyState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseY);
+            const InputAnalogState *rmxState = application->inputSystem->analogState(AnalogStates::RelMouseX);
+            const InputAnalogState *rmyState = application->inputSystem->analogState(AnalogStates::RelMouseY);
+            const InputAnalogState *amxState = application->inputSystem->analogState(AnalogStates::AbsMouseX);
+            const InputAnalogState *amyState = application->inputSystem->analogState(AnalogStates::AbsMouseY);
             ImGui::Text(
                 "Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue,
                 rmyState->currentValue

@@ -13,6 +13,7 @@
 #include "Modules/ModuleManager.h"
 #include "RenderInterface/IRHIModule.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
+#include "RenderInterface/GlobalRenderVariables.h"
 
 DECLARE_MODULE(EngineRenderer, EngineRedererModule)
 
@@ -24,7 +25,11 @@ IGraphicsInstance *EngineRedererModule::currentGraphicsInstance() const
 
 const GraphicsHelperAPI *EngineRedererModule::currentGraphicsHelper() const { return graphicsHelperCache; }
 
-void EngineRedererModule::initializeGraphics() { getRenderManager()->initialize(graphicsInstanceCache); }
+void EngineRedererModule::initializeGraphics(bool bComputeOnly /*= false*/)
+{
+    GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.set(bComputeOnly);
+    getRenderManager()->initialize(graphicsInstanceCache);
+}
 
 void EngineRedererModule::finalizeGraphicsInitialization() { getRenderManager()->finalizeInit(); }
 

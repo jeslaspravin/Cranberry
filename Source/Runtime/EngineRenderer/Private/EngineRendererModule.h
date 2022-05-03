@@ -30,7 +30,7 @@ public:
     IGraphicsInstance *currentGraphicsInstance() const final;
     const GraphicsHelperAPI *currentGraphicsHelper() const final;
 
-    void initializeGraphics() final;
+    void initializeGraphics(bool bComputeOnly = false);
     void finalizeGraphicsInitialization() final;
     RenderManager *getRenderManager() const final;
     DelegateHandle registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback) final;

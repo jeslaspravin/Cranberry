@@ -40,8 +40,12 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 {
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
 
-    ShaderDataCollection &defaultShaderCollection = rawShaderObjects[DEFAULT_SHADER_NAME];
+    auto defaultShaderCollectionItr = rawShaderObjects.find(DEFAULT_SHADER_NAME);
+    if (defaultShaderCollectionItr != rawShaderObjects.end())
     {
+        debugAssert(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get());
+        ShaderDataCollection &defaultShaderCollection = defaultShaderCollectionItr->second;
+
         const DrawMeshShaderObject::ShaderResourceList &defaultShaders
             = static_cast<DrawMeshShaderObject *>(defaultShaderCollection.shaderObject)->getAllShaders();
         for (const DrawMeshShaderObject::ShaderResourceInfo &defaultShader : defaultShaders)
@@ -72,6 +76,8 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
         if (shaderCollection.second.shaderObject->baseShaderType() == DrawMeshShaderConfig::staticType())
         {
+            debugAssert(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get());
+
             const DrawMeshShaderObject::ShaderResourceList &allShaders
                 = static_cast<DrawMeshShaderObject *>(shaderCollection.second.shaderObject)->getAllShaders();
 
@@ -83,7 +89,7 @@ void VulkanGlobalRenderingContext::initializeApiContext()
 
                 FramebufferFormat fbFormat(renderPassUsage);
                 GraphicsPipelineBase *defaultGraphicsPipeline;
-                const ShaderResource *defaultShader = static_cast<DrawMeshShaderObject *>(defaultShaderCollection.shaderObject)
+                const ShaderResource *defaultShader = static_cast<DrawMeshShaderObject *>(defaultShaderCollectionItr->second.shaderObject)
                                                           ->getShader(vertUsage, fbFormat, &defaultGraphicsPipeline);
 
                 if (defaultShader == nullptr)
@@ -108,6 +114,8 @@ void VulkanGlobalRenderingContext::initializeApiContext()
         }
         else if (shaderCollection.second.shaderObject->baseShaderType() == UniqueUtilityShaderConfig::staticType())
         {
+            debugAssert(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get());
+
             UniqueUtilityShaderObject *shaderObject = static_cast<UniqueUtilityShaderObject *>(shaderCollection.second.shaderObject);
             VulkanGraphicsPipeline *graphicsPipeline = static_cast<VulkanGraphicsPipeline *>(shaderObject->getDefaultPipeline());
             graphicsPipeline->pipelineLayout = VulkanGraphicsHelper::createPipelineLayout(graphicsInstance, graphicsPipeline);

@@ -10,7 +10,7 @@
  */
 
 #pragma once
-#include "InputDevice.h"
+#include "InputSystem/InputDevice.h"
 
 class WindowsMouseDevice final : public IInputDevice
 {

@@ -13,10 +13,10 @@
 
 #if PLATFORM_WINDOWS
 
-#include "WindowsKeyCodes.h"
-#include "WindowsKeyboardDevice.h"
-#include "WindowsMouseDevice.h"
-#include "WindowsRawInputBuffer.h"
+#include "InputSystem/WindowsKeyCodes.h"
+#include "InputSystem/WindowsKeyboardDevice.h"
+#include "InputSystem/WindowsMouseDevice.h"
+#include "InputSystem/WindowsRawInputBuffer.h"
 
 #elif PLATFORM_LINUX
 static_assert(false, "Platform not supported!");

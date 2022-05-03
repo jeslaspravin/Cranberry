@@ -10,7 +10,8 @@
  */
 
 #pragma once
-#include "RawInputBuffer.h"
+
+#include "InputSystem/RawInputBuffer.h"
 
 class WindowsRawInputBuffer final : public IRawInputBuffer
 {

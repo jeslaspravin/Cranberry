@@ -9,9 +9,9 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "InputSystem.h"
-#include "KeyToAsciiCharProcessor.h"
-#include "PlatformInputTypes.h"
+#include "InputSystem/InputSystem.h"
+#include "InputSystem/KeyToAsciiCharProcessor.h"
+#include "InputSystem/PlatformInputTypes.h"
 
 InputSystem::InputSystem()
 {
@@ -25,10 +25,6 @@ InputSystem::InputSystem()
 InputSystem::~InputSystem()
 {
     delete rawInputBuffer;
-    for (IInputDevice *inputDevice : inputDevices)
-    {
-        delete inputDevice;
-    }
     inputDevices.clear();
     keyToCharProcessor.reset();
 }
@@ -40,6 +36,8 @@ bool InputSystem::isKeyPressed(const Key &key) const { return keys.queryState(ke
 Utf32 InputSystem::keyChar(const Key &key) const { return keyToCharProcessor->keyChar(&key); }
 
 const InputAnalogState *InputSystem::analogState(AnalogStates::EStates stateKey) const { return analogStates.queryState(stateKey); }
+
+void InputSystem::addInputDevice(IInputDeviceRef inputDevice) { inputDevices.emplace_back(inputDevice); }
 
 void InputSystem::resetStates()
 {
@@ -68,7 +66,7 @@ void InputSystem::setKeyToCharProcessor(SharedPtr<class IKeyToCharProcessor> new
 
 void InputSystem::registerWindow(const class GenericAppWindow *window) const
 {
-    for (const IInputDevice *device : inputDevices)
+    for (const IInputDeviceRef &device : inputDevices)
     {
         device->registerWindow(window);
     }

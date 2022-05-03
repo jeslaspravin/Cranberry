@@ -10,7 +10,8 @@
  */
 
 #pragma once
-#include "InputDevice.h"
+
+#include "InputSystem/InputDevice.h"
 
 #include <map>
 

@@ -9,8 +9,8 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "WindowsRawInputBuffer.h"
-#include "InputDevice.h"
+#include "InputSystem/WindowsRawInputBuffer.h"
+#include "InputSystem/InputDevice.h"
 #include "Logger/Logger.h"
 #include "WindowsCommonHeaders.h"
 
