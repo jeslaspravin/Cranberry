@@ -12,11 +12,14 @@
 #pragma once
 
 #include "ApplicationExports.h"
-#include "FontManager.h"
 #include "String/String.h"
 #include "Types/CoreTypes.h"
+#include "IRenderInterfaceModule.h"
 
 class PlatformAppInstanceBase;
+class InputSystem;
+class FontManager;
+class WindowManager;
 
 struct AppInstanceCreateInfo
 {
@@ -29,9 +32,16 @@ struct AppInstanceCreateInfo
     int32 majorVersion;
     int32 minorVersion;
     int32 patchVersion;
+
+    // If this application uses GPU modules, This combined with below 2 boolean flags controls how EngineRenderer module gets loaded/initialized
+    bool bUseGpu = true;
+    // Switches off window and any Presenting related logics
+    bool bRenderOffscreen = false;
+    // Switches off dedicated Graphics pipelines
+    bool bIsComputeOnly = false;
 };
 
-class APPLICATION_EXPORT ApplicationInstance
+class ApplicationInstance
 {
 private:
     String applicationName;
@@ -41,16 +51,35 @@ private:
     int32 patchVersion;
     String cmdLine;
 
+    bool bExitNextFrame = false;
+    bool bAppActive = true;
+
 public:
     PlatformAppInstanceBase *platformApp;
-    FontManager fontManager;
+    // Input system and window manager will be valid only if we are rendering to screen
+    InputSystem *inputSystem;
+    WindowManager *windowManager;
+
+    FontManager *fontManager;
+
+private:
 
 public:
-    ApplicationInstance() = default;
-    ApplicationInstance(const AppInstanceCreateInfo &createInfo);
+    ApplicationInstance() = delete;
+    APPLICATION_EXPORT ApplicationInstance(const AppInstanceCreateInfo &createInfo);
 
-    const String &getAppName() const { return applicationName; }
-    void getVersion(int32 &majorVer, int32 &minorVer, int32 &patchVer) const
+    APPLICATION_EXPORT void requestExit() { bExitNextFrame = true; }
+
+    void startApp();
+    APPLICATION_EXPORT virtual void onStart() = 0;
+    void runApp();
+    APPLICATION_EXPORT virtual void onTick() = 0;
+    void exitApp();
+    APPLICATION_EXPORT virtual void onExit() = 0;
+    APPLICATION_EXPORT virtual void onRendererStateEvent(ERenderStateEvent state) {}
+
+    APPLICATION_EXPORT const String &getAppName() const { return applicationName; }
+    APPLICATION_EXPORT void getVersion(int32 &majorVer, int32 &minorVer, int32 &patchVer) const
     {
         majorVer = majorVersion;
         minorVer = minorVersion;

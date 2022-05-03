@@ -11,12 +11,13 @@
 
 #pragma once
 #include "Types/CoreTypes.h"
+#include "Types/Containers/ReferenceCountPtr.h"
 
 class Keys;
 class AnalogStates;
 class GenericAppWindow;
 
-class IInputDevice
+class IInputDevice : public RefCountable
 {
 protected:
     constexpr static int8 UP_STATE = 1;
@@ -28,3 +29,5 @@ public:
     virtual void pullProcessedInputs(Keys *keyStates, AnalogStates *analogStates) = 0;
     virtual bool registerWindow(const GenericAppWindow *window) const = 0;
 };
+
+using IInputDeviceRef = ReferenceCountPtr<IInputDevice>;

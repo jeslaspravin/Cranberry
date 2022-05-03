@@ -10,12 +10,12 @@
  */
 
 #include "Engine/GameEngine.h"
-#include "EngineInputCoreModule.h"
 #include "GenericAppWindow.h"
 #include "IApplicationModule.h"
 #include "Logger/Logger.h"
 #include "Modules/ModuleManager.h"
 #include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Time.h"
 #include "WindowManager.h"
@@ -50,67 +50,42 @@ float EngineTime::getDeltaTime() { return deltaTime * timeDilation; }
 //// Game Engine implementation
 //////////////////////////////////////////////////////////////////////////
 
-void GameEngine::startup(const AppInstanceCreateInfo appInstanceCI)
+void GameEngine::startup(ApplicationInstance *appInst)
 {
     timeData.engineStart();
     rendererModule = static_cast<IRenderInterfaceModule *>(ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer")).lock().get());
-    renderStateChangeHandle = rendererModule->registerToStateEvents(
-        RenderStateDelegate::SingleCastDelegateType::createObject(this, &GameEngine::onRenderStateChange)
-    );
     applicationModule = static_cast<IApplicationModule *>(ModuleManager::get()->getOrLoadModule(TCHAR("Application")).lock().get());
-    exitAppHandle
-        = applicationModule->registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType::createObject(this, &GameEngine::tryExitApp));
-    inputModule = static_cast<EngineInputCoreModule *>(ModuleManager::get()->getOrLoadModule(TCHAR("EngineInputCore")).lock().get());
+    application = appInst;
 
-    application = applicationModule->createApplication(appInstanceCI);
-    rendererModule->initializeGraphics();
     assetManager.load();
 
     onStartUp();
-    rendererModule->finalizeGraphicsInitialization();
+
+    timeData.tickStart();
+    LOG("GameEngine", "%s() : Engine initialized in %0.3f seconds", __func__, Time::asSeconds(timeData.initEndTick - timeData.startTick));
 }
 
 void GameEngine::quit()
 {
-    bExitNextFrame = true;
     onQuit();
 
     assetManager.unload();
-
-    ModuleManager::get()->unloadModule(TCHAR("EngineInputCore"));
-    ModuleManager::get()->unloadModule(TCHAR("Application"));
-    ModuleManager::get()->unloadModule(TCHAR("EngineRenderer"));
-    rendererModule = nullptr;
-    applicationModule = nullptr;
-    inputModule = nullptr;
-
-    assetManager.clearToDestroy();
+    ENQUEUE_COMMAND_NODEBUG(
+        EngineQuit, { assetManager.clearToDestroy(); }, this
+    );
 
     LOG("GameEngine", "%s() : Engine run time in %.3f minutes", __func__, Time::asMinutes(Time::timeNow() - timeData.startTick));
 }
 
 void GameEngine::engineLoop()
 {
-    timeData.tickStart();
-    LOG("GameEngine", "%s() : Engine initialized in %0.3f seconds", __func__, Time::asSeconds(timeData.initEndTick - timeData.startTick));
+    // timeData.activeTimeDilation = applicationModule->pollWindows() ? 1.0f : 0.0f;
 
-    while (!isExiting())
-    {
-        timeData.activeTimeDilation = applicationModule->pollWindows() ? 1.0f : 0.0f;
-        inputModule->getInputSystem()->updateInputStates();
+    timeData.progressFrame();
+    tickEngine();
+    rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);
 
-        // Possible when window destroy event was sent
-        if (isExiting())
-        {
-            break;
-        }
-
-        timeData.progressFrame();
-        tickEngine();
-        rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);
-
-        Logger::flushStream();
-    }
+    Logger::flushStream();
 }
 
 void GameEngine::onRenderStateChange(ERenderStateEvent state)
@@ -147,15 +122,11 @@ void GameEngine::onRenderStateChange(ERenderStateEvent state)
     }
 }
 
-void GameEngine::tryExitApp() { bExitNextFrame = true; }
-
 void GameEngine::onStartUp() {}
 
 void GameEngine::onQuit() {}
 
 void GameEngine::tickEngine() {}
-
-void GameEngine::requestExit() { bExitNextFrame = true; }
 
 #if !EXPERIMENTAL
 GameEngine *GameEngineWrapper::createEngineInstance() { return new GameEngine(); }

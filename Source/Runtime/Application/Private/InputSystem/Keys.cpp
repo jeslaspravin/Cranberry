@@ -9,8 +9,8 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Keys.h"
-#include "PlatformInputTypes.h"
+#include "InputSystem/Keys.h"
+#include "InputSystem/PlatformInputTypes.h"
 
 const Key Keys::LMB{ EKeyCode::MOUSE_LEFT, TCHAR("Mouse Left") };
 const Key Keys::RMB{ EKeyCode::MOUSE_RIGHT, TCHAR("Mouse Right") };

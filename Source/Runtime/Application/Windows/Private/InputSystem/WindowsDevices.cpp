@@ -10,13 +10,13 @@
  */
 
 #include "GenericAppWindow.h"
-#include "Keys.h"
+#include "InputSystem/Keys.h"
 #include "Logger/Logger.h"
 #include "Math/Math.h"
-#include "PlatformInputTypes.h"
+#include "InputSystem/PlatformInputTypes.h"
 #include "WindowsCommonHeaders.h"
-#include "WindowsKeyboardDevice.h"
-#include "WindowsMouseDevice.h"
+#include "InputSystem/WindowsKeyboardDevice.h"
+#include "InputSystem/WindowsMouseDevice.h"
 
 #include <hidusage.h>
 

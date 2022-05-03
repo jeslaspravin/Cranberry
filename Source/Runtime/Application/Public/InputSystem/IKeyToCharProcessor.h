@@ -10,7 +10,8 @@
  */
 
 #pragma once
-#include "Keys.h"
+
+#include "InputSystem/Keys.h"
 
 class IKeyToCharProcessor
 {

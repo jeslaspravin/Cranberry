@@ -4,7 +4,6 @@ set(private_modules
     ProgramCore
     EngineRenderer
     Application
-    EngineInputCore
     CoreObjects
     RTTIExample
 )

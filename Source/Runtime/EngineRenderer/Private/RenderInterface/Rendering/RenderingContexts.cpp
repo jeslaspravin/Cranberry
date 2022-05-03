@@ -101,12 +101,20 @@ void GlobalRenderingContextBase::initShaderResources()
         for (GraphicsResource *config : allShaderConfigs)
         {
             ShaderConfigCollector *shaderConfig = static_cast<ShaderConfigCollector *>(config);
+            bool bDrawMeshShaderConfig = shaderConfig->getType()->isChildOf(DrawMeshShaderConfig::staticType());
+            if (GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get()
+                && (bDrawMeshShaderConfig || shaderConfig->getType()->isChildOf(UniqueUtilityShaderConfig::staticType())))
+            {
+                // We are in compute only mode
+                continue;
+            }
+
             ShaderResource *shader = graphicsHelperCache->createShaderResource(shaderConfig);
             shader->init();
             allShaderResources.emplace_back(shader);
             shaderConfig->setShaderConfigured(shader);
 
-            if (shaderConfig->getType()->isChildOf(DrawMeshShaderConfig::staticType()))
+            if (bDrawMeshShaderConfig)
             {
                 const DrawMeshShaderConfig *drawMeshShaderConfig = static_cast<const DrawMeshShaderConfig *>(shaderConfig);
 
@@ -208,6 +216,8 @@ void GlobalRenderingContextBase::initShaderPipelines(
     {
         if (shader->getShaderConfig()->getType()->isChildOf(DrawMeshShaderConfig::staticType()))
         {
+            debugAssert(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get());
+
             const DrawMeshShaderConfig *drawMeshShaderConfig = static_cast<const DrawMeshShaderConfig *>(shader->getShaderConfig());
             vertexAttribFillLambda(drawMeshShaderConfig->vertexUsage(), drawMeshShaderConfig->getReflection()->inputs);
 
@@ -263,6 +273,8 @@ void GlobalRenderingContextBase::initShaderPipelines(
         }
         else if (shader->getShaderConfig()->getType()->isChildOf(UniqueUtilityShaderConfig::staticType()))
         {
+            debugAssert(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get());
+
             const UniqueUtilityShaderConfig *utilityShaderConfig = static_cast<const UniqueUtilityShaderConfig *>(shader->getShaderConfig());
             vertexAttribFillLambda(utilityShaderConfig->vertexUsage(), utilityShaderConfig->getReflection()->inputs);
 

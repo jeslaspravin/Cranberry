@@ -10,7 +10,8 @@
  */
 
 #pragma once
-#include "EngineInputCoreExports.h"
+
+#include "ApplicationExports.h"
 #include "String/String.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
@@ -67,14 +68,14 @@ struct InputStateRange
     IteratorType end() const { return IteratorType(InputType::STATES_INITIALIZER.end()); }
 };
 
-struct ENGINEINPUTCORE_EXPORT Key
+struct APPLICATION_EXPORT Key
 {
     // Make/Break code
     uint32 keyCode;
     String keyname;
 };
 
-struct ENGINEINPUTCORE_EXPORT KeyState
+struct APPLICATION_EXPORT KeyState
 {
     TickRep pressedTick;
     uint8 isPressed : 1;
@@ -89,7 +90,7 @@ struct ENGINEINPUTCORE_EXPORT KeyState
     {}
 };
 
-class ENGINEINPUTCORE_EXPORT Keys
+class APPLICATION_EXPORT Keys
 {
 public:
     using StateKeyType = const Key *;
@@ -236,7 +237,7 @@ public:
 };
 
 // Analog states like scroll wheel or mouse movements
-struct ENGINEINPUTCORE_EXPORT InputAnalogState
+struct APPLICATION_EXPORT InputAnalogState
 {
     float acceleration = 0;
     float currentValue = 0;
@@ -244,7 +245,7 @@ struct ENGINEINPUTCORE_EXPORT InputAnalogState
     uint8 stoppedThisFrame = 0;
 };
 
-class ENGINEINPUTCORE_EXPORT AnalogStates
+class APPLICATION_EXPORT AnalogStates
 {
 public:
     enum EStates

@@ -25,12 +25,11 @@
 #include "Editor/Core/ImGui/ImGuiLib/imgui.h"
 #include "Editor/Core/ImGui/ImGuiLib/implot.h"
 #include "Editor/Core/ImGui/ImGuiManager.h"
-#include "EngineInputCoreModule.h"
 #include "GenericAppWindow.h"
 #include "IApplicationModule.h"
 #include "ICoreObjectsModule.h"
-#include "InputSystem.h"
-#include "Keys.h"
+#include "InputSystem/InputSystem.h"
+#include "InputSystem/Keys.h"
 #include "Math/BVH.h"
 #include "Math/CoreMathTypes.h"
 #include "Math/Math.h"
@@ -1468,7 +1467,7 @@ void ExperimentalEnginePBR::createShaderParameters(IGraphicsInstance *graphicsIn
     sceneShaderUniqParams[&singleColorPipelineContext] = singleColShaderParams;
     sceneShaderUniqParams[&texturedPipelineContext] = texturedShaderParams;
 
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
     lightTextures.setNewSwapchain(windowCanvas);
     drawQuadTextureDescs.setNewSwapchain(windowCanvas);
@@ -1740,7 +1739,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *graphi
         }
     }
 
-    uint32 swapchainCount = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow())->imagesCount();
+    uint32 swapchainCount = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow())->imagesCount();
     ImageViewInfo ambImageViewInfo;
     ambImageViewInfo.componentMapping.g = ambImageViewInfo.componentMapping.b = ambImageViewInfo.componentMapping.a
         = ambImageViewInfo.componentMapping.r = EPixelComponentMapping::R;
@@ -1861,7 +1860,7 @@ void ExperimentalEnginePBR::updateShaderParameters(class IRenderCommandList *cmd
 
 void ExperimentalEnginePBR::reupdateTextureParamsOnResize()
 {
-    uint32 swapchainCount = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow())->imagesCount();
+    uint32 swapchainCount = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow())->imagesCount();
 
     for (uint32 i = 0; i < swapchainCount; ++i)
     {
@@ -1906,7 +1905,7 @@ void ExperimentalEnginePBR::reupdateEnvMap()
         {
             cmdList->flushAllcommands();
             const uint32 swapchainCount
-                = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow())->imagesCount();
+                = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow())->imagesCount();
             for (uint32 i = 0; i < swapchainCount; ++i)
             {
                 lightTextures.getResources()[i]->setTextureParam(
@@ -2044,7 +2043,7 @@ void ExperimentalEnginePBR::setupLightShaderData()
 
 void ExperimentalEnginePBR::resizeLightingRts(const Size2D &size)
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
@@ -2061,7 +2060,7 @@ void ExperimentalEnginePBR::resizeLightingRts(const Size2D &size)
 
 void ExperimentalEnginePBR::createFrameResources(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
@@ -2172,7 +2171,7 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
     resolveLightRtPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
     rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, lightingPassResolveRts);
 
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     resolveToPresentPipelineContext.windowCanvas = windowCanvas;
     resolveToPresentPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
     resolveToPresentPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
@@ -2220,44 +2219,44 @@ void ExperimentalEnginePBR::updateCameraParams()
 {
     ViewData viewDataTemp;
     bool bCamRotated = false;
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::RMB))
+    if (application->inputSystem->isKeyPressed(Keys::RMB))
     {
         cameraRotation.yaw()
-            += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
+            += application->inputSystem->analogState(AnalogStates::RelMouseX)->currentValue * timeData.activeTimeDilation * 0.25f;
         cameraRotation.pitch()
-            += inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
+            += application->inputSystem->analogState(AnalogStates::RelMouseY)->currentValue * timeData.activeTimeDilation * 0.25f;
         bCamRotated = true;
     }
     float camSpeedModifier = 1;
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::LSHIFT))
+    if (application->inputSystem->isKeyPressed(Keys::LSHIFT))
     {
         camSpeedModifier = 2;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::A))
+    if (application->inputSystem->isKeyPressed(Keys::A))
     {
         cameraTranslation -= cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::D))
+    if (application->inputSystem->isKeyPressed(Keys::D))
     {
         cameraTranslation += cameraRotation.rightVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::W))
+    if (application->inputSystem->isKeyPressed(Keys::W))
     {
         cameraTranslation += cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::S))
+    if (application->inputSystem->isKeyPressed(Keys::S))
     {
         cameraTranslation -= cameraRotation.fwdVector() * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::Q))
+    if (application->inputSystem->isKeyPressed(Keys::Q))
     {
         cameraTranslation -= Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::E))
+    if (application->inputSystem->isKeyPressed(Keys::E))
     {
         cameraTranslation += Vector3D::UP * timeData.deltaTime * timeData.activeTimeDilation * camSpeedModifier * 150.f;
     }
-    if (inputModule->getInputSystem()->keyState(Keys::R)->keyWentUp)
+    if (application->inputSystem->keyState(Keys::R)->keyWentUp)
     {
         cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
         bCamRotated = true;
@@ -2360,7 +2359,7 @@ void ExperimentalEnginePBR::onStartUp()
 
 void ExperimentalEnginePBR::startUpRenderInit(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
-    int32 swapchainCount = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow())->imagesCount();
+    int32 swapchainCount = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow())->imagesCount();
     frameResources.resize(swapchainCount);
     GBuffers::initialize(swapchainCount);
 
@@ -2406,7 +2405,7 @@ void ExperimentalEnginePBR::frameRender(
 )
 {
     SemaphoreRef waitSemaphore;
-    WindowCanvasRef windowCanvas = applicationModule->getWindowManager()->getWindowCanvas(applicationModule->mainWindow());
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 index = windowCanvas->requestNextImage(&waitSemaphore, nullptr);
 
     resolveToPresentPipelineContext.swapchainIdx = index;
@@ -2933,29 +2932,29 @@ void ExperimentalEnginePBR::tickEngine()
     updateCameraParams();
     setupLightShaderData();
 
-    if (inputModule->getInputSystem()->isKeyPressed(Keys::ONE))
+    if (application->inputSystem->isKeyPressed(Keys::ONE))
     {
         frameVisualizeId = 0;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::TWO))
+    else if (application->inputSystem->isKeyPressed(Keys::TWO))
     {
         frameVisualizeId = 1;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::THREE))
+    else if (application->inputSystem->isKeyPressed(Keys::THREE))
     {
         frameVisualizeId = 2;
     }
-    else if (inputModule->getInputSystem()->isKeyPressed(Keys::FOUR))
+    else if (application->inputSystem->isKeyPressed(Keys::FOUR))
     {
         frameVisualizeId = 3;
     }
 
-    if (inputModule->getInputSystem()->keyState(Keys::LMB)->keyWentDown && !imguiManager.capturedInputs())
+    if (application->inputSystem->keyState(Keys::LMB)->keyWentDown && !imguiManager.capturedInputs())
     {
-        Rect windowArea = applicationModule->mainWindow()->windowClientRect();
+        Rect windowArea = application->windowManager->getMainWindow()->windowClientRect();
         Vector2D mouseCoord = Vector2D(
-                                  inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseX)->currentValue,
-                                  inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseY)->currentValue
+                                  application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
+                                  application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
                               )
                               - windowArea.minBound;
         mouseCoord /= Vector2D(ApplicationSettings::surfaceSize.get());
@@ -3036,10 +3035,10 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
 
-            const InputAnalogState *rmxState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseX);
-            const InputAnalogState *rmyState = inputModule->getInputSystem()->analogState(AnalogStates::RelMouseY);
-            const InputAnalogState *amxState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseX);
-            const InputAnalogState *amyState = inputModule->getInputSystem()->analogState(AnalogStates::AbsMouseY);
+            const InputAnalogState *rmxState = application->inputSystem->analogState(AnalogStates::RelMouseX);
+            const InputAnalogState *rmyState = application->inputSystem->analogState(AnalogStates::RelMouseY);
+            const InputAnalogState *amxState = application->inputSystem->analogState(AnalogStates::AbsMouseX);
+            const InputAnalogState *amyState = application->inputSystem->analogState(AnalogStates::AbsMouseY);
             ImGui::Text(
                 "Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue,
                 rmyState->currentValue

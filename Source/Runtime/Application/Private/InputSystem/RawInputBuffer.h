@@ -10,13 +10,14 @@
  */
 
 #pragma once
-#include "Types/CoreTypes.h"
+
+#include "InputSystem/InputDevice.h"
 
 struct ProcessInputsParam
 {
     class Keys *keyStates;
     class AnalogStates *analogStates;
-    class IInputDevice **inputDevices;
+    IInputDeviceRef *inputDevices;
     int32 devicesNum;
 };
 

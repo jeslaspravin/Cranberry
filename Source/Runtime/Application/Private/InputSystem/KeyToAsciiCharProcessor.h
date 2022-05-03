@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "IKeyToCharProcessor.h"
+#include "InputSystem/IKeyToCharProcessor.h"
 
 class KeyToAsciiCharProcessor : public IKeyToCharProcessor
 {

@@ -9,7 +9,6 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Assets/AssetsManager.h"
 #include "CmdLine/CmdLine.h"
 #include "Engine/GameEngine.h"
 #include "Logger/Logger.h"
@@ -17,8 +16,32 @@
 #include "Modules/ModuleManager.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
+#include "ApplicationInstance.h"
+#include "IApplicationModule.h"
 
 CBE_GLOBAL_NEWDELETE_OVERRIDES
+
+class TestEngineApplication : public ApplicationInstance
+{
+public:
+    TestEngineApplication(const AppInstanceCreateInfo &createInfo)
+        : ApplicationInstance(createInfo)
+    {}
+
+    void onStart() override
+    {
+        LOG("Engine", "%s() : Engine start", __func__);
+        gEngine->startup(this);
+    }
+    void onTick() override { gEngine->engineLoop(); }
+    void onExit() override
+    {
+        gEngine->quit();
+        LOG("Engine", "%s() : Engine quit", __func__);
+    }
+
+    void onRendererStateEvent(ERenderStateEvent state) override { gEngine->onRenderStateChange(state); }
+};
 
 int appMain(String cmdLine, void *appPlatformInstance)
 {
@@ -30,6 +53,9 @@ int appMain(String cmdLine, void *appPlatformInstance)
     appCI.minorVersion = ENGINE_MINOR_VERSION;
     appCI.patchVersion = ENGINE_PATCH_VERSION;
     appCI.platformAppHandle = appPlatformInstance;
+    appCI.bIsComputeOnly = false;
+    appCI.bRenderOffscreen = false;
+    appCI.bUseGpu = true;
 
     // Main Core
     bool bMandatoryModulesLoaded = ModuleManager::get()->loadModule(TCHAR("ProgramCore"))
@@ -39,22 +65,13 @@ int appMain(String cmdLine, void *appPlatformInstance)
 
     UnexpectedErrorHandler::getHandler()->registerFilter();
 
-    if (!ProgramCmdLine::get()->parse(appCI.cmdLine))
+    IApplicationModule *appModule = IApplicationModule::get();
+    if (appModule)
     {
-        LOG_ERROR("Engine", "%s() : Invalid command line", __func__);
-        ProgramCmdLine::get()->printCommandLine();
+        appModule->startApplication<TestEngineApplication>(appCI);
     }
 
-    LOG("Engine", "%s() : Engine start", __func__);
-    gEngine->startup(appCI);
-
-    Logger::flushStream();
-    gEngine->engineLoop();
-
-    gEngine->quit();
     ModuleManager::get()->unloadAllModules();
-
-    LOG("Engine", "%s() : Engine quit", __func__);
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
     Logger::flushStream();
 

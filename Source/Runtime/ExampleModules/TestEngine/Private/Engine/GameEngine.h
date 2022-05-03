@@ -50,10 +50,6 @@ using EngineEvents = Event<class GameEngine>;
 class GameEngine
 {
 private:
-    bool bExitNextFrame = false;
-
-    DelegateHandle renderStateChangeHandle;
-    DelegateHandle exitAppHandle;
 
 protected:
     IRenderInterfaceModule *rendererModule;
@@ -65,10 +61,6 @@ protected:
     AssetManager assetManager;
     EngineTime timeData;
 
-private:
-    void onRenderStateChange(ERenderStateEvent state);
-    void tryExitApp();
-
 protected:
     virtual void onStartUp();
     virtual void onQuit();
@@ -77,12 +69,11 @@ protected:
 public:
     virtual ~GameEngine() = default;
 
-    void startup(const AppInstanceCreateInfo appInstanceCI);
+    void startup(ApplicationInstance * appInst);
     void engineLoop();
     void quit();
 
-    void requestExit();
-    bool isExiting() { return bExitNextFrame; }
+    void onRenderStateChange(ERenderStateEvent state);
 
     AssetManager &getAssetManager() { return assetManager; }
     ImGuiManager &getImGuiManager() { return imguiManager; }

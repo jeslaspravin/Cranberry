@@ -12,6 +12,9 @@
 #include "ApplicationModule.h"
 #include "Modules/ModuleManager.h"
 #include "PlatformInstances.h"
+#include "ApplicationSettings.h"
+#include "ApplicationInstance.h"
+#include "FontManager.h"
 
 DECLARE_MODULE(Application, ApplicationModule)
 
@@ -27,43 +30,104 @@ IApplicationModule *IApplicationModule::get()
 
 void ApplicationModule::graphicsInitEvents(ERenderStateEvent renderState)
 {
-    switch (renderState)
+    if (!ApplicationSettings::renderingOffscreen.get() && getApplication()->windowManager)
     {
-    case ERenderStateEvent::PreinitDevice:
-        /**
-         * Init needs to be called at pre-init of graphics device so that main window will be created and its surface can be used to cache
-         * present queues in GraphicsDevice
-         */
-        windowMan.init();
-        break;
-    case ERenderStateEvent::PostInitDevice:
-        /**
-         * Post init ensures that windows created before init of graphics device has a chance to create/retrieve swapchain images
-         */
-        windowMan.postInitGraphicCore();
-        break;
-    case ERenderStateEvent::Cleanup:
-        windowMan.destroy();
-        break;
-    default:
-        break;
+        switch (renderState)
+        {
+        case ERenderStateEvent::PreinitDevice:
+            /**
+             * Init needs to be called at pre-init of graphics device so that main window will be created and its surface can be used to cache
+             * present queues in GraphicsDevice
+             */
+            windowMan.init();
+            break;
+        case ERenderStateEvent::PostInitDevice:
+            /**
+             * Post init ensures that windows created before init of graphics device has a chance to create/retrieve swapchain images
+             */
+            windowMan.postInitGraphicCore();
+            break;
+        case ERenderStateEvent::Cleanup:
+            windowMan.destroy();
+            break;
+        default:
+            break;
+        }
     }
 }
 
-ApplicationInstance *ApplicationModule::createApplication(const AppInstanceCreateInfo &appCI)
+void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInstanceCreateInfo &appCI)
 {
-    appInstance = ApplicationInstance(appCI);
-    appInstance.platformApp = new PlatformAppInstance(appCI.platformAppHandle);
-    return &appInstance;
+    // Load core if not loaded already
+    bool bCoreModulesLoaded = ModuleManager::get()->loadModule(TCHAR("ProgramCore"));
+    fatalAssert(bCoreModulesLoaded, "Loading core modules failed");
+
+    IRenderInterfaceModule *engineRenderer = nullptr;
+
+    FontManager fontManager;
+    PlatformAppInstance platformApp(appCI.platformAppHandle);
+    appInst->platformApp = &platformApp;
+    appInstance = appInst;
+    // Initialize GPU device and renderer module if needed
+    if (appCI.bUseGpu)
+    {
+        WeakModulePtr renderModule = ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer"));
+        fatalAssert(!renderModule.expired(), "EngineRenderer not found!");
+
+        if (!(appCI.bRenderOffscreen || appCI.bIsComputeOnly))
+        {
+            appInstance->windowManager = &windowMan;
+            appInstance->inputSystem = &inputSystem;
+        }
+        // Since we could technically use font manager in compute only mode as well
+        fontManager = FontManager(InitType_DefaultInit);
+        appInstance->fontManager = &fontManager;
+
+        engineRenderer = static_cast<IRenderInterfaceModule *>(renderModule.lock().get());
+        // Registering before initialization to allow application for handle renderer events
+        engineRenderer->registerToStateEvents(
+            RenderStateDelegate::SingleCastDelegateType::createObject(appInstance, &ApplicationInstance::onRendererStateEvent)
+        );
+
+        engineRenderer->initializeGraphics(appCI.bIsComputeOnly);
+    }
+    else
+    {
+        appInstance->windowManager = nullptr;
+        appInstance->inputSystem = nullptr;
+        appInstance->fontManager = nullptr;
+    }
+
+    Logger::flushStream();
+    LOG("Application", "%s application start", appCI.applicationName);
+    appInstance->startApp();
+    if (engineRenderer)
+    {
+        engineRenderer->finalizeGraphicsInitialization();
+    }
+
+    Logger::flushStream();
+    appInstance->runApp();
+
+    LOG("Application", "%s application exit", appCI.applicationName);
+    appInstance->exitApp();
+
+    if (engineRenderer)
+    {
+        ModuleManager::get()->unloadModule(TCHAR("EngineRenderer"));
+    }
+    Logger::flushStream();
+
+    appInstance = nullptr;
 }
 
-const ApplicationInstance *ApplicationModule::getApplication() const { return &appInstance; }
+const ApplicationInstance *ApplicationModule::getApplication() const { return appInstance; }
 
-GenericAppWindow *ApplicationModule::mainWindow() { return windowMan.getMainWindow(); }
-
-WindowManager *ApplicationModule::getWindowManager() { return &windowMan; }
-
-bool ApplicationModule::pollWindows() { return windowMan.pollWindows(); }
+void ApplicationModule::windowCreated(GenericAppWindow *createdWindow) const
+{
+    inputSystem.registerWindow(createdWindow);
+    onWindowCreated.invoke(createdWindow);
+}
 
 DelegateHandle ApplicationModule::registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback)
 {
@@ -74,12 +138,12 @@ void ApplicationModule::unregisterOnWindowCreated(const DelegateHandle &callback
 
 DelegateHandle ApplicationModule::registerPreWindowSurfaceUpdate(AppWindowDelegate::SingleCastDelegateType callback)
 {
-    return preWindowSurfaceUpdate.bind(callback);
+    return onPreWindowSurfaceUpdate.bind(callback);
 }
 
 void ApplicationModule::unregisterPreWindowSurfaceUpdate(const DelegateHandle &callbackHandle)
 {
-    preWindowSurfaceUpdate.unbind(callbackHandle);
+    onPreWindowSurfaceUpdate.unbind(callbackHandle);
 }
 
 DelegateHandle ApplicationModule::registerOnWindowSurfaceUpdated(AppWindowDelegate::SingleCastDelegateType callback)
@@ -99,6 +163,15 @@ DelegateHandle ApplicationModule::registerOnWindowDestroyed(AppWindowDelegate::S
 
 void ApplicationModule::unregisterOnWindowDestroyed(const DelegateHandle &callbackHandle) { onWindowDestroyed.unbind(callbackHandle); }
 
+void ApplicationModule::allWindowDestroyed() const
+{
+    if (appInstance)
+    {
+        appInstance->requestExit();
+    }
+    onAllWindowsDestroyed.invoke();
+}
+
 DelegateHandle ApplicationModule::registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback)
 {
     return onAllWindowsDestroyed.bind(callback);
@@ -108,21 +181,23 @@ void ApplicationModule::unregisterAllWindowDestroyed(const DelegateHandle &callb
 
 void ApplicationModule::init()
 {
-    graphicsInitEventHandle = IRenderInterfaceModule::get()->registerToStateEvents(
-        RenderStateDelegate::SingleCastDelegateType::createObject(this, &ApplicationModule::graphicsInitEvents)
-    );
+    WeakModulePtr renderModule = ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer"));
+    if (!renderModule.expired())
+    {
+        graphicsInitEventHandle
+            = static_cast<IRenderInterfaceModule *>(renderModule.lock().get())
+                  ->registerToStateEvents(
+                      RenderStateDelegate::SingleCastDelegateType::createObject(this, &ApplicationModule::graphicsInitEvents)
+                  );
+    }
 }
 
 void ApplicationModule::release()
 {
-    if (appInstance.platformApp)
+    WeakModulePtr renderModule = ModuleManager::get()->getModule(TCHAR("EngineRenderer"));
+    if (!renderModule.expired())
     {
-        delete appInstance.platformApp;
-        appInstance.platformApp = nullptr;
+        static_cast<IRenderInterfaceModule *>(renderModule.lock().get())->unregisterToStateEvents(graphicsInitEventHandle);
     }
     windowMan.destroy();
-    if (IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get())
-    {
-        renderInterface->unregisterToStateEvents(graphicsInitEventHandle);
-    }
 }

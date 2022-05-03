@@ -15,11 +15,10 @@
 #include "Editor/Core/ImGui/ImGuiFontTextureAtlas.h"
 #include "Editor/Core/ImGui/ImGuiLib/imgui.h"
 #include "Editor/Core/ImGui/ImGuiLib/implot.h"
-#include "EngineInputCoreModule.h"
 #include "GenericAppWindow.h"
 #include "IApplicationModule.h"
-#include "InputSystem.h"
-#include "Keys.h"
+#include "InputSystem/InputSystem.h"
+#include "InputSystem/Keys.h"
 #include "Math/Vector2D.h"
 #include "Modules/ModuleManager.h"
 #include "RenderInterface/GraphicsHelper.h"
@@ -30,6 +29,7 @@
 #include "Types/Platform/PlatformFunctions.h"
 #include "WindowManager.h"
 #include "ApplicationSettings.h"
+#include "ApplicationInstance.h"
 
 using namespace ImGui;
 
@@ -214,12 +214,7 @@ void ImGuiManager::setupInputs()
     io.SetClipboardTextFn = &ImGuiManager::setClipboard;
 
     bCaptureInput = false;
-    inputSystem = nullptr;
-    WeakModulePtr inputModuleWeak = ModuleManager::get()->getModule(TCHAR("EngineInputCore"));
-    if (!inputModuleWeak.expired())
-    {
-        inputSystem = static_cast<EngineInputCoreModule *>(inputModuleWeak.lock().get())->getInputSystem();
-    }
+    inputSystem = IApplicationModule::get()->getApplication()->inputSystem;
 }
 
 void ImGuiManager::updateInputs()
@@ -228,9 +223,7 @@ void ImGuiManager::updateInputs()
 
     if (!inputSystem)
     {
-        WeakModulePtr inputModuleWeak = ModuleManager::get()->getModule(TCHAR("EngineInputCore"));
-        debugAssert(!inputModuleWeak.expired());
-        inputSystem = static_cast<EngineInputCoreModule *>(inputModuleWeak.lock().get())->getInputSystem();
+        inputSystem = IApplicationModule::get()->getApplication()->inputSystem;
     }
 
     for (const Key *key : Keys::Range())
@@ -260,8 +253,8 @@ void ImGuiManager::updateInputs()
     io.MouseWheelH = inputSystem->analogState(AnalogStates::ScrollWheelX)->currentValue;
 
     // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
-    Rect windowArea = IApplicationModule::get()->mainWindow()->windowClientRect();
-    float dpiScaleFactor = IApplicationModule::get()->mainWindow()->dpiScale();
+    Rect windowArea = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->windowClientRect();
+    float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
     io.MousePos
         = (Vector2D(
                inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue, inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
@@ -274,7 +267,7 @@ void ImGuiManager::updateInputs()
     // io.MousePos = pos * (Vector2D(ApplicationSettings::screenSize.get()) /
     // Vector2D(ApplicationSettings::surfaceSize.get()));
 
-    bCaptureInput = io.WantCaptureKeyboard | io.WantCaptureMouse;
+    bCaptureInput = io.WantCaptureKeyboard || io.WantCaptureMouse;
 }
 
 void ImGuiManager::updateTextureParameters()
@@ -345,8 +338,9 @@ void ImGuiManager::updateRenderResources(
         if (!vertexBuffer.isValid() || !idxBuffer.isValid())
         {
             // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
-            WindowCanvasRef windowCanvas
-                = IApplicationModule::get()->getWindowManager()->getWindowCanvas(IApplicationModule::get()->mainWindow());
+            WindowCanvasRef windowCanvas = IApplicationModule::get()->getApplication()->windowManager->getWindowCanvas(
+                IApplicationModule::get()->getApplication()->windowManager->getMainWindow()
+            );
             vertexBuffer.setNewSwapchain(windowCanvas);
             idxBuffer.setNewSwapchain(windowCanvas);
 
@@ -444,17 +438,17 @@ void ImGuiManager::setupRendering()
                                                                // field, allowing for large meshes.
 
     // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
-    float dpiScaleFactor = IApplicationModule::get()->mainWindow()->dpiScale();
+    float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
     // Using surface size
-    io.DisplaySize = Vector2D(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) * dpiScaleFactor;
-    textureResizedHnd
-        = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda({ [&io](Size2D oldSize, Size2D newSize)
-                                                                     {
-                                                                         float dpiScaleFactor
-                                                                             = IApplicationModule::get()->mainWindow()->dpiScale();
-                                                                         io.DisplaySize
-                                                                             = Vector2D(float(newSize.x), float(newSize.y)) * dpiScaleFactor;
-                                                                     } });
+    io.DisplaySize
+        = Vector2D(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) * dpiScaleFactor;
+    textureResizedHnd = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda(
+        [&io](Size2D oldSize, Size2D newSize)
+        {
+            float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
+            io.DisplaySize = Vector2D(float(newSize.x), float(newSize.y)) * dpiScaleFactor;
+        }
+    );
     // Using screen size
     // io.DisplaySize = Vector2D(float(ApplicationSettings::screenSize.get().x),
     // float(ApplicationSettings::screenSize.get().y)); textureResizedHnd =

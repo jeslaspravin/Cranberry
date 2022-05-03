@@ -106,15 +106,18 @@ void VulkanDevice::markGlobalConstants()
 
 bool VulkanDevice::createQueueResources()
 {
-    graphicsQueue = new VulkanQueueResource<EQueueFunction::Graphics>(queueFamiliesSupported);
-    if (graphicsQueue->isValidQueue())
+    if (!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get())
     {
-        allQueues.push_back(graphicsQueue);
-    }
-    else
-    {
-        delete graphicsQueue;
-        graphicsQueue = nullptr;
+        graphicsQueue = new VulkanQueueResource<EQueueFunction::Graphics>(queueFamiliesSupported);
+        if (graphicsQueue->isValidQueue())
+        {
+            allQueues.push_back(graphicsQueue);
+        }
+        else
+        {
+            delete graphicsQueue;
+            graphicsQueue = nullptr;
+        }
     }
 
     computeQueue = new VulkanQueueResource<EQueueFunction::Compute>(queueFamiliesSupported);
@@ -155,26 +158,32 @@ bool VulkanDevice::createQueueResources()
         }
     }
 
-    if (presentQueues.empty())
+    
+    if (GlobalRenderVariables::PRESENTING_ENABLED.get())
     {
-        LOG_WARN("VulkanDevice", "%s() : No valid surface found, Skipping creating presentation queue", __func__);
-    }
-    else
-    {
-        std::map<uint32, VkQueueFamilyProperties *> supportedQueues;
-        for (const uint32 &qIdx : presentQueues)
-        {
-            supportedQueues.insert({ qIdx, &queueFamiliesSupported[qIdx] });
-        }
+        alertIf(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get(), "Presenting enabled while GPU is used for compute only");
 
-        QueueResourceBase *q = new VulkanQueueResource<EQueueFunction::Present>(supportedQueues);
-        if (q->isValidQueue())
+        if (presentQueues.empty())
         {
-            allQueues.push_back(q);
+            LOG_ERROR("VulkanDevice", "%s() : No valid surface found, Skipping creating presentation queue", __func__);
         }
         else
         {
-            delete q;
+            std::map<uint32, VkQueueFamilyProperties *> supportedQueues;
+            for (const uint32 &qIdx : presentQueues)
+            {
+                supportedQueues.insert({ qIdx, &queueFamiliesSupported[qIdx] });
+            }
+
+            QueueResourceBase *q = new VulkanQueueResource<EQueueFunction::Present>(supportedQueues);
+            if (q->isValidQueue())
+            {
+                allQueues.push_back(q);
+            }
+            else
+            {
+                delete q;
+            }
         }
     }
 
@@ -254,6 +263,7 @@ VulkanQueueResource<QueueFunction> *getQueue(const VulkanDevice *device)
             return static_cast<VulkanQueueResource<QueueFunction> *>(queue);
         }
     }
+    // User needs to handle this case, We do not have to return generic queue
     return nullptr;
 }
 
@@ -303,6 +313,8 @@ void VulkanDevice::cacheGlobalSurfaceProperties(const WindowCanvasRef &windowCan
         }
         fatalAssert(!presentQueues.empty(), "%s() : Window is available but no queues support presenting to the window surface", __func__);
     }
+    GlobalRenderVariables::PRESENTING_ENABLED.set(true);
+    alertIf(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get(), "Presenting must not be enabled in compute only device!");
 
     VkSurfaceCapabilitiesKHR swapchainCapabilities;
     Vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, canvas->surface(), &swapchainCapabilities);
@@ -676,6 +688,8 @@ void VulkanDevice::createLogicDevice()
         queue->init();
         VulkanQueueResourceInvoker::invoke<void, CacheQueues>(queue, logicalDevice, vkGetDeviceQueue);
     }
+
+    GlobalRenderVariables::GPU_DEVICE_INITIALIZED.set(true);
 }
 
 void VulkanDevice::freeLogicDevice()

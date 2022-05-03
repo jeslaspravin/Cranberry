@@ -57,7 +57,7 @@ public:
     virtual IGraphicsInstance *currentGraphicsInstance() const = 0;
     virtual const GraphicsHelperAPI *currentGraphicsHelper() const = 0;
 
-    virtual void initializeGraphics() = 0;
+    virtual void initializeGraphics(bool bComputeOnly = false) = 0;
     virtual void finalizeGraphicsInitialization() = 0;
     virtual RenderManager *getRenderManager() const = 0;
 
