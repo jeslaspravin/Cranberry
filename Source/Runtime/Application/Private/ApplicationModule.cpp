@@ -114,6 +114,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
 
     if (engineRenderer)
     {
+        fontManager.clear();
         ModuleManager::get()->unloadModule(TCHAR("EngineRenderer"));
     }
     Logger::flushStream();

@@ -770,7 +770,7 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
     setIxMemory.resize(sceneData.size() + scenePointLights.size() + sceneSpotLights.size());
     std::pmr::monotonic_buffer_resource memRes(setIxMemory.data(), setIxMemory.size() * sizeof(GridEntity));
     std::pmr::polymorphic_allocator<GridEntity> setIxAlloc(&memRes);
-    std::pmr::unordered_set<GridEntity> setIntersections(setIxAlloc);
+    std::pmr::vector<GridEntity> setIntersections(setIxAlloc);
 
     auto fillDrawCmds = [&setIntersections, cmdList, this](std::vector<DrawIndexedIndirectCommand> &drawCmds, BufferResourceRef &drawCmdsBuffer)
     {
@@ -1100,7 +1100,7 @@ void ExperimentalEnginePBR::createScene()
     const Vector2D pillarTextureScale(1 / 3.0f, 1 / 6.0f);
     const Vector2D textureScale(1 / 3.0f);
 
-    std::list<GridEntity> entities;
+    std::vector<GridEntity> entities;
     auto pushEntity = [&entities, this](const PBRSceneEntity &entity)
     {
         entities.emplace_back(GridEntity{ GridEntity::Entity, uint32(sceneData.size()) });
@@ -1117,9 +1117,10 @@ void ExperimentalEnginePBR::createScene()
         scenePointLights.emplace_back(pointLight);
     };
 
-    for (int32 i = -1; i <= 1; i++)
+    const int32 halfCount = 1;
+    for (int32 i = -halfCount; i <= halfCount; i++)
     {
-        for (int32 j = -1; j <= 1; j++)
+        for (int32 j = -halfCount; j <= halfCount; j++)
         {
             String roomIdx = String::toString((i + 1) * 3 + j + 1);
             Vector3D offset = Vector3D(i * 1400.0f, j * 1400.0f, 0);
@@ -2753,7 +2754,7 @@ void ExperimentalEnginePBR::renderShadows(
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, spotShadowPipelineContext, *sptlit.shadowViewParams);
 #if SHADOWS_USE_CULLED_DRAW_CMDS
                 cmdList->cmdDrawIndexedIndirect(
-                    cmdBuffer, sptlit.drawCmdsBuffer, 0, sptlit.drawCmdCount, sptlit.drawCmdsBuffer->bufferStride()
+                    cmdBuffer, (*sptlit.drawCmdsBuffer), 0, sptlit.drawCmdCount, (*sptlit.drawCmdsBuffer)->bufferStride()
                 );
 #else
                 cmdList->cmdDrawIndexedIndirect(
@@ -2787,7 +2788,7 @@ void ExperimentalEnginePBR::renderShadows(
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, pointShadowPipelineContext, { faceFillQueryParam });
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, { *ptlit.shadowViewParams, instanceParameters });
 #if SHADOWS_USE_CULLED_DRAW_CMDS
-                cmdList->cmdDrawIndexedIndirect(cmdBuffer, ptlit.drawCmdsBuffer, 0, ptlit.drawCmdCount, ptlit.drawCmdsBuffer->bufferStride());
+                cmdList->cmdDrawIndexedIndirect(cmdBuffer, *ptlit.drawCmdsBuffer, 0, ptlit.drawCmdCount, (*ptlit.drawCmdsBuffer)->bufferStride());
 #else
                 cmdList->cmdDrawIndexedIndirect(
                     cmdBuffer, allEntityDrawCmds, 0, allEntityDrawCmds->bufferCount(), allEntityDrawCmds->bufferStride()
