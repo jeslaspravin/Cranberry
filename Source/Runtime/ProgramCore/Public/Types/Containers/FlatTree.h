@@ -191,6 +191,7 @@ public:
     }
     FORCE_INLINE void getAll(std::vector<NodeIdx> &outNodes) const
     {
+        outNodes.reserve(outNodes.size() + size());
         SizeType num = SizeType(nodes.totalCount());
         for (NodeIdx i = 0; i < num; ++i)
         {

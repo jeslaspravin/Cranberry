@@ -23,6 +23,28 @@ private:
     std::vector<T> data;
     CellIndex<d> cellsCount;
 
+private:
+    FORCE_INLINE uint32 cellIndexToLinearIdx(const CellIndex<d> &cell) const
+    {
+
+        uint32 idx = 0;
+        uint32 count = 1;
+        // If we are considering x as highest degree such that each x has Y * Z ys and zs
+        // Below need iterating for each x { for each y { for each z }}
+        // for (int32 i = d - 1; i >= 0; --i)
+        //{
+        //    idx += count * cell[i];
+        //    count *= cellsCount[i];
+        //}
+        // Usually we iterate like for each z { for each y { for each x }}
+        for (int32 i = 0; i < d; ++i)
+        {
+            idx += count * cell[i];
+            count *= cellsCount[i];
+        }
+        return idx;
+    }
+
 public:
     VectorND() { data.resize(0); }
 
@@ -58,25 +80,8 @@ public:
         return *this;
     }
 
-    FORCE_INLINE T &operator[](const CellIndex<d> &cell)
-    {
-        uint32 idx = 0;
-        uint32 count = 1;
-        // If we are considering x as highest degree such that each x has Y * Z ys and zs
-        // Below need iterating for each x { for each y { for each z }}
-        // for (int32 i = d - 1; i >= 0; --i)
-        //{
-        //    idx += count * cell[i];
-        //    count *= cellsCount[i];
-        //}
-        // Usually we iterate like for each z { for each y { for each x }}
-        for (int32 i = 0; i < d; ++i)
-        {
-            idx += count * cell[i];
-            count *= cellsCount[i];
-        }
-        return data[idx];
-    }
+    FORCE_INLINE T &operator[](const CellIndex<d> &cell) { return data[cellIndexToLinearIdx(cell)]; }
+    FORCE_INLINE const T &operator[](const CellIndex<d> &cell) const { return data[cellIndexToLinearIdx(cell)]; }
 
     FORCE_INLINE void clear()
     {

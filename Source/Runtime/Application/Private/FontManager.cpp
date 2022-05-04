@@ -515,7 +515,9 @@ FontManager &FontManager::operator=(FontManager &&otherManager)
     return (*this);
 }
 
-FontManager::~FontManager()
+FontManager::~FontManager() { clear(); }
+
+void FontManager::clear()
 {
     if (context)
     {
