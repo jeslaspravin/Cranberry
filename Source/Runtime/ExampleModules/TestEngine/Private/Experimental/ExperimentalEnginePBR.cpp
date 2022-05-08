@@ -123,7 +123,7 @@ struct FrameResource
     FenceRef recordingFence;
 };
 
-#define SHADOWS_USE_CULLED_DRAW_CMDS 0
+#define SHADOWS_USE_CULLED_DRAW_CMDS 1
 struct PointLight
 {
     Vector3D lightPos;
@@ -806,6 +806,7 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
         cmdList->copyToBuffer(drawCmdsBuffer, 0, drawCmds.data(), uint32(drawCmdsBuffer->getResourceSize()));
     };
 
+    std::vector<DrawIndexedIndirectCommand> drawCmds;
     // Draw spot lights
     for (SpotLight &sptlit : sceneSpotLights)
     {
@@ -819,7 +820,7 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
             setIntersections.clear();
             sceneVolume.findIntersection(setIntersections, sptRegion, true);
 
-            std::vector<DrawIndexedIndirectCommand> drawCmds;
+            drawCmds.clear();
             fillDrawCmds(drawCmds, *sptlit.drawCmdsBuffer);
             sptlit.drawCmdCount = uint32(drawCmds.size());
         }
@@ -841,7 +842,7 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
             setIntersections.clear();
             sceneVolume.findIntersection(setIntersections, ptRegion, true);
 
-            std::vector<DrawIndexedIndirectCommand> drawCmds;
+            drawCmds.clear();
             fillDrawCmds(drawCmds, *ptlit.drawCmdsBuffer);
             ptlit.drawCmdCount = uint32(drawCmds.size());
         }
@@ -1117,7 +1118,7 @@ void ExperimentalEnginePBR::createScene()
         scenePointLights.emplace_back(pointLight);
     };
 
-    const int32 halfCount = 1;
+    const int32 halfCount = 5;
     for (int32 i = -halfCount; i <= halfCount; i++)
     {
         for (int32 j = -halfCount; j <= halfCount; j++)
