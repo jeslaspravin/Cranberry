@@ -2965,7 +2965,7 @@ void ExperimentalEnginePBR::tickEngine()
         {
             Vector3D worldFwd = camera.screenToWorldFwd(mouseCoord);
             std::vector<GridEntity> entities;
-            if (sceneVolume.raycast(camera.translation(), worldFwd, 2000, entities))
+            if (sceneVolume.raycast(entities, camera.translation(), worldFwd, 2000))
             {
                 selection = entities.front();
             }
