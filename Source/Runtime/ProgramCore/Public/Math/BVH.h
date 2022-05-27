@@ -100,7 +100,7 @@ public:
                 for (const ObjectIdxType &objIdx : objs)
                 {
                     debugAssert(allObjects.isValid(objIdx));
-                    if (!resultIdxAdded[objIdx]  && box.intersect(allObjects[objIdx].getBounds()))
+                    if (!resultIdxAdded[objIdx] && box.intersect(allObjects[objIdx].getBounds()))
                     {
                         resultIdxs.emplace_back(objIdx);
                         resultIdxAdded[objIdx] = true;
@@ -153,7 +153,7 @@ public:
         }
     }
 
-    bool raycast(const Vector3D &start, const Vector3D &dir, const float &length, std::vector<StorageType> &result, bool bExistOnHit = true);
+    bool raycast(std::vector<StorageType> &result, const Vector3D &start, const Vector3D &dir, float length, bool bExistOnHit = true);
 
     void updateBounds(const StorageType &object, const AABB &oldBox, const AABB &newBox);
     bool isSameBounds(const AABB &boxOne, const AABB &boxTwo);
@@ -438,8 +438,9 @@ void BoundingVolume<StorageType>::removeAnObject(const StorageType &object)
 }
 
 template <typename StorageType>
-bool BoundingVolume<StorageType>::
-    raycast(const Vector3D &start, const Vector3D &dir, const float &length, std::vector<StorageType> &result, bool bExitOnHit /* = true */)
+bool BoundingVolume<StorageType>::raycast(
+    std::vector<StorageType> &result, const Vector3D &start, const Vector3D &dir, float length, bool bExitOnHit /* = true */
+)
 {
     AABB globalBound;
     volumeGrid.getBound(globalBound.minBound, globalBound.maxBound);
@@ -498,7 +499,7 @@ bool BoundingVolume<StorageType>::
             float timesPerAxis[3];
             float bestTime = leftLength;
 
-            bool reachedEnd = true;
+            bool bReachedEnd = true;
             for (uint32 axis = 0; axis < 3; axis++)
             {
                 if (!parallel[axis])
@@ -510,14 +511,14 @@ bool BoundingVolume<StorageType>::
                     if (bestTime > time)
                     {
                         bestTime = time;
-                        reachedEnd = false;
+                        bReachedEnd = false;
                     }
                 }
                 else
                     timesPerAxis[axis] = FLT_MAX;
             }
 
-            if (reachedEnd)
+            if (bReachedEnd)
             {
                 break;
             }
@@ -528,7 +529,15 @@ bool BoundingVolume<StorageType>::
                     continue;
                 nextCellIdx.idx[axis] += (timesPerAxis[axis] <= bestTime + SMALL_EPSILON) ? (dir[axis] > 0) ? 1 : -1 : 0;
                 if (nextCellIdx[axis] >= volumeGrid.cellCount()[axis] || nextCellIdx[axis] < 0)
-                    return result.size() > 0;
+                {
+                    bReachedEnd = true;
+                    break;
+                }
+            }
+
+            if (bReachedEnd)
+            {
+                break;
             }
 
             nextStart += dir * bestTime;
