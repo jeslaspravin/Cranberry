@@ -1009,7 +1009,7 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, c
         }
         // READ only textures ( might be copied to in transfer queue )
         {
-            // #TODO(Jeslas) : Handle attachment images
+            // TODO(Jeslas) : Handle attachment images
             std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> resources = descriptorsSet->getAllReadOnlyTextures();
             for (const auto &resource : resources)
             {
@@ -1140,7 +1140,7 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, c
             std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> resources = descriptorsSet->getAllWriteTextures();
             for (const auto &resource : resources)
             {
-                // #TODO(Jeslas) : Handle attachment images
+                // TODO(Jeslas) : Handle attachment images
                 VkPipelineStageFlags stagesUsed
                     = VkPipelineStageFlags(VulkanGraphicsHelper::shaderToPipelineStageFlags(resource.second->textureEntryPtr->data.stagesUsed));
                 std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
@@ -2018,10 +2018,9 @@ void VulkanCommandList::copyOrResolveImage(
                                       ? VkImageLayout::VK_IMAGE_LAYOUT_GENERAL
                                       : VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-    const GraphicsResource *cmdBuffer = cmdBufferManager.beginTempCmdBuffer(
-        (bCanSimpleCopy ? TCHAR("CopyImage_") : TCHAR("ResolveImage_")) + src->getResourceName() + TCHAR("_to_") + dst->getResourceName(),
-        EQueueFunction::Transfer
-    );
+    const GraphicsResource *cmdBuffer
+        = cmdBufferManager.beginTempCmdBuffer((bCanSimpleCopy ? TCHAR("CopyImage_") : TCHAR("ResolveImage_")) + src->getResourceName()
+                                               + TCHAR("_to_") + dst->getResourceName(), EQueueFunction::Transfer);
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
     // Transition to transferable layout one for src and dst

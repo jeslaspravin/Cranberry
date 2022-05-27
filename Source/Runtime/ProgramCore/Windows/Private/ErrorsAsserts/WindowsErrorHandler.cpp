@@ -269,8 +269,8 @@ long WindowsUnexpectedErrorHandler::handlerFilter(struct _EXCEPTION_POINTERS *ex
     StringStream errorStream;
     while (pExceptionRecord != NULL)
     {
-        errorStream << exceptionCodeMessage(pExceptionRecord->ExceptionCode) << TCHAR(" [0x") << std::hex << pExceptionRecord->ExceptionAddress
-                    << TCHAR("]");
+        errorStream << exceptionCodeMessage(pExceptionRecord->ExceptionCode)
+                    << TCHAR(" [0x") << std::hex << pExceptionRecord->ExceptionAddress << TCHAR("]");
         pExceptionRecord = pExceptionRecord->ExceptionRecord;
     }
     AChar *errorMsg;

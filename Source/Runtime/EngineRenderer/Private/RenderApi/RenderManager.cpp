@@ -148,7 +148,7 @@ void RenderManager::destroy()
 
 void RenderManager::renderFrame(const float &timedelta)
 {
-    // #TODO(Jeslas): Start new frame before any commands, Since not multi-threaded it is okay to call
+    // TODO(Jeslas): Start new frame before any commands, Since not multi-threaded it is okay to call
     // directly here
     bIsInsideRenderCommand = true;
     renderCmds->newFrame(timedelta);

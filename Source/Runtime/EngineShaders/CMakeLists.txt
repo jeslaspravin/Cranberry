@@ -1,4 +1,4 @@
-include(${cmake_script_dir}/EngineProjectMacros.cmake)
+include(EngineProjectMacros)
 
 get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 file(GLOB_RECURSE src_files LIST_DIRECTORIES false 

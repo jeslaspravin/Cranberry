@@ -18,6 +18,7 @@
 #include "Modules/ModuleManager.h"
 #include "Types/CoreTypes.h"
 #include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/Time.h"
 
 #include "SampleCode.h"
 
@@ -90,8 +91,7 @@ int32 main(int32 argsc, AChar **args)
     // Loading other libraries
     moduleManager->loadModule(TCHAR("ReflectionRuntime"));
     moduleManager->getOrLoadLibrary(
-        PathFunctions::combinePath(TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"), String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION)
-    );
+        PathFunctions::combinePath(TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"), String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION));
 
     Logger::flushStream();
 
@@ -108,6 +108,7 @@ int32 main(int32 argsc, AChar **args)
     }
     else
     {
+        StopWatch sw;
         ModuleSources moduleSrcs;
         if (!moduleSrcs.compileAllSources(SourceGenerator::isTemplatesModified()))
         {
@@ -127,6 +128,14 @@ int32 main(int32 argsc, AChar **args)
         {
             LOG_ERROR("ModuleReflectTool", "%s() : Generating module sources failed", __func__);
             return 1;
+        }
+        else
+        {
+            SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
+            String moduleSrcDir;
+            ProgramCmdLine::get()->getArg(moduleSrcDir, ReflectToolCmdLineConst::MODULE_SRC_DIR);
+            sw.stop();
+            LOG("ModuleReflectTool", "%s : Reflected in %0.2f seconds", PathFunctions::fileOrDirectoryName(moduleSrcDir), sw.duration());
         }
     }
 

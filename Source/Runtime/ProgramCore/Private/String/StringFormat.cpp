@@ -184,7 +184,7 @@ FormatArg::operator bool() const
     case FormatArg::Bool:
         return value.fundamentalVals.boolVal;
         break;
-    // #TODO(Jeslas) : Check if for uint8 sets all higher bits 0 in uint64
+    // TODO(Jeslas) : Check if for uint8 sets all higher bits 0 in uint64
     case FormatArg::UInt8:
     case FormatArg::UInt16:
     case FormatArg::UInt32:

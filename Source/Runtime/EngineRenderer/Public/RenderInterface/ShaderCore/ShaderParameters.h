@@ -149,7 +149,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
 
     constexpr static uint32 totalArrayElements() { return sizeof(MemberType) / sizeof(ArrayType); }
 
-    // #TODO(Jeslas) : Move this to concepts
+    // TODO(Jeslas) : Move this to concepts
     template <typename DataType>
     constexpr static std::enable_if_t<IsIndexable<DataType>::value, IndexableElementType<DataType>> *memberDataPtr(DataType &data)
     {

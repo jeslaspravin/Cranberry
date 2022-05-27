@@ -138,8 +138,7 @@ void EnvironmentMapAsset::initAsset()
                     ImageViewInfo viewInfo;
                     viewInfo.viewSubresource.baseMip = i;
                     viewInfo.viewSubresource.mipCount = 1;
-                    hdriToPrefilteredSpecParams->setTextureParam(
-                        TCHAR("outPrefilteredSpecMap"), specIrradIntermediate->getTextureResource(), i
+                    hdriToPrefilteredSpecParams->setTextureParam(TCHAR("outPrefilteredSpecMap"), specIrradIntermediate->getTextureResource(), i
                     );
                     hdriToPrefilteredSpecParams->setTextureParamViewInfo(TCHAR("outPrefilteredSpecMap"), viewInfo, i);
                 }
@@ -188,7 +187,7 @@ void EnvironmentMapAsset::initAsset()
                     {
                         {TCHAR("sourceSize"), envMap->getTextureSize().x}
                 }
-                );
+                    );
                 cmdList->cmdBindDescriptorsSets(createEnvCmdBuffer, hdriToPrefilteredSpecContext, hdriToPrefilteredSpecParams);
                 subgrpSize = static_cast<const ComputeShaderConfig *>(
                                  hdriToPrefilteredSpecContext.getPipeline()->getShaderResource()->getShaderConfig()

@@ -239,8 +239,9 @@ void visitMemberCppMethods(CXCursor cursor, LocalContext &localCntxt)
     if (clang_CXXMethod_isDefaulted(cursor))
     {
         parseFailed(
-            cursor, localCntxt.srcGenContext, __func__, TCHAR("Default functions/Constructors are not allowed for reflected types %s"), funcName
-        );
+            cursor, localCntxt.srcGenContext, __func__,
+            TCHAR("Default functions/Constructors are not allowed for reflected types %s"), funcName
+            );
         return;
     }
 
@@ -358,9 +359,9 @@ void visitClassMember(CXCursor cursor, LocalContext &localCntxt)
             if (classParseCntxt && clang_Cursor_isNull(classParseCntxt->baseClass))
             {
                 parseFailed(
-                    cursor, localCntxt.srcGenContext, __func__, TCHAR("Base class must be the first extended class[Before any interface %s]"),
-                    clang_getCursorSpelling(baseClass)
-                );
+                    cursor, localCntxt.srcGenContext, __func__,
+                    TCHAR("Base class must be the first extended class[Before any interface %s]"), clang_getCursorSpelling(baseClass)
+                    );
                 break;
             }
 
@@ -501,9 +502,8 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     {
         parseFailed(
             cursor, srcGenContext, __func__,
-            TCHAR("Interface %s must not be reflected, Remove GENERATED_CODES() and remove any field/function META_ANNOTATIONs"),
-            clang_getTypeSpelling(clang_getCursorType(cursor))
-        );
+            TCHAR("Interface %s must not be reflected, Remove GENERATED_CODES() and remove any field/function META_ANNOTATIONs"), clang_getTypeSpelling(clang_getCursorType(cursor))
+            );
         return;
     }
 

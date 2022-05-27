@@ -16,8 +16,8 @@
 #include "Reflections/Functions.h"
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
+#include "Types/TypesInfo.h"
 
-struct ReflectTypeInfo;
 class ClassProperty;
 class EnumProperty;
 class BaseProperty;

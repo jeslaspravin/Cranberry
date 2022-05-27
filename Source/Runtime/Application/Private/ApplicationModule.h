@@ -21,7 +21,7 @@ class ApplicationInstance;
 class ApplicationModule final : public IApplicationModule
 {
 private:
-    ApplicationInstance* appInstance;
+    ApplicationInstance *appInstance;
     WindowManager windowMan;
     InputSystem inputSystem;
 

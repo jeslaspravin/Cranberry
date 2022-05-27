@@ -88,7 +88,7 @@ public:
     static bool isValidFieldType(CXType clangType, CXCursor fieldCursor);
 
     // Must be in Clang impl codes
-    // #TODO(Jeslas) : Remove this once these functions become available in libclang
+    // TODO(Jeslas) : Remove this once these functions become available in libclang
     static bool clang_CXXMethod_isUserProvided(CXCursor funcCursor);
     static bool clang_CXXMethod_isDeleted(CXCursor funcCursor);
 };

@@ -82,6 +82,10 @@
 #define MI_VTABLE_OFFSET(ClassTypeName, OffsetOfClassTypeName) (((PtrInt) static_cast<OffsetOfClassTypeName *>((ClassTypeName *)1)) - 1)
 #endif
 
+#ifndef CACHELINE_SIZE
+#define CACHELINE_SIZE 64
+#endif
+
 // Math defines
 #ifndef IS_FINITE
 #define IS_FINITE std::isfinite

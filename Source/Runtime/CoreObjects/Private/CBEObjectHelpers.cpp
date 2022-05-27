@@ -29,8 +29,9 @@ void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEC
     INTERNAL_ObjectCoreAccessors::setAllocIdx(object, allocIdx);
     INTERNAL_ObjectCoreAccessors::getFlags(object) |= EObjectFlagBits::Default | EObjectFlagBits::RootObject;
     INTERNAL_ObjectCoreAccessors::setOuterAndName(
-        object, PropertyHelper::getValidSymbolName(clazz->nameString) + TCHAR("_Default"), nullptr, clazz
-    );
+        object, PropertyHelper::getValidSymbolName(clazz->nameString)
+                    + TCHAR("_Default"), nullptr, clazz
+                );
 
     if (ctor)
     {

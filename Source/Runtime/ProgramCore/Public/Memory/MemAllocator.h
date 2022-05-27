@@ -49,7 +49,7 @@ public:
 class PROGRAMCORE_EXPORT CBEMemAlloc : public AllocFromBuiltInMalloc
 {
 public:
-    CONST_EXPR static const uint32 DEFAULT_ALIGNMENT = 0;
+    CONST_EXPR static const uint32 DEFAULT_ALIGNMENT = 1;
     FORCE_INLINE static uint32 alignBy(SizeT size, uint32 alignment) { return Math::max((size > 8) ? 16 : 8, alignment); }
 
 public:

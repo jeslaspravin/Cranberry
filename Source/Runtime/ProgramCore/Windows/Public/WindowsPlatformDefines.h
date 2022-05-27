@@ -31,7 +31,7 @@
 #endif
 
 // Aligned platform specific memory allocators macro
-// #TODO(Jeslas) : Check if this is MSVC specific or specific to Windows(Found it in windows sdk so
+// TODO(Jeslas) : Check if this is MSVC specific or specific to Windows(Found it in windows sdk so
 // probably windows specific check however)
 #ifndef PLATFORM_ALIGNED_MALLOC
 #define PLATFORM_ALIGNED_MALLOC _aligned_malloc

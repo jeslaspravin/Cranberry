@@ -347,7 +347,8 @@ public:
 };
 
 template <typename ElementType, typename SparsityPolicyType>
-NODISCARD CONST_EXPR typename SparseVector<ElementType, SparsityPolicyType>::iterator SparseVector<ElementType, SparsityPolicyType>::begin() noexcept
+NODISCARD CONST_EXPR typename SparseVector<ElementType, SparsityPolicyType>::iterator
+    SparseVector<ElementType, SparsityPolicyType>::begin() noexcept
 {
     return iterator(0, *this);
 }

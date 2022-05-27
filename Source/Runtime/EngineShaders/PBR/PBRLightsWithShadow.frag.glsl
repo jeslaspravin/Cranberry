@@ -177,7 +177,7 @@ float directionalLightShadow(vec3 worldPos, vec3 worldNormal, vec3 pt2LightDir, 
 
     float bias = max(0.05 * (1.0 - dot(worldNormal, pt2LightDir)), 0.005);
     // Increasing bias as cascade plane gets far away
-    // #TODO : Find better alternative
+    // TODO : Find better alternative
     float cascadeBias = sqrt(2.0 / shadowData.cascadeFarPlane[cascadeIdx]);
     for(int i = 0; i < cascadeIdx; ++i)
     {

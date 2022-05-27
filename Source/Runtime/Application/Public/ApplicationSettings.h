@@ -31,5 +31,5 @@ extern APPLICATION_EXPORT ProgramOwnedVar<bool, ApplicationInstance> fullscreenM
 extern APPLICATION_EXPORT ProgramOwnedVar<bool, ApplicationInstance> enableVsync;
 
 extern APPLICATION_EXPORT ProgramOwnedVar<bool, ApplicationInstance> renderingOffscreen;
-     
-}
+
+} // namespace ApplicationSettings

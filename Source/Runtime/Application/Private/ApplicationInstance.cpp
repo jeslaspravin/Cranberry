@@ -65,7 +65,7 @@ void ApplicationInstance::runApp()
         }
         onTick();
 
-        // #TODO(Jeslas) : Handle render frame progress and Time data?
+        // TODO(Jeslas) : Handle render frame progress and Time data?
     }
 }
 

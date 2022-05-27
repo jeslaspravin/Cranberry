@@ -40,7 +40,8 @@ enum EObjectFlagBits : EObjectFlags
     MarkedForDelete = 0x00'00'00'00'00'00'00'02,
     /*
      * Object after deleted will be marked as deleted, deleted object
-     * remains available until the allocated slot is entirely deleted
+     * remains available until the allocated slot is entirely deleted.
+     * However It is not safe to use object in this state.
      */
     Deleted = 0x00'00'00'00'00'00'00'04,
     /*

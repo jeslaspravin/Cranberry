@@ -43,7 +43,7 @@ ProgramGlobalVar<uint64> MAX_TIMELINE_OFFSET(0);
 ProgramGlobalVar<uint64> MAX_SYNC_RES_WAIT_TIME(500000000); /*500ms*/
 
 /**
- * 
+ *
  */
 ProgramGlobalVar<bool> GPU_DEVICE_INITIALIZED{ false };
 ProgramGlobalVar<bool> PRESENTING_ENABLED{ false };

@@ -126,8 +126,9 @@ void VulkanCommandPool::reinitResources()
     else
     {
         cmdPoolInfo.vDevice->debugGraphics()->markObject(
-            (uint64)oneTimeRecordPool, getResourceName() + TCHAR("_OneTimeRecordPool"), getObjectType()
-        );
+            (uint64)oneTimeRecordPool, getResourceName()
+                                           + TCHAR("_OneTimeRecordPool"), getObjectType()
+                                       );
     }
 
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
@@ -151,8 +152,9 @@ void VulkanCommandPool::reinitResources()
     else
     {
         cmdPoolInfo.vDevice->debugGraphics()->markObject(
-            (uint64)rerecordableCommandPool, getResourceName() + TCHAR("_RerecordableCmdPool"), getObjectType()
-        );
+            (uint64)rerecordableCommandPool, getResourceName()
+                                                 + TCHAR("_RerecordableCmdPool"), getObjectType()
+                                             );
     }
 }
 
@@ -1422,7 +1424,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     // just read to finish
     if (std::find(accessors.lastReadsIn.cbegin(), accessors.lastReadsIn.cend(), cmdBuffer) != accessors.lastReadsIn.cend())
     {
-        // #TODO(Jeslas): Check if cmd not waiting on other reads is an issue here?
+        // TODO(Jeslas): Check if cmd not waiting on other reads is an issue here?
         ResourceBarrierInfo barrier;
         barrier.accessors.lastReadsIn.emplace_back(cmdBuffer);
         barrier.resource = resource.first;

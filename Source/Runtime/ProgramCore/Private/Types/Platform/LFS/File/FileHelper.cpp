@@ -54,7 +54,7 @@ bool FileHelper::isUtf32BEBom(const uint8 *byteStream, SizeT streamSize)
     );
 }
 
-// #TODO(Jeslas) : Replace this with compiler intrinsics if available
+// TODO(Jeslas) : Replace this with compiler intrinsics if available
 uint16 FileHelper::bytesSwap(uint16 value) { return (value << 8) | (value >> 8); }
 
 uint32 FileHelper::bytesSwap(uint32 value)

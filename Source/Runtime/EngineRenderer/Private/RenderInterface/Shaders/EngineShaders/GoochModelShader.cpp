@@ -55,7 +55,7 @@ public:
         static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
             {TCHAR("lightCommon"),                                           &LIGHTCOMMON_INFO},
             { TCHAR("lightArray"),                                             &LIGHTDATA_INFO},
-            {   TCHAR("viewData"), RenderSceneBase::sceneViewParamInfo().at(TCHAR("viewData"))}
+                                                           {   TCHAR("viewData"), RenderSceneBase::sceneViewParamInfo().at(TCHAR("viewData"))}
         };
 
         for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)

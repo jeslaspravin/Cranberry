@@ -1,4 +1,4 @@
-include(${cmake_script_dir}/EngineProjectMacros.cmake)
+include(EngineProjectMacros)
 
 set(private_libraries )
 set(public_libraries )

@@ -60,9 +60,11 @@ void ModuleSources::clearGenerated(const std::vector<String> &headers) const
     {
         String headerName = PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(headerFile));
 
-        String generatedFiles[] = { PathFunctions::combinePath(genDir, TCHAR("Private"), headerName + TCHAR(".gen.cpp")),
-                                    PathFunctions::combinePath(genDir, TCHAR("Public"), headerName + TCHAR(".gen.h")),
-                                    PathFunctions::combinePath(genDir, TCHAR("Private"), headerName + TCHAR(".gen.h")) };
+        String generatedFiles[] = { PathFunctions::combinePath(
+            genDir, TCHAR("Private"), headerName + TCHAR(".gen.cpp")),
+            PathFunctions::combinePath(
+                genDir, TCHAR("Public"), headerName + TCHAR(".gen.h")),
+                PathFunctions::combinePath(genDir, TCHAR("Private"), headerName + TCHAR(".gen.h")) };
 
         for (uint32 i = 0; i < ARRAY_LENGTH(generatedFiles); ++i)
         {
@@ -224,8 +226,7 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
         if (PathFunctions::isSubdirectory(sourceInfo.filePath, publicHeadersPath))
         {
             sourceInfo.generatedHeaderPath = PathFunctions::combinePath(
-                genDir, TCHAR("Public"), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".gen.h")
-            );
+                genDir, TCHAR("Public"), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".gen.h") );
             sourceInfo.headerIncl = PathFunctions::toRelativePath(sourceInfo.filePath, publicHeadersPath);
         }
         else
@@ -233,8 +234,7 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
             // This private header case happens for file which are in Private folder of srcDir or
             // ones in srcDir itself, only files in Public folder is public
             sourceInfo.generatedHeaderPath = PathFunctions::combinePath(
-                genDir, TCHAR("Private"), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".gen.h")
-            );
+                genDir, TCHAR("Private"), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".gen.h") );
             if (PathFunctions::isSubdirectory(sourceInfo.filePath, privateHeadersPath))
             {
                 sourceInfo.headerIncl = PathFunctions::toRelativePath(sourceInfo.filePath, privateHeadersPath);
@@ -254,8 +254,9 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
             // It is okay if we miss some insignificant includes as they are ignored and parsing
             // continues
             String headerPath = PathFunctions::combinePath(
-                headerFile.getHostDirectory(), PathFunctions::stripExtension(headerFile.getFileName()) + TCHAR(".H")
-            );
+                headerFile.getHostDirectory(), PathFunctions::stripExtension(headerFile.getFileName())
+                                                   + TCHAR(".H")
+                                               );
             CXTranslationUnit unit = clang_parseTranslationUnit(
                 index, TCHAR_TO_ANSI(headerPath.getChar()), argsPtrs.data(), int32(argsPtrs.size()), nullptr,
                 0

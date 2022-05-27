@@ -32,7 +32,8 @@ public:
     APPLICATION_EXPORT static IApplicationModule *get();
 
     template <typename ApplicationType>
-    requires std::is_base_of_v<ApplicationInstance, ApplicationType> void startApplication(const AppInstanceCreateInfo &appCI)
+    requires std::is_base_of_v<ApplicationInstance, ApplicationType>
+    void startApplication(const AppInstanceCreateInfo &appCI)
     {
         ApplicationType appInstance(appCI);
         startAndRun(&appInstance, appCI);

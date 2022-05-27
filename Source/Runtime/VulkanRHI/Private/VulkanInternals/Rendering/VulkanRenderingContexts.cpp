@@ -332,8 +332,9 @@ VkPipelineLayout VulkanGraphicsHelper::createPipelineLayout(class IGraphicsInsta
     {
         VulkanGraphicsHelper::debugGraphics(graphicsInstance)
             ->markObject(
-                uint64(pipelineLayout), pipeline->getResourceName() + TCHAR("_PipelineLayout"), VkObjectType::VK_OBJECT_TYPE_PIPELINE_LAYOUT
-            );
+                uint64(pipelineLayout), pipeline->getResourceName()
+                                            + TCHAR("_PipelineLayout"), VkObjectType::VK_OBJECT_TYPE_PIPELINE_LAYOUT
+                                        );
     }
 
     return pipelineLayout;

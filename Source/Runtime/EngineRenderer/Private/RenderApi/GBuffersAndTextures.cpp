@@ -152,7 +152,7 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInsta
 
     if (GlobalRenderVariables::ENABLE_EXTENDED_STORAGES)
     {
-        // #TODO(Jeslas) : Create better read only LUT
+        // TODO(Jeslas) : Create better read only LUT
         imageCI.imageFormat = EPixelDataFormat::RG_SF16;
         imageCI.dimensions = Size3D(GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, GlobalRenderVariables::MAX_ENV_MAP_SIZE / 2u, 1);
         integratedBRDF = graphicsHelper->createImage(graphicsInstance, imageCI);

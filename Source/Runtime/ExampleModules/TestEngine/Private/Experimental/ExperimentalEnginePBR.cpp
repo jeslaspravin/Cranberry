@@ -682,7 +682,7 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance *graphicsInst
         }
     }
 
-    // #TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding
+    // TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding
     // gpu/compute culling
     for (uint32 i = 0; i < pointShadowRTs.size() && pointShadowRTs[i]; ++i)
     {
@@ -709,7 +709,7 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance *graphicsInst
         [drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize()));
-        // #TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding
+        // TODO(Jeslas) : Not doing per light culling as it is faster without it, Enable after adding
         // gpu/compute culling
 #if SHADOWS_USE_CULLED_DRAW_CMDS
             setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
@@ -744,23 +744,20 @@ void PBRSceneEntity::updateMaterialParams(
         texturedMeshData.meshColor = meshBatch.color;
         texturedMeshData.rm_uvScale = { meshBatch.roughness, meshBatch.metallic, meshBatch.uvScale.x(), meshBatch.uvScale.y() };
         texturedMeshData.diffuseMapIdx
-            = (tex2dToBindlessIdx
-                   .find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_D")))
-                             ->getTexture()
-                             ->getTextureResource())
-                   ->second);
+            = (tex2dToBindlessIdx.find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_D")))
+                                                                       ->getTexture()
+                                                                       ->getTextureResource())
+                                           ->second);
         texturedMeshData.normalMapIdx
-            = (tex2dToBindlessIdx
-                   .find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_N")))
-                             ->getTexture()
-                             ->getTextureResource())
-                   ->second);
+            = (tex2dToBindlessIdx.find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_N")))
+                                                                       ->getTexture()
+                                                                       ->getTextureResource())
+                                           ->second);
         texturedMeshData.armMapIdx
-            = (tex2dToBindlessIdx
-                   .find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_ARM")))
-                             ->getTexture()
-                             ->getTextureResource())
-                   ->second);
+            = (tex2dToBindlessIdx.find(static_cast<TextureAsset *>(gEngine->getAssetManager().getAsset(meshBatch.textureName + TCHAR("_ARM")))
+                                                                       ->getTexture()
+                                                                       ->getTextureResource())
+                                           ->second);
         shaderParams->setBuffer(TCHAR("meshData"), texturedMeshData, batchShaderParamIdx[batchIdx]);
     }
 }
@@ -1074,17 +1071,18 @@ void ExperimentalEnginePBR::createScene()
     StaticMeshAsset *suzanne = static_cast<StaticMeshAsset *>(assetManager.getOrLoadAsset(TCHAR("Suzanne.obj")));
     std::array<StaticMeshAsset *, 5> assets{ cube, sphere, cylinder, cone, suzanne };
 #if NDEBUG
-    std::array<String, 8> floorTypes{ TCHAR("WoodFloor043"), TCHAR("Tiles086"),  TCHAR("Tiles074"),  TCHAR("MetalPlates006"),
-                                      TCHAR("Marble006"),    TCHAR("Ground042"), TCHAR("Ground037"), TCHAR("Gravel022") };
-    std::array<String, 6> ceilTypes{ TCHAR("WoodFloor043"),   TCHAR("Tiles108"),  TCHAR("Tiles074"),
-                                     TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Wood051") };
-    std::array<String, 9> pillarTypes{ TCHAR("WoodFloor043"),   TCHAR("Tiles108"),  TCHAR("Tiles074"),
-                                       TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Marble006"),
-                                       TCHAR("Rock035"),        TCHAR("Ground037"), TCHAR("PaintedPlaster016") };
+    std::array<String, 8> floorTypes{
+        TCHAR("WoodFloor043"), TCHAR("Tiles086"),  TCHAR("Tiles074"),  TCHAR("MetalPlates006"),
+                                                                             TCHAR("Marble006"),    TCHAR("Ground042"), TCHAR("Ground037"), TCHAR("Gravel022") };
+    std::array<String, 6> ceilTypes{
+        TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"), TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Wood051") };
+    std::array<String, 9> pillarTypes{
+        TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"),  TCHAR("MetalPlates006"),   TCHAR("Marble006"),
+                                                                                                       TCHAR("Marble006"),    TCHAR("Rock035"),  TCHAR("Ground037"), TCHAR("PaintedPlaster016") };
     std::array<String, 15> textures{ TCHAR("Bricks059"),      TCHAR("Gravel022"),         TCHAR("Ground037"), TCHAR("Ground042"),
-                                     TCHAR("Leather028"),     TCHAR("Marble006"),         TCHAR("Metal034"),  TCHAR("Metal038"),
-                                     TCHAR("MetalPlates006"), TCHAR("PaintedPlaster016"), TCHAR("Rock035"),   TCHAR("Tiles086"),
-                                     TCHAR("Tiles074"),       TCHAR("Tiles108"),          TCHAR("Wood051") };
+                                                                                                                    TCHAR("Leather028"),     TCHAR("Marble006"),         TCHAR("Metal034"),  TCHAR("Metal038"),
+                                                                                                                                                                                                   TCHAR("MetalPlates006"), TCHAR("PaintedPlaster016"), TCHAR("Rock035"),   TCHAR("Tiles086"),
+                                                                                                                                                                                                                                                                                  TCHAR("Tiles074"),       TCHAR("Tiles108"),          TCHAR("Wood051") };
 #else
     std::array<String, 1> floorTypes{ TCHAR("Tiles074") };
     std::array<String, 1> ceilTypes{ TCHAR("Tiles074") };
@@ -1496,9 +1494,7 @@ void ExperimentalEnginePBR::createShaderParameters(IGraphicsInstance *graphicsIn
         // as 1 and 2 are light common and textures
         lightData[i] = graphicsHelper->createShaderParameters(graphicsInstance, pbrModelNoShadowDescLayout, { 1, 2 });
         lightData[i]->setResourceName(
-            TCHAR("Light_") + String::toString(i * ARRAY_LENGTH(PBRLightArray::spotLits)) + TCHAR("to")
-            + String::toString(i * ARRAY_LENGTH(PBRLightArray::spotLits) + ARRAY_LENGTH(PBRLightArray::spotLits))
-        );
+            TCHAR("Light_") + String::toString(i * ARRAY_LENGTH(PBRLightArray::spotLits)) + TCHAR("to") + String::toString(i * ARRAY_LENGTH(PBRLightArray::spotLits) + ARRAY_LENGTH(PBRLightArray::spotLits)));
     }
     // as 1 and 2 are light common and textures
     lightDataShadowed = graphicsHelper->createShaderParameters(graphicsInstance, pbrModelWithShadowDescLayout, { 1, 2 });
@@ -2119,7 +2115,7 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
 
     fatalAssert(
         GlobalRenderVariables::ENABLE_GEOMETRY_SHADERS, TCHAR("Geometry shader feature not supported in this device, so cannot use shadows")
-    );
+        );
     spotShadowPipelineContext.forVertexType = pointShadowPipelineContext.forVertexType = directionalShadowPipelineContext.forVertexType
         = EVertexType::StaticMesh;
     spotShadowPipelineContext.materialName = pointShadowPipelineContext.materialName = directionalShadowPipelineContext.materialName
@@ -2534,7 +2530,7 @@ void ExperimentalEnginePBR::frameRender(
                     {
                         {TCHAR("debugDrawFlags"), uint32(renderFlags)}
                 }
-                );
+                    );
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawPbrWithShadowPipelineContext, { queryParam });
 
                 cmdList->cmdBindDescriptorsSets(
@@ -2682,7 +2678,7 @@ void ExperimentalEnginePBR::updateCamGizmoCapture(class IRenderCommandList *cmdL
                 {
                     {TCHAR("ptSize"), 1.0f}
             }
-            );
+                );
             cmdList->cmdBindDescriptorsSets(cmdBuffer, drawLinesDWritePipelineCntxt, camViewAndInstanceParams);
             cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getLineGizmoVertexIndexBuffers().first }, { 0 });
             cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getLineGizmoVertexIndexBuffers().second);
@@ -2789,7 +2785,9 @@ void ExperimentalEnginePBR::renderShadows(
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, pointShadowPipelineContext, { faceFillQueryParam });
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, { *ptlit.shadowViewParams, instanceParameters });
 #if SHADOWS_USE_CULLED_DRAW_CMDS
-                cmdList->cmdDrawIndexedIndirect(cmdBuffer, *ptlit.drawCmdsBuffer, 0, ptlit.drawCmdCount, (*ptlit.drawCmdsBuffer)->bufferStride());
+                cmdList->cmdDrawIndexedIndirect(
+                    cmdBuffer, *ptlit.drawCmdsBuffer, 0, ptlit.drawCmdCount, (*ptlit.drawCmdsBuffer)->bufferStride()
+                );
 #else
                 cmdList->cmdDrawIndexedIndirect(
                     cmdBuffer, allEntityDrawCmds, 0, allEntityDrawCmds->bufferCount(), allEntityDrawCmds->bufferStride()
@@ -2856,7 +2854,7 @@ void ExperimentalEnginePBR::debugFrameRender(
                 {
                     {TCHAR("ptSize"), 1.0f}
             }
-            );
+                );
             cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneEntity.meshAsset->getTbnVertexBuffer() }, { 0 });
             // Drawing with instance from one of batch as we do not care about material idx
             cmdList->cmdDrawVertices(cmdBuffer, 0, uint32(sceneEntity.meshAsset->tbnVerts.size()), sceneEntity.instanceParamIdx[0]);
@@ -2880,9 +2878,9 @@ void ExperimentalEnginePBR::debugFrameRender(
             std::vector<std::pair<String, std::any>> pushCnsts{
                 {        TCHAR("gridCellSize"),         gridCellSize},
                 {      TCHAR("gridExtendSize"),       gridExtendSize},
-                {TCHAR("cellMinPixelCoverage"), cellMinPixelCoverage},
-                {           TCHAR("thinColor"),  Vector4D(thinColor)},
-                {          TCHAR("thickColor"), Vector4D(thickColor)}
+                                                           {TCHAR("cellMinPixelCoverage"), cellMinPixelCoverage},
+                                                             {           TCHAR("thinColor"),  Vector4D(thinColor)},
+                                                               {          TCHAR("thickColor"), Vector4D(thickColor)}
             };
             GraphicsPipelineState pipelineState;
             pipelineState.pipelineQuery = { EPolygonDrawMode::Fill, ECullingMode::None };

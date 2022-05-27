@@ -15,6 +15,7 @@
 #include "Types/CoreDefines.h"
 #include "Types/CoreTypes.h"
 #include "Types/HashTypes.h"
+#include "String/String.h"
 #include "Types/Templates/TypeTraits.h"
 #include "Types/Templates/ValueTraits.h"
 
@@ -129,6 +130,7 @@ FORCE_INLINE std::vector<const ReflectTypeInfo *> typeInfoListFrom()
 
 #define REFLECTTYPEQUALIFIER_STR(QualifierEnum)                                                                                                \
     << (BIT_SET(ti.qualifiers, EReflectTypeQualifiers::Type::QualifierEnum) ? TCHAR(" " #QualifierEnum) : TCHAR(""))
+
 // Logger overrides
 FORCE_INLINE OutputStream &operator<<(OutputStream &stream, const ReflectTypeInfo &ti)
 {
