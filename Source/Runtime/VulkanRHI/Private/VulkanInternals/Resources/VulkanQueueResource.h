@@ -287,7 +287,7 @@ public:
             VulkanGraphicsHelper::debugGraphics(IVulkanRHIModule::get()->getGraphicsInstance())
                 ->markObject(
                     (uint64)queues[index], getObjectName().append(TCHAR("Queue_")).append(String::toString(priorities[index])), getObjectType()
-                );
+                                           );
         }
 
         int32 qIdx = 0;

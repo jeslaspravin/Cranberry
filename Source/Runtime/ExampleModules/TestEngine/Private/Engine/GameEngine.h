@@ -50,7 +50,6 @@ using EngineEvents = Event<class GameEngine>;
 class GameEngine
 {
 private:
-
 protected:
     IRenderInterfaceModule *rendererModule;
     IApplicationModule *applicationModule;
@@ -69,7 +68,7 @@ protected:
 public:
     virtual ~GameEngine() = default;
 
-    void startup(ApplicationInstance * appInst);
+    void startup(ApplicationInstance *appInst);
     void engineLoop();
     void quit();
 

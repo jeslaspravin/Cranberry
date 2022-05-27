@@ -18,7 +18,7 @@
 #define META_FLAG_ENTRY_FIRST(Flag) TCHAR(#Flag)
 #define META_FLAG_ENTRY(Flag) , TCHAR(#Flag)
 
-// #TODO(Jeslas) : Change ; to something better
+// TODO(Jeslas) : Change ; to something better
 std::vector<String> ParserHelper::parseMeta(std::vector<String> &metaData, const String &annotatedStr)
 {
     std::vector<String> metaFlags;

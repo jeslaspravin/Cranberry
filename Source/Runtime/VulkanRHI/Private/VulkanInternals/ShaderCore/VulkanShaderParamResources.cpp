@@ -468,8 +468,8 @@ VulkanVertexUniqDescLayout::VulkanVertexUniqDescLayout(const ShaderResource *sha
 
 String VulkanVertexUniqDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + TCHAR("_DescriptorsSetLayout")
-           + String::toString(ShaderParameterUtility::INSTANCE_UNIQ_SET);
+    return respectiveShaderRes->getResourceName()
+           + TCHAR("_DescriptorsSetLayout") + String::toString(ShaderParameterUtility::INSTANCE_UNIQ_SET);
 }
 
 void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
@@ -529,8 +529,8 @@ VulkanBindlessDescLayout::VulkanBindlessDescLayout(const ShaderResource *shaderR
 
 String VulkanBindlessDescLayout::getObjectName() const
 {
-    return respectiveShaderRes->getResourceName() + TCHAR("_BindlessDescriptorsSetLayout")
-           + String::toString(ShaderParameterUtility::BINDLESS_SET);
+    return respectiveShaderRes->getResourceName()
+           + TCHAR("_BindlessDescriptorsSetLayout") + String::toString(ShaderParameterUtility::BINDLESS_SET);
 }
 
 //////////////////////////////////////////////////////////////////////////

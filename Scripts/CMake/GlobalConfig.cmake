@@ -9,6 +9,10 @@
 #  License can be read in LICENSE file at this repository's root
 # 
 
+file(REAL_PATH "Scripts/CMake" cmake_script_dir BASE_DIRECTORY ${PROJECT_SOURCE_DIR})
+# Setup module lookup directories, So that instead of including like include(${cmake_script_dir}/EngineFileUtilities.cmake) we can just do include(EngineFileUtilities)
+list(APPEND CMAKE_MODULE_PATH ${cmake_script_dir})
+
 # Make sure we are targetting 64 bit
 if (NOT ${CMAKE_SIZEOF_VOID_P} EQUAL 8)    
     message(FATAL_ERROR "Only 64bit platform is supported!")

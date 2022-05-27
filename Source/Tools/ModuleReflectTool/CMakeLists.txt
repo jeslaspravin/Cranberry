@@ -1,5 +1,5 @@
-include(${cmake_script_dir}/EngineProjectMacros.cmake)
-include(${cmake_script_dir}/EngineFileUtilities.cmake)
+include(EngineProjectMacros)
+include(EngineFileUtilities)
 
 # Since Clang creates more targets
 get_filename_component(directory_name ${CMAKE_CURRENT_LIST_DIR} NAME)

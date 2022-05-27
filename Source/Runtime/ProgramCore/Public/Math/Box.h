@@ -306,26 +306,26 @@ public:
     }
 
     /**
-    * Box<T, d>::raycastFast
-    *
-    * Access: public  
-    *
-    * @param const T & startPoint 
-    * @param const T & dir 
-    * @param const T & invDir 
-    * @param float length 
-    * @param float invLength 
-    * @param const bool * const parallel 
-    * @param float & outEnterLength - Fraction of total length at which ray enters the volume. Valid if ray enters the volume
-    * @param T & outEnterPoint 
-    * @param float & outExitLength - Fraction of total length at which ray exits the volume. Valid if ray exits the volume
-    * @param T & outExitPoint 
-    *
-    * @return bool
-    */
+     * Box<T, d>::raycastFast
+     *
+     * Access: public
+     *
+     * @param const T & startPoint
+     * @param const T & dir
+     * @param const T & invDir
+     * @param float length
+     * @param float invLength
+     * @param const bool * const parallel
+     * @param float & outEnterLength - Fraction of total length at which ray enters the volume. Valid if ray enters the volume
+     * @param T & outEnterPoint
+     * @param float & outExitLength - Fraction of total length at which ray exits the volume. Valid if ray exits the volume
+     * @param T & outExitPoint
+     *
+     * @return bool
+     */
     bool raycastFast(
-        const T &startPoint, const T &dir, const T &invDir, float length, float invLength, const bool *const parallel,
-        float &outEnterLength, T &outEnterPoint, float &outExitLength, T &outExitPoint
+        const T &startPoint, const T &dir, const T &invDir, float length, float invLength, const bool *const parallel, float &outEnterLength,
+        T &outEnterPoint, float &outExitLength, T &outExitPoint
     ) const
     {
         T s2Min = minBound - startPoint;

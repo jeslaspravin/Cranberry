@@ -63,7 +63,6 @@ public:
     FontManager *fontManager;
 
 private:
-
 public:
     ApplicationInstance() = delete;
     APPLICATION_EXPORT ApplicationInstance(const AppInstanceCreateInfo &createInfo);

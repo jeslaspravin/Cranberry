@@ -158,7 +158,6 @@ bool VulkanDevice::createQueueResources()
         }
     }
 
-    
     if (GlobalRenderVariables::PRESENTING_ENABLED.get())
     {
         alertIf(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get(), "Presenting enabled while GPU is used for compute only");

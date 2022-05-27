@@ -495,7 +495,7 @@ endmacro()
 # C# related functions
 ########################################################################################################
 macro(generate_csharp_console_project)
-    include(${cmake_script_dir}/EngineFileUtilities.cmake)
+    include(EngineFileUtilities)
 
     get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 

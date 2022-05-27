@@ -185,7 +185,7 @@ public:                                                                         
             new typename NewTypeName##TemplatesDefine## ::##NewTypeName##_Type(                                                                \
                 new typename NewTypeName##TemplatesDefine## ::NewType(), &NewTypeName##TemplatesDefine## ::delFn,                              \
                 TCHAR(#NewTypeName #TemplatesDefine)                                                                                           \
-            )                                                                                                                                  \
+                )                                                                                                                              \
         );                                                                                                                                     \
                                                                                                                                                \
     template##NewTypeTemplates##void NewTypeName##TemplatesDefine## ::delFn(GraphicsResource *resource) { delete resource; }                   \

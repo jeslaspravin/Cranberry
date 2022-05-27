@@ -58,9 +58,10 @@ int appMain(String cmdLine, void *appPlatformInstance)
     appCI.bUseGpu = true;
 
     // Main Core
-    bool bMandatoryModulesLoaded = ModuleManager::get()->loadModule(TCHAR("ProgramCore"))
-                                   && ModuleManager::get()->loadModule(TCHAR("ReflectionRuntime"))
-                                   && ModuleManager::get()->loadModule(TCHAR("CoreObjects"));
+    bool bMandatoryModulesLoaded = ModuleManager::get()->loadModule(
+        TCHAR("ProgramCore")
+        )
+        && ModuleManager::get()->loadModule(TCHAR("ReflectionRuntime")) && ModuleManager::get()->loadModule(TCHAR("CoreObjects"));
     fatalAssert(bMandatoryModulesLoaded, "Loading mandatory modules failed");
 
     UnexpectedErrorHandler::getHandler()->registerFilter();

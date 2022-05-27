@@ -29,7 +29,7 @@ public:
     bool isValidWindow() const override;
     void *getWindowHandle() const override { return windowsHandle; }
 
-    void pushEvent(uint32 eventType, LambdaFunction<void> function);
+    void pushEvent(uint32 eventType, LambdaFunction<void> &&function);
     void activateWindow() const;
     void deactivateWindow() const;
     void windowResizing(uint32 width, uint32 height) const;

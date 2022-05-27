@@ -37,10 +37,11 @@ DebugMessengerData &VulkanDebugLogger::getData()
 
 String VulkanDebugLogger::messageTypeStr(VkDebugUtilsMessageTypeFlagsEXT messageTypes)
 {
-    String messageType = messageTypes & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT ? TCHAR("[General]")
-                         : messageTypes & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-                             ? TCHAR("[Performance]")
-                             : TCHAR("[Validation]");
+    String messageType = messageTypes & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+        ? TCHAR("[General]")
+        : messageTypes & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
+        ? TCHAR("[Performance]")
+        : TCHAR("[Validation]");
     return messageType;
 }
 

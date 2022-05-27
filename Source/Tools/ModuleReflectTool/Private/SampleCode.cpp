@@ -277,7 +277,7 @@ void visitTUCusor(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         visitStructs(cursor, srcParsedInfo);
         return;
     case CXCursor_UnionDecl:
-        // #TODO(Jeslas) : Add visit union function if needed
+        // TODO(Jeslas) : Add visit union function if needed
         visitStructs(cursor, srcParsedInfo);
         return;
     case CXCursor_ClassDecl:
@@ -836,7 +836,7 @@ void visitMacroDefinition(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     CXStringRef macroName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     LOG("CppReflectionParser", "%s() : Macro %s defined as %s", __func__, macroName, tokenStr);
 
-    // #TODO(Jeslas) : Find how to get macro's value and arguments if the cursor is function like macro
+    // TODO(Jeslas) : Find how to get macro's value and arguments if the cursor is function like macro
     clang_disposeTokens(tu, token, 1);
 }
 
@@ -851,7 +851,7 @@ void visitMacroExpansion(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     CXStringRef macroName(new CXStringWrapper(clang_getCursorSpelling(cursor)));
     LOG("CppReflectionParser", "%s() : Macro %s expanded as %s", __func__, macroName, tokenStr);
 
-    // #TODO(Jeslas) : Find how to get macro's expanded value and arguments passed in if the cursor is
+    // TODO(Jeslas) : Find how to get macro's expanded value and arguments passed in if the cursor is
     // function like macro
     clang_disposeTokens(tu, token, 1);
 }
@@ -956,8 +956,8 @@ void visitClassMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         // type by getting cursor's type
         int32 bIsBaseAbstract = clang_CXXRecord_isAbstract(clang_getTypeDeclaration(clang_getCursorType(cursor)));
         LOG("CppReflectionParser", "%s() : Inherited from %s(%s and %s) with %s access specifier", __func__, cursorName,
-            (!!bIsBaseAbstract) ? TCHAR("Abstract") : TCHAR("Non-Abstract"), (!!bIsBaseVirtual) ? TCHAR("Virtual") : TCHAR("Non-Virtual"),
-            access);
+            (!!bIsBaseAbstract) ? TCHAR("Abstract")
+                                : TCHAR("Non-Abstract"), (!!bIsBaseVirtual) ? TCHAR("Virtual") : TCHAR("Non-Virtual"), access);
         break;
     }
     case CXCursor_AnnotateAttr:
@@ -1176,8 +1176,8 @@ void visitStructMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         // type by getting cursor's type
         int32 bIsBaseAbstract = clang_CXXRecord_isAbstract(clang_getTypeDeclaration(clang_getCursorType(cursor)));
         LOG("CppReflectionParser", "%s() : Inherited from %s(%s and %s) with %s access specifier", __func__, cursorName,
-            (!!bIsBaseAbstract) ? TCHAR("Abstract") : TCHAR("Non-Abstract"), (!!bIsBaseVirtual) ? TCHAR("Virtual") : TCHAR("Non-Virtual"),
-            access);
+            (!!bIsBaseAbstract) ? TCHAR("Abstract")
+                                : TCHAR("Non-Abstract"), (!!bIsBaseVirtual) ? TCHAR("Virtual") : TCHAR("Non-Virtual"), access);
         break;
     }
     case CXCursor_AnnotateAttr:
@@ -1403,10 +1403,10 @@ void visitMemberCppMethods(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
     int32 bIsStatic = clang_CXXMethod_isStatic(cursor);
     int32 bIsConst = clang_CXXMethod_isConst(cursor);
     LOG("CppReflectionParser", "%s() : Function %s - %s%s", __func__, funcName,
-        (!!bIsStatic)  ? TCHAR("Static and ")
-        : (!!bIsConst) ? TCHAR("Const and ")
-                       : TCHAR(""),
-        (!!bIsVirtual) ? (!!bIsPureVirtual) ? TCHAR("Pure virtual") : TCHAR("virtual") : TCHAR("Non-virtual"));
+        (!!bIsStatic) ? TCHAR("Static and ")
+                      : (!!bIsConst)
+        ? TCHAR("Const and ")
+        : TCHAR(""), (!!bIsVirtual) ? (!!bIsPureVirtual) ? TCHAR("Pure virtual") : TCHAR("virtual") : TCHAR("Non-virtual"));
     // If not pure virtual method then print all base methods
     if (bIsVirtual && !bIsPureVirtual)
     {
@@ -1512,9 +1512,9 @@ void testLibClangParsing(String srcDir) noexcept
     // Header.H - H has to be capital but why?
     // It is okay if we miss some insignificant includes as they are ignored and parsing continues
     CXTranslationUnit unit = clang_parseTranslationUnit(
-        index, TCHAR_TO_ANSI(PathFunctions::combinePath(srcDir, TCHAR("SampleHeader.H")).getChar()), args, 3, nullptr, 0,
-        CXTranslationUnit_KeepGoing
-    );
+        index,
+        TCHAR_TO_ANSI(PathFunctions::combinePath(srcDir, TCHAR("SampleHeader.H")).getChar()), args, 3, nullptr, 0, CXTranslationUnit_KeepGoing
+        );
     // CXTranslationUnit unit = clang_createTranslationUnitFromSourceFile(index
     //     , PathFunctions::combinePath(srcDir, "Header.H").getChar()
     //     , 3, args, 0, nullptr);
@@ -1747,7 +1747,7 @@ void testRegex()
     };
     std::unordered_map<String, FormatArg> args2{
         {      TCHAR("name"),  TCHAR("Subity Jerald")},
-        {    TCHAR("Match2"),                    8265},
+          {    TCHAR("Match2"),                    8265},
         {   TCHAR("HelloMe"), *typeInfoFrom<uint32>()},
         {TCHAR("PrintInner"),                    true}
     };
@@ -1762,7 +1762,7 @@ void testRegex()
             {
                 {TCHAR("Peps"), peps}
     }
-        ));
+            ));
 
     String testStr3 = TCHAR("ID : {{Count}}{{#MSectFormat}}{{!This will be replaced}}\
         {{#CanRecurse}}\n{{>Recurse}}\n{{/CanRecurse}}{{/MSectFormat}}");
@@ -1801,8 +1801,8 @@ void testRegex()
     MustacheContext context2{
         .args = {       { TCHAR("CanRecurse"), FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::canRecurse) },
                  { TCHAR("Count"), FormatArg::ArgGetter::createObject(&dynDataTest, &TestDynamicFormatData::getCount) } },
-        .sectionFormatters
-        = {{ TCHAR("MSectFormat"), MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat) } }
+                  .sectionFormatters
+                  = {{ TCHAR("MSectFormat"), MustacheSectionFormatter::createObject(&dynDataTest, &TestDynamicFormatData::customFormat) } }
     };
     LOG("Test", "Mustache render dynamically modified recursive loop \n%s",
         sectFormatter.render(
@@ -1810,7 +1810,7 @@ void testRegex()
             {
                 {TCHAR("Recurse"), sectFormatter}
     }
-        ));
+            ));
 
     LOG("Test", "%s", PropertyHelper::getValidSymbolName(TCHAR("class <Niown>>")));
 }
@@ -1885,8 +1885,7 @@ struct RegisterPropertyFactory_TestPropertyClass
         );
 
         IReflectionRuntimeModule::get()->registerClassFactory(
-            STRID("TestPropertyClass"), typeInfoFrom<TestPropertyClass>(),
-            { &ThisType::createTestPropertyClassProperty, &ThisType::initTestPropertyClassProperty }
+            STRID("TestPropertyClass"), typeInfoFrom<TestPropertyClass>(), { &ThisType::createTestPropertyClassProperty, &ThisType::initTestPropertyClassProperty }
         );
     }
 
@@ -1905,10 +1904,7 @@ struct RegisterPropertyFactory_TestPropertyClass
     static BaseProperty *createstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property()
     {
         BaseProperty *prop = new PairProperty(
-            STRID("std::pair<const int32, TestPropertyClass::TestInnerStruct>"),
-            TCHAR("std::pair<const int32, TestPropertyClass::TestInnerStruct>"),
-            typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>()
-        );
+            STRID("std::pair<const int32, TestPropertyClass::TestInnerStruct>"), TCHAR("std::pair<const int32, TestPropertyClass::TestInnerStruct>"), typeInfoFrom<std::pair<const int32, TestPropertyClass::TestInnerStruct>>());
         return prop;
     }
     static void initstd__pair_const_int32__TestPropertyClass__TestInnerStruct_Property(BaseProperty *prop)
@@ -1922,8 +1918,7 @@ struct RegisterPropertyFactory_TestPropertyClass
     static BaseProperty *createstd__set_uint64_Property()
     {
         BaseProperty *prop = new ContainerPropertyImpl<std::set<uint64>>(
-            STRID("std::set<uint64>"), TCHAR("std::set<uint64>"), typeInfoFrom<std::set<uint64>>()
-        );
+            STRID("std::set<uint64>"), TCHAR("std::set<uint64>"), typeInfoFrom<std::set<uint64>>());
         return prop;
     }
     static void initstd__set_uint64_Property(BaseProperty *prop)
@@ -1936,9 +1931,7 @@ struct RegisterPropertyFactory_TestPropertyClass
     static BaseProperty *createstd__map_int32__TestPropertyClass__TestInnerStruct_Property()
     {
         BaseProperty *prop = new MapProperty(
-            STRID("std::map<int32, TestPropertyClass::TestInnerStruct>"), TCHAR("std::map<int32, TestPropertyClass::TestInnerStruct>"),
-            typeInfoFrom<std::map<int32, TestPropertyClass::TestInnerStruct>>()
-        );
+            STRID("std::map<int32, TestPropertyClass::TestInnerStruct>"), TCHAR("std::map<int32, TestPropertyClass::TestInnerStruct>"), typeInfoFrom<std::map<int32, TestPropertyClass::TestInnerStruct>>());
         return prop;
     }
     static void initstd__map_int32__TestPropertyClass__TestInnerStruct_Property(BaseProperty *prop)
@@ -1962,8 +1955,8 @@ struct RegisterPropertyFactory_TestPropertyClass
         prop->addCtorPtr()
             ->setFieldAccessor(EPropertyAccessSpecifier::Public)
             ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<TestPropertyClass *>())
-            ->addFunctionParamProperty(STRID("newName"), TCHAR("newName"), IReflectionRuntimeModule::getType<String>())
-            ->constructFuncPointer<GlobalFunctionWrapperImpl<TestPropertyClass *, String>>(&ThisType::TestPropertyClassCtor);
+            ->addFunctionParamProperty(
+                STRID("newName"), TCHAR("newName"), IReflectionRuntimeModule::getType<String>())->constructFuncPointer<GlobalFunctionWrapperImpl<TestPropertyClass *, String>>(&ThisType::TestPropertyClassCtor);
         prop->addMemberFunc(STRID("printNewNameStr"), TCHAR("printNewNameStr"))
             ->setFieldAccessor(EPropertyAccessSpecifier::Public)
             ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void>())
@@ -2008,16 +2001,14 @@ struct RegisterPropertyFactory_TestPropertyClass_TestInnerStruct
         );
 
         IReflectionRuntimeModule::get()->registerClassFactory(
-            STRID("TestPropertyClass::TestInnerStruct"), typeInfoFrom<TestPropertyClass::TestInnerStruct>(),
-            { &ThisType::createTestPropertyClass_TestInnerStructProperty, &ThisType::initTestPropertyClass_TestInnerStructProperty }
+            STRID("TestPropertyClass::TestInnerStruct"), typeInfoFrom<TestPropertyClass::TestInnerStruct>(), { &ThisType::createTestPropertyClass_TestInnerStructProperty, &ThisType::initTestPropertyClass_TestInnerStructProperty }
         );
     }
 
     static BaseProperty *createstd_vector_StringProperty()
     {
         BaseProperty *prop = new ContainerPropertyImpl<std::vector<String>>(
-            STRID("std::vector<String>"), TCHAR("std::vector<String>"), typeInfoFrom<std::vector<String>>()
-        );
+            STRID("std::vector<String>"), TCHAR("std::vector<String>"), typeInfoFrom<std::vector<String>>());
         return prop;
     }
     static void initstd_vector_StringProperty(BaseProperty *prop)
@@ -2030,9 +2021,8 @@ struct RegisterPropertyFactory_TestPropertyClass_TestInnerStruct
     static ClassProperty *createTestPropertyClass_TestInnerStructProperty()
     {
         ClassProperty *prop = (new ClassProperty(
-            STRID("TestPropertyClass::TestInnerStruct"), TCHAR("TestPropertyClass::TestInnerStruct"),
-            typeInfoFrom<TestPropertyClass::TestInnerStruct>()
-        ));
+            STRID("TestPropertyClass::TestInnerStruct"), TCHAR("TestPropertyClass::TestInnerStruct"), typeInfoFrom<TestPropertyClass::TestInnerStruct>())
+        );
         return prop;
     }
     static void initTestPropertyClass_TestInnerStructProperty(ClassProperty *prop)
@@ -2102,8 +2092,7 @@ void testTemplateReflectionGeneration()
     String appDir = FileSystemFunctions::applicationDirectory(appName);
     appName = PathFunctions::stripExtension(appName);
     std::vector<String> templateFiles = FileSystemFunctions::listFiles(
-        PathFunctions::toAbsolutePath(TCHAR("../../../Source/Tools/ModuleReflectTool/Templates"), appDir), true, TCHAR("*.mustache")
-    );
+        PathFunctions::toAbsolutePath(TCHAR("../../../Source/Tools/ModuleReflectTool/Templates"), appDir), true, TCHAR("*.mustache") );
     std::unordered_map<String, MustacheStringFormatter> templates;
     templates.reserve(templateFiles.size());
     for (const String &filePath : templateFiles)
@@ -2155,8 +2144,8 @@ void testTemplateReflectionGeneration()
     {
         MustacheContext &mapElemPair = allReflectTypes.emplace_back();
         mapElemPair.args[TCHAR("TypeName")] = TCHAR("std::pair<const int32, TestPropertyClass::TestInnerStruct>");
-        mapElemPair.args[TCHAR("SanitizedName")]
-            = PropertyHelper::getValidSymbolName(TCHAR("std::pair<const int32, TestPropertyClass::TestInnerStruct>"));
+        mapElemPair.args
+            [TCHAR("SanitizedName")] = PropertyHelper::getValidSymbolName(TCHAR("std::pair<const int32, TestPropertyClass::TestInnerStruct>"));
         mapElemPair.args[TCHAR("PropertyTypeName")] = TCHAR("BaseProperty");
         mapElemPair.args[TCHAR("RegisterFunctionName")] = TCHAR("registerTypeFactory");
 

@@ -347,7 +347,7 @@ void ExperimentalEngineGoochModel::createImages(IGraphicsInstance *graphicsInsta
     SamplerCreateInfo samplerCI{
         .filtering = ESamplerFiltering::Nearest,
         .mipFiltering = ESamplerFiltering::Nearest,
-        .tilingMode = {ESamplerTilingMode::Repeat,                       ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
+        .tilingMode = {ESamplerTilingMode::Repeat,                                 ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
         .mipLodRange = {                         0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get())                          },
         .resourceName = TCHAR("NearestSampler")
     };
@@ -645,9 +645,7 @@ void ExperimentalEngineGoochModel::createShaderParameters(
     singleColShaderParams->setResourceName(TCHAR("SingleColorShaderParams"));
     sceneShaderUniqParams[&drawSmPipelineContext] = singleColShaderParams;
 
-    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
-        application->windowManager->getMainWindow()
-    );
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
     lightTextures.setNewSwapchain(windowCanvas);
     drawQuadTextureDescs.setNewSwapchain(windowCanvas);
@@ -667,9 +665,7 @@ void ExperimentalEngineGoochModel::createShaderParameters(
         // as 1 and 2 are light common and textures
         lightData[i] = graphicsHelper->createShaderParameters(graphicsInstance, goochModelDescLayout, { 1, 2 });
         lightData[i]->setResourceName(
-            TCHAR("Light_") + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + TCHAR("to")
-            + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights))
-        );
+            TCHAR("Light_") + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights)) + TCHAR("to") + String::toString(i * ARRAY_LENGTH(GoochModelLightArray::lights) + ARRAY_LENGTH(GoochModelLightArray::lights)));
     }
 
     const GraphicsResource *drawQuadDescLayout = drawQuadPipelineContext.getPipeline()->getParamLayoutAtSet(0);
@@ -740,9 +736,7 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
         lightStartIdx += ARRAY_LENGTH(GoochModelLightArray::lights);
     }
 
-    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
-        application->windowManager->getMainWindow()
-    );
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
     ImageViewInfo depthImageViewInfo;
     depthImageViewInfo.componentMapping.g = depthImageViewInfo.componentMapping.b = depthImageViewInfo.componentMapping.a
@@ -835,9 +829,7 @@ void ExperimentalEngineGoochModel::updateShaderParameters(class IRenderCommandLi
 
 void ExperimentalEngineGoochModel::reupdateTextureParamsOnResize()
 {
-    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
-        application->windowManager->getMainWindow()
-    );
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     uint32 swapchainCount = windowCanvas->imagesCount();
 
     for (uint32 i = 0; i < swapchainCount; ++i)
@@ -910,9 +902,7 @@ void ExperimentalEngineGoochModel::destroyShaderParameters()
 
 void ExperimentalEngineGoochModel::resizeLightingRts(const Size2D &size)
 {
-    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
-        application->windowManager->getMainWindow()
-    );
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
     for (int32 i = 0; i < windowCanvas->imagesCount(); ++i)
     {
@@ -925,9 +915,7 @@ void ExperimentalEngineGoochModel::resizeLightingRts(const Size2D &size)
 
 void ExperimentalEngineGoochModel::createFrameResources(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
-    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
-        application->windowManager->getMainWindow()
-    );
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
@@ -971,9 +959,7 @@ void ExperimentalEngineGoochModel::destroyFrameResources()
 
 void ExperimentalEngineGoochModel::getPipelineForSubpass()
 {
-    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
-        application->windowManager->getMainWindow()
-    );
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     auto multibufferRts = GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0);
 
     drawSmPipelineContext.forVertexType = EVertexType::StaticMesh;
@@ -1261,9 +1247,7 @@ void ExperimentalEngineGoochModel::startUpRenderInit(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
-        application->windowManager->getMainWindow()
-    );
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     frameResources.resize(windowCanvas->imagesCount());
     GBuffers::initialize(windowCanvas->imagesCount());
 
@@ -1307,9 +1291,7 @@ void ExperimentalEngineGoochModel::frameRender(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(
-        application->windowManager->getMainWindow()
-    );
+    WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
     SemaphoreRef waitSemaphore;
     uint32 index = windowCanvas->requestNextImage(&waitSemaphore, nullptr);
     drawQuadPipelineContext.swapchainIdx = index;
@@ -1377,8 +1359,8 @@ void ExperimentalEngineGoochModel::frameRender(
         }
         std::vector<std::pair<String, std::any>> pushConsts = {
             {    TCHAR("time"),                                    { Time::asSeconds(Time::timeNow()) }},
-            {   TCHAR("flags"), { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }},
-            {TCHAR("srcIndex"),                                              { testBindlessTextureIdx }}
+              {   TCHAR("flags"), { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }},
+                {TCHAR("srcIndex"),                                              { testBindlessTextureIdx }}
         };
         cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, pushConsts);
         cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, { testComputeParams });

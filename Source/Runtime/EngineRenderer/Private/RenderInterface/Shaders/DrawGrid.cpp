@@ -49,8 +49,9 @@ private:
     String shaderFileName;
 
     DrawGrid()
-        : BaseType(String(DRAW_GRID_NAME) + (DepthTest ? TCHAR("DTest") : TCHAR("")))
-        , shaderFileName(DRAW_GRID_NAME)
+        : BaseType(
+            String(DRAW_GRID_NAME) + (DepthTest ? TCHAR("DTest") : TCHAR("")))
+            , shaderFileName(DRAW_GRID_NAME)
     {
         static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_GRID_PIPELINE_REGISTRAR, getResourceName(), &drawGridPipelineConfig<DepthTest>);
     }

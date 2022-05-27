@@ -34,7 +34,7 @@ Transform3D::Transform3D(const Matrix4 &transformMatrix)
     : transformMatrixCache(transformMatrix)
     , bCachedLatest(true)
 {
-    // #TODO(Jeslas) : fix cases when non uniform scaled matrix inverse creates invalid Rotation values(
+    // TODO(Jeslas) : fix cases when non uniform scaled matrix inverse creates invalid Rotation values(
     // May be quaternion will fix it )?
     transformTranslation = Vector3D(transformMatrix[3].x, transformMatrix[3].y, transformMatrix[3].z);
     transformScale

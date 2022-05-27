@@ -571,7 +571,7 @@ void ShaderParameters::setResourceName(const String &name) { descriptorSetName =
 
 std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> ShaderParameters::getAllReadOnlyTextures() const
 {
-    // #TODO(Jeslas) : Support image view
+    // TODO(Jeslas) : Support image view
     std::unordered_set<ImageResourceRef> uniqueness;
     std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> textures;
     for (const std::pair<const String, TextureParameterData> &textuteParam : shaderTextures)
@@ -610,7 +610,7 @@ std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> Sh
 
 std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> ShaderParameters::getAllReadOnlyTexels() const
 {
-    // #TODO(Jeslas) : Support texel view
+    // TODO(Jeslas) : Support texel view
     std::unordered_set<BufferResourceRef> uniqueness;
 
     std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> buffers;
@@ -634,7 +634,7 @@ std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> Sh
 
 std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> ShaderParameters::getAllWriteTextures() const
 {
-    // #TODO(Jeslas) : Support image view
+    // TODO(Jeslas) : Support image view
     std::unordered_set<ImageResourceRef> uniqueness;
 
     std::vector<std::pair<ImageResourceRef, const ShaderTextureDescriptorType *>> textures;
@@ -677,7 +677,7 @@ std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> Sh
 
 std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> ShaderParameters::getAllWriteTexels() const
 {
-    // #TODO(Jeslas) : Support texel view
+    // TODO(Jeslas) : Support texel view
     std::unordered_set<BufferResourceRef> uniqueness;
 
     std::vector<std::pair<BufferResourceRef, const ShaderBufferDescriptorType *>> buffers;
@@ -885,8 +885,9 @@ bool ShaderParameters::setFieldParam(const String &paramName, const FieldType &v
     {
         LOG_ERROR(
             "ShaderParameters", "%s() : Cannot set %s[%d] of %s", __func__, paramName.getChar(), index,
-            bufferName.empty() ? TCHAR("Buffer not found") : bufferName.getChar()
-        );
+            bufferName.empty() ? TCHAR("Buffer not found")
+                               : bufferName.getChar()
+            );
     }
     return bValueSet;
 }
@@ -950,8 +951,9 @@ FieldType ShaderParameters::getFieldParam(const String &paramName, uint32 index)
     {
         LOG_ERROR(
             "ShaderParameters", "%s() : Cannot get %s[%d] of %s", __func__, paramName.getChar(), index,
-            bufferName.empty() ? TCHAR("Buffer not found") : bufferName.getChar()
-        );
+            bufferName.empty() ? TCHAR("Buffer not found")
+                               : bufferName.getChar()
+            );
     }
     return FieldType(0);
 }

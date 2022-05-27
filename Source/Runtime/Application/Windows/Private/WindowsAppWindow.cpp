@@ -102,7 +102,10 @@ void WindowsAppWindow::destroyWindow()
 
 bool WindowsAppWindow::isValidWindow() const { return windowsHandle != nullptr && windowsHandle != nullptr; }
 
-void WindowsAppWindow::pushEvent(uint32 eventType, LambdaFunction<void> function) { accumulatedEvents[eventType] = function; }
+void WindowsAppWindow::pushEvent(uint32 eventType, LambdaFunction<void> &&function)
+{
+    accumulatedEvents[eventType] = std::forward<LambdaFunction<void>>(function);
+}
 
 void WindowsAppWindow::activateWindow() const
 {

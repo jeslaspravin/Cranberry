@@ -16,7 +16,9 @@ class PROGRAMCORE_EXPORT WindowsFile final : public GenericFile
 {
 
 public:
-    WindowsFile(const String &path = TCHAR(""))
+    WindowsFile(
+        const String &path = TCHAR("")
+        )
         : GenericFile(path)
     {}
     WindowsFile(WindowsFile &&otherFile);

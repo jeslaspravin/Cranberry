@@ -11,9 +11,7 @@
 
 # Included at root CMakeLists.txt. DO NOT include it in any internal List files
 
-file(REAL_PATH "Scripts/CMake" cmake_script_dir BASE_DIRECTORY ${PROJECT_SOURCE_DIR})
-
-include (${cmake_script_dir}/StringUtilities.cmake)
+include (StringUtilities)
 
 ##### ----CONFIG options start---- #####
 # Setting Global properties

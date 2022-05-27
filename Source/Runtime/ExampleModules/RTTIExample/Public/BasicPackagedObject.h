@@ -67,12 +67,23 @@ public:
     constexpr static const uint32 AllocSlotCount = 8;
 
 public:
-    META_ANNOTATE() std::map<uint32, std::map<String, uint32>> idxToStr;
-    META_ANNOTATE() float dt;
-    META_ANNOTATE() StringID id;
-    META_ANNOTATE() String nameVal;
-    META_ANNOTATE() BasicPackagedObject *interLinked;
-    META_ANNOTATE() BasicPackagedObject *inner;
+    META_ANNOTATE()
+    std::map<uint32, std::map<String, uint32>> idxToStr;
+
+    META_ANNOTATE()
+    float dt;
+
+    META_ANNOTATE()
+    StringID id;
+
+    META_ANNOTATE()
+    String nameVal;
+
+    META_ANNOTATE()
+    BasicPackagedObject *interLinked;
+
+    META_ANNOTATE()
+    BasicPackagedObject *inner;
 
     BasicFieldSerializedObject()
     {

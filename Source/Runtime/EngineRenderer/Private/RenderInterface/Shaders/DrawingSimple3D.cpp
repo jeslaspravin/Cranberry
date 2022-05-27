@@ -77,9 +77,8 @@ private:
 
     Draw3DColoredPerVertex()
         : BaseType(
-            String(DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite ? TCHAR("DWrite") : TCHAR(""))
-        )
-        , shaderFileName(DRAW_3D_COLORED_PER_VERTEX_NAME)
+            String(DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite ? TCHAR("DWrite") : TCHAR("")))
+            , shaderFileName(DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
         static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
     }
@@ -173,9 +172,8 @@ private:
     DirectDraw3DColoredPerVertex()
         : BaseType(
             String(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>()
-            + (DepthWrite ? TCHAR("DWrite") : TCHAR(""))
-        )
-        , shaderFileName(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME)
+            + (DepthWrite ? TCHAR("DWrite") : TCHAR("")))
+            , shaderFileName(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
         static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
     }

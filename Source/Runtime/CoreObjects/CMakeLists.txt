@@ -1,5 +1,5 @@
-include(${cmake_script_dir}/EngineProjectMacros.cmake)
-include(${cmake_script_dir}/GeneratedReflectionsMacros.cmake)
+include(EngineProjectMacros)
+include(GeneratedReflectionsMacros)
 
 set(private_modules
     ProgramCore

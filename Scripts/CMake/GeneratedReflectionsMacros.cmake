@@ -83,6 +83,7 @@ function (reflect_target)
                                     --logFileName ${reflect_target_TARGET_NAME}
         BYPRODUCTS ${gen_files}
         USES_TERMINAL
+        COMMAND_EXPAND_LISTS
         # VERBATIM not needed as we took care of quotes manually
         COMMENT "${reflect_target_TARGET_NAME} : Generating reflection codes..."
     )

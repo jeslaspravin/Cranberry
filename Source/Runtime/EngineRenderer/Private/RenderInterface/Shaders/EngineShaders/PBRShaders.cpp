@@ -81,7 +81,7 @@ public:
             std::map<String, ShaderBufferParamInfo *> paramInfo{
                 {     TCHAR("lightArray"),        &LIGHTDATA_INFO},
                 {TCHAR("colorCorrection"), &COLOR_CORRECTION_INFO},
-                {     TCHAR("shadowData"),      &SHADOW_DATA_INFO}
+                                                            {     TCHAR("shadowData"),      &SHADOW_DATA_INFO}
             };
             paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
             return paramInfo;
@@ -127,7 +127,8 @@ public:
     void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const override
     {
         specializationConst[TCHAR("PCF_KERNEL_SIZE")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::PCF_KERNEL_SIZE.get());
-        specializationConst[TCHAR("POINT_PCF_SAMPLES")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::POINT_LIGHT_PCF_KERNEL_SIZE.get());
+        specializationConst
+            [TCHAR("POINT_PCF_SAMPLES")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::POINT_LIGHT_PCF_KERNEL_SIZE.get());
         specializationConst[TCHAR("POINT_PCF_KERNEL_EXTEND")] = SpecializationConstUtility::fromValue(0.2f);
     }
 };
