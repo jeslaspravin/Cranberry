@@ -75,6 +75,7 @@
 #include <random>
 #include <source_location>
 #include <unordered_set>
+#include <memory_resource>
 
 #include "BasicPackagedObject.h"
 #include "CoreObjectDelegates.h"

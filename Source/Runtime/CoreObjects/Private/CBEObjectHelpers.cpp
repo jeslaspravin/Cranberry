@@ -14,6 +14,8 @@
 #include "Visitors/FieldVisitors.h"
 #include "Property/CustomProperty.h"
 
+#include <memory_resource>
+
 namespace CBE
 {
 void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEClass clazz) const

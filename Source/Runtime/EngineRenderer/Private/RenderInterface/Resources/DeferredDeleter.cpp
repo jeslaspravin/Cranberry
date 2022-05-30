@@ -13,6 +13,8 @@
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 
+#include <mutex>
+
 FORCE_INLINE void DeferredDeleter::deleteResource(GraphicsResource *res)
 {
     res->release();
