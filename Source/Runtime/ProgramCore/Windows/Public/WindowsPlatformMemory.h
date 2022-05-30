@@ -14,7 +14,9 @@
 #include "Types/Platform/GenericPlatformMemory.h"
 
 class PROGRAMCORE_EXPORT WindowsPlatformMemory : public GenericPlatformMemory
-{};
+{
+public:
+};
 
 namespace GPlatformMemory
 {

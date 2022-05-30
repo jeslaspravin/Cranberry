@@ -137,7 +137,13 @@ bool WindowsPlatformFunctions::isSame(const LibPointer *leftHandle, const LibPoi
     return static_cast<const WindowsLibHandle *>(leftHandle)->libHandle == static_cast<const WindowsLibHandle *>(rightHandle)->libHandle;
 }
 
-void *WindowsPlatformFunctions::getCurrentThreadHandle() { return ::GetCurrentThread(); }
+void *WindowsPlatformFunctions::createProcess(
+    const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory
+)
+{
+    // TODO(ASAP) : Very important implement this asap
+    return nullptr;
+}
 
 void *WindowsPlatformFunctions::getCurrentProcessHandle() { return ::GetCurrentProcess(); }
 
@@ -166,6 +172,12 @@ void WindowsPlatformFunctions::getAllModules(void *processHandle, LibPointerPtr 
         }
         modulesSize = totalInserts;
     }
+}
+
+bool WindowsPlatformFunctions::hasAttachedConsole()
+{
+    HWND consoleWindow = ::GetConsoleWindow();
+    return consoleWindow != NULL;
 }
 
 String WindowsPlatformFunctions::getClipboard()

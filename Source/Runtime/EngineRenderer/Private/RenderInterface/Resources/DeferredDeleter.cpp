@@ -21,31 +21,33 @@ FORCE_INLINE void DeferredDeleter::deleteResource(GraphicsResource *res)
 
 void DeferredDeleter::deferDelete(DeferringData &&deferringInfo)
 {
-    if (bClearing || deferringInfo.strategy == EDeferredDelStrategy::Immediate)
+    if (bClearing.test(std::memory_order::acquire) || deferringInfo.strategy == EDeferredDelStrategy::Immediate)
     {
         deleteResource(deferringInfo.resource);
         return;
     }
 
-    for (const DeferringData &res : deletingResources)
-    {
-        if (res.resource == deferringInfo.resource)
-        {
-            return;
-        }
-    }
-    deletingResources.emplace_back(std::forward<DeferringData>(deferringInfo));
+    std::scoped_lock<CBESpinLock> writeLock(deleteEmplaceLock);
+    // Not necessary to do the below check as double delete must be handled differently below is not effective way
+    // for (const DeferringData &res : deletingResources[getWritingIdx()])
+    //{
+    //    if (res.resource == deferringInfo.resource)
+    //    {
+    //        return;
+    //    }
+    //}
+    deletingResources[getWritingIdx()].emplace_back(std::forward<DeferringData>(deferringInfo));
 }
 
 void DeferredDeleter::update()
 {
-    if (deletingResources.empty())
+    if (deletingResources[readAtIdx].empty())
     {
         return;
     }
 
     auto newEnd = std::remove_if(
-        deletingResources.begin(), deletingResources.end(),
+        deletingResources[readAtIdx].begin(), deletingResources[readAtIdx].end(),
         [this](DeferringData &res)
         {
             uint32 references = 0;
@@ -100,15 +102,32 @@ void DeferredDeleter::update()
             return bRemove;
         }
     );
-    deletingResources.erase(newEnd, deletingResources.end());
+    // Copy the survived elements alone and clear the reading list
+    std::vector<DeferringData> pendingDeleteResources(deletingResources[readAtIdx].begin(), newEnd);
+    deletingResources[readAtIdx].clear();
+
+    // Now swap the read write buffers
+    deleteEmplaceLock.lock();
+    readAtIdx = getWritingIdx();
+    deleteEmplaceLock.unlock();
+
+    // now append the pendingDeletes to new read buffer
+    deletingResources[readAtIdx].insert(deletingResources[readAtIdx].end(), pendingDeleteResources.cbegin(), pendingDeleteResources.cend());
 }
 
 void DeferredDeleter::clear()
 {
-    bClearing = true;
-    for (const DeferringData &res : deletingResources)
+    bClearing.test_and_set(std::memory_order::release);
+    // Just wait until thread that is trying to insert into deletingResources is finished. We will not be in update() for sure as that and clear
+    // will be called from render thread
+    deleteEmplaceLock.lock();
+    deleteEmplaceLock.unlock();
+    for (uint32 i = 0; i < ARRAY_LENGTH(deletingResources); ++i)
     {
-        deleteResource(res.resource);
+        for (const DeferringData &res : deletingResources[i])
+        {
+            deleteResource(res.resource);
+        }
+        deletingResources[i].clear();
     }
-    deletingResources.clear();
 }

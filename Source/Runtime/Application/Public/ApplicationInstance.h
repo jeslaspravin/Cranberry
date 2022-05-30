@@ -20,6 +20,7 @@ class PlatformAppInstanceBase;
 class InputSystem;
 class FontManager;
 class WindowManager;
+namespace copat { class JobSystem; }
 
 struct AppInstanceCreateInfo
 {
@@ -61,8 +62,8 @@ public:
     WindowManager *windowManager;
 
     FontManager *fontManager;
+    copat::JobSystem *jobSystem;
 
-private:
 public:
     ApplicationInstance() = delete;
     APPLICATION_EXPORT ApplicationInstance(const AppInstanceCreateInfo &createInfo);
@@ -71,7 +72,8 @@ public:
 
     void startApp();
     APPLICATION_EXPORT virtual void onStart() = 0;
-    void runApp();
+    // Returns true if application can continue running
+    [[nodiscard]] bool appTick();
     APPLICATION_EXPORT virtual void onTick() = 0;
     void exitApp();
     APPLICATION_EXPORT virtual void onExit() = 0;

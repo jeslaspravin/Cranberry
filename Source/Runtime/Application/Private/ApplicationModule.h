@@ -38,11 +38,8 @@ private:
     DelegateHandle graphicsInitEventHandle;
     void graphicsInitEvents(ERenderStateEvent renderState);
 
-    /* IApplicationModule finals */
-protected:
-    void startAndRun(ApplicationInstance *appInst, const AppInstanceCreateInfo &appCI) final;
-
 public:
+    /* IApplicationModule finals */
     const ApplicationInstance *getApplication() const final;
 
     void windowCreated(GenericAppWindow *createdWindow) const final;
@@ -64,6 +61,11 @@ public:
     void allWindowDestroyed() const final;
     DelegateHandle registerAllWindowDestroyed(SimpleDelegate::SingleCastDelegateType callback) final;
     void unregisterAllWindowDestroyed(const DelegateHandle &callbackHandle) final;
+
+protected:
+    void startAndRun(ApplicationInstance *appInst, const AppInstanceCreateInfo &appCI) final;
+
+public:
     /* IModuleBase finals */
     void init() final;
     void release() final;

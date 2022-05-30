@@ -23,37 +23,47 @@ class GenericPlatformFunctions
 protected:
 public:
     // Extensions are auto appended by api to platform default
-    static LibPointer *openLibrary(String libName) { return PlatformClass::openLibrary(libName); }
+    FORCE_INLINE static LibPointer *openLibrary(String libName) { return PlatformClass::openLibrary(libName); }
 
-    static void releaseLibrary(const LibPointer *libraryHandle) { PlatformClass::releaseLibrary(libraryHandle); }
+    FORCE_INLINE static void releaseLibrary(const LibPointer *libraryHandle) { PlatformClass::releaseLibrary(libraryHandle); }
 
-    static void *getProcAddress(const LibPointer *libraryHandle, String symName)
+    FORCE_INLINE static void *getProcAddress(const LibPointer *libraryHandle, String symName)
     {
         return PlatformClass::getProcAddress(libraryHandle, symName);
     }
 
-    static bool isSame(const LibPointer *leftHandle, const LibPointer *rightHandle) { return PlatformClass::isSame(leftHandle, rightHandle); }
+    FORCE_INLINE static bool isSame(const LibPointer *leftHandle, const LibPointer *rightHandle)
+    {
+        return PlatformClass::isSame(leftHandle, rightHandle);
+    }
 
-    static void *getCurrentThreadHandle() { return PlatformClass::getCurrentThreadHandle(); }
+    // Process related functions
+    FORCE_INLINE static void *
+        createProcess(const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory)
+    {
+        return PlatformClass::createProcess(applicationPath, cmdLine, environment, workingDirectory);
+    }
+    FORCE_INLINE static void *getCurrentProcessHandle() { return PlatformClass::getCurrentProcessHandle(); }
+    FORCE_INLINE static void closeProcessHandle(void *handle) { PlatformClass::closeProcessHandle(handle); }
 
-    static void *getCurrentProcessHandle() { return PlatformClass::getCurrentProcessHandle(); }
-    static void closeProcessHandle(void *handle) { PlatformClass::closeProcessHandle(handle); }
-
-    static void getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize)
+    FORCE_INLINE static void getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize)
     {
         PlatformClass::getAllModules(processHandle, modules, modulesSize);
     }
 
-    static void getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)
+    FORCE_INLINE static void getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)
     {
         PlatformClass::getModuleInfo(processHandle, libraryHandle, moduleData);
     }
 
+    // Console related functions
+    FORCE_INLINE static bool hasAttachedConsole() { return PlatformClass::hasAttachedConsole(); }
+
     // Platform tools
 
-    static String getClipboard() { return PlatformClass::getClipboard(); }
+    FORCE_INLINE static String getClipboard() { return PlatformClass::getClipboard(); }
 
-    static bool setClipboard(const String &text) { return PlatformClass::setClipboard(text); }
+    FORCE_INLINE static bool setClipboard(const String &text) { return PlatformClass::setClipboard(text); }
 
     // Utilities
 

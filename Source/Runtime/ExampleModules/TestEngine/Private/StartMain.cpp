@@ -100,7 +100,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 }
 
 #elif PLATFORM_LINUX
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #elif PLATFORM_APPLE
-static_assert(false, "Platform not supported!");
+#error "Platform not supported!"
 #endif

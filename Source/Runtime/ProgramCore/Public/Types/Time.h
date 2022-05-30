@@ -12,6 +12,7 @@
 #pragma once
 #include "ProgramCoreExports.h"
 #include "Types/CoreTypes.h"
+#include "Types/CoreDefines.h"
 
 class String;
 
@@ -23,7 +24,7 @@ using TickRep = int64;
 // If real world clock time is needed use clockTimeNow
 // If time interval is needed use timeNow
 
-// IN MILLISECONDS PRECISION
+// IN MICROSECONDS PRECISION
 namespace Time
 {
 PROGRAMCORE_EXPORT TickRep addSeconds(TickRep tickValue, TimeConvType seconds);
@@ -31,10 +32,18 @@ PROGRAMCORE_EXPORT TickRep addMinutes(TickRep tickValue, TimeConvType minutes);
 PROGRAMCORE_EXPORT TickRep addHours(TickRep tickValue, TimeConvType hours);
 PROGRAMCORE_EXPORT TickRep addDays(TickRep tickValue, TimeConvType days);
 
+PROGRAMCORE_EXPORT TickRep fromMilliSeconds(TickRep milliSeconds);
+FORCE_INLINE CONST_EXPR TickRep fromMicroSeconds(TickRep microSeconds) { return microSeconds; };
+PROGRAMCORE_EXPORT TickRep fromNanoSeconds(TickRep nanoSeconds);
+
 PROGRAMCORE_EXPORT TickRep fromSeconds(TimeConvType seconds);
 PROGRAMCORE_EXPORT TickRep fromMinutes(TimeConvType minutes);
 PROGRAMCORE_EXPORT TickRep fromHours(TimeConvType hours);
 PROGRAMCORE_EXPORT TickRep fromDays(TimeConvType days);
+
+PROGRAMCORE_EXPORT TickRep asMilliSeconds(TickRep tickValue);
+FORCE_INLINE CONST_EXPR TickRep asMicroSeconds(TickRep tickValue) { return tickValue; }
+PROGRAMCORE_EXPORT TickRep asNanoSeconds(TickRep tickValue);
 
 PROGRAMCORE_EXPORT TimeConvType asSeconds(TickRep tickValue);
 PROGRAMCORE_EXPORT TimeConvType asMinutes(TickRep tickValue);
@@ -56,10 +65,18 @@ PROGRAMCORE_EXPORT TickRep addMinutes(TickRep tickValue, TimeConvType minutes);
 PROGRAMCORE_EXPORT TickRep addHours(TickRep tickValue, TimeConvType hours);
 PROGRAMCORE_EXPORT TickRep addDays(TickRep tickValue, TimeConvType days);
 
+PROGRAMCORE_EXPORT TickRep fromMilliSeconds(TickRep milliSeconds);
+PROGRAMCORE_EXPORT TickRep fromMicroSeconds(TickRep microSeconds);
+FORCE_INLINE CONST_EXPR TickRep fromNanoSeconds(TickRep nanoSeconds) { return nanoSeconds; }
+
 PROGRAMCORE_EXPORT TickRep fromSeconds(TimeConvType seconds);
 PROGRAMCORE_EXPORT TickRep fromMinutes(TimeConvType minutes);
 PROGRAMCORE_EXPORT TickRep fromHours(TimeConvType hours);
 PROGRAMCORE_EXPORT TickRep fromDays(TimeConvType days);
+
+PROGRAMCORE_EXPORT TickRep asMilliSeconds(TickRep tickValue);
+PROGRAMCORE_EXPORT TickRep asMicroSeconds(TickRep tickValue);
+FORCE_INLINE CONST_EXPR TickRep asNanoSeconds(TickRep tickValue) { return tickValue; }
 
 PROGRAMCORE_EXPORT TimeConvType asSeconds(TickRep tickValue);
 PROGRAMCORE_EXPORT TimeConvType asMinutes(TickRep tickValue);
