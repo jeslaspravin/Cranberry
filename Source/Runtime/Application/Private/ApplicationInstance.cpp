@@ -44,29 +44,28 @@ void ApplicationInstance::startApp()
     onStart();
 }
 
-void ApplicationInstance::runApp()
+bool ApplicationInstance::appTick()
 {
-    while (!bExitNextFrame)
+    if (windowManager && inputSystem)
     {
-        if (windowManager && inputSystem)
-        {
-            bAppActive = windowManager->pollWindows();
-            inputSystem->updateInputStates();
-        }
-        // Handle if we requested exit during this polling
-        if (bExitNextFrame)
-        {
-            break;
-        }
-
-        if (fontManager)
-        {
-            fontManager->flushUpdates();
-        }
-        onTick();
-
-        // TODO(Jeslas) : Handle render frame progress and Time data?
+        bAppActive = windowManager->pollWindows();
+        inputSystem->updateInputStates();
     }
+    // Handle if we requested exit during this polling
+    if (bExitNextFrame)
+    {
+        return false;
+    }
+
+    if (fontManager)
+    {
+        fontManager->flushUpdates();
+    }
+    onTick();
+
+    // TODO(Jeslas) : Handle render frame progress and Time data?
+
+    return !bExitNextFrame;
 }
 
 void ApplicationInstance::exitApp() { onExit(); }

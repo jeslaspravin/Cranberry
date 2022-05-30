@@ -23,10 +23,12 @@ public:
     static void getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData);
     static bool isSame(const LibPointer *leftHandle, const LibPointer *rightHandle);
 
-    static void *getCurrentThreadHandle();
+    static void *createProcess(const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory);
     static void *getCurrentProcessHandle();
     static void closeProcessHandle(void *handle);
     static void getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize);
+
+    static bool hasAttachedConsole();
 
     static String getClipboard();
     static bool setClipboard(const String &text);

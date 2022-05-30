@@ -36,13 +36,11 @@ function (split_src_per_access)
     set (pub_srcs )
     set (pri_srcs )
     foreach (src ${split_src_per_access_SOURCES})
-        if(${src} MATCHES ".*/*Private/.*")
+        if(${src} MATCHES ".*/*Private/.*|.*\\.cpp") # Any sources in folder containing 'Private' name or if it is cpp file we mark it as private
             list (APPEND pri_srcs ${src})
         elseif (${src} MATCHES ".*/*Public/.*")
             list (APPEND pub_srcs ${src})
-        else (${src} MATCHES ".*/*Private/.*") # Case where source is in directory other than private or public
-            list (APPEND pri_srcs ${src})
-        endif(${src} MATCHES ".*/*Private/.*")
+        endif(${src} MATCHES ".*/*Private/.*|.*\\.cpp")
     endforeach (src ${split_src_per_access_SOURCES})
 
     set (${split_src_per_access_OUTPUT_PRIVATE} ${pri_srcs} PARENT_SCOPE)

@@ -10,6 +10,7 @@
  */
 
 #include "ApplicationModule.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
 #include "Modules/ModuleManager.h"
 #include "PlatformInstances.h"
 #include "ApplicationSettings.h"
@@ -68,6 +69,24 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     PlatformAppInstance platformApp(appCI.platformAppHandle);
     appInst->platformApp = &platformApp;
     appInstance = appInst;
+
+    // Initialize job system
+    copat::JobSystem jobSys;
+    jobSys.initialize(
+        copat::JobSystem::MainThreadTickFunc::createLambda(
+            [&jobSys](void *appModulePtr)
+            {
+                ApplicationModule *appModule = (ApplicationModule *)appModulePtr;
+                if (!appModule->appInstance->appTick())
+                {
+                    jobSys.exitMain();
+                }
+            }
+        ),
+        this
+    );
+    appInstance->jobSystem = &jobSys;
+
     // Initialize GPU device and renderer module if needed
     if (appCI.bUseGpu)
     {
@@ -107,7 +126,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     }
 
     Logger::flushStream();
-    appInstance->runApp();
+    jobSys.joinMain();
 
     LOG("Application", "%s application exit", appCI.applicationName);
     appInstance->exitApp();
@@ -118,6 +137,9 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
         ModuleManager::get()->unloadModule(TCHAR("EngineRenderer"));
     }
     Logger::flushStream();
+
+    // Shutdown the job system after renderer is released!
+    jobSys.shutdown();
 
     appInstance = nullptr;
 }

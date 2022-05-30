@@ -11,7 +11,6 @@
 
 #include "Types/Time.h"
 #include "String/String.h"
-#include "Types/CoreDefines.h"
 
 #include <chrono>
 #include <ratio>
@@ -43,6 +42,21 @@ public:
     {
         using namespace std::chrono;
         return duration_cast<Resolution>(system_clock::now().time_since_epoch()).count();
+    }
+    FORCE_INLINE static TickRep asMilliSeconds(TickRep tickValue)
+    {
+        using namespace std::chrono;
+        return duration_cast<duration<TickRep, std::milli>>(Resolution(tickValue)).count();
+    }
+    FORCE_INLINE static TickRep asMicroSeconds(TickRep tickValue)
+    {
+        using namespace std::chrono;
+        return duration_cast<duration<TickRep, std::micro>>(Resolution(tickValue)).count();
+    }
+    FORCE_INLINE static TickRep asNanoSeconds(TickRep tickValue)
+    {
+        using namespace std::chrono;
+        return duration_cast<duration<TickRep, std::nano>>(Resolution(tickValue)).count();
     }
 
     FORCE_INLINE static TimeConvType asSeconds(TickRep tickValue)
@@ -116,6 +130,22 @@ public:
         return duration_cast<Resolution>(tickDur).count();
     }
 
+    FORCE_INLINE static TickRep fromMilliSeconds(TickRep milliSeconds)
+    {
+        using namespace std::chrono;
+        return duration_cast<Resolution>(duration<TickRep, std::milli>(milliSeconds)).count();
+    }
+    FORCE_INLINE static TickRep fromMicroSeconds(TickRep microSeconds)
+    {
+        using namespace std::chrono;
+        return duration_cast<Resolution>(duration<TickRep, std::micro>(microSeconds)).count();
+    }
+    FORCE_INLINE static TickRep fromNanoSeconds(TickRep nanoSeconds)
+    {
+        using namespace std::chrono;
+        return duration_cast<Resolution>(duration<TickRep, std::nano>(nanoSeconds)).count();
+    }
+
     FORCE_INLINE static TickRep fromSeconds(TimeConvType seconds)
     {
         using namespace std::chrono;
@@ -155,6 +185,10 @@ TickRep Time::timeNow() { return TimeHelper<false>::timeNow(); }
 
 TickRep Time::clockTimeNow() { return TimeHelper<false>::clockTimeNow(); }
 
+TickRep Time::asNanoSeconds(TickRep tickValue) { return TimeHelper<false>::asNanoSeconds(tickValue); }
+
+TickRep Time::asMilliSeconds(TickRep tickValue) { return TimeHelper<false>::asMilliSeconds(tickValue); }
+
 TimeConvType Time::asSeconds(TickRep tickValue) { return TimeHelper<false>::asSeconds(tickValue); }
 
 TimeConvType Time::asMinutes(TickRep tickValue) { return TimeHelper<false>::asMinutes(tickValue); }
@@ -170,6 +204,10 @@ TickRep Time::addMinutes(TickRep tickValue, TimeConvType minutes) { return TimeH
 TickRep Time::addHours(TickRep tickValue, TimeConvType hours) { return TimeHelper<false>::addHours(tickValue, hours); }
 
 TickRep Time::addDays(TickRep tickValue, TimeConvType days) { return TimeHelper<false>::addDays(tickValue, days); }
+
+TickRep Time::fromMilliSeconds(TickRep milliSeconds) { return TimeHelper<false>::fromMilliSeconds(milliSeconds); }
+
+TickRep Time::fromNanoSeconds(TickRep nanoSeconds) { return TimeHelper<false>::fromNanoSeconds(nanoSeconds); }
 
 TickRep Time::fromSeconds(TimeConvType seconds) { return TimeHelper<false>::fromSeconds(seconds); }
 
@@ -189,6 +227,10 @@ TickRep HighResolutionTime::timeNow() { return TimeHelper<true>::timeNow(); }
 
 TickRep HighResolutionTime::clockTimeNow() { return TimeHelper<true>::clockTimeNow(); }
 
+TickRep HighResolutionTime::asMilliSeconds(TickRep tickValue) { return TimeHelper<true>::asMilliSeconds(tickValue); }
+
+TickRep HighResolutionTime::asMicroSeconds(TickRep tickValue) { return TimeHelper<true>::asMicroSeconds(tickValue); }
+
 TimeConvType HighResolutionTime::asSeconds(TickRep tickValue) { return TimeHelper<true>::asSeconds(tickValue); }
 
 TimeConvType HighResolutionTime::asMinutes(TickRep tickValue) { return TimeHelper<true>::asMinutes(tickValue); }
@@ -202,6 +244,10 @@ TickRep HighResolutionTime::addSeconds(TickRep tickValue, TimeConvType seconds) 
 TickRep HighResolutionTime::addMinutes(TickRep tickValue, TimeConvType minutes) { return TimeHelper<true>::addMinutes(tickValue, minutes); }
 
 TickRep HighResolutionTime::addHours(TickRep tickValue, TimeConvType hours) { return TimeHelper<true>::addHours(tickValue, hours); }
+
+TickRep HighResolutionTime::fromMilliSeconds(TickRep milliSeconds) { return TimeHelper<true>::fromMilliSeconds(milliSeconds); }
+
+TickRep HighResolutionTime::fromMicroSeconds(TickRep microSeconds) { return TimeHelper<true>::fromMicroSeconds(microSeconds); }
 
 TickRep HighResolutionTime::fromSeconds(TimeConvType seconds) { return TimeHelper<true>::fromSeconds(seconds); }
 

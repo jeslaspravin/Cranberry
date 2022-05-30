@@ -22,3 +22,4 @@ Licenses for third party packages used is placed under `Licenses` folder
 * **`LLVM`**(**`CLang`**) CMake configs generated required some manual tweaking in LLVM project to support Debug,Development and Release config
 * **`mimalloc`** CMake configs generated required some manual tweaking in mimalloc project to support Debug,Development and Release config
 * **`xxHash`**(Embedded into the project)
+* **`CoPaT` **(Embedded into the project)

@@ -136,8 +136,10 @@ public:
     NODISCARD __VA_ARGS__ void *operator new[](size_t count, std::align_val_t al, void *allocatedPtr) noexcept { return allocatedPtr; }
 
 #define CBE_NOALLOC_PLACEMENT_DELETE_OPERATOR(...)                                                                                             \
-    /* No Idea how to clear and we do not allow exception in our code base so this should crash the                                            \
-     * application */                                                                                                                          \
+    /*                                                                                                                                         \
+     * No Idea how to delete placement alloc here(It must be handled in its specialization) and we do not allow exception in our code base so  \
+     * this should crash the application                                                                                                       \
+     */                                                                                                                                        \
     __VA_ARGS__ void operator delete(void *ptr, void *allocatedPtr) noexcept                                                                   \
     {                                                                                                                                          \
         fatalAssert(false, "This placement delete is not meant to be invoked here");                                                           \

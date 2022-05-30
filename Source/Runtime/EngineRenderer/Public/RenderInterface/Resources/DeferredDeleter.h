@@ -13,6 +13,7 @@
 
 #include "EngineRendererExports.h"
 #include "Types/CoreDefines.h"
+#include "Types/Platform/Threading/SyncPrimitives.h"
 #include "Types/Time.h"
 
 #include <vector>
@@ -42,16 +43,20 @@ public:
     };
 
 private:
-    std::vector<DeferringData> deletingResources;
-    // Used in case when clearing all clears an indirect resource which in turn adds to defer delete
-    bool bClearing = false;
+    std::vector<DeferringData> deletingResources[2];
+    uint8 readAtIdx = 0; // No need to be atomic since spin lock protects this
 
-private:
-    FORCE_INLINE void deleteResource(GraphicsResource *res);
+    // Used in case when clearing all, clears an indirect resource which in turn adds to defer delete
+    std::atomic_flag bClearing;
+    CBESpinLock deleteEmplaceLock;
 
 public:
     void deferDelete(DeferringData &&deferringInfo);
     void update();
     // Clears and deletes any pending resources
     void clear();
+
+private:
+    FORCE_INLINE void deleteResource(GraphicsResource *res);
+    FORCE_INLINE uint8 getWritingIdx() const { return (readAtIdx + 1) % ARRAY_LENGTH(deletingResources); }
 };
