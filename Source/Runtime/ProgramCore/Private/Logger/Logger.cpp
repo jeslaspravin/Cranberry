@@ -147,11 +147,11 @@ void Logger::warnInternal(const TChar *category, const String &message)
     OStringStream &stream = loggerBuffer();
     stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    CERR
+    CERR << CONSOLE_FOREGROUND_YELLOW
 #if SKIP_CAT_IN_CONSOLE == 0
         << TCHAR("[") << category << TCHAR("]") << CATEGORY
 #endif
-        << message.getChar() << std::endl;
+        << message.getChar() << CONSOLE_FOREGROUND_DEFAULT << std::endl;
 #endif // LOG_TO_CONSOLE
 }
 
@@ -166,11 +166,11 @@ void Logger::errorInternal(const TChar *category, const String &message)
     OStringStream &stream = loggerBuffer();
     stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
 #if LOG_TO_CONSOLE
-    CERR
+    CERR << CONSOLE_FOREGROUND_RED
 #if SKIP_CAT_IN_CONSOLE == 0
         << TCHAR("[") << category << TCHAR("]")
 #endif
-        << CATEGORY << message.getChar() << std::endl;
+        << CATEGORY << message.getChar() << CONSOLE_FOREGROUND_DEFAULT << std::endl;
 #endif // LOG_TO_CONSOLE
 }
 

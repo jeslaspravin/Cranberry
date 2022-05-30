@@ -15,6 +15,8 @@
 
 class PROGRAMCORE_EXPORT WindowsPlatformFunctions : public GenericPlatformFunctions<WindowsPlatformFunctions>
 {
+private:
+    static void bindCrtHandlesToStdHandles(bool bBindStdIn, bool bBindStdOut, bool bBindStdErr);
 
 public:
     static LibPointer *openLibrary(String libName);
@@ -29,6 +31,8 @@ public:
     static void getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize);
 
     static bool hasAttachedConsole();
+    static void setupAvailableConsole();
+    static void detachCosole();
 
     static String getClipboard();
     static bool setClipboard(const String &text);

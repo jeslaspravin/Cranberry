@@ -12,12 +12,17 @@
 #include "WindowsPlatformFunctions.h"
 #include "Types/Time.h"
 #include "WindowsCommonHeaders.h"
-#include <Psapi.h>
+
 #include <chrono>
 #include <intrin.h>
-#include <libloaderapi.h>
 #include <ratio>
+#include <iostream>
+
+#include <Psapi.h>
+#include <libloaderapi.h>
 #include <wtypes.h>
+#include <corecrt_io.h>
+#include <fcntl.h>
 
 struct WindowsLibHandle : public LibPointer
 {
@@ -174,10 +179,161 @@ void WindowsPlatformFunctions::getAllModules(void *processHandle, LibPointerPtr 
     }
 }
 
+// From - https://stackoverflow.com/questions/311955/redirecting-cout-to-a-console-in-windows/
+void WindowsPlatformFunctions::bindCrtHandlesToStdHandles(bool bBindStdIn, bool bBindStdOut, bool bBindStdErr)
+{
+    // Re-initialize the C runtime "FILE" handles with clean handles bound to "nul". We do this because it has been
+    // observed that the file number of our standard handle file objects can be assigned internally to a value of -2
+    // when not bound to a valid target, which represents some kind of unknown internal invalid state. In this state our
+    // call to "_dup2" fails, as it specifically tests to ensure that the target file number isn't equal to this value
+    // before allowing the operation to continue. We can resolve this issue by first "re-opening" the target files to
+    // use the "nul" device, which will place them into a valid state, after which we can redirect them to our target
+    // using the "_dup2" function.
+    if (bBindStdIn)
+    {
+        FILE *dummyFile;
+        freopen_s(&dummyFile, "nul", "r", stdin);
+    }
+    if (bBindStdOut)
+    {
+        FILE *dummyFile;
+        freopen_s(&dummyFile, "nul", "w", stdout);
+    }
+    if (bBindStdErr)
+    {
+        FILE *dummyFile;
+        freopen_s(&dummyFile, "nul", "w", stderr);
+    }
+
+    // Redirect unbuffered stdin from the current standard input handle
+    if (bBindStdIn)
+    {
+        HANDLE stdHandle = GetStdHandle(STD_INPUT_HANDLE);
+        if (stdHandle != INVALID_HANDLE_VALUE)
+        {
+            int fileDescriptor = ::_open_osfhandle((intptr_t)stdHandle, _O_TEXT);
+            if (fileDescriptor != -1)
+            {
+                FILE *file = _fdopen(fileDescriptor, "r");
+                if (file != NULL)
+                {
+                    int dup2Result = _dup2(_fileno(file), _fileno(stdin));
+                    if (dup2Result == 0)
+                    {
+                        setvbuf(stdin, NULL, _IONBF, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    // Redirect unbuffered stdout to the current standard output handle
+    if (bBindStdOut)
+    {
+        HANDLE stdHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (stdHandle != INVALID_HANDLE_VALUE)
+        {
+            int fileDescriptor = _open_osfhandle((intptr_t)stdHandle, _O_TEXT);
+            if (fileDescriptor != -1)
+            {
+                FILE *file = _fdopen(fileDescriptor, "w");
+                if (file != NULL)
+                {
+                    int dup2Result = _dup2(_fileno(file), _fileno(stdout));
+                    if (dup2Result == 0)
+                    {
+                        setvbuf(stdout, NULL, _IONBF, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    // Redirect unbuffered stderr to the current standard error handle
+    if (bBindStdErr)
+    {
+        HANDLE stdHandle = GetStdHandle(STD_ERROR_HANDLE);
+        if (stdHandle != INVALID_HANDLE_VALUE)
+        {
+            int fileDescriptor = _open_osfhandle((intptr_t)stdHandle, _O_TEXT);
+            if (fileDescriptor != -1)
+            {
+                FILE *file = _fdopen(fileDescriptor, "w");
+                if (file != NULL)
+                {
+                    int dup2Result = _dup2(_fileno(file), _fileno(stderr));
+                    if (dup2Result == 0)
+                    {
+                        setvbuf(stderr, NULL, _IONBF, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    // Clear the error state for each of the C++ standard stream objects. We need to do this, as attempts to access the
+    // standard streams before they refer to a valid target will cause the iostream objects to enter an error state. In
+    // versions of Visual Studio after 2005, this seems to always occur during startup regardless of whether anything
+    // has been read from or written to the targets or not.
+    if (bBindStdIn)
+    {
+        std::wcin.clear();
+        std::cin.clear();
+    }
+    if (bBindStdOut)
+    {
+        std::wcout.clear();
+        std::cout.clear();
+    }
+    if (bBindStdErr)
+    {
+        std::wcerr.clear();
+        std::cerr.clear();
+    }
+}
+
 bool WindowsPlatformFunctions::hasAttachedConsole()
 {
     HWND consoleWindow = ::GetConsoleWindow();
     return consoleWindow != NULL;
+}
+
+void WindowsPlatformFunctions::setupAvailableConsole()
+{
+    if (!hasAttachedConsole())
+    {
+        if (::AttachConsole(ATTACH_PARENT_PROCESS) == 0)
+        {
+            return;
+        }
+        // We only need output and error, If there is no console it must be GUI app and we do not need input in that case
+        bindCrtHandlesToStdHandles(false, true, true);
+    }
+
+    // If we are using AChar then it means we are using UTF-8 in our engine in windows platform
+    if CONST_EXPR (std::is_same_v<AChar, TChar>)
+    {
+        ::SetConsoleOutputCP(CP_UTF8);
+    }
+
+    HANDLE ouputHandle = ::GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE errorHandle = ::GetStdHandle(STD_ERROR_HANDLE);
+
+    // TODO(Jeslas) : Find how to move the next command line to end of text after application ends in power shell, cmd prompt is fine
+    dword consoleMode
+        = ENABLE_VIRTUAL_TERMINAL_PROCESSING /* Enable virtual terminal escape char sequences */
+          | ENABLE_WRAP_AT_EOL_OUTPUT        /* Wraps the line to next line if allowed end of line for current window's width is reached */
+          | ENABLE_PROCESSED_OUTPUT;         /* Enables special chars like \t \r\n \b \a */
+    ::SetConsoleMode(ouputHandle, consoleMode);
+    ::SetConsoleMode(errorHandle, consoleMode);
+}
+
+void WindowsPlatformFunctions::detachCosole()
+{
+    if (hasAttachedConsole())
+    {
+        ::FreeConsole();
+    }
 }
 
 String WindowsPlatformFunctions::getClipboard()
