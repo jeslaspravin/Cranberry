@@ -15,6 +15,8 @@
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Templates/TemplateTypes.h"
 
+#include <memory_resource>
+
 template <typename Type>
 FORCE_INLINE void serializeBytesSwapped(Type &data, BinaryArchive &archive, UIntToType<1>)
 {

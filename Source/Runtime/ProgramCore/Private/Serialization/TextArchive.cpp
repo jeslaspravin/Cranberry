@@ -15,6 +15,7 @@
 
 #include <charconv>
 #include <float.h>
+#include <memory_resource>
 
 // Reads null terminated string from stream into buffer pointed by firstChar and returns length of string
 SizeT readTextFromStream(AChar *firstChar, ArchiveStream &stream)
