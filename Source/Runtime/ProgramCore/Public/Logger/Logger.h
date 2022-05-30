@@ -27,7 +27,11 @@ public:
         Error = 8
     };
 
-    static const uint8 AllServerity = ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
+    constexpr static const uint8 AllServerity = ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
+
+    constexpr static const TChar *CONSOLE_FOREGROUND_RED = TCHAR("\x1b[31m");
+    constexpr static const TChar *CONSOLE_FOREGROUND_YELLOW = TCHAR("\x1b[33m");
+    constexpr static const TChar *CONSOLE_FOREGROUND_DEFAULT = TCHAR("\x1b[0m");
 
 private:
     Logger() = default;

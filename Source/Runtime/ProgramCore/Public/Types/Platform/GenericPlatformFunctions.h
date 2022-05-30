@@ -58,6 +58,12 @@ public:
 
     // Console related functions
     FORCE_INLINE static bool hasAttachedConsole() { return PlatformClass::hasAttachedConsole(); }
+    /**
+     * Attaches to console/terminal that is available either in parent process or in executing IDE output and performs some initial setup
+     * Does only setting to use console-virtual-terminal-sequence and UTF-8 if console is already present for this application
+     */
+    FORCE_INLINE static void setupAvailableConsole() { PlatformClass::setupAvailableConsole(); }
+    FORCE_INLINE static void detachCosole() { PlatformClass::detachCosole(); }
 
     // Platform tools
 

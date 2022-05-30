@@ -651,14 +651,14 @@ FORCE_INLINE void invokeHelper(const std::map<int32, SharedPtr<IDelegate<void, P
         delegateIndices = new int32[allDelegates.size()];
     }
 
-    SizeT delegateIndicesIdx = 0;
+    uint32 delegateIndicesIdx = 0;
     for (const std::pair<const int32, SharedPtr<IDelegate<void, Params...>>> &delegateInterface : allDelegates)
     {
         delegateIndices[delegateIndicesIdx] = delegateInterface.first;
         delegateIndicesIdx++;
     }
 
-    SizeT allDelegatesCount = allDelegates.size();
+    uint32 allDelegatesCount = uint32(allDelegates.size());
     for (delegateIndicesIdx = 0; delegateIndicesIdx < allDelegatesCount; ++delegateIndicesIdx)
     {
         auto itr = allDelegates.find(delegateIndices[delegateIndicesIdx]);
