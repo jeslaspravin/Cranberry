@@ -106,7 +106,7 @@ public:
     bool try_lock() noexcept { return !flag.test(std::memory_order::acquire); }
     void unlock() noexcept { flag.clear(std::memory_order::release); }
 };
-#else // OVERRIDE_SPINLOCK
+#else  // OVERRIDE_SPINLOCK
 using SpinLock = OVERRIDE_SPINLOCK;
 #endif // OVERRIDE_SPINLOCK
 

@@ -940,8 +940,7 @@ void VulkanShaderParameters::init()
             else
             {
                 LOG_ERROR(
-                    "VulkanShaderParameters", "%s() : Allocation of descriptors set %d failed %s", __func__, descriptorsBody.set,
-                    getResourceName().getChar()
+                    "VulkanShaderParameters", "Allocation of descriptors set %d failed %s", descriptorsBody.set, getResourceName().getChar()
                 );
                 return;
             }

@@ -62,7 +62,7 @@ void GameEngine::startup(ApplicationInstance *appInst)
     onStartUp();
 
     timeData.tickStart();
-    LOG("GameEngine", "%s() : Engine initialized in %0.3f seconds", __func__, Time::asSeconds(timeData.initEndTick - timeData.startTick));
+    LOG("GameEngine", "Engine initialized in %0.3f seconds", Time::asSeconds(timeData.initEndTick - timeData.startTick));
 }
 
 void GameEngine::quit()
@@ -74,7 +74,7 @@ void GameEngine::quit()
         EngineQuit, { assetManager.clearToDestroy(); }, this
     );
 
-    LOG("GameEngine", "%s() : Engine run time in %.3f minutes", __func__, Time::asMinutes(Time::timeNow() - timeData.startTick));
+    LOG("GameEngine", "Engine run time in %.3f minutes", Time::asMinutes(Time::timeNow() - timeData.startTick));
 }
 
 void GameEngine::engineLoop()

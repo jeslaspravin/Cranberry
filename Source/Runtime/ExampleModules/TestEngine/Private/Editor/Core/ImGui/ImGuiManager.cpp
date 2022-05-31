@@ -608,7 +608,7 @@ void ImGuiManager::draw(
                 const ImDrawCmd &drawCmd = uiCmdList->CmdBuffer[cmdIdx];
                 if (drawCmd.UserCallback != nullptr)
                 {
-                    LOG_WARN("ImGui", "%s() : Commands with callback is not supported", __func__);
+                    LOG_WARN("ImGui", "Commands with callback is not supported");
                     debugAssert(drawCmd.UserCallback != nullptr);
                     continue;
                 }
@@ -630,7 +630,7 @@ void ImGuiManager::draw(
                     if (drawCmd.TextureId)
                     {
                         perDrawTexture = getTextureParam(static_cast<const TextureBase *>(drawCmd.TextureId));
-                        fatalAssert(perDrawTexture.isValid(), "%s(): Failed getting texture parameters for imgui", __func__);
+                        fatalAssert(perDrawTexture.isValid(), "Failed getting texture parameters for imgui");
                     }
                     cmdList->cmdBindDescriptorsSets(drawingContext.cmdBuffer, pipelineContext, perDrawTexture.reference());
                     cmdList->cmdSetViewportAndScissor(drawingContext.cmdBuffer, viewport, scissor);

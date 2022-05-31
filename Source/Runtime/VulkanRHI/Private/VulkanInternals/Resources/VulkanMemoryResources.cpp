@@ -32,7 +32,7 @@ void VulkanBufferResource::reinitResources()
     BaseType::reinitResources();
     if (getResourceSize() == 0)
     {
-        LOG_ERROR("VulkanBufferResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanBufferResource", "Invalid resource %s", getObjectName().getChar());
         return;
     }
 
@@ -55,7 +55,7 @@ void VulkanBufferResource::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanBufferResource", "%s() : Failed creating buffer %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanBufferResource", "Failed creating buffer %s", getObjectName().getChar());
     }
 }
 
@@ -178,9 +178,9 @@ void VulkanImageResource::reinitResources()
             {
                 LOG_WARN(
                     "VulkanImageResource",
-                    "%s() : Cube map image %s should have 6 multiple layers, current layer "
+                    "Cube map image %s should have 6 multiple layers, current layer "
                     "count %d",
-                    __func__, getResourceName().getChar(), layerCount
+                    getResourceName().getChar(), layerCount
                 );
                 layerCount = ((layerCount / 6) + 1) * 6;
             }
@@ -205,7 +205,7 @@ void VulkanImageResource::reinitResources()
 
         if (!formatInfo)
         {
-            LOG_ERROR("VulkanImageResource", "%s() : Not supported image format", __func__);
+            LOG_ERROR("VulkanImageResource", "Not supported image format");
             return;
         }
         if (EPixelDataFormat::isDepthFormat(dataFormat))
@@ -260,7 +260,7 @@ void VulkanImageResource::reinitResources()
 
     if (getResourceSize() == 0)
     {
-        LOG_ERROR("VulkanImageResource", "%s() : Invalid resource %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanImageResource", "Invalid resource %s", getObjectName().getChar());
         return;
     }
 
@@ -293,7 +293,7 @@ void VulkanImageResource::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanImageResource", "%s() : Failed creating image %s", __func__, getObjectName().getChar());
+        LOG_ERROR("VulkanImageResource", "Failed creating image %s", getObjectName().getChar());
     }
 }
 

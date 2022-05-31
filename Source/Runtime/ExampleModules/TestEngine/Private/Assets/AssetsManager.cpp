@@ -19,7 +19,7 @@
 
 void AssetManager::loadUnderPath(const String &scanPath)
 {
-    LOG_DEBUG("AssetManager", "%s(): Initial asset loaded started", __func__);
+    LOG_DEBUG("AssetManager", "Initial asset loaded started");
     StopWatch loadTime;
     std::vector<String> foundFiles = FileSystemFunctions::listAllFiles(scanPath, true);
     for (const String &filePath : foundFiles)
@@ -28,14 +28,11 @@ void AssetManager::loadUnderPath(const String &scanPath)
         header.assetPath = PathFunctions::asGenericPath(filePath);
         header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
         loadAsset(header);
-        LOG_DEBUG(
-            "AssetManager", "%s(): Loaded asset %s in %0.3f Seconds(not including gpu copy)", __func__, header.assetPath.getChar(),
-            loadTime.thisLap()
-        );
+        LOG_DEBUG("AssetManager", "Loaded asset %s in %0.3f Seconds(not including gpu copy)", header.assetPath.getChar(), loadTime.thisLap());
         loadTime.lap();
     }
     loadTime.stop();
-    LOG_DEBUG("AssetManager", "%s(): Loaded all assets in %0.3f Seconds(not including gpu copy)", __func__, loadTime.duration());
+    LOG_DEBUG("AssetManager", "Loaded all assets in %0.3f Seconds(not including gpu copy)", loadTime.duration());
 }
 
 std::vector<AssetBase *> AssetManager::loadAsset(const AssetHeader &header)

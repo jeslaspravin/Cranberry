@@ -94,7 +94,7 @@ void WindowsUnexpectedErrorHandler::debugBreak() const
     bool bIsRunByDebugger = !!IsDebuggerPresent();
     if (CheckRemoteDebuggerPresent(processHandle, &bRemoteDebuggerAvailable) == 0)
     {
-        LOG_ERROR("WindowsUnexpectedErrorHandler", "%s() : Unable to find remoter debugger state", __func__);
+        LOG_ERROR("WindowsUnexpectedErrorHandler", "Unable to find remoter debugger state");
     }
 
     if (!!bRemoteDebuggerAvailable || bIsRunByDebugger)
@@ -113,7 +113,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
 
     if (!SymInitialize(processHandle, NULL, TRUE))
     {
-        LOG_ERROR("WindowsUnexpectedErrorHandler", "%s() : Failed loading symbols for initializing stack trace symbols", __func__);
+        LOG_ERROR("WindowsUnexpectedErrorHandler", "Failed loading symbols for initializing stack trace symbols");
         return;
     }
     dword symOptions = SymGetOptions();

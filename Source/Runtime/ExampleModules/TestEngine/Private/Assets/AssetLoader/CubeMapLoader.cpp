@@ -64,7 +64,7 @@ HDRLoader::HDRLoader(const String &assetPath)
 
         if (texelData == nullptr)
         {
-            LOG_ERROR("HDRLoader", "%s() : Failed loading image[%s] - %s", __func__, textureName.getChar(), STB::lastFailure());
+            LOG_ERROR("HDRLoader", "Failed loading image[%s] - %s", textureName.getChar(), STB::lastFailure());
             bLoaded = false;
         }
         else
@@ -82,7 +82,7 @@ HDRLoader::HDRLoader(const String &assetPath)
     }
     else
     {
-        LOG_ERROR("HDRLoader", "%s() : Failed opening texture file - %s", __func__, textureFile.getFileName().getChar());
+        LOG_ERROR("HDRLoader", "Failed opening texture file - %s", textureFile.getFileName().getChar());
         bLoaded = false;
     }
 }

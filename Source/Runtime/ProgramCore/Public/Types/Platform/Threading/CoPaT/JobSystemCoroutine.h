@@ -17,10 +17,13 @@
 
 #include <atomic>
 #include <concepts>
+#include <mutex>
 
 COPAT_NS_INLINED
 namespace copat
 {
+
+class JobSystem;
 
 template <EJobThreadType SwitchToThread>
 struct SwitchJobThreadAwaiter

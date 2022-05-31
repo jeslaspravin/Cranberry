@@ -89,13 +89,13 @@ ModuleSources::ModuleSources()
     ProgramCmdLine::get()->getArg(intermediateDir, ReflectToolCmdLineConst::INTERMEDIATE_DIR);
     ProgramCmdLine::get()->getArg(includesFile, ReflectToolCmdLineConst::INCLUDE_LIST_FILE);
     ProgramCmdLine::get()->getArg(compileDefsFile, ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE);
-    LOG_DEBUG("ModuleReflectTool", "%s(): Reflecting source from %s", __func__, srcDir);
+    LOG_DEBUG("ModuleReflectTool", "Reflecting source from %s", srcDir);
 
     fatalAssert(
         (PlatformFile(includesFile).exists() && PlatformFile(compileDefsFile).exists()),
-        "%s() : Includes list file(%s) or Definitions(%s) list file does not exists, Configuring cmake "
+        "Includes list file(%s) or Definitions(%s) list file does not exists, Configuring cmake "
         "will fix this!",
-        __func__, includesFile, compileDefsFile
+        includesFile, compileDefsFile
     );
 
     String content;
@@ -268,7 +268,7 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
 
             if (unit == nullptr)
             {
-                LOG_ERROR("CompileSource", "%s() : Unable to parse header %s. Quitting.", __func__, headerFile.getFullPath());
+                LOG_ERROR("CompileSource", "Unable to parse header %s. Quitting.", headerFile.getFullPath());
                 bAllClear = false;
             }
             else
@@ -315,11 +315,11 @@ void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformati
                 );
             }
 
-            String genFileContent = String::join(includeStmts.cbegin(), includeStmts.cend(), LINE_FEED_CHAR);
+            String genFileContent = String::join(includeStmts.cbegin(), includeStmts.cend(), LINE_FEED_TCHAR);
             if (!FileHelper::writeString(genFileContent, genFiles[i]))
             {
-                LOG_ERROR("GeneratingBuildTU", "%s() : Failed to write file %s", __func__, genFiles[i]);
-                std::exit(1);
+                LOG_ERROR("GeneratingBuildTU", "Failed to write file %s", genFiles[i]);
+                std::exit(-1);
                 return;
             }
         }

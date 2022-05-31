@@ -58,8 +58,8 @@
 #define DLL_IMPORT __declspec(dllimport)
 #endif
 
-#ifndef LINE_FEED_CHAR
-#define LINE_FEED_CHAR TCHAR("\r\n")
+#ifndef LINE_FEED_ACHAR
+#define LINE_FEED_ACHAR "\r\n"
 #endif
 
 // File System path separator

@@ -37,7 +37,7 @@ void ApplicationInstance::startApp()
 {
     if (!ProgramCmdLine::get()->parse(cmdLine))
     {
-        LOG_ERROR("Engine", "%s() : Invalid command line", __func__);
+        LOG_ERROR("Engine", "Invalid command line");
         ProgramCmdLine::get()->printCommandLine();
     }
 

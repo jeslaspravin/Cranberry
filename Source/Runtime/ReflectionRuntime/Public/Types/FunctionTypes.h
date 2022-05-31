@@ -103,14 +103,14 @@ public:
     {
         if (!(isSameReturnType<ReturnType>() && isSameArgsType<Args...>()))
         {
-            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given return values and arguments", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "Cannot call this function with given return values and arguments");
             return false;
         }
         // Since type ID of the innermost type must be same with object type's inner most type
         const ReflectTypeInfo *objectInnerMostType = getInnerMostType(typeInfoFrom<ObjectType>());
         if (objectInnerMostType->typeID != memberOfTypeInner->typeID)
         {
-            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given object type", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "Cannot call this function with given object type");
             return false;
         }
 
@@ -143,14 +143,14 @@ public:
     {
         if (!(isSameReturnType<void>() && isSameArgsType<Args...>()))
         {
-            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given return values and arguments", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "Cannot call this function with given return values and arguments");
             return false;
         }
         // Since type ID of the innermost type must be same with object type's inner most type
         const ReflectTypeInfo *objectInnerMostType = getInnerMostType(typeInfoFrom<ObjectType>());
         if (objectInnerMostType->typeID != memberOfTypeInner->typeID)
         {
-            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given object type", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "Cannot call this function with given object type");
             return false;
         }
 
@@ -221,7 +221,7 @@ public:
     {
         if (!(isSameReturnType<ReturnType>() && isSameArgsType<Args...>()))
         {
-            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given return values and arguments", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "Cannot call this function with given return values and arguments");
             return false;
         }
 
@@ -236,7 +236,7 @@ public:
     {
         if (!(isSameReturnType<void>() && isSameArgsType<Args...>()))
         {
-            LOG_ERROR("MemberFunctionWrapper", "%s() : Cannot call this function with given return values and arguments", __func__);
+            LOG_ERROR("MemberFunctionWrapper", "Cannot call this function with given return values and arguments");
             return false;
         }
 

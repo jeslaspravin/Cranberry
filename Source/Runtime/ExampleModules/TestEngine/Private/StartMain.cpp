@@ -30,14 +30,14 @@ public:
 
     void onStart() override
     {
-        LOG("Engine", "%s() : Engine start", __func__);
+        LOG("Engine", "Engine start");
         gEngine->startup(this);
     }
     void onTick() override { gEngine->engineLoop(); }
     void onExit() override
     {
         gEngine->quit();
-        LOG("Engine", "%s() : Engine quit", __func__);
+        LOG("Engine", "Engine quit");
     }
 
     void onRendererStateEvent(ERenderStateEvent state) override { gEngine->onRenderStateChange(state); }
@@ -92,14 +92,12 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     /*_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);*/
 
     String cmdLine{ WCHAR_TO_TCHAR(pCmdLine) };
-    // TODO(Jeslas) : Must be moved to Logger init
-    PlatformFunctions::setupAvailableConsole();
-    LOG_DEBUG("CommandLine", "%s() : Command [%s]", __func__, cmdLine.getChar());
+    Logger::initialize();
+    LOG_DEBUG("CommandLine", "Command [%s]", cmdLine.getChar());
 
     int32 exitCode = appMain(cmdLine, hInstance);
 
-    // TODO(Jeslas) : Must be moved to Logger shutdown
-    PlatformFunctions::detachCosole();
+    Logger::shutdown();
     return exitCode;
 }
 

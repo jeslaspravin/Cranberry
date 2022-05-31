@@ -71,7 +71,6 @@ CBE_GLOBAL_NEWDELETE_OVERRIDES
 int32 main(int32 argsc, AChar **args)
 {
     UnexpectedErrorHandler::getHandler()->registerFilter();
-    Logger::pushMuteSeverities(Logger::Debug | Logger::Log);
 
     ModuleManager *moduleManager = ModuleManager::get();
     moduleManager->loadModule(TCHAR("ProgramCore"));
@@ -79,7 +78,9 @@ int32 main(int32 argsc, AChar **args)
 
     if (!ProgramCmdLine::get()->parse(args, argsc))
     {
-        LOG("CPPReflect", "%s(): Failed to parse command line arguments", __func__);
+        // We cannot initialize logger before parsing command line args
+        Logger::initialize();
+        LOG_ERROR("CPPReflect", "Failed to parse command line arguments");
         ProgramCmdLine::get()->printCommandLine();
     }
     if (ProgramCmdLine::get()->printHelp())
@@ -87,6 +88,8 @@ int32 main(int32 argsc, AChar **args)
         // Since this invocation is for printing help
         return 0;
     }
+    Logger::initialize();
+    Logger::pushMuteSeverities(Logger::Debug | Logger::Log);
 
     // Loading other libraries
     moduleManager->loadModule(TCHAR("ReflectionRuntime"));
@@ -97,7 +100,7 @@ int32 main(int32 argsc, AChar **args)
 
     if (ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::SAMPLE_CODE))
     {
-        LOG_DEBUG("CPPReflect", "%s(): Executing sample codes %s", __func__, ENGINE_MODULES_PATH);
+        LOG_DEBUG("CPPReflect", "Executing sample codes %s", ENGINE_MODULES_PATH);
         String srcDir = ProgramCmdLine::get()->atIdx(ProgramCmdLine::get()->cmdLineCount() - 1);
 
         SampleCode::testLibClangParsing(srcDir);
@@ -112,7 +115,7 @@ int32 main(int32 argsc, AChar **args)
         ModuleSources moduleSrcs;
         if (!moduleSrcs.compileAllSources(SourceGenerator::isTemplatesModified()))
         {
-            LOG_ERROR("ModuleReflectTool", "%s() : Compiling module sources failed", __func__);
+            LOG_ERROR("ModuleReflectTool", "Compiling module sources failed");
             return 1;
         }
         SourceGenerator generator;
@@ -126,7 +129,7 @@ int32 main(int32 argsc, AChar **args)
 
         if (!bGenerated)
         {
-            LOG_ERROR("ModuleReflectTool", "%s() : Generating module sources failed", __func__);
+            LOG_ERROR("ModuleReflectTool", "Generating module sources failed");
             return 1;
         }
         else
@@ -143,6 +146,6 @@ int32 main(int32 argsc, AChar **args)
     moduleManager->unloadModule(TCHAR("ProgramCore"));
 
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
-    Logger::flushStream();
+    Logger::shutdown();
     return 0;
 }

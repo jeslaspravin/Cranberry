@@ -239,9 +239,7 @@ void GlobalRenderingContextBase::initShaderPipelines(
             }
             GraphicsPipelineBase *graphicsPipeline
                 = static_cast<GraphicsPipelineBase *>(pipelineFactory->create(graphicsInstanceCache, graphicsHelperCache, { shader }));
-            fatalAssert(
-                graphicsPipeline, "%s() : Graphics pipeline creation failed for shader %s", __func__, shader->getResourceName().getChar()
-            );
+            fatalAssert(graphicsPipeline, "Graphics pipeline creation failed for shader %s", shader->getResourceName().getChar());
 
             // Check if there is set 3(Per variant shader parameters)
             GraphicsResource *perVariantLayout = nullptr;
@@ -517,13 +515,13 @@ void GlobalRenderingContextBase::preparePipelineContext(
         = rawShaderObjects.find(pipelineContext->materialName);
     if (shaderDataCollectionItr == rawShaderObjects.cend())
     {
-        LOG_ERROR("GlobalRenderingContext", "%s : Requested material %s is not found", __func__, pipelineContext->materialName.getChar());
+        LOG_ERROR("GlobalRenderingContext", "Requested material %s is not found", pipelineContext->materialName.getChar());
         return;
     }
 
     if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == DrawMeshShaderConfig::staticType())
     {
-        fatalAssert(!pipelineContext->frameAttachments.empty(), "%s() : Frame attachments cannot be empty");
+        fatalAssert(!pipelineContext->frameAttachments.empty(), "Frame attachments cannot be empty");
 
         DrawMeshShaderObject *drawMeshShaderObj = static_cast<DrawMeshShaderObject *>(shaderDataCollectionItr->second.shaderObject);
 
@@ -539,14 +537,14 @@ void GlobalRenderingContextBase::preparePipelineContext(
             // and its render pass and pipelines
             fatalAssert(
                 renderpassProps == renderpassPropsFromRpFormat(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx),
-                "%s() : Incompatible RTs for Mesh Draw shaders", __func__
+                "Incompatible RTs for Mesh Draw shaders"
             );
 
             fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->frameAttachments);
         }
         fatalAssert(
-            fb != nullptr, "%s() : Framebuffer is invalid[Shader : %s, Render pass format : %s]", __func__,
-            pipelineContext->materialName.getChar(), ERenderPassFormat::toString(pipelineContext->renderpassFormat)
+            fb != nullptr, "Framebuffer is invalid[Shader : %s, Render pass format : %s]", pipelineContext->materialName.getChar(),
+            ERenderPassFormat::toString(pipelineContext->renderpassFormat)
         );
         pipelineContext->framebuffer = fb;
     }
@@ -583,7 +581,7 @@ void GlobalRenderingContextBase::preparePipelineContext(
         }
         else
         {
-            fatalAssert(!pipelineContext->frameAttachments.empty(), "%s() : Frame attachments cannot be empty", __func__);
+            fatalAssert(!pipelineContext->frameAttachments.empty(), "Frame attachments cannot be empty");
             fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->frameAttachments);
         }
         UniqueUtilityShaderObject *uniqUtilShaderObj = static_cast<UniqueUtilityShaderObject *>(shaderDataCollectionItr->second.shaderObject);

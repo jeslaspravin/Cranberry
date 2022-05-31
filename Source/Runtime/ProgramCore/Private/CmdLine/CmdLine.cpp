@@ -380,7 +380,7 @@ bool ProgramCmdLine::getArg(std::vector<String> &outValues, const String &argNam
 
 String ProgramCmdLine::atIdx(uint32 idx) const
 {
-    fatalAssert(cmdLineElements.size() > idx, "%s() : Cmd line value idx %d out of range %lu", __func__, idx, cmdLineElements.size());
+    fatalAssert(cmdLineElements.size() > idx, "Cmd line value idx %d out of range %lu", idx, cmdLineElements.size());
     return cmdLineElements[idx];
 }
 

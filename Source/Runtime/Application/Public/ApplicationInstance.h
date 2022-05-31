@@ -20,7 +20,10 @@ class PlatformAppInstanceBase;
 class InputSystem;
 class FontManager;
 class WindowManager;
-namespace copat { class JobSystem; }
+namespace copat
+{
+class JobSystem;
+}
 
 struct AppInstanceCreateInfo
 {

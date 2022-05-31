@@ -151,7 +151,8 @@ private:
     std::latch workersFinishedEvent{ calculateWorkersCount() };
 
     SpecialThreadQueueType mainThreadJobs;
-    std::atomic_flag bExitMain;
+    // 0 will be used by main thread loop itself while 1 will be used by worker threads to run until shutdown is called
+    std::atomic_flag bExitMain[2];
     // Main thread tick function type, This function gets ticked in main thread for every loop and then main job queue will be emptied
     MainThreadTickFunc mainThreadTick;
     void *userData;
@@ -168,12 +169,16 @@ public:
     void initialize(MainThreadTickFunc &&mainTickFunc, void *inUserData);
     void joinMain() { runMain(); }
 
-    void exitMain() { bExitMain.test_and_set(std::memory_order::release); }
+    void exitMain() { bExitMain[0].test_and_set(std::memory_order::release); }
 
     void shutdown()
     {
+        PerThreadData *mainThreadTlData = getPerThreadData();
+        COPAT_ASSERT(mainThreadTlData->threadType == EJobThreadType::MainThread);
+
         // Just setting bExitMain flag to expected when shutting down
-        bExitMain.test_and_set(std::memory_order::relaxed);
+        bExitMain[0].test_and_set(std::memory_order::relaxed);
+        bExitMain[1].test_and_set(std::memory_order::relaxed);
 
         specialThreadsPool.shutdown();
 
@@ -189,6 +194,12 @@ public:
         {}
         workerJobEvent.release(calculateWorkersCount());
         workersFinishedEvent.wait();
+
+        delete mainThreadTlData;
+        if (singletonInstance == this)
+        {
+            singletonInstance = nullptr;
+        }
     }
 
     void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread = EJobThreadType::WorkerThreads)
@@ -245,7 +256,8 @@ private:
 
     void runMain()
     {
-        PerThreadData *tlData = &getOrCreatePerThreadData();
+        // Main thread data gets created and destroy in initialize and shutdown resp.
+        PerThreadData *tlData = getPerThreadData();
         tlData->threadType = EJobThreadType::MainThread;
         while (true)
         {
@@ -259,12 +271,11 @@ private:
                 std::coroutine_handle<>::from_address(coroPtr).resume();
             }
 
-            if (bExitMain.test(std::memory_order::relaxed))
+            if (bExitMain[0].test(std::memory_order::relaxed))
             {
                 break;
             }
         }
-        memDelete(tlData);
     }
 
     void doWorkerJobs()
@@ -278,7 +289,7 @@ private:
                 std::coroutine_handle<>::from_address(coroPtr).resume();
             }
 
-            if (bExitMain.test(std::memory_order::relaxed))
+            if (bExitMain[1].test(std::memory_order::relaxed))
             {
                 break;
             }
@@ -306,7 +317,7 @@ private:
                 std::coroutine_handle<>::from_address(coroPtr).resume();
             }
 
-            if (bExitMain.test(std::memory_order::relaxed))
+            if (bExitMain[1].test(std::memory_order::relaxed))
             {
                 break;
             }

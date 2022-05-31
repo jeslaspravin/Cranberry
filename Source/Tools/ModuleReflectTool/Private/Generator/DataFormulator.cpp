@@ -42,8 +42,10 @@ void parseFailed(CXCursor cursor, SourceGeneratorContext *srcGenContext, const T
 {
     // Just push and pop debug here to enable log level
     SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
-    LOG("SourceGenerator", "%s ERROR %s() : Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName,
-        StringFormat::format(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...));
+    LOG_ERROR(
+        "SourceGenerator", "%s ERROR %s() : Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName,
+        StringFormat::format(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...)
+    );
     srcGenContext->bGenerated = false;
 }
 
@@ -631,7 +633,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
         }
         else
         {
-            LOG_ERROR("SourceGenerator", "%s() : Type %s is not fully supported custom type", __func__, clang_getTypeSpelling(referredType));
+            LOG_ERROR("SourceGenerator", "Type %s is not fully supported custom type", clang_getTypeSpelling(referredType));
             srcGenContext->bGenerated = false;
             return;
         }
@@ -695,10 +697,7 @@ void generatePrereqTypes(CXType type, SourceGeneratorContext *srcGenContext)
         CXCursor typeDecl = clang_getTypeDeclaration(referredType);
         if (clang_Cursor_isNull(typeDecl))
         {
-            LOG_ERROR(
-                "SourceGenerator", "%s() : Type %s do not have any declaration and cannot be reflected", __func__,
-                clang_getTypeSpelling(referredType)
-            );
+            LOG_ERROR("SourceGenerator", "Type %s do not have any declaration and cannot be reflected", clang_getTypeSpelling(referredType));
             srcGenContext->bGenerated = false;
             return;
         }

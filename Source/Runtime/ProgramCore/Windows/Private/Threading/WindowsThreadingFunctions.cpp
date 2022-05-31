@@ -25,7 +25,10 @@ bool WindowsThreadingFunctions::setTlsSlotValue(uint32 slot, void *value) { retu
 
 void *WindowsThreadingFunctions::getTlsSlotValue(uint32 slot) { return ::TlsGetValue(slot); }
 
-void WindowsThreadingFunctions::setThreadName(const TChar *name, void *threadHandle) { ::SetThreadDescription(threadHandle, TCHAR_TO_WCHAR(name)); }
+void WindowsThreadingFunctions::setThreadName(const TChar *name, void *threadHandle)
+{
+    ::SetThreadDescription(threadHandle, TCHAR_TO_WCHAR(name));
+}
 
 void WindowsThreadingFunctions::setCurrentThreadName(const TChar *name) { setThreadName(name, getCurrentThreadHandle()); }
 

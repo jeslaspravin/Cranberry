@@ -152,8 +152,7 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     if (tempIdx >= config.allowedDrawModes.size())
     {
         LOG_WARN(
-            "GraphicsPipeline", "%s() : Not supported draw mode %d for pipeline of shader %s", __func__, tempIdx,
-            pipelineShader->getResourceName().getChar()
+            "GraphicsPipeline", "Not supported draw mode %d for pipeline of shader %s", tempIdx, pipelineShader->getResourceName().getChar()
         );
     }
     idx += (tempIdx % config.allowedDrawModes.size()) * polyDeg;
@@ -166,8 +165,7 @@ int32 GraphicsPipelineBase::idxFromParam(GraphicsPipelineQueryParams queryParam)
     if (tempIdx >= config.supportedCullings.size())
     {
         LOG_WARN(
-            "GraphicsPipeline", "%s() : Not supported culling mode %d for pipeline of shader %s", __func__, tempIdx,
-            pipelineShader->getResourceName().getChar()
+            "GraphicsPipeline", "Not supported culling mode %d for pipeline of shader %s", tempIdx, pipelineShader->getResourceName().getChar()
         );
     }
     idx += (tempIdx % config.supportedCullings.size()) * polyDeg;
@@ -206,10 +204,7 @@ FORCE_INLINE PipelineBase *GraphicsPipelineFactoryRegistrant::operator()(
     }
     else
     {
-        fatalAssert(
-            getter.isBound(), "%s() : Invalid GraphicsPipelineConfig getter for shader %s", __func__,
-            args.pipelineShader->getResourceName().getChar()
-        );
+        fatalAssert(getter.isBound(), "Invalid GraphicsPipelineConfig getter for shader %s", args.pipelineShader->getResourceName().getChar());
         String pipelineName;
         pipeline = graphicsHelper->createGraphicsPipeline(graphicsInstance, getter.invoke(pipelineName, args.pipelineShader));
         pipeline->setResourceName(pipelineName);
@@ -279,6 +274,6 @@ PipelineBase *
 
         return (factoryItr->second)(graphicsInstance, graphicsHelper, args);
     }
-    LOG_ERROR("PipelineFactory", "%() : Pipeline factory unsupported shader config/shader", __func__);
+    LOG_ERROR("PipelineFactory", "Pipeline factory unsupported shader config/shader");
     return nullptr;
 }

@@ -395,7 +395,7 @@ bool ShaderParameters::setBuffer(const String &paramName, const BufferType &buff
         }
         else
         {
-            LOG_ERROR("ShaderParameters", "%s() : Cannot set %s[%d] of %s", __func__, paramName.getChar(), index, bufferName.getChar());
+            LOG_ERROR("ShaderParameters", "Cannot set %s[%d] of %s", paramName.getChar(), index, bufferName.getChar());
         }
     }
     else
@@ -420,9 +420,9 @@ bool ShaderParameters::setBuffer(const String &paramName, const BufferType &buff
         {
             LOG_ERROR(
                 "ShaderParameters",
-                "%s() : Cannot set stride %d to stride %d or cannot set buffer with runtime "
+                "Cannot set stride %d to stride %d or cannot set buffer with runtime "
                 "array as single struct, Set runtime array separately",
-                __func__, sizeof(BufferType), bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride()
+                sizeof(BufferType), bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride()
             );
         }
     }

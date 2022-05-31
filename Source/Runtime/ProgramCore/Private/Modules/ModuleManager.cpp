@@ -57,7 +57,7 @@ LibPointer *ModuleManager::loadFromAdditionalPaths(String modulePath) const
         }
         else
         {
-            LOG_WARN("ModuleManager", "%s() : Searched for %s library at %s", __func__, modulePath, lookAtPath);
+            LOG_WARN("ModuleManager", "Searched for %s library at %s", modulePath, lookAtPath);
         }
     }
     return nullptr;
@@ -79,8 +79,8 @@ ModuleManager::ModuleManager()
         LibraryData data;
         PlatformFunctions::getModuleInfo(procHandle, libPtr, data);
         LOG_DEBUG(
-            "ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d", __func__, data.name.getChar(),
-            data.imgName.getChar(), data.moduleSize
+            "ModuleManager", "System loaded module name : %s, Image : %s, Module size : %d", data.name.getChar(), data.imgName.getChar(),
+            data.moduleSize
         );
         loadedLibraries[data.name].first = libPtr;
         loadedLibraries[data.name].second = data;
@@ -124,7 +124,7 @@ LibPointer *ModuleManager::getOrLoadLibrary(String modulePath)
         }
         if (library)
         {
-            LOG_DEBUG("ModuleManager", "%s() : Loaded Library %s from %s", __func__, moduleName, modulePath);
+            LOG_DEBUG("ModuleManager", "Loaded Library %s from %s", moduleName, modulePath);
 
             loadedLibraries[moduleName].first = library;
             PlatformFunctions::getModuleInfo(
@@ -159,18 +159,18 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
 
     if (!bool(retModule))
     {
-        LOG("ModuleManager", "%s() : Loading module %s", __func__, moduleName);
+        LOG("ModuleManager", "Loading module %s", moduleName);
 
         auto staticInitializerItr = getModuleInitializerList().find(moduleName);
         if (staticInitializerItr != getModuleInitializerList().end())
         {
-            fatalAssert(staticInitializerItr->second.isBound(), "%s() : Static initializer must be bound", __func__);
+            fatalAssert(staticInitializerItr->second.isBound(), "Static initializer must be bound");
             retModule = ModulePtr(staticInitializerItr->second.invoke());
         }
 #if STATIC_LINKED
         else
         {
-            fatalAssert(!"Module initializer not found", "%s() : Module initializer not found", __func__);
+            fatalAssert(!"Module initializer not found", "Module initializer not found");
             return existingModule;
         }
 #else  // STATIC_LINKED
@@ -179,16 +179,16 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
             // Not specifying extension as they are auto appended by api to platform default
             LibPointerPtr libPtr = getOrLoadLibrary(moduleName);
             // Check other paths for modules
-            fatalAssert(libPtr, "%s() : Failed loading module %s", __func__, moduleName);
+            fatalAssert(libPtr, "Failed loading module %s", moduleName);
 
             Function<IModuleBase *> createFuncPtr((Function<IModuleBase *>::StaticDelegate
             )PlatformFunctions::getProcAddress(libPtr, TCHAR("createModule_") + moduleName));
-            fatalAssert(createFuncPtr, "%s() : Failed find module create function for module %s", __func__, moduleName);
+            fatalAssert(createFuncPtr, "Failed find module create function for module %s", moduleName);
 
             retModule = ModulePtr(createFuncPtr());
         }
 #endif // STATIC_LINKED
-        fatalAssert(retModule, "%s() : Failed loading module interface %s", __func__, moduleName);
+        fatalAssert(retModule, "Failed loading module interface %s", moduleName);
 
         retModule->init();
         loadedModuleInterfaces[moduleName] = retModule;
@@ -206,7 +206,7 @@ void ModuleManager::unloadModule(String moduleName)
         moduleInterface->release();
         loadedModuleInterfaces.erase(moduleName);
         std::erase(moduleLoadedOrder, moduleName);
-        LOG_DEBUG("ModuleManager", "%s() : Unloaded module %s", __func__, moduleName.getChar());
+        LOG_DEBUG("ModuleManager", "Unloaded module %s", moduleName.getChar());
 #if !STATIC_LINKED
         LibPointerPtr libPtr = getLibrary(moduleName);
         if (libPtr)
@@ -227,20 +227,20 @@ void ModuleManager::unloadAllModules()
         debugAssert(moduleItr != loadedModuleInterfaces.end());
         moduleItr->second->release();
         loadedModuleInterfaces.erase(moduleItr);
-        LOG_DEBUG("ModuleManager", "%s() : Unloaded module %s", __func__, *rItr);
+        LOG_DEBUG("ModuleManager", "Unloaded module %s", *rItr);
     }
     moduleLoadedOrder.clear();
     for (const std::pair<const String, ModulePtr> &modulePair : loadedModuleInterfaces)
     {
         modulePair.second->release();
-        LOG_DEBUG("ModuleManager", "%s() : Unloaded module %s", __func__, modulePair.first);
+        LOG_DEBUG("ModuleManager", "Unloaded module %s", modulePair.first);
     }
     loadedModuleInterfaces.clear();
 
     for (const std::pair<const String, std::pair<LibPointerPtr, LibraryData>> &libPair : loadedLibraries)
     {
         delete libPair.second.first;
-        LOG_DEBUG("ModuleManager", "%s() : Unloaded library %s", __func__, libPair.first);
+        LOG_DEBUG("ModuleManager", "Unloaded library %s", libPair.first);
     }
     loadedLibraries.clear();
 }
@@ -264,8 +264,8 @@ std::vector<std::pair<LibPointerPtr, LibraryData>> ModuleManager::getAllModuleDa
             continue;
 
         LOG_DEBUG(
-            "ModuleManager", "%s() : System loaded module name : %s, Image : %s, Module size : %d", __func__, data.name.getChar(),
-            data.imgName.getChar(), data.moduleSize
+            "ModuleManager", "System loaded module name : %s, Image : %s, Module size : %d", data.name.getChar(), data.imgName.getChar(),
+            data.moduleSize
         );
         loadedLibraries[data.name].first = libPtr;
         loadedLibraries[data.name].second = data;

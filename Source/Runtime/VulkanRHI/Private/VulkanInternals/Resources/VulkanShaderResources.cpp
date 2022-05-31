@@ -107,7 +107,7 @@ void VulkanShaderResource::init()
     shaderFile.openFile();
     reflectionFile.openFile();
     LOG_DEBUG(
-        "VulkanShaderResource", "%s() : Loading from shader file %s and reflection file %s", __func__, shaderFile.getFileName().getChar(),
+        "VulkanShaderResource", "Loading from shader file %s and reflection file %s", shaderFile.getFileName().getChar(),
         reflectionFile.getFileName().getChar()
     );
 

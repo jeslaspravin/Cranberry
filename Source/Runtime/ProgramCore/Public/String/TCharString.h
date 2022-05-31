@@ -93,7 +93,7 @@ CONST_EXPR bool find(const CharType *findIn, const CharType findCh, SizeT *outFo
 }
 
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool rfind(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+CONST_EXPR bool rfind(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = StringViewType::npos)
 {
     StringViewType strView(findIn);
     SizeT foundAt = strView.rfind(findStr, findFrom);
@@ -104,7 +104,7 @@ CONST_EXPR bool rfind(const CharType *findIn, const CharType *findStr, SizeT *ou
     return foundAt != StringViewType::npos;
 }
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
-CONST_EXPR bool rfind(const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
+CONST_EXPR bool rfind(const CharType *findIn, const CharType findCh, SizeT *outFoundAt = nullptr, SizeT findFrom = StringViewType::npos)
 {
     StringViewType strView(findIn);
     SizeT foundAt = strView.rfind(findCh, findFrom);

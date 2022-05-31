@@ -153,7 +153,7 @@ bool VulkanDevice::createQueueResources()
         {
             delete genericQueue;
             genericQueue = nullptr;
-            LOG_ERROR("VulkanDevice", "%s() : Failed creating necessary queue resources", __func__);
+            LOG_ERROR("VulkanDevice", "Failed creating necessary queue resources");
             return false;
         }
     }
@@ -164,7 +164,7 @@ bool VulkanDevice::createQueueResources()
 
         if (presentQueues.empty())
         {
-            LOG_ERROR("VulkanDevice", "%s() : No valid surface found, Skipping creating presentation queue", __func__);
+            LOG_ERROR("VulkanDevice", "No valid surface found, Skipping creating presentation queue");
         }
         else
         {
@@ -211,13 +211,13 @@ bool VulkanDevice::collectDeviceExtensions(std::vector<const char *> &extensions
         if (extensionsString.find(mandatoryExt, 0) != std::string::npos)
         {
             extensions.push_back(mandatoryExt);
-            LOG_DEBUG("VulkanDevice", "%s() : Loading device extension %s", __func__, mandatoryExt);
+            LOG_DEBUG("VulkanDevice", "Loading device extension %s", mandatoryExt);
         }
     }
 
     if (mandatoryExtensions.size() != extensions.size())
     {
-        LOG_ERROR("VulkanDevice", "%s() : Missing mandatory extensions", __func__);
+        LOG_ERROR("VulkanDevice", "Missing mandatory extensions");
         return false;
     }
 
@@ -233,7 +233,7 @@ void VulkanDevice::loadDeviceFunctions()
 #define DEVICE_VK_FUNCTIONS(function)                                                                                                          \
     function = (PFN_##function)Vk::vkGetDeviceProcAddr(logicalDevice, #function);                                                              \
     if (function == nullptr)                                                                                                                   \
-        LOG_ERROR("VulkanDevice", "%s() : Failed loading function : " #function, __func__);
+        LOG_ERROR("VulkanDevice", "Failed loading function : " #function);
 
 #define DEVICE_VK_EXT_FUNCTIONS(function, extension)                                                                                           \
     for (const char *ext : registeredExtensions)                                                                                               \
@@ -245,7 +245,7 @@ void VulkanDevice::loadDeviceFunctions()
         }                                                                                                                                      \
     }                                                                                                                                          \
     if (function == nullptr)                                                                                                                   \
-        LOG_ERROR("VulkanDevice", "%s() : Failed loading function : " #function, __func__);
+        LOG_ERROR("VulkanDevice", "Failed loading function : " #function);
 
 #include "VulkanFunctionLists.inl"
 }
@@ -310,7 +310,7 @@ void VulkanDevice::cacheGlobalSurfaceProperties(const WindowCanvasRef &windowCan
                 presentQueues.emplace_back(index);
             }
         }
-        fatalAssert(!presentQueues.empty(), "%s() : Window is available but no queues support presenting to the window surface", __func__);
+        fatalAssert(!presentQueues.empty(), "Window is available but no queues support presenting to the window surface");
     }
     GlobalRenderVariables::PRESENTING_ENABLED.set(true);
     alertIf(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get(), "Presenting must not be enabled in compute only device!");
@@ -334,19 +334,19 @@ void VulkanDevice::cacheGlobalSurfaceProperties(const WindowCanvasRef &windowCan
                 "V-Sync not supported"
             );
             globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
-            LOG_DEBUG("VulkanDevice", "%s() : Choosen fifo present mode", __func__);
+            LOG_DEBUG("VulkanDevice", "Choosen fifo present mode");
             choosenImageCount = swapchainCapabilities.minImageCount;
         }
         else if (std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR) != presentModes.cend())
         {
             globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR;
-            LOG_DEBUG("VulkanDevice", "%s() : Choosen mailbox present mode", __func__);
+            LOG_DEBUG("VulkanDevice", "Choosen mailbox present mode");
             choosenImageCount = Math::max<uint32>(choosenImageCount, 3);
         }
         else if (std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_RELAXED_KHR) != presentModes.cend())
         {
             globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_RELAXED_KHR;
-            LOG_DEBUG("VulkanDevice", "%s() : Choosen fifo relaxed present mode", __func__);
+            LOG_DEBUG("VulkanDevice", "Choosen fifo relaxed present mode");
             choosenImageCount = Math::max<uint32>(choosenImageCount, 3);
         }
         else
@@ -356,7 +356,7 @@ void VulkanDevice::cacheGlobalSurfaceProperties(const WindowCanvasRef &windowCan
                 "No accepted present mode is found, not even default case"
             );
             globalPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
-            LOG_DEBUG("VulkanDevice", "%s() : Choosen fifo present mode", __func__);
+            LOG_DEBUG("VulkanDevice", "Choosen fifo present mode");
             choosenImageCount = Math::max<uint32>(choosenImageCount, 2);
         }
     }
@@ -482,7 +482,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
     uint32 extCount = 0;
     if (Vk::vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, (uint32_t *)&extCount, nullptr) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanDevice", "%s() : enumerating extensions for device failed", __func__);
+        LOG_ERROR("VulkanDevice", "enumerating extensions for device failed");
         return;
     }
     availableExtensions.resize(extCount);
@@ -491,7 +491,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
     uint32 layerCount = 0;
     if (Vk::vkEnumerateDeviceLayerProperties(physicalDevice, (uint32_t *)&layerCount, nullptr) != VK_SUCCESS)
     {
-        LOG_WARN("VulkanDevice", "%s() : enumerating layers for device failed", __func__);
+        LOG_WARN("VulkanDevice", "enumerating layers for device failed");
     }
     else
     {
@@ -530,14 +530,14 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
 
         Vk::vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
         LOG_DEBUG(
-            "VulkanDevice", "%s() : Found %d memory types and %d heaps in device %s", __func__, memoryProperties.memoryTypeCount,
+            "VulkanDevice", "Found %d memory types and %d heaps in device %s", memoryProperties.memoryTypeCount,
             memoryProperties.memoryHeapCount, properties.deviceName
         );
     }
 
-    LOG_DEBUG("VulkanDevice", "%s() : Found %d extensions and %d layers in device %s", __func__, extCount, layerCount, properties.deviceName);
+    LOG_DEBUG("VulkanDevice", "Found %d extensions and %d layers in device %s", extCount, layerCount, properties.deviceName);
     LOG_DEBUG(
-        "VulkanDevice", "%s() : Device API version %d.%d.%d Driver version %d.%d.%d", __func__, VK_VERSION_MAJOR(properties.apiVersion),
+        "VulkanDevice", "Device API version %d.%d.%d Driver version %d.%d.%d", VK_VERSION_MAJOR(properties.apiVersion),
         VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion), VK_VERSION_MAJOR(properties.driverVersion),
         VK_VERSION_MINOR(properties.driverVersion), VK_VERSION_PATCH(properties.driverVersion)
     );
@@ -546,7 +546,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
     Vk::vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, (uint32_t *)&queueCount, nullptr);
     queueFamiliesSupported.resize(queueCount);
     Vk::vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, (uint32_t *)&queueCount, queueFamiliesSupported.data());
-    LOG_DEBUG("VulkanDevice", "%s() : %s supports %d number of queue families", __func__, properties.deviceName, queueCount);
+    LOG_DEBUG("VulkanDevice", "%s supports %d number of queue families", properties.deviceName, queueCount);
 }
 
 #define MOVE_IMPL()                                                                                                                            \
@@ -609,7 +609,7 @@ VulkanDevice::~VulkanDevice()
 {
     if (allQueues.size() > 0 || logicalDevice)
     {
-        LOG_WARN("VulkanDevice", "%s() : Queues & logic devices not cleared");
+        LOG_WARN("VulkanDevice", "Queues & logic devices not cleared");
         freeLogicDevice();
     }
 }
@@ -636,7 +636,7 @@ struct CacheQueues
 
 void VulkanDevice::createLogicDevice()
 {
-    LOG_DEBUG("VulkanDevice", "%s() : Creating logical device", __func__);
+    LOG_DEBUG("VulkanDevice", "Creating logical device");
     const bool bQueueResCreated = createQueueResources();
     fatalAssert(bQueueResCreated, "Without vulkan queues application cannot proceed running");
     markGlobalConstants();
@@ -693,7 +693,7 @@ void VulkanDevice::createLogicDevice()
 
 void VulkanDevice::freeLogicDevice()
 {
-    LOG_DEBUG("VulkanDevice", "%s() : Freeing logical device", __func__);
+    LOG_DEBUG("VulkanDevice", "Freeing logical device");
 
     for (QueueResourceBasePtr &queueResPtr : allQueues)
     {
