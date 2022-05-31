@@ -11,187 +11,434 @@
 
 #include "Logger/Logger.h"
 #include "CmdLine/CmdLine.h"
+#include "String/TCharString.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/Threading/SyncPrimitives.h"
+#include "Types/Platform/Threading/PlatformThreading.h"
+#include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
+#include "Types/Platform/PlatformFunctions.h"
+
+#include <mutex>
 
 #if LOG_TO_CONSOLE
 #include <iostream>
 
-// If 0 both user provided category will be skipped in console log
-// Severity category will be printed only for errors
-#define SKIP_CAT_IN_CONSOLE 1
+// If 0 both user provided category and severity will be skipped in console log
+// Also Source location informations will be removed
+#define SHORT_MSG_IN_CONSOLE 1
+#define ENABLE_VIRTUAL_TERMINAL_SEQ !PLATFORM_WINDOWS
+
 #endif // LOG_TO_CONSOLE
 
-OStringStream &Logger::loggerBuffer()
-{
-    static OStringStream buffer(std::ios_base::trunc);
-    return buffer;
-}
+//////////////////////////////////////////////////////////////////////////
+/// Logger impl
+//////////////////////////////////////////////////////////////////////////
 
-struct LogFileDeleter
+class LoggerImpl
 {
-    void operator()(GenericFile *filePtr) const noexcept
+private:
+    struct LoggerPerThreadData
     {
-        Logger::flushStream();
-        filePtr->closeFile();
-        delete filePtr;
+        // Right now we do per thread mute which is not correct, However this is better than solving below multi threaded scenario
+        // Thread 1 Pushes -> Thread 2 Pushes -> Thread 1 Pops incorrect mute flags -> Thread 2 Pops incorrect mute flags
+        std::vector<uint8> serverityMuteFlags{ 0 };
+
+        OStringStream bufferStream = OStringStream(std::ios_base::trunc);
+        // Per thread stream locks when flushing all streams
+        CBESpinLock streamRWLock;
+    };
+
+    uint32 tlsSlot;
+    // This will not be contented in fast path, fast path which is log, debug, warn, error has minimum spin lock contention
+    CBESpinLock allTlDataLock;
+    std::vector<LoggerPerThreadData *> allPerThreadData;
+
+    PlatformFile logFile;
+
+    LoggerPerThreadData &getOrCreatePerThreadData()
+    {
+        LoggerPerThreadData *threadLocalData = (LoggerPerThreadData *)PlatformThreadingFunctions::getTlsSlotValue(tlsSlot);
+        if (threadLocalData == nullptr)
+        {
+            LoggerPerThreadData *newTlData = new LoggerPerThreadData();
+            bool bTlsValueSet = PlatformThreadingFunctions::setTlsSlotValue(tlsSlot, newTlData);
+            if (!bTlsValueSet)
+            {
+                std::exit(-1);
+            }
+            threadLocalData = (LoggerPerThreadData *)PlatformThreadingFunctions::getTlsSlotValue(tlsSlot);
+
+            std::scoped_lock<CBESpinLock> lockAllThreadData(allTlDataLock);
+            allPerThreadData.emplace_back(threadLocalData);
+        }
+        return *threadLocalData;
+    }
+
+public:
+    bool initialize();
+    void shutdown();
+
+    std::vector<uint8> &muteFlags() { return getOrCreatePerThreadData().serverityMuteFlags; }
+
+    OStringStream &lockLoggerBuffer()
+    {
+        LoggerPerThreadData &tlData = getOrCreatePerThreadData();
+        tlData.streamRWLock.lock();
+        return tlData.bufferStream;
+    }
+    void unlockLoggerBuffer() { getOrCreatePerThreadData().streamRWLock.unlock(); }
+
+    void flushStream();
+
+private:
+    bool openNewLogFile();
+    void flushStreamInternal();
+
+    copat::NormalFuncAwaiter flushStreamAsync() { co_await flushInWorkerThread(); }
+    copat::JobSystemEnqTask<copat::EJobThreadType::WorkerThreads> flushInWorkerThread()
+    {
+        flushStreamInternal();
+        co_return;
     }
 };
-using LogFileUniquePtr = UniquePtr<GenericFile, LogFileDeleter>;
 
-GenericFile *Logger::getLogFile()
+bool LoggerImpl::initialize()
 {
-    static LogFileUniquePtr logFile;
-
-    if (!logFile)
+    if (!PlatformThreadingFunctions::createTlsSlot(tlsSlot))
     {
-        String logFileName;
-        String logFolderPath = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
-        if (ProgramCmdLine::get()->hasArg(TCHAR("--logFileName")))
-        {
-            ProgramCmdLine::get()->getArg(logFileName, TCHAR("--logFileName"));
-        }
+        return false;
+    }
+    PlatformFunctions::setupAvailableConsole();
 
-        logFileName = PathFunctions::stripExtension(logFileName);
-        String logFilePath = PathFunctions::combinePath(logFolderPath, logFileName + TCHAR(".log"));
-        PlatformFile checkFile{ logFilePath };
+    return openNewLogFile();
+}
 
-        if (checkFile.exists())
-        {
-            uint64 lastWrite = checkFile.lastWriteTimeStamp();
-            String renameTo = StringFormat::format(TCHAR("%s-%llu.log"), logFileName, lastWrite);
-            checkFile.renameFile(renameTo);
+void LoggerImpl::shutdown()
+{
+    logFile.closeFile();
 
-            // Remove or clear old logs
-            std::vector<String> oldLogFiles = FileSystemFunctions::listFiles(logFolderPath, false, logFileName + TCHAR("-*.log"));
-            if (oldLogFiles.size() > 10)
-            {
-                for (String &oldFile : oldLogFiles)
-                {
-                    oldFile = PathFunctions::fileOrDirectoryName(oldFile);
-                }
-                std::sort(oldLogFiles.begin(), oldLogFiles.end(), std::greater{});
+    PlatformFunctions::detachCosole();
 
-                for (uint32 i = 10; i < oldLogFiles.size(); ++i)
-                {
-                    PlatformFile(PathFunctions::combinePath(logFolderPath, oldLogFiles[i])).deleteFile();
-                }
-            }
-        }
+    // Thread locals are do not need lock at this point
+    for (LoggerPerThreadData *tlData : allPerThreadData)
+    {
+        delete tlData;
+    }
+    allPerThreadData.clear();
+    PlatformThreadingFunctions::releaseTlsSlot(tlsSlot);
+}
 
-        logFile = LogFileUniquePtr(new PlatformFile(logFilePath));
-        logFile->setFileFlags(EFileFlags::OpenAlways | EFileFlags::Write);
-        logFile->setSharingMode(EFileSharing::ReadOnly);
-        logFile->setAttributes(EFileAdditionalFlags::Normal);
+void LoggerImpl::flushStream()
+{
+    if (copat::JobSystem::get())
+    {
+        flushStreamAsync();
+    }
+    else
+    {
+        flushStreamInternal();
+    }
+}
 
-        bool bLogFileOpened = logFile->openOrCreate();
-        fatalAssert(bLogFileOpened, "Failed to open log file %s", logFile->getFullPath());
+void LoggerImpl::flushStreamInternal()
+{
+    decltype(std::declval<LoggerPerThreadData>().bufferStream.str()) str;
+
+    allTlDataLock.lock();
+    for (LoggerPerThreadData *tlData : allPerThreadData)
+    {
+        std::scoped_lock<CBESpinLock> lockTlStream(tlData->streamRWLock);
+        str.append(tlData->bufferStream.str());
+        tlData->bufferStream.str({});
+    }
+    allTlDataLock.unlock();
+
+    if (!str.empty())
+    {
+        const std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
+        logFile.write(ArrayView<const uint8>(reinterpret_cast<const uint8 *>(utf8str.data()), uint32(utf8str.length())));
+    }
+}
+
+bool LoggerImpl::openNewLogFile()
+{
+    String logFileName;
+    String logFolderPath = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
+    if (ProgramCmdLine::get()->hasArg(TCHAR("--logFileName")))
+    {
+        ProgramCmdLine::get()->getArg(logFileName, TCHAR("--logFileName"));
     }
 
-    return &(*logFile);
+    logFileName = PathFunctions::stripExtension(logFileName);
+    String logFilePath = PathFunctions::combinePath(logFolderPath, logFileName + TCHAR(".log"));
+    PlatformFile checkFile{ logFilePath };
+
+    if (checkFile.exists())
+    {
+        uint64 lastWrite = checkFile.lastWriteTimeStamp();
+        String renameTo = StringFormat::format(TCHAR("%s-%llu.log"), logFileName, lastWrite);
+        checkFile.renameFile(renameTo);
+
+        // Remove or clear old logs
+        std::vector<String> oldLogFiles = FileSystemFunctions::listFiles(logFolderPath, false, logFileName + TCHAR("-*.log"));
+        if (oldLogFiles.size() > 10)
+        {
+            for (String &oldFile : oldLogFiles)
+            {
+                oldFile = PathFunctions::fileOrDirectoryName(oldFile);
+            }
+            std::sort(oldLogFiles.begin(), oldLogFiles.end(), std::greater{});
+
+            for (uint32 i = 10; i < oldLogFiles.size(); ++i)
+            {
+                PlatformFile(PathFunctions::combinePath(logFolderPath, oldLogFiles[i])).deleteFile();
+            }
+        }
+    }
+
+    logFile = PlatformFile(logFilePath);
+    logFile.setFileFlags(EFileFlags::OpenAlways | EFileFlags::Write);
+    logFile.setSharingMode(EFileSharing::ReadOnly);
+    logFile.setAttributes(EFileAdditionalFlags::Normal);
+
+    return logFile.openOrCreate();
 }
 
-std::vector<uint8> &Logger::muteFlags()
+Logger::LoggerAutoShutdown Logger::autoShutdown;
+
+//////////////////////////////////////////////////////////////////////////
+/// Logger
+//////////////////////////////////////////////////////////////////////////
+
+LoggerImpl *Logger::loggerImpl = nullptr;
+
+NODISCARD constexpr const TChar *filterFileName(const AChar *fileName) noexcept
 {
-    static std::vector<uint8> serverityMuteFlags = { 0 };
-    return serverityMuteFlags;
+    SizeT foundAt = 0;
+    TCharStr::rfind(fileName, FS_PATH_SEPARATOR, &foundAt);
+    return fileName + foundAt + 1;
 }
 
-void Logger::debugInternal(const TChar *category, const String &message)
+void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
 #if DEV_BUILD
     static const String CATEGORY{ TCHAR("[DEBUG]") };
-    if (BIT_SET(muteFlags().back(), ELogServerity::Debug))
+
+    if (canLog(ELogServerity::Debug, ELogOutputType::File))
     {
-        return;
+        OStringStream &stream = loggerImpl->lockLoggerBuffer();
+        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar() 
+            << LINE_FEED_TCHAR;
+        loggerImpl->unlockLoggerBuffer();
     }
 
-    OStringStream &stream = loggerBuffer();
-    stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    if (canLog(ELogServerity::Debug, ELogOutputType::Console))
+    {
+        std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
-    COUT
-#if SKIP_CAT_IN_CONSOLE == 0
-        << TCHAR("[") << category << TCHAR("]") << CATEGORY
-#endif
-        << message.getChar() << std::endl;
+#if SHORT_MSG_IN_CONSOLE
+        COUT << message.getChar() << std::endl;
+#else
+        COUT << TCHAR("[") << category << TCHAR("]") << CATEGORY
+            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar()
+            << std::endl;
+#endif // SHORT_MSG_IN_CONSOLE
 #endif // LOG_TO_CONSOLE
+    }
+
 #endif // DEV_BUILD
 }
 
-void Logger::logInternal(const TChar *category, const String &message)
+void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
     static const String CATEGORY{ TCHAR("[LOG]") };
-    if (BIT_SET(muteFlags().back(), ELogServerity::Log))
+
+    if (canLog(ELogServerity::Log, ELogOutputType::File))
     {
-        return;
+        OStringStream &stream = loggerImpl->lockLoggerBuffer();
+        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar() 
+            << LINE_FEED_TCHAR;
+        loggerImpl->unlockLoggerBuffer();
     }
 
-    OStringStream &stream = loggerBuffer();
-    stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    if (canLog(ELogServerity::Log, ELogOutputType::Console))
+    {
+        std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
-    COUT
-#if SKIP_CAT_IN_CONSOLE == 0
-        << TCHAR("[") << category << TCHAR("]") << CATEGORY
-#endif
-        << message.getChar() << std::endl;
+#if SHORT_MSG_IN_CONSOLE
+        COUT << message.getChar() << std::endl;
+#else
+        COUT << TCHAR("[") << category << TCHAR("]") << CATEGORY
+            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar()
+            << std::endl;
+#endif // SHORT_MSG_IN_CONSOLE
 #endif // LOG_TO_CONSOLE
+    }
 }
 
-void Logger::warnInternal(const TChar *category, const String &message)
+void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
     static const String CATEGORY{ TCHAR("[WARN]") };
-    if (BIT_SET(muteFlags().back(), ELogServerity::Warning))
+
+    if (canLog(ELogServerity::Warning, ELogOutputType::File))
     {
-        return;
+        OStringStream &stream = loggerImpl->lockLoggerBuffer();
+        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar() 
+            << LINE_FEED_TCHAR;
+        loggerImpl->unlockLoggerBuffer();
     }
 
-    OStringStream &stream = loggerBuffer();
-    stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    if (canLog(ELogServerity::Warning, ELogOutputType::Console))
+    {
+        std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
-    CERR << CONSOLE_FOREGROUND_YELLOW
-#if SKIP_CAT_IN_CONSOLE == 0
-        << TCHAR("[") << category << TCHAR("]") << CATEGORY
+#if SHORT_MSG_IN_CONSOLE
+
+        CERR
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+            << CONSOLE_FOREGROUND_YELLOW
 #endif
-        << message.getChar() << CONSOLE_FOREGROUND_DEFAULT << std::endl;
+            << message.getChar()
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+            << CONSOLE_FOREGROUND_DEFAULT
+#endif
+            << std::endl;
+#else // SHORT_MSG_IN_CONSOLE
+        CERR
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+            << CONSOLE_FOREGROUND_YELLOW
+#endif
+            << TCHAR("[") << category << TCHAR("]") << CATEGORY
+            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar()
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+            << CONSOLE_FOREGROUND_DEFAULT
+#endif
+            << std::endl;
+#endif // SHORT_MSG_IN_CONSOLE
 #endif // LOG_TO_CONSOLE
+    }
 }
 
-void Logger::errorInternal(const TChar *category, const String &message)
+void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
     static const String CATEGORY{ TCHAR("[ERROR]") };
-    if (BIT_SET(muteFlags().back(), ELogServerity::Error))
+
+    if (canLog(ELogServerity::Error, ELogOutputType::File))
     {
-        return;
+        OStringStream &stream = loggerImpl->lockLoggerBuffer();
+        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar() 
+            << LINE_FEED_TCHAR;
+        loggerImpl->unlockLoggerBuffer();
     }
 
-    OStringStream &stream = loggerBuffer();
-    stream << TCHAR("[") << category << TCHAR("]") << CATEGORY << message.getChar() << LINE_FEED_CHAR;
+    if (canLog(ELogServerity::Error, ELogOutputType::Console))
+    {
+        std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
-    CERR << CONSOLE_FOREGROUND_RED
-#if SKIP_CAT_IN_CONSOLE == 0
-        << TCHAR("[") << category << TCHAR("]")
+#if SHORT_MSG_IN_CONSOLE
+
+        CERR
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+            << CONSOLE_FOREGROUND_RED
 #endif
-        << CATEGORY << message.getChar() << CONSOLE_FOREGROUND_DEFAULT << std::endl;
+            << message.getChar()
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+            << CONSOLE_FOREGROUND_DEFAULT
+#endif
+            << std::endl;
+#else // SHORT_MSG_IN_CONSOLE
+        CERR
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+            << CONSOLE_FOREGROUND_RED
+#endif
+            << TCHAR("[") << category << TCHAR("]") << CATEGORY
+            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar()
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+            << CONSOLE_FOREGROUND_DEFAULT
+#endif
+            << std::endl;
+#endif // SHORT_MSG_IN_CONSOLE
 #endif // LOG_TO_CONSOLE
+    }
+}
+
+CBESpinLock &Logger::consoleOutputLock()
+{
+    static CBESpinLock lock;
+    return lock;
+}
+
+FORCE_INLINE bool Logger::canLog(ELogServerity severity, ELogOutputType output)
+{
+    switch (output)
+    {
+    case Logger::File:
+        return loggerImpl != nullptr && BIT_NOT_SET(loggerImpl->muteFlags().back(), severity);
+        break;
+    case Logger::Console:
+        return loggerImpl != nullptr && PlatformFunctions::hasAttachedConsole() && BIT_NOT_SET(loggerImpl->muteFlags().back(), severity);
+        break;
+    default:
+        break;
+    }
+    return false;
 }
 
 void Logger::flushStream()
 {
-    GenericFile *logFile = getLogFile();
-    auto str = loggerBuffer().str();
-    if (!str.empty() && logFile)
+    if (loggerImpl)
     {
-        std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
-        logFile->write(ArrayView<const uint8>(reinterpret_cast<uint8 *>(utf8str.data()), uint32(utf8str.length())));
-        loggerBuffer().str({});
+        loggerImpl->flushStream();
     }
 }
 
-void Logger::pushMuteSeverities(uint8 muteSeverities) { muteFlags().push_back(muteSeverities); }
+void Logger::pushMuteSeverities(uint8 muteSeverities)
+{
+    if (loggerImpl)
+    {
+        loggerImpl->muteFlags().push_back(muteSeverities);
+    }
+}
 
 void Logger::popMuteSeverities()
 {
-    if (muteFlags().size() > 1)
+    if (loggerImpl && loggerImpl->muteFlags().size() > 1)
     {
-        muteFlags().pop_back();
+        loggerImpl->muteFlags().pop_back();
+    }
+}
+
+void Logger::initialize()
+{
+    if (!loggerImpl)
+    {
+        loggerImpl = new LoggerImpl();
+        loggerImpl->initialize();
+    }
+}
+
+void Logger::shutdown()
+{
+    flushStream();
+
+    if (loggerImpl)
+    {
+        LoggerImpl *loggerTemp = loggerImpl;
+        loggerImpl = nullptr;
+        loggerTemp->shutdown();
+        delete loggerTemp;
     }
 }

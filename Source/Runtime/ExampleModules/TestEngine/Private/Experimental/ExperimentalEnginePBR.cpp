@@ -451,7 +451,7 @@ public:
         {
         case GridEntity::Entity:
         {
-            fatalAssert(sceneData.size() > entity.idx, "%s() : Invalid index %d", __func__, entity.idx);
+            fatalAssert(sceneData.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(
                 sceneData[entity.idx].meshAsset->bounds.minBound * sceneData[entity.idx].transform.getScale()
                     + sceneData[entity.idx].transform.getTranslation(),
@@ -462,13 +462,13 @@ public:
         }
         case GridEntity::PointLight:
         {
-            fatalAssert(scenePointLights.size() > entity.idx, "%s() : Invalid index %d", __func__, entity.idx);
+            fatalAssert(scenePointLights.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(scenePointLights[entity.idx].lightPos - Vector3D(50), scenePointLights[entity.idx].lightPos + Vector3D(50));
             return bound;
         }
         case GridEntity::SpotLight:
         {
-            fatalAssert(sceneSpotLights.size() > entity.idx, "%s() : Invalid index %d", __func__, entity.idx);
+            fatalAssert(sceneSpotLights.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(
                 sceneSpotLights[entity.idx].transform.getTranslation() - Vector3D(50),
                 sceneSpotLights[entity.idx].transform.getTranslation() + Vector3D(50)
@@ -476,7 +476,7 @@ public:
             return bound;
         }
         default:
-            fatalAssert(false, "%s(): Unsupported type", __func__);
+            fatalAssert(false, "Unsupported type");
             break;
         }
         return { Vector3D::ZERO, Vector3D::ZERO };
@@ -654,12 +654,12 @@ void ExperimentalEnginePBR::createDrawCmdsBuffer(IGraphicsInstance *graphicsInst
             // Resizing material parameters
             sceneShaderUniqParams[pipeMeshPairToBatchEntity.first]->resizeRuntimeBuffer(TCHAR("materials"), materialCount);
             totalDrawCalls += pipelineDrawCalls;
-            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's Material's count %d", __func__,
-                pipeMeshPairToBatchEntity.first->materialName.getChar(), materialCount);
-            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's instanced draw calls %d", __func__,
-                pipeMeshPairToBatchEntity.first->materialName.getChar(), pipelineDrawCalls);
+            LOG("ExperimentalEnginePBR", "%s Pipeline's Material's count %d", pipeMeshPairToBatchEntity.first->materialName.getChar(),
+                materialCount);
+            LOG("ExperimentalEnginePBR", "%s Pipeline's instanced draw calls %d", pipeMeshPairToBatchEntity.first->materialName.getChar(),
+                pipelineDrawCalls);
         }
-        LOG("ExperimentalEnginePBR", "%s() : Total instanced draw calls %d", __func__, totalDrawCalls);
+        LOG("ExperimentalEnginePBR", "Total instanced draw calls %d", totalDrawCalls);
 
         // Resize instance parameters
         instanceParameters->resizeRuntimeBuffer(TCHAR("instancesWrapper"), instanceCount);
@@ -1353,7 +1353,7 @@ void ExperimentalEnginePBR::createScene()
         PBRSceneEntity car;
         car.name = TCHAR("DodgeChallenger");
         car.meshAsset = static_cast<StaticMeshAsset *>(assetManager.getAsset(car.name));
-        fatalAssert(car.meshAsset, "%s() : Failed finding car mesh %s", __func__, car.name.getChar());
+        fatalAssert(car.meshAsset, "Failed finding car mesh %s", car.name.getChar());
         car.transform.setTranslation(Vector3D(0, 2800, 0));
         for (uint32 batchIdx = 0; batchIdx < car.meshAsset->meshBatches.size(); ++batchIdx)
         {
@@ -2959,7 +2959,7 @@ void ExperimentalEnginePBR::tickEngine()
                               )
                               - windowArea.minBound;
         mouseCoord /= Vector2D(ApplicationSettings::surfaceSize.get());
-        LOG_DEBUG("ExperimentalEnginePBR", "%s(): mouse coord (%f, %f)", __func__, mouseCoord.x(), mouseCoord.y());
+        LOG_DEBUG("ExperimentalEnginePBR", "mouse coord (%f, %f)", mouseCoord.x(), mouseCoord.y());
         if (mouseCoord.x() >= 0 && mouseCoord.x() <= 1.0f && mouseCoord.y() >= 0 && mouseCoord.y() <= 1.0f)
         {
             Vector3D worldFwd = camera.screenToWorldFwd(mouseCoord);

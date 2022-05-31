@@ -25,15 +25,15 @@ VulkanSemaphore::VulkanSemaphore(const VulkanDevice *deviceInstance)
     , semaphore(nullptr)
 {}
 
-void VulkanSemaphore::waitForSignal() const { LOG_WARN("VulkanSemaphore", "%s() : Cannot wait on binary semaphores from host", __func__); }
+void VulkanSemaphore::waitForSignal() const { LOG_WARN("VulkanSemaphore", "Cannot wait on binary semaphores from host"); }
 
 bool VulkanSemaphore::isSignaled() const
 {
-    LOG_WARN("VulkanSemaphore", "%s() : Cannot check state on binary semaphores from host", __func__);
+    LOG_WARN("VulkanSemaphore", "Cannot check state on binary semaphores from host");
     return false;
 }
 
-void VulkanSemaphore::resetSignal() { LOG_WARN("VulkanSemaphore", "%s() : Cannot reset state on binary semaphores from host", __func__); }
+void VulkanSemaphore::resetSignal() { LOG_WARN("VulkanSemaphore", "Cannot reset state on binary semaphores from host"); }
 
 void VulkanSemaphore::init()
 {
@@ -56,7 +56,7 @@ void VulkanSemaphore::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanSemaphore", "%s() : Reinit failed to create new semaphore", __func__);
+        LOG_ERROR("VulkanSemaphore", "Reinit failed to create new semaphore");
     }
 }
 
@@ -114,7 +114,7 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
 
         if (vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkSignalSemaphore)(ownerDevice, &signalInfo) != VK_SUCCESS)
         {
-            LOG_ERROR("VulkanTimelineSemaphore", "%s() : Signaling to value %d failed", __func__, value);
+            LOG_ERROR("VulkanTimelineSemaphore", "Signaling to value %d failed", value);
         }
     }
 }
@@ -163,7 +163,7 @@ void VulkanTimelineSemaphore::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanSemaphore", "%s() : Reinit failed to create new semaphore", __func__);
+        LOG_ERROR("VulkanSemaphore", "Reinit failed to create new semaphore");
     }
 }
 
@@ -198,7 +198,7 @@ void VulkanFence::waitForSignal() const
 
     if (result == VK_TIMEOUT)
     {
-        LOG_WARN("VulkanFence", "%s() : waiting for fence timedout", __func__);
+        LOG_WARN("VulkanFence", "waiting for fence timedout");
     }
 }
 
@@ -228,7 +228,7 @@ void VulkanFence::reinitResources()
     }
     else
     {
-        LOG_ERROR("VulkanFence", "%s() : Failed recreating fence", __func__);
+        LOG_ERROR("VulkanFence", "Failed recreating fence");
     }
 }
 

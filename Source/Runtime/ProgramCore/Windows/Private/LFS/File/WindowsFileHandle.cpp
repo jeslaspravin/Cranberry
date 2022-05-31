@@ -93,7 +93,7 @@ bool WindowsFileHandle::openFile(const String &filePath)
 
     if (fileHandle == INVALID_HANDLE_VALUE)
     {
-        LOG_ERROR("WindowsFileHandle", "%s() : File handle creation/opening failed for %s", __func__, filePath.getChar());
+        LOG_ERROR("WindowsFileHandle", "File handle creation/opening failed for %s", filePath.getChar());
         fileHandle = nullptr;
         return false;
     }

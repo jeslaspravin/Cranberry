@@ -161,7 +161,7 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInsta
     }
     else
     {
-        LOG_ERROR("GlobalBuffers", "%s(): Cannot create integrated BRDF LUT, RG_SF16 is not supported format", __func__);
+        LOG_ERROR("GlobalBuffers", "Cannot create integrated BRDF LUT, RG_SF16 is not supported format");
         integratedBRDF = nullptr;
     }
 }

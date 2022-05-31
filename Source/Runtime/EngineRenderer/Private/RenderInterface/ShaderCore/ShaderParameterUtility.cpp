@@ -252,9 +252,9 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
                             debugAssert(bufferStructField.data.totalSize != 0 && !currentField->isPointer());
                             fatalAssert(
                                 !bHasRuntimeArray || (runtimeArrayOffset >= bufferStructField.data.offset),
-                                "%s() : Runtime array(offset : %d) must be the "
+                                "Runtime array(offset : %d) must be the "
                                 "last member of SoA. Member %s offset %d",
-                                __func__, runtimeArrayOffset, reflectStructFieldName, bufferStructField.data.offset
+                                runtimeArrayOffset, reflectStructFieldName, bufferStructField.data.offset
                             );
                         }
 
@@ -291,9 +291,9 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
                             debugAssert(bufferInnerField.data.totalSize != 0 && !currentField->isPointer());
                             fatalAssert(
                                 !bHasRuntimeArray || (runtimeArrayOffset >= bufferInnerField.data.offset),
-                                "%s() : Runtime array(offset : %d) must be the "
+                                "Runtime array(offset : %d) must be the "
                                 "last member of SoA. Member %s offset %d",
-                                __func__, runtimeArrayOffset, reflectFieldName, bufferInnerField.data.offset
+                                runtimeArrayOffset, reflectFieldName, bufferInnerField.data.offset
                             );
                         }
 
@@ -369,9 +369,9 @@ uint32 ShaderParameterUtility::convertNamedSpecConstsToPerStage(
                 {
                     LOG_WARN(
                         "ShaderSetParametersLayout",
-                        "%s() : No specialization const value found for %s, using "
+                        "No specialization const value found for %s, using "
                         "default",
-                        __func__, specConstAttribName
+                        specConstAttribName
                     );
                 }
                 stageSpecializationConsts[stageIdx].emplace_back(stageSpecConst.data);

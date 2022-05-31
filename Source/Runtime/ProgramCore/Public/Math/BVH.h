@@ -279,16 +279,16 @@ void BoundingVolume<StorageType>::reinitialize(const Vector3D &cellSize)
     }
 
     LOG_DEBUG(
-        "BVH", "%s() : Before correcting cell size global bounding box size is (%f, %f, %f)", __func__, globalBound.size().x(),
-        globalBound.size().y(), globalBound.size().z()
+        "BVH", "Before correcting cell size global bounding box size is (%f, %f, %f)", globalBound.size().x(), globalBound.size().y(),
+        globalBound.size().z()
     );
 
     volumeGrid.InitWithSize(globalBound.minBound, globalBound.maxBound, cellSize);
     volumeGrid.getBound(globalBound.minBound, globalBound.maxBound);
 
     LOG_DEBUG(
-        "BVH", "%s() : After correcting cell size global bounding box size is (%f, %f, %f)", __func__, globalBound.size().x(),
-        globalBound.size().y(), globalBound.size().z()
+        "BVH", "After correcting cell size global bounding box size is (%f, %f, %f)", globalBound.size().x(), globalBound.size().y(),
+        globalBound.size().z()
     );
 
     GridCellIndex cellCount = volumeGrid.cellCount();
@@ -314,7 +314,7 @@ void BoundingVolume<StorageType>::reinitialize(const Vector3D &cellSize)
             {
                 for (currentIdx[0] = minBoundIdx.idx[0]; currentIdx[0] <= maxBoundIdx[0]; currentIdx[0]++)
                 {
-                    // LOG_DEBUG("BVH", "%s() : Adding %d to (%d,%d,%d)", __func__, obj,
+                    // LOG_DEBUG("BVH", "Adding %d to (%d,%d,%d)", obj,
                     // x, y, z);
                     addObject(objIdx, currentIdx);
                 }

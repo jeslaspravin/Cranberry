@@ -178,5 +178,5 @@ QualifiedProperty::QualifiedProperty(const StringID &propNameID, const String &p
 {
     // Only const type can have no inner type as const int can be qualified type. This case is not a
     // useful one, and so we throw error here.
-    fatalAssert(typeInfo->innerType, "%s() : Inner type cannot be nullptr for a qualified type type %s", __func__, propName);
+    fatalAssert(typeInfo->innerType, "Inner type cannot be nullptr for a qualified type type %s", propName);
 }

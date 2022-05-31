@@ -10,6 +10,7 @@
  */
 
 #include "WindowsPlatformFunctions.h"
+#include "String/TCharString.h"
 #include "Types/Time.h"
 #include "WindowsCommonHeaders.h"
 
@@ -294,8 +295,7 @@ void WindowsPlatformFunctions::bindCrtHandlesToStdHandles(bool bBindStdIn, bool 
 
 bool WindowsPlatformFunctions::hasAttachedConsole()
 {
-    HWND consoleWindow = ::GetConsoleWindow();
-    return consoleWindow != NULL;
+    return ::GetStdHandle(STD_OUTPUT_HANDLE) != NULL && ::GetStdHandle(STD_ERROR_HANDLE) != NULL;
 }
 
 void WindowsPlatformFunctions::setupAvailableConsole()
@@ -318,14 +318,21 @@ void WindowsPlatformFunctions::setupAvailableConsole()
 
     HANDLE ouputHandle = ::GetStdHandle(STD_OUTPUT_HANDLE);
     HANDLE errorHandle = ::GetStdHandle(STD_ERROR_HANDLE);
+    // HANDLE inputHandle = ::GetStdHandle(STD_INPUT_HANDLE);
 
     // TODO(Jeslas) : Find how to move the next command line to end of text after application ends in power shell, cmd prompt is fine
-    dword consoleMode
+    dword outConsoleMode
         = ENABLE_VIRTUAL_TERMINAL_PROCESSING /* Enable virtual terminal escape char sequences */
           | ENABLE_WRAP_AT_EOL_OUTPUT        /* Wraps the line to next line if allowed end of line for current window's width is reached */
           | ENABLE_PROCESSED_OUTPUT;         /* Enables special chars like \t \r\n \b \a */
-    ::SetConsoleMode(ouputHandle, consoleMode);
-    ::SetConsoleMode(errorHandle, consoleMode);
+    bool modeSet = !!::SetConsoleMode(ouputHandle, outConsoleMode);
+    modeSet = modeSet && !!::SetConsoleMode(errorHandle, outConsoleMode);
+    // modeSet = modeSet && !!::SetConsoleMode(inputHandle, ENABLE_VIRTUAL_TERMINAL_INPUT);
+
+    if (!modeSet)
+    {
+        ::OutputDebugString(TCHAR("Failed to set console mode\n"));
+    }
 }
 
 void WindowsPlatformFunctions::detachCosole()

@@ -102,7 +102,7 @@ void calcTangent(MeshLoaderData &loaderData, StaticMeshVertex &vertexData, const
     float invDet = uv10.x() * uv20.y() - uv20.x() * uv10.y();
     if (invDet == 0.0f)
     {
-        LOG_DEBUG("StaticMeshLoader", "%s(): Incorrect texture coordinate, using world x, y as tangents", __func__);
+        LOG_DEBUG("StaticMeshLoader", "Incorrect texture coordinate, using world x, y as tangents");
 
         Rotation tbnFrame = RotationMatrix::fromZ(normal).asRotation();
         tangent = tbnFrame.fwdVector();

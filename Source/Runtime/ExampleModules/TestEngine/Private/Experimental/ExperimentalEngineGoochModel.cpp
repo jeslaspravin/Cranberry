@@ -449,12 +449,12 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer(IGraphicsInstance *graph
             // Resizing material parameters
             sceneShaderUniqParams[pipeMeshPairToBatchEntity.first]->resizeRuntimeBuffer(TCHAR("materials"), materialCount);
             totalDrawCalls += pipelineDrawCalls;
-            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's Material's count %d", __func__,
-                pipeMeshPairToBatchEntity.first->materialName.getChar(), materialCount);
-            LOG("ExperimentalEnginePBR", "%s() : %s Pipeline's instanced draw calls %d", __func__,
-                pipeMeshPairToBatchEntity.first->materialName.getChar(), pipelineDrawCalls);
+            LOG("ExperimentalEnginePBR", "%s Pipeline's Material's count %d", pipeMeshPairToBatchEntity.first->materialName.getChar(),
+                materialCount);
+            LOG("ExperimentalEnginePBR", "%s Pipeline's instanced draw calls %d", pipeMeshPairToBatchEntity.first->materialName.getChar(),
+                pipelineDrawCalls);
         }
-        LOG("ExperimentalEnginePBR", "%s() : Total instanced draw calls %d", __func__, totalDrawCalls);
+        LOG("ExperimentalEnginePBR", "Total instanced draw calls %d", totalDrawCalls);
 
         // Resize instance parameters
         instanceParameters->resizeRuntimeBuffer(TCHAR("instancesWrapper"), instanceCount);

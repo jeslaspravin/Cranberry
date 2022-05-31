@@ -80,7 +80,7 @@ bool WindowsMouseDevice::sendInRaw(const void *rawInput)
     }
     else if ((mouseData.usFlags & MOUSE_VIRTUAL_DESKTOP) == MOUSE_VIRTUAL_DESKTOP)
     {
-        LOG_WARN("WindowMouseDevice", "%s : Virtual desktop setup is not supported", __func__);
+        LOG_WARN("WindowMouseDevice", "Virtual desktop setup is not supported");
     }
 
     return true;
@@ -96,7 +96,7 @@ bool WindowsMouseDevice::registerWindow(const GenericAppWindow *window) const
 
     if (!RegisterRawInputDevices(&mouseDevice, 1, sizeof(decltype(mouseDevice))))
     {
-        LOG_WARN("WindowsMouseDevice", "%s : Failed registering mouse for window %s", __func__, window->getWindowName().getChar());
+        LOG_WARN("WindowsMouseDevice", "Failed registering mouse for window %s", window->getWindowName().getChar());
         return false;
     }
     return true;
@@ -184,7 +184,7 @@ bool WindowsKeyboardDevice::sendInRaw(const void *rawInput)
     if (winRawInput->data.keyboard.VKey == 0xFF)
     {
         LOG_WARN(
-            "WindowsKeyboardDevice", "%s() : Possible multibyte key that is not handled properly : %d, Flags : %d", __func__,
+            "WindowsKeyboardDevice", "Possible multibyte key that is not handled properly : %d, Flags : %d",
             winRawInput->data.keyboard.MakeCode, winRawInput->data.keyboard.Flags
         );
         return true;
@@ -216,7 +216,7 @@ bool WindowsKeyboardDevice::registerWindow(const GenericAppWindow *window) const
 
     if (!RegisterRawInputDevices(&keyboardDevice, 1, sizeof(decltype(keyboardDevice))))
     {
-        LOG_WARN("WindowsKeyboardDevice", "%s() : Failed registering keyboard for window %s", __func__, window->getWindowName().getChar());
+        LOG_WARN("WindowsKeyboardDevice", "Failed registering keyboard for window %s", window->getWindowName().getChar());
         return false;
     }
     return true;

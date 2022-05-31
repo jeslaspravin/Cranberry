@@ -34,7 +34,7 @@ void WindowsRawInputBuffer::processInputs(const ProcessInputsParam &params) cons
 
         if (!bProcessed)
         {
-            LOG_WARN("WindowsRawInputBuffer", "%s: No device found for processing raw input", __func__);
+            LOG_WARN("WindowsRawInputBuffer", "No device found for processing raw input");
             DefRawInputProc(&rawInput, 1, sizeof(RAWINPUTHEADER));
         }
         using QWORD = uint64;
@@ -60,7 +60,7 @@ void WindowsRawInputBuffer::update()
         currentBlocksNum = GetRawInputBuffer(nullptr, &bufferSize, sizeof(RAWINPUTHEADER));
         if (currentBlocksNum == -1)
         {
-            LOG_ERROR("WindowsRawInputBuffer", "%s : Retrieving input buffer size failed", __func__);
+            LOG_ERROR("WindowsRawInputBuffer", "Retrieving input buffer size failed");
             clearBuffer();
             return;
         }
@@ -77,7 +77,7 @@ void WindowsRawInputBuffer::update()
         totalBlocksNum += currentBlocksNum;
         if (currentBlocksNum == -1)
         {
-            LOG_ERROR("WindowsRawInputBuffer", "%s : Reading buffered raw input failed", __func__);
+            LOG_ERROR("WindowsRawInputBuffer", "Reading buffered raw input failed");
             clearBuffer();
             return;
         }

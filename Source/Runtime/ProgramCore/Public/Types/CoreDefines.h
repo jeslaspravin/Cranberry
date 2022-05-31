@@ -67,8 +67,11 @@
 #define DLL_IMPORT
 #endif
 
-#ifndef LINE_FEED_CHAR
-#define LINE_FEED_CHAR TCHAR("\n")
+#ifndef LINE_FEED_ACHAR
+#define LINE_FEED_ACHAR "\n"
+#endif
+#ifndef LINE_FEED_TCHAR
+#define LINE_FEED_TCHAR TCHAR(LINE_FEED_ACHAR)
 #endif
 
 // File System path separator

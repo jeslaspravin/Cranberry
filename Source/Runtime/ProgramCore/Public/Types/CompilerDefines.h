@@ -63,3 +63,9 @@ static_assert(false, "Unsupported compiler");
 #endif
 
 // clang-format on
+
+#ifdef __cpp_lib_source_location
+#define HAS_SOURCE_LOCATION_FEATURE __cpp_lib_source_location >= 201907L
+#else
+#define HAS_SOURCE_LOCATION_FEATURE 0
+#endif

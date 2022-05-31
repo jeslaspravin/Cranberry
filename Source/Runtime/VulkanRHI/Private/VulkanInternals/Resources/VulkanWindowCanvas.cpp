@@ -28,7 +28,7 @@ void VulkanWindowCanvas::init()
     BaseType::init();
     if (!ownerWindow || !ownerWindow->isValidWindow())
     {
-        LOG_ERROR("VkSurfaceKHR", "%s() : Cannot initialize Vulkan windows canvas without valid windows", __func__);
+        LOG_ERROR("VkSurfaceKHR", "Cannot initialize Vulkan windows canvas without valid windows");
         return;
     }
 
@@ -51,7 +51,7 @@ void VulkanWindowCanvas::reinitResources()
 
     if (!nextSwapchain || nextSwapchain == VK_NULL_HANDLE)
     {
-        LOG_ERROR("VulkanWindowCanvas", "%s() : failed creating swap chain for surface", __func__);
+        LOG_ERROR("VulkanWindowCanvas", "failed creating swap chain for surface");
         return;
     }
     const String &windowName = ownerWindow->getWindowName();
@@ -154,7 +154,7 @@ uint32 VulkanWindowCanvas::requestNextImage(SemaphoreRef *waitOnSemaphore, Fence
     }
     else
     {
-        LOG_WARN("VulkanWindowCanvas", "%s() : both waiting semaphore and fence being null is source of performance lose/bug", __func__);
+        LOG_WARN("VulkanWindowCanvas", "both waiting semaphore and fence being null is source of performance lose/bug");
         // if both are null then wait here
         fences[currentSyncIdx]->waitForSignal();
         currentFence = fences[currentSyncIdx];

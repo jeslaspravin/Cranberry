@@ -108,7 +108,7 @@ void VulkanCommandPool::reinitResources()
 {
     if (cmdPoolInfo.queueResource == nullptr)
     {
-        LOG_ERROR("VulkanCommandPool", "%s() : Command pool information is invalid", __func__);
+        LOG_ERROR("VulkanCommandPool", "Command pool information is invalid");
         return;
     }
     release();
@@ -120,7 +120,7 @@ void VulkanCommandPool::reinitResources()
     commandPoolCreateInfo.flags = 0;
     if (cmdPoolInfo.vDevice->vkCreateCommandPool(cmdPoolInfo.logicalDevice, &commandPoolCreateInfo, nullptr, &oneTimeRecordPool) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanCommandPool", "%s() : Failed creating one time record command buffer pool", __func__);
+        LOG_ERROR("VulkanCommandPool", "Failed creating one time record command buffer pool");
         oneTimeRecordPool = nullptr;
     }
     else
@@ -134,7 +134,7 @@ void VulkanCommandPool::reinitResources()
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     if (cmdPoolInfo.vDevice->vkCreateCommandPool(cmdPoolInfo.logicalDevice, &commandPoolCreateInfo, nullptr, &tempCommandsPool) != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanCommandPool", "%s() : Failed creating temporary one time use command buffer pool", __func__);
+        LOG_ERROR("VulkanCommandPool", "Failed creating temporary one time use command buffer pool");
         tempCommandsPool = nullptr;
     }
     else
@@ -146,7 +146,7 @@ void VulkanCommandPool::reinitResources()
     if (cmdPoolInfo.vDevice->vkCreateCommandPool(cmdPoolInfo.logicalDevice, &commandPoolCreateInfo, nullptr, &rerecordableCommandPool)
         != VK_SUCCESS)
     {
-        LOG_ERROR("VulkanCommandPool", "%s() : Failed creating rerecordable command buffer pool", __func__);
+        LOG_ERROR("VulkanCommandPool", "Failed creating rerecordable command buffer pool");
         rerecordableCommandPool = nullptr;
     }
     else
@@ -230,7 +230,7 @@ VulkanCmdBufferManager::~VulkanCmdBufferManager()
         if (cmdBuffer.second.cmdSyncInfoIdx != -1)
         {
             LOG_WARN(
-                "VulkanCmdBufferManager", "%s: Command buffer %s is not finished, trying to finish it", __func__,
+                "VulkanCmdBufferManager", "Command buffer %s is not finished, trying to finish it",
                 cmdBuffer.second.cmdBuffer->getResourceName().getChar()
             );
             cmdFinished(cmdBuffer.second.cmdBuffer->getResourceName(), nullptr);
@@ -310,14 +310,14 @@ const GraphicsResource *VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
         case ECmdState::Submitted:
             LOG_ERROR(
                 "VulkanCommandBufferManager",
-                "%s() : Trying to record a prerecorded command again is restricted Command = "
+                "Trying to record a prerecorded command again is restricted Command = "
                 "[%s]",
-                __func__, cmdName.getChar()
+                cmdName.getChar()
             );
             fatalAssert(false, "Cannot record prerecorded command again");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
-            LOG_WARN("VulkanCommandBufferManager", "%s() : Command %s is already being recorded", __func__, cmdName.getChar());
+            LOG_WARN("VulkanCommandBufferManager", "Command %s is already being recorded", cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Idle:
         default:
@@ -368,14 +368,14 @@ const GraphicsResource *VulkanCmdBufferManager::beginReuseCmdBuffer(const String
         case ECmdState::Submitted:
             LOG_ERROR(
                 "VulkanCommandBufferManager",
-                "%s() : Trying to record a submitted command [%s] is restricted before it is "
+                "Trying to record a submitted command [%s] is restricted before it is "
                 "finished",
-                __func__, cmdName.getChar()
+                cmdName.getChar()
             );
             fatalAssert(false, "Cannot record command while it is still executing");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
-            LOG_WARN("VulkanCommandBufferManager", "%s() : Command [%s] is already being recorded", __func__, cmdName.getChar());
+            LOG_WARN("VulkanCommandBufferManager", "Command [%s] is already being recorded", cmdName.getChar());
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recorded:
         case ECmdState::Idle:
@@ -403,7 +403,7 @@ void VulkanCmdBufferManager::startRenderPass(const GraphicsResource *cmdBuffer)
         if (cmdBufferItr != commandBuffers.end())
         {
             fatalAssert(
-                cmdBufferItr->second.cmdState == ECmdState::Recording, "%s: %s cmd buffer is not recording to start render pass", __func__,
+                cmdBufferItr->second.cmdState == ECmdState::Recording, "%s cmd buffer is not recording to start render pass",
                 cmdBufferItr->first.getChar()
             );
             cmdBufferItr->second.cmdState = ECmdState::RenderPass;
@@ -555,9 +555,7 @@ ECmdState VulkanCmdBufferManager::getState(const GraphicsResource *cmdBuffer) co
     {
         return cmdBufferItr->second.cmdState;
     }
-    LOG_DEBUG(
-        "VulkanCmdBufferManager", "%s() : Not available command buffer[%s] queried for state", __func__, cmdBuffer->getResourceName().getChar()
-    );
+    LOG_DEBUG("VulkanCmdBufferManager", "Not available command buffer[%s] queried for state", cmdBuffer->getResourceName().getChar());
     return ECmdState::Idle;
 }
 
@@ -616,14 +614,14 @@ void VulkanCmdBufferManager::submitCmds(
             cmdBuffers[i] = vCmdBuffer->cmdBuffer;
             if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
             {
-                LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+                LOG_ERROR("VulkanCommandBufferManager", "Buffers from different queues cannot be submitted together");
                 return;
             }
             queueRes = cmdPool.cmdPoolInfo.queueResource;
         }
         if (queueRes == nullptr)
         {
-            LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "Cannot submit as there is no queue found for command buffers");
             return;
         }
 
@@ -652,9 +650,7 @@ void VulkanCmdBufferManager::submitCmds(
         vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(),
         (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(
-        result == VK_SUCCESS, "%s(): Failed submitting command to queue %s(result: %d)", __func__, queueRes->getResourceName().getChar(), result
-    );
+    fatalAssert(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 
     for (const CommandSubmitInfo &command : commands)
     {
@@ -700,14 +696,14 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
         cmdBuffers[i] = vCmdBuffer->cmdBuffer;
         if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
         {
-            LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "Buffers from different queues cannot be submitted together");
             return;
         }
         queueRes = cmdPool.cmdPoolInfo.queueResource;
     }
     if (queueRes == nullptr)
     {
-        LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+        LOG_ERROR("VulkanCommandBufferManager", "Cannot submit as there is no queue found for command buffers");
         return;
     }
 
@@ -734,9 +730,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     VkResult result = vDevice->vkQueueSubmit(
         vQueue, 1, &cmdSubmitInfo, (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(
-        result == VK_SUCCESS, "%s(): Failed submitting command to queue %s(result: %d)", __func__, queueRes->getResourceName().getChar(), result
-    );
+    fatalAssert(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 
     bool bAnyNonTemp = false;
     int32 index = int32(cmdsSyncInfo.get());
@@ -792,9 +786,9 @@ void VulkanCmdBufferManager::submitCmds(
             {
                 LOG_ERROR(
                     "VulkanCommandBufferManager",
-                    "%s() : Temporary buffers[%s] are required to use advanced submit "
+                    "Temporary buffers[%s] are required to use advanced submit "
                     "function",
-                    __func__, vCmdBuffer->getResourceName().getChar()
+                    vCmdBuffer->getResourceName().getChar()
                 );
                 return;
             }
@@ -803,7 +797,7 @@ void VulkanCmdBufferManager::submitCmds(
             cmdBuffers[i] = vCmdBuffer->cmdBuffer;
             if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
             {
-                LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+                LOG_ERROR("VulkanCommandBufferManager", "Buffers from different queues cannot be submitted together");
                 return;
             }
             queueRes = cmdPool.cmdPoolInfo.queueResource;
@@ -819,9 +813,9 @@ void VulkanCmdBufferManager::submitCmds(
                     {
                         LOG_ERROR(
                             "VulkanCommandBufferManager",
-                            "%s() : Waiting on cmd buffer[%s] is invalid or not "
+                            "Waiting on cmd buffer[%s] is invalid or not "
                             "submitted",
-                            __func__, waitOn.cmdBuffer->getResourceName().getChar()
+                            waitOn.cmdBuffer->getResourceName().getChar()
                         );
                         return;
                     }
@@ -834,7 +828,7 @@ void VulkanCmdBufferManager::submitCmds(
         }
         if (queueRes == nullptr)
         {
-            LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "Cannot submit as there is no queue found for command buffers");
             return;
         }
 
@@ -845,8 +839,7 @@ void VulkanCmdBufferManager::submitCmds(
             if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
             {
                 LOG_ERROR(
-                    "VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__,
-                    waitOn->getResourceName().getChar()
+                    "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted", waitOn->getResourceName().getChar()
                 );
                 return;
             }
@@ -903,9 +896,7 @@ void VulkanCmdBufferManager::submitCmds(
         vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(),
         (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(
-        result == VK_SUCCESS, "%s(): Failed submitting command to queue %s(result: %d)", __func__, queueRes->getResourceName().getChar(), result
-    );
+    fatalAssert(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 }
 
 void VulkanCmdBufferManager::submitCmd(
@@ -928,7 +919,7 @@ void VulkanCmdBufferManager::submitCmd(
         if (vCmdBuffer->bIsTempBuffer)
         {
             LOG_ERROR(
-                "VulkanCommandBufferManager", "%s() : Temporary buffers[%s] are required to use advanced submit function", __func__,
+                "VulkanCommandBufferManager", "Temporary buffers[%s] are required to use advanced submit function",
                 vCmdBuffer->getResourceName().getChar()
             );
             return;
@@ -938,7 +929,7 @@ void VulkanCmdBufferManager::submitCmd(
         cmdBuffers[i] = vCmdBuffer->cmdBuffer;
         if (queueRes != nullptr && queueRes != cmdPool.cmdPoolInfo.queueResource)
         {
-            LOG_ERROR("VulkanCommandBufferManager", "%s() : Buffers from different queues cannot be submitted together", __func__);
+            LOG_ERROR("VulkanCommandBufferManager", "Buffers from different queues cannot be submitted together");
             return;
         }
         queueRes = cmdPool.cmdPoolInfo.queueResource;
@@ -953,7 +944,7 @@ void VulkanCmdBufferManager::submitCmd(
                 if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
                 {
                     LOG_ERROR(
-                        "VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__,
+                        "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted",
                         waitOn.cmdBuffer->getResourceName().getChar()
                     );
                     return;
@@ -967,7 +958,7 @@ void VulkanCmdBufferManager::submitCmd(
     }
     if (queueRes == nullptr)
     {
-        LOG_ERROR("VulkanCommandBufferManager", "%s() : Cannot submit as there is no queue found for command buffers", __func__);
+        LOG_ERROR("VulkanCommandBufferManager", "Cannot submit as there is no queue found for command buffers");
         return;
     }
 
@@ -977,8 +968,7 @@ void VulkanCmdBufferManager::submitCmd(
         if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
         {
             LOG_ERROR(
-                "VulkanCommandBufferManager", "%s() : Waiting on cmd buffer[%s] is invalid or not submitted", __func__,
-                waitOn->getResourceName().getChar()
+                "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted", waitOn->getResourceName().getChar()
             );
             return;
         }
@@ -1026,9 +1016,7 @@ void VulkanCmdBufferManager::submitCmd(
     VkResult result = vDevice->vkQueueSubmit(
         vQueue, 1, &cmdSubmitInfo, (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(
-        result == VK_SUCCESS, "%s(): Failed submitting command to queue %s(result: %d)", __func__, queueRes->getResourceName().getChar(), result
-    );
+    fatalAssert(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 }
 
 void VulkanCmdBufferManager::createPools()
@@ -1405,9 +1393,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
 )
 {
-    fatalAssert(
-        PlatformFunctions::getSetBitCount(resource.second) == 1, "%s: Writing to buffer in several pipeline stages is incorrect", __func__
-    );
+    fatalAssert(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to buffer in several pipeline stages is incorrect");
 
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits(resource.second);
@@ -1480,9 +1466,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
 )
 {
-    fatalAssert(
-        PlatformFunctions::getSetBitCount(resource.second) == 1, "%s: Writing to image in several pipeline stages is incorrect", __func__
-    );
+    fatalAssert(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to image in several pipeline stages is incorrect");
 
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits(resource.second);

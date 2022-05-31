@@ -270,7 +270,7 @@ void MustacheStringFormatter::parseFmtStr()
         }
         else if (isSectionClose(matchStr))
         {
-            fatalAssert(sectAndIdxStack.back().first == argName, "%s() : Section tag %s is not closed", __func__, sectAndIdxStack.back().first);
+            fatalAssert(sectAndIdxStack.back().first == argName, "Section tag %s is not closed", sectAndIdxStack.back().first);
             sections[sectAndIdxStack.back().second].childCount = uint32(sections.size() - (sectAndIdxStack.back().second + 1));
             sections[sectAndIdxStack.back().second].sectionEndIdx = i;
             sectAndIdxStack.pop_back();
@@ -319,7 +319,7 @@ String MustacheStringFormatter::formatBasic(const FormatArgsMap &formatArgs) con
         else if (formatArgItr == formatArgs.cend()) // Match's FormatArg not found so we skip and
                                                     // wont change final string size here
         {
-            LOG_WARN("StringFormat", "%s() : Format Arg not found for Arg Name %s", __func__, argName);
+            LOG_WARN("StringFormat", "Format Arg not found for Arg Name %s", argName);
             outSegments.emplace_back(FormatSegment{ backSegmentLength, uint64(match.prefix().length() + wholesubmatch.length()) });
         }
         else
@@ -453,9 +453,9 @@ void MustacheStringFormatter::renderSection(
                 // if negate condition unbound cannot be executed
                 LOG_ERROR(
                     "MustacheStringFormatter",
-                    "%s() : Section formatter function found for section {{%s}}, but it is "
+                    "Section formatter function found for section {{%s}}, but it is "
                     "unbound!",
-                    __func__, matchStr
+                    matchStr
                 );
             }
         }
@@ -502,7 +502,7 @@ uint32 MustacheStringFormatter::renderTag(
         auto partialItr = partials.find(argName);
         if (partialItr == partials.cend())
         {
-            LOG_ERROR("MustacheStringFormatter", "%s() : Could not find any partial for partial tag {{%s}}", __func__, matchStr);
+            LOG_ERROR("MustacheStringFormatter", "Could not find any partial for partial tag {{%s}}", matchStr);
         }
         else
         {
@@ -514,7 +514,7 @@ uint32 MustacheStringFormatter::renderTag(
         auto itr = std::find_if(
             sections.cbegin(), sections.cend(), [matchIdx](const Section &section) { return matchIdx == section.sectionStartIdx; }
         );
-        fatalAssert(itr != sections.cend(), "%s() : Section %s not found in sections list", __func__, argName);
+        fatalAssert(itr != sections.cend(), "Section %s not found in sections list", argName);
         uint32 sectionIdx = std::distance(sections.cbegin(), itr);
         renderSection(outStr, sectionIdx, context, partials);
 
@@ -525,7 +525,7 @@ uint32 MustacheStringFormatter::renderTag(
         auto arg = context.args.find(argName);
         if (arg == context.args.end())
         {
-            LOG_ERROR("MustacheStringFormatter", "%s() : Could not find format arg for tag {{%s}}", __func__, matchStr);
+            LOG_ERROR("MustacheStringFormatter", "Could not find format arg for tag {{%s}}", matchStr);
         }
         else
         {

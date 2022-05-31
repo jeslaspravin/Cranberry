@@ -34,26 +34,23 @@
 
 void VulkanGraphicsInstance::load()
 {
-    LOG_DEBUG("Vulkan", "%s() : Loading vulkan instance", __func__);
+    LOG_DEBUG("Vulkan", "Loading vulkan instance");
     loadGlobalFunctions();
 
     uint32 apiVersion;
     Vk::vkEnumerateInstanceVersion(&apiVersion);
-    LOG_DEBUG(
-        "Vulkan", "%s() : Vulkan version %d.%d.%d", __func__, VK_VERSION_MAJOR(apiVersion), VK_VERSION_MINOR(apiVersion),
-        VK_VERSION_PATCH(apiVersion)
-    );
+    LOG_DEBUG("Vulkan", "Vulkan version %d.%d.%d", VK_VERSION_MAJOR(apiVersion), VK_VERSION_MINOR(apiVersion), VK_VERSION_PATCH(apiVersion));
 
     uint32 extensionCounts;
     VkResult result = Vk::vkEnumerateInstanceExtensionProperties(nullptr, (uint32_t *)&extensionCounts, nullptr);
     if (result != VkResult::VK_SUCCESS)
     {
-        LOG_ERROR("Vulkan", "%s() : Failed to fetch extension properties", __func__);
+        LOG_ERROR("Vulkan", "Failed to fetch extension properties");
     }
 
     availableInstanceExtensions.resize(extensionCounts);
     Vk::vkEnumerateInstanceExtensionProperties(nullptr, (uint32_t *)&extensionCounts, availableInstanceExtensions.data());
-    LOG_DEBUG("Vulkan", "%s() : Fetched %d instance extension properties", __func__, extensionCounts);
+    LOG_DEBUG("Vulkan", "Fetched %d instance extension properties", extensionCounts);
 
     createVulkanInstance();
     loadInstanceFunctions();
@@ -71,7 +68,7 @@ void VulkanGraphicsInstance::unload()
         selectedDevice.freeLogicDevice();
     }
 
-    LOG_DEBUG("Vulkan", "%s() : Unloading vulkan instance", __func__);
+    LOG_DEBUG("Vulkan", "Unloading vulkan instance");
 
     VulkanDebugLogger::unregisterDebugLogger();
     Vk::vkDestroyInstance(vulkanInstance, nullptr);
@@ -85,14 +82,14 @@ void VulkanGraphicsInstance::loadGlobalFunctions()
         = (PFN_##function)PlatformFunctions::getProcAddress(ModuleManager::get()->getOrLoadLibrary(TCHAR("vulkan-1.dll")), TCHAR(#function));  \
     if (Vk::##function == nullptr)                                                                                                             \
     {                                                                                                                                          \
-        LOG_ERROR("Vulkan", "%s() : Loading failed for function :" #function, __func__);                                                       \
+        LOG_ERROR("Vulkan", "Loading failed for function :" #function);                                                                        \
     }
 
 #define GLOBAL_VK_FUNCTIONS(function)                                                                                                          \
     Vk::##function = (PFN_##function)Vk::vkGetInstanceProcAddr(nullptr, #function);                                                            \
     if (Vk::##function == nullptr)                                                                                                             \
     {                                                                                                                                          \
-        LOG_ERROR("Vulkan", "%s() : Loading failed for global function :" #function, __func__);                                                \
+        LOG_ERROR("Vulkan", "Loading failed for global function :" #function);                                                                 \
     }
 
 #include "VulkanInternals/VulkanFunctionLists.inl"
@@ -100,7 +97,7 @@ void VulkanGraphicsInstance::loadGlobalFunctions()
 
 void VulkanGraphicsInstance::createVulkanInstance()
 {
-    LOG_DEBUG("Vulkan", "%s() : Creating vulkan application instance", __func__);
+    LOG_DEBUG("Vulkan", "Creating vulkan application instance");
     CREATE_APP_INFO(appInfo);
     const ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
     appInfo.pApplicationName = (const AChar *)TCHAR_TO_UTF8(appInstance->getAppName().getChar());
@@ -122,7 +119,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
 
     if (!collectInstanceExtensions(registeredInstanceExtensions))
     {
-        LOG_ERROR("Vulkan", "%s() : Failed collecting extensions", __func__);
+        LOG_ERROR("Vulkan", "Failed collecting extensions");
         debugAssert(!"Necessary extensions are not collected!");
     }
 
@@ -140,7 +137,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
             layersStr.append(TCHAR("\n\t"));
             layersStr.append(UTF8_TO_TCHAR(layer));
         }
-        LOG_ERROR("Vulkan", "%s() : Requested layer/s not available%s", __func__, layersStr.getChar());
+        LOG_ERROR("Vulkan", "Requested layer/s not available%s", layersStr.getChar());
     }
     fatalAssert(result == VkResult::VK_SUCCESS && vulkanInstance != nullptr, "Could not create vulkan instance");
 }
@@ -172,13 +169,13 @@ bool VulkanGraphicsInstance::collectInstanceExtensions(std::vector<const char *>
         if (extensionsString.find(mandatoryExt, 0) != String::npos)
         {
             extensions.push_back(mandatoryExt);
-            LOG_DEBUG("Vulkan", "%s() : Loading instance extension %s", __func__, mandatoryExt);
+            LOG_DEBUG("Vulkan", "Loading instance extension %s", mandatoryExt);
         }
     }
 
     if (mandatoryExtensions.size() != extensions.size())
     {
-        LOG_ERROR("Vulkan", "%s() : Missing mandatory extensions", __func__);
+        LOG_ERROR("Vulkan", "Missing mandatory extensions");
         return false;
     }
 
@@ -192,7 +189,7 @@ void VulkanGraphicsInstance::loadInstanceFunctions()
 #define INSTANCE_VK_FUNCTIONS(function)                                                                                                        \
     Vk::##function = (PFN_##function)Vk::vkGetInstanceProcAddr(vulkanInstance, #function);                                                     \
     if (Vk::##function == nullptr)                                                                                                             \
-        LOG_ERROR("Vulkan", "%s() : Failed loading function : " #function, __func__);
+        LOG_ERROR("Vulkan", "Failed loading function : " #function);
 
 #define INSTANCE_VK_EXT_FUNCTIONS(function, extension)                                                                                         \
     for (const char *ext : registeredInstanceExtensions)                                                                                       \
@@ -204,7 +201,7 @@ void VulkanGraphicsInstance::loadInstanceFunctions()
         }                                                                                                                                      \
     }                                                                                                                                          \
     if (Vk::##function == nullptr)                                                                                                             \
-        LOG_ERROR("Vulkan", "%s() : Failed loading function : " #function, __func__);
+        LOG_ERROR("Vulkan", "Failed loading function : " #function);
 
 #define INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(function)                                                                                           \
     for (const char *ext : registeredInstanceExtensions)                                                                                       \
@@ -225,7 +222,7 @@ void VulkanGraphicsInstance::createVulkanDevice(const WindowCanvasRef &windowCan
 
     if (Vk::vkEnumeratePhysicalDevices(vulkanInstance, (uint32_t *)&numPhysicalDevices, nullptr) != VK_SUCCESS)
     {
-        LOG_ERROR("Vulkan", "%s() : Enumerating physical device failed! no graphics device found", __func__);
+        LOG_ERROR("Vulkan", "Enumerating physical device failed! no graphics device found");
         return;
     }
     std::vector<VkPhysicalDevice> vulkanPhysicalDevices;
@@ -246,7 +243,7 @@ void VulkanGraphicsInstance::createVulkanDevice(const WindowCanvasRef &windowCan
     selectedDevice = std::move(vulkanDevices[0]);
     vulkanDevices.clear();
 
-    LOG_DEBUG("Vulkan", "%s() : Selected device %s", __func__, selectedDevice.getDeviceName().getChar());
+    LOG_DEBUG("Vulkan", "Selected device %s", selectedDevice.getDeviceName().getChar());
 }
 
 void VulkanGraphicsInstance::updateSurfaceDependents()

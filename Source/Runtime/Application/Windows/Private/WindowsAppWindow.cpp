@@ -57,7 +57,7 @@ void WindowsAppWindow::createWindow(const ApplicationInstance *appInstance)
 
     if (windowsHandle == nullptr)
     {
-        LOG_ERROR("WindowsAppWindow", "%s() : Failed creating window, Error code %d", __func__, GetLastError());
+        LOG_ERROR("WindowsAppWindow", "Failed creating window, Error code %d", GetLastError());
         return;
     }
 
@@ -166,20 +166,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         const WindowsAppWindow *const windowPtr
             = reinterpret_cast<const WindowsAppWindow *>(reinterpret_cast<LPCREATESTRUCTA>(lParam)->lpCreateParams);
         SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(windowPtr));
-        LOG("WindowsAppWindow", "%s() : Created window %s", __func__, windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "Created window %s", windowPtr->getWindowName().getChar());
         return 0;
     }
     case WM_DESTROY:
     {
         const WindowsAppWindow *const windowPtr = reinterpret_cast<const WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        LOG("WindowsAppWindow", "%s() : Destroying window %s", __func__, windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "Destroying window %s", windowPtr->getWindowName().getChar());
         return 0;
     }
 
     case WM_CLOSE:
     {
         WindowsAppWindow *const windowPtr = reinterpret_cast<WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        LOG("WindowsAppWindow", "%s() : Quiting window %s", __func__, windowPtr->getWindowName().getChar());
+        LOG("WindowsAppWindow", "Quiting window %s", windowPtr->getWindowName().getChar());
 
         // This will trigger window destroyed event which can be used to kill engine
         windowPtr->pushEvent(WM_CLOSE, [windowPtr]() { windowPtr->windowDestroyRequested(); });
@@ -224,8 +224,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 WM_SIZE,
                 [windowPtr, lParam]()
                 {
-                    LOG("WindowsAppWindow", "%s() : Resizing window %s ( %d, %d )", __func__, windowPtr->getWindowName().getChar(),
-                        LOWORD(lParam), HIWORD(lParam));
+                    LOG("WindowsAppWindow", "Resizing window %s ( %d, %d )", windowPtr->getWindowName().getChar(), LOWORD(lParam),
+                        HIWORD(lParam));
                     windowPtr->windowResizing(LOWORD(lParam), HIWORD(lParam));
                 }
             );

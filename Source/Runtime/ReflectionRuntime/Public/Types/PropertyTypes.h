@@ -159,14 +159,14 @@ public:
 
         if CONST_EXPR (std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
         {
-            LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+            LOG_ERROR("MemberDataProperty", "Cannot set constant value");
         }
         else
         {
             // If constant then we use const MemberDataPointer
             if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
             {
-                LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+                LOG_ERROR("MemberDataProperty", "Cannot set constant value");
             }
             else
             {
@@ -223,7 +223,7 @@ public:
             const AsType *retVal = nullptr;
             const GlobalField<true, AsType> *memberFieldPtr = (const GlobalField<true, AsType> *)(propertyAccessor());
 
-            fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
+            fatalAssert(memberFieldPtr, "Invalid Field pointer");
             retVal = &memberFieldPtr->get();
             return retVal;
         }
@@ -232,7 +232,7 @@ public:
             AsType *retVal = nullptr;
             const GlobalField<false, AsType> *memberFieldPtr = (const GlobalField<false, AsType> *)(propertyAccessor());
 
-            fatalAssert(memberFieldPtr, "%s() : Invalid Field pointer", __func__);
+            fatalAssert(memberFieldPtr, "Invalid Field pointer");
             retVal = &memberFieldPtr->get();
             return retVal;
         }
@@ -245,13 +245,13 @@ public:
         // If constant then we use const MemberDataPointer
         if (BIT_SET(getPropertyTypeInfo()->qualifiers, EReflectTypeQualifiers::Constant))
         {
-            LOG_ERROR("MemberDataProperty", "%s() : Cannot set constant value", __func__);
+            LOG_ERROR("MemberDataProperty", "Cannot set constant value");
         }
         else
         {
             const GlobalField<false, MemberType> *memberFieldPtr = (const GlobalField<false, MemberType> *)(propertyAccessor());
 
-            fatalAssert(memberFieldPtr, "%s() : Invalid member pointer", __func__);
+            fatalAssert(memberFieldPtr, "Invalid member pointer");
             memberFieldPtr->set(std::forward<FromType>(value));
             return true;
         }
@@ -286,7 +286,7 @@ public:
     {
         if CONST_EXPR (std::is_const_v<MemberType>)
         {
-            LOG_ERROR("MemberFieldWrapperImpl", "%s() : Use const object function to retrieve const value", __func__);
+            LOG_ERROR("MemberFieldWrapperImpl", "Use const object function to retrieve const value");
             return nullptr;
         }
         else

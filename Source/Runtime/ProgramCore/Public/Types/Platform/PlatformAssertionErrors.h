@@ -37,7 +37,7 @@ public:
     {                                                                                                                                          \
         if (!(Expr))                                                                                                                           \
         {                                                                                                                                      \
-            LOG_ERROR("DebugAssertion", "%s() : Assert expression failed " #Expr, __func__);                                                   \
+            LOG_ERROR("DebugAssertion", "Assert expression failed " #Expr);                                                                    \
             UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                        \
         }                                                                                                                                      \
         /* Using assert macro to make use of assert window to crash or debug */                                                                \
@@ -55,7 +55,7 @@ public:
     {                                                                                                                                          \
         if (!(Expr))                                                                                                                           \
         {                                                                                                                                      \
-            LOG_ERROR("FatalAssertion", "%s() : Assert expression failed [" #Expr "] " #Message, __func__, __VA_ARGS__);                       \
+            LOG_ERROR("FatalAssertion", "Assert expression failed [" #Expr "] " #Message, __VA_ARGS__);                                        \
             UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                \
             UnexpectedErrorHandler::getHandler()->dumpCallStack(true);                                                                         \
         }                                                                                                                                      \
@@ -69,7 +69,7 @@ public:
     {                                                                                                                                          \
         if (!(Expr))                                                                                                                           \
         {                                                                                                                                      \
-            LOG_ERROR("DebugAssertion", "%s() : Signalling failure [" #Expr "] " #Message, __func__, __VA_ARGS__);                             \
+            LOG_ERROR("DebugAssertion", "Signalling failure [" #Expr "] " #Message, __VA_ARGS__);                                              \
             UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                        \
             UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                \
         }                                                                                                                                      \
