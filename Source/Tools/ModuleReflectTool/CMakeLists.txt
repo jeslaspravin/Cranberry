@@ -48,6 +48,7 @@ target_compile_definitions(${target_name}
         LLVM_INSTALL_PATH="${LLVM_INSTALL_PREFIX}"
         TEMPLATES_DIR="${CMAKE_CURRENT_LIST_DIR}/Templates"
 )
+target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/MP>)
 mark_delay_loaded_dlls()
 # we delay load here
 #copy_target_exe_runtime_deps(${target_name})
