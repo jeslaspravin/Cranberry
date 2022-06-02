@@ -42,7 +42,8 @@ struct HasAwaitSuspend : std::false_type
 {};
 
 template <typename AwaiterType>
-struct HasAwaitSuspend<AwaiterType, std::void_t<decltype(std::is_member_function_pointer_v<decltype(&AwaiterType::await_suspend)>)>>
+struct HasAwaitSuspend<
+    AwaiterType, std::void_t<decltype(std::is_member_function_pointer_v<decltype(&std::remove_cvref_t<AwaiterType>::await_suspend)>)>>
     : std::true_type
 {};
 
@@ -80,7 +81,7 @@ template <typename AwaitableType, typename = void>
 struct HasPromiseType : std::false_type
 {};
 template <typename AwaitableType>
-struct HasPromiseType<AwaitableType, std::void_t<typename AwaitableType::promise_type>> : std::true_type
+struct HasPromiseType<AwaitableType, std::void_t<typename std::remove_cvref_t<AwaitableType>::promise_type>> : std::true_type
 {};
 
 template <typename AwaitableType, typename = void>
@@ -95,8 +96,8 @@ struct HasAwaitTransformInPromise : std::false_type
 {};
 template <typename AwaitableType>
 requires HasPromiseType<AwaitableType>::value struct HasAwaitTransformInPromise<
-    AwaitableType, std::void_t<decltype(std::declval<typename AwaitableType::promise_type>().await_transform(std::declval<AwaitableType &>()))>>
-    : std::true_type
+    AwaitableType, std::void_t<decltype(std::declval<typename std::remove_cvref_t<AwaitableType>::promise_type>()
+                                            .await_transform(std::declval<std::remove_cvref_t<AwaitableType> &>()))>> : std::true_type
 {};
 
 /**
@@ -127,8 +128,9 @@ struct GetAwaiterType
 template <typename AwaitableType>
 requires HasAwaitTransformInPromise<AwaitableType>::value struct GetAwaiterType<AwaitableType>
 {
+    using AwaitableTypeName = std::remove_cvref_t<AwaitableType>;
     using type = std::remove_cvref_t<typename GetAwaiterTypeFromCoawait<
-        decltype(std::declval<typename AwaitableType::promise_type>().await_transform(std::declval<AwaitableType &>()))>::type>;
+        decltype(std::declval<typename AwaitableTypeName::promise_type>().await_transform(std::declval<AwaitableTypeName &>()))>::type>;
 };
 
 template <typename AwaitableType>

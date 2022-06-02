@@ -141,14 +141,19 @@ public:
     };
 
 private:
+    static JobSystem *singletonInstance;
+
+    u32 tlsSlot;
+
+    u32 workersCount;
     WorkerThreadQueueType workerJobs;
     // Binary semaphore wont work if two jobs arrive at same time, and one of 2 just ends up waiting until another job arrives
     // std::binary_semaphore workerJobEvent{0};
-    std::counting_semaphore<2 * MAX_SUPPORTED_WORKERS> workerJobEvent{ 0 };
+    std::counting_semaphore<2 * MAX_SUPPORTED_WORKERS> workerJobEvent;
     // To ensure that we do not trigger workerJobEvent when there is no free workers
-    std::atomic_uint_fast64_t availableWorkersCount{ 0 };
+    std::atomic_uint_fast64_t availableWorkersCount;
     // For waiting until all workers are finished
-    std::latch workersFinishedEvent{ calculateWorkersCount() };
+    std::latch workersFinishedEvent;
 
     SpecialThreadQueueType mainThreadJobs;
     // 0 will be used by main thread loop itself while 1 will be used by worker threads to run until shutdown is called
@@ -159,11 +164,14 @@ private:
 
     SpecialThreadsPoolType specialThreadsPool;
 
-    u32 tlsSlot;
-
-    static JobSystem *singletonInstance;
-
 public:
+    JobSystem()
+        : workersCount(calculateWorkersCount())
+        , workerJobEvent(0)
+        , availableWorkersCount(0)
+        , workersFinishedEvent(workersCount)
+    {}
+
     static JobSystem *get() { return singletonInstance; }
 
     void initialize(MainThreadTickFunc &&mainTickFunc, void *inUserData);
@@ -192,10 +200,10 @@ public:
         // Drain the worker job events if any so we can release all workers
         while (workerJobEvent.try_acquire())
         {}
-        workerJobEvent.release(calculateWorkersCount());
+        workerJobEvent.release(workersCount);
         workersFinishedEvent.wait();
 
-        delete mainThreadTlData;
+        memDelete(mainThreadTlData);
         if (singletonInstance == this)
         {
             singletonInstance = nullptr;
@@ -233,6 +241,8 @@ public:
         COPAT_ASSERT(tlData);
         return tlData->threadType;
     }
+
+    u32 getWorkersCount() const { return workersCount; }
 
 private:
     PerThreadData *getPerThreadData() const { return (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot); }
