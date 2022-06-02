@@ -143,22 +143,29 @@ void LoggerImpl::flushStream()
 
 void LoggerImpl::flushStreamInternal()
 {
-    decltype(std::declval<LoggerPerThreadData>().bufferStream.str()) str;
-
     allTlDataLock.lock();
     for (LoggerPerThreadData *tlData : allPerThreadData)
     {
-        std::scoped_lock<CBESpinLock> lockTlStream(tlData->streamRWLock);
-        str.append(tlData->bufferStream.str());
-        tlData->bufferStream.str({});
+        if (tlData->bufferStream.tellp() != 0)
+        {
+            // If not empty then only lock it, Else we can log in next flush!
+            std::scoped_lock<CBESpinLock> lockTlStream(tlData->streamRWLock);
+
+            // Below code uses null termination to mark end of string, by appending a null char at end, This works and does not clears buffer
+            // because TCHAR_TO_UTF8 works on null terminated string
+            // tlData->bufferStream << '\0';
+            // auto str = tlData->bufferStream.str();
+            // tlData->bufferStream.seekp(0);
+
+            // Below code clears buffer after every data flush
+            auto str = tlData->bufferStream.str();
+            tlData->bufferStream.str({});
+
+            const std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
+            logFile.write(ArrayView<const uint8>(reinterpret_cast<const uint8 *>(utf8str.data()), uint32(utf8str.length())));
+        }
     }
     allTlDataLock.unlock();
-
-    if (!str.empty())
-    {
-        const std::string utf8str{ TCHAR_TO_UTF8(str.c_str()) };
-        logFile.write(ArrayView<const uint8>(reinterpret_cast<const uint8 *>(utf8str.data()), uint32(utf8str.length())));
-    }
 }
 
 bool LoggerImpl::openNewLogFile()

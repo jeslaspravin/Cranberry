@@ -108,13 +108,13 @@ void WindowsPlatformFunctions::releaseLibrary(const LibPointer *libraryHandle)
     HMODULE handle = static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle;
     if (handle)
     {
-        FreeLibrary(handle);
+        ::FreeLibrary(handle);
     }
 }
 
 void *WindowsPlatformFunctions::getProcAddress(const LibPointer *libraryHandle, String symName)
 {
-    return GetProcAddress(static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle, TCHAR_TO_UTF8(symName.getChar()));
+    return ::GetProcAddress(static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle, TCHAR_TO_UTF8(symName.getChar()));
 }
 
 void WindowsPlatformFunctions::getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)

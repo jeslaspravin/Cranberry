@@ -35,8 +35,13 @@ void WindowsThreadingFunctions::setCurrentThreadName(const TChar *name) { setThr
 String WindowsThreadingFunctions::getThreadName(void *threadHandle)
 {
     WChar *threadName;
-    ::GetThreadDescription(threadHandle, &threadName);
-    return WCHAR_TO_TCHAR(threadName);
+    if (SUCCEEDED(::GetThreadDescription(threadHandle, &threadName)))
+    {
+        String outStr = WCHAR_TO_TCHAR(threadName);
+        ::LocalFree(threadName);
+        return std::move(outStr);
+    }
+    return TCHAR("");
 }
 
 String WindowsThreadingFunctions::getCurrentThreadName() { return getThreadName(getCurrentThreadHandle()); }
