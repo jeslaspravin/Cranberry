@@ -94,7 +94,9 @@ public:
         impl::AwaitAllTasksCounter *waitCounter = nullptr;
 
         AwaitOneTask get_return_object() noexcept { return AwaitOneTask(std::coroutine_handle<PromiseType>::from_promise(*this)); }
-        constexpr std::suspend_always initial_suspend() const noexcept { return {}; }
+        // We do not suspend at start but when manually suspended in makeOneTaskAwaitable, This is to allow move Awaitable in r-value awaitables
+        // So moved awaitable continue to exist until AwaitAllTasks is finished
+        constexpr std::suspend_never initial_suspend() const noexcept { return {}; }
         constexpr FinalSuspendAwaiter final_suspend() const noexcept { return {}; }
         constexpr void unhandled_exception() const noexcept {}
 
@@ -157,7 +159,9 @@ private:
     impl::AwaitAllTasksCounter counter;
 
 public:
-    AwaitAllTasks() = default;
+    AwaitAllTasks()
+        : counter(0)
+    {}
     AwaitAllTasks(AwaitingCollection &&collection)
         : allAwaits(std::forward<AwaitingCollection>(collection))
         , counter(AWAITABLES_COUNT)
@@ -184,6 +188,7 @@ public:
     constexpr bool await_ready() const noexcept { return AWAITABLES_COUNT == 0; }
     constexpr void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept
     {
+        // It is okay we do not handle empty awaitable as await_ready will handle that
         counter.setAwaitingCoroutine(awaitingCoroutine);
         // Resume each of the Awaitable
         setAwaitsWaitCounter(std::make_index_sequence<AWAITABLES_COUNT>{});
@@ -220,12 +225,13 @@ private:
  * Specialization for types that has size() and iterator
  */
 template <
-    template <AwaitableTypeConcept AwaitableType, typename... OtherArgs> typename AwaitingCollectionType, AwaitableTypeConcept AwaitableType,
+    template <typename AwaitableType, typename... OtherArgs> typename AwaitingCollectionType, AwaitableTypeConcept AwaitableType,
     typename... OtherArgs>
 class AwaitAllTasks<AwaitingCollectionType<AwaitableType, OtherArgs...>>
 {
 public:
-    using AwaitingCollection = AwaitingCollectionType<AwaitableType, OtherArgs...>;
+    using AwaitOneTaskType = AwaitOneTask<AwaiterReturnType<GetAwaiterType_t<AwaitableType>>>;
+    using AwaitingCollection = AwaitingCollectionType<AwaitOneTaskType>;
     using ResumeRetType = const AwaitingCollection &;
 
 private:
@@ -234,10 +240,12 @@ private:
     impl::AwaitAllTasksCounter counter;
 
 public:
-    AwaitAllTasks() = default;
+    AwaitAllTasks()
+        : counter(0)
+    {}
     AwaitAllTasks(AwaitingCollection &&collection)
         : allAwaits(std::forward<AwaitingCollection>(collection))
-        , counter(collection.size())
+        , counter(u32(allAwaits.size()))
     {}
 
     AwaitAllTasks(AwaitAllTasks &&other)
@@ -253,7 +261,7 @@ public:
 
     ~AwaitAllTasks()
     {
-        for (AwaitableType &awaitable : allAwaits)
+        for (AwaitOneTaskType &awaitable : allAwaits)
         {
             awaitable.destroyOwnerCoroutine();
         }
@@ -267,9 +275,10 @@ public:
     constexpr bool await_ready() const noexcept { return allAwaits.size() == 0; }
     constexpr void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept
     {
+        // It is okay we do not handle empty awaitable as await_ready will handle that
         counter.setAwaitingCoroutine(awaitingCoroutine);
         // Resume each of the Awaitable
-        for (AwaitableType &awaitable : allAwaits)
+        for (AwaitOneTaskType &awaitable : allAwaits)
         {
             awaitable.setWaitCounter(counter);
         }
@@ -279,17 +288,47 @@ public:
 
 namespace impl
 {
+
 template <AwaitableTypeConcept Awaitable, typename RetType = AwaiterReturnType<GetAwaiterType_t<Awaitable>>>
-requires(!std::is_void_v<RetType>) AwaitOneTask<RetType> makeOneTaskAwaitable(Awaitable &awaitable) { co_yield co_await awaitable; }
+requires(!std::is_void_v<RetType>) AwaitOneTask<RetType> makeOneTaskAwaitable(Awaitable &&awaitable)
+{
+    if constexpr (std::is_lvalue_reference_v<Awaitable>)
+    {
+        // Since AwaitOneTask's promise do not suspend at initial_suspend, To allow capturing r-value awaitable
+        co_await std::suspend_always{};
+        co_yield co_await awaitable;
+    }
+    else
+    {
+        Awaitable localAwaitable(std::forward<Awaitable>(awaitable));
+        co_await std::suspend_always{};
+        co_yield co_await localAwaitable;
+    }
+}
 template <AwaitableTypeConcept Awaitable, typename RetType = AwaiterReturnType<GetAwaiterType_t<Awaitable>>>
-requires std::is_void_v<RetType> AwaitOneTask<void> makeOneTaskAwaitable(Awaitable &awaitable) { co_await awaitable; }
+requires std::is_void_v<RetType> AwaitOneTask<void> makeOneTaskAwaitable(Awaitable &&awaitable)
+{
+    if constexpr (std::is_lvalue_reference_v<Awaitable>)
+    {
+        // Since AwaitOneTask's promise do not suspend at initial_suspend, To allow capturing r-value awaitable
+        co_await std::suspend_always{};
+        co_await awaitable;
+    }
+    else
+    {
+        Awaitable localAwaitable(std::forward<Awaitable>(awaitable));
+        co_await std::suspend_always{};
+        co_await localAwaitable;
+    }
+}
+
 } // namespace impl
 
 template <AwaitableTypeConcept... Awaitables>
-AwaitAllTasks<std::tuple<Awaitables...>> awaitAllTasks(Awaitables &...awaitables)
+AwaitAllTasks<std::tuple<Awaitables...>> awaitAllTasks(Awaitables &&...awaitables)
 {
     return AwaitAllTasks<std::tuple<Awaitables...>>{ std::tuple<AwaitOneTask<AwaiterReturnType<GetAwaiterType_t<Awaitables>>>...>{
-        std::make_tuple(impl::makeOneTaskAwaitable<Awaitables>(awaitables)...) } };
+        std::make_tuple(impl::makeOneTaskAwaitable<Awaitables>(std::forward<Awaitables>(awaitables))...) } };
 }
 
 template <AwaitableTypeConcept AwaitableType>
@@ -306,6 +345,23 @@ AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(const std::vector<Awaita
     for (AwaitableType &awaitable : awaitables)
     {
         allAwaits.emplace_back(std::move(impl::makeOneTaskAwaitable(awaitable)));
+    }
+    return AwaitAllTasks<std::vector<AwaitableType>>{ std::move(allAwaits) };
+}
+template <AwaitableTypeConcept AwaitableType>
+AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(std::vector<AwaitableType> &&awaitables)
+{
+    if (awaitables.empty())
+    {
+        return {};
+    }
+
+    using AwaiterRetType = AwaiterReturnType<GetAwaiterType_t<AwaitableType>>;
+    std::vector<AwaitOneTask<AwaiterRetType>> allAwaits;
+    allAwaits.reserve(awaitables.size());
+    for (AwaitableType &awaitable : awaitables)
+    {
+        allAwaits.emplace_back(std::move(impl::makeOneTaskAwaitable(std::move_if_noexcept<AwaitableType>(awaitable))));
     }
     return AwaitAllTasks<std::vector<AwaitableType>>{ std::move(allAwaits) };
 }

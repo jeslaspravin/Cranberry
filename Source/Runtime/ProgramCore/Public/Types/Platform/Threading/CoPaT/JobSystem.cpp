@@ -32,8 +32,7 @@ void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
 
     specialThreadsPool.initialize(this);
 
-    u32 maxWorkers = calculateWorkersCount();
-    for (u32 i = 0; i < maxWorkers; ++i)
+    for (u32 i = 0; i < workersCount; ++i)
     {
         std::thread worker{ [this]() { doWorkerJobs(); } };
         PlatformThreadingFuncs::setThreadName((COPAT_TCHAR("WorkerThread_") + COPAT_TOSTRING(i)).c_str(), worker.native_handle());
