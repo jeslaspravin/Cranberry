@@ -263,10 +263,18 @@ public:
         JobSystem *enqToJobSystem = nullptr;
 
     public:
+        /**
+         * User provided JobSystem. First argument of coroutine function must be JobSystem & or JobSystem *
+         */
         template <typename... FunctionParams>
         PromiseType(JobSystem &jobSystem, FunctionParams... params)
             : enqToJobSystem(&jobSystem)
         {}
+        template <typename... FunctionParams>
+        PromiseType(JobSystem *jobSystem, FunctionParams... params)
+            : enqToJobSystem(jobSystem)
+        {}
+
         PromiseType()
             : enqToJobSystem(JobSystem::get())
         {}
@@ -352,10 +360,18 @@ public:
         JobSystem *enqToJobSystem = nullptr;
 
     public:
+        /**
+         * User provided JobSystem. First argument of coroutine function must be JobSystem & or JobSystem *
+         */
         template <typename... FunctionParams>
         PromiseType(JobSystem &jobSystem, FunctionParams... params)
             : enqToJobSystem(&jobSystem)
         {}
+        template <typename... FunctionParams>
+        PromiseType(JobSystem *jobSystem, FunctionParams... params)
+            : enqToJobSystem(jobSystem)
+        {}
+
         PromiseType()
             : enqToJobSystem(JobSystem::get())
         {}
@@ -438,10 +454,18 @@ public:
         JobSystem *enqToJobSystem = nullptr;
 
     public:
+        /**
+         * User provided JobSystem. First argument of coroutine function must be JobSystem & or JobSystem *
+         */
         template <typename... FunctionParams>
         PromiseType(JobSystem &jobSystem, FunctionParams... params)
             : enqToJobSystem(&jobSystem)
         {}
+        template <typename... FunctionParams>
+        PromiseType(JobSystem *jobSystem, FunctionParams... params)
+            : enqToJobSystem(jobSystem)
+        {}
+
         PromiseType()
             : enqToJobSystem(JobSystem::get())
         {}
@@ -525,10 +549,18 @@ public:
         JobSystem *enqToJobSystem = nullptr;
 
     public:
+        /**
+         * User provided JobSystem. First argument of coroutine function must be JobSystem & or JobSystem *
+         */
         template <typename... FunctionParams>
         PromiseType(JobSystem &jobSystem, FunctionParams... params)
             : enqToJobSystem(&jobSystem)
         {}
+        template <typename... FunctionParams>
+        PromiseType(JobSystem *jobSystem, FunctionParams... params)
+            : enqToJobSystem(jobSystem)
+        {}
+
         PromiseType()
             : enqToJobSystem(JobSystem::get())
         {}

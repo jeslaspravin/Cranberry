@@ -17,12 +17,12 @@
 COPAT_NS_INLINED
 namespace copat
 {
-DispatchAwaitableType dispatchOneTask(JobSystem *jobSys, const DispatchFunctionType &callback, u32 jobIdx)
+DispatchAwaitableType dispatchOneTask(JobSystem &jobSys, const DispatchFunctionType &callback, u32 jobIdx)
 {
     callback(jobIdx);
     co_return;
 }
-DispatchAwaitableType dispatchTaskGroup(JobSystem *jobSys, const DispatchFunctionType &callback, u32 fromJobIdx, u32 count)
+DispatchAwaitableType dispatchTaskGroup(JobSystem &jobSys, const DispatchFunctionType &callback, u32 fromJobIdx, u32 count)
 {
     const u32 endJobIdx = fromJobIdx + count;
     for (u32 jobIdx = fromJobIdx; jobIdx < endJobIdx; ++jobIdx)
@@ -58,7 +58,7 @@ AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(JobSystem *jobSys, co
         dispatchedJobs.reserve(count);
         for (u32 i = 0; i < count; ++i)
         {
-            dispatchedJobs.emplace_back(std::move(dispatchOneTask(jobSys, callback, i)));
+            dispatchedJobs.emplace_back(std::move(dispatchOneTask(*jobSys, callback, i)));
         }
     }
     else
@@ -69,13 +69,13 @@ AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(JobSystem *jobSys, co
         for (u32 i = 0; i < grpsWithMoreJobCount; ++i)
         {
             // Add one more job for all grps with more jobs
-            dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(jobSys, callback, jobIdx, groupJobsCount + 1)));
+            dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, callback, jobIdx, groupJobsCount + 1)));
             jobIdx += groupJobsCount + 1;
         }
 
         for (u32 i = grpsWithMoreJobCount; i < jobSys->getWorkersCount(); ++i)
         {
-            dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(jobSys, callback, jobIdx, groupJobsCount)));
+            dispatchedJobs.emplace_back(std::move(dispatchTaskGroup(*jobSys, callback, jobIdx, groupJobsCount)));
             jobIdx += groupJobsCount;
         }
     }
