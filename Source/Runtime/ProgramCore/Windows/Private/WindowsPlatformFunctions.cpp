@@ -293,6 +293,19 @@ void WindowsPlatformFunctions::bindCrtHandlesToStdHandles(bool bBindStdIn, bool 
     }
 }
 
+void WindowsPlatformFunctions::setConsoleForegroundColor(uint8 r, uint8 g, uint8 b)
+{
+    const uint8 minIntensity = Math::min(r, g, b);
+    word attributeFlags = (minIntensity >= 128) ? FOREGROUND_INTENSITY : 0;
+
+    attributeFlags |= (r > 0 ? FOREGROUND_RED : 0) | (g > 0 ? FOREGROUND_GREEN : 0) | (b > 0 ? FOREGROUND_BLUE : 0);
+
+    HANDLE ouputHandle = ::GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE errorHandle = ::GetStdHandle(STD_ERROR_HANDLE);
+    ::SetConsoleTextAttribute(ouputHandle, attributeFlags);
+    ::SetConsoleTextAttribute(errorHandle, attributeFlags);
+}
+
 bool WindowsPlatformFunctions::hasAttachedConsole()
 {
     return ::GetStdHandle(STD_OUTPUT_HANDLE) != NULL && ::GetStdHandle(STD_ERROR_HANDLE) != NULL;

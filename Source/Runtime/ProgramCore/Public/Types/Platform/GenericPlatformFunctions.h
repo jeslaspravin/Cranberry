@@ -58,6 +58,7 @@ public:
 
     // Console related functions
     FORCE_INLINE static bool hasAttachedConsole() { return PlatformClass::hasAttachedConsole(); }
+    FORCE_INLINE static void setConsoleForegroundColor(uint8 r, uint8 g, uint8 b) { return PlatformClass::setConsoleForegroundColor(r, g, b); }
     /**
      * Attaches to console/terminal that is available either in parent process or in executing IDE output and performs some initial setup
      * Does only setting to use console-virtual-terminal-sequence and UTF-8 if console is already present for this application

@@ -31,8 +31,6 @@ AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: Yes
-# AttributeMacros:
-#   - __capability
 BinPackArguments: true
 BinPackParameters: true
 BraceWrapping:
@@ -78,12 +76,6 @@ EmptyLineBeforeAccessModifier: LogicalBlock
 # PackConstructorInitializers: BinPack
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 FixNamespaceComments: true
-# ForEachMacros:
-#   - foreach
-#   - Q_FOREACH
-#   - BOOST_FOREACH
-# IfMacros:
-#   - KJ_IF_MAYBE
 SortIncludes: false
 IncludeBlocks:   Preserve
 IncludeCategories:
@@ -169,16 +161,23 @@ SpacesInSquareBrackets: false
 SpaceBeforeSquareBrackets: false
 BitFieldColonSpacing: Both
 Standard:        Latest
+TabWidth:        4
+UseCRLF:         true
+UseTab:          Never
+# ForEachMacros:
+#   - foreach
+#   - Q_FOREACH
+#   - BOOST_FOREACH
+# IfMacros:
+#   - KJ_IF_MAYBE
+# AttributeMacros:
+#   - __capability
 StatementAttributeLikeMacros:
   - Q_EMIT
 StatementMacros:
   - META_ANNOTATE
   - GENERATED_CODES
-TabWidth:        4
-UseCRLF:         true
-UseTab:          Never
 WhitespaceSensitiveMacros:
   - TCHAR
   - STRID
 ...
-

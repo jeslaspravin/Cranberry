@@ -30,6 +30,7 @@ public:
     static void closeProcessHandle(void *handle);
     static void getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize);
 
+    static void setConsoleForegroundColor(uint8 r, uint8 g, uint8 b);
     static bool hasAttachedConsole();
     static void setupAvailableConsole();
     static void detachCosole();
