@@ -308,30 +308,28 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
     {
         std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
-#if SHORT_MSG_IN_CONSOLE
 
-        CERR
 #if ENABLE_VIRTUAL_TERMINAL_SEQ
-            << CONSOLE_FOREGROUND_YELLOW
-#endif
-            << message.getChar()
-#if ENABLE_VIRTUAL_TERMINAL_SEQ
-            << CONSOLE_FOREGROUND_DEFAULT
-#endif
-            << std::endl;
-#else // SHORT_MSG_IN_CONSOLE
-        CERR
-#if ENABLE_VIRTUAL_TERMINAL_SEQ
-            << CONSOLE_FOREGROUND_YELLOW
-#endif
-            << TCHAR("[") << category << TCHAR("]") << CATEGORY
+        CERR << CONSOLE_FOREGROUND_YELLOW;
+#else  // ENABLE_VIRTUAL_TERMINAL_SEQ
+        PlatformFunctions::setConsoleForegroundColor(255, 255, 0);
+#endif // ENABLE_VIRTUAL_TERMINAL_SEQ
+
+#if SHORT_MSG_IN_CONSOLE
+        CERR << message.getChar() << std::endl;
+#else  // SHORT_MSG_IN_CONSOLE
+        CERR << TCHAR("[") << category << TCHAR("]") << CATEGORY
             << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
-#if ENABLE_VIRTUAL_TERMINAL_SEQ
-            << CONSOLE_FOREGROUND_DEFAULT
-#endif
             << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
+
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+        CERR << CONSOLE_FOREGROUND_DEFAULT;
+#else  // ENABLE_VIRTUAL_TERMINAL_SEQ
+        PlatformFunctions::setConsoleForegroundColor(255, 255, 255);
+#endif // ENABLE_VIRTUAL_TERMINAL_SEQ
+
 #endif // LOG_TO_CONSOLE
     }
 }
@@ -354,30 +352,28 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
     {
         std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
 #if LOG_TO_CONSOLE
-#if SHORT_MSG_IN_CONSOLE
 
-        CERR
 #if ENABLE_VIRTUAL_TERMINAL_SEQ
-            << CONSOLE_FOREGROUND_RED
-#endif
-            << message.getChar()
-#if ENABLE_VIRTUAL_TERMINAL_SEQ
-            << CONSOLE_FOREGROUND_DEFAULT
-#endif
-            << std::endl;
-#else // SHORT_MSG_IN_CONSOLE
-        CERR
-#if ENABLE_VIRTUAL_TERMINAL_SEQ
-            << CONSOLE_FOREGROUND_RED
-#endif
-            << TCHAR("[") << category << TCHAR("]") << CATEGORY
+        CERR << CONSOLE_FOREGROUND_YELLOW;
+#else  // ENABLE_VIRTUAL_TERMINAL_SEQ
+        PlatformFunctions::setConsoleForegroundColor(255, 0, 0);
+#endif // ENABLE_VIRTUAL_TERMINAL_SEQ
+
+#if SHORT_MSG_IN_CONSOLE
+        CERR << message.getChar() << std::endl;
+#else  // SHORT_MSG_IN_CONSOLE
+        CERR << TCHAR("[") << category << TCHAR("]") << CATEGORY
             << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
-#if ENABLE_VIRTUAL_TERMINAL_SEQ
-            << CONSOLE_FOREGROUND_DEFAULT
-#endif
             << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
+
+#if ENABLE_VIRTUAL_TERMINAL_SEQ
+        CERR << CONSOLE_FOREGROUND_DEFAULT;
+#else  // ENABLE_VIRTUAL_TERMINAL_SEQ
+        PlatformFunctions::setConsoleForegroundColor(255, 255, 255);
+#endif // ENABLE_VIRTUAL_TERMINAL_SEQ
+
 #endif // LOG_TO_CONSOLE
     }
 }
