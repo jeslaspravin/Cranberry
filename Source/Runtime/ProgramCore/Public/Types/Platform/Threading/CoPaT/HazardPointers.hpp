@@ -39,22 +39,63 @@ public:
     constexpr static const uintptr_t RESET_VALUE = 0;
     constexpr static const uintptr_t FREE_VALUE = ~(uintptr_t)(0);
 
+    /**
+     * Just storing hazardous pointer alone is not thread safe.
+     * As after load the thread has to store which is not safe
+     * We can avoid that by using pointer to hazard ptr store
+     */
     std::atomic<uintptr_t> hazardPtr{ FREE_VALUE };
+    /**
+     * If this value is set and hazardPtr is invalid, It means either hazardPtr is not loaded yet or is loaded but not stored
+     * gcCollect() tries to load by calling getHazardPtr() which sets up the hazardPtr using CAS
+     */
+    std::atomic<uintptr_t> hazardPtrStorePtr{ RESET_VALUE };
 
 public:
     template <typename T>
-    T *setHazardPtr(T *ptr)
+    T *setHazardPtr(const std::atomic<T *> &ptr)
     {
-        hazardPtr.store((uintptr_t)ptr, std::memory_order::release);
+        hazardPtrStorePtr.store((uintptr_t)&ptr, std::memory_order::release);
         // We need fence here to ensure that instructions never gets reordered at compiler
         std::atomic_signal_fence(std::memory_order::seq_cst);
         // We can read relaxed as the HazardRecord will be acquired by a thread and not shared so setting will technically happen in a thread
         // only
-        return (T *)hazardPtr.load(std::memory_order::relaxed);
+        return getHazardPtr<T>(std::memory_order::relaxed);
     }
 
-    void reset() { hazardPtr.store(RESET_VALUE, std::memory_order::release); }
-    void free() { hazardPtr.store(FREE_VALUE, std::memory_order::release); }
+    /**
+     * Must be called only if setHazardPtr with valid ptr store is called on this record
+     */
+    template <typename T>
+    T *getHazardPtr(std::memory_order hazardPtrLoadOrder)
+    {
+        uintptr_t currHazardPtr = hazardPtr.load(hazardPtrLoadOrder);
+        if (!isValid(currHazardPtr))
+        {
+            // store ptr can be loaded relaxed as both is setHazardPtr and gcCollect we are thread, cache coherency safe
+            const std::atomic<T *> &ptrStore = *(const std::atomic<T *> *)hazardPtrStorePtr.load(std::memory_order::relaxed);
+            // RMW must be acquire and release as gcCollect might have written first, On failure we can just load relaxed
+            if (hazardPtr.compare_exchange_strong(
+                    currHazardPtr, (uintptr_t)ptrStore.load(std::memory_order::acquire), std::memory_order::acq_rel, std::memory_order::relaxed
+                ))
+            {
+                // Relaxed is fine as we are the one modified it just now
+                currHazardPtr = hazardPtr.load(std::memory_order::relaxed);
+            }
+        }
+        return (T *)currHazardPtr;
+    }
+
+    void reset()
+    {
+        hazardPtrStorePtr.store(RESET_VALUE, std::memory_order::relaxed);
+        hazardPtr.store(RESET_VALUE, std::memory_order::release);
+    }
+    void free()
+    {
+        hazardPtrStorePtr.store(RESET_VALUE, std::memory_order::relaxed);
+        hazardPtr.store(FREE_VALUE, std::memory_order::release);
+    }
 
     constexpr static bool isUseable(uintptr_t ptr) { return ptr == RESET_VALUE; }
     constexpr static bool isFree(uintptr_t ptr) { return ptr == FREE_VALUE; }
@@ -276,10 +317,15 @@ private:
         {
             for (u32 i = 0; i != HazardPointersChunk::RECORDS_PER_CHUNK; ++i)
             {
-                uintptr_t hazPtr = chunk->records[i].hazardPtr.load(std::memory_order::acquire);
+                // Relaxed is fine here as even if this is not valid we can safely getHazardPtr in else case
+                uintptr_t hazPtr = chunk->records[i].hazardPtr.load(std::memory_order::relaxed);
                 if (HazardRecord::isValid(hazPtr))
                 {
                     referencedPtrs.emplace_back((HazardPointerType)hazPtr);
+                }
+                else if (HazardRecord::isValid(chunk->records[i].hazardPtrStorePtr.load(std::memory_order::acquire)))
+                {
+                    referencedPtrs.emplace_back(chunk->records[i].getHazardPtr<HazardType>(std::memory_order::acquire));
                 }
             }
             chunk = chunk->pNext.load(std::memory_order::acquire);

@@ -54,6 +54,11 @@
 #define MACRO_TO_STRING_internal(DefExpanded) #DefExpanded
 #define MACRO_TO_STRING(VarName) MACRO_TO_STRING_internal(VarName)
 
+#define CODE_BLOCK_BODY(...)                                                                                                                   \
+    {                                                                                                                                          \
+        __VA_ARGS__                                                                                                                            \
+    }
+
 #define MAKE_TYPE_NONCOPY_NONMOVE(TypeName)                                                                                                    \
     TypeName(TypeName &&) = delete;                                                                                                            \
     TypeName(const TypeName &) = delete;                                                                                                       \
