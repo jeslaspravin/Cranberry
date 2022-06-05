@@ -25,7 +25,9 @@ namespace copat
 class JobSystem;
 
 using SpecialThreadQueueType = FAAArrayMPSCQueue<void>;
+using SpecialQHazardToken = SpecialThreadQueueType::HazardToken;
 using WorkerThreadQueueType = FAAArrayQueue<void>;
+using WorkerQHazardToken = WorkerThreadQueueType::HazardToken;
 
 /**
  * Just to not leak thread include
@@ -63,26 +65,30 @@ public:
     SpecialJobReceivedEvent specialJobEvents[COUNT];
     std::latch allSpecialsFinishedEvent{ COUNT };
 
-    void initialize(JobSystem *jobSystem)
+private:
+    struct EnqueueTokensAllocator
     {
-        COPAT_ASSERT(jobSystem);
-        ownerJobSystem = jobSystem;
+        SpecialQHazardToken *hazardTokens{ nullptr };
+        u32 totalTokens{ 0 };
+        std::atomic_int_fast32_t stackTop{ 0 };
 
-        initializeSpecialThreads(std::make_integer_sequence<u32, COUNT>{});
-    }
-    void shutdown()
-    {
-        for (u32 i = 0; i < COUNT; ++i)
-        {
-            specialJobEvents[i].notify();
-        }
-        allSpecialsFinishedEvent.wait();
-    }
+        void initialize(u32 totalThreads);
+        void release();
 
-    void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread)
+        SpecialQHazardToken *allocate();
+    };
+
+    EnqueueTokensAllocator tokensAllocator;
+
+public:
+    void initialize(JobSystem *jobSystem);
+    void shutdown();
+
+    void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread, SpecialQHazardToken *fromThreadTokens)
     {
+        COPAT_ASSERT(fromThreadTokens);
         const u32 idx = threadTypeToIdx(enqueueToThread);
-        specialQueues[idx].enqueue(coro.address());
+        specialQueues[idx].enqueue(coro.address(), fromThreadTokens[idx]);
 
         specialJobEvents[idx].notify();
     }
@@ -90,6 +96,20 @@ public:
     SpecialThreadQueueType *getThreadJobsQueue(u32 idx) { return &specialQueues[idx]; }
     SpecialJobReceivedEvent *getJobEvent(u32 idx) { return &specialJobEvents[idx]; }
     void onSpecialThreadExit() { allSpecialsFinishedEvent.count_down(); }
+
+    /**
+     * Allocates COUNT number of enqueue tokens, One for each special thread to be used for en queuing job from threads
+     */
+    SpecialQHazardToken *allocateEnqTokens()
+    {
+        SpecialQHazardToken *tokens = tokensAllocator.allocate();
+        COPAT_ASSERT(tokens);
+        for (u32 specialThreadIdx = 0; specialThreadIdx < COUNT; ++specialThreadIdx)
+        {
+            new (tokens + specialThreadIdx) SpecialQHazardToken(getThreadJobsQueue(specialThreadIdx)->getHazardToken());
+        }
+        return tokens;
+    }
 
 private:
     static constexpr u32 threadTypeToIdx(EJobThreadType threadType) { return u32(threadType) - (u32(EJobThreadType::MainThread) + 1); }
@@ -113,11 +133,13 @@ public:
     void initialize(JobSystem *jobSystem) {}
     void shutdown() {}
 
-    void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread) {}
+    void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread, SpecialQHazardToken *fromThreadTokens) {}
 
     SpecialThreadQueueType *getThreadJobsQueue(u32 idx) { return nullptr; }
     SpecialJobReceivedEvent *getJobEvent(u32 idx) { return nullptr; }
     void onSpecialThreadExit() {}
+
+    SpecialQHazardToken *allocateEnqTokens() { return nullptr; }
 };
 
 class COPAT_EXPORT_SYM JobSystem
@@ -132,11 +154,15 @@ public:
     struct PerThreadData
     {
         EJobThreadType threadType;
-        WorkerThreadQueueType::HazardToken enqDqToken;
+        WorkerQHazardToken workerEnqDqToken;
+        SpecialQHazardToken mainEnqToken;
+        SpecialQHazardToken *specialThreadTokens;
 
-        PerThreadData(WorkerThreadQueueType::HazardToken &&hazardToken)
+        PerThreadData(WorkerQHazardToken &&workerQToken, SpecialQHazardToken &&mainQToken, SpecialThreadsPoolType &specialThreadPool)
             : threadType(EJobThreadType::WorkerThreads)
-            , enqDqToken(std::forward<WorkerThreadQueueType::HazardToken>(hazardToken))
+            , workerEnqDqToken(std::forward<WorkerThreadQueueType::HazardToken>(workerQToken))
+            , mainEnqToken(std::forward<SpecialThreadQueueType::HazardToken>(mainQToken))
+            , specialThreadTokens(specialThreadPool.allocateEnqTokens())
         {}
     };
 
@@ -217,11 +243,11 @@ public:
 
         if (enqueueToThread == EJobThreadType::MainThread)
         {
-            mainThreadJobs.enqueue(coro.address());
+            mainThreadJobs.enqueue(coro.address(), threadData->mainEnqToken);
         }
         else if (enqueueToThread == EJobThreadType::WorkerThreads)
         {
-            workerJobs.enqueue(coro.address(), threadData->enqDqToken);
+            workerJobs.enqueue(coro.address(), threadData->workerEnqDqToken);
             // We do not have to be very strict here as long as one or two is free and we get 0 or nothing is free and we release one or two
             // more it is fine
             if (availableWorkersCount.load(std::memory_order::relaxed) != 0)
@@ -231,7 +257,7 @@ public:
         }
         else
         {
-            specialThreadsPool.enqueueJob(coro, enqueueToThread);
+            specialThreadsPool.enqueueJob(coro, enqueueToThread, threadData->specialThreadTokens);
         }
     }
 
@@ -243,6 +269,7 @@ public:
     }
 
     u32 getWorkersCount() const { return workersCount; }
+    u32 getTotalThreadsCount() const { return workersCount + SpecialThreadsPoolType::COUNT + 1; }
 
 private:
     PerThreadData *getPerThreadData() const { return (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot); }
@@ -251,7 +278,9 @@ private:
         PerThreadData *threadData = (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot);
         if (!threadData)
         {
-            PlatformThreadingFuncs::setTlsSlotValue(tlsSlot, memNew<PerThreadData>(std::move(workerJobs.getHazardToken())));
+            PerThreadData *newThreadData
+                = memNew<PerThreadData>(workerJobs.getHazardToken(), mainThreadJobs.getHazardToken(), specialThreadsPool);
+            PlatformThreadingFuncs::setTlsSlotValue(tlsSlot, newThreadData);
             threadData = (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot);
         }
         return *threadData;
@@ -294,7 +323,7 @@ private:
         tlData->threadType = EJobThreadType::WorkerThreads;
         while (true)
         {
-            while (void *coroPtr = workerJobs.dequeue(tlData->enqDqToken))
+            while (void *coroPtr = workerJobs.dequeue(tlData->workerEnqDqToken))
             {
                 std::coroutine_handle<>::from_address(coroPtr).resume();
             }
@@ -339,6 +368,31 @@ private:
     }
 };
 
+//////////////////////////////////////////////////////////////////////////
+/// SpecialThreadsPool impl
+//////////////////////////////////////////////////////////////////////////
+
+template <u32 SpecialThreadsCount>
+void SpecialThreadsPool<SpecialThreadsCount>::initialize(JobSystem *jobSystem)
+{
+    COPAT_ASSERT(jobSystem);
+    ownerJobSystem = jobSystem;
+
+    tokensAllocator.initialize(ownerJobSystem->getTotalThreadsCount());
+    initializeSpecialThreads(std::make_integer_sequence<u32, COUNT>{});
+}
+
+template <u32 SpecialThreadsCount>
+void SpecialThreadsPool<SpecialThreadsCount>::shutdown()
+{
+    for (u32 i = 0; i < COUNT; ++i)
+    {
+        specialJobEvents[i].notify();
+    }
+    allSpecialsFinishedEvent.wait();
+    tokensAllocator.release();
+}
+
 template <u32 SpecialThreadsCount>
 template <u32 LastIdx>
 void SpecialThreadsPool<SpecialThreadsCount>::initializeSpecialThreads(std::integer_sequence<u32, LastIdx>)
@@ -356,6 +410,41 @@ void SpecialThreadsPool<SpecialThreadsCount>::initializeSpecialThreads(std::inte
     INTERNAL_SpecialThreadFuncType func = &JobSystem::doSpecialThreadJobs<FirstIdx, threadType>;
     INTERNAL_initializeAndRunSpecialThread(func, threadType, ownerJobSystem);
     initializeSpecialThreads(std::integer_sequence<u32, Indices...>{});
+}
+
+template <u32 SpecialThreadsCount>
+void SpecialThreadsPool<SpecialThreadsCount>::EnqueueTokensAllocator::initialize(u32 totalThreads)
+{
+    if (hazardTokens != nullptr)
+    {
+        CoPaTMemAlloc::memFree(hazardTokens);
+        hazardTokens = nullptr;
+    }
+    totalTokens = totalThreads;
+    hazardTokens
+        = (SpecialQHazardToken *)(CoPaTMemAlloc::memAlloc(sizeof(SpecialQHazardToken) * totalThreads * COUNT, alignof(SpecialQHazardToken)));
+    stackTop.store(0, std::memory_order::relaxed);
+}
+
+template <u32 SpecialThreadsCount>
+void SpecialThreadsPool<SpecialThreadsCount>::EnqueueTokensAllocator::release()
+{
+    if (hazardTokens != nullptr)
+    {
+        CoPaTMemAlloc::memFree(hazardTokens);
+        hazardTokens = nullptr;
+    }
+}
+
+template <u32 SpecialThreadsCount>
+SpecialQHazardToken *SpecialThreadsPool<SpecialThreadsCount>::EnqueueTokensAllocator::allocate()
+{
+    u32 tokenIdx = stackTop.fetch_add(COUNT, std::memory_order::acq_rel);
+    if (tokenIdx < totalTokens)
+    {
+        return hazardTokens + tokenIdx;
+    }
+    return nullptr;
 }
 
 } // namespace copat

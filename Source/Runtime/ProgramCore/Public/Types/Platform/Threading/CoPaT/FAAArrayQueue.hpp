@@ -164,7 +164,7 @@ public:
             return;
         while (true)
         {
-            Node *ltail = hazardRecord.record->setHazardPtr(tail.load(std::memory_order::acquire));
+            Node *ltail = hazardRecord.record->setHazardPtr(tail);
             const int idx = ltail->enqidx.fetch_add(1, std::memory_order::acq_rel);
             if (idx > BUFFER_SIZE - 1) // This node is full
             {
@@ -210,7 +210,7 @@ public:
     {
         while (true)
         {
-            Node *lhead = hazardRecord.record->setHazardPtr(head.load(std::memory_order::acquire));
+            Node *lhead = hazardRecord.record->setHazardPtr(head);
             // Do not want to delete head node if it is same as tail
             if (lhead->deqidx.load(std::memory_order::acquire) >= lhead->enqidx.load(std::memory_order::acquire)
                 && lhead->next.load(std::memory_order::acquire) == nullptr)
@@ -286,11 +286,20 @@ private:
 
     static T *takenPtr() { return (T *)TAKEN_PTR; }
 
+    /**
+     * Needed as enqueue needs protection from dequeue delete
+     * when enqueue from 2 thread and dequeue from a thread at a same time. One enq thread created new node while deq finished and deleted
+     * other enq thread's local node
+     */
+    HazardPointersManager<Node> hazardsManager;
+
     // Pointers to head and tail of the list
     alignas(2 * CACHE_LINE_SIZE) Node *head;
     alignas(2 * CACHE_LINE_SIZE) std::atomic<Node *> tail;
 
 public:
+    using HazardToken = HazardPointersManager<Node>::HazardPointer;
+
     FAAArrayMPSCQueue()
     {
         Node *sentinelNode = memNew<Node, Node *>(nullptr);
@@ -307,13 +316,20 @@ public:
         memDelete(head); // Delete the last node
     }
 
+    inline HazardToken getHazardToken() { return { hazardsManager }; }
+
     void enqueue(T *item)
+    {
+        HazardToken token{ hazardsManager };
+        enqueue(item, token);
+    }
+    void enqueue(T *item, HazardToken &hazardRecord)
     {
         if (item == nullptr)
             return;
         while (true)
         {
-            Node *ltail = tail.load(std::memory_order::acquire);
+            Node *ltail = hazardRecord.record->setHazardPtr(tail);
             const int idx = ltail->enqidx.fetch_add(1, std::memory_order::acq_rel);
             if (idx > BUFFER_SIZE - 1) // This node is full
             {
@@ -323,10 +339,14 @@ public:
                 Node *lnext = ltail->next.load(std::memory_order::relaxed);
                 if (lnext == nullptr)
                 {
-                    Node *newNode = memNew<Node>(item);
+                    // Try acquire existing deleting node if any present
+                    Node *newNode = hazardsManager.dequeueDelete();
+                    newNode = newNode ? newNode : (Node *)(CoPaTMemAlloc::memAlloc(sizeof(Node), alignof(Node)));
+                    newNode = new (newNode) Node(item);
                     if (ltail->casNext(nullptr, newNode))
                     {
                         casTail(ltail, newNode);
+                        hazardRecord.record->reset();
                         return;
                     }
                     memDelete(newNode);
@@ -340,6 +360,7 @@ public:
             T *itemnull = nullptr;
             if (ltail->items[idx].compare_exchange_strong(itemnull, item))
             {
+                hazardRecord.record->reset();
                 return;
             }
         }
@@ -365,7 +386,7 @@ public:
                     break;
                 }
                 head = lnext;
-                memDelete(lhead);
+                hazardsManager.enqueueDelete(lhead);
                 continue;
             }
             T *item = lhead->items[idx].exchange(takenPtr(), std::memory_order::relaxed);
