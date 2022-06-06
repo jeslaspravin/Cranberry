@@ -11,8 +11,8 @@
 
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "Math/Math.h"
+#include "RenderApi/RenderTaskHelpers.h"
 #include "RenderInterface/GraphicsHelper.h"
-#include "RenderInterface/Rendering/IRenderCommandList.h"
 
 DEFINE_GRAPHICS_RESOURCE(MemoryResource)
 

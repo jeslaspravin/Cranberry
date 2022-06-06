@@ -51,6 +51,7 @@ bool ApplicationInstance::appTick()
         bAppActive = windowManager->pollWindows();
         inputSystem->updateInputStates();
     }
+
     // Handle if we requested exit during this polling
     if (bExitNextFrame)
     {

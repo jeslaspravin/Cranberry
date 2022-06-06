@@ -13,6 +13,9 @@
 
 #include "EngineRendererExports.h"
 
+/**
+ * Graphics hardware's instance for this application instance
+ */
 class ENGINERENDERER_EXPORT IGraphicsInstance
 {
 public:

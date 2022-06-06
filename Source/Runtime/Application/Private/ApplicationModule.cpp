@@ -35,10 +35,10 @@ void ApplicationModule::graphicsInitEvents(ERenderStateEvent renderState)
     {
         switch (renderState)
         {
-        case ERenderStateEvent::PreinitDevice:
+        case ERenderStateEvent::PostLoadInstance:
             /**
              * Init needs to be called at pre-init of graphics device so that main window will be created and its surface can be used to cache
-             * present queues in GraphicsDevice
+             * present queues in GraphicsDevice, And since we need it to created in main thread we go with PostLoadInstance
              */
             windowMan.init();
             break;

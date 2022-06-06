@@ -30,6 +30,7 @@
 #include "WindowManager.h"
 #include "ApplicationSettings.h"
 #include "ApplicationInstance.h"
+#include "RenderApi/RenderManager.h"
 
 using namespace ImGui;
 

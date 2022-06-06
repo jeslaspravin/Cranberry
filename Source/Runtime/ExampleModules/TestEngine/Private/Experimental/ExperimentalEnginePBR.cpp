@@ -2296,16 +2296,6 @@ void ExperimentalEnginePBR::onStartUp()
 {
     GameEngine::onStartUp();
 
-    ENQUEUE_COMMAND(RenderStartup)
-    (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            createSceneRenderData(cmdList, graphicsInstance, graphicsHelper);
-            startUpRenderInit(graphicsInstance, graphicsHelper);
-            updateCamGizmoCapture(cmdList, graphicsInstance);
-        }
-    );
-
     camera.cameraProjection = projection;
     camera.setOrthoSize({ 1280, 720 });
     camera.setClippingPlane(0.1f, 6000.f);
@@ -2354,6 +2344,16 @@ void ExperimentalEnginePBR::onStartUp()
     selectedEnv = 0;
 
     tempTest();
+
+    ENQUEUE_COMMAND(RenderStartup)
+    (
+        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            createSceneRenderData(cmdList, graphicsInstance, graphicsHelper);
+            startUpRenderInit(graphicsInstance, graphicsHelper);
+            updateCamGizmoCapture(cmdList, graphicsInstance);
+        }
+    );
 }
 
 void ExperimentalEnginePBR::startUpRenderInit(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)

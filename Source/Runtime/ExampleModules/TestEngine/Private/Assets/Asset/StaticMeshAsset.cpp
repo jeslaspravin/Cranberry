@@ -12,6 +12,7 @@
 #include "Assets/Asset/StaticMeshAsset.h"
 #include "Engine/GameEngine.h"
 #include "RenderApi/VertexData.h"
+#include "RenderApi/RenderTaskHelpers.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 

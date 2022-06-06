@@ -11,6 +11,7 @@
 
 #include "ImGuiFontTextureAtlas.h"
 #include "ImGuiLib/imgui.h"
+#include "RenderApi/RenderTaskHelpers.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 

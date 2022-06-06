@@ -10,7 +10,7 @@
  */
 
 #include "TexturesBase.h"
-#include "RenderInterface/Rendering/IRenderCommandList.h"
+#include "RenderApi/RenderTaskHelpers.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 
 void TextureBase::setFilteringMode(ESamplerFiltering::Type filtering) { sampleFiltering = filtering; }

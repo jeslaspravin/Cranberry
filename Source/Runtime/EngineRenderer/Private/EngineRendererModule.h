@@ -13,7 +13,7 @@
 
 #include "IRenderInterfaceModule.h"
 
-class EngineRedererModule final : public IRenderInterfaceModule
+class EngineRendererModule final : public IRenderInterfaceModule
 {
 private:
     IGraphicsInstance *graphicsInstanceCache;

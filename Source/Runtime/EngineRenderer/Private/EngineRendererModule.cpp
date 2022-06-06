@@ -11,38 +11,64 @@
 
 #include "EngineRendererModule.h"
 #include "Modules/ModuleManager.h"
-#include "RenderInterface/IRHIModule.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
+#include "RenderInterface/IRHIModule.h"
 #include "RenderInterface/GlobalRenderVariables.h"
+#include "RenderApi/RenderTaskHelpers.h"
+#include "RenderApi/RenderManager.h"
 
-DECLARE_MODULE(EngineRenderer, EngineRedererModule)
+DECLARE_MODULE(EngineRenderer, EngineRendererModule)
 
-IGraphicsInstance *EngineRedererModule::currentGraphicsInstance() const
+//////////////////////////////////////////////////////////////////////////
+/// Rendering thread stubs
+//////////////////////////////////////////////////////////////////////////
+
+copat::NormalFuncAwaiter
+    initializeGraphicsStub(RenderManager *renderManager, IGraphicsInstance *graphicsInstanceCache, const GraphicsHelperAPI *graphicsHelper)
 {
-    debugAssert(getRenderManager()->isExecutingCommands() && "using graphics instance any where outside render commands is not allowed");
+    co_await renderManager->initialize(graphicsInstanceCache, graphicsHelper);
+}
+
+//////////////////////////////////////////////////////////////////////////
+/// EngineRendererModule implementations
+//////////////////////////////////////////////////////////////////////////
+
+IGraphicsInstance *EngineRendererModule::currentGraphicsInstance() const
+{
+    ASSERT_INSIDE_RENDERTHREAD();
     return graphicsInstanceCache;
 }
 
-const GraphicsHelperAPI *EngineRedererModule::currentGraphicsHelper() const { return graphicsHelperCache; }
-
-void EngineRedererModule::initializeGraphics(bool bComputeOnly /*= false*/)
+const GraphicsHelperAPI *EngineRendererModule::currentGraphicsHelper() const
 {
-    GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.set(bComputeOnly);
-    getRenderManager()->initialize(graphicsInstanceCache);
+    ASSERT_INSIDE_RENDERTHREAD();
+    return graphicsHelperCache;
 }
 
-void EngineRedererModule::finalizeGraphicsInitialization() { getRenderManager()->finalizeInit(); }
+RenderManager *EngineRendererModule::getRenderManager() const
+{
+    ASSERT_INSIDE_RENDERTHREAD();
+    return renderManager;
+}
 
-RenderManager *EngineRedererModule::getRenderManager() const { return renderManager; }
+void EngineRendererModule::initializeGraphics(bool bComputeOnly /*= false*/)
+{
+    GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.set(bComputeOnly);
+    initializeGraphicsStub(renderManager, graphicsInstanceCache, graphicsHelperCache);
+}
 
-DelegateHandle EngineRedererModule::registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback)
+void EngineRendererModule::finalizeGraphicsInitialization() { renderManager->finalizeInit(); }
+
+DelegateHandle EngineRendererModule::registerToStateEvents(RenderStateDelegate::SingleCastDelegateType callback)
 {
     return renderStateEvents.bind(callback);
 }
 
-void EngineRedererModule::unregisterToStateEvents(const DelegateHandle &handle) { renderStateEvents.unbind(handle); }
+void EngineRendererModule::unregisterToStateEvents(const DelegateHandle &handle) { renderStateEvents.unbind(handle); }
 
-void EngineRedererModule::init()
+void EngineRendererModule::init()
 {
     renderManager = new RenderManager();
     weakRHI = ModuleManager::get()->getOrLoadModule(TCHAR("VulkanRHI"));
@@ -52,17 +78,20 @@ void EngineRedererModule::init()
     graphicsHelperCache = static_cast<IRHIModule *>(rhiModule)->getGraphicsHelper();
 }
 
-void EngineRedererModule::release()
+void EngineRendererModule::release()
 {
-    renderManager->destroy();
-    delete renderManager;
+    // Wait till all graphics resources are released 
+    copat::waitOnAwaitable(renderManager->destroy());
     renderManager = nullptr;
+    delete renderManager;
 
     if (!weakRHI.expired())
     {
         auto rhiModule = weakRHI.lock().get();
         static_cast<IRHIModule *>(rhiModule)->destroyGraphicsInstance();
     }
+    weakRHI.reset();
+
     graphicsInstanceCache = nullptr;
     graphicsHelperCache = nullptr;
     ModuleManager::get()->unloadModule(TCHAR("VulkanRHI"));
@@ -74,4 +103,36 @@ IRenderInterfaceModule *IRenderInterfaceModule::get()
 {
     static WeakModulePtr weakRiModule = (ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer")));
     return weakRiModule.expired() ? nullptr : static_cast<IRenderInterfaceModule *>(weakRiModule.lock().get());
+}
+
+RenderThreadEnqTask RenderThreadEnqueuer::execInRenderThreadAwaitable(RenderThreadEnqueuer::RenderEnqFuncType execFunc)
+{
+    if (IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get())
+    {
+        execFunc(
+            renderInterface->getRenderManager()->getRenderCmds(), renderInterface->currentGraphicsInstance(),
+            renderInterface->currentGraphicsHelper()
+        );
+    }
+    co_return;
+}
+
+void RenderThreadEnqueuer::flushWaitRenderThread()
+{
+    RenderThreadEnqTask dummyTask = execInRenderThreadAwaitable([](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *) {});
+    copat::waitOnAwaitable(dummyTask);
+}
+
+copat::NormalFuncAwaiter RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc) {
+    if (copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread)
+    {
+        IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
+        debugAssert(renderInterface);
+        execFunc(
+            renderInterface->getRenderManager()->getRenderCmds(), renderInterface->currentGraphicsInstance(),
+            renderInterface->currentGraphicsHelper()
+        );
+        co_return;
+    }
+    co_await execInRenderThreadAwaitable(std::forward<RenderEnqFuncType>(execFunc));
 }

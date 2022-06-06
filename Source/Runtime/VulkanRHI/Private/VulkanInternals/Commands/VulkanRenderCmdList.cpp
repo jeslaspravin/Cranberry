@@ -14,6 +14,8 @@
 
 #include "Math/Box.h"
 #include "Math/Math.h"
+#include "IRenderInterfaceModule.h"
+#include "RenderApi/RenderManager.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Resources/DeferredDeleter.h"
