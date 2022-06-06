@@ -12,6 +12,8 @@
 #include "Core/GBuffers.h"
 #include "Core/Types/Textures/RenderTargetTextures.h"
 #include "ApplicationSettings.h"
+#include "IRenderInterfaceModule.h"
+#include "RenderApi/RenderManager.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "Types/Platform/PlatformAssertionErrors.h"

@@ -39,8 +39,6 @@ public:
         gEngine->quit();
         LOG("Engine", "Engine quit");
     }
-
-    void onRendererStateEvent(ERenderStateEvent state) override { gEngine->onRenderStateChange(state); }
 };
 
 int appMain(String cmdLine, void *appPlatformInstance)

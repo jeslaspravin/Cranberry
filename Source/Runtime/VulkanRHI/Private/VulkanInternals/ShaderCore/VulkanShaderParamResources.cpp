@@ -10,16 +10,17 @@
  */
 
 #include "VulkanShaderParamResources.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Math/Math.h"
+#include "IRenderInterfaceModule.h"
 #include "RenderApi/Material/MaterialCommonUniforms.h"
 #include "RenderApi/Scene/RenderScene.h"
+#include "RenderApi/RenderManager.h"
 #include "RenderInterface/GlobalRenderVariables.h"
-#include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Resources/ShaderResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
 #include "RenderInterface/Shaders/Base/DrawMeshShader.h"
 #include "ShaderReflected.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
 #include "VulkanGraphicsHelper.h"
 #include "VulkanInternals/Debugging.h"
 #include "VulkanInternals/Resources/VulkanMemoryResources.h"
@@ -748,7 +749,7 @@ void VulkanShaderSetParameters::init()
     }
 
     VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, bufferDescWrites, {});
-    ENQUEUE_COMMAND_NODEBUG(FinalizeShaderParams, LAMBDA_BODY(updateParams(cmdList, graphicsInstance);), this);
+    updateParams(IRenderInterfaceModule::get()->getRenderManager()->getRenderCmds(), IRenderInterfaceModule::get()->currentGraphicsInstance());
 }
 
 void VulkanShaderSetParameters::release()
@@ -969,9 +970,7 @@ void VulkanShaderParameters::init()
     }
 
     VulkanGraphicsHelper::updateDescriptorsSet(graphicsInstance, bufferDescWrites, {});
-    ENQUEUE_COMMAND(FinalizeShaderParams)
-    ([this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-     { updateParams(cmdList, graphicsInstance); });
+    updateParams(IRenderInterfaceModule::get()->getRenderManager()->getRenderCmds(), IRenderInterfaceModule::get()->currentGraphicsInstance());
 }
 
 void VulkanShaderParameters::release()

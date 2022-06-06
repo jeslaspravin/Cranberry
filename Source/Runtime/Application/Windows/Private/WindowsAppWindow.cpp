@@ -74,10 +74,10 @@ void WindowsAppWindow::updateWindow()
     auto peekMsgsLambda = [this](uint32 minFilter, uint32 maxFilter, uint32 removeFlag)
     {
         MSG msg;
-        while (PeekMessage(&msg, (HWND)windowsHandle, minFilter, maxFilter, removeFlag) > 0)
+        while (::PeekMessage(&msg, (HWND)windowsHandle, minFilter, maxFilter, removeFlag) > 0)
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            ::TranslateMessage(&msg);
+            ::DispatchMessage(&msg);
         }
     };
 
@@ -96,7 +96,7 @@ void WindowsAppWindow::destroyWindow()
 {
     GenericAppWindow::destroyWindow();
 
-    DestroyWindow((HWND)windowsHandle);
+    ::DestroyWindow((HWND)windowsHandle);
     windowsHandle = nullptr;
 }
 

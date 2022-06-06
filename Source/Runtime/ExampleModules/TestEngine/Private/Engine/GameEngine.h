@@ -72,8 +72,6 @@ public:
     void engineLoop();
     void quit();
 
-    void onRenderStateChange(ERenderStateEvent state);
-
     AssetManager &getAssetManager() { return assetManager; }
     ImGuiManager &getImGuiManager() { return imguiManager; }
 };

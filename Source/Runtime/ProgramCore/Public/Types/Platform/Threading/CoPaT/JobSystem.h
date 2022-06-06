@@ -12,8 +12,6 @@
 #pragma once
 
 #include "FAAArrayQueue.hpp"
-#include "SyncPrimitives.h"
-#include "Platform/PlatformThreadingFunctions.h"
 
 #include <coroutine>
 #include <semaphore>
@@ -86,7 +84,8 @@ public:
 
     void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread, SpecialQHazardToken *fromThreadTokens)
     {
-        COPAT_ASSERT(fromThreadTokens);
+        // We must not enqueue at shutdown
+        COPAT_ASSERT(fromThreadTokens && !allSpecialsFinishedEvent.try_wait());
         const u32 idx = threadTypeToIdx(enqueueToThread);
         specialQueues[idx].enqueue(coro.address(), fromThreadTokens[idx]);
 
@@ -202,64 +201,10 @@ public:
 
     void initialize(MainThreadTickFunc &&mainTickFunc, void *inUserData);
     void joinMain() { runMain(); }
-
     void exitMain() { bExitMain[0].test_and_set(std::memory_order::release); }
+    void shutdown();
 
-    void shutdown()
-    {
-        PerThreadData *mainThreadTlData = getPerThreadData();
-        COPAT_ASSERT(mainThreadTlData->threadType == EJobThreadType::MainThread);
-
-        // Just setting bExitMain flag to expected when shutting down
-        bExitMain[0].test_and_set(std::memory_order::relaxed);
-        bExitMain[1].test_and_set(std::memory_order::relaxed);
-
-        specialThreadsPool.shutdown();
-
-        // Binary semaphore
-        // while (!workersFinishedEvent.try_wait())
-        //{
-        //    workerJobEvent.release();
-        //}
-
-        // Counting semaphore
-        // Drain the worker job events if any so we can release all workers
-        while (workerJobEvent.try_acquire())
-        {}
-        workerJobEvent.release(workersCount);
-        workersFinishedEvent.wait();
-
-        memDelete(mainThreadTlData);
-        if (singletonInstance == this)
-        {
-            singletonInstance = nullptr;
-        }
-    }
-
-    void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread = EJobThreadType::WorkerThreads)
-    {
-        PerThreadData *threadData = getPerThreadData();
-        COPAT_ASSERT(threadData);
-
-        if (enqueueToThread == EJobThreadType::MainThread)
-        {
-            mainThreadJobs.enqueue(coro.address(), threadData->mainEnqToken);
-        }
-        else if (enqueueToThread == EJobThreadType::WorkerThreads)
-        {
-            workerJobs.enqueue(coro.address(), threadData->workerEnqDqToken);
-            // We do not have to be very strict here as long as one or two is free and we get 0 or nothing is free and we release one or two
-            // more it is fine
-            if (availableWorkersCount.load(std::memory_order::relaxed) != 0)
-            {
-                workerJobEvent.release();
-            }
-        }
-        else
-        {
-            specialThreadsPool.enqueueJob(coro, enqueueToThread, threadData->specialThreadTokens);
-        }
-    }
+    void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread = EJobThreadType::WorkerThreads);
 
     EJobThreadType getCurrentThreadType() const
     {
@@ -267,83 +212,17 @@ public:
         COPAT_ASSERT(tlData);
         return tlData->threadType;
     }
-
     u32 getWorkersCount() const { return workersCount; }
     u32 getTotalThreadsCount() const { return workersCount + SpecialThreadsPoolType::COUNT + 1; }
 
 private:
-    PerThreadData *getPerThreadData() const { return (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot); }
-    PerThreadData &getOrCreatePerThreadData()
-    {
-        PerThreadData *threadData = (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot);
-        if (!threadData)
-        {
-            PerThreadData *newThreadData
-                = memNew<PerThreadData>(workerJobs.getHazardToken(), mainThreadJobs.getHazardToken(), specialThreadsPool);
-            PlatformThreadingFuncs::setTlsSlotValue(tlsSlot, newThreadData);
-            threadData = (PerThreadData *)PlatformThreadingFuncs::getTlsSlotValue(tlsSlot);
-        }
-        return *threadData;
-    }
+    PerThreadData *getPerThreadData() const;
+    PerThreadData &getOrCreatePerThreadData();
 
-    u32 calculateWorkersCount() const
-    {
-        u32 count = std::thread::hardware_concurrency() / 2;
-        count = count > 4 ? count : 4;
-        return count > MAX_SUPPORTED_WORKERS ? MAX_SUPPORTED_WORKERS : count;
-    }
+    u32 calculateWorkersCount() const;
 
-    void runMain()
-    {
-        // Main thread data gets created and destroy in initialize and shutdown resp.
-        PerThreadData *tlData = getPerThreadData();
-        tlData->threadType = EJobThreadType::MainThread;
-        while (true)
-        {
-            if (bool(mainThreadTick))
-            {
-                mainThreadTick(userData);
-            }
-
-            while (void *coroPtr = mainThreadJobs.dequeue())
-            {
-                std::coroutine_handle<>::from_address(coroPtr).resume();
-            }
-
-            if (bExitMain[0].test(std::memory_order::relaxed))
-            {
-                break;
-            }
-        }
-    }
-
-    void doWorkerJobs()
-    {
-        PerThreadData *tlData = &getOrCreatePerThreadData();
-        tlData->threadType = EJobThreadType::WorkerThreads;
-        while (true)
-        {
-            while (void *coroPtr = workerJobs.dequeue(tlData->workerEnqDqToken))
-            {
-                std::coroutine_handle<>::from_address(coroPtr).resume();
-            }
-
-            if (bExitMain[1].test(std::memory_order::relaxed))
-            {
-                break;
-            }
-
-            // Marking that we are becoming available
-            availableWorkersCount.fetch_add(1, std::memory_order::memory_order_acq_rel);
-            // Wait until job available
-            workerJobEvent.acquire();
-            // Starting work
-            availableWorkersCount.fetch_sub(1, std::memory_order::memory_order_acq_rel);
-        }
-        workersFinishedEvent.count_down();
-        memDelete(tlData);
-    }
-
+    void runMain();
+    void doWorkerJobs();
     template <u32 SpecialThreadIdx, EJobThreadType SpecialThreadType>
     void doSpecialThreadJobs()
     {

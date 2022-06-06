@@ -13,12 +13,13 @@
 #include "GenericAppWindow.h"
 #include "IApplicationModule.h"
 #include "Logger/Logger.h"
+#include "Types/Time.h"
 #include "Modules/ModuleManager.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
+#include "WindowManager.h"
+#include "RenderApi/RenderManager.h"
 #include "RenderInterface/Rendering/RenderingContexts.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
-#include "Types/Time.h"
-#include "WindowManager.h"
 
 void EngineTime::engineStart() { startTick = Time::timeNow(); }
 
@@ -58,6 +59,7 @@ void GameEngine::startup(ApplicationInstance *appInst)
     application = appInst;
 
     assetManager.load();
+    imguiManager.initialize();
 
     onStartUp();
 
@@ -73,6 +75,9 @@ void GameEngine::quit()
     ENQUEUE_COMMAND_NODEBUG(
         EngineQuit, { assetManager.clearToDestroy(); }, this
     );
+    imguiManager.release();
+    // We are not yet ready for 100% multi threaded renderer
+    RenderThreadEnqueuer::flushWaitRenderThread();
 
     LOG("GameEngine", "Engine run time in %.3f minutes", Time::asMinutes(Time::timeNow() - timeData.startTick));
 }
@@ -83,43 +88,14 @@ void GameEngine::engineLoop()
 
     timeData.progressFrame();
     tickEngine();
-    rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);
+    ENQUEUE_COMMAND_NODEBUG(
+        Engineloop, { rendererModule->getRenderManager()->renderFrame(timeData.deltaTime); }, this
+    );
+    imguiManager.updateFrame(timeData.deltaTime);
+    // We are not yet ready for 100% multi threaded renderer
+    RenderThreadEnqueuer::flushWaitRenderThread();
 
     Logger::flushStream();
-}
-
-void GameEngine::onRenderStateChange(ERenderStateEvent state)
-{
-    switch (state)
-    {
-    case ERenderStateEvent::PostLoadInstance:
-        break;
-    case ERenderStateEvent::PreinitDevice:
-        break;
-    case ERenderStateEvent::PostInitDevice:
-        break;
-    case ERenderStateEvent::PostInitGraphicsContext:
-        break;
-    case ERenderStateEvent::PostInititialize:
-        imguiManager.initialize();
-        break;
-    case ERenderStateEvent::PreFinalizeInit:
-        break;
-    case ERenderStateEvent::PostFinalizeInit:
-        break;
-    case ERenderStateEvent::PreExecFrameCommands:
-        imguiManager.updateFrame(timeData.deltaTime);
-        break;
-    case ERenderStateEvent::PreCleanupCommands:
-        imguiManager.release();
-        break;
-    case ERenderStateEvent::Cleanup:
-        break;
-    case ERenderStateEvent::PostCleanupCommands:
-        break;
-    default:
-        break;
-    }
 }
 
 void GameEngine::onStartUp() {}

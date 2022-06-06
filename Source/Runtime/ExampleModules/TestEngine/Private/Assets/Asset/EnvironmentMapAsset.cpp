@@ -13,6 +13,8 @@
 #include "Core/Types/Textures/CubeTextures.h"
 #include "Core/Types/Textures/Texture2D.h"
 #include "RenderInterface/GraphicsHelper.h"
+#include "IRenderInterfaceModule.h"
+#include "RenderApi/RenderManager.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Rendering/RenderingContexts.h"

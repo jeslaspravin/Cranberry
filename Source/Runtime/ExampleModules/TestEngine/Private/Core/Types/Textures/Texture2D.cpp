@@ -12,6 +12,7 @@
 #include "Texture2D.h"
 #include "Logger/Logger.h"
 #include "Math/Math.h"
+#include "RenderApi/RenderTaskHelpers.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/GraphicsIntance.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"

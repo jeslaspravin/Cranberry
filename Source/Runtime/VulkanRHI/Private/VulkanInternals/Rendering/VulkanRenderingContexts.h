@@ -48,5 +48,7 @@ public:
     VkRenderPass getRenderPass(ERenderPassFormat::Type renderpassFormat, const RenderPassAdditionalProps &additionalProps);
     VkRenderPass getRenderPass(const GenericRenderPassProperties &renderpassProps, const RenderPassAdditionalProps &additionalProps);
 
+#if DEFER_DELETION
     FORCE_INLINE DeferredDeleter *getDeferredDeleter() { return &resourceDeleter; }
+#endif
 };

@@ -138,7 +138,7 @@ WaitOnAwaitable<void> awaitOnVoidAwaitable(AwaitableType &awaitable)
 } // namespace impl
 
 template <AwaitableTypeConcept AwaitableType, typename RetType = AwaiterReturnType<GetAwaiterType_t<AwaitableType>>>
-requires(!std::is_void_v<RetType>) RetType waitOnAwaitable(AwaitableType &awaitable)
+requires(!std::is_void_v<RetType>) RetType waitOnAwaitable(AwaitableType &&awaitable)
 {
     impl::WaitOnAwaitable<RetType> waitingOnAwaitable = impl::awaitOnAwaitable<AwaitableType, RetType>(awaitable);
     std::binary_semaphore semaphore{ 0 };
@@ -149,7 +149,7 @@ requires(!std::is_void_v<RetType>) RetType waitOnAwaitable(AwaitableType &awaita
 }
 
 template <AwaitableTypeConcept AwaitableType, typename RetType = AwaiterReturnType<GetAwaiterType_t<AwaitableType>>>
-requires std::is_void_v<RetType> RetType waitOnAwaitable(AwaitableType &awaitable)
+requires std::is_void_v<RetType> RetType waitOnAwaitable(AwaitableType &&awaitable)
 {
     impl::WaitOnAwaitable<RetType> waitingOnAwaitable = impl::awaitOnVoidAwaitable(awaitable);
     std::binary_semaphore semaphore{ 0 };

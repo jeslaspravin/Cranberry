@@ -15,6 +15,7 @@
 #include "GenericAppWindow.h"
 #include "Logger/Logger.h"
 #include "RenderApi/GBuffersAndTextures.h"
+#include "RenderApi/RenderManager.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/GraphicsIntance.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"

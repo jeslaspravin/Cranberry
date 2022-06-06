@@ -10,6 +10,8 @@
  */
 
 #include "RenderApi/RenderManager.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
 #include "EngineRendererModule.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderApi/ResourcesInterface/IRenderResource.h"
@@ -19,7 +21,6 @@
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Rendering/RenderingContexts.h"
 #include "RenderInterface/Resources/MemoryResources.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
 
 GenericRenderPassProperties RenderManager::renderpassPropsFromRTs(const std::vector<IRenderTargetTexture *> &rtTextures) const
 {
@@ -43,15 +44,13 @@ GenericRenderPassProperties RenderManager::renderpassPropsFromRTs(const std::vec
     return renderpassProperties;
 }
 
-void RenderManager::createSingletons()
-{
-    globalContext = IRenderInterfaceModule::get()->currentGraphicsHelper()->createGlobalRenderingContext();
-}
+void RenderManager::createSingletons() { globalContext = graphicsHelperCache->createGlobalRenderingContext(); }
 
-void RenderManager::initialize(IGraphicsInstance *graphicsInstance)
+RenderThreadEnqTask RenderManager::initialize(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
     graphicsInstanceCache = graphicsInstance;
-    auto engineRendererModule = static_cast<EngineRedererModule *>(IRenderInterfaceModule::get());
+    graphicsHelperCache = graphicsHelper;
+    auto engineRendererModule = static_cast<EngineRendererModule *>(IRenderInterfaceModule::get());
     debugAssert(engineRendererModule);
 
     createSingletons();
@@ -60,8 +59,7 @@ void RenderManager::initialize(IGraphicsInstance *graphicsInstance)
     // Load instance done
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostLoadInstance);
 
-    ENQUEUE_COMMAND(InitRenderApi)
-    (
+    return RenderThreadEnqueuer::execInRenderThreadAwaitable(
         [this,
          engineRendererModule](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -90,25 +88,23 @@ void RenderManager::initialize(IGraphicsInstance *graphicsInstance)
 
 void RenderManager::finalizeInit()
 {
-    auto engineRendererModule = static_cast<EngineRedererModule *>(IRenderInterfaceModule::get());
+    auto engineRendererModule = static_cast<EngineRendererModule *>(IRenderInterfaceModule::get());
     debugAssert(engineRendererModule);
 
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreFinalizeInit);
-    // Process post init pre-frame render commands
-    waitOnCommands();
+    RenderThreadEnqueuer::flushWaitRenderThread();
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostFinalizeInit);
 }
 
-void RenderManager::destroy()
+RenderThreadEnqTask RenderManager::destroy()
 {
     debugAssert(IRenderInterfaceModule::get());
-    auto engineRendererModule = static_cast<EngineRedererModule *>(IRenderInterfaceModule::get());
+    auto engineRendererModule = static_cast<EngineRendererModule *>(IRenderInterfaceModule::get());
 
     // TODO(Commented) EngineSettings::enableVsync.onConfigChanged().unbind(onVsyncChangeHandle);
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreCleanupCommands);
 
-    ENQUEUE_COMMAND(DestroyRenderApi)
-    (
+    return RenderThreadEnqueuer::execInRenderThreadAwaitable(
         [this,
          engineRendererModule](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
@@ -116,54 +112,52 @@ void RenderManager::destroy()
 
             globalContext->clearContext();
             GlobalBuffers::destroy();
+
+            delete renderCmds;
+            renderCmds = nullptr;
+
+            engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostCleanupCommands);
+
+            graphicsInstanceCache->unload();
+
+            std::vector<GraphicsResource *> resourceLeak;
+            GraphicsResource::staticType()->allRegisteredResources(resourceLeak, true);
+            if (!resourceLeak.empty())
+            {
+                LOG_ERROR("GraphicsResourceLeak", "Resource leak detected");
+                for (const GraphicsResource *resource : resourceLeak)
+                {
+                    LOG_ERROR(
+                        "GraphicsResourceLeak", "\tType:%s, Resource Name %s", resource->getType()->getName(),
+                        resource->getResourceName().getChar()
+                    );
+                }
+            }
         }
     );
-
-    // Executing commands one last time
-    waitOnCommands();
-    delete renderCmds;
-    renderCmds = nullptr;
-
-    engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PostCleanupCommands);
-    if (!commands.empty())
-    {
-        LOG_WARN("RenderManager", "Commands enqueued at post clean up phase, but they will not be executed");
-    }
-
-    graphicsInstanceCache->unload();
-
-    std::vector<GraphicsResource *> resourceLeak;
-    GraphicsResource::staticType()->allRegisteredResources(resourceLeak, true);
-    if (!resourceLeak.empty())
-    {
-        LOG_ERROR("GraphicsResourceLeak", "Resource leak detected");
-        for (const GraphicsResource *resource : resourceLeak)
-        {
-            LOG_ERROR(
-                "GraphicsResourceLeak", "\tType:%s, Resource Name %s", resource->getType()->getName(), resource->getResourceName().getChar()
-            );
-        }
-    }
 }
 
 void RenderManager::renderFrame(const float &timedelta)
 {
     // TODO(Jeslas): Start new frame before any commands, Since not multi-threaded it is okay to call
     // directly here
-    bIsInsideRenderCommand = true;
     renderCmds->newFrame(timedelta);
-    bIsInsideRenderCommand = false;
 
     debugAssert(IRenderInterfaceModule::get());
-    auto engineRendererModule = static_cast<EngineRedererModule *>(IRenderInterfaceModule::get());
+    auto engineRendererModule = static_cast<EngineRendererModule *>(IRenderInterfaceModule::get());
     engineRendererModule->renderStateEvents.invoke(ERenderStateEvent::PreExecFrameCommands);
-    executeAllCmds();
 }
 
 GlobalRenderingContextBase *RenderManager::getGlobalRenderingContext() const
 {
-    debugAssert(bIsInsideRenderCommand && "using non const rendering context any where outside render commands is not allowed");
+    ASSERT_INSIDE_RENDERTHREAD();
     return globalContext;
+}
+
+IRenderCommandList *RenderManager::getRenderCmds() const
+{
+    ASSERT_INSIDE_RENDERTHREAD();
+    return renderCmds;
 }
 
 FORCE_INLINE void
@@ -214,46 +208,3 @@ void RenderManager::clearExternInitRtsFramebuffer(
     rtTexturesToFrameAttachments(rtTextures, frameAttachments);
     globalContext->clearExternInitRtsFramebuffer(frameAttachments, renderpassProps);
 }
-
-void RenderManager::enqueueCommand(class IRenderCommand *renderCommand)
-{
-    if (bIsInsideRenderCommand && renderCmds)
-    {
-        debugAssert(IRenderInterfaceModule::get());
-        const GraphicsHelperAPI *graphicsHelperApi = IRenderInterfaceModule::get()->currentGraphicsHelper();
-
-        renderCommand->execute(renderCmds, graphicsInstanceCache, graphicsHelperApi);
-        delete renderCommand;
-    }
-    else
-    {
-        commands.push(renderCommand);
-    }
-}
-
-void RenderManager::immediateExecCommand(ImmediateExecuteCommandType &&immediateCmd) const
-{
-    const GraphicsHelperAPI *graphicsHelperApi = IRenderInterfaceModule::get()->currentGraphicsHelper();
-
-    immediateCmd.invoke(renderCmds, graphicsInstanceCache, graphicsHelperApi);
-}
-
-void RenderManager::executeAllCmds()
-{
-    bIsInsideRenderCommand = true;
-
-    debugAssert(IRenderInterfaceModule::get());
-    const GraphicsHelperAPI *graphicsHelperApi = IRenderInterfaceModule::get()->currentGraphicsHelper();
-
-    while (!commands.empty())
-    {
-        IRenderCommand *command = commands.front();
-        commands.pop();
-
-        command->execute(renderCmds, graphicsInstanceCache, graphicsHelperApi);
-        delete command;
-    }
-    bIsInsideRenderCommand = false;
-}
-
-void RenderManager::waitOnCommands() { executeAllCmds(); }

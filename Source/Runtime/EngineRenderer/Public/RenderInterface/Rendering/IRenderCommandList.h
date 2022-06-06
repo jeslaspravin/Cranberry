@@ -14,9 +14,7 @@
 #include <optional>
 #include <set>
 
-#include "IRenderInterfaceModule.h"
 #include "Math/Box.h"
-#include "Reflections/Functions.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "RenderInterface/Resources/GraphicsSyncResource.h"
 #include "RenderInterface/Resources/MemoryResources.h"
@@ -30,52 +28,6 @@ struct CommandSubmitInfo;
 struct CommandSubmitInfo2;
 class LocalPipelineContext;
 struct RenderPassAdditionalProps;
-class GraphicsHelperAPI;
-class IGraphicsInstance;
-
-class ENGINERENDERER_EXPORT IRenderCommand
-{
-public:
-    virtual ~IRenderCommand() = default;
-    virtual void execute(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper) = 0;
-};
-
-template <typename CommandType, typename LambdaType>
-void issueRenderCommand(LambdaType &&lambdaFunc)
-{
-    IRenderInterfaceModule::issueRenderCommand<CommandType>(typename CommandType::RenderCmdFunc(std::forward<LambdaType>(lambdaFunc)));
-};
-
-// LambdaBody must be followed by all capture arguments
-#define LAMBDA_BODY(...)                                                                                                                       \
-    {                                                                                                                                          \
-        __VA_ARGS__                                                                                                                            \
-    }
-
-#define ENQUEUE_COMMAND(CommandName)                                                                                                           \
-    class CommandName##_RenderCommand final : public IRenderCommand                                                                            \
-    {                                                                                                                                          \
-    public:                                                                                                                                    \
-        using RenderCmdFunc = LambdaFunction<void, class IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *>;                \
-                                                                                                                                               \
-    private:                                                                                                                                   \
-        RenderCmdFunc renderCmd;                                                                                                               \
-                                                                                                                                               \
-    public:                                                                                                                                    \
-        CommandName##_RenderCommand(RenderCmdFunc &&lambdaFunc)                                                                                \
-            : renderCmd(std::forward<RenderCmdFunc>(lambdaFunc))                                                                               \
-        {}                                                                                                                                     \
-                                                                                                                                               \
-        void execute(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper) override \
-        {                                                                                                                                      \
-            renderCmd(cmdList, graphicsInstance, graphicsHelper);                                                                              \
-        }                                                                                                                                      \
-    };                                                                                                                                         \
-    ::issueRenderCommand<CommandName##_RenderCommand>
-
-#define ENQUEUE_COMMAND_NODEBUG(CommandName, LambdaBody, ...)                                                                                  \
-    ENQUEUE_COMMAND(CommandName)                                                                                                               \
-    ([##__VA_ARGS__##](IRenderCommandList * cmdList, IGraphicsInstance * graphicsInstance, const GraphicsHelperAPI *graphicsHelper)##LambdaBody)
 
 #define SCOPED_CMD_MARKER(CmdList, CommandBuffer, Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name))
 #define SCOPED_CMD_COLORMARKER(CmdList, CommandBuffer, Name, Color)                                                                            \

@@ -48,6 +48,24 @@ void INTERNAL_destroyCBEObject(Object *obj)
     clazz->destructor(obj);
 }
 
+Object *getDefaultObject(CBEClass clazz)
+{
+    ObjectAllocatorBase *objAllocator = getObjAllocator(clazz);
+    if (objAllocator)
+    {
+        return reinterpret_cast<Object *>(objAllocator->getDefault());
+    }
+    // If clazz if not abstract we could try and create first instance to trigger object allocator creation
+    if (clazz->allocFunc && clazz->destructor)
+    {
+        Object *obj = create(clazz, TCHAR("DummyForDefault"), nullptr);
+        debugAssert(obj);
+        INTERNAL_destroyCBEObject(obj);
+        return getDefaultObject(clazz);
+    }
+    return nullptr;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Copy/Duplicate implementations
 //////////////////////////////////////////////////////////////////////////
@@ -281,24 +299,6 @@ void DeepCopyFieldVisitable::visitStruct(const PropertyInfo &propInfo, void *use
     structUserData.fromObject = structUserData.fromData;
     structUserData.toObject = structUserData.toData;
     FieldVisitor::visitFields<StartDeepCopyFieldVisitable>(clazz, copyUserData->fromData, userData);
-}
-
-Object *getDefaultObject(CBEClass clazz)
-{
-    ObjectAllocatorBase *objAllocator = getObjAllocator(clazz);
-    if (objAllocator)
-    {
-        return reinterpret_cast<Object *>(objAllocator->getDefault());
-    }
-    // If clazz if not abstract we could try and create first instance to trigger object allocator creation
-    if (clazz->allocFunc && clazz->destructor)
-    {
-        Object* obj = create(clazz, TCHAR("DummyForDefault"), nullptr);
-        debugAssert(obj);
-        INTERNAL_destroyCBEObject(obj);
-        return getDefaultObject(clazz);
-    }
-    return nullptr;
 }
 
 bool deepCopy(Object *fromObject, Object *toObject)

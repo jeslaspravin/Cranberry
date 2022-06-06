@@ -14,13 +14,13 @@
 #include <vector> // TODO(Jeslas) : change vector ptrs to const ref vectors
 
 #include "EngineRendererExports.h"
+#include "Types/CoreTypes.h"
 #include "Memory/SmartPointers.h"
 #include "RenderInterface/Resources/DeferredDeleter.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "RenderInterface/Resources/GraphicsSyncResource.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "Types/CoreTypes.h"
 
 class GlobalRenderingContextBase;
 class ShaderConfigCollector;
@@ -42,6 +42,10 @@ enum Type;
 }
 /* Fwd declarations end */
 
+/**
+ * Helper functions that are related to general helper functions and are stateless. Using instance to allow virtual calls to API specific
+ * functions
+ */
 class ENGINERENDERER_EXPORT GraphicsHelperAPI
 {
 public:

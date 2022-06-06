@@ -11,17 +11,18 @@
 
 #include <unordered_set>
 
-#include "IRenderInterfaceModule.h"
 #include "Math/Matrix4.h"
 #include "Math/Vector2D.h"
 #include "Math/Vector4D.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
+#include "RenderApi/RenderTaskHelpers.h"
+#include "IRenderInterfaceModule.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
 #include "RenderInterface/Shaders/Base/UtilityShaders.h"
 #include "ShaderReflected.h"
-#include "Types/Platform/PlatformAssertionErrors.h"
 
 void ShaderDescriptorParamType::wrapReflectedDescriptors(
     std::map<String, ShaderDescriptorParamType *> &descriptorParams, const ReflectDescriptorBody &reflectDescriptors,
