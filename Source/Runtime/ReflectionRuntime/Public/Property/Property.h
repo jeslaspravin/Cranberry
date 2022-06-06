@@ -215,8 +215,11 @@ struct REFLECTIONRUNTIME_EXPORT InterfaceInfo
 class REFLECTIONRUNTIME_EXPORT ClassProperty final : public TypedProperty
 {
 public:
-    const FunctionProperty *allocFunc;
-    const FunctionProperty *destructor;
+    using AllocFuncType = Function<void *>;
+    using DestructorFuncType = Function<void, void *>;
+
+    AllocFuncType allocFunc;
+    DestructorFuncType destructor;
     const ClassProperty *baseClass;
 
     std::vector<const FunctionProperty *> constructors;
@@ -242,19 +245,15 @@ public:
         constructors.emplace_back(funcProp);
         return funcProp;
     }
-    FORCE_INLINE FunctionProperty *constructDtorPtr()
+    FORCE_INLINE ClassProperty *setDtorPtr(DestructorFuncType &&inFunc)
     {
-        FunctionProperty *funcProp
-            = (new FunctionProperty(name, nameString))->setOwnerProperty(this)->setFieldAccessor(EPropertyAccessSpecifier::Public);
-        destructor = funcProp;
-        return funcProp;
+        destructor = std::forward<DestructorFuncType>(inFunc);
+        return this;
     }
-    FORCE_INLINE FunctionProperty *constructAllocFuncPtr()
+    FORCE_INLINE ClassProperty *setAllocFuncPtr(AllocFuncType &&inFunc)
     {
-        FunctionProperty *funcProp
-            = (new FunctionProperty(name, nameString))->setOwnerProperty(this)->setFieldAccessor(EPropertyAccessSpecifier::Public);
-        allocFunc = funcProp;
-        return funcProp;
+        allocFunc = std::forward<AllocFuncType>(inFunc);
+        return this;
     }
 
     FORCE_INLINE FieldProperty *addMemberField(const StringID &fieldNameID, const String &fieldName)

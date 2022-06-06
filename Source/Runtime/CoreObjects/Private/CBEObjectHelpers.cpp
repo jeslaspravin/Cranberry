@@ -45,7 +45,7 @@ void INTERNAL_destroyCBEObject(Object *obj)
 {
     CBEClass clazz = obj->getType();
     obj->destroyObject();
-    static_cast<const GlobalFunctionWrapper *>(clazz->destructor->funcPtr)->invokeUnsafe<void>(obj);
+    clazz->destructor(obj);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -283,6 +283,24 @@ void DeepCopyFieldVisitable::visitStruct(const PropertyInfo &propInfo, void *use
     FieldVisitor::visitFields<StartDeepCopyFieldVisitable>(clazz, copyUserData->fromData, userData);
 }
 
+Object *getDefaultObject(CBEClass clazz)
+{
+    ObjectAllocatorBase *objAllocator = getObjAllocator(clazz);
+    if (objAllocator)
+    {
+        return reinterpret_cast<Object *>(objAllocator->getDefault());
+    }
+    // If clazz if not abstract we could try and create first instance to trigger object allocator creation
+    if (clazz->allocFunc && clazz->destructor)
+    {
+        Object* obj = create(clazz, TCHAR("DummyForDefault"), nullptr);
+        debugAssert(obj);
+        INTERNAL_destroyCBEObject(obj);
+        return getDefaultObject(clazz);
+    }
+    return nullptr;
+}
+
 bool deepCopy(Object *fromObject, Object *toObject)
 {
     debugAssert(fromObject && toObject);
@@ -342,6 +360,27 @@ bool deepCopy(Object *fromObject, Object *toObject)
         FieldVisitor::visitFields<StartDeepCopyFieldVisitable>(fromToPair.first->getType(), fromToPair.first, &userData);
     }
     return true;
+}
+
+Object *duplicateObject(Object *fromObject, Object *newOuter, String newName /*= ""*/)
+{
+    if (newName.empty())
+    {
+        newName = fromObject->getName();
+    }
+
+    if (!isValid(newOuter))
+    {
+        newOuter = fromObject->getOuter();
+    }
+
+    Object *duplicateObj = create(fromObject->getType(), newName, newOuter, fromObject->getFlags());
+    if (deepCopy(fromObject, duplicateObj))
+    {
+        return duplicateObj;
+    }
+    duplicateObj->beginDestroy();
+    return nullptr;
 }
 
 } // namespace CBE

@@ -198,6 +198,12 @@ public:
     {
         SizeT allocateFrom = lastAllocatedCacheValid() ? lastAllocatedCache : findAllocator();
         void *ptr = allocators[allocateFrom]->memAlloc(SlotAllocatorType::SlotSize);
+        if (ptr == nullptr)
+        {
+            allocateFrom = findAllocator();
+            ptr = allocators[allocateFrom]->memAlloc(SlotAllocatorType::SlotSize);
+            fatalAssert(ptr, "Allocating object failed!");
+        }
         SlotIdxType slotIdx = allocators[allocateFrom]->ptrToSlotIdx(ptr);
 
         outAllocIdx = slotIdxToAllocIdx(slotIdx, allocateFrom);
