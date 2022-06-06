@@ -153,6 +153,7 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
         );
     }
 #endif // DEV_BUILD
+    fatalAssert(clazz->allocFunc && clazz->destructor, "Abstract class %s cannot be instantiated!", clazz->nameString);
 
     /**
      * **NOTICE**
@@ -169,7 +170,7 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
         return nullptr;
     }
 
-    void *objPtr = static_cast<const GlobalFunctionWrapper *>(clazz->allocFunc->funcPtr)->invokeUnsafe<void *>();
+    void *objPtr = clazz->allocFunc();
     Object *object = reinterpret_cast<Object *>(objPtr);
 
     // Object's data must be populated even before constructor is called
@@ -253,15 +254,7 @@ ClassType *getDefaultObject()
     return reinterpret_cast<ClassType *>(objAllocator.getDefault());
 }
 
-FORCE_INLINE Object *getDefaultObject(CBEClass clazz)
-{
-    ObjectAllocatorBase *objAllocator = getObjAllocator(clazz);
-    if (objAllocator)
-    {
-        return reinterpret_cast<Object *>(objAllocator->getDefault());
-    }
-    return nullptr;
-}
+COREOBJECTS_EXPORT Object *getDefaultObject(CBEClass clazz);
 
 /**
  * CBE::deepCopy - copies all reflected data from a object to another object and creates new object for any referenced subobject while copying
@@ -274,25 +267,6 @@ FORCE_INLINE Object *getDefaultObject(CBEClass clazz)
  * @return void
  */
 COREOBJECTS_EXPORT bool deepCopy(Object *fromObject, Object *toObject);
-FORCE_INLINE Object *duplicateObject(Object *fromObject, Object *newOuter, String newName = "")
-{
-    if (newName.empty())
-    {
-        newName = fromObject->getName();
-    }
-
-    if (!isValid(newOuter))
-    {
-        newOuter = fromObject->getOuter();
-    }
-
-    Object *duplicateObj = create(fromObject->getType(), newName, newOuter, fromObject->getFlags());
-    if (deepCopy(fromObject, duplicateObj))
-    {
-        return duplicateObj;
-    }
-    duplicateObj->beginDestroy();
-    return nullptr;
-}
+COREOBJECTS_EXPORT Object *duplicateObject(Object *fromObject, Object *newOuter, String newName = "");
 
 } // namespace CBE

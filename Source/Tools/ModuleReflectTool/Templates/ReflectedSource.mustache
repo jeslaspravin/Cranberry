@@ -152,12 +152,8 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(ClassProperty* typeProperty)
                 ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<{{TypeName}}*>())
                 ->constructFuncPointer<GlobalFunctionWrapperImpl<{{TypeName}} *, void *>>(&ThisType::{{SanitizedName}}_CTor<>);
 {{/Ctors}}
-    typeProperty->constructDtorPtr()
-                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void>())
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<void, void *>>(&ThisType::COMBINE(HEADER_FILE_ID, _DTor)<{{TypeName}}>);
-    typeProperty->constructAllocFuncPtr()
-                ->setFunctionReturnProperty(IReflectionRuntimeModule::getType<void *>())
-                ->constructFuncPointer<GlobalFunctionWrapperImpl<void *>>(&ThisType::COMBINE(HEADER_FILE_ID, _AllocFunc)<{{TypeName}}>);
+    typeProperty->setDtorPtr(&ThisType::COMBINE(HEADER_FILE_ID, _DTor)<{{TypeName}}>);
+    typeProperty->setAllocFuncPtr(&ThisType::COMBINE(HEADER_FILE_ID, _AllocFunc)<{{TypeName}}>);
 {{/IsAbstract}}{{#MemberFuncs}}
     typeProperty->addMemberFunc(STRID("{{FunctionName}}"), TCHAR("{{FunctionName}}"))
                 ->setFieldAccessor(EPropertyAccessSpecifier::{{AccessSpecifier}}){{#ParamsListContext}}
