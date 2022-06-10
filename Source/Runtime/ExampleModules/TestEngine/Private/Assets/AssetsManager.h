@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Assets/Asset/AssetHeader.h"
+#include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
 
 #include <unordered_map>
 #include <vector>
@@ -28,7 +29,10 @@ private:
 
 private:
     void loadUnderPath(const String &scanPath);
+    void loadUnderPathAsync(const String &scanPath);
     std::vector<AssetBase *> loadAsset(const AssetHeader &header);
+    copat::JobSystemReturnableTask<std::vector<AssetBase *>, true, copat::EJobThreadType::WorkerThreads>
+        loadAssetAsync(AssetHeader header);
 
 public:
     AssetManager() = default;

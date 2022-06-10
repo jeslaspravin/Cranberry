@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include "EngineRendererExports.h"
 #include "Types/CoreTypes.h"
 
 #include <vulkan_core.h>
