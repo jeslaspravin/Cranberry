@@ -9,14 +9,14 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "RenderInterface/Shaders/EngineShaders/GoochModelShader.h"
+#include "RenderApi/Shaders/EngineShaders/GoochModelShader.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderApi/Scene/RenderScene.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "RenderInterface/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/CoreDefines.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 

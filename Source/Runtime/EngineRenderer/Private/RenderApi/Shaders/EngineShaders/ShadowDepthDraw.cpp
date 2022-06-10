@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "RenderInterface/Shaders/EngineShaders/ShadowDepthDraw.h"
+#include "RenderApi/Shaders/EngineShaders/ShadowDepthDraw.h"
 #include "Math/RotationMatrix.h"
 #include "Math/Vector3D.h"
 

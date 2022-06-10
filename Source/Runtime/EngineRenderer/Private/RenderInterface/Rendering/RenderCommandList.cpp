@@ -12,7 +12,7 @@
 #include "Math/CoreMathTypes.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderInterface/Resources/ShaderResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "ShaderReflected.h"

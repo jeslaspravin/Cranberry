@@ -9,11 +9,11 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "RenderInterface/Shaders/EngineShaders/TexturedShader.h"
+#include "RenderApi/Shaders/EngineShaders/TexturedShader.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
 #include "Types/CoreDefines.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 

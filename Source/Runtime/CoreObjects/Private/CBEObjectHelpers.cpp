@@ -323,6 +323,7 @@ bool deepCopy(Object *fromObject, Object *toObject)
     std::unordered_set<std::pair<Object *, Object *>> duplicatedObjects{
         {fromObject, toObject}
     };
+    // Create all sub-objects to be duplicated with appropriate path and name
     for (Object *subObj : subObjects)
     {
         // From this subobject at 0 to outer after fromObject at (size - 1)
@@ -333,7 +334,7 @@ bool deepCopy(Object *fromObject, Object *toObject)
             objectNamesChain.emplace_back(subObjOuter->getName());
             subObjOuter = subObjOuter->getOuter();
         }
-        // Create outer objects from outer most to this sub object
+        // Create outer objects from outer most(direct child of fromObject) to this sub object
         Object *duplicateSubObjOuter = toObject;
         for (auto outerNameRItr = objectNamesChain.crbegin(); outerNameRItr != objectNamesChain.crend(); ++outerNameRItr)
         {

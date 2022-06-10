@@ -12,7 +12,7 @@
 #include "VulkanInternals/ShaderCore/VulkanShaderParamResourcesFactory.h"
 #include "Logger/Logger.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
 #include "VulkanInternals/ShaderCore/VulkanShaderParamResources.h"
 
 GraphicsResource *VulkanShaderParametersLayoutFactory::create(const ShaderResource *forShader, uint32 descriptorsSetIdx) const

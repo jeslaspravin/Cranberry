@@ -332,7 +332,7 @@ AwaitAllTasks<std::tuple<Awaitables...>> awaitAllTasks(Awaitables &&...awaitable
 }
 
 template <AwaitableTypeConcept AwaitableType>
-AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(const std::vector<AwaitableType> &awaitables)
+AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(std::vector<AwaitableType> &awaitables)
 {
     if (awaitables.empty())
     {

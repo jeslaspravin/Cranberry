@@ -13,7 +13,7 @@
 #include "Math/Vector4D.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 #define TESTCOMPUTE_SHADER_NAME TCHAR("TestCompute")

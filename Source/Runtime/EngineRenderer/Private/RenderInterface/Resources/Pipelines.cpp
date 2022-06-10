@@ -12,8 +12,8 @@
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Resources/ShaderResources.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 

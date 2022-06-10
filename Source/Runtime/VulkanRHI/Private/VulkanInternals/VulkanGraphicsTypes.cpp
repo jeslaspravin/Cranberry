@@ -11,7 +11,6 @@
 
 #include <map>
 
-#include "RenderApi/GBuffersAndTextures.h"
 #include "RenderInterface/CoreGraphicsTypes.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/Resources/ShaderResources.h"

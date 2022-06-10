@@ -46,19 +46,20 @@
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
+#include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderInterface/Resources/BufferedResources.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/Resources/QueueResource.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
-#include "RenderInterface/Shaders/EngineShaders/PBRShaders.h"
-#include "RenderInterface/Shaders/EngineShaders/ShadowDepthDraw.h"
-#include "RenderInterface/Shaders/EngineShaders/SingleColorShader.h"
-#include "RenderInterface/Shaders/EngineShaders/TexturedShader.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/EngineShaders/PBRShaders.h"
+#include "RenderApi/Shaders/EngineShaders/ShadowDepthDraw.h"
+#include "RenderApi/Shaders/EngineShaders/SingleColorShader.h"
+#include "RenderApi/Shaders/EngineShaders/TexturedShader.h"
 #include "String/StringID.h"
 #include "Types/Camera/Camera.h"
 #include "Types/Colors.h"
@@ -991,7 +992,7 @@ void ExperimentalEnginePBR::setupCascadeShadowViewsShimmerFix()
     // Directional light cascades
     const AABB sceneBounds = sceneVolume.getBounds();
     Vector3D sceneBoundPts[8];
-    ArrayView<Vector3D> sceneBoundPtsView(sceneBoundPts, ARRAY_LENGTH(sceneBoundPts));
+    ArrayView<Vector3D> sceneBoundPtsView(sceneBoundPts);
     sceneBounds.boundCorners(sceneBoundPtsView);
 
     const Vector3D dirLightFwd = dirLight.direction.fwdVector();

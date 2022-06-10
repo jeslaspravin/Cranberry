@@ -19,7 +19,7 @@
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/GraphicsIntance.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
 #include "ApplicationSettings.h"
 #include "IApplicationModule.h"
 

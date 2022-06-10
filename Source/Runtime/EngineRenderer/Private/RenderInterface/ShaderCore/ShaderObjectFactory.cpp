@@ -11,8 +11,8 @@
 
 #include "RenderInterface/ShaderCore/ShaderObjectFactory.h"
 #include "RenderInterface/ShaderCore/ShaderObject.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 ShaderObjectBase *ShaderObjectFactory::create(const String &shaderName, const ShaderResource *shader) const

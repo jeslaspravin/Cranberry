@@ -43,13 +43,16 @@ private:
 
     static void createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     // Generates using shaders or some other pipeline based technics
-    static void generateTexture2Ds();
+    static void generateTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     static void destroyTexture2Ds();
 
     static void createVertIndBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     static void destroyVertIndBuffers();
 
 public:
+    /**
+     * Both must be called from render thread
+     */
     static void initialize();
     static void destroy();
 
