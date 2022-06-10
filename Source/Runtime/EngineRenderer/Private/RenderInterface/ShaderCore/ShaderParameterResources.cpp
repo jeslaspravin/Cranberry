@@ -21,7 +21,7 @@
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "ShaderReflected.h"
 
 void ShaderDescriptorParamType::wrapReflectedDescriptors(

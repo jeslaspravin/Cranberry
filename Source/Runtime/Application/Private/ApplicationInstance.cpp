@@ -11,7 +11,6 @@
 
 #include "ApplicationInstance.h"
 #include "ApplicationSettings.h"
-#include "CmdLine/CmdLine.h"
 #include "Modules/ModuleManager.h"
 #include "InputSystem/InputSystem.h"
 #include "WindowManager.h"
@@ -35,12 +34,6 @@ ProgramOwnedVar<bool, ApplicationInstance> renderingOffscreen{ false };
 
 void ApplicationInstance::startApp()
 {
-    if (!ProgramCmdLine::get()->parse(cmdLine))
-    {
-        LOG_ERROR("Engine", "Invalid command line");
-        ProgramCmdLine::get()->printCommandLine();
-    }
-
     onStart();
 }
 

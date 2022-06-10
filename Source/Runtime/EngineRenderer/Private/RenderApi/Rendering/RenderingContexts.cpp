@@ -9,8 +9,10 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
 #include "RenderApi/GBuffersAndTextures.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "IRenderInterfaceModule.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
@@ -18,8 +20,7 @@
 #include "RenderInterface/ShaderCore/ShaderObject.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "ShaderReflected.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"

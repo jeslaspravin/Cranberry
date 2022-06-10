@@ -13,13 +13,14 @@
 #include "Math/Math.h"
 #include "IRenderInterfaceModule.h"
 #include "RenderApi/RenderManager.h"
+#include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "RenderInterface/Rendering/RenderingContexts.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
 #include "RenderInterface/Resources/GenericWindowCanvas.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -88,30 +89,25 @@ bool FramebufferFormat::operator<(const FramebufferFormat &otherFormat) const
 
 void GlobalBuffers::initialize()
 {
-    ENQUEUE_COMMAND(InitializeGlobalBuffers)
-    (
-        [](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            createTextureCubes(cmdList, graphicsInstance, graphicsHelper);
-            createTexture2Ds(cmdList, graphicsInstance, graphicsHelper);
-            createVertIndBuffers(cmdList, graphicsInstance, graphicsHelper);
+    IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
+    debugAssert(renderInterface);
 
-            generateTexture2Ds();
-        }
-    );
+    IRenderCommandList *cmdList = renderInterface->getRenderManager()->getRenderCmds();
+    IGraphicsInstance *graphicsInstance = renderInterface->currentGraphicsInstance();
+    const GraphicsHelperAPI *graphicsHelper = renderInterface->currentGraphicsHelper();
+
+    createTextureCubes(cmdList, graphicsInstance, graphicsHelper);
+    createTexture2Ds(cmdList, graphicsInstance, graphicsHelper);
+    createVertIndBuffers(cmdList, graphicsInstance, graphicsHelper);
+
+    generateTexture2Ds(cmdList, graphicsInstance, graphicsHelper);
 }
 
 void GlobalBuffers::destroy()
 {
-    ENQUEUE_COMMAND(DestroyGlobalBuffers)
-    (
-        [](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            destroyTextureCubes();
-            destroyTexture2Ds();
-            destroyVertIndBuffers();
-        }
-    );
+    destroyTextureCubes();
+    destroyTexture2Ds();
+    destroyVertIndBuffers();
 }
 
 GenericRenderPassProperties GlobalBuffers::getFramebufferRenderpassProps(ERenderPassFormat::Type renderpassFormat)
@@ -168,49 +164,44 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInsta
     }
 }
 
-void GlobalBuffers::generateTexture2Ds()
+void GlobalBuffers::generateTexture2Ds(
+    IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+)
 {
-    ENQUEUE_COMMAND(GenerateTextures2D)
-    (
-        [](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            dummyWhiteTexture->init();
-            dummyBlackTexture->init();
-            dummyNormalTexture->init();
-            integratedBRDF->init();
-            cmdList->setupInitialLayout(integratedBRDF);
+    dummyWhiteTexture->init();
+    dummyBlackTexture->init();
+    dummyNormalTexture->init();
+    integratedBRDF->init();
+    cmdList->setupInitialLayout(integratedBRDF);
 
-            LocalPipelineContext integrateBrdfContext;
-            integrateBrdfContext.materialName = TCHAR("IntegrateBRDF_16x16x1");
-            IRenderInterfaceModule::get()->getRenderManager()->preparePipelineContext(&integrateBrdfContext);
-            ShaderParametersRef integrateBrdfParams
-                = graphicsHelper->createShaderParameters(graphicsInstance, integrateBrdfContext.getPipeline()->getParamLayoutAtSet(0), {});
-            integrateBrdfParams->setTextureParam(TCHAR("outIntegratedBrdf"), integratedBRDF);
-            integrateBrdfParams->init();
+    LocalPipelineContext integrateBrdfContext;
+    integrateBrdfContext.materialName = TCHAR("IntegrateBRDF_16x16x1");
+    IRenderInterfaceModule::get()->getRenderManager()->preparePipelineContext(&integrateBrdfContext);
+    ShaderParametersRef integrateBrdfParams
+        = graphicsHelper->createShaderParameters(graphicsInstance, integrateBrdfContext.getPipeline()->getParamLayoutAtSet(0), {});
+    integrateBrdfParams->setTextureParam(TCHAR("outIntegratedBrdf"), integratedBRDF);
+    integrateBrdfParams->init();
 
-            const GraphicsResource *cmdBuffer = cmdList->startCmd(TCHAR("IntegrateBRDF"), EQueueFunction::Graphics, false);
-            cmdList->cmdBindComputePipeline(cmdBuffer, integrateBrdfContext);
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, integrateBrdfContext, { integrateBrdfParams });
-            Size3D subgrpSize
-                = static_cast<const ComputeShaderConfig *>(integrateBrdfContext.getPipeline()->getShaderResource()->getShaderConfig())
-                      ->getSubGroupSize();
-            cmdList->cmdDispatch(cmdBuffer, integratedBRDF->getImageSize().x / subgrpSize.x, integratedBRDF->getImageSize().y / subgrpSize.y);
-            cmdList->cmdTransitionLayouts(cmdBuffer, { integratedBRDF });
-            cmdList->endCmd(cmdBuffer);
+    const GraphicsResource *cmdBuffer = cmdList->startCmd(TCHAR("IntegrateBRDF"), EQueueFunction::Graphics, false);
+    cmdList->cmdBindComputePipeline(cmdBuffer, integrateBrdfContext);
+    cmdList->cmdBindDescriptorsSets(cmdBuffer, integrateBrdfContext, { integrateBrdfParams });
+    Size3D subgrpSize = static_cast<const ComputeShaderConfig *>(integrateBrdfContext.getPipeline()->getShaderResource()->getShaderConfig())
+                            ->getSubGroupSize();
+    cmdList->cmdDispatch(cmdBuffer, integratedBRDF->getImageSize().x / subgrpSize.x, integratedBRDF->getImageSize().y / subgrpSize.y);
+    cmdList->cmdTransitionLayouts(cmdBuffer, { integratedBRDF });
+    cmdList->endCmd(cmdBuffer);
 
-            CommandSubmitInfo2 submitInfo;
-            submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-            cmdList->submitCmd(EQueuePriority::High, submitInfo);
+    CommandSubmitInfo2 submitInfo;
+    submitInfo.cmdBuffers.emplace_back(cmdBuffer);
+    cmdList->submitCmd(EQueuePriority::High, submitInfo);
 
-            cmdList->copyToImage(dummyBlackTexture, { ColorConst::BLACK });
-            cmdList->copyToImage(dummyWhiteTexture, { ColorConst::WHITE });
-            cmdList->copyToImage(dummyNormalTexture, { ColorConst::BLUE });
+    cmdList->copyToImage(dummyBlackTexture, { ColorConst::BLACK });
+    cmdList->copyToImage(dummyWhiteTexture, { ColorConst::WHITE });
+    cmdList->copyToImage(dummyNormalTexture, { ColorConst::BLUE });
 
-            cmdList->finishCmd(cmdBuffer);
-            cmdList->freeCmd(cmdBuffer);
-            integrateBrdfParams.reset();
-        }
-    );
+    cmdList->finishCmd(cmdBuffer);
+    cmdList->freeCmd(cmdBuffer);
+    integrateBrdfParams.reset();
 }
 
 void GlobalBuffers::destroyTexture2Ds()

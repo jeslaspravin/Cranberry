@@ -762,6 +762,11 @@ public:
                     );
                 }
 
+                /**
+                 * index i is needed to check if a resource supports the memory type at index i.
+                 * i-th bit from LSB in VkMemoryRequirements.memoryTypeBits will be set if this memory type is supported
+                 * Fixed as part of https://github.com/jeslaspravin/Cranberry/commit/c570f2a64e0c6f04c8608028f95e3cc2b40001dc commit
+                 */
                 availableMemoryProps.push_back({ i, device->memoryProperties.memoryTypes[i].propertyFlags });
             }
         }

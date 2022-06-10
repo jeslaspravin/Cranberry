@@ -29,6 +29,7 @@ struct PipelineFactoryArgs;
 struct Framebuffer;
 class GraphicsHelperAPI;
 class GenericWindowCanvas;
+class LocalPipelineContext;
 
 /////////////////////////////////////////////////////////////////////////////////
 // Contains most of the global common items that could be one time initialized
@@ -115,47 +116,7 @@ protected:
     PipelineBase *createNewPipeline(UniqueUtilityShaderObject *shaderObject, const GenericRenderPassProperties &renderpassProps);
 
 public:
-    void preparePipelineContext(class LocalPipelineContext *pipelineContext, GenericRenderPassProperties renderpassProps);
+    void preparePipelineContext(LocalPipelineContext *pipelineContext, GenericRenderPassProperties renderpassProps);
     void clearExternInitRtsFramebuffer(const std::vector<ImageResourceRef> &frameAttachments, GenericRenderPassProperties renderpassProps);
     void clearWindowCanvasFramebuffer(WindowCanvasRef windowCanvas);
 };
-
-// Temporary class high chance to change later so avoid relying on this.
-class ENGINERENDERER_EXPORT LocalPipelineContext
-{
-private:
-    friend GlobalRenderingContextBase;
-
-    const Framebuffer *framebuffer = nullptr;
-    const PipelineBase *pipelineUsed = nullptr;
-
-public:
-    uint32 swapchainIdx;
-    WindowCanvasRef windowCanvas;
-
-    // Will be filled by RenderManager
-    std::vector<ImageResourceRef> frameAttachments;
-    ERenderPassFormat::Type renderpassFormat;
-
-    EVertexType::Type forVertexType;
-
-    String materialName;
-
-    const Framebuffer *getFb() const { return framebuffer; }
-    const PipelineBase *getPipeline() const { return pipelineUsed; }
-
-    // Reset all Reference resources held by this context
-    FORCE_INLINE void reset()
-    {
-        windowCanvas.reset();
-        frameAttachments.clear();
-    }
-};
-
-// struct ENGINERENDERER_EXPORT TinyDrawingContext
-//{
-//     const GraphicsResource* cmdBuffer;
-//
-//     std::vector<RenderTargetTexture*> rtTextures;
-//     uint32 swapchainIdx = ~(0u);
-// };

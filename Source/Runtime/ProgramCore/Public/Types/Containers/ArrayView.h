@@ -132,34 +132,40 @@ public:
         , length(0)
     {}
 
-    ArrayView(std::vector<value_type> &parent, SizeT inOffset = 0)
-    {
-        dataPtr = parent.data();
-        offset = Math::min(inOffset, SizeT(parent.size() - 1));
-        length = SizeT(parent.size() - offset);
-    }
+    template <typename T>
+    ArrayView(std::vector<T> &parent, SizeT inOffset = 0)
+        : dataPtr(parent.data())
+        , offset(Math::min(inOffset, SizeT(parent.size() - 1)))
+        , length(SizeT(parent.size() - offset))
+    {}
 
-    ArrayView(std::vector<value_type> &parent, SizeT inLength, SizeT inOffset = 0)
-    {
-        dataPtr = parent.data();
-        offset = Math::min(inOffset, SizeT(parent.size() - 1));
-        length = Math::min(inLength, SizeT(parent.size() - offset));
-    }
+    template <typename T>
+    ArrayView(std::vector<T> &parent, SizeT inLength, SizeT inOffset = 0)
+        : dataPtr(parent.data())
+        , offset(Math::min(inOffset, SizeT(parent.size() - 1)))
+        , length(Math::min(inLength, SizeT(parent.size() - offset)))
+    {}
 
-    ArrayView(pointer parentData, SizeT parentSize, SizeT inOffset = 0)
-    {
-        dataPtr = parentData;
-        offset = Math::min(inOffset, parentSize - 1);
-        length = parentSize - offset;
-    }
+    CONST_EXPR ArrayView(pointer parentData, SizeT parentSize, SizeT inOffset = 0)
+        : dataPtr(parentData)
+        , offset(Math::min(inOffset, parentSize - 1))
+        , length(parentSize - offset)
+    {}
 
-    SizeT size() const { return length; }
+    template <typename T, SizeT N>
+    CONST_EXPR ArrayView(T (&parentData)[N])
+        : dataPtr(parentData)
+        , offset(0)
+        , length(N)
+    {}
+
+    CONST_EXPR SizeT size() const { return length; }
 
     NODISCARD bool empty() const { return length == 0; }
 
-    pointer data() { return dataPtr + offset; }
+    CONST_EXPR pointer data() { return dataPtr + offset; }
 
-    const pointer data() const { return dataPtr + offset; }
+    CONST_EXPR const pointer data() const { return dataPtr + offset; }
 
     reference operator[](SizeT idx)
     {

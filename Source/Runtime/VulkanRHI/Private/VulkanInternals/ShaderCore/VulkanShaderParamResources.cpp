@@ -19,7 +19,7 @@
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Resources/ShaderResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
 #include "ShaderReflected.h"
 #include "VulkanGraphicsHelper.h"
 #include "VulkanInternals/Debugging.h"

@@ -12,6 +12,7 @@
 #include "ApplicationModule.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
 #include "Modules/ModuleManager.h"
+#include "CmdLine/CmdLine.h"
 #include "PlatformInstances.h"
 #include "ApplicationSettings.h"
 #include "ApplicationInstance.h"
@@ -62,8 +63,12 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     // Load core if not loaded already
     bool bCoreModulesLoaded = ModuleManager::get()->loadModule(TCHAR("ProgramCore"));
     fatalAssert(bCoreModulesLoaded, "Loading core modules failed");
-
-    IRenderInterfaceModule *engineRenderer = nullptr;
+    // Needs to be parsed asap
+    if (!ProgramCmdLine::get()->parse(appInst->getCmdLine()))
+    {
+        LOG_ERROR("Engine", "Invalid command line");
+        ProgramCmdLine::get()->printCommandLine();
+    }
 
     FontManager fontManager;
     PlatformAppInstance platformApp(appCI.platformAppHandle);
@@ -87,6 +92,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     );
     appInstance->jobSystem = &jobSys;
 
+    IRenderInterfaceModule *engineRenderer = nullptr;
     // Initialize GPU device and renderer module if needed
     if (appCI.bUseGpu)
     {

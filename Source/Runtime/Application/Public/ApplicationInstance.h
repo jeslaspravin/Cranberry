@@ -89,4 +89,5 @@ public:
         minorVer = minorVersion;
         patchVer = patchVersion;
     }
+    APPLICATION_EXPORT const String &getCmdLine() const { return cmdLine; }
 };

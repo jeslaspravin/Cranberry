@@ -14,7 +14,7 @@
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 #define DRAW_3D_COLORED_PER_VERTEX_NAME TCHAR("Draw3DColoredPerVertex")

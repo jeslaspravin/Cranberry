@@ -11,7 +11,7 @@
 
 #include "RenderInterface/GlobalRenderVariables.h"
 #include "RenderInterface/Resources/Pipelines.h"
-#include "RenderInterface/Shaders/Base/UtilityShaders.h"
+#include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "ShaderDataTypes.h"
 
 #define SAMPLE_COUNT TCHAR("SAMPLE_COUNT")

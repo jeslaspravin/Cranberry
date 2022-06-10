@@ -12,8 +12,8 @@
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "RenderInterface/Shaders/Base/DrawMeshShader.h"
-#include "RenderInterface/Shaders/EngineShaders/ShadowDepthDraw.h"
+#include "RenderApi/Shaders/Base/DrawMeshShader.h"
+#include "RenderApi/Shaders/EngineShaders/ShadowDepthDraw.h"
 #include "Types/CoreDefines.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 

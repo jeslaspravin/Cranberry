@@ -12,7 +12,6 @@
 #include <array>
 
 #include "Logger/Logger.h"
-#include "RenderApi/GBuffersAndTextures.h"
 #include "RenderInterface/Rendering/FramebufferTypes.h"
 #include "Resources/VulkanWindowCanvas.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
