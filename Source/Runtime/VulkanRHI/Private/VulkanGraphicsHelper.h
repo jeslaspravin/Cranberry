@@ -10,7 +10,6 @@
  */
 
 #pragma once
-#include "EngineRendererExports.h"
 #include "RenderInterface/CoreGraphicsTypes.h"
 #include "RenderInterface/GraphicsHelper.h"
 

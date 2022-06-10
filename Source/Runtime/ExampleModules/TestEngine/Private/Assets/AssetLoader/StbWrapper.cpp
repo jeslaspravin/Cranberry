@@ -34,7 +34,7 @@ float *STB::loadFloatFromMemory(uint8 const *buffer, int32 bufferLen, int32 *x, 
 
 void STB::deallocStbBuffer(void *data) { stbi_image_free(data); }
 
-void STB::setLoadVerticalFlipped(bool bFlip) { stbi_set_flip_vertically_on_load(bFlip); }
+void STB::setLoadVerticalFlipped(bool bFlip) { stbi_set_flip_vertically_on_load_thread(bFlip); }
 
 const AChar *STB::lastFailure() { return stbi_failure_reason(); }
 
