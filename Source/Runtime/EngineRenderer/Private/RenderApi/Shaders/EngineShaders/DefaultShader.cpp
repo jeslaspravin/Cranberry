@@ -10,10 +10,11 @@
  */
 
 #include "RenderApi/GBuffersAndTextures.h"
-#include "RenderInterface/Resources/Pipelines.h"
-#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderApi/Rendering/PipelineRegistration.h"
 #include "RenderApi/Shaders/Base/DrawMeshShader.h"
 #include "RenderApi/Shaders/EngineShaders/ShadowDepthDraw.h"
+#include "RenderInterface/Resources/Pipelines.h"
+#include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "Types/CoreDefines.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 

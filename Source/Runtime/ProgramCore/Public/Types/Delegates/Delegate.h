@@ -679,7 +679,7 @@ template <typename... Params>
 class Delegate : public MultiCastDelegateBase<Params...>
 {
 private:
-    using MultiCastDelegateBase<Params...>::DelegateInterface;
+    using typename MultiCastDelegateBase<Params...>::DelegateInterface;
     using MultiCastDelegateBase<Params...>::allDelegates;
 
 public:

@@ -10,10 +10,10 @@
  */
 
 #include "Math/Math.h"
-#include "RenderInterface/Resources/Pipelines.h"
-#include "RenderInterface/ShaderCore/ShaderObject.h"
+#include "RenderApi/Rendering/ShaderObject.h"
 #include "RenderApi/Shaders/Base/DrawMeshShader.h"
 #include "RenderApi/Shaders/Base/UtilityShaders.h"
+#include "RenderInterface/Resources/Pipelines.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
 #include <algorithm>

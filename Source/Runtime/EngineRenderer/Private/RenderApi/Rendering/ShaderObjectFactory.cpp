@@ -9,8 +9,8 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "RenderInterface/ShaderCore/ShaderObjectFactory.h"
-#include "RenderInterface/ShaderCore/ShaderObject.h"
+#include "RenderApi/Rendering/ShaderObjectFactory.h"
+#include "RenderApi/Rendering/ShaderObject.h"
 #include "RenderApi/Shaders/Base/DrawMeshShader.h"
 #include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"

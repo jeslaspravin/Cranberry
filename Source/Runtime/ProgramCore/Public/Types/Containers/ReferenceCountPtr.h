@@ -246,3 +246,11 @@ public:
         return ReferenceCountPtr<AsType>(this);
     }
 };
+
+template <typename RefType>
+class RefCountableAs : public RefCountable
+{
+public:
+    virtual const RefType *reference() const { return static_cast<const RefType *>(this); }
+    virtual RefType *reference() { return static_cast<RefType *>(this); }
+};
