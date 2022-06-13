@@ -10,6 +10,7 @@
  */
 
 #include "RenderInterface/Resources/Pipelines.h"
+#include "RenderApi/Rendering/PipelineRegistration.h"
 #include "RenderApi/Shaders/Base/UtilityShaders.h"
 
 #define HDRITOCUBE_SHADER_NAME TCHAR("HDRIToCube")

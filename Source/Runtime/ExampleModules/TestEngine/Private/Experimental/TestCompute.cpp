@@ -13,6 +13,7 @@
 #include "Math/Vector4D.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "RenderApi/Rendering/PipelineRegistration.h"
 #include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 

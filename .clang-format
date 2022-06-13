@@ -177,6 +177,10 @@ StatementAttributeLikeMacros:
 StatementMacros:
   - META_ANNOTATE
   - GENERATED_CODES
+  - FirstMacroName
+  - MacroName
+  - LastMacroName
+  - OpMacro
 WhitespaceSensitiveMacros:
   - TCHAR
   - STRID

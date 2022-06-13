@@ -451,10 +451,23 @@ enum class StoreOp
 } // namespace EAttachmentOp
 
 #define EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName)                                                   \
-    FirstMacroName(Top) MacroName(DrawIndirect) MacroName(VertexInput) MacroName(VertexShaderStage) MacroName(TessellationControlShaderStage)  \
-        MacroName(TessallationEvalShaderStage) MacroName(GeometryShaderStage) MacroName(FragmentShaderStage) MacroName(EarlyFragTest)          \
-            MacroName(LateFragTest) MacroName(ColorAttachmentOutput) MacroName(ComputeShaderStage) MacroName(Transfer) MacroName(Bottom)       \
-                MacroName(Host) MacroName(AllGraphics) LastMacroName(AllCommands)
+    FirstMacroName(Top)                                                                                                                        \
+    MacroName(DrawIndirect)                                                                                                                    \
+    MacroName(VertexInput)                                                                                                                     \
+    MacroName(VertexShaderStage)                                                                                                               \
+    MacroName(TessellationControlShaderStage)                                                                                                  \
+    MacroName(TessallationEvalShaderStage)                                                                                                     \
+    MacroName(GeometryShaderStage)                                                                                                             \
+    MacroName(FragmentShaderStage)                                                                                                             \
+    MacroName(EarlyFragTest)                                                                                                                   \
+    MacroName(LateFragTest)                                                                                                                    \
+    MacroName(ColorAttachmentOutput)                                                                                                           \
+    MacroName(ComputeShaderStage)                                                                                                              \
+    MacroName(Transfer)                                                                                                                        \
+    MacroName(Bottom)                                                                                                                          \
+    MacroName(Host)                                                                                                                            \
+    MacroName(AllGraphics)                                                                                                                     \
+    LastMacroName(AllCommands)
 
 #define EPIPELINESTAGES_FOR_EACH(MacroName) EPIPELINESTAGES_FOR_EACH_UNIQUE_FIRST_LAST(MacroName, MacroName, MacroName)
 
@@ -493,5 +506,9 @@ enum Type
 ENGINERENDERER_EXPORT String toString(ERenderPassFormat::Type renderpassFormat);
 
 #define FOR_EACH_RENDERPASS_FORMAT(OpMacro)                                                                                                    \
-    OpMacro(Generic) OpMacro(Multibuffer) OpMacro(Depth) OpMacro(PointLightDepth) OpMacro(DirectionalLightDepth)
+    OpMacro(Generic)                                                                                                                           \
+    OpMacro(Multibuffer)                                                                                                                       \
+    OpMacro(Depth)                                                                                                                             \
+    OpMacro(PointLightDepth)                                                                                                                   \
+    OpMacro(DirectionalLightDepth)
 } // namespace ERenderPassFormat

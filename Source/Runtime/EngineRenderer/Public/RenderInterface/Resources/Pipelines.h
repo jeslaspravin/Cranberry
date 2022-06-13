@@ -10,16 +10,11 @@
  */
 
 #pragma once
-#include "EngineRendererExports.h"
 #include "GraphicsResources.h"
 #include "RenderInterface/CoreGraphicsTypes.h"
 #include "RenderInterface/Rendering/FramebufferTypes.h"
 #include "String/String.h"
-#include "Types/CoreDefines.h"
-#include "Types/Delegates/Delegate.h"
-#include "Types/Patterns/FactoriesBase.h"
-
-#include <map>
+#include "EngineRendererExports.h"
 
 class ShaderResource;
 class GraphicsHelperAPI;
@@ -190,56 +185,4 @@ protected:
     ComputePipelineBase(const ComputePipelineBase *parent);
 
 public:
-};
-
-//////////////////////////////////////////////////////////////////////////
-// PipelineFactory
-//////////////////////////////////////////////////////////////////////////
-
-struct PipelineFactoryArgs
-{
-    const ShaderResource *pipelineShader;
-    const PipelineBase *parentPipeline = nullptr;
-};
-
-/*
- * Pipeline registration
- */
-#define CREATE_GRAPHICS_PIPELINE_REGISTRANT(Registrant, ShaderName, FunctionPtr)                                                               \
-    GraphicsPipelineFactoryRegistrant Registrant(                                                                                              \
-        ShaderName, GraphicsPipelineFactoryRegistrant::GraphicsPipelineConfigGetter::createStatic(FunctionPtr)                                 \
-    )
-
-struct ENGINERENDERER_EXPORT GraphicsPipelineFactoryRegistrant
-{
-    using GraphicsPipelineConfigGetter = SingleCastDelegate<GraphicsPipelineConfig, String &, const ShaderResource *>;
-    GraphicsPipelineConfigGetter getter;
-
-public:
-    GraphicsPipelineFactoryRegistrant(const String &shaderName, GraphicsPipelineConfigGetter configGetter);
-    FORCE_INLINE PipelineBase *
-        operator()(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
-};
-
-struct ENGINERENDERER_EXPORT ComputePipelineFactoryRegistrant
-{
-public:
-    ComputePipelineFactoryRegistrant(const String &shaderName);
-    FORCE_INLINE PipelineBase *
-        operator()(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
-};
-
-class ENGINERENDERER_EXPORT PipelineFactory final
-    : public FactoriesBase<PipelineBase *, IGraphicsInstance *, const GraphicsHelperAPI *, const PipelineFactoryArgs &>
-{
-private:
-    friend GraphicsPipelineFactoryRegistrant;
-    friend ComputePipelineFactoryRegistrant;
-
-    static std::map<String, GraphicsPipelineFactoryRegistrant> &graphicsPipelineFactoriesRegistry();
-    static std::map<String, ComputePipelineFactoryRegistrant> &computePipelineFactoriesRegistry();
-
-public:
-    PipelineBase *
-        create(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const final;
 };

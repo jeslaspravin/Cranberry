@@ -10,10 +10,11 @@
  */
 
 #include "RenderApi/Scene/RenderScene.h"
+#include "RenderApi/Rendering/PipelineRegistration.h"
+#include "RenderApi/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
-#include "RenderApi/Shaders/Base/ScreenspaceQuadGraphicsPipeline.h"
 #include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 

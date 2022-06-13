@@ -43,5 +43,5 @@ class ENGINERENDERER_EXPORT IRenderTargetTexture
 class ENGINERENDERER_EXPORT IRenderResource
 {
 public:
-    virtual MemoryResource *renderResource() const = 0;
+    virtual GraphicsResource *renderResource() const = 0;
 };
