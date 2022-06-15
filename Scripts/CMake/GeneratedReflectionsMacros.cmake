@@ -81,6 +81,7 @@ function (reflect_target)
                                     --includeList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${reflect_target_TARGET_NAME}_incls.list" 
                                     --compileDefList "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${reflect_target_TARGET_NAME}_defs.list"
                                     --logFileName ${reflect_target_TARGET_NAME}
+                                    # --logVerbose
         BYPRODUCTS ${gen_files}
         USES_TERMINAL
         COMMAND_EXPAND_LISTS

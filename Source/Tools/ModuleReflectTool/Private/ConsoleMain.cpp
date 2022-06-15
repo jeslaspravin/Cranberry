@@ -59,6 +59,7 @@ void initializeCmdArguments()
         TCHAR("Filters the diagnostics results and only display what is absolutely necessary"), ReflectToolCmdLineConst::FILTER_DIAGNOSTICS
     );
     CmdLineArgument noDiagnostics(TCHAR("No diagnostics will be displayed"), ReflectToolCmdLineConst::NO_DIAGNOSTICS);
+    CmdLineArgument logVerbose(TCHAR("Sets the verbosity of logger to debug"), ReflectToolCmdLineConst::LOG_VERBOSE);
 
     ProgramCmdLine::get()->setProgramDescription(TCHAR("ModuleReflectTool Copyright (C) Jeslas Pravin, Since 2022\n\
     Parses the headers in provided module and creates reflection files for them.\n\
@@ -89,7 +90,10 @@ int32 main(int32 argsc, AChar **args)
         return 0;
     }
     Logger::initialize();
-    Logger::pushMuteSeverities(Logger::Debug | Logger::Log);
+    if (!ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::LOG_VERBOSE))
+    {
+        Logger::pushMuteSeverities(Logger::Debug | Logger::Log);
+    }
 
     // Loading other libraries
     moduleManager->loadModule(TCHAR("ReflectionRuntime"));
