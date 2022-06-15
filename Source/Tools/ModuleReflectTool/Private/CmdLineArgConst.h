@@ -25,4 +25,5 @@ CONST_EXPR StringLiteralStore<TCHAR("--compileDefList")> COMPILE_DEF_LIST_FILE;
 CONST_EXPR StringLiteralStore<TCHAR("--sampleCode")> SAMPLE_CODE;
 CONST_EXPR StringLiteralStore<TCHAR("--filterDiagnostics")> FILTER_DIAGNOSTICS;
 CONST_EXPR StringLiteralStore<TCHAR("--noDiagnostics")> NO_DIAGNOSTICS;
+CONST_EXPR StringLiteralStore<TCHAR("--logVerbose")> LOG_VERBOSE;
 } // namespace ReflectToolCmdLineConst

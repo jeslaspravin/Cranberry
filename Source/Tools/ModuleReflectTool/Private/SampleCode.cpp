@@ -2052,10 +2052,10 @@ void testPropertySystem()
         String args;
         if (!ctor->funcParamsProp.empty())
         {
-            args += ctor->funcParamsProp[0].typeProperty->nameString + TCHAR(" ") + ctor->funcParamsProp[0].nameString;
+            args += String(ctor->funcParamsProp[0].typeProperty->nameString) + TCHAR(" ") + ctor->funcParamsProp[0].nameString;
             for (int32 i = 1; i < ctor->funcParamsProp.size(); ++i)
             {
-                args += TCHAR(", ") + ctor->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + ctor->funcParamsProp[i].nameString;
+                args += String(TCHAR(", ")) + ctor->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + ctor->funcParamsProp[i].nameString;
             }
         }
         LOG("Test", "Class %s: CTor %s(%s)", prop->name, ctor->name, args);
@@ -2065,10 +2065,10 @@ void testPropertySystem()
         String args;
         if (!memFunc->funcParamsProp.empty())
         {
-            args += memFunc->funcParamsProp[0].typeProperty->nameString + TCHAR(" ") + memFunc->funcParamsProp[0].nameString;
+            args += String(memFunc->funcParamsProp[0].typeProperty->nameString) + TCHAR(" ") + memFunc->funcParamsProp[0].nameString;
             for (int32 i = 1; i < memFunc->funcParamsProp.size(); ++i)
             {
-                args += TCHAR(", ") + memFunc->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + memFunc->funcParamsProp[i].nameString;
+                args += String(TCHAR(", ")) + memFunc->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + memFunc->funcParamsProp[i].nameString;
             }
         }
         LOG("Test", "Class %s: Func %s %s(%s)", prop->nameString, memFunc->funcReturnProp->nameString, memFunc->nameString, args);
