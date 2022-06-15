@@ -36,7 +36,7 @@ public:
                                   "necessary for identifying free slots"
     );
     // Number of slots
-    CONST_EXPR static const uint32 Size = SlotsCount;
+    CONST_EXPR static const uint32 Count = SlotsCount;
 
 private:
     void *slots;
@@ -50,13 +50,13 @@ public:
     SlotAllocatorBase(void *slotsPtr)
         : slots(slotsPtr)
         , freeHead(0)
-        , freeTail(Size - 1)
-        , freeCount(Size)
+        , freeTail(Count - 1)
+        , freeCount(Count)
     {
         debugAssert(slots);
 
         // Setup the initial linked list for slots
-        for (SizeType idx = 0; idx < Size; ++idx)
+        for (SizeType idx = 0; idx < Count; ++idx)
         {
             nextFree(idx) = idx + 1;
         }
@@ -66,7 +66,7 @@ public:
     FORCE_INLINE bool isOwningMemory(void *ptr) const
     {
         PtrInt diff = (PtrInt)(ptr) - (PtrInt)(slots);
-        return diff >= 0 && diff < (SlotSize * Size);
+        return diff >= 0 && diff < (SlotSize * Count);
     }
 
     FORCE_INLINE SizeType ptrToSlotIdx(void *ptr) const { return ((UPtrInt)(ptr) - (UPtrInt)(slots)) / SlotSize; }
@@ -101,14 +101,14 @@ public:
 
     void *at(SizeType idx) const
     {
-        debugAssert(idx < Size);
+        debugAssert(idx < Count);
         return &nextFree(idx);
     }
 
     /**
      * Returns true if no objects are allocated/used so all slots as free
      */
-    bool empty() const { return freeCount == Size; }
+    bool empty() const { return freeCount == Count; }
 
 protected:
     void *getSlots() const { return slots; }
@@ -148,10 +148,10 @@ class SlotAllocator<ElementSize, ElementAlignment, SlotsCount, true> : public Sl
 public:
     using BaseType = SlotAllocatorBase<ElementSize, ElementAlignment, SlotsCount>;
     using BaseType::SlotSize;
-    using BaseType::Size;
+    using BaseType::Count;
     using BaseType::SlotAlignment;
 private:
-    alignas(SlotAlignment) uint8 inlineSlots[Size * SlotSize];
+    alignas(SlotAlignment) uint8 inlineSlots[Count * SlotSize];
 
 public:
     SlotAllocator()
@@ -164,14 +164,14 @@ class SlotAllocator<ElementSize, ElementAlignment, SlotsCount, false> : public S
 {
 public:
     using BaseType = SlotAllocatorBase<ElementSize, ElementAlignment, SlotsCount>;
-    using BaseType::Size;
+    using BaseType::Count;
     using BaseType::SlotSize;
     using BaseType::SlotAlignment;
     using BaseType::getSlots;
 
 public:
     SlotAllocator()
-        : BaseType(CBEMemory::memAlloc(SlotSize * Size, SlotAlignment))
+        : BaseType(CBEMemory::memAlloc(SlotSize * Count, SlotAlignment))
     {}
 
     ~SlotAllocator() { CBEMemory::memFree(getSlots()); }

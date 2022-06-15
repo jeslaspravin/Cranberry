@@ -3029,7 +3029,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
         ImGui::SetNextWindowSize(ImVec2(430, 450), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
 
-        if (!ImGui::Begin("Settings", &bSettingOpen, ImGuiWindowFlags_NoMove))
+        if (!ImGui::Begin("Settings", &bSettingOpen))
         {
             ImGui::End();
         }

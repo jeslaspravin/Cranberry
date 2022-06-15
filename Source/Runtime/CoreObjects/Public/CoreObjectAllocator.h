@@ -129,12 +129,12 @@ private:
     bool lastAllocatedCacheValid() const { return lastAllocPoolCache < allocatorPools.size() && allocatorPools[lastAllocPoolCache]; }
     FORCE_INLINE static SizeT allocIdxToSlotIdx(SlotIdxType &slotIdx, AllocIdx allocIdx)
     {
-        slotIdx = (allocIdx % SlotAllocatorType::Size);
-        return (allocIdx / SlotAllocatorType::Size);
+        slotIdx = (allocIdx % SlotAllocatorType::Count);
+        return (allocIdx / SlotAllocatorType::Count);
     }
     FORCE_INLINE static AllocIdx slotIdxToAllocIdx(SlotIdxType slotIdx, SizeT poolIdx)
     {
-        return (AllocIdx)(poolIdx * SlotAllocatorType::Size + slotIdx);
+        return (AllocIdx)(poolIdx * SlotAllocatorType::Count + slotIdx);
     }
 
     FORCE_INLINE SizeT findAllocator();
@@ -298,7 +298,7 @@ FORCE_INLINE SizeT ObjectAllocator<ClassType>::findAllocator()
     else
     {
         allocatorPools.emplace_back(new SlotAllocatorType());
-        allocValidity.add(SlotAllocatorType::Size);
+        allocValidity.add(SlotAllocatorType::Count);
         return allocatorPools.size() - 1;
     }
 }
