@@ -161,12 +161,12 @@ private:
     bool lastAllocatedCacheValid() const { return lastAllocPoolCache < allocatorPools.size() && allocatorPools[lastAllocPoolCache]; }
     FORCE_INLINE static SizeT allocIdxToSlotIdx(SlotIdxType &slotIdx, SlotAllocIdxType allocIdx)
     {
-        slotIdx = (allocIdx % SlotAllocatorType::Size);
-        return (allocIdx / SlotAllocatorType::Size);
+        slotIdx = (allocIdx % SlotAllocatorType::Count);
+        return (allocIdx / SlotAllocatorType::Count);
     }
     FORCE_INLINE static AllocIdx slotIdxToAllocIdx(SlotIdxType slotIdx, SizeT poolIdx)
     {
-        return (AllocIdx)(poolIdx * SlotAllocatorType::Size + slotIdx);
+        return (AllocIdx)(poolIdx * SlotAllocatorType::Count + slotIdx);
     }
 
     ElementType *getAllocAt(SlotAllocIdxType allocIdx) const
@@ -211,8 +211,8 @@ private:
         else
         {
             allocatorPools.emplace_back(new SlotAllocatorType());
-            allocValidity.add(SlotAllocatorType::Size);
-            slotGeneration.resize(slotGeneration.size() + SlotAllocatorType::Size, 0);
+            allocValidity.add(SlotAllocatorType::Count);
+            slotGeneration.resize(slotGeneration.size() + SlotAllocatorType::Count, 0);
             return allocatorPools.size() - 1;
         }
     }
@@ -243,7 +243,7 @@ private:
     FORCE_INLINE void resetGenerations(SizeT poolIdx)
     {
         SizeT firstAllocIdx = slotIdxToAllocIdx(0, poolIdx);
-        debugAssert(slotGeneration.size() > firstAllocIdx && slotGeneration.size() > (firstAllocIdx + SlotAllocatorType::Size));
-        CBEMemory::memZero(&slotGeneration[firstAllocIdx], sizeof(SlotGenerationIdxType) * SlotAllocatorType::Size);
+        debugAssert(slotGeneration.size() > firstAllocIdx && slotGeneration.size() > (firstAllocIdx + SlotAllocatorType::Count));
+        CBEMemory::memZero(&slotGeneration[firstAllocIdx], sizeof(SlotGenerationIdxType) * SlotAllocatorType::Count);
     }
 };

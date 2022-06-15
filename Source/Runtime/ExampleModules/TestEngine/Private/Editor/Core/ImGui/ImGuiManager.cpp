@@ -59,8 +59,8 @@ void ImGuiManager::initialize()
 
     ImGuiIO &io = GetIO();
     io.BackendPlatformName = "CranberryEngine";
-    io.LogFilename = nullptr;
-    io.IniFilename = nullptr;
+    io.LogFilename = "/Saved/TestImgui.log";
+    io.IniFilename = "TestImgui.ini";
     ImFontConfig fontConfig;
     fontConfig.OversampleH = 3;
     fontConfig.OversampleV = 3;
@@ -628,6 +628,8 @@ void ImGuiManager::draw(
                 );
                 if (scissor.intersect(viewport))
                 {
+                    scissor = scissor.getIntersectionBox(viewport, false);
+
                     ShaderParametersRef perDrawTexture = getFontAtlasParam();
                     if (drawCmd.TextureId)
                     {

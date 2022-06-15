@@ -128,6 +128,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     appInstance->startApp();
     if (engineRenderer)
     {
+        // Allow application to do some allowed renderer setups before finalizing initialization
         engineRenderer->finalizeGraphicsInitialization();
     }
 
