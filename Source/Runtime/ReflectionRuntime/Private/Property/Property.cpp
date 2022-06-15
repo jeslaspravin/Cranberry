@@ -16,7 +16,7 @@
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/TypesInfo.h"
 
-BaseProperty::BaseProperty(const StringID &propNameID, const String &propName, EPropertyType propType)
+BaseProperty::BaseProperty(const StringID &propNameID, const TChar *propName, EPropertyType propType)
     : name(propNameID)
     , nameString(propName)
     , type(propType)
@@ -38,7 +38,7 @@ void BaseProperty::setMetaData(const std::vector<const PropertyMetaDataBase *> &
 /// FieldProperty
 //////////////////////////////////////////////////////////////////////////
 
-FieldProperty::FieldProperty(const StringID &propNameID, const String &propName)
+FieldProperty::FieldProperty(const StringID &propNameID, const TChar *propName)
     : BaseProperty(propNameID, propName, EPropertyType::FieldType)
     , ownerProperty(nullptr)
     , field(nullptr)
@@ -63,7 +63,7 @@ uint64 FieldProperty::getPropertyMetaFlags() const { return getMetaFlags(); }
 /// FunctionProperty
 //////////////////////////////////////////////////////////////////////////
 
-FunctionProperty::FunctionProperty(const StringID &propNameID, const String &propName)
+FunctionProperty::FunctionProperty(const StringID &propNameID, const TChar *propName)
     : BaseProperty(propNameID, propName, EPropertyType::Function)
     , ownerProperty(nullptr)
     , funcPtr(nullptr)
@@ -88,7 +88,7 @@ uint64 FunctionProperty::getPropertyMetaFlags() const { return getMetaFlags(); }
 /// ClassProperty
 //////////////////////////////////////////////////////////////////////////
 
-ClassProperty::ClassProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *classTypeInfo)
+ClassProperty::ClassProperty(const StringID &propNameID, const TChar *propName, const ReflectTypeInfo *classTypeInfo)
     : TypedProperty(propNameID, propName, EPropertyType::ClassType, classTypeInfo)
     , allocFunc(nullptr)
     , destructor(nullptr)
@@ -139,13 +139,13 @@ uint64 ClassProperty::getPropertyMetaFlags() const { return getMetaFlags(); }
 /// EnumProperty
 //////////////////////////////////////////////////////////////////////////
 
-EnumProperty::EnumProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *enumTypeInfo, bool bCanBeUsedAsFlags)
+EnumProperty::EnumProperty(const StringID &propNameID, const TChar *propName, const ReflectTypeInfo *enumTypeInfo, bool bCanBeUsedAsFlags)
     : TypedProperty(propNameID, propName, EPropertyType::EnumType, enumTypeInfo)
     , bIsFlags(bCanBeUsedAsFlags)
 {}
 
 EnumProperty *EnumProperty::addEnumField(
-    const StringID &fieldNameID, const String &fieldName, uint64 fieldValue, uint64 metaFlags,
+    const StringID &fieldNameID, const TChar *fieldName, uint64 fieldValue, uint64 metaFlags,
     std::vector<const PropertyMetaDataBase *> fieldMetaData
 )
 {
@@ -172,7 +172,7 @@ uint64 EnumProperty::getPropertyMetaFlags() const { return getMetaFlags(); }
 /// PointerProperty
 //////////////////////////////////////////////////////////////////////////
 
-QualifiedProperty::QualifiedProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo)
+QualifiedProperty::QualifiedProperty(const StringID &propNameID, const TChar *propName, const ReflectTypeInfo *propTypeInfo)
     : TypedProperty(propNameID, propName, EPropertyType::QualifiedType, propTypeInfo)
     , unqualTypeProperty(nullptr)
 {

@@ -48,7 +48,7 @@ enum class EPropertyType
 class BaseProperty
 {
 public:
-    String nameString;
+    const TChar* nameString;
     StringID name;
     EPropertyType type;
 
@@ -58,7 +58,7 @@ protected:
     void setMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
 
 public:
-    BaseProperty(const StringID &propNameID, const String &propName, EPropertyType propType);
+    BaseProperty(const StringID &propNameID, const TChar *propName, EPropertyType propType);
     BaseProperty() = delete;
     MAKE_TYPE_NONCOPY_NONMOVE(BaseProperty)
 
@@ -73,7 +73,7 @@ public:
     const ReflectTypeInfo *typeInfo;
 
 public:
-    TypedProperty(const StringID &propNameID, const String &propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo)
+    TypedProperty(const StringID &propNameID, const TChar *propName, EPropertyType propType, const ReflectTypeInfo *propTypeInfo)
         : BaseProperty(propNameID, propName, propType)
         , typeInfo(propTypeInfo)
     {}
@@ -100,7 +100,7 @@ public:
     const BaseFieldWrapper *fieldPtr;
 
 public:
-    FieldProperty(const StringID &propNameID, const String &propName);
+    FieldProperty(const StringID &propNameID, const TChar *propName);
     ~FieldProperty();
 
     FORCE_INLINE FieldProperty *setOwnerProperty(const ClassProperty *inOwnerClass)
@@ -159,7 +159,7 @@ public:
     const BaseProperty *funcReturnProp;
 
 public:
-    FunctionProperty(const StringID &propNameID, const String &propName);
+    FunctionProperty(const StringID &propNameID, const TChar *propName);
     ~FunctionProperty();
 
     FORCE_INLINE FunctionProperty *setOwnerProperty(const ClassProperty *inOwnerClass)
@@ -207,7 +207,7 @@ public:
 
 struct REFLECTIONRUNTIME_EXPORT InterfaceInfo
 {
-    String typeName;
+    const TChar *typeName;
     PtrInt offset = 0;
     const ReflectTypeInfo *interfaceTypeInfo = nullptr;
 };
@@ -236,7 +236,7 @@ public:
 
 public:
     // Complete class name including namespace/classes
-    ClassProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *classTypeInfo);
+    ClassProperty(const StringID &propNameID, const TChar *propName, const ReflectTypeInfo *classTypeInfo);
     ~ClassProperty();
 
     FORCE_INLINE FunctionProperty *addCtorPtr()
@@ -256,14 +256,14 @@ public:
         return this;
     }
 
-    FORCE_INLINE FieldProperty *addMemberField(const StringID &fieldNameID, const String &fieldName)
+    FORCE_INLINE FieldProperty *addMemberField(const StringID &fieldNameID, const TChar *fieldName)
     {
         FieldProperty *fieldProp = (new FieldProperty(fieldNameID, fieldName))->setOwnerProperty(this);
         memberFields.emplace_back(fieldProp);
         return fieldProp;
     }
 
-    FORCE_INLINE FunctionProperty *addMemberFunc(const StringID &funcNameID, const String &funcName)
+    FORCE_INLINE FunctionProperty *addMemberFunc(const StringID &funcNameID, const TChar *funcName)
     {
         FunctionProperty *funcProp = (new FunctionProperty(funcNameID, funcName))->setOwnerProperty(this);
         memberFunctions.emplace_back(funcProp);
@@ -271,14 +271,14 @@ public:
     }
 
     // Use field.ownerClass to get back to ClassProperty
-    FORCE_INLINE FieldProperty *addStaticField(const StringID &fieldNameID, const String &fieldName)
+    FORCE_INLINE FieldProperty *addStaticField(const StringID &fieldNameID, const TChar *fieldName)
     {
         FieldProperty *fieldProp = (new FieldProperty(fieldNameID, fieldName))->setOwnerProperty(this);
         staticFields.emplace_back(fieldProp);
         return fieldProp;
     }
 
-    FORCE_INLINE FunctionProperty *addStaticFunc(const StringID &funcNameID, const String &funcName)
+    FORCE_INLINE FunctionProperty *addStaticFunc(const StringID &funcNameID, const TChar *funcName)
     {
         FunctionProperty *funcProp = (new FunctionProperty(funcNameID, funcName))->setOwnerProperty(this);
         staticFunctions.emplace_back(funcProp);
@@ -290,7 +290,7 @@ public:
         baseClass = static_cast<const ClassProperty *>(baseClassProp);
         return this;
     }
-    FORCE_INLINE ClassProperty *addInterface(const String &interfaceName, PtrInt offset, const ReflectTypeInfo *interfaceTypeInfo)
+    FORCE_INLINE ClassProperty *addInterface(const TChar *interfaceName, PtrInt offset, const ReflectTypeInfo *interfaceTypeInfo)
     {
         interfaces.emplace_back(interfaceName, offset, interfaceTypeInfo);
         return this;
@@ -316,7 +316,7 @@ public:
     {
         uint64 value;
         uint64 metaFlags;
-        String entryNameString;
+        const TChar *entryNameString;
         StringID entryName;
     };
 
@@ -328,10 +328,10 @@ public:
 
 public:
     // Complete class name including namespace/classes
-    EnumProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *enumTypeInfo, bool bCanBeUsedAsFlags);
+    EnumProperty(const StringID &propNameID, const TChar *propName, const ReflectTypeInfo *enumTypeInfo, bool bCanBeUsedAsFlags);
 
     EnumProperty *addEnumField(
-        const StringID &fieldNameID, const String &fieldName, uint64 fieldValue, uint64 metaFlags,
+        const StringID &fieldNameID, const TChar *fieldName, uint64 fieldValue, uint64 metaFlags,
         std::vector<const PropertyMetaDataBase *> fieldMetaData
     );
     EnumProperty *setPropertyMetaData(const std::vector<const PropertyMetaDataBase *> &propertyMeta, uint64 propertyMetaFlags);
@@ -352,7 +352,7 @@ public:
     const BaseProperty *unqualTypeProperty;
 
 public:
-    QualifiedProperty(const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo);
+    QualifiedProperty(const StringID &propNameID, const TChar *propName, const ReflectTypeInfo *propTypeInfo);
 
     FORCE_INLINE QualifiedProperty *setUnqualifiedType(const BaseProperty *prop)
     {

@@ -64,16 +64,10 @@ private:
     // Library paths to look for a library if not found in initial OS environment paths search
     std::vector<String> additionalLibraryPaths;
 
-private:
-    friend StaticModuleInitializerRegistrant;
-    static StaticModuleInitializerList &getModuleInitializerList();
-
-    /*
-     * Checks and appends/prepends library prefix and extension as required if not present already
-     */
-    LibPointer *loadFromAdditionalPaths(String modulePath) const;
-
-    ModuleManager();
+public:
+    using ModuleEvent = Event<ModuleManager, const String &>;
+    ModuleEvent onModuleLoad;
+    ModuleEvent onModuleUnload;
 
 public:
     ~ModuleManager();
@@ -94,4 +88,15 @@ public:
     void unloadAllModules();
 
     std::vector<std::pair<LibPointerPtr, struct LibraryData>> getAllModuleData();
+
+private:
+    friend StaticModuleInitializerRegistrant;
+    static StaticModuleInitializerList &getModuleInitializerList();
+
+    /*
+     * Checks and appends/prepends library prefix and extension as required if not present already
+     */
+    LibPointer *loadFromAdditionalPaths(const String &modulePath) const;
+
+    ModuleManager();
 };
