@@ -47,7 +47,7 @@ template <typename ContainerType>
 class ContainerPropertyImpl final : public ContainerProperty
 {
 public:
-    ContainerPropertyImpl(const StringID &propNameID, const String &propName, const ReflectTypeInfo *propTypeInfo)
+    ContainerPropertyImpl(const StringID &propNameID, const TChar *propName, const ReflectTypeInfo *propTypeInfo)
         : ContainerProperty(propNameID, propName, ContainerEPropertyType<ContainerType>::type, propTypeInfo)
     {}
 };

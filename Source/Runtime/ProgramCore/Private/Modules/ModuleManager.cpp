@@ -28,7 +28,7 @@ StaticModuleInitializerList &ModuleManager::getModuleInitializerList()
     return singletonInitializerList;
 }
 
-LibPointer *ModuleManager::loadFromAdditionalPaths(String modulePath) const
+LibPointer * ModuleManager::loadFromAdditionalPaths(const String& modulePath) const
 {
     std::filesystem::path moduleFullPath(modulePath.getChar());
     // If is relative path then it is okay to append it to available paths and do load checks
@@ -193,6 +193,8 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
         retModule->init();
         loadedModuleInterfaces[moduleName] = retModule;
         moduleLoadedOrder.emplace_back(moduleName);
+
+        onModuleLoad.invoke(moduleName);
     }
     return retModule;
 }
@@ -203,6 +205,8 @@ void ModuleManager::unloadModule(String moduleName)
     if (!existingModule.expired())
     {
         IModuleBase *moduleInterface = existingModule.lock().get();
+
+        onModuleUnload.invoke(moduleName);
         moduleInterface->release();
         loadedModuleInterfaces.erase(moduleName);
         std::erase(moduleLoadedOrder, moduleName);
@@ -225,6 +229,8 @@ void ModuleManager::unloadAllModules()
     {
         auto moduleItr = loadedModuleInterfaces.find(*rItr);
         debugAssert(moduleItr != loadedModuleInterfaces.end());
+
+        onModuleUnload.invoke(*rItr);
         moduleItr->second->release();
         loadedModuleInterfaces.erase(moduleItr);
         LOG_DEBUG("ModuleManager", "Unloaded module %s", *rItr);
@@ -232,6 +238,7 @@ void ModuleManager::unloadAllModules()
     moduleLoadedOrder.clear();
     for (const std::pair<const String, ModulePtr> &modulePair : loadedModuleInterfaces)
     {
+        onModuleUnload.invoke(modulePair.first);
         modulePair.second->release();
         LOG_DEBUG("ModuleManager", "Unloaded module %s", modulePair.first);
     }
