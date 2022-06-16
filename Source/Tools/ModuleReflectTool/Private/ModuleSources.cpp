@@ -19,6 +19,7 @@
 #include "String/StringRegex.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 #include "SampleCode.h"
 
@@ -91,7 +92,7 @@ ModuleSources::ModuleSources()
     ProgramCmdLine::get()->getArg(compileDefsFile, ReflectToolCmdLineConst::COMPILE_DEF_LIST_FILE);
     LOG_DEBUG("ModuleReflectTool", "Reflecting source from %s", srcDir);
 
-    fatalAssert(
+    fatalAssertf(
         (PlatformFile(includesFile).exists() && PlatformFile(compileDefsFile).exists()),
         "Includes list file(%s) or Definitions(%s) list file does not exists, Configuring cmake "
         "will fix this!",
@@ -102,7 +103,7 @@ ModuleSources::ModuleSources()
     // Read includes file
     if (!FileHelper::readString(content, includesFile))
     {
-        fatalAssert(!"Failed to read include file", "Failed to read include file from %s", includesFile);
+        fatalAssertf(!"Failed to read include file", "Failed to read include file from %s", includesFile);
     }
     for (const String &includeList : content.splitLines())
     {
@@ -117,7 +118,7 @@ ModuleSources::ModuleSources()
     // Read compile defines
     if (!FileHelper::readString(content, compileDefsFile))
     {
-        fatalAssert(!"Failed to read compile definitions", "Failed to read compile definitions from %s", compileDefsFile);
+        fatalAssertf(!"Failed to read compile definitions", "Failed to read compile definitions from %s", compileDefsFile);
     }
     // Parsing compile definitions
     for (const String &compileDefsList : content.splitLines())
@@ -296,22 +297,30 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
 
 void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformation *> &generatedSrcs)
 {
-    std::sort(
-        sources.begin(), sources.end(), [](const SourceInformation &lhs, const SourceInformation &rhs) { return lhs.fileSize > rhs.fileSize; }
-    );
-
     // Only if anything new is generated inject those sources
     if (!generatedSrcs.empty())
     {
+        // Sort sources in descending order of source size, This ensures all generated TU has uniform distributed includes
+        std::vector<const SourceInformation *> sortedSources;
+        sortedSources.reserve(sources.size());
+        for (const SourceInformation &source : sources)
+        {
+            sortedSources.emplace_back(&source);
+        }
+        std::sort(
+            sortedSources.begin(), sortedSources.end(),
+            [](const SourceInformation *lhs, const SourceInformation *rhs) { return lhs->fileSize > rhs->fileSize; }
+        );
+
         // For each gen files
         for (uint32 i = 0; i < genFiles.size(); ++i)
         {
             std::vector<String> includeStmts;
             // Since stride is number of generated module files
-            for (uint32 j = i; j < sources.size(); j += genFiles.size())
+            for (uint32 j = i; j < sortedSources.size(); j += genFiles.size())
             {
                 includeStmts.emplace_back(
-                    StringFormat::format(TCHAR("#include \"%s\""), PathFunctions::fileOrDirectoryName(sources[j].generatedTUPath))
+                    StringFormat::format(TCHAR("#include \"%s\""), PathFunctions::fileOrDirectoryName(sortedSources[j]->generatedTUPath))
                 );
             }
 
