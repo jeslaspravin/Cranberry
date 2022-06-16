@@ -12,6 +12,8 @@
 #include "Modules/ModuleManager.h"
 #include "Logger/Logger.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/Platform/LFS/Paths.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
 
@@ -28,7 +30,7 @@ StaticModuleInitializerList &ModuleManager::getModuleInitializerList()
     return singletonInitializerList;
 }
 
-LibPointer * ModuleManager::loadFromAdditionalPaths(const String& modulePath) const
+LibPointer *ModuleManager::loadFromAdditionalPaths(const String &modulePath) const
 {
     std::filesystem::path moduleFullPath(modulePath.getChar());
     // If is relative path then it is okay to append it to available paths and do load checks
@@ -65,8 +67,10 @@ LibPointer * ModuleManager::loadFromAdditionalPaths(const String& modulePath) co
 
 ModuleManager::ModuleManager()
     : loadedLibraries()
-    , additionalLibraryPaths{ TCHAR(ENGINE_MODULES_PATH) }
 {
+    // Since Tools, Editor exists in EngineRoot/Runtime/../[Tools|Editor] We can determine the EngineRoot and go into other library locations
+    // from there
+    additionalLibraryPaths.insert(additionalLibraryPaths.end(), { PathFunctions::combinePath(Paths::engineRoot(), TCHAR("Runtime")) });
     void *procHandle = PlatformFunctions::getCurrentProcessHandle();
     uint32 modulesSize;
     PlatformFunctions::getAllModules(procHandle, nullptr, modulesSize);
@@ -164,13 +168,13 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
         auto staticInitializerItr = getModuleInitializerList().find(moduleName);
         if (staticInitializerItr != getModuleInitializerList().end())
         {
-            fatalAssert(staticInitializerItr->second.isBound(), "Static initializer must be bound");
+            fatalAssertf(staticInitializerItr->second.isBound(), "Static initializer must be bound");
             retModule = ModulePtr(staticInitializerItr->second.invoke());
         }
 #if STATIC_LINKED
         else
         {
-            fatalAssert(!"Module initializer not found", "Module initializer not found");
+            fatalAssertf(!"Module initializer not found", "Module initializer not found");
             return existingModule;
         }
 #else  // STATIC_LINKED
@@ -179,16 +183,16 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
             // Not specifying extension as they are auto appended by api to platform default
             LibPointerPtr libPtr = getOrLoadLibrary(moduleName);
             // Check other paths for modules
-            fatalAssert(libPtr, "Failed loading module %s", moduleName);
+            fatalAssertf(libPtr, "Failed loading module %s", moduleName);
 
             Function<IModuleBase *> createFuncPtr((Function<IModuleBase *>::StaticDelegate
             )PlatformFunctions::getProcAddress(libPtr, TCHAR("createModule_") + moduleName));
-            fatalAssert(createFuncPtr, "Failed find module create function for module %s", moduleName);
+            fatalAssertf(createFuncPtr, "Failed find module create function for module %s", moduleName);
 
             retModule = ModulePtr(createFuncPtr());
         }
 #endif // STATIC_LINKED
-        fatalAssert(retModule, "Failed loading module interface %s", moduleName);
+        fatalAssertf(retModule, "Failed loading module interface %s", moduleName);
 
         retModule->init();
         loadedModuleInterfaces[moduleName] = retModule;
