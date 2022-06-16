@@ -49,7 +49,7 @@ void VulkanBufferResource::reinitResources()
     {
         buffer = nextBuffer;
         graphicsDebugger->markObject(this);
-        fatalAssert(
+        fatalAssertf(
             VulkanGraphicsHelper::allocateBufferResource(graphicsInstance, this, isStagingResource()), "Memory allocation failed for resource"
         );
     }
@@ -287,7 +287,7 @@ void VulkanImageResource::reinitResources()
     {
         image = nextImage;
         graphicsDebugger->markObject(this);
-        fatalAssert(
+        fatalAssertf(
             VulkanGraphicsHelper::allocateImageResource(graphicsInstance, this, isStagingResource()), "Memory allocation failed for resource"
         );
     }

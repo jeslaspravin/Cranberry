@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Logger/Logger.h"
+#include "Types/CompilerDefines.h"
 #include "ProgramCoreExports.h"
 
 class PROGRAMCORE_EXPORT UnexpectedErrorHandler
@@ -28,34 +29,69 @@ public:
     virtual void debugBreak() const = 0;
 };
 
-// Debug assert or slow assert
-#ifndef debugAssert
+#define LOG_ASSERTION_FORMATTED(Expr, Category, Message, ...) LOG_ERROR(Category, "Assert expression failed [" #Expr "] " #Message, __VA_ARGS__)
+
+#define LOG_ASSERTION(Expr, Category) LOG_ERROR(Category, "Assert expression failed " #Expr)
+
 #if DEBUG_VALIDATIONS
 #include <assert.h>
+
+#ifndef debugAssert
 #define debugAssert(Expr)                                                                                                                      \
     do                                                                                                                                         \
     {                                                                                                                                          \
         if (!(Expr))                                                                                                                           \
         {                                                                                                                                      \
-            LOG_ERROR("DebugAssertion", "Assert expression failed " #Expr);                                                                    \
+            LOG_ASSERTION(Expr, "DebugAssertion");                                                                                             \
             UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                        \
         }                                                                                                                                      \
         /* Using assert macro to make use of assert window to crash or debug */                                                                \
         assert((Expr));                                                                                                                        \
     }                                                                                                                                          \
     while (0)
-#else
-#define debugAssert(Expr)
-#endif // #define debugAssert(Expr)
 #endif // #ifndef debugAssert
 
-#ifndef fatalAssert
-#define fatalAssert(Expr, Message, ...)                                                                                                        \
+// Debug assert or slow assert
+#ifndef debugAssertf
+#define debugAssertf(Expr, Message, ...)                                                                                                       \
     do                                                                                                                                         \
     {                                                                                                                                          \
         if (!(Expr))                                                                                                                           \
         {                                                                                                                                      \
-            LOG_ERROR("FatalAssertion", "Assert expression failed [" #Expr "] " #Message, __VA_ARGS__);                                        \
+            LOG_ASSERTION_FORMATTED(Expr, "DebugAssertion", Message, __VA_ARGS__);                                                             \
+            UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                        \
+        }                                                                                                                                      \
+        /* Using assert macro to make use of assert window to crash or debug */                                                                \
+        assert((Expr));                                                                                                                        \
+    }                                                                                                                                          \
+    while (0)
+#endif // #ifndef debugAssertf
+
+#else // DEBUG_VALIDATIONS
+#define debugAssert(Expr)
+#define debugAssertf(Expr, Message, ...)
+#endif // DEBUG_VALIDATIONS
+
+#ifndef fatalAssert
+#define fatalAssert(Expr)                                                                                                                      \
+    do                                                                                                                                         \
+    {                                                                                                                                          \
+        if (!(Expr))                                                                                                                           \
+        {                                                                                                                                      \
+            LOG_ASSERTION(Expr, "FatalAssertion");                                                                                             \
+            UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                \
+            UnexpectedErrorHandler::getHandler()->dumpCallStack(true);                                                                         \
+        }                                                                                                                                      \
+    }                                                                                                                                          \
+    while (0)
+#endif
+#ifndef fatalAssertf
+#define fatalAssertf(Expr, Message, ...)                                                                                                       \
+    do                                                                                                                                         \
+    {                                                                                                                                          \
+        if (!(Expr))                                                                                                                           \
+        {                                                                                                                                      \
+            LOG_ASSERTION_FORMATTED(Expr, "FatalAssertion", Message, __VA_ARGS__);                                                             \
             UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                \
             UnexpectedErrorHandler::getHandler()->dumpCallStack(true);                                                                         \
         }                                                                                                                                      \
@@ -63,16 +99,52 @@ public:
     while (0)
 #endif
 
-#ifndef alertIf
-#define alertIf(Expr, Message, ...)                                                                                                            \
+#define ALERT_internal(Expr)                                                                                                                   \
+    if (!(Expr))                                                                                                                               \
+    {                                                                                                                                          \
+        LOG_ASSERTION(Expr, "AlertAssertion");                                                                                                 \
+        UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                            \
+        UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                    \
+    }
+
+#define ALERT_FORMATTED_internal(Expr, Message, ...)                                                                                           \
+    if (!(Expr))                                                                                                                               \
+    {                                                                                                                                          \
+        LOG_ASSERTION_FORMATTED(Expr, "AlertAssertion", Message, __VA_ARGS__);                                                                 \
+        UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                            \
+        UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                    \
+    }
+
+#ifndef alertAlways
+#define alertAlways(Expr)                                                                                                                      \
     do                                                                                                                                         \
     {                                                                                                                                          \
-        if (!(Expr))                                                                                                                           \
-        {                                                                                                                                      \
-            LOG_ERROR("DebugAssertion", "Signalling failure [" #Expr "] " #Message, __VA_ARGS__);                                              \
-            UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                        \
-            UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                \
-        }                                                                                                                                      \
+        ALERT_internal(Expr)                                                                                                                   \
+    }                                                                                                                                          \
+    while (0)
+#endif
+#ifndef alertAlwaysf
+#define alertAlwaysf(Expr, Message, ...)                                                                                                       \
+    do                                                                                                                                         \
+    {                                                                                                                                          \
+        ALERT_FORMATTED_internal(Expr, Message, __VA_ARGS__)                                                                                   \
+    }                                                                                                                                          \
+    while (0)
+#endif
+
+#ifndef alertOnce
+#define alertOnce(Expr)                                                                                                                        \
+    do                                                                                                                                         \
+    {                                                                                                                                          \
+        CALL_ONCE([]() { ALERT_internal(Expr) });                                                                                              \
+    }                                                                                                                                          \
+    while (0)
+#endif
+#ifndef alertOncef
+#define alertOncef(Expr, Message, ...)                                                                                                         \
+    do                                                                                                                                         \
+    {                                                                                                                                          \
+        CALL_ONCE([]() { ALERT_FORMATTED_internal(Expr, Message, __VA_ARGS__) });                                                              \
     }                                                                                                                                          \
     while (0)
 #endif

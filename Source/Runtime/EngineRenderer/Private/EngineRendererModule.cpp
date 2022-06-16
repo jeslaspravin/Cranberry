@@ -80,7 +80,7 @@ void EngineRendererModule::init()
 
 void EngineRendererModule::release()
 {
-    // Wait till all graphics resources are released 
+    // Wait till all graphics resources are released
     copat::waitOnAwaitable(renderManager->destroy());
     renderManager = nullptr;
     delete renderManager;
@@ -123,7 +123,8 @@ void RenderThreadEnqueuer::flushWaitRenderThread()
     copat::waitOnAwaitable(dummyTask);
 }
 
-copat::NormalFuncAwaiter RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc) {
+copat::NormalFuncAwaiter RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc)
+{
     if (copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread)
     {
         IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();

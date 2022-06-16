@@ -30,7 +30,7 @@ void WindowsAppWindow::createWindow(const ApplicationInstance *appInstance)
     if (!parentWindow)
     {
         bool bSetDpiAwarness = ::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-        fatalAssert(bSetDpiAwarness, "DPI awareness setup failed");
+        fatalAssertf(bSetDpiAwarness, "DPI awareness setup failed");
     }
 
     WNDCLASS windowClass{};

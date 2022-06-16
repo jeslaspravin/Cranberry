@@ -91,7 +91,7 @@ FORCE_INLINE static Type *constructObject(void *allocatedPtr, CtorArgs &&...args
         return CtorPolicy::template construct<Type>(allocatedPtr, std::forward<CtorArgs>(args)...);
     }
     Type *objPtr = CtorPolicy::template newObject<Type>(std::forward<CtorArgs>(args)...);
-    fatalAssert(objPtr, "if passed in ptr is null newObject of construction policy must create and construct object");
+    fatalAssertf(objPtr, "if passed in ptr is null newObject of construction policy must create and construct object");
     return objPtr;
 }
 

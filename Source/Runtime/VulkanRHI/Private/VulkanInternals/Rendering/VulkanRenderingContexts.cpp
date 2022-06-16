@@ -101,7 +101,7 @@ void VulkanGlobalRenderingContext::initializeApiContext()
                         "for [%s %s]",
                         EVertexType::toString(vertUsage).getChar(), ERenderPassFormat::toString(renderPassUsage).getChar()
                     );
-                    fatalAssert(defaultShader, "Default shader missing!");
+                    fatalAssertf(defaultShader, "Default shader missing!");
                 }
 
                 shaderPair.pipeline->setParentPipeline(defaultGraphicsPipeline);

@@ -17,6 +17,7 @@
 #include "Property/PropertyHelper.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 FORCE_INLINE std::vector<String> SourceGenerator::getTemplateFiles()
 {

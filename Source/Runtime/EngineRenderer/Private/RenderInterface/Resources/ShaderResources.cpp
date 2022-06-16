@@ -37,7 +37,7 @@ String ShaderCodeResource::getResourceName() const { return shaderFileName; }
 
 EShaderStage::Type ShaderCodeResource::shaderStage() const
 {
-    fatalAssert(false, "Not implemented");
+    fatalAssertf(false, "Not implemented");
     return EShaderStage::Compute /*0*/;
 }
 

@@ -45,7 +45,7 @@ void VulkanSemaphore::reinitResources()
 {
     release();
     BaseType::reinitResources();
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     VkSemaphore nextSemaphore;
 
     CREATE_SEMAPHORE_INFO(semaphoreCreateInfo);
@@ -62,7 +62,7 @@ void VulkanSemaphore::reinitResources()
 
 void VulkanSemaphore::release()
 {
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     if (semaphore)
     {
         vulkanDevice->vkDestroySemaphore(ownerDevice, semaphore, nullptr);
@@ -149,7 +149,7 @@ void VulkanTimelineSemaphore::reinitResources()
         semaphore = nullptr;
         return;
     }
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     VkSemaphore nextSemaphore;
 
     CREATE_SEMAPHORE_INFO(semaphoreCreateInfo);
@@ -169,7 +169,7 @@ void VulkanTimelineSemaphore::reinitResources()
 
 void VulkanTimelineSemaphore::release()
 {
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     if (semaphore)
     {
         vulkanDevice->vkDestroySemaphore(ownerDevice, semaphore, nullptr);
@@ -216,7 +216,7 @@ void VulkanFence::reinitResources()
 {
     release();
     BaseType::reinitResources();
-    fatalAssert(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
     VkFence nextFence;
 
     CREATE_FENCE_INFO(fenceCreateInfo);

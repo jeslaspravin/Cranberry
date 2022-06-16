@@ -11,6 +11,7 @@
 
 #include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
+#include "String/String.h"
 
 #include <filesystem>
 
@@ -18,7 +19,7 @@ String PathFunctions::toRelativePath(const String &absPath, const String &relToP
 {
     std::filesystem::path absolutePath(absPath.getChar());
     std::filesystem::path relativeToPath(relToPath.getChar());
-    fatalAssert(relativeToPath.is_absolute(), "Relative to path %s must be absolute path", relToPath);
+    fatalAssertf(relativeToPath.is_absolute(), "Relative to path %s must be absolute path", relToPath);
     if (absolutePath.is_relative())
     {
         return absPath;
@@ -27,7 +28,7 @@ String PathFunctions::toRelativePath(const String &absPath, const String &relToP
     // under the hood anyways
     std::error_code errorCode;
     std::filesystem::path relPath = std::filesystem::relative(absolutePath, relativeToPath, errorCode);
-    fatalAssert(
+    fatalAssertf(
         errorCode.value() == 0, "Error %s when making [%s] as relative to %s", UTF8_TO_TCHAR(errorCode.message().c_str()), absPath, relToPath
     );
     return WCHAR_TO_TCHAR(relPath.c_str());
@@ -97,7 +98,7 @@ bool PathFunctions::isSubdirectory(const String &checkPath, const String &basePa
     return true;
 }
 
-String PathFunctions::stripExtension(const String &fileName, String &extension)
+String PathFunctions::stripExtension(String &extension, const String &fileName)
 {
     String::size_type foundAt = fileName.rfind('.', fileName.length());
 
@@ -132,6 +133,19 @@ String PathFunctions::fileOrDirectoryName(const String &filePath)
         fileName = { pathTmp.substr(hostDirectoryAt + 1) };
     }
     return fileName;
+}
+
+String PathFunctions::splitFileAndDirectory(String &outFileName, const String &filePath)
+{
+    String pathTmp = asGenericPath(filePath);
+    size_t hostDirectoryAt = pathTmp.rfind(TCHAR('/'), pathTmp.length());
+    if (hostDirectoryAt != String::npos)
+    {
+        // Skip the separator char so +1
+        outFileName = { pathTmp.substr(hostDirectoryAt + 1) };
+        return { pathTmp.substr(0, hostDirectoryAt) };
+    }
+    return pathTmp;
 }
 
 String PathFunctions::asGenericPath(const String &path)

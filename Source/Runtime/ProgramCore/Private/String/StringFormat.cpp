@@ -270,7 +270,7 @@ void MustacheStringFormatter::parseFmtStr()
         }
         else if (isSectionClose(matchStr))
         {
-            fatalAssert(sectAndIdxStack.back().first == argName, "Section tag %s is not closed", sectAndIdxStack.back().first);
+            fatalAssertf(sectAndIdxStack.back().first == argName, "Section tag %s is not closed", sectAndIdxStack.back().first);
             sections[sectAndIdxStack.back().second].childCount = uint32(sections.size() - (sectAndIdxStack.back().second + 1));
             sections[sectAndIdxStack.back().second].sectionEndIdx = i;
             sectAndIdxStack.pop_back();
@@ -514,7 +514,7 @@ uint32 MustacheStringFormatter::renderTag(
         auto itr = std::find_if(
             sections.cbegin(), sections.cend(), [matchIdx](const Section &section) { return matchIdx == section.sectionStartIdx; }
         );
-        fatalAssert(itr != sections.cend(), "Section %s not found in sections list", argName);
+        fatalAssertf(itr != sections.cend(), "Section %s not found in sections list", argName);
         uint32 sectionIdx = std::distance(sections.cbegin(), itr);
         renderSection(outStr, sectionIdx, context, partials);
 

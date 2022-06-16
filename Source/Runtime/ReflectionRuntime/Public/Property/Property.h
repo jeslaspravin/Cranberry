@@ -48,7 +48,7 @@ enum class EPropertyType
 class BaseProperty
 {
 public:
-    const TChar* nameString;
+    const TChar *nameString;
     StringID name;
     EPropertyType type;
 

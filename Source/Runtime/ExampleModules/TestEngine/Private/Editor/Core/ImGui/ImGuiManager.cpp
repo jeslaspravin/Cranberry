@@ -634,7 +634,7 @@ void ImGuiManager::draw(
                     if (drawCmd.TextureId)
                     {
                         perDrawTexture = getTextureParam(static_cast<const TextureBase *>(drawCmd.TextureId));
-                        fatalAssert(perDrawTexture.isValid(), "Failed getting texture parameters for imgui");
+                        fatalAssertf(perDrawTexture.isValid(), "Failed getting texture parameters for imgui");
                     }
                     cmdList->cmdBindDescriptorsSets(drawingContext.cmdBuffer, pipelineContext, perDrawTexture.reference());
                     cmdList->cmdSetViewportAndScissor(drawingContext.cmdBuffer, viewport, scissor);

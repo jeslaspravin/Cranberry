@@ -196,7 +196,9 @@ public:
 
             if CONST_EXPR (std::is_const_v<UnderlyingTypeWithConst<ObjectType>>)
             {
-                fatalAssert(!std::is_const_v<UnderlyingTypeWithConst<ObjectType>>, "Const type cannot invoke non const object member function");
+                fatalAssertf(
+                    !std::is_const_v<UnderlyingTypeWithConst<ObjectType>>, "Const type cannot invoke non const object member function"
+                );
             }
             else
             {

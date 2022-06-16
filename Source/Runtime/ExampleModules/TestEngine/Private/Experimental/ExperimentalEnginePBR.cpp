@@ -65,6 +65,7 @@
 #include "Types/Colors.h"
 #include "Types/CompilerDefines.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/Paths.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Transform3D.h"
 #include "Types/TypesInfo.h"
@@ -74,7 +75,6 @@
 #include <array>
 #include <map>
 #include <random>
-#include <source_location>
 #include <unordered_set>
 #include <memory_resource>
 
@@ -452,7 +452,7 @@ public:
         {
         case GridEntity::Entity:
         {
-            fatalAssert(sceneData.size() > entity.idx, "Invalid index %d", entity.idx);
+            fatalAssertf(sceneData.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(
                 sceneData[entity.idx].meshAsset->bounds.minBound * sceneData[entity.idx].transform.getScale()
                     + sceneData[entity.idx].transform.getTranslation(),
@@ -463,13 +463,13 @@ public:
         }
         case GridEntity::PointLight:
         {
-            fatalAssert(scenePointLights.size() > entity.idx, "Invalid index %d", entity.idx);
+            fatalAssertf(scenePointLights.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(scenePointLights[entity.idx].lightPos - Vector3D(50), scenePointLights[entity.idx].lightPos + Vector3D(50));
             return bound;
         }
         case GridEntity::SpotLight:
         {
-            fatalAssert(sceneSpotLights.size() > entity.idx, "Invalid index %d", entity.idx);
+            fatalAssertf(sceneSpotLights.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(
                 sceneSpotLights[entity.idx].transform.getTranslation() - Vector3D(50),
                 sceneSpotLights[entity.idx].transform.getTranslation() + Vector3D(50)
@@ -477,7 +477,7 @@ public:
             return bound;
         }
         default:
-            fatalAssert(false, "Unsupported type");
+            fatalAssertf(false, "Unsupported type");
             break;
         }
         return { Vector3D::ZERO, Vector3D::ZERO };
@@ -1354,7 +1354,7 @@ void ExperimentalEnginePBR::createScene()
         PBRSceneEntity car;
         car.name = TCHAR("DodgeChallenger");
         car.meshAsset = static_cast<StaticMeshAsset *>(assetManager.getAsset(car.name));
-        fatalAssert(car.meshAsset, "Failed finding car mesh %s", car.name.getChar());
+        fatalAssertf(car.meshAsset, "Failed finding car mesh %s", car.name.getChar());
         car.transform.setTranslation(Vector3D(0, 2800, 0));
         for (uint32 batchIdx = 0; batchIdx < car.meshAsset->meshBatches.size(); ++batchIdx)
         {
@@ -2115,7 +2115,7 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
     texturedPipelineContext.swapchainIdx = 0;
     rendererModule->getRenderManager()->preparePipelineContext(&texturedPipelineContext, multibufferRts);
 
-    fatalAssert(
+    fatalAssertf(
         GlobalRenderVariables::ENABLE_GEOMETRY_SHADERS, TCHAR("Geometry shader feature not supported in this device, so cannot use shadows")
         );
     spotShadowPipelineContext.forVertexType = pointShadowPipelineContext.forVertexType = directionalShadowPipelineContext.forVertexType
@@ -3427,8 +3427,7 @@ void ExperimentalEnginePBR::tempTest()
     ModuleManager::get()->loadModule("RTTIExample");
     String dir;
     String name;
-    dir = FileSystemFunctions::applicationDirectory(name);
-    name = PathFunctions::stripExtension(name);
+    dir = Paths::applicationDirectory(name);
     CoreObjectDelegates::broadcastContentDirectoryAdded(dir);
     if (BasicPackagedObject *obj = CBE::load<BasicPackagedObject>(name))
     {

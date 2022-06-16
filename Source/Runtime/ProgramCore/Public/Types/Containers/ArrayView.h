@@ -49,7 +49,7 @@ public:
             : arrayView(&view)
             , idx(itrIdx)
         {
-            fatalAssert(arrayView && idx >= 0 && arrayView->length >= idx, "Invalid iterator data");
+            fatalAssertf(arrayView && idx >= 0 && arrayView->length >= idx, "Invalid iterator data");
         }
 
         pointer operator->() const noexcept
@@ -169,13 +169,13 @@ public:
 
     reference operator[](SizeT idx)
     {
-        fatalAssert(idx < length, "Invalid index %d", idx);
+        fatalAssertf(idx < length, "Invalid index %d", idx);
         return dataPtr[offset + idx];
     }
 
     const reference operator[](SizeT idx) const
     {
-        fatalAssert(idx < length, "Invalid index %d", idx);
+        fatalAssertf(idx < length, "Invalid index %d", idx);
         return dataPtr[offset + idx];
     }
 

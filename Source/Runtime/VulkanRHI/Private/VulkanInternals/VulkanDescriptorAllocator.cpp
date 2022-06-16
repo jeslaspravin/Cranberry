@@ -226,7 +226,7 @@ VkDescriptorSet VulkanDescriptorsSetAllocator::allocateSetFromPool(
     descsSetAllocInfo.pSetLayouts = &descriptorsSetLayout;
 
     VkDescriptorSet descsSet;
-    fatalAssert(
+    fatalAssertf(
         ownerDevice->vkAllocateDescriptorSets(VulkanGraphicsHelper::getDevice(ownerDevice), &descsSetAllocInfo, &descsSet) == VK_SUCCESS,
         "Allocating new descriptors set failed"
     );
@@ -274,7 +274,7 @@ VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::createNewPool(
         descriptorsSetPoolSizes[i] = *queryDescPoolSizeItr;
     }
 
-    fatalAssert(
+    fatalAssertf(
         ownerDevice->vkCreateDescriptorPool(
             VulkanGraphicsHelper::getDevice(ownerDevice), &descsSetPoolCreateInfo, nullptr, &allocationPool.pool
         ) == VK_SUCCESS,
@@ -401,7 +401,7 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice *devic
     // globalPoolCreateInfo.pPoolSizes = globalDescriptorsSetPoolSizes.data();
     // globalPoolCreateInfo.maxSets = globalPool.maxSets = DESCRIPTORS_SET_POOL_MAX_SETS;
 
-    // fatalAssert(ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice),
+    // fatalAssertf(ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice),
     // &globalPoolCreateInfo
     //     , nullptr, &globalPool.pool) == VK_SUCCESS, "Global pool creation failed");
 
@@ -410,7 +410,7 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice *devic
         DESCRIPTOR_SET_LAYOUT_CREATE_INFO(emptyLayoutCI);
         emptyLayoutCI.pBindings = nullptr;
         emptyLayoutCI.bindingCount = 0;
-        fatalAssert(
+        fatalAssertf(
             ownerDevice->vkCreateDescriptorSetLayout(VulkanGraphicsHelper::getDevice(ownerDevice), &emptyLayoutCI, nullptr, &emptyLayout)
                 == VK_SUCCESS,
             "Failed creating empty descriptors set layout"
@@ -423,7 +423,7 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice *devic
         emptyPoolCreateInfo.poolSizeCount = 1;
         emptyPoolCreateInfo.pPoolSizes = &poolSize;
         emptyPoolCreateInfo.maxSets = 1;
-        fatalAssert(
+        fatalAssertf(
             ownerDevice->vkCreateDescriptorPool(VulkanGraphicsHelper::getDevice(ownerDevice), &emptyPoolCreateInfo, nullptr, &emptyPool)
                 == VK_SUCCESS,
             "Empty pool creation failed"
@@ -432,7 +432,7 @@ VulkanDescriptorsSetAllocator::VulkanDescriptorsSetAllocator(VulkanDevice *devic
         emptySetAI.descriptorPool = emptyPool;
         emptySetAI.descriptorSetCount = 1;
         emptySetAI.pSetLayouts = &emptyLayout;
-        fatalAssert(
+        fatalAssertf(
             ownerDevice->vkAllocateDescriptorSets(VulkanGraphicsHelper::getDevice(ownerDevice), &emptySetAI, &emptyDescriptor) == VK_SUCCESS,
             "Failed to allocate empty descriptors set"
         );

@@ -126,7 +126,7 @@ public:
     void setMemory(uint64 chunkSize, VkDeviceMemory dMemory)
     {
         // Ensure it is properly aligned
-        fatalAssert(chunkSize % alignment == 0, "Chunk memory size is not properly aligned");
+        fatalAssertf(chunkSize % alignment == 0, "Chunk memory size is not properly aligned");
         cSize = chunkSize;
         deviceMemory = dMemory;
 
@@ -169,7 +169,7 @@ public:
     VulkanMemoryBlock *allocateBlock(const uint64 &size, const uint64 &offsetAlignment)
     {
         // Ensure it is properly aligned
-        fatalAssert(size % alignment == 0, "Size allocating is not properly aligned");
+        fatalAssertf(size % alignment == 0, "Size allocating is not properly aligned");
         uint64 nOfBlocks = size / alignment;
 
         VulkanMemoryBlock *allocatedBlock = findAndAlloc(nOfBlocks, offsetAlignment);

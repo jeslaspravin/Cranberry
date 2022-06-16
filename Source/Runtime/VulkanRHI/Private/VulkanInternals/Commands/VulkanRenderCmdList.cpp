@@ -428,7 +428,7 @@ void VulkanCommandList::
             stagingBuffer->setDeferredDelete(false);
             stagingBuffer->init();
 
-            fatalAssert(stagingBuffer->isValid(), "Initializing staging buffer failed");
+            fatalAssertf(stagingBuffer->isValid(), "Initializing staging buffer failed");
             copyToBuffer_Internal(stagingBuffer, 0, dataToCopy, size, true);
             copyBuffer(stagingBuffer, dst, copyInfo);
 
@@ -945,7 +945,7 @@ void VulkanCommandList::cmdClearDepth(
 
 void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, const std::set<ShaderParametersRef> &descriptorsSets)
 {
-    fatalAssert(
+    fatalAssertf(
         !cmdBufferManager.isInRenderPass(cmdBuffer), "%s cmd buffer is inside render pass, it is not supported",
         cmdBuffer->getResourceName().getChar()
     );
@@ -1509,7 +1509,7 @@ void VulkanCommandList::cmdBindVertexBuffers(
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
 
-    fatalAssert(vertexBuffers.size() == offsets.size(), "Offsets must be equivalent to vertex buffers");
+    fatalAssertf(vertexBuffers.size() == offsets.size(), "Offsets must be equivalent to vertex buffers");
     std::vector<VkBuffer> vertBuffers(vertexBuffers.size());
     for (int32 i = 0; i < vertexBuffers.size(); ++i)
     {
@@ -1683,7 +1683,7 @@ void VulkanCommandList::cmdEndBufferMarker(const GraphicsResource *commandBuffer
 
 void VulkanCommandList::copyToImage(ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
-    fatalAssert(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
+    fatalAssertf(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
     {
         LOG_ERROR("VulkanCommandList", "Depth/Float format is not supported for copying from Color data");
@@ -1715,7 +1715,7 @@ void VulkanCommandList::copyToImage(
     ImageResourceRef dst, const std::vector<class LinearColor> &pixelData, const CopyPixelsToImageInfo &copyInfo
 )
 {
-    fatalAssert(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
+    fatalAssertf(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
     const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(dst->imageFormat());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat())
         && (formatInfo->componentSize[0] != 32 || EPixelDataFormat::isStencilFormat(dst->imageFormat())))
@@ -1751,7 +1751,7 @@ void VulkanCommandList::copyToImageLinearMapped(
     ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo
 )
 {
-    fatalAssert(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
+    fatalAssertf(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
     {
         LOG_ERROR("VulkanCommandList", "Depth/Float format is not supported for copying from Color data");

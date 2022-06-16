@@ -13,6 +13,7 @@
 #include "LFS/File/WindowsFileHandle.h"
 #include "Logger/Logger.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
 #include "WindowsCommonHeaders.h"

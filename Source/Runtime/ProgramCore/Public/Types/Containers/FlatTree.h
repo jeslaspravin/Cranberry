@@ -121,17 +121,17 @@ public:
 
     FORCE_INLINE reference operator[](NodeIdx index) noexcept
     {
-        fatalAssert(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return treeData[index];
     }
     FORCE_INLINE const_reference operator[](NodeIdx index) const noexcept
     {
-        fatalAssert(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return treeData[index];
     }
     FORCE_INLINE const Node &getNode(NodeIdx index) const noexcept
     {
-        fatalAssert(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return nodes[index];
     }
 

@@ -50,7 +50,7 @@ void INTERNAL_ObjectCoreAccessors::setAllocIdx(Object *object, ObjectAllocIdx al
 
 void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String &newName, Object *outer, CBEClass clazz /*= nullptr*/)
 {
-    fatalAssert(!newName.empty(), "Object name cannot be empty");
+    fatalAssertf(!newName.empty(), "Object name cannot be empty");
     if (outer == object->getOuter() && object->getName() == newName)
         return;
 
@@ -103,7 +103,7 @@ void INTERNAL_ObjectCoreAccessors::renameObject(Object *object, const String &ne
 
 ObjectArchive &ObjectArchive::serialize(CBE::Object *&obj)
 {
-    fatalAssert(false, "CBE::Object serialization not implemented!");
+    fatalAssertf(false, "CBE::Object serialization not implemented!");
     return *this;
 }
 

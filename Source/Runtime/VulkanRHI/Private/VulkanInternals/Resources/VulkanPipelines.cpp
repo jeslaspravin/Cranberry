@@ -267,7 +267,7 @@ void VulkanGraphicsPipeline::fillSpecializationConsts(
     {
         return;
     }
-    fatalAssert(
+    fatalAssertf(
         specConstsPerStage.size() == pipelineShader->getShaders().size(), "Specialization constant stage count does not match shader stages"
     );
 
@@ -300,7 +300,7 @@ void VulkanGraphicsPipeline::fillSpecializationConsts(
                 break;
             case RelectPrimitive_invalid:
             default:
-                fatalAssert(!"Invalid primitive type", "Invalid primitive type");
+                fatalAssertf(!"Invalid primitive type", "Invalid primitive type");
             }
 
             specData.resize(specData.size() + entry.size);
@@ -454,11 +454,11 @@ String VulkanGraphicsPipeline::getObjectName() const { return getResourceName();
 
 void VulkanGraphicsPipeline::init()
 {
-    fatalAssert(
+    fatalAssertf(
         config.attachmentBlendStates.size() == pipelineShader->getReflection()->outputs.size(),
         "Blend states has to be equivalent to color attachments count"
     );
-    fatalAssert(
+    fatalAssertf(
         pipelineShader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>()
             || pipelineShader->getShaderConfig()->getType()->isChildOf<UniqueUtilityShaderConfig>(),
         "Not supported shader for graphics pipeline"
@@ -594,7 +594,7 @@ VulkanComputePipeline::VulkanComputePipeline(const ComputePipelineBase *parent)
 void VulkanComputePipeline::fillShaderStages(VkPipelineShaderStageCreateInfo &shaderStage) const
 {
     auto computeShaderCodeItr = pipelineShader->getShaders().find(EShaderStage::Compute);
-    fatalAssert(
+    fatalAssertf(
         pipelineShader->getShaders().size() == 1 && computeShaderCodeItr != pipelineShader->getShaders().cend(),
         "Compute shader suppots only one stage | Compute shader is invalid"
     );
@@ -626,7 +626,7 @@ void VulkanComputePipeline::fillSpecializationConsts(
     {
         return;
     }
-    fatalAssert(
+    fatalAssertf(
         specConstsPerStage.size() == pipelineShader->getShaders().size(), "Specialization constant stage count does not match shader stages"
     );
 
@@ -657,7 +657,7 @@ void VulkanComputePipeline::fillSpecializationConsts(
             break;
         case RelectPrimitive_invalid:
         default:
-            fatalAssert(!"Invalid primitive type", "Invalid primitive type");
+            fatalAssertf(!"Invalid primitive type", "Invalid primitive type");
         }
 
         specData.resize(specData.size() + entry.size);

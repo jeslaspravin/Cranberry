@@ -7,7 +7,6 @@ class IRenderCommandList;
 class IGraphicsInstance;
 class GraphicsHelperAPI;
 
-
 using RenderThreadEnqTask = copat::JobSystemEnqTask<copat::EJobThreadType::RenderThread>;
 
 class ENGINERENDERER_EXPORT RenderThreadEnqueuer

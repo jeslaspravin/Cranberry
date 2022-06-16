@@ -73,7 +73,7 @@ private:
         }
         else
         {
-            fatalAssert(false, "References in field is not allowed");
+            fatalAssertf(false, "References in field is not allowed");
         }
     }
     template <typename Visitable>
@@ -81,7 +81,7 @@ private:
     {
         // Qualified type cannot have more than 1 inner type as that means double or more
         // reference/pointer combination
-        fatalAssert(
+        fatalAssertf(
             propInfo.thisProperty->typeInfo->innerType == nullptr || propInfo.thisProperty->typeInfo->innerType->innerType == nullptr,
             "Qualification for property %s is not allowed for field types in field %s", propInfo.thisProperty->nameString,
             propInfo.fieldProperty->nameString
@@ -147,7 +147,7 @@ private:
             }
             else
             {
-                alertIf(false, "Qualified type invoked inside qualified type, Use struct");
+                alertAlwaysf(false, "Qualified type invoked inside qualified type, Use struct");
             }
             break;
         case EPropertyType::FundamentalType:

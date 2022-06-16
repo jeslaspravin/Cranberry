@@ -29,7 +29,7 @@ void PackageSaver::setupContainedObjs()
     for (CBE::Object *child : children)
     {
         // Package is final class so we just have compare, no need to go through isChild hierarchy
-        fatalAssert(child->getType() != CBE::Package::staticType(), "Package must not contain package object");
+        fatalAssertf(child->getType() != CBE::Package::staticType(), "Package must not contain package object");
 
         objToContObjsIdx[child->getStringID()] = containedObjects.size();
         PackageContainedData &containedObjData = containedObjects.emplace_back();

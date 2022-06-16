@@ -54,6 +54,8 @@
 #define MACRO_TO_STRING_internal(DefExpanded) #DefExpanded
 #define MACRO_TO_STRING(VarName) MACRO_TO_STRING_internal(VarName)
 
+#define MAKE_UNIQUE_VARNAME(BaseName) COMBINE(BaseName, COMBINE(_, __COUNTER__))
+
 #define CODE_BLOCK_BODY(...)                                                                                                                   \
     {                                                                                                                                          \
         __VA_ARGS__                                                                                                                            \

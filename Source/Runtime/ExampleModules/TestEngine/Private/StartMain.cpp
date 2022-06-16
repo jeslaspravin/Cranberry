@@ -60,7 +60,7 @@ int appMain(String cmdLine, void *appPlatformInstance)
         TCHAR("ProgramCore")
         )
         && ModuleManager::get()->loadModule(TCHAR("ReflectionRuntime")) && ModuleManager::get()->loadModule(TCHAR("CoreObjects"));
-    fatalAssert(bMandatoryModulesLoaded, "Loading mandatory modules failed");
+    fatalAssertf(bMandatoryModulesLoaded, "Loading mandatory modules failed");
 
     UnexpectedErrorHandler::getHandler()->registerFilter();
 

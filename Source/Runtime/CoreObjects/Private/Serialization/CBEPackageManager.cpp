@@ -16,6 +16,7 @@
 #include "Serialization/PackageLoader.h"
 #include "Serialization/PackageSaver.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 namespace CBE
 {
@@ -64,7 +65,7 @@ Object *load(String objectPath)
         bool bPackageLoaded = objectPackageLoader->load();
         if (!bPackageLoaded)
         {
-            fatalAssert(bPackageLoaded, "Loading package %s failed", package->getName());
+            fatalAssertf(bPackageLoaded, "Loading package %s failed", package->getName());
             return nullptr;
         }
     }

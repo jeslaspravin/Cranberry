@@ -23,6 +23,8 @@
 #include "Types/FunctionTypes.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/Paths.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Types/Platform/PlatformFunctions.h"
 #include "Types/PropertyTypes.h"
@@ -937,7 +939,7 @@ void visitClassMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         uint32 tokensCount;
         clang_tokenize(tu, accessSpecDeclRange, &tokens, &tokensCount);
 
-        fatalAssert(
+        fatalAssertf(
             tokensCount > 1,
             "Tokens must be atleast 2(Got %d) in case of access specifiers 'public' and "
             "(':' or 'class/struct name')",
@@ -1157,7 +1159,7 @@ void visitStructMember(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         uint32 tokensCount;
         clang_tokenize(tu, accessSpecDeclRange, &tokens, &tokensCount);
 
-        fatalAssert(
+        fatalAssertf(
             tokensCount > 1,
             "Tokens must be atleast 2(Got %d) in case of access specifiers 'public' and "
             "(':' or 'class/struct name')",
@@ -2055,7 +2057,8 @@ void testPropertySystem()
             args += String(ctor->funcParamsProp[0].typeProperty->nameString) + TCHAR(" ") + ctor->funcParamsProp[0].nameString;
             for (int32 i = 1; i < ctor->funcParamsProp.size(); ++i)
             {
-                args += String(TCHAR(", ")) + ctor->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + ctor->funcParamsProp[i].nameString;
+                args
+                    += String(TCHAR(", ")) + ctor->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + ctor->funcParamsProp[i].nameString;
             }
         }
         LOG("Test", "Class %s: CTor %s(%s)", prop->name, ctor->name, args);
@@ -2068,7 +2071,10 @@ void testPropertySystem()
             args += String(memFunc->funcParamsProp[0].typeProperty->nameString) + TCHAR(" ") + memFunc->funcParamsProp[0].nameString;
             for (int32 i = 1; i < memFunc->funcParamsProp.size(); ++i)
             {
-                args += String(TCHAR(", ")) + memFunc->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + memFunc->funcParamsProp[i].nameString;
+                args += String(
+                    TCHAR(", ")
+                    )
+                    + memFunc->funcParamsProp[i].typeProperty->nameString + TCHAR(" ") + memFunc->funcParamsProp[i].nameString;
             }
         }
         LOG("Test", "Class %s: Func %s %s(%s)", prop->nameString, memFunc->funcReturnProp->nameString, memFunc->nameString, args);
@@ -2088,8 +2094,7 @@ void testPropertySystem()
 void testTemplateReflectionGeneration()
 {
     String appName;
-    String appDir = FileSystemFunctions::applicationDirectory(appName);
-    appName = PathFunctions::stripExtension(appName);
+    String appDir = Paths::applicationDirectory(appName);
     std::vector<String> templateFiles = FileSystemFunctions::listFiles(
         PathFunctions::toAbsolutePath(TCHAR("../../../Source/Tools/ModuleReflectTool/Templates"), appDir), true, TCHAR("*.mustache") );
     std::unordered_map<String, MustacheStringFormatter> templates;

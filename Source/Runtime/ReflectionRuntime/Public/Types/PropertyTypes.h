@@ -223,7 +223,7 @@ public:
             const AsType *retVal = nullptr;
             const GlobalField<true, AsType> *memberFieldPtr = (const GlobalField<true, AsType> *)(propertyAccessor());
 
-            fatalAssert(memberFieldPtr, "Invalid Field pointer");
+            fatalAssertf(memberFieldPtr, "Invalid Field pointer");
             retVal = &memberFieldPtr->get();
             return retVal;
         }
@@ -232,7 +232,7 @@ public:
             AsType *retVal = nullptr;
             const GlobalField<false, AsType> *memberFieldPtr = (const GlobalField<false, AsType> *)(propertyAccessor());
 
-            fatalAssert(memberFieldPtr, "Invalid Field pointer");
+            fatalAssertf(memberFieldPtr, "Invalid Field pointer");
             retVal = &memberFieldPtr->get();
             return retVal;
         }
@@ -251,7 +251,7 @@ public:
         {
             const GlobalField<false, MemberType> *memberFieldPtr = (const GlobalField<false, MemberType> *)(propertyAccessor());
 
-            fatalAssert(memberFieldPtr, "Invalid member pointer");
+            fatalAssertf(memberFieldPtr, "Invalid member pointer");
             memberFieldPtr->set(std::forward<FromType>(value));
             return true;
         }

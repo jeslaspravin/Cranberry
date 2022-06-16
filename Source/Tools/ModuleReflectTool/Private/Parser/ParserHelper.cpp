@@ -33,7 +33,7 @@ COMPILER_PRAGMA(COMPILER_POP_WARNING)
 String ParserHelper::getNonConstTypeName(CXType clangType, CXCursor typeRefCursor)
 {
     CXType innerType = getTypeReferred(clangType, typeRefCursor);
-    fatalAssert(innerType.kind != CXType_Invalid, "Type retrieval must not fail here! check the input");
+    fatalAssertf(innerType.kind != CXType_Invalid, "Type retrieval must not fail here! check the input");
 
     String typeName = CXStringWrapper(clang_getTypeSpelling(innerType)).toString();
     if (clang_isConstQualifiedType(innerType))
@@ -510,7 +510,7 @@ bool ParserHelper::getMapElementTypes(CXType &outKeyType, CXType &outValueType, 
     }
 
     int32 templatesCount = clang_Type_getNumTemplateArguments(referredType);
-    fatalAssert(templatesCount >= 2, "Template %d count must be atleast 2 for type %s", templatesCount, mapName);
+    fatalAssertf(templatesCount >= 2, "Template %d count must be atleast 2 for type %s", templatesCount, mapName);
 
     outKeyType = clang_Type_getTemplateArgumentAsType(referredType, 0);
     outValueType = clang_Type_getTemplateArgumentAsType(referredType, 1);
@@ -529,7 +529,7 @@ bool ParserHelper::getPairElementTypes(CXType &outKeyType, CXType &outValueType,
     }
 
     int32 templatesCount = clang_Type_getNumTemplateArguments(referredType);
-    fatalAssert(templatesCount >= 2, "Template %d count must be atleast 2 for type %s", templatesCount, pairName);
+    fatalAssertf(templatesCount >= 2, "Template %d count must be atleast 2 for type %s", templatesCount, pairName);
 
     outKeyType = clang_Type_getTemplateArgumentAsType(referredType, 0);
     outValueType = clang_Type_getTemplateArgumentAsType(referredType, 1);
@@ -547,7 +547,7 @@ bool ParserHelper::getContainerElementType(CXType &outType, CXType containerType
     }
 
     int32 templatesCount = clang_Type_getNumTemplateArguments(referredType);
-    fatalAssert(templatesCount >= 1, "Template %d count must be atleast 1 for type %s", templatesCount, typeName);
+    fatalAssertf(templatesCount >= 1, "Template %d count must be atleast 1 for type %s", templatesCount, typeName);
 
     outType = clang_Type_getTemplateArgumentAsType(referredType, 0);
     return outType.kind != CXType_Invalid;

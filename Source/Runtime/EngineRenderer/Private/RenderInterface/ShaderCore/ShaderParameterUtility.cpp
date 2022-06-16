@@ -250,7 +250,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
                         {
                             // Make sure we do not miss intended runtime array
                             debugAssert(bufferStructField.data.totalSize != 0 && !currentField->isPointer());
-                            fatalAssert(
+                            fatalAssertf(
                                 !bHasRuntimeArray || (runtimeArrayOffset >= bufferStructField.data.offset),
                                 "Runtime array(offset : %d) must be the "
                                 "last member of SoA. Member %s offset %d",
@@ -289,7 +289,7 @@ bool ShaderParameterUtility::fillRefToBufParamInfo(
                         {
                             // Make sure we do not miss intended runtime array
                             debugAssert(bufferInnerField.data.totalSize != 0 && !currentField->isPointer());
-                            fatalAssert(
+                            fatalAssertf(
                                 !bHasRuntimeArray || (runtimeArrayOffset >= bufferInnerField.data.offset),
                                 "Runtime array(offset : %d) must be the "
                                 "last member of SoA. Member %s offset %d",

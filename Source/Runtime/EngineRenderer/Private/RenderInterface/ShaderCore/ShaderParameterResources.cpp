@@ -257,7 +257,7 @@ void ShaderParametersLayout::init()
         for (const std::pair<const String, ShaderDescriptorParamType *> &descriptorWrapper : setToDescriptorsPair.second)
         {
             // Since currently we support only one unique name per shader
-            fatalAssert(
+            fatalAssertf(
                 paramsLayout.find(descriptorWrapper.first) == paramsLayout.end(),
                 "Shader descriptor param name must be unique for a shader pipeline"
             );
@@ -313,7 +313,7 @@ std::map<String, ShaderDescriptorParamType *> ShaderParametersLayout::allParamet
 uint32 ShaderParametersLayout::getSetID(const String &paramName) const
 {
     auto foundParamItr = paramsLayout.find(paramName);
-    fatalAssert(
+    fatalAssertf(
         foundParamItr != paramsLayout.cend(), "Cannot call this function with invalid param name, Use "
                                               "parameterDescription function if validity is not sure"
     );
@@ -380,7 +380,7 @@ ShaderParameters::ShaderParameters(const GraphicsResource *shaderParamLayout, co
     }
     else
     {
-        fatalAssert(false, "Unsupported Shader parameters layout");
+        fatalAssertf(false, "Unsupported Shader parameters layout");
     }
 }
 
@@ -426,7 +426,7 @@ void ShaderParameters::initBufferParams(
             // parameter indexing limitation being 1 right now
             if (outerName != nullptr && currentField->isIndexAccessible())
             {
-                fatalAssert(!"We do not support nested array in parameters", "We do not support nested array in parameters");
+                fatalAssertf(!"We do not support nested array in parameters", "We do not support nested array in parameters");
             }
             void *nextOuterPtr = nullptr;
             // Not pointer or if pointer is set
@@ -820,7 +820,7 @@ void ShaderParameters::resizeRuntimeBuffer(const String &bufferName, uint32 minS
                     // Push descriptor update
                     bufferResourceUpdates.insert(bufferName);
 
-                    fatalAssert(bufferData.gpuBuffer->isValid(), "Runtime array initialization failed");
+                    fatalAssertf(bufferData.gpuBuffer->isValid(), "Runtime array initialization failed");
                     if (oldBuffer.isValid())
                     {
                         if (oldBuffer->isValid())

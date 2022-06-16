@@ -157,7 +157,7 @@ public:
         }
         else
         {
-            fatalAssert(false, "Unsupported size for enum value");
+            fatalAssertf(false, "Unsupported size for enum value");
         }
         enumVal = clearInvalidEnumValues(enumVal, enumProp);
         return enumVal;
@@ -183,7 +183,7 @@ public:
         }
         else
         {
-            fatalAssert(false, "Unsupported size for enum value");
+            fatalAssertf(false, "Unsupported size for enum value");
         }
     }
 

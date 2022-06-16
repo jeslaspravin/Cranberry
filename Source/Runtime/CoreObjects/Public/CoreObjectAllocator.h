@@ -204,7 +204,7 @@ public:
         {
             allocateFrom = findAllocator();
             ptr = allocatorPools[allocateFrom]->memAlloc(SlotAllocatorType::SlotSize);
-            fatalAssert(ptr, "Allocating object failed!");
+            fatalAssertf(ptr, "Allocating object failed!");
         }
         SlotIdxType slotIdx = allocatorPools[allocateFrom]->ptrToSlotIdx(ptr);
 

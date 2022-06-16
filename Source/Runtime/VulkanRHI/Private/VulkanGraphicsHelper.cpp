@@ -105,7 +105,7 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
     VulkanQueueResource<EQueueFunction::Present> *presentQueue = getQueue<EQueueFunction::Present>(device);
     VulkanQueueResource<EQueueFunction::Graphics> *graphicsQueue = getQueue<EQueueFunction::Graphics>(device);
 
-    fatalAssert(presentQueue && graphicsQueue, "presenting queue or graphics queue cannot be null");
+    fatalAssertf(presentQueue && graphicsQueue, "presenting queue or graphics queue cannot be null");
 
     if (presentQueue->queueFamilyIndex() == graphicsQueue->queueFamilyIndex())
     {
@@ -292,7 +292,7 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(
     class IGraphicsInstance *graphicsInstance, std::vector<TimelineSemaphoreRef> *semaphores, std::vector<uint64> *waitForValues
 ) const
 {
-    fatalAssert(
+    fatalAssertf(
         semaphores->size() <= waitForValues->size(), "Cannot wait on semaphores if the wait for values is less than waiting semaphors count"
     );
 
@@ -781,7 +781,7 @@ void VulkanGraphicsHelper::cacheSurfaceProperties(class IGraphicsInstance *graph
     if (!gInstance->selectedDevice.isValidDevice())
     {
         gInstance->createVulkanDevice(windowCanvas);
-        fatalAssert(gInstance->selectedDevice.isValidDevice(), "Graphics device creation failed");
+        fatalAssertf(gInstance->selectedDevice.isValidDevice(), "Graphics device creation failed");
     }
     gInstance->selectedDevice.cacheGlobalSurfaceProperties(windowCanvas);
 }
@@ -1239,7 +1239,7 @@ std::vector<VkPipeline> VulkanGraphicsHelper::createGraphicsPipeline(
     const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkPipeline> pipelines(graphicsPipelineCI.size());
-    fatalAssert(
+    fatalAssertf(
         device->vkCreateGraphicsPipelines(
             device->logicalDevice, pipelineCache, uint32(graphicsPipelineCI.size()), graphicsPipelineCI.data(), nullptr, pipelines.data()
         ) == VK_SUCCESS,
@@ -1257,7 +1257,7 @@ std::vector<VkPipeline> VulkanGraphicsHelper::createComputePipeline(
     const VulkanDevice *device = &gInstance->selectedDevice;
 
     std::vector<VkPipeline> pipelines(computePipelineCI.size());
-    fatalAssert(
+    fatalAssertf(
         device->vkCreateComputePipelines(
             device->logicalDevice, pipelineCache, uint32(computePipelineCI.size()), computePipelineCI.data(), nullptr, pipelines.data()
         ) == VK_SUCCESS,

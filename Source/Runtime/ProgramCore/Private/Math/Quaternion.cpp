@@ -139,7 +139,7 @@ void Quat::fromAngleAxisImpl(float angle, Vector3D axis)
     const float hAngleSin = Math::sin(hAngleRad);
 
     float sqrLen = axis.sqrlength();
-    alertIf(sqrLen >= SMALL_EPSILON, "Invalid axis square length %f", sqrLen);
+    alertAlwaysf(sqrLen >= SMALL_EPSILON, "Invalid axis square length %f", sqrLen);
     if (sqrLen >= SMALL_EPSILON && !Math::isEqual(1.0f, sqrLen, SMALL_EPSILON))
     {
         axis = axis.normalized();

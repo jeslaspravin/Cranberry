@@ -32,10 +32,7 @@ ProgramOwnedVar<bool, ApplicationInstance> renderingOffscreen{ false };
 
 } // namespace ApplicationSettings
 
-void ApplicationInstance::startApp()
-{
-    onStart();
-}
+void ApplicationInstance::startApp() { onStart(); }
 
 bool ApplicationInstance::appTick()
 {

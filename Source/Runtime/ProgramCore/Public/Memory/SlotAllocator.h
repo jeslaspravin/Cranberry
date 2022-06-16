@@ -147,9 +147,10 @@ class SlotAllocator<ElementSize, ElementAlignment, SlotsCount, true> : public Sl
 {
 public:
     using BaseType = SlotAllocatorBase<ElementSize, ElementAlignment, SlotsCount>;
-    using BaseType::SlotSize;
     using BaseType::Count;
     using BaseType::SlotAlignment;
+    using BaseType::SlotSize;
+
 private:
     alignas(SlotAlignment) uint8 inlineSlots[Count * SlotSize];
 
@@ -165,9 +166,9 @@ class SlotAllocator<ElementSize, ElementAlignment, SlotsCount, false> : public S
 public:
     using BaseType = SlotAllocatorBase<ElementSize, ElementAlignment, SlotsCount>;
     using BaseType::Count;
-    using BaseType::SlotSize;
-    using BaseType::SlotAlignment;
     using BaseType::getSlots;
+    using BaseType::SlotAlignment;
+    using BaseType::SlotSize;
 
 public:
     SlotAllocator()

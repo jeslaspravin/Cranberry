@@ -241,7 +241,7 @@ void GlobalRenderingContextBase::initShaderPipelines(
             }
             GraphicsPipelineBase *graphicsPipeline
                 = static_cast<GraphicsPipelineBase *>(pipelineFactory->create(graphicsInstanceCache, graphicsHelperCache, { shader }));
-            fatalAssert(graphicsPipeline, "Graphics pipeline creation failed for shader %s", shader->getResourceName().getChar());
+            fatalAssertf(graphicsPipeline, "Graphics pipeline creation failed for shader %s", shader->getResourceName().getChar());
 
             // Check if there is set 3(Per variant shader parameters)
             GraphicsResource *perVariantLayout = nullptr;
@@ -495,7 +495,7 @@ const Framebuffer *GlobalRenderingContextBase::getOrCreateFramebuffer(
 PipelineBase *
     GlobalRenderingContextBase::createNewPipeline(UniqueUtilityShaderObject *shaderObject, const GenericRenderPassProperties &renderpassProps)
 {
-    fatalAssert(
+    fatalAssertf(
         renderpassProps.renderpassAttachmentFormat.attachments.size()
             == shaderObject->getDefaultPipeline()->getRenderpassProperties().renderpassAttachmentFormat.attachments.size(),
         "Attachment count must be same for utility shader pipeline variants"
@@ -523,7 +523,7 @@ void GlobalRenderingContextBase::preparePipelineContext(
 
     if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == DrawMeshShaderConfig::staticType())
     {
-        fatalAssert(!pipelineContext->frameAttachments.empty(), "Frame attachments cannot be empty");
+        fatalAssertf(!pipelineContext->frameAttachments.empty(), "Frame attachments cannot be empty");
 
         DrawMeshShaderObject *drawMeshShaderObj = static_cast<DrawMeshShaderObject *>(shaderDataCollectionItr->second.shaderObject);
 
@@ -537,14 +537,14 @@ void GlobalRenderingContextBase::preparePipelineContext(
             renderpassProps.renderpassAttachmentFormat.rpFormat = pipelineContext->renderpassFormat;
             // To make sure that RTs created framebuffer is compatible with GlobalBuffers created FBs
             // and its render pass and pipelines
-            fatalAssert(
+            fatalAssertf(
                 renderpassProps == renderpassPropsFromRpFormat(pipelineContext->renderpassFormat, pipelineContext->swapchainIdx),
                 "Incompatible RTs for Mesh Draw shaders"
             );
 
             fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->frameAttachments);
         }
-        fatalAssert(
+        fatalAssertf(
             fb != nullptr, "Framebuffer is invalid[Shader : %s, Render pass format : %s]", pipelineContext->materialName.getChar(),
             ERenderPassFormat::toString(pipelineContext->renderpassFormat)
         );
@@ -583,7 +583,7 @@ void GlobalRenderingContextBase::preparePipelineContext(
         }
         else
         {
-            fatalAssert(!pipelineContext->frameAttachments.empty(), "Frame attachments cannot be empty");
+            fatalAssertf(!pipelineContext->frameAttachments.empty(), "Frame attachments cannot be empty");
             fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->frameAttachments);
         }
         UniqueUtilityShaderObject *uniqUtilShaderObj = static_cast<UniqueUtilityShaderObject *>(shaderDataCollectionItr->second.shaderObject);

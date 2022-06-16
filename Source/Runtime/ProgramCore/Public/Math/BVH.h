@@ -172,7 +172,7 @@ void BoundingVolume<StorageType>::addObject(ObjectIdxType objIdx, const GridCell
 {
     GridCellStorage &objects = grid[atIdx];
 #if DEBUG_BUILD
-    alertIf(std::find(objects.cbegin(), objects.cend(), objIdx) == objects.cend(), "Object of index %llu duplicate insertion", objIdx);
+    alertAlwaysf(std::find(objects.cbegin(), objects.cend(), objIdx) == objects.cend(), "Object of index %llu duplicate insertion", objIdx);
 #endif
     objects.emplace_back(objIdx);
 }

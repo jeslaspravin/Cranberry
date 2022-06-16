@@ -50,7 +50,7 @@ public:
         : minBound(0)
         , maxBound(0)
     {
-        fatalAssert(points.size() > 0, "Points must have atleast one point");
+        fatalAssertf(points.size() > 0, "Points must have atleast one point");
         offset(points[0]);
         for (uint32 i = 1; i < points.size(); ++i)
         {
@@ -256,7 +256,7 @@ public:
     void boundCorners(ArrayView<T> &corners) const
     {
         uint32 totalCorners = Math::pow(2, d);
-        fatalAssert(corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
+        fatalAssertf(corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);
 
         const T boundCenter = center();
         const T boundHalfExtend = size() * 0.5f;

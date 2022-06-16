@@ -178,5 +178,5 @@ QualifiedProperty::QualifiedProperty(const StringID &propNameID, const TChar *pr
 {
     // Only const type can have no inner type as const int can be qualified type. This case is not a
     // useful one, and so we throw error here.
-    fatalAssert(typeInfo->innerType, "Inner type cannot be nullptr for a qualified type type %s", propName);
+    fatalAssertf(typeInfo->innerType, "Inner type cannot be nullptr for a qualified type type %s", propName);
 }
