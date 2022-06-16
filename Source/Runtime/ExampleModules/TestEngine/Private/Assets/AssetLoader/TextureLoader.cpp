@@ -18,6 +18,7 @@
 #include "Math/Math.h"
 #include "Types/Colors.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 #include <array>
 

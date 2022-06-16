@@ -40,7 +40,7 @@ struct ReadFieldVisitable
     template <UnsupportedFundamentalOrSpecial Type>
     static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
@@ -173,7 +173,7 @@ struct ReadFieldVisitable
     // Ignoring const types
     static void visit(const void *val, const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
@@ -201,7 +201,9 @@ struct ReadFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            alertAlwaysf(
+                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
             break;
         }
     }
@@ -224,7 +226,7 @@ struct WriteFieldVisitable
     template <UnsupportedFundamentalOrSpecial Type>
     static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
@@ -312,7 +314,7 @@ struct WriteFieldVisitable
     // Ignoring const types
     static void visit(const void *val, const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
     static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
     {
@@ -334,7 +336,9 @@ struct WriteFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            alertAlwaysf(
+                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
             break;
         }
     }
@@ -396,7 +400,7 @@ ObjectArchive &ObjectSerializationHelpers::serializeAllFields(CBE::Object *obj, 
     if (ar.isLoading())
     {
         uint32 objectFieldSerVersion = ar.getCustomVersion((uint32)(OBJECTFIELD_SER_CUSTOM_VERSION_ID));
-        fatalAssert(
+        fatalAssertf(
             objectFieldSerVersion >= OBJECTFIELD_SER_CUTOFF_VERSION,
             "Unsupport version %d of serialized object fields of object %s! Minimum supported version %d", objectFieldSerVersion,
             obj->getFullPath(), OBJECTFIELD_SER_CUTOFF_VERSION

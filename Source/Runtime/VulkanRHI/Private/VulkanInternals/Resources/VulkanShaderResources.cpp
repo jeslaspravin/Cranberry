@@ -13,6 +13,8 @@
 #include "Logger/Logger.h"
 #include "ShaderArchive.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/PathFunctions.h"
+#include "Types/Platform/LFS/Paths.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "VulkanGraphicsHelper.h"
 #include "VulkanInternals/Debugging.h"
@@ -85,9 +87,7 @@ String VulkanShaderResource::getObjectName() const { return getResourceName(); }
 
 void VulkanShaderResource::init()
 {
-    String filePath;
-    filePath
-        = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(filePath), TCHAR("Shaders"), shaderConfig->getShaderFileName());
+    String filePath = PathFunctions::combinePath(Paths::applicationDirectory(), TCHAR("Shaders"), shaderConfig->getShaderFileName());
     String shaderFilePath = filePath + TCHAR(".") + SHADER_EXTENSION;
     String reflectionsFilePath = filePath + TCHAR(".") + REFLECTION_EXTENSION;
     PlatformFile shaderFile(shaderFilePath);
@@ -99,7 +99,7 @@ void VulkanShaderResource::init()
     reflectionFile.addSharingFlags(EFileSharing::NoSharing);
     reflectionFile.addAttributes(EFileAdditionalFlags::ReadOnly);
 
-    fatalAssert(
+    fatalAssertf(
         shaderFile.exists() && reflectionFile.exists(),
         "Shader and reflection files are mandatory in shader %s[Shader file %s, Reflection file %s]", getResourceName().getChar(),
         shaderFile.getFileName().getChar(), reflectionFile.getFileName().getChar()

@@ -45,13 +45,13 @@ public:
     template <typename Type, typename... CtorArgs>
     static Type *newObject(CtorArgs &&...args)
     {
-        fatalAssert(false, "newObject is not supported interface and must not happen");
+        fatalAssertf(false, "newObject is not supported interface and must not happen");
         return nullptr;
     }
     template <typename Type>
     static void deleteObject(Type *ptr)
     {
-        fatalAssert(false, "deleteObject is not supported interface and must not happen");
+        fatalAssertf(false, "deleteObject is not supported interface and must not happen");
     }
 };
 

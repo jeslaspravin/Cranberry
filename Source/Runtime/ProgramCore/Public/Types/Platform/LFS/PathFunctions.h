@@ -12,7 +12,11 @@
 #pragma once
 
 #include "ProgramCoreExports.h"
-#include "String/String.h"
+#include "Types/CoreDefines.h"
+
+#include <type_traits>
+
+class String;
 
 class PROGRAMCORE_EXPORT PathFunctions
 {
@@ -48,9 +52,15 @@ public:
      */
     static bool isSubdirectory(const String &checkPath, const String &basePath);
 
-    static String stripExtension(const String &fileName, String &extension);
+    static String stripExtension(String &extension, const String &fileName);
     static String stripExtension(const String &fileName);
     static String fileOrDirectoryName(const String &filePath);
+    /**
+     * Splits a path's last file/directory and its parent directory
+     * C:/ABC/DEF/GHI/Some.txt gives outFileName=Some.txt and Returns C:/ABC/DEF/GHI
+     * C:/ABC/DEF/GHI/SomeFolder gives outFileName=SomeFolder and Returns C:/ABC/DEF/GHI
+     */
+    static String splitFileAndDirectory(String &outFileName, const String &filePath);
 
     static String asGenericPath(const String &path);
 };

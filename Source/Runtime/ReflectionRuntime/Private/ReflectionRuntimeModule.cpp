@@ -204,7 +204,7 @@ FORCE_INLINE void ReflectionRuntimeModule::createAllPendingClasses()
     for (const ReflectTypeInfo *typeInfo : typeInfos)
     {
         const ClassProperty *classProp = getClassType(typeInfo);
-        alertIf(classProp, "Failed creating class property for type info %s", *typeInfo);
+        alertAlwaysf(classProp, "Failed creating class property for type info %s", *typeInfo);
     }
 }
 

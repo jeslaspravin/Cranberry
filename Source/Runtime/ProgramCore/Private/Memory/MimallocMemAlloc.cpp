@@ -30,7 +30,7 @@ void *MimallocMemAlloc::tryMalloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGN
 void *MimallocMemAlloc::memAlloc(SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     void *ptr = tryMalloc(size, alignment);
-    fatalAssert(size == 0 || ptr, "Allocation failed!");
+    fatalAssertf(size == 0 || ptr, "Allocation failed!");
     return ptr;
 }
 
@@ -54,7 +54,7 @@ void *MimallocMemAlloc::tryRealloc(void *currentPtr, SizeT size, uint32 alignmen
 void *MimallocMemAlloc::memRealloc(void *currentPtr, SizeT size, uint32 alignment /*= DEFAULT_ALIGNMENT*/)
 {
     void *ptr = tryRealloc(currentPtr, size, alignment);
-    fatalAssert(size == 0 || ptr, "Reallocation failed!");
+    fatalAssertf(size == 0 || ptr, "Reallocation failed!");
     return ptr;
 }
 

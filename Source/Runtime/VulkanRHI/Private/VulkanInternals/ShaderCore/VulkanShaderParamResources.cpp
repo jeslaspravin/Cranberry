@@ -64,7 +64,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -78,7 +78,7 @@ void fillDescriptorsSet(
         {
             String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
                 "Unbound image(texel) buffer array is not allowed for parameter %s", attribName
             );
@@ -104,7 +104,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -118,7 +118,7 @@ void fillDescriptorsSet(
         {
             String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
                 "Unbound sampled(texel) buffer array is not allowed for parameter %s", attribName
             );
@@ -144,7 +144,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -158,7 +158,7 @@ void fillDescriptorsSet(
         {
             String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
                 "Unbound array of images or imageArray is not allowed for parameter %s", attribName
             );
@@ -184,7 +184,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -198,7 +198,7 @@ void fillDescriptorsSet(
         {
             String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
                 "Unbound array of textures or textureArray is not allowed for parameter %s", attribName
             );
@@ -224,7 +224,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }
@@ -238,7 +238,7 @@ void fillDescriptorsSet(
         {
             String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
-            fatalAssert(
+            fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
                 "Unbound array of sampled textures or sampled textureArray is not allowed for "
                 "parameter %s",
@@ -266,7 +266,7 @@ void fillDescriptorsSet(
                 uint32 tempDim;
                 if (!SpecializationConstUtility::asValue(tempDim, stageSpecializationConsts[arrayDimInfo.stageIdx][arrayDimInfo.dimension]))
                 {
-                    fatalAssert(false, "Specialized data retrieval failed");
+                    fatalAssertf(false, "Specialized data retrieval failed");
                 }
                 descCount *= tempDim;
             }

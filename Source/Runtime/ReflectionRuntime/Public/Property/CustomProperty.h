@@ -399,7 +399,7 @@ public:
                 return true;
             }
         }
-        alertIf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
+        alertAlwaysf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
         return false;
     }
 
@@ -425,7 +425,7 @@ public:
         {
             return (*reinterpret_cast<const ContainerType::value_type *>(lhs)) == (*reinterpret_cast<const ContainerType::value_type *>(rhs));
         }
-        alertIf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
+        alertAlwaysf(std::equality_comparable<ContainerType::value_type>, "LOGICAL ERROR: Type does not have equality check!");
         return false;
     }
 };

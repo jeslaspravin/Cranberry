@@ -13,6 +13,8 @@
 #include "CmdLine/CmdLine.h"
 #include "String/TCharString.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/Paths.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Platform/Threading/SyncPrimitives.h"
 #include "Types/Platform/Threading/PlatformThreading.h"
 #include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
@@ -171,13 +173,12 @@ void LoggerImpl::flushStreamInternal()
 bool LoggerImpl::openNewLogFile()
 {
     String logFileName;
-    String logFolderPath = FileSystemFunctions::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
+    String logFolderPath = Paths::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
     if (ProgramCmdLine::get()->hasArg(TCHAR("--logFileName")))
     {
         ProgramCmdLine::get()->getArg(logFileName, TCHAR("--logFileName"));
     }
 
-    logFileName = PathFunctions::stripExtension(logFileName);
     String logFilePath = PathFunctions::combinePath(logFolderPath, logFileName + TCHAR(".log"));
     PlatformFile checkFile{ logFilePath };
 

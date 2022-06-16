@@ -104,7 +104,7 @@ int32 main(int32 argsc, AChar **args)
 
     if (ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::SAMPLE_CODE))
     {
-        LOG_DEBUG("CPPReflect", "Executing sample codes %s", ENGINE_MODULES_PATH);
+        LOG_DEBUG("CPPReflect", "Executing sample codes");
         String srcDir = ProgramCmdLine::get()->atIdx(ProgramCmdLine::get()->cmdLineCount() - 1);
 
         SampleCode::testLibClangParsing(srcDir);

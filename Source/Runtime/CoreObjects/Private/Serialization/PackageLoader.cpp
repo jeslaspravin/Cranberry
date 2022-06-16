@@ -28,7 +28,7 @@ void PackageLoader::createContainedObject(PackageContainedData &containedData)
         String outerFullPath = package->getName() + ObjectPathHelper::RootObjectSeparator + outerPath;
         outerObj = CBE::get(outerFullPath.getChar());
 
-        alertIf(outerObj, "Outer object being null is unexpected case, Serialization order of objects is outer first to leaf last");
+        alertAlwaysf(outerObj, "Outer object being null is unexpected case, Serialization order of objects is outer first to leaf last");
         if (!outerObj)
         {
             auto outerContainedDataItr = std::find_if(
@@ -53,7 +53,7 @@ void PackageLoader::createContainedObject(PackageContainedData &containedData)
         IReflectionRuntimeModule::get()->getClassType(containedData.className), objectName, outerObj,
         CBE::EObjectFlagBits::PackageLoadPending | containedData.objectFlags
     );
-    fatalAssert(obj, "Package(%s) load failed to create object %s", package->getName(), containedData.objectPath);
+    fatalAssertf(obj, "Package(%s) load failed to create object %s", package->getName(), containedData.objectPath);
     containedData.object = obj;
 }
 
@@ -91,7 +91,7 @@ ObjectArchive &PackageLoader::serialize(CBE::Object *&obj)
         if (!CBE::isValid(dependentObjects[tableIdx].object))
         {
             CBE::Object *depObj = CBE::getOrLoad(dependentObjects[tableIdx].objectFullPath);
-            fatalAssert(
+            fatalAssertf(
                 depObj && depObj->getType() == IReflectionRuntimeModule::get()->getClassType(dependentObjects[tableIdx].className),
                 "Invalid dependent object[%s] in package %s", dependentObjects[tableIdx].objectFullPath, package->getName()
             );
@@ -110,7 +110,7 @@ ObjectArchive &PackageLoader::serialize(CBE::Object *&obj)
 void PackageLoader::prepareLoader()
 {
     FileArchiveStream fileStream{ packageFilePath, true };
-    fatalAssert(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
+    fatalAssertf(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
 
     packageArchive.setStream(&fileStream);
     // Set custom versions to this archive to ensure custom versions are available in ObjectArchive
@@ -120,7 +120,7 @@ void PackageLoader::prepareLoader()
     }
 
     uint32 packageVersion = getCustomVersion(uint32(PACKAGE_CUSTOM_VERSION_ID));
-    fatalAssert(
+    fatalAssertf(
         packageVersion >= PACKAGE_SERIALIZER_CUTOFF_VERSION, "Package(%s) version %u is not supported. Minimum supported version is %u",
         package->getName(), packageVersion, PACKAGE_SERIALIZER_CUTOFF_VERSION
     );
@@ -142,13 +142,13 @@ void PackageLoader::prepareLoader()
 
     streamStartAt = fileStream.cursorPos();
 
-    alertIf(!containedObjects.empty(), "Empty package %s at %s", package->getName(), packageFilePath);
+    alertAlwaysf(!containedObjects.empty(), "Empty package %s at %s", package->getName(), packageFilePath);
 }
 
 bool PackageLoader::load()
 {
     FileArchiveStream fileStream{ packageFilePath, true };
-    fatalAssert(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
+    fatalAssertf(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
 
     packageArchive.setStream(&fileStream);
 
@@ -179,7 +179,7 @@ bool PackageLoader::load()
         SizeT serializedSize = fileStream.cursorPos() - containedData.streamStart;
         if (serializedSize != containedData.streamSize)
         {
-            alertIf(
+            alertAlwaysf(
                 serializedSize == containedData.streamSize,
                 "Corrupted package %s for object %s consider using Custom version and handle versioning! Written out size for object %llu is "
                 "not same as read size %llu",

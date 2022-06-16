@@ -62,7 +62,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
 {
     // Load core if not loaded already
     bool bCoreModulesLoaded = ModuleManager::get()->loadModule(TCHAR("ProgramCore"));
-    fatalAssert(bCoreModulesLoaded, "Loading core modules failed");
+    fatalAssertf(bCoreModulesLoaded, "Loading core modules failed");
     // Needs to be parsed asap
     if (!ProgramCmdLine::get()->parse(appInst->getCmdLine()))
     {
@@ -97,7 +97,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     if (appCI.bUseGpu)
     {
         WeakModulePtr renderModule = ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer"));
-        fatalAssert(!renderModule.expired(), "EngineRenderer not found!");
+        fatalAssertf(!renderModule.expired(), "EngineRenderer not found!");
 
         if (!(appCI.bRenderOffscreen || appCI.bIsComputeOnly))
         {

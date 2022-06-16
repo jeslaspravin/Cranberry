@@ -137,7 +137,7 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
     // Using valid property name, Change if needed other wise also change in ObjectAllocatorBase::constructDefault
     if (!PropertyHelper::isValidSymbolName(objectName))
     {
-        alertIf(false, "Invalid object name! Invalid characters will be replaced with underscore(_)");
+        alertAlwaysf(false, "Invalid object name! Invalid characters will be replaced with underscore(_)");
         objectName = PropertyHelper::getValidSymbolName(objectName);
     }
     String objectFullPath = ObjectPathHelper::getFullPath(objectName.getChar(), outerObj);
@@ -153,7 +153,7 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
         );
     }
 #endif // DEV_BUILD
-    fatalAssert(clazz->allocFunc && clazz->destructor, "Abstract class %s cannot be instantiated!", clazz->nameString);
+    fatalAssertf(clazz->allocFunc && clazz->destructor, "Abstract class %s cannot be instantiated!", clazz->nameString);
 
     /**
      * **NOTICE**
@@ -163,7 +163,7 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
 
     // void* is first param of ctor since we pass in object on which construction needs to be executed
     const GlobalFunctionWrapper *ctor = PropertyHelper::findMatchingCtor<void *, CtorArgs...>(clazz);
-    alertIf(ctor, "Constructor arguments are invalid");
+    alertAlwaysf(ctor, "Constructor arguments are invalid");
     if (!ctor)
     {
         LOG_ERROR("ObjectHelper", "Cannot construct object with given constructor arguments");
@@ -188,7 +188,7 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
 
     if (!INTERNAL_validateCreatedObject(object))
     {
-        alertIf(false, "Object validation failed! Destroying %s", object->getFullPath());
+        alertAlwaysf(false, "Object validation failed! Destroying %s", object->getFullPath());
         INTERNAL_destroyCBEObject(object);
         object = nullptr;
     }

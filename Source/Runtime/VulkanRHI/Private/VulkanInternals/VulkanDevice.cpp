@@ -160,7 +160,7 @@ bool VulkanDevice::createQueueResources()
 
     if (GlobalRenderVariables::PRESENTING_ENABLED.get())
     {
-        alertIf(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get(), "Presenting enabled while GPU is used for compute only");
+        alertAlwaysf(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get(), "Presenting enabled while GPU is used for compute only");
 
         if (presentQueues.empty())
         {
@@ -310,10 +310,10 @@ void VulkanDevice::cacheGlobalSurfaceProperties(const WindowCanvasRef &windowCan
                 presentQueues.emplace_back(index);
             }
         }
-        fatalAssert(!presentQueues.empty(), "Window is available but no queues support presenting to the window surface");
+        fatalAssertf(!presentQueues.empty(), "Window is available but no queues support presenting to the window surface");
     }
     GlobalRenderVariables::PRESENTING_ENABLED.set(true);
-    alertIf(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get(), "Presenting must not be enabled in compute only device!");
+    alertAlwaysf(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get(), "Presenting must not be enabled in compute only device!");
 
     VkSurfaceCapabilitiesKHR swapchainCapabilities;
     Vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, canvas->surface(), &swapchainCapabilities);
@@ -329,7 +329,7 @@ void VulkanDevice::cacheGlobalSurfaceProperties(const WindowCanvasRef &windowCan
         Vk::vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, canvas->surface(), (uint32_t *)&presentModesCount, presentModes.data());
         if (ApplicationSettings::enableVsync.get())
         {
-            fatalAssert(
+            fatalAssertf(
                 std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR) != presentModes.cend(),
                 "V-Sync not supported"
             );
@@ -351,7 +351,7 @@ void VulkanDevice::cacheGlobalSurfaceProperties(const WindowCanvasRef &windowCan
         }
         else
         {
-            fatalAssert(
+            fatalAssertf(
                 std::find(presentModes.cbegin(), presentModes.cend(), VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR) != presentModes.cend(),
                 "No accepted present mode is found, not even default case"
             );
@@ -638,7 +638,7 @@ void VulkanDevice::createLogicDevice()
 {
     LOG_DEBUG("VulkanDevice", "Creating logical device");
     const bool bQueueResCreated = createQueueResources();
-    fatalAssert(bQueueResCreated, "Without vulkan queues application cannot proceed running");
+    fatalAssertf(bQueueResCreated, "Without vulkan queues application cannot proceed running");
     markGlobalConstants();
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -664,7 +664,7 @@ void VulkanDevice::createLogicDevice()
     deviceCreateInfo.ppEnabledLayerNames = registeredLayers.data();
 #endif
     const bool bExtsSupported = collectDeviceExtensions(registeredExtensions);
-    fatalAssert(bExtsSupported, "Failed collecting extensions");
+    fatalAssertf(bExtsSupported, "Failed collecting extensions");
 
     deviceCreateInfo.enabledExtensionCount = (uint32_t)registeredExtensions.size();
     deviceCreateInfo.ppEnabledExtensionNames = registeredExtensions.data();
@@ -678,7 +678,7 @@ void VulkanDevice::createLogicDevice()
     enabledDescIndexingFeatures.pNext = &sync2Features;
 
     const VkResult vulkanDeviceCreationResult = Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
-    fatalAssert(vulkanDeviceCreationResult == VK_SUCCESS, "Failed creating logical device");
+    fatalAssertf(vulkanDeviceCreationResult == VK_SUCCESS, "Failed creating logical device");
 
     loadDeviceFunctions();
 

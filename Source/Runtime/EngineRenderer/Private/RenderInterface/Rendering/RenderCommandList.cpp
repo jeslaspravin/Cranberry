@@ -502,7 +502,7 @@ void IRenderCommandList::copyPixelsTo(
         const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
 
         uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
-        fatalAssert(
+        fatalAssertf(
             ((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx],
             "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName.getChar()
         );
@@ -549,7 +549,7 @@ void IRenderCommandList::copyPixelsTo(
     }
     else
     {
-        fatalAssert(false, "Big endian platform not supported yet");
+        fatalAssertf(false, "Big endian platform not supported yet");
     }
 }
 
@@ -593,7 +593,7 @@ void IRenderCommandList::copyPixelsTo(
             const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
 
             uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
-            fatalAssert(
+            fatalAssertf(
                 ((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx],
                 "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName.getChar()
             );
@@ -639,7 +639,7 @@ void IRenderCommandList::copyPixelsTo(
         }
         else
         {
-            fatalAssert(false, "Big endian platform not supported yet");
+            fatalAssertf(false, "Big endian platform not supported yet");
         }
     }
 }
@@ -659,7 +659,7 @@ void IRenderCommandList::copyPixelsLinearMappedTo(
         const uint8 compIdx = uint8(formatInfo->componentOrder[idx]);
 
         uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
-        fatalAssert(
+        fatalAssertf(
             ((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx],
             "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName.getChar()
         );
@@ -707,7 +707,7 @@ void IRenderCommandList::copyPixelsLinearMappedTo(
     }
     else
     {
-        fatalAssert(false, "Big endian platform not supported yet");
+        fatalAssertf(false, "Big endian platform not supported yet");
     }
 }
 

@@ -16,6 +16,7 @@
 #include "Types/Colors.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 class ICubeMapLoader
 {
@@ -48,7 +49,7 @@ HDRLoader::HDRLoader(const String &assetPath)
 {
     PlatformFile textureFile(assetPath);
     textureFile.setFileFlags(EFileFlags::Read | EFileFlags::OpenExisting);
-    textureName = PathFunctions::stripExtension(textureFile.getFileName(), textureName); // Extension is passed in as dummy(same textureName)
+    textureName = PathFunctions::stripExtension(textureFile.getFileName());
     if (textureFile.exists() && textureFile.openFile())
     {
         std::vector<uint8> fileData;
@@ -102,14 +103,14 @@ AssetBase *AssetLoaderLibrary::loadCubeMap(const String &assetPath)
     EnvironmentMapAsset *envMapsAsset = nullptr;
 
     String extension;
-    PathFunctions::stripExtension(assetPath, extension);
+    PathFunctions::stripExtension(extension, assetPath);
     if (extension.startsWith(TCHAR("hdr")))
     {
         loader = new HDRLoader(assetPath);
     }
     else
     {
-        fatalAssert(false, "Invalid Cube map asset %s", assetPath.getChar());
+        fatalAssertf(false, "Invalid Cube map asset %s", assetPath.getChar());
         return nullptr;
     }
 

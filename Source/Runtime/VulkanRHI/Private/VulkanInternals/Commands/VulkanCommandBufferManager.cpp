@@ -259,7 +259,7 @@ const GraphicsResource *VulkanCmdBufferManager::beginTempCmdBuffer(const String 
     cmdBuffer->fromQueue = cmdPool.cmdPoolInfo.queueType;
     cmdBuffer->usage = usingQueue;
 
-    fatalAssert(
+    fatalAssertf(
         vDevice->vkAllocateCommandBuffers(VulkanGraphicsHelper::getDevice(vDevice), &cmdBuffAllocInfo, &cmdBuffer->cmdBuffer) == VK_SUCCESS,
         "Allocating temporary command buffer failed"
     );
@@ -293,7 +293,7 @@ const GraphicsResource *VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
         cmdBuffer->fromQueue = cmdPool.cmdPoolInfo.queueType;
         cmdBuffer->usage = usingQueue;
 
-        fatalAssert(
+        fatalAssertf(
             vDevice->vkAllocateCommandBuffers(VulkanGraphicsHelper::getDevice(vDevice), &cmdBuffAllocInfo, &cmdBuffer->cmdBuffer) == VK_SUCCESS,
             "Allocating record once command buffer failed"
         );
@@ -314,7 +314,7 @@ const GraphicsResource *VulkanCmdBufferManager::beginRecordOnceCmdBuffer(const S
                 "[%s]",
                 cmdName.getChar()
             );
-            fatalAssert(false, "Cannot record prerecorded command again");
+            fatalAssertf(false, "Cannot record prerecorded command again");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
             LOG_WARN("VulkanCommandBufferManager", "Command %s is already being recorded", cmdName.getChar());
@@ -352,7 +352,7 @@ const GraphicsResource *VulkanCmdBufferManager::beginReuseCmdBuffer(const String
         cmdBuffer->fromQueue = cmdPool.cmdPoolInfo.queueType;
         cmdBuffer->usage = usingQueue;
 
-        fatalAssert(
+        fatalAssertf(
             vDevice->vkAllocateCommandBuffers(VulkanGraphicsHelper::getDevice(vDevice), &cmdBuffAllocInfo, &cmdBuffer->cmdBuffer) == VK_SUCCESS,
             "Allocating reusable command buffer failed"
         );
@@ -372,7 +372,7 @@ const GraphicsResource *VulkanCmdBufferManager::beginReuseCmdBuffer(const String
                 "finished",
                 cmdName.getChar()
             );
-            fatalAssert(false, "Cannot record command while it is still executing");
+            fatalAssertf(false, "Cannot record command while it is still executing");
             return cmdBufferItr->second.cmdBuffer;
         case ECmdState::Recording:
             LOG_WARN("VulkanCommandBufferManager", "Command [%s] is already being recorded", cmdName.getChar());
@@ -402,7 +402,7 @@ void VulkanCmdBufferManager::startRenderPass(const GraphicsResource *cmdBuffer)
         auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());
         if (cmdBufferItr != commandBuffers.end())
         {
-            fatalAssert(
+            fatalAssertf(
                 cmdBufferItr->second.cmdState == ECmdState::Recording, "%s cmd buffer is not recording to start render pass",
                 cmdBufferItr->first.getChar()
             );
@@ -650,7 +650,7 @@ void VulkanCmdBufferManager::submitCmds(
         vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(),
         (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 
     for (const CommandSubmitInfo &command : commands)
     {
@@ -730,7 +730,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     VkResult result = vDevice->vkQueueSubmit(
         vQueue, 1, &cmdSubmitInfo, (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 
     bool bAnyNonTemp = false;
     int32 index = int32(cmdsSyncInfo.get());
@@ -896,7 +896,7 @@ void VulkanCmdBufferManager::submitCmds(
         vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(),
         (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 }
 
 void VulkanCmdBufferManager::submitCmd(
@@ -1016,7 +1016,7 @@ void VulkanCmdBufferManager::submitCmd(
     VkResult result = vDevice->vkQueueSubmit(
         vQueue, 1, &cmdSubmitInfo, (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
     );
-    fatalAssert(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
+    fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 }
 
 void VulkanCmdBufferManager::createPools()
@@ -1078,7 +1078,7 @@ VulkanCommandPool &VulkanCmdBufferManager::getPool(EQueueFunction forQueue)
     auto cmdPoolItr = pools.find(forQueue);
     if (cmdPoolItr == pools.end())
     {
-        fatalAssert(genericPool, "Generic pool must be available");
+        fatalAssertf(genericPool, "Generic pool must be available");
         return *genericPool;
     }
     else
@@ -1393,7 +1393,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
 )
 {
-    fatalAssert(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to buffer in several pipeline stages is incorrect");
+    fatalAssertf(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to buffer in several pipeline stages is incorrect");
 
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits(resource.second);
@@ -1466,7 +1466,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource
 )
 {
-    fatalAssert(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to image in several pipeline stages is incorrect");
+    fatalAssertf(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to image in several pipeline stages is incorrect");
 
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits(resource.second);

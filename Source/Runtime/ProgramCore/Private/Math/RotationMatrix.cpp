@@ -158,7 +158,7 @@ RotationMatrix::RotationMatrix(RotationMatrix &&other)
 
 void RotationMatrix::verifyMatrix() const
 {
-    alertIf(
+    alertAlwaysf(
         Math::isEqual(Vector3D(rotationMatrix[0]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
             && Math::isEqual(Vector3D(rotationMatrix[1]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON)
             && Math::isEqual(Vector3D(rotationMatrix[2]).sqrlength(), 1.0f, SLIGHTLY_SMALL_EPSILON),

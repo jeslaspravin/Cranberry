@@ -10,6 +10,7 @@
  */
 
 #include "TestReflectionGen.h"
+#include "TestNoGen.h"
 
 std::pair<uint32, TestNS::BerryObject *> BerrySecond::idxToObjext;
 

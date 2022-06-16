@@ -173,13 +173,13 @@ int32 VulkanWindowCanvas::imagesCount() const { return (int32)swapchainImages.si
 
 VkImage VulkanWindowCanvas::swapchainImage(uint32 index) const
 {
-    fatalAssert(index >= 0 && index < swapchainImages.size(), "Invalid swapchain index");
+    fatalAssertf(index >= 0 && index < swapchainImages.size(), "Invalid swapchain index");
     return swapchainImages[index];
 }
 
 VkImageView VulkanWindowCanvas::swapchainImageView(uint32 index) const
 {
-    fatalAssert(index >= 0 && index < swapchainImages.size(), "Invalid swapchain index");
+    fatalAssertf(index >= 0 && index < swapchainImages.size(), "Invalid swapchain index");
     return swapchainImageViews[index];
 }
 

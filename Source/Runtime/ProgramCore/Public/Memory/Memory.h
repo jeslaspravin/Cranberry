@@ -30,7 +30,7 @@ private:
     FORCE_INLINE void create()
     {
         static bool bSuccess = AllocatorCreatePolicy::create(&allocator);
-        fatalAssert(bSuccess, "Failed to create global allocator");
+        fatalAssertf(bSuccess, "Failed to create global allocator");
     }
     FORCE_INLINE void destroy()
     {
@@ -42,7 +42,7 @@ public:
     FORCE_INLINE MemAllocTypePtr operator->()
     {
         create();
-        fatalAssert(allocator, "Invalid memory allocator!");
+        fatalAssertf(allocator, "Invalid memory allocator!");
         return allocator;
     }
 };
@@ -142,19 +142,19 @@ public:
      */                                                                                                                                        \
     __VA_ARGS__ void operator delete(void *ptr, void *allocatedPtr) noexcept                                                                   \
     {                                                                                                                                          \
-        fatalAssert(false, "This placement delete is not meant to be invoked here");                                                           \
+        fatalAssertf(false, "This placement delete is not meant to be invoked here");                                                          \
     }                                                                                                                                          \
     __VA_ARGS__ void operator delete[](void *ptr, void *allocatedPtr) noexcept                                                                 \
     {                                                                                                                                          \
-        fatalAssert(false, "This placement delete is not meant to be invoked here");                                                           \
+        fatalAssertf(false, "This placement delete is not meant to be invoked here");                                                          \
     }                                                                                                                                          \
     __VA_ARGS__ void operator delete(void *ptr, std::align_val_t al, void *allocatedPtr) noexcept                                              \
     {                                                                                                                                          \
-        fatalAssert(false, "This placement delete is not meant to be invoked here");                                                           \
+        fatalAssertf(false, "This placement delete is not meant to be invoked here");                                                          \
     }                                                                                                                                          \
     __VA_ARGS__ void operator delete[](void *ptr, std::align_val_t al, void *allocatedPtr) noexcept                                            \
     {                                                                                                                                          \
-        fatalAssert(false, "This placement delete is not meant to be invoked here");                                                           \
+        fatalAssertf(false, "This placement delete is not meant to be invoked here");                                                          \
     }
 
 #define CBE_GLOBAL_NEWDELETE_OVERRIDES                                                                                                         \
@@ -166,9 +166,7 @@ public:
 #define CBE_CLASS_NEWDELETE_OVERRIDES(ClassName)                                                                                               \
 private:                                                                                                                                       \
     static void *ClassName##_Alloc(SizeT size, uint32 alignment) { return CBEMemory::memAlloc(size, alignment); }                              \
-                                                                                                                                               \
     static void *ClassName##_Alloc(SizeT size) { return CBEMemory::memAlloc(size); }                                                           \
-                                                                                                                                               \
     static void ClassName##_Free(void *ptr) { CBEMemory::memFree(ptr); }                                                                       \
                                                                                                                                                \
 public:                                                                                                                                        \

@@ -346,7 +346,9 @@ struct GCObjectFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            alertAlwaysf(
+                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
             break;
         }
     }
@@ -381,7 +383,7 @@ struct GCObjectFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(
+            alertAlwaysf(
                 false, "Unhandled ptr to const ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
             );
             break;

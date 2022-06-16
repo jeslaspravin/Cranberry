@@ -26,7 +26,7 @@
 #if _DEBUG
 #define IM_ASSERT(EXPR) debugAssert(EXPR)
 #elif NDEBUG
-#define IM_ASSERT(EXPR) fatalAssert(EXPR, "")
+#define IM_ASSERT(EXPR) fatalAssert(EXPR)
 #endif
 
 //---- Define attributes of all API symbols declarations, e.g. for DLL under Windows

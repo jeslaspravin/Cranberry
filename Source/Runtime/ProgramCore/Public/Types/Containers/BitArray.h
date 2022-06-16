@@ -195,7 +195,7 @@ public:
     }
     CONST_EXPR const_reference at(SizeT bitIdx) const noexcept
     {
-        fatalAssert(bitIdx < bitsCount, "Accessing out of index %llu", bitIdx);
+        fatalAssertf(bitIdx < bitsCount, "Accessing out of index %llu", bitIdx);
         return this->operator[](bitIdx);
     }
     CONST_EXPR const_reference front() const noexcept

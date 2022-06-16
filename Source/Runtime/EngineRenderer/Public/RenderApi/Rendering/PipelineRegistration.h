@@ -17,15 +17,12 @@
 
 #include <map>
 
-
 class PipelineBase;
 class ShaderResource;
 class String;
 struct GraphicsPipelineConfig;
 class IGraphicsInstance;
 class GraphicsHelperAPI;
-
-
 
 //////////////////////////////////////////////////////////////////////////
 // PipelineFactory

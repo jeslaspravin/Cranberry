@@ -122,13 +122,13 @@ public:
 
     reference operator[](SizeType index) noexcept
     {
-        fatalAssert(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return elements[index];
     }
 
     const_reference operator[](SizeType index) const noexcept
     {
-        fatalAssert(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index %llu is invalid", index);
         return elements[index];
     }
 
@@ -160,7 +160,7 @@ public:
 
     void reset(SizeType index)
     {
-        fatalAssert(isValid(index), "Index %llu is invalid", index);
+        fatalAssertf(isValid(index), "Index %llu is invalid", index);
         if CONST_EXPR (std::is_destructible_v<ValueType>)
         {
             elements[index].~ElementType();
@@ -216,7 +216,7 @@ private:
     SparseVectorType *iteratingVector;
 
 private:
-    FORCE_INLINE void validateItr() const { fatalAssert(iteratingVector && iteratingVector->isValid(idx), "Iterator is invalid!"); }
+    FORCE_INLINE void validateItr() const { fatalAssertf(iteratingVector && iteratingVector->isValid(idx), "Iterator is invalid!"); }
 
 public:
     CONST_EXPR SparseVectorIterator() = delete;

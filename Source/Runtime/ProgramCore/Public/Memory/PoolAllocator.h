@@ -14,7 +14,8 @@
 #include "Memory/SlotAllocator.h"
 
 /**
- * Some private members are copied straight from CoreObjectAllocator.h's CBE::ObjectAllocator, If any bug fixes were made do the same there as well!
+ * Some private members are copied straight from CoreObjectAllocator.h's CBE::ObjectAllocator, If any bug fixes were made do the same there as
+ * well!
  */
 template <typename ElementType, SizeT PoolSlotsCount>
 class PoolAllocator
@@ -85,7 +86,7 @@ public:
         {
             allocateFrom = findAllocator();
             ptr = allocatorPools[allocateFrom]->memAlloc(SlotAllocatorType::SlotSize);
-            fatalAssert(ptr, "Allocating object failed!");
+            fatalAssertf(ptr, "Allocating object failed!");
         }
         SlotIdxType slotIdx = allocatorPools[allocateFrom]->ptrToSlotIdx(ptr);
 

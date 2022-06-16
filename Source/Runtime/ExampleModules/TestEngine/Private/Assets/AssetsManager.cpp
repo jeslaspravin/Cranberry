@@ -15,6 +15,8 @@
 #include "Assets/AssetLoaderLibrary.h"
 #include "Logger/Logger.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
+#include "Types/Platform/LFS/Paths.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 #include "Types/Time.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
 #include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
@@ -55,11 +57,10 @@ void AssetManager::loadUnderPathAsync(const String &scanPath)
         header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
         asyncTasks.emplace_back(loadAssetAsync(header));
     }
-    copat::AwaitAllTasks<std::vector<decltype(loadAssetAsync(std::declval<AssetHeader>()))>> allAwaits
-        = copat::awaitAllTasks(asyncTasks);
+    copat::AwaitAllTasks<std::vector<decltype(loadAssetAsync(std::declval<AssetHeader>()))>> allAwaits = copat::awaitAllTasks(asyncTasks);
     for (auto &awaitable : copat::waitOnAwaitable(allAwaits))
     {
-        for (AssetBase* asset : awaitable.getReturnValue())
+        for (AssetBase *asset : awaitable.getReturnValue())
         {
             assetsRegistered[asset->assetHeader] = asset;
         }
@@ -116,15 +117,14 @@ std::vector<AssetBase *> AssetManager::loadAsset(const AssetHeader &header)
 
 void AssetManager::load()
 {
-    String appPath;
-    appPath = FileSystemFunctions::applicationDirectory(appPath);
+    String appPath = Paths::applicationDirectory();
     // Default path
     addPathsToScan(TCHAR("Assets"));
     for (const String &scanPath : preloadingPaths)
     {
         String scanFullPath = PathFunctions::combinePath(appPath, scanPath);
         loadUnderPathAsync(scanFullPath);
-        //loadUnderPath(scanFullPath);
+        // loadUnderPath(scanFullPath);
     }
 }
 
@@ -154,16 +154,16 @@ void AssetManager::addPathsToScan(const String &scanPath)
     if (bIsLoaded)
     {
         loadUnderPathAsync(scanPath);
-        //loadUnderPath(scanPath);
+        // loadUnderPath(scanPath);
     }
 }
 
 AssetBase *AssetManager::getOrLoadAsset(const String &relAssetPath)
 {
     String newRelPath = PathFunctions::asGenericPath(relAssetPath);
-    String appName;
+
     AssetHeader header;
-    header.assetPath = PathFunctions::combinePath(FileSystemFunctions::applicationDirectory(appName), TCHAR("Assets"), newRelPath);
+    header.assetPath = PathFunctions::combinePath(Paths::applicationDirectory(), TCHAR("Assets"), newRelPath);
     header.type = AssetLoaderLibrary::typeFromAssetPath(newRelPath);
     header.assetName = PlatformFile(header.assetPath).getFileName();
     header.assetName = PathFunctions::stripExtension(header.assetName);

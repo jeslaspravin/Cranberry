@@ -23,7 +23,7 @@ void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEC
     // Direct call to object construction routine to skip getting allocator that happens when constructing using CBEObjectConstructionPolicy
     // Default ctor
     const GlobalFunctionWrapper *ctor = PropertyHelper::findMatchingCtor<void *>(clazz);
-    alertIf(ctor, "Default constructor not found to construct defaul object");
+    alertAlwaysf(ctor, "Default constructor not found to construct defaul object");
 
     Object *object = reinterpret_cast<Object *>(objPtr);
 
@@ -96,7 +96,7 @@ struct DeepCopyFieldVisitable
     template <DeepCopyUnsupportedFundamentalOrSpecial Type>
     static void visit(const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
 
     // above UnsupportedFundamentalOrSpecial takes precedence over below generic support
@@ -212,7 +212,7 @@ struct DeepCopyFieldVisitable
     template <std::same_as<const void> Type>
     static void visit(const PropertyInfo &propInfo, void *userData)
     {
-        alertIf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
     }
 
     template <std::same_as<void *> Type>
@@ -249,7 +249,9 @@ struct DeepCopyFieldVisitable
         case EPropertyType::ArrayType:
         case EPropertyType::PairType:
         default:
-            alertIf(false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo);
+            alertAlwaysf(
+                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
             break;
         }
     }

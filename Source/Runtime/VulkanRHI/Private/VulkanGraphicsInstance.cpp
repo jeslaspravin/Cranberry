@@ -139,7 +139,7 @@ void VulkanGraphicsInstance::createVulkanInstance()
         }
         LOG_ERROR("Vulkan", "Requested layer/s not available%s", layersStr.getChar());
     }
-    fatalAssert(result == VkResult::VK_SUCCESS && vulkanInstance != nullptr, "Could not create vulkan instance");
+    fatalAssertf(result == VkResult::VK_SUCCESS && vulkanInstance != nullptr, "Could not create vulkan instance");
 }
 
 #if DEV_BUILD
@@ -254,7 +254,7 @@ void VulkanGraphicsInstance::updateSurfaceDependents()
     if (!selectedDevice.isValidDevice())
     {
         createVulkanDevice(nullptr);
-        fatalAssert(selectedDevice.isValidDevice(), "Graphics device creation failed");
+        fatalAssertf(selectedDevice.isValidDevice(), "Graphics device creation failed");
     }
     if (!selectedDevice.isLogicalDeviceCreated())
     {

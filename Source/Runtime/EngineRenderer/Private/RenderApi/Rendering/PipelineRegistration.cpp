@@ -16,7 +16,6 @@
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Resources/ShaderResources.h"
-  
 
 //////////////////////////////////////////////////////////////////////////
 // PipelineFactory
@@ -39,7 +38,7 @@ FORCE_INLINE PipelineBase *GraphicsPipelineFactoryRegistrant::operator()(
     }
     else
     {
-        fatalAssert(getter.isBound(), "Invalid GraphicsPipelineConfig getter for shader %s", args.pipelineShader->getResourceName().getChar());
+        fatalAssertf(getter.isBound(), "Invalid GraphicsPipelineConfig getter for shader %s", args.pipelineShader->getResourceName().getChar());
         String pipelineName;
         pipeline = graphicsHelper->createGraphicsPipeline(graphicsInstance, getter.invoke(pipelineName, args.pipelineShader));
         pipeline->setResourceName(pipelineName);
@@ -87,12 +86,12 @@ std::map<String, ComputePipelineFactoryRegistrant> &PipelineFactory::computePipe
 PipelineBase *
     PipelineFactory::create(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const
 {
-    fatalAssert(args.pipelineShader, "Pipeline shader cannot be null");
+    fatalAssertf(args.pipelineShader, "Pipeline shader cannot be null");
     if (args.pipelineShader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>()
         || args.pipelineShader->getShaderConfig()->getType()->isChildOf<UniqueUtilityShaderConfig>())
     {
         auto factoryItr = graphicsPipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
-        fatalAssert(
+        fatalAssertf(
             factoryItr != graphicsPipelineFactoriesRegistry().end(), "Failed finding factory to create graphics pipeline for shader %s",
             args.pipelineShader->getResourceName().getChar()
         );
@@ -102,7 +101,7 @@ PipelineBase *
     else if (args.pipelineShader->getShaderConfig()->getType()->isChildOf<ComputeShaderConfig>())
     {
         auto factoryItr = computePipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
-        fatalAssert(
+        fatalAssertf(
             factoryItr != computePipelineFactoriesRegistry().end(), "Failed finding factory to create compute pipeline for shader %s",
             args.pipelineShader->getResourceName().getChar()
         );

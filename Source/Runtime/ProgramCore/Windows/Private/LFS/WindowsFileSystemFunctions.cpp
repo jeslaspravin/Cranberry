@@ -9,9 +9,11 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
+#include "String/String.h"
 #include "LFS/WindowsFileSystemFunctions.h"
 #include "LFS/File/WindowsFile.h"
 #include "WindowsCommonHeaders.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 #include <queue>
 
@@ -155,17 +157,13 @@ std::vector<String> WindowsFileSystemFunctions::listAllDirectories(const String 
     return folderList;
 }
 
-String WindowsFileSystemFunctions::applicationDirectory(String &appName)
+String WindowsFileSystemFunctions::applicationPath()
 {
     String path;
     path.resize(MAX_PATH);
     dword pathActualSize = (dword)path.length();
     pathActualSize = ::GetModuleFileName(nullptr, path.data(), pathActualSize);
-
-    path.resize(pathActualSize);
-    WindowsFile file{ path };
-    appName = file.getFileName();
-    return file.getHostDirectory();
+    return path;
 }
 
 bool WindowsFileSystemFunctions::moveFile(GenericFile *moveFrom, GenericFile *moveTo)

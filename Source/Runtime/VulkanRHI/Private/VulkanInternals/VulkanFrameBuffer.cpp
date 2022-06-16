@@ -148,7 +148,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
         // resolve attachment for depth
         if (EPixelDataFormat::isDepthFormat(resource->imageFormat()))
         {
-            fatalAssert(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
+            fatalAssertf(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
             depthAttachmentRef.push_back({ attachmentIdx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
             ++attachmentIdx;
         }
@@ -210,7 +210,7 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(
 )
 {
     using namespace EAttachmentOp;
-    fatalAssert(
+    fatalAssertf(
         !additionalProps.bUsedAsPresentSource
             || (renderpassProps.bOneRtPerFormat && renderpassProps.renderpassAttachmentFormat.attachments.size() == 1),
         "Presentable swapchain attachments cannot have more than one attachments or more than 1 sample "
@@ -241,7 +241,7 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(
         // resolve attachment for depth
         if (EPixelDataFormat::isDepthFormat(attachmentFormat))
         {
-            fatalAssert(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
+            fatalAssertf(depthAttachmentRef.size() == 0, "More than one depth attachment is not allowed");
 
             attachmentDesc.loadOp = EngineToVulkanAPI::vulkanLoadOp(additionalProps.depthLoadOp);
             attachmentDesc.storeOp = EngineToVulkanAPI::vulkanStoreOp(additionalProps.depthStoreOp);
