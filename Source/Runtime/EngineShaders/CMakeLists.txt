@@ -6,13 +6,14 @@ file(GLOB_RECURSE src_files LIST_DIRECTORIES false
     *)
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files})
 
+set (shader_output_dir "${PROJECT_BINARY_DIR}/$<CONFIG>/Runtime")
 shader_outputs(
     SOURCES ${src_files} 
-    OUTPUT_DIR ${PROJECT_BINARY_DIR} 
+    OUTPUT_DIR ${shader_output_dir} 
     OUTPUTS compiled_outputs)
 add_custom_command(OUTPUT ${compiled_outputs}
     DEPENDS GameBuilder SpirvShaderReflection ${src_files}
-    COMMAND GameBuilder -mode shaderCompile -targetPath "\"${PROJECT_BINARY_DIR}/$<CONFIG>\"" -intermediatePath "\"${PROJECT_BINARY_DIR}/Intermediate/$<CONFIG>\"" -api vulkan
+    COMMAND GameBuilder -mode shaderCompile -targetPath "\"${shader_output_dir}\"" -intermediatePath "\"${PROJECT_BINARY_DIR}/Intermediate/$<CONFIG>\"" -api vulkan
     WORKING_DIRECTORY $<TARGET_FILE_DIR:GameBuilder>
     USES_TERMINAL
     COMMAND_EXPAND_LISTS

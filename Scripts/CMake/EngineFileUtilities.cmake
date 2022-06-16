@@ -9,17 +9,6 @@
 #  License can be read in LICENSE file at this repository's root
 # 
 
-# Appends some cmake searching directories to given path
-function(make_find_package_hints package_name base_dir out_hint_paths)
-    set(${out_hint_paths} 
-        ${base_dir}/lib/cmake/
-        ${base_dir}/cmake/
-        ${base_dir}/${package_name}/lib/cmake/
-        ${base_dir}/${package_name}/cmake/
-        PARENT_SCOPE
-    )
-endfunction()
-
 function(write_cmdline_args out_file)
     set(multi_value_args CMDLINE)
     cmake_parse_arguments(cmdline_args "" "" "${multi_value_args}" ${ARGN})
