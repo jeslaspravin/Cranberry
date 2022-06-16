@@ -1,4 +1,5 @@
 include(EngineProjectMacros)
+include(EngineCMakeHelpers)
 
 set(private_libraries )
 set(public_libraries )
@@ -18,6 +19,7 @@ if (${enable_mimalloc})
     find_package(mimalloc 1.7
         REQUIRED CONFIG
         HINTS ${mimalloc_hints} ${mimalloc_debug_hints})
+    map_imported_targets_config(TARGETS ${mimalloc_lib_name})
     
     get_target_property(lib_path ${mimalloc_lib_name} IMPORTED_LOCATION_RELEASE)
     get_target_property(dbg_lib_path ${mimalloc_lib_name} IMPORTED_LOCATION_DEBUG)
@@ -43,8 +45,6 @@ target_compile_definitions(${target_name}
     PUBLIC 
         ${engine_def} 
         ${experimental_def} 
-        # Path where all engine modules exists for use with delayed loaded dlls
-        ENGINE_MODULES_PATH="$<TARGET_FILE_DIR:${target_name}>"
         $<$<BOOL:${enable_console_log}>:LOG_TO_CONSOLE=1>
     PRIVATE
         ${private_compile_defs}

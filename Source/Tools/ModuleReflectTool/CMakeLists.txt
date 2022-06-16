@@ -1,5 +1,5 @@
 include(EngineProjectMacros)
-include(EngineFileUtilities)
+include(EngineCMakeHelpers)
 
 # Since Clang creates more targets
 get_filename_component(directory_name ${CMAKE_CURRENT_LIST_DIR} NAME)
@@ -26,6 +26,11 @@ else ()
     message (FATAL_ERROR "Clang package not found, Make sure to configure \"llvm_install_path\" config CACHE with path to llvm install")
 endif ()
 
+map_imported_targets_config(TARGETS libclang clangAST
+    # Below are libs clangAST pulls
+    LLVMCore LLVMSupport LLVMRemarks LLVMBitstreamReader LLVMFrontendOpenMP LLVMBinaryFormat
+    clangBasic clangLex
+)
 set(private_libraries
     libclang
     clangAST # Contains implementations for AST, Necessary to implement some custom parse function that are not exposed in libclang

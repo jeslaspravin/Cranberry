@@ -549,7 +549,7 @@ function(shader_outputs)
             if(NOT ${src_wo_glsl} MATCHES ".*[.inl]$")
                 # Replace any .vert, .frag ... but capturing matches before .extension
                 string(REGEX REPLACE "(.*)[.].*" "\\1" src_wo_ext ${src_wo_glsl})
-                list(APPEND unique_shaders ${shader_outputs_OUTPUT_DIR}/$<CONFIG>/Shaders/${src_wo_ext}.ref ${shader_outputs_OUTPUT_DIR}/$<CONFIG>/Shaders/${src_wo_ext}.shader)
+                list(APPEND unique_shaders "${shader_outputs_OUTPUT_DIR}/Shaders/${src_wo_ext}.ref" "${shader_outputs_OUTPUT_DIR}/Shaders/${src_wo_ext}.shader")
             endif()
         endif(${src_file} MATCHES ".*[.glsl]$")
     endforeach()
