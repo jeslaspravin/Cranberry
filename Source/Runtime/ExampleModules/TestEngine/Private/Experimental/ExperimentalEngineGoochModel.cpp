@@ -59,13 +59,15 @@
 #include "Types/Transform3D.h"
 #include "WindowManager.h"
 #include "ApplicationSettings.h"
+#include "FontManager.h"
+#include "Types/Platform/LFS/Paths.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 #include "Math/MathGeom.h"
 #include "RenderInterface/Resources/Pipelines.h"
 #include <array>
 #include <map>
 #include <random>
-#include "FontManager.h"
 
 struct AOS
 {
@@ -1030,7 +1032,7 @@ void ExperimentalEngineGoochModel::createTextRenderResources(
 {
     FontManager &fontManager = *application->fontManager;
     FontManager::FontIndex idx
-        = fontManager.addFont(TCHAR("D:/Workspace/VisualStudio/Cranberry/Build/Debug/Assets/Fonts/CascadiaMono-Bold.ttf"));
+        = fontManager.addFont(PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Assets/Fonts/CascadiaMono-Bold.ttf")));
 
     fontManager.addGlyphs(
         idx,
@@ -1848,7 +1850,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
     }
 }
 
-// GameEngine* GameEngineWrapper::createEngineInstance()
+// GameEngine *GameEngineWrapper::createEngineInstance()
 //{
 //     static ExperimentalEngineGoochModel gameEngine;
 //     return &gameEngine;

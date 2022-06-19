@@ -89,9 +89,13 @@ void GameEngine::engineLoop()
     timeData.progressFrame();
     tickEngine();
     ENQUEUE_COMMAND_NODEBUG(
-        Engineloop, { rendererModule->getRenderManager()->renderFrame(timeData.deltaTime); }, this
+        Engineloop,
+        {
+            rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);
+            imguiManager.updateFrame(timeData.deltaTime);
+        },
+        this
     );
-    imguiManager.updateFrame(timeData.deltaTime);
     // We are not yet ready for 100% multi threaded renderer
     RenderThreadEnqueuer::flushWaitRenderThread();
 

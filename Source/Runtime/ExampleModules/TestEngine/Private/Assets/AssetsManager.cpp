@@ -24,7 +24,7 @@
 
 void AssetManager::loadUnderPath(const String &scanPath)
 {
-    LOG_DEBUG("AssetManager", "Initial asset loaded started");
+    LOG_DEBUG("AssetManager", "Initial asset load started");
     StopWatch loadTime;
     std::vector<String> foundFiles = FileSystemFunctions::listAllFiles(scanPath, true);
     for (const String &filePath : foundFiles)
@@ -45,7 +45,7 @@ void AssetManager::loadUnderPath(const String &scanPath)
 
 void AssetManager::loadUnderPathAsync(const String &scanPath)
 {
-    LOG("AssetManager", "Initial asset loaded started");
+    LOG("AssetManager", "Initial asset load started");
     StopWatch loadTime;
     std::vector<String> foundFiles = FileSystemFunctions::listAllFiles(scanPath, true);
     std::vector<decltype(loadAssetAsync(std::declval<AssetHeader>()))> asyncTasks;
@@ -57,7 +57,8 @@ void AssetManager::loadUnderPathAsync(const String &scanPath)
         header.type = AssetLoaderLibrary::typeFromAssetPath(filePath);
         asyncTasks.emplace_back(loadAssetAsync(header));
     }
-    copat::AwaitAllTasks<std::vector<decltype(loadAssetAsync(std::declval<AssetHeader>()))>> allAwaits = copat::awaitAllTasks(asyncTasks);
+    copat::AwaitAllTasks<std::vector<decltype(loadAssetAsync(std::declval<AssetHeader>()))>> allAwaits
+        = copat::awaitAllTasks(std::move(asyncTasks));
     for (auto &awaitable : copat::waitOnAwaitable(allAwaits))
     {
         for (AssetBase *asset : awaitable.getReturnValue())
