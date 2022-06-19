@@ -135,8 +135,6 @@ WaitOnAwaitable<void> awaitOnVoidAwaitable(AwaitableType &awaitable)
     co_await awaitable;
 }
 
-} // namespace impl
-
 template <AwaitableTypeConcept AwaitableType, typename RetType = AwaiterReturnType<GetAwaiterType_t<AwaitableType>>>
 requires(!std::is_void_v<RetType>) RetType waitOnAwaitable(AwaitableType &&awaitable)
 {
@@ -155,6 +153,14 @@ requires std::is_void_v<RetType> RetType waitOnAwaitable(AwaitableType &&awaitab
     std::binary_semaphore semaphore{ 0 };
     waitingOnAwaitable.startWait(semaphore);
     semaphore.acquire();
+}
+
+} // namespace impl
+
+template <AwaitableTypeConcept AwaitableType>
+inline auto waitOnAwaitable(AwaitableType &&awaitable)
+{
+    return impl::waitOnAwaitable(std::forward<AwaitableType>(awaitable));
 }
 
 } // namespace copat

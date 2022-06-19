@@ -34,9 +34,20 @@ String Paths::applicationDirectory(String &appName, String *extension /*= nullpt
     return appDir;
 }
 
-String Paths::applicationName()
+const TChar *Paths::applicationName()
 {
-    return PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(FileSystemFunctions::applicationPath()));
+    static const String appName = PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(FileSystemFunctions::applicationPath()));
+    return appName.getChar();
 }
 
-String Paths::engineRoot() { return PathFunctions::toAbsolutePath(TCHAR(".."), Paths::applicationDirectory()); }
+const TChar *Paths::engineRoot()
+{
+    static const String rootPath = PathFunctions::toAbsolutePath(TCHAR(".."), Paths::applicationDirectory());
+    return rootPath.getChar();
+}
+
+const TChar *Paths::engineRuntimeRoot()
+{
+    static const String runtimeRootPath = PathFunctions::combinePath(engineRoot(), TCHAR("Runtime"));
+    return runtimeRootPath.getChar();
+}

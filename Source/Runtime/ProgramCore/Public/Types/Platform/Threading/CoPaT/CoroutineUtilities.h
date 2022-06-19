@@ -166,6 +166,7 @@ public:
     using ReturnType = Type;
     using RefType = Type &;
 
+    using value_type = ReturnType;
     using reference_type = RefType;
     static_assert(!std::is_rvalue_reference_v<Type>, "R-Value references are not supported return Type");
 
@@ -206,6 +207,7 @@ public:
     using ReturnType = Type &;
     using RefType = ReturnType;
 
+    using value_type = ReturnType;
     using reference_type = RefType;
 
 public:

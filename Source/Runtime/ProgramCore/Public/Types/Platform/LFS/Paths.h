@@ -12,6 +12,7 @@
 #pragma once
 
 #include "ProgramCoreExports.h"
+#include "Types/CoreTypes.h"
 
 class String;
 
@@ -25,7 +26,8 @@ public:
     static String applicationDirectory(String &appName, String *extension = nullptr);
     static String applicationDirectory();
     // Without extension
-    static String applicationName();
+    static const TChar *applicationName();
 
-    static String engineRoot();
+    static const TChar *engineRoot();
+    static const TChar *engineRuntimeRoot();
 };

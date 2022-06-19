@@ -324,6 +324,11 @@ requires std::is_void_v<RetType> AwaitOneTask<void> makeOneTaskAwaitable(Awaitab
 
 } // namespace impl
 
+/**
+ * If piping the awaitAllTasks to waitOnAwaitable as r-value reference note that awaitAllTasks will be waitOnAwaitable scope
+ * and gets destroyed when waitOnAwaitable returns. awaitAllTasks life time has to be managed by user of API
+ */
+
 template <AwaitableTypeConcept... Awaitables>
 AwaitAllTasks<std::tuple<Awaitables...>> awaitAllTasks(Awaitables &&...awaitables)
 {
@@ -363,6 +368,7 @@ AwaitAllTasks<std::vector<AwaitableType>> awaitAllTasks(std::vector<AwaitableTyp
     {
         allAwaits.emplace_back(std::move(impl::makeOneTaskAwaitable(std::move_if_noexcept<AwaitableType>(awaitable))));
     }
+    awaitables.clear();
     return AwaitAllTasks<std::vector<AwaitableType>>{ std::move(allAwaits) };
 }
 

@@ -238,8 +238,14 @@ public:
         int32 bitmapStride
     ) const
     {
-        stbtt_MakeGlyphBitmapSubpixel(
-            &allFonts[font].stbFont, outBitmap, glyphWidth, glyphHeight, bitmapStride, scale, scale, xShift, yShift, glyph.glyphIdx
+        // stbtt_MakeGlyphBitmapSubpixel(
+        //     &allFonts[font].stbFont, outBitmap, glyphWidth, glyphHeight, bitmapStride, scale, scale, xShift, yShift, glyph.glyphIdx
+        //);
+
+        float subX, subY;
+        stbtt_MakeGlyphBitmapSubpixelPrefilter(
+            &allFonts[font].stbFont, outBitmap, glyphWidth, glyphHeight, bitmapStride, scale, scale, xShift, yShift, 2, 2, &subX, &subY,
+            glyph.glyphIdx
         );
     }
 
