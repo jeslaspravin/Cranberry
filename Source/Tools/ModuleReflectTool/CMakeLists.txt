@@ -26,14 +26,15 @@ else ()
     message (FATAL_ERROR "Clang package not found, Make sure to configure \"llvm_install_path\" config CACHE with path to llvm install")
 endif ()
 
-map_imported_targets_config(TARGETS libclang clangAST
+map_imported_targets_config(TARGETS libclang 
+    # clangAST
     # Below are libs clangAST pulls
-    LLVMCore LLVMSupport LLVMRemarks LLVMBitstreamReader LLVMFrontendOpenMP LLVMBinaryFormat
-    clangBasic clangLex
+    # LLVMSupport LLVMCore LLVMBinaryFormat LLVMBitstreamReader LLVMFrontendOpenMP LLVMRemarks
+    # clangBasic clangLex
 )
 set(private_libraries
     libclang
-    clangAST # Contains implementations for AST, Necessary to implement some custom parse function that are not exposed in libclang
+    # clangAST # Contains implementations for AST, Necessary to implement some custom parse function that are not exposed in libclang
 )
 set(private_includes
     ${CLANG_INCLUDE_DIRS}

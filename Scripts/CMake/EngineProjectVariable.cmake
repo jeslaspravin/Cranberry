@@ -24,8 +24,9 @@ option (engine_static_modules "Should compile and link engine modules statically
 option (enable_console_log "Should log write to console as well?" ON)
 
 set (vulkan_sdk_path $ENV{VULKAN_SDK} CACHE PATH "Vulkan SDK path")
-# TODO(Jeslas) : Change this to automatically resolve/download dependencies
-set (cpp_libs_path $ENV{CPP_LIB} CACHE PATH "Path to CPP libraries")
+
+# Setup.bat will populate this directory
+set (cpp_libs_path ${CMAKE_SOURCE_DIR}/External CACHE PATH "Path to CPP libraries")
 # LLVM installed path
 set (llvm_install_path ${cpp_libs_path}/llvm CACHE PATH "LLVM installed path(For libclang)")
 
