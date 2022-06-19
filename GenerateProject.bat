@@ -9,5 +9,14 @@ REM cmake -B StaticBuild -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_IN
 REM echo cmake -B Build -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=%InstallPath% -Dengine_static_modules:BOOL=OFF %*
 REM cmake -B Build -G "Visual Studio 17 2022" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=%InstallPath% -Dengine_static_modules:BOOL=OFF %*
 
-echo cmake --preset %*
-cmake --preset %*
+if "%~1"=="" (
+    if NOT EXIST %~dp0/External/SetupSuccess.txt (
+        call %~dp0/Setup.bat
+    )
+    
+    echo cmake --preset Engine-DynamicLinked
+    cmake --preset Engine-DynamicLinked
+) else (
+    echo cmake --preset %*
+    cmake --preset %*
+)

@@ -44,7 +44,10 @@ bld/
 [Tt]mp/
 
 # External dependencies
-[Ee]xternal
+[Tt]hirdParties/*
+[Ee]xternal/*
+![Tt]hirdParties/CMakeLists.txt
+![Ee]xternal/CMakeLists.txt
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

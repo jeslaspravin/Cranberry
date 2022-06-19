@@ -19,6 +19,9 @@
 #include "Types/Platform/LFS/File/FileHelper.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 
+/*
+clangAST includes
+
 COMPILER_PRAGMA(COMPILER_PUSH_WARNING)
 COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_MISMATCHED_NEW_DELETE))
 COMPILER_PRAGMA(COMPILER_PUSH_WARNING)
@@ -29,6 +32,8 @@ COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_IMPLICIT_DESTRUCTOR_DELETE))
 
 COMPILER_PRAGMA(COMPILER_POP_WARNING)
 COMPILER_PRAGMA(COMPILER_POP_WARNING)
+
+*/
 
 String ParserHelper::getNonConstTypeName(CXType clangType, CXCursor typeRefCursor)
 {
@@ -737,46 +742,4 @@ bool ParserHelper::isValidFieldType(CXType clangType, CXCursor fieldCursor)
         }
     }
     return bIsValid;
-}
-
-//////////////////////////////////////////////////////////////////////////
-/// Must be in Clang impl codes
-//////////////////////////////////////////////////////////////////////////
-
-bool ParserHelper::clang_CXXMethod_isUserProvided(CXCursor funcCursor)
-{
-    // We skip template functions here as it cannot be defaulted or deleted and also we are not
-    // supporting it yet
-    if (!clang_isDeclaration(funcCursor.kind) && clang_getCursorKind(funcCursor) != CXCursor_FunctionTemplate)
-        return 0;
-
-    using namespace clang;
-
-    // const Decl* D = cxcursor::getCursorDecl(funcCursor); This function shows that Cursor.data[0] as
-    // decl type From clang_CXXMethod_isDefaulted implementation
-    const Decl *decl = static_cast<const Decl *>(funcCursor.data[0]);
-    // We do not have to getAsFunction() since no template
-    // const CXXMethodDecl* methodDecl =
-    //    decl ? dyn_cast_or_null<CXXMethodDecl>(decl->getAsFunction()) : nullptr;
-    const CXXMethodDecl *methodDecl = decl ? static_cast<const CXXMethodDecl *>(decl) : nullptr;
-    return (methodDecl && methodDecl->isUserProvided()) ? 1 : 0;
-}
-
-bool ParserHelper::clang_CXXMethod_isDeleted(CXCursor funcCursor)
-{
-    // We skip template functions here as it cannot be defaulted or deleted and also we are not
-    // supporting it yet
-    if (!clang_isDeclaration(funcCursor.kind) && clang_getCursorKind(funcCursor) != CXCursor_FunctionTemplate)
-        return 0;
-
-    using namespace clang;
-
-    // const Decl* D = cxcursor::getCursorDecl(funcCursor); This function shows that Cursor.data[0] as
-    // decl type From clang_CXXMethod_isDefaulted implementation
-    const Decl *decl = static_cast<const Decl *>(funcCursor.data[0]);
-    // We do not have to getAsFunction() since no template
-    // const CXXMethodDecl* methodDecl =
-    //    decl ? dyn_cast_or_null<CXXMethodDecl>(decl->getAsFunction()) : nullptr;
-    const CXXMethodDecl *methodDecl = decl ? static_cast<const CXXMethodDecl *>(decl) : nullptr;
-    return (methodDecl && methodDecl->isDeleted()) ? 1 : 0;
 }
