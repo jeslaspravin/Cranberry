@@ -193,6 +193,10 @@ AssetBase *AssetManager::getOrLoadAsset(const AssetHeader &header)
             break;
         }
     }
+    if (!returnVal)
+    {
+        LOG_ERROR("AssetManager", "Asset %s(%s) does not exists!", header.assetName, header.assetPath);
+    }
     return returnVal;
 }
 
@@ -205,5 +209,6 @@ AssetBase *AssetManager::getAsset(const String &assetName) const
             return asset.second;
         }
     }
+    LOG_ERROR("AssetManager", "Asset %s does not exists!", assetName);
     return nullptr;
 }

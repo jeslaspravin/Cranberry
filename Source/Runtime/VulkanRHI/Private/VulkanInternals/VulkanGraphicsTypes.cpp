@@ -213,7 +213,7 @@ struct FilterInfoData
     }
 const FilterInfoData FILTER_TYPE_TO_API_FILTER[] = { SAMPLE_FILTER_INFO_PAIR(Nearest, VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST),
                                                      SAMPLE_FILTER_INFO_PAIR(Linear, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR),
-                                                     SAMPLE_FILTER_INFO_PAIR(Cubic, VK_FILTER_CUBIC_IMG, VK_SAMPLER_MIPMAP_MODE_NEAREST) };
+                                                     SAMPLE_FILTER_INFO_PAIR(Cubic, VK_FILTER_CUBIC_IMG, VK_SAMPLER_MIPMAP_MODE_LINEAR) };
 #undef SAMPLE_FILTER_INFO_PAIR
 VkFilter vulkanFilter(ESamplerFiltering::Type filter) { return FILTER_TYPE_TO_API_FILTER[uint32(filter)].filter; }
 
