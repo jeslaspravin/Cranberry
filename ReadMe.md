@@ -5,7 +5,8 @@
 ## Instructions
 
 * Install CMake
-* Run GenerateProject.bat to generate Visual Studio solution with one of following presets(eg., `GenerateProject.bat <preset> [Some Cmake arguments]..`)
+* Run GenerateProject.bat to generate Visual Studio solution with one of following presets(eg., `GenerateProject.bat` or `GenerateProject.bat <preset> [Some Cmake arguments]..`)
+Note that if using custom preset and not going to change dependencies run Setup.bat first
     - `Engine-StaticLinked` preset creates command `cmake -B StaticBuild -G "Visual Studio 16 2019" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=ON`
     - `Engine-DynamicLinked` preset creates command `cmake -B Build -G "Visual Studio 16 2019" -A x64 -Thost=x64 -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=OFF`
     - Hidden preset not available `BasePreset` preset creates command `cmake -B Build -DCMAKE_INSTALL_PREFIX:STRING=${sourceDir}/Installed -Dengine_static_modules:BOOL=OFF`

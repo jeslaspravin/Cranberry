@@ -231,6 +231,7 @@ class ExperimentalEnginePBR
     SamplerRef nearestFiltering = nullptr;
     SamplerRef linearFiltering = nullptr;
     SamplerRef depthFiltering = nullptr;
+    SamplerRef shadowFiltering = nullptr;
     // SamplerRef cubicFiltering = nullptr;
     void createImages(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void destroyImages();
@@ -510,6 +511,14 @@ void ExperimentalEnginePBR::createImages(IGraphicsInstance *graphicsInstance, co
     depthFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
     depthFiltering->init();
 
+    // Has to lesser comparison since we want shadow to be 1.0 only if shading texel's depth is less that shadow depth texel
+    // And lesser than gives 1.0(Shadowed) if shading depth is less than texel depth
+    samplerCI.useCompareOp = 1;
+    samplerCI.compareOp = CoreGraphicsTypes::ECompareOp::Less;
+    samplerCI.resourceName = TCHAR("ShadowSampler");
+    shadowFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    shadowFiltering->init();
+
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
     rtCreateParams.bIsSrgb = false;
@@ -559,6 +568,7 @@ void ExperimentalEnginePBR::destroyImages()
     nearestFiltering.reset();
     linearFiltering.reset();
     depthFiltering.reset();
+    shadowFiltering.reset();
 
     TextureBase::destroyTexture<RenderTargetTexture>(camGizmoColorTexture);
     TextureBase::destroyTexture<RenderTargetTexture>(camGizmoDepthTarget);
@@ -1072,7 +1082,7 @@ void ExperimentalEnginePBR::createScene()
     StaticMeshAsset *cone = static_cast<StaticMeshAsset *>(assetManager.getOrLoadAsset(TCHAR("Cone.obj")));
     StaticMeshAsset *suzanne = static_cast<StaticMeshAsset *>(assetManager.getOrLoadAsset(TCHAR("Suzanne.obj")));
     std::array<StaticMeshAsset *, 5> assets{ cube, sphere, cylinder, cone, suzanne };
-#if NDEBUG
+#if RELEASE_BUILD
     std::array<String, 8> floorTypes{
         TCHAR("WoodFloor043"), TCHAR("Tiles086"),  TCHAR("Tiles074"),  TCHAR("MetalPlates006"),
                                                                              TCHAR("Marble006"),    TCHAR("Ground042"), TCHAR("Ground037"), TCHAR("Gravel022") };
@@ -1118,7 +1128,7 @@ void ExperimentalEnginePBR::createScene()
         scenePointLights.emplace_back(pointLight);
     };
 
-    const int32 halfCount = 5;
+    const int32 halfCount = 1;
     for (int32 i = -halfCount; i <= halfCount; i++)
     {
         for (int32 j = -halfCount; j <= halfCount; j++)
@@ -1700,16 +1710,16 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *graphi
     dirLight.normalizeCascadeCoverage();
     lightDataShadowed->setFloatParam(TCHAR("gamma"), gamma);
     lightDataShadowed->setFloatParam(TCHAR("exposure"), exposure);
-    lightDataShadowed->setTextureParam(TCHAR("directionalLightCascades"), dirLight.cascadeShadowMaps->getTextureResource(), depthFiltering);
+    lightDataShadowed->setTextureParam(TCHAR("directionalLightCascades"), dirLight.cascadeShadowMaps->getTextureResource(), shadowFiltering);
     for (uint32 i = 0; i < pointShadowRTs.size(); ++i)
     {
         ImageResourceRef texture = pointShadowRTs[i] ? pointShadowRTs[i]->getTextureResource() : GlobalBuffers::dummyCube();
-        lightDataShadowed->setTextureParam(TCHAR("pointShadowMaps"), texture, depthFiltering, i);
+        lightDataShadowed->setTextureParam(TCHAR("pointShadowMaps"), texture, shadowFiltering, i);
     }
     for (uint32 i = 0; i < spotShadowRTs.size(); ++i)
     {
         ImageResourceRef texture = spotShadowRTs[i] ? spotShadowRTs[i]->getTextureResource() : GlobalBuffers::dummyBlack2D();
-        lightDataShadowed->setTextureParam(TCHAR("spotLightShadowMaps"), texture, depthFiltering, i);
+        lightDataShadowed->setTextureParam(TCHAR("spotLightShadowMaps"), texture, shadowFiltering, i);
     }
     // count will be min up to 8
     uint32 shadowedCount = lightDataShadowed->getUintParam(TCHAR("count"));
