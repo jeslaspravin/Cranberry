@@ -625,7 +625,7 @@ void FontManager::setupTextureAtlas(ShaderParameters *shaderParams, const String
         {
             for (int32 i = 0; i < ARRAY_LENGTH(context->textureAtlases); ++i)
             {
-                shaderParams->setTextureParam(paramName, context->textureAtlases[i], i);
+                shaderParams->setTextureParam(paramName.getChar(), context->textureAtlases[i], i);
             }
         }
     );

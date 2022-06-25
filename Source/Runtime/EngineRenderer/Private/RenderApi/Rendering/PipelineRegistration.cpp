@@ -21,7 +21,7 @@
 // PipelineFactory
 //////////////////////////////////////////////////////////////////////////
 
-GraphicsPipelineFactoryRegistrant::GraphicsPipelineFactoryRegistrant(const String &shaderName, GraphicsPipelineConfigGetter configGetter)
+GraphicsPipelineFactoryRegistrant::GraphicsPipelineFactoryRegistrant(const TChar *shaderName, GraphicsPipelineConfigGetter configGetter)
     : getter(configGetter)
 {
     PipelineFactory::graphicsPipelineFactoriesRegistry().insert({ shaderName, *this });
@@ -47,7 +47,7 @@ FORCE_INLINE PipelineBase *GraphicsPipelineFactoryRegistrant::operator()(
     return pipeline;
 }
 
-ComputePipelineFactoryRegistrant::ComputePipelineFactoryRegistrant(const String &shaderName)
+ComputePipelineFactoryRegistrant::ComputePipelineFactoryRegistrant(const TChar *shaderName)
 {
     PipelineFactory::computePipelineFactoriesRegistry().insert({ shaderName, *this });
 }
@@ -71,15 +71,15 @@ FORCE_INLINE PipelineBase *ComputePipelineFactoryRegistrant::operator()(
     return pipeline;
 }
 
-std::map<String, GraphicsPipelineFactoryRegistrant> &PipelineFactory::graphicsPipelineFactoriesRegistry()
+std::map<StringID, GraphicsPipelineFactoryRegistrant> &PipelineFactory::graphicsPipelineFactoriesRegistry()
 {
-    static std::map<String, GraphicsPipelineFactoryRegistrant> singletonPipelineFactoriesRegistry;
+    static std::map<StringID, GraphicsPipelineFactoryRegistrant> singletonPipelineFactoriesRegistry;
     return singletonPipelineFactoriesRegistry;
 }
 
-std::map<String, ComputePipelineFactoryRegistrant> &PipelineFactory::computePipelineFactoriesRegistry()
+std::map<StringID, ComputePipelineFactoryRegistrant> &PipelineFactory::computePipelineFactoriesRegistry()
 {
-    static std::map<String, ComputePipelineFactoryRegistrant> singletonPipelineFactoriesRegistry;
+    static std::map<StringID, ComputePipelineFactoryRegistrant> singletonPipelineFactoriesRegistry;
     return singletonPipelineFactoriesRegistry;
 }
 
@@ -90,7 +90,7 @@ PipelineBase *
     if (args.pipelineShader->getShaderConfig()->getType()->isChildOf<DrawMeshShaderConfig>()
         || args.pipelineShader->getShaderConfig()->getType()->isChildOf<UniqueUtilityShaderConfig>())
     {
-        auto factoryItr = graphicsPipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
+        auto factoryItr = graphicsPipelineFactoriesRegistry().find(StringID(args.pipelineShader->getResourceName()));
         fatalAssertf(
             factoryItr != graphicsPipelineFactoriesRegistry().end(), "Failed finding factory to create graphics pipeline for shader %s",
             args.pipelineShader->getResourceName().getChar()
@@ -100,7 +100,7 @@ PipelineBase *
     }
     else if (args.pipelineShader->getShaderConfig()->getType()->isChildOf<ComputeShaderConfig>())
     {
-        auto factoryItr = computePipelineFactoriesRegistry().find(args.pipelineShader->getResourceName());
+        auto factoryItr = computePipelineFactoriesRegistry().find(StringID(args.pipelineShader->getResourceName()));
         fatalAssertf(
             factoryItr != computePipelineFactoriesRegistry().end(), "Failed finding factory to create compute pipeline for shader %s",
             args.pipelineShader->getResourceName().getChar()

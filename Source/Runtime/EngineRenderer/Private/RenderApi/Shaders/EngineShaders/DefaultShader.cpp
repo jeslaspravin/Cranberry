@@ -31,17 +31,17 @@ protected:
     }
 
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         if constexpr (RenderpassFormat != ERenderPassFormat::DirectionalLightDepth && RenderpassFormat != ERenderPassFormat::PointLightDepth)
         {
             return;
         }
 
-        const std::map<String, ShaderBufferParamInfo *> *paramInfo = nullptr;
+        const std::map<StringID, ShaderBufferParamInfo *> *paramInfo = nullptr;
         if constexpr (RenderpassFormat == ERenderPassFormat::DirectionalLightDepth)
         {
-            static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+            static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
                 {TCHAR("lightViews"), DirectionalShadowCascadeViews::paramInfo()}
             };
 
@@ -49,7 +49,7 @@ public:
         }
         else if constexpr (RenderpassFormat == ERenderPassFormat::PointLightDepth)
         {
-            static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+            static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
                 {TCHAR("lightViews"), PointShadowDepthViews::paramInfo()}
             };
 
@@ -58,7 +58,7 @@ public:
 
         if (paramInfo != nullptr)
         {
-            for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : *paramInfo)
+            for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : *paramInfo)
             {
                 auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 

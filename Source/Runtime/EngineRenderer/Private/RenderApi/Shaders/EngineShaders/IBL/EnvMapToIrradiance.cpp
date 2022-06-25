@@ -27,10 +27,10 @@ public:
     EnvMapToDiffuseIrradiance()
         : BaseType(ENVMAPTODIFFIRRAD_SHADER_NAME)
     {
-        static ComputePipelineFactoryRegistrant ENVMAPTOIRRAD_SHADER_PIPELINE_REGISTER(this->getResourceName());
+        static ComputePipelineFactoryRegistrant ENVMAPTOIRRAD_SHADER_PIPELINE_REGISTER(this->getResourceName().getChar());
     }
 
-    void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const final
+    void getSpecializationConsts(SpecConstantNamedMap &specializationConst) const
     {
         specializationConst[SAMPLE_COUNT] = SpecializationConstUtility::fromValue(128u);
     }
@@ -56,10 +56,10 @@ public:
     HDRIToPrefilteredSpecular()
         : BaseType(HDRITOPREFILTEREDSPEC_SHADER_NAME)
     {
-        static ComputePipelineFactoryRegistrant HDRITOPREFILTEREDSPEC_SHADER_PIPELINE_REGISTER(this->getResourceName());
+        static ComputePipelineFactoryRegistrant HDRITOPREFILTEREDSPEC_SHADER_PIPELINE_REGISTER(this->getResourceName().getChar());
     }
 
-    void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const final
+    void getSpecializationConsts(SpecConstantNamedMap &specializationConst) const
     {
         specializationConst[SAMPLE_COUNT] = SpecializationConstUtility::fromValue(1024u);
         specializationConst[TCHAR("MIP_COUNT")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::MAX_PREFILTERED_CUBE_MIPS.get());

@@ -13,8 +13,7 @@
 
 #include "Math/Matrix4.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
-
-#include <map>
+#include "RenderInterface/Resources/ShaderResources.h"
 
 struct ViewData
 {
@@ -27,6 +26,6 @@ struct ViewData
 class ENGINERENDERER_EXPORT RenderSceneBase
 {
 public:
-    static const std::map<String, ShaderBufferParamInfo *> &sceneViewParamInfo();
-    static void sceneViewSpecConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst);
+    static const std::map<StringID, ShaderBufferParamInfo *> &sceneViewParamInfo();
+    static void sceneViewSpecConsts(SpecConstantNamedMap &specializationConst);
 };

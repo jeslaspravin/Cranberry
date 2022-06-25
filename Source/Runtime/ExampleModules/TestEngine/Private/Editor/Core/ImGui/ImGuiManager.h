@@ -45,8 +45,8 @@ struct ImGuiDrawingContext
 class ImGuiManager
 {
 private:
-    static const String TEXTURE_PARAM_NAME;
-    static const String IMGUI_SHADER_NAME;
+    static const StringID TEXTURE_PARAM_NAME;
+    static const NameString IMGUI_SHADER_NAME;
     // Only parent GUI manager data
     SamplerRef textureSampler;
     TextureBase *textureAtlas;

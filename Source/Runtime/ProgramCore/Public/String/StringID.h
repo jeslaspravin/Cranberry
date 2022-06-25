@@ -16,18 +16,12 @@
 
 #if DEV_BUILD
 #define STRINGID_FUNCQUALIFIER FORCE_INLINE
-#define STRING_FUNCQUALIFIER FORCE_INLINE
 #define STRINGID_CONSTEXPR
 #define HAS_STRINGID_CONSTEXPR 0
 #else // DEV_BUILD
 #define STRINGID_FUNCQUALIFIER CONST_EXPR
 #define STRINGID_CONSTEXPR CONST_EXPR
 #define HAS_STRINGID_CONSTEXPR 1
-#if HAS_STRING_CONSTEXPR
-#define STRING_FUNCQUALIFIER CONST_EXPR
-#else // HAS_STRING_CONSTEXPR
-#define STRING_FUNCQUALIFIER FORCE_INLINE
-#endif // HAS_STRING_CONSTEXPR
 #endif // DEV_BUILD
 
 #ifndef STRINGID_HASHFUNC
@@ -103,7 +97,7 @@ public:
         : id(0)
     {}
     // Additional constructors
-    STRING_FUNCQUALIFIER StringID(const String &str)
+    FORCE_INLINE explicit StringID(const String &str)
         : id(STRINGID_HASHFUNC(str, Seed))
     {
         insertDbgStr(str);
@@ -119,7 +113,7 @@ public:
     STRINGID_FUNCQUALIFIER
     StringID(const WChar *str) { initFromAChar(TCHAR_TO_UTF8(WCHAR_TO_TCHAR(str))); }
     // Additional assignments
-    STRING_FUNCQUALIFIER
+    FORCE_INLINE
     StringID &operator=(const String &str)
     {
         id = STRINGID_HASHFUNC(str, Seed);
@@ -194,4 +188,3 @@ ArchiveType &operator<<(ArchiveType &archive, StringID &value)
 }
 
 #undef STRINGID_FUNCQUALIFIER
-#undef STRING_FUNCQUALIFIER

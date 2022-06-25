@@ -38,7 +38,7 @@ public:
     // Used only for predefined render pass formats(renderpassFormat != ERenderPassFormat::Generic)
     EVertexType::Type forVertexType;
 
-    String materialName;
+    NameString materialName;
 
     const Framebuffer *getFb() const { return framebuffer; }
     const PipelineBase *getPipeline() const { return pipelineUsed; }

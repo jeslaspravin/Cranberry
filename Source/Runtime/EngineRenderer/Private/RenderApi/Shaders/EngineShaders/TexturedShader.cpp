@@ -49,14 +49,14 @@ protected:
         compatibleVertex = VertexUsage;
     }
 
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static TexturedMeshMaterialsBufferParamInfo MESH_MATERIALS_DATA;
-        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+        static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
             {TCHAR("materials"), &MESH_MATERIALS_DATA}
         };
 
-        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 

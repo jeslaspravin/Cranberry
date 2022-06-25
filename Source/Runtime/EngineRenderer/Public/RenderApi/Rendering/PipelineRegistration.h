@@ -23,6 +23,7 @@ class String;
 struct GraphicsPipelineConfig;
 class IGraphicsInstance;
 class GraphicsHelperAPI;
+class StringID;
 
 //////////////////////////////////////////////////////////////////////////
 // PipelineFactory
@@ -48,7 +49,7 @@ struct ENGINERENDERER_EXPORT GraphicsPipelineFactoryRegistrant
     GraphicsPipelineConfigGetter getter;
 
 public:
-    GraphicsPipelineFactoryRegistrant(const String &shaderName, GraphicsPipelineConfigGetter configGetter);
+    GraphicsPipelineFactoryRegistrant(const TChar *shaderName, GraphicsPipelineConfigGetter configGetter);
     FORCE_INLINE PipelineBase *
         operator()(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
 };
@@ -56,7 +57,7 @@ public:
 struct ENGINERENDERER_EXPORT ComputePipelineFactoryRegistrant
 {
 public:
-    ComputePipelineFactoryRegistrant(const String &shaderName);
+    ComputePipelineFactoryRegistrant(const TChar *shaderName);
     FORCE_INLINE PipelineBase *
         operator()(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, const PipelineFactoryArgs &args) const;
 };
@@ -68,8 +69,8 @@ private:
     friend GraphicsPipelineFactoryRegistrant;
     friend ComputePipelineFactoryRegistrant;
 
-    static std::map<String, GraphicsPipelineFactoryRegistrant> &graphicsPipelineFactoriesRegistry();
-    static std::map<String, ComputePipelineFactoryRegistrant> &computePipelineFactoriesRegistry();
+    static std::map<StringID, GraphicsPipelineFactoryRegistrant> &graphicsPipelineFactoriesRegistry();
+    static std::map<StringID, ComputePipelineFactoryRegistrant> &computePipelineFactoriesRegistry();
 
 public:
     PipelineBase *

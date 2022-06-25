@@ -26,10 +26,10 @@ public:
     IntegrateBRDFShader()
         : BaseType(INTEGRATEBRDF_SHADER_NAME)
     {
-        static ComputePipelineFactoryRegistrant INTEGRATEBRDF_SHADER_PIPELINE_REGISTER(getResourceName());
+        static ComputePipelineFactoryRegistrant INTEGRATEBRDF_SHADER_PIPELINE_REGISTER(getResourceName().getChar());
     }
 
-    void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const final
+    void getSpecializationConsts(SpecConstantNamedMap &specializationConst) const
     {
         specializationConst[SAMPLE_COUNT] = SpecializationConstUtility::fromValue(1024u);
     }
@@ -47,7 +47,7 @@ private:
     DrawIntegrateBRDFShader();
 
 public:
-    void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const final
+    void getSpecializationConsts(SpecConstantNamedMap &specializationConst) const
     {
         specializationConst[SAMPLE_COUNT] = SpecializationConstUtility::fromValue(1024u);
     }
