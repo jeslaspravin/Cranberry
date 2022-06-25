@@ -16,10 +16,18 @@
 
 #if DEV_BUILD
 #define STRINGID_FUNCQUALIFIER FORCE_INLINE
+#define STRING_FUNCQUALIFIER FORCE_INLINE
 #define STRINGID_CONSTEXPR
+#define HAS_STRINGID_CONSTEXPR 0
 #else // DEV_BUILD
 #define STRINGID_FUNCQUALIFIER CONST_EXPR
 #define STRINGID_CONSTEXPR CONST_EXPR
+#define HAS_STRINGID_CONSTEXPR 1
+#if HAS_STRING_CONSTEXPR
+#define STRING_FUNCQUALIFIER CONST_EXPR
+#else // HAS_STRING_CONSTEXPR
+#define STRING_FUNCQUALIFIER FORCE_INLINE
+#endif // HAS_STRING_CONSTEXPR
 #endif // DEV_BUILD
 
 #ifndef STRINGID_HASHFUNC
@@ -95,7 +103,7 @@ public:
         : id(0)
     {}
     // Additional constructors
-    FORCE_INLINE StringID(const String &str)
+    STRING_FUNCQUALIFIER StringID(const String &str)
         : id(STRINGID_HASHFUNC(str, Seed))
     {
         insertDbgStr(str);
@@ -111,18 +119,21 @@ public:
     STRINGID_FUNCQUALIFIER
     StringID(const WChar *str) { initFromAChar(TCHAR_TO_UTF8(WCHAR_TO_TCHAR(str))); }
     // Additional assignments
-    FORCE_INLINE StringID &operator=(const String &str)
+    STRING_FUNCQUALIFIER
+    StringID &operator=(const String &str)
     {
         id = STRINGID_HASHFUNC(str, Seed);
         insertDbgStr(str);
         return *this;
     }
-    STRINGID_FUNCQUALIFIER StringID &operator=(const AChar *str)
+    STRINGID_FUNCQUALIFIER
+    StringID &operator=(const AChar *str)
     {
         initFromAChar(str);
         return *this;
     }
-    STRINGID_FUNCQUALIFIER StringID &operator=(const WChar *str)
+    STRINGID_FUNCQUALIFIER
+    StringID &operator=(const WChar *str)
     {
         initFromAChar(TCHAR_TO_UTF8(WCHAR_TO_TCHAR(str)));
         return *this;
@@ -135,6 +146,7 @@ public:
     /**
      * toString will return id integer as string in release build
      * NOTE : Do not use this toString for any purpose other than debug logging
+     * Use NameString if you need toString() for logic
      */
     FORCE_INLINE String toString() const
     {
@@ -182,3 +194,4 @@ ArchiveType &operator<<(ArchiveType &archive, StringID &value)
 }
 
 #undef STRINGID_FUNCQUALIFIER
+#undef STRING_FUNCQUALIFIER

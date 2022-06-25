@@ -184,4 +184,6 @@ StatementMacros:
 WhitespaceSensitiveMacros:
   - TCHAR
   - STRID
+TypenameMacros :
+
 ...
