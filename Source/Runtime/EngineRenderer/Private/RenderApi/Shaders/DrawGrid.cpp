@@ -54,7 +54,7 @@ private:
             String(DRAW_GRID_NAME) + (DepthTest ? TCHAR("DTest") : TCHAR("")))
             , shaderFileName(DRAW_GRID_NAME)
     {
-        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_GRID_PIPELINE_REGISTRAR, getResourceName(), &drawGridPipelineConfig<DepthTest>);
+        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_GRID_PIPELINE_REGISTRAR, getResourceName().getChar(), &drawGridPipelineConfig<DepthTest>);
     }
 
 protected:
@@ -62,11 +62,11 @@ protected:
     String getShaderFileName() const override { return shaderFileName; }
     /* overrides ends */
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
-        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
+        static std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
 
-        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 

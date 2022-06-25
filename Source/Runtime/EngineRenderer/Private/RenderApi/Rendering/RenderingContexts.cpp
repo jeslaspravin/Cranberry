@@ -32,7 +32,7 @@ void GlobalRenderingContextBase::initContext(IGraphicsInstance *graphicsInstance
     graphicsInstanceCache = graphicsInstance;
     graphicsHelperCache = graphicsHelper;
 
-    std::map<String, uint32> &runtimeResCount = ShaderParameterUtility::unboundArrayResourcesCount();
+    std::map<StringID, uint32> &runtimeResCount = ShaderParameterUtility::unboundArrayResourcesCount();
     // Fill Runtime indexed resources max count over here
     runtimeResCount[TCHAR("srcImages")] = 16u;
     runtimeResCount[TCHAR("globalSampledTexs")] = GlobalRenderVariables::GLOBAL_SAMPLED_TEX_NUM.get();
@@ -84,7 +84,7 @@ void GlobalRenderingContextBase::initShaderResources()
         pipelinesCache->init();
     }
 
-    std::map<String, std::pair<uint32, ShaderResource *>> shaderUniqParamUsageMaxBitCount;
+    std::map<StringID, std::pair<uint32, ShaderResource *>> shaderUniqParamUsageMaxBitCount;
     std::vector<ShaderResource *> allShaderResources;
     std::vector<GraphicsResource *> allShaderConfigs;
     ShaderConfigCollector::staticType()->allChildDefaultResources(allShaderConfigs, true, true);
@@ -119,6 +119,7 @@ void GlobalRenderingContextBase::initShaderResources()
             if (bDrawMeshShaderConfig)
             {
                 const DrawMeshShaderConfig *drawMeshShaderConfig = static_cast<const DrawMeshShaderConfig *>(shaderConfig);
+                const StringID shaderResNameID{ drawMeshShaderConfig->getResourceName() };
 
                 for (const ReflectDescriptorBody &descriptorsSetMeta : shader->getReflection()->descriptorsSets)
                 {
@@ -139,10 +140,10 @@ void GlobalRenderingContextBase::initShaderResources()
                     }
                     else if (descriptorsSetMeta.set == ShaderParameterUtility::SHADER_UNIQ_SET)
                     {
-                        auto itr = shaderUniqParamUsageMaxBitCount.find(drawMeshShaderConfig->getResourceName());
+                        auto itr = shaderUniqParamUsageMaxBitCount.find(shaderResNameID);
                         if (itr == shaderUniqParamUsageMaxBitCount.end())
                         {
-                            shaderUniqParamUsageMaxBitCount[drawMeshShaderConfig->getResourceName()] = { setBitCount, shader };
+                            shaderUniqParamUsageMaxBitCount[shaderResNameID] = { setBitCount, shader };
                         }
                         else if (itr->second.first < setBitCount)
                         {
@@ -196,7 +197,8 @@ void GlobalRenderingContextBase::initShaderResources()
 }
 
 void GlobalRenderingContextBase::initShaderPipelines(
-    const std::vector<ShaderResource *> &allShaderResources, const std::map<String, std::pair<uint32, ShaderResource *>> &shaderUniqParamShader
+    const std::vector<ShaderResource *> &allShaderResources,
+    const std::map<StringID, std::pair<uint32, ShaderResource *>> &shaderUniqParamShader
 )
 {
     std::set<EVertexType::Type> filledVertexInfo;
@@ -216,6 +218,7 @@ void GlobalRenderingContextBase::initShaderPipelines(
 
     for (ShaderResource *shader : allShaderResources)
     {
+        const StringID shaderResNameID{ shader->getResourceName() };
         if (shader->getShaderConfig()->getType()->isChildOf(DrawMeshShaderConfig::staticType()))
         {
             debugAssert(!GlobalRenderVariables::GPU_IS_COMPUTE_ONLY.get());
@@ -223,11 +226,11 @@ void GlobalRenderingContextBase::initShaderPipelines(
             const DrawMeshShaderConfig *drawMeshShaderConfig = static_cast<const DrawMeshShaderConfig *>(shader->getShaderConfig());
             vertexAttribFillLambda(drawMeshShaderConfig->vertexUsage(), drawMeshShaderConfig->getReflection()->inputs);
 
-            ShaderDataCollection &shaderCollection = rawShaderObjects[shader->getResourceName()];
+            ShaderDataCollection &shaderCollection = rawShaderObjects[shaderResNameID];
             if (shaderCollection.shadersParamLayout == nullptr)
             {
                 ShaderResource *shaderToUse = shader;
-                auto shaderToUseItr = shaderUniqParamShader.find(shader->getResourceName());
+                auto shaderToUseItr = shaderUniqParamShader.find(shaderResNameID);
                 if (shaderToUseItr != shaderUniqParamShader.cend())
                 {
                     shaderToUse = shaderToUseItr->second.second;
@@ -241,7 +244,7 @@ void GlobalRenderingContextBase::initShaderPipelines(
             }
             GraphicsPipelineBase *graphicsPipeline
                 = static_cast<GraphicsPipelineBase *>(pipelineFactory->create(graphicsInstanceCache, graphicsHelperCache, { shader }));
-            fatalAssertf(graphicsPipeline, "Graphics pipeline creation failed for shader %s", shader->getResourceName().getChar());
+            fatalAssertf(graphicsPipeline, "Graphics pipeline creation failed for shader %s", shader->getResourceName());
 
             // Check if there is set 3(Per variant shader parameters)
             GraphicsResource *perVariantLayout = nullptr;
@@ -278,7 +281,7 @@ void GlobalRenderingContextBase::initShaderPipelines(
             const UniqueUtilityShaderConfig *utilityShaderConfig = static_cast<const UniqueUtilityShaderConfig *>(shader->getShaderConfig());
             vertexAttribFillLambda(utilityShaderConfig->vertexUsage(), utilityShaderConfig->getReflection()->inputs);
 
-            ShaderDataCollection &shaderCollection = rawShaderObjects[shader->getResourceName()];
+            ShaderDataCollection &shaderCollection = rawShaderObjects[shaderResNameID];
             debugAssert(shaderCollection.shaderObject == nullptr);
             debugAssert(shaderCollection.shadersParamLayout == nullptr);
 
@@ -300,7 +303,7 @@ void GlobalRenderingContextBase::initShaderPipelines(
         }
         else if (shader->getShaderConfig()->getType()->isChildOf<ComputeShaderConfig>())
         {
-            ShaderDataCollection &shaderCollection = rawShaderObjects[shader->getResourceName()];
+            ShaderDataCollection &shaderCollection = rawShaderObjects[shaderResNameID];
             debugAssert(shaderCollection.shaderObject == nullptr);
             debugAssert(shaderCollection.shadersParamLayout == nullptr);
 
@@ -342,7 +345,7 @@ void GlobalRenderingContextBase::destroyShaderResources()
     }
     perVertexTypeLayouts.clear();
 
-    for (std::pair<const String, ShaderDataCollection> &shaderDataCollection : rawShaderObjects)
+    for (std::pair<const StringID, ShaderDataCollection> &shaderDataCollection : rawShaderObjects)
     {
         shaderDataCollection.second.shadersParamLayout->release();
         delete shaderDataCollection.second.shadersParamLayout;
@@ -356,7 +359,7 @@ void GlobalRenderingContextBase::writeAndDestroyPipelineCache()
 {
     if (pipelinesCache)
     {
-        for (const std::pair<const String, ShaderDataCollection> &shaderDataCollection : rawShaderObjects)
+        for (const std::pair<const StringID, ShaderDataCollection> &shaderDataCollection : rawShaderObjects)
         {
             shaderDataCollection.second.shaderObject->preparePipelineCache(pipelinesCache);
         }
@@ -513,11 +516,11 @@ void GlobalRenderingContextBase::preparePipelineContext(
     class LocalPipelineContext *pipelineContext, GenericRenderPassProperties renderpassProps
 )
 {
-    std::unordered_map<String, ShaderDataCollection>::const_iterator shaderDataCollectionItr
-        = rawShaderObjects.find(pipelineContext->materialName);
+    std::unordered_map<StringID, ShaderDataCollection>::const_iterator shaderDataCollectionItr
+        = rawShaderObjects.find(StringID(pipelineContext->materialName));
     if (shaderDataCollectionItr == rawShaderObjects.cend())
     {
-        LOG_ERROR("GlobalRenderingContext", "Requested material %s is not found", pipelineContext->materialName.getChar());
+        LOG_ERROR("GlobalRenderingContext", "Requested material %s is not found", pipelineContext->materialName);
         return;
     }
 
@@ -545,7 +548,7 @@ void GlobalRenderingContextBase::preparePipelineContext(
             fb = getOrCreateFramebuffer(renderpassProps, pipelineContext->frameAttachments);
         }
         fatalAssertf(
-            fb != nullptr, "Framebuffer is invalid[Shader : %s, Render pass format : %s]", pipelineContext->materialName.getChar(),
+            fb != nullptr, "Framebuffer is invalid[Shader : %s, Render pass format : %s]", pipelineContext->materialName,
             ERenderPassFormat::toString(pipelineContext->renderpassFormat)
         );
         pipelineContext->framebuffer = fb;

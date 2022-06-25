@@ -35,8 +35,8 @@
 
 using namespace ImGui;
 
-const String ImGuiManager::TEXTURE_PARAM_NAME{ TCHAR("textureAtlas") };
-const String ImGuiManager::IMGUI_SHADER_NAME{ TCHAR("DrawImGui") };
+const StringID ImGuiManager::TEXTURE_PARAM_NAME{ TCHAR("textureAtlas") };
+const NameString ImGuiManager::IMGUI_SHADER_NAME{ TCHAR("DrawImGui") };
 
 ImGuiManager::ImGuiManager(ImGuiManager *parent)
     : parentGuiManager(parent)

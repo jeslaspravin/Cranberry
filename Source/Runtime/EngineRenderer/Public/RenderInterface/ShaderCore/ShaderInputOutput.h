@@ -26,7 +26,7 @@ enum Type
 // Half float not supported yet
 namespace EShaderInputAttribFormat
 {
-enum Type
+enum Type : uint32
 {
     Undefined = EPixelDataFormat::Undefined,
     Double = EPixelDataFormat::R_SF64,

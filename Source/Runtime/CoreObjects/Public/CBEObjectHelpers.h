@@ -16,6 +16,7 @@
 #include "CoreObjectsDB.h"
 #include "ObjectPathHelpers.h"
 #include "Property/PropertyHelper.h"
+#include "String/NameString.h"
 
 namespace CBE
 {
@@ -140,11 +141,11 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
         alertAlwaysf(false, "Invalid object name! Invalid characters will be replaced with underscore(_)");
         objectName = PropertyHelper::getValidSymbolName(objectName);
     }
-    String objectFullPath = ObjectPathHelper::getFullPath(objectName.getChar(), outerObj);
+    NameString objectFullPath = NameString(ObjectPathHelper::getFullPath(objectName.getChar(), outerObj));
 
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
 #if DEV_BUILD
-    if (objectsDb.hasObject(objectFullPath))
+    if (objectsDb.hasObject(StringID(objectFullPath)))
     {
         LOG_WARN(
             "ObjectHelper",
@@ -174,7 +175,7 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
     Object *object = reinterpret_cast<Object *>(objPtr);
 
     // Object's data must be populated even before constructor is called
-    if (objectsDb.hasObject(objectFullPath))
+    if (objectsDb.hasObject(StringID(objectFullPath)))
     {
         // Appending allocation ID and class name will make it unique
         SizeT uniqueNameId = uint32(clazz->name);
@@ -199,7 +200,7 @@ template <typename... CtorArgs>
 Object *createOrGet(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
 {
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-    StringID objectFullPath = ObjectPathHelper::getFullPath(name.getChar(), outerObj);
+    StringID objectFullPath = ObjectPathHelper::getFullPath(name.getChar(), outerObj).getChar();
     if (objectsDb.hasObject(objectFullPath))
     {
         return objectsDb.getObject(objectFullPath);

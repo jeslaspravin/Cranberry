@@ -11,6 +11,7 @@
 
 #pragma once
 #include "Reflections/Fields.h"
+#include "String/NameString.h"
 #include "RenderInterface/ShaderCore/ShaderInputOutput.h"
 #include "Types/Containers/ArrayView.h"
 #include "Types/Templates/TypeTraits.h"
@@ -39,14 +40,14 @@ using ShaderBufferParamInfo = ShaderParamInfo<ShaderBufferFieldNode>;
 
 struct ENGINERENDERER_EXPORT ShaderVertexField
 {
-    String attributeName{};
+    NameString attributeName{};
     uint32 offset = 0;
     // Location and format will be retrieved from reflection
     uint32 location = 0;
     EShaderInputAttribFormat::Type format = EShaderInputAttribFormat::Undefined;
 
-    ShaderVertexField(const String &attribName, const uint32 &offsetVal);
-    ShaderVertexField(const String &attribName, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat);
+    ShaderVertexField(const TChar *attribName, const uint32 &offsetVal);
+    ShaderVertexField(const TChar *attribName, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat);
 };
 
 template <typename OuterType, typename MemberType>
@@ -55,13 +56,13 @@ struct ShaderVertexMemberField : public ShaderVertexField
     using FieldPtr = ClassMemberField<false, OuterType, MemberType>;
     FieldPtr memberPtr;
 
-    ShaderVertexMemberField(const String &pName, const FieldPtr &fieldPtr, const uint32 &offsetVal)
+    ShaderVertexMemberField(const TChar *pName, const FieldPtr &fieldPtr, const uint32 &offsetVal)
         : ShaderVertexField(pName, offsetVal)
         , memberPtr(fieldPtr)
     {}
 
     ShaderVertexMemberField(
-        const String &pName, const FieldPtr &fieldPtr, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat
+        const TChar *pName, const FieldPtr &fieldPtr, const uint32 &offsetVal, EShaderInputAttribFormat::Type overrideFormat
     )
         : ShaderVertexField(pName, offsetVal, overrideFormat)
         , memberPtr(fieldPtr)
@@ -85,12 +86,12 @@ struct ENGINERENDERER_EXPORT ShaderBufferField
     uint32 offset = 0;
     uint32 stride;
     uint32 size;
-    String paramName;
+    NameString paramName;
 
     uint8 fieldDecorations = 0;
     ShaderBufferParamInfo *paramInfo = nullptr;
 
-    ShaderBufferField(const String &pName);
+    ShaderBufferField(const TChar *pName);
 
     virtual bool setFieldData(void *outerPtr, const std::any &newValue) const = 0;
     virtual bool setFieldDataArray(void *outerPtr, const std::any &newValuesPtr) const = 0;
@@ -111,7 +112,7 @@ struct ENGINERENDERER_EXPORT ShaderBufferField
 template <typename OuterType>
 struct ShaderBufferTypedField : public ShaderBufferField
 {
-    ShaderBufferTypedField(const String &pName)
+    ShaderBufferTypedField(const TChar *pName)
         : ShaderBufferField(pName)
     {}
 
@@ -134,7 +135,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     using FieldPtr = ClassMemberField<false, OuterType, MemberType>;
     FieldPtr memberPtr;
 
-    ShaderBufferMemberField(const String &pName, const FieldPtr &fieldPtr)
+    ShaderBufferMemberField(const TChar *pName, const FieldPtr &fieldPtr)
         : ShaderBufferTypedField<OuterType>(pName)
         , memberPtr(fieldPtr)
     {
@@ -265,7 +266,7 @@ struct ShaderBufferStructField : public ShaderBufferMemberField<OuterType, Membe
     using ShaderBufferMemberField<OuterType, MemberType>::paramInfo;
     using typename ShaderBufferMemberField<OuterType, MemberType>::FieldPtr;
 
-    ShaderBufferStructField(const String &pName, const FieldPtr &fieldPtr, ShaderBufferParamInfo *pInfo)
+    ShaderBufferStructField(const TChar *pName, const FieldPtr &fieldPtr, ShaderBufferParamInfo *pInfo)
         : ShaderBufferMemberField<OuterType, MemberType>(pName, fieldPtr)
     {
         paramInfo = pInfo;

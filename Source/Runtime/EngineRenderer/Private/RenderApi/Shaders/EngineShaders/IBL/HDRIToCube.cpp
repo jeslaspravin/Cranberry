@@ -23,7 +23,7 @@ public:
     HDRIToCubeShader()
         : BaseType(HDRITOCUBE_SHADER_NAME)
     {
-        static ComputePipelineFactoryRegistrant HDRITOCUBE_SHADER_PIPELINE_REGISTER(getResourceName());
+        static ComputePipelineFactoryRegistrant HDRITOCUBE_SHADER_PIPELINE_REGISTER(getResourceName().getChar());
     }
 };
 

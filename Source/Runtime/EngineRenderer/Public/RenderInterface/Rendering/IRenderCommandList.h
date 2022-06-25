@@ -297,14 +297,14 @@ void IRenderCommandList::recordCopyToBuffer(
 }
 
 template <typename BufferType>
-bool ShaderParameters::setBuffer(const String &paramName, const BufferType &bufferValue, uint32 index /* = 0 */)
+bool ShaderParameters::setBuffer(StringID paramName, const BufferType &bufferValue, uint32 index /* = 0 */)
 {
     bool bValueSet = false;
     auto bufferDataItr = shaderBuffers.find(paramName);
 
     if (bufferDataItr == shaderBuffers.end())
     {
-        String bufferName;
+        StringID bufferName;
         std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *> foundInfo
             = findBufferParam(bufferName, paramName);
         if (foundInfo.first && foundInfo.second && BIT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct)
@@ -347,7 +347,7 @@ bool ShaderParameters::setBuffer(const String &paramName, const BufferType &buff
         }
         else
         {
-            LOG_ERROR("ShaderParameters", "Cannot set %s[%d] of %s", paramName.getChar(), index, bufferName.getChar());
+            LOG_ERROR("ShaderParameters", "Cannot set %s[%d] of %s", paramName, index, bufferName);
         }
     }
     else

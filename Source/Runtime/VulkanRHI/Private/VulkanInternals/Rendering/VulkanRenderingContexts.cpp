@@ -68,9 +68,9 @@ void VulkanGlobalRenderingContext::initializeApiContext()
         }
     }
 
-    for (std::pair<const String, ShaderDataCollection> &shaderCollection : rawShaderObjects)
+    for (std::pair<const StringID, ShaderDataCollection> &shaderCollection : rawShaderObjects)
     {
-        if (shaderCollection.first == String(DEFAULT_SHADER_NAME))
+        if (shaderCollection.first == StringID(DEFAULT_SHADER_NAME))
         {
             continue;
         }

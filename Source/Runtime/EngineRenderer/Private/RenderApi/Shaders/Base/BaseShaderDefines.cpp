@@ -25,7 +25,7 @@ String DrawMeshShaderConfig::getShaderFileName() const
     return getResourceName() + EVertexType::toString(vertexUsage()) + ERenderPassFormat::toString(renderpassUsage());
 }
 
-void DrawMeshShaderConfig::getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const
+void DrawMeshShaderConfig::getSpecializationConsts(SpecConstantNamedMap &specializationConst) const
 {
     BaseType::getSpecializationConsts(specializationConst);
     RenderSceneBase::sceneViewSpecConsts(specializationConst);

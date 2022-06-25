@@ -76,11 +76,11 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound image(texel) buffer array is not allowed for parameter %s", attribName
+                "Unbound image(texel) buffer array is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -116,11 +116,11 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound sampled(texel) buffer array is not allowed for parameter %s", attribName
+                "Unbound sampled(texel) buffer array is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -156,11 +156,11 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound array of images or imageArray is not allowed for parameter %s", attribName
+                "Unbound array of images or imageArray is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -196,11 +196,11 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound array of textures or textureArray is not allowed for parameter %s", attribName
+                "Unbound array of textures or textureArray is not allowed for parameter %s", UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -236,13 +236,12 @@ void fillDescriptorsSet(
         // 0 means unbound array
         if (descCount == 0)
         {
-            String attribName{ UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str()) };
+            StringID attribName{ descriptorInfo.attributeName.c_str() };
             auto itr = std::as_const(ShaderParameterUtility::unboundArrayResourcesCount()).find(attribName);
             fatalAssertf(
                 itr != ShaderParameterUtility::unboundArrayResourcesCount().cend(),
-                "Unbound array of sampled textures or sampled textureArray is not allowed for "
-                "parameter %s",
-                attribName
+                "Unbound array of sampled textures or sampled textureArray is not allowed for parameter %s",
+                UTF8_TO_TCHAR(descriptorInfo.attributeName.c_str())
             );
             descCount = itr->second;
             runtimeArray[descriptorInfo.data.binding] = true;
@@ -315,7 +314,7 @@ void VulkanShaderSetParamsLayout::init()
 
     std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
     {
-        std::map<String, SpecializationConstantEntry> specConsts;
+        SpecConstantNamedMap specConsts;
         respectiveShaderRes->getSpecializationConsts(specConsts);
         ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, respectiveShaderRes->getReflection());
     }
@@ -447,7 +446,7 @@ VulkanShaderUniqDescLayout::VulkanShaderUniqDescLayout(const ShaderResource *sha
     : BaseType(shaderResource, descSetIdx)
 {}
 
-void VulkanShaderUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
+void VulkanShaderUniqDescLayout::bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const
 {
     respectiveShaderRes->bindBufferParamInfo(bindingBuffers);
 }
@@ -473,13 +472,13 @@ String VulkanVertexUniqDescLayout::getObjectName() const
            + TCHAR("_DescriptorsSetLayout") + String::toString(ShaderParameterUtility::INSTANCE_UNIQ_SET);
 }
 
-void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
+void VulkanVertexUniqDescLayout::bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const
 {
-    const std::map<String, ShaderBufferParamInfo *> &vertexSpecificBufferInfo = MaterialVertexUniforms::bufferParamInfo(
+    const std::map<StringID, ShaderBufferParamInfo *> &vertexSpecificBufferInfo = MaterialVertexUniforms::bufferParamInfo(
         static_cast<const DrawMeshShaderConfig *>(respectiveShaderRes->getShaderConfig())->vertexUsage()
     );
 
-    for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : vertexSpecificBufferInfo)
+    for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : vertexSpecificBufferInfo)
     {
         auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -504,11 +503,11 @@ String VulkanViewUniqDescLayout::getObjectName() const
     return respectiveShaderRes->getResourceName() + TCHAR("_DescriptorsSetLayout") + String::toString(ShaderParameterUtility::VIEW_UNIQ_SET);
 }
 
-void VulkanViewUniqDescLayout::bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const
+void VulkanViewUniqDescLayout::bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const
 {
-    const std::map<String, ShaderBufferParamInfo *> &viewSpecificBufferInfo = RenderSceneBase::sceneViewParamInfo();
+    const std::map<StringID, ShaderBufferParamInfo *> &viewSpecificBufferInfo = RenderSceneBase::sceneViewParamInfo();
 
-    for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : viewSpecificBufferInfo)
+    for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : viewSpecificBufferInfo)
     {
         auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -553,7 +552,7 @@ void VulkanShaderParametersLayout::init()
 
     std::vector<std::vector<SpecializationConstantEntry>> specializationConsts;
     {
-        std::map<String, SpecializationConstantEntry> specConsts;
+        SpecConstantNamedMap specConsts;
         respectiveShaderRes->getSpecializationConsts(specConsts);
         ShaderParameterUtility::convertNamedSpecConstsToPerStage(specializationConsts, specConsts, respectiveShaderRes->getReflection());
     }
@@ -731,7 +730,7 @@ void VulkanShaderSetParameters::init()
     bufferDescWrites.reserve(shaderBuffers.size());
     std::vector<VkDescriptorBufferInfo> bufferInfos(shaderBuffers.size());
     uint32 descWriteIdx = 0;
-    for (const std::pair<const String, BufferParametersData> &bufferParam : shaderBuffers)
+    for (const std::pair<const StringID, BufferParametersData> &bufferParam : shaderBuffers)
     {
         WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
         writeDescSet.dstSet = descriptorsSet;
@@ -782,7 +781,7 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList *cmdList, IGraph
     std::vector<VkDescriptorImageInfo> imageAndSamplerInfos;
     imageAndSamplerInfos.reserve(textureUpdates.size() + samplerUpdates.size());
 
-    for (const String &bufferParamName : bufferResourceUpdates)
+    for (const StringID &bufferParamName : bufferResourceUpdates)
     {
         DescriptorWriteData &bufferWriteData = writeDescs.emplace_back();
         bufferWriteData.ParamData.buffer = &shaderBuffers.at(bufferParamName);
@@ -794,7 +793,7 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList *cmdList, IGraph
         bufferInfo.range = bufferWriteData.ParamData.buffer->gpuBuffer->getResourceSize();
         bufferInfos.emplace_back(bufferInfo);
     }
-    for (const std::pair<String, uint32> &texelBufferUpdate : texelUpdates)
+    for (const std::pair<StringID, uint32> &texelBufferUpdate : texelUpdates)
     {
         DescriptorWriteData &texelWriteData = writeDescs.emplace_back();
         texelWriteData.ParamData.texel = &shaderTexels.at(texelBufferUpdate.first);
@@ -806,7 +805,7 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList *cmdList, IGraph
                 ->getBufferView({})
         );
     }
-    for (const std::pair<String, uint32> &textureUpdate : textureUpdates)
+    for (const std::pair<StringID, uint32> &textureUpdate : textureUpdates)
     {
         DescriptorWriteData &texWriteData = writeDescs.emplace_back();
         texWriteData.ParamData.texture = &shaderTextures.at(textureUpdate.first);
@@ -829,7 +828,7 @@ void VulkanShaderSetParameters::updateParams(IRenderCommandList *cmdList, IGraph
                       texWriteData.ParamData.texture->descriptorInfo->textureEntryPtr->data.data.imageViewType
                   );
     }
-    for (const std::pair<String, uint32> &samplerUpdate : samplerUpdates)
+    for (const std::pair<StringID, uint32> &samplerUpdate : samplerUpdates)
     {
         DescriptorWriteData &samplerWriteData = writeDescs.emplace_back();
         samplerWriteData.ParamData.sampler = &shaderSamplers.at(samplerUpdate.first);
@@ -952,7 +951,7 @@ void VulkanShaderParameters::init()
     bufferDescWrites.reserve(shaderBuffers.size());
     std::vector<VkDescriptorBufferInfo> bufferInfos(shaderBuffers.size());
     uint32 descWriteIdx = 0;
-    for (const std::pair<const String, BufferParametersData> &bufferParam : shaderBuffers)
+    for (const std::pair<const StringID, BufferParametersData> &bufferParam : shaderBuffers)
     {
         WRITE_RESOURCE_TO_DESCRIPTORS_SET(writeDescSet);
         writeDescSet.dstSet = descriptorsSets[static_cast<const ShaderParametersLayout *>(paramLayout)->getSetID(bufferParam.first)];
@@ -1008,7 +1007,7 @@ void VulkanShaderParameters::updateParams(IRenderCommandList *cmdList, IGraphics
     std::vector<VkDescriptorImageInfo> imageAndSamplerInfos;
     imageAndSamplerInfos.reserve(textureUpdates.size() + samplerUpdates.size());
 
-    for (const String &bufferParamName : bufferResourceUpdates)
+    for (const StringID &bufferParamName : bufferResourceUpdates)
     {
         DescriptorWriteData &bufferWriteData = writeDescs.emplace_back();
         bufferWriteData.ParamData.buffer = &shaderBuffers.at(bufferParamName);
@@ -1021,7 +1020,7 @@ void VulkanShaderParameters::updateParams(IRenderCommandList *cmdList, IGraphics
         bufferInfo.range = bufferWriteData.ParamData.buffer->gpuBuffer->getResourceSize();
         bufferInfos.emplace_back(bufferInfo);
     }
-    for (const std::pair<String, uint32> &texelBufferUpdate : texelUpdates)
+    for (const std::pair<StringID, uint32> &texelBufferUpdate : texelUpdates)
     {
         DescriptorWriteData &texelWriteData = writeDescs.emplace_back();
         texelWriteData.ParamData.texel = &shaderTexels.at(texelBufferUpdate.first);
@@ -1034,7 +1033,7 @@ void VulkanShaderParameters::updateParams(IRenderCommandList *cmdList, IGraphics
                 ->getBufferView({})
         );
     }
-    for (const std::pair<String, uint32> &textureUpdate : textureUpdates)
+    for (const std::pair<StringID, uint32> &textureUpdate : textureUpdates)
     {
         DescriptorWriteData &texWriteData = writeDescs.emplace_back();
         texWriteData.ParamData.texture = &shaderTextures.at(textureUpdate.first);
@@ -1058,7 +1057,7 @@ void VulkanShaderParameters::updateParams(IRenderCommandList *cmdList, IGraphics
                       texWriteData.ParamData.texture->descriptorInfo->textureEntryPtr->data.data.imageViewType
                   );
     }
-    for (const std::pair<String, uint32> &samplerUpdate : samplerUpdates)
+    for (const std::pair<StringID, uint32> &samplerUpdate : samplerUpdates)
     {
         DescriptorWriteData &samplerWriteData = writeDescs.emplace_back();
         samplerWriteData.ParamData.sampler = &shaderSamplers.at(samplerUpdate.first);

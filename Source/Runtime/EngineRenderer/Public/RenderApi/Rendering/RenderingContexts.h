@@ -56,7 +56,7 @@ protected:
     const GraphicsHelperAPI *graphicsHelperCache;
 
     // Shader(material as all shader with same name considered as same material) name to collection
-    std::unordered_map<String, ShaderDataCollection> rawShaderObjects;
+    std::unordered_map<StringID, ShaderDataCollection> rawShaderObjects;
 
     // Has one layout(Descriptors set layout) for each vertex type
     std::unordered_map<EVertexType::Type, GraphicsResource *> perVertexTypeLayouts;
@@ -81,7 +81,7 @@ private:
     void initShaderResources();
     void initShaderPipelines(
         const std::vector<ShaderResource *> &allShaderResources,
-        const std::map<String, std::pair<uint32, ShaderResource *>> &shaderUniqParamShader
+        const std::map<StringID, std::pair<uint32, ShaderResource *>> &shaderUniqParamShader
     );
     void destroyShaderResources();
     void writeAndDestroyPipelineCache();

@@ -258,7 +258,7 @@ void VulkanGraphicsPipeline::fillSpecializationConsts(
     uint32 specConstsCount = 0;
     std::vector<std::vector<SpecializationConstantEntry>> specConstsPerStage;
     {
-        std::map<String, SpecializationConstantEntry> specConsts;
+        SpecConstantNamedMap specConsts;
         pipelineShader->getSpecializationConsts(specConsts);
         specConstsCount
             = ShaderParameterUtility::convertNamedSpecConstsToPerStage(specConstsPerStage, specConsts, pipelineShader->getReflection());
@@ -617,7 +617,7 @@ void VulkanComputePipeline::fillSpecializationConsts(
     uint32 specConstsCount = 0;
     std::vector<std::vector<SpecializationConstantEntry>> specConstsPerStage;
     {
-        std::map<String, SpecializationConstantEntry> specConsts;
+        SpecConstantNamedMap specConsts;
         pipelineShader->getSpecializationConsts(specConsts);
         specConstsCount
             = ShaderParameterUtility::convertNamedSpecConstsToPerStage(specConstsPerStage, specConsts, pipelineShader->getReflection());

@@ -233,7 +233,7 @@ struct DeepCopyFieldVisitable
             {
                 String comRootRelPath = ObjectPathHelper::getObjectPath(*fromDataPtrPtr, copyUserData->fromCommonRoot);
                 Object *dupObj
-                    = copyUserData->objDb->getObject(ObjectPathHelper::getFullPath(comRootRelPath.getChar(), copyUserData->toCommonRoot));
+                    = copyUserData->objDb->getObject(ObjectPathHelper::getFullPath(comRootRelPath.getChar(), copyUserData->toCommonRoot).getChar());
                 debugAssert(dupObj);
                 (*toDataPtrPtr) = dupObj;
             }
@@ -340,7 +340,7 @@ bool deepCopy(Object *fromObject, Object *toObject)
         Object *duplicateSubObjOuter = toObject;
         for (auto outerNameRItr = objectNamesChain.crbegin(); outerNameRItr != objectNamesChain.crend(); ++outerNameRItr)
         {
-            String fromObjectFullPath = ObjectPathHelper::getFullPath(outerNameRItr->getChar(), subObjOuter);
+            StringID fromObjectFullPath = StringID(ObjectPathHelper::getFullPath(outerNameRItr->getChar(), subObjOuter));
             Object *fromOuterObj = objDb.getObject(fromObjectFullPath);
             debugAssert(fromOuterObj);
             Object *outer = createOrGet(fromOuterObj->getType(), *outerNameRItr, duplicateSubObjOuter, fromOuterObj->getFlags());

@@ -81,7 +81,7 @@ private:
             String(DRAW_3D_COLORED_PER_VERTEX_NAME) + EPrimitiveTopology::getChar<Topology>() + (DepthWrite ? TCHAR("DWrite") : TCHAR("")))
             , shaderFileName(DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
-        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
+        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName().getChar(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
     }
 
 protected:
@@ -89,11 +89,11 @@ protected:
     String getShaderFileName() const override { return shaderFileName; }
     /* overrides ends */
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         auto ShaderParamInfoInit = [this]
         {
-            std::map<String, ShaderBufferParamInfo *> paramInfo;
+            std::map<StringID, ShaderBufferParamInfo *> paramInfo;
             paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
 
             // Vertex based instance param info at set 1
@@ -101,9 +101,9 @@ public:
             paramInfo.insert(instanceParamInfo.cbegin(), instanceParamInfo.cend());
             return paramInfo;
         };
-        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ ShaderParamInfoInit() };
+        static std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ ShaderParamInfoInit() };
 
-        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -140,13 +140,13 @@ protected:
     /* overrides ends */
 
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
-        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
+        static std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
 
         SHADER_PARAMS_INFO.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
 
-        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -176,7 +176,7 @@ private:
             + (DepthWrite ? TCHAR("DWrite") : TCHAR("")))
             , shaderFileName(DIRECT_DRAW_3D_COLORED_PER_VERTEX_NAME)
     {
-        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
+        static CREATE_GRAPHICS_PIPELINE_REGISTRANT(DRAW_3D_COLORED_PER_VERTEX_REGISTER, getResourceName().getChar(), &drawSimple3DPipelineConfig<EXPAND_ARGS(Topology, DepthWrite)>);
     }
 
 protected:
@@ -184,13 +184,13 @@ protected:
     String getShaderFileName() const override { return shaderFileName; }
     /* overrides ends */
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
-        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
+        static std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
 
         SHADER_PARAMS_INFO.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
 
-        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 
@@ -222,13 +222,13 @@ private:
     {}
 
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
-        static std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
+        static std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{ RenderSceneBase::sceneViewParamInfo() };
 
         SHADER_PARAMS_INFO.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
 
-        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 

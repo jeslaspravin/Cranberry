@@ -49,17 +49,17 @@ protected:
     {}
 
 public:
-    void bindBufferParamInfo(std::map<String, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
+    void bindBufferParamInfo(std::map<StringID, struct ShaderBufferDescriptorType *> &bindingBuffers) const override
     {
         static GoochModelLightCommonBufferParamInfo LIGHTCOMMON_INFO;
         static GoochModelLightArrayBufferParamInfo LIGHTDATA_INFO;
-        static const std::map<String, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
+        static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
             {TCHAR("lightCommon"),                                           &LIGHTCOMMON_INFO},
             { TCHAR("lightArray"),                                             &LIGHTDATA_INFO},
                                                            {   TCHAR("viewData"), RenderSceneBase::sceneViewParamInfo().at(TCHAR("viewData"))}
         };
 
-        for (const std::pair<const String, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
+        for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)
         {
             auto foundDescBinding = bindingBuffers.find(bufferInfo.first);
 

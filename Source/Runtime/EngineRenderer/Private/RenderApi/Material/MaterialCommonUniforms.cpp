@@ -31,10 +31,10 @@ END_BUFFER_DEFINITION();
 namespace MaterialVertexUniforms
 {
 template <>
-const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Simple2>()
+const std::map<StringID, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Simple2>()
 {
     static InstanceDataWrapperBufferParamInfo INSTDATA_WRAPPER_INFO;
-    static const std::map<String, ShaderBufferParamInfo *> VERTEX_BUFFER_PARAMS{
+    static const std::map<StringID, ShaderBufferParamInfo *> VERTEX_BUFFER_PARAMS{
         {TCHAR("instancesWrapper"), &INSTDATA_WRAPPER_INFO}
     };
 
@@ -42,33 +42,33 @@ const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Si
 }
 
 template <>
-const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::UI>()
+const std::map<StringID, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::UI>()
 {
     return bufferParamInfo<EVertexType::Simple2>();
 }
 
 template <>
-const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Simple3>()
+const std::map<StringID, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Simple3>()
 {
     return bufferParamInfo<EVertexType::Simple2>();
 }
 template <>
-const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Simple3DColor>()
+const std::map<StringID, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::Simple3DColor>()
 {
     return bufferParamInfo<EVertexType::Simple2>();
 }
 template <>
-const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::BasicMesh>()
+const std::map<StringID, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::BasicMesh>()
 {
     return bufferParamInfo<EVertexType::Simple2>();
 }
 template <>
-const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::StaticMesh>()
+const std::map<StringID, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::StaticMesh>()
 {
     return bufferParamInfo<EVertexType::Simple2>();
 }
 template <>
-const std::map<String, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::NoVertex>()
+const std::map<StringID, ShaderBufferParamInfo *> &bufferParamInfo<EVertexType::NoVertex>()
 {
     return bufferParamInfo<EVertexType::Simple2>();
 }

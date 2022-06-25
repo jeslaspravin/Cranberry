@@ -35,7 +35,7 @@ protected:
 
     /* ShaderResource overrides */
     String getShaderFileName() const final;
-    virtual void getSpecializationConsts(std::map<String, struct SpecializationConstantEntry> &specializationConst) const override;
+    virtual void getSpecializationConsts(SpecConstantNamedMap &specializationConst) const override;
 
 public:
     EVertexType::Type vertexUsage() const { return compatibleVertex; }

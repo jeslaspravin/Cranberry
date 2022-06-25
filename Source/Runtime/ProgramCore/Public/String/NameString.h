@@ -14,15 +14,14 @@
 #include "String.h"
 #include "StringID.h"
 
+// Since STRINGID is used inside NameString we start with STRINGID constexpr check
 #if HAS_STRINGID_CONSTEXPR
-#define STRINGID_FUNCQUALIFIER CONST_EXPR
 #if HAS_STRING_CONSTEXPR
 #define STRING_FUNCQUALIFIER CONST_EXPR
 #else // HAS_STRING_CONSTEXPR
 #define STRING_FUNCQUALIFIER FORCE_INLINE
 #endif // HAS_STRING_CONSTEXPR
 #else  // HAS_STRINGID_CONSTEXPR
-#define STRINGID_FUNCQUALIFIER FORCE_INLINE
 #define STRING_FUNCQUALIFIER FORCE_INLINE
 #endif // HAS_STRINGID_CONSTEXPR
 
@@ -53,27 +52,27 @@ public:
         , id(initType)
     {}
     // Additional constructors
-    STRING_FUNCQUALIFIER NameString(const String &str)
+    FORCE_INLINE explicit NameString(const String &str)
         : nameStr(str)
         , id(nameStr)
     {}
-    STRINGID_FUNCQUALIFIER
+    STRING_FUNCQUALIFIER
     NameString(const AChar *str, SizeT len)
         : nameStr(str, len)
         , id(str, len)
     {}
-    STRINGID_FUNCQUALIFIER
+    STRING_FUNCQUALIFIER
     NameString(const AChar *str)
         : nameStr(UTF8_TO_TCHAR(str))
         , id(str)
     {}
-    STRINGID_FUNCQUALIFIER
+    STRING_FUNCQUALIFIER
     NameString(const WChar *str)
         : nameStr(WCHAR_TO_TCHAR(str))
         , id(str)
     {}
     // Additional assignments
-    STRING_FUNCQUALIFIER NameString &operator=(const String &str)
+    FORCE_INLINE NameString &operator=(const String &str)
     {
         nameStr = str;
         id = nameStr;
@@ -96,6 +95,11 @@ public:
     CONST_EXPR std::strong_ordering operator<=>(const NameString &rhs) const noexcept { return id <=> rhs.id; }
     // Since the == operator is necessary even though spaceship is defined for hash map
     CONST_EXPR bool operator==(const NameString &rhs) const noexcept { return id == rhs.id; }
+    // String ID equality
+    friend CONST_EXPR std::strong_ordering operator<=>(const NameString &lhs, const StringID &rhs) noexcept { return lhs.id <=> rhs; }
+    friend CONST_EXPR bool operator==(const NameString &lhs, const StringID &rhs) noexcept { return lhs.id == rhs; }
+    friend CONST_EXPR std::strong_ordering operator<=>(const StringID &lhs, const NameString &rhs) noexcept { return lhs <=> rhs.id; }
+    friend CONST_EXPR bool operator==(const StringID &lhs, const NameString &rhs) noexcept { return lhs == rhs.id; }
 
     FORCE_INLINE const String& toString() const { return nameStr; }
     FORCE_INLINE bool isValid() const noexcept { return id.isValid(); }
@@ -119,5 +123,4 @@ struct PROGRAMCORE_EXPORT std::hash<NameString>
     NODISCARD SizeT operator()(const StringID &keyval) const noexcept { return StringID(keyval).getID(); }
 };
 
-#undef STRINGID_FUNCQUALIFIER
 #undef STRING_FUNCQUALIFIER

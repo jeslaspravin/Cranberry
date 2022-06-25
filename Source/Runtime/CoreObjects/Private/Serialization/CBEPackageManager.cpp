@@ -44,12 +44,12 @@ Object *load(String objectPath)
         objectPath = objPath;
     }
 
-    PackageLoader *objectPackageLoader = packageManager.getPackageLoader(packagePath);
+    PackageLoader *objectPackageLoader = packageManager.getPackageLoader(packagePath.getChar());
     if (!objectPackageLoader)
     {
         LOG_WARN("ObjectHelper", "ObjectLoader for object %s is not found", objectPath);
         packageManager.refreshPackages();
-        objectPackageLoader = packageManager.getPackageLoader(packagePath);
+        objectPackageLoader = packageManager.getPackageLoader(packagePath.getChar());
         if (!objectPackageLoader)
         {
             LOG_ERROR("ObjectHelper", "Object %s is not found in any packages!", objectPath);
@@ -200,7 +200,7 @@ void CBEPackageManager::refreshPackages()
         for (const String &packageFilePath : packageFiles)
         {
             String packagePath = packagePathFromFilePath(packageFilePath, contentDir);
-            if (!packageToLoader.contains(packagePath))
+            if (!packageToLoader.contains(packagePath.getChar()))
             {
                 setupPackage(packageFilePath, contentDir);
             }
@@ -217,7 +217,7 @@ void CBEPackageManager::setupPackage(const String &packageFilePath, const String
     PackageLoader *loader = new PackageLoader(package, packageFilePath);
     loader->prepareLoader();
 
-    packageToLoader[packagePath] = loader;
+    packageToLoader[packagePath.getChar()] = loader;
     allFoundPackages.emplace_back(packagePath);
     // Add all objects
     for (const PackageContainedData &containedData : loader->getContainedObjects())
