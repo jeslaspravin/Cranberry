@@ -32,51 +32,60 @@ using IStringStream = std::basic_istringstream<BaseString::value_type, BaseStrin
 using OStringStream = std::basic_ostringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
 using StringStream = std::basic_stringstream<BaseString::value_type, BaseString::traits_type, BaseString::allocator_type>;
 
+#ifdef __cpp_lib_constexpr_string
+#define HAS_STRING_CONSTEXPR __cpp_lib_constexpr_string >= 201907L
+#define STRING_FUNCQUALIFIER constexpr
+#else
+#define HAS_STRING_CONSTEXPR 0
+#define STRING_FUNCQUALIFIER FORCE_INLINE
+#endif
+
+
 class String : public BaseString
 {
 public:
     CONST_EXPR static const bool bIsWide = std::is_same_v<TChar, WChar>;
 
 public:
-    FORCE_INLINE String()
+    STRING_FUNCQUALIFIER String()
         : BaseString()
     {}
-    FORCE_INLINE String(const String &otherString)
+    STRING_FUNCQUALIFIER String(const String &otherString)
         : BaseString(otherString)
     {}
-    FORCE_INLINE String(const String &otherString, size_type pos, size_type len)
+    STRING_FUNCQUALIFIER String(const String &otherString, size_type pos, size_type len)
         : BaseString(otherString, pos, len)
     {}
-    FORCE_INLINE String(const TChar *s, size_type n)
+    STRING_FUNCQUALIFIER String(const TChar *s, size_type n)
         : BaseString(s, n)
     {}
-    FORCE_INLINE String(const TChar *s)
+    STRING_FUNCQUALIFIER String(const TChar *s)
         : BaseString(s)
     {}
-    FORCE_INLINE String(size_type n, TChar c)
+    STRING_FUNCQUALIFIER String(size_type n, TChar c)
         : BaseString(n, c)
     {}
     // template<size_type N>
     // CONST_EXPR String(const TChar(&str)[N]) : std::string(str) {}
-    FORCE_INLINE String(const BaseString &otherString)
+    STRING_FUNCQUALIFIER String(const BaseString &otherString)
         : BaseString(otherString)
     {}
-    FORCE_INLINE String(BaseString &&otherString)
+    STRING_FUNCQUALIFIER String(BaseString &&otherString)
         : BaseString(otherString)
     {}
-    FORCE_INLINE String(BaseString::const_iterator start, BaseString::const_iterator end)
+    STRING_FUNCQUALIFIER String(BaseString::const_iterator start, BaseString::const_iterator end)
         : BaseString(start, end)
     {}
-    FORCE_INLINE String(const StringView &strView)
+    STRING_FUNCQUALIFIER String(const StringView &strView)
         : BaseString(strView)
     {}
 
-    FORCE_INLINE const TChar *getChar() const { return c_str(); }
+    STRING_FUNCQUALIFIER const TChar *getChar() const { return c_str(); }
 
     // Count of String's character code points
     FORCE_INLINE uint64 codeCount() const;
 
-    FORCE_INLINE bool findAny(
+    STRING_FUNCQUALIFIER bool findAny(
         size_type &outIndex, String &outFoundString, const std::vector<String> &findStrgs, size_type offset = 0, bool fromEnd = false
     ) const
     {
@@ -100,7 +109,7 @@ public:
         return false;
     }
 
-    FORCE_INLINE String replaceAllCopy(const String &from, const String &to) const
+    STRING_FUNCQUALIFIER String replaceAllCopy(const String &from, const String &to) const
     {
         String newStr{ this->getChar() };
         size_type replaceAtPos = 0;
@@ -112,7 +121,7 @@ public:
         return newStr;
     }
 
-    FORCE_INLINE String &replaceAll(const String &from, const String &to)
+    STRING_FUNCQUALIFIER String &replaceAll(const String &from, const String &to)
     {
         size_type replaceAtPos = 0;
         while ((replaceAtPos = find(from, replaceAtPos)) != npos)
@@ -123,7 +132,7 @@ public:
         return *this;
     }
 
-    FORCE_INLINE bool startsWith(const String &match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool startsWith(const String &match, bool bMatchCase = true) const
     {
         if (length() < match.length())
             return false;
@@ -141,7 +150,7 @@ public:
         return cbegin() == it;
     }
 
-    FORCE_INLINE bool startsWith(TChar match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool startsWith(TChar match, bool bMatchCase = true) const
     {
         if (bMatchCase)
         {
@@ -151,7 +160,7 @@ public:
         return std::toupper(*begin()) == std::toupper(match);
     }
 
-    FORCE_INLINE bool endsWith(const String &match, bool bMatchCase = true) const
+    STRING_FUNCQUALIFIER bool endsWith(const String &match, bool bMatchCase = true) const
     {
         if (length() < match.length())
             return false;
@@ -169,19 +178,19 @@ public:
         return it == searchFrom;
     }
 
-    FORCE_INLINE String &trimL()
+    STRING_FUNCQUALIFIER String &trimL()
     {
         erase(begin(), std::find_if(begin(), end(), [](const TChar &ch) { return !std::isspace(ch); }));
         return *this;
     }
 
-    FORCE_INLINE String &trimR()
+    STRING_FUNCQUALIFIER String &trimR()
     {
         erase(std::find_if(rbegin(), rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(), end());
         return *this;
     }
 
-    FORCE_INLINE String &trim()
+    STRING_FUNCQUALIFIER String &trim()
     {
         trimL();
         trimR();
@@ -190,7 +199,7 @@ public:
 
     // Removes consequently duplicated chars
     // **NOTE** Only works for characters that can be represented in sizeof(TChar)
-    FORCE_INLINE String &trimDuplicates(TChar duplicateChar, uint64 offset = 0)
+    STRING_FUNCQUALIFIER String &trimDuplicates(TChar duplicateChar, uint64 offset = 0)
     {
         uint64 foundAt = find(duplicateChar, offset);
         while (foundAt != npos)
@@ -215,21 +224,21 @@ public:
         return (*this);
     }
 
-    FORCE_INLINE String trimLCopy() const
+    STRING_FUNCQUALIFIER String trimLCopy() const
     {
         String s(*this);
         s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](const TChar &ch) { return !std::isspace(ch); }));
         return s;
     }
 
-    FORCE_INLINE String trimRCopy() const
+    STRING_FUNCQUALIFIER String trimRCopy() const
     {
         String s(*this);
         s.erase(std::find_if(s.rbegin(), s.rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(), s.end());
         return s;
     }
 
-    FORCE_INLINE String trimCopy() const
+    STRING_FUNCQUALIFIER String trimCopy() const
     {
         String s(*this);
         s.trim();
@@ -238,7 +247,7 @@ public:
 
     // Removes consequently duplicated chars
     // **NOTE** Only works for characters that can be represented in sizeof(TChar)
-    FORCE_INLINE String trimDuplicatesCopy(TChar duplicateChar, uint64 offset = 0)
+    STRING_FUNCQUALIFIER String trimDuplicatesCopy(TChar duplicateChar, uint64 offset = 0)
     {
         String s(*this);
         s.trimDuplicates(duplicateChar, offset);
@@ -313,7 +322,7 @@ public:
     }
 
     template <typename Type>
-    FORCE_INLINE static String toString(Type &&value);
+    STRING_FUNCQUALIFIER static String toString(Type &&value);
 };
 
 template <>
@@ -365,3 +374,5 @@ template <typename... T>
 concept StringTypes = IsStringTypes<T...>::value;
 
 #include "String/StringHelpers.inl"
+
+#undef STRING_FUNCQUALIFIER

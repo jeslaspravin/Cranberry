@@ -1082,25 +1082,28 @@ void ExperimentalEnginePBR::createScene()
     StaticMeshAsset *cone = static_cast<StaticMeshAsset *>(assetManager.getOrLoadAsset(TCHAR("Cone.obj")));
     StaticMeshAsset *suzanne = static_cast<StaticMeshAsset *>(assetManager.getOrLoadAsset(TCHAR("Suzanne.obj")));
     std::array<StaticMeshAsset *, 5> assets{ cube, sphere, cylinder, cone, suzanne };
+
+// clang-format off
 #if RELEASE_BUILD
     std::array<String, 8> floorTypes{
         TCHAR("WoodFloor043"), TCHAR("Tiles086"),  TCHAR("Tiles074"),  TCHAR("MetalPlates006"),
-                                                                             TCHAR("Marble006"),    TCHAR("Ground042"), TCHAR("Ground037"), TCHAR("Gravel022") };
+        TCHAR("Marble006"),    TCHAR("Ground042"), TCHAR("Ground037"), TCHAR("Gravel022") };
     std::array<String, 6> ceilTypes{
         TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"), TCHAR("MetalPlates006"), TCHAR("Marble006"), TCHAR("Wood051") };
     std::array<String, 9> pillarTypes{
         TCHAR("WoodFloor043"), TCHAR("Tiles108"), TCHAR("Tiles074"),  TCHAR("MetalPlates006"),   TCHAR("Marble006"),
-                                                                                                       TCHAR("Marble006"),    TCHAR("Rock035"),  TCHAR("Ground037"), TCHAR("PaintedPlaster016") };
+        TCHAR("Marble006"),    TCHAR("Rock035"),  TCHAR("Ground037"), TCHAR("PaintedPlaster016") };
     std::array<String, 15> textures{ TCHAR("Bricks059"),      TCHAR("Gravel022"),         TCHAR("Ground037"), TCHAR("Ground042"),
-                                                                                                                    TCHAR("Leather028"),     TCHAR("Marble006"),         TCHAR("Metal034"),  TCHAR("Metal038"),
-                                                                                                                                                                                                   TCHAR("MetalPlates006"), TCHAR("PaintedPlaster016"), TCHAR("Rock035"),   TCHAR("Tiles086"),
-                                                                                                                                                                                                                                                                                  TCHAR("Tiles074"),       TCHAR("Tiles108"),          TCHAR("Wood051") };
+                                     TCHAR("Leather028"),     TCHAR("Marble006"),         TCHAR("Metal034"),  TCHAR("Metal038"),
+                                     TCHAR("MetalPlates006"), TCHAR("PaintedPlaster016"), TCHAR("Rock035"),   TCHAR("Tiles086"),
+                                     TCHAR("Tiles074"),       TCHAR("Tiles108"),          TCHAR("Wood051") };
 #else
     std::array<String, 1> floorTypes{ TCHAR("Tiles074") };
     std::array<String, 1> ceilTypes{ TCHAR("Tiles074") };
     std::array<String, 1> pillarTypes{ TCHAR("Tiles074") };
     std::array<String, 1> textures{ TCHAR("Tiles074") };
 #endif
+    // clang-format on
 
     std::default_random_engine generator;
     std::uniform_real_distribution<float> distribution(-1.0, 1.0);
