@@ -3438,9 +3438,8 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface *drawIn
 void ExperimentalEnginePBR::tempTest()
 {
     ModuleManager::get()->loadModule("RTTIExample");
-    String dir;
-    String name;
-    dir = Paths::applicationDirectory(name);
+    String dir = Paths::contentDirectory();
+    String name = Paths::applicationName();
     CoreObjectDelegates::broadcastContentDirectoryAdded(dir);
     if (BasicPackagedObject *obj = CBE::load<BasicPackagedObject>(name))
     {
@@ -3448,8 +3447,8 @@ void ExperimentalEnginePBR::tempTest()
     }
     else
     {
-        CBE::Package *package = CBE::create<CBE::Package>(name, nullptr);
-        CBE::Package *package2 = CBE::create<CBE::Package>(name + TCHAR("2"), nullptr);
+        CBE::Package *package = CBE::Package::createPackage(name, dir);
+        CBE::Package *package2 = CBE::Package::createPackage(name + TCHAR("2"), dir);
         package->setPackageRoot(dir);
         package2->setPackageRoot(dir);
 

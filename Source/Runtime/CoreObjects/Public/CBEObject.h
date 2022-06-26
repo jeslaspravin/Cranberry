@@ -108,6 +108,7 @@ public:
 
     void destroyObject();
     void beginDestroy() { markReadyForDestroy(); }
+    void postLoad() { onPostLoad(); }
 
     FORCE_INLINE Object *getOuter() const { return objOuter; }
     FORCE_INLINE Object *getOuterMost() const
@@ -126,6 +127,7 @@ public:
     String getFullPath() const;
 
     virtual void destroy() {}
+    virtual void onPostLoad() {}
     virtual ObjectArchive &serialize(ObjectArchive &ar) { return ar; }
 };
 } // namespace CBE

@@ -40,7 +40,6 @@ using StringStream = std::basic_stringstream<BaseString::value_type, BaseString:
 #define STRING_FUNCQUALIFIER FORCE_INLINE
 #endif
 
-
 class String : public BaseString
 {
 public:
@@ -204,16 +203,17 @@ public:
         uint64 foundAt = find(duplicateChar, offset);
         while (foundAt != npos)
         {
-            uint64 searchOffset = 0;
             // Start from character after foundAt char
-            while (*(begin() + searchOffset + 1) == duplicateChar)
+            auto strItr = cbegin() + foundAt;
+            while ((strItr + 1) != cend() && (*(strItr + 1) == duplicateChar))
             {
-                searchOffset++;
+                strItr++;
             }
+            uint64 searchOffset = strItr - cbegin();
 
             // No matter we erased duplicates or not we have to continue from foundAt + 1
             foundAt++;
-            if (searchOffset > 0)
+            if (searchOffset >= foundAt)
             {
                 // Since search offset points to last of consequently duplicated chars
                 searchOffset++;
@@ -247,11 +247,52 @@ public:
 
     // Removes consequently duplicated chars
     // **NOTE** Only works for characters that can be represented in sizeof(TChar)
-    STRING_FUNCQUALIFIER String trimDuplicatesCopy(TChar duplicateChar, uint64 offset = 0)
+    STRING_FUNCQUALIFIER String trimDuplicatesCopy(TChar duplicateChar, uint64 offset = 0) const
     {
         String s(*this);
         s.trimDuplicates(duplicateChar, offset);
         return s;
+    }
+
+    // Remove count number of characters from start of string
+    STRING_FUNCQUALIFIER String &eraseL(uint64 count) noexcept
+    {
+        if (count > length())
+        {
+            clear();
+            return *this;
+        }
+        erase(0, count);
+        return *this;
+    }
+    // Remove count number of characters from end of string
+    STRING_FUNCQUALIFIER String &eraseR(uint64 count) noexcept
+    {
+        if (count > length())
+        {
+            clear();
+            return *this;
+        }
+        erase(length() - count, count);
+        return *this;
+    }
+    // Remove count number of characters from start of string
+    STRING_FUNCQUALIFIER String eraseLCopy(uint64 count) const noexcept
+    {
+        if (count > length())
+        {
+            return {};
+        }
+        return String(cbegin() + count, cend());
+    }
+    // Remove count number of characters from end of string
+    STRING_FUNCQUALIFIER String eraseRCopy(uint64 count) const noexcept
+    {
+        if (count > length())
+        {
+            return {};
+        }
+        return String(cbegin(), cbegin() + (length() - count));
     }
 
     /*

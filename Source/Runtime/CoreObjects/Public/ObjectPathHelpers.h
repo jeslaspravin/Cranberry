@@ -48,4 +48,6 @@ public:
 
     // Just helper to split package host path and package's name
     static String splitPackageNameAndPath(String &outName, const TChar *path);
+
+    static String packagePathFromFilePath(const String &filePath, const String &contentDir);
 };

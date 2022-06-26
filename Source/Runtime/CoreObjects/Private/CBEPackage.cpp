@@ -28,6 +28,11 @@ Package::Package()
     }
 }
 
+void Package::setPackageRoot(const String &root)
+{
+    packageRoot = root;
+}
+
 String Package::getPackageFilePath() const { return PathFunctions::combinePath(getPackageRoot(), getName() + TCHAR(".") + PACKAGE_EXT); }
 
 void Package::destroy() { Object::destroy(); }

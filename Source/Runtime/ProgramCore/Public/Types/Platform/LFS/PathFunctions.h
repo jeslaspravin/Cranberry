@@ -51,6 +51,7 @@ public:
      * C:/ABC/DEF/GHI/Some.txt is sub directory of C:/ABC/DEF and not sub directory of C:/ABC/DEF/JKL
      */
     static bool isSubdirectory(const String &checkPath, const String &basePath);
+    static bool isRelativePath(const String &checkPath);
 
     static String stripExtension(String &extension, const String &fileName);
     static String stripExtension(const String &fileName);
@@ -59,8 +60,12 @@ public:
      * Splits a path's last file/directory and its parent directory
      * C:/ABC/DEF/GHI/Some.txt gives outFileName=Some.txt and Returns C:/ABC/DEF/GHI
      * C:/ABC/DEF/GHI/SomeFolder gives outFileName=SomeFolder and Returns C:/ABC/DEF/GHI
+     * C:/ gives outFilename="" and returns C:
+     * So if outFileName becomes empty it means we reached root
      */
     static String splitFileAndDirectory(String &outFileName, const String &filePath);
+    // Returns empty if root is reached
+    static String parentDirectory(const String &filePath);
 
     static String asGenericPath(const String &path);
 };

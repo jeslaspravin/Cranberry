@@ -98,6 +98,12 @@ bool PathFunctions::isSubdirectory(const String &checkPath, const String &basePa
     return true;
 }
 
+bool PathFunctions::isRelativePath(const String &checkPath)
+{
+    std::filesystem::path relativePath(checkPath.getChar());
+    return relativePath.is_relative();
+}
+
 String PathFunctions::stripExtension(String &extension, const String &fileName)
 {
     String::size_type foundAt = fileName.rfind('.', fileName.length());
@@ -148,9 +154,24 @@ String PathFunctions::splitFileAndDirectory(String &outFileName, const String &f
     return pathTmp;
 }
 
+String PathFunctions::parentDirectory(const String &filePath)
+{
+    String pathTmp = asGenericPath(filePath);
+    size_t hostDirectoryAt = pathTmp.rfind(TCHAR('/'), pathTmp.length());
+    if (hostDirectoryAt != String::npos)
+    {
+        return { pathTmp.substr(0, hostDirectoryAt) };
+    }
+    return {};
+}
+
 String PathFunctions::asGenericPath(const String &path)
 {
     String pathTmp = path.replaceAllCopy(TCHAR("\\"), TCHAR("/"));
     pathTmp.trimDuplicates(TCHAR('/'));
+    if (pathTmp.endsWith(TCHAR("/")))
+    {
+        pathTmp.eraseR(1);
+    }
     return pathTmp;
 }

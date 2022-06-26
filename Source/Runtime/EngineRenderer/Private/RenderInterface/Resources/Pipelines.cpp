@@ -40,7 +40,7 @@ String PipelineCacheBase::getResourceName() const { return cacheName; }
 void PipelineCacheBase::setResourceName(const String &name)
 {
     cacheName = name;
-    cacheFileName = PathFunctions::combinePath(Paths::applicationDirectory(), TCHAR("Cache"), cacheName + TCHAR(".cache"));
+    cacheFileName = PathFunctions::combinePath(Paths::savedDirectory(), TCHAR("Cache"), cacheName + TCHAR(".cache"));
 }
 
 void PipelineCacheBase::addPipelineToCache(const class PipelineBase *pipeline) { pipelinesToCache.emplace_back(pipeline); }
