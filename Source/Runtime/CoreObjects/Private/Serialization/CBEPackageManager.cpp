@@ -13,13 +13,30 @@
 #include "CBEPackage.h"
 #include "CoreObjectsModule.h"
 #include "CBEObjectHelpers.h"
+#include "ObjectPathHelpers.h"
 #include "Serialization/PackageLoader.h"
 #include "Serialization/PackageSaver.h"
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 
+FORCE_INLINE String ObjectPathHelper::packagePathFromFilePath(const String &filePath, const String &contentDir)
+{
+    String relPath = PathFunctions::toRelativePath(filePath, contentDir);
+    // Right now we use relative path as Package path. But in future once plug ins were added
+    // Have to allow package path uniqueness per plugin like prefixing plugin name to package path
+    return PathFunctions::stripExtension(relPath);
+}
+
 namespace CBE
 {
+Package *Package::createPackage(const String &relativePath, const String &contentDir)
+{
+    String packagePath = ObjectPathHelper::packagePathFromFilePath(relativePath, contentDir);
+    CBE::Package *package = CBE::createOrGet<CBE::Package>(packagePath, nullptr, CBE::EObjectFlagBits::PackageLoadPending);
+    package->setPackageRoot(contentDir);
+    return package;
+}
+
 Object *load(String objectPath)
 {
     CBEPackageManager &packageManager = CoreObjectsModule::packageManager();
@@ -187,11 +204,6 @@ void CBEPackageManager::removePackagesFrom(const String &contentDir)
     }
 }
 
-FORCE_INLINE String CBEPackageManager::packagePathFromFilePath(const String &filePath, const String &contentDir)
-{
-    return PathFunctions::stripExtension(PathFunctions::toRelativePath(filePath, contentDir));
-}
-
 void CBEPackageManager::refreshPackages()
 {
     for (const String &contentDir : contentDirs)
@@ -199,7 +211,7 @@ void CBEPackageManager::refreshPackages()
         std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + CBE::PACKAGE_EXT);
         for (const String &packageFilePath : packageFiles)
         {
-            String packagePath = packagePathFromFilePath(packageFilePath, contentDir);
+            String packagePath = ObjectPathHelper::packagePathFromFilePath(packageFilePath, contentDir);
             if (!packageToLoader.contains(packagePath.getChar()))
             {
                 setupPackage(packageFilePath, contentDir);
@@ -210,9 +222,8 @@ void CBEPackageManager::refreshPackages()
 
 void CBEPackageManager::setupPackage(const String &packageFilePath, const String &contentDir)
 {
-    String packagePath = packagePathFromFilePath(packageFilePath, contentDir);
-    CBE::Package *package = CBE::createOrGet<CBE::Package>(packagePath, nullptr, CBE::EObjectFlagBits::PackageLoadPending);
-    package->setPackageRoot(contentDir);
+    String packagePath = ObjectPathHelper::packagePathFromFilePath(packageFilePath, contentDir);
+    CBE::Package *package = CBE::Package::createPackage(PathFunctions::toRelativePath(packageFilePath, contentDir), contentDir);
 
     PackageLoader *loader = new PackageLoader(package, packageFilePath);
     loader->prepareLoader();

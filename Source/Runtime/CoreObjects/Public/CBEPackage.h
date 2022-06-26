@@ -34,12 +34,24 @@ public:
     FORCE_INLINE const String &getPackageName() const { return packageName; }
     FORCE_INLINE const String &getPackagePath() const { return packagePath; }
     FORCE_INLINE const String &getPackageRoot() const { return packageRoot; }
-    FORCE_INLINE void setPackageRoot(const String &root) { packageRoot = root; }
+    void setPackageRoot(const String &root);
 
     String getPackageFilePath() const;
 
     /* CBE::Object overrides */
     void destroy() override;
     /* Overrides ends */
+
+    /**
+    * CBE::Package::createPackage
+    *
+    * Access: public static  
+    *
+    * @param const String & relativePath - Package path relative to contentDir
+    * @param const String & contentDir - Root directory under which the package must be saved or loaded from
+    *
+    * @return CBE::Package *
+    */
+    static Package *createPackage(const String &relativePath, const String &contentDir);
 };
 } // namespace CBE

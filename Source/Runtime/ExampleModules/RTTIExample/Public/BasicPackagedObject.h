@@ -53,6 +53,7 @@ public:
         return ar;
     }
 
+    void onPostLoad() override;
     void exampleFunc() const override;
 };
 
@@ -95,5 +96,6 @@ public:
 
     ObjectArchive &serialize(ObjectArchive &ar) override { return ObjectSerializationHelpers::serializeAllFields(this, ar); }
 
-    void exampleFunc() const override { LOG("BasicPackageObject", "Example interface function"); }
+    void onPostLoad() override;
+    void exampleFunc() const override;
 };

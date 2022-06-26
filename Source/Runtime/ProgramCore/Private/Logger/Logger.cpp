@@ -172,8 +172,8 @@ void LoggerImpl::flushStreamInternal()
 
 bool LoggerImpl::openNewLogFile()
 {
-    String logFileName;
-    String logFolderPath = Paths::applicationDirectory(logFileName).append(TCHAR("/Saved/Logs/"));
+    String logFileName = Paths::applicationName();
+    String logFolderPath = PathFunctions::combinePath(Paths::savedDirectory(), TCHAR("Logs"));
     if (ProgramCmdLine::get()->hasArg(TCHAR("--logFileName")))
     {
         ProgramCmdLine::get()->getArg(logFileName, TCHAR("--logFileName"));

@@ -25,6 +25,8 @@ public:
     // Without extension
     static String applicationDirectory(String &appName, String *extension = nullptr);
     static String applicationDirectory();
+    static String savedDirectory();
+    static String contentDirectory();
     // Without extension
     static const TChar *applicationName();
 

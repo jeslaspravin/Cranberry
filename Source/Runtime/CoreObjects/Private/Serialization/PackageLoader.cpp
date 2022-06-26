@@ -143,6 +143,7 @@ void PackageLoader::prepareLoader()
     streamStartAt = fileStream.cursorPos();
 
     alertAlwaysf(!containedObjects.empty(), "Empty package %s at %s", package->getName(), packageFilePath);
+    CoreObjectDelegates::broadcastPackageScanned(this);
 }
 
 bool PackageLoader::load()
@@ -190,6 +191,12 @@ bool PackageLoader::load()
     }
     CLEAR_BITS(CBE::INTERNAL_ObjectCoreAccessors::getFlags(package), CBE::EObjectFlagBits::PackageLoadPending);
 
+    // Broadcast load events
+    for (PackageContainedData &containedData : containedObjects)
+    {
+        debugAssert(CBE::isValid(containedData.object));
+        containedData.object->postLoad();
+    }
     CoreObjectDelegates::broadcastPackageLoaded(package);
 
     return bSuccess;

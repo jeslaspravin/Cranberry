@@ -34,6 +34,18 @@ String Paths::applicationDirectory(String &appName, String *extension /*= nullpt
     return appDir;
 }
 
+String Paths::savedDirectory()
+{
+    static const String savedPath = PathFunctions::combinePath(applicationDirectory(), TCHAR("Saved"));
+    return savedPath;
+}
+
+String Paths::contentDirectory()
+{
+    static const String contentDir = PathFunctions::combinePath(applicationDirectory(), TCHAR("Content"));
+    return contentDir;
+}
+
 const TChar *Paths::applicationName()
 {
     static const String appName = PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(FileSystemFunctions::applicationPath()));
