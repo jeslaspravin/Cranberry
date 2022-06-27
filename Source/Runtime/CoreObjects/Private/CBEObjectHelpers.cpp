@@ -232,8 +232,9 @@ struct DeepCopyFieldVisitable
             if ((*fromDataPtrPtr)->hasOuter(copyUserData->fromCommonRoot))
             {
                 String comRootRelPath = ObjectPathHelper::getObjectPath(*fromDataPtrPtr, copyUserData->fromCommonRoot);
-                Object *dupObj
-                    = copyUserData->objDb->getObject(ObjectPathHelper::getFullPath(comRootRelPath.getChar(), copyUserData->toCommonRoot).getChar());
+                Object *dupObj = copyUserData->objDb->getObject(
+                    ObjectPathHelper::getFullPath(comRootRelPath.getChar(), copyUserData->toCommonRoot).getChar()
+                );
                 debugAssert(dupObj);
                 (*toDataPtrPtr) = dupObj;
             }

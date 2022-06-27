@@ -52,5 +52,5 @@ public:
     bool load();
 
     FORCE_INLINE CBE::Package *getPackage() const { return package; }
-    FORCE_INLINE const std::vector<PackageContainedData>& getContainedObjects() const { return containedObjects; }
+    FORCE_INLINE const std::vector<PackageContainedData> &getContainedObjects() const { return containedObjects; }
 };

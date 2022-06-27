@@ -122,4 +122,7 @@ uint64 FileArchiveStream::cursorPos() const { return fileCursor; }
 
 bool FileArchiveStream::isAvailable() const { return file->isFile() && file->exists(); }
 
-bool FileArchiveStream::hasMoreData(SizeT requiredByteCount) const { return isAvailable() && (fileCursor + requiredByteCount) <= file->fileSize(); }
+bool FileArchiveStream::hasMoreData(SizeT requiredByteCount) const
+{
+    return isAvailable() && (fileCursor + requiredByteCount) <= file->fileSize();
+}
