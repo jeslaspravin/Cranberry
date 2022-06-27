@@ -13,41 +13,41 @@
 #include "Math/Math.h"
 #include "Memory/Memory.h"
 
-void ArrayArchiveStream::read(void *toPtr, SizeT len)
+void ArrayArchiveStream::read(void *toPtr, SizeT byteLen)
 {
-    if (hasMoreData(len))
+    if (hasMoreData(byteLen))
     {
-        CBEMemory::memCopy(toPtr, buffer.data() + cursor, len);
-        cursor += len;
+        CBEMemory::memCopy(toPtr, buffer.data() + cursor, byteLen);
+        cursor += byteLen;
     }
     else
     {
-        cursor += len;
+        cursor += byteLen;
         cursor = Math::min(cursor, buffer.size());
     }
 }
 
-void ArrayArchiveStream::write(const void *ptr, SizeT len)
+void ArrayArchiveStream::write(const void *ptr, SizeT byteLen)
 {
     SizeT currCursor = cursor;
-    moveForward(len);
-    CBEMemory::memCopy(buffer.data() + currCursor, ptr, len);
+    moveForward(byteLen);
+    CBEMemory::memCopy(buffer.data() + currCursor, ptr, byteLen);
 }
 
-void ArrayArchiveStream::moveForward(SizeT count)
+void ArrayArchiveStream::moveForward(SizeT byteCount)
 {
-    cursor += count;
+    cursor += byteCount;
     if (buffer.size() <= cursor)
     {
         buffer.resize(cursor + 1);
     }
 }
 
-void ArrayArchiveStream::moveBackward(SizeT count) { cursor = Math::max((int64)cursor - (int64)count, 0); }
+void ArrayArchiveStream::moveBackward(SizeT byteCount) { cursor = Math::max((int64)cursor - (int64)byteCount, 0); }
 
-bool ArrayArchiveStream::allocate(SizeT count)
+bool ArrayArchiveStream::allocate(SizeT byteCount)
 {
-    buffer.resize(buffer.size() + count);
+    buffer.resize(buffer.size() + byteCount);
     return true;
 }
 
@@ -69,6 +69,6 @@ uint8 ArrayArchiveStream::readBackwardAt(SizeT idx) const
 
 bool ArrayArchiveStream::isAvailable() const { return true; }
 
-bool ArrayArchiveStream::hasMoreData(SizeT requiredSize) const { return isAvailable() && (cursor + requiredSize) <= buffer.size(); }
+bool ArrayArchiveStream::hasMoreData(SizeT requiredByteCount) const { return isAvailable() && (cursor + requiredByteCount) <= buffer.size(); }
 
 uint64 ArrayArchiveStream::cursorPos() const { return cursor; }

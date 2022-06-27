@@ -15,6 +15,7 @@
 #include "CoreObjectsExports.h"
 #include "ReflectionMacros.h"
 #include "Serialization/ObjectArchive.h"
+#include "Serialization/CommonTypesSerialization.h"
 #include "Types/CompilerDefines.h"
 
 #include "CBEObject.gen.h"

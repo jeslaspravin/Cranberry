@@ -10,6 +10,8 @@
  */
 
 #pragma once
+
+#include "Serialization/ArchiveTypes.h"
 #include "Math/Matrix4.h"
 #include "Math/Rotation.h"
 #include "Math/Vector3D.h"
@@ -23,10 +25,9 @@ private:
 
     Matrix4 transformMatrixCache;
     bool bCachedLatest;
-
-    template <ArchiveType ArchiveType>
+    
+    template <ArchiveTypeName ArchiveType>
     friend ArchiveType &operator<<(ArchiveType &archive, Transform3D &value);
-
 private:
     Matrix4 normalTransformMatrix() const;
     Matrix4 getTransformMatrix() const;
@@ -73,14 +74,3 @@ public:
 public:
     static Transform3D ZERO_TRANSFORM;
 };
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Transform3D &value)
-{
-    archive << value.transformTranslation << value.transformRotation << value.transformScale;
-    if (archive.isLoading())
-    {
-        value.bCachedLatest = false;
-    }
-    return archive;
-}

@@ -10,6 +10,7 @@
  */
 
 #include "Serialization/ObjectSerializationHelpers.h"
+#include "Serialization/CommonTypesSerialization.h"
 #include "Property/CustomProperty.h"
 #include "Visitors/FieldVisitors.h"
 

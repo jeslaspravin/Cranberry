@@ -13,7 +13,6 @@
 
 #include "Math/CoreMathTypes.h"
 #include "Types/CoreTypes.h"
-#include "Serialization/ArchiveBase.h"
 
 class LinearColor;
 
@@ -127,15 +126,3 @@ extern PROGRAMCORE_EXPORT const LinearColor RED;
 extern PROGRAMCORE_EXPORT const LinearColor BLUE;
 extern PROGRAMCORE_EXPORT const LinearColor GREEN;
 } // namespace LinearColorConst
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Color &value)
-{
-    return archive << value.getColorValue().r << value.getColorValue().g << value.getColorValue().b << value.getColorValue().a;
-}
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, LinearColor &value)
-{
-    return archive << value.getColorValue().r << value.getColorValue().g << value.getColorValue().b << value.getColorValue().a;
-}

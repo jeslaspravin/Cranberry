@@ -33,37 +33,37 @@ FileArchiveStream::~FileArchiveStream()
     file = nullptr;
 }
 
-void FileArchiveStream::read(void *toPtr, SizeT len)
+void FileArchiveStream::read(void *toPtr, SizeT byteLen)
 {
-    if (hasMoreData(len))
+    if (hasMoreData(byteLen))
     {
-        file->read(reinterpret_cast<uint8 *>(toPtr), len);
-        file->offsetCursor((int64)len);
-        fileCursor += len;
+        file->read(reinterpret_cast<uint8 *>(toPtr), byteLen);
+        file->offsetCursor((int64)byteLen);
+        fileCursor += byteLen;
     }
     else
     {
-        len = Math::min(len, file->fileSize() - fileCursor);
-        file->offsetCursor((int64)len);
-        fileCursor += len;
+        byteLen = Math::min(byteLen, file->fileSize() - fileCursor);
+        file->offsetCursor((int64)byteLen);
+        fileCursor += byteLen;
     }
 }
 
-void FileArchiveStream::write(const void *ptr, SizeT len)
+void FileArchiveStream::write(const void *ptr, SizeT byteLen)
 {
     if (bIsReadOnly)
         return;
 
-    file->write({ reinterpret_cast<const uint8 *>(ptr), len });
-    fileCursor += len;
+    file->write({ reinterpret_cast<const uint8 *>(ptr), byteLen });
+    fileCursor += byteLen;
 }
 
-void FileArchiveStream::moveForward(SizeT count)
+void FileArchiveStream::moveForward(SizeT byteCount)
 {
-    if (count == 0)
+    if (byteCount == 0)
         return;
 
-    fileCursor += count;
+    fileCursor += byteCount;
     if (file->fileSize() <= fileCursor)
     {
         if (!bIsReadOnly)
@@ -73,25 +73,25 @@ void FileArchiveStream::moveForward(SizeT count)
     }
     else
     {
-        file->offsetCursor((int64)count);
+        file->offsetCursor((int64)byteCount);
     }
 }
 
-void FileArchiveStream::moveBackward(SizeT count)
+void FileArchiveStream::moveBackward(SizeT byteCount)
 {
-    if (count == 0)
+    if (byteCount == 0)
         return;
 
-    fileCursor = (SizeT)Math::max(0, (int64)(fileCursor) - (int64)(count));
+    fileCursor = (SizeT)Math::max(0, (int64)(fileCursor) - (int64)(byteCount));
     file->seek(fileCursor);
 }
 
-bool FileArchiveStream::allocate(SizeT count)
+bool FileArchiveStream::allocate(SizeT byteCount)
 {
     if (bIsReadOnly)
         return false;
 
-    return file->setFileSize(file->fileSize() + count);
+    return file->setFileSize(file->fileSize() + byteCount);
 }
 
 uint8 FileArchiveStream::readForwardAt(SizeT idx) const
@@ -122,4 +122,4 @@ uint64 FileArchiveStream::cursorPos() const { return fileCursor; }
 
 bool FileArchiveStream::isAvailable() const { return file->isFile() && file->exists(); }
 
-bool FileArchiveStream::hasMoreData(SizeT requiredSize) const { return isAvailable() && (fileCursor + requiredSize) <= file->fileSize(); }
+bool FileArchiveStream::hasMoreData(SizeT requiredByteCount) const { return isAvailable() && (fileCursor + requiredByteCount) <= file->fileSize(); }

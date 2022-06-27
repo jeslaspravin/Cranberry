@@ -39,7 +39,7 @@ struct PackageDependencyData
     CBE::Object *object = nullptr;
 };
 
-template <ArchiveType ArchiveType>
+template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, PackageDependencyData &value)
 {
     archive << value.objectFullPath;
@@ -63,7 +63,7 @@ struct PackageContainedData
     CBE::Object *object = nullptr;
 };
 
-template <ArchiveType ArchiveType>
+template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, PackageContainedData &value)
 {
     archive << value.objectPath;
