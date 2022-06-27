@@ -12,7 +12,6 @@
 #pragma once
 
 #include "Math/CoreMathTypedefs.h"
-#include "Serialization/ArchiveBase.h"
 #include "ProgramCoreExports.h"
 
 #include <glm/ext/matrix_float2x2.hpp>
@@ -70,11 +69,3 @@ public:
 public:
     static const Matrix2 IDENTITY;
 };
-
-template <ArchiveType ArchiveType>
-ArchiveType &operator<<(ArchiveType &archive, Matrix2 &value)
-{
-    archive << value[0].x << value[1].x;
-    archive << value[0].y << value[1].y;
-    return archive;
-}

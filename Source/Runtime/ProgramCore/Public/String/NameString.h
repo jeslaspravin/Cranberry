@@ -40,6 +40,8 @@ private:
     String nameStr;
     StringID id;
 
+    template <ArchiveTypeName ArchiveType>
+    friend ArchiveType &operator<<(ArchiveType &archive, NameString &value);
 public:
     STRING_FUNCQUALIFIER NameString() = default;
     STRING_FUNCQUALIFIER NameString(const NameString &) = default;
@@ -105,16 +107,6 @@ public:
     FORCE_INLINE bool isValid() const noexcept { return id.isValid(); }
     FORCE_INLINE explicit operator StringID() const noexcept { return id; }
     FORCE_INLINE explicit operator String() const noexcept { return nameStr; }
-
-    template <ArchiveType ArchiveType>
-    friend ArchiveType &operator<<(ArchiveType &archive, NameString &value)
-    {
-        archive << value.nameStr;
-        if (archive.isLoading())
-        {
-            value.id = value.nameStr;
-        }
-    }
 };
 
 template <>

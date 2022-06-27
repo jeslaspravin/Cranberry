@@ -92,6 +92,7 @@ bool PackageSaver::savePackage()
     {
         containedObjData.streamStart = (containedObjData.streamStart - dummyHeaderSize) + actualHeaderSize;
     }
+    SizeT finalPackageSize = containedObjects.back().streamStart + containedObjects.back().streamSize;
 
     // Step 5 : Setup file stream to write
     String packagePath = package->getPackageFilePath();
@@ -101,6 +102,7 @@ bool PackageSaver::savePackage()
         LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getName(), packagePath);
         return false;
     }
+    fileStream.allocate(finalPackageSize);
     packageArchive.setStream(&fileStream);
 
     // Step 6 : Write into archive

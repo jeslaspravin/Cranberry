@@ -12,7 +12,7 @@
 #include "Serialization/ArchiveBase.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
-void ArchiveSizeCounterStream::read(void *toPtr, SizeT len) { fatalAssertf(false, "Reading is not allowed in Size counter stream"); }
+void ArchiveSizeCounterStream::read(void *toPtr, SizeT byteLen) { fatalAssertf(false, "Reading is not allowed in Size counter stream"); }
 uint8 ArchiveSizeCounterStream::readForwardAt(SizeT idx) const
 {
     fatalAssertf(false, "Reading is not allowed in Size counter stream");

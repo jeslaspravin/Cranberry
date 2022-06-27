@@ -124,7 +124,7 @@ public:
     /* Overrides ends */
 };
 
-template <ArchiveType ArchiveType, ReflectClassType ObjectType>
+template <ArchiveTypeName ArchiveType, ReflectClassType ObjectType>
 requires(std::derived_from<ArchiveType, ObjectArchive> &&std::derived_from<ObjectType, CBE::Object>) ArchiveType &
     operator<<(ArchiveType &archive, ObjectType *&value)
 {
