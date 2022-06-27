@@ -219,6 +219,7 @@ struct ReadFieldVisitable
 struct WriteObjectFieldUserData
 {
     ObjectArchive *ar;
+    const std::unordered_set<StringID> *fieldsToSerialize = nullptr;
 };
 
 struct WriteFieldVisitable
@@ -357,6 +358,7 @@ struct WriteFieldVisitable
  *
  * 3rd serialized field's data itself
  */
+template <bool bOnlySelectedFields>
 struct StartWriteFieldVisitable
 {
     // Ignore const type
@@ -375,6 +377,15 @@ struct StartWriteFieldVisitable
         WriteObjectFieldUserData *writeUserData = (WriteObjectFieldUserData *)(userData);
 
         StringID fieldNameId = propInfo.fieldProperty->name;
+        if constexpr (bOnlySelectedFields)
+        {
+            debugAssert(writeUserData->fieldsToSerialize);
+            if (!writeUserData->fieldsToSerialize->contains(fieldNameId))
+            {
+                return;
+            }
+        }
+        // Start writing
         (*writeUserData->ar) << fieldNameId;
         // We do not know size yet so just skip now and fill later
         writeUserData->ar->stream()->moveForward(sizeof(FieldSizeDataType));
@@ -396,7 +407,7 @@ struct StartWriteFieldVisitable
 // Helper implementations
 //////////////////////////////////////////////////////////////////////////
 
-ObjectArchive &ObjectSerializationHelpers::serializeAllFields(CBE::Object *obj, ObjectArchive &ar)
+ObjectArchive &serializeFieldsHelper(CBE::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> *fieldsToSerialize)
 {
     if (ar.isLoading())
     {
@@ -441,10 +452,30 @@ ObjectArchive &ObjectSerializationHelpers::serializeAllFields(CBE::Object *obj, 
         ar.setCustomVersion(uint32(OBJECTFIELD_SER_CUSTOM_VERSION_ID), OBJECTFIELD_SER_VERSION);
 
         WriteObjectFieldUserData userData{ .ar = &ar };
-        FieldVisitor::visitFields<StartWriteFieldVisitable>(obj->getType(), obj, &userData);
+        if (fieldsToSerialize)
+        {
+            userData.fieldsToSerialize = fieldsToSerialize;
+            FieldVisitor::visitFields<StartWriteFieldVisitable<true>>(obj->getType(), obj, &userData);
+        }
+        else
+        {
+            FieldVisitor::visitFields<StartWriteFieldVisitable<false>>(obj->getType(), obj, &userData);
+        }
+
         // Append an invalid StringID to make finding end of fields
         StringID invalidID = StringID::INVALID;
         ar << invalidID;
     }
     return ar;
+}
+
+ObjectArchive &ObjectSerializationHelpers::serializeAllFields(CBE::Object *obj, ObjectArchive &ar)
+{
+    return serializeFieldsHelper(obj, ar, nullptr);
+}
+
+ObjectArchive &
+    ObjectSerializationHelpers::serializeOnlyFields(CBE::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> &fieldsToSerialize)
+{
+    return serializeFieldsHelper(obj, ar, &fieldsToSerialize);
 }
