@@ -66,6 +66,7 @@ class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicFieldSerializedObject
 public:
     // Overriding Allocator slot count to 8
     constexpr static const uint32 AllocSlotCount = 8;
+    constexpr static const bool bOnlySelectedFields = false;
 
 public:
     META_ANNOTATE()
@@ -94,7 +95,18 @@ public:
         }
     }
 
-    ObjectArchive &serialize(ObjectArchive &ar) override { return ObjectSerializationHelpers::serializeAllFields(this, ar); }
+    ObjectArchive &serialize(ObjectArchive &ar) override
+    {
+        if constexpr (bOnlySelectedFields)
+        {
+            std::unordered_set<StringID> selectedFields{ TCHAR("dt"), TCHAR("id") };
+            return ObjectSerializationHelpers::serializeOnlyFields(this, ar, selectedFields);
+        }
+        else
+        {
+            return ObjectSerializationHelpers::serializeAllFields(this, ar);
+        }
+    }
 
     void onPostLoad() override;
     void exampleFunc() const override;
