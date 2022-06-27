@@ -292,7 +292,8 @@ private:
         const std::map<StringID, ShaderDescriptorParamType *> &paramsDesc,
         const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts
     );
-    std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *> findBufferParam(StringID &bufferName, StringID paramName) const;
+    std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *>
+        findBufferParam(StringID &bufferName, StringID paramName) const;
     template <typename FieldType>
     bool setFieldParam(StringID paramName, const FieldType &value, uint32 index);
     template <typename FieldType>

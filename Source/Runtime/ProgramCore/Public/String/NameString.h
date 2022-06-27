@@ -42,6 +42,7 @@ private:
 
     template <ArchiveTypeName ArchiveType>
     friend ArchiveType &operator<<(ArchiveType &archive, NameString &value);
+
 public:
     STRING_FUNCQUALIFIER NameString() = default;
     STRING_FUNCQUALIFIER NameString(const NameString &) = default;
@@ -103,7 +104,7 @@ public:
     friend CONST_EXPR std::strong_ordering operator<=>(const StringID &lhs, const NameString &rhs) noexcept { return lhs <=> rhs.id; }
     friend CONST_EXPR bool operator==(const StringID &lhs, const NameString &rhs) noexcept { return lhs == rhs.id; }
 
-    FORCE_INLINE const String& toString() const { return nameStr; }
+    FORCE_INLINE const String &toString() const { return nameStr; }
     FORCE_INLINE bool isValid() const noexcept { return id.isValid(); }
     FORCE_INLINE explicit operator StringID() const noexcept { return id; }
     FORCE_INLINE explicit operator String() const noexcept { return nameStr; }

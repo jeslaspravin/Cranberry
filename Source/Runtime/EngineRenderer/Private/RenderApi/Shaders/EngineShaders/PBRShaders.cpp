@@ -82,7 +82,7 @@ public:
             std::map<StringID, ShaderBufferParamInfo *> paramInfo{
                 {     TCHAR("lightArray"),        &LIGHTDATA_INFO},
                 {TCHAR("colorCorrection"), &COLOR_CORRECTION_INFO},
-                {     TCHAR("shadowData"),      &SHADOW_DATA_INFO}
+                                                            {     TCHAR("shadowData"),      &SHADOW_DATA_INFO}
             };
             paramInfo.insert(RenderSceneBase::sceneViewParamInfo().cbegin(), RenderSceneBase::sceneViewParamInfo().cend());
             return paramInfo;

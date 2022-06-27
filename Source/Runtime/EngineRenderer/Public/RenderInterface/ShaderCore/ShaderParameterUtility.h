@@ -90,13 +90,15 @@ public:
      *
      * @return uint32
      */
-    template <uint32 MaxDimension> static constexpr uint32 getArrayElementCount(
+    template <uint32 MaxDimension>
+    static constexpr uint32 getArrayElementCount(
         const StringID &paramName, const std::vector<ArrayDefinition> &arraySize,
         const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts
     );
 };
 
-template <uint32 MaxDimension>  constexpr uint32 ShaderParameterUtility::getArrayElementCount(
+template <uint32 MaxDimension>
+constexpr uint32 ShaderParameterUtility::getArrayElementCount(
     const StringID &paramName, const std::vector<ArrayDefinition> &arraySize,
     const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts
 )
