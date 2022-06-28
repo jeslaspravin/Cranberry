@@ -10,11 +10,12 @@
  */
 
 #pragma once
-#include "String/String.h"
+
 #include "Types/CoreTypes.h"
 #include "Types/Platform/GenericPlatformTypes.h"
 
 struct CBEGuid;
+class String;
 
 template <typename PlatformClass>
 class GenericPlatformFunctions
@@ -23,11 +24,11 @@ class GenericPlatformFunctions
 protected:
 public:
     // Extensions are auto appended by api to platform default
-    FORCE_INLINE static LibPointer *openLibrary(String libName) { return PlatformClass::openLibrary(libName); }
+    FORCE_INLINE static LibPointer *openLibrary(const TChar *libName) { return PlatformClass::openLibrary(libName); }
 
     FORCE_INLINE static void releaseLibrary(const LibPointer *libraryHandle) { PlatformClass::releaseLibrary(libraryHandle); }
 
-    FORCE_INLINE static void *getProcAddress(const LibPointer *libraryHandle, String symName)
+    FORCE_INLINE static void *getProcAddress(const LibPointer *libraryHandle, const TChar *symName)
     {
         return PlatformClass::getProcAddress(libraryHandle, symName);
     }
@@ -78,8 +79,7 @@ public:
      * We need to remove ref and const here as we use perfect forwarding and type will be either const appended l/r value reference
      */
     template <typename UnsignedType>
-    requires std::unsigned_integral<std::remove_cvref_t<UnsignedType>>
-    static uint32 getSetBitCount(UnsignedType &&value)
+    requires std::unsigned_integral<std::remove_cvref_t<UnsignedType>> FORCE_INLINE static uint32 getSetBitCount(UnsignedType &&value)
     {
         // Switch statement is not working as const_expr
         if CONST_EXPR (sizeof(value) == 1)

@@ -76,6 +76,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     appInstance = appInst;
 
     // Initialize job system
+    PlatformThreadingFunctions::printSystemThreadingInfo();
     copat::JobSystem jobSys;
     jobSys.initialize(
         copat::JobSystem::MainThreadTickFunc::createLambda(

@@ -53,7 +53,7 @@ LibPointer *ModuleManager::loadFromAdditionalPaths(const String &modulePath) con
     String relativeModulePath(WCHAR_TO_TCHAR(moduleFullPath.c_str()));
     for (const String &lookAtPath : additionalLibraryPaths)
     {
-        if (LibPointer *library = PlatformFunctions::openLibrary(PathFunctions::combinePath(lookAtPath, relativeModulePath)))
+        if (LibPointer *library = PlatformFunctions::openLibrary(PathFunctions::combinePath(lookAtPath, relativeModulePath).getChar()))
         {
             return library;
         }
@@ -120,7 +120,7 @@ LibPointer *ModuleManager::getOrLoadLibrary(String modulePath)
 
     if (!isLibraryLoaded(moduleName))
     {
-        LibPointer *library = PlatformFunctions::openLibrary(modulePath);
+        LibPointer *library = PlatformFunctions::openLibrary(modulePath.getChar());
         if (library == nullptr)
         {
             // Pass in sent path to derive abs paths from relative if any
@@ -186,7 +186,7 @@ WeakModulePtr ModuleManager::getOrLoadModule(String moduleName)
             fatalAssertf(libPtr, "Failed loading module %s", moduleName);
 
             Function<IModuleBase *> createFuncPtr((Function<IModuleBase *>::StaticDelegate
-            )PlatformFunctions::getProcAddress(libPtr, TCHAR("createModule_") + moduleName));
+            )PlatformFunctions::getProcAddress(libPtr, (TCHAR("createModule_") + moduleName).c_str()));
             fatalAssertf(createFuncPtr, "Failed find module create function for module %s", moduleName);
 
             retModule = ModulePtr(createFuncPtr());
