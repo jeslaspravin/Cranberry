@@ -19,9 +19,9 @@ private:
     static void bindCrtHandlesToStdHandles(bool bBindStdIn, bool bBindStdOut, bool bBindStdErr);
 
 public:
-    static LibPointer *openLibrary(String libName);
+    static LibPointer *openLibrary(const TChar* libName);
     static void releaseLibrary(const LibPointer *libraryHandle);
-    static void *getProcAddress(const LibPointer *libraryHandle, String symName);
+    static void *getProcAddress(const LibPointer *libraryHandle, const TChar *symName);
     static void getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData);
     static bool isSame(const LibPointer *leftHandle, const LibPointer *rightHandle);
 

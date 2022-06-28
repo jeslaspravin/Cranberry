@@ -88,12 +88,12 @@ SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::nanoseconds)
 
 #undef SPECIALIZE_FROM_PLATFORM_TIME
 
-LibPointer *WindowsPlatformFunctions::openLibrary(String libName)
+LibPointer *WindowsPlatformFunctions::openLibrary(const TChar *libName)
 {
     // TODO(Jeslas) : Improve this to handle dependent dlls here, Using
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/february/inside-windows-win32-portable-executable-file-format-in-detail
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/march/inside-windows-an-in-depth-look-into-the-win32-portable-executable-file-format-part-2
-    WindowsLibHandle *handle = new WindowsLibHandle(LoadLibrary(libName.getChar()), true);
+    WindowsLibHandle *handle = new WindowsLibHandle(LoadLibrary(libName), true);
 
     if (!handle->libHandle)
     {
@@ -112,9 +112,9 @@ void WindowsPlatformFunctions::releaseLibrary(const LibPointer *libraryHandle)
     }
 }
 
-void *WindowsPlatformFunctions::getProcAddress(const LibPointer *libraryHandle, String symName)
+void *WindowsPlatformFunctions::getProcAddress(const LibPointer *libraryHandle, const TChar *symName)
 {
-    return ::GetProcAddress(static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle, TCHAR_TO_UTF8(symName.getChar()));
+    return ::GetProcAddress(static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle, TCHAR_TO_UTF8(symName));
 }
 
 void WindowsPlatformFunctions::getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)

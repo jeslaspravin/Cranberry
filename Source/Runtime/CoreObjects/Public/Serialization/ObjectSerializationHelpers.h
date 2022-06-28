@@ -13,12 +13,6 @@
 
 #include "CBEObject.h"
 
-namespace std
-{
-template <class _Kty, class _Hasher, class _Keyeq, class _Alloc>
-class unordered_set;
-}
-
 class COREOBJECTS_EXPORT ObjectSerializationHelpers
 {
 private:
