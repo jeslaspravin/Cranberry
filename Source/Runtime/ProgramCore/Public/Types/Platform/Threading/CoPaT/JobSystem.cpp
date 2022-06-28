@@ -18,6 +18,17 @@ COPAT_NS_INLINED
 namespace copat
 {
 
+void getCoreCount(u32 &outCoreCount, u32 &outLogicalProcessorCount)
+{
+    PlatformThreadingFuncs::getCoreCount(outCoreCount, outLogicalProcessorCount);
+    // Just a backup if user did not provide an implementation
+    if (outCoreCount == 0 || outLogicalProcessorCount == 0)
+    {
+        outLogicalProcessorCount = std::thread::hardware_concurrency();
+        outCoreCount = outLogicalProcessorCount / 2;
+    }
+}
+
 JobSystem *JobSystem::singletonInstance = nullptr;
 
 void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
@@ -32,20 +43,47 @@ void JobSystem::initialize(MainThreadTickFunc &&mainTick, void *inUserData)
 
     specialThreadsPool.initialize(this);
 
-    for (u32 i = 0; i < workersCount; ++i)
-    {
-        std::thread worker{ [this]() { doWorkerJobs(); } };
-        PlatformThreadingFuncs::setThreadName((COPAT_TCHAR("WorkerThread_") + COPAT_TOSTRING(i)).c_str(), worker.native_handle());
-        // Destroy when finishes
-        worker.detach();
-    }
+    initializeWorkers();
 
     // Setup main thread
     mainThreadTick = std::forward<MainThreadTickFunc>(mainTick);
     userData = inUserData;
     PlatformThreadingFuncs::setCurrentThreadName(COPAT_TCHAR("MainThread"));
+    PlatformThreadingFuncs::setCurrentThreadProcessor(0, 0);
     PerThreadData &mainThreadData = getOrCreatePerThreadData();
     mainThreadData.threadType = EJobThreadType::MainThread;
+}
+
+void JobSystem::initializeWorkers()
+{
+    u32 coreCount, logicalProcCount;
+    getCoreCount(coreCount, logicalProcCount);
+    const u32 htCount = logicalProcCount / coreCount;
+
+    u32 nonWorkerCount = SpecialThreadsPoolType::COUNT + 1;
+    u32 coresForWorkers = coreCount;
+    if (coreCount <= nonWorkerCount)
+    {
+        // If there is very limited cores then let OS decide on scheduling, we just distribute workers evenly
+        nonWorkerCount = 0;
+    }
+    else
+    {
+        coresForWorkers = coreCount - nonWorkerCount;
+    }
+
+    for (u32 i = 0; i < workersCount; ++i)
+    {
+        u32 coreIdx = (i % coresForWorkers) + nonWorkerCount;
+        u32 htIdx = (i / coresForWorkers) % htCount;
+
+        // Create and setup thread
+        std::thread worker{ [this]() { doWorkerJobs(); } };
+        PlatformThreadingFuncs::setThreadName((COPAT_TCHAR("WorkerThread_") + COPAT_TOSTRING(i)).c_str(), worker.native_handle());
+        PlatformThreadingFuncs::setThreadProcessor(coreIdx, htIdx, worker.native_handle());
+        // Destroy when finishes
+        worker.detach();
+    }
 }
 
 void JobSystem::shutdown()
@@ -171,9 +209,10 @@ void JobSystem::doWorkerJobs()
 
 copat::u32 JobSystem::calculateWorkersCount() const
 {
-    u32 count = std::thread::hardware_concurrency() / 2;
-    count = count > 4 ? count : 4;
-    return count > MAX_SUPPORTED_WORKERS ? MAX_SUPPORTED_WORKERS : count;
+    u32 coreCount, logicalProcCount;
+    getCoreCount(coreCount, logicalProcCount);
+    coreCount = coreCount > 4 ? coreCount : 4;
+    return coreCount > MAX_SUPPORTED_WORKERS ? MAX_SUPPORTED_WORKERS : coreCount;
 }
 
 copat::JobSystem::PerThreadData *JobSystem::getPerThreadData() const
@@ -183,10 +222,18 @@ copat::JobSystem::PerThreadData *JobSystem::getPerThreadData() const
 
 void INTERNAL_initializeAndRunSpecialThread(INTERNAL_SpecialThreadFuncType threadFunc, EJobThreadType threadType, JobSystem *jobSystem)
 {
+    u32 coreCount, logicalProcCount;
+    getCoreCount(coreCount, logicalProcCount);
+
     std::thread specialThread{ [jobSystem, threadFunc]() { (jobSystem->*threadFunc)(); } };
     PlatformThreadingFuncs::setThreadName(
         (COPAT_TCHAR("SpecialThread_") + COPAT_TOSTRING(u32(threadType))).c_str(), specialThread.native_handle()
     );
+    if (coreCount > u32(threadType))
+    {
+        // If not enough core just run as free thread
+        PlatformThreadingFuncs::setThreadProcessor(u32(threadType), 0, specialThread.native_handle());
+    }
     // Destroy when finishes
     specialThread.detach();
 }

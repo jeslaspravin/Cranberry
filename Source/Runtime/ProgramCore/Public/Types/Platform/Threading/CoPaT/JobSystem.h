@@ -216,6 +216,8 @@ public:
     u32 getTotalThreadsCount() const { return workersCount + SpecialThreadsPoolType::COUNT + 1; }
 
 private:
+    void initializeWorkers();
+
     PerThreadData *getPerThreadData() const;
     PerThreadData &getOrCreatePerThreadData();
 
