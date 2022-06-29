@@ -47,7 +47,7 @@ String WindowsThreadingFunctions::getCurrentThreadName() { return getThreadName(
 
 void *WindowsThreadingFunctions::getCurrentThreadHandle() { return ::GetCurrentThread(); }
 
-bool WindowsThreadingFunctions::setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, void *threadHandle) 
+bool WindowsThreadingFunctions::setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, void *threadHandle)
 {
     uint32 coreCount, logicalProcCount;
     getCoreCount(coreCount, logicalProcCount);
@@ -58,13 +58,12 @@ bool WindowsThreadingFunctions::setThreadProcessor(uint32 coreIdx, uint32 logica
     const uint32 groupIndex = coreAffinityShift / 64;
     const uint64 groupAffinityMask = 1ull << (coreAffinityShift % 64);
 
+    // Need to zero initialize for ::SetThreadGroupAffinity to succeed!
     ::GROUP_AFFINITY grpAffinity = {};
     grpAffinity.Group = WORD(groupIndex);
     grpAffinity.Mask = groupAffinityMask;
 
-    ::GROUP_AFFINITY outgrpAffinity = {};
-
-    return !!::SetThreadGroupAffinity((HANDLE)threadHandle, &grpAffinity, &outgrpAffinity);
+    return !!::SetThreadGroupAffinity((HANDLE)threadHandle, &grpAffinity, nullptr);
 }
 
 template <typename T>
@@ -96,6 +95,12 @@ SystemProcessorsInfo WindowsThreadingFunctions::getSystemProcessorInfo()
 
     std::vector<uint8> buffer;
     uint32 activeProcessorsCount = 0;
+    /**
+     * Each Relation provides all the logical processors and its group related to it and the related component's properties
+     * Example Group lists all processors active under a group
+     * Cache lists the cache's property and all the processor's(In its group) that shares this cache
+     * ProcessorCore lists for each core and its group and logical processors
+     */
     windowsLogicalProcessorInfoVisitor(
         [&processorInfo, &activeProcessorsCount](const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *procInfo)
         {
@@ -234,7 +239,7 @@ SystemProcessorsCacheInfo WindowsThreadingFunctions::getProcessorCacheInfo()
     return cacheInfo;
 }
 
-void WindowsThreadingFunctions::printSystemThreadingInfo() 
+void WindowsThreadingFunctions::printSystemThreadingInfo()
 {
     INTERNAL_printSystemThreadingInfo(getSystemProcessorInfo(), getProcessorCacheInfo());
 }
