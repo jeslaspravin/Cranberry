@@ -71,6 +71,10 @@
 #include "Types/TypesInfo.h"
 #include "WindowManager.h"
 #include "ApplicationSettings.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
+#include "Types/Platform/Threading/CoPaT/DispatchHelpers.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineAwaitAll.h"
 
 #include <array>
 #include <map>
@@ -240,8 +244,6 @@ class ExperimentalEnginePBR
     // offset in count, in scene
     std::unordered_map<const MeshAsset *, std::pair<uint32, uint32>> meshVertIdxOffset;
 
-    // Memory to find intersection with scene volume
-    std::vector<GridEntity> setIxMemory;
     // Scene data
     // All used asset's vertex and index data
     BufferResourceRef sceneVertexBuffer;
@@ -775,14 +777,54 @@ void PBRSceneEntity::updateMaterialParams(
 
 void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
 {
-    setIxMemory.resize(sceneData.size() + scenePointLights.size() + sceneSpotLights.size());
-    std::pmr::monotonic_buffer_resource memRes(setIxMemory.data(), setIxMemory.size() * sizeof(GridEntity));
-    std::pmr::polymorphic_allocator<GridEntity> setIxAlloc(&memRes);
-    std::pmr::vector<GridEntity> setIntersections(setIxAlloc);
-
-    auto fillDrawCmds = [&setIntersections, cmdList, this](std::vector<DrawIndexedIndirectCommand> &drawCmds, BufferResourceRef &drawCmdsBuffer)
+    struct LightObjectCulling
     {
-        for (const GridEntity &gridEntity : setIntersections)
+        std::vector<DrawIndexedIndirectCommand> drawCmds;
+        std::vector<GridEntity> setIntersections;
+    };
+    std::vector<LightObjectCulling> lightCullings(sceneSpotLights.size() + scenePointLights.size());
+    bool bHasAnyBufferResize = false;
+    auto cullLambda = [&lightCullings, &bHasAnyBufferResize, this](uint32 idx, bool bIsPtLights)
+    {
+        BufferResourceRef drawCmdsBuffer = nullptr;
+        uint32 lightCullingOffset = 0;
+        AABB lightRegion;
+        if (bIsPtLights)
+        {
+            lightCullingOffset = sceneSpotLights.size();
+            const PointLight &ptlit = scenePointLights[idx];
+            if (!ptlit.shadowViewParams || !ptlit.shadowMap || !ptlit.drawCmdsBuffer)
+            {
+                return;
+            }
+            lightRegion = AABB(ptlit.lightPos + Vector3D(ptlit.radius, 0, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3D(-ptlit.radius, 0, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3D(0, ptlit.radius, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3D(0, -ptlit.radius, 0));
+            lightRegion.grow(ptlit.lightPos + Vector3D(0, 0, ptlit.radius));
+            lightRegion.grow(ptlit.lightPos + Vector3D(0, 0, -ptlit.radius));
+
+            drawCmdsBuffer = *ptlit.drawCmdsBuffer;
+        }
+        else
+        {
+            const SpotLight &sptlit = sceneSpotLights[idx];
+            if (!sptlit.shadowViewParams || !sptlit.shadowMap || !sptlit.drawCmdsBuffer)
+            {
+                return;
+            }
+
+            Vector3D corners[8];
+            sptlit.view.frustumCorners(corners);
+            ArrayView<Vector3D> cornersView(corners);
+            lightRegion = AABB(cornersView);
+
+            drawCmdsBuffer = *sptlit.drawCmdsBuffer;
+        }
+
+        LightObjectCulling &lightCulling = lightCullings[lightCullingOffset + idx];
+        sceneVolume.findIntersection(lightCulling.setIntersections, lightRegion, true);
+        for (const GridEntity &gridEntity : lightCulling.setIntersections)
         {
             if (gridEntity.type == GridEntity::Entity)
             {
@@ -792,7 +834,7 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
                 {
                     const MeshVertexView &meshBatch = static_cast<const StaticMeshAsset *>(sceneEntity.meshAsset)->meshBatches[meshBatchIdx];
                     // fill draw command for this batch
-                    DrawIndexedIndirectCommand &drawCmd = drawCmds.emplace_back();
+                    DrawIndexedIndirectCommand &drawCmd = lightCulling.drawCmds.emplace_back();
                     drawCmd.firstInstance = sceneEntity.instanceParamIdx[meshBatchIdx];
                     drawCmd.firstIndex = meshVertIdxOffset[sceneEntity.meshAsset].second // Mesh's scene index buffer offset
                                          + meshBatch.startIndex;                         // Local index buffer offset
@@ -804,57 +846,70 @@ void ExperimentalEnginePBR::setupLightSceneDrawCmdsBuffer(class IRenderCommandLi
             }
         }
 
-        if (drawCmdsBuffer->bufferCount() < drawCmds.size())
+        bHasAnyBufferResize = bHasAnyBufferResize || (drawCmdsBuffer->bufferCount() < lightCulling.drawCmds.size());
+        if (bIsPtLights)
         {
-            drawCmdsBuffer->setBufferCount(uint32(drawCmds.size()));
-            cmdList->flushAllcommands();
-            drawCmdsBuffer->reinitResources();
+            scenePointLights[idx].drawCmdCount = uint32(lightCulling.drawCmds.size());
         }
-
-        cmdList->copyToBuffer(drawCmdsBuffer, 0, drawCmds.data(), uint32(drawCmdsBuffer->getResourceSize()));
+        else
+        {
+            sceneSpotLights[idx].drawCmdCount = uint32(lightCulling.drawCmds.size());
+        }
     };
 
-    std::vector<DrawIndexedIndirectCommand> drawCmds;
-    // Draw spot lights
-    for (SpotLight &sptlit : sceneSpotLights)
+    auto sceneSptCullingJobs = copat::dispatch(
+        copat::JobSystem::get(), copat::DispatchFunctionType::createLambda(cullLambda, false), uint32(sceneSpotLights.size())
+    );
+    auto scenePtCullingJobs = copat::dispatch(
+        copat::JobSystem::get(), copat::DispatchFunctionType::createLambda(cullLambda, true), uint32(scenePointLights.size())
+    );
+    copat::waitOnAwaitable(sceneSptCullingJobs);
+    copat::waitOnAwaitable(scenePtCullingJobs);
+
+    if (bHasAnyBufferResize)
     {
-        if (sptlit.shadowViewParams && sptlit.shadowMap && sptlit.drawCmdsBuffer)
-        {
-            Vector3D corners[8];
-            sptlit.view.frustumCorners(corners);
-            ArrayView<Vector3D> cornersView(corners, ARRAY_LENGTH(corners));
-            AABB sptRegion(cornersView);
-
-            setIntersections.clear();
-            sceneVolume.findIntersection(setIntersections, sptRegion, true);
-
-            drawCmds.clear();
-            fillDrawCmds(drawCmds, *sptlit.drawCmdsBuffer);
-            sptlit.drawCmdCount = uint32(drawCmds.size());
-        }
+        cmdList->flushAllcommands();
     }
-
-    // Draw point lights
-    for (PointLight &ptlit : scenePointLights)
+    std::vector<BatchCopyBufferData> batchCopies;
+    for (uint32 i = 0; i < sceneSpotLights.size(); ++i)
     {
-        if (ptlit.shadowViewParams && ptlit.shadowMap && ptlit.drawCmdsBuffer)
+        const LightObjectCulling &lightCulling = lightCullings[i];
+        SpotLight &sptlit = sceneSpotLights[i];
+        if (!sptlit.drawCmdsBuffer)
         {
-            Vector3D corners[8];
-            AABB ptRegion(ptlit.lightPos + Vector3D(ptlit.radius, 0, 0));
-            ptRegion.grow(ptlit.lightPos + Vector3D(-ptlit.radius, 0, 0));
-            ptRegion.grow(ptlit.lightPos + Vector3D(0, ptlit.radius, 0));
-            ptRegion.grow(ptlit.lightPos + Vector3D(0, -ptlit.radius, 0));
-            ptRegion.grow(ptlit.lightPos + Vector3D(0, 0, ptlit.radius));
-            ptRegion.grow(ptlit.lightPos + Vector3D(0, 0, -ptlit.radius));
-
-            setIntersections.clear();
-            sceneVolume.findIntersection(setIntersections, ptRegion, true);
-
-            drawCmds.clear();
-            fillDrawCmds(drawCmds, *ptlit.drawCmdsBuffer);
-            ptlit.drawCmdCount = uint32(drawCmds.size());
+            continue;
         }
+        if ((*sptlit.drawCmdsBuffer)->bufferCount() < lightCulling.drawCmds.size())
+        {
+            (*sptlit.drawCmdsBuffer)->setBufferCount(uint32(lightCulling.drawCmds.size()));
+            (*sptlit.drawCmdsBuffer)->reinitResources();
+        }
+
+        batchCopies.emplace_back(BatchCopyBufferData{ .dst = (*sptlit.drawCmdsBuffer),
+                                                      .dstOffset = 0,
+                                                      .dataToCopy = lightCulling.drawCmds.data(),
+                                                      .size = uint32((*sptlit.drawCmdsBuffer)->getResourceSize()) });
     }
+    for (uint32 i = 0; i < scenePointLights.size(); ++i)
+    {
+        const LightObjectCulling &lightCulling = lightCullings[sceneSpotLights.size() + i];
+        PointLight &ptlit = scenePointLights[i];
+        if (!ptlit.drawCmdsBuffer)
+        {
+            continue;
+        }
+        if ((*ptlit.drawCmdsBuffer)->bufferCount() < lightCulling.drawCmds.size())
+        {
+            (*ptlit.drawCmdsBuffer)->setBufferCount(uint32(lightCulling.drawCmds.size()));
+            (*ptlit.drawCmdsBuffer)->reinitResources();
+        }
+
+        batchCopies.emplace_back(BatchCopyBufferData{ .dst = (*ptlit.drawCmdsBuffer),
+                                                      .dstOffset = 0,
+                                                      .dataToCopy = lightCulling.drawCmds.data(),
+                                                      .size = uint32((*ptlit.drawCmdsBuffer)->getResourceSize()) });
+    }
+    cmdList->copyToBuffer(batchCopies);
 }
 
 void ExperimentalEnginePBR::destroyDrawCmdsBuffer()
@@ -2028,6 +2083,7 @@ void ExperimentalEnginePBR::setupLightShaderData()
             SpotLight &lightData = sceneSpotLights[spotLightIdxs[rangeIdx + lightStartIdx]];
             lightData.shadowMap = nullptr;
             lightData.shadowViewParams = nullptr;
+            lightData.drawCmdsBuffer = nullptr;
             lightData.paramCollection = &light;
             lightData.index = rangeIdx;
 
@@ -2040,6 +2096,7 @@ void ExperimentalEnginePBR::setupLightShaderData()
             PointLight &lightData = scenePointLights[ptLightIdxs[rangeIdx + lightStartIdx]];
             lightData.shadowMap = nullptr;
             lightData.shadowViewParams = nullptr;
+            lightData.drawCmdsBuffer = nullptr;
             lightData.paramCollection = &light;
             lightData.index = rangeIdx;
 
