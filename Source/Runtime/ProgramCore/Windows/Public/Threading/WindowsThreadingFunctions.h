@@ -30,7 +30,7 @@ public:
 
     static bool setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, void *threadHandle);
 
-    static void printSystemThreadingInfo(); 
+    static void printSystemThreadingInfo();
     static SystemProcessorsInfo getSystemProcessorInfo();
     static SystemProcessorsCacheInfo getProcessorCacheInfo();
 };

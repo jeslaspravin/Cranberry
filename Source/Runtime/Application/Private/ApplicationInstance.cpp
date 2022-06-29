@@ -71,6 +71,7 @@ ApplicationInstance::ApplicationInstance(const AppInstanceCreateInfo &createInfo
     , inputSystem(nullptr)
     , windowManager(nullptr)
     , fontManager(nullptr)
+    , jobSystem(nullptr)
 {
     ApplicationSettings::renderingOffscreen.set(createInfo.bRenderOffscreen);
 }

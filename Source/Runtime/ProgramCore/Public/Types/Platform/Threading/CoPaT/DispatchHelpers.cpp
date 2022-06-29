@@ -17,12 +17,13 @@
 COPAT_NS_INLINED
 namespace copat
 {
-DispatchAwaitableType dispatchOneTask(JobSystem &jobSys, const DispatchFunctionType &callback, u32 jobIdx)
+// Just copying the callback so a copy exists inside dispatch
+DispatchAwaitableType dispatchOneTask(JobSystem &jobSys, DispatchFunctionType callback, u32 jobIdx)
 {
     callback(jobIdx);
     co_return;
 }
-DispatchAwaitableType dispatchTaskGroup(JobSystem &jobSys, const DispatchFunctionType &callback, u32 fromJobIdx, u32 count)
+DispatchAwaitableType dispatchTaskGroup(JobSystem &jobSys, DispatchFunctionType callback, u32 fromJobIdx, u32 count)
 {
     const u32 endJobIdx = fromJobIdx + count;
     for (u32 jobIdx = fromJobIdx; jobIdx < endJobIdx; ++jobIdx)

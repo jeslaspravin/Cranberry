@@ -55,11 +55,14 @@ public:
     template <typename T>
     T *setHazardPtr(const std::atomic<T *> &ptr)
     {
-        hazardPtrStorePtr.store((uintptr_t)&ptr, std::memory_order::release);
+        hazardPtrStorePtr.store((uintptr_t)&ptr, std::memory_order::relaxed);
+        // If we are setting new pointer then pointer value also must be reset
+        hazardPtr.store(RESET_VALUE, std::memory_order::release);
+
         // We need fence here to ensure that instructions never gets reordered at compiler
         std::atomic_signal_fence(std::memory_order::seq_cst);
-        // We can read relaxed as the HazardRecord will be acquired by a thread and not shared so setting will technically happen in a thread
-        // only
+        // We can read relaxed as the HazardRecord will be acquired by a thread and not shared 
+        // so setting will technically happen in a thread only
         return getHazardPtr<T>(std::memory_order::relaxed);
     }
 

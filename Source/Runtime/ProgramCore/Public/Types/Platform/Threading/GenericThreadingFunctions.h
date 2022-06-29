@@ -70,7 +70,12 @@ public:
     FORCE_INLINE static String getCurrentThreadName() { return PlatformClass::getCurrentThreadName(); }
     FORCE_INLINE static void *getCurrentThreadHandle() { return PlatformClass::getCurrentThreadHandle(); }
 
-    FORCE_INLINE static void getCoreCount(uint32 &outCoreCount, uint32 &outLogicalProcessorCount) {}
+    FORCE_INLINE static void getCoreCount(uint32 &outCoreCount, uint32 &outLogicalProcessorCount)
+    {
+        SystemProcessorsInfo processorsInfo = getSystemProcessorInfo();
+        outCoreCount = processorsInfo.coresCount;
+        outLogicalProcessorCount = processorsInfo.logicalProcessorsCount;
+    }
     FORCE_INLINE static bool setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, void *threadHandle)
     {
         return PlatformClass::setThreadProcessor(coreIdx, logicalProcessorIdx, threadHandle);
