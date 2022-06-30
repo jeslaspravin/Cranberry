@@ -10,16 +10,18 @@
  */
 
 #pragma once
+
 #include "Types/Platform/LFS/File/GenericFile.h"
 
 class PROGRAMCORE_EXPORT WindowsFile final : public GenericFile
 {
 
 public:
-    WindowsFile(
-        const String &path = TCHAR("")
-        )
+    WindowsFile(const String &path)
         : GenericFile(path)
+    {}
+    WindowsFile()
+        : GenericFile(TCHAR(""))
     {}
     WindowsFile(WindowsFile &&otherFile);
     WindowsFile(const WindowsFile &otherFile);
@@ -51,8 +53,8 @@ public:
     bool createDirectory() const override;
 
 protected:
-    virtual GenericFileHandle *openOrCreateImpl() override;
-    virtual GenericFileHandle *openImpl() const override;
+    virtual PlatformHandle openOrCreateImpl() override;
+    virtual PlatformHandle openImpl() const override;
     virtual bool closeImpl() const override;
 
     bool dirDelete() const override;

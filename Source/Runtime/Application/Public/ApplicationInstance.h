@@ -14,6 +14,7 @@
 #include "ApplicationExports.h"
 #include "String/String.h"
 #include "Types/CoreTypes.h"
+#include "Types/Platform/PlatformTypes.h"
 #include "IRenderInterfaceModule.h"
 
 class PlatformAppInstanceBase;
@@ -27,7 +28,7 @@ class JobSystem;
 
 struct AppInstanceCreateInfo
 {
-    void *platformAppHandle;
+    InstanceHandle platformAppHandle;
 
     String applicationName;
     // This cmdLine will be used as reference inside ProgramCmdLine

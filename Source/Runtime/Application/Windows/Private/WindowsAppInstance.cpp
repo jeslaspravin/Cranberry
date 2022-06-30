@@ -11,4 +11,4 @@
 
 #include "WindowsAppInstance.h"
 
-void *WindowsAppInstance::getPlatformAppInstance() const { return windowsInstance; }
+InstanceHandle WindowsAppInstance::getPlatformAppInstance() const { return windowsInstance; }

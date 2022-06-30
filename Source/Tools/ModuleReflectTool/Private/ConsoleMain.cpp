@@ -97,8 +97,9 @@ int32 main(int32 argsc, AChar **args)
 
     // Loading other libraries
     moduleManager->loadModule(TCHAR("ReflectionRuntime"));
-    moduleManager->getOrLoadLibrary(
-        PathFunctions::combinePath(TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"), String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION));
+    moduleManager->getOrLoadLibrary(PathFunctions::combinePath(
+        TCHAR(LLVM_INSTALL_PATH), TCHAR("bin"), String(LIB_PREFIX) + TCHAR("libclang.") + SHARED_LIB_EXTENSION).getChar()
+    );
 
     Logger::flushStream();
 

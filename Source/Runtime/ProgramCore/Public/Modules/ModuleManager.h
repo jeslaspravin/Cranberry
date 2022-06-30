@@ -16,7 +16,7 @@
 #include "Modules/IModuleBase.h"
 #include "String/String.h"
 #include "Types/Delegates/Delegate.h"
-#include "Types/Platform/GenericPlatformTypes.h"
+#include "Types/Platform/PlatformTypes.h"
 
 #include <unordered_map>
 
@@ -52,7 +52,7 @@ using WeakModulePtr = WeakPtr<IModuleBase>;
 class PROGRAMCORE_EXPORT ModuleManager
 {
 private:
-    using LoadedLibsMap = std::unordered_map<String, std::pair<LibPointerPtr, LibraryData>>;
+    using LoadedLibsMap = std::unordered_map<String, std::pair<LibHandle, LibraryData>>;
     using LoadedModulesMap = std::unordered_map<String, ModulePtr>;
 
     // Contains modules loaded as shared libraries
@@ -75,19 +75,20 @@ public:
     static ModuleManager *get();
 
     // Library loading functions
-    bool isLibraryLoaded(String moduleName) const;
-    LibPointer *getLibrary(String moduleName) const;
-    LibPointer *getOrLoadLibrary(String modulePath);
+    bool isLibraryLoaded(const TChar *libNameOrPath) const;
+    LibHandle getLibrary(const TChar *libNameOrPath) const;
+    LibHandle getOrLoadLibrary(const TChar *libNameOrPath);
+    bool unloadLibrary(const TChar *libName);
 
     // Engine/Game module loading functions
-    bool isModuleLoaded(String moduleName) const;
-    WeakModulePtr getModule(String moduleName) const;
-    bool loadModule(String moduleName);
-    WeakModulePtr getOrLoadModule(String moduleName);
-    void unloadModule(String moduleName);
-    void unloadAllModules();
+    bool isModuleLoaded(const TChar *moduleName) const;
+    WeakModulePtr getModule(const TChar *moduleName) const;
+    bool loadModule(const TChar *moduleName);
+    WeakModulePtr getOrLoadModule(const TChar *moduleName);
+    void unloadModule(const TChar *moduleName);
+    void unloadAll();
 
-    std::vector<std::pair<LibPointerPtr, struct LibraryData>> getAllModuleData();
+    std::vector<std::pair<LibHandle, struct LibraryData>> getAllModuleData();
 
 private:
     friend StaticModuleInitializerRegistrant;
@@ -96,7 +97,7 @@ private:
     /*
      * Checks and appends/prepends library prefix and extension as required if not present already
      */
-    LibPointer *loadFromAdditionalPaths(const String &modulePath) const;
+    LibHandle loadFromAdditionalPaths(const TChar *modulePath) const;
 
     ModuleManager();
 };

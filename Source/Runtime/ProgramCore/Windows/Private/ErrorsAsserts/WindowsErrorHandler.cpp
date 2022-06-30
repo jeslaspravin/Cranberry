@@ -120,7 +120,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
     symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
     ::SymSetOptions(symOptions);
 
-    std::vector<std::pair<LibPointerPtr, LibraryData>> modulesDataPairs = ModuleManager::get()->getAllModuleData();
+    std::vector<std::pair<LibHandle, LibraryData>> modulesDataPairs = ModuleManager::get()->getAllModuleData();
 
     IMAGE_NT_HEADERS *imageHeader = ::ImageNtHeader(modulesDataPairs[0].second.basePtr);
     dword imageType = imageHeader->FileHeader.Machine;
@@ -151,7 +151,7 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
             uint64 moduleBase = ::SymGetModuleBase64(processHandle, frame.AddrPC.Offset);
             SymbolInfo symInfo = SymbolInfo(processHandle, frame.AddrPC.Offset, symOffset);
             String moduleName;
-            for (const std::pair<const LibPointerPtr, LibraryData> &modulePair : modulesDataPairs)
+            for (const std::pair<const LibHandle, LibraryData> &modulePair : modulesDataPairs)
             {
                 if (moduleBase == (uint64)modulePair.second.basePtr)
                 {

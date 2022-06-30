@@ -25,22 +25,6 @@
 #include <corecrt_io.h>
 #include <fcntl.h>
 
-struct WindowsLibHandle : public LibPointer
-{
-    HMODULE libHandle;
-    bool bUnload;
-    WindowsLibHandle(HMODULE handle, bool manualUnload)
-        : libHandle(handle)
-        , bUnload(manualUnload)
-    {}
-
-    ~WindowsLibHandle()
-    {
-        if (bUnload)
-            WindowsPlatformFunctions::releaseLibrary(this);
-    }
-};
-
 // as 100ns
 using WindowsTimeDuration = std::chrono::duration<int64, std::ratio<1, 10'000'000>>;
 // From https://stackoverflow.com/questions/6161776/convert-windows-filetime-to-second-in-unix-linux
@@ -88,62 +72,49 @@ SPECIALIZE_FROM_PLATFORM_TIME(std::chrono::nanoseconds)
 
 #undef SPECIALIZE_FROM_PLATFORM_TIME
 
-LibPointer *WindowsPlatformFunctions::openLibrary(const TChar *libName)
+LibHandle WindowsPlatformFunctions::openLibrary(const TChar *libName)
 {
     // TODO(Jeslas) : Improve this to handle dependent dlls here, Using
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/february/inside-windows-win32-portable-executable-file-format-in-detail
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2002/march/inside-windows-an-in-depth-look-into-the-win32-portable-executable-file-format-part-2
-    WindowsLibHandle *handle = new WindowsLibHandle(LoadLibrary(libName), true);
-
-    if (!handle->libHandle)
-    {
-        delete handle;
-        handle = nullptr;
-    }
-    return handle;
+    return LoadLibrary(libName);
 }
 
-void WindowsPlatformFunctions::releaseLibrary(const LibPointer *libraryHandle)
+void WindowsPlatformFunctions::releaseLibrary(LibHandle libraryHandle)
 {
-    HMODULE handle = static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle;
-    if (handle)
+    if (libraryHandle)
     {
-        ::FreeLibrary(handle);
+        ::FreeLibrary((HMODULE)libraryHandle);
     }
 }
 
-void *WindowsPlatformFunctions::getProcAddress(const LibPointer *libraryHandle, const TChar *symName)
+ProcAddress WindowsPlatformFunctions::getProcAddress(LibHandle libraryHandle, const TChar *symName)
 {
-    return ::GetProcAddress(static_cast<const WindowsLibHandle *>(libraryHandle)->libHandle, TCHAR_TO_UTF8(symName));
+    return ::GetProcAddress((HMODULE)libraryHandle, TCHAR_TO_UTF8(symName));
 }
 
-void WindowsPlatformFunctions::getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)
+void WindowsPlatformFunctions::getModuleInfo(PlatformHandle processHandle, LibHandle libraryHandle, LibraryData &moduleData)
 {
-    if (!libraryHandle)
+    if (libraryHandle == nullptr)
     {
         return;
     }
 
     String::value_type temp[MAX_PATH];
     MODULEINFO mi;
-    HMODULE module = static_cast<WindowsLibHandle *>(libraryHandle)->libHandle;
+    HMODULE libHandle = (HMODULE)libraryHandle;
 
-    GetModuleInformation(processHandle, module, &mi, sizeof(mi));
+    GetModuleInformation((HANDLE)processHandle, libHandle, &mi, sizeof(mi));
     moduleData.basePtr = mi.lpBaseOfDll;
     moduleData.moduleSize = mi.SizeOfImage;
 
-    GetModuleFileNameEx(processHandle, module, temp, sizeof(temp));
-    moduleData.imgName = temp;
-    GetModuleBaseName(processHandle, module, temp, sizeof(temp));
+    GetModuleFileNameEx((HANDLE)processHandle, libHandle, temp, sizeof(temp));
+    moduleData.imgPath = temp;
+    GetModuleBaseName((HANDLE)processHandle, libHandle, temp, sizeof(temp));
     moduleData.name = temp;
 }
 
-bool WindowsPlatformFunctions::isSame(const LibPointer *leftHandle, const LibPointer *rightHandle)
-{
-    return static_cast<const WindowsLibHandle *>(leftHandle)->libHandle == static_cast<const WindowsLibHandle *>(rightHandle)->libHandle;
-}
-
-void *WindowsPlatformFunctions::createProcess(
+PlatformHandle WindowsPlatformFunctions::createProcess(
     const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory
 )
 {
@@ -151,33 +122,34 @@ void *WindowsPlatformFunctions::createProcess(
     return nullptr;
 }
 
-void *WindowsPlatformFunctions::getCurrentProcessHandle() { return ::GetCurrentProcess(); }
+PlatformHandle WindowsPlatformFunctions::getCurrentProcessHandle() { return ::GetCurrentProcess(); }
 
-void WindowsPlatformFunctions::closeProcessHandle(void *handle) { ::CloseHandle((HANDLE)handle); }
+void WindowsPlatformFunctions::closeProcessHandle(PlatformHandle handle) { ::CloseHandle((HANDLE)handle); }
 
-void WindowsPlatformFunctions::getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize)
+void WindowsPlatformFunctions::getAllModules(PlatformHandle processHandle, LibHandle *modules, uint32 &modulesSize)
 {
     if (modules == nullptr)
     {
-        DWORD modSize;
+        DWORD modByteSize;
         HMODULE mod;
-        EnumProcessModulesEx(processHandle, &mod, 1, &modSize, LIST_MODULES_64BIT);
-        modulesSize = modSize / sizeof(mod);
+        EnumProcessModulesEx((HANDLE)processHandle, &mod, sizeof(mod), &modByteSize, LIST_MODULES_64BIT);
+        modulesSize = modByteSize / sizeof(HMODULE);
     }
     else
     {
-        std::vector<HMODULE> mods(modulesSize);
-        EnumProcessModulesEx(processHandle, mods.data(), modulesSize, (LPDWORD)&modulesSize, LIST_MODULES_64BIT);
-        uint32 totalInserts = 0;
-        for (HMODULE mod : mods)
-        {
-            if (mod)
-            {
-                modules[totalInserts++] = new WindowsLibHandle(mod, false);
-            }
-        }
-        modulesSize = totalInserts;
+        DWORD modByteSize;
+        DWORD inByteSize = modulesSize * sizeof(LibHandle);
+        EnumProcessModulesEx((HANDLE)processHandle, (HMODULE *)modules, inByteSize, (LPDWORD)&modByteSize, LIST_MODULES_64BIT);
+        modulesSize = modByteSize / sizeof(HMODULE);
     }
+}
+
+// From - https://stackoverflow.com/questions/557081/how-do-i-get-the-hmodule-for-the-currently-executing-code
+LibHandle WindowsPlatformFunctions::getAddressModule(void *address)
+{
+    HMODULE hModule = NULL;
+    ::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCTSTR)address, &hModule);
+    return hModule;
 }
 
 // From - https://stackoverflow.com/questions/311955/redirecting-cout-to-a-console-in-windows/

@@ -41,7 +41,7 @@ public:
     }
 };
 
-int appMain(String cmdLine, void *appPlatformInstance)
+int appMain(String cmdLine, InstanceHandle appPlatformInstance)
 {
     AppInstanceCreateInfo appCI;
     // appCI.applicationName = TCHAR(MACRO_TO_STRING(ENGINE_NAME));
@@ -70,7 +70,7 @@ int appMain(String cmdLine, void *appPlatformInstance)
         appModule->startApplication<TestEngineApplication>(appCI);
     }
 
-    ModuleManager::get()->unloadAllModules();
+    ModuleManager::get()->unloadAll();
     UnexpectedErrorHandler::getHandler()->unregisterFilter();
     Logger::flushStream();
 

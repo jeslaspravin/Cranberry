@@ -12,6 +12,7 @@
 #pragma once
 
 #include "String/String.h"
+#include "Types/Platform/PlatformTypes.h"
 
 struct SystemProcessorsCacheInfo
 {
@@ -63,12 +64,12 @@ public:
 
     FORCE_INLINE static void *getTlsSlotValue(uint32 slot) { return PlatformClass::getTlsSlotValue(slot); }
 
-    FORCE_INLINE static void setThreadName(const TChar *name, void *threadHandle) { PlatformClass::setThreadName(name, threadHandle); }
+    FORCE_INLINE static void setThreadName(const TChar *name, PlatformHandle threadHandle) { PlatformClass::setThreadName(name, threadHandle); }
     FORCE_INLINE static void setCurrentThreadName(const TChar *name) { setThreadName(name, getCurrentThreadHandle); }
 
-    FORCE_INLINE static String getThreadName(void *threadHandle) { return PlatformClass::getThreadName(threadHandle); }
+    FORCE_INLINE static String getThreadName(PlatformHandle threadHandle) { return PlatformClass::getThreadName(threadHandle); }
     FORCE_INLINE static String getCurrentThreadName() { return PlatformClass::getCurrentThreadName(); }
-    FORCE_INLINE static void *getCurrentThreadHandle() { return PlatformClass::getCurrentThreadHandle(); }
+    FORCE_INLINE static PlatformHandle getCurrentThreadHandle() { return PlatformClass::getCurrentThreadHandle(); }
 
     FORCE_INLINE static void getCoreCount(uint32 &outCoreCount, uint32 &outLogicalProcessorCount)
     {

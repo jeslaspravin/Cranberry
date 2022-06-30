@@ -17,7 +17,7 @@ class WindowsAppWindow final : public GenericAppWindow
 {
 
 private:
-    void *windowsHandle;
+    WindowHandle windowsHandle;
 
 protected:
     // void resizeWindow() override;
@@ -27,7 +27,7 @@ public:
     void updateWindow() override;
     void destroyWindow() override;
     bool isValidWindow() const override;
-    void *getWindowHandle() const override { return windowsHandle; }
+    WindowHandle getWindowHandle() const override { return windowsHandle; }
 
     void pushEvent(uint32 eventType, LambdaFunction<void> &&function);
     void activateWindow() const;

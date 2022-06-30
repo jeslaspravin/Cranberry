@@ -16,6 +16,7 @@
 #include "Reflections/Functions.h"
 #include "String/String.h"
 #include "Types/Delegates/Delegate.h"
+#include "Types/Platform/PlatformTypes.h"
 
 struct ApplicationInstance;
 
@@ -68,5 +69,5 @@ public:
     virtual void destroyWindow();
     virtual Rect windowClientRect() const = 0;
     virtual bool isValidWindow() const = 0;
-    virtual void *getWindowHandle() const = 0;
+    virtual WindowHandle getWindowHandle() const = 0;
 };
