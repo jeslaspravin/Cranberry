@@ -12,7 +12,7 @@
 #pragma once
 
 #include "Types/CoreTypes.h"
-#include "Types/Platform/GenericPlatformTypes.h"
+#include "Types/Platform/PlatformTypes.h"
 
 struct CBEGuid;
 class String;
@@ -23,36 +23,41 @@ class GenericPlatformFunctions
 
 protected:
 public:
-    // Extensions are auto appended by api to platform default
-    FORCE_INLINE static LibPointer *openLibrary(const TChar *libName) { return PlatformClass::openLibrary(libName); }
+    /**
+     * Extensions are auto appended by api to platform default
+     * Module/Lib handle must be manually freed with releaseLibrary()
+     */
+    FORCE_INLINE static LibHandle openLibrary(const TChar *libName) { return PlatformClass::openLibrary(libName); }
 
-    FORCE_INLINE static void releaseLibrary(const LibPointer *libraryHandle) { PlatformClass::releaseLibrary(libraryHandle); }
+    FORCE_INLINE static void releaseLibrary(LibHandle libraryHandle) { PlatformClass::releaseLibrary(libraryHandle); }
 
-    FORCE_INLINE static void *getProcAddress(const LibPointer *libraryHandle, const TChar *symName)
+    FORCE_INLINE static ProcAddress getProcAddress(LibHandle libraryHandle, const TChar *symName)
     {
         return PlatformClass::getProcAddress(libraryHandle, symName);
     }
 
-    FORCE_INLINE static bool isSame(const LibPointer *leftHandle, const LibPointer *rightHandle)
-    {
-        return PlatformClass::isSame(leftHandle, rightHandle);
-    }
-
     // Process related functions
-    FORCE_INLINE static void *
+
+    // Must be closed with closeProcessHandle()
+    FORCE_INLINE static PlatformHandle
         createProcess(const String &applicationPath, const String &cmdLine, const String &environment, const String &workingDirectory)
     {
         return PlatformClass::createProcess(applicationPath, cmdLine, environment, workingDirectory);
     }
-    FORCE_INLINE static void *getCurrentProcessHandle() { return PlatformClass::getCurrentProcessHandle(); }
-    FORCE_INLINE static void closeProcessHandle(void *handle) { PlatformClass::closeProcessHandle(handle); }
+    FORCE_INLINE static PlatformHandle getCurrentProcessHandle() { return PlatformClass::getCurrentProcessHandle(); }
+    FORCE_INLINE static void closeProcessHandle(PlatformHandle handle) { PlatformClass::closeProcessHandle(handle); }
 
-    FORCE_INLINE static void getAllModules(void *processHandle, LibPointerPtr *modules, uint32 &modulesSize)
+    // Do not close LibHandles from this method
+    FORCE_INLINE static void getAllModules(PlatformHandle processHandle, LibHandle *modules, uint32 &modulesSize)
     {
         PlatformClass::getAllModules(processHandle, modules, modulesSize);
     }
+    FORCE_INLINE static LibHandle getAddressModule(void *address)
+    {
+        return PlatformClass::getAddressModule(address);
+    }
 
-    FORCE_INLINE static void getModuleInfo(void *processHandle, LibPointer *libraryHandle, LibraryData &moduleData)
+    FORCE_INLINE static void getModuleInfo(PlatformHandle processHandle, LibHandle libraryHandle, LibraryData &moduleData)
     {
         PlatformClass::getModuleInfo(processHandle, libraryHandle, moduleData);
     }

@@ -12,10 +12,7 @@
 #include "Types/Platform/LFS/File/GenericFile.h"
 #include "Logger/Logger.h"
 #include "Types/CoreDefines.h"
-#include "Types/Platform/LFS/File/GenericFileHandle.h"
 #include "Types/Platform/LFS/PathFunctions.h"
-
-void *GenericFile::getFileHandleRaw() const { return fileHandle ? fileHandle->getFileHandle() : nullptr; }
 
 void GenericFile::setPath(const String &fPath)
 {
@@ -90,7 +87,6 @@ bool GenericFile::closeFile()
 {
     if (fileHandle && closeImpl())
     {
-        delete fileHandle;
         fileHandle = nullptr;
         return true;
     }

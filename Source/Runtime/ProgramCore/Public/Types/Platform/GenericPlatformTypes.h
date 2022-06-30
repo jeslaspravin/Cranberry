@@ -14,20 +14,25 @@
 #include "ProgramCoreExports.h"
 #include "String/String.h"
 
-// TODO(Jeslas) : Replace this type of heap allocated handles to raw platform handle here, PlatformFile,
-// Application Instance, Window Instance
-struct PROGRAMCORE_EXPORT LibPointer
-{
-
-    virtual ~LibPointer() = default;
-};
-
-typedef LibPointer *LibPointerPtr;
-
 struct LibraryData
 {
     String name;
-    String imgName;
+    String imgPath;
     void *basePtr;
     dword moduleSize;
+};
+
+class GenericPlatformTypes
+{
+private:
+    GenericPlatformTypes() = default;
+
+public:
+    using PlatformHandle = void *;
+
+    using InstanceHandle = PlatformHandle;
+    using LibHandle = PlatformHandle;
+    using WindowHandle = PlatformHandle;
+
+    using ProcAddress = void *;
 };

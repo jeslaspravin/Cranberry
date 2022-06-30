@@ -10,55 +10,56 @@
  */
 #pragma once
 
-template <typename PlatformType>
 class GenericPlatformCoreTypes
 {
 public:
-    typedef unsigned char uint8;
-    typedef unsigned int uint32;
-    typedef unsigned long long uint64;
-    typedef unsigned short int uint16;
+    using uint8 = unsigned char;
+    using uint32 = unsigned int;
+    using uint64 = unsigned long long;
+    using uint16 = unsigned short int;
 
-    typedef signed char int8;
-    typedef signed int int32;
-    typedef signed long long int64;
-    typedef signed short int int16;
+    using int8 = signed char;
+    using int32 = signed int;
+    using int64 = signed long long;
+    using int16 = signed short int;
 
-    typedef wchar_t WChar;
-    typedef char AChar;
+    using WChar = wchar_t;
+    using AChar = char;
     // In case changing TChar type do not forget to change USING_WIDE_UNICODE define
     // Also change EncodedType to new appropriate type
-    typedef WChar TChar;
-    typedef char8_t Utf8;
-    typedef char16_t Utf16;
-    typedef char32_t Utf32;
-    typedef uint16 Ucs2;
-    typedef uint32 Ucs4;
-    typedef Utf32 WCharEncodedType;
-    typedef Utf32 EncodedType;
+    using TChar = WChar;
+    using Utf8 = char8_t;
+    using Utf16 = char16_t;
+    using Utf32 = char32_t;
+    using Ucs2 = uint16;
+    using Ucs4 = uint32;
+    using WCharEncodedType = Utf32;
+    using EncodedType = Utf32;
 
-    typedef unsigned short word;
-    typedef unsigned long dword;
+    using word = unsigned short;
+    using dword = unsigned long;
 
     // Since we support only 64bit
-    typedef size_t SizeT;
-    typedef int64 SSizeT;
-    typedef uint64 UPtrInt;
-    typedef int64 PtrInt;
+    using SizeT = size_t;
+    using SSizeT = int64;
+    using UPtrInt = uint64;
+    using PtrInt = int64;
 
-    // This must be reversed in Big Endian
-    typedef union _uint64
+    union UInt64
     {
+#if (defined BIG_ENDIAN) & BIG_ENDIAN
+        struct
+        {
+            dword highPart;
+            dword lowPart;
+        };
+#else
         struct
         {
             dword lowPart;
             dword highPart;
         };
-        struct
-        {
-            dword lowPart;
-            dword highPart;
-        } u;
+#endif
         uint64 quadPart;
-    } UInt64;
+    };
 };

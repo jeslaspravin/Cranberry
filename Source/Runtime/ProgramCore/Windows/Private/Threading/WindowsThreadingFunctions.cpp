@@ -26,15 +26,15 @@ bool WindowsThreadingFunctions::setTlsSlotValue(uint32 slot, void *value) { retu
 
 void *WindowsThreadingFunctions::getTlsSlotValue(uint32 slot) { return ::TlsGetValue(slot); }
 
-void WindowsThreadingFunctions::setThreadName(const TChar *name, void *threadHandle)
+void WindowsThreadingFunctions::setThreadName(const TChar *name, PlatformHandle threadHandle)
 {
-    ::SetThreadDescription(threadHandle, TCHAR_TO_WCHAR(name));
+    ::SetThreadDescription((HANDLE)threadHandle, TCHAR_TO_WCHAR(name));
 }
 
-String WindowsThreadingFunctions::getThreadName(void *threadHandle)
+String WindowsThreadingFunctions::getThreadName(PlatformHandle threadHandle)
 {
     WChar *threadName;
-    if (SUCCEEDED(::GetThreadDescription(threadHandle, &threadName)))
+    if (SUCCEEDED(::GetThreadDescription((HANDLE)threadHandle, &threadName)))
     {
         String outStr = WCHAR_TO_TCHAR(threadName);
         ::LocalFree(threadName);
@@ -45,9 +45,9 @@ String WindowsThreadingFunctions::getThreadName(void *threadHandle)
 
 String WindowsThreadingFunctions::getCurrentThreadName() { return getThreadName(getCurrentThreadHandle()); }
 
-void *WindowsThreadingFunctions::getCurrentThreadHandle() { return ::GetCurrentThread(); }
+PlatformHandle WindowsThreadingFunctions::getCurrentThreadHandle() { return ::GetCurrentThread(); }
 
-bool WindowsThreadingFunctions::setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, void *threadHandle)
+bool WindowsThreadingFunctions::setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, PlatformHandle threadHandle)
 {
     uint32 coreCount, logicalProcCount;
     getCoreCount(coreCount, logicalProcCount);

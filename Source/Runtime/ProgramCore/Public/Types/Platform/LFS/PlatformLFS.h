@@ -19,7 +19,6 @@
 #elif PLATFORM_APPLE
 #error "Platform not supported!"
 #endif
-#include "File/GenericFileHandle.h"
 
 using FileSystemFunctions = LFS::FileSystemFunctions;
 using PlatformFile = LFS::PlatformFile;

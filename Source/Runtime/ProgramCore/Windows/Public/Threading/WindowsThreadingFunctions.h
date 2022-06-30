@@ -22,13 +22,13 @@ public:
 
     static void *getTlsSlotValue(uint32 slot);
 
-    static void setThreadName(const TChar *name, void *threadHandle);
+    static void setThreadName(const TChar *name, PlatformHandle threadHandle);
 
-    static String getThreadName(void *threadHandle);
+    static String getThreadName(PlatformHandle threadHandle);
     static String getCurrentThreadName();
-    static void *getCurrentThreadHandle();
+    static PlatformHandle getCurrentThreadHandle();
 
-    static bool setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, void *threadHandle);
+    static bool setThreadProcessor(uint32 coreIdx, uint32 logicalProcessorIdx, PlatformHandle threadHandle);
 
     static void printSystemThreadingInfo();
     static SystemProcessorsInfo getSystemProcessorInfo();

@@ -130,15 +130,13 @@ String PathFunctions::stripExtension(const String &fileName)
 String PathFunctions::fileOrDirectoryName(const String &filePath)
 {
     String pathTmp = asGenericPath(filePath);
-    String fileName;
-
     size_t hostDirectoryAt = pathTmp.rfind(TCHAR('/'), pathTmp.length());
     if (hostDirectoryAt != String::npos)
     {
         // Skip the separator char so +1
-        fileName = { pathTmp.substr(hostDirectoryAt + 1) };
+        return { pathTmp.substr(hostDirectoryAt + 1) };
     }
-    return fileName;
+    return filePath;
 }
 
 String PathFunctions::splitFileAndDirectory(String &outFileName, const String &filePath)

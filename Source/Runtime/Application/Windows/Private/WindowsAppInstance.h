@@ -15,14 +15,14 @@
 class WindowsAppInstance : public PlatformAppInstanceBase
 {
 private:
-    void *windowsInstance;
+    InstanceHandle windowsInstance;
 
 public:
-    WindowsAppInstance(void *appPlatformInstance)
+    WindowsAppInstance(InstanceHandle appPlatformInstance)
         : windowsInstance(appPlatformInstance)
     {}
 
-    void *getPlatformAppInstance() const override;
+    InstanceHandle getPlatformAppInstance() const override;
 };
 
 namespace GPlatformInstances
