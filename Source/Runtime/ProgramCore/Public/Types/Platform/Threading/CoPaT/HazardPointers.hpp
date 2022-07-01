@@ -61,7 +61,7 @@ public:
 
         // We need fence here to ensure that instructions never gets reordered at compiler
         std::atomic_signal_fence(std::memory_order::seq_cst);
-        // We can read relaxed as the HazardRecord will be acquired by a thread and not shared 
+        // We can read relaxed as the HazardRecord will be acquired by a thread and not shared
         // so setting will technically happen in a thread only
         return getHazardPtr<T>(std::memory_order::relaxed);
     }

@@ -68,6 +68,11 @@ private:
     {
         insertDbgStr(String(debugStr, len));
     }
+    explicit StringID(IDType strId)
+        : id(strId)
+    {
+        debugStrings = &debugStringDB();
+    }
 #else
     CONST_EXPR StringID(IDType strId)
         : id(strId)

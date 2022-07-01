@@ -3505,12 +3505,11 @@ void ExperimentalEnginePBR::tempTest()
     {
         CBE::Package *package = CBE::Package::createPackage(name, dir);
         CBE::Package *package2 = CBE::Package::createPackage(name + TCHAR("2"), dir);
-        package->setPackageRoot(dir);
-        package2->setPackageRoot(dir);
 
         BasicPackagedObject *packedObj2 = CBE::create<BasicPackagedObject>(name, package2);
         packedObj2->dt = 0.56;
         packedObj2->nameVal = TCHAR("Its connected object");
+        packedObj2->structData = { .a = 4124111.06, .b = 2026, .testStr = "This must be connected to another package" };
         BasicPackagedObject *packedObj = CBE::create<BasicPackagedObject>(name, package);
         packedObj->dt = 0.28;
         packedObj->id = STRID("Hello Subity & Jeslas");
@@ -3519,6 +3518,7 @@ void ExperimentalEnginePBR::tempTest()
             {1, TCHAR("Jeslas Pravin")},
             {2, TCHAR("Subity Jerald")}
         };
+        packedObj->structData = { .a = 8235.28, .b = 834435, .testStr = "3528" };
         packedObj->interLinked = packedObj2;
 
         BasicFieldSerializedObject *testTemp = CBE::create<BasicFieldSerializedObject>(name, package);
@@ -3526,6 +3526,7 @@ void ExperimentalEnginePBR::tempTest()
         testTemp->id = STRID("HEll Let lOsE");
         testTemp->interLinked = packedObj;
         testTemp->nameVal = TCHAR("Test All field serialization!");
+        testTemp->structData = { .a = 4321, .b = 1234, .testStr = "Not a default value here!" };
         testTemp->idxToStr[10] = {
             {TCHAR("ABC"), 123},
             {TCHAR("CBA"), 321}

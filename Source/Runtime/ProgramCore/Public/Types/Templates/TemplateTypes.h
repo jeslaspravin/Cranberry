@@ -41,9 +41,9 @@ struct TypeToType
     using type = Type;
 };
 
-template <typename Type>
+template <typename... Types>
 struct DependentFalseType : public std::false_type
 {};
 
-template <typename Type>
-inline constexpr bool DependentFalseTypeValue = DependentFalseType<Type>::value;
+template <typename... Types>
+inline constexpr bool DependentFalseTypeValue = DependentFalseType<Types...>::value;

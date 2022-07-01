@@ -52,9 +52,13 @@ public:
     {
         PlatformClass::getAllModules(processHandle, modules, modulesSize);
     }
-    FORCE_INLINE static LibHandle getAddressModule(void *address)
+    // Do not close LibHandles from this method
+    FORCE_INLINE static LibHandle getAddressModule(void *address) { return PlatformClass::getAddressModule(address); }
+    // Do not close LibHandles from this method, Be careful when calling this from header
+    template <typename... Args>
+    FORCE_INLINE static LibHandle getCallerModule(Args... args)
     {
-        return PlatformClass::getAddressModule(address);
+        return getAddressModule(&GenericPlatformFunctions<PlatformClass>::getCallerModule<Args...>);
     }
 
     FORCE_INLINE static void getModuleInfo(PlatformHandle processHandle, LibHandle libraryHandle, LibraryData &moduleData)

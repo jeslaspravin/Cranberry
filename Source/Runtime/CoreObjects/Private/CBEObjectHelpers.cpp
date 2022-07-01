@@ -301,7 +301,7 @@ void DeepCopyFieldVisitable::visitStruct(const PropertyInfo &propInfo, void *use
     DeepCopyUserData structUserData{ *copyUserData };
     structUserData.fromObject = structUserData.fromData;
     structUserData.toObject = structUserData.toData;
-    FieldVisitor::visitFields<StartDeepCopyFieldVisitable>(clazz, copyUserData->fromData, userData);
+    FieldVisitor::visitFields<StartDeepCopyFieldVisitable>(clazz, copyUserData->fromData, &structUserData);
 }
 
 bool deepCopy(Object *fromObject, Object *toObject)

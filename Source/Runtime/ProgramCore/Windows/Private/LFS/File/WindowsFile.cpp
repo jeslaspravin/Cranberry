@@ -343,8 +343,8 @@ void WindowsFile::read(uint8 *readTo, const uint32 &bytesToRead) const
     while (bytesLeftToRead > 0)
     {
         ::ReadFile(
-            getFileHandle(), readTo + filePointerOffset, (bytesLeftToRead > readBufferSize) ? readBufferSize : bytesLeftToRead,
-            &bytesLastRead, nullptr
+            getFileHandle(), readTo + filePointerOffset, (bytesLeftToRead > readBufferSize) ? readBufferSize : bytesLeftToRead, &bytesLastRead,
+            nullptr
         );
 
         bytesLeftToRead -= bytesLastRead;
@@ -533,10 +533,7 @@ PlatformHandle WindowsFile::openOrCreateImpl()
     return openImpl();
 }
 
-PlatformHandle WindowsFile::openImpl() const
-{
-    return openWindowsFile(getFullPath(), fileFlags, sharingMode, attributes, advancedFlags);
-}
+PlatformHandle WindowsFile::openImpl() const { return openWindowsFile(getFullPath(), fileFlags, sharingMode, attributes, advancedFlags); }
 
 bool WindowsFile::closeImpl() const
 {
