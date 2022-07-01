@@ -101,7 +101,15 @@ ArchiveType &operator<<(ArchiveType &archive, LinearColor &value)
 template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, StringID &value)
 {
-    return archive << value.id;
+    archive << value.id;
+#if DEV_BUILD
+    // In development build we have to setup debug string as well
+    if (archive.isLoading())
+    {
+        value = StringID(value.id);
+    }
+#endif
+    return archive;
 }
 
 template <ArchiveTypeName ArchiveType>

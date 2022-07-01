@@ -18,10 +18,19 @@ class COREOBJECTS_EXPORT ObjectSerializationHelpers
 private:
     ObjectSerializationHelpers() = default;
 
+    static ObjectArchive &serializeStructFields(void *structObj, CBEClass structType, ObjectArchive &ar);
+
 public:
     static ObjectArchive &serializeAllFields(CBE::Object *obj, ObjectArchive &ar);
     /**
      * fieldsToSerialize will be used only when writing/saving when reading object gets serialized just like serializeAllFields()
      */
     static ObjectArchive &serializeOnlyFields(CBE::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> &fieldsToSerialize);
+
+    // Use only if you are having custom serialize implementation in your Object and want to serialize data struct without manual serialization
+    template <typename StructType>
+    static ObjectArchive &serializeStructFields(StructType &structObj, ObjectArchive &ar)
+    {
+        return serializeStructFields(&structObj, StructType::staticType(), ar);
+    }
 };

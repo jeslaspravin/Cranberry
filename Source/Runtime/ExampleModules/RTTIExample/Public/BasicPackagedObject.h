@@ -20,6 +20,19 @@
 
 #include "BasicPackagedObject.gen.h"
 
+struct META_ANNOTATE() SimpleStruct
+{
+    GENERATED_CODES()
+
+public:
+    META_ANNOTATE()
+    float a = -1.0f;
+    META_ANNOTATE()
+    int32 b = -1;
+    META_ANNOTATE()
+    String testStr = "Default value";
+};
+
 class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject
     : public CBE::Object
     , public IInterfaceExample
@@ -31,6 +44,7 @@ public:
     float dt;
     StringID id;
     String nameVal;
+    SimpleStruct structData;
     BasicPackagedObject *interLinked;
     BasicPackagedObject *inner;
 
@@ -48,6 +62,7 @@ public:
         ar << dt;
         ar << id;
         ar << nameVal;
+        ObjectSerializationHelpers::serializeStructFields(structData, ar);
         ar << interLinked;
         ar << inner;
         return ar;
@@ -80,6 +95,9 @@ public:
 
     META_ANNOTATE()
     String nameVal;
+
+    META_ANNOTATE()
+    SimpleStruct structData;
 
     META_ANNOTATE()
     BasicPackagedObject *interLinked;

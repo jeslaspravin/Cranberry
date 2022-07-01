@@ -15,9 +15,6 @@
 
 class WindowsPlatformTypes : public GenericPlatformTypes
 {
-private:
-    WindowsPlatformTypes() = default;
-
 public:
 };
 
