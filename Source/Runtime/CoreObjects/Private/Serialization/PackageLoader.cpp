@@ -116,7 +116,7 @@ void PackageLoader::prepareLoader()
     // Set custom versions to this archive to ensure custom versions are available in ObjectArchive
     for (const std::pair<const uint32, uint32> &customVersion : packageArchive.getCustomVersions())
     {
-        packageArchive.setCustomVersion(customVersion.first, customVersion.second);
+        setCustomVersion(customVersion.first, customVersion.second);
     }
 
     uint32 packageVersion = getCustomVersion(uint32(PACKAGE_CUSTOM_VERSION_ID));
@@ -146,14 +146,18 @@ void PackageLoader::prepareLoader()
     CoreObjectDelegates::broadcastPackageScanned(this);
 }
 
-bool PackageLoader::load()
+EPackageLoadSaveResult PackageLoader::load()
 {
     FileArchiveStream fileStream{ packageFilePath, true };
-    fatalAssertf(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
+    if (!fileStream.isAvailable())
+    {
+        alertAlwaysf(fileStream.isAvailable(), "Package %s at %s cannot be read!", package->getName(), packageFilePath);
+        return EPackageLoadSaveResult::IOError;
+    }
 
     packageArchive.setStream(&fileStream);
 
-    bool bSuccess = true;
+    EPackageLoadSaveResult loadResult = EPackageLoadSaveResult::Success;
 
     // Create all object first
     for (PackageContainedData &containedData : containedObjects)
@@ -186,7 +190,8 @@ bool PackageLoader::load()
                 "not same as read size %llu",
                 package->getName(), containedData.objectPath, containedData.streamSize, (fileStream.cursorPos() - containedData.streamStart)
             );
-            bSuccess = false;
+            // It is okay to continue as it is just warning
+            loadResult = EPackageLoadSaveResult::WithWarnings;
         }
     }
     CLEAR_BITS(CBE::INTERNAL_ObjectCoreAccessors::getFlags(package), CBE::EObjectFlagBits::PackageLoadPending);
@@ -199,5 +204,5 @@ bool PackageLoader::load()
     }
     CoreObjectDelegates::broadcastPackageLoaded(package);
 
-    return bSuccess;
+    return loadResult;
 }

@@ -55,7 +55,7 @@ PackageSaver::PackageSaver(CBE::Package *savingPackage)
     setupContainedObjs();
 }
 
-bool PackageSaver::savePackage()
+EPackageLoadSaveResult PackageSaver::savePackage()
 {
     ArchiveSizeCounterStream archiveCounter;
     packageArchive.setStream(&archiveCounter);
@@ -69,11 +69,11 @@ bool PackageSaver::savePackage()
         containedObjData.object->serialize(*this);
         containedObjData.streamSize = archiveCounter.cursorPos() - containedObjData.streamStart;
         // We must have custom version setup if present, Custom version keys must be from class property name
-        containedObjData.classVersion = getCustomVersion(uint32(containedObjData.object->getType()->name));
+        containedObjData.classVersion = ArchiveBase::getCustomVersion(uint32(containedObjData.object->getType()->name));
     }
 
     // Step 3 : Copy custom versions and other archive related property to actual packageArchive
-    for (const std::pair<const uint32, uint32> &customVersion : getCustomVersions())
+    for (const std::pair<const uint32, uint32> &customVersion : ArchiveBase::getCustomVersions())
     {
         packageArchive.setCustomVersion(customVersion.first, customVersion.second);
     }
@@ -100,7 +100,7 @@ bool PackageSaver::savePackage()
     if (!fileStream.isAvailable())
     {
         LOG_ERROR("PackageSaver", "Failed to open file stream to save package %s at %s", package->getName(), packagePath);
-        return false;
+        return EPackageLoadSaveResult::IOError;
     }
     fileStream.allocate(finalPackageSize);
     packageArchive.setStream(&fileStream);
@@ -117,7 +117,7 @@ bool PackageSaver::savePackage()
 
     CoreObjectDelegates::broadcastPackageSaved(package);
 
-    return true;
+    return EPackageLoadSaveResult::Success;
 }
 
 ObjectArchive &PackageSaver::serialize(CBE::Object *&obj)

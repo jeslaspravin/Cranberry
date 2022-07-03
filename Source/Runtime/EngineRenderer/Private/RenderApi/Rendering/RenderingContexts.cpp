@@ -652,6 +652,6 @@ void GlobalRenderingContextBase::clearWindowCanvasFramebuffer(WindowCanvasRef wi
         {
             delete fb;
         }
+        windowCanvasFramebuffers.erase(itr);
     }
-    windowCanvasFramebuffers.erase(itr);
 }

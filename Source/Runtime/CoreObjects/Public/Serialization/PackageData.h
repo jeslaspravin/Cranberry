@@ -76,3 +76,17 @@ ArchiveType &operator<<(ArchiveType &archive, PackageContainedData &value)
 
     return archive;
 }
+
+enum class EPackageLoadSaveResult : uint32
+{
+    Failed = 0,
+    IOError,
+    WithWarnings,
+    Success,
+    ErrorStart = Failed,
+    ErrorEnd = IOError
+};
+
+#define CBEPACKAGE_SAVELOAD_SUCCESS(OpResult) ((OpResult) == EPackageLoadSaveResult::Success)
+#define CBEPACKAGE_SAVELOAD_ERROR(OpResult)                                                                                                    \
+    (uint32(OpResult) >= uint32(EPackageLoadSaveResult::ErrorStart) && uint32(OpResult) <= uint32(EPackageLoadSaveResult::ErrorEnd))
