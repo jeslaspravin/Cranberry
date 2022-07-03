@@ -16,6 +16,7 @@
 #include "CBEObjectHelpers.h"
 #include "InterfaceExample.h"
 #include "String/String.h"
+#include "Types/Platform/PlatformAssertionErrors.h"
 #include "Serialization/ObjectSerializationHelpers.h"
 
 #include "BasicPackagedObject.gen.h"
@@ -32,6 +33,10 @@ public:
     META_ANNOTATE()
     String testStr = "Default value";
 };
+
+// Example custom serialization version check at BasicPackagedObject
+inline constexpr static const uint32 BASICPACKAGEDOBJ_SERIALIZER_VERSION = 1;
+inline constexpr static const uint32 BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION = 0;
 
 class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject
     : public CBE::Object
@@ -58,13 +63,35 @@ public:
 
     ObjectArchive &serialize(ObjectArchive &ar) override
     {
+        uint32 packageVersion = BASICPACKAGEDOBJ_SERIALIZER_VERSION;
+        if (ar.isLoading())
+        {
+            packageVersion = ar.getCustomVersion(uint32(staticType()->name));
+            if (packageVersion < BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION)
+            {
+                debugAssertf(
+                    packageVersion >= BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION, "Unsupported serialization version for class %s",
+                    staticType()->nameString
+                );
+                return ar;
+            }
+        }
+        else
+        {
+            ar.setCustomVersion(uint32(staticType()->name), BASICPACKAGEDOBJ_SERIALIZER_VERSION);
+        }
+
         ar << idxToStr;
         ar << dt;
         ar << id;
         ar << nameVal;
-        ObjectSerializationHelpers::serializeStructFields(structData, ar);
         ar << interLinked;
         ar << inner;
+
+        if (packageVersion >= BASICPACKAGEDOBJ_SERIALIZER_VERSION)
+        {
+            ObjectSerializationHelpers::serializeStructFields(structData, ar);
+        }
         return ar;
     }
 

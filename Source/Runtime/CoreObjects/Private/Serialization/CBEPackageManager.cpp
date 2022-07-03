@@ -79,11 +79,15 @@ Object *load(String objectPath)
 
     if (BIT_SET(package->getFlags(), EObjectFlagBits::PackageLoadPending))
     {
-        bool bPackageLoaded = objectPackageLoader->load();
-        if (!bPackageLoaded)
+        EPackageLoadSaveResult loadResult = objectPackageLoader->load();
+        if (CBEPACKAGE_SAVELOAD_ERROR(loadResult))
         {
-            fatalAssertf(bPackageLoaded, "Loading package %s failed", package->getName());
+            fatalAssertf(CBEPACKAGE_SAVELOAD_SUCCESS(loadResult), "Loading package %s failed", package->getName());
             return nullptr;
+        }
+        else if (!CBEPACKAGE_SAVELOAD_SUCCESS(loadResult))
+        {
+            LOG_WARN("ObjectHelper", "Loaded package %s(For object %s) with few minor errors", packagePath, objectPath);
         }
     }
 
@@ -153,10 +157,15 @@ bool save(Object *obj)
     }
 
     PackageSaver saver(package);
-    if (!saver.savePackage())
+    EPackageLoadSaveResult saveResult = saver.savePackage();
+    if (CBEPACKAGE_SAVELOAD_ERROR(saveResult))
     {
         LOG_ERROR("ObjectHelper", "Failed to save package %s", package->getName());
         return false;
+    }
+    else if (!CBEPACKAGE_SAVELOAD_SUCCESS(saveResult))
+    {
+        LOG_WARN("ObjectHelper", "Saved package %s with minor warnings", package->getName());
     }
     CLEAR_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::PackageDirty);
     return true;

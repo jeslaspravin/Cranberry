@@ -112,19 +112,28 @@ private:
     // Borrowed stream(Ownership must belong to creator)
     ArchiveStream *archiveStream = nullptr;
 
-private:
-    void serializeArchiveMeta();
-
 public:
     /**
      * All getters are virtual to allow overriding the behavior however setters are not as that needs to taken care by the user directly and set
-     * values to appropriate archives
+     * values to appropriate archives, Example check ObjectArchive and PackageSaver. 
+     * It manually takes care of setting custom versions in each archive based on loading or saving
      */
     virtual bool ifSwapBytes() const { return bShouldSwapBytes; }
-    FORCE_INLINE void setSwapBytes(bool bSwapBytes) { bShouldSwapBytes = bSwapBytes; }
     virtual bool isLoading() const { return bIsLoading; }
-    FORCE_INLINE void setLoading(bool bLoad) { bIsLoading = bLoad; }
     virtual ArchiveStream *stream() const { return archiveStream; }
+    virtual uint32 getCustomVersion(uint32 customId) const
+    {
+        auto itr = customVersions.find(customId);
+        if (itr != customVersions.cend())
+        {
+            return itr->second;
+        }
+        return 0;
+    }
+    virtual const std::map<uint32, uint32> &getCustomVersions() const { return customVersions; }
+
+    FORCE_INLINE void setSwapBytes(bool bSwapBytes) { bShouldSwapBytes = bSwapBytes; }
+    FORCE_INLINE void setLoading(bool bLoad) { bIsLoading = bLoad; }
     FORCE_INLINE void setStream(ArchiveStream *inStream)
     {
         if (archiveStream == inStream)
@@ -148,22 +157,15 @@ public:
         }
     }
     FORCE_INLINE void setCustomVersion(uint32 customId, uint32 version) { customVersions[customId] = version; }
-    virtual uint32 getCustomVersion(uint32 customId) const
-    {
-        auto itr = customVersions.find(customId);
-        if (itr != customVersions.cend())
-        {
-            return itr->second;
-        }
-        return 0;
-    }
-    virtual const std::map<uint32, uint32> &getCustomVersions() const { return customVersions; }
     FORCE_INLINE void clearCustomVersions() { customVersions.clear(); }
 
     FOR_EACH_CORE_TYPES(SERIALIZE_VIRTUAL)
 
     virtual ArchiveBase &serialize(String &) = 0;
     virtual ArchiveBase &serialize(TChar *) = 0;
+
+private:
+    void serializeArchiveMeta();
 };
 
 #undef SERIALIZE_VIRTUAL

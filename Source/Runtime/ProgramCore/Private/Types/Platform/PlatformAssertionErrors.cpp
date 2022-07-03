@@ -21,4 +21,27 @@
 #error "Platform not supported!"
 #endif
 
+#include "Modules/ModuleManager.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
+#include "Types/ProgramCoreDelegates.h"
+
 UnexpectedErrorHandler *UnexpectedErrorHandler::getHandler() { return PlatformUnexpectedErrorHandler::getHandler(); }
+
+void UnexpectedErrorHandler::crashApplication()
+{
+    LOG_ERROR("CrashHandler", "Shutting down core systems! GOOD BYE!!");
+    Logger::flushStream();
+    getHandler()->debugBreak();
+
+    /* Shut down core systems below */
+    ProgramCoreDelegates::onApplicationCrash.invoke();
+
+    ModuleManager::get()->unloadAll();
+    Logger::flushStream();
+    if (copat::JobSystem::get())
+    {
+        copat::JobSystem::get()->shutdown();
+    }
+
+    exit(1);
+}

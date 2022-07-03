@@ -184,12 +184,13 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
 
     LOG_ERROR("WindowsUnexpectedErrorHandler", "Error call trace : \n%s", stackTrace.str().c_str());
 
-    Logger::flushStream();
     if (bCloseApp)
     {
+        CALL_ONCE(crashApplication);
+    }
+    else
+    {
         Logger::flushStream();
-        debugBreak();
-        exit(1);
     }
 }
 

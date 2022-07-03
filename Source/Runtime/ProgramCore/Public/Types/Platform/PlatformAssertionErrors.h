@@ -19,6 +19,10 @@ class PROGRAMCORE_EXPORT UnexpectedErrorHandler
 {
 public:
     static UnexpectedErrorHandler *getHandler();
+    /**
+     * Deliberately crashes the application after trying to close core systems. Tries breaking the application before that
+     */
+    static void crashApplication();
 
     virtual void registerFilter() = 0;
     virtual void unregisterFilter() const = 0;
@@ -29,8 +33,7 @@ public:
     virtual void debugBreak() const = 0;
 };
 
-#define LOG_ASSERTION_FORMATTED(Expr, Category, Message, ...) LOG_ERROR(Category, "Assert expression failed [" #Expr "] " #Message, __VA_ARGS__)
-
+#define LOG_ASSERTION_FORMATTED(Expr, Category, Message, ...) LOG_ERROR(Category, "Assert expression failed [" #Expr "] " Message, __VA_ARGS__)
 #define LOG_ASSERTION(Expr, Category) LOG_ERROR(Category, "Assert expression failed " #Expr)
 
 #if DEBUG_VALIDATIONS
