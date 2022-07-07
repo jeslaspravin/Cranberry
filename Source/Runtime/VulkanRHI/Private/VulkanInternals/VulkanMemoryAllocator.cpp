@@ -21,16 +21,13 @@
 #include <algorithm>
 #include <set>
 
+using BlockIdxType = uint32;
 struct VulkanMemoryBlock
 {
-    uint64 offset;
-    // When free size value will be alignment value and when allocated it will be value of its total
-    // requested size
-    uint64 size;
-    VkDeviceMemory deviceMemory;
-    void *mappedMemory = nullptr;
-    VulkanMemoryBlock *nextFreeBlock;
-    uint32 free : 1;
+    constexpr static const BlockIdxType INVALID_BLOCK_IDX = 0;
+    // with above 0 as invalid index a VulkanMemoryChunk could manage ~maximum of 255GB memory at 64byte alignment
+    // Will be actual array index
+    BlockIdxType nextFreeIndex = INVALID_BLOCK_IDX;
 };
 
 class VulkanMemoryChunk
@@ -44,14 +41,66 @@ private:
     void *mappedMemory;
     uint64 mappedMemRefCounter;
 
-    uint64 cSize;
+    uint64 cByteSize;
     // Must be power of 2
     uint64 alignment;
 
-    VulkanMemoryBlock *findAndAlloc(const uint64 &blocksCount, const uint64 &offsetAlignment)
+public:
+    VulkanMemoryChunk(uint64 blockSize)
+        : deviceMemory(nullptr)
+        , mappedMemory(nullptr)
+        , mappedMemRefCounter(0)
+        , cByteSize(0)
+        , alignment(blockSize)
+    {}
+
+    FORCE_INLINE const VulkanMemoryBlock *firstBlock() const { return blocks.data() + 1; }
+    FORCE_INLINE VulkanMemoryBlock *firstBlock() { return blocks.data() + 1; }
+    FORCE_INLINE BlockIdxType blockIdxToIdx(BlockIdxType blockIdx) const { return blockIdx + 1; }
+    FORCE_INLINE BlockIdxType idxToBlockIdx(BlockIdxType idx) const { return idx - 1; }
+
+    FORCE_INLINE bool isInChunk(VulkanMemoryBlock *memoryBlock) const
+    {
+        return UPtrInt(firstBlock()) <= UPtrInt(memoryBlock) && getArrayIndex(memoryBlock) < blocks.size();
+    }
+
+    FORCE_INLINE void alignSize(uint64 size, uint64 &alignedSize) const
+    {
+        // Ensure if it is power of 2
+        debugAssert(Math::isPowOf2(alignment));
+        alignedSize = Math::alignBy(size, alignment);
+    }
+    FORCE_INLINE uint64 alignSize(uint64 size) const
+    {
+        uint64 alignedSize;
+        alignSize(size, alignedSize);
+        return alignedSize;
+    }
+
+    void setMemory(uint64 chunkSize, VkDeviceMemory dMemory);
+
+    FORCE_INLINE VulkanMemoryBlock *allocateBlock(uint64 size, uint64 offsetAlignment);
+    void freeBlock(VulkanMemoryBlock *memoryBlock, uint64 byteSize);
+    NODISCARD void *mapMemory(VulkanMemoryBlock *block, VulkanDevice *device);
+    void unmapMemory(VulkanMemoryBlock *block, VulkanDevice *device);
+
+    uint64 availableHeapSize() const;
+    FORCE_INLINE uint64 chunkSize() const { return cByteSize; }
+
+    FORCE_INLINE VkDeviceMemory getDeviceMemory() const { return deviceMemory; }
+    // Must be a valid memoryBlock
+    FORCE_INLINE uint64 getBlockIndex(const VulkanMemoryBlock *block) const { return block - firstBlock(); }
+    FORCE_INLINE uint64 getBlockByteOffset(const VulkanMemoryBlock *block) const { return alignment * getBlockIndex(block); }
+
+private:
+    FORCE_INLINE uint64 getArrayIndex(const VulkanMemoryBlock *block) const { return block - blocks.data(); }
+    FORCE_INLINE uint64 getBlockByteOffset(BlockIdxType idx) const { return alignment * idxToBlockIdx(idx); }
+    FORCE_INLINE bool isValidBlock(const VulkanMemoryBlock *block) const { return block && block != blocks.data(); }
+
+    VulkanMemoryBlock *findAndAlloc(BlockIdxType blocksCount, uint64 offsetAlignment)
     {
         // OoM
-        if (!freeBlockHead)
+        if (!isValidBlock(freeBlockHead))
             return nullptr;
 
         if (!Math::isPowOf2(offsetAlignment))
@@ -64,31 +113,31 @@ private:
         }
 
         VulkanMemoryBlock *previousBlock = nullptr;
-        VulkanMemoryBlock *currentStartBlock = freeBlockHead;
-        VulkanMemoryBlock *currentEndBlock = currentStartBlock->nextFreeBlock;
+        BlockIdxType currentStartBlockIdx = getArrayIndex(freeBlockHead);
+        BlockIdxType currentEndBlockIdx = blocks[currentStartBlockIdx].nextFreeIndex;
 
-        // TODO(Jeslas) : Ensure if offset alignment is always between min and max value of all min
-        // offset alignments.
-        bool blocksOffsetAligned = currentStartBlock->offset % offsetAlignment == 0;
+        // TODO(Jeslas) : Ensure if offset alignment is always between min and max value
+        // of all min offset alignments.
+        bool blocksOffsetAligned = getBlockByteOffset(currentStartBlockIdx) % offsetAlignment == 0;
 
-        VulkanMemoryBlock *tempBlock = currentStartBlock;
-        uint64 currentDiff = 1;
-        while (currentEndBlock && currentDiff < blocksCount)
+        BlockIdxType tempBlockIdx = currentStartBlockIdx;
+        BlockIdxType currentDiff = 1;
+        while (currentEndBlockIdx != VulkanMemoryBlock::INVALID_BLOCK_IDX && currentDiff < blocksCount)
         {
-            if (getBlockIndex(currentEndBlock) - getBlockIndex(tempBlock) == 1 && blocksOffsetAligned) // Valid chain
+            if (((currentEndBlockIdx - tempBlockIdx) == 1) && blocksOffsetAligned) // Valid chain
             {
-                tempBlock = currentEndBlock;
-                currentEndBlock = currentEndBlock->nextFreeBlock;
+                tempBlockIdx = currentEndBlockIdx;
+                currentEndBlockIdx = blocks[currentEndBlockIdx].nextFreeIndex;
                 currentDiff += 1;
             }
             else
             {
-                previousBlock = tempBlock;
-                currentStartBlock = tempBlock = currentEndBlock;
-                currentEndBlock = currentEndBlock->nextFreeBlock;
+                previousBlock = &blocks[tempBlockIdx];
+                currentStartBlockIdx = tempBlockIdx = currentEndBlockIdx;
+                currentEndBlockIdx = blocks[currentEndBlockIdx].nextFreeIndex;
                 // TODO(Jeslas) : Ensure if offset alignment is always between min and max value
                 // of all min offset alignments.
-                blocksOffsetAligned = currentStartBlock->offset % offsetAlignment == 0;
+                blocksOffsetAligned = getBlockByteOffset(currentStartBlockIdx) % offsetAlignment == 0;
                 currentDiff = 1;
             }
         }
@@ -98,206 +147,129 @@ private:
             if (previousBlock)
             {
                 // Bridge the chain
-                previousBlock->nextFreeBlock = currentEndBlock;
+                previousBlock->nextFreeIndex = currentEndBlockIdx;
             }
             else
             {
                 // Reset free head
-                freeBlockHead = currentEndBlock;
+                freeBlockHead = currentEndBlockIdx == VulkanMemoryBlock::INVALID_BLOCK_IDX ? nullptr : &blocks[currentEndBlockIdx];
             }
-            return currentStartBlock;
+            return &blocks[currentStartBlockIdx];
         }
         // OoM
         return nullptr;
     }
+};
 
-    // Must be a valid memoryBlock
-    uint64 getBlockIndex(VulkanMemoryBlock *memoryBlock) const { return memoryBlock->offset / alignment; }
+void VulkanMemoryChunk::setMemory(uint64 chunkSize, VkDeviceMemory dMemory)
+{
+    // Ensure it is properly aligned
+    fatalAssertf(chunkSize % alignment == 0, "Chunk memory size is not properly aligned");
+    cByteSize = chunkSize;
+    deviceMemory = dMemory;
 
-public:
-    VulkanMemoryChunk(uint64 blockSize)
-        : deviceMemory(nullptr)
-        , mappedMemory(nullptr)
-        , mappedMemRefCounter(0)
-        , cSize(0)
-        , alignment(blockSize)
-    {}
-
-    void setMemory(uint64 chunkSize, VkDeviceMemory dMemory)
+    // +1 since 0 will always be invalid block
+    blocks.resize((cByteSize / alignment) + 1);
+    freeBlockHead = &blocks[1];
+    for (BlockIdxType i = 1; i < blocks.size(); ++i)
     {
-        // Ensure it is properly aligned
-        fatalAssertf(chunkSize % alignment == 0, "Chunk memory size is not properly aligned");
-        cSize = chunkSize;
-        deviceMemory = dMemory;
+        VulkanMemoryBlock &block = blocks[i];
+        block.nextFreeIndex = i + 1;
+        debugAssert(i == blockIdxToIdx(getBlockIndex(&block)) && i == getArrayIndex(&block));
+    }
+    blocks[blocks.size() - 1].nextFreeIndex = VulkanMemoryBlock::INVALID_BLOCK_IDX;
+}
 
-        blocks.resize(cSize / alignment);
-        freeBlockHead = blocks.data();
-        uint64 currentOffset = 0;
-        for (uint64 i = 0; i < blocks.size(); ++i)
-        {
-            VulkanMemoryBlock &block = blocks[i];
-            block.offset = currentOffset;
-            block.size = alignment;
-            block.deviceMemory = deviceMemory;
-            uint64 nextBlockIdx = i + 1;
-            if (nextBlockIdx < blocks.size())
-            {
-                block.nextFreeBlock = &blocks[nextBlockIdx];
-            }
-            else
-            {
-                block.nextFreeBlock = nullptr;
-            }
-            block.free = 1;
-            currentOffset += alignment;
-            debugAssert(i == getBlockIndex(&block));
-        }
+FORCE_INLINE VulkanMemoryBlock *VulkanMemoryChunk::allocateBlock(uint64 size, uint64 offsetAlignment)
+{
+    // Ensure it is properly aligned
+    fatalAssertf(size % alignment == 0, "Size allocating is not properly aligned");
+    BlockIdxType nOfBlocks = size / alignment;
+
+    return findAndAlloc(nOfBlocks, offsetAlignment);
+}
+
+void VulkanMemoryChunk::freeBlock(VulkanMemoryBlock *memoryBlock, uint64 byteSize)
+{
+    BlockIdxType nOfBlocks = byteSize / alignment;
+    BlockIdxType firstBlockIndex = getArrayIndex(memoryBlock);
+    BlockIdxType lastBlockIndex = firstBlockIndex + nOfBlocks - 1;
+
+    // Not want to set next free for last block here
+    for (BlockIdxType idx = firstBlockIndex; idx < lastBlockIndex; ++idx)
+    {
+        blocks[idx].nextFreeIndex = idx + 1;
     }
 
-    bool isInChunk(VulkanMemoryBlock *memoryBlock) const
+    // Happens if we did one large allocation and used everything in it
+    if (!isValidBlock(freeBlockHead))
     {
-        return memoryBlock->deviceMemory == deviceMemory && (memoryBlock->offset <= cSize - memoryBlock->size);
+        blocks[lastBlockIndex].nextFreeIndex = VulkanMemoryBlock::INVALID_BLOCK_IDX;
+        freeBlockHead = &blocks[firstBlockIndex];
+        return;
     }
 
-    void alignSize(const uint64 &size, uint64 &alignedSize) const
+    BlockIdxType freeHeadIdx = getArrayIndex(freeBlockHead);
+    // If freeBlockHead is after last freeing Block then we can just link the end to current
+    // freeBlockHead and start as new freeBlockHead
+    if (lastBlockIndex < freeHeadIdx)
     {
-        // Ensure if it is power of 2
-        debugAssert(Math::isPowOf2(alignment));
-        alignedSize = Math::alignBy(size, alignment);
+        blocks[lastBlockIndex].nextFreeIndex = freeHeadIdx;
+        freeBlockHead = &blocks[firstBlockIndex];
+        return;
     }
 
-    VulkanMemoryBlock *allocateBlock(const uint64 &size, const uint64 &offsetAlignment)
+    /**
+     * Current freeing blocks is in the middle of free list.
+     * Find the block before freeing head and after freeing tail and link them together
+     */
+    BlockIdxType prevLinkIdx = freeHeadIdx;
+    while (blocks[prevLinkIdx].nextFreeIndex != VulkanMemoryBlock::INVALID_BLOCK_IDX && blocks[prevLinkIdx].nextFreeIndex < firstBlockIndex)
     {
-        // Ensure it is properly aligned
-        fatalAssertf(size % alignment == 0, "Size allocating is not properly aligned");
-        uint64 nOfBlocks = size / alignment;
+        prevLinkIdx = blocks[prevLinkIdx].nextFreeIndex;
+    }
+    // Linking freeing tail to next free and prev free to freeing head
+    blocks[lastBlockIndex].nextFreeIndex = blocks[prevLinkIdx].nextFreeIndex;
+    blocks[prevLinkIdx].nextFreeIndex = firstBlockIndex;
+}
 
-        VulkanMemoryBlock *allocatedBlock = findAndAlloc(nOfBlocks, offsetAlignment);
-
-        if (allocatedBlock)
-        {
-            allocatedBlock->size = size;
-            uint64 startIndex = getBlockIndex(allocatedBlock);
-            for (uint64 idxOffset = 0; idxOffset < nOfBlocks; ++idxOffset)
-            {
-                blocks[startIndex + idxOffset].free = 0;
-            }
-        }
-        return allocatedBlock;
+NODISCARD void *VulkanMemoryChunk::mapMemory(VulkanMemoryBlock *block, VulkanDevice *device)
+{
+    if (mappedMemory == nullptr)
+    {
+        device->vkMapMemory(VulkanGraphicsHelper::getDevice(device), deviceMemory, 0, cByteSize, 0, &mappedMemory);
     }
 
-    void freeBlock(VulkanMemoryBlock *memoryBlock)
+    void *outPtr = reinterpret_cast<uint8 *>(mappedMemory) + getBlockByteOffset(block);
+    mappedMemRefCounter++;
+    return outPtr;
+}
+
+void VulkanMemoryChunk::unmapMemory(VulkanMemoryBlock *block, VulkanDevice *device)
+{
+    mappedMemRefCounter--;
+    if (mappedMemRefCounter == 0)
     {
-        uint64 nOfBlocks = memoryBlock->size / alignment;
-        uint64 startBlockIndex = getBlockIndex(memoryBlock);
-        uint64 endBlockIndex = startBlockIndex + nOfBlocks - 1;
-
-        for (uint64 idx = startBlockIndex; idx <= endBlockIndex; ++idx)
-        {
-            blocks[idx].free = 1;
-            blocks[idx].size = alignment;
-
-            if (idx + 1 <= endBlockIndex) // Valid next free block
-            {
-                blocks[idx].nextFreeBlock = &blocks[idx + 1];
-            }
-        }
-
-        // If freeBlockHead is after freeing endBlock then we can just link the end to current
-        // freeBlockHead and start as new freeBlockHead
-        if (freeBlockHead && endBlockIndex < getBlockIndex(freeBlockHead))
-        {
-            blocks[endBlockIndex].nextFreeBlock = freeBlockHead;
-            freeBlockHead = &blocks[startBlockIndex];
-            return;
-        }
-
-        // If memoryBlock is in between freeBlockHead and current end block or after current end block
-        // Find first free head in front of memoryBlock and first free tail after end of memoryBlock and
-        // link them together
-        VulkanMemoryBlock *freeHead = nullptr;
-        VulkanMemoryBlock *freeTail = nullptr;
-        for (uint64 offsetIdx = 1; offsetIdx <= startBlockIndex; ++offsetIdx)
-        {
-            VulkanMemoryBlock *block = &blocks[startBlockIndex - offsetIdx];
-            if (block->free)
-            {
-                freeHead = block;
-                break;
-            }
-        }
-
-        if (!freeHead)
-        {
-            for (uint64 idx = endBlockIndex + 1; idx < blocks.size(); ++idx)
-            {
-                VulkanMemoryBlock *block = &blocks[idx];
-                if (block->free)
-                {
-                    freeTail = block;
-                    break;
-                }
-            }
-            freeBlockHead = &blocks[startBlockIndex];
-        }
-        else
-        {
-            freeTail = freeHead->nextFreeBlock;
-            freeHead->nextFreeBlock = &blocks[startBlockIndex];
-        }
-
-        if (freeTail)
-        {
-            blocks[endBlockIndex].nextFreeBlock = freeTail;
-        }
-        else
-        {
-            blocks[endBlockIndex].nextFreeBlock = nullptr;
-        }
+        device->vkUnmapMemory(VulkanGraphicsHelper::getDevice(device), deviceMemory);
+        mappedMemory = nullptr;
     }
+}
 
-    void mapMemory(VulkanMemoryBlock *block, VulkanDevice *device)
+uint64 VulkanMemoryChunk::availableHeapSize() const
+{
+    uint64 heapSizeLeft = 0;
+    if (!isValidBlock(freeBlockHead))
     {
-        if (mappedMemory == nullptr)
-        {
-            device->vkMapMemory(VulkanGraphicsHelper::getDevice(device), deviceMemory, 0, cSize, 0, &mappedMemory);
-        }
-
-        block->mappedMemory = reinterpret_cast<uint8 *>(mappedMemory) + block->offset;
-        mappedMemRefCounter++;
-    }
-
-    void unmapMemory(VulkanMemoryBlock *block, VulkanDevice *device)
-    {
-        block->mappedMemory = nullptr;
-        mappedMemRefCounter--;
-        if (mappedMemRefCounter == 0)
-        {
-            device->vkUnmapMemory(VulkanGraphicsHelper::getDevice(device), deviceMemory);
-            mappedMemory = nullptr;
-        }
-    }
-
-    uint64 availableHeapSize() const
-    {
-        uint64 heapSizeLeft = 0;
-        if (!freeBlockHead)
-        {
-            return heapSizeLeft;
-        }
-        VulkanMemoryBlock *nextBlock = freeBlockHead;
-        while (nextBlock)
-        {
-            heapSizeLeft += alignment;
-            nextBlock = nextBlock->nextFreeBlock;
-        }
         return heapSizeLeft;
     }
-
-    uint64 chunkSize() const { return cSize; }
-
-    VkDeviceMemory getDeviceMemory() const { return deviceMemory; }
-};
+    const VulkanMemoryBlock *nextBlock = freeBlockHead;
+    while (isValidBlock(nextBlock))
+    {
+        heapSizeLeft += alignment;
+        nextBlock = &blocks[nextBlock->nextFreeIndex];
+    }
+    return heapSizeLeft;
+}
 
 class VulkanHeapAllocator
 {
@@ -312,6 +284,166 @@ private:
     std::vector<VulkanMemoryChunk *> chunks;
     std::vector<VulkanMemoryChunk *> chunks2xAligned;
 
+public:
+    VulkanHeapAllocator(uint64 chunkSize, uint64 alignment, VulkanDevice *vDevice, uint32 typeIndex, uint32 heapIndex)
+        : cSize(chunkSize)
+        , initialAlignment(alignment)
+        , device(vDevice)
+        , tIndex(typeIndex)
+        , hIndex(heapIndex)
+    {
+        uint64 currentUsageSize;
+        uint64 totalHeapSize;
+        device->getMemoryStat(totalHeapSize, currentUsageSize, hIndex);
+        cSize = (uint64)(Math::min<uint64>(2 * cSize, totalHeapSize) * 0.5f);
+        /* Allocate as required as even 100MB in graphics memory is important */
+        // allocateNewChunk(chunks, alignment, cSize);
+        // allocateNewChunk(chunks2xAligned, alignment * 2, cSize);
+    }
+
+    ~VulkanHeapAllocator()
+    {
+        for (VulkanMemoryChunk *chunk : chunks)
+        {
+            device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk->getDeviceMemory(), nullptr);
+            delete chunk;
+        }
+        for (VulkanMemoryChunk *chunk : chunks2xAligned)
+        {
+            device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk->getDeviceMemory(), nullptr);
+            delete chunk;
+        }
+        chunks.clear();
+        chunks2xAligned.clear();
+    }
+
+    uint64 allocatorSize() const
+    {
+        uint64 totalSize = 0;
+        for (const VulkanMemoryChunk *chunk : chunks)
+        {
+            totalSize += chunk->chunkSize();
+        }
+        for (const VulkanMemoryChunk *chunk : chunks2xAligned)
+        {
+            totalSize += chunk->chunkSize();
+        }
+        return totalSize;
+    }
+
+    VulkanMemoryAllocation allocate(const uint64 &size, const uint64 &offsetAlignment)
+    {
+        // If using chunk allocator for first time, Moved from constructor allocation to here
+        if (chunks.empty())
+        {
+            allocateNewChunk(chunks, initialAlignment, cSize);
+        }
+        if (chunks2xAligned.empty())
+        {
+            allocateNewChunk(chunks2xAligned, initialAlignment * 2, cSize);
+        }
+
+        // Chunks to min wastage after alignment pair
+        std::vector<std::pair<std::vector<VulkanMemoryChunk *> *, uint64>> sortedChunks;
+        {
+            uint64 aligned;
+            uint64 aligned2x;
+            chunks[0]->alignSize(size, aligned);
+            chunks2xAligned[0]->alignSize(size, aligned2x);
+
+            sortedChunks.push_back({ &chunks, aligned - size });
+            sortedChunks.push_back({ &chunks2xAligned, aligned2x - size });
+            std::sort(
+                sortedChunks.begin(), sortedChunks.end(),
+                [](std::pair<std::vector<VulkanMemoryChunk *> *, uint64> &lhs, std::pair<std::vector<VulkanMemoryChunk *> *, uint64> &rhs)
+                { return lhs.second < rhs.second; }
+            );
+        }
+
+        for (auto &chunks : sortedChunks)
+        {
+            uint64 alignedSize = size + chunks.second;
+
+            for (int32 index = (int32)chunks.first->size() - 1; index >= 0; --index)
+            {
+                VulkanMemoryChunk *chunk = (*chunks.first)[index];
+                VulkanMemoryBlock *allocatedBlock = chunk->allocateBlock(alignedSize, offsetAlignment);
+                if (allocatedBlock)
+                {
+                    VulkanMemoryAllocation allocation;
+                    allocation.deviceMemory = chunk->getDeviceMemory();
+                    allocation.memBlock = allocatedBlock;
+                    allocation.byteSize = alignedSize;
+                    allocation.byteOffset = chunk->getBlockByteOffset(allocatedBlock);
+                    return allocation;
+                }
+            }
+        }
+
+        for (auto &chunks : sortedChunks)
+        {
+            uint64 alignedSize = size + chunks.second;
+            uint64 alignment;
+            (*chunks.first)[0]->alignSize(1, alignment);
+            // In case if requested size is greater then allocate requested amount
+            int32 index = allocateNewChunk(*chunks.first, alignment, Math::max(cSize, alignedSize));
+
+            if (index < 0)
+            {
+                continue;
+            }
+            VulkanMemoryChunk *chunk = (*chunks.first)[index];
+            VulkanMemoryBlock *allocatedBlock = chunk->allocateBlock(alignedSize, offsetAlignment);
+            if (allocatedBlock)
+            {
+                VulkanMemoryAllocation allocation;
+                allocation.deviceMemory = chunk->getDeviceMemory();
+                allocation.memBlock = allocatedBlock;
+                allocation.byteSize = alignedSize;
+                allocation.byteOffset = chunk->getBlockByteOffset(allocatedBlock);
+                return allocation;
+            }
+        }
+        return {};
+    }
+
+    bool mapMemory(VulkanMemoryAllocation &allocation)
+    {
+        if (VulkanMemoryChunk *chunk = findBlockChunk(allocation.memBlock))
+        {
+            allocation.mappedMemory = chunk->mapMemory(allocation.memBlock, device);
+            return true;
+        }
+        return false;
+    }
+
+    bool unmapMemory(VulkanMemoryAllocation &allocation)
+    {
+        if (VulkanMemoryChunk *chunk = findBlockChunk(allocation.memBlock))
+        {
+            chunk->unmapMemory(allocation.memBlock, device);
+            allocation.mappedMemory = nullptr;
+            return true;
+        }
+        return false;
+    }
+
+    // return true if removed from this allocator
+    bool free(const VulkanMemoryAllocation &allocation)
+    {
+        if (VulkanMemoryChunk *chunk = findBlockChunk(allocation.memBlock))
+        {
+            if (allocation.mappedMemory != nullptr)
+            {
+                chunk->unmapMemory(allocation.memBlock, device);
+            }
+            chunk->freeBlock(allocation.memBlock, allocation.byteSize);
+            return true;
+        }
+        return false;
+    }
+
+private:
     int32 allocateNewChunk(std::vector<VulkanMemoryChunk *> &chunks, uint64 alignment, uint64 chunkSize)
     {
         uint64 currentUsageSize;
@@ -374,154 +506,6 @@ private:
         }
         return nullptr;
     }
-
-public:
-    VulkanHeapAllocator(uint64 chunkSize, uint64 alignment, VulkanDevice *vDevice, uint32 typeIndex, uint32 heapIndex)
-        : cSize(chunkSize)
-        , initialAlignment(alignment)
-        , device(vDevice)
-        , tIndex(typeIndex)
-        , hIndex(heapIndex)
-    {
-        uint64 currentUsageSize;
-        uint64 totalHeapSize;
-        device->getMemoryStat(totalHeapSize, currentUsageSize, hIndex);
-        cSize = (uint64)(Math::min<uint64>(2 * cSize, totalHeapSize) * 0.5f);
-        /* Allocate as required as even 100MB in graphics memory is important */
-        // allocateNewChunk(chunks, alignment, cSize);
-        // allocateNewChunk(chunks2xAligned, alignment * 2, cSize);
-    }
-
-    ~VulkanHeapAllocator()
-    {
-        for (VulkanMemoryChunk *chunk : chunks)
-        {
-            device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk->getDeviceMemory(), nullptr);
-            delete chunk;
-        }
-        for (VulkanMemoryChunk *chunk : chunks2xAligned)
-        {
-            device->vkFreeMemory(VulkanGraphicsHelper::getDevice(device), chunk->getDeviceMemory(), nullptr);
-            delete chunk;
-        }
-        chunks.clear();
-        chunks2xAligned.clear();
-    }
-
-    uint64 allocatorSize() const
-    {
-        uint64 totalSize = 0;
-        for (const VulkanMemoryChunk *chunk : chunks)
-        {
-            totalSize += chunk->chunkSize();
-        }
-        for (const VulkanMemoryChunk *chunk : chunks2xAligned)
-        {
-            totalSize += chunk->chunkSize();
-        }
-        return totalSize;
-    }
-
-    VulkanMemoryBlock *allocate(const uint64 &size, const uint64 &offsetAlignment)
-    {
-        // If using chunk allocator for first time, Moved from constructor allocation to here
-        if (chunks.empty())
-        {
-            allocateNewChunk(chunks, initialAlignment, cSize);
-        }
-        if (chunks2xAligned.empty())
-        {
-            allocateNewChunk(chunks2xAligned, initialAlignment * 2, cSize);
-        }
-
-        VulkanMemoryBlock *allocatedBlock = nullptr;
-        // Chunks to min wastage after alignment pair
-        std::vector<std::pair<std::vector<VulkanMemoryChunk *> *, uint64>> sortedChunks;
-        {
-            uint64 aligned;
-            uint64 aligned2x;
-            chunks[0]->alignSize(size, aligned);
-            chunks2xAligned[0]->alignSize(size, aligned2x);
-
-            sortedChunks.push_back({ &chunks, aligned - size });
-            sortedChunks.push_back({ &chunks2xAligned, aligned2x - size });
-            std::sort(
-                sortedChunks.begin(), sortedChunks.end(),
-                [](std::pair<std::vector<VulkanMemoryChunk *> *, uint64> &lhs, std::pair<std::vector<VulkanMemoryChunk *> *, uint64> &rhs)
-                { return lhs.second < rhs.second; }
-            );
-        }
-
-        for (auto &chunks : sortedChunks)
-        {
-            uint64 alignedSize = size + chunks.second;
-
-            for (int32 index = (int32)chunks.first->size() - 1; index >= 0; --index)
-            {
-                allocatedBlock = chunks.first->at(index)->allocateBlock(alignedSize, offsetAlignment);
-                if (allocatedBlock)
-                {
-                    return allocatedBlock;
-                }
-            }
-        }
-
-        for (auto &chunks : sortedChunks)
-        {
-            uint64 alignedSize = size + chunks.second;
-            uint64 alignment;
-            chunks.first->at(0)->alignSize(1, alignment);
-            // In case if requested size is greater then allocate requested amount
-            int32 index = allocateNewChunk(*chunks.first, alignment, Math::max(cSize, alignedSize));
-
-            if (index < 0)
-            {
-                continue;
-            }
-            allocatedBlock = chunks.first->at(index)->allocateBlock(alignedSize, offsetAlignment);
-            if (allocatedBlock)
-            {
-                break;
-            }
-        }
-
-        return allocatedBlock;
-    }
-
-    bool mapMemory(VulkanMemoryBlock *block)
-    {
-        if (VulkanMemoryChunk *chunk = findBlockChunk(block))
-        {
-            chunk->mapMemory(block, device);
-            return true;
-        }
-        return false;
-    }
-
-    bool unmapMemory(VulkanMemoryBlock *block)
-    {
-        if (VulkanMemoryChunk *chunk = findBlockChunk(block))
-        {
-            chunk->unmapMemory(block, device);
-            return true;
-        }
-        return false;
-    }
-
-    // return true if removed from this allocator
-    bool free(VulkanMemoryBlock *block)
-    {
-        if (VulkanMemoryChunk *chunk = findBlockChunk(block))
-        {
-            if (block->mappedMemory != nullptr)
-            {
-                chunk->unmapMemory(block, device);
-            }
-            chunk->freeBlock(block);
-            return true;
-        }
-        return false;
-    }
 };
 
 #if DEBUG_BUILD
@@ -537,17 +521,17 @@ public:
             uint64 aligned4;
             c4.alignSize(3, aligned4);
             VulkanMemoryBlock *block1 = c4.allocateBlock(aligned4, 1);
-            if (block1->offset != 0)
+            if (c4.getBlockByteOffset(block1) != 0)
             {
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
                     "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
                     "offset %d",
-                    block1->offset, 0
+                    c4.getBlockByteOffset(block1), 0
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block1->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", aligned4, c4.availableHeapSize());
             VulkanMemoryBlock *oomBlock = c4.allocateBlock(40, 1);
             if (oomBlock)
             {
@@ -557,17 +541,17 @@ public:
             uint64 aligned28;
             c4.alignSize(27, aligned28);
             VulkanMemoryBlock *block2 = c4.allocateBlock(aligned28, 1);
-            if (block2->offset != 4)
+            if (c4.getBlockByteOffset(block2) != 4)
             {
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
                     "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
                     "offset %d",
-                    block2->offset, 4
+                    c4.getBlockByteOffset(block2), 4
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block2->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", aligned28, c4.availableHeapSize());
             oomBlock = c4.allocateBlock(4, 1);
             if (oomBlock)
             {
@@ -575,53 +559,63 @@ public:
                 LOG_ERROR("TestChunk", "unexpected behavior(VulkanMemoryAllocator) : block should be nullptr");
             }
 
-            c4.freeBlock(block1);
-            if (block1->free != 1)
+            // Next free must be 0 as 28bytes of 32byte is allocated and this 4byte free must be the only block(4byte size) free in chunk
+            c4.freeBlock(block1, aligned4);
+            if (block1->nextFreeIndex != VulkanMemoryBlock::INVALID_BLOCK_IDX)
             {
                 failedAny |= true;
-                LOG_ERROR("TestChunk", "unexpected behavior(VulkanMemoryAllocator) : block should be free");
+                LOG_ERROR(
+                    "TestChunk",
+                    "unexpected behavior(VulkanMemoryAllocator) : Freeing only 1 block of fully allocated chunk, "
+                    "Expected next index %d Found next index %d",
+                    VulkanMemoryBlock::INVALID_BLOCK_IDX, block1->nextFreeIndex
+                );
             }
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", aligned4, c4.availableHeapSize());
 
             block1 = c4.allocateBlock(aligned4, 1);
-            if (block1->offset != 0)
+            if (c4.getBlockByteOffset(block1) != 0)
             {
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
                     "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
                     "offset %d",
-                    block1->offset, 0
+                    c4.getBlockByteOffset(block1), 0
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block1->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", aligned4, c4.availableHeapSize());
 
-            c4.freeBlock(block2);
-            if (block2->free != 1)
+            c4.freeBlock(block2, aligned28);
+            if ((c4.idxToBlockIdx(block2->nextFreeIndex) - c4.getBlockIndex(block2)) != 1)
             {
                 failedAny |= true;
-                LOG_ERROR("TestChunk", "unexpected behavior(VulkanMemoryAllocator) : block should be free");
+                LOG_ERROR(
+                    "TestChunk",
+                    "unexpected behavior(VulkanMemoryAllocator) : Freeing must link free list, Expected next index %d Found next index %d",
+                    c4.getBlockIndex(block2) + 1, c4.idxToBlockIdx(block2->nextFreeIndex)
+                );
             }
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 28, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", aligned28, c4.availableHeapSize());
 
             block2 = c4.allocateBlock(12, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block2->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
             VulkanMemoryBlock *block3 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block3->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
             VulkanMemoryBlock *block4 = c4.allocateBlock(12, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block4->size, c4.availableHeapSize());
-            c4.freeBlock(block2);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 12, c4.availableHeapSize());
-            c4.freeBlock(block3);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            c4.freeBlock(block2, c4.alignSize(12));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            c4.freeBlock(block3, c4.alignSize(4));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
             block2 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block2->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
             block3 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block3->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
             VulkanMemoryBlock *block5 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block5->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
             VulkanMemoryBlock *block6 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block6->size, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
 
             if (!block2 || !block3 || !block4 || !block6)
             {
@@ -632,69 +626,69 @@ public:
                 );
             }
 
-            c4.freeBlock(block2);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
+            c4.freeBlock(block2, c4.alignSize(4));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
             block2 = nullptr;
-            c4.freeBlock(block5);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
-            c4.freeBlock(block6);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
+            c4.freeBlock(block5, c4.alignSize(4));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            c4.freeBlock(block6, c4.alignSize(4));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
             block6 = nullptr;
 
             block5 = c4.allocateBlock(8, 1);
-            if (!block5 || block5->offset != 12)
+            if (!block5 || c4.getBlockByteOffset(block5) != 12)
             {
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
                     "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
                     "offset %d",
-                    block5->offset, 12
+                    c4.getBlockByteOffset(block5), 12
                 );
             }
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block5->size, c4.availableHeapSize());
-            c4.freeBlock(block5);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 8, c4.availableHeapSize());
-            c4.freeBlock(block4);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 12, c4.availableHeapSize());
-            c4.freeBlock(block1);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
-            c4.freeBlock(block3);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(8), c4.availableHeapSize());
+            c4.freeBlock(block5, c4.alignSize(8));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(8), c4.availableHeapSize());
+            c4.freeBlock(block4, c4.alignSize(12));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            c4.freeBlock(block1, c4.alignSize(4));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            c4.freeBlock(block3, c4.alignSize(4));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
 
             block1 = c4.allocateBlock(4, 1);
             block2 = c4.allocateBlock(4, 1);
             block3 = c4.allocateBlock(4, 1);
             block4 = c4.allocateBlock(4, 1);
             block5 = c4.allocateBlock(4, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", 20, c4.availableHeapSize());
-            c4.freeBlock(block1);
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", 5 * c4.alignSize(4), c4.availableHeapSize());
+            c4.freeBlock(block1, c4.alignSize(4));
             block1 = nullptr;
-            c4.freeBlock(block3);
+            c4.freeBlock(block3, c4.alignSize(4));
             block3 = nullptr;
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 8, c4.availableHeapSize());
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 2 * c4.alignSize(4), c4.availableHeapSize());
 
             block6 = c4.allocateBlock(12, 1);
-            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", block6->size, c4.availableHeapSize());
-            if (!block6 || block6->offset != 20)
+            LOG_DEBUG("TestChunk", "%d - Allocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
+            if (!block6 || c4.getBlockByteOffset(block6) != 20)
             {
                 failedAny |= true;
                 LOG_ERROR(
                     "TestChunk",
                     "unexpected behavior(VulkanMemoryAllocator) : block offset %d expected "
                     "offset %d",
-                    block6->offset, 20
+                    c4.getBlockByteOffset(block6), 20
                 );
             }
 
-            c4.freeBlock(block2);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
-            c4.freeBlock(block4);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
-            c4.freeBlock(block5);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 4, c4.availableHeapSize());
-            c4.freeBlock(block6);
-            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", 12, c4.availableHeapSize());
+            c4.freeBlock(block2, c4.alignSize(4));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            c4.freeBlock(block4, c4.alignSize(4));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            c4.freeBlock(block5, c4.alignSize(4));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(4), c4.availableHeapSize());
+            c4.freeBlock(block6, c4.alignSize(12));
+            LOG_DEBUG("TestChunk", "%d - deallocated %d heap left", c4.alignSize(12), c4.availableHeapSize());
             if (c4.availableHeapSize() != 32)
             {
                 failedAny |= true;
@@ -792,9 +786,9 @@ public:
         availableMemoryProps.clear();
     }
 
-    VulkanMemoryBlock *allocateBuffer(VkBuffer buffer, bool cpuAccessible) override
+    VulkanMemoryAllocation allocateBuffer(VkBuffer buffer, bool cpuAccessible) override
     {
-        VulkanMemoryBlock *block = nullptr;
+        VulkanMemoryAllocation allocation;
         VkMemoryRequirements memRequirement;
         device->vkGetBufferMemoryRequirements(device->logicalDevice, buffer, &memRequirement);
 
@@ -809,20 +803,20 @@ public:
                 continue;
             }
 
-            block = linearChunkAllocators[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
+            allocation = linearChunkAllocators[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
 
-            if (block)
+            if (allocation.memBlock)
             {
                 break;
             }
         }
 
-        return block;
+        return allocation;
     }
 
-    VulkanMemoryBlock *allocateImage(VkImage image, bool cpuAccessible, bool bIsOptimalTiled) override
+    VulkanMemoryAllocation allocateImage(VkImage image, bool cpuAccessible, bool bIsOptimalTiled) override
     {
-        VulkanMemoryBlock *block = nullptr;
+        VulkanMemoryAllocation allocation;
         VkMemoryRequirements memRequirement;
         device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
 
@@ -838,18 +832,18 @@ public:
                 continue;
             }
 
-            block = chunkAllocator[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
+            allocation = chunkAllocator[indexPropPair.first]->allocate(memRequirement.size, memRequirement.alignment);
 
-            if (block)
+            if (allocation.memBlock)
             {
                 break;
             }
         }
 
-        return block;
+        return allocation;
     }
 
-    void deallocateBuffer(VkBuffer buffer, VulkanMemoryBlock *block) override
+    void deallocateBuffer(VkBuffer buffer, const VulkanMemoryAllocation &block) override
     {
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
@@ -860,7 +854,7 @@ public:
         }
     }
 
-    void deallocateImage(VkImage image, VulkanMemoryBlock *block, bool bIsOptimalTiled) override
+    void deallocateImage(VkImage image, const VulkanMemoryAllocation &block, bool bIsOptimalTiled) override
     {
         VulkanHeapAllocator **chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
 
@@ -873,7 +867,7 @@ public:
         }
     }
 
-    void mapBuffer(VulkanMemoryBlock *block) override
+    void mapBuffer(VulkanMemoryAllocation &allocation) override
     {
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
@@ -881,14 +875,14 @@ public:
             {
                 continue;
             }
-            if (linearChunkAllocators[indexPropPair.first]->mapMemory(block))
+            if (linearChunkAllocators[indexPropPair.first]->mapMemory(allocation))
             {
                 return;
             }
         }
     }
 
-    void unmapBuffer(VulkanMemoryBlock *block) override
+    void unmapBuffer(VulkanMemoryAllocation &allocation) override
     {
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
@@ -896,14 +890,14 @@ public:
             {
                 continue;
             }
-            if (linearChunkAllocators[indexPropPair.first]->unmapMemory(block))
+            if (linearChunkAllocators[indexPropPair.first]->unmapMemory(allocation))
             {
                 return;
             }
         }
     }
 
-    void mapImage(VulkanMemoryBlock *block) override
+    void mapImage(VulkanMemoryAllocation &block) override
     {
         VulkanHeapAllocator **chunkAllocator = linearChunkAllocators;
 
@@ -920,7 +914,7 @@ public:
         }
     }
 
-    void unmapImage(VulkanMemoryBlock *block) override
+    void unmapImage(VulkanMemoryAllocation &block) override
     {
         VulkanHeapAllocator **chunkAllocator = linearChunkAllocators;
 
@@ -999,14 +993,16 @@ SharedPtr<IVulkanMemoryAllocator> IVulkanMemoryAllocator::createAllocator(Vulkan
 
 /* Resource Implementation */
 
-void IVulkanMemoryResources::setMemoryData(VulkanMemoryBlock *block) { blockData = block; }
+void IVulkanMemoryResources::setMemoryData(VulkanMemoryAllocation allocation) { memAllocation = allocation; }
 
-uint64 IVulkanMemoryResources::allocatedSize() const { return blockData->size; }
+uint64 IVulkanMemoryResources::allocatedSize() const { return memAllocation.byteSize; }
 
-uint64 IVulkanMemoryResources::allocationOffset() const { return blockData->offset; }
+uint64 IVulkanMemoryResources::allocationOffset() const { return memAllocation.byteOffset; }
 
-VulkanMemoryBlock *IVulkanMemoryResources::getMemoryData() const { return blockData; }
+const VulkanMemoryAllocation &IVulkanMemoryResources::getMemoryData() const { return memAllocation; }
 
-VkDeviceMemory IVulkanMemoryResources::getDeviceMemory() const { return blockData->deviceMemory; }
+VulkanMemoryAllocation &IVulkanMemoryResources::getMemoryData() { return memAllocation; }
 
-void *IVulkanMemoryResources::getMappedMemory() const { return blockData->mappedMemory; }
+VkDeviceMemory IVulkanMemoryResources::getDeviceMemory() const { return memAllocation.deviceMemory; }
+
+void *IVulkanMemoryResources::getMappedMemory() const { return memAllocation.mappedMemory; }

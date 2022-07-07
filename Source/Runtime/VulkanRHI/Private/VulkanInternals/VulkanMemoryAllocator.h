@@ -11,10 +11,12 @@
 
 #pragma once
 #include "Memory/SmartPointers.h"
+
 #include <vulkan_core.h>
 
 class VulkanDevice;
 struct VulkanMemoryBlock;
+struct VulkanMemoryAllocation;
 
 class IVulkanMemoryAllocator
 {
@@ -30,16 +32,16 @@ public:
     virtual void initAllocator() = 0;
     virtual void destroyAllocator() = 0;
 
-    virtual VulkanMemoryBlock *allocateBuffer(VkBuffer buffer, bool cpuAccessible) = 0;
-    virtual VulkanMemoryBlock *allocateImage(VkImage image, bool cpuAccessible, bool bIsOptimalTiled) = 0;
+    virtual VulkanMemoryAllocation allocateBuffer(VkBuffer buffer, bool cpuAccessible) = 0;
+    virtual VulkanMemoryAllocation allocateImage(VkImage image, bool cpuAccessible, bool bIsOptimalTiled) = 0;
 
-    virtual void deallocateBuffer(VkBuffer buffer, VulkanMemoryBlock *block) = 0;
-    virtual void deallocateImage(VkImage image, VulkanMemoryBlock *block, bool bIsOptimalTiled) = 0;
+    virtual void deallocateBuffer(VkBuffer buffer, const VulkanMemoryAllocation &allocation) = 0;
+    virtual void deallocateImage(VkImage image, const VulkanMemoryAllocation &allocation, bool bIsOptimalTiled) = 0;
 
-    virtual void mapBuffer(VulkanMemoryBlock *block) = 0;
-    virtual void unmapBuffer(VulkanMemoryBlock *block) = 0;
-    virtual void mapImage(VulkanMemoryBlock *block) = 0;
-    virtual void unmapImage(VulkanMemoryBlock *block) = 0;
+    virtual void mapBuffer(VulkanMemoryAllocation &allocation) = 0;
+    virtual void unmapBuffer(VulkanMemoryAllocation &allocation) = 0;
+    virtual void mapImage(VulkanMemoryAllocation &block) = 0;
+    virtual void unmapImage(VulkanMemoryAllocation &block) = 0;
 };
 
 namespace std
