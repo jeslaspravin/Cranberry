@@ -395,10 +395,10 @@ bool VulkanGraphicsHelper::allocateBufferResource(
 {
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     auto *resource = static_cast<VulkanBufferResource *>(memoryResource);
-    VulkanMemoryBlock *block = gInstance->memoryAllocator->allocateBuffer(resource->buffer, cpuAccessible);
-    if (block)
+    VulkanMemoryAllocation allocation = gInstance->memoryAllocator->allocateBuffer(resource->buffer, cpuAccessible);
+    if (allocation.memBlock)
     {
-        memoryResource->setMemoryData(block);
+        memoryResource->setMemoryData(allocation);
         gInstance->selectedDevice.vkBindBufferMemory(
             gInstance->selectedDevice.logicalDevice, resource->buffer, memoryResource->getDeviceMemory(), memoryResource->allocationOffset()
         );
@@ -411,7 +411,7 @@ void VulkanGraphicsHelper::deallocateBufferResource(class IGraphicsInstance *gra
 {
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     auto *resource = static_cast<VulkanBufferResource *>(memoryResource);
-    if (memoryResource->getMemoryData())
+    if (memoryResource->getMemoryData().memBlock)
     {
         gInstance->memoryAllocator->deallocateBuffer(resource->buffer, memoryResource->getMemoryData());
     }
@@ -637,14 +637,14 @@ bool VulkanGraphicsHelper::allocateImageResource(
 {
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     auto *resource = static_cast<VulkanImageResource *>(memoryResource);
-    VulkanMemoryBlock *block = gInstance->memoryAllocator->allocateImage(
+    VulkanMemoryAllocation allocation = gInstance->memoryAllocator->allocateImage(
         resource->image, cpuAccessible,
         !resource->isStagingResource()
     ); // Every image apart from staging image are optimal
 
-    if (block)
+    if (allocation.memBlock)
     {
-        memoryResource->setMemoryData(block);
+        memoryResource->setMemoryData(allocation);
         gInstance->selectedDevice.vkBindImageMemory(
             gInstance->selectedDevice.logicalDevice, resource->image, memoryResource->getDeviceMemory(), memoryResource->allocationOffset()
         );
@@ -657,7 +657,7 @@ void VulkanGraphicsHelper::deallocateImageResource(class IGraphicsInstance *grap
 {
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     auto *resource = static_cast<VulkanImageResource *>(memoryResource);
-    if (memoryResource->getMemoryData())
+    if (memoryResource->getMemoryData().memBlock)
     {
         gInstance->memoryAllocator->deallocateImage(
             resource->image, memoryResource->getMemoryData(),
