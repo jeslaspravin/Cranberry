@@ -28,8 +28,10 @@
 
 class String;
 
-// Source stream of data for archive to read or write
-// Each read or write pushes the stream forward or backwards
+/**
+ * Source stream of data for archive to read or write
+ * Each read or write pushes the stream forward or backwards
+ */
 class PROGRAMCORE_EXPORT ArchiveStream
 {
 public:
@@ -39,16 +41,22 @@ public:
     virtual ~ArchiveStream() = default;
 
 public:
-    // reads given length of data from cursor to the passed in pointer, Pointer must be pointing to data
-    // with at least len size Moves the stream cursor to start of next data stream
+    /**
+     * reads given length of data from cursor to the passed in pointer, Pointer must be pointing to data
+     * with at least len size Moves the stream cursor to start of next data stream
+     */
     virtual void read(void *toPtr, SizeT byteLen) = 0;
-    // writes given length of data from cursor from the passed in pointer to data stream, Pointer must be
-    // pointing to data with at least len size Moves the stream cursor to start of next write data
-    // stream. Allocates or extends any necessary extra stream data required for this write.
+    /**
+     * writes given length of data from cursor from the passed in pointer to data stream, Pointer must be
+     * pointing to data with at least len size Moves the stream cursor to start of next write data
+     * stream. Allocates or extends any necessary extra stream data required for this write.
+     */
     virtual void write(const void *ptr, SizeT byteLen) = 0;
 
-    // Moves the stream cursor forward by count bytes
-    // Allocates or extends any necessary extra stream data required for this write.
+    /**
+     * Moves the stream cursor forward by count bytes
+     * Allocates or extends any necessary extra stream data required for this write.
+     */
     virtual void moveForward(SizeT byteCount) = 0;
     // Moves the stream cursor backward by count bytes
     virtual void moveBackward(SizeT byteCount) = 0;
@@ -97,9 +105,7 @@ class PROGRAMCORE_EXPORT ArchiveBase
 {
 private:
     constexpr static const uint32 ARCHIVE_VERSION = 0;
-    /*
-     * Lowest version supported
-     */
+    // Lowest version supported
     constexpr static const uint32 CUTOFF_VERSION = 0;
 
     // Custom versions that will be serialized in/from this archive
@@ -115,7 +121,7 @@ private:
 public:
     /**
      * All getters are virtual to allow overriding the behavior however setters are not as that needs to taken care by the user directly and set
-     * values to appropriate archives, Example check ObjectArchive and PackageSaver. 
+     * values to appropriate archives, Example check ObjectArchive and PackageSaver.
      * It manually takes care of setting custom versions in each archive based on loading or saving
      */
     virtual bool ifSwapBytes() const { return bShouldSwapBytes; }

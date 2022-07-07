@@ -279,65 +279,6 @@ macro (engine_module_dependencies)
     endif ()
 endmacro ()
 
-# Converts engine modules as just includes for this target
-macro (engine_module_dependencies_includes)    
-    set(engine_module_pri_incls )
-    set(engine_module_pub_incls )
-    set(engine_module_interface_incls )
-
-    # Private dependencies
-    list (LENGTH private_modules private_modules_count)
-    if (${private_modules_count} GREATER 0)
-        foreach (module ${private_modules})
-            get_target_property(incl_src_dir ${module} SOURCE_DIR)
-            if (EXISTS ${incl_src_dir}/Public)
-                list (APPEND engine_module_pri_incls ${incl_src_dir}/Public)
-            endif ()
-            # Platform includes
-            if (EXISTS ${incl_src_dir}/${platform_folder}/Public)
-                list (APPEND engine_module_pri_incls ${incl_src_dir}/${platform_folder}/Public)
-            endif ()
-        endforeach ()
-    endif ()
-    # Public dependencies
-    list (LENGTH public_modules public_modules_count)
-    if (${public_modules_count} GREATER 0)        
-        foreach (module ${public_modules})
-            get_target_property(incl_src_dir ${module} SOURCE_DIR)
-            if (EXISTS ${incl_src_dir}/Public)
-                list (APPEND engine_module_pub_incls ${incl_src_dir}/Public)
-            endif ()
-            # Platform includes
-            if (EXISTS ${incl_src_dir}/${platform_folder}/Public)
-                list (APPEND engine_module_pub_incls ${incl_src_dir}/${platform_folder}/Public)
-            endif ()
-        endforeach ()
-    endif ()
-    # Interface dependencies
-    list (LENGTH interface_modules interface_modules_count)
-    if (${interface_modules_count} GREATER 0)
-        foreach (module ${interface_modules})
-            get_target_property(incl_src_dir ${module} SOURCE_DIR)
-            if (EXISTS ${incl_src_dir}/Public)
-                list (APPEND engine_module_pub_incls ${incl_src_dir}/Public)
-            endif ()
-            # Platform includes
-            if (EXISTS ${incl_src_dir}/${platform_folder}/Public)
-                list (APPEND engine_module_interface_incls ${incl_src_dir}/${platform_folder}/Public)
-            endif ()
-        endforeach ()
-    endif ()
-    
-    target_include_directories(${target_name} 
-        PRIVATE
-            ${engine_module_pri_incls}
-        PUBLIC
-            ${engine_module_pub_incls}
-        INTERFACE
-            ${engine_module_interface_incls}
-    )
-endmacro ()
-
 macro (mark_delay_loaded_dlls)
     
     set(option_args IGNORE_MODULES)

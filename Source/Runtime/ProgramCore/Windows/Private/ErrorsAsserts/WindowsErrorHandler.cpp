@@ -120,7 +120,10 @@ void WindowsUnexpectedErrorHandler::dumpStack(struct _CONTEXT *context, bool bCl
     symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
     ::SymSetOptions(symOptions);
 
+    // We do not want to write all debug logs when getting all modules
+    Logger::pushMuteSeverities(Logger::Debug);
     std::vector<std::pair<LibHandle, LibraryData>> modulesDataPairs = ModuleManager::get()->getAllModuleData();
+    Logger::popMuteSeverities();
 
     IMAGE_NT_HEADERS *imageHeader = ::ImageNtHeader(modulesDataPairs[0].second.basePtr);
     dword imageType = imageHeader->FileHeader.Machine;
