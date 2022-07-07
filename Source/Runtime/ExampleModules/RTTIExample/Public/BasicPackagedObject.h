@@ -70,8 +70,8 @@ public:
             if (packageVersion < BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION)
             {
                 debugAssertf(
-                    packageVersion >= BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION, "Unsupported serialization version for class %s",
-                    staticType()->nameString
+                    packageVersion >= BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION, "Unsupported serialization version for object %s of class %s",
+                    getName(), staticType()->nameString
                 );
                 return ar;
             }

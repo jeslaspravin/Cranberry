@@ -299,8 +299,9 @@ public:
     VkDeviceMemory getDeviceMemory() const { return deviceMemory; }
 };
 
-class VulkanChunkAllocator
+class VulkanHeapAllocator
 {
+private:
     // Chunk size
     uint64 cSize;
     uint64 initialAlignment;
@@ -327,11 +328,8 @@ class VulkanChunkAllocator
             allocatingSize -= alignment; // Just to stay in safe limits
         }
 
-        if (allocatingSize == 0)
-        {
-            LOG_ERROR("VulkanMemory", "Out of Memory");
-            return -1;
-        }
+        fatalAssertf(allocatingSize != 0, "Out of Memory");
+
         LOG_DEBUG("VulkanChunkAllocator", "Allocating a chunk of size %d", allocatingSize);
 
         MEMORY_ALLOCATE_INFO(allocateInfo);
@@ -378,7 +376,7 @@ class VulkanChunkAllocator
     }
 
 public:
-    VulkanChunkAllocator(uint64 chunkSize, uint64 alignment, VulkanDevice *vDevice, uint32 typeIndex, uint32 heapIndex)
+    VulkanHeapAllocator(uint64 chunkSize, uint64 alignment, VulkanDevice *vDevice, uint32 typeIndex, uint32 heapIndex)
         : cSize(chunkSize)
         , initialAlignment(alignment)
         , device(vDevice)
@@ -394,7 +392,7 @@ public:
         // allocateNewChunk(chunks2xAligned, alignment * 2, cSize);
     }
 
-    ~VulkanChunkAllocator()
+    ~VulkanHeapAllocator()
     {
         for (VulkanMemoryChunk *chunk : chunks)
         {
@@ -717,8 +715,8 @@ public:
 class VulkanMemoryAllocator : public IVulkanMemoryAllocator
 {
 private:
-    VulkanChunkAllocator *linearChunkAllocators[VK_MAX_MEMORY_TYPES];
-    VulkanChunkAllocator *optimalChunkAllocators[VK_MAX_MEMORY_TYPES];
+    VulkanHeapAllocator *linearChunkAllocators[VK_MAX_MEMORY_TYPES];
+    VulkanHeapAllocator *optimalChunkAllocators[VK_MAX_MEMORY_TYPES];
     std::vector<std::pair<uint32, VkMemoryPropertyFlags>> availableMemoryProps;
 
     void sortAvailableByPriority(bool cpuAccessible);
@@ -750,14 +748,14 @@ public:
             {
                 // TODO(Jeslas) : Revisit hard coded size per chunk part.
                 linearChunkAllocators[i]
-                    = new VulkanChunkAllocator(64 * 1024 * 1024, alignment, device, i, device->memoryProperties.memoryTypes[i].heapIndex);
+                    = new VulkanHeapAllocator(64 * 1024 * 1024, alignment, device, i, device->memoryProperties.memoryTypes[i].heapIndex);
 
-                if ((device->memoryProperties.memoryTypes[i].propertyFlags & VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0)
+                if (BIT_SET(device->memoryProperties.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
                 {
                     // If alignment is 64bytes the image memory alignment is considered
                     // 1024bytes = 1KB Maybe reduce this size in future once memory allocator
                     // is improved
-                    optimalChunkAllocators[i] = new VulkanChunkAllocator(
+                    optimalChunkAllocators[i] = new VulkanHeapAllocator(
                         128 * 1024 * 1024, alignment * 16, device, i, device->memoryProperties.memoryTypes[i].heapIndex
                     );
                 }
@@ -804,9 +802,9 @@ public:
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
             uint32 memoryTypeBit = 1u << indexPropPair.first;
-            if ((cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
-                || (memoryTypeBit & memRequirement.memoryTypeBits) == 0) // Cannot use pure device local as CPU accessible or
-                                                                         // not supported memory type
+            // Cannot use pure device local as CPU accessible or not supported memory type
+            if ((cpuAccessible && NO_BITS_SET(indexPropPair.second, ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+                || (memoryTypeBit & memRequirement.memoryTypeBits) == 0)
             {
                 continue;
             }
@@ -828,14 +826,14 @@ public:
         VkMemoryRequirements memRequirement;
         device->vkGetImageMemoryRequirements(device->logicalDevice, image, &memRequirement);
 
-        VulkanChunkAllocator **chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
+        VulkanHeapAllocator **chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
         sortAvailableByPriority(cpuAccessible);
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
             uint32 memoryTypeBit = 1u << indexPropPair.first;
-            if ((cpuAccessible && (indexPropPair.second & ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
-                || (memoryTypeBit & memRequirement.memoryTypeBits) == 0) // Cannot use pure device local as CPU accessible or
-                                                                         // not supported memory type
+            // Cannot use pure device local as CPU accessible or not supported memory type
+            if ((cpuAccessible && NO_BITS_SET(indexPropPair.second, ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+                || (memoryTypeBit & memRequirement.memoryTypeBits) == 0)
             {
                 continue;
             }
@@ -864,7 +862,7 @@ public:
 
     void deallocateImage(VkImage image, VulkanMemoryBlock *block, bool bIsOptimalTiled) override
     {
-        VulkanChunkAllocator **chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
+        VulkanHeapAllocator **chunkAllocator = bIsOptimalTiled ? optimalChunkAllocators : linearChunkAllocators;
 
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
@@ -879,7 +877,7 @@ public:
     {
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
-            if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
+            if (BIT_NOT_SET(indexPropPair.second, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
             {
                 continue;
             }
@@ -894,7 +892,7 @@ public:
     {
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
-            if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
+            if (BIT_NOT_SET(indexPropPair.second, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
             {
                 continue;
             }
@@ -907,11 +905,11 @@ public:
 
     void mapImage(VulkanMemoryBlock *block) override
     {
-        VulkanChunkAllocator **chunkAllocator = linearChunkAllocators;
+        VulkanHeapAllocator **chunkAllocator = linearChunkAllocators;
 
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
-            if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
+            if (BIT_NOT_SET(indexPropPair.second, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
             {
                 continue;
             }
@@ -924,11 +922,11 @@ public:
 
     void unmapImage(VulkanMemoryBlock *block) override
     {
-        VulkanChunkAllocator **chunkAllocator = linearChunkAllocators;
+        VulkanHeapAllocator **chunkAllocator = linearChunkAllocators;
 
         for (const std::pair<const uint32, VkMemoryPropertyFlags> &indexPropPair : availableMemoryProps)
         {
-            if ((indexPropPair.second & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
+            if (BIT_NOT_SET(indexPropPair.second, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
             {
                 continue;
             }
@@ -948,17 +946,16 @@ void VulkanMemoryAllocator::sortAvailableByPriority(bool cpuAccessible)
             availableMemoryProps.begin(), availableMemoryProps.end(),
             [](const std::pair<uint32, VkMemoryPropertyFlags> &lhs, const std::pair<uint32, VkMemoryPropertyFlags> &rhs)
             {
-                uint8 lhsScore = (lhs.second & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) > 0 ? 1 : 0;
-                uint8 rhsScore = (rhs.second & (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) > 0 ? 1 : 0;
-                ;
+                uint8 lhsScore = ANY_BIT_SET(lhs.second, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) ? 1 : 0;
+                uint8 rhsScore = ANY_BIT_SET(rhs.second, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) ? 1 : 0;
 
                 if (lhsScore != rhsScore)
                 {
                     return lhsScore > rhsScore ? true : false;
                 }
 
-                lhsScore = (lhs.second & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) > 0 ? 1 : 0;
-                rhsScore = (rhs.second & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) > 0 ? 1 : 0;
+                lhsScore = ANY_BIT_SET(lhs.second, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) ? 1 : 0;
+                rhsScore = ANY_BIT_SET(rhs.second, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)) ? 1 : 0;
 
                 if (lhsScore != rhsScore)
                 {
@@ -974,8 +971,8 @@ void VulkanMemoryAllocator::sortAvailableByPriority(bool cpuAccessible)
             availableMemoryProps.begin(), availableMemoryProps.end(),
             [](const std::pair<uint32, VkMemoryPropertyFlags> &lhs, const std::pair<uint32, VkMemoryPropertyFlags> &rhs)
             {
-                uint8 lhsScore = (lhs.second & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0 ? 1 : 0;
-                uint8 rhsScore = (rhs.second & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) > 0 ? 1 : 0;
+                uint8 lhsScore = BIT_SET(lhs.second, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) ? 1 : 0;
+                uint8 rhsScore = BIT_SET(rhs.second, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) ? 1 : 0;
                 ;
 
                 if (lhsScore != rhsScore)

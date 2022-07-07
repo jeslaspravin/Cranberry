@@ -12,6 +12,7 @@
 #pragma once
 #include "RenderInterface/CoreGraphicsTypes.h"
 #include "RenderInterface/GraphicsHelper.h"
+#include "VulkanRHIExports.h"
 
 #include <vulkan_core.h>
 
@@ -24,12 +25,12 @@ class VulkanGraphicsHelper : public GraphicsHelperAPI
 public:
 #if EXPERIMENTAL
     // Only in experimental branch
-    static class VulkanDevice *getVulkanDevice(class IGraphicsInstance *graphicsInstance);
-    static VkCommandBuffer getRawCmdBuffer(class IGraphicsInstance *graphicsInstance, const GraphicsResource *cmdBuffer);
+    VULKANRHI_EXPORT static class VulkanDevice *getVulkanDevice(class IGraphicsInstance *graphicsInstance);
+    VULKANRHI_EXPORT static VkCommandBuffer getRawCmdBuffer(class IGraphicsInstance *graphicsInstance, const GraphicsResource *cmdBuffer);
 #endif
 
-    static VkInstance getInstance(class IGraphicsInstance *graphicsInstance);
-    static VkDevice getDevice(const class VulkanDevice *vulkanDevice);
+    VULKANRHI_EXPORT static VkInstance getInstance(class IGraphicsInstance *graphicsInstance);
+    VULKANRHI_EXPORT static VkDevice getDevice(const class VulkanDevice *vulkanDevice);
     static const class VulkanDebugGraphics *debugGraphics(class IGraphicsInstance *graphicsInstance);
     static class VulkanDescriptorsSetAllocator *getDescriptorsSetAllocator(class IGraphicsInstance *graphicsInstance);
 #if DEFER_DELETION
@@ -147,7 +148,6 @@ public:
     // Size in bytes not 4bytes
     static VkShaderModule createShaderModule(class IGraphicsInstance *graphicsInstance, const uint8 *code, uint32 size);
     static void destroyShaderModule(class IGraphicsInstance *graphicsInstance, VkShaderModule shaderModule);
-    // Following two methods might change in future avoid using these
     static VkRenderPass createDummyRenderPass(class IGraphicsInstance *graphicsInstance, const struct Framebuffer *framebuffer);
     static VkRenderPass createRenderPass(
         class IGraphicsInstance *graphicsInstance, const struct GenericRenderPassProperties &renderpassProps,
