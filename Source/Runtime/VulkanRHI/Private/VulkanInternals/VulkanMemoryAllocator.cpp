@@ -54,12 +54,10 @@ public:
         , alignment(blockSize)
     {}
 
-    FORCE_INLINE const VulkanMemoryBlock *firstBlock() const { return blocks.data() + 1; }
-    FORCE_INLINE VulkanMemoryBlock *firstBlock() { return blocks.data() + 1; }
     FORCE_INLINE BlockIdxType blockIdxToIdx(BlockIdxType blockIdx) const { return blockIdx + 1; }
     FORCE_INLINE BlockIdxType idxToBlockIdx(BlockIdxType idx) const { return idx - 1; }
 
-    FORCE_INLINE bool isInChunk(VulkanMemoryBlock *memoryBlock) const
+    FORCE_INLINE bool isInChunk(const VulkanMemoryBlock *memoryBlock) const
     {
         return UPtrInt(firstBlock()) <= UPtrInt(memoryBlock) && getArrayIndex(memoryBlock) < blocks.size();
     }
@@ -80,9 +78,9 @@ public:
     void setMemory(uint64 chunkSize, VkDeviceMemory dMemory);
 
     FORCE_INLINE VulkanMemoryBlock *allocateBlock(uint64 size, uint64 offsetAlignment);
-    void freeBlock(VulkanMemoryBlock *memoryBlock, uint64 byteSize);
-    NODISCARD void *mapMemory(VulkanMemoryBlock *block, VulkanDevice *device);
-    void unmapMemory(VulkanMemoryBlock *block, VulkanDevice *device);
+    void freeBlock(const VulkanMemoryBlock *memoryBlock, uint64 byteSize);
+    NODISCARD void *mapMemory(const VulkanMemoryBlock *block, VulkanDevice *device);
+    void unmapMemory(const VulkanMemoryBlock *block, VulkanDevice *device);
 
     uint64 availableHeapSize() const;
     FORCE_INLINE uint64 chunkSize() const { return cByteSize; }
@@ -93,6 +91,8 @@ public:
     FORCE_INLINE uint64 getBlockByteOffset(const VulkanMemoryBlock *block) const { return alignment * getBlockIndex(block); }
 
 private:
+    FORCE_INLINE const VulkanMemoryBlock *firstBlock() const { return blocks.data() + 1; }
+    FORCE_INLINE VulkanMemoryBlock *firstBlock() { return blocks.data() + 1; }
     FORCE_INLINE uint64 getArrayIndex(const VulkanMemoryBlock *block) const { return block - blocks.data(); }
     FORCE_INLINE uint64 getBlockByteOffset(BlockIdxType idx) const { return alignment * idxToBlockIdx(idx); }
     FORCE_INLINE bool isValidBlock(const VulkanMemoryBlock *block) const { return block && block != blocks.data(); }
@@ -189,7 +189,7 @@ FORCE_INLINE VulkanMemoryBlock *VulkanMemoryChunk::allocateBlock(uint64 size, ui
     return findAndAlloc(nOfBlocks, offsetAlignment);
 }
 
-void VulkanMemoryChunk::freeBlock(VulkanMemoryBlock *memoryBlock, uint64 byteSize)
+void VulkanMemoryChunk::freeBlock(const VulkanMemoryBlock *memoryBlock, uint64 byteSize)
 {
     BlockIdxType nOfBlocks = byteSize / alignment;
     BlockIdxType firstBlockIndex = getArrayIndex(memoryBlock);
@@ -233,7 +233,7 @@ void VulkanMemoryChunk::freeBlock(VulkanMemoryBlock *memoryBlock, uint64 byteSiz
     blocks[prevLinkIdx].nextFreeIndex = firstBlockIndex;
 }
 
-NODISCARD void *VulkanMemoryChunk::mapMemory(VulkanMemoryBlock *block, VulkanDevice *device)
+NODISCARD void *VulkanMemoryChunk::mapMemory(const VulkanMemoryBlock *block, VulkanDevice *device)
 {
     if (mappedMemory == nullptr)
     {
@@ -245,7 +245,7 @@ NODISCARD void *VulkanMemoryChunk::mapMemory(VulkanMemoryBlock *block, VulkanDev
     return outPtr;
 }
 
-void VulkanMemoryChunk::unmapMemory(VulkanMemoryBlock *block, VulkanDevice *device)
+void VulkanMemoryChunk::unmapMemory(const VulkanMemoryBlock *block, VulkanDevice *device)
 {
     mappedMemRefCounter--;
     if (mappedMemRefCounter == 0)
@@ -488,7 +488,7 @@ private:
         return chunkIndex;
     }
 
-    VulkanMemoryChunk *findBlockChunk(VulkanMemoryBlock *block)
+    VulkanMemoryChunk *findBlockChunk(const VulkanMemoryBlock *block)
     {
         for (VulkanMemoryChunk *chunk : chunks)
         {

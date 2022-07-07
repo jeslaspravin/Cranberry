@@ -33,7 +33,7 @@ struct VulkanMemoryAllocation
 {
     uint64 byteOffset;
     uint64 byteSize;
-    VulkanMemoryBlock *memBlock = nullptr;
+    const VulkanMemoryBlock *memBlock = nullptr;
     VkDeviceMemory deviceMemory;
     void *mappedMemory = nullptr;
 };
