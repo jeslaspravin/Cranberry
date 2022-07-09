@@ -45,6 +45,7 @@ private:
 public:
     GenericAppWindow *getMainWindow() const;
     WindowCanvasRef getWindowCanvas(GenericAppWindow *window) const;
+    bool hasActiveWindow() const { return activeWindow != nullptr; }
 
     void init();
     void destroy();

@@ -66,6 +66,11 @@ bool WindowsThreadingFunctions::setThreadProcessor(uint32 coreIdx, uint32 logica
     return !!::SetThreadGroupAffinity((HANDLE)threadHandle, &grpAffinity, nullptr);
 }
 
+void WindowsThreadingFunctions::sleep(int64 msTicks) 
+{
+    ::Sleep(DWORD(msTicks));
+}
+
 template <typename T>
 void windowsLogicalProcessorInfoVisitor(T &&func, std::vector<uint8> &buffer, LOGICAL_PROCESSOR_RELATIONSHIP processorRelation)
 {
@@ -241,5 +246,5 @@ SystemProcessorsCacheInfo WindowsThreadingFunctions::getProcessorCacheInfo()
 
 void WindowsThreadingFunctions::printSystemThreadingInfo()
 {
-    INTERNAL_printSystemThreadingInfo(getSystemProcessorInfo(), getProcessorCacheInfo());
+    ThreadingHelpers::INTERNAL_printSystemThreadingInfo(getSystemProcessorInfo(), getProcessorCacheInfo());
 }

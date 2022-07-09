@@ -12,6 +12,11 @@
 #include "Types/Platform/Threading/GenericThreadingFunctions.h"
 #include "Logger/Logger.h"
 
+#include <thread>
+
+namespace ThreadingHelpers
+{
+
 void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, SystemProcessorsCacheInfo cacheInfo)
 {
     const TChar *fmtStrProcInfo = TCHAR(
@@ -67,3 +72,10 @@ void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, Syste
         printCacheInfo(cacheInfo.unitL2ByteSize, cacheInfo.puSharingL2, processorInfo.logicalProcessorsCount),
         printCacheInfo(cacheInfo.unitL3ByteSize, cacheInfo.puSharingL3, processorInfo.logicalProcessorsCount));
 }
+
+void sleep(int64 msTicks) 
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(msTicks));
+}
+
+} // namespace GenericThreadingFunctions
