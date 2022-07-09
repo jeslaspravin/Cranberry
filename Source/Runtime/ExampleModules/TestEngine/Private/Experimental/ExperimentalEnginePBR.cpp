@@ -3144,6 +3144,10 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
 
             if (ImGui::CollapsingHeader("Rendering"))
             {
+                if (ImGui::InputInt("FrameRate", &timeData.frameRate, 5, 15, ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    timeData.setTargetFrameRate(uint8(timeData.frameRate));
+                }
                 {
                     const char *resolutions[] = { "1280x720", "1920x1080", "2560x1440", "3840x2160" };
                     static int currRes = 0;

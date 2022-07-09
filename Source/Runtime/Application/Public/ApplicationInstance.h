@@ -77,7 +77,7 @@ public:
     void startApp();
     APPLICATION_EXPORT virtual void onStart() = 0;
     // Returns true if application can continue running
-    [[nodiscard]] bool appTick();
+    NODISCARD bool appTick();
     APPLICATION_EXPORT virtual void onTick() = 0;
     void exitApp();
     APPLICATION_EXPORT virtual void onExit() = 0;

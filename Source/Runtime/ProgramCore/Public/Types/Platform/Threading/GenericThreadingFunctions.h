@@ -49,7 +49,13 @@ struct SystemProcessorsInfo
     uint32 logicalGroupsCount = 0;
 };
 
-extern void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, SystemProcessorsCacheInfo cacheInfo);
+// Helper non templated functions for GenericThreadingFunctions
+namespace ThreadingHelpers
+{
+void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, SystemProcessorsCacheInfo cacheInfo);
+
+PROGRAMCORE_EXPORT void sleep(int64 msTicks);
+} // namespace ThreadingHelpers
 
 template <typename PlatformClass>
 class GenericThreadingFunctions
@@ -85,6 +91,9 @@ public:
     {
         return setThreadProcessor(coreIdx, logicalProcessorIdx, getCurrentThreadHandle());
     }
+
+    // Ticks in milliseconds
+    FORCE_INLINE static void sleep(int64 msTicks) { ThreadingHelpers::sleep(msTicks); }
 
     // Miscellaneous
     FORCE_INLINE static void printSystemThreadingInfo() { PlatformClass::printSystemThreadingInfo(); }
