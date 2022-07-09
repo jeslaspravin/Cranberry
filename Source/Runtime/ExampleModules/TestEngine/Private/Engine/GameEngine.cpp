@@ -111,16 +111,19 @@ void GameEngine::engineLoop()
     {
         // Technically only should tick logic twice not the renderer
         tickEngine();
-        ENQUEUE_COMMAND_NODEBUG(
-            Engineloop,
-            {
-                rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);
-                imguiManager.updateFrame(timeData.deltaTime);
-            },
-            this
-        );
-        // We are not yet ready for 100% multi threaded renderer
-        RenderThreadEnqueuer::flushWaitRenderThread();
+        if (!application->windowManager->getMainWindow()->isMinimized())
+        {
+            ENQUEUE_COMMAND_NODEBUG(
+                Engineloop,
+                {
+                    rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);
+                    imguiManager.updateFrame(timeData.deltaTime);
+                },
+                this
+            );
+            // We are not yet ready for 100% multi threaded renderer
+            RenderThreadEnqueuer::flushWaitRenderThread();
+        }
     }
     if (bActiveWindow && !application->windowManager->hasActiveWindow())
     {

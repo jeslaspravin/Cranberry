@@ -244,7 +244,7 @@ void WindowManager::onWindowResize(uint32 width, uint32 height, GenericAppWindow
                 window->setWindowSize(width, height, true);
                 // Update the canvas
                 WindowCanvasRef windowCanvas = getWindowCanvas(window);
-                if (windowCanvas.isValid())
+                if (windowCanvas.isValid() && !window->isMinimized())
                 {
                     LOG_DEBUG("WindowsAppWindow", "Reiniting window canvas");
                     // Release the canvas before updating

@@ -56,6 +56,7 @@ protected:
 public:
     void windowSize(uint32 &width, uint32 &height) const;
     void setWindowSize(const uint32 &width, const uint32 &height, bool updateResources);
+    FORCE_INLINE bool isMinimized() const { return windowWidth == 0 || windowHeight == 0; }
 
     float dpiScale() const { return dpiScaling; }
 

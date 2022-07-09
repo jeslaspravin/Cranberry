@@ -3059,17 +3059,20 @@ void ExperimentalEnginePBR::tickEngine()
         );
     }
 
-    ENQUEUE_COMMAND(TickFrame)
-    (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            updateShaderParameters(cmdList, graphicsInstance);
+    if (!application->windowManager->getMainWindow()->isMinimized())
+    {
+        ENQUEUE_COMMAND(TickFrame)
+        (
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            {
+                updateShaderParameters(cmdList, graphicsInstance);
 #if SHADOWS_USE_CULLED_DRAW_CMDS
-            setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
+                setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
 #endif
-            frameRender(cmdList, graphicsInstance, graphicsHelper);
-        }
-    );
+                frameRender(cmdList, graphicsInstance, graphicsHelper);
+            }
+        );
+    }
 
     tempTestPerFrame();
 }
