@@ -44,7 +44,8 @@ void WindowsAppWindow::createWindow(const ApplicationInstance *appInstance)
         RegisterClass(&windowClass);
     }
 
-    dword style = bIsWindowed ? WS_OVERLAPPED | WS_THICKFRAME | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX : WS_POPUP | WS_MAXIMIZE;
+    dword style
+        = bIsWindowed ? WS_OVERLAPPED | WS_THICKFRAME | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX : WS_POPUP | WS_MAXIMIZE;
 
     RECT windowRect{ 0, 0, (LONG)windowWidth, (LONG)windowHeight };
 
@@ -218,15 +219,30 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_SIZE:
     {
         WindowsAppWindow *const windowPtr = reinterpret_cast<WindowsAppWindow *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-        if (windowPtr && (wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED) && LOWORD(lParam) > 0 && HIWORD(lParam) > 0)
+        if (!windowPtr)
+            break;
+
+        if ((wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED) && LOWORD(lParam) > 0 && HIWORD(lParam) > 0)
         {
             windowPtr->pushEvent(
                 WM_SIZE,
                 [windowPtr, lParam]()
                 {
-                    LOG("WindowsAppWindow", "Resizing window %s ( %d, %d )", windowPtr->getWindowName().getChar(), LOWORD(lParam),
-                        HIWORD(lParam));
+                    LOG("WindowsAppWindow", "Window %s Resized (%d, %d)", windowPtr->getWindowName().getChar(), LOWORD(lParam), HIWORD(lParam));
                     windowPtr->windowResizing(LOWORD(lParam), HIWORD(lParam));
+                }
+            );
+            return 0;
+        }
+        else if (wParam == SIZE_MINIMIZED)
+        {
+            windowPtr->pushEvent(
+                WM_SIZE,
+                [windowPtr, lParam]()
+                {
+                    LOG_DEBUG("WindowsAppWindow", "Window %s Minimized", windowPtr->getWindowName().getChar());
+                    debugAssert(LOWORD(lParam) == 0 && HIWORD(lParam) == 0);
+                    windowPtr->windowResizing(0, 0);
                 }
             );
             return 0;

@@ -60,6 +60,7 @@
 #include "WindowManager.h"
 #include "ApplicationSettings.h"
 #include "FontManager.h"
+#include "GenericAppWindow.h"
 #include "Types/Platform/LFS/Paths.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 
@@ -1597,14 +1598,17 @@ void ExperimentalEngineGoochModel::tickEngine()
         );
     }
 
-    ENQUEUE_COMMAND_NODEBUG(
-        TickFrame,
-        {
-            updateShaderParameters(cmdList, graphicsInstance);
-            frameRender(cmdList, graphicsInstance, graphicsHelper);
-        },
-        this
-    );
+    if (!application->windowManager->getMainWindow()->isMinimized())
+    {
+        ENQUEUE_COMMAND_NODEBUG(
+            TickFrame,
+            {
+                updateShaderParameters(cmdList, graphicsInstance);
+                frameRender(cmdList, graphicsInstance, graphicsHelper);
+            },
+            this
+        );
+    }
 
     tempTestPerFrame();
 }
