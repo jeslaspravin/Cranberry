@@ -108,6 +108,8 @@ public:
 
         NODISCARD Iterator operator-(const difference_type off) const noexcept { return Iterator(*arrayView, idx - off); }
 
+        NODISCARD difference_type operator-(const Iterator &other) const noexcept { return idx - other.idx; }
+
         NODISCARD reference operator[](const difference_type off) const noexcept
         {
             debugAssert(arrayView && (idx + off) >= 0 && arrayView->length > (idx + off));

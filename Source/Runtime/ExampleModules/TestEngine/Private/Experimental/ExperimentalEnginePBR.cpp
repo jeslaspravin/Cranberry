@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Engine/GameEngine.h"
+#include "Engine/TestGameEngine.h"
 #if EXPERIMENTAL
 
 #include "../Editor/Core/ImGui/IImGuiLayer.h"
@@ -229,7 +229,7 @@ struct std::hash<GridEntity>
 };
 
 class ExperimentalEnginePBR
-    : public GameEngine
+    : public TestGameEngine
     , public IImGuiLayer
 {
     SamplerRef nearestFiltering = nullptr;
@@ -2364,7 +2364,7 @@ void ExperimentalEnginePBR::updateCameraParams()
 
 void ExperimentalEnginePBR::onStartUp()
 {
-    GameEngine::onStartUp();
+    TestGameEngine::onStartUp();
 
     camera.cameraProjection = projection;
     camera.setOrthoSize({ 1280, 720 });
@@ -2453,7 +2453,7 @@ void ExperimentalEnginePBR::onQuit()
     imguiManager.removeLayer(this);
 
     tempTestQuit();
-    GameEngine::onQuit();
+    TestGameEngine::onQuit();
 }
 
 void ExperimentalEnginePBR::renderQuit()
@@ -2999,7 +2999,7 @@ void ExperimentalEnginePBR::debugFrameRender(
 
 void ExperimentalEnginePBR::tickEngine()
 {
-    GameEngine::tickEngine();
+    TestGameEngine::tickEngine();
     updateCameraParams();
     setupLightShaderData();
 
@@ -3565,7 +3565,7 @@ void ExperimentalEnginePBR::tempTestPerFrame()
 
 void ExperimentalEnginePBR::tempTestQuit() {}
 
-GameEngine *GameEngineWrapper::createEngineInstance()
+TestGameEngine *GameEngineWrapper::createEngineInstance()
 {
     static ExperimentalEnginePBR gameEngine;
     return &gameEngine;

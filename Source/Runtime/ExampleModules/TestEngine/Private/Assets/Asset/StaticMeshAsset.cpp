@@ -10,7 +10,7 @@
  */
 
 #include "Assets/Asset/StaticMeshAsset.h"
-#include "Engine/GameEngine.h"
+#include "Engine/TestGameEngine.h"
 #include "RenderApi/VertexData.h"
 #include "RenderApi/RenderTaskHelpers.h"
 #include "RenderInterface/GraphicsHelper.h"
