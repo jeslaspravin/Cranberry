@@ -10,7 +10,7 @@
  */
 
 #include "CmdLine/CmdLine.h"
-#include "Engine/GameEngine.h"
+#include "Engine/TestGameEngine.h"
 #include "Logger/Logger.h"
 #include "Memory/Memory.h"
 #include "Modules/ModuleManager.h"

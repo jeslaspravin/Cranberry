@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Engine/GameEngine.h"
+#include "Engine/TestGameEngine.h"
 #include "GenericAppWindow.h"
 #include "IApplicationModule.h"
 #include "Logger/Logger.h"
@@ -67,7 +67,7 @@ float EngineTime::getDeltaTime() { return deltaTime * timeDilation; }
 //// Game Engine implementation
 //////////////////////////////////////////////////////////////////////////
 
-void GameEngine::startup(ApplicationInstance *appInst)
+void TestGameEngine::startup(ApplicationInstance *appInst)
 {
     timeData.engineStart();
     rendererModule = static_cast<IRenderInterfaceModule *>(ModuleManager::get()->getOrLoadModule(TCHAR("EngineRenderer")).lock().get());
@@ -85,7 +85,7 @@ void GameEngine::startup(ApplicationInstance *appInst)
     LOG("GameEngine", "Engine initialized in %0.3f seconds", Time::asSeconds(timeData.initEndTick - timeData.startTick));
 }
 
-void GameEngine::quit()
+void TestGameEngine::quit()
 {
     onQuit();
 
@@ -100,7 +100,7 @@ void GameEngine::quit()
     LOG("GameEngine", "Engine run time in %.3f minutes", Time::asMinutes(Time::timeNow() - timeData.startTick));
 }
 
-void GameEngine::engineLoop()
+void TestGameEngine::engineLoop()
 {
     // timeData.activeTimeDilation = applicationModule->pollWindows() ? 1.0f : 0.0f;
 
@@ -140,12 +140,12 @@ void GameEngine::engineLoop()
     Logger::flushStream();
 }
 
-void GameEngine::onStartUp() {}
+void TestGameEngine::onStartUp() {}
 
-void GameEngine::onQuit() {}
+void TestGameEngine::onQuit() {}
 
-void GameEngine::tickEngine() {}
+void TestGameEngine::tickEngine() {}
 
 #if !EXPERIMENTAL
-GameEngine *GameEngineWrapper::createEngineInstance() { return new GameEngine(); }
+TestGameEngine *GameEngineWrapper::createEngineInstance() { return new TestGameEngine(); }
 #endif

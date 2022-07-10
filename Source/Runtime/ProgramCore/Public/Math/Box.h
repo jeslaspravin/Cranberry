@@ -31,6 +31,7 @@ public:
     using value_type = PointType;
 
 public:
+    // Both are inclusive
     T minBound;
     T maxBound;
 
@@ -392,6 +393,7 @@ public:
     using value_type = PointType;
 
 public:
+    // Both are inclusive
     T minBound;
     T maxBound;
 

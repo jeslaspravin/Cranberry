@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Engine/GameEngine.h"
+#include "Engine/TestGameEngine.h"
 
 #if EXPERIMENTAL
 
@@ -207,7 +207,7 @@ struct FrameResource
 };
 
 class ExperimentalEngineGoochModel
-    : public GameEngine
+    : public TestGameEngine
     , public IImGuiLayer
 {
     SamplerRef nearestFiltering = nullptr;
@@ -1199,7 +1199,7 @@ void ExperimentalEngineGoochModel::updateCameraParams()
 
 void ExperimentalEngineGoochModel::onStartUp()
 {
-    GameEngine::onStartUp();
+    TestGameEngine::onStartUp();
 
     ENQUEUE_COMMAND(EngineStartUp)
     (
@@ -1273,7 +1273,7 @@ void ExperimentalEngineGoochModel::onQuit()
     );
 
     imguiManager.removeLayer(this);
-    GameEngine::onQuit();
+    TestGameEngine::onQuit();
 }
 
 void ExperimentalEngineGoochModel::renderQuit()
@@ -1564,7 +1564,7 @@ void ExperimentalEngineGoochModel::frameRender(
 
 void ExperimentalEngineGoochModel::tickEngine()
 {
-    GameEngine::tickEngine();
+    TestGameEngine::tickEngine();
     updateCameraParams();
 
     if (application->inputSystem->isKeyPressed(Keys::ONE))

@@ -73,5 +73,6 @@ ApplicationInstance::ApplicationInstance(const AppInstanceCreateInfo &createInfo
     , fontManager(nullptr)
     , jobSystem(nullptr)
 {
+    debugAssertf(!createInfo.bRenderOffscreen, "Offscreen rendering is not supported!");
     ApplicationSettings::renderingOffscreen.set(createInfo.bRenderOffscreen);
 }

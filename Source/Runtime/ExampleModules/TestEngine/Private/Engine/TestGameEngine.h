@@ -63,9 +63,9 @@ struct EngineTime
     }
 };
 
-using EngineEvents = Event<class GameEngine>;
+using EngineEvents = Event<class TestGameEngine>;
 
-class GameEngine
+class TestGameEngine
 {
 private:
 protected:
@@ -86,7 +86,7 @@ protected:
     virtual void tickEngine();
 
 public:
-    virtual ~GameEngine() = default;
+    virtual ~TestGameEngine() = default;
 
     void startup(ApplicationInstance *appInst);
     void engineLoop();
@@ -99,18 +99,18 @@ public:
 class GameEngineWrapper final
 {
 private:
-    GameEngine *gEngine = nullptr;
+    TestGameEngine *gEngine = nullptr;
 
-    GameEngine *createEngineInstance();
+    TestGameEngine *createEngineInstance();
 
 public:
     GameEngineWrapper() { gEngine = createEngineInstance(); }
 
     ~GameEngineWrapper() { gEngine = nullptr; }
 
-    GameEngine *operator->() const { return gEngine; }
+    TestGameEngine *operator->() const { return gEngine; }
 
-    GameEngine *operator*() const { return gEngine; }
+    TestGameEngine *operator*() const { return gEngine; }
 
     operator bool() const { return gEngine != nullptr; }
 
