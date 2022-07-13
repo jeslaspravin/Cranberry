@@ -36,10 +36,10 @@ public:
 public:
     Vector3D();
     explicit Vector3D(const Matrix3Col &vector3d);
-    Vector3D(const float &x, const float &y, const float &z);
-    Vector3D(const float &x, const float &y);
-    explicit Vector3D(const float &allValue);
-    Vector3D(const Vector2D &xy, const float &z);
+    Vector3D(float x, float y, float z);
+    Vector3D(float x, float y);
+    explicit Vector3D(float allValue);
+    Vector3D(const Vector2D &xy, float z);
     Vector3D(const Vector3D &other);
     // Construct from v4d x,y,z
     Vector3D(const Vector4D &other);
@@ -69,14 +69,14 @@ public:
     Vector3D &operator-=(const Vector3D &b);
     Vector3D operator+(const Vector3D &b) const;
     Vector3D &operator+=(const Vector3D &b);
-    Vector3D operator*(const float &scalar) const;
-    Vector3D &operator*=(const float &scalar);
-    Vector3D operator/(const float &scalar) const;
-    Vector3D &operator/=(const float &scalar);
-    Vector3D operator-(const float &scalar) const;
-    Vector3D &operator-=(const float &scalar);
-    Vector3D operator+(const float &scalar) const;
-    Vector3D &operator+=(const float &scalar);
+    Vector3D operator*(float scalar) const;
+    Vector3D &operator*=(float scalar);
+    Vector3D operator/(float scalar) const;
+    Vector3D &operator/=(float scalar);
+    Vector3D operator-(float scalar) const;
+    Vector3D &operator-=(float scalar);
+    Vector3D operator+(float scalar) const;
+    Vector3D &operator+=(float scalar);
     Vector3D operator-() const;
     bool isSame(const Vector3D &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
@@ -109,7 +109,7 @@ public:
     static Vector3D ceil(const Vector3D &value);
     static Vector3D round(const Vector3D &value);
     static Vector3D mod(const Vector3D &a, const Vector3D &b);
-    static Vector3D mod(const Vector3D &a, const float &b);
+    static Vector3D mod(const Vector3D &a, float b);
     static Vector3D modf(Vector3D &wholePart, const Vector3D &value);
 };
 

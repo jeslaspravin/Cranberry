@@ -27,8 +27,6 @@ void EngineTime::tickStart()
 {
     initEndTick = Time::timeNow();
     frameTick = lastFrameTick = initEndTick;
-    deltaTime = 0;
-    frameCounter = 0;
 }
 
 void EngineTime::progressFrame()
@@ -104,7 +102,6 @@ void TestGameEngine::engineLoop()
 {
     // timeData.activeTimeDilation = applicationModule->pollWindows() ? 1.0f : 0.0f;
 
-    timeData.progressFrame();
     bool bDoubleTick = timeData.targetFrameTicks > 0 && (timeData.accumulatedSlack / timeData.targetFrameTicks);
     timeData.accumulatedSlack %= timeData.targetFrameTicks;
     for (int32 i = bDoubleTick; i >= 0; --i)
@@ -138,6 +135,7 @@ void TestGameEngine::engineLoop()
     }
 
     Logger::flushStream();
+    timeData.progressFrame();
 }
 
 void TestGameEngine::onStartUp() {}

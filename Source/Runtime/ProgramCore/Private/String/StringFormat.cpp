@@ -512,7 +512,11 @@ uint32 MustacheStringFormatter::renderTag(
     else if (isASection(matchStr))
     {
         auto itr = std::find_if(
-            sections.cbegin(), sections.cend(), [matchIdx](const Section &section) { return matchIdx == section.sectionStartIdx; }
+            sections.cbegin(), sections.cend(),
+            [matchIdx](const Section &section)
+            {
+                return matchIdx == section.sectionStartIdx;
+            }
         );
         fatalAssertf(itr != sections.cend(), "Section %s not found in sections list", argName);
         uint32 sectionIdx = std::distance(sections.cbegin(), itr);

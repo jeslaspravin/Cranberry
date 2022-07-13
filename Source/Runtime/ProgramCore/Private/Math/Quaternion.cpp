@@ -183,9 +183,9 @@ Quat &Quat::operator*=(const Quat &b)
     return (*this);
 }
 
-Quat Quat::operator*(const float &scalar) const { return Quat(x * scalar, y * scalar, z * scalar, w * scalar); }
+Quat Quat::operator*(float scalar) const { return Quat(x * scalar, y * scalar, z * scalar, w * scalar); }
 
-Quat &Quat::operator*=(const float &scalar)
+Quat &Quat::operator*=(float scalar)
 {
     x *= scalar;
     y *= scalar;
@@ -194,9 +194,9 @@ Quat &Quat::operator*=(const float &scalar)
     return *this;
 }
 
-Quat Quat::operator/(const float &scalar) const { return Quat(x / scalar, y / scalar, z / scalar, w / scalar); }
+Quat Quat::operator/(float scalar) const { return Quat(x / scalar, y / scalar, z / scalar, w / scalar); }
 
-Quat &Quat::operator/=(const float &scalar)
+Quat &Quat::operator/=(float scalar)
 {
     x /= scalar;
     y /= scalar;
@@ -216,9 +216,9 @@ Quat &Quat::operator-=(const Quat &b)
     return *this;
 }
 
-Quat Quat::operator-(const float &scalar) const { return Quat(x - scalar, y - scalar, z - scalar, w - scalar); }
+Quat Quat::operator-(float scalar) const { return Quat(x - scalar, y - scalar, z - scalar, w - scalar); }
 
-Quat &Quat::operator-=(const float &scalar)
+Quat &Quat::operator-=(float scalar)
 {
     x -= scalar;
     y -= scalar;
@@ -240,9 +240,9 @@ Quat &Quat::operator+=(const Quat &b)
     return *this;
 }
 
-Quat Quat::operator+(const float &scalar) const { return Quat(x + scalar, y + scalar, z + scalar, w + scalar); }
+Quat Quat::operator+(float scalar) const { return Quat(x + scalar, y + scalar, z + scalar, w + scalar); }
 
-Quat &Quat::operator+=(const float &scalar)
+Quat &Quat::operator+=(float scalar)
 {
     x += scalar;
     y += scalar;

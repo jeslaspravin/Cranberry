@@ -678,7 +678,10 @@ void squashDuplicates(ReflectBufferShaderField &shaderBufferField)
 
         sort(
             shaderBufferField.bufferFields.begin(), shaderBufferField.bufferFields.end(),
-            [](const ReflectBufferEntry &rhs, const ReflectBufferEntry &lhs) { return offsetSortFunc(rhs.data, lhs.data); }
+            [](const ReflectBufferEntry &rhs, const ReflectBufferEntry &lhs)
+            {
+                return offsetSortFunc(rhs.data, lhs.data);
+            }
         );
 
         for (uint32_t i = 0; i < shaderBufferField.bufferFields.size();)
@@ -706,7 +709,10 @@ void squashDuplicates(ReflectBufferShaderField &shaderBufferField)
 
         sort(
             shaderBufferField.bufferStructFields.begin(), shaderBufferField.bufferStructFields.end(),
-            [](const ReflectBufferStructEntry &rhs, const ReflectBufferStructEntry &lhs) { return offsetSortFunc(rhs.data, lhs.data); }
+            [](const ReflectBufferStructEntry &rhs, const ReflectBufferStructEntry &lhs)
+            {
+                return offsetSortFunc(rhs.data, lhs.data);
+            }
         );
 
         for (uint32_t i = 0; i < shaderBufferField.bufferStructFields.size();)
@@ -980,7 +986,10 @@ void printDescriptorsSet(const ReflectDescriptorBody &descriptorsSet)
     printf("Descriptors Set = %d Combined stages usage = %d\n", descriptorsSet.set, descriptorsSet.combinedSetUsage);
     for (const uint32_t &binding : descriptorsSet.usedBindings)
     {
-        auto finderFunc = [&binding](const auto &descriptor) { return descriptor.data.binding == binding; };
+        auto finderFunc = [&binding](const auto &descriptor)
+        {
+            return descriptor.data.binding == binding;
+        };
 
         {
             auto itr = std::find_if(descriptorsSet.uniforms.cbegin(), descriptorsSet.uniforms.cend(), finderFunc);

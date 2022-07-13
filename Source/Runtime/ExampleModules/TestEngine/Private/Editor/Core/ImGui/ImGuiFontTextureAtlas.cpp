@@ -99,8 +99,12 @@ void ImGuiFontTextureAtlas::destroy(ImGuiFontTextureAtlas *texture)
 {
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(DestroyImGuiFontTextureAtlas)
-    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-     { textureResource->release(); });
+    (
+        [textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            textureResource->release();
+        }
+    );
 
     texture->textureResource.reset();
 }

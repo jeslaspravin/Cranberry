@@ -480,8 +480,12 @@ void ExperimentalEngineGoochModel::createDrawCmdsBuffer(IGraphicsInstance *graph
     }
 
     ENQUEUE_COMMAND(CreateAllEntityDrawCmds)
-    ([drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-     { cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize())); });
+    (
+        [drawCmds, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            cmdList->copyToBuffer(allEntityDrawCmds, 0, drawCmds.data(), uint32(allEntityDrawCmds->getResourceSize()));
+        }
+    );
 }
 
 void ExperimentalEngineGoochModel::destroyDrawCmdsBuffer() { allEntityDrawCmds.reset(); }
@@ -1842,8 +1846,12 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                 if (bAnyModified)
                 {
                     ENQUEUE_COMMAND(UpdateTextData)
-                    ([this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-                     { updateTextRenderData(cmdList, graphicsInstance, graphicsHelper); });
+                    (
+                        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+                        {
+                            updateTextRenderData(cmdList, graphicsInstance, graphicsHelper);
+                        }
+                    );
                 }
             }
 

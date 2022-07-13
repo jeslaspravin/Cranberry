@@ -25,11 +25,11 @@ Vector3D::Vector3D()
     : value(0)
 {}
 
-Vector3D::Vector3D(const float &x, const float &y)
+Vector3D::Vector3D(float x, float y)
     : value(x, y, 0)
 {}
 
-Vector3D::Vector3D(const float &allValue)
+Vector3D::Vector3D(float allValue)
     : value(allValue)
 {}
 
@@ -41,7 +41,7 @@ Vector3D::Vector3D(Vector3D &&other)
     : value(std::move(other.value))
 {}
 
-Vector3D::Vector3D(const float &x, const float &y, const float &z)
+Vector3D::Vector3D(float x, float y, float z)
     : value(x, y, z)
 {}
 
@@ -49,7 +49,7 @@ Vector3D::Vector3D(const Vector4D &other)
     : value(other.x(), other.y(), other.z())
 {}
 
-Vector3D::Vector3D(const Vector2D &xy, const float &z)
+Vector3D::Vector3D(const Vector2D &xy, float z)
     : value(xy.x(), xy.y(), z)
 {}
 
@@ -103,9 +103,9 @@ Vector3D &Vector3D::operator*=(const Vector3D &b)
     return *this;
 }
 
-Vector3D Vector3D::operator*(const float &scalar) const { return Vector3D(value * scalar); }
+Vector3D Vector3D::operator*(float scalar) const { return Vector3D(value * scalar); }
 
-Vector3D &Vector3D::operator*=(const float &scalar)
+Vector3D &Vector3D::operator*=(float scalar)
 {
     value *= scalar;
     return *this;
@@ -119,9 +119,9 @@ Vector3D &Vector3D::operator/=(const Vector3D &b)
     return *this;
 }
 
-Vector3D Vector3D::operator/(const float &scalar) const { return Vector3D(value / scalar); }
+Vector3D Vector3D::operator/(float scalar) const { return Vector3D(value / scalar); }
 
-Vector3D &Vector3D::operator/=(const float &scalar)
+Vector3D &Vector3D::operator/=(float scalar)
 {
     value /= scalar;
     return *this;
@@ -135,9 +135,9 @@ Vector3D &Vector3D::operator-=(const Vector3D &b)
     return *this;
 }
 
-Vector3D Vector3D::operator-(const float &scalar) const { return Vector3D(value - scalar); }
+Vector3D Vector3D::operator-(float scalar) const { return Vector3D(value - scalar); }
 
-Vector3D &Vector3D::operator-=(const float &scalar)
+Vector3D &Vector3D::operator-=(float scalar)
 {
     value -= scalar;
     return *this;
@@ -153,9 +153,9 @@ Vector3D &Vector3D::operator+=(const Vector3D &b)
     return *this;
 }
 
-Vector3D Vector3D::operator+(const float &scalar) const { return Vector3D(value + scalar); }
+Vector3D Vector3D::operator+(float scalar) const { return Vector3D(value + scalar); }
 
-Vector3D &Vector3D::operator+=(const float &scalar)
+Vector3D &Vector3D::operator+=(float scalar)
 {
     value += scalar;
     return *this;
@@ -222,6 +222,6 @@ Vector3D Vector3D::round(const Vector3D &value) { return Vector3D(glm::round(val
 
 Vector3D Vector3D::mod(const Vector3D &a, const Vector3D &b) { return Vector3D(glm::mod(a.value, b.value)); }
 
-Vector3D Vector3D::mod(const Vector3D &a, const float &b) { return Vector3D(glm::mod(a.value, b)); }
+Vector3D Vector3D::mod(const Vector3D &a, float b) { return Vector3D(glm::mod(a.value, b)); }
 
 Vector3D Vector3D::modf(Vector3D &wholePart, const Vector3D &value) { return Vector3D(glm::modf(value.value, wholePart.value)); }

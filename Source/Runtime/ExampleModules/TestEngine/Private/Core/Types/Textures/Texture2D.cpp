@@ -164,8 +164,12 @@ void Texture2D::destroy(Texture2D *texture)
 {
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(DestroyTexture2D)
-    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-     { textureResource->release(); });
+    (
+        [textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            textureResource->release();
+        }
+    );
 
     texture->textureResource.reset();
 }
@@ -178,8 +182,12 @@ void Texture2DRW::destroy(Texture2DRW *texture)
 {
     ImageResourceRef textureResource = texture->textureResource;
     ENQUEUE_COMMAND(DestroyTexture2D)
-    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-     { textureResource->release(); });
+    (
+        [textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            textureResource->release();
+        }
+    );
 
     texture->textureResource = nullptr;
 }

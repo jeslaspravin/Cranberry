@@ -139,7 +139,12 @@ public:
 #define alertOnce(Expr)                                                                                                                        \
     do                                                                                                                                         \
     {                                                                                                                                          \
-        CALL_ONCE([&]() { ALERT_internal(Expr) });                                                                                             \
+        CALL_ONCE(                                                                                                                             \
+            [&]()                                                                                                                              \
+            {                                                                                                                                  \
+                ALERT_internal(Expr)                                                                                                           \
+            }                                                                                                                                  \
+        );                                                                                                                                     \
     }                                                                                                                                          \
     while (0)
 #endif
@@ -147,7 +152,12 @@ public:
 #define alertOncef(Expr, Message, ...)                                                                                                         \
     do                                                                                                                                         \
     {                                                                                                                                          \
-        CALL_ONCE([&]() { ALERT_FORMATTED_internal(Expr, Message, __VA_ARGS__) });                                                             \
+        CALL_ONCE(                                                                                                                             \
+            [&]()                                                                                                                              \
+            {                                                                                                                                  \
+                ALERT_FORMATTED_internal(Expr, Message, __VA_ARGS__)                                                                           \
+            }                                                                                                                                  \
+        );                                                                                                                                     \
     }                                                                                                                                          \
     while (0)
 #endif
