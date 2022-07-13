@@ -86,7 +86,7 @@ GenericAppWindow *WindowManager::createWindow(Size2D size, const TChar *name, Ge
     appWindow->onWindowDeactived.bindObject(this, &WindowManager::deactivateWindow, appWindow);
     appWindow->onResize.bindObject(this, &WindowManager::onWindowResize, appWindow);
     appWindow->onDestroyRequested.bindObject(this, &WindowManager::requestDestroyWindow, appWindow);
-    // We need order when creating so that auto activation will arrange windows
+    // We need order when creating so that auto activation will arrange windows, Setting order as last so activating will reorder all windows
     ManagerData windowData{ .order = int32(windowsOpened.size()) };
     windowsOpened[appWindow] = windowData;
 
@@ -107,7 +107,6 @@ GenericAppWindow *WindowManager::createWindow(Size2D size, const TChar *name, Ge
 
 void WindowManager::destroyWindow(GenericAppWindow *window)
 {
-    deactivateWindow(window);
     windowsToDestroy.clear();
     requestDestroyWindow(window);
     destroyPendingWindows();
@@ -320,11 +319,11 @@ void WindowManager::destroyPendingWindows()
             continue;
         }
 
-        ManagerData wndData = foundItr->second;
-        canvasesToDestroy.emplace_back(wndData.windowCanvas);
-
         appModule->windowDestroyed(foundItr->first);
         foundItr->first->destroyWindow();
+        // Must copy after native window destroy as it activate/deactivate windows
+        ManagerData wndData = foundItr->second;
+        canvasesToDestroy.emplace_back(wndData.windowCanvas);
         delete foundItr->first;
 
         windowsOpened.erase(foundItr);
