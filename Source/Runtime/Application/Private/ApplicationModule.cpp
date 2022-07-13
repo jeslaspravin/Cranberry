@@ -74,6 +74,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     PlatformAppInstance platformApp(appCI.platformAppHandle);
     appInst->platformApp = &platformApp;
     appInstance = appInst;
+    appInstance->timeData.appStart();
 
     // Initialize job system
     PlatformThreadingFunctions::printSystemThreadingInfo();

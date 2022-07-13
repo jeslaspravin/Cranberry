@@ -86,6 +86,7 @@
 #include "CoreObjectDelegates.h"
 #include "CBEObjectHelpers.h"
 #include "CBEPackage.h"
+#include "Widgets/WidgetWindow.h"
 
 struct PBRSceneEntity
 {
@@ -2357,8 +2358,12 @@ void ExperimentalEnginePBR::updateCameraParams()
     {
         updateCamGizmoViewParams();
         ENQUEUE_COMMAND(CameraGizmoUpdate)
-        ([this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-         { updateCamGizmoCapture(cmdList, graphicsInstance); });
+        (
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            {
+                updateCamGizmoCapture(cmdList, graphicsInstance);
+            }
+        );
     }
 }
 
@@ -3022,12 +3027,13 @@ void ExperimentalEnginePBR::tickEngine()
 
     if (application->inputSystem->keyState(Keys::LMB)->keyWentDown && !imguiManager.capturedInputs())
     {
-        Rect windowArea = application->windowManager->getMainWindow()->windowClientRect();
+        QuantShortBox2D windowArea = application->windowManager->getMainWindow()->windowClientRect();
+        Vector2D windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
         Vector2D mouseCoord = Vector2D(
                                   application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
                                   application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
                               )
-                              - windowArea.minBound;
+                              - windowOrigin;
         mouseCoord /= Vector2D(ApplicationSettings::surfaceSize.get());
         LOG_DEBUG("ExperimentalEnginePBR", "mouse coord (%f, %f)", mouseCoord.x(), mouseCoord.y());
         if (mouseCoord.x() >= 0 && mouseCoord.x() <= 1.0f && mouseCoord.y() >= 0 && mouseCoord.y() <= 1.0f)
@@ -3113,10 +3119,36 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
             const InputAnalogState *rmyState = application->inputSystem->analogState(AnalogStates::RelMouseY);
             const InputAnalogState *amxState = application->inputSystem->analogState(AnalogStates::AbsMouseX);
             const InputAnalogState *amyState = application->inputSystem->analogState(AnalogStates::AbsMouseY);
-            ImGui::Text(
-                "Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue,
-                rmyState->currentValue
-            );
+            SharedPtr<WgWindow> wnd = application->getHoveringWindow();
+            if (wnd)
+            {
+                Short2D wndRelPos = wnd->screenToWindowSpace(Short2D(amxState->currentValue, amyState->currentValue));
+                ImGui::Text(
+                    "Cursor pos (%.0f, %.0f)[%s (%d, %d)] Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue,
+                    TCHAR_TO_UTF8(wnd->getAppWindow()->getWindowName().getChar()), wndRelPos.x, wndRelPos.y, rmxState->currentValue,
+                    rmyState->currentValue
+                );
+            }
+            else
+            {
+                ImGui::Text(
+                    "Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue,
+                    rmyState->currentValue
+                );
+            }
+            if (ImGui::Button("New Window"))
+            {
+                copat::fireAndForget(
+                    [this]() -> copat::JobSystemEnqTask<copat::EJobThreadType::MainThread>
+                    {
+                        static int32 count = 1;
+                        application->createWindow(renderSize, ("TestWindow" + String::toString(count)).c_str(), nullptr);
+                        count++;
+                        co_return;
+                    }
+                );
+            }
+
             if (ImGui::CollapsingHeader("Camera"))
             {
                 {
@@ -3147,10 +3179,6 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
 
             if (ImGui::CollapsingHeader("Rendering"))
             {
-                if (ImGui::InputInt("FrameRate", &timeData.frameRate, 5, 15, ImGuiInputTextFlags_EnterReturnsTrue))
-                {
-                    timeData.setTargetFrameRate(uint8(timeData.frameRate));
-                }
                 {
                     const char *resolutions[] = { "1280x720", "1920x1080", "2560x1440", "3840x2160" };
                     static int currRes = 0;
@@ -3333,7 +3361,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
     ImGui::Begin(
         "FPS", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar
     );
-    ImGui::Text("%.3f ms(%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::Text("%.3f ms(%.1f FPS)", 1000.0f * application->timeData.smoothedDeltaTime, 1 / application->timeData.smoothedDeltaTime);
     ImGui::End();
     ImGui::PopStyleColor();
 }
