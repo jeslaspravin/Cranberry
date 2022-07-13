@@ -270,7 +270,10 @@ String CBEPackageManager::findObject(const String &objectPath) const
 {
     auto itr = std::find_if(
         allFoundObjects.cbegin(), allFoundObjects.cend(),
-        [&objectPath](const String &otherObjectPath) { return otherObjectPath.find(objectPath) != String::npos; }
+        [&objectPath](const String &otherObjectPath)
+        {
+            return otherObjectPath.find(objectPath) != String::npos;
+        }
     );
     return (itr != allFoundObjects.cend()) ? *itr : TCHAR("");
 }

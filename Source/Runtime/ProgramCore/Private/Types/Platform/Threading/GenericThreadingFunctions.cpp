@@ -73,9 +73,6 @@ void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, Syste
         printCacheInfo(cacheInfo.unitL3ByteSize, cacheInfo.puSharingL3, processorInfo.logicalProcessorsCount));
 }
 
-void sleep(int64 msTicks) 
-{
-    std::this_thread::sleep_for(std::chrono::milliseconds(msTicks));
-}
+void sleep(int64 msTicks) { std::this_thread::sleep_for(std::chrono::milliseconds(msTicks)); }
 
-} // namespace GenericThreadingFunctions
+} // namespace ThreadingHelpers

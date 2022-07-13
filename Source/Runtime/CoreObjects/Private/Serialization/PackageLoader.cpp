@@ -33,7 +33,10 @@ void PackageLoader::createContainedObject(PackageContainedData &containedData)
         {
             auto outerContainedDataItr = std::find_if(
                 containedObjects.begin(), containedObjects.end(),
-                [&outerPath](const PackageContainedData &containedData) { return containedData.objectPath == outerPath; }
+                [&outerPath](const PackageContainedData &containedData)
+                {
+                    return containedData.objectPath == outerPath;
+                }
             );
 
             debugAssert(outerContainedDataItr != containedObjects.end());

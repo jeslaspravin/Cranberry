@@ -145,7 +145,7 @@ public:
         {
             return;
         }
-#if 0 // Minimum stack memory foot print but does depth first traversal
+#if 0 // Minimum stack memory foot print but does depth first traversal, This is not used as well
         const Node *currNode = &nodes[nodes[parent].firstChild];
         children.emplace_back(currNode->index);
         if (bRecurse)

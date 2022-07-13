@@ -56,14 +56,14 @@ public:
     Matrix2 &operator-=(const Matrix2 &b);
     Matrix2 operator+(const Matrix2 &b) const;
     Matrix2 &operator+=(const Matrix2 &b);
-    Matrix2 operator*(const float &scalar) const;
-    Matrix2 &operator*=(const float &scalar);
-    Matrix2 operator/(const float &scalar) const;
-    Matrix2 &operator/=(const float &scalar);
-    Matrix2 operator-(const float &scalar) const;
-    Matrix2 &operator-=(const float &scalar);
-    Matrix2 operator+(const float &scalar) const;
-    Matrix2 &operator+=(const float &scalar);
+    Matrix2 operator*(float scalar) const;
+    Matrix2 &operator*=(float scalar);
+    Matrix2 operator/(float scalar) const;
+    Matrix2 &operator/=(float scalar);
+    Matrix2 operator-(float scalar) const;
+    Matrix2 &operator-=(float scalar);
+    Matrix2 operator+(float scalar) const;
+    Matrix2 &operator+=(float scalar);
     Matrix2 operator-() const;
 
 public:

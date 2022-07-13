@@ -78,7 +78,10 @@ void JobSystem::initializeWorkers()
         u32 htIdx = (i / coresForWorkers) % htCount;
 
         // Create and setup thread
-        std::thread worker{ [this]() { doWorkerJobs(); } };
+        std::thread worker{ [this]()
+                            {
+                                doWorkerJobs();
+                            } };
         PlatformThreadingFuncs::setThreadName((COPAT_TCHAR("WorkerThread_") + COPAT_TOSTRING(i)).c_str(), worker.native_handle());
         PlatformThreadingFuncs::setThreadProcessor(coreIdx, htIdx, worker.native_handle());
         // Destroy when finishes
@@ -225,7 +228,10 @@ void INTERNAL_initializeAndRunSpecialThread(INTERNAL_SpecialThreadFuncType threa
     u32 coreCount, logicalProcCount;
     getCoreCount(coreCount, logicalProcCount);
 
-    std::thread specialThread{ [jobSystem, threadFunc]() { (jobSystem->*threadFunc)(); } };
+    std::thread specialThread{ [jobSystem, threadFunc]()
+                               {
+                                   (jobSystem->*threadFunc)();
+                               } };
     PlatformThreadingFuncs::setThreadName(
         (COPAT_TCHAR("SpecialThread_") + COPAT_TOSTRING(u32(threadType))).c_str(), specialThread.native_handle()
     );

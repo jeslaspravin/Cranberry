@@ -309,7 +309,10 @@ void ModuleSources::injectGeneratedFiles(const std::vector<const SourceInformati
         }
         std::sort(
             sortedSources.begin(), sortedSources.end(),
-            [](const SourceInformation *lhs, const SourceInformation *rhs) { return lhs->fileSize > rhs->fileSize; }
+            [](const SourceInformation *lhs, const SourceInformation *rhs)
+            {
+                return lhs->fileSize > rhs->fileSize;
+            }
         );
 
         // For each gen files

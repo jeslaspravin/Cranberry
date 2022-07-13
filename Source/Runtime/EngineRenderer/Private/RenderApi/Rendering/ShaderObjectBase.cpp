@@ -83,7 +83,10 @@ void DrawMeshShaderObject::addShader(const ShaderResource *shaderResource)
     FramebufferFormat usageFormats(drawMeshShader->renderpassUsage());
     ShaderResourcesConstIterator itr = std::find_if(
         shaderResources.cbegin(), shaderResources.cend(),
-        [shaderResource](const ShaderResourceInfo &shaderPipelineInfo) { return shaderPipelineInfo.shader == shaderResource; }
+        [shaderResource](const ShaderResourceInfo &shaderPipelineInfo)
+        {
+            return shaderPipelineInfo.shader == shaderResource;
+        }
     );
     if (itr == shaderResources.cend())
     {
@@ -116,7 +119,10 @@ void DrawMeshShaderObject::setPipeline(const ShaderResource *shaderResource, Gra
 {
     ShaderResourcesIterator itr = std::find_if(
         shaderResources.begin(), shaderResources.end(),
-        [shaderResource](const ShaderResourceInfo &shaderPipelinePair) { return shaderPipelinePair.shader == shaderResource; }
+        [shaderResource](const ShaderResourceInfo &shaderPipelinePair)
+        {
+            return shaderPipelinePair.shader == shaderResource;
+        }
     );
 
     debugAssert(itr != shaderResources.end());
@@ -128,7 +134,10 @@ void DrawMeshShaderObject::setVariantParamsLayout(const ShaderResource *shaderRe
 {
     ShaderResourcesIterator itr = std::find_if(
         shaderResources.begin(), shaderResources.end(),
-        [shaderResource](const ShaderResourceInfo &shaderPipelinePair) { return shaderPipelinePair.shader == shaderResource; }
+        [shaderResource](const ShaderResourceInfo &shaderPipelinePair)
+        {
+            return shaderPipelinePair.shader == shaderResource;
+        }
     );
 
     debugAssert(itr != shaderResources.end());

@@ -355,7 +355,10 @@ void VulkanShaderSetParamsLayout::init()
     // sort and merge type duplicate descriptor pool size
     std::sort(
         poolAllocation.begin(), poolAllocation.end(),
-        [](const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs) { return lhs.type < rhs.type; }
+        [](const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs)
+        {
+            return lhs.type < rhs.type;
+        }
     );
     for (std::vector<VkDescriptorPoolSize>::iterator itr = poolAllocation.begin(); itr != poolAllocation.end();)
     {
@@ -371,7 +374,10 @@ void VulkanShaderSetParamsLayout::init()
     // Sort bindings so that it will be easier when querying for descriptors
     std::sort(
         layoutBindings.begin(), layoutBindings.end(),
-        [](const VkDescriptorSetLayoutBinding &lhs, const VkDescriptorSetLayoutBinding &rhs) { return lhs.binding < rhs.binding; }
+        [](const VkDescriptorSetLayoutBinding &lhs, const VkDescriptorSetLayoutBinding &rhs)
+        {
+            return lhs.binding < rhs.binding;
+        }
     );
 
     // reinitResources();
@@ -594,7 +600,10 @@ void VulkanShaderParametersLayout::init()
         // sort and merge type duplicate descriptor pool size
         std::sort(
             descSetLayoutInfo.poolAllocation.begin(), descSetLayoutInfo.poolAllocation.end(),
-            [](const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs) { return lhs.type < rhs.type; }
+            [](const VkDescriptorPoolSize &lhs, const VkDescriptorPoolSize &rhs)
+            {
+                return lhs.type < rhs.type;
+            }
         );
         for (std::vector<VkDescriptorPoolSize>::iterator itr = descSetLayoutInfo.poolAllocation.begin();
              itr != descSetLayoutInfo.poolAllocation.end();)
@@ -611,7 +620,10 @@ void VulkanShaderParametersLayout::init()
         // Sort bindings so that it will be easier when querying for descriptors
         std::sort(
             descSetLayoutInfo.layoutBindings.begin(), descSetLayoutInfo.layoutBindings.end(),
-            [](const VkDescriptorSetLayoutBinding &lhs, const VkDescriptorSetLayoutBinding &rhs) { return lhs.binding < rhs.binding; }
+            [](const VkDescriptorSetLayoutBinding &lhs, const VkDescriptorSetLayoutBinding &rhs)
+            {
+                return lhs.binding < rhs.binding;
+            }
         );
 
         // Create descriptors set

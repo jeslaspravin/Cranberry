@@ -81,8 +81,12 @@ void CubeTexture::destroy(CubeTexture *texture)
     texture->textureResource.reset();
 
     ENQUEUE_COMMAND(DestroyCubeTexture)
-    ([textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-     { textureResource->release(); });
+    (
+        [textureResource](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            textureResource->release();
+        }
+    );
 }
 
 CubeTexture *CubeTexture::createTexture(const CubeTextureCreateParams &createParams)

@@ -291,7 +291,10 @@ NODISCARD bool startsWith(const CharType *matchIn, const CharType *match, bool b
 
     auto it = std::search(
         matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
-        [](CharType c1, CharType c2) { return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2); }
+        [](CharType c1, CharType c2)
+        {
+            return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2);
+        }
     );
 
     return matchInView.cbegin() == it;
@@ -330,7 +333,10 @@ NODISCARD bool endsWith(const CharType *matchIn, const CharType *match, bool bMa
 
     auto it = std::search(
         matchInView.cbegin(), matchInView.cend(), matchView.cbegin(), matchView.cend(),
-        [](CharType c1, CharType c2) { return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2); }
+        [](CharType c1, CharType c2)
+        {
+            return PlatformFunctions::toUpper(c1) == PlatformFunctions::toUpper(c2);
+        }
     );
 
     return matchInView.cbegin() == it;
@@ -339,7 +345,13 @@ NODISCARD bool endsWith(const CharType *matchIn, const CharType *match, bool bMa
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
 NODISCARD CONST_EXPR StringViewType trimL(StringViewType strView)
 {
-    auto itr = std::find_if(strView.cbegin(), strView.cend(), [](CharType ch) { return !std::isspace(ch); });
+    auto itr = std::find_if(
+        strView.cbegin(), strView.cend(),
+        [](CharType ch)
+        {
+            return !std::isspace(ch);
+        }
+    );
 
     if (itr == strView.cend())
     {
@@ -352,7 +364,13 @@ NODISCARD CONST_EXPR StringViewType trimL(StringViewType strView)
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
 NODISCARD CONST_EXPR StringViewType trimR(StringViewType strView)
 {
-    auto itr = std::find_if(strView.crbegin(), strView.crend(), [](CharType ch) { return !std::isspace(ch); });
+    auto itr = std::find_if(
+        strView.crbegin(), strView.crend(),
+        [](CharType ch)
+        {
+            return !std::isspace(ch);
+        }
+    );
 
     if (itr == strView.cend())
     {

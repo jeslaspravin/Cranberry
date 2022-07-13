@@ -389,8 +389,12 @@ void ShaderParameters::removeRef()
     if (count == 1)
     {
         ENQUEUE_COMMAND(DeleteShaderParameter)
-        ([this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-         { graphicsHelper->markForDeletion(graphicsInstance, this, EDeferredDelStrategy::SwapchainCount); });
+        (
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            {
+                graphicsHelper->markForDeletion(graphicsInstance, this, EDeferredDelStrategy::SwapchainCount);
+            }
+        );
     }
 }
 

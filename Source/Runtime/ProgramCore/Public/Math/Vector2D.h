@@ -35,8 +35,8 @@ public:
 public:
     Vector2D();
     explicit Vector2D(const Matrix2Col &vector2d);
-    Vector2D(const float &x, const float &y);
-    explicit Vector2D(const float &allValue);
+    Vector2D(float x, float y);
+    explicit Vector2D(float allValue);
     Vector2D(const Vector2D &other);
     Vector2D(const Vector3D &other);
     Vector2D(Vector2D &&other);
@@ -63,14 +63,14 @@ public:
     Vector2D &operator-=(const Vector2D &b);
     Vector2D operator+(const Vector2D &b) const;
     Vector2D &operator+=(const Vector2D &b);
-    Vector2D operator*(const float &scalar) const;
-    Vector2D &operator*=(const float &scalar);
-    Vector2D operator/(const float &scalar) const;
-    Vector2D &operator/=(const float &scalar);
-    Vector2D operator-(const float &scalar) const;
-    Vector2D &operator-=(const float &scalar);
-    Vector2D operator+(const float &scalar) const;
-    Vector2D &operator+=(const float &scalar);
+    Vector2D operator*(float scalar) const;
+    Vector2D &operator*=(float scalar);
+    Vector2D operator/(float scalar) const;
+    Vector2D &operator/=(float scalar);
+    Vector2D operator-(float scalar) const;
+    Vector2D &operator-=(float scalar);
+    Vector2D operator+(float scalar) const;
+    Vector2D &operator+=(float scalar);
     Vector2D operator-() const;
 
     bool isSame(const Vector2D &b, float epsilon = SMALL_EPSILON) const;
@@ -103,7 +103,7 @@ public:
     static Vector2D ceil(const Vector2D &value);
     static Vector2D round(const Vector2D &value);
     static Vector2D mod(const Vector2D &a, const Vector2D &b);
-    static Vector2D mod(const Vector2D &a, const float &b);
+    static Vector2D mod(const Vector2D &a, float b);
     static Vector2D modf(Vector2D &wholePart, const Vector2D &value);
 };
 

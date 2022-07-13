@@ -183,7 +183,10 @@ BoundingVolume<StorageType>::ObjectIdxType BoundingVolume<StorageType>::findObje
     debugAssert(getBounds().intersect(bound));
 
     ObjectIdxType foundIdx = allObjects.totalCount();
-    auto objectFinderPredicate = [this, &object](ObjectIdxType objIdx) { return allObjects.isValid(objIdx) && allObjects[objIdx] == object; };
+    auto objectFinderPredicate = [this, &object](ObjectIdxType objIdx)
+    {
+        return allObjects.isValid(objIdx) && allObjects[objIdx] == object;
+    };
 
     GridCellIndex minBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(bound.minBound)));
     GridCellIndex maxBoundIdx = volumeGrid.clampCellIndex(volumeGrid.cell(volumeGrid.clampLocation(bound.maxBound)));

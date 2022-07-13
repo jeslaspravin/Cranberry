@@ -228,7 +228,7 @@ void ImGuiManager::updateInputs()
         inputSystem = IApplicationModule::get()->getApplication()->inputSystem;
     }
 
-    for (const Key *key : Keys::Range())
+    for (Keys::StateKeyType key : Keys::Range())
     {
         if (Keys::isMouseKey(key->keyCode))
         {
@@ -255,14 +255,15 @@ void ImGuiManager::updateInputs()
     io.MouseWheelH = inputSystem->analogState(AnalogStates::ScrollWheelX)->currentValue;
 
     // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
-    Rect windowArea = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->windowClientRect();
+    QuantShortBox2D windowArea = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->windowClientRect();
+    Vector2D windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
     float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
     io.MousePos
         = (Vector2D(
                inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue, inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
            )
-           - windowArea.minBound)
-          * dpiScaleFactor;
+           - windowOrigin)
+          / dpiScaleFactor;
     // Resize to screen render size, If using screen size
     // const Vector2D pos = Vector2D(inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
     // inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue) - windowArea.minBound;
@@ -443,12 +444,12 @@ void ImGuiManager::setupRendering()
     float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
     // Using surface size
     io.DisplaySize
-        = Vector2D(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) * dpiScaleFactor;
+        = Vector2D(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) / dpiScaleFactor;
     textureResizedHnd = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda(
         [&io](Size2D oldSize, Size2D newSize)
         {
             float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
-            io.DisplaySize = Vector2D(float(newSize.x), float(newSize.y)) * dpiScaleFactor;
+            io.DisplaySize = Vector2D(float(newSize.x), float(newSize.y)) / dpiScaleFactor;
         }
     );
     // Using screen size
@@ -661,7 +662,10 @@ void ImGuiManager::updateFrame(const float &deltaTime)
     {
         std::sort(
             imGuiLayers.second.begin(), imGuiLayers.second.end(),
-            [](IImGuiLayer *lhs, IImGuiLayer *rhs) -> bool { return lhs->sublayerDepth() > rhs->sublayerDepth(); }
+            [](IImGuiLayer *lhs, IImGuiLayer *rhs) -> bool
+            {
+                return lhs->sublayerDepth() > rhs->sublayerDepth();
+            }
         );
 
         for (IImGuiLayer *layer : imGuiLayers.second)

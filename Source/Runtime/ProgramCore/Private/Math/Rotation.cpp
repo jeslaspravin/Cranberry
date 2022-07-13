@@ -20,7 +20,7 @@ Rotation::Rotation()
     : value(0)
 {}
 
-Rotation::Rotation(const float &allValue)
+Rotation::Rotation(float allValue)
     : value(allValue)
 {}
 
@@ -32,7 +32,7 @@ Rotation::Rotation(Rotation &&other)
     : value(std::move(other.value))
 {}
 
-Rotation::Rotation(const float &r, const float &p, const float &y)
+Rotation::Rotation(float r, float p, float y)
     : value(r, p, y)
 {}
 
@@ -70,9 +70,9 @@ Rotation &Rotation::operator*=(const Rotation &b)
     return *this;
 }
 
-Rotation Rotation::operator*(const float &scalar) const { return Rotation(value * scalar); }
+Rotation Rotation::operator*(float scalar) const { return Rotation(value * scalar); }
 
-Rotation &Rotation::operator*=(const float &scalar)
+Rotation &Rotation::operator*=(float scalar)
 {
     value *= scalar;
     return *this;
@@ -86,9 +86,9 @@ Rotation &Rotation::operator/=(const Rotation &b)
     return *this;
 }
 
-Rotation Rotation::operator/(const float &scalar) const { return Rotation(value / scalar); }
+Rotation Rotation::operator/(float scalar) const { return Rotation(value / scalar); }
 
-Rotation &Rotation::operator/=(const float &scalar)
+Rotation &Rotation::operator/=(float scalar)
 {
     value /= scalar;
     return *this;
@@ -102,9 +102,9 @@ Rotation &Rotation::operator-=(const Rotation &b)
     return *this;
 }
 
-Rotation Rotation::operator-(const float &scalar) const { return Rotation(value - scalar); }
+Rotation Rotation::operator-(float scalar) const { return Rotation(value - scalar); }
 
-Rotation &Rotation::operator-=(const float &scalar)
+Rotation &Rotation::operator-=(float scalar)
 {
     value -= scalar;
     return *this;
@@ -118,9 +118,9 @@ Rotation &Rotation::operator+=(const Rotation &b)
     return *this;
 }
 
-Rotation Rotation::operator+(const float &scalar) const { return Rotation(value + scalar); }
+Rotation Rotation::operator+(float scalar) const { return Rotation(value + scalar); }
 
-Rotation &Rotation::operator+=(const float &scalar)
+Rotation &Rotation::operator+=(float scalar)
 {
     value += scalar;
     return *this;
@@ -209,6 +209,6 @@ Rotation Rotation::round(const Rotation &value) { return Rotation(glm::round(val
 
 Rotation Rotation::mod(const Rotation &a, const Rotation &b) { return Rotation(glm::mod(a.value, b.value)); }
 
-Rotation Rotation::mod(const Rotation &a, const float &b) { return Rotation(glm::mod(a.value, b)); }
+Rotation Rotation::mod(const Rotation &a, float b) { return Rotation(glm::mod(a.value, b)); }
 
 Rotation Rotation::modf(Rotation &wholePart, const Rotation &value) { return Rotation(glm::modf(value.value, wholePart.value)); }

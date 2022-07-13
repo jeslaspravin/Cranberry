@@ -26,9 +26,18 @@ class JobSystemTaskType;
 template <typename AwaitingCollection>
 class AwaitAllTasks;
 
+struct NormalFuncAwaiter;
+
 using DispatchAwaitableType = JobSystemTaskType<void, JobSystemPromiseBase, true, EJobThreadType::WorkerThreads>;
 using DispatchFunctionType = FunctionType<void, u32>;
 
 COPAT_EXPORT_SYM AwaitAllTasks<std::vector<DispatchAwaitableType>> dispatch(JobSystem *jobSys, const DispatchFunctionType &callback, u32 count);
+
+template <typename FuncType, typename... Args>
+NormalFuncAwaiter fireAndForget(FuncType &&func, Args &&...args)
+{
+    FuncType funcCopy = std::forward<FuncType>(func);
+    co_await funcCopy(std::forward<Args>(args)...);
+}
 
 } // namespace copat

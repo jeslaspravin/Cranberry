@@ -34,10 +34,10 @@ public:
 
 public:
     Vector4D();
-    Vector4D(const float &x, const float &y, const float &z, const float &w);
+    Vector4D(float x, float y, float z, float w);
     explicit Vector4D(const Matrix4Col &vector4d);
-    explicit Vector4D(const float &allValue);
-    Vector4D(const Vector3D &xyz, const float &w);
+    explicit Vector4D(float allValue);
+    Vector4D(const Vector3D &xyz, float w);
     Vector4D(const Vector4D &other);
     Vector4D(Vector4D &&other);
     Vector4D &operator=(const Vector4D &other);
@@ -66,14 +66,14 @@ public:
     Vector4D &operator-=(const Vector4D &b);
     Vector4D operator+(const Vector4D &b) const;
     Vector4D &operator+=(const Vector4D &b);
-    Vector4D operator*(const float &scalar) const;
-    Vector4D &operator*=(const float &scalar);
-    Vector4D operator/(const float &scalar) const;
-    Vector4D &operator/=(const float &scalar);
-    Vector4D operator-(const float &scalar) const;
-    Vector4D &operator-=(const float &scalar);
-    Vector4D operator+(const float &scalar) const;
-    Vector4D &operator+=(const float &scalar);
+    Vector4D operator*(float scalar) const;
+    Vector4D &operator*=(float scalar);
+    Vector4D operator/(float scalar) const;
+    Vector4D &operator/=(float scalar);
+    Vector4D operator-(float scalar) const;
+    Vector4D &operator-=(float scalar);
+    Vector4D operator+(float scalar) const;
+    Vector4D &operator+=(float scalar);
     Vector4D operator-() const;
     bool isSame(const Vector4D &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
@@ -102,7 +102,7 @@ public:
     static Vector4D ceil(const Vector4D &value);
     static Vector4D round(const Vector4D &value);
     static Vector4D mod(const Vector4D &a, const Vector4D &b);
-    static Vector4D mod(const Vector4D &a, const float &b);
+    static Vector4D mod(const Vector4D &a, float b);
     static Vector4D modf(Vector4D &wholePart, const Vector4D &value);
 };
 

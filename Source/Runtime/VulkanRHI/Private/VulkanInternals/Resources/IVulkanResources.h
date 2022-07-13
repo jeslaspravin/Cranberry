@@ -28,7 +28,6 @@ public:
     virtual uint64 getDispatchableHandle() const { return 0; }
 };
 
-
 struct VulkanMemoryAllocation
 {
     uint64 byteOffset;

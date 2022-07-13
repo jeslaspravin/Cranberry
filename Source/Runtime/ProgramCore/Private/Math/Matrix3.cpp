@@ -28,10 +28,7 @@ Matrix3::Matrix3(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3)
     : value(c1.x(), c1.y(), c1.z(), c2.x(), c2.y(), c2.z(), c3.x(), c3.y(), c3.z())
 {}
 
-Matrix3::Matrix3(
-    const float &c1x, const float &c1y, const float &c1z, const float &c2x, const float &c2y, const float &c2z, const float &c3x,
-    const float &c3y, const float &c3z
-)
+Matrix3::Matrix3(float c1x, float c1y, float c1z, float c2x, float c2y, float c2z, float c3x, float c3y, float c3z)
     : value(c1x, c1y, c1z, c2x, c2y, c2z, c3x, c3y, c3z)
 {}
 
@@ -73,9 +70,9 @@ Matrix3 &Matrix3::operator*=(const Matrix3 &b)
     return *this;
 }
 
-Matrix3 Matrix3::operator*(const float &scalar) const { return value * scalar; }
+Matrix3 Matrix3::operator*(float scalar) const { return value * scalar; }
 
-Matrix3 &Matrix3::operator*=(const float &scalar)
+Matrix3 &Matrix3::operator*=(float scalar)
 {
     value *= scalar;
     return *this;
@@ -103,9 +100,9 @@ Matrix3 &Matrix3::operator/=(const Matrix3 &b)
     return *this;
 }
 
-Matrix3 Matrix3::operator/(const float &scalar) const { return Matrix3(value / scalar); }
+Matrix3 Matrix3::operator/(float scalar) const { return Matrix3(value / scalar); }
 
-Matrix3 &Matrix3::operator/=(const float &scalar)
+Matrix3 &Matrix3::operator/=(float scalar)
 {
     value /= scalar;
     return *this;
@@ -119,9 +116,9 @@ Matrix3 &Matrix3::operator-=(const Matrix3 &b)
     return *this;
 }
 
-Matrix3 Matrix3::operator-(const float &scalar) const { return (value - scalar); }
+Matrix3 Matrix3::operator-(float scalar) const { return (value - scalar); }
 
-Matrix3 &Matrix3::operator-=(const float &scalar)
+Matrix3 &Matrix3::operator-=(float scalar)
 {
     value -= scalar;
     return *this;
@@ -137,9 +134,9 @@ Matrix3 &Matrix3::operator+=(const Matrix3 &b)
     return *this;
 }
 
-Matrix3 Matrix3::operator+(const float &scalar) const { return (value + scalar); }
+Matrix3 Matrix3::operator+(float scalar) const { return (value + scalar); }
 
-Matrix3 &Matrix3::operator+=(const float &scalar)
+Matrix3 &Matrix3::operator+=(float scalar)
 {
     value += scalar;
     return *this;

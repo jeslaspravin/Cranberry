@@ -232,7 +232,10 @@ public:
     {
         auto itr = std::find_if(
             clazz->memberFields.cbegin(), clazz->memberFields.cend(),
-            [&fieldName](const FieldProperty *prop) { return prop->name == fieldName; }
+            [&fieldName](const FieldProperty *prop)
+            {
+                return prop->name == fieldName;
+            }
         );
         return (itr == clazz->memberFields.cend()) ? nullptr : *itr;
     }
@@ -240,7 +243,10 @@ public:
     {
         auto itr = std::find_if(
             clazz->staticFields.cbegin(), clazz->staticFields.cend(),
-            [&fieldName](const FieldProperty *prop) { return prop->name == fieldName; }
+            [&fieldName](const FieldProperty *prop)
+            {
+                return prop->name == fieldName;
+            }
         );
         return (itr == clazz->staticFields.cend()) ? nullptr : *itr;
     }

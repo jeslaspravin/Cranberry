@@ -36,11 +36,10 @@ public:
     //  r2(c0)  r2(c1)  r2(c2)  r2(c3)
     //  r3(c0)  r3(c1)  r3(c2)  r3(c3)
     Matrix4(
-        const float &c1x, const float &c1y, const float &c1z, const float &c1w, const float &c2x, const float &c2y, const float &c2z,
-        const float &c2w, const float &c3x, const float &c3y, const float &c3z, const float &c3w, const float &c4x, const float &c4y,
-        const float &c4z, const float &c4w
+        float c1x, float c1y, float c1z, float c1w, float c2x, float c2y, float c2z, float c2w, float c3x, float c3y, float c3z, float c3w,
+        float c4x, float c4y, float c4z, float c4w
     );
-    Matrix4(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3, const Vector3D &c4, const float &c4w = 1.0f);
+    Matrix4(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3, const Vector3D &c4, float c4w = 1.0f);
     Matrix4(const Vector4D &c1, const Vector4D &c2, const Vector4D &c3, const Vector4D &c4);
     // Scaling matrix should always be applied before rotation or translation to preserve volume
     Matrix4(const Vector3D &scale);
@@ -71,14 +70,14 @@ public:
     Matrix4 &operator-=(const Matrix4 &b);
     Matrix4 operator+(const Matrix4 &b) const;
     Matrix4 &operator+=(const Matrix4 &b);
-    Matrix4 operator*(const float &scalar) const;
-    Matrix4 &operator*=(const float &scalar);
-    Matrix4 operator/(const float &scalar) const;
-    Matrix4 &operator/=(const float &scalar);
-    Matrix4 operator-(const float &scalar) const;
-    Matrix4 &operator-=(const float &scalar);
-    Matrix4 operator+(const float &scalar) const;
-    Matrix4 &operator+=(const float &scalar);
+    Matrix4 operator*(float scalar) const;
+    Matrix4 &operator*=(float scalar);
+    Matrix4 operator/(float scalar) const;
+    Matrix4 &operator/=(float scalar);
+    Matrix4 operator-(float scalar) const;
+    Matrix4 &operator-=(float scalar);
+    Matrix4 operator+(float scalar) const;
+    Matrix4 &operator+=(float scalar);
 
 public:
     static const Matrix4 IDENTITY;

@@ -1166,7 +1166,10 @@ void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
 
         auto newEnd = std::remove_if(
             resAccessorItr->second.lastReadsIn.begin(), resAccessorItr->second.lastReadsIn.end(),
-            [cmdBuffer](const GraphicsResource *cmd) { return cmd == cmdBuffer; }
+            [cmdBuffer](const GraphicsResource *cmd)
+            {
+                return cmd == cmdBuffer;
+            }
         );
         resAccessorItr->second.lastReadsIn.erase(newEnd, resAccessorItr->second.lastReadsIn.end());
 
@@ -1190,7 +1193,10 @@ void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
 
         auto newEnd = std::remove_if(
             attachmentItr->second.lastReadsIn.begin(), attachmentItr->second.lastReadsIn.end(),
-            [cmdBuffer](const GraphicsResource *cmd) { return cmd == cmdBuffer; }
+            [cmdBuffer](const GraphicsResource *cmd)
+            {
+                return cmd == cmdBuffer;
+            }
         );
         attachmentItr->second.lastReadsIn.erase(newEnd, attachmentItr->second.lastReadsIn.end());
 
@@ -1237,7 +1243,10 @@ void VulkanResourcesTracker::clearUnwanted()
 
                 auto newEnd = std::remove_if(
                     itr->second.lastReadsIn.begin(), itr->second.lastReadsIn.end(),
-                    [&uniqueReads](const GraphicsResource *res) { return !uniqueReads.insert(res).second; }
+                    [&uniqueReads](const GraphicsResource *res)
+                    {
+                        return !uniqueReads.insert(res).second;
+                    }
                 );
                 itr->second.lastReadsIn.erase(newEnd, itr->second.lastReadsIn.end());
                 // Restore first read
@@ -1266,7 +1275,10 @@ void VulkanResourcesTracker::clearUnwanted()
 
                 auto newEnd = std::remove_if(
                     itr->second.lastReadsIn.begin(), itr->second.lastReadsIn.end(),
-                    [&uniqueReads](const GraphicsResource *res) { return !uniqueReads.insert(res).second; }
+                    [&uniqueReads](const GraphicsResource *res)
+                    {
+                        return !uniqueReads.insert(res).second;
+                    }
                 );
                 itr->second.lastReadsIn.erase(newEnd, itr->second.lastReadsIn.end());
                 // Restore first read

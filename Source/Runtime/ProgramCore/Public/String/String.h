@@ -143,7 +143,10 @@ public:
 
         const_iterator it = std::search(
             cbegin(), cbegin() + match.length(), match.cbegin(), match.cend(),
-            [](auto c1, auto c2) { return std::toupper(c1) == std::toupper(c2); }
+            [](auto c1, auto c2)
+            {
+                return std::toupper(c1) == std::toupper(c2);
+            }
         );
 
         return cbegin() == it;
@@ -171,7 +174,11 @@ public:
 
         const_iterator searchFrom = cbegin() + (length() - match.length());
         const_iterator it = std::search(
-            searchFrom, cend(), match.cbegin(), match.cend(), [](auto c1, auto c2) { return std::toupper(c1) == std::toupper(c2); }
+            searchFrom, cend(), match.cbegin(), match.cend(),
+            [](auto c1, auto c2)
+            {
+                return std::toupper(c1) == std::toupper(c2);
+            }
         );
 
         return it == searchFrom;
@@ -179,13 +186,30 @@ public:
 
     STRING_FUNCQUALIFIER String &trimL()
     {
-        erase(begin(), std::find_if(begin(), end(), [](const TChar &ch) { return !std::isspace(ch); }));
+        erase(
+            begin(), std::find_if(
+                         begin(), end(),
+                         [](const TChar &ch)
+                         {
+                             return !std::isspace(ch);
+                         }
+                     )
+        );
         return *this;
     }
 
     STRING_FUNCQUALIFIER String &trimR()
     {
-        erase(std::find_if(rbegin(), rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(), end());
+        erase(
+            std::find_if(
+                rbegin(), rend(),
+                [](const TChar &ch)
+                {
+                    return !std::isspace(ch);
+                }
+            ).base(),
+            end()
+        );
         return *this;
     }
 
@@ -227,14 +251,31 @@ public:
     STRING_FUNCQUALIFIER String trimLCopy() const
     {
         String s(*this);
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](const TChar &ch) { return !std::isspace(ch); }));
+        s.erase(
+            s.begin(), std::find_if(
+                           s.begin(), s.end(),
+                           [](const TChar &ch)
+                           {
+                               return !std::isspace(ch);
+                           }
+                       )
+        );
         return s;
     }
 
     STRING_FUNCQUALIFIER String trimRCopy() const
     {
         String s(*this);
-        s.erase(std::find_if(s.rbegin(), s.rend(), [](const TChar &ch) { return !std::isspace(ch); }).base(), s.end());
+        s.erase(
+            std::find_if(
+                s.rbegin(), s.rend(),
+                [](const TChar &ch)
+                {
+                    return !std::isspace(ch);
+                }
+            ).base(),
+            s.end()
+        );
         return s;
     }
 

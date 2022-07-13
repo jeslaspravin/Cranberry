@@ -296,7 +296,7 @@ void WindowManager::requestDestroyWindow(GenericAppWindow *window)
             {
                 requestDestroyWindow(windowData.first);
             }
-        }        
+        }
     }
 
     for (GenericAppWindow *childWnd : window->childWindows)

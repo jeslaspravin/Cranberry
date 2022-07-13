@@ -267,7 +267,10 @@ public:
     template <typename Visitable>
     static void visit(const TypedProperty *prop, void *userData)
     {
-        auto typeVisitor = [userData]<typename Type>(PropertyInfo propInfo) { Visitable::template visit<Type>(propInfo, userData); };
+        auto typeVisitor = [userData]<typename Type>(PropertyInfo propInfo)
+        {
+            Visitable::template visit<Type>(propInfo, userData);
+        };
         PropertyInfo propInfo;
         propInfo.thisProperty = prop;
         visit(propInfo, typeVisitor);
@@ -277,8 +280,10 @@ public:
     template <typename Visitable>
     static void visit(const TypedProperty *prop, void *val, void *userData)
     {
-        auto typeVisitor
-            = [val, userData]<typename Type>(PropertyInfo propInfo) { Visitable::visit(reinterpret_cast<Type *>(val), propInfo, userData); };
+        auto typeVisitor = [val, userData]<typename Type>(PropertyInfo propInfo)
+        {
+            Visitable::visit(reinterpret_cast<Type *>(val), propInfo, userData);
+        };
         PropertyInfo propInfo;
         propInfo.thisProperty = prop;
         visit(propInfo, typeVisitor);

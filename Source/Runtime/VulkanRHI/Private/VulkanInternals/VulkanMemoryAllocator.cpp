@@ -356,7 +356,9 @@ public:
             std::sort(
                 sortedChunks.begin(), sortedChunks.end(),
                 [](std::pair<std::vector<VulkanMemoryChunk *> *, uint64> &lhs, std::pair<std::vector<VulkanMemoryChunk *> *, uint64> &rhs)
-                { return lhs.second < rhs.second; }
+                {
+                    return lhs.second < rhs.second;
+                }
             );
         }
 

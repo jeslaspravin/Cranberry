@@ -112,6 +112,13 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
         swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         swapchainCreateInfo.queueFamilyIndexCount = 0;
         swapchainCreateInfo.pQueueFamilyIndices = nullptr;
+
+        // Below check is to avoid VK validation error, Cached surface properties works fine in single gpu environment
+        VkBool32 queueSupported;
+        Vk::vkGetPhysicalDeviceSurfaceSupportKHR(
+            device->physicalDevice, presentQueue->queueFamilyIndex(), swapchainCreateInfo.surface, &queueSupported
+        );
+        fatalAssertf(queueSupported == VK_TRUE, "Window surface created in unsupported device(Multiple GPU is not supported)");
     }
     else
     {
@@ -119,9 +126,22 @@ VkSwapchainKHR VulkanGraphicsHelper::createSwapchain(
         std::vector<uint32> queueFamilyIndices = { graphicsQueue->queueFamilyIndex(), presentQueue->queueFamilyIndex() };
         swapchainCreateInfo.queueFamilyIndexCount = (uint32_t)queueFamilyIndices.size();
         swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices.data();
+
+        // Below check is to avoid VK validation error, Cached surface properties works fine in single gpu environment
+        VkBool32 presentSupported, graphicsSupported;
+        Vk::vkGetPhysicalDeviceSurfaceSupportKHR(
+            device->physicalDevice, presentQueue->queueFamilyIndex(), swapchainCreateInfo.surface, &presentSupported
+        );
+        Vk::vkGetPhysicalDeviceSurfaceSupportKHR(
+            device->physicalDevice, graphicsQueue->queueFamilyIndex(), swapchainCreateInfo.surface, &graphicsSupported
+        );
+        fatalAssertf(
+            presentSupported == VK_TRUE && graphicsSupported == VK_TRUE,
+            "Window surface created in unsupported device(Multiple GPU is not supported)"
+        );
     }
 
-    /* Updating other necessary values */
+    /* Updating other necessary window unique values */
     VkSurfaceCapabilitiesKHR swapchainCapabilities;
     Vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->physicalDevice, swapchainCreateInfo.surface, &swapchainCapabilities);
     VkExtent2D surfaceSize = swapchainCapabilities.currentExtent;

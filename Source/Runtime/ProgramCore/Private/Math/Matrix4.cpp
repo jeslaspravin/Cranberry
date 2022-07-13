@@ -25,7 +25,7 @@ Matrix4::Matrix4(float allValue)
     : value(allValue)
 {}
 
-Matrix4::Matrix4(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3, const Vector3D &c4, const float &c4w /*=1.0f*/)
+Matrix4::Matrix4(const Vector3D &c1, const Vector3D &c2, const Vector3D &c3, const Vector3D &c4, float c4w /*=1.0f*/)
     : value(c1.x(), c1.y(), c1.z(), 0, c2.x(), c2.y(), c2.z(), 0, c3.x(), c3.y(), c3.z(), 0, c4.x(), c4.y(), c4.z(), c4w)
 {}
 
@@ -42,9 +42,8 @@ Matrix4::Matrix4(const Vector4D &c1, const Vector4D &c2, const Vector4D &c3, con
 {}
 
 Matrix4::Matrix4(
-    const float &c1x, const float &c1y, const float &c1z, const float &c1w, const float &c2x, const float &c2y, const float &c2z,
-    const float &c2w, const float &c3x, const float &c3y, const float &c3z, const float &c3w, const float &c4x, const float &c4y,
-    const float &c4z, const float &c4w
+    float c1x, float c1y, float c1z, float c1w, float c2x, float c2y, float c2z, float c2w, float c3x, float c3y, float c3z, float c3w,
+    float c4x, float c4y, float c4z, float c4w
 )
     : value(c1x, c1y, c1z, c1w, c2x, c2y, c2z, c2w, c3x, c3y, c3z, c3w, c4x, c4y, c4z, c4w)
 {}
@@ -86,9 +85,9 @@ Matrix4 &Matrix4::operator*=(const Matrix4 &b)
     return *this;
 }
 
-Matrix4 Matrix4::operator*(const float &scalar) const { return value * scalar; }
+Matrix4 Matrix4::operator*(float scalar) const { return value * scalar; }
 
-Matrix4 &Matrix4::operator*=(const float &scalar)
+Matrix4 &Matrix4::operator*=(float scalar)
 {
     value *= scalar;
     return *this;
@@ -116,9 +115,9 @@ Matrix4 &Matrix4::operator/=(const Matrix4 &b)
     return *this;
 }
 
-Matrix4 Matrix4::operator/(const float &scalar) const { return Matrix4(value / scalar); }
+Matrix4 Matrix4::operator/(float scalar) const { return Matrix4(value / scalar); }
 
-Matrix4 &Matrix4::operator/=(const float &scalar)
+Matrix4 &Matrix4::operator/=(float scalar)
 {
     value /= scalar;
     return *this;
@@ -132,9 +131,9 @@ Matrix4 &Matrix4::operator-=(const Matrix4 &b)
     return *this;
 }
 
-Matrix4 Matrix4::operator-(const float &scalar) const { return (value - scalar); }
+Matrix4 Matrix4::operator-(float scalar) const { return (value - scalar); }
 
-Matrix4 &Matrix4::operator-=(const float &scalar)
+Matrix4 &Matrix4::operator-=(float scalar)
 {
     value -= scalar;
     return *this;
@@ -148,9 +147,9 @@ Matrix4 &Matrix4::operator+=(const Matrix4 &b)
     return *this;
 }
 
-Matrix4 Matrix4::operator+(const float &scalar) const { return (value + scalar); }
+Matrix4 Matrix4::operator+(float scalar) const { return (value + scalar); }
 
-Matrix4 &Matrix4::operator+=(const float &scalar)
+Matrix4 &Matrix4::operator+=(float scalar)
 {
     value += scalar;
     return *this;
