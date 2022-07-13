@@ -35,7 +35,23 @@ void GenericAppWindow::setWindowSize(const uint32 &width, const uint32 &height, 
 
 void GenericAppWindow::setWindowMode(bool bIsFullScreen) { bIsWindowed = !bIsFullScreen; }
 
-void GenericAppWindow::setWindowName(const String &wndName) { windowName = wndName; }
+void GenericAppWindow::setWindowName(const TChar *wndName) { windowName = wndName; }
+
+void GenericAppWindow::setParent(GenericAppWindow *window)
+{
+    if (!window)
+    {
+        return;
+    }
+    if (isValidWindow())
+    {
+        LOG_ERROR("GenericAppWindow", "Cannot setup parent after window(%s) is created!", windowName);
+        return;
+    }
+
+    parentWindow = window;
+    window->childWindows.emplace_back(this);
+}
 
 void GenericAppWindow::updateWindow()
 {
@@ -48,15 +64,16 @@ void GenericAppWindow::updateWindow()
 
 void GenericAppWindow::destroyWindow()
 {
-    for (GenericAppWindow *child : childWindows)
-    {
-        // TODO(Jeslas) : change this to call destroy in window manager as it needs to be updated
-        // there as well.
-        child->destroyWindow();
-    }
+    // Must have been destroyed before parent is destroyed
+    debugAssertf(childWindows.empty(), "Child windows must be destroyed before parent %s", windowName);
     childWindows.clear();
     onWindowDeactived.clear();
     onWindowActivated.clear();
     onResize.clear();
     onDestroyRequested.clear();
+
+    if (parentWindow)
+    {
+        std::erase(parentWindow->childWindows, this);
+    }
 }

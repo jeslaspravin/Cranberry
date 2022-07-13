@@ -77,10 +77,10 @@ struct APPLICATION_EXPORT Key
 
 struct APPLICATION_EXPORT KeyState
 {
-    TickRep pressedTick;
-    uint8 isPressed : 1;
-    uint8 keyWentUp : 1;   // will be high the frame the key went up
-    uint8 keyWentDown : 1; // will be high the frame the key went down
+    TickRep pressedTick = -1;
+    uint8 isPressed : 1 = 0;
+    uint8 keyWentUp : 1 = 0;   // will be high the frame the key went up
+    uint8 keyWentDown : 1 = 0; // will be high the frame the key went down
 
     KeyState()
         : pressedTick(-1)
