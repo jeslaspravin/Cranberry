@@ -27,16 +27,16 @@ class SlotAllocatorBase
 public:
     using SizeType = uint32;
 
-    CONST_EXPR static const SizeType SlotAlignment = (ElementAlignment > sizeof(SizeType) ? ElementAlignment : (SizeType)sizeof(SizeType));
-    CONST_EXPR static const SizeType SlotSize = Math::alignByUnsafe(ElementSize, SlotAlignment);
-    CONST_EXPR static const SizeType InvalidSize = ~(SizeType)(0);
+    constexpr static const SizeType SlotAlignment = (ElementAlignment > sizeof(SizeType) ? ElementAlignment : (SizeType)sizeof(SizeType));
+    constexpr static const SizeType SlotSize = Math::alignByUnsafe(ElementSize, SlotAlignment);
+    constexpr static const SizeType InvalidSize = ~(SizeType)(0);
 
     static_assert(
         SlotsCount < InvalidSize, "SlotsCount must less than max of unsigned integer, This is "
                                   "necessary for identifying free slots"
     );
     // Number of slots
-    CONST_EXPR static const uint32 Count = SlotsCount;
+    constexpr static const uint32 Count = SlotsCount;
 
 private:
     void *slots;

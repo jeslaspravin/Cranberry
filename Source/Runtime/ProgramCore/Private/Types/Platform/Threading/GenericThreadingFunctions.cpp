@@ -10,6 +10,7 @@
  */
 
 #include "Types/Platform/Threading/GenericThreadingFunctions.h"
+#include "Types/Delegates/Delegate.h"
 #include "Logger/Logger.h"
 
 #include <thread>
@@ -74,5 +75,20 @@ void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, Syste
 }
 
 void sleep(int64 msTicks) { std::this_thread::sleep_for(std::chrono::milliseconds(msTicks)); }
+
+struct ThreadExitListener
+{
+    SimpleDelegate callbacks;
+
+    ThreadExitListener() = default;
+    ~ThreadExitListener() { callbacks.invoke(); }
+
+    static thread_local ThreadExitListener listener;
+};
+thread_local ThreadExitListener ThreadExitListener::listener;
+
+void atThreadExit(Function<void> callback) { ThreadExitListener::listener.callbacks.bindStatic(std::move(callback)); }
+
+void atThreadExit(LambdaFunction<void> callback) { ThreadExitListener::listener.callbacks.bindLambda(std::move(callback)); }
 
 } // namespace ThreadingHelpers
