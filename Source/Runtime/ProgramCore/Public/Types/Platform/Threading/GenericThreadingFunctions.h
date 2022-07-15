@@ -13,6 +13,7 @@
 
 #include "String/String.h"
 #include "Types/Platform/PlatformTypes.h"
+#include "Reflections/Functions.h"
 
 struct SystemProcessorsCacheInfo
 {
@@ -55,6 +56,8 @@ namespace ThreadingHelpers
 void INTERNAL_printSystemThreadingInfo(SystemProcessorsInfo processorInfo, SystemProcessorsCacheInfo cacheInfo);
 
 PROGRAMCORE_EXPORT void sleep(int64 msTicks);
+PROGRAMCORE_EXPORT void atThreadExit(Function<void> callback);
+PROGRAMCORE_EXPORT void atThreadExit(LambdaFunction<void> callback);
 } // namespace ThreadingHelpers
 
 template <typename PlatformClass>
@@ -94,6 +97,11 @@ public:
 
     // Ticks in milliseconds
     FORCE_INLINE static void sleep(int64 msTicks) { ThreadingHelpers::sleep(msTicks); }
+    template <typename T>
+    FORCE_INLINE static void atThreadExit(T &&callback)
+    {
+        ThreadingHelpers::atThreadExit(std::forward<T>(callback));
+    }
 
     // Miscellaneous
     FORCE_INLINE static void printSystemThreadingInfo() { PlatformClass::printSystemThreadingInfo(); }

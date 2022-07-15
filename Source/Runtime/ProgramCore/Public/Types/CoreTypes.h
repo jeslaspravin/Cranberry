@@ -118,3 +118,9 @@ enum EInitType
     InitType_ForceInit,
     InitType_NoInit
 };
+
+enum EThreadSharing
+{
+    ThreadSharing_Exclusive,
+    ThreadSharing_Shared
+};
