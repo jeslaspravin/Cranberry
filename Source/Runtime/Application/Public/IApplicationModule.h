@@ -39,7 +39,7 @@ public:
         startAndRun(&appInstance, appCI);
     }
 
-    APPLICATION_EXPORT virtual const ApplicationInstance *getApplication() const = 0;
+    APPLICATION_EXPORT virtual ApplicationInstance *getApplication() const = 0;
 
     virtual void windowCreated(GenericAppWindow *createdWindow) const = 0;
     APPLICATION_EXPORT virtual DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) = 0;

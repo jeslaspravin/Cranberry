@@ -34,13 +34,6 @@ struct VertexSimple2D
     Vector2D position;
 };
 
-struct VertexUI
-{
-    Vector2D position;
-    Vector2D uv;
-    uint32 color;
-};
-
 struct VertexSimple3D
 {
     Vector3D position;

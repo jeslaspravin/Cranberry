@@ -349,9 +349,21 @@ bool WindowsPlatformFunctions::setClipboard(const String &text)
     if (!::OpenClipboard(NULL))
         return false;
 
-    ::EmptyClipboard();
-    if (::SetClipboardData(CF_UNICODETEXT, (HANDLE)TCHAR_TO_WCHAR(text.getChar())) == NULL)
+    std::wstring clipboardText = TCHAR_TO_WCHAR(text.getChar());
+    // Allocate global memory and copy wchar to it, and transfer the ownership to clip board
+    HGLOBAL clipboardHnd = ::GlobalAlloc(GMEM_MOVEABLE, (SizeT)clipboardText.size() * sizeof(WChar));
+    if (clipboardHnd == NULL)
     {
+        ::CloseClipboard();
+        return false;
+    }
+    CBEMemory::memCopy(::GlobalLock(clipboardHnd), clipboardText.data(), (SizeT)clipboardText.size() * sizeof(WChar));
+    ::GlobalUnlock(clipboardHnd);
+
+    ::EmptyClipboard();
+    if (::SetClipboardData(CF_UNICODETEXT, (HANDLE)clipboardHnd) == NULL)
+    {
+        ::GlobalFree(clipboardHnd);
         ::CloseClipboard();
         return false;
     }

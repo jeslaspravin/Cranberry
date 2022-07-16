@@ -102,26 +102,24 @@ void TestGameEngine::engineLoop()
 {
     // timeData.activeTimeDilation = applicationModule->pollWindows() ? 1.0f : 0.0f;
 
-    bool bDoubleTick = timeData.targetFrameTicks > 0 && (timeData.accumulatedSlack / timeData.targetFrameTicks);
+    // Technically only should tick logic twice not the renderer, Since I do not have separate path for rendering I ignore
+    // bool bDoubleTick = timeData.targetFrameTicks > 0 && (timeData.accumulatedSlack / timeData.targetFrameTicks);
     timeData.accumulatedSlack %= timeData.targetFrameTicks;
-    for (int32 i = bDoubleTick; i >= 0; --i)
+    tickEngine();
+    if (!application->windowManager->getMainWindow()->isMinimized())
     {
-        // Technically only should tick logic twice not the renderer
-        tickEngine();
-        if (!application->windowManager->getMainWindow()->isMinimized())
-        {
-            ENQUEUE_COMMAND_NODEBUG(
-                Engineloop,
-                {
-                    rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);
-                    imguiManager.updateFrame(timeData.deltaTime);
-                },
-                this
-            );
-            // We are not yet ready for 100% multi threaded renderer
-            RenderThreadEnqueuer::flushWaitRenderThread();
-        }
+        ENQUEUE_COMMAND_NODEBUG(
+            Engineloop,
+            {
+                rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);
+                imguiManager.updateFrame(timeData.deltaTime);
+            },
+            this
+        );
+        // We are not yet ready for 100% multi threaded renderer
+        RenderThreadEnqueuer::flushWaitRenderThread();
     }
+
     if (bActiveWindow && !application->windowManager->hasActiveWindow())
     {
         frameRateBackup = uint8(timeData.frameRate);

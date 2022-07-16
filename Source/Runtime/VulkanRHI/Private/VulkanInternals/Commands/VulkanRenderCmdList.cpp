@@ -478,7 +478,7 @@ void VulkanCommandList::endCmd(const GraphicsResource *cmdBuffer) { cmdBufferMan
 
 void VulkanCommandList::freeCmd(const GraphicsResource *cmdBuffer) { cmdBufferManager.freeCmdBuffer(cmdBuffer); }
 
-void VulkanCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef &fence)
+void VulkanCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence)
 {
     cmdBufferManager.submitCmd(priority, submitInfo, fence);
 }
@@ -495,6 +495,11 @@ void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority, const Comma
 void VulkanCommandList::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands)
 {
     cmdBufferManager.submitCmds(priority, commands, &resourcesTracker);
+}
+
+void VulkanCommandList::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &submitInfos, FenceRef fence)
+{
+    cmdBufferManager.submitCmds(priority, submitInfos, fence);
 }
 
 void VulkanCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command)
@@ -565,7 +570,9 @@ void VulkanCommandList::presentImage(
     std::vector<SemaphoreRef> waitSemaphores = waitOnSemaphores;
     for (const GraphicsResource *cmdBuffer : swapchainFrameWrites)
     {
-        waitSemaphores.emplace_back(cmdBufferManager.cmdSignalSemaphore(cmdBuffer));
+        SemaphoreRef cmdSignal = cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
+        fatalAssertf(cmdSignal, "Invalid signalling semaphore for cmd buffer %s!", cmdBuffer->getResourceName());
+        waitSemaphores.emplace_back(cmdSignal);
     }
 
     VulkanGraphicsHelper::presentImage(graphicsInstanceCache, &canvases, &imageIndices, &waitSemaphores);

@@ -40,7 +40,7 @@ private:
 
 public:
     /* IApplicationModule finals */
-    const ApplicationInstance *getApplication() const final;
+    ApplicationInstance *getApplication() const final;
 
     void windowCreated(GenericAppWindow *createdWindow) const final;
     DelegateHandle registerOnWindowCreated(AppWindowDelegate::SingleCastDelegateType callback) final;

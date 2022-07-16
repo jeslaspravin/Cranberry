@@ -12,6 +12,7 @@
 #pragma once
 
 #include "IRenderInterfaceModule.h"
+#include "Modules/ModuleManager.h"
 
 class EngineRendererModule final : public IRenderInterfaceModule
 {

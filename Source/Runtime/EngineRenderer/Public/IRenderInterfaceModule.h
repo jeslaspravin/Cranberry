@@ -12,8 +12,7 @@
 #pragma once
 
 #include "EngineRendererExports.h"
-#include "Modules/ModuleManager.h"
-#include "Types/Containers/ReferenceCountPtr.h"
+#include "Modules/IModuleBase.h"
 #include "Types/Delegates/Delegate.h"
 
 class IGraphicsInstance;

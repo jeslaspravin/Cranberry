@@ -12,6 +12,7 @@
 #pragma once
 #include "EngineRendererExports.h"
 #include "Math/CoreMathTypedefs.h"
+#include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/Rendering/FramebufferTypes.h"
 
 #include <unordered_map>
@@ -38,16 +39,24 @@ private:
     static std::pair<BufferResourceRef, BufferResourceRef> quadRectVertsInds;
     static std::pair<BufferResourceRef, BufferResourceRef> lineGizmoVertxInds;
 
+    static SamplerRef nearestFiltering;
+    static SamplerRef linearFiltering;
+    static SamplerRef depthFiltering;
+    static SamplerRef shadowFiltering;
+
     static void createTextureCubes(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     static void destroyTextureCubes();
 
     static void createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    // Generates using shaders or some other pipeline based technics
+    // Generates using shaders or some other pipeline based techniqs
     static void generateTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     static void destroyTexture2Ds();
 
     static void createVertIndBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     static void destroyVertIndBuffers();
+
+    static void createSamplers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    static void destroySamplers();
 
 public:
     /**
@@ -64,6 +73,11 @@ public:
     static ImageResourceRef dummyCube() { return dummyCubeTexture; }
     static ImageResourceRef dummyNormal() { return dummyNormalTexture; }
     static ImageResourceRef integratedBrdfLUT() { return integratedBRDF; }
+
+    static SamplerRef nearestSampler() { return nearestFiltering; }
+    static SamplerRef linearSampler() { return linearFiltering; }
+    static SamplerRef depthSampler() { return depthFiltering; }
+    static SamplerRef shadowSampler() { return shadowFiltering; }
 
     static const BufferResourceRef getQuadTriVertexBuffer() { return quadTriVerts; }
     static std::pair<const BufferResourceRef, const BufferResourceRef> getQuadRectVertexIndexBuffers() { return quadRectVertsInds; }

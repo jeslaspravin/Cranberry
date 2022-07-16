@@ -28,6 +28,7 @@
 #include "GenericAppWindow.h"
 #include "IApplicationModule.h"
 #include "ICoreObjectsModule.h"
+#include "Modules/ModuleManager.h"
 #include "InputSystem/InputSystem.h"
 #include "InputSystem/Keys.h"
 #include "Math/BVH.h"
@@ -492,35 +493,10 @@ AABB GridEntity::getBounds() const { return static_cast<ExperimentalEnginePBR *>
 
 void ExperimentalEnginePBR::createImages(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
 {
-    SamplerCreateInfo samplerCI{
-        .filtering = ESamplerFiltering::Nearest,
-        .mipFiltering = ESamplerFiltering::Nearest,
-        .tilingMode = {ESamplerTilingMode::Repeat,                                 ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat },
-        .mipLodRange = {                         0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get())                          },
-        .resourceName = TCHAR("NearestSampler")
-    };
-    nearestFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
-    nearestFiltering->init();
-
-    samplerCI.mipFiltering = samplerCI.filtering = ESamplerFiltering::Linear;
-    samplerCI.resourceName = TCHAR("LinearSampler");
-    linearFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
-    linearFiltering->init();
-
-    samplerCI.mipFiltering = samplerCI.filtering = ESamplerFiltering::Linear;
-    samplerCI.tilingMode = { ESamplerTilingMode::BorderClamp, ESamplerTilingMode::BorderClamp, ESamplerTilingMode::BorderClamp };
-    samplerCI.resourceName = TCHAR("DepthSampler");
-    // Depth sampling must be nearest however there is better filtering when using linear filtering
-    depthFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
-    depthFiltering->init();
-
-    // Has to lesser comparison since we want shadow to be 1.0 only if shading texel's depth is less that shadow depth texel
-    // And lesser than gives 1.0(Shadowed) if shading depth is less than texel depth
-    samplerCI.useCompareOp = 1;
-    samplerCI.compareOp = CoreGraphicsTypes::ECompareOp::Less;
-    samplerCI.resourceName = TCHAR("ShadowSampler");
-    shadowFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
-    shadowFiltering->init();
+    nearestFiltering = GlobalBuffers::nearestSampler();
+    linearFiltering = GlobalBuffers::linearSampler();
+    depthFiltering = GlobalBuffers::depthSampler();
+    shadowFiltering = GlobalBuffers::shadowSampler();
 
     RenderTextureCreateParams rtCreateParams;
     rtCreateParams.bSameReadWriteTexture = true;
@@ -2701,9 +2677,6 @@ void ExperimentalEnginePBR::frameRender(
     submitInfo.cmdBuffers = { cmdBuffer };
 
     cmdList->submitCmd(EQueuePriority::High, submitInfo, frameResources[index].recordingFence);
-
-    std::vector<uint32> indices = { index };
-    cmdList->presentImage({ windowCanvas }, indices, {});
 }
 
 void ExperimentalEnginePBR::updateCamGizmoViewParams()
@@ -3119,21 +3092,16 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
             const InputAnalogState *rmyState = application->inputSystem->analogState(AnalogStates::RelMouseY);
             const InputAnalogState *amxState = application->inputSystem->analogState(AnalogStates::AbsMouseX);
             const InputAnalogState *amyState = application->inputSystem->analogState(AnalogStates::AbsMouseY);
+            ImGui::Text(
+                "Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue,
+                rmyState->currentValue
+            );
             SharedPtr<WgWindow> wnd = application->getHoveringWindow();
             if (wnd)
             {
                 Short2D wndRelPos = wnd->screenToWindowSpace(Short2D(amxState->currentValue, amyState->currentValue));
                 ImGui::Text(
-                    "Cursor pos (%.0f, %.0f)[%s (%d, %d)] Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue,
-                    TCHAR_TO_UTF8(wnd->getAppWindow()->getWindowName().getChar()), wndRelPos.x, wndRelPos.y, rmxState->currentValue,
-                    rmyState->currentValue
-                );
-            }
-            else
-            {
-                ImGui::Text(
-                    "Cursor pos (%.0f, %.0f) Delta (%0.1f, %0.1f)", amxState->currentValue, amyState->currentValue, rmxState->currentValue,
-                    rmyState->currentValue
+                    "Cursor pos in window %s (%d, %d)", TCHAR_TO_UTF8(wnd->getAppWindow()->getWindowName().getChar()), wndRelPos.x, wndRelPos.y
                 );
             }
             if (ImGui::Button("New Window"))

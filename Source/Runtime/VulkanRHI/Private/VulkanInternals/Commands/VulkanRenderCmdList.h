@@ -149,11 +149,12 @@ public:
     const GraphicsResource *startCmd(const String &uniqueName, EQueueFunction queue, bool bIsReusable) final;
     void endCmd(const GraphicsResource *cmdBuffer) final;
     void freeCmd(const GraphicsResource *cmdBuffer) final;
-    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef &fence) final;
-    void finishCmd(const GraphicsResource *cmdBuffer) final;
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence) final;
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &submitInfos, FenceRef fence) final;
     void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &submitInfo) final;
     void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands) final;
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command) final;
+    void finishCmd(const GraphicsResource *cmdBuffer) final;
     void finishCmd(const String &uniqueName) final;
     const GraphicsResource *getCmdBuffer(const String &uniqueName) const final;
     void waitIdle() final;
