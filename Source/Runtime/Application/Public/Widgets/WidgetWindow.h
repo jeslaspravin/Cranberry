@@ -44,10 +44,11 @@ public:
     Short2D screenToWindowSpace(Short2D screenPt) const;
     Short2D windowToScreenSpace(Short2D windowPt) const;
 
+    void setContent(SharedPtr<WidgetBase> widget);
+    SharedPtr<WidgetBase> getContent() const { return content; }
     WidgetGeom findWidgetGeom(SharedPtr<WidgetBase> widget) const;
 
     void drawWidget(WidgetDrawContext &context);
-    void setContent(SharedPtr<WidgetBase> widget);
 
     /* WidgetBase overrides */
     // below 2 functions will be called from within WgWindow

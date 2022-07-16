@@ -56,12 +56,17 @@ void WidgetRHIRenderer::destroy()
 
 void WidgetRHIRenderer::clearWindowState(const SharedPtr<WgWindow> &window)
 {
+    if (windowStates.empty())
+    {
+        return;
+    }
     //  Flush before clearing, As we might be in middle of rendering in render thread
     RenderThreadEnqueuer::flushWaitRenderThread();
 
     auto itr = windowStates.find(window);
     if (itr != windowStates.end())
     {
+        // Waiting on command is better than waiting on fence
         for (const FenceRef &fence : itr->second.perFrameSubmitFences)
         {
             if (!fence->isSignaled())
@@ -107,8 +112,9 @@ WidgetRHIRenderer::WindowState &WidgetRHIRenderer::createWindowState(
     for (uint32 i = 0; i < swapchainCanvas->imagesCount(); ++i)
     {
         state.perFrameCmdBuffers[i] = window->getAppWindow()->getWindowName() + TCHAR("_CmdBuffer_") + String::toString(i);
+        // We have to start the fences signaled so that first draw frame wait will not time out
         state.perFrameSubmitFences[i] = graphicsHelper->createFence(
-            graphicsInstance, (window->getAppWindow()->getWindowName() + TCHAR("_Fence_") + String::toString(i)).c_str()
+            graphicsInstance, (window->getAppWindow()->getWindowName() + TCHAR("_Fence_") + String::toString(i)).c_str(), true
             );
         state.perFrameSubmitFences[i]->init();
         state.perFrameSignal[i] = graphicsHelper->createSemaphore(
