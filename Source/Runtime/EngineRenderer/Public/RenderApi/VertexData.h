@@ -12,6 +12,7 @@
 #pragma once
 #include "EngineRendererExports.h"
 #include "Math/Vector4D.h"
+#include "Math/Vector2D.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 #include "RenderInterface/Resources/ShaderResources.h"
 
@@ -22,6 +23,14 @@ struct StaticMeshVertex
     Vector4D position; // xyz position, w texture coord's U
     Vector4D normal;   // xyz normal, w texture coord's V
     Vector4D tangent;
+};
+
+// IMGui compatible vertex, Needs one draw call per texture per layer
+struct VertexUI
+{
+    Vector2D position;
+    Vector2D uv;
+    uint32 color;
 };
 
 namespace EVertexType

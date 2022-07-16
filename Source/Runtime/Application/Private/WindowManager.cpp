@@ -17,7 +17,6 @@
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderApi/RenderManager.h"
 #include "RenderInterface/GraphicsHelper.h"
-#include "RenderInterface/GraphicsIntance.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderApi/Rendering/RenderingContexts.h"
 #include "ApplicationSettings.h"
@@ -136,8 +135,9 @@ GenericAppWindow *WindowManager::findWindowUnder(Short2D screenPos) const
 {
     // First find using native API
     WindowHandle wndHnd = PlatformAppWindow::getWindowUnderPoint(screenPos);
-    if (GenericAppWindow *appWnd = findNativeHandleWindow(wndHnd))
+    if (wndHnd != nullptr)
     {
+        GenericAppWindow *appWnd = findNativeHandleWindow(wndHnd);
         return appWnd;
     }
 

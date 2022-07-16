@@ -153,7 +153,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     appInstance = nullptr;
 }
 
-const ApplicationInstance *ApplicationModule::getApplication() const { return appInstance; }
+ApplicationInstance *ApplicationModule::getApplication() const { return appInstance; }
 
 void ApplicationModule::windowCreated(GenericAppWindow *createdWindow) const
 {

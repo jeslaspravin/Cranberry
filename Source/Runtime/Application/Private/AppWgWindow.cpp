@@ -12,10 +12,13 @@
 #include "ApplicationInstance.h"
 #include "WindowManager.h"
 #include "GenericAppWindow.h"
+#include "Widgets/WidgetDrawContext.h"
 #include "Widgets/WidgetWindow.h"
+#include "Widgets/WidgetRenderer.h"
 #include "ApplicationSettings.h"
 #include "InputSystem/InputSystem.h"
 #include "RenderApi/RenderTaskHelpers.h"
+#include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -47,6 +50,18 @@ Short2D WgWindow::windowToScreenSpace(Short2D windowPt) const
 //////////////////////////////////////////////////////////////////////////
 /// ApplicationInstance Implementations
 //////////////////////////////////////////////////////////////////////////
+
+StackAllocator<EThreadSharing::ThreadSharing_Exclusive> &ApplicationInstance::getFrameAllocator()
+{
+    debugAssert(copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::MainThread);
+    return frameAllocator;
+}
+
+StackAllocator<EThreadSharing::ThreadSharing_Exclusive> &ApplicationInstance::getRenderFrameAllocator()
+{
+    debugAssert(copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread);
+    return renderFrameAllocator;
+}
 
 SharedPtr<WgWindow> ApplicationInstance::getMainWindow() const
 {
@@ -152,7 +167,12 @@ void ApplicationInstance::onWindowDestroyed(GenericAppWindow *appWindow)
     {
         lastHoverWnd = nullptr;
     }
-    windowWidgets.erase(appWindow);
+    auto itr = windowWidgets.find(appWindow);
+    if (itr != windowWidgets.cend())
+    {
+        wgRenderer->clearWindowState(itr->second);
+        windowWidgets.erase(itr);
+    }
 }
 
 void ApplicationInstance::tickWindowWidgets()
@@ -180,22 +200,22 @@ void ApplicationInstance::tickWindowWidgets()
         if (lastHoverWnd)
         {
             float scaleFactor = lastHoverWnd->getWidgetScaling();
-            Short2D mouseAbsPos = Short2D(int16(mouseScreenPos.x / scaleFactor), int16(mouseScreenPos.y / scaleFactor));
-            lastHoverWnd->mouseLeave(mouseAbsPos, lastHoverWnd->screenToWindowSpace(mouseScreenPos), inputSystem);
+            Short2D mouseAbsPos = lastHoverWnd->screenToWindowSpace(mouseScreenPos);
+            lastHoverWnd->mouseLeave(mouseAbsPos, mouseAbsPos, inputSystem);
         }
         lastHoverWnd = wndWidget;
         if (lastHoverWnd)
         {
             float scaleFactor = lastHoverWnd->getWidgetScaling();
-            Short2D mouseAbsPos = Short2D(int16(mouseScreenPos.x / scaleFactor), int16(mouseScreenPos.y / scaleFactor));
-            lastHoverWnd->mouseEnter(mouseAbsPos, lastHoverWnd->screenToWindowSpace(mouseScreenPos), inputSystem);
+            Short2D mouseAbsPos = lastHoverWnd->screenToWindowSpace(mouseScreenPos);
+            lastHoverWnd->mouseEnter(mouseAbsPos, mouseAbsPos, inputSystem);
         }
     }
     if (lastHoverWnd && (screenMouseX->acceleration != 0.0f || screenMouseY->acceleration != 0.0f))
     {
         float scaleFactor = lastHoverWnd->getWidgetScaling();
-        Short2D mouseAbsPos = Short2D(int16(mouseScreenPos.x / scaleFactor), int16(mouseScreenPos.y / scaleFactor));
-        lastHoverWnd->mouseMoved(mouseAbsPos, lastHoverWnd->screenToWindowSpace(mouseScreenPos), inputSystem);
+        Short2D mouseAbsPos = lastHoverWnd->screenToWindowSpace(mouseScreenPos);
+        lastHoverWnd->mouseMoved(mouseAbsPos, mouseAbsPos, inputSystem);
     }
 
     for (const std::pair<GenericAppWindow *const, SharedPtr<WgWindow>> window : windowWidgets)
@@ -209,32 +229,77 @@ void ApplicationInstance::tickWindowWidgets()
 
 void ApplicationInstance::drawWindowWidgets()
 {
-    std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> allDrawCtxs;
-    allDrawCtxs.reserve(windowWidgets.size());
-    for (const std::pair<GenericAppWindow *const, SharedPtr<WgWindow>> window : windowWidgets)
+    std::vector<SharedPtr<WgWindow>> allDrawWindows;
+    allDrawWindows.reserve(windowWidgets.size());
+    for (const std::pair<GenericAppWindow *const, SharedPtr<WgWindow>> &window : windowWidgets)
     {
         if (window.first->isValidWindow() && !window.first->isMinimized())
         {
-            auto &wndWidgetDrawContext = allDrawCtxs.emplace_back();
-            wndWidgetDrawContext.first = window.second;
-            window.second->drawWidget(wndWidgetDrawContext.second);
+            allDrawWindows.emplace_back(window.second);
         }
     }
 
-    ENQUEUE_COMMAND(DrawWindowWidgets)
-    (
-        [allDrawCtxs = std::move(allDrawCtxs),
-         this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            drawWindowWidgetsRenderThread(allDrawCtxs, cmdList, graphicsInstance, graphicsHelper);
-        }
-    );
+    debugAssert(wgRenderer);
+    wgRenderer->drawWindowWidgets(allDrawWindows);
 }
 
-void ApplicationInstance::drawWindowWidgetsRenderThread(
-    const std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &drawingContexts, IRenderCommandList *cmdList,
-    IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
-) const
+void ApplicationInstance::presentAllWindows()
 {
-    // TODO(Jeslas): Draw widgets data
+    std::vector<WindowCanvasRef> allDrawSwapchains;
+    allDrawSwapchains.reserve(windowWidgets.size());
+    for (const std::pair<GenericAppWindow *const, SharedPtr<WgWindow>> &window : windowWidgets)
+    {
+        if (window.first->isValidWindow() && !window.first->isMinimized())
+        {
+            allDrawSwapchains.emplace_back(windowManager->getWindowCanvas(window.first));
+        }
+    }
+
+    if (!allDrawSwapchains.empty())
+    {
+        ENQUEUE_COMMAND(PresentAllWindows)
+        (
+            [allDrawSwapchains](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            {
+                std::vector<uint32> swapchainsIdxs(allDrawSwapchains.size());
+                for (uint32 i = 0; i < allDrawSwapchains.size(); ++i)
+                {
+                    uint32 idx = allDrawSwapchains[i]->currentImgIdx();
+                    swapchainsIdxs[i] = idx;
+                }
+                cmdList->presentImage(allDrawSwapchains, swapchainsIdxs, {});
+            }
+        );
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+/// Drawing window widget
+//////////////////////////////////////////////////////////////////////////
+
+void WidgetRenderer::drawWindowWidgets(const std::vector<SharedPtr<WgWindow>> &windows)
+{
+    bool bHasAnyDrawCmds = false;
+    std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> allDrawCtxs;
+    allDrawCtxs.reserve(windows.size());
+    for (const SharedPtr<WgWindow> &window : windows)
+    {
+        auto &wndWidgetDrawContext = allDrawCtxs.emplace_back();
+        wndWidgetDrawContext.first = window;
+        window->drawWidget(wndWidgetDrawContext.second);
+        bHasAnyDrawCmds = bHasAnyDrawCmds || !wndWidgetDrawContext.second.perVertexPos().empty();
+    }
+
+    if (bHasAnyDrawCmds)
+    {
+        // Clear all empty windows
+        std::erase_if(
+            allDrawCtxs,
+            [](const std::pair<SharedPtr<WgWindow>, WidgetDrawContext> &drawCtx)
+            {
+                return drawCtx.second.perVertexPos().empty();
+            }
+        );
+        drawWindowWidgets(std::move(allDrawCtxs));
+    }
 }

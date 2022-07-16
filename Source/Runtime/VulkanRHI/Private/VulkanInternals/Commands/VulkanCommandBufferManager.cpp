@@ -585,7 +585,7 @@ bool VulkanCmdBufferManager::isTransferCmdBuffer(const GraphicsResource *cmdBuff
 }
 
 void VulkanCmdBufferManager::submitCmds(
-    EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands, FenceRef &cmdsCompleteFence
+    EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands, FenceRef cmdsCompleteFence
 )
 {
     QueueResourceBase *queueRes = nullptr;
@@ -668,7 +668,7 @@ void VulkanCmdBufferManager::submitCmds(
         }
         if (bAnyNonTemp)
         {
-            syncInfo.signalingSemaphore = command.signalSemaphores.front();
+            syncInfo.signalingSemaphore = command.signalSemaphores.empty() ? nullptr : command.signalSemaphores.front();
             syncInfo.completeFence = cmdsCompleteFence;
             syncInfo.bIsAdvancedSubmit = true;
             syncInfo.refCount = uint32(command.cmdBuffers.size());
@@ -680,7 +680,7 @@ void VulkanCmdBufferManager::submitCmds(
     }
 }
 
-void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef &cmdsCompleteFence)
+void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef cmdsCompleteFence)
 {
     QueueResourceBase *queueRes = nullptr;
 
@@ -746,7 +746,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     }
     if (bAnyNonTemp)
     {
-        syncInfo.signalingSemaphore = command.signalSemaphores.front();
+        syncInfo.signalingSemaphore = command.signalSemaphores.empty() ? nullptr : command.signalSemaphores.front();
         syncInfo.completeFence = cmdsCompleteFence;
         syncInfo.bIsAdvancedSubmit = true;
         syncInfo.refCount = uint32(command.cmdBuffers.size());

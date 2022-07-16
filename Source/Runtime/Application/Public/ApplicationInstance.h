@@ -14,8 +14,10 @@
 #include "ApplicationExports.h"
 #include "String/String.h"
 #include "Types/CoreTypes.h"
-#include "Types/Platform/PlatformTypes.h"
 #include "Types/Time.h"
+#include "Math/CoreMathTypedefs.h"
+#include "Memory/StackAllocator.h"
+#include "Types/Platform/PlatformTypes.h"
 #include "IRenderInterfaceModule.h"
 
 class PlatformAppInstanceBase;
@@ -29,7 +31,10 @@ class WidgetDrawContext;
 class WgWindow;
 class GenericAppWindow;
 class GenericWindowCanvas;
+class WidgetRenderer;
 
+template <typename PtrType>
+class ReferenceCountPtr;
 using WindowCanvasRef = ReferenceCountPtr<GenericWindowCanvas>;
 
 namespace copat
@@ -107,9 +112,14 @@ private:
     bool bExitNextFrame = false;
     bool bAppActive = true;
 
+    // Gets reset every frame and starts fresh for next frame
+    StackAllocator<EThreadSharing::ThreadSharing_Exclusive> frameAllocator;
+    StackAllocator<EThreadSharing::ThreadSharing_Exclusive> renderFrameAllocator;
+
     DelegateHandle onWindowDestroyHandle;
     SharedPtr<WgWindow> lastHoverWnd;
     std::map<GenericAppWindow *, SharedPtr<WgWindow>> windowWidgets;
+    WidgetRenderer *wgRenderer;
 
 public:
     ApplicationTimeData timeData;
@@ -140,6 +150,10 @@ public:
     FORCE_INLINE const String &getAppName() const { return applicationName; }
     FORCE_INLINE void getVersion(int32 &majorVer, int32 &minorVer, int32 &patchVer) const;
     FORCE_INLINE const String &getCmdLine() const { return cmdLine; }
+    // Must be used in main thread and within application tick only
+    APPLICATION_EXPORT StackAllocator<EThreadSharing::ThreadSharing_Exclusive> &getFrameAllocator();
+    // Must be used in render thread
+    APPLICATION_EXPORT StackAllocator<EThreadSharing::ThreadSharing_Exclusive> &getRenderFrameAllocator();
 
     // Window related functions
     APPLICATION_EXPORT SharedPtr<WgWindow> getMainWindow() const;
@@ -156,10 +170,7 @@ private:
 
     void tickWindowWidgets();
     void drawWindowWidgets();
-    void drawWindowWidgetsRenderThread(
-        const std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &drawingContexts, IRenderCommandList *cmdList,
-        IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
-    ) const;
+    void presentAllWindows();
 };
 
 FORCE_INLINE void ApplicationInstance::getVersion(int32 &majorVer, int32 &minorVer, int32 &patchVer) const

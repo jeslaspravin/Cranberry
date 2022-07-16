@@ -16,14 +16,11 @@
 #include "Types/Containers/FlatTree.h"
 #include "Memory/SmartPointers.h"
 #include "Math/Box.h"
-#include "Math/Vector2D.h"
-#include "Types/Colors.h"
-#include "RenderInterface/Resources/MemoryResources.h"
-#include "RenderInterface/Resources/GraphicsSyncResource.h"
 
 class InputSystem;
 class WidgetBase;
 class WgWindow;
+class WidgetDrawContext;
 
 struct WidgetGeom
 {
@@ -32,50 +29,6 @@ struct WidgetGeom
 };
 using WidgetGeomTree = FlatTree<WidgetGeom, uint32>;
 using WidgetGeomId = WidgetGeomTree::NodeIdx;
-
-class WidgetDrawContext
-{
-private:
-    std::vector<Color> vertexColor;
-    std::vector<Vector2D> vertexCoord;
-    std::vector<Short2D> vertices;
-    std::vector<ImageResourceRef> instanceTexture;
-    std::vector<QuantShortBox2D> instanceClip;
-
-    std::vector<SemaphoreRef> waitOnSemaphores;
-    /**
-     * Maps each range of vertices that can be draw at same depth to its layer, Higher layer will be drawn on top of lower layer
-     */
-    std::vector<std::vector<ValueRange<uint32>>> altToVertRange;
-
-    int32 layerAlt = -1;
-
-public:
-    APPLICATION_EXPORT void
-        drawBox(ArrayView<Size2D> verts, ArrayView<Vector2D> coords, ArrayView<Color> color, ImageResourceRef *texture, QuantShortBox2D clip);
-    APPLICATION_EXPORT void drawBox(ArrayView<Size2D> verts, ArrayView<Color> color, QuantShortBox2D clip);
-    APPLICATION_EXPORT void drawBox(ArrayView<Size2D> verts, QuantShortBox2D clip);
-
-    APPLICATION_EXPORT void addWaitCondition(SemaphoreRef *semaphore);
-
-    APPLICATION_EXPORT void beginLayer();
-    APPLICATION_EXPORT void endLayer();
-
-    FORCE_INLINE const std::vector<Color> &perVertexColor() const { return vertexColor; }
-    FORCE_INLINE const std::vector<Short2D> &perVertexPos() const { return vertices; }
-    FORCE_INLINE const std::vector<Vector2D> &perVertexUV() const { return vertexCoord; }
-
-    FORCE_INLINE const std::vector<ImageResourceRef> &perQuadTexture() const { return instanceTexture; }
-    FORCE_INLINE const std::vector<QuantShortBox2D> &perQuadClipping() const { return instanceClip; }
-
-    FORCE_INLINE const std::vector<SemaphoreRef> &allWaitOnSemaphores() const { return waitOnSemaphores; }
-
-    // Layers at higher indices appear on top of ones below
-    FORCE_INLINE const auto &allLayerVertRange() const { return altToVertRange; }
-
-private:
-    bool canAddMoreVerts(uint32 vertsCount) const;
-};
 
 enum class EInputHandleState
 {
@@ -97,6 +50,7 @@ public:
     // below virtual functions are non recursive. Overrides do not have to call its child as children will be processed before parent
     virtual void tick(float timeDelta) = 0;
     virtual EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) = 0;
+    // absPos are not screen position but position relative to widget's window and widgetRelPos is this widget relative position
     virtual void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) = 0;
     virtual void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) = 0;
     virtual void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) = 0;

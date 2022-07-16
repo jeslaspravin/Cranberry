@@ -141,9 +141,10 @@ public:
     const GraphicsResource *startCmd(const String &uniqueName, EQueueFunction queue, bool bIsReusable) final;
     void endCmd(const GraphicsResource *cmdBuffer) final;
     void freeCmd(const GraphicsResource *cmdBuffer) final;
-    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef &fence) final;
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence) final;
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &submitInfos, FenceRef fence) final;
     void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &submitInfo);
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands) final;
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &submitInfos) final;
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command) final;
     void finishCmd(const GraphicsResource *cmdBuffer) final;
     void finishCmd(const String &uniqueName) final;
@@ -255,9 +256,14 @@ void RenderCommandList::endCmd(const GraphicsResource *cmdBuffer) { cmdList->end
 
 void RenderCommandList::freeCmd(const GraphicsResource *cmdBuffer) { cmdList->freeCmd(cmdBuffer); }
 
-void RenderCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef &fence)
+void RenderCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence)
 {
     cmdList->submitCmd(priority, submitInfo, fence);
+}
+
+void RenderCommandList::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &submitInfos, FenceRef fence)
+{
+    cmdList->submitCmds(priority, submitInfos, fence);
 }
 
 void RenderCommandList::submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &submitInfo)
@@ -265,9 +271,9 @@ void RenderCommandList::submitWaitCmd(EQueuePriority::Enum priority, const Comma
     cmdList->submitWaitCmd(priority, submitInfo);
 }
 
-void RenderCommandList::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands)
+void RenderCommandList::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &submitInfos)
 {
-    cmdList->submitCmds(priority, commands);
+    cmdList->submitCmds(priority, submitInfos);
 }
 
 void RenderCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command) { cmdList->submitCmd(priority, command); }

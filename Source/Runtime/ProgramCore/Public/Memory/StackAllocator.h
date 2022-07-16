@@ -300,21 +300,21 @@ public:
 
     CONST_EXPR ~CBEStlStackAllocator() = default;
 
-    CONST_EXPR void deallocate(Type *const ptr, const SizeT size)
+    CONST_EXPR void deallocate(Type *const ptr, const SizeT count)
     {
         if (stackAllocator == nullptr)
             return;
 
-        stackAllocator->memFree(ptr, size);
+        stackAllocator->memFree(ptr, count * sizeof(Type));
     }
 
-    NODISCARD CONST_EXPR Type *allocate(const SizeT size)
+    NODISCARD CONST_EXPR Type *allocate(const SizeT count)
     {
         if (stackAllocator == nullptr)
             return nullptr;
 
-        debugAssert(stackAllocator->isBspAlignedBy(alignof(Type)));
-        return static_cast<Type *>(stackAllocator->memAlloc(size));
+        debugAssertf(stackAllocator->isBspAlignedBy(alignof(Type)), "Alignment %d requirement not meet!", alignof(Type));
+        return static_cast<Type *>(stackAllocator->memAlloc(count * sizeof(Type)));
     }
 
     NODISCARD CONST_EXPR AllocatorType *allocator() const { return stackAllocator; }
@@ -326,3 +326,8 @@ FORCE_INLINE CONST_EXPR bool
 {
     return lhs.allocator() == rhs.allocator();
 }
+
+template <typename Type>
+using CBEStrStackAllocatorShared = CBEStlStackAllocator<Type, EThreadSharing::ThreadSharing_Shared>;
+template <typename Type>
+using CBEStrStackAllocatorExclusive = CBEStlStackAllocator<Type, EThreadSharing::ThreadSharing_Exclusive>;

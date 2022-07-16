@@ -43,6 +43,12 @@ ImageResourceRef GlobalBuffers::dummyNormalTexture;
 ImageResourceRef GlobalBuffers::integratedBRDF;
 
 BufferResourceRef GlobalBuffers::quadTriVerts = nullptr;
+
+SamplerRef GlobalBuffers::nearestFiltering = nullptr;
+SamplerRef GlobalBuffers::linearFiltering = nullptr;
+SamplerRef GlobalBuffers::depthFiltering = nullptr;
+SamplerRef GlobalBuffers::shadowFiltering = nullptr;
+
 std::pair<BufferResourceRef, BufferResourceRef> GlobalBuffers::quadRectVertsInds{ nullptr, nullptr };
 std::pair<BufferResourceRef, BufferResourceRef> GlobalBuffers::lineGizmoVertxInds{ nullptr, nullptr };
 
@@ -99,6 +105,7 @@ void GlobalBuffers::initialize()
     createTextureCubes(cmdList, graphicsInstance, graphicsHelper);
     createTexture2Ds(cmdList, graphicsInstance, graphicsHelper);
     createVertIndBuffers(cmdList, graphicsInstance, graphicsHelper);
+    createSamplers(cmdList, graphicsInstance, graphicsHelper);
 
     generateTexture2Ds(cmdList, graphicsInstance, graphicsHelper);
 }
@@ -108,6 +115,7 @@ void GlobalBuffers::destroy()
     destroyTextureCubes();
     destroyTexture2Ds();
     destroyVertIndBuffers();
+    destroySamplers();
 }
 
 GenericRenderPassProperties GlobalBuffers::getFramebufferRenderpassProps(ERenderPassFormat::Type renderpassFormat)
@@ -211,6 +219,48 @@ void GlobalBuffers::destroyTexture2Ds()
     dummyNormalTexture.reset();
 
     integratedBRDF.reset();
+}
+
+void GlobalBuffers::createSamplers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+{
+    SamplerCreateInfo samplerCI{
+        .filtering = ESamplerFiltering::Nearest,
+        .mipFiltering = ESamplerFiltering::Nearest,
+        .mipLodRange = ValueRange<float>{0, float(GlobalRenderVariables::MIN_SAMPLINE_MIP_LEVEL.get())},
+        .resourceName = TCHAR("NearestSampler")
+    };
+    samplerCI.tilingMode = { ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat, ESamplerTilingMode::Repeat };
+
+    nearestFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    nearestFiltering->init();
+
+    samplerCI.mipFiltering = samplerCI.filtering = ESamplerFiltering::Linear;
+    samplerCI.resourceName = TCHAR("LinearSampler");
+    linearFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    linearFiltering->init();
+
+    samplerCI.mipFiltering = samplerCI.filtering = ESamplerFiltering::Linear;
+    samplerCI.tilingMode = { ESamplerTilingMode::BorderClamp, ESamplerTilingMode::BorderClamp, ESamplerTilingMode::BorderClamp };
+    samplerCI.resourceName = TCHAR("DepthSampler");
+    // Depth sampling must be nearest however there is better filtering when using linear filtering
+    depthFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    depthFiltering->init();
+
+    // Has to lesser comparison since we want shadow to be 1.0 only if shading texel's depth is less that shadow depth texel
+    // And lesser than gives 1.0(Shadowed) if shading depth is less than texel depth
+    samplerCI.useCompareOp = 1;
+    samplerCI.compareOp = CoreGraphicsTypes::ECompareOp::Less;
+    samplerCI.resourceName = TCHAR("ShadowSampler");
+    shadowFiltering = graphicsHelper->createSampler(graphicsInstance, samplerCI);
+    shadowFiltering->init();
+}
+
+void GlobalBuffers::destroySamplers()
+{
+    nearestFiltering.reset();
+    linearFiltering.reset();
+    depthFiltering.reset();
+    shadowFiltering.reset();
 }
 
 void GlobalBuffers::createTextureCubes(

@@ -17,7 +17,7 @@
 
 #include <queue>
 
-FORCE_INLINE std::vector<String> WindowsFileSystemFunctions::listFiles(const String &directory, bool bRecursive, const String &wildcard)
+std::vector<String> WindowsFileSystemFunctions::listFiles(const String &directory, bool bRecursive, const String &wildcard)
 {
     std::vector<String> fileList;
     {

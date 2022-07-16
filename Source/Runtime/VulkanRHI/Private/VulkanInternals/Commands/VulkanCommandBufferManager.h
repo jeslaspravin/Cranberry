@@ -146,8 +146,8 @@ public:
     // Parameter: GraphicsFence * cmdsCompleteFence - Fence that gets signalled when all of the commands
     // submitted are complete
     //************************************
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands, FenceRef &cmdsCompleteFence);
-    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef &cmdsCompleteFence);
+    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands, FenceRef cmdsCompleteFence);
+    void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef cmdsCompleteFence);
 
     void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands, VulkanResourcesTracker *resourceTracker);
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command, VulkanResourcesTracker *resourceTracker);

@@ -186,7 +186,7 @@ WeakModulePtr ModuleManager::getOrLoadModule(const TChar *moduleName)
 #if STATIC_LINKED
         else
         {
-            fatalAssertf(!"Module initializer not found", "Module initializer not found");
+            fatalAssertf(!"Module initializer not found", "Module %s initializer not found", moduleName);
             return existingModule;
         }
 #else  // STATIC_LINKED

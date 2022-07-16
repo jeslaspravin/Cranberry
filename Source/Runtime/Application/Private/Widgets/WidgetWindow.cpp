@@ -11,6 +11,7 @@
 
 #include "Widgets/WidgetWindow.h"
 #include "InputSystem/InputSystem.h"
+#include "Widgets/WidgetDrawContext.h"
 
 void WgWindow::construct(const WgArguments &args)
 {
@@ -95,7 +96,7 @@ void WgWindow::rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree)
         return;
     }
 
-    content->rebuildGeometry(geomTree.add(WidgetGeom{ .widget = content }), geomTree);
+    content->rebuildGeometry(geomTree.add(WidgetGeom{ .widget = content }, 0), geomTree);
     std::vector<WidgetGeomTree::NodeIdx> children;
     geomTree.getChildren(children, 0, true);
 
@@ -119,7 +120,9 @@ void WgWindow::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const 
     auto nodeIdx = geomTree.getChildren(thisId)[0];
     const WidgetGeom &contentGeom = geomTree[nodeIdx];
     debugAssert(contentGeom.widget == content);
+    context.beginLayer();
     content->drawWidget(clipBound.getIntersectionBox(contentGeom.box), nodeIdx, geomTree, context);
+    context.endLayer();
 }
 
 void WgWindow::tick(float timeDelta)
@@ -190,7 +193,10 @@ void WgWindow::mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSyste
             hoveringWidget->mouseLeave(absPos, absPos - oldGeom.box.minBound, inputSystem);
         }
         hoveringWidget = currentHoverGeom.widget;
-        hoveringWidget->mouseEnter(absPos, absPos - currentHoverGeom.box.minBound, inputSystem);
+        if (hoveringWidget)
+        {
+            hoveringWidget->mouseEnter(absPos, absPos - currentHoverGeom.box.minBound, inputSystem);
+        }
     }
     mousePos = absPos;
 
@@ -205,6 +211,7 @@ void WgWindow::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSyste
     if (hoveringWidget)
     {
         hoveringWidget->mouseLeave(absPos, widgetRelPos, inputSystem);
+        hoveringWidget = nullptr;
     }
 }
 

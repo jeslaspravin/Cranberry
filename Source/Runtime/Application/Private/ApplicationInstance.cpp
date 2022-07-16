@@ -16,6 +16,7 @@
 #include "InputSystem/InputSystem.h"
 #include "WindowManager.h"
 #include "FontManager.h"
+#include "Widgets/WidgetRenderer.h"
 #include "Types/Platform/Threading/PlatformThreading.h"
 
 namespace ApplicationSettings
@@ -90,10 +91,12 @@ void ApplicationTimeData::progressFrame()
 
 ApplicationInstance::ApplicationInstance(const AppInstanceCreateInfo &createInfo)
     : applicationName(createInfo.applicationName)
+    , cmdLine(createInfo.cmdLine)
     , majorVersion(createInfo.majorVersion)
     , minorVersion(createInfo.minorVersion)
     , patchVersion(createInfo.patchVersion)
-    , cmdLine(createInfo.cmdLine)
+    , lastHoverWnd(nullptr)
+    , wgRenderer(nullptr)
     , platformApp(nullptr)
     , inputSystem(nullptr)
     , windowManager(nullptr)
@@ -111,6 +114,10 @@ void ApplicationInstance::startApp()
     {
         debugAssert(windowManager->getMainWindow());
         windowWidgets[windowManager->getMainWindow()] = createWindowWidget(windowManager->getMainWindow());
+
+        wgRenderer = WidgetRenderer::createRenderer();
+        fatalAssertf(wgRenderer, "Failed creating WidgetRenderer!");
+        wgRenderer->initialize();
     }
     // TODO(Jeslas) : If ever rendering off screen just create new proxy window with proxy window canvas(like swapchain) and setup window widget
 
@@ -149,18 +156,23 @@ bool ApplicationInstance::appTick()
     if (!ApplicationSettings::computeOnly)
     {
         drawWindowWidgets();
+        presentAllWindows();
     }
-
     timeData.progressFrame();
     return !bExitNextFrame;
 }
 
 void ApplicationInstance::exitApp()
 {
+    onExit();
+    if (wgRenderer)
+    {
+        wgRenderer->destroy();
+        // Will be deleted after destroyed in render thread
+        wgRenderer = nullptr;
+    }
     IApplicationModule::get()->unregisterOnWindowDestroyed(onWindowDestroyHandle);
     windowWidgets.clear();
-
-    onExit();
 
     LOG("ApplicationInstance", "%s run time %.3f minutes", applicationName, Time::asMinutes(Time::timeNow() - timeData.startTick));
 }

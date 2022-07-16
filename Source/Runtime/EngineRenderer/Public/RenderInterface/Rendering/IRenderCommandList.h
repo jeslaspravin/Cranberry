@@ -30,6 +30,7 @@ class LocalPipelineContext;
 struct RenderPassAdditionalProps;
 
 #define SCOPED_CMD_MARKER(CmdList, CommandBuffer, Name) ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name))
+#define SCOPED_STR_CMD_MARKER(CmdList, CommandBuffer, Name) ScopedCommandMarker COMBINE(cmdMarker_, __COUNTER__)(CmdList, CommandBuffer, (Name))
 #define SCOPED_CMD_COLORMARKER(CmdList, CommandBuffer, Name, Color)                                                                            \
     ScopedCommandMarker cmdMarker_##Name(CmdList, CommandBuffer, TCHAR(#Name), Color)
 struct ENGINERENDERER_EXPORT ScopedCommandMarker
@@ -241,10 +242,16 @@ public:
     virtual void endCmd(const GraphicsResource *cmdBuffer) = 0;
     // Frees the command buffer after usage
     virtual void freeCmd(const GraphicsResource *cmdBuffer) = 0;
-    virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef &fence) = 0;
+
+    /**
+     * Advanced submits, Dependencies needs to be handled manually. If you are using cmdBarrierResources() in this command buffer use
+     * CommandSubmitInfo2 alternative
+     */
+    virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence) = 0;
+    virtual void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &submitInfos, FenceRef fence) = 0;
 
     virtual void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &submitInfo) = 0;
-    virtual void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands) = 0;
+    virtual void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &submitInfos) = 0;
     virtual void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command) = 0;
 
     virtual void finishCmd(const GraphicsResource *cmdBuffer) = 0;

@@ -10,6 +10,7 @@
  */
 
 #include "Widgets/WidgetBase.h"
+#include "Widgets/WidgetDrawContext.h"
 
 void WidgetDrawContext::drawBox(
     ArrayView<Size2D> verts, ArrayView<Vector2D> coords, ArrayView<Color> color, ImageResourceRef *texture, QuantShortBox2D clip
