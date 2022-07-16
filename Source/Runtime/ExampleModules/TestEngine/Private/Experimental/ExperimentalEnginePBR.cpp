@@ -88,6 +88,7 @@
 #include "CBEObjectHelpers.h"
 #include "CBEPackage.h"
 #include "Widgets/WidgetWindow.h"
+#include "Widgets/WidgetDrawContext.h"
 
 struct PBRSceneEntity
 {
@@ -3060,6 +3061,57 @@ int32 ExperimentalEnginePBR::layerDepth() const { return 0; }
 
 int32 ExperimentalEnginePBR::sublayerDepth() const { return 0; }
 
+class TestWidget : public WidgetBase
+{
+
+public:
+    Color colors[4] = { ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN };
+    void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override
+    {
+        WidgetGeom &geom = geomTree[thisId];
+        geom.box = {
+            Short2D{100, 100},
+            Short2D{250, 200}
+        };
+    }
+
+    void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override
+    {
+        Size2D verts[4] = {
+            {100, 100},
+            {250, 100},
+            {250, 200},
+            {100, 200}
+        };
+        context.drawBox(verts, colors, clipBound);
+    }
+
+    void tick(float timeDelta) override {}
+
+    EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override
+    {
+        return EInputHandleState::NotHandled;
+    }
+
+    void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override
+    {
+        colors[0] = ColorConst::random();
+        colors[1] = ColorConst::random();
+        colors[2] = ColorConst::random();
+        colors[3] = ColorConst::random();
+    }
+
+    void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override {}
+
+    void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override
+    {
+        colors[0] = ColorConst::GREEN;
+        colors[1] = ColorConst::GREEN;
+        colors[2] = ColorConst::GREEN;
+        colors[3] = ColorConst::GREEN;
+    }
+};
+
 void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
 {
     static bool bOpenImguiDemo = false;
@@ -3110,7 +3162,8 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
                     [this]() -> copat::JobSystemEnqTask<copat::EJobThreadType::MainThread>
                     {
                         static int32 count = 1;
-                        application->createWindow(renderSize, ("TestWindow" + String::toString(count)).c_str(), nullptr);
+                        application->createWindow(renderSize, ("TestWindow" + String::toString(count)).c_str(), nullptr)
+                            ->setContent(std::make_shared<TestWidget>());
                         count++;
                         co_return;
                     }
