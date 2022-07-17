@@ -14,6 +14,7 @@
 #include "Memory/SmartPointers.h"
 
 #include <vector>
+#include "Types/CoreDefines.h"
 
 class WgWindow;
 class WidgetDrawContext;
@@ -32,7 +33,7 @@ public:
     virtual void destroy() = 0;
     virtual void clearWindowState(const SharedPtr<WgWindow> &window) = 0;
 
-    void drawWindowWidgets(const std::vector<SharedPtr<WgWindow>> &windows);
+    NODISCARD std::vector<SharedPtr<WgWindow>> drawWindowWidgets(const std::vector<SharedPtr<WgWindow>> &windows);
 
 protected:
     virtual void drawWindowWidgets(std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &&drawingContexts) = 0;

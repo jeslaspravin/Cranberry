@@ -128,13 +128,19 @@ public:
     }
     void memFree(void *ptr, SizeType size)
     {
-        if (ptr)
+        if (!ptr)
         {
             return;
         }
         if (isOwningMemory(ptr))
         {
-            alertAlwaysf(UPtrInt(ptr) == (UPtrInt(memoryPtr) + (bsp - size)), "Out of order freeing allocated stack memory!");
+            const UPtrInt freeingPtr = UPtrInt(ptr);
+            const UPtrInt expectedPtr = UPtrInt(memoryPtr) + (bsp - size);
+            alertAlwaysf(
+                freeingPtr == expectedPtr, "Out of order freeing allocated stack memory! Freeing ptr %llu expected ptr %llu", freeingPtr,
+                expectedPtr
+            );
+            bsp -= size;
         }
         else
         {
@@ -143,7 +149,7 @@ public:
     }
     void memFreeChecked(void *ptr, SizeType size)
     {
-        if (ptr)
+        if (!ptr)
         {
             return;
         }

@@ -44,17 +44,21 @@ private:
     BufferResourceRef indices;
     BufferResourceRef vertices;
 
+    /* WidgetRenderer overrides */
 public:
     void initialize() final;
     void destroy() final;
     void clearWindowState(const SharedPtr<WgWindow> &window) final;
 
 protected:
-    void drawWindowWidgets(std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &&drawingContexts) final;
+    void drawWindowWidgets(std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &&drawingContexts);
 
+    /* Overrides ends */
 private:
     void initializeRenderThread(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void destroyRenderThread(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+
+    FORCE_INLINE void clearUnusedTextures();
 
     WindowState &createWindowState(
         const SharedPtr<WgWindow> &window, GenericWindowCanvas *swapchainCanvas, IRenderCommandList *cmdList,

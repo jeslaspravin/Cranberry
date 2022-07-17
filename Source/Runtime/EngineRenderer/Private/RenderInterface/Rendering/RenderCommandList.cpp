@@ -41,7 +41,7 @@ private:
 
 public:
     void setup(IRenderCommandList *commandList) final;
-    void newFrame(const float &tiimeDelta);
+    void newFrame(float timeDelta) final;
 
     void copyToBuffer(BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy, uint32 size) final;
     void copyToBuffer(const std::vector<BatchCopyBufferData> &batchCopies) final;
@@ -231,7 +231,7 @@ void RenderCommandList::setup(IRenderCommandList *commandList)
     }
 }
 
-void RenderCommandList::newFrame(const float &tiimeDelta) { cmdList->newFrame(tiimeDelta); }
+void RenderCommandList::newFrame(float timeDelta) { cmdList->newFrame(timeDelta); }
 
 void RenderCommandList::copyBuffer(BufferResourceRef src, BufferResourceRef dst, const CopyBufferInfo &copyInfo)
 {

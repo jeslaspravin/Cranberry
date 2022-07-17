@@ -138,7 +138,7 @@ RenderThreadEnqTask RenderManager::destroy()
     );
 }
 
-void RenderManager::renderFrame(const float &timedelta)
+void RenderManager::renderFrame(float timedelta)
 {
     // TODO(Jeslas): Start new frame before any commands, Since not multi-threaded it is okay to call
     // directly here
