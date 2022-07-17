@@ -373,6 +373,8 @@ const Color BLACK(0, 0, 0, 255);
 const Color RED(255, 0, 0, 255);
 const Color BLUE(0, 0, 255, 255);
 const Color GREEN(0, 255, 0, 255);
+
+const Color CYAN(0, 255, 255, 255);
 } // namespace ColorConst
 
 namespace LinearColorConst
@@ -396,4 +398,6 @@ const LinearColor BLACK(0, 0, 0, 1);
 const LinearColor RED(1, 0, 0, 1);
 const LinearColor BLUE(0, 0, 1, 1);
 const LinearColor GREEN(0, 1, 0, 1);
+
+const LinearColor CYAN(0, 1, 1, 1);
 } // namespace LinearColorConst

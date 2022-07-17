@@ -40,7 +40,8 @@ using WindowCanvasRef = ReferenceCountPtr<GenericWindowCanvas>;
 namespace copat
 {
 class JobSystem;
-}
+struct NormalFuncAwaiter;
+} // namespace copat
 
 struct AppInstanceCreateInfo
 {
@@ -71,7 +72,10 @@ struct ApplicationTimeData
 
     /* Global time dilation */
     float timeDilation = 1;
-    // -1 means no limit, Ensures that delta time never goes below frame rate limit
+
+    // -1 means no limit, Ensures that delta time never goes below frame rate limit,
+    // inactiveTicksBackup will be same as frameLimitsTicks when app is active
+    TickRep inactiveTicksBackup = -1;
     TickRep frameLimitsTicks = -1;
 
     // Per frame data
@@ -88,7 +92,8 @@ struct ApplicationTimeData
     float prevDeltaTimes[60];
     uint8 lastDelTimeIdx = 0;
 
-    void setFrameRateLimit(uint8 inFameRate);
+    void setApplicationState(bool bActive);
+    void setFramesLimit(uint8 framesLimit);
 
     void appStart();
     void tickStart();
@@ -169,8 +174,10 @@ private:
     void onWindowDestroyed(GenericAppWindow *appWindow);
 
     void tickWindowWidgets();
-    void drawWindowWidgets();
-    void presentAllWindows();
+    NODISCARD std::vector<SharedPtr<WgWindow>> drawWindowWidgets();
+    void presentDrawnWnds(const std::vector<SharedPtr<WgWindow>> &windowsDrawn);
+
+    void startNewFrame();
 };
 
 FORCE_INLINE void ApplicationInstance::getVersion(int32 &majorVer, int32 &minorVer, int32 &patchVer) const

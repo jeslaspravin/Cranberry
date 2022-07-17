@@ -101,10 +101,11 @@ void WindowsAppWindow::updateWindow()
 
 void WindowsAppWindow::destroyWindow()
 {
-    GenericAppWindow::destroyWindow();
-
     ::DestroyWindow((HWND)windowHandle);
     windowHandle = nullptr;
+
+    // Doing after destroying native handle to allow processing native events like WM_ACTIVATE at WindowProc
+    GenericAppWindow::destroyWindow();
 }
 
 bool WindowsAppWindow::isValidWindow() const { return windowHandle != nullptr && windowHandle != nullptr; }

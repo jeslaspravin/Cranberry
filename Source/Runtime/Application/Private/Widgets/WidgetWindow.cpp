@@ -116,8 +116,14 @@ void WgWindow::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const 
     {
         return;
     }
+    std::vector<WidgetGeomId> children = geomTree.getChildren(thisId);
+    if (children.empty())
+    {
+        // This happens only when we are deactivating all window of application before first ticking the window after setting window content
+        return;
+    }
 
-    auto nodeIdx = geomTree.getChildren(thisId)[0];
+    auto nodeIdx = children[0];
     const WidgetGeom &contentGeom = geomTree[nodeIdx];
     debugAssert(contentGeom.widget == content);
     context.beginLayer();

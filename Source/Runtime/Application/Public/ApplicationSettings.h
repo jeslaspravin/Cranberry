@@ -33,5 +33,6 @@ extern APPLICATION_EXPORT ProgramOwnedVar<bool, ApplicationInstance> enableVsync
 extern APPLICATION_EXPORT ProgramOwnedVar<bool, ApplicationInstance> renderingOffscreen;
 // Will be same as GlobalRenderVariables::GPU_IS_COMPUTE_ONLY
 extern APPLICATION_EXPORT ProgramOwnedVar<bool, ApplicationInstance> computeOnly;
+extern APPLICATION_EXPORT ProgramOwnedVar<bool, ApplicationInstance> usingGpu;
 
 } // namespace ApplicationSettings

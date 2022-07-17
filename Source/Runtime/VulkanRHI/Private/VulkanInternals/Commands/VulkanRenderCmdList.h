@@ -49,7 +49,7 @@ public:
     VulkanCommandList(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, VulkanDevice *vulkanDevice);
     ~VulkanCommandList() = default;
 
-    void newFrame(const float &tiimeDelta);
+    void newFrame(float timeDelta);
 
     void copyToBuffer(BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy, uint32 size) final;
     void copyBuffer(BufferResourceRef src, BufferResourceRef dst, const CopyBufferInfo &copyInfo) final;

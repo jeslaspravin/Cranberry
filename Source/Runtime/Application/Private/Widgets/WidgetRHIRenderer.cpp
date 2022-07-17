@@ -94,6 +94,22 @@ void WidgetRHIRenderer::destroyRenderThread(
     vertices.reset();
 }
 
+FORCE_INLINE void WidgetRHIRenderer::clearUnusedTextures()
+{
+    for (auto itr = textureToParamsIdx.begin(); itr != textureToParamsIdx.end();)
+    {
+        if (textureParams[itr->second].second)
+        {
+            ++itr;
+        }
+        else
+        {
+            textureParams.reset(itr->second);
+            itr = textureToParamsIdx.erase(itr);
+        }
+    }
+}
+
 WidgetRHIRenderer::WindowState &WidgetRHIRenderer::createWindowState(
     const SharedPtr<WgWindow> &window, GenericWindowCanvas *swapchainCanvas, IRenderCommandList *cmdList,
     const LocalPipelineContext &pipelineContext, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
@@ -364,71 +380,78 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
             }
         }
 
-        RenderPassClearValue clearValue;
-        clearValue.colors.emplace_back(LinearColorConst::Transparent);
-        clearValue.depth = 1;
-
-        RenderPassAdditionalProps additionalParams;
-        additionalParams.bUsedAsPresentSource = true;
-
-        GraphicsPipelineState pipelineState;
-        pipelineState.pipelineQuery.cullingMode = ECullingMode::BackFace;
-        pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
-
-        for (uint32 i = 0; i < drawingContexts.size(); ++i)
-        {
-            uint32 width, height;
-            drawingContexts[i].first->getAppWindow()->windowSize(width, height);
-            QuantizedBox2D renderArea{ Int2D(0), Int2D(width, height) };
-
-            LocalPipelineContext &pipelineContext = pipelineCntxPerWnd[i];
-            WindowState *windowState = statePerWnd[i];
-
-            FenceRef fence = windowState->perFrameSubmitFences[pipelineContext.swapchainIdx];
-            if (!fence->isSignaled())
-            {
-                fence->waitForSignal();
-            }
-            fence->resetSignal();
-
-            // Wait until corresponding previous frame draw is done
-            cmdList->finishCmd(windowState->perFrameCmdBuffers[pipelineContext.swapchainIdx]);
-
-            const GraphicsResource *cmdBuffer
-                = cmdList->startCmd(windowState->perFrameCmdBuffers[pipelineContext.swapchainIdx], EQueueFunction::Graphics, true);
-            cmdBufferPerWnd[i] = cmdBuffer;
-
-            SCOPED_STR_CMD_MARKER(cmdList, cmdBuffer, TCHAR("WidgetRHIRender_") + drawingContexts[i].first->getAppWindow()->getWindowName());
-            cmdList->cmdBeginRenderPass(cmdBuffer, pipelineContext, renderArea, additionalParams, clearValue);
-            cmdList->cmdSetViewportAndScissor(cmdBuffer, renderArea, renderArea);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { vertices }, { 0 });
-            cmdList->cmdBindIndexBuffer(cmdBuffer, indices, 0);
-            cmdList->cmdBindGraphicsPipeline(cmdBuffer, pipelineContext, pipelineState);
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineContext, windowState->windowTransformParam);
-            for (const WgDrawCmd &drawCmd : drawCmdsPerWnd[i])
-            {
-                QuantizedBox2D scissor{
-                    Int2D{drawCmd.scissor.minBound.x, drawCmd.scissor.minBound.y},
-                    Int2D{drawCmd.scissor.maxBound.x, drawCmd.scissor.maxBound.y}
-                };
-                cmdList->cmdSetViewportAndScissor(cmdBuffer, renderArea, scissor);
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineContext, textureParams[drawCmd.textureDescIdx].first);
-
-                cmdList->cmdDrawIndexed(cmdBuffer, drawCmd.indicesOffset, drawCmd.indicesCount);
-            }
-            cmdList->cmdEndRenderPass(cmdBuffer);
-
-            cmdList->endCmd(cmdBuffer);
-
-            CommandSubmitInfo submitInfo;
-            submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-            submitInfo.waitOn.emplace_back(swapchainSemaphores[i], INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));
-            submitInfo.signalSemaphores = { windowState->perFrameSignal[pipelineContext.swapchainIdx] };
-            for (const SemaphoreRef &semaphore : drawingContexts[i].second.allWaitOnSemaphores())
-            {
-                submitInfo.waitOn.emplace_back(semaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));
-            }
-            cmdList->submitCmd(EQueuePriority::SuperHigh, submitInfo, fence);
-        }
+        graphicsHelper->flushMappedPtr(graphicsInstance, std::vector<BufferResourceRef>{ vertices, indices });
+        graphicsHelper->returnMappedPtr(graphicsInstance, vertices);
+        graphicsHelper->returnMappedPtr(graphicsInstance, indices);
     }
+
+    // Render the widget draw commands
+    RenderPassClearValue clearValue;
+    clearValue.colors.emplace_back(LinearColorConst::Transparent);
+    clearValue.depth = 1;
+
+    RenderPassAdditionalProps additionalParams;
+    additionalParams.bUsedAsPresentSource = true;
+
+    GraphicsPipelineState pipelineState;
+    pipelineState.pipelineQuery.cullingMode = ECullingMode::BackFace;
+    pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
+
+    for (uint32 i = 0; i < drawingContexts.size(); ++i)
+    {
+        uint32 width, height;
+        drawingContexts[i].first->getAppWindow()->windowSize(width, height);
+        QuantizedBox2D renderArea{ Int2D(0), Int2D(width, height) };
+
+        LocalPipelineContext &pipelineContext = pipelineCntxPerWnd[i];
+        WindowState *windowState = statePerWnd[i];
+
+        FenceRef fence = windowState->perFrameSubmitFences[pipelineContext.swapchainIdx];
+        if (!fence->isSignaled())
+        {
+            fence->waitForSignal();
+        }
+        fence->resetSignal();
+
+        // Wait until corresponding previous frame draw is done
+        cmdList->finishCmd(windowState->perFrameCmdBuffers[pipelineContext.swapchainIdx]);
+
+        const GraphicsResource *cmdBuffer
+            = cmdList->startCmd(windowState->perFrameCmdBuffers[pipelineContext.swapchainIdx], EQueueFunction::Graphics, true);
+        cmdBufferPerWnd[i] = cmdBuffer;
+
+        SCOPED_STR_CMD_MARKER(cmdList, cmdBuffer, TCHAR("WidgetRHIRender_") + drawingContexts[i].first->getAppWindow()->getWindowName());
+        cmdList->cmdBeginRenderPass(cmdBuffer, pipelineContext, renderArea, additionalParams, clearValue);
+        cmdList->cmdSetViewportAndScissor(cmdBuffer, renderArea, renderArea);
+        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { vertices }, { 0 });
+        cmdList->cmdBindIndexBuffer(cmdBuffer, indices, 0);
+        cmdList->cmdBindGraphicsPipeline(cmdBuffer, pipelineContext, pipelineState);
+        cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineContext, windowState->windowTransformParam);
+        for (const WgDrawCmd &drawCmd : drawCmdsPerWnd[i])
+        {
+            QuantizedBox2D scissor{
+                Int2D{drawCmd.scissor.minBound.x, drawCmd.scissor.minBound.y},
+                Int2D{drawCmd.scissor.maxBound.x, drawCmd.scissor.maxBound.y}
+            };
+            cmdList->cmdSetViewportAndScissor(cmdBuffer, renderArea, scissor);
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineContext, textureParams[drawCmd.textureDescIdx].first);
+
+            cmdList->cmdDrawIndexed(cmdBuffer, drawCmd.indicesOffset, drawCmd.indicesCount);
+        }
+        cmdList->cmdEndRenderPass(cmdBuffer);
+
+        cmdList->endCmd(cmdBuffer);
+
+        CommandSubmitInfo submitInfo;
+        submitInfo.cmdBuffers.emplace_back(cmdBuffer);
+        submitInfo.waitOn.emplace_back(swapchainSemaphores[i], INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));
+        submitInfo.signalSemaphores = { windowState->perFrameSignal[pipelineContext.swapchainIdx] };
+        for (const SemaphoreRef &semaphore : drawingContexts[i].second.allWaitOnSemaphores())
+        {
+            submitInfo.waitOn.emplace_back(semaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));
+        }
+        cmdList->submitCmd(EQueuePriority::SuperHigh, submitInfo, fence);
+    }
+
+    clearUnusedTextures();
 }

@@ -29,21 +29,32 @@ ProgramOwnedVar<Size2D, WindowManager> surfaceSize;
 
 ProgramOwnedVar<bool, ApplicationInstance> fullscreenMode{ false };
 
-ProgramOwnedVar<bool, ApplicationInstance> enableVsync{ true };
+ProgramOwnedVar<bool, ApplicationInstance> enableVsync{ false };
 
 ProgramOwnedVar<bool, ApplicationInstance> renderingOffscreen{ false };
 ProgramOwnedVar<bool, ApplicationInstance> computeOnly{ false };
+ProgramOwnedVar<bool, ApplicationInstance> usingGpu{ true };
 
 } // namespace ApplicationSettings
 
-void ApplicationTimeData::setFrameRateLimit(uint8 inFameRate)
+void ApplicationTimeData::setApplicationState(bool bActive)
 {
-    if (inFameRate == 0)
+    if (bActive)
     {
-        frameLimitsTicks = -1;
+        frameLimitsTicks = inactiveTicksBackup;
         return;
     }
-    frameLimitsTicks = Time::fromSeconds(1.0f / float(inFameRate));
+    frameLimitsTicks = Time::fromSeconds(1.0f / 5.0f);
+}
+
+void ApplicationTimeData::setFramesLimit(uint8 framesLimit)
+{
+    if (framesLimit == 0)
+    {
+        inactiveTicksBackup = frameLimitsTicks = -1;
+        return;
+    }
+    inactiveTicksBackup = frameLimitsTicks = Time::fromSeconds(1.0f / float(framesLimit));
 }
 
 void ApplicationTimeData::appStart() { startTick = Time::timeNow(); }
@@ -74,10 +85,20 @@ void ApplicationTimeData::progressFrame()
         deltaTime = lastDeltaTime;
     }
 
-    // If we are faster than frame limit sleep for few ms
-    if (frameLimitsTicks > 0 && deltaTicks < frameLimitsTicks)
+    // If we are faster than frame limit when inactive sleep for few ms
+    while (frameLimitsTicks > 0 && deltaTicks < frameLimitsTicks)
     {
-        PlatformThreadingFunctions::sleep(Time::asMilliSeconds(frameLimitsTicks - deltaTicks));
+        TickRep sleepDur = Time::asMilliSeconds(frameLimitsTicks - deltaTicks);
+        // If we are trying to sleep more than 32ms(30fps) then use sleep else just loop
+        if (sleepDur > 32)
+        {
+            PlatformThreadingFunctions::sleep(sleepDur);
+        }
+        else
+        {
+            // Just push thread to staged state(giving up its time slice and waits for next time slice)
+            PlatformThreadingFunctions::sleep(0);
+        }
         frameTick = Time::timeNow();
         deltaTicks = frameTick - lastFrameTick;
         deltaTime = Time::asSeconds(deltaTicks);
@@ -106,6 +127,7 @@ ApplicationInstance::ApplicationInstance(const AppInstanceCreateInfo &createInfo
     debugAssertf(!createInfo.bRenderOffscreen, "Offscreen rendering is not supported!");
     ApplicationSettings::renderingOffscreen.set(createInfo.bRenderOffscreen);
     ApplicationSettings::computeOnly.set(createInfo.bIsComputeOnly);
+    ApplicationSettings::usingGpu.set(createInfo.bUseGpu);
 }
 
 void ApplicationInstance::startApp()
@@ -114,12 +136,14 @@ void ApplicationInstance::startApp()
     {
         debugAssert(windowManager->getMainWindow());
         windowWidgets[windowManager->getMainWindow()] = createWindowWidget(windowManager->getMainWindow());
-
+    }
+    // TODO(Jeslas) : If ever rendering off screen just create new proxy window with proxy window canvas(like swapchain) and setup window widget
+    if (ApplicationSettings::usingGpu && !ApplicationSettings::computeOnly)
+    {
         wgRenderer = WidgetRenderer::createRenderer();
         fatalAssertf(wgRenderer, "Failed creating WidgetRenderer!");
         wgRenderer->initialize();
     }
-    // TODO(Jeslas) : If ever rendering off screen just create new proxy window with proxy window canvas(like swapchain) and setup window widget
 
     onWindowDestroyHandle = IApplicationModule::get()->registerOnWindowDestroyed(
         AppWindowDelegate::SingleCastDelegateType::createObject(this, &ApplicationInstance::onWindowDestroyed)
@@ -132,10 +156,13 @@ void ApplicationInstance::startApp()
 
 bool ApplicationInstance::appTick()
 {
+    startNewFrame();
+
     if (windowManager && inputSystem)
     {
         bAppActive = windowManager->pollWindows();
         inputSystem->updateInputStates();
+        timeData.setApplicationState(bAppActive);
     }
 
     // Handle if we requested exit during this polling
@@ -144,20 +171,31 @@ bool ApplicationInstance::appTick()
         return false;
     }
 
+    // Do any none App Tick dependent rendering/ticks here
     if (fontManager)
     {
         fontManager->flushUpdates();
     }
-    onTick();
     if (hasActiveWindow())
     {
         tickWindowWidgets();
     }
-    if (!ApplicationSettings::computeOnly)
+
+    // Application tick
+    onTick();
+
+    // Rendering widgets after application tick to allow application updates to be visible
+    if (wgRenderer)
     {
-        drawWindowWidgets();
-        presentAllWindows();
+        auto drawnWnds = drawWindowWidgets();
+        if (!ApplicationSettings::renderingOffscreen)
+        {
+            presentDrawnWnds(drawnWnds);
+        }
     }
+
+    // Below must be last executed
+    Logger::flushStream();
     timeData.progressFrame();
     return !bExitNextFrame;
 }

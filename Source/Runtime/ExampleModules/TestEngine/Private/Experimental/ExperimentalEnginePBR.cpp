@@ -2678,6 +2678,11 @@ void ExperimentalEnginePBR::frameRender(
     submitInfo.cmdBuffers = { cmdBuffer };
 
     cmdList->submitCmd(EQueuePriority::High, submitInfo, frameResources[index].recordingFence);
+
+    // Presenting manually here as for Experimental we are not adding any widget to app main window and it gets skipped in presenting all drawn
+    // windows
+    std::vector<uint32> indices = { index };
+    cmdList->presentImage({ windowCanvas }, indices, {});
 }
 
 void ExperimentalEnginePBR::updateCamGizmoViewParams()
@@ -2999,7 +3004,8 @@ void ExperimentalEnginePBR::tickEngine()
         frameVisualizeId = 3;
     }
 
-    if (application->inputSystem->keyState(Keys::LMB)->keyWentDown && !imguiManager.capturedInputs())
+    if (application->inputSystem->keyState(Keys::LMB)->keyWentDown && !imguiManager.capturedInputs()
+        && !application->windowManager->getMainWindow()->isMinimized())
     {
         QuantShortBox2D windowArea = application->windowManager->getMainWindow()->windowClientRect();
         Vector2D windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
@@ -3063,34 +3069,118 @@ int32 ExperimentalEnginePBR::sublayerDepth() const { return 0; }
 
 class TestWidget : public WidgetBase
 {
+private:
+    Short2D origin = { 300, 300 };
+    Short2D halfExtent = { 75, 50 };
+    Color colors[4] = { ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN };
+    Color color = ColorConst::GREEN;
+
+    SharedPtr<TestWidget> content;
 
 public:
-    Color colors[4] = { ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN, ColorConst::GREEN };
+    struct WgArguments
+    {
+        Short2D origin = { 300, 300 };
+        Short2D halfExtent = { 75, 50 };
+        Color color = ColorConst::GREEN;
+        // 1 or 2 or 3 or 0
+        uint32 style;
+    };
+
+    void construct(WgArguments args)
+    {
+        origin = args.origin;
+        halfExtent = args.halfExtent;
+        color = args.color;
+        colors[0] = args.color;
+        colors[1] = args.color;
+        colors[2] = args.color;
+        colors[3] = args.color;
+
+        if (args.style == 0)
+        {
+            return;
+        }
+
+        if (args.style == 2)
+        {
+            TestWidget::WgArguments childArgs = args;
+            childArgs.origin = halfExtent * Short2D(2);
+            childArgs.style = 0;
+            auto wg = std::make_shared<TestWidget>();
+            setupParent(wg, shared_from_this());
+            wg->construct(childArgs);
+            content = wg;
+        }
+        if (args.style == 3)
+        {
+            TestWidget::WgArguments childArgs = args;
+            childArgs.origin = Short2D(halfExtent.x + 2 * origin.x, halfExtent.y);
+            childArgs.color = ColorConst::BLUE;
+            childArgs.style = 0;
+            auto wg = std::make_shared<TestWidget>();
+            setupParent(wg, shared_from_this());
+            wg->construct(childArgs);
+            content = wg;
+
+            childArgs.origin = Short2D(halfExtent.x, 2 * halfExtent.y + origin.y);
+            childArgs.color = ColorConst::RED;
+            wg = std::make_shared<TestWidget>();
+            setupParent(wg, content);
+            wg->construct(childArgs);
+            content->content = wg;
+
+            childArgs.origin = Short2D(halfExtent.x - 2 * origin.x, halfExtent.y);
+            childArgs.color = ColorConst::GRAY;
+            wg = std::make_shared<TestWidget>();
+            setupParent(wg, content->content);
+            wg->construct(childArgs);
+            content->content->content = wg;
+
+            childArgs.origin = Short2D(halfExtent.x + origin.x, 0);
+            childArgs.color = ColorConst::CYAN;
+            wg = std::make_shared<TestWidget>();
+            setupParent(wg, content->content->content);
+            wg->construct(childArgs);
+            content->content->content->content = wg;
+        }
+    }
+
     void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override
     {
         WidgetGeom &geom = geomTree[thisId];
-        geom.box = {
-            Short2D{100, 100},
-            Short2D{250, 200}
-        };
+        geom.box = { origin - halfExtent, origin + halfExtent };
+        if (content)
+        {
+            WidgetGeomId childId = geomTree.add(WidgetGeom{ .widget = content }, thisId);
+            content->rebuildGeometry(childId, geomTree);
+        }
     }
 
     void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override
     {
+        const QuantShortBox2D &box = geomTree[thisId].box;
         Size2D verts[4] = {
-            {100, 100},
-            {250, 100},
-            {250, 200},
-            {100, 200}
+            box.minBound, {box.maxBound.x, box.minBound.y},
+             box.maxBound, {box.minBound.x, box.maxBound.y}
         };
         context.drawBox(verts, colors, clipBound);
+        if (content)
+        {
+            WidgetGeomId childId = geomTree.getChildren(thisId, false)[0];
+            context.beginLayer();
+            // Below is right way but we are not using traditional geometry
+            // content->drawWidget(clipBound.getIntersectionBox(geomTree[childId].box), childId, geomTree, context);
+            content->drawWidget(geomTree[childId].box, childId, geomTree, context);
+            context.endLayer();
+        }
     }
 
     void tick(float timeDelta) override {}
 
     EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override
     {
-        return EInputHandleState::NotHandled;
+        return content ? content->inputKey(key, state, inputSystem) : EInputHandleState::NotHandled;
     }
 
     void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override
@@ -3105,10 +3195,10 @@ public:
 
     void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override
     {
-        colors[0] = ColorConst::GREEN;
-        colors[1] = ColorConst::GREEN;
-        colors[2] = ColorConst::GREEN;
-        colors[3] = ColorConst::GREEN;
+        colors[0] = color;
+        colors[1] = color;
+        colors[2] = color;
+        colors[3] = color;
     }
 };
 
@@ -3162,8 +3252,13 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
                     [this]() -> copat::JobSystemEnqTask<copat::EJobThreadType::MainThread>
                     {
                         static int32 count = 1;
-                        application->createWindow(renderSize, ("TestWindow" + String::toString(count)).c_str(), nullptr)
-                            ->setContent(std::make_shared<TestWidget>());
+                        TestWidget::WgArguments args;
+                        args.halfExtent = { 200, 110 };
+                        args.origin = { 213, 120 };
+                        args.style = (count % 3) + 1;
+                        auto wg = std::make_shared<TestWidget>();
+                        wg->construct(args);
+                        application->createWindow(renderSize, ("TestWindow" + String::toString(count)).c_str(), nullptr)->setContent(wg);
                         count++;
                         co_return;
                     }

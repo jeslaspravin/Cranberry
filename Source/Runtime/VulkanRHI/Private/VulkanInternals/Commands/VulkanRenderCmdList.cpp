@@ -271,13 +271,13 @@ void VulkanCommandList::copyBuffer(const std::vector<BatchCopyBufferInfo> &batch
     tempFence->release();
 }
 
-void VulkanCommandList::newFrame(const float &tiimeDelta)
+void VulkanCommandList::newFrame(float timeDelta)
 {
     resourcesTracker.clearUnwanted();
 #if DEFER_DELETION
     VulkanGraphicsHelper::getDeferredDeleter(graphicsInstanceCache)->update();
 #endif
-    VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstanceCache)->tick(tiimeDelta);
+    VulkanGraphicsHelper::getDescriptorsSetAllocator(graphicsInstanceCache)->tick(timeDelta);
 }
 
 void VulkanCommandList::copyToBuffer(BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy, uint32 size)

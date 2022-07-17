@@ -10,16 +10,20 @@
  */
 
 #include "ApplicationInstance.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
 #include "WindowManager.h"
 #include "GenericAppWindow.h"
 #include "Widgets/WidgetDrawContext.h"
+#include "Widgets/NullWidget.h"
 #include "Widgets/WidgetWindow.h"
 #include "Widgets/WidgetRenderer.h"
 #include "ApplicationSettings.h"
 #include "InputSystem/InputSystem.h"
 #include "RenderApi/RenderTaskHelpers.h"
+#include "RenderApi/RenderManager.h"
+#include "IRenderInterfaceModule.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
-#include "Types/Platform/Threading/CoPaT/JobSystem.h"
 
 //////////////////////////////////////////////////////////////////////////
 /// WgWindow Implementations
@@ -227,7 +231,7 @@ void ApplicationInstance::tickWindowWidgets()
     }
 }
 
-void ApplicationInstance::drawWindowWidgets()
+std::vector<SharedPtr<WgWindow>> ApplicationInstance::drawWindowWidgets()
 {
     std::vector<SharedPtr<WgWindow>> allDrawWindows;
     allDrawWindows.reserve(windowWidgets.size());
@@ -239,20 +243,16 @@ void ApplicationInstance::drawWindowWidgets()
         }
     }
 
-    debugAssert(wgRenderer);
-    wgRenderer->drawWindowWidgets(allDrawWindows);
+    return wgRenderer->drawWindowWidgets(allDrawWindows);
 }
 
-void ApplicationInstance::presentAllWindows()
+void ApplicationInstance::presentDrawnWnds(const std::vector<SharedPtr<WgWindow>> &windowsDrawn)
 {
     std::vector<WindowCanvasRef> allDrawSwapchains;
-    allDrawSwapchains.reserve(windowWidgets.size());
-    for (const std::pair<GenericAppWindow *const, SharedPtr<WgWindow>> &window : windowWidgets)
+    allDrawSwapchains.reserve(windowsDrawn.size());
+    for (const SharedPtr<WgWindow> &window : windowsDrawn)
     {
-        if (window.first->isValidWindow() && !window.first->isMinimized())
-        {
-            allDrawSwapchains.emplace_back(windowManager->getWindowCanvas(window.first));
-        }
+        allDrawSwapchains.emplace_back(windowManager->getWindowCanvas(window->getAppWindow()));
     }
 
     if (!allDrawSwapchains.empty())
@@ -273,33 +273,51 @@ void ApplicationInstance::presentAllWindows()
     }
 }
 
+void ApplicationInstance::startNewFrame()
+{
+    frameAllocator.reset();
+
+    /**
+     * Flush wait until all previous render commands are finished, 
+     * This is to avoid over queuing render thread which happens as frame wait happens only in render thread
+     * so main thread run wild and fills render queue with commands more than it can process
+     */
+    copat::waitOnAwaitable(RenderThreadEnqueuer::execInRenderThreadAwaitable
+    (
+        [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            renderFrameAllocator.reset();
+            IRenderInterfaceModule::get()->getRenderManager()->renderFrame(timeData.deltaTime);
+        }
+    ));
+}
+
 //////////////////////////////////////////////////////////////////////////
 /// Drawing window widget
 //////////////////////////////////////////////////////////////////////////
 
-void WidgetRenderer::drawWindowWidgets(const std::vector<SharedPtr<WgWindow>> &windows)
+std::vector<SharedPtr<WgWindow>> WidgetRenderer::drawWindowWidgets(const std::vector<SharedPtr<WgWindow>> &windows)
 {
-    bool bHasAnyDrawCmds = false;
+    std::vector<SharedPtr<WgWindow>> drawingWindows;
+    drawingWindows.reserve(windows.size());
     std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> allDrawCtxs;
     allDrawCtxs.reserve(windows.size());
     for (const SharedPtr<WgWindow> &window : windows)
     {
-        auto &wndWidgetDrawContext = allDrawCtxs.emplace_back();
-        wndWidgetDrawContext.first = window;
-        window->drawWidget(wndWidgetDrawContext.second);
-        bHasAnyDrawCmds = bHasAnyDrawCmds || !wndWidgetDrawContext.second.perVertexPos().empty();
+        WidgetDrawContext wndDrawContext;
+        window->drawWidget(wndDrawContext);
+        if (!wndDrawContext.perVertexPos().empty())
+        {
+            allDrawCtxs.emplace_back(window, std::move(wndDrawContext));
+            drawingWindows.emplace_back(window);
+        }
     }
 
-    if (bHasAnyDrawCmds)
+    if (!allDrawCtxs.empty())
     {
-        // Clear all empty windows
-        std::erase_if(
-            allDrawCtxs,
-            [](const std::pair<SharedPtr<WgWindow>, WidgetDrawContext> &drawCtx)
-            {
-                return drawCtx.second.perVertexPos().empty();
-            }
-        );
         drawWindowWidgets(std::move(allDrawCtxs));
     }
+    return drawingWindows;
 }
+
+APPLICATION_EXPORT SharedPtr<WgNullWidget> WgNullWidget::nullWidget = std::make_shared<WgNullWidget>();

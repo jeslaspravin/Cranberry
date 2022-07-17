@@ -112,6 +112,8 @@ extern PROGRAMCORE_EXPORT const Color BLACK;
 extern PROGRAMCORE_EXPORT const Color RED;
 extern PROGRAMCORE_EXPORT const Color BLUE;
 extern PROGRAMCORE_EXPORT const Color GREEN;
+
+extern PROGRAMCORE_EXPORT const Color CYAN;
 } // namespace ColorConst
 
 namespace LinearColorConst
@@ -125,4 +127,6 @@ extern PROGRAMCORE_EXPORT const LinearColor BLACK;
 extern PROGRAMCORE_EXPORT const LinearColor RED;
 extern PROGRAMCORE_EXPORT const LinearColor BLUE;
 extern PROGRAMCORE_EXPORT const LinearColor GREEN;
+
+extern PROGRAMCORE_EXPORT const LinearColor CYAN;
 } // namespace LinearColorConst

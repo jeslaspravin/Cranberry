@@ -44,7 +44,7 @@ public:
     void finalizeInit();
     RenderThreadEnqTask destroy();
 
-    void renderFrame(const float &timedelta);
+    void renderFrame(float timedelta);
     GlobalRenderingContextBase *getGlobalRenderingContext() const;
     IRenderCommandList *getRenderCmds() const;
 

@@ -42,21 +42,6 @@ void EngineTime::progressFrame()
     {
         deltaTime = lastDeltaTime;
     }
-
-    if (targetFrameTicks > 0)
-    {
-        // Since we are ticks at fixed rate
-        deltaTime = Time::asSeconds(targetFrameTicks);
-        if (deltaTicks >= targetFrameTicks)
-        {
-            // We only do double tick max, If there is more than 2 frames delta we drop 1 frame and add a frame fraction
-            accumulatedSlack += deltaTicks % targetFrameTicks;
-        }
-        else // deltaTime is less than target so we have to sleep
-        {
-            PlatformThreadingFunctions::sleep(Time::asMilliSeconds(targetFrameTicks - deltaTicks));
-        }
-    }
 }
 
 float EngineTime::getDeltaTime() { return deltaTime * timeDilation; }
@@ -77,8 +62,6 @@ void TestGameEngine::startup(ApplicationInstance *appInst)
 
     onStartUp();
 
-    bActiveWindow = application->windowManager->hasActiveWindow();
-    frameRateBackup = timeData.frameRate;
     timeData.tickStart();
     LOG("GameEngine", "Engine initialized in %0.3f seconds", Time::asSeconds(timeData.initEndTick - timeData.startTick));
 }
@@ -101,17 +84,12 @@ void TestGameEngine::quit()
 void TestGameEngine::engineLoop()
 {
     // timeData.activeTimeDilation = applicationModule->pollWindows() ? 1.0f : 0.0f;
-
-    // Technically only should tick logic twice not the renderer, Since I do not have separate path for rendering I ignore
-    // bool bDoubleTick = timeData.targetFrameTicks > 0 && (timeData.accumulatedSlack / timeData.targetFrameTicks);
-    timeData.accumulatedSlack %= timeData.targetFrameTicks;
     tickEngine();
     if (!application->windowManager->getMainWindow()->isMinimized())
     {
         ENQUEUE_COMMAND_NODEBUG(
             Engineloop,
             {
-                rendererModule->getRenderManager()->renderFrame(timeData.deltaTime);
                 imguiManager.updateFrame(timeData.deltaTime);
             },
             this
@@ -120,19 +98,6 @@ void TestGameEngine::engineLoop()
         RenderThreadEnqueuer::flushWaitRenderThread();
     }
 
-    if (bActiveWindow && !application->windowManager->hasActiveWindow())
-    {
-        frameRateBackup = uint8(timeData.frameRate);
-        timeData.setTargetFrameRate(5);
-        bActiveWindow = false;
-    }
-    else if (!bActiveWindow && application->windowManager->hasActiveWindow())
-    {
-        timeData.setTargetFrameRate(frameRateBackup);
-        bActiveWindow = true;
-    }
-
-    Logger::flushStream();
     timeData.progressFrame();
 }
 
