@@ -16,8 +16,6 @@
 class WgNullWidget final : public WidgetBase
 {
 public:
-
-public:
     void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override { geomTree[thisId].box = QuantShortBox2D{ Short2D{ 0 } }; }
 
     void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override {}

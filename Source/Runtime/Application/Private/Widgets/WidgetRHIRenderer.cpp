@@ -340,10 +340,11 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
 
             for (const std::pair<const std::pair<uint32, ImageResourceRef>, WgDrawCmdsPerLayer> &uniqDraw : uniqueDrawIndexed)
             {
+                debugAssert(!uniqDraw.second.quadIdxs.empty());
                 WgDrawCmd &drawCmd = drawCmdsPerWnd[i][uniqDraw.second.drawCmdIdx];
                 drawCmd.indicesCount = uniqDraw.second.quadIdxs.size() * 6;
                 drawCmd.indicesOffset = quadOffset * 6;
-                drawCmd.scissor = QuantShortBox2D(Short2D(0));
+                drawCmd.scissor = drawingCtx.perQuadClipping()[uniqDraw.second.quadIdxs[0]];
                 drawCmd.textureDescIdx = textureToParamsIdx[uniqDraw.first.second];
                 // For each of quad fill the vertices, indices and expand the drawCmd.Scissor
                 for (uint32 quadIdx : uniqDraw.second.quadIdxs)

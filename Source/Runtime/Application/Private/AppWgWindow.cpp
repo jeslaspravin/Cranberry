@@ -278,12 +278,11 @@ void ApplicationInstance::startNewFrame()
     frameAllocator.reset();
 
     /**
-     * Flush wait until all previous render commands are finished, 
+     * Flush wait until all previous render commands are finished,
      * This is to avoid over queuing render thread which happens as frame wait happens only in render thread
      * so main thread run wild and fills render queue with commands more than it can process
      */
-    copat::waitOnAwaitable(RenderThreadEnqueuer::execInRenderThreadAwaitable
-    (
+    copat::waitOnAwaitable(RenderThreadEnqueuer::execInRenderThreadAwaitable(
         [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             renderFrameAllocator.reset();
