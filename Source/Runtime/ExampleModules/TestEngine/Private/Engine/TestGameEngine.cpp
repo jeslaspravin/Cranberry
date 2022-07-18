@@ -88,11 +88,7 @@ void TestGameEngine::engineLoop()
     if (!application->windowManager->getMainWindow()->isMinimized())
     {
         ENQUEUE_COMMAND_NODEBUG(
-            Engineloop,
-            {
-                imguiManager.updateFrame(timeData.deltaTime);
-            },
-            this
+            Engineloop, { imguiManager.updateFrame(timeData.deltaTime); }, this
         );
         // We are not yet ready for 100% multi threaded renderer
         RenderThreadEnqueuer::flushWaitRenderThread();

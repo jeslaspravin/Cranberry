@@ -29,7 +29,7 @@ ProgramOwnedVar<Size2D, WindowManager> surfaceSize;
 
 ProgramOwnedVar<bool, ApplicationInstance> fullscreenMode{ false };
 
-ProgramOwnedVar<bool, ApplicationInstance> enableVsync{ false };
+ProgramOwnedVar<bool, ApplicationInstance> enableVsync{ true };
 
 ProgramOwnedVar<bool, ApplicationInstance> renderingOffscreen{ false };
 ProgramOwnedVar<bool, ApplicationInstance> computeOnly{ false };
@@ -184,7 +184,7 @@ bool ApplicationInstance::appTick()
     // Application tick
     onTick();
 
-    // Rendering widgets after application tick to allow application updates to be visible
+    // Rendering widgets after application tick to allow application updates to be visible, No idea if it is right choice!
     if (wgRenderer)
     {
         auto drawnWnds = drawWindowWidgets();
