@@ -1628,6 +1628,13 @@ void VulkanCommandList::cmdSetViewportAndScissor(
                                float(viewportSize.y),      0.f /* Min depth */,        1.f /* Max depth */ };
     vDevice->vkCmdSetViewport(rawCmdBuffer, atViewport, 1, &vulkanViewport);
 
+    cmdSetScissor(cmdBuffer, scissor, atViewport);
+}
+
+void VulkanCommandList::cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport /*= 0*/) const
+{
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+
     if (scissor.isValidAABB())
     {
         Size2D scissorSize = scissor.size();

@@ -23,15 +23,11 @@ private:
     Vector3D transformScale;
     Rotation transformRotation;
 
-    Matrix4 transformMatrixCache;
-    bool bCachedLatest;
-
     template <ArchiveTypeName ArchiveType>
     friend ArchiveType &operator<<(ArchiveType &archive, Transform3D &value);
 
 private:
     Matrix4 normalTransformMatrix() const;
-    Matrix4 getTransformMatrix() const;
 
     Vector3D invScaleSafe() const;
     Vector3D invTranslation() const;
@@ -59,7 +55,7 @@ public:
     void setRotation(const Rotation &newRotation);
     void setScale(const Vector3D &newScale);
 
-    const Matrix4 &getTransformMatrix();
+    Matrix4 getTransformMatrix() const;
     Vector3D transformNormal(const Vector3D &normal) const;
     Vector3D invTransformNormal(const Vector3D &normal) const;
     Vector3D transformPoint(const Vector3D &point) const;

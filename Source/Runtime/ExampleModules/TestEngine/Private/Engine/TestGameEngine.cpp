@@ -11,7 +11,12 @@
 
 #include "Engine/TestGameEngine.h"
 #include "GenericAppWindow.h"
+#include "ApplicationSettings.h"
 #include "IApplicationModule.h"
+#include "Widgets/WidgetWindow.h"
+#include "Widgets/ImGui/ImGuiManager.h"
+#include "InputSystem/Keys.h"
+#include "InputSystem/InputSystem.h"
 #include "Logger/Logger.h"
 #include "Types/Time.h"
 #include "Modules/ModuleManager.h"
@@ -58,7 +63,22 @@ void TestGameEngine::startup(ApplicationInstance *appInst)
     application = appInst;
 
     assetManager.load();
-    imguiManager.initialize();
+    imguiManager = new ImGuiManager(TCHAR("TestEngine"), application->getMainWindow());
+    imguiManager->initialize();
+    // Moved out surface resize feeding from ImGuiManager to here
+    // Using surface size
+    float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
+    Vector2D displaySize
+        = Vector2D(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) / dpiScaleFactor;
+    imguiManager->setDisplaySize(Short2D(int16(displaySize.x()), int16(displaySize.y())));
+    surfaceResizeHandle = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda(
+        [this](Size2D oldSize, Size2D newSize)
+        {
+            float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
+            Vector2D displaySize = Vector2D(float(newSize.x), float(newSize.y)) / dpiScaleFactor;
+            imguiManager->setDisplaySize(Short2D(int16(displaySize.x()), int16(displaySize.y())));
+        }
+    );
 
     onStartUp();
 
@@ -71,10 +91,16 @@ void TestGameEngine::quit()
     onQuit();
 
     assetManager.unload();
-    ENQUEUE_COMMAND_NODEBUG(
-        EngineQuit, { assetManager.clearToDestroy(); }, this
+    imguiManager->release();
+    ApplicationSettings::surfaceSize.onConfigChanged().unbind(surfaceResizeHandle);
+    ENQUEUE_COMMAND(EngineQuit)
+    (
+        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            assetManager.clearToDestroy();
+            delete imguiManager;
+        }
     );
-    imguiManager.release();
     // We are not yet ready for 100% multi threaded renderer
     RenderThreadEnqueuer::flushWaitRenderThread();
 
@@ -87,8 +113,35 @@ void TestGameEngine::engineLoop()
     tickEngine();
     if (!application->windowManager->getMainWindow()->isMinimized())
     {
-        ENQUEUE_COMMAND_NODEBUG(
-            Engineloop, { imguiManager.updateFrame(timeData.deltaTime); }, this
+        // Moved out key input feeding from ImGuiManager to here
+        for (Keys::StateKeyType key : Keys::Range())
+        {
+            auto state = application->inputSystem->keyState(*key);
+            if (state->keyWentUp || state->keyWentDown)
+            {
+                imguiManager->inputKey(key, *state, application->inputSystem);
+            }
+        }
+        QuantShortBox2D windowArea = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->windowClientRect();
+        Vector2D windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
+        float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
+        Vector2D relMousePos = (Vector2D(
+                                    application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
+                                    application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
+                                )
+                                - windowOrigin)
+                               / dpiScaleFactor;
+        imguiManager->mouseMoved(
+            Short2D(int16(relMousePos.x()), int16(relMousePos.y())), Short2D(int16(relMousePos.x()), int16(relMousePos.y())),
+            application->inputSystem
+        );
+
+        ENQUEUE_COMMAND(Engineloop)
+        (
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            {
+                imguiManager->updateFrame(timeData.deltaTime);
+            }
         );
         // We are not yet ready for 100% multi threaded renderer
         RenderThreadEnqueuer::flushWaitRenderThread();

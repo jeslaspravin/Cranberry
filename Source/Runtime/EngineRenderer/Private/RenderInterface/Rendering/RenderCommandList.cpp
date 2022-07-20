@@ -129,6 +129,7 @@ public:
     void cmdSetViewportAndScissor(
         const GraphicsResource *cmdBuffer, const QuantizedBox2D &viewport, const QuantizedBox2D &scissor, uint32 atViewport = 0
     ) const final;
+    void cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport = 0) const final;
     void cmdSetLineWidth(const GraphicsResource *cmdBuffer, float lineWidth) const final;
     void cmdSetDepthBias(const GraphicsResource *cmdBuffer, float constantBias, float slopeFactor, float clampValue) const final;
 
@@ -401,6 +402,11 @@ void RenderCommandList::cmdSetViewportAndScissor(
 ) const
 {
     cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor, atViewport);
+}
+
+void RenderCommandList::cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport /*= 0*/) const
+{
+    cmdList->cmdSetScissor(cmdBuffer, scissor, atViewport);
 }
 
 void RenderCommandList::cmdSetLineWidth(const GraphicsResource *cmdBuffer, float lineWidth) const

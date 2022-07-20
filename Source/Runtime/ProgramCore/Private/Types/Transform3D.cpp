@@ -18,21 +18,15 @@ Transform3D::Transform3D()
     : transformTranslation(0)
     , transformScale(1)
     , transformRotation(0)
-    , transformMatrixCache(Matrix4::IDENTITY)
-    , bCachedLatest(true)
 {}
 
 Transform3D::Transform3D(const Vector3D &translation, const Rotation &rotation, const Vector3D &scale)
     : transformTranslation(translation)
     , transformScale(scale)
     , transformRotation(rotation)
-    , transformMatrixCache()
-    , bCachedLatest(false)
 {}
 
 Transform3D::Transform3D(const Matrix4 &transformMatrix)
-    : transformMatrixCache(transformMatrix)
-    , bCachedLatest(true)
 {
     // TODO(Jeslas) : fix cases when non uniform scaled matrix inverse creates invalid Rotation values(
     // May be quaternion will fix it )?
@@ -60,24 +54,18 @@ Transform3D::Transform3D(const Transform3D &otherTransform)
     : transformTranslation(otherTransform.transformTranslation)
     , transformScale(otherTransform.transformScale)
     , transformRotation(otherTransform.transformRotation)
-    , transformMatrixCache(otherTransform.transformMatrixCache)
-    , bCachedLatest(otherTransform.bCachedLatest)
 {}
 
 Transform3D::Transform3D(Transform3D &&otherTransform)
     : transformTranslation(std::move(otherTransform.transformTranslation))
     , transformScale(std::move(otherTransform.transformScale))
     , transformRotation(std::move(otherTransform.transformRotation))
-    , transformMatrixCache(std::move(otherTransform.transformMatrixCache))
-    , bCachedLatest(std::move(otherTransform.bCachedLatest))
 {}
 
 Transform3D::Transform3D(const Rotation &rotation)
     : transformTranslation(Vector3D::ZERO)
     , transformScale(Vector3D::ONE)
     , transformRotation(rotation)
-    , transformMatrixCache()
-    , bCachedLatest(false)
 {}
 
 void Transform3D::operator=(const Transform3D &otherTransform)
@@ -85,8 +73,6 @@ void Transform3D::operator=(const Transform3D &otherTransform)
     transformTranslation = otherTransform.transformTranslation;
     transformScale = otherTransform.transformScale;
     transformRotation = otherTransform.transformRotation;
-    transformMatrixCache = otherTransform.transformMatrixCache;
-    bCachedLatest = otherTransform.bCachedLatest;
 }
 
 void Transform3D::operator=(Transform3D &&otherTransform)
@@ -94,8 +80,6 @@ void Transform3D::operator=(Transform3D &&otherTransform)
     transformTranslation = std::move(otherTransform.transformTranslation);
     transformScale = std::move(otherTransform.transformScale);
     transformRotation = std::move(otherTransform.transformRotation);
-    transformMatrixCache = std::move(otherTransform.transformMatrixCache);
-    bCachedLatest = std::move(otherTransform.bCachedLatest);
 }
 
 void Transform3D::operator=(const Matrix4 &transformMatrix)
@@ -104,15 +88,12 @@ void Transform3D::operator=(const Matrix4 &transformMatrix)
     transformScale
         = Vector3D(Vector3D(transformMatrix[0]).length(), Vector3D(transformMatrix[1]).length(), Vector3D(transformMatrix[2]).length());
     transformRotation = RotationMatrix(transformMatrix / Matrix4(transformScale)).asRotation();
-    transformMatrixCache = transformMatrix;
-    bCachedLatest = true;
 }
 
 const Vector3D &Transform3D::getTranslation() const { return transformTranslation; }
 
 Vector3D &Transform3D::getTranslation()
 {
-    bCachedLatest = false;
     return transformTranslation;
 }
 
@@ -120,7 +101,6 @@ const Rotation &Transform3D::getRotation() const { return transformRotation; }
 
 Rotation &Transform3D::getRotation()
 {
-    bCachedLatest = false;
     return transformRotation;
 }
 
@@ -128,26 +108,22 @@ const Vector3D &Transform3D::getScale() const { return transformScale; }
 
 Vector3D &Transform3D::getScale()
 {
-    bCachedLatest = false;
     return transformScale;
 }
 
 void Transform3D::setTranslation(const Vector3D &newTranslation)
 {
     transformTranslation = newTranslation;
-    bCachedLatest = false;
 }
 
 void Transform3D::setRotation(const Rotation &newRotation)
 {
     transformRotation = newRotation;
-    bCachedLatest = false;
 }
 
 void Transform3D::setScale(const Vector3D &newScale)
 {
     transformScale = newScale;
-    bCachedLatest = false;
 }
 
 Matrix4 Transform3D::normalTransformMatrix() const
@@ -162,33 +138,10 @@ Matrix4 Transform3D::normalTransformMatrix() const
     return normTranform;
 }
 
-const Matrix4 &Transform3D::getTransformMatrix()
-{
-    if (!bCachedLatest)
-    {
-        // Scales -> Rotate -> Translate all in transform existing space
-        RotationMatrix rotMatrix(transformRotation);
-        transformMatrixCache[0] = Matrix4Col(rotMatrix.matrix()[0], 0.0f);
-        transformMatrixCache[1] = Matrix4Col(rotMatrix.matrix()[1], 0.0f);
-        transformMatrixCache[2] = Matrix4Col(rotMatrix.matrix()[2], 0.0f);
-
-        transformMatrixCache *= Matrix4(transformScale);
-
-        transformMatrixCache[3] = Matrix4Col(transformTranslation.x(), transformTranslation.y(), transformTranslation.z(), 1.0);
-
-        bCachedLatest = true;
-    }
-
-    return transformMatrixCache;
-}
-
 Matrix4 Transform3D::getTransformMatrix() const
 {
-    if (bCachedLatest)
-    {
-        return transformMatrixCache;
-    }
     Matrix4 transformMatrix;
+    // Scales -> Rotate -> Translate all in transform existing space
     RotationMatrix rotMatrix(transformRotation);
     transformMatrix[0] = Matrix4Col(rotMatrix.matrix()[0], 0.0f);
     transformMatrix[1] = Matrix4Col(rotMatrix.matrix()[1], 0.0f);

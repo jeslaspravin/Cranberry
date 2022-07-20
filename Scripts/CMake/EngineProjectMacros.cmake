@@ -333,8 +333,18 @@ macro (mark_delay_loaded_dlls)
     endif ()
 endmacro ()
 
+# TARGET_NAME arg to override target_name obtained from directory name
 macro (generate_cpp_console_project)
-    get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
+    set(one_value_args TARGET_NAME)
+    cmake_parse_arguments(console_project "" "${one_value_args}" "" ${ARGN})
+    
+    # For C++ application alone we could allow overriding target_name
+    if (DEFINED console_project_TARGET_NAME)
+        set (target_name ${console_project_TARGET_NAME})
+    else (DEFINED console_project_TARGET_NAME)
+        get_filename_component(target_name ${CMAKE_CURRENT_LIST_DIR} NAME)
+    endif (DEFINED console_project_TARGET_NAME)
+
     gather_all_cpp_srcs(src_files)
 
     source_group(TREE ${CMAKE_CURRENT_LIST_DIR} PREFIX Sources FILES ${src_files})

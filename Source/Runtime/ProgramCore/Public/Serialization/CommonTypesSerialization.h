@@ -78,12 +78,7 @@ ArchiveType &operator<<(ArchiveType &archive, Rotation &value)
 template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, Transform3D &value)
 {
-    archive << value.transformTranslation << value.transformRotation << value.transformScale;
-    if (archive.isLoading())
-    {
-        value.bCachedLatest = false;
-    }
-    return archive;
+    return archive << value.transformTranslation << value.transformRotation << value.transformScale;
 }
 
 template <ArchiveTypeName ArchiveType>

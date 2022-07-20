@@ -196,14 +196,15 @@ More information at: https://docs.microsoft.com/en-us/visualstudio/debugger/crea
       <CustomListItems Optional="true">
         <Variable Name="pNode" InitialValue="debugStrings-&gt;_List._Mypair._Myval2._Myhead-&gt;_Next" />
         <Size>1</Size>
-        <Loop>
+        <Loop Condition="id != 0">
           <Break Condition="pNode == nullptr" />
           <If Condition="pNode->_Myval.first == id">
             <Item>pNode->_Myval</Item>
           </If>
           <Exec>pNode = pNode->_Next</Exec>
         </Loop>
-      </CustomListItems>
+      </CustomListItems>      
+      <Item Name="Debug strings">debugStrings</Item>
     </Expand>
   </Type>  
 </AutoVisualizer>

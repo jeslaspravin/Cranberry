@@ -9,8 +9,8 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "ImGuiDrawInterface.h"
-#include "ImGuiLib/imgui_internal.h"
+#include "Widgets/ImGui/ImGuiDrawInterface.h"
+#include "Widgets/ImGui/ImGuiLib/imgui_internal.h"
 #include "Math/MathGeom.h"
 
 void ImGuiDrawInterface::drawQuadFilled(

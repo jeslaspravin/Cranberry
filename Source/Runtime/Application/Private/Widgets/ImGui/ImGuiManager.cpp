@@ -9,45 +9,51 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Editor/Core/ImGui/ImGuiManager.h"
-#include "Core/Types/Textures/RenderTargetTextures.h"
-#include "Editor/Core/ImGui/IImGuiLayer.h"
-#include "Editor/Core/ImGui/ImGuiFontTextureAtlas.h"
-#include "Editor/Core/ImGui/ImGuiLib/imgui.h"
-#include "Editor/Core/ImGui/ImGuiLib/implot.h"
-#include "GenericAppWindow.h"
-#include "IApplicationModule.h"
+#include "Widgets/ImGui/ImGuiManager.h"
+#include "Widgets/ImGui/IImGuiLayer.h"
+#include "Widgets/ImGui/ImGuiLib/imgui.h"
+#include "Widgets/ImGui/ImGuiLib/implot.h"
+#include "Widgets/WidgetWindow.h"
 #include "InputSystem/InputSystem.h"
-#include "InputSystem/Keys.h"
-#include "Math/Vector2D.h"
-#include "Modules/ModuleManager.h"
-#include "RenderApi/Rendering/RenderingContexts.h"
+#include "InputSystem/PlatformInputTypes.h"
+#include "Types/Platform/LFS/Paths.h"
+#include "Types/Platform/LFS/File/FileHelper.h"
+#include "ApplicationInstance.h"
 #include "RenderApi/RenderManager.h"
+#include "RenderApi/GBuffersAndTextures.h"
+#include "RenderApi/ResourcesInterface/IRenderResource.h"
 #include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
-#include "String/String.h"
-#include "Types/Platform/PlatformFunctions.h"
-#include "WindowManager.h"
-#include "ApplicationSettings.h"
-#include "ApplicationInstance.h"
 
 using namespace ImGui;
 
 const StringID ImGuiManager::TEXTURE_PARAM_NAME{ TCHAR("textureAtlas") };
 const NameString ImGuiManager::IMGUI_SHADER_NAME{ TCHAR("DrawImGui") };
 
-ImGuiManager::ImGuiManager(ImGuiManager *parent)
+ImGuiManager::ImGuiManager(const TChar *managerName, ImGuiManager *parent, SharedPtr<WidgetBase> inWidget)
     : parentGuiManager(parent)
+    , wgWindow(WidgetBase::findWidgetParentWindow(inWidget))
+    , name(TCHAR_TO_UTF8(managerName))
+    , widget(inWidget)
+{}
+
+ImGuiManager::ImGuiManager(const TChar *managerName, SharedPtr<WidgetBase> inWidget)
+    : parentGuiManager(nullptr)
+    , wgWindow(WidgetBase::findWidgetParentWindow(inWidget))
+    , name(TCHAR_TO_UTF8(managerName))
+    , widget(inWidget)
 {}
 
 void ImGuiManager::initialize()
 {
+    fatalAssertf(getWindowWidget() && widget, "Invalid widgets that contains ImGui");
+
     IMGUI_CHECKVERSION();
     if (parentGuiManager)
     {
-        parentGuiManager->setCurrentContexts();
+        parentGuiManager->setCurrentContext();
         context = CreateContext(GetIO().Fonts);
     }
     else
@@ -55,12 +61,11 @@ void ImGuiManager::initialize()
         context = CreateContext();
     }
     implotContext = ImPlot::CreateContext();
-    setCurrentContexts();
+    setCurrentContext();
 
     ImGuiIO &io = GetIO();
-    io.BackendPlatformName = "CranberryEngine";
-    io.LogFilename = "/Saved/TestImgui.log";
-    io.IniFilename = "TestImgui.ini";
+    io.BackendPlatformName = name.c_str();
+    io.IniFilename = nullptr;
     ImFontConfig fontConfig;
     fontConfig.OversampleH = 3;
     fontConfig.OversampleV = 3;
@@ -113,22 +118,46 @@ void ImGuiManager::setShaderData()
     }
 }
 
-void ImGuiManager::setCurrentContexts()
+void ImGuiManager::recreateFontAtlas(
+    class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+)
+{
+    debugAssert(context == ImGui::GetCurrentContext() && parentGuiManager == nullptr);
+    ImFontAtlas *fontAtlas = ImGui::GetIO().Fonts;
+    uint8 *alphaVals;
+    int32 textureSizeX, textureSizeY;
+    fontAtlas->GetTexDataAsAlpha8(&alphaVals, &textureSizeX, &textureSizeY);
+    std::vector<Color> rawData(textureSizeX * textureSizeY, ColorConst::BLACK);
+    for (int32 i = 0; i < rawData.size(); ++i)
+    {
+        rawData[i].setR(alphaVals[i]);
+    }
+
+    ImageResourceCreateInfo imageCI{ .imageFormat = EPixelDataFormat::R_U8_Norm,
+                                     .dimensions = Size3D(textureSizeX, textureSizeY, 1),
+                                     .numOfMips = 1 };
+    textureAtlas = graphicsHelper->createImage(graphicsInstance, imageCI);
+    textureAtlas->setResourceName(UTF8_TO_TCHAR((name + "FontAtlas").c_str()));
+    textureAtlas->setShaderUsage(EImageShaderUsage::Sampling);
+    textureAtlas->setSampleCounts(EPixelSampleCount::SampleCount1);
+    textureAtlas->init();
+    cmdList->copyToImage(textureAtlas, rawData);
+}
+
+void ImGuiManager::setCurrentContext()
 {
     SetCurrentContext(context);
     ImPlot::SetCurrentContext(implotContext);
 }
 
-TextureBase *ImGuiManager::getFontTextureAtlas() const { return parentGuiManager ? parentGuiManager->getFontTextureAtlas() : textureAtlas; }
-
-SamplerRef ImGuiManager::getTextureSampler() const { return parentGuiManager ? parentGuiManager->getTextureSampler() : textureSampler; }
+ImageResourceRef ImGuiManager::getFontTextureAtlas() const { return parentGuiManager ? parentGuiManager->getFontTextureAtlas() : textureAtlas; }
 
 ShaderParametersRef ImGuiManager::getFontAtlasParam() const
 {
     return parentGuiManager ? parentGuiManager->getFontAtlasParam() : imguiFontAtlasParams;
 }
 
-ShaderParametersRef ImGuiManager::getTextureParam(const TextureBase *textureUsed)
+ShaderParametersRef ImGuiManager::getTextureParam(ImageResourceRef textureUsed)
 {
     if (parentGuiManager)
     {
@@ -147,7 +176,7 @@ ShaderParametersRef ImGuiManager::getTextureParam(const TextureBase *textureUsed
 }
 
 ShaderParametersRef ImGuiManager::createTextureParam(
-    const TextureBase *texture, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
+    ImageResourceRef texture, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
     const class LocalPipelineContext &pipelineContext
 )
 {
@@ -159,8 +188,8 @@ ShaderParametersRef ImGuiManager::createTextureParam(
     {
         ShaderParametersRef params
             = graphicsHelper->createShaderParameters(graphicsInstance, pipelineContext.getPipeline()->getParamLayoutAtSet(0), { 0 });
-        params->setTextureParam(TEXTURE_PARAM_NAME, texture->getTextureResource(), getTextureSampler());
-        params->setResourceName(TCHAR("ShaderParams_") + texture->getTextureName());
+        params->setTextureParam(TEXTURE_PARAM_NAME, texture, GlobalBuffers::linearSampler());
+        params->setResourceName(UTF8_TO_TCHAR(name.c_str()) + String(TCHAR("_")) + texture->getResourceName());
         params->init();
 
         textureParams[texture] = params;
@@ -169,18 +198,20 @@ ShaderParametersRef ImGuiManager::createTextureParam(
     }
 }
 
-ShaderParametersRef ImGuiManager::findFreeTextureParam(const TextureBase *textureUsed)
+ShaderParametersRef ImGuiManager::findFreeTextureParam(ImageResourceRef textureUsed)
 {
     if (!freeTextureParams.empty())
     {
         ShaderParametersRef retVal = freeTextureParams.front();
         textureParams[textureUsed] = retVal;
         freeTextureParams.pop();
-        retVal->setTextureParam(TEXTURE_PARAM_NAME, textureUsed->getTextureResource(), getTextureSampler());
+        retVal->setTextureParam(TEXTURE_PARAM_NAME, textureUsed, GlobalBuffers::linearSampler());
         return retVal;
     }
     return nullptr;
 }
+
+SharedPtr<WgWindow> ImGuiManager::getWindowWidget() const { return parentGuiManager ? parentGuiManager->getWindowWidget() : wgWindow; }
 
 void ImGuiManager::setupInputs()
 {
@@ -216,61 +247,6 @@ void ImGuiManager::setupInputs()
     io.SetClipboardTextFn = &ImGuiManager::setClipboard;
 
     bCaptureInput = false;
-    inputSystem = IApplicationModule::get()->getApplication()->inputSystem;
-}
-
-void ImGuiManager::updateInputs()
-{
-    ImGuiIO &io = GetIO();
-
-    if (!inputSystem)
-    {
-        inputSystem = IApplicationModule::get()->getApplication()->inputSystem;
-    }
-
-    for (Keys::StateKeyType key : Keys::Range())
-    {
-        if (Keys::isMouseKey(key->keyCode))
-        {
-            io.MouseDown[key->keyCode - Keys::LMB.keyCode] = inputSystem->isKeyPressed(*key);
-        }
-        else
-        {
-            const KeyState *state = inputSystem->keyState(*key);
-            io.KeysDown[key->keyCode] = state->isPressed;
-
-            Utf32 keyChar = inputSystem->keyChar(*key);
-            if (state->keyWentDown && keyChar != 0)
-            {
-                io.AddInputCharacter(keyChar);
-            }
-        }
-    }
-
-    io.KeyCtrl = inputSystem->isKeyPressed(Keys::RCTRL) || inputSystem->isKeyPressed(Keys::LCTRL);
-    io.KeyShift = inputSystem->isKeyPressed(Keys::RSHIFT) || inputSystem->isKeyPressed(Keys::LSHIFT);
-    io.KeyAlt = inputSystem->isKeyPressed(Keys::RALT) || inputSystem->isKeyPressed(Keys::LALT);
-    io.KeySuper = inputSystem->isKeyPressed(Keys::RWIN) || inputSystem->isKeyPressed(Keys::LWIN);
-    io.MouseWheel = inputSystem->analogState(AnalogStates::ScrollWheelY)->currentValue;
-    io.MouseWheelH = inputSystem->analogState(AnalogStates::ScrollWheelX)->currentValue;
-
-    // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
-    QuantShortBox2D windowArea = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->windowClientRect();
-    Vector2D windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
-    float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
-    io.MousePos
-        = (Vector2D(
-               inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue, inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
-           )
-           - windowOrigin)
-          / dpiScaleFactor;
-    // Resize to screen render size, If using screen size
-    // const Vector2D pos = Vector2D(inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
-    // inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue) - windowArea.minBound;
-    // io.MousePos = pos * (Vector2D(ApplicationSettings::screenSize.get()) /
-    // Vector2D(ApplicationSettings::surfaceSize.get()));
-
-    bCaptureInput = io.WantCaptureKeyboard || io.WantCaptureMouse;
 }
 
 void ImGuiManager::updateTextureParameters()
@@ -307,21 +283,21 @@ void ImGuiManager::updateTextureParameters()
                 const ImDrawCmd &drawCmd = uiCmdList->CmdBuffer[cmdIdx];
                 if (drawCmd.TextureId)
                 {
-                    ShaderParametersRef perDrawTexture = getTextureParam(static_cast<const TextureBase *>(drawCmd.TextureId));
+                    ShaderParametersRef perDrawTexture = getTextureParam(static_cast<ImageResource *>(drawCmd.TextureId));
                     if (perDrawTexture.isValid())
                     {
                         texturesUsed.insert(perDrawTexture.reference());
                     }
                     else
                     {
-                        perDrawTexture = findFreeTextureParam(static_cast<const TextureBase *>(drawCmd.TextureId));
+                        perDrawTexture = findFreeTextureParam(static_cast<ImageResource *>(drawCmd.TextureId));
                         if (perDrawTexture.isValid())
                         {
                             texturesUsed.insert(perDrawTexture.reference());
                         }
                         else
                         {
-                            texturesToCreate.insert(static_cast<const TextureBase *>(drawCmd.TextureId));
+                            texturesToCreate.insert(static_cast<ImageResource *>(drawCmd.TextureId));
                         }
                     }
                 }
@@ -332,58 +308,25 @@ void ImGuiManager::updateTextureParameters()
 
 void ImGuiManager::updateRenderResources(
     class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper,
-    const ImGuiDrawingContext &drawingContext, const class LocalPipelineContext &pipelineContext
+    const class LocalPipelineContext &pipelineContext
 )
 {
     ImDrawData *drawData = ImGui::GetDrawData();
     // Setting up vertex and index buffers
     {
-        if (!vertexBuffer.isValid() || !idxBuffer.isValid())
+        if (!vertexBuffer.isValid() || vertexBuffer->bufferCount() < uint32(drawData->TotalVtxCount))
         {
-            // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
-            WindowCanvasRef windowCanvas = IApplicationModule::get()->getApplication()->windowManager->getWindowCanvas(
-                IApplicationModule::get()->getApplication()->windowManager->getMainWindow()
-            );
-            vertexBuffer.setNewSwapchain(windowCanvas);
-            idxBuffer.setNewSwapchain(windowCanvas);
-
-            for (uint32 i = 0; i < windowCanvas->imagesCount(); ++i)
-            {
-                BufferResourceRef vertexBuf = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, int32(sizeof(ImDrawVert)), 1);
-                vertexBuf->setAsStagingResource(true);
-                vertexBuf->setResourceName(TCHAR("ImGuiVertices_") + String::toString(i));
-                BufferResourceRef idxBuf = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, int32(sizeof(ImDrawIdx)), 1);
-                idxBuf->setAsStagingResource(true);
-                idxBuf->setResourceName(TCHAR("ImGuiIndices_") + String::toString(i));
-
-                vertexBuffer.set(vertexBuf, i);
-                idxBuffer.set(idxBuf, i);
-            }
+            vertexBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, int32(sizeof(ImDrawVert)), drawData->TotalVtxCount);
+            vertexBuffer->setAsStagingResource(true);
+            vertexBuffer->setResourceName(UTF8_TO_TCHAR((name + "Vertices").c_str()));
+            vertexBuffer->init();
         }
-
-        if (vertexBuffer->bufferCount() < uint32(drawData->TotalVtxCount))
+        if (!idxBuffer.isValid() || idxBuffer->bufferCount() < uint32(drawData->TotalIdxCount))
         {
-            vertexBuffer->setBufferCount(drawData->TotalVtxCount);
-            if (vertexBuffer->isValid())
-            {
-                vertexBuffer->reinitResources();
-            }
-            else
-            {
-                vertexBuffer->init();
-            }
-        }
-        if (idxBuffer->bufferCount() < uint32(drawData->TotalIdxCount))
-        {
-            idxBuffer->setBufferCount(drawData->TotalIdxCount);
-            if (idxBuffer->isValid())
-            {
-                idxBuffer->reinitResources();
-            }
-            else
-            {
-                idxBuffer->init();
-            }
+            idxBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, int32(sizeof(ImDrawIdx)), drawData->TotalIdxCount);
+            idxBuffer->setAsStagingResource(true);
+            idxBuffer->setResourceName(UTF8_TO_TCHAR((name + "Indices").c_str()));
+            idxBuffer->init();
         }
         std::vector<BatchCopyBufferData> bufferCopies;
         uint32 vertOffset = 0;
@@ -392,14 +335,14 @@ void ImGuiManager::updateRenderResources(
         {
             const ImDrawList *cmdList = drawData->CmdLists[n];
             BatchCopyBufferData &vertCpy = bufferCopies.emplace_back();
-            vertCpy.dst = *vertexBuffer;
+            vertCpy.dst = vertexBuffer;
             vertCpy.dstOffset = vertOffset;
             vertCpy.dataToCopy = cmdList->VtxBuffer.Data;
             vertCpy.size = cmdList->VtxBuffer.Size * vertexBuffer->bufferStride();
             vertOffset += vertCpy.size;
 
             BatchCopyBufferData &idxCpy = bufferCopies.emplace_back();
-            idxCpy.dst = *idxBuffer;
+            idxCpy.dst = idxBuffer;
             idxCpy.dstOffset = idxOffset;
             idxCpy.dataToCopy = cmdList->IdxBuffer.Data;
             idxCpy.size = cmdList->IdxBuffer.Size * idxBuffer->bufferStride();
@@ -409,25 +352,37 @@ void ImGuiManager::updateRenderResources(
     }
 
     // only in parent GUI
-    if (!getFontAtlasParam().isValid() && parentGuiManager == nullptr)
+    if (parentGuiManager == nullptr)
     {
-        // As 0 contains all sets in utility shader, ignore 0 as it is unique to each GUI manager
-        imguiFontAtlasParams
-            = graphicsHelper->createShaderParameters(graphicsInstance, pipelineContext.getPipeline()->getParamLayoutAtSet(0), { 0 });
-        imguiFontAtlasParams->setTextureParam(TEXTURE_PARAM_NAME, getFontTextureAtlas()->getTextureResource(), getTextureSampler());
-        imguiFontAtlasParams->setResourceName(TCHAR("ShaderParams_") + getFontTextureAtlas()->getTextureName());
-        imguiFontAtlasParams->init();
+        if (!getFontTextureAtlas().isValid())
+        {
+            recreateFontAtlas(cmdList, graphicsInstance, graphicsHelper);
+        }
+        if (!getFontAtlasParam().isValid())
+        {
+            // As 0 contains all sets in utility shader, ignore 0 as it is unique to each GUI manager
+            imguiFontAtlasParams
+                = graphicsHelper->createShaderParameters(graphicsInstance, pipelineContext.getPipeline()->getParamLayoutAtSet(0), { 0 });
+            ImageViewInfo viewInfo;
+            viewInfo.componentMapping.g = EPixelComponentMapping::R;
+            viewInfo.componentMapping.b = EPixelComponentMapping::R;
+            viewInfo.componentMapping.a = EPixelComponentMapping::R;
+            imguiFontAtlasParams->setTextureParam(TEXTURE_PARAM_NAME, getFontTextureAtlas(), GlobalBuffers::linearSampler());
+            imguiFontAtlasParams->setTextureParamViewInfo(TEXTURE_PARAM_NAME, viewInfo);
+            imguiFontAtlasParams->setResourceName(UTF8_TO_TCHAR((name + "Desc_").c_str()) + getFontTextureAtlas()->getResourceName());
+            imguiFontAtlasParams->init();
+        }
     }
     if (!imguiTransformParams.isValid())
     {
         imguiTransformParams
             = graphicsHelper->createShaderParameters(graphicsInstance, pipelineContext.getPipeline()->getParamLayoutAtSet(0), { 1 });
-        imguiTransformParams->setResourceName(TCHAR("ShaderParams_IMGUI_TX"));
+        imguiTransformParams->setResourceName(UTF8_TO_TCHAR((name + "_TX").c_str()));
         setShaderData();
         imguiTransformParams->init();
     }
     // Create necessary texture parameters
-    for (const TextureBase *texture : texturesToCreate)
+    for (const ImageResourceRef &texture : texturesToCreate)
     {
         texturesUsed.insert(createTextureParam(texture, graphicsInstance, graphicsHelper, pipelineContext).reference());
     }
@@ -439,55 +394,19 @@ void ImGuiManager::setupRendering()
     ImGuiIO &io = GetIO();
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // We can honor the ImDrawCmd::VtxOffset
                                                                // field, allowing for large meshes.
-
-    // TODO(Jeslas) : If we are supporting multi-window then this has to be reworked.
-    float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
-    // Using surface size
-    io.DisplaySize
-        = Vector2D(float(ApplicationSettings::surfaceSize.get().x), float(ApplicationSettings::surfaceSize.get().y)) / dpiScaleFactor;
-    textureResizedHnd = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda(
-        [&io](Size2D oldSize, Size2D newSize)
-        {
-            float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
-            io.DisplaySize = Vector2D(float(newSize.x), float(newSize.y)) / dpiScaleFactor;
-        }
-    );
-    // Using screen size
-    // io.DisplaySize = Vector2D(float(ApplicationSettings::screenSize.get().x),
-    // float(ApplicationSettings::screenSize.get().y)); textureResizedHnd =
-    // ApplicationSettings::screenSize.onConfigChanged().bindLambda(LambdaFunction<void, Size2D,
-    // Size2D>([&io](Size2D oldSize, Size2D newSize)
-    //    {
-    //        io.DisplaySize = Vector2D(float(newSize.x), float(newSize.y));
-    //    }));
-
     // texture atlas can be used from parent
     if (parentGuiManager)
     {
         textureAtlas = nullptr;
-        textureSampler = nullptr;
     }
     else
     {
-        ImGuiFontTextureParams textureParams;
-        textureParams.textureName = TCHAR("ImGuiTextureAtlas");
-        textureParams.filtering = ESamplerFiltering::Linear;
-        textureParams.owningContext = context;
-        textureAtlas = TextureBase::createTexture<ImGuiFontTextureAtlas>(textureParams);
-
-        ENQUEUE_COMMAND(CreateSampler)
+        ENQUEUE_COMMAND(SetupImGui)
         (
+
             [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
-                SamplerCreateInfo createInfo{
-                    .filtering = ESamplerFiltering::Linear,
-                    .mipFiltering = ESamplerFiltering::Linear,
-                    .tilingMode = {ESamplerTilingMode::EdgeClamp, ESamplerTilingMode::EdgeClamp, ESamplerTilingMode::EdgeClamp },
-                    .mipLodRange = {                            0,                             0                             },
-                    .resourceName = TCHAR("ImGuiFontAtlasSampler")
-                };
-                textureSampler = graphicsHelper->createSampler(graphicsInstance, createInfo);
-                textureSampler->init();
+                recreateFontAtlas(cmdList, graphicsInstance, graphicsHelper);
             }
         );
     }
@@ -501,22 +420,14 @@ void ImGuiManager::releaseRendering()
         {
             if (textureAtlas)
             {
-                TextureBase::destroyTexture<ImGuiFontTextureAtlas>(textureAtlas);
-                textureAtlas = nullptr;
-            }
-            if (textureSampler.isValid())
-            {
-                textureSampler->release();
-                textureSampler.reset();
+                textureAtlas.reset();
             }
             if (imguiFontAtlasParams.isValid())
             {
-                imguiFontAtlasParams->release();
                 imguiFontAtlasParams.reset();
             }
             if (imguiTransformParams.isValid())
             {
-                imguiTransformParams->release();
                 imguiTransformParams.reset();
             }
             vertexBuffer.reset();
@@ -524,24 +435,15 @@ void ImGuiManager::releaseRendering()
 
             if (!parentGuiManager)
             {
-                for (std::pair<TextureBase const *const, ShaderParametersRef> &textureParam : textureParams)
-                {
-                    textureParam.second->release();
-                    textureParam.second.reset();
-                }
+                textureParams.clear();
                 while (!freeTextureParams.empty())
                 {
-                    freeTextureParams.front()->release();
-                    freeTextureParams.front().reset();
                     freeTextureParams.pop();
                 }
                 activeTextureParams.clear();
             }
         }
     );
-
-    ApplicationSettings::surfaceSize.onConfigChanged().unbind(textureResizedHnd);
-    // ApplicationSettings::screenSize.onConfigChanged().unbind(textureResizedHnd);
 }
 
 void ImGuiManager::draw(
@@ -549,9 +451,10 @@ void ImGuiManager::draw(
     const ImGuiDrawingContext &drawingContext
 )
 {
-    setCurrentContexts();
+    setCurrentContext();
+
     ImDrawData *drawData = ImGui::GetDrawData();
-    if (!drawData || drawingContext.rtTextures.empty() || drawData->CmdListsCount == 0 || drawData->DisplaySize.x <= 0.0f
+    if (!drawData || !drawingContext.rtTexture || drawData->CmdListsCount == 0 || drawData->DisplaySize.x <= 0.0f
         || drawData->DisplaySize.y <= 0.0f)
     {
         return;
@@ -561,20 +464,19 @@ void ImGuiManager::draw(
     LocalPipelineContext pipelineContext;
     pipelineContext.materialName = IMGUI_SHADER_NAME;
     pipelineContext.forVertexType = EVertexType::UI;
-    // pipelineContext.frameAttachments = drawingContext.rtTextures;
-    pipelineContext.swapchainIdx = drawingContext.swapchainIdx;
-    IRenderInterfaceModule::get()->getRenderManager()->preparePipelineContext(&pipelineContext, drawingContext.rtTextures);
+    IRenderInterfaceModule::get()->getRenderManager()->preparePipelineContext(&pipelineContext, { drawingContext.rtTexture });
 
-    updateRenderResources(cmdList, graphicsInstance, graphicsHelper, drawingContext, pipelineContext);
+    updateRenderResources(cmdList, graphicsInstance, graphicsHelper, pipelineContext);
 
     //////////////////////////////////////////////////////////////////////////
     /// Drawing
     //////////////////////////////////////////////////////////////////////////
 
+    ImageResource *rtTexture = static_cast<ImageResource *>(drawingContext.rtTexture->renderTargetResource().get());
     QuantizedBox2D viewport;
     viewport.minBound = Int2D(0, 0);
     // doing like this because even if ImGui size is different from framebuffer we can still draw
-    viewport.maxBound = static_cast<RenderTargetTexture *>(drawingContext.rtTextures[0])->getTextureSize();
+    viewport.maxBound = Int2D(rtTexture->getImageSize().x, rtTexture->getImageSize().y);
 
     Vector2D uiToFbDispScale = Vector2D(float(viewport.maxBound.x), float(viewport.maxBound.y)) / Vector2D(drawData->DisplaySize);
 
@@ -597,8 +499,8 @@ void ImGuiManager::draw(
         query.cullingMode = ECullingMode::BackFace;
         query.drawMode = EPolygonDrawMode::Fill;
         cmdList->cmdBindGraphicsPipeline(drawingContext.cmdBuffer, pipelineContext, { query });
-        cmdList->cmdBindVertexBuffers(drawingContext.cmdBuffer, 0, { *vertexBuffer }, { 0 });
-        cmdList->cmdBindIndexBuffer(drawingContext.cmdBuffer, *idxBuffer);
+        cmdList->cmdBindVertexBuffers(drawingContext.cmdBuffer, 0, { vertexBuffer }, { 0 });
+        cmdList->cmdBindIndexBuffer(drawingContext.cmdBuffer, idxBuffer);
         cmdList->cmdBindDescriptorsSets(drawingContext.cmdBuffer, pipelineContext, imguiTransformParams.reference());
 
         int32 vertOffset = 0;
@@ -634,7 +536,7 @@ void ImGuiManager::draw(
                     ShaderParametersRef perDrawTexture = getFontAtlasParam();
                     if (drawCmd.TextureId)
                     {
-                        perDrawTexture = getTextureParam(static_cast<const TextureBase *>(drawCmd.TextureId));
+                        perDrawTexture = getTextureParam(static_cast<ImageResource *>(drawCmd.TextureId));
                         fatalAssertf(perDrawTexture.isValid(), "Failed getting texture parameters for imgui");
                     }
                     cmdList->cmdBindDescriptorsSets(drawingContext.cmdBuffer, pipelineContext, perDrawTexture.reference());
@@ -651,11 +553,12 @@ void ImGuiManager::draw(
     cmdList->cmdEndRenderPass(drawingContext.cmdBuffer);
 }
 
-void ImGuiManager::updateFrame(const float &deltaTime)
+void ImGuiManager::updateFrame(float deltaTime)
 {
-    setCurrentContexts();
-    GetIO().DeltaTime = deltaTime;
-    updateInputs();
+    setCurrentContext();
+    ImGuiIO &io = GetIO();
+    io.DeltaTime = deltaTime;
+    bCaptureInput = io.WantCaptureKeyboard || io.WantCaptureMouse;
 
     ImGui::NewFrame();
     for (std::pair<const int32, std::vector<IImGuiLayer *>> &imGuiLayers : drawLayers)
@@ -679,6 +582,12 @@ void ImGuiManager::updateFrame(const float &deltaTime)
     setShaderData();
 }
 
+void ImGuiManager::setDisplaySize(Short2D newSize)
+{
+    setCurrentContext();
+    GetIO().DisplaySize = ImVec2(newSize.x, newSize.y);
+}
+
 void ImGuiManager::addFont(const String &fontAssetPath, float fontSize)
 {
     if (parentGuiManager)
@@ -687,17 +596,15 @@ void ImGuiManager::addFont(const String &fontAssetPath, float fontSize)
     }
     else
     {
-        setCurrentContexts();
+        setCurrentContext();
 
         // TODO(Jeslas) : Load from asset manager
         std::vector<uint8> fontData;
+        FileHelper::readBytes(fontData, fontAssetPath);
         GetIO().Fonts->AddFontFromMemoryTTF(fontData.data(), int32(fontData.size()), fontSize);
-        getFontTextureAtlas()->markResourceDirty();
 
-        if (imguiFontAtlasParams.isValid())
-        {
-            imguiFontAtlasParams->setTextureParam(TCHAR("textureAtlas"), getFontTextureAtlas()->getTextureResource(), getTextureSampler());
-        }
+        getFontTextureAtlas().reset();
+        imguiFontAtlasParams.reset();
     }
 }
 
@@ -720,4 +627,73 @@ void ImGuiManager::removeLayer(IImGuiLayer *layer)
     {
         layers.erase(itr);
     }
+}
+
+bool ImGuiManager::inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem)
+{
+    setCurrentContext();
+    ImGuiIO &io = GetIO();
+
+    if (Keys::isMouseKey(key->keyCode))
+    {
+        io.MouseDown[key->keyCode - Keys::LMB.keyCode] = state.isPressed;
+    }
+    else
+    {
+        io.KeysDown[key->keyCode] = state.isPressed;
+
+        Utf32 keyChar = inputSystem->keyChar(*key);
+        if (state.keyWentDown && keyChar != 0)
+        {
+            io.AddInputCharacter(keyChar);
+        }
+
+        switch (key->keyCode)
+        {
+        case EKeyCode::KEY_LCTRL:
+        case EKeyCode::KEY_RCTRL:
+            io.KeyCtrl = state.isPressed;
+            break;
+        case EKeyCode::KEY_LSHIFT:
+        case EKeyCode::KEY_RSHIFT:
+            io.KeyShift = state.isPressed;
+            break;
+        case EKeyCode::KEY_LALT:
+        case EKeyCode::KEY_RALT:
+            io.KeyAlt = state.isPressed;
+            break;
+        case EKeyCode::KEY_LWIN:
+        case EKeyCode::KEY_RWIN:
+            io.KeySuper = state.isPressed;
+            break;
+        default:
+            break;
+        };
+    }
+    return bCaptureInput;
+}
+
+void ImGuiManager::updateMouse(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+{
+    setCurrentContext();
+    ImGuiIO &io = GetIO();
+
+    io.MousePos = ImVec2(widgetRelPos.x, widgetRelPos.y);
+    io.MouseWheel = inputSystem->analogState(AnalogStates::ScrollWheelY)->currentValue;
+    io.MouseWheelH = inputSystem->analogState(AnalogStates::ScrollWheelX)->currentValue;
+}
+
+void ImGuiManager::mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+{
+    updateMouse(absPos, widgetRelPos, inputSystem);
+}
+
+void ImGuiManager::mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+{
+    updateMouse(absPos, widgetRelPos, inputSystem);
+}
+
+void ImGuiManager::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
+{
+    updateMouse(absPos, widgetRelPos, inputSystem);
 }

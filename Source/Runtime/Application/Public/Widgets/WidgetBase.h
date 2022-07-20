@@ -43,7 +43,7 @@ protected:
 
 public:
     virtual ~WidgetBase() = default;
-    // Rebuild and draw widget is recursive. Each widget must call its sub widgets
+    // rebuildGeometry and drawWidget is recursive. Each widget must call its sub widgets
     virtual void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) = 0;
     virtual void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) = 0;
 

@@ -50,13 +50,21 @@ enum EObjectFlagBits : EObjectFlags
      */
     RootObject = 0x00'00'00'00'00'00'00'08,
     /*
+     * If Object is transient and will not be serialized with package
+     */
+    Transient = 0x00'00'00'00'00'00'00'10,
+    /*
      * If package is modified and needs to be saved
      */
-    PackageDirty = 0x00'00'00'00'00'00'00'10,
+    PackageDirty = 0x00'00'00'00'00'00'00'20,
     /*
      * If object of the package is being loaded/needs loading. Once object is loaded this flag will be cleared
      */
-    PackageLoadPending = 0x00'00'00'00'00'00'00'20
+    PackageLoadPending = 0x00'00'00'00'00'00'00'40,
+    /*
+     * If object of the package is Loaded. Once object is loaded this flag will be set
+     */
+    PackageLoaded = 0x00'00'00'00'00'00'00'80
 };
 
 // Why separate accessor? Because this accessor will be needed only for some low level carefully

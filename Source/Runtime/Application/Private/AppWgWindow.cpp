@@ -287,6 +287,21 @@ void ApplicationInstance::startNewFrame()
         {
             renderFrameAllocator.reset();
             IRenderInterfaceModule::get()->getRenderManager()->renderFrame(timeData.deltaTime);
+
+            // Copy all shader updates from previous frame in this frame
+            std::vector<BatchCopyBufferData> copies;
+            std::vector<GraphicsResource *> shaderParams;
+            ShaderParameters::staticType()->allRegisteredResources(shaderParams, true, true);
+            for (GraphicsResource *resource : shaderParams)
+            {
+                static_cast<ShaderParameters *>(resource)->pullBufferParamUpdates(copies, cmdList, graphicsInstance);
+                // Mostly update buffer/texture params will be empty as it will be handled in respective update codes
+                static_cast<ShaderParameters *>(resource)->updateParams(cmdList, graphicsInstance);
+            }
+            if (!copies.empty())
+            {
+                cmdList->copyToBuffer(copies);
+            }
         }
     ));
 }
