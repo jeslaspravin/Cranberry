@@ -26,10 +26,16 @@ void PackageSaver::setupContainedObjs()
     // The getChildren from FlatTree already returns in ordered manner so we should be good without peeling manually here
     std::vector<CBE::Object *> children;
     objsDb.getSubobjects(children, package->getStringID());
+    containedObjects.clear();
+    containedObjects.reserve(children.size());
     for (CBE::Object *child : children)
     {
         // Package is final class so we just have compare, no need to go through isChild hierarchy
         fatalAssertf(child->getType() != CBE::Package::staticType(), "Package must not contain package object");
+        if (BIT_SET(child->getFlags(), CBE::EObjectFlagBits::Transient))
+        {
+            continue;
+        }
 
         objToContObjsIdx[child->getStringID()] = containedObjects.size();
         PackageContainedData &containedObjData = containedObjects.emplace_back();
@@ -122,8 +128,8 @@ EPackageLoadSaveResult PackageSaver::savePackage()
 
 ObjectArchive &PackageSaver::serialize(CBE::Object *&obj)
 {
-    // Push null object index
-    if (!obj)
+    // Push null object index if object is null or it is transient
+    if (!obj || BIT_SET(obj->getFlags(), CBE::EObjectFlagBits::Transient))
     {
         (*static_cast<ObjectArchive *>(this)) << *const_cast<SizeT *>(&NULL_OBJECT_FLAG);
         return (*this);

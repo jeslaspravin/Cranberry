@@ -38,6 +38,9 @@
 #define RELEASE_BUILD 0
 #endif
 
+/**
+ * If all libraries are built for editor
+ */
 #ifndef EDITOR_BUILD
 #define EDITOR_BUILD 0
 #endif

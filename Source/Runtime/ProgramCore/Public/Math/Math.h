@@ -113,7 +113,7 @@ private:
 
     // Non math helpers
 
-    static bool isEqual(const Type &a, const Type &b, float epsilon) { a.isSame(b, epsilon); }
+    static bool isEqual(const Type &a, const Type &b, float epsilon) { return a.isSame(b, epsilon); }
 
     FORCE_INLINE static bool isFinite(const Type &value) { return value.isFinite(); }
 };

@@ -28,23 +28,17 @@ std::vector<String> WindowsFileSystemFunctions::listFiles(const String &director
         }
     }
 
-    std::queue<String> directories;
-    directories.push(directory);
-
-    while (!directories.empty())
+    std::vector<String> directories;
+    directories.emplace_back(directory);
+    // If we recurse find and append all subdirectories
+    if (bRecursive)
     {
-        String currentDir = directories.front();
-        directories.pop();
+        auto subdirs = listAllDirectories(directory, bRecursive);
+        directories.insert(directories.end(), subdirs.cbegin(), subdirs.cend());
+    }
 
-        // If we recurse find and append all subdirectories
-        if (bRecursive)
-        {
-            for (const String &subDir : listAllDirectories(currentDir, bRecursive))
-            {
-                directories.push(subDir);
-            }
-        }
-
+    for (const String &currentDir : directories)
+    {
         WIN32_FIND_DATA data;
         HANDLE fHandle = ::FindFirstFile(PathFunctions::combinePath(currentDir, wildcard).c_str(), &data);
 

@@ -12,7 +12,6 @@
 #include "Engine/TestGameEngine.h"
 #if EXPERIMENTAL
 
-#include "../Editor/Core/ImGui/IImGuiLayer.h"
 #include "Assets/Asset/EnvironmentMapAsset.h"
 #include "Assets/Asset/StaticMeshAsset.h"
 #include "Assets/Asset/TextureAsset.h"
@@ -22,10 +21,11 @@
 #include "Core/Types/Textures/Texture2D.h"
 #include "Core/Types/Textures/TexturesBase.h"
 #include "CoreObjectGC.h"
-#include "Editor/Core/ImGui/ImGuiLib/imgui.h"
-#include "Editor/Core/ImGui/ImGuiLib/implot.h"
-#include "Editor/Core/ImGui/ImGuiManager.h"
 #include "GenericAppWindow.h"
+#include "Widgets/ImGui/ImGuiLib/imgui.h"
+#include "Widgets/ImGui/IImGuiLayer.h"
+#include "Widgets/ImGui/ImGuiManager.h"
+#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "IApplicationModule.h"
 #include "ICoreObjectsModule.h"
 #include "Modules/ModuleManager.h"
@@ -323,7 +323,6 @@ class ExperimentalEnginePBR
 
     void createShaderParameters(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void setupShaderParameterParams(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    void updateShaderParameters(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
     void destroyShaderParameters();
 
     void setupLightShaderData();
@@ -1872,37 +1871,6 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *graphi
     camRTParams->init();
 }
 
-void ExperimentalEnginePBR::updateShaderParameters(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
-{
-    // const bool canUpdate = timeData.frameCounter % frameResources.size() == 0;
-
-    // Update once every swapchain cycles are presented
-    // if(canUpdate)
-    {
-        // for (const FrameResource& frameRes : frameResources)
-        //{
-        //     if (!frameRes.recordingFence->isSignaled())
-        //     {
-        //         frameRes.recordingFence->waitForSignal();
-        //     }
-        // }
-
-        std::vector<BatchCopyBufferData> copies;
-
-        std::vector<GraphicsResource *> shaderParams;
-        ShaderParameters::staticType()->allRegisteredResources(shaderParams, true, true);
-        for (GraphicsResource *resource : shaderParams)
-        {
-            static_cast<ShaderParameters *>(resource)->pullBufferParamUpdates(copies, cmdList, graphicsInstance);
-            static_cast<ShaderParameters *>(resource)->updateParams(cmdList, graphicsInstance);
-        }
-        if (!copies.empty())
-        {
-            cmdList->copyToBuffer(copies);
-        }
-    }
-}
-
 void ExperimentalEnginePBR::reupdateTextureParamsOnResize()
 {
     uint32 swapchainCount = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow())->imagesCount();
@@ -2363,7 +2331,7 @@ void ExperimentalEnginePBR::onStartUp()
     thinColor = LinearColorConst::GRAY;
     thickColor = LinearColorConst::WHITE;
 
-    imguiManager.addLayer(this);
+    getImGuiManager().addLayer(this);
     createScene();
 
     textures = assetManager.getAssetsOfType<EAssetType::Texture2D, TextureAsset>();
@@ -2432,7 +2400,7 @@ void ExperimentalEnginePBR::onQuit()
         }
     );
 
-    imguiManager.removeLayer(this);
+    getImGuiManager().removeLayer(this);
 
     tempTestQuit();
     TestGameEngine::onQuit();
@@ -2644,8 +2612,8 @@ void ExperimentalEnginePBR::frameRender(
         // Drawing IMGUI
         ImGuiDrawingContext drawingContext;
         drawingContext.cmdBuffer = cmdBuffer;
-        drawingContext.rtTextures = lightRtAttachments;
-        imguiManager.draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
+        drawingContext.rtTexture = lightRtAttachments[0];
+        getImGuiManager().draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
 
         // Drawing final resolve to presenting surface quad
         viewport.minBound = Int2D(0, 0);
@@ -3004,7 +2972,7 @@ void ExperimentalEnginePBR::tickEngine()
         frameVisualizeId = 3;
     }
 
-    if (application->inputSystem->keyState(Keys::LMB)->keyWentDown && !imguiManager.capturedInputs()
+    if (application->inputSystem->keyState(Keys::LMB)->keyWentDown && !getImGuiManager().capturedInputs()
         && !application->windowManager->getMainWindow()->isMinimized())
     {
         QuantShortBox2D windowArea = application->windowManager->getMainWindow()->windowClientRect();
@@ -3031,6 +2999,21 @@ void ExperimentalEnginePBR::tickEngine()
         }
     }
 
+    if (!application->windowManager->getMainWindow()->isMinimized())
+    {
+        ENQUEUE_COMMAND(TickFrame)
+        (
+            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+            {
+#if SHADOWS_USE_CULLED_DRAW_CMDS
+                setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
+#endif
+                frameRender(cmdList, graphicsInstance, graphicsHelper);
+            }
+        );
+    }
+
+    // Do the resize after frame rendering so next frame will be updated
     if (renderSize != ApplicationSettings::screenSize.get())
     {
         ENQUEUE_COMMAND(WritingDescs)
@@ -3041,21 +3024,6 @@ void ExperimentalEnginePBR::tickEngine()
                 resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
                 ApplicationSettings::screenSize.set(renderSize);
-            }
-        );
-    }
-
-    if (!application->windowManager->getMainWindow()->isMinimized())
-    {
-        ENQUEUE_COMMAND(TickFrame)
-        (
-            [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-            {
-                updateShaderParameters(cmdList, graphicsInstance);
-#if SHADOWS_USE_CULLED_DRAW_CMDS
-                setupLightSceneDrawCmdsBuffer(cmdList, graphicsInstance);
-#endif
-                frameRender(cmdList, graphicsInstance, graphicsHelper);
             }
         );
     }
@@ -3416,18 +3384,11 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
                 ImGui::TreePop();
             }
 
-            // if (ImGui::CollapsingHeader(TCHAR("Textures"))
-            //{
-            //     ImGui::Image(static_cast<TextureAsset*>(assetManager.getAsset(TCHAR("ten_N"))->getTexture(),
-            //     ImVec2(
-            //         ImGui::GetWindowContentRegionWidth(),
-            //         ImGui::GetWindowContentRegionWidth()));
-            // }
             if (ImGui::CollapsingHeader("Texture Histogram"))
             {
                 if (selectedTexture != 0)
                 {
-                    ImGui::Image(textures[selectedTexture - 1]->getTexture(), ImVec2(64, 64));
+                    ImGui::Image(textures[selectedTexture - 1]->getTexture()->getTextureResource().get(), ImVec2(64, 64));
                     ImGui::SameLine();
                 }
                 if (ImGui::Combo("Textures", &selectedTexture, textureNames.data(), int32(textureNames.size())))

@@ -26,6 +26,7 @@ class Box
 public:
     using PointType = T;
     using PointElementType = typename PointType::value_type;
+    using NumericLimits = std::numeric_limits<PointElementType>;
     CONST_EXPR static const uint32 Dim = d;
 
     using value_type = PointType;
@@ -35,7 +36,10 @@ public:
     T minBound;
     T maxBound;
 
-    Box() = default;
+    Box()
+        : minBound(NumericLimits::max())
+        , maxBound(NumericLimits::lowest())
+    {}
 
     Box(const T &min, const T &max)
         : minBound(min)
@@ -388,6 +392,7 @@ class Box<T, 1>
 public:
     using PointType = T;
     using PointElementType = T;
+    using NumericLimits = std::numeric_limits<PointElementType>;
     CONST_EXPR static const uint32 Dim = 1;
 
     using value_type = PointType;
@@ -397,7 +402,10 @@ public:
     T minBound;
     T maxBound;
 
-    Box() = default;
+    Box()
+        : minBound(NumericLimits::max())
+        , maxBound(NumericLimits::lowest())
+    {}
 
     Box(const T &min, const T &max)
     {

@@ -18,11 +18,11 @@
 #include "../Core/Types/Textures/RenderTargetTextures.h"
 #include "../Core/Types/Textures/Texture2D.h"
 #include "../Core/Types/Textures/TexturesBase.h"
-#include "../Editor/Core/ImGui/IImGuiLayer.h"
-#include "../Editor/Core/ImGui/ImGuiLib/imgui.h"
-#include "../Editor/Core/ImGui/ImGuiLib/implot.h"
-#include "../Editor/Core/ImGui/ImGuiManager.h"
 #include "ApplicationInstance.h"
+#include "Widgets/ImGui/ImGuiLib/imgui.h"
+#include "Widgets/ImGui/IImGuiLayer.h"
+#include "Widgets/ImGui/ImGuiManager.h"
+#include "Widgets/ImGui/ImGuiLib/implot.h"
 #include "Core/GBuffers.h"
 #include "IApplicationModule.h"
 #include "InputSystem/InputSystem.h"
@@ -257,7 +257,6 @@ class ExperimentalEngineGoochModel
     void
         createShaderParameters(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void setupShaderParameterParams(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    void updateShaderParameters(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
     void destroyShaderParameters();
 
     void resizeLightingRts(const Size2D &size);
@@ -810,30 +809,6 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
     testComputeParams->init();
 }
 
-void ExperimentalEngineGoochModel::updateShaderParameters(class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
-{
-    // const bool canUpdate = timeData.frameCounter % frameResources.size() == 0;
-
-    // Update once every swapchain cycles are presented
-    // if(canUpdate)
-    {
-        // for (const FrameResource& frameRes : frameResources)
-        //{
-        //     if (!frameRes.recordingFence->isSignaled())
-        //     {
-        //         frameRes.recordingFence->waitForSignal();
-        //     }
-        // }
-
-        std::vector<GraphicsResource *> shaderParams;
-        ShaderParameters::staticType()->allRegisteredResources(shaderParams, true, true);
-        for (GraphicsResource *resource : shaderParams)
-        {
-            static_cast<ShaderParameters *>(resource)->updateParams(cmdList, graphicsInstance);
-        }
-    }
-}
-
 void ExperimentalEngineGoochModel::reupdateTextureParamsOnResize()
 {
     WindowCanvasRef windowCanvas = application->windowManager->getWindowCanvas(application->windowManager->getMainWindow());
@@ -1226,7 +1201,7 @@ void ExperimentalEngineGoochModel::onStartUp()
     camera.lookAt(Vector3D::ZERO);
     cameraRotation = camera.rotation();
 
-    imguiManager.addLayer(this);
+    getImGuiManager().addLayer(this);
     createScene();
 
     std::vector<ShortSizeBox2D> bxs{
@@ -1276,7 +1251,7 @@ void ExperimentalEngineGoochModel::onQuit()
         }
     );
 
-    imguiManager.removeLayer(this);
+    getImGuiManager().removeLayer(this);
     TestGameEngine::onQuit();
 }
 
@@ -1500,8 +1475,8 @@ void ExperimentalEngineGoochModel::frameRender(
         // Drawing IMGUI
         ImGuiDrawingContext drawingContext;
         drawingContext.cmdBuffer = cmdBuffer;
-        drawingContext.rtTextures = { frameResources[index].lightingPassRt };
-        imguiManager.draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
+        drawingContext.rtTexture = frameResources[index].lightingPassRt;
+        getImGuiManager().draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
 
         // Drawing text
         rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { frameResources[index].lightingPassRt });
@@ -1588,6 +1563,13 @@ void ExperimentalEngineGoochModel::tickEngine()
         frameVisualizeId = 3;
     }
 
+    if (!application->windowManager->getMainWindow()->isMinimized())
+    {
+        ENQUEUE_COMMAND_NODEBUG(
+            TickFrame, { frameRender(cmdList, graphicsInstance, graphicsHelper); }, this
+        );
+    }
+
     if (renderSize != ApplicationSettings::screenSize.get())
     {
         ENQUEUE_COMMAND_NODEBUG(
@@ -1597,18 +1579,6 @@ void ExperimentalEngineGoochModel::tickEngine()
                 resizeLightingRts(renderSize);
                 reupdateTextureParamsOnResize();
                 ApplicationSettings::screenSize.set(renderSize);
-            },
-            this
-        );
-    }
-
-    if (!application->windowManager->getMainWindow()->isMinimized())
-    {
-        ENQUEUE_COMMAND_NODEBUG(
-            TickFrame,
-            {
-                updateShaderParameters(cmdList, graphicsInstance);
-                frameRender(cmdList, graphicsInstance, graphicsHelper);
             },
             this
         );
@@ -1727,7 +1697,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
 
                 ImGui::Separator();
                 ImGui::NextColumn();
-                ImGui::Image(writeTexture, ImVec2(ImGui::GetWindowContentRegionWidth(), ImGui::GetWindowContentRegionWidth()));
+                ImGui::Image(
+                    writeTexture->getTextureResource().get(), ImVec2(ImGui::GetWindowContentRegionWidth(), ImGui::GetWindowContentRegionWidth())
+                );
                 ImGui::Separator();
             }
 

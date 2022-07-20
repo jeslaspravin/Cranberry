@@ -82,6 +82,7 @@ ModuleManager::ModuleManager()
     {
         LibraryData data;
         PlatformFunctions::getModuleInfo(procHandle, libPtr, data);
+        data.name = PathFunctions::stripExtension(data.name);
         LOG_DEBUG(
             "ModuleManager", "System loaded module name : %s, Image : %s, Module size : %d", data.name.getChar(), data.imgPath.getChar(),
             data.moduleSize
@@ -209,9 +210,10 @@ WeakModulePtr ModuleManager::getOrLoadModule(const TChar *moduleName)
 #endif // STATIC_LINKED
         fatalAssertf(retModule, "Failed loading module interface %s", moduleName);
 
-        retModule->init();
-        loadedModuleInterfaces[moduleName] = retModule;
+        // Order and module must be set before calling init, this allows module's code to access module from ModuleManager inside init
         moduleLoadedOrder.emplace_back(moduleName);
+        loadedModuleInterfaces[moduleName] = retModule;
+        retModule->init();
 
         onModuleLoad.invoke(moduleName);
     }
@@ -238,25 +240,39 @@ void ModuleManager::unloadModule(const TChar *moduleName)
 
 void ModuleManager::unloadAll()
 {
-    for (auto rItr = moduleLoadedOrder.crbegin(); rItr != moduleLoadedOrder.crend(); ++rItr)
+    // Make a local copy and erase moduleLoadedOrder
+    std::vector<String> localModuleLoadOrder = std::move(moduleLoadedOrder);
+    for (auto rItr = localModuleLoadOrder.crbegin(); rItr != localModuleLoadOrder.crend(); ++rItr)
     {
         auto moduleItr = loadedModuleInterfaces.find(*rItr);
-        debugAssert(moduleItr != loadedModuleInterfaces.end());
+        if (moduleItr == loadedModuleInterfaces.end())
+        {
+            LOG_DEBUG("ModuleManager", "Module %s is already unloaded in one of module that was unload", *rItr);
+            continue;
+        }
 
         onModuleUnload.invoke(*rItr);
         moduleItr->second->release();
         loadedModuleInterfaces.erase(moduleItr);
         LOG_DEBUG("ModuleManager", "Unloaded module %s", *rItr);
     }
-    moduleLoadedOrder.clear();
-    for (const std::pair<const String, ModulePtr> &modulePair : loadedModuleInterfaces)
+    // Make a local copy and erase loadedModuleInterfaces
+    LoadedModulesMap strandedModule = std::move(loadedModuleInterfaces);
+    for (const std::pair<const String, ModulePtr> &modulePair : strandedModule)
     {
         onModuleUnload.invoke(modulePair.first);
         modulePair.second->release();
         LOG_DEBUG("ModuleManager", "Unloaded module %s", modulePair.first);
     }
-    loadedModuleInterfaces.clear();
 
+#if !STATIC_LINKED
+    // First unload all libraries in reverse of loaded order
+    for (auto rItr = localModuleLoadOrder.crbegin(); rItr != localModuleLoadOrder.crend(); ++rItr)
+    {
+        unloadLibrary(rItr->getChar());
+        LOG_DEBUG("ModuleManager", "Unloaded library %s", *rItr);
+    }
+#endif // STATIC_LINKED
     for (const std::pair<const String, std::pair<LibHandle, LibraryData>> &libPair : loadedLibraries)
     {
         PlatformFunctions::releaseLibrary(libPair.second.first);
@@ -279,6 +295,7 @@ std::vector<std::pair<LibHandle, LibraryData>> ModuleManager::getAllModuleData()
     {
         LibraryData data;
         PlatformFunctions::getModuleInfo(procHandle, libPtr, data);
+        data.name = PathFunctions::stripExtension(data.name);
 
         if (loadedLibraries.find(data.name) != loadedLibraries.end())
             continue;

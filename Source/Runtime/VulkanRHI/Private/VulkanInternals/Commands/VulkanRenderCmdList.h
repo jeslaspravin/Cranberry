@@ -136,6 +136,7 @@ public:
     void cmdSetViewportAndScissor(
         const GraphicsResource *cmdBuffer, const QuantizedBox2D &viewport, const QuantizedBox2D &scissor, uint32 atViewport = 0
     ) const final;
+    void cmdSetScissor(const GraphicsResource *cmdBuffer, const QuantizedBox2D &scissor, uint32 atViewport = 0) const final;
     void cmdSetLineWidth(const GraphicsResource *cmdBuffer, float lineWidth) const final;
     void cmdSetDepthBias(const GraphicsResource *cmdBuffer, float constantBias, float slopeFactor, float clampValue) const final;
 

@@ -84,15 +84,15 @@ int32 main(int32 argsc, AChar **args)
         LOG_ERROR("CPPReflect", "Failed to parse command line arguments");
         ProgramCmdLine::get()->printCommandLine();
     }
-    if (ProgramCmdLine::get()->printHelp())
-    {
-        // Since this invocation is for printing help
-        return 0;
-    }
     Logger::initialize();
     if (!ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::LOG_VERBOSE))
     {
         Logger::pushMuteSeverities(Logger::Debug | Logger::Log);
+    }
+    if (ProgramCmdLine::get()->printHelp())
+    {
+        // Since this invocation is for printing help
+        return 0;
     }
 
     // Loading other libraries

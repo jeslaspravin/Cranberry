@@ -10,6 +10,8 @@
  */
 
 #pragma once
+
+#include "ApplicationExports.h"
 #include "ImGuiLib/imgui.h"
 #include "Math/Box.h"
 #include "Math/Vector2D.h"
@@ -17,7 +19,7 @@
 
 class TextureBase;
 
-class ImGuiDrawInterface
+class APPLICATION_EXPORT ImGuiDrawInterface
 {
 private:
     friend class ImGuiManager;

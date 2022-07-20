@@ -19,10 +19,20 @@ struct VersionPair
 
 struct ArchiveMeta 
 {
-    uint64 archiveVersion;
+    uint32 archiveMarker<read = PrintArchiveMarker>;
+    uint32 archiveVersion;
     uint64 customVersionsLen<hidden=true>;    
     VersionPair customVersions[customVersionsLen];
 };
+
+#define ARCHIVE_MARKER_VALUE 1042438380
+string PrintArchiveMarker(uint32 archiveMarkerVal)
+{
+    string retStr;
+    SPrintf(retStr, "%s(%u)"
+        , (archiveMarkerVal == ARCHIVE_MARKER_VALUE)? "ValidArchive" : "InvalidArchive", archiveMarkerVal);
+    return retStr;
+}
 
 // Package data
 struct PackageContainedData
@@ -105,12 +115,13 @@ string ObjectBitFlagToStr(uint64 flags)
     return fmtStr;    
 }
 
+#define ARCHIVE_MARKER_VALUE 1042438380
 #define PACKAGE_MARKER_VALUE 3759085268 
 string PrintPackageMarker(uint32 packageMarkerVal)
 {
     string retStr;
     SPrintf(retStr, "%s(%u)"
-        , (packageMarker == PACKAGE_MARKER_VALUE)? "Valid" : "Invalid", packageMarkerVal);
+        , (packageMarkerVal == PACKAGE_MARKER_VALUE)? "ValidPackage" : "InvalidPackage", packageMarkerVal);
     return retStr;
 }
 

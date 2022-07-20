@@ -13,12 +13,12 @@
 
 #include "ApplicationInstance.h"
 #include "Assets/AssetsManager.h"
-#include "Editor/Core/ImGui/ImGuiManager.h"
 #include "IRenderInterfaceModule.h"
 #include "Types/Time.h"
 
 class EngineInputCoreModule;
 class IApplicationModule;
+class ImGuiManager;
 
 struct EngineTime
 {
@@ -57,7 +57,10 @@ protected:
     EngineInputCoreModule *inputModule;
 
     ApplicationInstance *application;
-    ImGuiManager imguiManager;
+
+    ImGuiManager *imguiManager;
+    DelegateHandle surfaceResizeHandle;
+
     AssetManager assetManager;
     EngineTime timeData;
 
@@ -74,7 +77,7 @@ public:
     void quit();
 
     AssetManager &getAssetManager() { return assetManager; }
-    ImGuiManager &getImGuiManager() { return imguiManager; }
+    ImGuiManager &getImGuiManager() { return *imguiManager; }
 };
 
 class GameEngineWrapper final

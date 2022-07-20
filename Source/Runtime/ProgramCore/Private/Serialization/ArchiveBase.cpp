@@ -11,6 +11,7 @@
 
 #include "Serialization/ArchiveBase.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
+#include "Serialization/CommonTypesSerialization.h"
 
 void ArchiveSizeCounterStream::read(void *toPtr, SizeT byteLen) { fatalAssertf(false, "Reading is not allowed in Size counter stream"); }
 uint8 ArchiveSizeCounterStream::readForwardAt(SizeT idx) const
@@ -24,11 +25,19 @@ uint8 ArchiveSizeCounterStream::readBackwardAt(SizeT idx) const
     return 0;
 }
 
+STRINGID_CONSTEXPR static const StringID ARCHIVE_MARKER = STRID("CBEArchive");
 void ArchiveBase::serializeArchiveMeta()
 {
-    uint64 vers = ARCHIVE_VERSION;
+    // Mark as valid archive
+    StringID archiveMarker = ARCHIVE_MARKER;
+    (*this) << archiveMarker;
+    fatalAssertf(archiveMarker == ARCHIVE_MARKER, "Invalid archive(No archive marker found)!");
+
+    // Handle archive versions
+    uint32 vers = ARCHIVE_VERSION;
     (*this) << vers;
     fatalAssertf(vers >= CUTOFF_VERSION, "Unsupported archive!");
 
+    // Serialize custom versions
     (*this) << customVersions;
 }

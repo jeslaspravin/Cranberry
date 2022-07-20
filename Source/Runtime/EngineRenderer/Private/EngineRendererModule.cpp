@@ -80,8 +80,10 @@ void EngineRendererModule::init()
 
 void EngineRendererModule::release()
 {
-    // Wait till all graphics resources are released
-    copat::waitOnAwaitable(renderManager->destroy());
+    if (GlobalRenderVariables::GPU_DEVICE_INITIALIZED)
+    { // Wait till all graphics resources are released
+        copat::waitOnAwaitable(renderManager->destroy());
+    }
     renderManager = nullptr;
     delete renderManager;
 

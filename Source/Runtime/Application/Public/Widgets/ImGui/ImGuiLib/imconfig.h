@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "ApplicationExports.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "Math/Vector2D.h"
 #include "Math/Vector4D.h"
@@ -35,6 +36,9 @@
 // for each static/DLL boundary you are calling from. Read "Context and Memory Allocators" section of imgui.cpp for more details.
 //#define IMGUI_API __declspec( dllexport )
 //#define IMGUI_API __declspec( dllimport )
+// It is okay since we just always call from Application.dll
+#define IMGUI_API APPLICATION_EXPORT
+#define IMPLOT_API APPLICATION_EXPORT
 
 //---- Don't define obsolete functions/enums/behaviors. Consider enabling from time to time after updating to avoid using soon-to-be obsolete function/names.
 //#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
@@ -128,7 +132,7 @@
 
 //---- Debug Tools: Macro to break in Debugger
 // (use 'Metrics->Tools->Item Picker' to pick widgets with the mouse and break into them for easy debugging.)
-#define IM_DEBUG_BREAK()  IM_ASSERT(0)
+//#define IM_DEBUG_BREAK  IM_ASSERT(0)
 //#define IM_DEBUG_BREAK  __debugbreak()
 
 //---- Debug Tools: Have the Item Picker break in the ItemAdd() function instead of ItemHoverable(),

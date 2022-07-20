@@ -183,6 +183,7 @@ EPackageLoadSaveResult PackageLoader::load()
         }
         containedData.object->serialize(*this);
         CLEAR_BITS(CBE::INTERNAL_ObjectCoreAccessors::getFlags(containedData.object), CBE::EObjectFlagBits::PackageLoadPending);
+        SET_BITS(CBE::INTERNAL_ObjectCoreAccessors::getFlags(containedData.object), CBE::EObjectFlagBits::PackageLoaded);
 
         SizeT serializedSize = fileStream.cursorPos() - containedData.streamStart;
         if (serializedSize != containedData.streamSize)
@@ -198,6 +199,7 @@ EPackageLoadSaveResult PackageLoader::load()
         }
     }
     CLEAR_BITS(CBE::INTERNAL_ObjectCoreAccessors::getFlags(package), CBE::EObjectFlagBits::PackageLoadPending);
+    SET_BITS(CBE::INTERNAL_ObjectCoreAccessors::getFlags(package), CBE::EObjectFlagBits::PackageLoaded);
 
     // Broadcast load events
     for (PackageContainedData &containedData : containedObjects)

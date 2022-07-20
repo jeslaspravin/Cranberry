@@ -10,6 +10,7 @@
  */
 
 #include "Widgets/WidgetRHIRenderer.h"
+#include "Math/Math.h"
 #include "IApplicationModule.h"
 #include "ApplicationInstance.h"
 #include "WindowManager.h"
@@ -323,6 +324,12 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
                     for (uint32 vertIdx = verticesRange.minBound; vertIdx < verticesRange.maxBound; vertIdx += 4)
                     {
                         uint32 quadIdx = vertIdx / 4;
+                        // Only if quad is big enough
+                        if (drawingCtx.perQuadClipping()[quadIdx].size() == Short2D(0))
+                        {
+                            continue;
+                        }
+
                         ImageResourceRef img
                             = drawingCtx.perQuadTexture()[quadIdx].isValid() ? drawingCtx.perQuadTexture()[quadIdx] : dummyTexture;
                         std::pair<uint32, ImageResourceRef> uniqPair = { layerIdx, img };
@@ -434,7 +441,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
                 Int2D{drawCmd.scissor.minBound.x, drawCmd.scissor.minBound.y},
                 Int2D{drawCmd.scissor.maxBound.x, drawCmd.scissor.maxBound.y}
             };
-            cmdList->cmdSetViewportAndScissor(cmdBuffer, renderArea, scissor);
+            cmdList->cmdSetScissor(cmdBuffer, scissor);
             cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineContext, textureParams[drawCmd.textureDescIdx].first);
 
             cmdList->cmdDrawIndexed(cmdBuffer, drawCmd.indicesOffset, drawCmd.indicesCount);
