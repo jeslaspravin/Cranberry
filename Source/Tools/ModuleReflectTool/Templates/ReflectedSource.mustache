@@ -34,7 +34,7 @@ struct HEADER_FILE_ID
     
     {{#Classes}}{{^IsAbstract}}
     template <typename... Args>
-    static {{TypeName}}* {{SanitizedName}}_CTor(void* ptr, Args&&... args);{{/IsAbstract}}{{/Classes}}
+    static {{TypeName}}* {{SanitizedName}}_CTor(void* ptr, Args... args);{{/IsAbstract}}{{/Classes}}
 } COMBINE(HEADER_FILE_ID, _autoinit);
 
 HEADER_FILE_ID::HEADER_FILE_ID()
@@ -122,7 +122,7 @@ void HEADER_FILE_ID::init_{{SanitizedName}}(EnumProperty* typeProperty)
 
 {{#Classes}}{{^IsAbstract}}
 template <typename... Args>
-static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(void* ptr, Args&&... args)
+static {{TypeName}}* HEADER_FILE_ID::{{SanitizedName}}_CTor(void* ptr, Args... args)
 {
     return CtorPolicyHelper::constructObject<typename COMBINE({{TypeName}}::, CONSTRUCTION_POLICY_TYPEDEF_NAME), {{TypeName}}, Args...>(ptr, std::forward<Args>(args)...);
 }{{/IsAbstract}}

@@ -115,4 +115,5 @@ ArchiveType &operator<<(ArchiveType &archive, NameString &value)
     {
         value.id = value.nameStr;
     }
+    return archive;
 }

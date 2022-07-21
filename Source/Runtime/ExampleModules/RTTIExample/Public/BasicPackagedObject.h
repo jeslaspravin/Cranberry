@@ -96,6 +96,7 @@ public:
     }
 
     void onPostLoad() override;
+    void onConstructed() override;
     void exampleFunc() const override;
 };
 
@@ -154,5 +155,6 @@ public:
     }
 
     void onPostLoad() override;
+    void onConstructed() override;
     void exampleFunc() const override;
 };

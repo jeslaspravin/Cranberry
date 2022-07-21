@@ -129,9 +129,20 @@ requires(
 //////////////////////////////////////////////////////////////////////////
 COREOBJECTS_EXPORT void INTERNAL_destroyCBEObject(Object *obj);
 FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::Default); }
-
+/**
+ * CBE::INTERNAL_create - Only difference between regular create and this is constructed never gets called under any condition
+ * This must be used if constructed() must be delayed without setting any neccessary flags
+ *
+ * @param CBEClass clazz
+ * @param const String & name
+ * @param Object * outerObj
+ * @param EObjectFlags flags
+ * @param CtorArgs && ...ctorArgs
+ *
+ * @return CBE::Object *
+ */
 template <typename... CtorArgs>
-Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
 {
     // If empty string then try create from class name
     String objectName = name.empty() ? clazz->nameString : name;
@@ -194,6 +205,19 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
         object = nullptr;
     }
     return object;
+}
+
+template <typename... CtorArgs>
+Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+{
+    Object *obj = INTERNAL_create<CtorArgs...>(clazz, name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...);
+    // Also change CBE::Object::constructed(), Always construct for Transients
+    if (NO_BITS_SET(obj->collectAllFlags(), EObjectFlagBits::PackageLoadPending | EObjectFlagBits::TemplateLoadPending)
+        || BIT_SET(flags, EObjectFlagBits::Transient))
+    {
+        obj->constructed();
+    }
+    return obj;
 }
 
 template <typename... CtorArgs>

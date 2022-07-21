@@ -473,10 +473,13 @@ void ImGuiManager::draw(
     //////////////////////////////////////////////////////////////////////////
 
     ImageResource *rtTexture = static_cast<ImageResource *>(drawingContext.rtTexture->renderTargetResource().get());
-    QuantizedBox2D viewport;
-    viewport.minBound = Int2D(0, 0);
-    // doing like this because even if ImGui size is different from framebuffer we can still draw
-    viewport.maxBound = Int2D(rtTexture->getImageSize().x, rtTexture->getImageSize().y);
+    QuantizedBox2D viewport = drawingContext.viewport;
+    if (!viewport.isValidAABB())
+    {
+        viewport.minBound = Int2D(0, 0);
+        // doing like this because even if ImGui size is different from framebuffer we can still draw
+        viewport.maxBound = Int2D(rtTexture->getImageSize().x, rtTexture->getImageSize().y);
+    }
 
     Vector2D uiToFbDispScale = Vector2D(float(viewport.maxBound.x), float(viewport.maxBound.y)) / Vector2D(drawData->DisplaySize);
 

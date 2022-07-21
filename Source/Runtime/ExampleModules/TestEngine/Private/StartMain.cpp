@@ -79,7 +79,7 @@ int appMain(String cmdLine, InstanceHandle appPlatformInstance)
 
 #if PLATFORM_WINDOWS
 
-#include <wtypes.h>
+#include "WindowsCommonHeaders.h"
 
 //#define _CRTDBG_MAP_ALLOC
 //#include <cstdlib>

@@ -32,10 +32,6 @@ void PackageSaver::setupContainedObjs()
     {
         // Package is final class so we just have compare, no need to go through isChild hierarchy
         fatalAssertf(child->getType() != CBE::Package::staticType(), "Package must not contain package object");
-        if (BIT_SET(child->getFlags(), CBE::EObjectFlagBits::Transient))
-        {
-            continue;
-        }
 
         objToContObjsIdx[child->getStringID()] = containedObjects.size();
         PackageContainedData &containedObjData = containedObjects.emplace_back();
@@ -43,6 +39,18 @@ void PackageSaver::setupContainedObjs()
         containedObjData.objectPath = ObjectPathHelper::getObjectPath(child, package);
         containedObjData.objectFlags = child->getFlags();
         containedObjData.className = child->getType()->name;
+    }
+}
+
+void PackageSaver::serializeObject(CBE::Object *obj)
+{
+    /**
+     * If transient we store the object as part of package but never serialize it.
+     * This is to allow us to do pointer fix ups if transient object is available while loading
+     */
+    if (NO_BITS_SET(obj->collectAllFlags(), CBE::EObjectFlagBits::Transient))
+    {
+        obj->serialize(*this);
     }
 }
 
@@ -72,7 +80,7 @@ EPackageLoadSaveResult PackageSaver::savePackage()
     for (PackageContainedData &containedObjData : containedObjects)
     {
         containedObjData.streamStart = archiveCounter.cursorPos();
-        containedObjData.object->serialize(*this);
+        serializeObject(containedObjData.object);
         containedObjData.streamSize = archiveCounter.cursorPos() - containedObjData.streamStart;
         // We must have custom version setup if present, Custom version keys must be from class property name
         containedObjData.classVersion = ArchiveBase::getCustomVersion(uint32(containedObjData.object->getType()->name));
@@ -117,7 +125,7 @@ EPackageLoadSaveResult PackageSaver::savePackage()
     (*static_cast<ObjectArchive *>(this)) << dependentObjects;
     for (PackageContainedData &containedObjData : containedObjects)
     {
-        containedObjData.object->serialize(*this);
+        serializeObject(containedObjData.object);
     }
     packageArchive.setStream(nullptr);
 
@@ -128,8 +136,8 @@ EPackageLoadSaveResult PackageSaver::savePackage()
 
 ObjectArchive &PackageSaver::serialize(CBE::Object *&obj)
 {
-    // Push null object index if object is null or it is transient
-    if (!obj || BIT_SET(obj->getFlags(), CBE::EObjectFlagBits::Transient))
+    // Push null object index if object is null
+    if (!obj)
     {
         (*static_cast<ObjectArchive *>(this)) << *const_cast<SizeT *>(&NULL_OBJECT_FLAG);
         return (*this);

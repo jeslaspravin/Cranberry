@@ -116,7 +116,7 @@ class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BerrySecond : public TestNS::BerryOb
 {
     GENERATED_CODES();
 
-public:
+private:
     struct META_ANNOTATE() BerrySecondData
     {
         GENERATED_CODES();
@@ -128,6 +128,7 @@ public:
         bool operator==(const BerrySecondData &other) const noexcept { return value == other.value; }
     };
 
+public:
     META_ANNOTATE()
     BerrySecondData reflectedStruct;
     META_ANNOTATE()

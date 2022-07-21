@@ -33,9 +33,6 @@ private:
 
     BinaryArchive packageArchive;
 
-private:
-    void setupContainedObjs();
-
 public:
     PackageSaver(CBE::Package *savingPackage);
     EPackageLoadSaveResult savePackage();
@@ -43,4 +40,9 @@ public:
     /* ObjectArchive overrides */
     ObjectArchive &serialize(CBE::Object *&obj) override;
     /* Overrides ends */
+
+private:
+    void setupContainedObjs();
+    // Just helper to bring serializing object bytes to single place
+    void serializeObject(CBE::Object* obj);
 };
