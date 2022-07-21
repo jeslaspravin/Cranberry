@@ -109,6 +109,20 @@ public:
 
     void destroyObject();
     void beginDestroy() { markReadyForDestroy(); }
+    /**
+     * This gets called after complete construction from either Class or something else(Example after load or after construction from template)
+     * This does not mean it will not get called before that. It has to be handled after checking object flags
+     */
+    void constructed()
+    {
+        // Also change CBE::create()
+        debugAssertf(
+            NO_BITS_SET(flags, EObjectFlagBits::PackageLoadPending | EObjectFlagBits::TemplateLoadPending),
+            "constructed called before load is finished! Try using INTERNAL_create"
+        );
+        onConstructed();
+    }
+    // Will get called after loaded from package
     void postLoad() { onPostLoad(); }
 
     FORCE_INLINE Object *getOuter() const { return objOuter; }
@@ -122,12 +136,26 @@ public:
         return outer;
     }
     bool hasOuter(Object *checkOuter) const { return getOuter() && (getOuter() == checkOuter || getOuter()->hasOuter(checkOuter)); }
+
     FORCE_INLINE EObjectFlags getFlags() const { return flags; }
+    FORCE_INLINE EObjectFlags collectAllFlags() const 
+    {
+        EObjectFlags retVal = flags;
+        Object *outer = this->getOuter();
+        while (outer)
+        {
+            retVal |= outer->flags;
+            outer = outer->getOuter();
+        }
+        return retVal;
+    }
+
     FORCE_INLINE const String &getName() const { return objectName; }
     FORCE_INLINE StringID getStringID() const { return sid; }
     String getFullPath() const;
 
     virtual void destroy() {}
+    virtual void onConstructed() {}
     virtual void onPostLoad() {}
     virtual ObjectArchive &serialize(ObjectArchive &ar) { return ar; }
 };

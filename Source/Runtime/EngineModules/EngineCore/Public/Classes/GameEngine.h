@@ -16,7 +16,10 @@
 
 #include "GameEngine.gen.h"
 
-class META_ANNOTATE_API(ENGINECORE_EXPORT) GameEngine : public CBE::Object
+namespace CBE
+{
+
+class META_ANNOTATE_API(ENGINECORE_EXPORT) GameEngine : public Object
 {
     GENERATED_CODES()
 public:
@@ -24,5 +27,6 @@ public:
     constexpr static const uint32 AllocSlotCount = 2;
 
 public:
-    
 };
+
+} // namespace CBE

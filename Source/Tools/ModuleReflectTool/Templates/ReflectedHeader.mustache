@@ -9,6 +9,7 @@
 #endif
 
 #define HEADER_FILE_ID {{HeaderFileId}}
+struct HEADER_FILE_ID;
 
 {{!For each reflect struct/class types expand below}}
 {{#ReflectTypes}}
@@ -16,7 +17,7 @@
 public:\
 {{>StaticFunctions}}{{#IsClass}}\
 {{>VirtualTypeGetter}}\
-friend struct HEADER_FILE_ID;\
+friend HEADER_FILE_ID;\
 {{/IsClass}}\
 {{#IsBaseType}}{{#DefineCtorPolicy}}OVERRIDE_CONSTRUCTION_POLICY(DefaultConstructionPolicy);{{/DefineCtorPolicy}}{{/IsBaseType}}\
 CBE_CLASS_NEWDELETE_OVERRIDES({{SimpleTypeName}})

@@ -34,7 +34,12 @@ private:
     BinaryArchive packageArchive;
 
 private:
-    void createContainedObject(PackageContainedData &containedData);
+    /**
+     * Creates or obtains objects contained in this package and sets it in corresponding PackageContainedData
+     * For transient objects this will set object to found object. If no transient object exists it will be nullptr
+     * Returns collectedFlags from all outers
+     */
+    EObjectFlags createContainedObject(PackageContainedData &containedData);
 
 public:
     PackageLoader(CBE::Package *loadingPackage, const String &filePath);

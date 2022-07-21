@@ -10,6 +10,7 @@
  */
 
 #include "CoreObjectGC.h"
+#include "GCReferenceCollector.h"
 #include "CBEObject.h"
 #include "CBEPackage.h"
 #include "CBEObjectTypes.h"

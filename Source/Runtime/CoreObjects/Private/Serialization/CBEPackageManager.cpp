@@ -149,7 +149,11 @@ void markDirty(Object *obj)
 
 bool save(Object *obj)
 {
-    CBE::Package *package = cast<CBE::Package>(obj->getOuterMost());
+    CBE::Package *package = cast<CBE::Package>(obj);
+    if (!package)
+    {
+        package = cast<CBE::Package>(obj->getOuterMost());
+    }
     if (!package)
     {
         LOG_WARN("ObjectHelper", "Object %s cannot be saved due to invalid package", obj->getFullPath());

@@ -40,6 +40,7 @@ struct ImGuiDrawingContext
 {
     const GraphicsResource *cmdBuffer;
     IRenderTargetTexture *rtTexture;
+    QuantizedBox2D viewport;
 };
 
 class APPLICATION_EXPORT ImGuiManager
@@ -47,6 +48,7 @@ class APPLICATION_EXPORT ImGuiManager
 private:
     static const StringID TEXTURE_PARAM_NAME;
     static const NameString IMGUI_SHADER_NAME;
+
     // Only parent GUI manager data
     ImageResourceRef textureAtlas;
     ShaderParametersRef imguiFontAtlasParams;
@@ -55,8 +57,10 @@ private:
     std::map<ImageResourceRef, ShaderParametersRef> textureParams;
     // Inactive free texture params
     std::queue<ShaderParametersRef> freeTextureParams;
-    // Texture params accessed last frame, if any from texture params that are not here it goes to
-    // inactive free params
+    /**
+     * Texture params accessed last frame, if any from texture params that are not here it goes to
+     * inactive free params
+     */ 
     std::set<ShaderParametersRef> activeTextureParams;
 
     // Unique per GUI manager

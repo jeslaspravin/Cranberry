@@ -64,7 +64,15 @@ enum EObjectFlagBits : EObjectFlags
     /*
      * If object of the package is Loaded. Once object is loaded this flag will be set
      */
-    PackageLoaded = 0x00'00'00'00'00'00'00'80
+    PackageLoaded = 0x00'00'00'00'00'00'00'80,
+    /*
+     * If object is being created from a Template and is pending construction from template
+     */
+    TemplateLoadPending = 0x00'00'00'00'00'00'01'00,
+    /*
+     * If object is created from Template.
+     */
+    FromTemplate = 0x00'00'00'00'00'00'02'00,
 };
 
 // Why separate accessor? Because this accessor will be needed only for some low level carefully

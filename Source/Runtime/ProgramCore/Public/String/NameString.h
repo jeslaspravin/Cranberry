@@ -113,7 +113,7 @@ public:
 template <>
 struct PROGRAMCORE_EXPORT std::hash<NameString>
 {
-    NODISCARD SizeT operator()(const StringID &keyval) const noexcept { return StringID(keyval).getID(); }
+    NODISCARD SizeT operator()(const NameString &keyval) const noexcept { return StringID(keyval).getID(); }
 };
 
 #undef STRING_FUNCQUALIFIER
