@@ -66,9 +66,9 @@ enum EObjectFlagBits : EObjectFlags
      */
     PackageLoaded = 0x00'00'00'00'00'00'00'80,
     /*
-     * If object is being created from a Template and is pending construction from template
+     * If object is a template default object
      */
-    TemplateLoadPending = 0x00'00'00'00'00'00'01'00,
+    TemplateDefault = 0x00'00'00'00'00'00'01'00,
     /*
      * If object is created from Template.
      */

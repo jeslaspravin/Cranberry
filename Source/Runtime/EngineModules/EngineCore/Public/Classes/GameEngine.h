@@ -13,6 +13,7 @@
 
 #include "EngineCoreExports.h"
 #include "CBEObject.h"
+#include "CBEObjectHelpers.h"
 
 #include "GameEngine.gen.h"
 
@@ -27,6 +28,27 @@ public:
     constexpr static const uint32 AllocSlotCount = 2;
 
 public:
+    META_ANNOTATE()
+    float dt;
+
+    META_ANNOTATE()
+    StringID id;
+
+    META_ANNOTATE()
+    String nameVal;
+
+    META_ANNOTATE()
+    GameEngine *inner;
+
+    GameEngine()
+    {
+        if (getOuter() && getOuter()->getType() != staticType())
+        {
+            inner = create<GameEngine>(TCHAR("SubObject"), this);
+        }
+    }
+
+    void onConstructed() override { LOG("TEST", "Constructed %s", getFullPath()); }
 };
 
 } // namespace CBE

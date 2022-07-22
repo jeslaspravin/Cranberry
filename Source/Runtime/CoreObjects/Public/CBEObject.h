@@ -117,8 +117,7 @@ public:
     {
         // Also change CBE::create()
         debugAssertf(
-            NO_BITS_SET(flags, EObjectFlagBits::PackageLoadPending | EObjectFlagBits::TemplateLoadPending),
-            "constructed called before load is finished! Try using INTERNAL_create"
+            NO_BITS_SET(flags, EObjectFlagBits::PackageLoadPending), "constructed called before load is finished! Try using INTERNAL_create"
         );
         onConstructed();
     }
@@ -138,7 +137,7 @@ public:
     bool hasOuter(Object *checkOuter) const { return getOuter() && (getOuter() == checkOuter || getOuter()->hasOuter(checkOuter)); }
 
     FORCE_INLINE EObjectFlags getFlags() const { return flags; }
-    FORCE_INLINE EObjectFlags collectAllFlags() const 
+    FORCE_INLINE EObjectFlags collectAllFlags() const
     {
         EObjectFlags retVal = flags;
         Object *outer = this->getOuter();
