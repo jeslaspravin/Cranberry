@@ -75,11 +75,16 @@ public:
         uintptr_t currHazardPtr = hazardPtr.load(hazardPtrLoadOrder);
         if (!isValid(currHazardPtr))
         {
-            // store ptr can be loaded relaxed as both is setHazardPtr and gcCollect we are thread, cache coherency safe
-            const std::atomic<T *> &ptrStore = *(const std::atomic<T *> *)hazardPtrStorePtr.load(std::memory_order::relaxed);
+            /**
+             * store ptr can be loaded relaxed as both in setHazardPtr and gcCollect we are thread, cache coherency safe
+             * However in gcCollect there is a possibility that hazardPtrStorePtr will be reset(0) but never visible due to relaxed store
+             * In reset(0) invisible or before reset case we will either return null or set hazardPtr thus not freeing ptr until next gc
+             */
+            const std::atomic<T *> *ptrStore = (const std::atomic<T *> *)hazardPtrStorePtr.load(std::memory_order::relaxed);
             // RMW must be acquire and release as gcCollect might have written first, On failure we can just load relaxed
             if (hazardPtr.compare_exchange_strong(
-                    currHazardPtr, (uintptr_t)ptrStore.load(std::memory_order::acquire), std::memory_order::acq_rel, std::memory_order::relaxed
+                    currHazardPtr, ptrStore ? (uintptr_t)ptrStore->load(std::memory_order::acquire) : RESET_VALUE, std::memory_order::acq_rel,
+                    std::memory_order::relaxed
                 ))
             {
                 // Relaxed is fine as we are the one modified it just now
