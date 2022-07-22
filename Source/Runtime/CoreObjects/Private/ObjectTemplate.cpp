@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Classes/ObjectTemplate.h"
+#include "ObjectTemplate.h"
 #include "CBEObjectHelpers.h"
 #include "Serialization/CommonTypesSerialization.h"
 #include "Serialization/ObjectSerializationHelpers.h"
@@ -40,8 +40,6 @@ ObjectTemplate::ObjectTemplate(StringID className, String name)
     templateObj->constructed();
 }
 
-ObjectTemplate::ObjectTemplate() {}
-
 void ObjectTemplate::destroy()
 {
     Object::destroy();
@@ -69,6 +67,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
         ar.setCustomVersion(uint32(OBJECT_TEMPLATE_CUSTOM_VERSION_ID), OBJECT_TEMPLATE_SERIALIZER_VERSION);
     }
 
+    ar << parentTemplate;
     ar << objectName;
     StringID clazzName = objectClass ? objectClass->name : StringID::INVALID;
     ar << clazzName;
@@ -166,7 +165,15 @@ void ObjectTemplate::createTemplate(CBEClass clazz, String name)
     objectClass = clazz;
     objectName = name;
 
-    templateObj = INTERNAL_create(objectClass, name, this, EObjectFlagBits::Transient);
+    EObjectFlags flags = EObjectFlagBits::Transient | EObjectFlagBits::TemplateDefault;
+    if (parentTemplate)
+    {
+        templateObj = create(parentTemplate, name, this, flags);
+    }
+    else
+    {
+        templateObj = INTERNAL_create(objectClass, name, this, flags);
+    }
 
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
     std::vector<Object *> subObjs;
@@ -177,6 +184,17 @@ void ObjectTemplate::createTemplate(CBEClass clazz, String name)
     {
         objectEntries.emplace(ObjectPathHelper::getObjectPath(subObj, this), TemplateObjectEntry{});
     }
+}
+
+CBE::Object *create(ObjectTemplate *objTemplate, const String &name, Object *outerObj, EObjectFlags flags /*= 0*/)
+{
+    if (!isValid(objTemplate))
+    {
+        return nullptr;
+    }
+
+    SET_BITS(flags, EObjectFlagBits::FromTemplate);
+    return duplicateObject(objTemplate->getTemplate(), outerObj, name, flags, EObjectFlagBits::Transient | EObjectFlagBits::TemplateDefault);
 }
 
 } // namespace CBE

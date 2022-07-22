@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "EngineCoreExports.h"
+#include "CoreObjectsExports.h"
 #include "String/NameString.h"
 #include "CBEObject.h"
 
@@ -21,7 +21,8 @@ class FieldProperty;
 
 namespace CBE
 {
-class META_ANNOTATE_API(ENGINECORE_EXPORT) ObjectTemplate : public Object
+
+class META_ANNOTATE_API(COREOBJECTS_EXPORT) ObjectTemplate : public Object
 {
     GENERATED_CODES()
 public:
@@ -34,8 +35,11 @@ public:
 
 private:
     // Will be temporary template object
-    META_ANNOTATE()
+    META_ANNOTATE(Transient)
     Object *templateObj;
+
+    META_ANNOTATE()
+    ObjectTemplate *parentTemplate = nullptr;
 
     // Object names are relative to outer, ie) templateObj will be subobject of ObjectTemplate
     NameString objectName;
@@ -44,7 +48,7 @@ private:
     std::unordered_map<NameString, TemplateObjectEntry> objectEntries;
 
 public:
-    ObjectTemplate();
+    ObjectTemplate() {}
     ObjectTemplate(StringID className, String name);
 
     /* CBE::Object overrides */
@@ -60,11 +64,9 @@ private:
     void createTemplate(CBEClass clazz, String name);
 };
 
-class META_ANNOTATE_API(ENGINECORE_EXPORT) ActorPrefabTemplate : public Object
-{
-    GENERATED_CODES()
-
-public:
-};
+/**
+ * Creates an object from template
+ */
+COREOBJECTS_EXPORT Object *create(ObjectTemplate *objTemplate, const String &name, Object *outerObj, EObjectFlags flags = 0);
 
 } // namespace CBE

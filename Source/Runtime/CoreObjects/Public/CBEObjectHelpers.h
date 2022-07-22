@@ -142,7 +142,7 @@ FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_S
  * @return CBE::Object *
  */
 template <typename... CtorArgs>
-Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     // If empty string then try create from class name
     String objectName = name.empty() ? clazz->nameString : name;
@@ -208,12 +208,11 @@ Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EO
 }
 
 template <typename... CtorArgs>
-Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     Object *obj = INTERNAL_create<CtorArgs...>(clazz, name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...);
     // Also change CBE::Object::constructed(), Always construct for Transients
-    if (NO_BITS_SET(obj->collectAllFlags(), EObjectFlagBits::PackageLoadPending | EObjectFlagBits::TemplateLoadPending)
-        || BIT_SET(flags, EObjectFlagBits::Transient))
+    if (NO_BITS_SET(obj->collectAllFlags(), EObjectFlagBits::PackageLoadPending) || BIT_SET(flags, EObjectFlagBits::Transient))
     {
         obj->constructed();
     }
@@ -221,7 +220,7 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
 }
 
 template <typename... CtorArgs>
-Object *createOrGet(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+Object *createOrGet(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
     StringID objectFullPath = ObjectPathHelper::getFullPath(name.getChar(), outerObj).getChar();
@@ -233,13 +232,13 @@ Object *createOrGet(CBEClass clazz, const String &name, Object *outerObj, EObjec
 }
 
 template <typename ClassType, typename... CtorArgs>
-ClassType *create(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+ClassType *create(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     return static_cast<ClassType *>(create(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...));
 }
 
 template <typename ClassType, typename... CtorArgs>
-ClassType *createOrGet(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs &&...ctorArgs)
+ClassType *createOrGet(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     return static_cast<ClassType *>(createOrGet(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...));
 }
@@ -291,7 +290,8 @@ COREOBJECTS_EXPORT Object *getDefaultObject(CBEClass clazz);
  *
  * @return void
  */
-COREOBJECTS_EXPORT bool deepCopy(Object *fromObject, Object *toObject);
-COREOBJECTS_EXPORT Object *duplicateObject(Object *fromObject, Object *newOuter, String newName = "");
+COREOBJECTS_EXPORT bool deepCopy(Object *fromObject, Object *toObject, EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0);
+COREOBJECTS_EXPORT Object *
+    duplicateObject(Object *fromObject, Object *newOuter, String newName = "", EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0);
 
 } // namespace CBE

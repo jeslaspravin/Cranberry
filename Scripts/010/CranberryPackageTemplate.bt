@@ -65,8 +65,12 @@ enum <uint64> ObjectFlagBits
     OBJECTFLAG_MarkedForDelete= 0x0000000000000002,
     OBJECTFLAG_Deleted= 0x0000000000000004,
     OBJECTFLAG_RootObject= 0x0000000000000008,
-    OBJECTFLAG_PackageDirty= 0x0000000000000010,
-    OBJECTFLAG_PackageLoadPending= 0x0000000000000020
+    OBJECTFLAG_Transient= 0x0000000000000010,
+    OBJECTFLAG_PackageDirty= 0x0000000000000020,
+    OBJECTFLAG_PackageLoadPending= 0x0000000000000040,
+    OBJECTFLAG_PackageLoaded= 0x0000000000000080,
+    OBJECTFLAG_TemplateDefault= 0x0000000000000100,
+    OBJECTFLAG_FromTemplate= 0x0000000000000200
 };
 
 string ObjectFlagsDisplay(uint64 flags)
@@ -99,6 +103,10 @@ string ObjectBitFlagToStr(uint64 flags)
     {
         Strcat(fmtStr, "RootObject | ");
     }
+    if((flags & OBJECTFLAG_Transient) != 0)
+    {
+        Strcat(fmtStr, "Transient | ");
+    }
     if((flags & OBJECTFLAG_PackageDirty) != 0)
     {
         Strcat(fmtStr, "DirtyPackage | ");
@@ -106,6 +114,18 @@ string ObjectBitFlagToStr(uint64 flags)
     if((flags & OBJECTFLAG_PackageLoadPending) != 0)
     {
         Strcat(fmtStr, "PendingLoad | ");
+    }
+    if((flags & OBJECTFLAG_PackageLoaded) != 0)
+    {
+        Strcat(fmtStr, "PackageLoaded | ");
+    }
+    if((flags & OBJECTFLAG_TemplateDefault) != 0)
+    {
+        Strcat(fmtStr, "TemplateDefault | ");
+    }
+    if((flags & OBJECTFLAG_FromTemplate) != 0)
+    {
+        Strcat(fmtStr, "FromTemplate | ");
     }
     uint64 fmtStrLen = Strlen(fmtStr);
     if(fmtStrLen > 0)

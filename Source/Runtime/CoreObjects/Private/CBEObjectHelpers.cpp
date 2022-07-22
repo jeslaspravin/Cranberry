@@ -229,7 +229,7 @@ struct DeepCopyFieldVisitable
 
             Object **fromDataPtrPtr = reinterpret_cast<Object **>(copyUserData->fromData);
             Object **toDataPtrPtr = reinterpret_cast<Object **>(copyUserData->toData);
-            if ((*fromDataPtrPtr)->hasOuter(copyUserData->fromCommonRoot))
+            if ((*fromDataPtrPtr) && (*fromDataPtrPtr)->hasOuter(copyUserData->fromCommonRoot))
             {
                 String comRootRelPath = ObjectPathHelper::getObjectPath(*fromDataPtrPtr, copyUserData->fromCommonRoot);
                 Object *dupObj = copyUserData->objDb->getObject(
@@ -304,7 +304,7 @@ void DeepCopyFieldVisitable::visitStruct(const PropertyInfo &propInfo, void *use
     FieldVisitor::visitFields<StartDeepCopyFieldVisitable>(clazz, copyUserData->fromData, &structUserData);
 }
 
-bool deepCopy(Object *fromObject, Object *toObject)
+bool deepCopy(Object *fromObject, Object *toObject, EObjectFlags additionalFlags /*= 0*/, EObjectFlags clearFlags /*= 0*/)
 {
     debugAssert(fromObject && toObject);
 
@@ -344,10 +344,24 @@ bool deepCopy(Object *fromObject, Object *toObject)
             StringID fromObjectFullPath = StringID(ObjectPathHelper::getFullPath(outerNameRItr->getChar(), subObjOuter));
             Object *fromOuterObj = objDb.getObject(fromObjectFullPath);
             debugAssert(fromOuterObj);
-            Object *outer = createOrGet(fromOuterObj->getType(), *outerNameRItr, duplicateSubObjOuter, fromOuterObj->getFlags());
+            String toOuterFullPath = ObjectPathHelper::getFullPath(outerNameRItr->getChar(), duplicateSubObjOuter);
+            // Just createOrGet()
+            Object *toOuter = get(toOuterFullPath.getChar());
+            if (!toOuter)
+            {
+                EObjectFlags flags = fromOuterObj->getFlags();
+                CLEAR_BITS(flags, clearFlags);
+                SET_BITS(flags, additionalFlags);
+                toOuter = INTERNAL_create(fromOuterObj->getType(), *outerNameRItr, duplicateSubObjOuter, flags);
+            }
+            else
+            {
+                CLEAR_BITS(INTERNAL_ObjectCoreAccessors::getFlags(toOuter), clearFlags);
+                SET_BITS(INTERNAL_ObjectCoreAccessors::getFlags(toOuter), additionalFlags);
+            }
 
-            duplicatedObjects.insert(std::pair<Object *, Object *>{ fromOuterObj, outer });
-            duplicateSubObjOuter = outer;
+            duplicatedObjects.insert(std::pair<Object *, Object *>{ fromOuterObj, toOuter });
+            duplicateSubObjOuter = toOuter;
             subObjOuter = fromOuterObj;
         }
     }
@@ -362,11 +376,17 @@ bool deepCopy(Object *fromObject, Object *toObject)
                                    .fromData = fromToPair.first,
                                    .toData = fromToPair.second };
         FieldVisitor::visitFields<StartDeepCopyFieldVisitable>(fromToPair.first->getType(), fromToPair.first, &userData);
+        if (toObject != fromToPair.second)
+        {
+            fromToPair.second->constructed();
+        }
     }
     return true;
 }
 
-Object *duplicateObject(Object *fromObject, Object *newOuter, String newName /*= ""*/)
+Object *duplicateObject(
+    Object *fromObject, Object *newOuter, String newName /*= ""*/, EObjectFlags additionalFlags /*= 0*/, EObjectFlags clearFlags /*= 0*/
+)
 {
     if (newName.empty())
     {
@@ -378,9 +398,13 @@ Object *duplicateObject(Object *fromObject, Object *newOuter, String newName /*=
         newOuter = fromObject->getOuter();
     }
 
-    Object *duplicateObj = create(fromObject->getType(), newName, newOuter, fromObject->getFlags());
-    if (deepCopy(fromObject, duplicateObj))
+    EObjectFlags flags = fromObject->getFlags();
+    CLEAR_BITS(flags, clearFlags);
+    SET_BITS(flags, additionalFlags);
+    Object *duplicateObj = INTERNAL_create(fromObject->getType(), newName, newOuter, flags);
+    if (deepCopy(fromObject, duplicateObj, additionalFlags))
     {
+        duplicateObj->constructed();
         return duplicateObj;
     }
     duplicateObj->beginDestroy();

@@ -144,13 +144,13 @@ public:
     APPLICATION_EXPORT void requestExit() { bExitNextFrame = true; }
 
     void startApp();
-    APPLICATION_EXPORT virtual void onStart() = 0;
+    virtual void onStart() = 0;
     // Returns true if application can continue running
     NODISCARD bool appTick();
-    APPLICATION_EXPORT virtual void onTick() = 0;
+    virtual void onTick() = 0;
     void exitApp();
-    APPLICATION_EXPORT virtual void onExit() = 0;
-    APPLICATION_EXPORT virtual void onRendererStateEvent(ERenderStateEvent state) {}
+    virtual void onExit() = 0;
+    virtual void onRendererStateEvent(ERenderStateEvent state) {}
 
     FORCE_INLINE const String &getAppName() const { return applicationName; }
     FORCE_INLINE void getVersion(int32 &majorVer, int32 &minorVer, int32 &patchVer) const;
