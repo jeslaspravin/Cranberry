@@ -303,6 +303,8 @@ requires(!std::is_void_v<RetType>) AwaitOneTask<RetType> makeOneTaskAwaitable(Aw
         Awaitable localAwaitable(std::forward<Awaitable>(awaitable));
         co_await std::suspend_always{};
         co_yield co_await localAwaitable;
+        // Keep awaitable around until this coro is destroyed
+        co_return;
     }
 }
 template <AwaitableTypeConcept Awaitable, typename RetType = AwaiterReturnType<GetAwaiterType_t<Awaitable>>>
