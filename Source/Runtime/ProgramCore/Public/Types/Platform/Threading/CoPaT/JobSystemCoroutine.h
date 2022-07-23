@@ -77,13 +77,14 @@ public:
 
     bool trySetContinuation(std::coroutine_handle<> newContinuation)
     {
-        bool bAlreadySetOrDone = bBlockContinuation.test_and_set(std::memory_order::acq_rel);
-        if (!bAlreadySetOrDone)
+        continuation = newContinuation;
+        const bool bAlreadySetOrDone = bBlockContinuation.test_and_set(std::memory_order::acq_rel);
+        if (bAlreadySetOrDone)
         {
-            continuation = newContinuation;
-            return true;
+            continuation = nullptr;
+            return false;
         }
-        return false;
+        return true;
     }
 
     FinalSuspendAwaiter final_suspend() noexcept { return {}; }
@@ -175,8 +176,8 @@ public:
         {
             ContinuationEventChain *expectedValue = nullptr;
             // CAS on same chainTailPtrCache as eventually it will be changed in one of the threads
-            while (chainTailPtrCache
-                   && chainTailPtrCache->pNext.compare_exchange_strong(expectedValue, nextEventChain, std::memory_order::acq_rel))
+            if (chainTailPtrCache
+                && chainTailPtrCache->pNext.compare_exchange_strong(expectedValue, nextEventChain, std::memory_order::acq_rel))
             {
                 bAlreadyDone = bBlockContinuation.test(std::memory_order::acquire);
 
