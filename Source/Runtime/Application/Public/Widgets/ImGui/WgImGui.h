@@ -1,5 +1,5 @@
 /*!
- * \file WidgetWindow.h
+ * \file WgImGui.h
  *
  * \author Jeslas
  * \date July 2022
@@ -12,50 +12,48 @@
 #pragma once
 
 #include "Widgets/WidgetBase.h"
+#include "Widgets/WgRenderTarget.h"
+#include "RenderInterface/Resources/GraphicsSyncResource.h"
 
-class GenericAppWindow;
+class ImGuiManager;
+class GraphicsResource;
+class IRenderCommandList;
+class IGraphicsInstance;
+class GraphicsHelperAPI;
 
-class APPLICATION_EXPORT WgWindow : public WidgetBase
+class APPLICATION_EXPORT WgImGui : public WidgetBase
 {
 public:
     struct WgArguments
     {
-        GenericAppWindow *ownerWindow;
-        SharedPtr<WidgetBase> content;
-        float scaling = 1.0f;
+        String imguiManagerName;
     };
 
 private:
-    WidgetGeomTree allWidgetGeoms;
+    struct FrameBufferedData
+    {
+        WgRenderTarget rt;
+        // Do not need fence as window widget's fence will take care of sync as long as we are in same window
+        SemaphoreRef semaphore;
+    };
+    std::vector<FrameBufferedData> swapchainBuffered;
+    uint32 imageIdx = 0;
 
-    GenericAppWindow *ownerWindow;
-    SharedPtr<WidgetBase> content;
-    float scaling;
-
-    Short2D mousePos;
-    SharedPtr<WidgetBase> hoveringWidget;
+    SharedPtr<WgWindow> wgWindow;
+    ImGuiManager *imgui;
 
 public:
     void construct(const WgArguments &args);
+    ~WgImGui();
 
-    FORCE_INLINE GenericAppWindow *getAppWindow() const { return ownerWindow; }
-    Short2D getWidgetSize() const;
-    float getWidgetScaling() const;
-    Short2D screenToWindowSpace(Short2D screenPt) const;
-    Short2D windowToScreenSpace(Short2D windowPt) const;
-
-    void setContent(SharedPtr<WidgetBase> widget);
-    SharedPtr<WidgetBase> getContent() const { return content; }
-
-    // Searches cached geometry tree to find widget's geometry. If not found returns default WidgetGeom
-    WidgetGeom findWidgetGeom(SharedPtr<WidgetBase> widget) const;
-
-    void drawWidget(WidgetDrawContext &context);
-    void rebuildWindowGeoms();
+    ImGuiManager &getImGuiManager()
+    {
+        debugAssert(imgui);
+        return *imgui;
+    }
 
     /* WidgetBase overrides */
 protected:
-    // below 2 functions will be called from within WgWindow
     void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override;
 
 public:
@@ -67,5 +65,11 @@ public:
     void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
     void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
     void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
-    /* override ends */
+
+    /* Overrides ends */
+private:
+    void drawImGui(
+        const GraphicsResource *cmdBuffer, class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+        const GraphicsHelperAPI *graphicsHelper
+    );
 };

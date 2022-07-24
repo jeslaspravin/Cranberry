@@ -18,7 +18,7 @@
 #include "InputSystem/PlatformInputTypes.h"
 #include "Types/Platform/LFS/Paths.h"
 #include "Types/Platform/LFS/File/FileHelper.h"
-#include "ApplicationInstance.h"
+#include "IRenderInterfaceModule.h"
 #include "RenderApi/RenderManager.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderApi/ResourcesInterface/IRenderResource.h"
@@ -32,24 +32,18 @@ using namespace ImGui;
 const StringID ImGuiManager::TEXTURE_PARAM_NAME{ TCHAR("textureAtlas") };
 const NameString ImGuiManager::IMGUI_SHADER_NAME{ TCHAR("DrawImGui") };
 
-ImGuiManager::ImGuiManager(const TChar *managerName, ImGuiManager *parent, SharedPtr<WidgetBase> inWidget)
+ImGuiManager::ImGuiManager(const TChar *managerName, ImGuiManager *parent)
     : parentGuiManager(parent)
-    , wgWindow(WidgetBase::findWidgetParentWindow(inWidget))
     , name(TCHAR_TO_UTF8(managerName))
-    , widget(inWidget)
 {}
 
-ImGuiManager::ImGuiManager(const TChar *managerName, SharedPtr<WidgetBase> inWidget)
+ImGuiManager::ImGuiManager(const TChar *managerName)
     : parentGuiManager(nullptr)
-    , wgWindow(WidgetBase::findWidgetParentWindow(inWidget))
     , name(TCHAR_TO_UTF8(managerName))
-    , widget(inWidget)
 {}
 
 void ImGuiManager::initialize()
 {
-    fatalAssertf(getWindowWidget() && widget, "Invalid widgets that contains ImGui");
-
     IMGUI_CHECKVERSION();
     if (parentGuiManager)
     {
@@ -210,8 +204,6 @@ ShaderParametersRef ImGuiManager::findFreeTextureParam(ImageResourceRef textureU
     }
     return nullptr;
 }
-
-SharedPtr<WgWindow> ImGuiManager::getWindowWidget() const { return parentGuiManager ? parentGuiManager->getWindowWidget() : wgWindow; }
 
 void ImGuiManager::setupInputs()
 {
@@ -485,12 +477,13 @@ void ImGuiManager::draw(
 
     // Render UI
     RenderPassAdditionalProps additionalProps;
-    additionalProps.bAllowUndefinedLayout = false;
-    additionalProps.colorAttachmentLoadOp = EAttachmentOp::LoadOp::Load;
+    additionalProps.bAllowUndefinedLayout = drawingContext.bClearRt;
+    additionalProps.colorAttachmentLoadOp = drawingContext.bClearRt ? EAttachmentOp::LoadOp::Clear : EAttachmentOp::LoadOp::Load;
     additionalProps.depthLoadOp = EAttachmentOp::LoadOp::Load;
     additionalProps.stencilLoadOp = EAttachmentOp::LoadOp::Load;
 
     RenderPassClearValue clearVal;
+    clearVal.colors = { LinearColorConst::BLACK_Transparent, LinearColorConst::BLACK_Transparent };
 
     // Barrier resources once
     cmdList->cmdBarrierResources(drawingContext.cmdBuffer, texturesUsed);
@@ -564,17 +557,9 @@ void ImGuiManager::updateFrame(float deltaTime)
     bCaptureInput = io.WantCaptureKeyboard || io.WantCaptureMouse;
 
     ImGui::NewFrame();
-    for (std::pair<const int32, std::vector<IImGuiLayer *>> &imGuiLayers : drawLayers)
+    for (std::pair<const int32, std::vector<SharedPtr<IImGuiLayer>>> &imGuiLayers : drawLayers)
     {
-        std::sort(
-            imGuiLayers.second.begin(), imGuiLayers.second.end(),
-            [](IImGuiLayer *lhs, IImGuiLayer *rhs) -> bool
-            {
-                return lhs->sublayerDepth() > rhs->sublayerDepth();
-            }
-        );
-
-        for (IImGuiLayer *layer : imGuiLayers.second)
+        for (SharedPtr<IImGuiLayer> &layer : imGuiLayers.second)
         {
             layer->draw(&drawInterface);
         }
@@ -611,23 +596,31 @@ void ImGuiManager::addFont(const String &fontAssetPath, float fontSize)
     }
 }
 
-void ImGuiManager::addLayer(IImGuiLayer *layer)
+void ImGuiManager::addLayer(SharedPtr<IImGuiLayer> layer)
 {
-    std::vector<IImGuiLayer *> &layers = drawLayers[layer->layerDepth()];
+    std::vector<SharedPtr<IImGuiLayer>> &layers = drawLayers[layer->layerDepth()];
     auto itr = std::find(layers.cbegin(), layers.cend(), layer);
 
     if (itr == layers.cend())
     {
         layers.emplace_back(layer);
+        std::sort(
+            layers.begin(), layers.end(),
+            [](const SharedPtr<IImGuiLayer> &lhs, const SharedPtr<IImGuiLayer> &rhs) -> bool
+            {
+                return lhs->sublayerDepth() > rhs->sublayerDepth();
+            }
+        );
     }
 }
 
-void ImGuiManager::removeLayer(IImGuiLayer *layer)
+void ImGuiManager::removeLayer(SharedPtr<IImGuiLayer> layer)
 {
-    std::vector<IImGuiLayer *> &layers = drawLayers[layer->layerDepth()];
+    std::vector<SharedPtr<IImGuiLayer>> &layers = drawLayers[layer->layerDepth()];
     auto itr = std::find(layers.cbegin(), layers.cend(), layer);
     if (itr != layers.cend())
     {
+        // no need to sort
         layers.erase(itr);
     }
 }

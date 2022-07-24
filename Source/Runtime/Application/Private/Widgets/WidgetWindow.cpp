@@ -16,12 +16,9 @@
 void WgWindow::construct(const WgArguments &args)
 {
     ownerWindow = args.ownerWindow;
-    content = args.content;
     scaling = args.scaling;
-    if (content)
-    {
-        setupParent(content, shared_from_this());
-    }
+    setContent(args.content);
+
     // Insert root
     WidgetGeom windowGeom;
     windowGeom.widget = shared_from_this();
@@ -41,18 +38,21 @@ void WgWindow::drawWidget(WidgetDrawContext &context)
     drawWidget(QuantShortBox2D(Short2D(0), getWidgetSize()), 0, allWidgetGeoms, context);
 }
 
-void WgWindow::setContent(SharedPtr<WidgetBase> widget)
+bool WgWindow::hasWidget(SharedPtr<WidgetBase> widget) const
 {
-    if (content)
-    {
-        setupParent(content, nullptr);
-    }
-    content = widget;
-    if (content)
-    {
-        setupParent(content, shared_from_this());
-    }
+    return widget.get() == this || (content && (widget == content || content->hasWidget(widget)));
 }
+
+void WgWindow::rebuildWindowGeoms()
+{
+    allWidgetGeoms.clear();
+    WidgetGeom windowGeom;
+    windowGeom.widget = shared_from_this();
+    windowGeom.box = QuantShortBox2D(Short2D(0), getWidgetSize());
+    rebuildWidgetGeometry(allWidgetGeoms.add(windowGeom), allWidgetGeoms);
+}
+
+void WgWindow::setContent(SharedPtr<WidgetBase> widget) { content = widget; }
 
 WidgetGeom WgWindow::findWidgetGeom(SharedPtr<WidgetBase> widget) const
 {
@@ -96,7 +96,7 @@ void WgWindow::rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree)
         return;
     }
 
-    content->rebuildGeometry(geomTree.add(WidgetGeom{ .widget = content }, 0), geomTree);
+    content->rebuildWidgetGeometry(geomTree.add(WidgetGeom{ .widget = content }, 0), geomTree);
     std::vector<WidgetGeomTree::NodeIdx> children;
     geomTree.getChildren(children, 0, true);
 
@@ -135,11 +135,7 @@ void WgWindow::tick(float timeDelta)
 {
     debugAssert(ownerWindow);
 
-    allWidgetGeoms.clear();
-    WidgetGeom windowGeom;
-    windowGeom.widget = shared_from_this();
-    windowGeom.box = QuantShortBox2D(Short2D(0), getWidgetSize());
-    rebuildGeometry(allWidgetGeoms.add(windowGeom), allWidgetGeoms);
+    rebuildWindowGeoms();
 
     // All inner most children will be at last
     std::vector<WidgetGeomTree::NodeIdx> children;
@@ -221,27 +217,13 @@ void WgWindow::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSyste
     }
 }
 
-SharedPtr<WgWindow> WidgetBase::findWidgetParentWindow(SharedPtr<WidgetBase> widget)
-{
-    if (!widget)
-    {
-        return nullptr;
-    }
-    SharedPtr<WidgetBase> rootWidget = widget;
-    while (rootWidget->parentWidget != nullptr)
-    {
-        rootWidget = rootWidget->parentWidget;
-    }
-    return std::static_pointer_cast<WgWindow>(rootWidget);
-}
-
 float WidgetBase::getWidgetScaling(SharedPtr<WidgetBase> widget)
 {
-    if (!widget)
+    if (SharedPtr<WgWindow> windowWidget = findWidgetParentWindow(widget))
     {
-        return 1.f;
+        return windowWidget->getWidgetScaling();
     }
-    return findWidgetParentWindow(widget)->getWidgetScaling();
+    return 1.0f;
 }
 
 WidgetGeom WidgetBase::getWidgetGeom(SharedPtr<WidgetBase> widget)

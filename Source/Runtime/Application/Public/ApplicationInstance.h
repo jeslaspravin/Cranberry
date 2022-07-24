@@ -29,6 +29,7 @@ class GraphicsHelperAPI;
 class IGraphicsInstance;
 class WidgetDrawContext;
 class WgWindow;
+class WidgetBase;
 class GenericAppWindow;
 class GenericWindowCanvas;
 class WidgetRenderer;
@@ -168,6 +169,11 @@ public:
     APPLICATION_EXPORT bool hasActiveWindow() const;
     APPLICATION_EXPORT SharedPtr<WgWindow> createWindow(Size2D size, const TChar *name, SharedPtr<WgWindow> parent);
     APPLICATION_EXPORT void destroyWindow(SharedPtr<WgWindow> window);
+    // Widget queries
+    APPLICATION_EXPORT bool isAWindow(SharedPtr<WidgetBase> widget);
+    // Finds widget using hasWidget, Then rebuilds widget of a window if not found. returns null if nothing could find widget
+    // Avoid calling this often as it leads to rebuilding widget tree in some cases
+    APPLICATION_EXPORT SharedPtr<WgWindow> findWidgetParentWindow(SharedPtr<WidgetBase> widget);
 
 private:
     SharedPtr<WgWindow> createWindowWidget(GenericAppWindow *appWindow) const;

@@ -13,7 +13,10 @@
 
 #include <vector>
 
-namespace CBE { class Object; }
+namespace CBE
+{
+class Object;
+}
 
 class IReferenceCollector
 {

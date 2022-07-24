@@ -9,7 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
- #include "CranberryEngineApp.h"
+#include "CranberryEngineApp.h"
 
 void tempTest();
 
@@ -28,6 +28,7 @@ void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent state) {}
 #include "CoreObjectDelegates.h"
 #include "ObjectTemplate.h"
 #include "Classes/GameEngine.h"
+#include "Modules/ModuleManager.h"
 
 void tempTest()
 {
@@ -103,4 +104,8 @@ void tempTest()
 
         CBE::save(package);
     }
+
+    // TODO
+    ModuleManager::get()->addAdditionalLibPath(TCHAR("Editor"));
+    ModuleManager::get()->loadModule(TCHAR("EditorCore"));
 }

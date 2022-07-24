@@ -2327,7 +2327,7 @@ void ExperimentalEnginePBR::onStartUp()
     thinColor = LinearColorConst::GRAY;
     thickColor = LinearColorConst::WHITE;
 
-    getImGuiManager().addLayer(this);
+    getImGuiManager().addLayer(std::static_pointer_cast<IImGuiLayer>(shared_from_this()));
     createScene();
 
     textures = assetManager.getAssetsOfType<EAssetType::Texture2D, TextureAsset>();
@@ -2396,7 +2396,7 @@ void ExperimentalEnginePBR::onQuit()
         }
     );
 
-    getImGuiManager().removeLayer(this);
+    getImGuiManager().removeLayer(std::static_pointer_cast<IImGuiLayer>(shared_from_this()));
 
     tempTestQuit();
     TestGameEngine::onQuit();
@@ -3071,8 +3071,8 @@ public:
             TestWidget::WgArguments childArgs = args;
             childArgs.origin = halfExtent * Short2D(2);
             childArgs.style = 0;
+            childArgs.color = Color{ 255, 0, 0, 130 };
             auto wg = std::make_shared<TestWidget>();
-            setupParent(wg, shared_from_this());
             wg->construct(childArgs);
             content = wg;
         }
@@ -3083,33 +3083,30 @@ public:
             childArgs.color = ColorConst::BLUE;
             childArgs.style = 0;
             auto wg = std::make_shared<TestWidget>();
-            setupParent(wg, shared_from_this());
             wg->construct(childArgs);
             content = wg;
 
             childArgs.origin = Short2D(halfExtent.x, 2 * halfExtent.y + origin.y);
             childArgs.color = ColorConst::RED;
             wg = std::make_shared<TestWidget>();
-            setupParent(wg, content);
             wg->construct(childArgs);
             content->content = wg;
 
             childArgs.origin = Short2D(halfExtent.x - 2 * origin.x, halfExtent.y);
             childArgs.color = ColorConst::GRAY;
             wg = std::make_shared<TestWidget>();
-            setupParent(wg, content->content);
             wg->construct(childArgs);
             content->content->content = wg;
 
             childArgs.origin = Short2D(halfExtent.x + origin.x, 0);
             childArgs.color = ColorConst::CYAN;
             wg = std::make_shared<TestWidget>();
-            setupParent(wg, content->content->content);
             wg->construct(childArgs);
             content->content->content->content = wg;
         }
     }
 
+protected:
     void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override
     {
         WidgetGeom &geom = geomTree[thisId];
@@ -3117,18 +3114,15 @@ public:
         if (content)
         {
             WidgetGeomId childId = geomTree.add(WidgetGeom{ .widget = content }, thisId);
-            content->rebuildGeometry(childId, geomTree);
+            content->rebuildWidgetGeometry(childId, geomTree);
         }
     }
 
+public:
     void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override
     {
         const QuantShortBox2D &box = geomTree[thisId].box;
-        Size2D verts[4] = {
-            box.minBound, {box.maxBound.x, box.minBound.y},
-             box.maxBound, {box.minBound.x, box.maxBound.y}
-        };
-        context.drawBox(verts, colors, clipBound);
+        context.drawBox(box, nullptr, clipBound, colors);
         if (content)
         {
             WidgetGeomId childId = geomTree.getChildren(thisId, false)[0];
@@ -3139,6 +3133,7 @@ public:
             context.endLayer();
         }
     }
+    bool hasWidget(SharedPtr<WidgetBase> widget) const override { return content && (content == widget || content->hasWidget(widget)); }
 
     void tick(float timeDelta) override {}
 
@@ -3603,15 +3598,15 @@ void ExperimentalEnginePBR::tempTest() {}
 
 void ExperimentalEnginePBR::tempTestPerFrame()
 {
-    //CoreObjectGC &gc = ICoreObjectsModule::get()->getGC();
-    //gc.collect(0.016f);
+    // CoreObjectGC &gc = ICoreObjectsModule::get()->getGC();
+    // gc.collect(0.016f);
 }
 
 void ExperimentalEnginePBR::tempTestQuit() {}
 
 TestGameEngine *GameEngineWrapper::createEngineInstance()
 {
-    static ExperimentalEnginePBR gameEngine;
-    return &gameEngine;
+    static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
+    return engineInst.get();
 }
 #endif

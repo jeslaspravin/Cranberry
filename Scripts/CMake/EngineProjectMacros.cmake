@@ -171,7 +171,9 @@ macro (cpp_common_options_and_defines)
     )
 
     # POD/Variables in class has to initialized with {} to zero initialize if calling constructors that are not compiler generated
-    # target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/sdl>)        
+    # target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/sdl>)
+    # Strictly conform to standard    
+    target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/permissive->)
 endmacro ()
 
 macro (cpp_common_includes)

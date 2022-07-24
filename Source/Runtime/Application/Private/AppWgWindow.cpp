@@ -9,6 +9,7 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
+#include "IApplicationModule.h"
 #include "ApplicationInstance.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
 #include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
@@ -49,6 +50,30 @@ Short2D WgWindow::windowToScreenSpace(Short2D windowPt) const
 {
     Short2D screenSpace = Short2D(int16(windowPt.x * getWidgetScaling()), int16(windowPt.y * getWidgetScaling()));
     return screenSpace + ownerWindow->windowClientRect().minBound;
+}
+
+//////////////////////////////////////////////////////////////////////////
+/// WidgetBase Implementations
+//////////////////////////////////////////////////////////////////////////
+
+SharedPtr<WgWindow> WidgetBase::findWidgetParentWindow(SharedPtr<WidgetBase> widget)
+{
+    ApplicationInstance *app = IApplicationModule::get()->getApplication();
+    if (!widget || !app)
+    {
+        return nullptr;
+    }
+    SharedPtr<WidgetBase> rootWidget = widget;
+    while (rootWidget->parentWidget != nullptr)
+    {
+        rootWidget = rootWidget->parentWidget;
+    }
+
+    if (app->isAWindow(rootWidget))
+    {
+        return std::static_pointer_cast<WgWindow>(rootWidget);
+    }
+    return app->findWidgetParentWindow(widget);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -147,6 +172,38 @@ void ApplicationInstance::destroyWindow(SharedPtr<WgWindow> window)
     debugAssert(window && window->getAppWindow());
     windowWidgets.erase(window->getAppWindow());
     windowManager->destroyWindow(window->getAppWindow());
+}
+
+bool ApplicationInstance::isAWindow(SharedPtr<WidgetBase> widget)
+{
+    for (const auto &windowWidget : windowWidgets)
+    {
+        if (windowWidget.second == widget)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+SharedPtr<WgWindow> ApplicationInstance::findWidgetParentWindow(SharedPtr<WidgetBase> widget)
+{
+    for (const auto &windowWidget : windowWidgets)
+    {
+        if (windowWidget.second->hasWidget(widget))
+        {
+            return windowWidget.second;
+        }
+    }
+    for (const auto &windowWidget : windowWidgets)
+    {
+        windowWidget.second->rebuildWindowGeoms();
+        WidgetGeom geom = windowWidget.second->findWidgetGeom(widget);
+        if (geom.widget == widget)
+        {
+            return windowWidget.second;
+        }
+    }
+    return nullptr;
 }
 
 SharedPtr<WgWindow> ApplicationInstance::createWindowWidget(GenericAppWindow *appWindow) const

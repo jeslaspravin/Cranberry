@@ -37,11 +37,14 @@ private:
 };
 
 // CommandName is not used for now
-#define ENQUEUE_COMMAND(CommandName) RenderThreadEnqueuer::execInRenderingThread
+#define ENQUEUE_RENDER_COMMAND(CommandName) RenderThreadEnqueuer::execInRenderingThread
+#define ENQUEUE_COMMAND(CommandName) ENQUEUE_RENDER_COMMAND(CommandName)
 
-#define ENQUEUE_COMMAND_NODEBUG(CommandName, LambdaBody, ...)                                                                                  \
+#define ENQUEUE_RENDER_COMMAND_NODEBUG(CommandName, LambdaBody, ...)                                                                           \
     ENQUEUE_COMMAND(CommandName)                                                                                                               \
     ([##__VA_ARGS__##](IRenderCommandList * cmdList, IGraphicsInstance * graphicsInstance, const GraphicsHelperAPI *graphicsHelper)##LambdaBody)
+
+#define ENQUEUE_COMMAND_NODEBUG(CommandName, LambdaBody, ...) ENQUEUE_RENDER_COMMAND_NODEBUG(CommandName, LambdaBody, __VA_ARGS__)
 
 #define ASSERT_INSIDE_RENDERTHREAD()                                                                                                           \
     debugAssert(                                                                                                                               \

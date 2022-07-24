@@ -15,10 +15,12 @@
 
 class WgNullWidget final : public WidgetBase
 {
-public:
+protected:
     void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override { geomTree[thisId].box = QuantShortBox2D{ Short2D{ 0 } }; }
 
+public:
     void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override {}
+    bool hasWidget(SharedPtr<WidgetBase> widget) const override { return false; }
     void tick(float timeDelta) override {}
     EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override
     {
