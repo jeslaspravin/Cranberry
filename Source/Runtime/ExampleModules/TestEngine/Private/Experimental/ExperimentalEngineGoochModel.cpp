@@ -1201,7 +1201,7 @@ void ExperimentalEngineGoochModel::onStartUp()
     camera.lookAt(Vector3D::ZERO);
     cameraRotation = camera.rotation();
 
-    getImGuiManager().addLayer(this);
+    getImGuiManager().addLayer(std::static_pointer_cast<IImGuiLayer>(shared_from_this()));
     createScene();
 
     std::vector<ShortSizeBox2D> bxs{
@@ -1251,7 +1251,7 @@ void ExperimentalEngineGoochModel::onQuit()
         }
     );
 
-    getImGuiManager().removeLayer(this);
+    getImGuiManager().removeLayer(std::static_pointer_cast<IImGuiLayer>(shared_from_this()));
     TestGameEngine::onQuit();
 }
 
@@ -1833,9 +1833,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
     }
 }
 
-// GameEngine *GameEngineWrapper::createEngineInstance()
+// TestGameEngine *GameEngineWrapper::createEngineInstance()
 //{
-//     static ExperimentalEngineGoochModel gameEngine;
-//     return &gameEngine;
+//     static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
+//     return engineInst.get();
 // }
 #endif

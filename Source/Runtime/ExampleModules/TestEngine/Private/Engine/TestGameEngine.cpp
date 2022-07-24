@@ -63,7 +63,7 @@ void TestGameEngine::startup(ApplicationInstance *appInst)
     application = appInst;
 
     assetManager.load();
-    imguiManager = new ImGuiManager(TCHAR("TestEngine"), application->getMainWindow());
+    imguiManager = new ImGuiManager(TCHAR("TestEngine"));
     imguiManager->initialize();
     // Moved out surface resize feeding from ImGuiManager to here
     // Using surface size
@@ -157,5 +157,9 @@ void TestGameEngine::onQuit() {}
 void TestGameEngine::tickEngine() {}
 
 #if !EXPERIMENTAL
-TestGameEngine *GameEngineWrapper::createEngineInstance() { return new TestGameEngine(); }
+TestGameEngine *GameEngineWrapper::createEngineInstance()
+{
+    static SharedPtr<TestGameEngine> engineInst = std::make_shared<TestGameEngine>();
+    return engineInst.get();
+}
 #endif

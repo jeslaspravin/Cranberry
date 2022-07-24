@@ -68,9 +68,7 @@ LibHandle ModuleManager::loadFromAdditionalPaths(const TChar *modulePath) const
 ModuleManager::ModuleManager()
     : loadedLibraries()
 {
-    // Since Tools, Editor exists in EngineRoot/Runtime/../[Tools|Editor] We can determine the EngineRoot and go into other library locations
-    // from there
-    additionalLibraryPaths.insert(additionalLibraryPaths.end(), { PathFunctions::combinePath(Paths::engineRoot(), TCHAR("Runtime")) });
+    additionalLibraryPaths.insert(additionalLibraryPaths.end(), { Paths::engineRuntimeRoot() });
     PlatformHandle procHandle = PlatformFunctions::getCurrentProcessHandle();
     uint32 modulesSize;
     PlatformFunctions::getAllModules(procHandle, nullptr, modulesSize);
@@ -98,6 +96,37 @@ ModuleManager *ModuleManager::get()
 {
     static ModuleManager singletonManager;
     return &singletonManager;
+}
+
+void ModuleManager::addAdditionalLibPath(const TChar *dir)
+{
+    String libDir = dir;
+    std::filesystem::path dirPath(dir);
+    if (dirPath.is_relative())
+    {
+        libDir = PathFunctions::combinePath(Paths::engineRoot(), dir);
+    }
+
+    auto itr = std::find(additionalLibraryPaths.cbegin(), additionalLibraryPaths.cend(), libDir);
+    if (itr == additionalLibraryPaths.cend())
+    {
+        additionalLibraryPaths.emplace_back(std::move(libDir));
+    }
+}
+
+void ModuleManager::removedAdditionalLibPath(const TChar *dir)
+{
+    String libDir = dir;
+    std::filesystem::path dirPath(dir);
+    if (dirPath.is_relative())
+    {
+        libDir = PathFunctions::combinePath(Paths::engineRoot(), dir);
+    }
+    auto itr = std::find(additionalLibraryPaths.cbegin(), additionalLibraryPaths.cend(), libDir);
+    if (itr != additionalLibraryPaths.cend())
+    {
+        additionalLibraryPaths.erase(itr);
+    }
 }
 
 bool ModuleManager::isLibraryLoaded(const TChar *libNameOrPath) const { return loadedLibraries.find(libNameOrPath) != loadedLibraries.end(); }

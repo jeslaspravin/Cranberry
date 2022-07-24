@@ -366,7 +366,8 @@ namespace ColorConst
 {
 Color random(uint8 alpha /*= 255*/) { return Color(LinearColorConst::random(NORMALIZE_COLOR_COMP(alpha))); }
 
-const Color Transparent(255, 255, 255, 0);
+const Color WHITE_Transparent(255, 255, 255, 0);
+const Color BLACK_Transparent(0, 0, 0, 0);
 const Color WHITE(255, 255, 255, 255);
 const Color GRAY(128, 128, 128, 255);
 const Color BLACK(0, 0, 0, 255);
@@ -391,7 +392,8 @@ LinearColor random(float alpha /*= 1.0f*/)
     return LinearColor::fromHsv(Vector3D(h, 0.5f, 1.0f));
 }
 
-const LinearColor Transparent(1, 1, 1, 0);
+const LinearColor WHITE_Transparent(1, 1, 1, 0);
+const LinearColor BLACK_Transparent(0, 0, 0, 0);
 const LinearColor WHITE(1, 1, 1, 1);
 const LinearColor GRAY(0.5, 0.5, 0.5, 1);
 const LinearColor BLACK(0, 0, 0, 1);

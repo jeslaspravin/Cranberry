@@ -105,6 +105,7 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
     }
     // Mark all packages as valid if it has any subobject
     {
+        alertOnce(gCBEObjectAllocators->contains(CBE::Package::staticType()));
         BitArray<uint64> &packagesFlag = objUsedFlags[CBE::Package::staticType()];
         for (CBE::Package *package : (*gCBEObjectAllocators)[CBE::Package::staticType()]->getAllObjects<CBE::Package>())
         {

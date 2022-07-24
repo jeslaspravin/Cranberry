@@ -46,11 +46,13 @@ public:
      *  v4------v3
      */
     APPLICATION_EXPORT void
-        drawBox(ArrayView<Size2D> verts, ArrayView<Vector2D> coords, ArrayView<Color> color, ImageResourceRef *texture, QuantShortBox2D clip);
-    APPLICATION_EXPORT void drawBox(ArrayView<Size2D> verts, ArrayView<Color> color, QuantShortBox2D clip);
+        drawBox(ArrayView<Size2D> verts, ArrayView<Vector2D> coords, ArrayView<Color> colors, ImageResourceRef texture, QuantShortBox2D clip);
+    APPLICATION_EXPORT void drawBox(ArrayView<Size2D> verts, ArrayView<Color> colors, QuantShortBox2D clip);
     APPLICATION_EXPORT void drawBox(ArrayView<Size2D> verts, QuantShortBox2D clip);
+    APPLICATION_EXPORT void drawBox(QuantShortBox2D box, ImageResourceRef texture, QuantShortBox2D clip, Color color = ColorConst::WHITE);
+    APPLICATION_EXPORT void drawBox(QuantShortBox2D box, ImageResourceRef texture, QuantShortBox2D clip, ArrayView<Color> colors);
 
-    APPLICATION_EXPORT void addWaitCondition(SemaphoreRef *semaphore);
+    APPLICATION_EXPORT void addWaitCondition(SemaphoreRef semaphore);
 
     APPLICATION_EXPORT void beginLayer();
     APPLICATION_EXPORT void endLayer();

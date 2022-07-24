@@ -395,7 +395,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
 
     // Render the widget draw commands
     RenderPassClearValue clearValue;
-    clearValue.colors.emplace_back(LinearColorConst::Transparent);
+    clearValue.colors.emplace_back(LinearColorConst::WHITE_Transparent);
     clearValue.depth = 1;
 
     RenderPassAdditionalProps additionalParams;
@@ -458,7 +458,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         {
             submitInfo.waitOn.emplace_back(semaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));
         }
-        cmdList->submitCmd(EQueuePriority::SuperHigh, submitInfo, fence);
+        cmdList->submitCmd(EQueuePriority::High, submitInfo, fence);
     }
 
     clearUnusedTextures();

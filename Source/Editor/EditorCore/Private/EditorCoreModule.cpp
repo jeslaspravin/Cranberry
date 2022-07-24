@@ -1,5 +1,5 @@
 /*!
- * \file GameEngine.cpp
+ * \file EditorCoreModule.cpp
  *
  * \author Jeslas
  * \date July 2022
@@ -9,4 +9,6 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-#include "Classes/GameEngine.h"
+#include "Modules/ModuleManager.h"
+
+DECLARE_MODULE(EditorCore, ModuleNoImpl)

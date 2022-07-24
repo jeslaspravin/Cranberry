@@ -75,6 +75,8 @@ public:
     static ModuleManager *get();
 
     // Library loading functions
+    void addAdditionalLibPath(const TChar *dir);
+    void removedAdditionalLibPath(const TChar *dir);
     bool isLibraryLoaded(const TChar *libNameOrPath) const;
     LibHandle getLibrary(const TChar *libNameOrPath) const;
     LibHandle getOrLoadLibrary(const TChar *libNameOrPath);

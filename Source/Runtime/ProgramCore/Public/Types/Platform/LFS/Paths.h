@@ -31,5 +31,9 @@ public:
     static const TChar *applicationName();
 
     static const TChar *engineRoot();
+    /**
+     * Since Runtime, Tools, Editor exists in EngineRoot/Runtime/../[Tools|Editor] We can determine the EngineRoot and go into other library
+     * locations from there
+     */
     static const TChar *engineRuntimeRoot();
 };

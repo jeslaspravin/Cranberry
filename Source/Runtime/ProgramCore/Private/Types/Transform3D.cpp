@@ -92,39 +92,21 @@ void Transform3D::operator=(const Matrix4 &transformMatrix)
 
 const Vector3D &Transform3D::getTranslation() const { return transformTranslation; }
 
-Vector3D &Transform3D::getTranslation()
-{
-    return transformTranslation;
-}
+Vector3D &Transform3D::getTranslation() { return transformTranslation; }
 
 const Rotation &Transform3D::getRotation() const { return transformRotation; }
 
-Rotation &Transform3D::getRotation()
-{
-    return transformRotation;
-}
+Rotation &Transform3D::getRotation() { return transformRotation; }
 
 const Vector3D &Transform3D::getScale() const { return transformScale; }
 
-Vector3D &Transform3D::getScale()
-{
-    return transformScale;
-}
+Vector3D &Transform3D::getScale() { return transformScale; }
 
-void Transform3D::setTranslation(const Vector3D &newTranslation)
-{
-    transformTranslation = newTranslation;
-}
+void Transform3D::setTranslation(const Vector3D &newTranslation) { transformTranslation = newTranslation; }
 
-void Transform3D::setRotation(const Rotation &newRotation)
-{
-    transformRotation = newRotation;
-}
+void Transform3D::setRotation(const Rotation &newRotation) { transformRotation = newRotation; }
 
-void Transform3D::setScale(const Vector3D &newScale)
-{
-    transformScale = newScale;
-}
+void Transform3D::setScale(const Vector3D &newScale) { transformScale = newScale; }
 
 Matrix4 Transform3D::normalTransformMatrix() const
 {

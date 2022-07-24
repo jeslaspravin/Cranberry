@@ -44,5 +44,5 @@ public:
 private:
     void setupContainedObjs();
     // Just helper to bring serializing object bytes to single place
-    void serializeObject(CBE::Object* obj);
+    void serializeObject(CBE::Object *obj);
 };

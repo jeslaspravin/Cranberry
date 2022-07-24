@@ -105,7 +105,8 @@ namespace ColorConst
 {
 PROGRAMCORE_EXPORT Color random(uint8 alpha = 255);
 
-extern PROGRAMCORE_EXPORT const Color Transparent;
+extern PROGRAMCORE_EXPORT const Color WHITE_Transparent;
+extern PROGRAMCORE_EXPORT const Color BLACK_Transparent;
 extern PROGRAMCORE_EXPORT const Color WHITE;
 extern PROGRAMCORE_EXPORT const Color GRAY;
 extern PROGRAMCORE_EXPORT const Color BLACK;
@@ -120,7 +121,8 @@ namespace LinearColorConst
 {
 PROGRAMCORE_EXPORT LinearColor random(float alpha = 1.0f);
 
-extern PROGRAMCORE_EXPORT const LinearColor Transparent;
+extern PROGRAMCORE_EXPORT const LinearColor WHITE_Transparent;
+extern PROGRAMCORE_EXPORT const LinearColor BLACK_Transparent;
 extern PROGRAMCORE_EXPORT const LinearColor WHITE;
 extern PROGRAMCORE_EXPORT const LinearColor GRAY;
 extern PROGRAMCORE_EXPORT const LinearColor BLACK;

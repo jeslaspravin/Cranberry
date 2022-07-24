@@ -58,7 +58,7 @@ Object *getDefaultObject(CBEClass clazz)
     // If clazz if not abstract we could try and create first instance to trigger object allocator creation
     if (clazz->allocFunc && clazz->destructor)
     {
-        Object *obj = create(clazz, TCHAR("DummyForDefault"), nullptr);
+        Object *obj = create(clazz, TCHAR("DummyForDefault"), nullptr, EObjectFlagBits::Transient);
         debugAssert(obj);
         INTERNAL_destroyCBEObject(obj);
         return getDefaultObject(clazz);
