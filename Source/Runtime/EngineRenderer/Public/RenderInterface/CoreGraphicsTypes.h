@@ -77,88 +77,115 @@ enum Type
 {
     Undefined,
     /* Integral formats */
-    BGR_U8_Norm,
-    BGR_S8_Norm,
-    BGR_U8_Scaled,
-    BGR_S8_Scaled,
-    BGR_UI8,
-    BGR_SI8,
-    BGR_U8_SRGB, /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
-    BGRA_U8_Norm,
-    BGRA_S8_Norm,
-    BGRA_U8_Scaled,
-    BGRA_S8_Scaled,
-    BGRA_UI8,
-    BGRA_SI8,
-    BGRA_U8_SRGB, /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
-    R_U8_Norm,
-    R_S8_Norm,
-    R_U8_Scaled,
-    R_S8_Scaled,
+    // Unsigned
+    ABGR8_UI32_Packed,
+    A2RGB10_UI32_Packed,
+    A2BGR10_UI32_Packed,
     R_UI8,
-    R_SI8,
-    R_U8_SRGB,
-    RG_U8_Norm,
-    RG_S8_Norm,
-    RG_U8_Scaled,
-    RG_S8_Scaled,
     RG_UI8,
-    RG_SI8,
-    RG_U8_SRGB,
-    RGB_U8_Norm,
-    RGB_S8_Norm,
-    RGB_U8_Scaled,
-    RGB_S8_Scaled,
     RGB_UI8,
-    RGB_SI8,
-    RGB_U8_SRGB,
-    RGBA_U8_Norm,
-    RGBA_S8_Norm,
-    RGBA_U8_Scaled,
-    RGBA_S8_Scaled,
     RGBA_UI8,
-    RGBA_SI8,
-    RGBA_U8_SRGB, /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
-    R_U16_Norm,   /* 0 to 65535 gives 0.0f to 1.0f */
-    R_S16_Norm,   /* -32767 to 32767 gives -1.0f - 1.0f per comp( -32768 gets clamped to -32767 )*/
-    R_U16_Scaled,
-    R_S16_Scaled,
     R_UI16,
-    R_SI16,
-    RG_U16_Norm,
-    RG_S16_Norm,
-    RG_U16_Scaled,
-    RG_S16_Scaled,
     RG_UI16,
-    RG_SI16,
-    RGB_U16_Norm,
-    RGB_S16_Norm,
-    RGB_U16_Scaled,
-    RGB_S16_Scaled,
     RGB_UI16,
-    RGB_SI16,
-    RGBA_U16_Norm,
-    RGBA_S16_Norm,
-    RGBA_U16_Scaled,
-    RGBA_S16_Scaled,
     RGBA_UI16,
-    RGBA_SI16,
     R_UI32,
-    R_SI32,
     RG_UI32,
-    RG_SI32,
     RGB_UI32,
-    RGB_SI32,
     RGBA_UI32,
-    RGBA_SI32,
     R_UI64,
-    R_SI64,
     RG_UI64,
-    RG_SI64,
     RGB_UI64,
-    RGB_SI64,
     RGBA_UI64,
+    BGR_UI8,
+    BGRA_UI8,
+    // Signed
+    ABGR8_SI32_Packed,
+    A2RGB10_SI32_Packed,
+    A2BGR10_SI32_Packed,
+    R_SI8,
+    RG_SI8,
+    RGB_SI8,
+    RGBA_SI8,
+    R_SI16,
+    RG_SI16,
+    RGB_SI16,
+    RGBA_SI16,
+    R_SI32,
+    RG_SI32,
+    RGB_SI32,
+    RGBA_SI32,
+    R_SI64,
+    RG_SI64,
+    RGB_SI64,
     RGBA_SI64,
+    BGR_SI8,
+    BGRA_SI8,
+    /* Integral but normalized formats */
+    // Unsigned
+    ABGR8_U32_NormPacked, /* 0 to 255 gives 0.0f - 1.0f per comp */
+    A2RGB10_U32_NormPacked,
+    A2BGR10_U32_NormPacked,
+    R_U8_Norm,
+    RG_U8_Norm,
+    RGB_U8_Norm,
+    RGBA_U8_Norm,
+    R_U16_Norm, /* 0 to 65535 gives 0.0f to 1.0f */
+    RG_U16_Norm,
+    RGB_U16_Norm,
+    RGBA_U16_Norm,
+    BGR_U8_Norm,
+    BGRA_U8_Norm,
+    BGR_U8_SRGB,  /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
+    BGRA_U8_SRGB, /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
+    ABGR8_U32_SrgbPacked,
+    R_U8_SRGB,
+    RG_U8_SRGB,
+    RGB_U8_SRGB,
+    RGBA_U8_SRGB, /* 0 to 255 gives 0.0f - 1.0f per comp in sRGB encoding */
+    // Signed
+    ABGR8_S32_NormPacked, /* -127 to 127 gives -1.0f - 1.0f per comp( -128 gets clamped to -127 ) */
+    A2RGB10_S32_NormPacked,
+    A2BGR10_S32_NormPacked,
+    R_S8_Norm,
+    RG_S8_Norm,
+    RGB_S8_Norm,
+    RGBA_S8_Norm,
+    R_S16_Norm, /* -32767 to 32767 gives -1.0f - 1.0f per comp( -32768 gets clamped to -32767 )*/
+    RG_S16_Norm,
+    RGB_S16_Norm,
+    RGBA_S16_Norm,
+    BGR_S8_Norm,
+    BGRA_S8_Norm,
+    /* Integral but scaled formats */
+    // Unsigned
+    ABGR8_U32_ScaledPacked, /* Just converts the value directly as float 0.0f - 255.0f per comp */
+    A2RGB10_U32_ScaledPacked,
+    A2BGR10_U32_ScaledPacked,
+    R_U8_Scaled,
+    RG_U8_Scaled,
+    RGB_U8_Scaled,
+    RGBA_U8_Scaled,
+    R_U16_Scaled,
+    RG_U16_Scaled,
+    RGB_U16_Scaled,
+    RGBA_U16_Scaled,
+    BGR_U8_Scaled,
+    BGRA_U8_Scaled,
+    // Signed
+    ABGR8_S32_ScaledPacked, /* Just converts the value directly as float -128.0f - 127.0f per comp */
+    A2RGB10_S32_ScaledPacked,
+    A2BGR10_S32_ScaledPacked,
+    R_S8_Scaled,
+    RG_S8_Scaled,
+    RGB_S8_Scaled,
+    RGBA_S8_Scaled,
+    R_S16_Scaled,
+    RG_S16_Scaled,
+    RGB_S16_Scaled,
+    RGBA_S16_Scaled,
+    BGR_S8_Scaled,
+    BGRA_S8_Scaled,
     /* Floating formats */
     R_SF16,
     RG_SF16,
@@ -172,25 +199,6 @@ enum Type
     RG_SF64,
     RGB_SF64,
     RGBA_SF64,
-    ABGR8_U32_NormPacked,   /* 0 to 255 gives 0.0f - 1.0f per comp */
-    ABGR8_S32_NormPacked,   /* -127 to 127 gives -1.0f - 1.0f per comp( -128 gets clamped to -127 ) */
-    ABGR8_U32_ScaledPacked, /* Just converts the value directly as float 0.0f - 255.0f per comp */
-    ABGR8_S32_ScaledPacked, /* Just converts the value directly as float -128.0f - 127.0f per comp */
-    ABGR8_UI32_Packed,
-    ABGR8_SI32_Packed,
-    ABGR8_U32_SrgbPacked,
-    A2RGB10_U32_NormPacked,
-    A2RGB10_S32_NormPacked,
-    A2RGB10_U32_ScaledPacked,
-    A2RGB10_S32_ScaledPacked,
-    A2RGB10_UI32_Packed,
-    A2RGB10_SI32_Packed,
-    A2BGR10_U32_NormPacked,
-    A2BGR10_S32_NormPacked,
-    A2BGR10_U32_ScaledPacked,
-    A2BGR10_S32_ScaledPacked,
-    A2BGR10_UI32_Packed,
-    A2BGR10_SI32_Packed,
     /* Depth and stencil formats */
     D24X8_U32_NormPacked, /* 0 to 16777215 depth gives 0.0f to 1.0f, 8bit not used */
     D_U16_Norm,           /* 0 to 65535 gives 0.0f to 1.0f */
@@ -199,10 +207,33 @@ enum Type
     D16S8_U24_DNorm_SInt, /* 0 to 65535 depth gives 0.0f to 1.0f, 0 - 255 as stencil */
     D24S8_U32_DNorm_SInt, /* 0 to 16777215 depth gives 0.0f to 1.0f, 0 - 255 as stencil */
     AllFormatEnd,
+
+    IntFormatBegin = ABGR8_UI32_Packed,
+    IntFormatEnd = BGRA_SI8,
+    UIntFormatBegin = IntFormatBegin,
+    UIntFormatEnd = BGRA_UI8,
+    SIntFormatBegin = ABGR8_SI32_Packed,
+    SIntFormatEnd = IntFormatEnd,
+
+    NormFormatBegin = ABGR8_U32_NormPacked,
+    NormFormatEnd = BGRA_S8_Norm,
+    UNormFormatBegin = NormFormatBegin,
+    UNormFormatEnd = RGBA_U8_SRGB,
+    SRGBFormatBegin = BGR_U8_SRGB,
+    SRGBFormatEnd = UNormFormatEnd,
+    SNormFormatBegin = ABGR8_S32_NormPacked,
+    SNormFormatEnd = NormFormatEnd,
+
+    ScaledFormatBegin = ABGR8_U32_ScaledPacked,
+    ScaledFormatEnd = BGRA_S8_Scaled,
+    UScaledFormatBegin = ScaledFormatBegin,
+    UScaledFormatEnd = BGRA_U8_Scaled,
+    SScaledFormatBegin = ABGR8_S32_ScaledPacked,
+    SScaledFormatEnd = ScaledFormatEnd,
+
     FloatFormatBegin = R_SF16,
     FloatFormatEnd = RGBA_SF64,
-    PackedFormatBegin = ABGR8_U32_NormPacked,
-    PackedFormatEnd = D24X8_U32_NormPacked,
+
     DepthFormatBegin = D24X8_U32_NormPacked,
     DepthFormatEnd = D24S8_U32_DNorm_SInt,
     StencilDepthBegin = D32S8_SF32_UI8,
@@ -213,7 +244,7 @@ struct PixelFormatInfo
 {
     // In bytes
     const uint32 pixelDataSize;
-    const String formatName;
+    const TChar *formatName;
     // In bits
     const uint8 componentSize[MAX_PIXEL_COMP_COUNT] = { 0, 0, 0, 0 };
     const EPixelComponent componentOrder[MAX_PIXEL_COMP_COUNT]
@@ -262,7 +293,15 @@ struct PixelFormatInfo
 ENGINERENDERER_EXPORT const PixelFormatInfo *getFormatInfo(EPixelDataFormat::Type dataFormat);
 ENGINERENDERER_EXPORT bool isDepthFormat(EPixelDataFormat::Type dataFormat);
 ENGINERENDERER_EXPORT bool isStencilFormat(EPixelDataFormat::Type dataFormat);
+// Norm and scaled, float will be accessed as OpTypeFloat
 ENGINERENDERER_EXPORT bool isFloatingFormat(EPixelDataFormat::Type dataFormat);
+ENGINERENDERER_EXPORT bool isNormalizedFormat(EPixelDataFormat::Type dataFormat);
+ENGINERENDERER_EXPORT bool isScaledFormat(EPixelDataFormat::Type dataFormat);
+// Formats that will be accessed as OpTypeInt in shader
+ENGINERENDERER_EXPORT bool isPureIntegralFormat(EPixelDataFormat::Type dataFormat);
+ENGINERENDERER_EXPORT bool isSignedFormat(EPixelDataFormat::Type dataFormat);
+ENGINERENDERER_EXPORT bool isUnsignedFormat(EPixelDataFormat::Type dataFormat);
+ENGINERENDERER_EXPORT bool isSrgbFormat(EPixelDataFormat::Type dataFormat);
 } // namespace EPixelDataFormat
 
 namespace EPixelSampleCount

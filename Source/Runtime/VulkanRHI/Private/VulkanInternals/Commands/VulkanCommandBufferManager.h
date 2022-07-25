@@ -84,7 +84,6 @@ struct VulkanCmdBufferState
 
 struct VulkanCmdSubmitSyncInfo
 {
-    bool bIsAdvancedSubmit = false;
     uint32 refCount = 0;
     FenceRef completeFence;
     SemaphoreRef signalingSemaphore;

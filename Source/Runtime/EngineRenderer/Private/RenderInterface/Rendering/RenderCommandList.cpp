@@ -516,7 +516,7 @@ void IRenderCommandList::copyPixelsTo(
         uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
         fatalAssertf(
             ((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx],
-            "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName.getChar()
+            "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName
         );
 
         uint32 end = 1 << (formatInfo->componentSize[compIdx] - 1);
@@ -607,7 +607,7 @@ void IRenderCommandList::copyPixelsTo(
             uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
             fatalAssertf(
                 ((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx],
-                "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName.getChar()
+                "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName
             );
 
             uint32 end = 1 << (formatInfo->componentSize[compIdx] - 1);
@@ -673,7 +673,7 @@ void IRenderCommandList::copyPixelsLinearMappedTo(
         uint8 offset = formatInfo->getOffset(EPixelComponent(compIdx)) % 8;
         fatalAssertf(
             ((sizeof(uint32) * 8) - offset) >= formatInfo->componentSize[compIdx],
-            "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName.getChar()
+            "Component %d of pixel format %s is going beyond 32bits mask after offset", compIdx, formatInfo->formatName
         );
 
         uint32 end = 1 << (formatInfo->componentSize[compIdx] - 1);

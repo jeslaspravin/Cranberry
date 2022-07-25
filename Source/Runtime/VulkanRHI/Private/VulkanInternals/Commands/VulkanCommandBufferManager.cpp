@@ -464,25 +464,20 @@ void VulkanCmdBufferManager::cmdFinished(const String &cmdName, VulkanResourcesT
     {
         VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
         syncInfo.refCount--;
-        if (!syncInfo.bIsAdvancedSubmit && syncInfo.completeFence.isValid())
-        {
-            if (!syncInfo.completeFence->isSignaled())
-            {
-                syncInfo.completeFence->waitForSignal();
-            }
 
-            if (syncInfo.refCount == 0 && syncInfo.completeFence.refCount() == 0)
-            {
-                syncInfo.completeFence->resetSignal();
-                syncInfo.completeFence->release();
-            }
+        fatalAssertf(syncInfo.completeFence.isValid(), "Complete fence cannot be null!");
+        if (!syncInfo.completeFence->isSignaled())
+        {
+            syncInfo.completeFence->waitForSignal();
         }
+
+        // Reset resources
         if (syncInfo.refCount == 0)
         {
-            if (!syncInfo.bIsAdvancedSubmit && syncInfo.signalingSemaphore.refCount() == 0)
-            {
-                syncInfo.signalingSemaphore->release();
-            }
+            syncInfo.completeFence->resetSignal();
+            syncInfo.completeFence.reset();
+            syncInfo.signalingSemaphore.reset();
+
             cmdsSyncInfo.reset(cmdBufferItr->second.cmdSyncInfoIdx);
         }
         if (resourceTracker)
@@ -501,8 +496,7 @@ void VulkanCmdBufferManager::finishAllSubmited(VulkanResourcesTracker *resourceT
         if (cmd.second.cmdState == ECmdState::Submitted)
         {
             VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmd.second.cmdSyncInfoIdx];
-            // If advanced submit then finishing won't wait so wait here
-            if (syncInfo.bIsAdvancedSubmit && !syncInfo.completeFence->isSignaled())
+            if (!syncInfo.completeFence->isSignaled())
             {
                 syncInfo.completeFence->waitForSignal();
             }
@@ -588,6 +582,8 @@ void VulkanCmdBufferManager::submitCmds(
     EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands, FenceRef cmdsCompleteFence
 )
 {
+    IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
+    const GraphicsHelperAPI *graphicsHelper = IVulkanRHIModule::get()->getGraphicsHelper();
     QueueResourceBase *queueRes = nullptr;
 
     std::vector<std::vector<VkCommandBuffer>> allCmdBuffers(commands.size());
@@ -645,11 +641,14 @@ void VulkanCmdBufferManager::submitCmds(
         allSubmitInfo[cmdSubmitIdx].pWaitDstStageMask = waitingStages.data();
     }
 
+    if (!cmdsCompleteFence.isValid())
+    {
+        cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("AdvancedSubmitBatched"));
+        cmdsCompleteFence->init();
+    }
     VkQueue vQueue = getVkQueue(priority, queueRes);
-    VkResult result = vDevice->vkQueueSubmit(
-        vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(),
-        (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
-    );
+    VkResult result
+        = vDevice->vkQueueSubmit(vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(), cmdsCompleteFence.reference<VulkanFence>()->fence);
     fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 
     for (const CommandSubmitInfo &command : commands)
@@ -670,7 +669,6 @@ void VulkanCmdBufferManager::submitCmds(
         {
             syncInfo.signalingSemaphore = command.signalSemaphores.empty() ? nullptr : command.signalSemaphores.front();
             syncInfo.completeFence = cmdsCompleteFence;
-            syncInfo.bIsAdvancedSubmit = true;
             syncInfo.refCount = uint32(command.cmdBuffers.size());
         }
         else
@@ -682,6 +680,8 @@ void VulkanCmdBufferManager::submitCmds(
 
 void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef cmdsCompleteFence)
 {
+    IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
+    const GraphicsHelperAPI *graphicsHelper = IVulkanRHIModule::get()->getGraphicsHelper();
     QueueResourceBase *queueRes = nullptr;
 
     std::vector<VkCommandBuffer> cmdBuffers(command.cmdBuffers.size());
@@ -726,6 +726,11 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     cmdSubmitInfo.pWaitSemaphores = waitOnSemaphores.data();
     cmdSubmitInfo.pWaitDstStageMask = waitingStages.data();
 
+    if (!cmdsCompleteFence.isValid())
+    {
+        cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("AdvancedSubmitBatched"));
+        cmdsCompleteFence->init();
+    }
     VkQueue vQueue = getVkQueue(priority, queueRes);
     VkResult result = vDevice->vkQueueSubmit(
         vQueue, 1, &cmdSubmitInfo, (cmdsCompleteFence.isValid() ? cmdsCompleteFence.reference<VulkanFence>()->fence : nullptr)
@@ -748,7 +753,6 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     {
         syncInfo.signalingSemaphore = command.signalSemaphores.empty() ? nullptr : command.signalSemaphores.front();
         syncInfo.completeFence = cmdsCompleteFence;
-        syncInfo.bIsAdvancedSubmit = true;
         syncInfo.refCount = uint32(command.cmdBuffers.size());
     }
     else
@@ -864,7 +868,6 @@ void VulkanCmdBufferManager::submitCmds(
     {
         int32 index = int32(cmdsSyncInfo.get());
         VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[index];
-        syncInfo.bIsAdvancedSubmit = false;
         syncInfo.completeFence = cmdsCompleteFence;
         syncInfo.refCount = uint32(commands[cmdSubmitIdx].cmdBuffers.size());
 
@@ -983,7 +986,6 @@ void VulkanCmdBufferManager::submitCmd(
 
     int32 index = int32(cmdsSyncInfo.get());
     VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[index];
-    syncInfo.bIsAdvancedSubmit = false;
     syncInfo.completeFence = cmdsCompleteFence;
     syncInfo.refCount = uint32(command.cmdBuffers.size());
 

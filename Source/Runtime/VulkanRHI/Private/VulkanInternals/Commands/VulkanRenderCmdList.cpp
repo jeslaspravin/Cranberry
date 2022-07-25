@@ -109,22 +109,34 @@ FORCE_INLINE void
 {
     const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(format);
 
-    clearValue.float32[0] = color.r();
-    clearValue.float32[1] = color.g();
-    clearValue.float32[2] = color.b();
-    clearValue.float32[3] = color.a();
+    // https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html#formats-numericformat Normalized and scaled values are
+    // considered float
+    if (EPixelDataFormat::isFloatingFormat(format) || EPixelDataFormat::isNormalizedFormat(format) || EPixelDataFormat::isScaledFormat(format))
+    {
+        clearValue.float32[0] = color.r();
+        clearValue.float32[1] = color.g();
+        clearValue.float32[2] = color.b();
+        clearValue.float32[3] = color.a();
+    }
+    else
+    {
+        LinearColor clamped = LinearColor(Math::clamp(Vector4D(color), Vector4D::ZERO, Vector4D::ONE));
+        uint32 uMaxVal = Math::pow(2, formatInfo->componentSize[0]) - 1;
+        clearValue.uint32[0] = uint32(uMaxVal * clamped[0]);
+        clearValue.uint32[1] = uint32(uMaxVal * clamped[1]);
+        clearValue.uint32[2] = uint32(uMaxVal * clamped[2]);
+        clearValue.uint32[3] = uint32(uMaxVal * clamped[3]);
 
-    LinearColor clamped(Math::clamp(Vector4D(color), Vector4D(-1), Vector4D::ONE));
-    clearValue.int32[0] = int32(Math::pow(2, formatInfo->componentSize[0]) * clamped[0]);
-    clearValue.int32[1] = int32(Math::pow(2, formatInfo->componentSize[1]) * clamped[1]);
-    clearValue.int32[2] = int32(Math::pow(2, formatInfo->componentSize[2]) * clamped[2]);
-    clearValue.int32[3] = int32(Math::pow(2, formatInfo->componentSize[3]) * clamped[3]);
-
-    clamped = LinearColor(Math::clamp(Vector4D(color), Vector4D::ZERO, Vector4D::ONE));
-    clearValue.uint32[0] = uint32(Math::pow(2, formatInfo->componentSize[0]) * clamped[0]);
-    clearValue.uint32[1] = uint32(Math::pow(2, formatInfo->componentSize[1]) * clamped[1]);
-    clearValue.uint32[2] = uint32(Math::pow(2, formatInfo->componentSize[2]) * clamped[2]);
-    clearValue.uint32[3] = uint32(Math::pow(2, formatInfo->componentSize[3]) * clamped[3]);
+        if (EPixelDataFormat::isSignedFormat(format))
+        {
+            clamped = LinearColor(Math::clamp(Vector4D(color), Vector4D(-1), Vector4D::ONE));
+            int32 signedDelta = Math::pow(2, formatInfo->componentSize[0] - 1);
+            clearValue.int32[0] = clearValue.uint32[0] - signedDelta;
+            clearValue.int32[1] = clearValue.uint32[1] - signedDelta;
+            clearValue.int32[2] = clearValue.uint32[2] - signedDelta;
+            clearValue.int32[3] = clearValue.uint32[3] - signedDelta;
+        }
+    }
 }
 
 #if DEFER_DELETION
