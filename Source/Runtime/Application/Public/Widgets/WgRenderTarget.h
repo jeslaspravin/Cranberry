@@ -19,7 +19,7 @@
 
 struct WgRenderTargetCI
 {
-    const TChar *textureName;
+    String textureName;
     Short2D textureSize;
     EPixelSampleCount::Type sampleCount = EPixelSampleCount::SampleCount1;
     bool bIsSrgb = false;

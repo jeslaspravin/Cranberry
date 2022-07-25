@@ -26,6 +26,10 @@ public:
     {
         return EInputHandleState::NotHandled;
     }
+    EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem)
+    {
+        return EInputHandleState::NotHandled;
+    }
     void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override {}
     void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override {}
     void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override {}

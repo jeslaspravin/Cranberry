@@ -39,7 +39,7 @@ enum class EInputHandleState
 class APPLICATION_EXPORT WidgetBase : public std::enable_shared_from_this<WidgetBase>
 {
 protected:
-    SharedPtr<WidgetBase> parentWidget = nullptr;
+    WeakPtr<WidgetBase> parentWidget;
 #if DEBUG_BUILD
     // To ensure that rebuild never happens inside its rebuild
     bool bRebuildingGeom = false;
@@ -59,6 +59,7 @@ public:
     // below virtual functions are non recursive. Overrides do not have to call its child as children will be processed before parent
     virtual void tick(float timeDelta) = 0;
     virtual EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) = 0;
+    virtual EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem) = 0;
     // absPos are not screen position but position relative to widget's window and widgetRelPos is this widget relative position
     virtual void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) = 0;
     virtual void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) = 0;
@@ -71,7 +72,6 @@ public:
     static SharedPtr<WgWindow> findWidgetParentWindow(SharedPtr<WidgetBase> widget);
 
 protected:
-    static float getWidgetScaling(SharedPtr<WidgetBase> widget);
     /**
      * Gets widget's geometry in this frame, Avoid calling this often as it traverses the geometry tree to find it
      */

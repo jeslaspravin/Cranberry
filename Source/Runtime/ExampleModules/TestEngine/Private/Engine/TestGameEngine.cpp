@@ -122,19 +122,19 @@ void TestGameEngine::engineLoop()
                 imguiManager->inputKey(key, *state, application->inputSystem);
             }
         }
-        QuantShortBox2D windowArea = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->windowClientRect();
-        Vector2D windowOrigin{ float(windowArea.minBound.x), float(windowArea.minBound.y) };
-        float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
-        Vector2D relMousePos = (Vector2D(
-                                    application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue,
-                                    application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue
-                                )
-                                - windowOrigin)
-                               / dpiScaleFactor;
-        imguiManager->mouseMoved(
-            Short2D(int16(relMousePos.x()), int16(relMousePos.y())), Short2D(int16(relMousePos.x()), int16(relMousePos.y())),
-            application->inputSystem
-        );
+        for (AnalogStates::StateKeyType key : AnalogStates::Range())
+        {
+            const AnalogStates::StateInfoType *state = application->inputSystem->analogState(key);
+            if (state->acceleration != 0.0f || state->currentValue != 0.0f)
+            {
+                imguiManager->analogKey(key, *state, application->inputSystem);
+            }
+        }
+        Short2D relMousePos = application->getMainWindow()->screenToWindowSpace(Short2D(
+            int16(application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue),
+            int16(application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue)
+        ));
+        imguiManager->mouseMoved(relMousePos, relMousePos, application->inputSystem);
 
         ENQUEUE_COMMAND(Engineloop)
         (

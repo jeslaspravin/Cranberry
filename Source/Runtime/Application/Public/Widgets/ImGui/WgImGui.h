@@ -39,7 +39,7 @@ private:
     std::vector<FrameBufferedData> swapchainBuffered;
     uint32 imageIdx = 0;
 
-    SharedPtr<WgWindow> wgWindow;
+    WeakPtr<WgWindow> wgWindow;
     ImGuiManager *imgui;
 
 public:
@@ -62,14 +62,15 @@ public:
 
     void tick(float timeDelta) override;
     EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override;
+    EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem) override;
     void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
     void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
     void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
 
     /* Overrides ends */
 private:
-    void drawImGui(
-        const GraphicsResource *cmdBuffer, class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+    void drawToRenderTarget(
+        const GraphicsResource *cmdBuffer, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
         const GraphicsHelperAPI *graphicsHelper
     );
 };

@@ -30,25 +30,25 @@
 /// WgWindow Implementations
 //////////////////////////////////////////////////////////////////////////
 
+float WgWindow::getWidgetScaling() const { return ownerWindow->dpiScale() * scaling; }
+
 Short2D WgWindow::getWidgetSize() const
 {
     uint32 width, height;
     ownerWindow->windowSize(width, height);
-    return Short2D(int16(width / getWidgetScaling()), int16(height / getWidgetScaling()));
+    return removeDpiScale(Short2D(width, height));
 }
-
-float WgWindow::getWidgetScaling() const { return ownerWindow->dpiScale() * scaling; }
 
 Short2D WgWindow::screenToWindowSpace(Short2D screenPt) const
 {
     Short2D windowOrigin = ownerWindow->windowClientRect().minBound;
     Short2D windowSpace = screenPt - windowOrigin;
-    return Short2D(int16(windowSpace.x / getWidgetScaling()), int16(windowSpace.y / getWidgetScaling()));
+    return removeDpiScale(windowSpace);
 }
 
 Short2D WgWindow::windowToScreenSpace(Short2D windowPt) const
 {
-    Short2D screenSpace = Short2D(int16(windowPt.x * getWidgetScaling()), int16(windowPt.y * getWidgetScaling()));
+    Short2D screenSpace = applyDpiScale(windowPt);
     return screenSpace + ownerWindow->windowClientRect().minBound;
 }
 
@@ -64,9 +64,9 @@ SharedPtr<WgWindow> WidgetBase::findWidgetParentWindow(SharedPtr<WidgetBase> wid
         return nullptr;
     }
     SharedPtr<WidgetBase> rootWidget = widget;
-    while (rootWidget->parentWidget != nullptr)
+    while (!rootWidget->parentWidget.expired())
     {
-        rootWidget = rootWidget->parentWidget;
+        rootWidget = rootWidget->parentWidget.lock();
     }
 
     if (app->isAWindow(rootWidget))
@@ -232,6 +232,7 @@ void ApplicationInstance::onWindowDestroyed(GenericAppWindow *appWindow)
     if (itr != windowWidgets.cend())
     {
         wgRenderer->clearWindowState(itr->second);
+        itr->second->clearWindow();
         windowWidgets.erase(itr);
     }
 }
@@ -250,6 +251,14 @@ void ApplicationInstance::tickWindowWidgets()
             window->inputKey(key, *state, inputSystem);
         }
     }
+    for (AnalogStates::StateKeyType key : AnalogStates::Range())
+    {
+        const AnalogStates::StateInfoType *state = inputSystem->analogState(key);
+        if (state->acceleration != 0.0f || state->currentValue != 0.0f)
+        {
+            window->analogKey(key, *state, inputSystem);
+        }
+    }
 
     const AnalogStates::StateInfoType *screenMouseX = inputSystem->analogState(AnalogStates::AbsMouseX);
     const AnalogStates::StateInfoType *screenMouseY = inputSystem->analogState(AnalogStates::AbsMouseY);
@@ -260,21 +269,18 @@ void ApplicationInstance::tickWindowWidgets()
     {
         if (lastHoverWnd)
         {
-            float scaleFactor = lastHoverWnd->getWidgetScaling();
             Short2D mouseAbsPos = lastHoverWnd->screenToWindowSpace(mouseScreenPos);
             lastHoverWnd->mouseLeave(mouseAbsPos, mouseAbsPos, inputSystem);
         }
         lastHoverWnd = wndWidget;
         if (lastHoverWnd)
         {
-            float scaleFactor = lastHoverWnd->getWidgetScaling();
             Short2D mouseAbsPos = lastHoverWnd->screenToWindowSpace(mouseScreenPos);
             lastHoverWnd->mouseEnter(mouseAbsPos, mouseAbsPos, inputSystem);
         }
     }
     if (lastHoverWnd && (screenMouseX->acceleration != 0.0f || screenMouseY->acceleration != 0.0f))
     {
-        float scaleFactor = lastHoverWnd->getWidgetScaling();
         Short2D mouseAbsPos = lastHoverWnd->screenToWindowSpace(mouseScreenPos);
         lastHoverWnd->mouseMoved(mouseAbsPos, mouseAbsPos, inputSystem);
     }
@@ -328,6 +334,23 @@ void ApplicationInstance::presentDrawnWnds(const std::vector<SharedPtr<WgWindow>
             }
         );
     }
+}
+
+void ApplicationInstance::clearWidgets()
+{
+    if (wgRenderer)
+    {
+        wgRenderer->destroy();
+        // Will be deleted after destroyed in render thread
+        wgRenderer = nullptr;
+    }
+    IApplicationModule::get()->unregisterOnWindowDestroyed(onWindowDestroyHandle);
+    for (const std::pair<GenericAppWindow *const, SharedPtr<WgWindow>> &window : windowWidgets)
+    {
+        window.second->clearWindow();
+    }
+    windowWidgets.clear();
+    lastHoverWnd.reset();
 }
 
 void ApplicationInstance::startNewFrame()

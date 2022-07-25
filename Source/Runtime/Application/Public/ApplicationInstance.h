@@ -182,6 +182,7 @@ private:
     void tickWindowWidgets();
     NODISCARD std::vector<SharedPtr<WgWindow>> drawWindowWidgets();
     void presentDrawnWnds(const std::vector<SharedPtr<WgWindow>> &windowsDrawn);
+    void clearWidgets();
 
     void startNewFrame();
 };

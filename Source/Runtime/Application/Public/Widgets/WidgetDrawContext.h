@@ -67,7 +67,11 @@ public:
     FORCE_INLINE const std::vector<SemaphoreRef> &allWaitOnSemaphores() const { return waitOnSemaphores; }
 
     // Layers at higher indices appear on top of ones below
-    FORCE_INLINE const auto &allLayerVertRange() const { return altToVertRange; }
+    FORCE_INLINE const auto &allLayerVertRange() const
+    {
+        debugAssertf(layerAlt == -1, "Getting all layer vertex range before all endLayer()");
+        return altToVertRange;
+    }
 
 private:
     bool canAddMoreVerts(uint32 vertsCount) const;

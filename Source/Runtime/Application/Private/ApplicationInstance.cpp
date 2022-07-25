@@ -203,14 +203,7 @@ bool ApplicationInstance::appTick()
 void ApplicationInstance::exitApp()
 {
     onExit();
-    if (wgRenderer)
-    {
-        wgRenderer->destroy();
-        // Will be deleted after destroyed in render thread
-        wgRenderer = nullptr;
-    }
-    IApplicationModule::get()->unregisterOnWindowDestroyed(onWindowDestroyHandle);
-    windowWidgets.clear();
+    clearWidgets();
 
     LOG("ApplicationInstance", "%s run time %.3f minutes", applicationName, Time::asMinutes(Time::timeNow() - timeData.startTick));
 }

@@ -52,6 +52,13 @@ void WgWindow::rebuildWindowGeoms()
     rebuildWidgetGeometry(allWidgetGeoms.add(windowGeom), allWidgetGeoms);
 }
 
+void WgWindow::clearWindow()
+{
+    allWidgetGeoms.clear();
+    content.reset();
+    hoveringWidget.reset();
+}
+
 void WgWindow::setContent(SharedPtr<WidgetBase> widget) { content = widget; }
 
 WidgetGeom WgWindow::findWidgetGeom(SharedPtr<WidgetBase> widget) const
@@ -166,6 +173,23 @@ EInputHandleState WgWindow::inputKey(Keys::StateKeyType key, Keys::StateInfoType
     return EInputHandleState::NotHandled;
 }
 
+EInputHandleState WgWindow::analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem)
+{
+    // All inner most children will be at last
+    std::vector<WidgetGeomTree::NodeIdx> children;
+    allWidgetGeoms.getChildren(children, 0, true);
+    for (auto rItr = children.rbegin(); rItr != children.rend(); ++rItr)
+    {
+        const WidgetGeom &widgetGeom = allWidgetGeoms[*rItr];
+        debugAssert(widgetGeom.widget);
+        if (widgetGeom.widget->analogKey(key, state, inputSystem) == EInputHandleState::Processed)
+        {
+            return EInputHandleState::Processed;
+        }
+    }
+    return EInputHandleState::NotHandled;
+}
+
 void WgWindow::mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) {}
 
 void WgWindow::mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
@@ -217,15 +241,6 @@ void WgWindow::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSyste
     }
 }
 
-float WidgetBase::getWidgetScaling(SharedPtr<WidgetBase> widget)
-{
-    if (SharedPtr<WgWindow> windowWidget = findWidgetParentWindow(widget))
-    {
-        return windowWidget->getWidgetScaling();
-    }
-    return 1.0f;
-}
-
 WidgetGeom WidgetBase::getWidgetGeom(SharedPtr<WidgetBase> widget)
 {
     if (SharedPtr<WgWindow> windowWidget = findWidgetParentWindow(widget))
@@ -242,7 +257,7 @@ std::vector<SharedPtr<WidgetBase>> WidgetBase::getWidgetChain(SharedPtr<WidgetBa
     while (tempWidget)
     {
         widgetChain.emplace_back(tempWidget);
-        tempWidget = tempWidget->parentWidget;
+        tempWidget = tempWidget->parentWidget.expired() ? nullptr : tempWidget->parentWidget.lock();
     }
 
     std::reverse(widgetChain.begin(), widgetChain.end());

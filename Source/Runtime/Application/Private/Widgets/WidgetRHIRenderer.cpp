@@ -129,9 +129,8 @@ WidgetRHIRenderer::WindowState &WidgetRHIRenderer::createWindowState(
     for (uint32 i = 0; i < swapchainCanvas->imagesCount(); ++i)
     {
         state.perFrameCmdBuffers[i] = window->getAppWindow()->getWindowName() + TCHAR("_CmdBuffer_") + String::toString(i);
-        // We have to start the fences signaled so that first draw frame wait will not time out
         state.perFrameSubmitFences[i] = graphicsHelper->createFence(
-            graphicsInstance, (window->getAppWindow()->getWindowName() + TCHAR("_Fence_") + String::toString(i)).c_str(), true
+            graphicsInstance, (window->getAppWindow()->getWindowName() + TCHAR("_Fence_") + String::toString(i)).c_str()
             );
         state.perFrameSubmitFences[i]->init();
         state.perFrameSignal[i] = graphicsHelper->createSemaphore(
@@ -379,12 +378,8 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
                     quadOffset++;
                 }
                 // Convert scissor to window scaled size
-                Rect scissor{ Vector2D(drawCmd.scissor.minBound.x, drawCmd.scissor.minBound.y),
-                              Vector2D(drawCmd.scissor.maxBound.x, drawCmd.scissor.maxBound.y) };
-                scissor.minBound *= drawingContexts[i].first->getWidgetScaling();
-                scissor.maxBound *= drawingContexts[i].first->getWidgetScaling();
-                drawCmd.scissor.minBound = Short2D(int16(scissor.minBound.x()), int16(scissor.minBound.y()));
-                drawCmd.scissor.maxBound = Short2D(int16(scissor.maxBound.x()), int16(scissor.maxBound.y()));
+                drawCmd.scissor.minBound = drawingContexts[i].first->applyDpiScale(drawCmd.scissor.minBound);
+                drawCmd.scissor.maxBound = drawingContexts[i].first->applyDpiScale(drawCmd.scissor.maxBound);
             }
         }
 
@@ -413,13 +408,6 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
 
         LocalPipelineContext &pipelineContext = pipelineCntxPerWnd[i];
         WindowState *windowState = statePerWnd[i];
-
-        FenceRef fence = windowState->perFrameSubmitFences[pipelineContext.swapchainIdx];
-        if (!fence->isSignaled())
-        {
-            fence->waitForSignal();
-        }
-        fence->resetSignal();
 
         // Wait until corresponding previous frame draw is done
         cmdList->finishCmd(windowState->perFrameCmdBuffers[pipelineContext.swapchainIdx]);
@@ -458,7 +446,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         {
             submitInfo.waitOn.emplace_back(semaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));
         }
-        cmdList->submitCmd(EQueuePriority::High, submitInfo, fence);
+        cmdList->submitCmd(EQueuePriority::High, submitInfo, windowState->perFrameSubmitFences[pipelineContext.swapchainIdx]);
     }
 
     clearUnusedTextures();
