@@ -389,7 +389,7 @@ VkBuffer VulkanGraphicsHelper::createBuffer(
 
         if ((formatProps.bufferFeatures & requiredFeatures) != requiredFeatures)
         {
-            LOG_ERROR("NewBufferCreation", "Required format %s for buffer is not supported by device", imageFormatInfo->formatName.getChar());
+            LOG_ERROR("NewBufferCreation", "Required format %s for buffer is not supported by device", imageFormatInfo->formatName);
             return buffer;
         }
     }
