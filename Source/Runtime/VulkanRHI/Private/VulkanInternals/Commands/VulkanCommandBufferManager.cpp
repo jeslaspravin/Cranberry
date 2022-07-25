@@ -1139,16 +1139,6 @@ std::vector<const GraphicsResource *> VulkanResourcesTracker::getCmdBufferResour
         }
         retVal.insert(retVal.end(), resourceAccessorItr->second.lastReadsIn.cbegin(), resourceAccessorItr->second.lastReadsIn.cend());
     }
-
-    auto attachmentAccessItr = renderpassAttachments.find(resource);
-    if (attachmentAccessItr != renderpassAttachments.cend())
-    {
-        if (attachmentAccessItr->second.lastWrite)
-        {
-            retVal.emplace_back(attachmentAccessItr->second.lastWrite);
-        }
-        retVal.insert(retVal.end(), attachmentAccessItr->second.lastReadsIn.cbegin(), attachmentAccessItr->second.lastReadsIn.cend());
-    }
     return retVal;
 }
 
@@ -1184,40 +1174,9 @@ void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
             ++resAccessorItr;
         }
     }
-
-    // Remove cmdBuffer from read list and write and remove resource if no cmd buffer is related to it
-    for (auto attachmentItr = renderpassAttachments.begin(); attachmentItr != renderpassAttachments.end();)
-    {
-        if (attachmentItr->second.lastWrite == cmdBuffer)
-        {
-            attachmentItr->second.lastWrite = nullptr;
-        }
-
-        auto newEnd = std::remove_if(
-            attachmentItr->second.lastReadsIn.begin(), attachmentItr->second.lastReadsIn.end(),
-            [cmdBuffer](const GraphicsResource *cmd)
-            {
-                return cmd == cmdBuffer;
-            }
-        );
-        attachmentItr->second.lastReadsIn.erase(newEnd, attachmentItr->second.lastReadsIn.end());
-
-        if (attachmentItr->second.lastWrite == nullptr && attachmentItr->second.lastReadsIn.empty())
-        {
-            attachmentItr = renderpassAttachments.erase(attachmentItr);
-        }
-        else
-        {
-            ++attachmentItr;
-        }
-    }
 }
 
-void VulkanResourcesTracker::clearResource(const MemoryResourceRef &resource)
-{
-    resourcesAccessors.erase(resource);
-    renderpassAttachments.erase(resource);
-}
+void VulkanResourcesTracker::clearResource(const MemoryResourceRef &resource) { resourcesAccessors.erase(resource); }
 
 void VulkanResourcesTracker::clearUnwanted()
 {
@@ -1232,38 +1191,6 @@ void VulkanResourcesTracker::clearUnwanted()
         if (memResources.find(itr->first.reference()) == memResources.end())
         {
             itr = resourcesAccessors.erase(itr);
-        }
-        else
-        {
-            // Remove duplicate reads preserving first read alone
-            if (itr->second.lastReadsIn.size() > 1)
-            {
-                // Since we need to preserve first read alone
-                const GraphicsResource *firstRead = itr->second.lastReadsIn[0];
-                std::unordered_set<const GraphicsResource *> uniqueReads;
-                uniqueReads.insert(firstRead);
-
-                auto newEnd = std::remove_if(
-                    itr->second.lastReadsIn.begin(), itr->second.lastReadsIn.end(),
-                    [&uniqueReads](const GraphicsResource *res)
-                    {
-                        return !uniqueReads.insert(res).second;
-                    }
-                );
-                itr->second.lastReadsIn.erase(newEnd, itr->second.lastReadsIn.end());
-                // Restore first read
-                itr->second.lastReadsIn.emplace_back(itr->second.lastReadsIn[0]);
-                itr->second.lastReadsIn[0] = firstRead;
-            }
-            ++itr;
-        }
-    }
-
-    for (std::map<const ImageResourceRef, ResourceAccessors>::iterator itr = renderpassAttachments.begin(); itr != renderpassAttachments.end();)
-    {
-        if (memResources.find(itr->first.reference()) == memResources.end())
-        {
-            itr = renderpassAttachments.erase(itr);
         }
         else
         {
@@ -1606,5 +1533,48 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
         accessorsItr->second.lastWrite = nullptr;
     }
 
+    return outBarrierInfo;
+}
+
+std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
+    VulkanResourcesTracker::colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef resource)
+{
+    std::optional<ResourceBarrierInfo> outBarrierInfo;
+    VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    ResourceAccessors &accessors = resourcesAccessors[resource];
+
+    // If never read or write, no need to do any transition unless we are loading in render pass
+    if (!accessors.lastWrite && accessors.lastReadsIn.empty())
+    {
+        accessors.lastWrite = cmdBuffer;
+        accessors.lastWriteStage = stageFlag;
+
+        return outBarrierInfo;
+    }
+
+    // If not read in same cmd buffer then there is other cmds that are reading so wait for those cmds,
+    // Transition is not necessary as load/clear either way layout will be compatible
+    if (!accessors.lastReadsIn.empty()
+        && std::find(accessors.lastReadsIn.cbegin(), accessors.lastReadsIn.cend(), cmdBuffer) == accessors.lastReadsIn.cend())
+    {
+        for (const GraphicsResource *cmdBuffer : accessors.lastReadsIn)
+            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ cmdBuffer, resource });
+
+        accessors.lastWrite = cmdBuffer;
+        accessors.lastWriteStage = stageFlag;
+        accessors.lastReadsIn.clear();
+        accessors.allReadStages = accessors.lastReadStages = 0;
+
+        return outBarrierInfo;
+    }
+
+    // If last write is not in this cmd buffer then we just wait on that cmd buffer
+    // Transition is not necessary as load/clear either way layout will be compatible
+    if (accessors.lastWrite && accessors.lastWrite != cmdBuffer)
+    {
+        cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource });
+    }
+    accessors.lastWrite = cmdBuffer;
+    accessors.lastWriteStage = stageFlag;
     return outBarrierInfo;
 }

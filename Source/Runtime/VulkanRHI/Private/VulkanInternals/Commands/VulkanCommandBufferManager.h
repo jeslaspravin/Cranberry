@@ -184,8 +184,6 @@ public:
 
 private:
     std::map<MemoryResourceRef, ResourceAccessors> resourcesAccessors;
-    // Render pass attachments auto transfer layouts so it will need to put barrier only after transfer
-    std::map<const ImageResourceRef, ResourceAccessors> renderpassAttachments;
 
     using CmdWaitInfoMap = std::map<const GraphicsResource *, std::vector<CommandResUsageInfo>>;
     CmdWaitInfoMap cmdWaitInfo;
@@ -227,4 +225,5 @@ public:
         writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
 
     std::optional<ResourceBarrierInfo> imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef resource);
+    std::optional<ResourceBarrierInfo> colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef resource);
 };
