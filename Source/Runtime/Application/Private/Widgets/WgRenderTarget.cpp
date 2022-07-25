@@ -20,7 +20,6 @@ void WgRenderTarget::init(WgRenderTargetCI createInfo)
         destroy();
         return;
     }
-
     ENQUEUE_RENDER_COMMAND(WgRenderTargetInit)
     (
         [createInfo, this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
@@ -47,19 +46,18 @@ void WgRenderTarget::init(WgRenderTargetCI createInfo)
 
                 rtTexture = graphicsHelper->createRTImage(graphicsInstance, imageCI, createInfo.sampleCount);
                 rtTexture->setShaderUsage(EImageShaderUsage::Sampling);
-                rtTexture->setResourceName(String(createInfo.textureName) + TCHAR("_RT"));
+                rtTexture->setResourceName(createInfo.textureName + TCHAR("_RT"));
                 rtTexture->init();
 
                 if (createInfo.sampleCount == EPixelSampleCount::SampleCount1)
                 {
                     resolvedTexture = rtTexture;
-                    resolvedTexture.reset();
                 }
                 else
                 {
                     resolvedTexture = graphicsHelper->createImage(graphicsInstance, imageCI);
                     resolvedTexture->setShaderUsage(EImageShaderUsage::Sampling);
-                    rtTexture->setResourceName(String(createInfo.textureName) + TCHAR("_Resolve"));
+                    rtTexture->setResourceName(createInfo.textureName + TCHAR("_Resolve"));
                     resolvedTexture->init();
                 }
             }
@@ -69,12 +67,6 @@ void WgRenderTarget::init(WgRenderTargetCI createInfo)
 
 void WgRenderTarget::destroy()
 {
-    ENQUEUE_RENDER_COMMAND(WgRenderTargetDestroy)
-    (
-        [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-        {
-            rtTexture.reset();
-            resolvedTexture.reset();
-        }
-    );
+    rtTexture.reset();
+    resolvedTexture.reset();
 }

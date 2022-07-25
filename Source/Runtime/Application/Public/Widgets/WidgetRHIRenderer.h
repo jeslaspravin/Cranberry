@@ -29,6 +29,7 @@ private:
         ShaderParametersRef windowTransformParam;
         std::vector<String> perFrameCmdBuffers;
         std::vector<FenceRef> perFrameSubmitFences;
+        // Signal semaphore is necessary to present
         std::vector<SemaphoreRef> perFrameSignal;
     };
 

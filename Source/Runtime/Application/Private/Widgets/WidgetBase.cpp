@@ -89,7 +89,13 @@ void WidgetDrawContext::beginLayer()
     if (layerAlt >= 0)
     {
         debugAssert(!altToVertRange[layerAlt].empty());
-        altToVertRange[layerAlt].back().maxBound = vertices.size() - 1;
+        altToVertRange[layerAlt].back().maxBound = vertices.empty() ? 0 : vertices.size() - 1;
+        // If no vertices were added just remove the layer vertices
+        if (!altToVertRange[layerAlt].back().isValidAABB()
+            || altToVertRange[layerAlt].back().minBound == altToVertRange[layerAlt].back().maxBound)
+        {
+            altToVertRange[layerAlt].pop_back();
+        }
     }
 
     layerAlt++;
@@ -100,7 +106,12 @@ void WidgetDrawContext::beginLayer()
 void WidgetDrawContext::endLayer()
 {
     debugAssert(layerAlt >= 0);
-    altToVertRange[layerAlt].back().maxBound = vertices.size() - 1;
+    altToVertRange[layerAlt].back().maxBound = vertices.empty() ? 0 : vertices.size() - 1;
+    // If no vertices were added just remove the layer vertices
+    if (!altToVertRange[layerAlt].back().isValidAABB() || altToVertRange[layerAlt].back().minBound == altToVertRange[layerAlt].back().maxBound)
+    {
+        altToVertRange[layerAlt].pop_back();
+    }
 
     layerAlt--;
     if (layerAlt >= 0)
@@ -126,7 +137,7 @@ void WidgetBase::rebuildWidgetGeometry(WidgetGeomId thisId, WidgetGeomTree &geom
     }
     else
     {
-        parentWidget = nullptr;
+        parentWidget.reset();
     }
     rebuildGeometry(thisId, geomTree);
 

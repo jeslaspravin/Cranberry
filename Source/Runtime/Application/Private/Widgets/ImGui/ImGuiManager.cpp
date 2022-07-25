@@ -446,8 +446,12 @@ void ImGuiManager::draw(
     setCurrentContext();
 
     ImDrawData *drawData = ImGui::GetDrawData();
-    if (!drawData || !drawingContext.rtTexture || drawData->CmdListsCount == 0 || drawData->DisplaySize.x <= 0.0f
-        || drawData->DisplaySize.y <= 0.0f)
+    if (!drawData || !drawingContext.rtTexture || drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f)
+    {
+        return;
+    }
+    // If not doing fresh draw(ie clearing) we do not even have to start the render pass and other update tasks if there is nothing to draw
+    if (!drawingContext.bClearRt && drawData->CmdListsCount == 0)
     {
         return;
     }
@@ -478,12 +482,11 @@ void ImGuiManager::draw(
     // Render UI
     RenderPassAdditionalProps additionalProps;
     additionalProps.bAllowUndefinedLayout = drawingContext.bClearRt;
-    additionalProps.colorAttachmentLoadOp = drawingContext.bClearRt ? EAttachmentOp::LoadOp::Clear : EAttachmentOp::LoadOp::Load;
-    additionalProps.depthLoadOp = EAttachmentOp::LoadOp::Load;
-    additionalProps.stencilLoadOp = EAttachmentOp::LoadOp::Load;
+    additionalProps.colorAttachmentLoadOp = additionalProps.depthLoadOp = additionalProps.stencilLoadOp
+        = drawingContext.bClearRt ? EAttachmentOp::LoadOp::Clear : EAttachmentOp::LoadOp::Load;
 
     RenderPassClearValue clearVal;
-    clearVal.colors = { LinearColorConst::BLACK_Transparent, LinearColorConst::BLACK_Transparent };
+    clearVal.colors = { LinearColorConst::BLACK, LinearColorConst::BLACK };
 
     // Barrier resources once
     cmdList->cmdBarrierResources(drawingContext.cmdBuffer, texturesUsed);
@@ -495,9 +498,12 @@ void ImGuiManager::draw(
         query.cullingMode = ECullingMode::BackFace;
         query.drawMode = EPolygonDrawMode::Fill;
         cmdList->cmdBindGraphicsPipeline(drawingContext.cmdBuffer, pipelineContext, { query });
-        cmdList->cmdBindVertexBuffers(drawingContext.cmdBuffer, 0, { vertexBuffer }, { 0 });
-        cmdList->cmdBindIndexBuffer(drawingContext.cmdBuffer, idxBuffer);
         cmdList->cmdBindDescriptorsSets(drawingContext.cmdBuffer, pipelineContext, imguiTransformParams.reference());
+        if (vertexBuffer->bufferCount() > 0 && idxBuffer->bufferCount() > 0)
+        {
+            cmdList->cmdBindVertexBuffers(drawingContext.cmdBuffer, 0, { vertexBuffer }, { 0 });
+            cmdList->cmdBindIndexBuffer(drawingContext.cmdBuffer, idxBuffer);
+        }
 
         int32 vertOffset = 0;
         uint32 idxOffset = 0;
@@ -555,6 +561,10 @@ void ImGuiManager::updateFrame(float deltaTime)
     ImGuiIO &io = GetIO();
     io.DeltaTime = deltaTime;
     bCaptureInput = io.WantCaptureKeyboard || io.WantCaptureMouse;
+    if (io.DisplaySize.x <= 1.0f || io.DisplaySize.y <= 1.0f)
+    {
+        return;
+    }
 
     ImGui::NewFrame();
     for (std::pair<const int32, std::vector<SharedPtr<IImGuiLayer>>> &imGuiLayers : drawLayers)
@@ -669,14 +679,33 @@ bool ImGuiManager::inputKey(Keys::StateKeyType key, Keys::StateInfoType state, c
     return bCaptureInput;
 }
 
+bool ImGuiManager::analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem)
+{
+    setCurrentContext();
+    ImGuiIO &io = GetIO();
+
+    switch (key)
+    {
+    case AnalogStates::ScrollWheelX:
+        io.MouseWheelH = state.currentValue;
+        return true;
+        break;
+    case AnalogStates::ScrollWheelY:
+        io.MouseWheel = state.currentValue;
+        return true;
+        break;
+    default:
+        break;
+    }
+    return io.WantCaptureMouse;
+}
+
 void ImGuiManager::updateMouse(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)
 {
     setCurrentContext();
     ImGuiIO &io = GetIO();
 
     io.MousePos = ImVec2(widgetRelPos.x, widgetRelPos.y);
-    io.MouseWheel = inputSystem->analogState(AnalogStates::ScrollWheelY)->currentValue;
-    io.MouseWheelH = inputSystem->analogState(AnalogStates::ScrollWheelX)->currentValue;
 }
 
 void ImGuiManager::mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)

@@ -914,7 +914,7 @@ void ExperimentalEngineGoochModel::createFrameResources(IGraphicsInstance *graph
         frameResources[i].usageWaitSemaphore.push_back(graphicsHelper->createSemaphore(graphicsInstance, (name + TCHAR("QueueSubmit")).c_str())
         );
         frameResources[i].usageWaitSemaphore.back()->init();
-        frameResources[i].recordingFence = graphicsHelper->createFence(graphicsInstance, (name + TCHAR("RecordingGaurd")).c_str(), true);
+        frameResources[i].recordingFence = graphicsHelper->createFence(graphicsInstance, (name + TCHAR("RecordingGaurd")).c_str());
         frameResources[i].recordingFence->init();
 
         rtCreateParams.textureName = TCHAR("LightingRT_") + String::toString(i);
@@ -1288,12 +1288,6 @@ void ExperimentalEngineGoochModel::frameRender(
     GraphicsPipelineQueryParams queryParam;
     queryParam.cullingMode = ECullingMode::BackFace;
     queryParam.drawMode = EPolygonDrawMode::Fill;
-
-    if (!frameResources[index].recordingFence->isSignaled())
-    {
-        frameResources[index].recordingFence->waitForSignal();
-    }
-    frameResources[index].recordingFence->resetSignal();
 
     QuantizedBox2D viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down

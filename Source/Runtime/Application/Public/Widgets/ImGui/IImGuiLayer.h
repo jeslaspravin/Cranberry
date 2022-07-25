@@ -14,6 +14,11 @@
 #include "Widgets/WidgetBase.h"
 
 class ImGuiDrawInterface;
+class GraphicsResource;
+class IRenderCommandList;
+class IGraphicsInstance;
+class GraphicsHelperAPI;
+class WgRenderTarget;
 
 /**
  * Individual layer could have it's own Widget as well
@@ -21,9 +26,32 @@ class ImGuiDrawInterface;
 class IImGuiLayer : public WidgetBase
 {
 public:
+    struct DrawDirectParams
+    {
+        /**
+         * Must be filled to FALSE if this draws to RT and RenderPass clears the entire RT
+         * This is there to avoid having to set layout for RT and do cmdClearImage(), Instead clear at first draw
+         */
+        bool &inOutClearRt;
+        WgRenderTarget *rt;
+        const GraphicsResource *cmdBuffer;
+        IRenderCommandList *cmdList;
+        IGraphicsInstance *graphicsInstance;
+        const GraphicsHelperAPI *graphicsHelper;
+    };
+
+public:
     virtual int32 layerDepth() const = 0;
     virtual int32 sublayerDepth() const = 0;
+    // Draw to ImGui context
     virtual void draw(ImGuiDrawInterface *drawInterface) = 0;
+
+    /**
+     * Directly draw inside the command buffer this is initially created to draw directly to ImGui render target
+     * This function will be called from render thread only
+     * Returns true if this layer did any draw
+     */
+    virtual bool drawDirect(const DrawDirectParams &params) { return false; }
 
     /* WidgetBase overrides */
 protected:
@@ -35,6 +63,10 @@ public:
 
     void tick(float timeDelta) override {}
     EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override
+    {
+        return EInputHandleState::NotHandled;
+    }
+    EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem)
     {
         return EInputHandleState::NotHandled;
     }

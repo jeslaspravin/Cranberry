@@ -47,8 +47,6 @@ struct ImGuiDrawingContext
 class APPLICATION_EXPORT ImGuiManager
 {
 private:
-    friend class WgImGui;
-
     static const StringID TEXTURE_PARAM_NAME;
     static const NameString IMGUI_SHADER_NAME;
 
@@ -105,6 +103,7 @@ public:
     void updateFrame(float deltaTime);
     void setDisplaySize(Short2D newSize);
     bool inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem);
+    bool analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem);
     void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem);
     void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem);
     void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem);

@@ -2088,7 +2088,7 @@ void ExperimentalEnginePBR::createFrameResources(IGraphicsInstance *graphicsInst
         frameResources[i].usageWaitSemaphore.push_back(graphicsHelper->createSemaphore(graphicsInstance, (name + TCHAR("QueueSubmit")).c_str())
         );
         frameResources[i].usageWaitSemaphore.back()->init();
-        frameResources[i].recordingFence = graphicsHelper->createFence(graphicsInstance, (name + TCHAR("RecordingGaurd")).c_str(), true);
+        frameResources[i].recordingFence = graphicsHelper->createFence(graphicsInstance, (name + TCHAR("RecordingGaurd")).c_str());
         frameResources[i].recordingFence->init();
 
         rtCreateParams.textureName = TCHAR("LightingRT_") + String::toString(i);
@@ -2440,11 +2440,12 @@ void ExperimentalEnginePBR::frameRender(
     queryParam.cullingMode = ECullingMode::BackFace;
     queryParam.drawMode = EPolygonDrawMode::Fill;
 
-    if (!frameResources[index].recordingFence->isSignaled())
-    {
-        frameResources[index].recordingFence->waitForSignal();
-    }
-    frameResources[index].recordingFence->resetSignal();
+    // finishCmd will wait
+    // if (!frameResources[index].recordingFence->isSignaled())
+    //{
+    //    frameResources[index].recordingFence->waitForSignal();
+    //}
+    // frameResources[index].recordingFence->resetSignal();
 
     QuantizedBox2D viewport;
     // Since view matrix positive y is along up while vulkan positive y in view is down
@@ -3140,6 +3141,10 @@ public:
     EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override
     {
         return content ? content->inputKey(key, state, inputSystem) : EInputHandleState::NotHandled;
+    }
+    EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem)
+    {
+        return EInputHandleState::NotHandled;
     }
 
     void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override

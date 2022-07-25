@@ -29,6 +29,25 @@ void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent state) {}
 #include "ObjectTemplate.h"
 #include "Classes/GameEngine.h"
 #include "Modules/ModuleManager.h"
+#include "Widgets/ImGui/IImGuiLayer.h"
+#include "IApplicationModule.h"
+#include "Widgets/ImGui/ImGuiManager.h"
+#include "Widgets/WidgetWindow.h"
+#include "Widgets/ImGui/WgImGui.h"
+
+class TestImGuiLayer : public IImGuiLayer
+{
+public:
+    int32 layerDepth() const override { return 0; }
+
+    int32 sublayerDepth() const override { return 0; }
+
+    void draw(ImGuiDrawInterface *drawInterface) override
+    {
+        bool bOpen = true;
+        ImGui::ShowDemoWindow(&bOpen);
+    }
+};
 
 void tempTest()
 {
@@ -108,4 +127,12 @@ void tempTest()
     // TODO
     ModuleManager::get()->addAdditionalLibPath(TCHAR("Editor"));
     ModuleManager::get()->loadModule(TCHAR("EditorCore"));
+
+    WgImGui::WgArguments args;
+    args.imguiManagerName = TCHAR("TestImgui");
+    SharedPtr<WgImGui> wgImgui = std::make_shared<WgImGui>();
+    wgImgui->construct(args);
+    SharedPtr<IImGuiLayer> imguiLayer = std::make_shared<TestImGuiLayer>();
+    wgImgui->getImGuiManager().addLayer(imguiLayer);
+    IApplicationModule::get()->getApplication()->getMainWindow()->setContent(std::static_pointer_cast<WidgetBase>(wgImgui));
 }

@@ -39,8 +39,16 @@ public:
     void construct(const WgArguments &args);
 
     FORCE_INLINE GenericAppWindow *getAppWindow() const { return ownerWindow; }
-    Short2D getWidgetSize() const;
     float getWidgetScaling() const;
+    Short2D getWidgetSize() const;
+    FORCE_INLINE Short2D applyDpiScale(Short2D pt) const
+    {
+        return Short2D(int16(Math::round(pt.x * getWidgetScaling())), int16(Math::round(pt.y * getWidgetScaling())));
+    }
+    FORCE_INLINE Short2D removeDpiScale(Short2D pt) const
+    {
+        return Short2D(int16(pt.x / getWidgetScaling()), int16(pt.y / getWidgetScaling()));
+    }
     Short2D screenToWindowSpace(Short2D screenPt) const;
     Short2D windowToScreenSpace(Short2D windowPt) const;
 
@@ -52,6 +60,7 @@ public:
 
     void drawWidget(WidgetDrawContext &context);
     void rebuildWindowGeoms();
+    void clearWindow();
 
     /* WidgetBase overrides */
 protected:
@@ -64,6 +73,7 @@ public:
 
     void tick(float timeDelta) override;
     EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override;
+    EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem) override;
     void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
     void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
     void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override;
