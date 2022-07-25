@@ -1047,7 +1047,11 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, c
                     // Since shader binding and read only
                     memBarrier.dstAccessMask = memBarrier.srcAccessMask = determineImageAccessMask(resource.first);
 
-                    if (barrierInfo->accessors.lastWrite)
+                    // If last write is a color attachment then we have nothing to barrier as render pass takes care of it
+                    if (barrierInfo->accessors.lastWrite
+                        && BIT_NOT_SET(
+                            barrierInfo->accessors.lastWriteStage, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+                        ))
                     {
                         memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
                         memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
@@ -1183,6 +1187,14 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, c
                     // same cmd buffer then just barrier no layout switch
                     if (barrierInfo->accessors.lastWrite)
                     {
+                        // if written in render pass then we get implicit barrier
+                        if (BIT_SET(
+                                barrierInfo->accessors.lastWriteStage, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+                            ))
+                        {
+                            continue;
+                        }
+
                         // If written in transfer before
                         if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
                             || BIT_SET(barrierInfo->accessors.lastWriteStage, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT))
@@ -1207,8 +1219,8 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, c
                         // We Will not be in incorrect layout in write image
                         // imageBarriers.emplace_back(memBarrier);
                     }
-                    // If not written but read last in same command buffer then wait or if
-                    // only read remains
+                    // If not written but read last in same command buffer then wait.
+                    // Below barrier is if current usage is write. Read current usage will not reach this point
                     else
                     {
                         // If transfer read at last then use transfer src layout
@@ -1309,6 +1321,9 @@ void VulkanCommandList::cmdBeginRenderPass(
         uint32 colorIdx = 0;
         for (const ImageResourceRef frameTexture : contextPipeline.getFb()->textures)
         {
+            // no need to barrier as render pass load/clear both will have implicit barriers
+            resourcesTracker.colorAttachmentWrite(cmdBuffer, frameTexture);
+
             if (EPixelDataFormat::isDepthFormat(frameTexture->imageFormat()))
             {
                 VkClearValue clearVal;
