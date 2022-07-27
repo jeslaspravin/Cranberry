@@ -158,6 +158,8 @@ public:
     void finishCmd(const GraphicsResource *cmdBuffer) final;
     void finishCmd(const String &uniqueName) final;
     const GraphicsResource *getCmdBuffer(const String &uniqueName) const final;
+    SemaphoreRef getCmdSignalSemaphore(const String &uniqueName) const final;
+    SemaphoreRef getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const final;
     void waitIdle() final;
     void waitOnResDepCmds(const MemoryResourceRef &resource) final;
     void flushAllcommands() final;

@@ -227,7 +227,6 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
 
         // for preallocating indices and vertices
         uint32 totalNoOfQuads = 0;
-        std::vector<BatchCopyBufferData> dataCopies;
         // Setup per window parameters and texture parameters
         for (uint32 i = 0; i < drawingContexts.size(); ++i)
         {
@@ -249,14 +248,13 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
             pipelineCntxPerWnd[i].windowCanvas = swapchainCanvas;
             renderManager->preparePipelineContext(&pipelineCntxPerWnd[i]);
 
-            // Fill window parameters to shader
+            // Fill window parameters to shader, This will be Uploaded in next frame. 0th frame params will be invalid
             Short2D windowSize = drawingContexts[i].first->getWidgetSize();
             Vector2D scale = 2.0f / Vector2D(windowSize);
             // -1.0f - Offset * scale, So that vertices gets translated to viewport, but in our case we always stay within the window
             Vector2D translate = Vector2D(-1.0f);
             statePerWnd[i]->windowTransformParam->setVector2Param(STRID("scale"), scale);
             statePerWnd[i]->windowTransformParam->setVector2Param(STRID("translate"), translate);
-            statePerWnd[i]->windowTransformParam->pullBufferParamUpdates(dataCopies, cmdList, graphicsInstance);
 
             totalNoOfQuads += drawingContexts[i].second.perQuadTexture().size();
             for (ImageResourceRef texture : drawingContexts[i].second.perQuadTexture())
@@ -290,7 +288,6 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
                 }
             }
         }
-        cmdList->copyToBuffer(dataCopies);
 
         // Setup vertices, indices and fill draw commands
         createVerticesAndIndices(totalNoOfQuads * 6, totalNoOfQuads * 4, graphicsInstance, graphicsHelper);
