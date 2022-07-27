@@ -409,8 +409,9 @@ void ShaderParameters::init()
         if (bufferParameters.second.gpuBuffer.isValid() && !bufferParameters.second.gpuBuffer->isValid())
         {
             bufferParameters.second.gpuBuffer->setResourceName(
-                UTF8_TO_TCHAR(bufferParameters.second.descriptorInfo->bufferEntryPtr->attributeName.c_str())
-            );
+                getResourceName()
+                + TCHAR("_") + UTF8_TO_TCHAR(bufferParameters.second.descriptorInfo->bufferEntryPtr->attributeName.c_str())
+                );
             bufferParameters.second.gpuBuffer->init();
         }
     }

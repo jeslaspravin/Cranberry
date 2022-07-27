@@ -34,6 +34,7 @@ ScopedCommandMarker::ScopedCommandMarker(
 
 ScopedCommandMarker::~ScopedCommandMarker() { cmdList->cmdEndBufferMarker(cmdBuffer); }
 
+// This must be modified to be a thread safe call when from other threads
 class RenderCommandList final : public IRenderCommandList
 {
 private:
@@ -150,6 +151,8 @@ public:
     void finishCmd(const GraphicsResource *cmdBuffer) final;
     void finishCmd(const String &uniqueName) final;
     const GraphicsResource *getCmdBuffer(const String &uniqueName) const final;
+    SemaphoreRef getCmdSignalSemaphore(const String &uniqueName) const final;
+    SemaphoreRef getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const final;
     void waitIdle() final;
     void waitOnResDepCmds(const MemoryResourceRef &resource) final;
     void flushAllcommands() final;
@@ -284,6 +287,13 @@ void RenderCommandList::finishCmd(const GraphicsResource *cmdBuffer) { cmdList->
 void RenderCommandList::finishCmd(const String &uniqueName) { cmdList->finishCmd(uniqueName); }
 
 const GraphicsResource *RenderCommandList::getCmdBuffer(const String &uniqueName) const { return cmdList->getCmdBuffer(uniqueName); }
+
+SemaphoreRef RenderCommandList::getCmdSignalSemaphore(const String &uniqueName) const { return cmdList->getCmdSignalSemaphore(uniqueName); }
+
+SemaphoreRef RenderCommandList::getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
+{
+    return cmdList->getCmdSignalSemaphore(cmdBuffer);
+}
 
 void RenderCommandList::waitIdle() { cmdList->waitIdle(); }
 

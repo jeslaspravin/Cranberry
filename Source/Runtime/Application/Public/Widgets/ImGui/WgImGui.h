@@ -69,8 +69,7 @@ public:
 
     /* Overrides ends */
 private:
-    void drawToRenderTarget(
-        const GraphicsResource *cmdBuffer, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
-        const GraphicsHelperAPI *graphicsHelper
-    );
+    FORCE_INLINE String getCmdBufferBaseName() const;
+    void flushFreeCmdBuffers(const String& cmdBufferBaseName) const;
+    void clearResources();
 };

@@ -28,8 +28,7 @@ void WgImGui::construct(const WgArguments &args)
     debugAssert(!args.imguiManagerName.empty());
     if (imgui)
     {
-        imgui->release();
-        delete imgui;
+        clearResources();
     }
     imgui = new ImGuiManager(args.imguiManagerName.getChar());
     imgui->initialize();
@@ -39,9 +38,7 @@ WgImGui::~WgImGui()
 {
     if (imgui)
     {
-        imgui->release();
-        delete imgui;
-        imgui = nullptr;
+        clearResources();
     }
 }
 
@@ -116,24 +113,10 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
         }
     }
 
-    String cmdBufferNameBase = imgui->getName() + TCHAR("_");
+    String cmdBufferNameBase = getCmdBufferBaseName();
     if (bFlushCmdBuffers && !swapchainBuffered.empty())
     {
-        ENQUEUE_RENDER_COMMAND(FlushWgImGuiCmds)
-        (
-            [cmdBufferNameBase, this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-            {
-                for (uint32 i = 0; i < swapchainBuffered.size(); ++i)
-                {
-                    const GraphicsResource *cmdBuffer = cmdList->getCmdBuffer(cmdBufferNameBase + String::toString(i));
-                    if (cmdBuffer)
-                    {
-                        cmdList->finishCmd(cmdBuffer);
-                        cmdList->freeCmd(cmdBuffer);
-                    }
-                }
-            }
-        );
+        flushFreeCmdBuffers(cmdBufferNameBase);
     }
     swapchainBuffered.resize(bufferingCount);
 
@@ -213,17 +196,55 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
         [cmdBufferNameBase, this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             String cmdBufferName = cmdBufferNameBase + String::toString(imageIdx);
+            String layerDrawCmdBufferName = cmdBufferName + TCHAR("_LayerDraw");
+
+            WgRenderTarget rt = swapchainBuffered[imageIdx].rt;
+            bool bClearRt = true;
+
+            // Must finish imgui draw cmd buffer first as it uses layerDrawCmdBuffer
             cmdList->finishCmd(cmdBufferName);
-            // No need to finish before starting as it will be taken care by window widget
+            cmdList->finishCmd(layerDrawCmdBufferName);
+
+            // Drawing layers in separate command buffer so that dependencies can be auto resolved using cmdBarrierResources()
+            const GraphicsResource *layerDrawCmdBuffer = cmdList->startCmd(layerDrawCmdBufferName, EQueueFunction::Graphics, true);
+            {
+                SCOPED_CMD_MARKER(cmdList, layerDrawCmdBuffer, DrawImGuiLayer);
+                IImGuiLayer::DrawDirectParams layerDrawParams
+                    = { bClearRt, &rt, layerDrawCmdBuffer, cmdList, graphicsInstance, graphicsHelper };
+                for (const std::pair<const int32, std::vector<SharedPtr<IImGuiLayer>>> &layersPerDepth : imgui->getLayers())
+                {
+                    for (const SharedPtr<IImGuiLayer> &layer : layersPerDepth.second)
+                    {
+                        bool bDrawn = layer->drawDirect(layerDrawParams);
+                        debugAssertf(
+                            !bDrawn || !bClearRt,
+                            "First draw must clear RT, It appears that RT is not cleared! or inOutClearRt is not set to false after clear!"
+                        );
+                    }
+                }
+            }
+            cmdList->endCmd(layerDrawCmdBuffer);
+            CommandSubmitInfo2 layerDrawSubmitInfo;
+            layerDrawSubmitInfo.cmdBuffers.emplace_back(layerDrawCmdBuffer);
+            cmdList->submitCmd(EQueuePriority::High, layerDrawSubmitInfo);
+            SemaphoreRef layerDrawComplete = cmdList->getCmdSignalSemaphore(layerDrawCmdBuffer);
+
+            // Now draw the imgui widgets
             const GraphicsResource *cmdBuffer = cmdList->startCmd(cmdBufferName, EQueueFunction::Graphics, true);
-
-            drawToRenderTarget(cmdBuffer, cmdList, graphicsInstance, graphicsHelper);
-
+            {
+                SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawWgImGui);
+                ImGuiDrawingContext drawingContext;
+                drawingContext.bClearRt = bClearRt;
+                drawingContext.cmdBuffer = cmdBuffer;
+                drawingContext.rtTexture = &rt;
+                imgui->draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
+            }
             cmdList->endCmd(cmdBuffer);
 
             CommandSubmitInfo submitInfo;
             submitInfo.cmdBuffers.emplace_back(cmdBuffer);
             submitInfo.signalSemaphores.emplace_back(swapchainBuffered[imageIdx].semaphore);
+            submitInfo.waitOn.emplace_back(layerDrawComplete, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));
             cmdList->submitCmd(EQueuePriority::High, submitInfo, nullptr);
         }
     );
@@ -296,33 +317,50 @@ void WgImGui::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem
     }
 }
 
-void WgImGui::drawToRenderTarget(
-    const GraphicsResource *cmdBuffer, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
-)
-{
-    ASSERT_INSIDE_RENDERTHREAD();
-    if (imgui)
-    {
-        WgRenderTarget rt = swapchainBuffered[imageIdx].rt;
-        bool bClearRt = true;
+FORCE_INLINE String WgImGui::getCmdBufferBaseName() const { return imgui->getName() + TCHAR("_"); }
 
-        IImGuiLayer::DrawDirectParams layerDrawParams = { bClearRt, &rt, cmdBuffer, cmdList, graphicsInstance, graphicsHelper };
-        for (const std::pair<const int32, std::vector<SharedPtr<IImGuiLayer>>> &layersPerDepth : imgui->getLayers())
+void WgImGui::flushFreeCmdBuffers(const String &cmdBufferBaseName) const
+{
+    uint32 bufferingCount = swapchainBuffered.size();
+    ENQUEUE_RENDER_COMMAND(FreeWgImGuiCmds)
+    (
+        [cmdBufferBaseName,
+         bufferingCount](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
-            for (const SharedPtr<IImGuiLayer> &layer : layersPerDepth.second)
+            for (uint32 i = 0; i < bufferingCount; ++i)
             {
-                bool bDrawn = layer->drawDirect(layerDrawParams);
-                debugAssertf(
-                    !bDrawn || !bClearRt,
-                    "First draw must clear RT, It appears that RT is not cleared! or inOutClearRt is not set to false after clear!"
-                );
+                String cmdBufferName = cmdBufferBaseName + String::toString(i);
+                String layerDrawCmdBufferName = cmdBufferName + TCHAR("_LayerDraw");
+
+                // First have to finish and free this as it uses layerDrawCmdBuffer
+                const GraphicsResource *cmdBuffer = cmdList->getCmdBuffer(cmdBufferName);
+                if (cmdBuffer)
+                {
+                    cmdList->finishCmd(cmdBuffer);
+                    cmdList->freeCmd(cmdBuffer);
+                }
+
+                const GraphicsResource *layerDrawCmdBuffer = cmdList->getCmdBuffer(layerDrawCmdBufferName);
+                if (layerDrawCmdBuffer)
+                {
+                    cmdList->finishCmd(layerDrawCmdBuffer);
+                    cmdList->freeCmd(layerDrawCmdBuffer);
+                }
             }
         }
+    );
+}
 
-        ImGuiDrawingContext drawingContext;
-        drawingContext.bClearRt = bClearRt;
-        drawingContext.cmdBuffer = cmdBuffer;
-        drawingContext.rtTexture = &rt;
-        imgui->draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
-    }
+void WgImGui::clearResources()
+{
+    flushFreeCmdBuffers(getCmdBufferBaseName());
+    imgui->release();
+    ENQUEUE_RENDER_COMMAND(ClearWgImGui)
+    (
+        [imgui = imgui](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            delete imgui;
+        }
+    );
+    imgui = nullptr;
 }

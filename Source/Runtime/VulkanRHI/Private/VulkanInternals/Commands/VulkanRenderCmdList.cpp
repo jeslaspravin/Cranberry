@@ -346,6 +346,7 @@ void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData> &bat
                 }
                 dstToStagingBufferMap[vulkanDst] = { stagingBuffer, { &copyData } };
                 stagingBuffer->setAsStagingResource(true);
+                stagingBuffer->setResourceName(vulkanDst->getResourceName() + TCHAR("_Staging"));
                 stagingBuffer->setDeferredDelete(false);
                 stagingBuffer->init();
 
@@ -438,6 +439,7 @@ void VulkanCommandList::
         {
             stagingBuffer->setAsStagingResource(true);
             stagingBuffer->setDeferredDelete(false);
+            stagingBuffer->setResourceName(dst->getResourceName() + TCHAR("_Staging"));
             stagingBuffer->init();
 
             fatalAssertf(stagingBuffer->isValid(), "Initializing staging buffer failed");
@@ -524,6 +526,16 @@ void VulkanCommandList::finishCmd(const GraphicsResource *cmdBuffer) { cmdBuffer
 void VulkanCommandList::finishCmd(const String &uniqueName) { cmdBufferManager.cmdFinished(uniqueName, &resourcesTracker); }
 
 const GraphicsResource *VulkanCommandList::getCmdBuffer(const String &uniqueName) const { return cmdBufferManager.getCmdBuffer(uniqueName); }
+
+SemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const String &uniqueName) const
+{
+    return getCmdSignalSemaphore(cmdBufferManager.getCmdBuffer(uniqueName));
+}
+
+SemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
+{
+    return cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
+}
 
 void VulkanCommandList::waitIdle() { vDevice->vkDeviceWaitIdle(VulkanGraphicsHelper::getDevice(vDevice)); }
 
@@ -1738,6 +1750,7 @@ void VulkanCommandList::copyToImage(ImageResourceRef dst, const std::vector<clas
         = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin);
     stagingBuffer->setAsStagingResource(true);
     stagingBuffer->setDeferredDelete(false);
+    stagingBuffer->setResourceName(dst->getResourceName() + TCHAR("_Staging"));
     stagingBuffer->init();
 
     uint8 *stagingPtr = reinterpret_cast<uint8 *>(graphicsHelperCache->borrowMappedPtr(graphicsInstanceCache, stagingBuffer));
@@ -1774,6 +1787,7 @@ void VulkanCommandList::copyToImage(
         = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin);
     stagingBuffer->setAsStagingResource(true);
     stagingBuffer->setDeferredDelete(false);
+    stagingBuffer->setResourceName(dst->getResourceName() + TCHAR("_Staging"));
     stagingBuffer->init();
 
     uint8 *stagingPtr = reinterpret_cast<uint8 *>(graphicsHelperCache->borrowMappedPtr(graphicsInstanceCache, stagingBuffer));
@@ -1807,6 +1821,7 @@ void VulkanCommandList::copyToImageLinearMapped(
         = graphicsHelperCache->createReadOnlyBuffer(graphicsInstanceCache, formatInfo->pixelDataSize, uint32(pixelData.size()) + dataMargin);
     stagingBuffer->setAsStagingResource(true);
     stagingBuffer->setDeferredDelete(false);
+    stagingBuffer->setResourceName(dst->getResourceName() + TCHAR("_Staging"));
     stagingBuffer->init();
 
     uint8 *stagingPtr = reinterpret_cast<uint8 *>(graphicsHelperCache->borrowMappedPtr(graphicsInstanceCache, stagingBuffer));
