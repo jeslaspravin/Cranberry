@@ -16,7 +16,7 @@
 
 class CoreObjectsDB;
 class CoreObjectGC;
-namespace CBE
+namespace cbe
 {
 class Package;
 }
@@ -26,6 +26,6 @@ class COREOBJECTS_EXPORT ICoreObjectsModule : public IModuleBase
 public:
     virtual const CoreObjectsDB &getObjectsDB() const = 0;
     virtual CoreObjectGC &getGC() = 0;
-    virtual CBE::Package *getTransientPackage() const = 0;
+    virtual cbe::Package *getTransientPackage() const = 0;
     static ICoreObjectsModule *get();
 };

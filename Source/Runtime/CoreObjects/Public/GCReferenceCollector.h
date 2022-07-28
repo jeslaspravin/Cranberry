@@ -13,7 +13,7 @@
 
 #include <vector>
 
-namespace CBE
+namespace cbe
 {
 class Object;
 }
@@ -27,10 +27,10 @@ public:
      *
      * Access: virtual public
      *
-     * @param const std::vector<CBE::Object * > & deletedObjects
+     * @param const std::vector<cbe::Object * > & deletedObjects
      *
      * @return void
      */
-    virtual void clearReferences(const std::vector<CBE::Object *> &deletedObjects) = 0;
-    virtual void collectReferences(std::vector<CBE::Object *> &outObjects) const = 0;
+    virtual void clearReferences(const std::vector<cbe::Object *> &deletedObjects) = 0;
+    virtual void collectReferences(std::vector<cbe::Object *> &outObjects) const = 0;
 };

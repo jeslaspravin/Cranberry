@@ -70,6 +70,6 @@ public:
     /* Overrides ends */
 private:
     FORCE_INLINE String getCmdBufferBaseName() const;
-    void flushFreeCmdBuffers(const String& cmdBufferBaseName) const;
+    void flushFreeCmdBuffers(const String &cmdBufferBaseName) const;
     void clearResources();
 };

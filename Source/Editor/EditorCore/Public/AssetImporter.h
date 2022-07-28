@@ -25,10 +25,10 @@ struct ImportOption
     CBEClass structType;
 };
 
-class META_ANNOTATE() AssetImporterBase : public CBE::Object
+class META_ANNOTATE() AssetImporterBase : public cbe::Object
 {
     GENERATED_CODES()
 public:
     bool supportsImporting(ImportOption &inOutOptions) { return false; }
-    CBE::Object *tryImporting(ImportOption &inOutOptions) const { return nullptr; }
+    cbe::Object *tryImporting(ImportOption &inOutOptions) const { return nullptr; }
 };

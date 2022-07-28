@@ -27,12 +27,12 @@ FORCE_INLINE String ObjectPathHelper::packagePathFromFilePath(const String &file
     return PathFunctions::stripExtension(relPath);
 }
 
-namespace CBE
+namespace cbe
 {
 Package *Package::createPackage(const String &relativePath, const String &contentDir)
 {
     String packagePath = ObjectPathHelper::packagePathFromFilePath(relativePath, contentDir);
-    CBE::Package *package = CBE::createOrGet<CBE::Package>(packagePath, nullptr, CBE::EObjectFlagBits::PackageLoadPending);
+    cbe::Package *package = cbe::createOrGet<cbe::Package>(packagePath, nullptr, cbe::EObjectFlagBits::PackageLoadPending);
     package->setPackageRoot(contentDir);
     return package;
 }
@@ -74,7 +74,7 @@ Object *load(String objectPath)
         }
     }
 
-    CBE::Package *package = objectPackageLoader->getPackage();
+    cbe::Package *package = objectPackageLoader->getPackage();
     debugAssert(package);
 
     if (BIT_SET(package->getFlags(), EObjectFlagBits::PackageLoadPending))
@@ -140,7 +140,7 @@ Object *getOrLoad(String objectPath)
 
 void markDirty(Object *obj)
 {
-    CBE::Package *package = cast<CBE::Package>(obj->getOuterMost());
+    cbe::Package *package = cast<cbe::Package>(obj->getOuterMost());
     if (package)
     {
         SET_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::PackageDirty);
@@ -149,10 +149,10 @@ void markDirty(Object *obj)
 
 bool save(Object *obj)
 {
-    CBE::Package *package = cast<CBE::Package>(obj);
+    cbe::Package *package = cast<cbe::Package>(obj);
     if (!package)
     {
-        package = cast<CBE::Package>(obj->getOuterMost());
+        package = cast<cbe::Package>(obj->getOuterMost());
     }
     if (!package)
     {
@@ -174,11 +174,11 @@ bool save(Object *obj)
     CLEAR_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::PackageDirty);
     return true;
 }
-} // namespace CBE
+} // namespace cbe
 
 void CBEPackageManager::readPackagesIn(const String &contentDir)
 {
-    std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + CBE::PACKAGE_EXT);
+    std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + cbe::PACKAGE_EXT);
     for (const String &packageFile : packageFiles)
     {
         setupPackage(packageFile, contentDir);
@@ -221,7 +221,7 @@ void CBEPackageManager::refreshPackages()
 {
     for (const String &contentDir : contentDirs)
     {
-        std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + CBE::PACKAGE_EXT);
+        std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + cbe::PACKAGE_EXT);
         for (const String &packageFilePath : packageFiles)
         {
             String packagePath = ObjectPathHelper::packagePathFromFilePath(packageFilePath, contentDir);
@@ -236,7 +236,7 @@ void CBEPackageManager::refreshPackages()
 void CBEPackageManager::setupPackage(const String &packageFilePath, const String &contentDir)
 {
     String packagePath = ObjectPathHelper::packagePathFromFilePath(packageFilePath, contentDir);
-    CBE::Package *package = CBE::Package::createPackage(PathFunctions::toRelativePath(packageFilePath, contentDir), contentDir);
+    cbe::Package *package = cbe::Package::createPackage(PathFunctions::toRelativePath(packageFilePath, contentDir), contentDir);
 
     PackageLoader *loader = new PackageLoader(package, packageFilePath);
     loader->prepareLoader();

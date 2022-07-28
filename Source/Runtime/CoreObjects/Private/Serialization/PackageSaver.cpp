@@ -24,14 +24,14 @@ void PackageSaver::setupContainedObjs()
 
     // We peel the onion as parent must be create before child,
     // The getChildren from FlatTree already returns in ordered manner so we should be good without peeling manually here
-    std::vector<CBE::Object *> children;
+    std::vector<cbe::Object *> children;
     objsDb.getSubobjects(children, package->getStringID());
     containedObjects.clear();
     containedObjects.reserve(children.size());
-    for (CBE::Object *child : children)
+    for (cbe::Object *child : children)
     {
         // Package is final class so we just have compare, no need to go through isChild hierarchy
-        fatalAssertf(child->getType() != CBE::Package::staticType(), "Package must not contain package object");
+        fatalAssertf(child->getType() != cbe::Package::staticType(), "Package must not contain package object");
 
         objToContObjsIdx[child->getStringID()] = containedObjects.size();
         PackageContainedData &containedObjData = containedObjects.emplace_back();
@@ -42,19 +42,19 @@ void PackageSaver::setupContainedObjs()
     }
 }
 
-void PackageSaver::serializeObject(CBE::Object *obj)
+void PackageSaver::serializeObject(cbe::Object *obj)
 {
     /**
      * If transient we store the object as part of package but never serialize it.
      * This is to allow us to do pointer fix ups if transient object is available while loading
      */
-    if (NO_BITS_SET(obj->collectAllFlags(), CBE::EObjectFlagBits::Transient))
+    if (NO_BITS_SET(obj->collectAllFlags(), cbe::EObjectFlagBits::Transient))
     {
         obj->serialize(*this);
     }
 }
 
-PackageSaver::PackageSaver(CBE::Package *savingPackage)
+PackageSaver::PackageSaver(cbe::Package *savingPackage)
     : package(savingPackage)
 {
     debugAssert(package);
@@ -134,7 +134,7 @@ EPackageLoadSaveResult PackageSaver::savePackage()
     return EPackageLoadSaveResult::Success;
 }
 
-ObjectArchive &PackageSaver::serialize(CBE::Object *&obj)
+ObjectArchive &PackageSaver::serialize(cbe::Object *&obj)
 {
     // Push null object index if object is null
     if (!obj)

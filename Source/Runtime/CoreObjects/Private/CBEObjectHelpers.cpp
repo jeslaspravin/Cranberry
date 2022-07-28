@@ -16,7 +16,7 @@
 
 #include <memory_resource>
 
-namespace CBE
+namespace cbe
 {
 void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEClass clazz) const
 {
@@ -225,7 +225,7 @@ struct DeepCopyFieldVisitable
         {
         case EPropertyType::ClassType:
         {
-            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
 
             Object **fromDataPtrPtr = reinterpret_cast<Object **>(copyUserData->fromData);
             Object **toDataPtrPtr = reinterpret_cast<Object **>(copyUserData->toData);
@@ -411,4 +411,4 @@ Object *duplicateObject(
     return nullptr;
 }
 
-} // namespace CBE
+} // namespace cbe

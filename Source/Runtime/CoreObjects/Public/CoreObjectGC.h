@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace CBE
+namespace cbe
 {
 class Object;
 }
@@ -38,7 +38,7 @@ private:
         Clearing    // Collection is finished now clearing based on collection results
     };
 
-    // Maps directly to CBE::ObjectAllocatorBase's allocValidity indices and holds true if an object is
+    // Maps directly to cbe::ObjectAllocatorBase's allocValidity indices and holds true if an object is
     // referenced, if not referenced it will be detroyed If marked for destroy it will be unreferenced
     // and destroyed
     std::unordered_map<CBEClass, BitArray<uint64>> objUsedFlags;
@@ -57,7 +57,7 @@ private:
 #endif
 
 private:
-    void deleteObject(CBE::Object *obj) const;
+    void deleteObject(cbe::Object *obj) const;
 
     void collectFromRefCollectors(TickRep &budgetTicks);
     void markObjectsAsValid(TickRep &budgetTicks);

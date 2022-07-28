@@ -15,7 +15,7 @@
 #include "Property/PropertyHelper.h"
 #include "CoreObjectsExports.h"
 
-namespace CBE
+namespace cbe
 {
 class Object;
 }
@@ -42,7 +42,7 @@ public:
 
     void setInnerArchive(ArchiveBase *inner) { innerArchive = inner; }
 
-    virtual ObjectArchive &serialize(CBE::Object *&obj);
+    virtual ObjectArchive &serialize(cbe::Object *&obj);
 
     /* ArchiveBase overrides */
 
@@ -125,11 +125,11 @@ public:
 };
 
 template <ArchiveTypeName ArchiveType, ReflectClassType ObjectType>
-requires(std::derived_from<ArchiveType, ObjectArchive> &&std::derived_from<ObjectType, CBE::Object>) ArchiveType &
+requires(std::derived_from<ArchiveType, ObjectArchive> &&std::derived_from<ObjectType, cbe::Object>) ArchiveType &
     operator<<(ArchiveType &archive, ObjectType *&value)
 {
     ObjectArchive &objArchive = static_cast<ObjectArchive &>(archive);
-    CBE::Object *obj = value;
+    cbe::Object *obj = value;
     objArchive.serialize(obj);
     if (archive.isLoading())
     {

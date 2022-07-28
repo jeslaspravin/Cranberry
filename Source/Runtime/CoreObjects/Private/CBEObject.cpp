@@ -14,11 +14,11 @@
 #include "CoreObjectsModule.h"
 #include "ObjectPathHelpers.h"
 
-namespace CBE
+namespace cbe
 {
 
 //////////////////////////////////////////////////////////////////////////
-/// CBE::Object implementations
+/// cbe::Object implementations
 //////////////////////////////////////////////////////////////////////////
 
 void Object::destroyObject()
@@ -99,11 +99,11 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String 
 void INTERNAL_ObjectCoreAccessors::setOuter(Object *object, Object *outer) { setOuterAndName(object, object->objectName, outer); }
 
 void INTERNAL_ObjectCoreAccessors::renameObject(Object *object, const String &newName) { setOuterAndName(object, newName, object->objOuter); }
-} // namespace CBE
+} // namespace cbe
 
-ObjectArchive &ObjectArchive::serialize(CBE::Object *&obj)
+ObjectArchive &ObjectArchive::serialize(cbe::Object *&obj)
 {
-    fatalAssertf(false, "CBE::Object serialization not implemented!");
+    fatalAssertf(false, "cbe::Object serialization not implemented!");
     return *this;
 }
 
@@ -125,7 +125,7 @@ FORCE_INLINE String ObjectPathHelper::getOuterPathAndObjectName(String &outObjec
     return TCHAR("");
 }
 
-String ObjectPathHelper::getObjectPath(const CBE::Object *object, const CBE::Object *stopAt)
+String ObjectPathHelper::getObjectPath(const cbe::Object *object, const cbe::Object *stopAt)
 {
     debugAssert(stopAt != object);
 
@@ -137,7 +137,7 @@ String ObjectPathHelper::getObjectPath(const CBE::Object *object, const CBE::Obj
     std::vector<String> outers;
     // Since last path element must be this obj name
     outers.emplace_back(object->getName());
-    const CBE::Object *outer = object->getOuter();
+    const cbe::Object *outer = object->getOuter();
     while (outer != stopAt && outer->getOuter())
     {
         outers.emplace_back(outer->getName());
@@ -151,7 +151,7 @@ String ObjectPathHelper::getObjectPath(const CBE::Object *object, const CBE::Obj
     return String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
 }
 
-FORCE_INLINE String ObjectPathHelper::getFullPath(const CBE::Object *object)
+FORCE_INLINE String ObjectPathHelper::getFullPath(const cbe::Object *object)
 {
     if (object->getOuter() == nullptr)
     {
@@ -161,7 +161,7 @@ FORCE_INLINE String ObjectPathHelper::getFullPath(const CBE::Object *object)
     std::vector<String> outers;
     // Since last path element must be this obj name
     outers.emplace_back(object->getName());
-    const CBE::Object *outer = object->getOuter();
+    const cbe::Object *outer = object->getOuter();
     while (outer->getOuter())
     {
         outers.emplace_back(outer->getName());
@@ -173,7 +173,7 @@ FORCE_INLINE String ObjectPathHelper::getFullPath(const CBE::Object *object)
     return objectPath;
 }
 
-String ObjectPathHelper::getFullPath(const TChar *objectName, const CBE::Object *outerObj)
+String ObjectPathHelper::getFullPath(const TChar *objectName, const cbe::Object *outerObj)
 {
     if (outerObj)
     {

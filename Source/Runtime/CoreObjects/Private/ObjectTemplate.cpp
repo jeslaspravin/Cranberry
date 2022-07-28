@@ -14,7 +14,7 @@
 #include "Serialization/CommonTypesSerialization.h"
 #include "Serialization/ObjectSerializationHelpers.h"
 
-namespace CBE
+namespace cbe
 {
 inline constexpr static const uint32 OBJECT_TEMPLATE_SERIALIZER_VERSION = 0;
 inline constexpr static const uint32 OBJECT_TEMPLATE_SERIALIZER_CUTOFF_VERSION = 0;
@@ -32,10 +32,21 @@ ArchiveType &operator<<(ArchiveType &archive, ObjectTemplate::TemplateObjectEntr
 
 ObjectTemplate::ObjectTemplate(StringID className, String name)
     : Object()
+    , parentTemplate(nullptr)
 {
     CBEClass clazz = IReflectionRuntimeModule::get()->getClassType(className);
     debugAssert(clazz);
     createTemplate(clazz, name);
+    debugAssert(templateObj);
+    templateObj->constructed();
+}
+
+ObjectTemplate::ObjectTemplate(ObjectTemplate *inTemplate, String name)
+    : Object()
+    , parentTemplate(inTemplate)
+{
+    debugAssert(parentTemplate && parentTemplate->objectClass);
+    createTemplate(parentTemplate->objectClass, name);
     debugAssert(templateObj);
     templateObj->constructed();
 }
@@ -186,7 +197,7 @@ void ObjectTemplate::createTemplate(CBEClass clazz, String name)
     }
 }
 
-CBE::Object *create(ObjectTemplate *objTemplate, const String &name, Object *outerObj, EObjectFlags flags /*= 0*/)
+cbe::Object *create(ObjectTemplate *objTemplate, const String &name, Object *outerObj, EObjectFlags flags /*= 0*/)
 {
     if (!isValid(objTemplate))
     {
@@ -197,4 +208,4 @@ CBE::Object *create(ObjectTemplate *objTemplate, const String &name, Object *out
     return duplicateObject(objTemplate->getTemplate(), outerObj, name, flags, EObjectFlagBits::Transient | EObjectFlagBits::TemplateDefault);
 }
 
-} // namespace CBE
+} // namespace cbe

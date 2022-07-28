@@ -22,7 +22,7 @@ struct PROGRAMCORE_EXPORT CmdLineArgument
 
 /*
  * Args starting with `single -` will be short hand flags and can be stringed together and they cannot
- * accept values Args starting with `--` Can have values space delimited strings Args starting with `@`
+ * accept values. Args starting with `--` Can have values space delimited strings Args starting with `@`
  * refers to file which contains all arguments(It can be absolute path or relative to application
  * directory) All args are case sensitive
  */

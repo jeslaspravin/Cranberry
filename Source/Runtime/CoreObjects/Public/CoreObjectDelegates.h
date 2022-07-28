@@ -16,7 +16,7 @@
 
 class String;
 class PackageLoader;
-namespace CBE
+namespace cbe
 {
 class Object;
 }
@@ -35,15 +35,15 @@ public:
     FORCE_INLINE static void broadcastContentDirectoryRemoved(const String &contentDir) { onContentDirectoryRemoved.invoke(contentDir); }
 
     using PackageLoaderEvent = Event<CoreObjectDelegates, PackageLoader *>;
-    using PackageEvent = Event<CoreObjectDelegates, CBE::Object *>;
+    using PackageEvent = Event<CoreObjectDelegates, cbe::Object *>;
     static PackageEvent onPackageSaved;
     static PackageEvent onPackageLoaded;
     /**
      * Broadcasts when package is scanned from directory and is ready to be loaded.
-     * No objects except CBE::Package is created at this point however contained objects table is loaded
+     * No objects except cbe::Package is created at this point however contained objects table is loaded
      */
     static PackageLoaderEvent onPackageScanned;
-    FORCE_INLINE static void broadcastPackageSaved(CBE::Object *package) { onPackageSaved.invoke(package); }
-    FORCE_INLINE static void broadcastPackageLoaded(CBE::Object *package) { onPackageLoaded.invoke(package); }
+    FORCE_INLINE static void broadcastPackageSaved(cbe::Object *package) { onPackageSaved.invoke(package); }
+    FORCE_INLINE static void broadcastPackageLoaded(cbe::Object *package) { onPackageLoaded.invoke(package); }
     FORCE_INLINE static void broadcastPackageScanned(PackageLoader *packageLoader) { onPackageScanned.invoke(packageLoader); }
 };

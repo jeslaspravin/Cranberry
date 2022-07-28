@@ -22,7 +22,7 @@ using ObjectAllocIdx = uint32;
 using EObjectFlags = uint64;
 using CBEClass = const ClassProperty *;
 
-namespace CBE
+namespace cbe
 {
 class Object;
 
@@ -30,7 +30,7 @@ enum EObjectFlagBits : EObjectFlags
 {
     /*
      * Default object that are created as part of
-     * CBE::ObjectAllocatorBase creation and are not cleared during garbage collection
+     * cbe::ObjectAllocatorBase creation and are not cleared during garbage collection
      */
     Default = 0x00'00'00'00'00'00'00'01,
     /*
@@ -94,4 +94,4 @@ public:
     static void renameObject(Object *object, const String &newName);
 };
 
-} // namespace CBE
+} // namespace cbe
