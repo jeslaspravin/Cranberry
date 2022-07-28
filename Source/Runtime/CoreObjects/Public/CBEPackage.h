@@ -15,7 +15,7 @@
 
 #include "CBEPackage.gen.h"
 
-namespace CBE
+namespace cbe
 {
 inline constexpr static const TChar *PACKAGE_EXT = TCHAR("berry");
 
@@ -38,20 +38,20 @@ public:
 
     String getPackageFilePath() const;
 
-    /* CBE::Object overrides */
+    /* cbe::Object overrides */
     void destroy() override;
     /* Overrides ends */
 
     /**
-     * CBE::Package::createPackage
+     * cbe::Package::createPackage
      *
      * Access: public static
      *
      * @param const String & relativePath - Package path relative to contentDir
      * @param const String & contentDir - Root directory under which the package must be saved or loaded from
      *
-     * @return CBE::Package *
+     * @return cbe::Package *
      */
     static Package *createPackage(const String &relativePath, const String &contentDir);
 };
-} // namespace CBE
+} // namespace cbe

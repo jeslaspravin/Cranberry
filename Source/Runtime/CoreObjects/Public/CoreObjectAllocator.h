@@ -19,14 +19,14 @@
 #include <unordered_map>
 
 class ClassProperty;
-namespace CBE
+namespace cbe
 {
 class ObjectAllocatorBase;
 }
 
-extern COREOBJECTS_EXPORT std::unordered_map<CBEClass, CBE::ObjectAllocatorBase *> *gCBEObjectAllocators;
+extern COREOBJECTS_EXPORT std::unordered_map<CBEClass, cbe::ObjectAllocatorBase *> *gCBEObjectAllocators;
 
-namespace CBE
+namespace cbe
 {
 class COREOBJECTS_EXPORT ObjectAllocatorBase
 {
@@ -325,4 +325,4 @@ ObjectAllocator<ClassType> &getObjAllocator()
 }
 
 COREOBJECTS_EXPORT ObjectAllocatorBase *getObjAllocator(CBEClass classType);
-} // namespace CBE
+} // namespace cbe

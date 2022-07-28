@@ -59,7 +59,7 @@ public:
 COMPILER_PRAGMA(COMPILER_PUSH_WARNING)
 COMPILER_PRAGMA(COMPILER_DISABLE_WARNING(WARN_UNINITIALIZED))
 
-namespace CBE
+namespace cbe
 {
 // Just a class to avoid overwriting base properties when constructing
 // Example string will always be constructed to empty which is not acceptable behavior for us
@@ -77,7 +77,7 @@ protected:
     {}
 };
 
-class META_ANNOTATE_API(COREOBJECTS_EXPORT, BaseType) Object : private ObjectBase
+class COREOBJECTS_EXPORT Object : private ObjectBase
 {
     GENERATED_CODES();
 
@@ -115,7 +115,7 @@ public:
      */
     void constructed()
     {
-        // Also change CBE::create()
+        // Also change cbe::create()
         debugAssertf(
             NO_BITS_SET(flags, EObjectFlagBits::PackageLoadPending), "constructed called before load is finished! Try using INTERNAL_create"
         );
@@ -157,8 +157,8 @@ public:
     virtual void onConstructed() {}
     virtual void onPostLoad() {}
     virtual ObjectArchive &serialize(ObjectArchive &ar) { return ar; }
-};
-} // namespace CBE
+} META_ANNOTATE(BaseType; NoExport);
+} // namespace cbe
 
 COMPILER_PRAGMA(COMPILER_POP_WARNING)
 
@@ -166,18 +166,18 @@ template <typename Type>
 void *CBEObjectConstructionPolicy::allocate()
 {
     ObjectAllocIdx allocIdx;
-    Type *ptr = (Type *)CBE::getObjAllocator<Type>().allocate(allocIdx);
+    Type *ptr = (Type *)cbe::getObjAllocator<Type>().allocate(allocIdx);
     CBEMemory::memZero(ptr, sizeof(Type));
 
-    CBE::Object *objPtr = static_cast<CBE::Object *>(ptr);
+    cbe::Object *objPtr = static_cast<cbe::Object *>(ptr);
     objPtr->allocIdx = allocIdx;
     return ptr;
 }
 template <typename Type>
 void CBEObjectConstructionPolicy::deallocate(void *ptr)
 {
-    CBE::Object *objPtr = static_cast<CBE::Object *>(ptr);
-    CBE::getObjAllocator<Type>().free(ptr, objPtr->allocIdx);
+    cbe::Object *objPtr = static_cast<cbe::Object *>(ptr);
+    cbe::getObjAllocator<Type>().free(ptr, objPtr->allocIdx);
 }
 
 template <typename Type, typename... CtorArgs>
@@ -188,6 +188,6 @@ Type *CBEObjectConstructionPolicy::construct(void *allocatedPtr, CtorArgs &&...a
 template <typename Type>
 void CBEObjectConstructionPolicy::destruct(void *ptr)
 {
-    CBE::Object *objPtr = static_cast<CBE::Object *>(ptr);
+    cbe::Object *objPtr = static_cast<cbe::Object *>(ptr);
     static_cast<Type *>(objPtr)->~Type();
 }

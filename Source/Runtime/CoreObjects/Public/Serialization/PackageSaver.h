@@ -15,7 +15,7 @@
 #include "Serialization/ObjectArchive.h"
 #include "Serialization/BinaryArchive.h"
 
-namespace CBE
+namespace cbe
 {
 class Package;
 }
@@ -23,7 +23,7 @@ class Package;
 class PackageSaver : public ObjectArchive
 {
 private:
-    CBE::Package *package;
+    cbe::Package *package;
 
     std::unordered_map<StringID, SizeT> objToContObjsIdx;
     std::vector<PackageContainedData> containedObjects;
@@ -34,15 +34,15 @@ private:
     BinaryArchive packageArchive;
 
 public:
-    PackageSaver(CBE::Package *savingPackage);
+    PackageSaver(cbe::Package *savingPackage);
     EPackageLoadSaveResult savePackage();
 
     /* ObjectArchive overrides */
-    ObjectArchive &serialize(CBE::Object *&obj) override;
+    ObjectArchive &serialize(cbe::Object *&obj) override;
     /* Overrides ends */
 
 private:
     void setupContainedObjs();
     // Just helper to bring serializing object bytes to single place
-    void serializeObject(CBE::Object *obj);
+    void serializeObject(cbe::Object *obj);
 };

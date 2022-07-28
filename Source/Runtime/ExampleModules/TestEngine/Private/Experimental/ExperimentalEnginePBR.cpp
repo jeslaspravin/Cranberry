@@ -412,12 +412,12 @@ class ExperimentalEnginePBR
     String noneString{ TCHAR("None") };
 
     IReferenceCollector *collector;
-    CBE::Object *rootObj;
-    CBE::Object *objectPtrTest;
-    CBE::Object *objectPtrToValTest;
-    CBE::Object *valToObjectPtrTest;
-    CBE::Object *valToStructTest;
-    CBE::Object *structToValTest;
+    cbe::Object *rootObj;
+    cbe::Object *objectPtrTest;
+    cbe::Object *objectPtrToValTest;
+    cbe::Object *valToObjectPtrTest;
+    cbe::Object *valToStructTest;
+    cbe::Object *structToValTest;
 
 protected:
     void onStartUp() override;

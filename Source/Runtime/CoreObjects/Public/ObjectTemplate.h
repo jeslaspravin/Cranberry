@@ -19,7 +19,7 @@
 
 class FieldProperty;
 
-namespace CBE
+namespace cbe
 {
 
 class META_ANNOTATE_API(COREOBJECTS_EXPORT) ObjectTemplate : public Object
@@ -50,8 +50,9 @@ private:
 public:
     ObjectTemplate() {}
     ObjectTemplate(StringID className, String name);
+    ObjectTemplate(ObjectTemplate* inTemplate, String name);
 
-    /* CBE::Object overrides */
+    /* cbe::Object overrides */
     void destroy() override;
     ObjectArchive &serialize(ObjectArchive &ar) override;
     /* Overrides ends */
@@ -69,4 +70,4 @@ private:
  */
 COREOBJECTS_EXPORT Object *create(ObjectTemplate *objTemplate, const String &name, Object *outerObj, EObjectFlags flags = 0);
 
-} // namespace CBE
+} // namespace cbe

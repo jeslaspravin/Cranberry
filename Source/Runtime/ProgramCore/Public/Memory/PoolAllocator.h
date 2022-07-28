@@ -14,7 +14,7 @@
 #include "Memory/SlotAllocator.h"
 
 /**
- * Some private members are copied straight from CoreObjectAllocator.h's CBE::ObjectAllocator, If any bug fixes were made do the same there as
+ * Some private members are copied straight from CoreObjectAllocator.h's cbe::ObjectAllocator, If any bug fixes were made do the same there as
  * well!
  */
 template <typename ElementType, SizeT PoolSlotsCount>

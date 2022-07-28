@@ -14,7 +14,7 @@
 #include "Types/Platform/PlatformAssertionErrors.h"
 #include "ObjectPathHelpers.h"
 
-namespace CBE
+namespace cbe
 {
 
 Package::Package()
@@ -34,4 +34,4 @@ String Package::getPackageFilePath() const { return PathFunctions::combinePath(g
 
 void Package::destroy() { Object::destroy(); }
 
-} // namespace CBE
+} // namespace cbe

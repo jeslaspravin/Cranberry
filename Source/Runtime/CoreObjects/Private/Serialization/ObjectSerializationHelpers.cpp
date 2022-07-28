@@ -194,9 +194,9 @@ struct ReadFieldVisitable
         {
         case EPropertyType::ClassType:
         {
-            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
 
-            CBE::Object **objPtrPtr = reinterpret_cast<CBE::Object **>(ptr);
+            cbe::Object **objPtrPtr = reinterpret_cast<cbe::Object **>(ptr);
             (*readUserData->ar) << (*objPtrPtr);
             break;
         }
@@ -329,10 +329,10 @@ struct WriteFieldVisitable
         {
         case EPropertyType::ClassType:
         {
-            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), CBE::Object::staticType()));
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
 
             WriteObjectFieldUserData *writeUserData = (WriteObjectFieldUserData *)(userData);
-            CBE::Object **objPtrPtr = reinterpret_cast<CBE::Object **>(ptr);
+            cbe::Object **objPtrPtr = reinterpret_cast<cbe::Object **>(ptr);
             (*writeUserData->ar) << (*objPtrPtr);
             break;
         }
@@ -463,7 +463,7 @@ ObjectArchive &writeFieldsHelper(void *ptr, CBEClass clazz, ObjectArchive &ar, c
     return ar;
 }
 
-ObjectArchive &serializeObjectFieldsHelper(CBE::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> *fieldsToSerialize)
+ObjectArchive &serializeObjectFieldsHelper(cbe::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> *fieldsToSerialize)
 {
     if (ar.isLoading())
     {
@@ -483,13 +483,13 @@ ObjectArchive &serializeObjectFieldsHelper(CBE::Object *obj, ObjectArchive &ar, 
     return ar;
 }
 
-ObjectArchive &ObjectSerializationHelpers::serializeAllFields(CBE::Object *obj, ObjectArchive &ar)
+ObjectArchive &ObjectSerializationHelpers::serializeAllFields(cbe::Object *obj, ObjectArchive &ar)
 {
     return serializeObjectFieldsHelper(obj, ar, nullptr);
 }
 
 ObjectArchive &
-    ObjectSerializationHelpers::serializeOnlyFields(CBE::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> &fieldsToSerialize)
+    ObjectSerializationHelpers::serializeOnlyFields(cbe::Object *obj, ObjectArchive &ar, const std::unordered_set<StringID> &fieldsToSerialize)
 {
     return serializeObjectFieldsHelper(obj, ar, &fieldsToSerialize);
 }

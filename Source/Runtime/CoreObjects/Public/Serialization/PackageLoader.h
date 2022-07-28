@@ -15,7 +15,7 @@
 #include "Serialization/ObjectArchive.h"
 #include "Serialization/BinaryArchive.h"
 
-namespace CBE
+namespace cbe
 {
 class Package;
 }
@@ -23,7 +23,7 @@ class Package;
 class PackageLoader : public ObjectArchive
 {
 private:
-    CBE::Package *package;
+    cbe::Package *package;
     String packageFilePath;
 
     std::vector<PackageContainedData> containedObjects;
@@ -42,11 +42,11 @@ private:
     EObjectFlags createContainedObject(PackageContainedData &containedData);
 
 public:
-    PackageLoader(CBE::Package *loadingPackage, const String &filePath);
+    PackageLoader(cbe::Package *loadingPackage, const String &filePath);
     MAKE_TYPE_NONCOPY_NONMOVE(PackageLoader)
 
     /* ObjectArchive overrides */
-    ObjectArchive &serialize(CBE::Object *&obj) override;
+    ObjectArchive &serialize(cbe::Object *&obj) override;
     /* Overrides ends */
 
     /**
@@ -56,6 +56,6 @@ public:
     void prepareLoader();
     EPackageLoadSaveResult load();
 
-    FORCE_INLINE CBE::Package *getPackage() const { return package; }
+    FORCE_INLINE cbe::Package *getPackage() const { return package; }
     FORCE_INLINE const std::vector<PackageContainedData> &getContainedObjects() const { return containedObjects; }
 };

@@ -101,9 +101,13 @@ CONST_EXPR StringLiteralStore<TCHAR("registerTypeFactory")> REGISTERTYPEFACTORY_
 CONST_EXPR StringLiteralStore<TCHAR("ReflectedHeader")> REFLECTHEADER_TEMPLATE;
 CONST_EXPR StringLiteralStore<TCHAR("ReflectedSource")> REFLECTSOURCE_TEMPLATE;
 
-// Class build flags
+/**
+ * Class build flags
+ */
 // Marks a class type as reflected BaseClass for further extended reflection
 CONST_EXPR StringLiteralStore<TCHAR("BaseType")> BASETYPE_FLAG;
+// Does not add generated class function as exported,
+// This must be manually used if using end of class META_ANNOTATE() and exporting class itself.
 CONST_EXPR StringLiteralStore<TCHAR("NoExport")> NOEXPORT_FLAG;
 CONST_EXPR StringLiteralStore<TCHAR("Interface")> INTERFACE_FLAG;
 } // namespace GeneratorConsts

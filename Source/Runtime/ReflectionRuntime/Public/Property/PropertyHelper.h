@@ -195,6 +195,13 @@ public:
         const ClassProperty *parentClassProp = rtti->getClassType(typeInfoFrom<ParentType>());
         return isChildOf(childClassProp, parentClassProp);
     }
+    template <ReflectClassOrStructType ParentType>
+    FORCE_INLINE static bool isChildOf(const ClassProperty *childClassProp)
+    {
+        IReflectionRuntimeModule *rtti = IReflectionRuntimeModule::get();
+        const ClassProperty *parentClassProp = rtti->getClassType(typeInfoFrom<ParentType>());
+        return isChildOf(childClassProp, parentClassProp);
+    }
     static bool isChildOf(const ClassProperty *childClassProp, const ClassProperty *parentClassProp);
     static bool isStruct(const ClassProperty *classProp);
 
@@ -249,5 +256,94 @@ public:
             }
         );
         return (itr == clazz->staticFields.cend()) ? nullptr : *itr;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    // Object casts
+    //////////////////////////////////////////////////////////////////////////
+
+    // Object to Object conversions
+    template <ReflectClassOrStructType AsType, ReflectClassOrStructType FromType>
+    FORCE_INLINE static AsType *cast(FromType *obj)
+    {
+        if (isValid(obj) && isChildOf(obj->getType(), AsType::staticType()))
+        {
+            return static_cast<AsType *>(obj);
+        }
+        return nullptr;
+    }
+
+    // Object to Interface
+    template <InterfaceType AsType, ReflectClassOrStructType FromType>
+    requires StaticCastable<FromType *, AsType *> FORCE_INLINE static AsType *cast(FromType *obj) { return static_cast<AsType *>(obj); }
+
+    template <InterfaceType AsType, ReflectClassOrStructType FromType>
+    requires(!StaticCastable<FromType *, AsType *>) FORCE_INLINE static AsType *cast(FromType *obj)
+    {
+        using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
+
+        if (!isValid(obj))
+        {
+            return nullptr;
+        }
+        if (const InterfaceInfo *interfaceInfo = getMatchingInterfaceInfo(obj->getType(), typeInfoFrom<std::remove_const_t<AsType>>()))
+        {
+            return (AsType *)(reinterpret_cast<UPtrIntType>(obj) + interfaceInfo->offset);
+        }
+        return nullptr;
+    }
+
+    // Interface to Object
+    template <ReflectClassOrStructType AsType, InterfaceType FromType>
+    requires StaticCastable<FromType *, AsType *> FORCE_INLINE static AsType *cast(FromType *obj)
+    {
+        return isChildOf(obj->getType(), AsType::staticType()) ? static_cast<AsType *>(obj) : nullptr;
+    }
+
+    template <ReflectClassOrStructType AsType, InterfaceType FromType>
+    requires(!StaticCastable<FromType *, AsType *>) FORCE_INLINE static AsType *cast(FromType *obj)
+    {
+        using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
+
+        if (!(obj && obj->getType() && isChildOf(obj->getType(), AsType::staticType())))
+        {
+            return nullptr;
+        }
+        if (const InterfaceInfo *interfaceInfo = getMatchingInterfaceInfo(obj->getType(), typeInfoFrom<std::remove_const_t<FromType>>()))
+        {
+            return (AsType *)(reinterpret_cast<UPtrIntType>(obj) - interfaceInfo->offset);
+        }
+        return nullptr;
+    }
+
+    // Interface to Interface
+    template <InterfaceType AsType, InterfaceType FromType>
+    requires StaticCastable<FromType *, AsType *> FORCE_INLINE static AsType *cast(FromType *obj) { return static_cast<AsType *>(obj); }
+
+    template <InterfaceType AsType, InterfaceType FromType>
+    requires(!StaticCastable<FromType *, AsType *>) FORCE_INLINE static AsType *cast(FromType *obj)
+    {
+        using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
+
+        if (!(obj && obj->getType() && implementsInterface<AsType>(obj->getType())))
+        {
+            return nullptr;
+        }
+        const InterfaceInfo *fromInterfaceInfo = getMatchingInterfaceInfo(obj->getType(), typeInfoFrom<std::remove_const_t<FromType>>());
+        const InterfaceInfo *toInterfaceInfo = getMatchingInterfaceInfo(obj->getType(), typeInfoFrom<std::remove_const_t<AsType>>());
+        if (fromInterfaceInfo && toInterfaceInfo)
+        {
+            return (AsType *)((reinterpret_cast<UPtrIntType>(obj) - fromInterfaceInfo->offset) + toInterfaceInfo->offset);
+        }
+        return nullptr;
+    }
+
+    // None of the above casts
+    template <typename AsType, typename FromType>
+    requires(
+        StaticCastable<FromType *, AsType *> && !(ReflectClassOrStructOrInterfaceType<AsType> || ReflectClassOrStructOrInterfaceType<FromType>)
+    ) FORCE_INLINE static AsType *cast(FromType *obj)
+    {
+        return static_cast<AsType *>(obj);
     }
 };

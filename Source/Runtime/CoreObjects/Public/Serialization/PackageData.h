@@ -15,7 +15,7 @@
 #include "String/StringID.h"
 #include "CBEObjectTypes.h"
 
-namespace CBE
+namespace cbe
 {
 class Object;
 }
@@ -36,7 +36,7 @@ struct PackageDependencyData
     StringID className;
 
     // Loaded/saving object
-    CBE::Object *object = nullptr;
+    cbe::Object *object = nullptr;
 };
 
 template <ArchiveTypeName ArchiveType>
@@ -60,7 +60,7 @@ struct PackageContainedData
     SizeT streamSize;
 
     // Loaded/saving object
-    CBE::Object *object = nullptr;
+    cbe::Object *object = nullptr;
 };
 
 template <ArchiveTypeName ArchiveType>

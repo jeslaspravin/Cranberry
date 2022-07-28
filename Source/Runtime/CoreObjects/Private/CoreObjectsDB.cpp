@@ -67,37 +67,37 @@ void CoreObjectsDB::setObjectParent(StringID objectId, StringID newParent)
     }
 }
 
-CBE::Object *CoreObjectsDB::getObject(NodeIdxType nodeidx) const
+cbe::Object *CoreObjectsDB::getObject(NodeIdxType nodeidx) const
 {
     if (objectTree.isValid(nodeidx))
     {
         const ObjectData &objData = objectTree[nodeidx];
-        return CBE::getObjAllocator(objData.clazz)->getAt<CBE::Object>(objData.allocIdx);
+        return cbe::getObjAllocator(objData.clazz)->getAt<cbe::Object>(objData.allocIdx);
     }
     return nullptr;
 }
 
-void CoreObjectsDB::getSubobjects(std::vector<CBE::Object *> &subobjs, NodeIdxType nodeidx) const
+void CoreObjectsDB::getSubobjects(std::vector<cbe::Object *> &subobjs, NodeIdxType nodeidx) const
 {
     std::vector<NodeIdxType> subObjIndices;
     objectTree.getChildren(subObjIndices, nodeidx, true);
     for (NodeIdxType subnodeIdx : subObjIndices)
     {
-        if (CBE::Object *obj = getObject(subnodeIdx))
+        if (cbe::Object *obj = getObject(subnodeIdx))
         {
             subobjs.emplace_back(obj);
         }
     }
 }
 
-void CoreObjectsDB::getChildren(std::vector<CBE::Object *> &children, NodeIdxType nodeidx) const
+void CoreObjectsDB::getChildren(std::vector<cbe::Object *> &children, NodeIdxType nodeidx) const
 {
     std::vector<NodeIdxType> childIndices;
     objectTree.getChildren(childIndices, nodeidx);
     children.reserve(children.size() + childIndices.size());
     for (NodeIdxType subnodeIdx : childIndices)
     {
-        if (CBE::Object *obj = getObject(subnodeIdx))
+        if (cbe::Object *obj = getObject(subnodeIdx))
         {
             children.emplace_back(obj);
         }

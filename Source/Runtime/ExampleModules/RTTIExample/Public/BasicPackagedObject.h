@@ -39,7 +39,7 @@ inline constexpr static const uint32 BASICPACKAGEDOBJ_SERIALIZER_VERSION = 1;
 inline constexpr static const uint32 BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION = 0;
 
 class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject
-    : public CBE::Object
+    : public cbe::Object
     , public IInterfaceExample
     , public IInterfaceExample2
 {
@@ -57,7 +57,7 @@ public:
     {
         if (getOuter() && getOuter()->getType() != staticType())
         {
-            inner = CBE::create<BasicPackagedObject>(TCHAR("SubObject"), this);
+            inner = cbe::create<BasicPackagedObject>(TCHAR("SubObject"), this);
         }
     }
 
@@ -101,7 +101,7 @@ public:
 };
 
 class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicFieldSerializedObject
-    : public CBE::Object
+    : public cbe::Object
     , public IInterfaceExample
     , public IInterfaceExample2
 {
@@ -137,7 +137,7 @@ public:
     {
         if (getOuter() && getOuter()->getType() != staticType())
         {
-            inner = CBE::create<BasicPackagedObject>(TCHAR("SubObject"), this);
+            inner = cbe::create<BasicPackagedObject>(TCHAR("SubObject"), this);
         }
     }
 

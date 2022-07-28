@@ -18,6 +18,7 @@ namespace ReflectToolCmdLineConst
 CONST_EXPR StringLiteralStore<TCHAR("--generatedList")> GENERATED_TU_LIST;
 CONST_EXPR StringLiteralStore<TCHAR("--generatedDir")> GENERATED_DIR;
 CONST_EXPR StringLiteralStore<TCHAR("--moduleSrcDir")> MODULE_SRC_DIR;
+CONST_EXPR StringLiteralStore<TCHAR("--moduleName")> MODULE_NAME;
 CONST_EXPR StringLiteralStore<TCHAR("--moduleExportMacro")> MODULE_EXP_MACRO;
 CONST_EXPR StringLiteralStore<TCHAR("--intermediateDir")> INTERMEDIATE_DIR;
 CONST_EXPR StringLiteralStore<TCHAR("--includeList")> INCLUDE_LIST_FILE;

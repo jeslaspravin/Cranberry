@@ -26,7 +26,7 @@ ICoreObjectsModule *ICoreObjectsModule::get()
 
 void CoreObjectsModule::init()
 {
-    CBE::initializeObjectAllocators();
+    cbe::initializeObjectAllocators();
     CoreObjectDelegates::onContentDirectoryAdded.bindObject(&packMan, &CBEPackageManager::registerContentRoot);
     CoreObjectDelegates::onContentDirectoryRemoved.bindObject(&packMan, &CBEPackageManager::registerContentRoot);
 }
@@ -39,6 +39,6 @@ void CoreObjectsModule::release()
 
 const CoreObjectsDB &CoreObjectsModule::getObjectsDB() const { return objsDb; }
 
-CBE::Package *CoreObjectsModule::getTransientPackage() const { return CBE::getDefaultObject<CBE::Package>(); }
+cbe::Package *CoreObjectsModule::getTransientPackage() const { return cbe::getDefaultObject<cbe::Package>(); }
 
 CoreObjectGC &CoreObjectsModule::getGC() { return gc; }

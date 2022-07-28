@@ -28,9 +28,9 @@ public:
     CONST_EXPR static const TChar ObjectObjectSeparator = '/';
     CONST_EXPR static const TChar RootObjectSeparator = ':';
 
-    static String getFullPath(const CBE::Object *object);
-    static String getFullPath(const TChar *objectName, const CBE::Object *outerObj);
-    static String getObjectPath(const CBE::Object *object, const CBE::Object *stopAt);
+    static String getFullPath(const cbe::Object *object);
+    static String getFullPath(const TChar *objectName, const cbe::Object *outerObj);
+    static String getObjectPath(const cbe::Object *object, const cbe::Object *stopAt);
 
     static String getPackagePath(const TChar *objFullPath);
     /**

@@ -55,20 +55,20 @@ void tempTest()
     String name = Paths::applicationName();
     CoreObjectDelegates::broadcastContentDirectoryAdded(dir);
 #if 0
-    if (BasicPackagedObject *obj = CBE::load<BasicPackagedObject>(name))
+    if (BasicPackagedObject *obj = cbe::load<BasicPackagedObject>(name))
     {
         LOG("Test", "Loaded object %s nameVal %s", obj->getFullPath(), obj->nameVal);
     }
     else
     {
-        CBE::Package *package = CBE::Package::createPackage(name, dir);
-        CBE::Package *package2 = CBE::Package::createPackage(name + TCHAR("2"), dir);
+        cbe::Package *package = cbe::Package::createPackage(name, dir);
+        cbe::Package *package2 = cbe::Package::createPackage(name + TCHAR("2"), dir);
 
-        BasicPackagedObject *packedObj2 = CBE::create<BasicPackagedObject>(name, package2);
+        BasicPackagedObject *packedObj2 = cbe::create<BasicPackagedObject>(name, package2);
         packedObj2->dt = 0.56;
         packedObj2->nameVal = TCHAR("Its connected object");
         packedObj2->structData = { .a = 4124111.06, .b = 2026, .testStr = "This must be connected to another package" };
-        BasicPackagedObject *packedObj = CBE::create<BasicPackagedObject>(name, package);
+        BasicPackagedObject *packedObj = cbe::create<BasicPackagedObject>(name, package);
         packedObj->dt = 0.28;
         packedObj->id = STRID("Hello Subity & Jeslas");
         packedObj->nameVal = TCHAR("Its Me Jeslas");
@@ -79,7 +79,7 @@ void tempTest()
         packedObj->structData = { .a = 8235.28, .b = 834435, .testStr = "3528" };
         packedObj->interLinked = packedObj2;
 
-        BasicFieldSerializedObject *testTemp = CBE::create<BasicFieldSerializedObject>(name, package);
+        BasicFieldSerializedObject *testTemp = cbe::create<BasicFieldSerializedObject>(name, package);
         testTemp->dt = 101.111;
         testTemp->id = STRID("HEll Let lOsE");
         testTemp->interLinked = packedObj;
@@ -93,35 +93,35 @@ void tempTest()
             {TCHAR("XYZ"), 55667788},
             {TCHAR("ZYX"),     8235}
         };
-        IInterfaceExample *interface1 = CBE::cast<IInterfaceExample>(static_cast<CBE::Object *>(testTemp));
-        IInterfaceExample2 *interface2 = CBE::cast<IInterfaceExample2>(static_cast<CBE::Object *>(testTemp));
-        IInterfaceExample2 *interface3 = CBE::cast<IInterfaceExample2>(interface1);
-        BasicFieldSerializedObject *ixToClassObj = CBE::cast<BasicFieldSerializedObject>(interface1);
-        CBE::Object *ix1ToClassObj = CBE::cast<CBE::Object>(interface1);
-        CBE::Object *ix2ToClassObj = CBE::cast<CBE::Object>(interface2);
-        BasicPackagedObject *failingCast = CBE::cast<BasicPackagedObject>(interface1);
+        IInterfaceExample *interface1 = cbe::cast<IInterfaceExample>(static_cast<cbe::Object *>(testTemp));
+        IInterfaceExample2 *interface2 = cbe::cast<IInterfaceExample2>(static_cast<cbe::Object *>(testTemp));
+        IInterfaceExample2 *interface3 = cbe::cast<IInterfaceExample2>(interface1);
+        BasicFieldSerializedObject *ixToClassObj = cbe::cast<BasicFieldSerializedObject>(interface1);
+        cbe::Object *ix1ToClassObj = cbe::cast<cbe::Object>(interface1);
+        cbe::Object *ix2ToClassObj = cbe::cast<cbe::Object>(interface2);
+        BasicPackagedObject *failingCast = cbe::cast<BasicPackagedObject>(interface1);
 
-        BasicFieldSerializedObject *copied = CBE::cast<BasicFieldSerializedObject>(CBE::duplicateObject(testTemp, package));
+        BasicFieldSerializedObject *copied = cbe::cast<BasicFieldSerializedObject>(cbe::duplicateObject(testTemp, package));
 
-        CBE::save(packedObj);
-        CBE::save(packedObj2);
+        cbe::save(packedObj);
+        cbe::save(packedObj2);
     }
 #endif
-    if (CBE::ObjectTemplate *obj = CBE::load<CBE::ObjectTemplate>(name))
+    if (cbe::ObjectTemplate *obj = cbe::load<cbe::ObjectTemplate>(name))
     {
-        CBE::GameEngine *engine = CBE::cast<CBE::GameEngine>(CBE::create(obj, TCHAR("Engine"), nullptr));
+        cbe::GameEngine *engine = cbe::cast<cbe::GameEngine>(cbe::create(obj, TCHAR("Engine"), nullptr));
         LOG("Test", "Loaded object %s nameVal %s", obj->getFullPath(), engine->nameVal);
     }
     else
     {
-        CBE::Package *package = CBE::Package::createPackage(name + TCHAR("_Template"), dir);
+        cbe::Package *package = cbe::Package::createPackage(name + TCHAR("_Template"), dir);
 
-        CBE::ObjectTemplate *tmplt
-            = CBE::create<CBE::ObjectTemplate, StringID, String>(name, package, 0, CBE::GameEngine::staticType()->name, name);
-        CBE::cast<CBE::GameEngine>(tmplt->getTemplate())->nameVal = TCHAR("Test value, I am Jeslas Pravin");
-        tmplt->onFieldModified(PropertyHelper::findField(CBE::GameEngine::staticType(), STRID("nameVal")), tmplt->getTemplate());
+        cbe::ObjectTemplate *tmplt
+            = cbe::create<cbe::ObjectTemplate, StringID, String>(name, package, 0, cbe::GameEngine::staticType()->name, name);
+        cbe::cast<cbe::GameEngine>(tmplt->getTemplate())->nameVal = TCHAR("Test value, I am Jeslas Pravin");
+        tmplt->onFieldModified(PropertyHelper::findField(cbe::GameEngine::staticType(), STRID("nameVal")), tmplt->getTemplate());
 
-        CBE::save(package);
+        cbe::save(package);
     }
 
     // TODO

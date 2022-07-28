@@ -17,7 +17,7 @@
 
 #include "GameEngine.gen.h"
 
-namespace CBE
+namespace cbe
 {
 
 class META_ANNOTATE_API(ENGINECORE_EXPORT) GameEngine : public Object
@@ -51,4 +51,4 @@ public:
     void onConstructed() override { LOG("TEST", "Constructed %s", getFullPath()); }
 };
 
-} // namespace CBE
+} // namespace cbe

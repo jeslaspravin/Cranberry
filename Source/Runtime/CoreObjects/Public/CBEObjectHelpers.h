@@ -18,110 +18,34 @@
 #include "Property/PropertyHelper.h"
 #include "String/NameString.h"
 
-namespace CBE
+namespace cbe
 {
 
 //////////////////////////////////////////////////////////////////////////
 // Generic object related helpers
 //////////////////////////////////////////////////////////////////////////
 
+template <typename T>
+concept ObjectType = ReflectClassType<T> && std::is_base_of_v<Object, T>;
+
 FORCE_INLINE bool isValid(const Object *obj)
 {
-    return obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::Deleted | EObjectFlagBits::MarkedForDelete);
+    if (obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::Deleted | EObjectFlagBits::MarkedForDelete))
+    {
+        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
+        return objectsDb.hasObject(obj->getStringID());
+    }
+    return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Object casts
 //////////////////////////////////////////////////////////////////////////
 
-// Object to Object conversions
-template <ReflectClassOrStructType AsType, ReflectClassOrStructType FromType>
+template <typename AsType, typename FromType>
 FORCE_INLINE AsType *cast(FromType *obj)
 {
-    using CBEObjectType = std::conditional_t<std::is_const_v<FromType>, const CBE::Object, CBE::Object>;
-    if (isValid(obj) && PropertyHelper::isChildOf(obj->getType(), AsType::staticType()))
-    {
-        return static_cast<AsType *>(static_cast<CBEObjectType *>(obj));
-    }
-    return nullptr;
-}
-
-// Object to Interface
-template <InterfaceType AsType, ReflectClassOrStructType FromType>
-requires StaticCastable<FromType *, AsType *> FORCE_INLINE AsType *cast(FromType *obj) { return static_cast<AsType *>(obj); }
-
-template <InterfaceType AsType, ReflectClassOrStructType FromType>
-requires(!StaticCastable<FromType *, AsType *>) FORCE_INLINE AsType *cast(FromType *obj)
-{
-    using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
-
-    if (!isValid(obj))
-    {
-        return nullptr;
-    }
-    if (const InterfaceInfo *interfaceInfo
-        = PropertyHelper::getMatchingInterfaceInfo(obj->getType(), typeInfoFrom<std::remove_const_t<AsType>>()))
-    {
-        return (AsType *)(reinterpret_cast<UPtrIntType>(obj) + interfaceInfo->offset);
-    }
-    return nullptr;
-}
-
-// Interface to Object
-template <ReflectClassOrStructType AsType, InterfaceType FromType>
-requires StaticCastable<FromType *, AsType *> FORCE_INLINE AsType *cast(FromType *obj)
-{
-    return PropertyHelper::isChildOf(obj->getType(), AsType::staticType()) ? static_cast<AsType *>(obj) : nullptr;
-}
-
-template <ReflectClassOrStructType AsType, InterfaceType FromType>
-requires(!StaticCastable<FromType *, AsType *>) FORCE_INLINE AsType *cast(FromType *obj)
-{
-    using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
-
-    if (!(obj && obj->getType() && PropertyHelper::isChildOf(obj->getType(), AsType::staticType())))
-    {
-        return nullptr;
-    }
-    if (const InterfaceInfo *interfaceInfo
-        = PropertyHelper::getMatchingInterfaceInfo(obj->getType(), typeInfoFrom<std::remove_const_t<FromType>>()))
-    {
-        return (AsType *)(reinterpret_cast<UPtrIntType>(obj) - interfaceInfo->offset);
-    }
-    return nullptr;
-}
-
-// Interface to Interface
-template <InterfaceType AsType, InterfaceType FromType>
-requires StaticCastable<FromType *, AsType *> FORCE_INLINE AsType *cast(FromType *obj) { return static_cast<AsType *>(obj); }
-
-template <InterfaceType AsType, InterfaceType FromType>
-requires(!StaticCastable<FromType *, AsType *>) FORCE_INLINE AsType *cast(FromType *obj)
-{
-    using UPtrIntType = std::conditional_t<std::is_const_v<FromType>, const UPtrInt, UPtrInt>;
-
-    if (!(obj && obj->getType() && PropertyHelper::implementsInterface<AsType>(obj->getType())))
-    {
-        return nullptr;
-    }
-    const InterfaceInfo *fromInterfaceInfo
-        = PropertyHelper::getMatchingInterfaceInfo(obj->getType(), typeInfoFrom<std::remove_const_t<FromType>>());
-    const InterfaceInfo *toInterfaceInfo
-        = PropertyHelper::getMatchingInterfaceInfo(obj->getType(), typeInfoFrom<std::remove_const_t<AsType>>());
-    if (fromInterfaceInfo && toInterfaceInfo)
-    {
-        return (AsType *)((reinterpret_cast<UPtrIntType>(obj) - fromInterfaceInfo->offset) + toInterfaceInfo->offset);
-    }
-    return nullptr;
-}
-
-// None of the above casts
-template <typename AsType, typename FromType>
-requires(
-    StaticCastable<FromType *, AsType *> && !(ReflectClassOrStructOrInterfaceType<AsType> || ReflectClassOrStructOrInterfaceType<FromType>)
-) FORCE_INLINE AsType *cast(FromType *obj)
-{
-    return static_cast<AsType *>(obj);
+    return PropertyHelper::cast<AsType, FromType>(obj);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,7 +54,7 @@ requires(
 COREOBJECTS_EXPORT void INTERNAL_destroyCBEObject(Object *obj);
 FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::Default); }
 /**
- * CBE::INTERNAL_create - Only difference between regular create and this is constructed never gets called under any condition
+ * cbe::INTERNAL_create - Only difference between regular create and this is constructed never gets called under any condition
  * This must be used if constructed() must be delayed without setting any neccessary flags
  *
  * @param CBEClass clazz
@@ -139,11 +63,17 @@ FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_S
  * @param EObjectFlags flags
  * @param CtorArgs && ...ctorArgs
  *
- * @return CBE::Object *
+ * @return cbe::Object *
  */
 template <typename... CtorArgs>
 Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
+    if (clazz == nullptr)
+    {
+        alertAlwaysf(false, "Invalid class type! when creating object %s", name);
+        return nullptr;
+    }
+
     // If empty string then try create from class name
     String objectName = name.empty() ? clazz->nameString : name;
     // Using valid property name, Change if needed other wise also change in ObjectAllocatorBase::constructDefault
@@ -211,8 +141,8 @@ template <typename... CtorArgs>
 Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
     Object *obj = INTERNAL_create<CtorArgs...>(clazz, name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...);
-    // Also change CBE::Object::constructed(), Always construct for Transients
-    if (NO_BITS_SET(obj->collectAllFlags(), EObjectFlagBits::PackageLoadPending) || BIT_SET(flags, EObjectFlagBits::Transient))
+    // Also change cbe::Object::constructed(), Always construct for Transients
+    if (obj && NO_BITS_SET(obj->collectAllFlags(), EObjectFlagBits::PackageLoadPending) || BIT_SET(flags, EObjectFlagBits::Transient))
     {
         obj->constructed();
     }
@@ -281,7 +211,7 @@ ClassType *getDefaultObject()
 COREOBJECTS_EXPORT Object *getDefaultObject(CBEClass clazz);
 
 /**
- * CBE::deepCopy - copies all reflected data from a object to another object and creates new object for any referenced subobject while copying
+ * cbe::deepCopy - copies all reflected data from a object to another object and creates new object for any referenced subobject while copying
  *
  * Access: public
  *
@@ -294,4 +224,4 @@ COREOBJECTS_EXPORT bool deepCopy(Object *fromObject, Object *toObject, EObjectFl
 COREOBJECTS_EXPORT Object *
     duplicateObject(Object *fromObject, Object *newOuter, String newName = "", EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0);
 
-} // namespace CBE
+} // namespace cbe
