@@ -106,56 +106,6 @@ function (set_target_sources)
     )
 endfunction ()
 
-# Recursively finds all engine modules that this target depends on
-# Use with
-# configure_file(${cmake_script_dir}/${configure_file_folder}/ModuleDependencies.list.in ${CMAKE_CURRENT_BINARY_DIR}/ModuleDependencies.list
-#     USE_SOURCE_PERMISSIONS 
-#     @ONLY
-# )
-#
-# DIRECT_MODULES Modules target depends on
-# OUT_ALL_MODULES
-function (find_all_modules_recursively)
-    set(one_value_args OUT_ALL_MODULES)
-    set(multi_value_args DIRECT_MODULES)
-    cmake_parse_arguments(all_modules "" "${one_value_args}" "${multi_value_args}" ${ARGN})
-
-    set (out_modules )
-    set (modules_tree ${all_modules_DIRECT_MODULES})
-    while (ON)
-        set (new_modules_tree )
-        foreach (module ${modules_tree})
-            # Skip if already visited module
-            list(FIND out_modules ${module} found_idx)
-            if (found_idx GREATER_EQUAL 0)
-                continue ()
-            endif ()
-            
-            list(APPEND out_modules ${module})
-            get_target_property(module_bin_dir ${module} BINARY_DIR)            
-            if (EXISTS ${module_bin_dir}/ModuleDependencies.list)
-                file(READ ${module_bin_dir}/ModuleDependencies.list dep_module_list)
-                foreach (new_item ${dep_module_list})
-                    STRING(STRIP ${new_item} new_module)
-                    # If not just empty spaces
-                    if(${new_module} MATCHES ".*")
-                        message ("Module ${new_module}")
-                        list (APPEND new_modules_tree ${new_module})
-                    endif ()
-                endforeach ()
-            endif ()
-        endforeach ()
-        
-        set (modules_tree ${new_modules_tree})        
-        list(LENGTH modules_tree modules_count)
-        if (modules_count EQUAL 0)
-            break ()
-        endif ()
-    endwhile ()
-    
-    set (${all_modules_OUT_ALL_MODULES} ${out_modules} PARENT_SCOPE)
-endfunction ()
-
 #
 # CPP Project related functions
 #
@@ -230,6 +180,29 @@ macro (cpp_common_dependencies)
     endif ()
 endmacro()
 
+# Generates codes or file that will be used by modules/other tools regarding module dependencies. RIGHT NOW ITS NOT USED
+macro (generate_enginelib_depends)    
+    # Generating dependent module's directories. This is to walk the dependency tree if neccessary
+    # each line contains directories of a module in file named ${target_name}_PrivateEngineLibs.depend, ${target_name}_EngineLibs.depend
+    # Change in ModuleReflectTool if changing file description or name
+    set (private_engine_lib_dirs "")
+    set (public_engine_lib_dirs "")
+    foreach (module ${private_modules})
+        string(APPEND private_engine_lib_dirs "${module}=$<TARGET_PROPERTY:${module},BINARY_DIR>/$<CONFIG>;$<TARGET_FILE_DIR:${module}>\n")
+    endforeach()
+    foreach (module ${transitive_modules})
+        string(APPEND public_engine_lib_dirs "${module}=$<TARGET_PROPERTY:${module},BINARY_DIR>/$<CONFIG>;$<TARGET_FILE_DIR:${module}>\n")
+    endforeach()
+    file(GENERATE OUTPUT $<CONFIG>/${target_name}_PrivateEngineLibs.depend
+        CONTENT "${private_engine_lib_dirs}"
+        TARGET ${target_name}
+    )
+    file(GENERATE OUTPUT $<CONFIG>/${target_name}_EngineLibs.depend
+        CONTENT "${public_engine_lib_dirs}"
+        TARGET ${target_name}
+    )
+endmacro ()
+
 macro (engine_module_dependencies)
     # Private dependencies
     list (LENGTH private_modules private_modules_count)
@@ -267,6 +240,7 @@ macro (engine_module_dependencies)
                 $<TARGET_PROPERTY:${module},INTERFACE_COMPILE_DEFINITIONS>
         )
     endforeach ()
+    # generate_enginelib_depends()
     
     # Since we do not want all symbols that are not referenced removed as some were left out in local context like static initialized factory registers    
     if (${engine_static_modules})
