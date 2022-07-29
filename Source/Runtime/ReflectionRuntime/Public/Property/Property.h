@@ -22,6 +22,7 @@ class BaseFunctionWrapper;
 class PropertyMetaDataBase;
 struct ReflectTypeInfo;
 class ClassProperty;
+class IReflectionRuntimeModule;
 
 enum class EPropertyType
 {
@@ -360,3 +361,45 @@ public:
         return this;
     }
 };
+
+//////////////////////////////////////////////////////////////////////////
+/// Serialization functions
+//////////////////////////////////////////////////////////////////////////
+
+template <ArchiveTypeName ArchiveType>
+ArchiveType &operator<<(ArchiveType &archive, ClassProperty const *&value)
+{
+    if (archive.isLoading())
+    {
+        StringID className;
+        archive << className;
+        value = IReflectionRuntimeModule::get()->getClassType(className);
+        if (value == nullptr)
+        {
+            value = IReflectionRuntimeModule::get()->getStructType(className);
+        }
+    }
+    else
+    {
+        StringID className = value ? value->name : StringID::INVALID;
+        archive << className;
+    }
+    return archive;
+}
+
+template <ArchiveTypeName ArchiveType>
+ArchiveType &operator<<(ArchiveType &archive, EnumProperty const *&value)
+{
+    if (archive.isLoading())
+    {
+        StringID enumName;
+        archive << enumName;
+        value = IReflectionRuntimeModule::get()->getEnumType(enumName);
+    }
+    else
+    {
+        StringID enumName = value ? value->name : StringID::INVALID;
+        archive << enumName;
+    }
+    return archive;
+}

@@ -17,6 +17,7 @@
 #include "ReflectionMacros.h"
 #include "ReflectionRuntimeExports.h"
 #include "Types/Colors.h"
+#include "String/NameString.h"
 #include "Types/PropertyTypes.h"
 #include "Types/Templates/TypeList.h"
 #include "Types/Transform3D.h"

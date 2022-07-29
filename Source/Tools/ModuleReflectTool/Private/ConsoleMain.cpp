@@ -38,7 +38,9 @@ void initializeCmdArguments()
     CmdLineArgument moduleSrcDir(
         TCHAR("Directory to search and parse source headers from for this module."), ReflectToolCmdLineConst::MODULE_SRC_DIR
     );
-    CmdLineArgument moduleName(TCHAR("Name of this module. This will be used to derive several build file names."), ReflectToolCmdLineConst::MODULE_NAME);
+    CmdLineArgument moduleName(
+        TCHAR("Name of this module. This will be used to derive several build file names."), ReflectToolCmdLineConst::MODULE_NAME
+    );
     CmdLineArgument moduleExpMacro(TCHAR("Name of API export macro for this module."), ReflectToolCmdLineConst::MODULE_EXP_MACRO);
     CmdLineArgument intermediateDir(
         TCHAR("Directory where intermediate files can be dropped/created.\n\

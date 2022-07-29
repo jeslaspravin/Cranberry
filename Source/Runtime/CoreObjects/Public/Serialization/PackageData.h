@@ -33,7 +33,7 @@ struct PackageDependencyData
 {
     // Necessary as string to support package and object path processing
     String objectFullPath;
-    StringID className;
+    CBEClass clazz;
 
     // Loaded/saving object
     cbe::Object *object = nullptr;
@@ -43,7 +43,7 @@ template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, PackageDependencyData &value)
 {
     archive << value.objectFullPath;
-    archive << value.className;
+    archive << value.clazz;
     return archive;
 }
 
@@ -51,10 +51,10 @@ struct PackageContainedData
 {
     // Without package path as package path will be derived from package itself
     String objectPath;
-    StringID className;
     // Will also be pushed to archive's custom version, Should we need this?
     uint32 classVersion;
     EObjectFlags objectFlags;
+    CBEClass clazz;
 
     SizeT streamStart;
     SizeT streamSize;
@@ -67,9 +67,9 @@ template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, PackageContainedData &value)
 {
     archive << value.objectPath;
-    archive << value.className;
     archive << value.classVersion;
     archive << value.objectFlags;
+    archive << value.clazz;
 
     archive << value.streamStart;
     archive << value.streamSize;

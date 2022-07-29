@@ -134,6 +134,20 @@ public:
         }
         return outer;
     }
+    template <typename Type>
+    FORCE_INLINE Type *getOuterOfType() const
+    {
+        return static_cast<Type *>(getOuterOfType(Type::staticType()));
+    }
+    FORCE_INLINE Object *getOuterOfType(CBEClass clazz) const
+    {
+        Object *outer = this->getOuter();
+        while (outer && outer->getType() != clazz)
+        {
+            outer = outer->getOuter();
+        }
+        return outer;
+    }
     bool hasOuter(Object *checkOuter) const { return getOuter() && (getOuter() == checkOuter || getOuter()->hasOuter(checkOuter)); }
 
     FORCE_INLINE EObjectFlags getFlags() const { return flags; }

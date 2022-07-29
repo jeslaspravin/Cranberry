@@ -38,7 +38,7 @@ void PackageSaver::setupContainedObjs()
         containedObjData.object = child;
         containedObjData.objectPath = ObjectPathHelper::getObjectPath(child, package);
         containedObjData.objectFlags = child->getFlags();
-        containedObjData.className = child->getType()->name;
+        containedObjData.clazz = child->getType();
     }
 }
 
@@ -160,7 +160,7 @@ ObjectArchive &PackageSaver::serialize(cbe::Object *&obj)
             PackageDependencyData &objDepData = dependentObjects.emplace_back();
             objDepData.object = obj;
             objDepData.objectFullPath = obj->getFullPath();
-            objDepData.className = obj->getType()->name;
+            objDepData.clazz = obj->getType();
         }
         else
         {

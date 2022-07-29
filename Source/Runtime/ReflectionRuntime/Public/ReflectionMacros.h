@@ -17,6 +17,7 @@
 #define FOR_EACH_SPECIAL_TYPES_UNIQUE_FIRST_LAST(FirstMacroName, MacroName, LastMacroName) \
     FirstMacroName(String)          \
     MacroName(StringID)             \
+    MacroName(NameString)           \
     MacroName(Color)                \
     MacroName(LinearColor)          \
     MacroName(Vector2D)             \

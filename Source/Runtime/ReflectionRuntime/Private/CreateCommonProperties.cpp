@@ -13,6 +13,7 @@
 #include "ReflectionMacros.h"
 #include "ReflectionRuntimeModule.h"
 #include "String/TCharString.h"
+#include "String/NameString.h"
 #include "Types/Colors.h"
 #include "Types/Transform3D.h"
 #include "Types/TypesInfo.h"
