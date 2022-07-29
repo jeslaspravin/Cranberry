@@ -18,6 +18,12 @@
 
 EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containedData)
 {
+    if (containedData.clazz == nullptr)
+    {
+        containedData.object = nullptr;
+        return 0;
+    }
+
     String objectName;
     String outerPath;
     ObjectPathHelper::getPathComponents(outerPath, objectName, containedData.objectPath.getChar());
@@ -78,10 +84,8 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
     {
         debugAssert(outerObj);
         // It is okay to call createOrGet as we are setting cbe::EObjectFlagBits::PackageLoadPending flags during create itself
-        cbe::Object *obj = cbe::createOrGet(
-            IReflectionRuntimeModule::get()->getClassType(containedData.className), objectName, outerObj,
-            cbe::EObjectFlagBits::PackageLoadPending | containedData.objectFlags
-        );
+        cbe::Object *obj
+            = cbe::createOrGet(containedData.clazz, objectName, outerObj, cbe::EObjectFlagBits::PackageLoadPending | containedData.objectFlags);
         alertAlwaysf(obj, "Package(%s) load failed to create object %s", package->getName(), containedData.objectPath);
         containedData.object = obj;
     }
@@ -123,8 +127,8 @@ ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
         {
             cbe::Object *depObj = cbe::getOrLoad(dependentObjects[tableIdx].objectFullPath);
             alertAlwaysf(
-                depObj && depObj->getType() == IReflectionRuntimeModule::get()->getClassType(dependentObjects[tableIdx].className),
-                "Invalid dependent object[%s] in package %s", dependentObjects[tableIdx].objectFullPath, package->getName()
+                depObj && depObj->getType() == dependentObjects[tableIdx].clazz, "Invalid dependent object[%s] in package %s",
+                dependentObjects[tableIdx].objectFullPath, package->getName()
             );
             dependentObjects[tableIdx].object = depObj;
         }
@@ -216,7 +220,12 @@ EPackageLoadSaveResult PackageLoader::load()
         {
             fileStream.moveForward(containedData.streamStart - fileStream.cursorPos());
         }
-        // Should I retry to createContainedObject as Transient would have been created by this point?
+
+        // Try loading contained object again if it is created at this point
+        if (!cbe::isValid(containedData.object))
+        {
+            createContainedObject(containedData);
+        }
         if (cbe::isValid(containedData.object))
         {
             if (NO_BITS_SET(containedData.object->collectAllFlags(), cbe::EObjectFlagBits::Transient))

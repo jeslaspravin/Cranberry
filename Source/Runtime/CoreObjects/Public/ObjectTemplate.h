@@ -49,8 +49,8 @@ private:
 
 public:
     ObjectTemplate() {}
-    ObjectTemplate(StringID className, String name);
-    ObjectTemplate(ObjectTemplate* inTemplate, String name);
+    ObjectTemplate(StringID className, const String &name);
+    ObjectTemplate(ObjectTemplate *inTemplate, const String &name);
 
     /* cbe::Object overrides */
     void destroy() override;
@@ -62,7 +62,7 @@ public:
     void onFieldReset(const FieldProperty *prop, Object *obj);
 
 private:
-    void createTemplate(CBEClass clazz, String name);
+    void createTemplate(CBEClass clazz, const TChar *name);
 };
 
 /**

@@ -30,23 +30,23 @@ ArchiveType &operator<<(ArchiveType &archive, ObjectTemplate::TemplateObjectEntr
     return archive << value.modifiedFields << value.cursorStart;
 }
 
-ObjectTemplate::ObjectTemplate(StringID className, String name)
+ObjectTemplate::ObjectTemplate(StringID className, const String &name)
     : Object()
     , parentTemplate(nullptr)
 {
     CBEClass clazz = IReflectionRuntimeModule::get()->getClassType(className);
     debugAssert(clazz);
-    createTemplate(clazz, name);
+    createTemplate(clazz, name.getChar());
     debugAssert(templateObj);
     templateObj->constructed();
 }
 
-ObjectTemplate::ObjectTemplate(ObjectTemplate *inTemplate, String name)
+ObjectTemplate::ObjectTemplate(ObjectTemplate *inTemplate, const String &name)
     : Object()
     , parentTemplate(inTemplate)
 {
     debugAssert(parentTemplate && parentTemplate->objectClass);
-    createTemplate(parentTemplate->objectClass, name);
+    createTemplate(parentTemplate->objectClass, name.getChar());
     debugAssert(templateObj);
     templateObj->constructed();
 }
@@ -80,18 +80,19 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
 
     ar << parentTemplate;
     ar << objectName;
-    StringID clazzName = objectClass ? objectClass->name : StringID::INVALID;
-    ar << clazzName;
+    CBEClass clazz = objectClass;
+    ar << clazz;
     if (ar.isLoading())
     {
-        CBEClass clazz = IReflectionRuntimeModule::get()->getClassType(clazzName);
         if (clazz == nullptr)
         {
-            LOG_ERROR("ObjectTemplate", "Failed to get class from class ID %u while serializing %s", clazzName, getOuterMost()->getFullPath());
+            LOG_ERROR(
+                "ObjectTemplate", "Failed to get class from class ID %u while serializing %s", clazz->nameString, getOuterMost()->getFullPath()
+            );
             return ar;
         }
 
-        createTemplate(clazz, objectName.toString());
+        createTemplate(clazz, objectName.toString().getChar());
         std::unordered_map<NameString, TemplateObjectEntry> loadedEntries;
         uint64 archiveEnd = 0;
         ar << loadedEntries;
@@ -165,7 +166,7 @@ void ObjectTemplate::onFieldReset(const FieldProperty *prop, Object *obj)
     entry.modifiedFields.erase(prop->name);
 }
 
-void ObjectTemplate::createTemplate(CBEClass clazz, String name)
+void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
 {
     if (clazz != objectClass && isValid(templateObj))
     {
