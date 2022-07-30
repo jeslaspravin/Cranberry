@@ -32,7 +32,7 @@ namespace cbe
 Package *Package::createPackage(const String &relativePath, const String &contentDir)
 {
     String packagePath = ObjectPathHelper::packagePathFromFilePath(relativePath, contentDir);
-    cbe::Package *package = cbe::createOrGet<cbe::Package>(packagePath, nullptr, cbe::EObjectFlagBits::PackageLoadPending);
+    cbe::Package *package = cbe::createOrGet<cbe::Package>(packagePath, nullptr, cbe::EObjectFlagBits::ObjFlag_PackageLoadPending);
     package->setPackageRoot(contentDir);
     return package;
 }
@@ -77,7 +77,7 @@ Object *load(String objectPath)
     cbe::Package *package = objectPackageLoader->getPackage();
     debugAssert(package);
 
-    if (BIT_SET(package->getFlags(), EObjectFlagBits::PackageLoadPending))
+    if (BIT_SET(package->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending))
     {
         EPackageLoadSaveResult loadResult = objectPackageLoader->load();
         if (CBEPACKAGE_SAVELOAD_ERROR(loadResult))
@@ -98,7 +98,7 @@ Object *load(String objectPath)
     {
         obj = objectsDb.getObject(objId);
     }
-    debugAssert(obj && BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::PackageLoadPending));
+    debugAssert(obj && BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending));
     return obj;
 }
 
@@ -131,7 +131,7 @@ Object *getOrLoad(String objectPath)
         obj = objectsDb.getObject(objId);
     }
 
-    if (!obj || BIT_SET(obj->getFlags(), EObjectFlagBits::PackageLoadPending))
+    if (!obj || BIT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending))
     {
         return load(objectPath);
     }
@@ -143,7 +143,7 @@ void markDirty(Object *obj)
     cbe::Package *package = cast<cbe::Package>(obj->getOuterMost());
     if (package)
     {
-        SET_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::PackageDirty);
+        SET_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::ObjFlag_PackageDirty);
     }
 }
 
@@ -171,7 +171,7 @@ bool save(Object *obj)
     {
         LOG_WARN("ObjectHelper", "Saved package %s with minor warnings", package->getName());
     }
-    CLEAR_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::PackageDirty);
+    CLEAR_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::ObjFlag_PackageDirty);
     return true;
 }
 } // namespace cbe

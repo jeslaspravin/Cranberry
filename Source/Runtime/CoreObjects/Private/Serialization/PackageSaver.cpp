@@ -48,7 +48,7 @@ void PackageSaver::serializeObject(cbe::Object *obj)
      * If transient we store the object as part of package but never serialize it.
      * This is to allow us to do pointer fix ups if transient object is available while loading
      */
-    if (NO_BITS_SET(obj->collectAllFlags(), cbe::EObjectFlagBits::Transient))
+    if (NO_BITS_SET(obj->collectAllFlags(), cbe::EObjectFlagBits::ObjFlag_Transient))
     {
         obj->serialize(*this);
     }

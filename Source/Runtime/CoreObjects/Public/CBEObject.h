@@ -94,7 +94,7 @@ private:
     ObjectAllocIdx allocIdx;
 
 protected:
-    void markReadyForDestroy() { SET_BITS(flags, EObjectFlagBits::MarkedForDelete); }
+    void markReadyForDestroy() { SET_BITS(flags, EObjectFlagBits::ObjFlag_MarkedForDelete); }
 
 public:
     Object()
@@ -117,7 +117,8 @@ public:
     {
         // Also change cbe::create()
         debugAssertf(
-            NO_BITS_SET(flags, EObjectFlagBits::PackageLoadPending), "constructed called before load is finished! Try using INTERNAL_create"
+            NO_BITS_SET(flags, EObjectFlagBits::ObjFlag_PackageLoadPending),
+            "constructed called before load is finished! Try using INTERNAL_create"
         );
         onConstructed();
     }

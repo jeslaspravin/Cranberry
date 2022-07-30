@@ -32,47 +32,55 @@ enum EObjectFlagBits : EObjectFlags
      * Default object that are created as part of
      * cbe::ObjectAllocatorBase creation and are not cleared during garbage collection
      */
-    Default = 0x00'00'00'00'00'00'00'01,
+    ObjFlag_Default = 0x00'00'00'00'00'00'00'01,
     /*
      * Object when marked for delete will be deleted during later
      * garbage collection no matter if they are referred or not
      */
-    MarkedForDelete = 0x00'00'00'00'00'00'00'02,
+    ObjFlag_MarkedForDelete = 0x00'00'00'00'00'00'00'02,
     /*
      * Object after deleted will be marked as deleted, deleted object
      * remains available until the allocated slot is entirely deleted.
      * However It is not safe to use object in this state.
      */
-    Deleted = 0x00'00'00'00'00'00'00'04,
+    ObjFlag_Deleted = 0x00'00'00'00'00'00'00'04,
     /*
      * Objects marked as root can only be removed if its parent is deleted or if it is manually deleted.
      * GC skips over objects marked as root
      */
-    RootObject = 0x00'00'00'00'00'00'00'08,
+    ObjFlag_RootObject = 0x00'00'00'00'00'00'00'08,
     /*
      * If Object is transient and will not be serialized with package
      */
-    Transient = 0x00'00'00'00'00'00'00'10,
+    ObjFlag_Transient = 0x00'00'00'00'00'00'00'10,
     /*
      * If package is modified and needs to be saved
      */
-    PackageDirty = 0x00'00'00'00'00'00'00'20,
+    ObjFlag_PackageDirty = 0x00'00'00'00'00'00'00'20,
     /*
      * If object of the package is being loaded/needs loading. Once object is loaded this flag will be cleared
      */
-    PackageLoadPending = 0x00'00'00'00'00'00'00'40,
+    ObjFlag_PackageLoadPending = 0x00'00'00'00'00'00'00'40,
     /*
      * If object of the package is Loaded. Once object is loaded this flag will be set
      */
-    PackageLoaded = 0x00'00'00'00'00'00'00'80,
+    ObjFlag_PackageLoaded = 0x00'00'00'00'00'00'00'80,
     /*
      * If object is a template default object
      */
-    TemplateDefault = 0x00'00'00'00'00'00'01'00,
+    ObjFlag_TemplateDefault = 0x00'00'00'00'00'00'01'00,
     /*
      * If object is created from Template.
      */
-    FromTemplate = 0x00'00'00'00'00'00'02'00,
+    ObjFlag_FromTemplate = 0x00'00'00'00'00'00'02'00,
+};
+
+enum class EObjectTraversalMode
+{
+    OnlyObject,
+    // If we want to traverse all the sub objects of Object, but not grand children and after
+    ObjectAndChildren,
+    EntireObjectTree
 };
 
 // Why separate accessor? Because this accessor will be needed only for some low level carefully

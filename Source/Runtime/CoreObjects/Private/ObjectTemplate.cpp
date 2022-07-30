@@ -177,7 +177,7 @@ void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)
     objectClass = clazz;
     objectName = name;
 
-    EObjectFlags flags = EObjectFlagBits::Transient | EObjectFlagBits::TemplateDefault;
+    EObjectFlags flags = EObjectFlagBits::ObjFlag_Transient | EObjectFlagBits::ObjFlag_TemplateDefault;
     if (parentTemplate)
     {
         templateObj = create(parentTemplate, name, this, flags);
@@ -205,8 +205,10 @@ cbe::Object *create(ObjectTemplate *objTemplate, const String &name, Object *out
         return nullptr;
     }
 
-    SET_BITS(flags, EObjectFlagBits::FromTemplate);
-    return duplicateObject(objTemplate->getTemplate(), outerObj, name, flags, EObjectFlagBits::Transient | EObjectFlagBits::TemplateDefault);
+    SET_BITS(flags, EObjectFlagBits::ObjFlag_FromTemplate);
+    return duplicateObject(
+        objTemplate->getTemplate(), outerObj, name, flags, EObjectFlagBits::ObjFlag_Transient | EObjectFlagBits::ObjFlag_TemplateDefault
+    );
 }
 
 } // namespace cbe

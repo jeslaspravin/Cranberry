@@ -26,14 +26,14 @@ void Object::destroyObject()
     destroy();
 
     // Must have entry in object DB if we constructed the objects properly unless object is default
-    debugAssert(CoreObjectsModule::objectsDB().hasObject(sid) || BIT_SET(flags, EObjectFlagBits::Default));
+    debugAssert(CoreObjectsModule::objectsDB().hasObject(sid) || BIT_SET(flags, EObjectFlagBits::ObjFlag_Default));
     if (CoreObjectsModule::objectsDB().hasObject(sid))
     {
         CoreObjectsModule::objectsDB().removeObject(sid);
     }
     objOuter = nullptr;
     sid = StringID();
-    SET_BITS(flags, EObjectFlagBits::Deleted);
+    SET_BITS(flags, EObjectFlagBits::ObjFlag_Deleted);
 }
 
 String Object::getFullPath() const { return ObjectPathHelper::getFullPath(this); }

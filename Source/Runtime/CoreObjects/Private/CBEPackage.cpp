@@ -19,7 +19,7 @@ namespace cbe
 
 Package::Package()
 {
-    debugAssert(!getName().empty() || BIT_SET(getFlags(), EObjectFlagBits::Default));
+    debugAssert(!getName().empty() || BIT_SET(getFlags(), EObjectFlagBits::ObjFlag_Default));
 
     // Name will be empty only in default objects now
     if (!getName().empty())

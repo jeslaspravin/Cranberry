@@ -30,7 +30,7 @@ concept ObjectType = ReflectClassType<T> && std::is_base_of_v<Object, T>;
 
 FORCE_INLINE bool isValid(const Object *obj)
 {
-    if (obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::Deleted | EObjectFlagBits::MarkedForDelete))
+    if (obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Deleted | EObjectFlagBits::ObjFlag_MarkedForDelete))
     {
         const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
         return objectsDb.hasObject(obj->getStringID());
@@ -52,7 +52,7 @@ FORCE_INLINE AsType *cast(FromType *obj)
 // Object Related helpers
 //////////////////////////////////////////////////////////////////////////
 COREOBJECTS_EXPORT void INTERNAL_destroyCBEObject(Object *obj);
-FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::Default); }
+FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Default); }
 /**
  * cbe::INTERNAL_create - Only difference between regular create and this is constructed never gets called under any condition
  * This must be used if constructed() must be delayed without setting any neccessary flags
@@ -142,7 +142,8 @@ Object *create(CBEClass clazz, const String &name, Object *outerObj, EObjectFlag
 {
     Object *obj = INTERNAL_create<CtorArgs...>(clazz, name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...);
     // Also change cbe::Object::constructed(), Always construct for Transients
-    if (obj && NO_BITS_SET(obj->collectAllFlags(), EObjectFlagBits::PackageLoadPending) || BIT_SET(flags, EObjectFlagBits::Transient))
+    if (obj && NO_BITS_SET(obj->collectAllFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending)
+        || BIT_SET(flags, EObjectFlagBits::ObjFlag_Transient))
     {
         obj->constructed();
     }
@@ -210,18 +211,49 @@ ClassType *getDefaultObject()
 
 COREOBJECTS_EXPORT Object *getDefaultObject(CBEClass clazz);
 
+//////////////////////////////////////////////////////////////////////////
+// Object modification helpers
+//////////////////////////////////////////////////////////////////////////
+
+struct CopyObjectOptions
+{
+    Object *fromObject;
+    Object *toObject;
+    EObjectFlags additionalFlags = 0;
+    EObjectFlags clearFlags = 0;
+    // If each sub object of fromObject references has to be replaced with corresponding sub object of toObject
+    bool bReplaceSubobjRefs;
+    // If call constructed after copy on ToObject after copy
+    bool bConstructToObject;
+    // If call constructed after copy on all sub objects
+    bool bConstructSubObjects;
+    EObjectTraversalMode copyMode;
+};
+COREOBJECTS_EXPORT bool copyObject(CopyObjectOptions options);
 /**
  * cbe::deepCopy - copies all reflected data from a object to another object and creates new object for any referenced subobject while copying
- *
- * Access: public
  *
  * @param Object * fromObject
  * @param Object * toObject
  *
  * @return void
  */
-COREOBJECTS_EXPORT bool deepCopy(Object *fromObject, Object *toObject, EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0);
+COREOBJECTS_EXPORT bool deepCopy(
+    Object *fromObject, Object *toObject, EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0, bool bConstructToObject = true
+);
 COREOBJECTS_EXPORT Object *
     duplicateObject(Object *fromObject, Object *newOuter, String newName = "", EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0);
+
+/**
+ * cbe::replaceObjectReferences - Replaces
+ *
+ * @param Object * object
+ * @param const std::unordered_map<Object *, Object * > &replacements
+ *
+ */
+COREOBJECTS_EXPORT void replaceObjectReferences(
+    Object *object, const std::unordered_map<Object *, Object *> &replacements,
+    EObjectTraversalMode replaceMode = EObjectTraversalMode::EntireObjectTree
+);
 
 } // namespace cbe

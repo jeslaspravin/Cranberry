@@ -49,7 +49,7 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
             collectedFlags |= createContainedObject(*outerContainedDataItr);
             // Transient object can be null
             alertAlwaysf(
-                BIT_SET(collectedFlags, cbe::EObjectFlagBits::Transient) || outerObj,
+                BIT_SET(collectedFlags, cbe::EObjectFlagBits::ObjFlag_Transient) || outerObj,
                 "Outer object being null is unexpected case, Serialization order of objects is outer first to leaf last"
             );
             outerObj = outerContainedDataItr->object;
@@ -66,7 +66,7 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
         collectedFlags |= outerObj->getFlags();
     }
 
-    if (BIT_SET(collectedFlags, cbe::EObjectFlagBits::Transient))
+    if (BIT_SET(collectedFlags, cbe::EObjectFlagBits::ObjFlag_Transient))
     {
         // Try to find Transient object. If not found set all pointer fields to nullptr
         if (outerObj == nullptr)
@@ -76,7 +76,7 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
         else
         {
             cbe::Object *obj = cbe::get(ObjectPathHelper::getFullPath(objectName.getChar(), outerObj).getChar());
-            debugAssert(!obj || BIT_SET(obj->collectAllFlags(), cbe::EObjectFlagBits::Transient));
+            debugAssert(!obj || BIT_SET(obj->collectAllFlags(), cbe::EObjectFlagBits::ObjFlag_Transient));
             containedData.object = obj;
         }
     }
@@ -84,8 +84,9 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
     {
         debugAssert(outerObj);
         // It is okay to call createOrGet as we are setting cbe::EObjectFlagBits::PackageLoadPending flags during create itself
-        cbe::Object *obj
-            = cbe::createOrGet(containedData.clazz, objectName, outerObj, cbe::EObjectFlagBits::PackageLoadPending | containedData.objectFlags);
+        cbe::Object *obj = cbe::createOrGet(
+            containedData.clazz, objectName, outerObj, cbe::EObjectFlagBits::ObjFlag_PackageLoadPending | containedData.objectFlags
+        );
         alertAlwaysf(obj, "Package(%s) load failed to create object %s", package->getName(), containedData.objectPath);
         containedData.object = obj;
     }
@@ -206,7 +207,7 @@ EPackageLoadSaveResult PackageLoader::load()
             // If this object is transient or in transient hierarchy? Then there is a chance that object will only be created after main
             // packaged object is serialized
             EObjectFlags collectedFlags = createContainedObject(containedData);
-            debugAssert(BIT_SET(collectedFlags, cbe::EObjectFlagBits::Transient) || cbe::isValid(containedData.object));
+            debugAssert(BIT_SET(collectedFlags, cbe::EObjectFlagBits::ObjFlag_Transient) || cbe::isValid(containedData.object));
         }
     }
 
@@ -228,12 +229,12 @@ EPackageLoadSaveResult PackageLoader::load()
         }
         if (cbe::isValid(containedData.object))
         {
-            if (NO_BITS_SET(containedData.object->collectAllFlags(), cbe::EObjectFlagBits::Transient))
+            if (NO_BITS_SET(containedData.object->collectAllFlags(), cbe::EObjectFlagBits::ObjFlag_Transient))
             {
                 containedData.object->serialize(*this);
-                SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(containedData.object), cbe::EObjectFlagBits::PackageLoaded);
+                SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(containedData.object), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
             }
-            CLEAR_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(containedData.object), cbe::EObjectFlagBits::PackageLoadPending);
+            CLEAR_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(containedData.object), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending);
         }
 
         SizeT serializedSize = fileStream.cursorPos() - containedData.streamStart;
@@ -249,8 +250,8 @@ EPackageLoadSaveResult PackageLoader::load()
             loadResult = EPackageLoadSaveResult::WithWarnings;
         }
     }
-    CLEAR_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(package), cbe::EObjectFlagBits::PackageLoadPending);
-    SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(package), cbe::EObjectFlagBits::PackageLoaded);
+    CLEAR_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(package), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending);
+    SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(package), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
 
     // Broadcast load events, postLoad() and constructed()
     for (PackageContainedData &containedData : containedObjects)
