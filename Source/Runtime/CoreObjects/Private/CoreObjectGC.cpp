@@ -15,6 +15,7 @@
 #include "CBEPackage.h"
 #include "CBEObjectTypes.h"
 #include "CoreObjectsModule.h"
+#include "PropertyVisitorHelpers.h"
 #include "Property/PropertyHelper.h"
 #include "Visitors/FieldVisitors.h"
 
@@ -56,7 +57,7 @@ void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
 
         for (cbe::Object *obj : objects)
         {
-            if (BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::MarkedForDelete))
+            if (BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
             {
                 markedDelete.emplace_back(obj);
             }
@@ -96,8 +97,8 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
         {
             // Only mark as valid if object not marked for delete already and
             // If object is marked explicitly as root or default then we must not delete it
-            if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::MarkedForDelete)
-                && BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::RootObject | cbe::EObjectFlagBits::Default))
+            if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete)
+                && BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_RootObject | cbe::EObjectFlagBits::ObjFlag_Default))
             {
                 classObjsFlag[cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
             }
@@ -109,7 +110,7 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
         BitArray<uint64> &packagesFlag = objUsedFlags[cbe::Package::staticType()];
         for (cbe::Package *package : (*gCBEObjectAllocators)[cbe::Package::staticType()]->getAllObjects<cbe::Package>())
         {
-            if (BIT_NOT_SET(package->getFlags(), cbe::EObjectFlagBits::MarkedForDelete) && objsDb.hasChild(package->getStringID()))
+            if (BIT_NOT_SET(package->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete) && objsDb.hasChild(package->getStringID()))
             {
                 packagesFlag[cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(package)] = true;
             }
@@ -256,9 +257,6 @@ struct GCObjectVisitableUserData
 
 struct GCObjectFieldVisitable
 {
-    static void visitMap(const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData);
-    static void visitSet(const ContainerProperty *setProp, void *val, const PropertyInfo &propInfo, void *userData);
-
     // Ignore fundamental and special types, we need none const custom types or pointers
     template <typename Type>
     static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
@@ -270,12 +268,16 @@ struct GCObjectFieldVisitable
         {
         case EPropertyType::MapType:
         {
-            visitMap(static_cast<const MapProperty *>(prop), val, propInfo, userData);
+            PropertyVisitorHelper::visitEditMapEntriesPtrOnly<GCObjectFieldVisitable>(
+                static_cast<const MapProperty *>(prop), val, propInfo, userData
+            );
             break;
         }
         case EPropertyType::SetType:
         {
-            visitSet(static_cast<const ContainerProperty *>(prop), val, propInfo, userData);
+            PropertyVisitorHelper::visitEditSetEntries<GCObjectFieldVisitable>(
+                static_cast<const ContainerProperty *>(prop), val, propInfo, userData
+            );
             break;
         }
         case EPropertyType::ArrayType:
@@ -331,7 +333,7 @@ struct GCObjectFieldVisitable
             cbe::Object *objPtr = *objPtrPtr;
             if (objPtr && objPtr != gcUserData->thisObj)
             {
-                if (BIT_SET(objPtr->getFlags(), cbe::EObjectFlagBits::MarkedForDelete))
+                if (BIT_SET(objPtr->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     (*objPtrPtr) = nullptr;
                 }
@@ -368,7 +370,7 @@ struct GCObjectFieldVisitable
             const cbe::Object *objPtr = *objPtrPtr;
             if (objPtr && objPtr != gcUserData->thisObj)
             {
-                if (BIT_SET(objPtr->getFlags(), cbe::EObjectFlagBits::MarkedForDelete))
+                if (BIT_SET(objPtr->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     (*objPtrPtr) = nullptr;
                 }
@@ -392,139 +394,6 @@ struct GCObjectFieldVisitable
         }
     }
 };
-
-void GCObjectFieldVisitable::visitMap(const MapProperty *mapProp, void *val, const PropertyInfo &propInfo, void *userData)
-{
-    const IterateableDataRetriever *dataRetriever = static_cast<const IterateableDataRetriever *>(mapProp->dataRetriever);
-    const TypedProperty *keyProp = static_cast<const TypedProperty *>(mapProp->keyProp);
-    const TypedProperty *valueProp = static_cast<const TypedProperty *>(mapProp->valueProp);
-
-    // map key can be either fundamental or special or struct or class ptr but it can never be custom
-    // types fundamental or special cannot hold pointer to cbe::Object so only struct and pointer is left
-    if (PropertyHelper::getUnqualified(keyProp)->type == EPropertyType::ClassType)
-    {
-        // 2 times the data is needed to copy current and new value, to be removed and added later
-        uint8 *bufferData = (uint8 *)CBEMemory::memAlloc(mapProp->pairSize * (dataRetriever->size(val) * 2 + 1), mapProp->pairAlignment);
-        uint8 *tempData = bufferData;
-        bufferData += mapProp->pairSize;
-
-        // First - original data, Second - replacement data. both are key value pairs
-        std::vector<std::pair<uint8 *, uint8 *>> editedKeys;
-        for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
-        {
-            void *keyPtr = itrPtr->getElement();
-            void *valPtr = static_cast<MapIteratorWrapper *>(itrPtr.get())->value();
-
-            CBEMemory::memZero(tempData, mapProp->pairSize);
-            dataRetriever->copyTo(keyPtr, tempData);
-            FieldVisitor::visit<GCObjectFieldVisitable>(keyProp, tempData, userData);
-            // If both original and temp new keys are equal then we do not have to replace entry
-            if (dataRetriever->equals(keyPtr, tempData))
-            {
-                // Copy back key just in case pointer is not used for hashing or equality
-                // checks
-                dataRetriever->copyTo(tempData, keyPtr);
-                // visit the value
-                FieldVisitor::visit<GCObjectFieldVisitable>(valueProp, valPtr, userData);
-            }
-            else
-            {
-                std::pair<uint8 *, uint8 *> originalToNewPairs;
-                originalToNewPairs.first = bufferData;
-                bufferData += mapProp->pairSize;
-                originalToNewPairs.second = bufferData;
-                bufferData += mapProp->pairSize;
-                // Copy original
-                dataRetriever->copyTo(keyPtr, originalToNewPairs.first);
-                // Copy new key and value
-                dataRetriever->copyTo(tempData, originalToNewPairs.second);
-                // visit the value
-                FieldVisitor::visit<GCObjectFieldVisitable>(valueProp, originalToNewPairs.second + mapProp->secondOffset, userData);
-
-                editedKeys.emplace_back(std::move(originalToNewPairs));
-            }
-        }
-
-        for (const std::pair<uint8 *, uint8 *> &originalToNewPairs : editedKeys)
-        {
-            dataRetriever->remove(val, originalToNewPairs.first);
-            dataRetriever->add(val, originalToNewPairs.second);
-        }
-
-        CBEMemory::memFree(tempData);
-    }
-    else // Only value can have pointer
-    {
-        for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
-        {
-            FieldVisitor::visit<GCObjectFieldVisitable>(valueProp, static_cast<MapIteratorWrapper *>(itrPtr.get())->value(), userData);
-        }
-    }
-}
-
-void GCObjectFieldVisitable::visitSet(const ContainerProperty *setProp, void *val, const PropertyInfo &propInfo, void *userData)
-{
-    const IterateableDataRetriever *dataRetriever = static_cast<const IterateableDataRetriever *>(setProp->dataRetriever);
-    const TypedProperty *elementProp = static_cast<const TypedProperty *>(setProp->elementProp);
-
-    // set key can be either fundamental or special or struct or class ptr but it can never be custom
-    // types fundamental or special cannot hold pointer to cbe::Object so only struct and pointer is left
-    if (PropertyHelper::getUnqualified(elementProp)->type == EPropertyType::ClassType)
-    {
-        // 2 times the data is needed to copy current and new value, to be removed and added later
-        uint8 *bufferData
-            = (uint8 *)CBEMemory::memAlloc(elementProp->typeInfo->size * (dataRetriever->size(val) * 2 + 1), elementProp->typeInfo->alignment);
-        uint8 *tempData = bufferData;
-        bufferData += elementProp->typeInfo->size;
-
-        // First - original data, Second - replacement data.
-        std::vector<std::pair<uint8 *, uint8 *>> editedKeys;
-        for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
-        {
-            void *elemPtr = itrPtr->getElement();
-
-            CBEMemory::memZero(tempData, elementProp->typeInfo->size);
-            dataRetriever->copyTo(elemPtr, tempData);
-            FieldVisitor::visit<GCObjectFieldVisitable>(elementProp, tempData, userData);
-            // If both original and temp new keys are equal then we do not have to replace entry
-            if (dataRetriever->equals(elemPtr, tempData))
-            {
-                // Copy back key just in case pointer is not used for hashing or equality
-                // checks
-                dataRetriever->copyTo(tempData, elemPtr);
-            }
-            else
-            {
-                std::pair<uint8 *, uint8 *> originalToNewPairs;
-                originalToNewPairs.first = bufferData;
-                bufferData += elementProp->typeInfo->size;
-                originalToNewPairs.second = bufferData;
-                bufferData += elementProp->typeInfo->size;
-                // Copy original
-                dataRetriever->copyTo(elemPtr, originalToNewPairs.first);
-                // Copy new key and value
-                dataRetriever->copyTo(tempData, originalToNewPairs.second);
-
-                editedKeys.emplace_back(std::move(originalToNewPairs));
-            }
-        }
-
-        for (const std::pair<uint8 *, uint8 *> &originalToNewPairs : editedKeys)
-        {
-            dataRetriever->remove(val, originalToNewPairs.first);
-            dataRetriever->add(val, originalToNewPairs.second);
-        }
-
-        CBEMemory::memFree(tempData);
-    }
-    else // Only value can have pointer
-    {
-        for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
-        {
-            FieldVisitor::visit<GCObjectFieldVisitable>(elementProp, itrPtr->getElement(), userData);
-        }
-    }
-}
 
 void CoreObjectGC::collectObjects(TickRep &budgetTicks)
 {
@@ -555,7 +424,7 @@ void CoreObjectGC::collectObjects(TickRep &budgetTicks)
 
             for (cbe::Object *obj : allocator->getAllObjects<cbe::Object>())
             {
-                if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::MarkedForDelete))
+                if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     userData.thisObj = obj;
                     FieldVisitor::visitFields<GCObjectFieldVisitable>(classesLeft.back(), obj, &userData);
