@@ -39,6 +39,7 @@ ObjectTemplate::ObjectTemplate(StringID className, const String &name)
     createTemplate(clazz, name.getChar());
     debugAssert(templateObj);
     templateObj->constructed();
+    markDirty(this);
 }
 
 ObjectTemplate::ObjectTemplate(ObjectTemplate *inTemplate, const String &name)
@@ -49,6 +50,7 @@ ObjectTemplate::ObjectTemplate(ObjectTemplate *inTemplate, const String &name)
     createTemplate(parentTemplate->objectClass, name.getChar());
     debugAssert(templateObj);
     templateObj->constructed();
+    markDirty(this);
 }
 
 void ObjectTemplate::destroy()
@@ -155,6 +157,7 @@ void ObjectTemplate::onFieldModified(const FieldProperty *prop, Object *obj)
 
     TemplateObjectEntry &entry = objectEntries[objName];
     entry.modifiedFields.emplace(prop->name);
+    markDirty(this);
 }
 
 void ObjectTemplate::onFieldReset(const FieldProperty *prop, Object *obj)
@@ -164,6 +167,7 @@ void ObjectTemplate::onFieldReset(const FieldProperty *prop, Object *obj)
 
     TemplateObjectEntry &entry = objectEntries[objName];
     entry.modifiedFields.erase(prop->name);
+    markDirty(this);
 }
 
 void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)

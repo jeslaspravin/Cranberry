@@ -39,9 +39,9 @@ struct PackageContainedData
 {
     uint64 objectPathLen<hidden=true>;
     char objectPath[objectPathLen];
-    uint32 className;
     uint32 classVersion;
     uint64 objectFlags<read = ObjectFlagsDisplay>;
+    uint32 className;
 
     uint64 streamStart;
     uint64 streamSize;
