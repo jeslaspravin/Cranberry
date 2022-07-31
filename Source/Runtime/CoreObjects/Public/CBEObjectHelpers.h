@@ -165,13 +165,15 @@ Object *createOrGet(CBEClass clazz, const String &name, Object *outerObj, EObjec
 template <typename ClassType, typename... CtorArgs>
 ClassType *create(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
-    return static_cast<ClassType *>(create(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...));
+    return static_cast<ClassType *>(create<CtorArgs...>(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...));
 }
 
 template <typename ClassType, typename... CtorArgs>
 ClassType *createOrGet(const String &name, Object *outerObj, EObjectFlags flags = 0, CtorArgs... ctorArgs)
 {
-    return static_cast<ClassType *>(createOrGet(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...));
+    return static_cast<ClassType *>(
+        createOrGet<CtorArgs...>(ClassType::staticType(), name, outerObj, flags, std::forward<CtorArgs>(ctorArgs)...)
+    );
 }
 
 FORCE_INLINE Object *get(const TChar *objectFullPath) { return ICoreObjectsModule::get()->getObjectsDB().getObject(objectFullPath); }

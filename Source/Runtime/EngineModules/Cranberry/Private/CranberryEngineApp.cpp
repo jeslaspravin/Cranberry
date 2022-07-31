@@ -117,7 +117,7 @@ void tempTest()
         cbe::Package *package = cbe::Package::createPackage(name + TCHAR("_Template"), dir);
 
         cbe::ObjectTemplate *tmplt
-            = cbe::create<cbe::ObjectTemplate, StringID, String>(name, package, 0, cbe::GameEngine::staticType()->name, name);
+            = cbe::create<cbe::ObjectTemplate, StringID, const String &>(name, package, 0, cbe::GameEngine::staticType()->name, name);
         cbe::cast<cbe::GameEngine>(tmplt->getTemplate())->nameVal = TCHAR("Test value, I am Jeslas Pravin");
         tmplt->onFieldModified(PropertyHelper::findField(cbe::GameEngine::staticType(), STRID("nameVal")), tmplt->getTemplate());
 

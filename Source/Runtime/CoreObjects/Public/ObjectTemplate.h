@@ -58,6 +58,11 @@ public:
     /* Overrides ends */
 
     FORCE_INLINE Object *getTemplate() const { return templateObj; }
+    template <typename T>
+    FORCE_INLINE T *getTemplateAs() const
+    {
+        return cast<T>(templateObj);
+    }
     void onFieldModified(const FieldProperty *prop, Object *obj);
     void onFieldReset(const FieldProperty *prop, Object *obj);
 
