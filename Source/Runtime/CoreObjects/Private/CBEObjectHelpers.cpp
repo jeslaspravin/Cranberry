@@ -588,4 +588,162 @@ void replaceObjectReferences(
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Find object references implementations
+//////////////////////////////////////////////////////////////////////////
+
+struct FindObjRefsVisitableUserData
+{
+    const std::unordered_set<Object *> &objects;
+    std::vector<ObjectReferences> &outReferences;
+
+    Object *searchedIn;
+    const FieldProperty *fieldProperty;
+};
+
+struct FindObjRefsVisitable
+{
+    // Ignore fundamental and special types, we need none const custom types or pointers
+    template <typename Type>
+    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    {}
+    static void visit(void *val, const PropertyInfo &propInfo, void *userData)
+    {
+        const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
+        switch (prop->type)
+        {
+        case EPropertyType::MapType:
+        {
+            PropertyVisitorHelper::visitEditMapEntriesPtrOnly<FindObjRefsVisitable>(
+                static_cast<const MapProperty *>(prop), val, propInfo, userData
+            );
+            break;
+        }
+        case EPropertyType::SetType:
+        {
+            PropertyVisitorHelper::visitEditSetEntries<FindObjRefsVisitable>(
+                static_cast<const ContainerProperty *>(prop), val, propInfo, userData
+            );
+            break;
+        }
+        case EPropertyType::ArrayType:
+        {
+            const IterateableDataRetriever *dataRetriever
+                = static_cast<const IterateableDataRetriever *>(static_cast<const ContainerProperty *>(prop)->dataRetriever);
+            const TypedProperty *elemProp = static_cast<const TypedProperty *>(static_cast<const ContainerProperty *>(prop)->elementProp);
+
+            for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
+            {
+                FieldVisitor::visit<FindObjRefsVisitable>(elemProp, itrPtr->getElement(), userData);
+            }
+            break;
+        }
+        case EPropertyType::PairType:
+        {
+            const PairDataRetriever *dataRetriever
+                = static_cast<const PairDataRetriever *>(static_cast<const PairProperty *>(prop)->dataRetriever);
+            const TypedProperty *keyProp = static_cast<const TypedProperty *>(static_cast<const PairProperty *>(prop)->keyProp);
+            const TypedProperty *valueProp = static_cast<const TypedProperty *>(static_cast<const PairProperty *>(prop)->valueProp);
+
+            void *keyPtr = dataRetriever->first(val);
+            void *valPtr = dataRetriever->second(val);
+
+            FieldVisitor::visit<FindObjRefsVisitable>(keyProp, keyPtr, userData);
+            FieldVisitor::visit<FindObjRefsVisitable>(valueProp, valPtr, userData);
+            break;
+        }
+        case EPropertyType::ClassType:
+        {
+            CBEClass clazz = static_cast<CBEClass>(prop);
+            debugAssert(PropertyHelper::isStruct(clazz));
+            FieldVisitor::visitFields<FindObjRefsVisitable>(clazz, val, userData);
+            break;
+        }
+        case EPropertyType::EnumType:
+            break;
+        }
+    }
+    // Ignoring const types
+    static void visit(const void *val, const PropertyInfo &propInfo, void *userData)
+    {
+        alertAlwaysf(false, "Why?! This isn't supposed to be invoked %s", propInfo.thisProperty->nameString);
+    }
+    static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
+    {
+        const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
+        switch (prop->type)
+        {
+        case EPropertyType::ClassType:
+        {
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
+
+            FindObjRefsVisitableUserData *findRefsUserData = (FindObjRefsVisitableUserData *)(userData);
+            cbe::Object **objPtrPtr = reinterpret_cast<cbe::Object **>(ptr);
+            cbe::Object *objPtr = *objPtrPtr;
+
+            auto foundObjItr = findRefsUserData->objects.find(objPtr);
+            if (foundObjItr != findRefsUserData->objects.cend())
+            {
+                findRefsUserData->outReferences.emplace_back(findRefsUserData->searchedIn, findRefsUserData->fieldProperty, objPtr);
+            }
+            break;
+        }
+        case EPropertyType::EnumType:
+        case EPropertyType::MapType:
+        case EPropertyType::SetType:
+        case EPropertyType::ArrayType:
+        case EPropertyType::PairType:
+        default:
+            alertAlwaysf(
+                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
+            break;
+        }
+    }
+    // It is okay we are not going to do anything that violates constant
+    static void visit(const void **ptr, const PropertyInfo &propInfo, void *userData) { visit(const_cast<void **>(ptr), propInfo, userData); }
+};
+
+struct StartFindObjRefsVisitable
+{
+    template <typename Type>
+    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    {
+        FindObjRefsVisitableUserData *findRefsUserData = (FindObjRefsVisitableUserData *)(userData);
+        debugAssert(propInfo.fieldProperty);
+        findRefsUserData->fieldProperty = propInfo.fieldProperty;
+        FindObjRefsVisitable::visit<Type>(val, propInfo, &findRefsUserData);
+    }
+};
+
+COREOBJECTS_EXPORT std::vector<ObjectReferences> findObjectReferences(
+    Object *object, const std::unordered_set<Object *> &objects, EObjectTraversalMode replaceMode /*= EObjectTraversalMode::EntireObjectTree */
+)
+{
+    const CoreObjectsDB &objDb = ICoreObjectsModule::get()->getObjectsDB();
+    std::vector<Object *> subObjects;
+    switch (replaceMode)
+    {
+    case EObjectTraversalMode::EntireObjectTree:
+        objDb.getSubobjects(subObjects, object->getStringID());
+        break;
+    case EObjectTraversalMode::ObjectAndChildren:
+        objDb.getChildren(subObjects, object->getStringID());
+        break;
+    case EObjectTraversalMode::OnlyObject:
+    default:
+        break;
+    }
+
+    std::vector<ObjectReferences> references;
+    FindObjRefsVisitableUserData userData{ .objects = objects, .outReferences = references, .searchedIn = object };
+    FieldVisitor::visitFields<StartFindObjRefsVisitable>(object->getType(), object, &userData);
+    for (Object *subObj : subObjects)
+    {
+        userData.searchedIn = subObj;
+        FieldVisitor::visitFields<StartFindObjRefsVisitable>(subObj->getType(), subObj, &userData);
+    }
+    return references;
+}
+
 } // namespace cbe
