@@ -258,4 +258,14 @@ COREOBJECTS_EXPORT void replaceObjectReferences(
     EObjectTraversalMode replaceMode = EObjectTraversalMode::EntireObjectTree
 );
 
+struct ObjectReferences
+{
+    Object *foundInObject;
+    const FieldProperty *fieldProperty;
+    Object *foundObject;
+};
+COREOBJECTS_EXPORT std::vector<ObjectReferences> findObjectReferences(
+    Object *object, const std::unordered_set<Object *> &objects, EObjectTraversalMode replaceMode = EObjectTraversalMode::EntireObjectTree
+);
+
 } // namespace cbe

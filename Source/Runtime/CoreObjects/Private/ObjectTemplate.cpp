@@ -20,10 +20,6 @@ inline constexpr static const uint32 OBJECT_TEMPLATE_SERIALIZER_VERSION = 0;
 inline constexpr static const uint32 OBJECT_TEMPLATE_SERIALIZER_CUTOFF_VERSION = 0;
 inline STRINGID_CONSTEXPR static const StringID OBJECT_TEMPLATE_CUSTOM_VERSION_ID = STRID("ObjectTemplate");
 
-inline constexpr static const uint32 ACTOR_TEMPLATE_SERIALIZER_VERSION = 0;
-inline constexpr static const uint32 ACTOR_TEMPLATE_SERIALIZER_CUTOFF_VERSION = 0;
-inline STRINGID_CONSTEXPR static const StringID ACTOR_TEMPLATE_CUSTOM_VERSION_ID = STRID("ActorTemplate");
-
 template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, ObjectTemplate::TemplateObjectEntry &value)
 {
