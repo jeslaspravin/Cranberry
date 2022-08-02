@@ -46,7 +46,9 @@ private:
 public:
     // For any world spawned actor, its outer will be world itself
     World *getWorld() const;
-    TransformComponent *getRootComponent() const { return rootComponent; }
+    FORCE_INLINE TransformComponent *getRootComponent() const { return rootComponent; }
+    FORCE_INLINE const std::set<TransformComponent *> &getTransformComponents() const { return transformComps; }
+    FORCE_INLINE const std::set<LogicComponent *> &getLogicComponents() const { return logicComps; }
 
     void addComponent(Object *component);
     void removeComponent(Object *component);

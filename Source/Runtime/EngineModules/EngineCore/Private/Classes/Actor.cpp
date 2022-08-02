@@ -26,7 +26,7 @@ namespace cbe
 
 inline constexpr static const uint32 ACTOR_PREFAB_SERIALIZER_VERSION = 0;
 inline constexpr static const uint32 ACTOR_PREFAB_SERIALIZER_CUTOFF_VERSION = 0;
-inline STRINGID_CONSTEXPR static const StringID ACTOR_PREFAB_CUSTOM_VERSION_ID = STRID("ActorPrefab");
+inline STRINGID_CONSTEXPR static const StringID ACTOR_PREFAB_CUSTOM_VERSION_ID = STRID("ActorPrefabSerializer");
 
 ActorPrefab::ActorPrefab(StringID className, const String &actorName)
     : parentPrefab(nullptr)
@@ -361,6 +361,22 @@ void ActorPrefab::removeComponent(Object *comp)
     comp->beginDestroy();
 }
 
+TransformComponent *ActorPrefab::getRootComponent() const
+{
+    const ActorPrefab *rootCompFromPrefab = this;
+    while (rootCompFromPrefab && !rootCompFromPrefab->rootComponent)
+    {
+        rootCompFromPrefab = rootCompFromPrefab->parentPrefab;
+    }
+    if (rootCompFromPrefab)
+    {
+        return rootCompFromPrefab->rootComponent;
+    }
+
+    debugAssert(actorTemplate->getTemplateAs<Actor>()->rootComponent);
+    return actorTemplate->getTemplateAs<Actor>()->rootComponent;
+}
+
 ObjectArchive &ActorPrefab::serialize(ObjectArchive &ar)
 {
     if (ar.isLoading())
@@ -463,7 +479,7 @@ ObjectArchive &ActorPrefab::serialize(ObjectArchive &ar)
                 }
             }
 
-            // If there is no possible root then it means there is not TransformComponent
+            // If there is no possible root then it means there is no TransformComponent
             if (possibleRoot)
             {
                 // We cannot set not owned component as root
@@ -493,25 +509,54 @@ ObjectArchive &ActorPrefab::serialize(ObjectArchive &ar)
     return ar;
 }
 
+void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
+{
+    World *actorWorld = inPrefab->getActorTemplate()->getWorld();
+    debugAssert(actorWorld);
+
+    Actor *actor = inPrefab->getActorTemplate();
+    uint32 nativeCompsCount = uint32(actor->getLogicComponents().size() + actor->getTransformComponents().size());
+    actor->rootComponent = inPrefab->getRootComponent();
+    auto addCompToActor = [&actor, &inPrefab](Object *comp)
+    {
+        if (TransformComponent *tfComp = cast<TransformComponent>(comp))
+        {
+#if DEV_BUILD
+            if (tfComp != actor->rootComponent)
+            {
+                auto attachedToItr = inPrefab->componentAttachedTo.find(tfComp);
+                alertAlways(attachedToItr != inPrefab->componentAttachedTo.end() && attachedToItr->second == tfComp->getAttachedTo());
+            }
+#endif
+            actor->transformComps.insert(tfComp);
+        }
+        else if (LogicComponent *logicComp = cast<LogicComponent>(comp))
+        {
+            actor->logicComps.insert(logicComp);
+        }
+        else
+        {
+            fatalAssertf(false, "Why?? Component %s of type %s is not a valid component", comp->getName(), comp->getType()->nameString);
+        }
+    };
+    for (Object *comp : inPrefab->components)
+    {
+        addCompToActor(comp);
+    }
+    for (const ComponentOverrideInfo &overrideInfo : inPrefab->componentOverrides)
+    {
+        addCompToActor(overrideInfo.overriddenTemplate->getTemplate());
+    }
+    debugAssert(
+        actor->rootComponent
+        && (actor->logicComps.size() + actor->transformComps.size())
+               == (inPrefab->components.size() + inPrefab->componentOverrides.size() + nativeCompsCount)
+    );
+}
+
 FORCE_INLINE bool ActorPrefab::isNativeComponent(Object *obj) const
 {
     return obj && PropertyHelper::isChildOf<Actor>(obj->getOuter()->getType());
-}
-
-TransformComponent *ActorPrefab::getRootComponent() const
-{
-    const ActorPrefab *rootCompFromPrefab = this;
-    while (rootCompFromPrefab && !rootCompFromPrefab->rootComponent)
-    {
-        rootCompFromPrefab = rootCompFromPrefab->parentPrefab;
-    }
-    if (rootCompFromPrefab)
-    {
-        return rootCompFromPrefab->rootComponent;
-    }
-
-    debugAssert(actorTemplate->getTemplateAs<Actor>()->rootComponent);
-    return actorTemplate->getTemplateAs<Actor>()->rootComponent;
 }
 
 void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences)
@@ -688,7 +733,10 @@ void Actor::addComponent(Object *component)
         {
             tfComp->setAttachedTo(rootComponent);
         }
-        getWorld()->onComponentAdded(this, tfComp);
+        if (World *world = getWorld())
+        {
+            world->onComponentAdded(this, tfComp);
+        }
     }
     else if (PropertyHelper::isChildOf<LogicComponent>(component->getType()))
     {
@@ -705,18 +753,42 @@ void Actor::removeComponent(Object *component)
         {
             if (tfComp == rootComponent)
             {
-                std::vector<TransformComponent *> attachments;
-                getWorld()->componentsAttachedTo(attachments, tfComp);
-                // Just set the first child component of root as new root the world will fix up attachments
-                for (TransformComponent *attachment : attachments)
+                if (World *world = getWorld())
                 {
-                    if (attachment->getActor() == this)
+                    std::vector<TransformComponent *> attachments;
+                    getWorld()->componentsAttachedTo(attachments, tfComp);
+                    // Just set the first child component of root as new root the world will fix up attachments
+                    for (TransformComponent *attachment : attachments)
                     {
-                        rootComponent = attachment;
-                        break;
+                        if (attachment->getActor() == this)
+                        {
+                            rootComponent = attachment;
+                            break;
+                        }
+                    }
+                    // This will reattach  all components to new root that was attached to old root
+                    getWorld()->onComponentRemoved(this, tfComp);
+                }
+                else
+                {
+                    // This happens if actor is not created from world. Instead may be created as part of ActorPrefab
+                    for (TransformComponent *attachment : transformComps)
+                    {
+                        if (attachment->getAttachedTo() == tfComp)
+                        {
+                            rootComponent = attachment;
+                            attachment->setAttachedTo(nullptr);
+                            break;
+                        }
+                    }
+                    for (TransformComponent *attachment : transformComps)
+                    {
+                        if (attachment->getAttachedTo() == tfComp)
+                        {
+                            attachment->setAttachedTo(rootComponent);
+                        }
                     }
                 }
-                getWorld()->onComponentRemoved(this, tfComp);
             }
         }
     }

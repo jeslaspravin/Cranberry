@@ -69,7 +69,7 @@ private:
     // root component override
     META_ANNOTATE()
     TransformComponent *rootComponent;
-    // will not contains actor entry or not overridden components
+    // will not contains actor entry
     META_ANNOTATE()
     std::map<TransformComponent *, TransformComponent *> componentAttachedTo;
 
@@ -107,13 +107,21 @@ public:
     Object *addComponent(ObjectTemplate *compTemplate, const String &compName);
     void removeComponent(Object *comp);
 
+    Actor *getActorTemplate() const;
+    TransformComponent *getRootComponent() const;
+
     /* cbe::Object overrides */
     ObjectArchive &serialize(ObjectArchive &ar) override;
     /* Overrides ends */
-private:
+
+    // Helper functions
     static ActorPrefab *prefabFromActorTemplate(ObjectTemplate *actorTemplate);
     static ActorPrefab *prefabFromCompTemplate(ObjectTemplate *compTemplate);
     static ObjectTemplate *objectTemplateFromObj(Object *obj);
+    // initializes world actor prefab by connecting all attachments
+    static void initializeActor(ActorPrefab *inPrefab);
+
+private:
     FORCE_INLINE static ObjectTemplate *getTemplateToOverride(const ComponentOverrideInfo &overrideInfo)
     {
         return overrideInfo.lastOverride ? overrideInfo.lastOverride : overrideInfo.baseTemplate;
@@ -122,7 +130,6 @@ private:
     FORCE_INLINE bool isNativeComponent(Object *obj) const;
     // If this prefab owns this component
     FORCE_INLINE bool isOwnedComponent(Object *comp) const;
-    TransformComponent *getRootComponent() const;
 
     void createComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences);
     void clearComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences);

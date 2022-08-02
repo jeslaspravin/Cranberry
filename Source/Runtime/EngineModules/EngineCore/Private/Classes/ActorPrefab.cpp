@@ -63,6 +63,8 @@ void ActorPrefab::onActorFieldReset(const FieldProperty *prop, Actor *actor)
     markDirty(this);
 }
 
+Actor *ActorPrefab::getActorTemplate() const { return actorTemplate->getTemplateAs<Actor>(); }
+
 ActorPrefab *ActorPrefab::prefabFromActorTemplate(ObjectTemplate *actorTemplate)
 {
     // Outer of actor template must be actor prefab
