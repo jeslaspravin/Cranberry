@@ -571,6 +571,10 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     );
 
     headerReflectTypeCntxt.args[GeneratorConsts::IFGENERATECTOR_BRANCH_TAG] = !classParseCntx.bHasConstructor;
+    if (!clang_Cursor_isNull(classParseCntx.baseClass))
+    {
+        headerReflectTypeCntxt.args[GeneratorConsts::BASECLASSTYPENAME_TAG] = classCntxt.args[GeneratorConsts::BASECLASSTYPENAME_TAG];
+    }
 
     for (CXCursor c : classLocalCtx.unhandledSibilings)
     {
