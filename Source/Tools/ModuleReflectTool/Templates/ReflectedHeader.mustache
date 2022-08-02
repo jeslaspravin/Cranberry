@@ -18,6 +18,7 @@ public:\
 {{>StaticFunctions}}{{#IsClass}}\
 {{>VirtualTypeGetter}}\
 friend HEADER_FILE_ID;\
+{{#BaseClassTypeName}}using BaseType = {{BaseClassTypeName}};{{/BaseClassTypeName}}\
 {{/IsClass}}\
 {{#IsBaseType}}{{#DefineCtorPolicy}}OVERRIDE_CONSTRUCTION_POLICY(DefaultConstructionPolicy);{{/DefineCtorPolicy}}{{/IsBaseType}}\
 CBE_CLASS_NEWDELETE_OVERRIDES({{SimpleTypeName}})
