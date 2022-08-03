@@ -351,7 +351,7 @@ public:
         using IteratorBase::node;
 
     public:
-        using IteratorBase::FieldType;
+        using typename IteratorBase::FieldType;
 
         ConstIterator() = default;
         ConstIterator(const ShaderParamInfo *paramInfo)
@@ -402,7 +402,7 @@ public:
         using IteratorBase::node;
 
     public:
-        using IteratorBase::FieldType;
+        using typename IteratorBase::FieldType;
 
         Iterator() = default;
         Iterator(const ShaderParamInfo *paramInfo)
