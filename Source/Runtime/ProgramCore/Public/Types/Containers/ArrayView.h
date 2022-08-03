@@ -22,7 +22,9 @@ class ArrayView
 public:
     using value_type = ElementType;
     using pointer = ElementType *;
+    using const_pointer = ElementType const *;
     using reference = ElementType &;
+    using const_reference = ElementType const &;
 
     template <bool bIsConst>
     class Iterator
@@ -162,12 +164,18 @@ public:
     {}
 
     CONST_EXPR SizeT size() const { return length; }
-
     NODISCARD bool empty() const { return length == 0; }
-
     CONST_EXPR pointer data() { return dataPtr + offset; }
+    CONST_EXPR const_pointer data() const { return dataPtr + offset; }
+    CONST_EXPR pointer ptr() { return dataPtr; }
+    CONST_EXPR const_pointer ptr() const { return dataPtr; }
 
-    CONST_EXPR const pointer data() const { return dataPtr + offset; }
+    CONST_EXPR void reset()
+    {
+        offset = 0;
+        length = 0;
+        dataPtr = nullptr;
+    }
 
     reference operator[](SizeT idx)
     {
@@ -175,7 +183,7 @@ public:
         return dataPtr[offset + idx];
     }
 
-    const reference operator[](SizeT idx) const
+    const_reference operator[](SizeT idx) const
     {
         fatalAssertf(idx < length, "Invalid index %d", idx);
         return dataPtr[offset + idx];

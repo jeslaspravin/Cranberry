@@ -512,8 +512,8 @@ enum class StoreOp
 
 namespace EPipelineStages
 {
-#define EPIPELINESTAGES_FIRST(Stage) Stage## = 0,
-#define EPIPELINESTAGES(Stage) Stage##,
+#define EPIPELINESTAGES_FIRST(Stage) Stage = 0,
+#define EPIPELINESTAGES(Stage) Stage,
 #define EPIPELINESTAGES_LAST(Stage) Stage
 enum Type
 {
