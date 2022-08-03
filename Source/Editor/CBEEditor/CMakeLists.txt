@@ -4,6 +4,8 @@ include(GeneratedReflectionsMacros)
 set(private_modules
     ProgramCore
     CoreObjects
+    EngineCore
+    EditorCore
 )
 
 set(public_modules 

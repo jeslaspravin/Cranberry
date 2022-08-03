@@ -2,10 +2,10 @@ include(EngineProjectMacros)
 include(GeneratedReflectionsMacros)
 
 set(private_modules
-    ProgramCore
 )
 
 set(public_modules 
+    ProgramCore
     ReflectionRuntime
 )
 

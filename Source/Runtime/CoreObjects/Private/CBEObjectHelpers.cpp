@@ -312,6 +312,10 @@ void DeepCopyFieldVisitable::visitStruct(const PropertyInfo &propInfo, void *use
 bool copyObject(CopyObjectOptions options)
 {
     debugAssert(options.fromObject && options.toObject);
+    if (!options.fromObject)
+    {
+        return false;
+    }
 
     if (options.fromObject->getType() != options.toObject->getType())
     {
@@ -425,6 +429,11 @@ Object *duplicateObject(
     Object *fromObject, Object *newOuter, String newName /*= ""*/, EObjectFlags additionalFlags /*= 0*/, EObjectFlags clearFlags /*= 0*/
 )
 {
+    if (!fromObject)
+    {
+        return nullptr;
+    }
+
     if (newName.empty())
     {
         newName = fromObject->getName();
