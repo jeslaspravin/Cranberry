@@ -2,11 +2,11 @@ include(EngineProjectMacros)
 include(GeneratedReflectionsMacros)
 
 set(private_modules
-    ProgramCore
-    CoreObjects
 )
 
 set(public_modules 
+    CoreObjects
+    Application
 )
 
 set (interface_modules
