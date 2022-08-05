@@ -2273,17 +2273,28 @@ void ExperimentalEnginePBR::updateCameraParams()
         bCamRotated = true;
     }
 
-    if (camera.cameraProjection != projection)
+    auto projectionChanged = [this]()
     {
         camera.cameraProjection = projection;
-        viewDataTemp.projection = camera.projectionMatrix();
-        viewDataTemp.invProjection = viewDataTemp.projection.inverse();
+        camera.setFOV((110.f * ApplicationSettings::surfaceSize.get().x) / (ApplicationSettings::surfaceSize.get().y * 1.78f), 90.f);
 
-        viewParameters->setMatrixParam(TCHAR("projection"), viewDataTemp.projection);
-        viewParameters->setMatrixParam(TCHAR("invProjection"), viewDataTemp.invProjection);
-        lightCommon->setMatrixParam(TCHAR("projection"), viewDataTemp.projection);
-        lightCommon->setMatrixParam(TCHAR("invProjection"), viewDataTemp.invProjection);
+        Matrix4 projectionMat = camera.projectionMatrix();
+        Matrix4 invProjectionMat = projectionMat.inverse();
+        viewParameters->setMatrixParam(TCHAR("projection"), projectionMat);
+        viewParameters->setMatrixParam(TCHAR("invProjection"), invProjectionMat);
+        lightCommon->setMatrixParam(TCHAR("projection"), projectionMat);
+        lightCommon->setMatrixParam(TCHAR("invProjection"), invProjectionMat);
+    };
+    if (camera.cameraProjection != projection)
+    {
+        projectionChanged();
     }
+    static DelegateHandle handle = ApplicationSettings::surfaceSize.onConfigChanged().bindLambda(
+        [projectionChanged](Size2D, Size2D)
+        {
+            projectionChanged();
+        }
+    );
 
     camera.setRotation(cameraRotation);
     camera.setTranslation(cameraTranslation);
@@ -2315,7 +2326,7 @@ void ExperimentalEnginePBR::onStartUp()
     camera.cameraProjection = projection;
     camera.setOrthoSize({ 1280, 720 });
     camera.setClippingPlane(0.1f, 6000.f);
-    camera.setFOV(110.f, 90.f);
+    camera.setFOV((110.f * ApplicationSettings::surfaceSize.get().x) / (ApplicationSettings::surfaceSize.get().y * 1.78f), 90.f);
 
     cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
     cameraTranslation.z() += 200;
