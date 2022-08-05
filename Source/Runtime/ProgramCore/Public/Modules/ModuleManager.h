@@ -87,6 +87,16 @@ public:
     WeakModulePtr getModule(const TChar *moduleName) const;
     bool loadModule(const TChar *moduleName);
     WeakModulePtr getOrLoadModule(const TChar *moduleName);
+    template <typename ModuleType>
+    ModuleType *getOrLoadModule(const TChar *moduleName)
+    {
+        WeakModulePtr modulePtr = getOrLoadModule(moduleName);
+        if (!modulePtr.expired())
+        {
+            return static_cast<ModuleType *>(modulePtr.get());
+        }
+        return nullptr;
+    }
     void unloadModule(const TChar *moduleName);
     void unloadAll();
 
