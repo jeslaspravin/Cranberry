@@ -29,6 +29,7 @@ void ModuleSources::printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptio
     const uint32 childDiagsNum = clang_getNumDiagnosticsInSet(childDiags);
 
     String diagnosticStr(CXStringWrapper(clang_formatDiagnostic(diagnostic, formatOptions)).toString());
+    CXSourceLocation diagnosticLoc = clang_getDiagnosticLocation(diagnostic);
     // Ignore include failed on gen.h files
     static const StringRegex inclGenHeaderMatch(TCHAR(".*'.*.gen.h' file not found.*"), std::regex_constants::ECMAScript);
     if (std::regex_match(diagnosticStr, inclGenHeaderMatch))
@@ -36,7 +37,7 @@ void ModuleSources::printDiagnostics(CXDiagnostic diagnostic, uint32 formatOptio
         return;
     }
 
-    LOG_WARN("Diagnostics", "[%d]%s", idx, diagnosticStr);
+    LOG_WARN("Diagnostics", "%s%s", diagnosticLoc, diagnosticStr);
     for (int32 i = 0; i < childDiagsNum; ++i)
     {
         CXDiagnostic childDiagnostic = clang_getDiagnosticInSet(childDiags, i);
@@ -197,11 +198,17 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
     addAdditionalCompileOpts(moduleArgs);
     for (const String &compileDef : compileDefs)
     {
-        moduleArgs.emplace_back("-D" + std::string(TCHAR_TO_ANSI(compileDef.getChar())));
+        if (!compileDefs.empty())
+        {
+            moduleArgs.emplace_back("-D" + std::string(TCHAR_TO_ANSI(compileDef.getChar())));
+        }
     }
     for (const String &incl : includes)
     {
-        moduleArgs.emplace_back("-I" + std::string(TCHAR_TO_ANSI(incl.getChar())));
+        if (!incl.empty())
+        {
+            moduleArgs.emplace_back("-I" + std::string(TCHAR_TO_ANSI(incl.getChar())));
+        }
     }
     std::vector<const AChar *> argsPtrs(moduleArgs.size());
     // Fill args pointers
@@ -274,11 +281,11 @@ bool ModuleSources::compileAllSources(bool bFullCompile /*= false*/)
             {
                 if (!ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::NO_DIAGNOSTICS))
                 {
-                    uint32 formatOptions = CXDiagnostic_DisplaySourceLocation | CXDiagnostic_DisplayColumn | CXDiagnostic_DisplayCategoryName
-                                           | CXDiagnostic_DisplayOption;
+                    uint32 formatOptions = CXDiagnostic_DisplayCategoryName | CXDiagnostic_DisplayOption;
                     uint32 diagnosticsNum = clang_getNumDiagnostics(unit);
                     for (uint32 i = 0; i < diagnosticsNum; ++i)
                     {
+                        LOG_WARN("Diagnostics", "------ Diagnostics %u ------", i);
                         auto diagnostic = clang_getDiagnostic(unit, i);
                         printDiagnostics(diagnostic, formatOptions, i);
                         clang_disposeDiagnostic(diagnostic);
