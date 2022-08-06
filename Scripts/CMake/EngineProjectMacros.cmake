@@ -282,14 +282,10 @@ macro (mark_delay_loaded_dlls)
         endif ()
         
         # ProgramCore module must be skipped as it has all base code for loading modules,
-        # So instead we add POST_BUILD copy here
+        # So instead we add POST_BUILD copy in ProgramCore
         set (program_core_module "ProgramCore")
         list (FIND delay_load_list ${program_core_module} program_core_idx)
         if (${program_core_idx} GREATER_EQUAL 0)
-            add_custom_command(TARGET ${target_name} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${program_core_module}> $<TARGET_FILE_DIR:${target_name}>
-                COMMAND_EXPAND_LISTS
-            )
             # Remove ProgramCore
             list (REMOVE_ITEM delay_load_list ${program_core_module})
         endif (${program_core_idx} GREATER_EQUAL 0)

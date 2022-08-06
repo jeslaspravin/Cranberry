@@ -42,3 +42,7 @@ macro(setup_runtime_output_dir root_dir rel_path)
         set (CMAKE_RUNTIME_OUTPUT_DIRECTORY_${config} "${root_dir}/${config_name}/${rel_path}")
     endforeach()
 endmacro()
+
+function(get_engine_root abs_path out_engine_root)
+    set (${out_engine_root} "${abs_path}/.." PARENT_SCOPE)
+endfunction()
