@@ -114,10 +114,10 @@ private:
     static constexpr u32 threadTypeToIdx(EJobThreadType threadType) { return u32(threadType) - (u32(EJobThreadType::MainThread) + 1); }
     static constexpr EJobThreadType idxToThreadType(u32 idx) { return EJobThreadType(idx + 1 + u32(EJobThreadType::MainThread)); }
 
-    template <u32 LastIdx>
-    void initializeSpecialThreads(std::integer_sequence<u32, LastIdx>);
-    template <u32 FirstIdx, u32... Indices>
-    void initializeSpecialThreads(std::integer_sequence<u32, FirstIdx, Indices...>);
+    template <u32 Idx>
+    void initializeSpecialThread();
+    template <u32... Indices>
+    void initializeSpecialThreads(std::integer_sequence<u32, Indices...>);
 };
 
 /**
@@ -275,22 +275,19 @@ void SpecialThreadsPool<SpecialThreadsCount>::shutdown()
 }
 
 template <u32 SpecialThreadsCount>
-template <u32 LastIdx>
-void SpecialThreadsPool<SpecialThreadsCount>::initializeSpecialThreads(std::integer_sequence<u32, LastIdx>)
+template <u32 Idx>
+void SpecialThreadsPool<SpecialThreadsCount>::initializeSpecialThread()
 {
-    constexpr static const EJobThreadType threadType = idxToThreadType(LastIdx);
-    INTERNAL_SpecialThreadFuncType func = &JobSystem::doSpecialThreadJobs<LastIdx, threadType>;
+    constexpr static const EJobThreadType threadType = idxToThreadType(Idx);
+    INTERNAL_SpecialThreadFuncType func = &JobSystem::doSpecialThreadJobs<Idx, threadType>;
     INTERNAL_initializeAndRunSpecialThread(func, threadType, ownerJobSystem);
 }
 
 template <u32 SpecialThreadsCount>
-template <u32 FirstIdx, u32... Indices>
-void SpecialThreadsPool<SpecialThreadsCount>::initializeSpecialThreads(std::integer_sequence<u32, FirstIdx, Indices...>)
+template <u32... Indices>
+void SpecialThreadsPool<SpecialThreadsCount>::initializeSpecialThreads(std::integer_sequence<u32, Indices...>)
 {
-    constexpr static const EJobThreadType threadType = idxToThreadType(FirstIdx);
-    INTERNAL_SpecialThreadFuncType func = &JobSystem::doSpecialThreadJobs<FirstIdx, threadType>;
-    INTERNAL_initializeAndRunSpecialThread(func, threadType, ownerJobSystem);
-    initializeSpecialThreads(std::integer_sequence<u32, Indices...>{});
+    (initializeSpecialThread<Indices>(), ...);
 }
 
 template <u32 SpecialThreadsCount>
