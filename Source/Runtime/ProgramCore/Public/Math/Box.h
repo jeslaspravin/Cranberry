@@ -20,7 +20,7 @@ class Vector2D;
 class Vector3D;
 
 // Usage AABB
-template <class T, uint32 d>
+template <typename T, uint32 d>
 class Box
 {
 public:
@@ -386,7 +386,7 @@ public:
     }
 };
 
-template <class T>
+template <typename T>
 class Box<T, 1>
 {
 public:

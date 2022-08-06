@@ -13,10 +13,33 @@
 
 #include "Serialization/ArchiveBase.h"
 #include "Math/CoreMathTypes.h"
+#include "Math/Box.h"
 #include "Types/Transform3D.h"
 #include "Types/Colors.h"
 #include "String/StringID.h"
 #include "String/NameString.h"
+
+// serialize glm types
+struct SerializeGlmVec
+{
+    template <SizeT Idx, ArchiveTypeName ArchiveType, glm::length_t Count, typename ElementType, glm::qualifier Qualifier>
+    FORCE_INLINE static void serialize(ArchiveType &archive, glm::vec<Count, ElementType, Qualifier> &value)
+    {
+        archive << value[Idx];
+    }
+    template <ArchiveTypeName ArchiveType, glm::length_t Count, typename ElementType, glm::qualifier Qualifier, SizeT... Indices>
+    static ArchiveType &serialize(ArchiveType &archive, glm::vec<Count, ElementType, Qualifier> &value, std::index_sequence<Indices...>)
+    {
+        // Expand inline
+        (serialize<Indices>(archive, value), ...);
+        return archive;
+    }
+};
+template <ArchiveTypeName ArchiveType, glm::length_t Count, typename ElementType, glm::qualifier Qualifier>
+ArchiveType &operator<<(ArchiveType &archive, glm::vec<Count, ElementType, Qualifier> &value)
+{
+    return SerializeGlmVec::serialize(archive, value, std::make_index_sequence<Count>{});
+}
 
 template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, Vector2D &value)
@@ -39,27 +62,21 @@ ArchiveType &operator<<(ArchiveType &archive, Vector4D &value)
 template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, Matrix2 &value)
 {
-    archive << value[0].x << value[1].x;
-    archive << value[0].y << value[1].y;
+    archive << value[0] << value[1];
     return archive;
 }
 
 template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, Matrix3 &value)
 {
-    archive << value[0].x << value[1].x << value[2].x;
-    archive << value[0].y << value[1].y << value[2].y;
-    archive << value[0].z << value[1].z << value[2].z;
+    archive << value[0] << value[1] << value[2];
     return archive;
 }
 
 template <ArchiveTypeName ArchiveType>
 ArchiveType &operator<<(ArchiveType &archive, Matrix4 &value)
 {
-    archive << value[0].x << value[1].x << value[2].x << value[3].x;
-    archive << value[0].y << value[1].y << value[2].y << value[3].y;
-    archive << value[0].z << value[1].z << value[2].z << value[3].z;
-    archive << value[0].w << value[1].w << value[2].w << value[3].w;
+    archive << value[0] << value[1] << value[2] << value[3];
     return archive;
 }
 
@@ -116,4 +133,11 @@ ArchiveType &operator<<(ArchiveType &archive, NameString &value)
         value.id = value.nameStr;
     }
     return archive;
+}
+
+// Box type
+template <ArchiveTypeName ArchiveType, typename ElementType, uint32 ElementCount>
+ArchiveType &operator<<(ArchiveType &archive, Box<ElementType, ElementCount> &value)
+{
+    return archive << value.minBound << value.maxBound;
 }

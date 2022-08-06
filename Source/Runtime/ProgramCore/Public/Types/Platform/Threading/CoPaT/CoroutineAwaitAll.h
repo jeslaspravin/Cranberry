@@ -196,28 +196,26 @@ public:
     ResumeRetType await_resume() const noexcept { return allAwaits; }
 
 private:
-    template <size_t LastIdx>
-    void setAwaitsWaitCounter(std::index_sequence<LastIdx>)
+    template <size_t Idx>
+    void setAwaitWaitCounter()
     {
-        std::get<LastIdx>(allAwaits).setWaitCounter(counter);
+        std::get<Idx>(allAwaits).setWaitCounter(counter);
     }
-    template <size_t FirstIdx, size_t... Indices>
-    void setAwaitsWaitCounter(std::index_sequence<FirstIdx, Indices...>)
+    template <size_t... Indices>
+    void setAwaitsWaitCounter(std::index_sequence<Indices...>)
     {
-        std::get<FirstIdx>(allAwaits).setWaitCounter(counter);
-        setAwaitsWaitCounter(std::index_sequence<Indices...>{});
+        (setAwaitWaitCounter<Indices>(), ...);
     }
 
-    template <size_t LastIdx>
-    void destroyAllAwaits(std::index_sequence<LastIdx>)
+    template <size_t Idx>
+    void destroyAwait()
     {
-        std::get<LastIdx>(allAwaits).destroyOwnerCoroutine();
+        std::get<Idx>(allAwaits).destroyOwnerCoroutine();
     }
-    template <size_t FirstIdx, size_t... Indices>
-    void destroyAllAwaits(std::index_sequence<FirstIdx, Indices...>)
+    template <size_t... Indices>
+    void destroyAllAwaits(std::index_sequence<Indices...>)
     {
-        std::get<FirstIdx>(allAwaits).destroyOwnerCoroutine();
-        destroyAllAwaits(std::index_sequence<Indices...>{});
+        (destroyAwait<Indices>(), ...);
     }
 };
 

@@ -703,7 +703,7 @@ template <typename OwnerType, typename... Params>
 class Event : public MultiCastDelegateBase<Params...>
 {
 private:
-    using MultiCastDelegateBase<Params...>::DelegateInterface;
+    using typename MultiCastDelegateBase<Params...>::DelegateInterface;
     using MultiCastDelegateBase<Params...>::allDelegates;
 
     friend OwnerType;
