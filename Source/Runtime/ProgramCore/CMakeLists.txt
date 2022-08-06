@@ -49,6 +49,15 @@ target_compile_definitions(${target_name}
     PRIVATE
         ${private_compile_defs}
 )
+# Copying to other directories like Editor and Tools, In dynamic libraries
+if (NOT ${engine_static_modules})
+    get_engine_root($<TARGET_FILE_DIR:${target_name}> engine_root)
+    add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${target_name}> ${engine_root}/Tools
+        COMMAND_EXPAND_LISTS
+    )
+endif (NOT ${engine_static_modules})
+
 
 # it is okay here as this will be base of all module and so no other modules exists yet
 mark_delay_loaded_dlls(IGNORE_MODULES)
