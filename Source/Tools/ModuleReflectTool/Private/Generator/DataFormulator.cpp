@@ -43,7 +43,7 @@ void parseFailed(CXCursor cursor, SourceGeneratorContext *srcGenContext, const T
     // Just push and pop debug here to enable log level
     SCOPED_MUTE_LOG_SEVERITIES(Logger::Debug);
     LOG_ERROR(
-        "SourceGenerator", "%s ERROR %s() : Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName,
+        "SourceGenerator", "%s error ParseFailed: %s() Reflection parsing failed - %s", clang_getCursorLocation(cursor), funcName,
         StringFormat::format(std::forward<FmtType>(fmtMsg), std::forward<Args>(args)...)
     );
     srcGenContext->bGenerated = false;
