@@ -39,3 +39,13 @@ set(CMAKE_STATIC_LINKER_FLAGS_DEVELOPMENT ${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEB
 set(CMAKE_SHARED_LINKER_FLAGS_DEVELOPMENT ${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO_INIT} CACHE STRING
     "CPP exe shared library flags for Development configuration")
 
+# Global compile and link options
+
+# Not using since mimalloc does not work
+# add_compile_options(-fsanitize=address)
+
+# POD/Variables in class has to initialized with {} to zero initialize if calling constructors that are not compiler generated
+# add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/sdl>)
+
+# Strictly conform to standard    
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/permissive->)

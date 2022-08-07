@@ -143,6 +143,10 @@ public:
     APPLICATION_EXPORT ApplicationInstance(const AppInstanceCreateInfo &createInfo);
 
     APPLICATION_EXPORT void requestExit() { bExitNextFrame = true; }
+    // When to call exit next frame?
+    // If you already started rendering jobs based on objects that will gets destroyed immediately(Without waiting for render thread jobs) after
+    // exiting
+    APPLICATION_EXPORT void exitNextFrame();
 
     void startApp();
     virtual void onStart() = 0;

@@ -30,8 +30,8 @@ void WgImGui::construct(const WgArguments &args)
     {
         clearResources();
     }
-    imgui = new ImGuiManager(args.imguiManagerName.getChar());
-    imgui->initialize();
+    imgui = new ImGuiManager(args.imguiManagerName.getChar(), args.parentImguiCntxt);
+    imgui->initialize({ .bEnableDocking = args.bEnableDocking });
 }
 
 WgImGui::~WgImGui()

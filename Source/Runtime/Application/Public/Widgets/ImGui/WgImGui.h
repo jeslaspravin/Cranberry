@@ -27,6 +27,8 @@ public:
     struct WgArguments
     {
         String imguiManagerName;
+        ImGuiManager *parentImguiCntxt = nullptr;
+        bool bEnableDocking = false;
     };
 
 private:
