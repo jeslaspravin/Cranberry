@@ -121,8 +121,12 @@ RenderThreadEnqTask RenderThreadEnqueuer::execInRenderThreadAwaitable(RenderThre
 
 void RenderThreadEnqueuer::flushWaitRenderThread()
 {
-    RenderThreadEnqTask dummyTask = execInRenderThreadAwaitable([](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *) {});
-    copat::waitOnAwaitable(dummyTask);
+    if (copat::JobSystem::get()->getCurrentThreadType() != copat::EJobThreadType::RenderThread)
+    {
+        RenderThreadEnqTask dummyTask
+            = execInRenderThreadAwaitable([](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *) {});
+        copat::waitOnAwaitable(dummyTask);
+    }
 }
 
 copat::NormalFuncAwaiter RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc)
