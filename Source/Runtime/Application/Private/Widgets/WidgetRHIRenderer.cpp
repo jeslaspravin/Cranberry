@@ -90,6 +90,12 @@ void WidgetRHIRenderer::destroyRenderThread(
     IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
+    for (auto itr = windowStates.begin(); itr != windowStates.end();)
+    {
+        SharedPtr<WgWindow> window = itr->first;
+        itr++;
+        clearWindowState(window);
+    }
     dummyTexture.reset();
     indices.reset();
     vertices.reset();

@@ -36,6 +36,12 @@ class LocalPipelineContext;
 class WidgetBase;
 class WgWindow;
 
+struct ImGuiManagerOptions
+{
+    bool bEnableDocking = false;
+    bool bEnableViewport = false;
+};
+
 struct ImGuiDrawingContext
 {
     const GraphicsResource *cmdBuffer;
@@ -93,7 +99,7 @@ public:
     ImGuiManager(const TChar *managerName, ImGuiManager *parent);
     ImGuiManager(const TChar *managerName);
 
-    void initialize();
+    void initialize(ImGuiManagerOptions opts);
     void release();
 
     void draw(

@@ -26,6 +26,7 @@
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 
 using namespace ImGui;
 
@@ -42,8 +43,9 @@ ImGuiManager::ImGuiManager(const TChar *managerName)
     , name(TCHAR_TO_UTF8(managerName))
 {}
 
-void ImGuiManager::initialize()
+void ImGuiManager::initialize(ImGuiManagerOptions opts)
 {
+    debugAssertf(!opts.bEnableViewport, "Viewport option is not supported!");
     IMGUI_CHECKVERSION();
     if (parentGuiManager)
     {
@@ -60,26 +62,42 @@ void ImGuiManager::initialize()
     ImGuiIO &io = GetIO();
     io.BackendPlatformName = name.c_str();
     io.IniFilename = nullptr;
+    io.ConfigFlags = (opts.bEnableDocking ? ImGuiConfigFlags_DockingEnable : 0);
     ImFontConfig fontConfig;
-    fontConfig.OversampleH = 3;
-    fontConfig.OversampleV = 3;
-    fontConfig.GlyphExtraSpacing = ImVec2(1, 1);
-    fontConfig.RasterizerMultiply = 2.0f;
-    io.Fonts->AddFontDefault(&fontConfig);
+    fontConfig.OversampleH = 2;
+    fontConfig.OversampleV = 2;
+    //fontConfig.GlyphExtraSpacing = ImVec2(1, 1);
+    fontConfig.RasterizerMultiply = 1.5f;
+    // io.Fonts->AddFontDefault(&fontConfig);
 
-    // fontConfig.OversampleH = 2;
-    // fontConfig.OversampleV = 2;
-    // fontConfig.GlyphExtraSpacing = ImVec2(1, 1);
-    // fontConfig.RasterizerMultiply = 1.25f;
-    // io.Fonts->AddFontFromFileTTF("D:/Workspace/VisualStudio/Cranberry/Build/Debug/Assets/Fonts/CascadiaMono-Bold.ttf"
-    //     , 13.0f, &fontConfig);
+    io.Fonts->AddFontFromFileTTF(TCHAR_TO_UTF8(
+        PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Assets/Fonts/CascadiaMono-Regular.ttf")).getChar()
+        ),
+        14.0f, &fontConfig);
+
+    // https://github.com/google/material-design-icons/blob/master/font/MaterialIcons-Regular.codepoints
+    // fontConfig.MergeMode = true;
+    // fontConfig.GlyphMinAdvanceX = 13.0f;
+    // fontConfig.GlyphOffset = ImVec2(0, 2);
+    // Captures the pointer so Range must be alive when building the font itself
+    // static const ImWchar fontRange[] = { 0xe000, 0xf8ff, 0 };
+    // io.Fonts->AddFontFromFileTTF(TCHAR_TO_UTF8(
+    //    PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Assets/Fonts/MaterialIcons-Regular.ttf")).getChar()
+    //    ),
+    //    13.0f, &fontConfig, fontRange);
 
     // Setup Dear ImGui style
     StyleColorsDark();
     GetStyle().AntiAliasedLines = false;
-    GetStyle().WindowRounding = 0.15f;
     GetStyle().AntiAliasedFill = true;
     GetStyle().AntiAliasedLinesUseTex = true;
+
+    GetStyle().WindowRounding = 1.0f;
+    GetStyle().ChildRounding = 0.75f;
+    GetStyle().FrameRounding = 0.75f;
+    GetStyle().ScrollbarRounding = 1.0f;
+    GetStyle().GrabRounding = 1.0f;
+    GetStyle().TabRounding = 1.0f;
 
     setupInputs();
     setupRendering();
@@ -384,8 +402,9 @@ void ImGuiManager::updateRenderResources(
 void ImGuiManager::setupRendering()
 {
     ImGuiIO &io = GetIO();
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // We can honor the ImDrawCmd::VtxOffset
-                                                               // field, allowing for large meshes.
+    // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+
     // texture atlas can be used from parent
     if (parentGuiManager)
     {
@@ -395,7 +414,6 @@ void ImGuiManager::setupRendering()
     {
         ENQUEUE_COMMAND(SetupImGui)
         (
-
             [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
             {
                 recreateFontAtlas(cmdList, graphicsInstance, graphicsHelper);

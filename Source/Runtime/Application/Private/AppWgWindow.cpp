@@ -80,6 +80,13 @@ SharedPtr<WgWindow> WidgetBase::findWidgetParentWindow(SharedPtr<WidgetBase> wid
 /// ApplicationInstance Implementations
 //////////////////////////////////////////////////////////////////////////
 
+copat::NormalFuncAwaiter enqExitApp()
+{
+    co_await copat::SwitchJobThreadAwaiter<copat::EJobThreadType::MainThread>{};
+    IApplicationModule::get()->getApplication()->requestExit();
+}
+void ApplicationInstance::exitNextFrame() { enqExitApp(); }
+
 StackAllocator<EThreadSharing::ThreadSharing_Exclusive> &ApplicationInstance::getFrameAllocator()
 {
     debugAssert(copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::MainThread);
