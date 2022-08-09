@@ -595,7 +595,7 @@ void VulkanCommandList::presentImage(
     for (const GraphicsResource *cmdBuffer : swapchainFrameWrites)
     {
         SemaphoreRef cmdSignal = cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
-        fatalAssertf(cmdSignal, "Invalid signalling semaphore for cmd buffer %s!", cmdBuffer->getResourceName());
+        fatalAssertf(cmdSignal.isValid(), "Invalid signalling semaphore for cmd buffer %s!", cmdBuffer->getResourceName());
         waitSemaphores.emplace_back(cmdSignal);
     }
 

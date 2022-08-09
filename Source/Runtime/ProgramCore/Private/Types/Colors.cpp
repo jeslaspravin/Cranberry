@@ -373,6 +373,7 @@ const Color GRAY(128, 128, 128, 255);
 const Color BLACK(0, 0, 0, 255);
 const Color RED(255, 0, 0, 255);
 const Color BLUE(0, 0, 255, 255);
+const Color PALE_BLUE(195, 218, 234, 255);
 const Color GREEN(0, 255, 0, 255);
 
 const Color CYAN(0, 255, 255, 255);
@@ -399,6 +400,7 @@ const LinearColor GRAY(0.5, 0.5, 0.5, 1);
 const LinearColor BLACK(0, 0, 0, 1);
 const LinearColor RED(1, 0, 0, 1);
 const LinearColor BLUE(0, 0, 1, 1);
+const LinearColor PALE_BLUE(0.764f, 0.854f, 0.917f, 1.0f);
 const LinearColor GREEN(0, 1, 0, 1);
 
 const LinearColor CYAN(0, 1, 1, 1);

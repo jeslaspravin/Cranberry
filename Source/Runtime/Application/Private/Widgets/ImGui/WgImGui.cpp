@@ -54,6 +54,11 @@ void WgImGui::rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree)
         imgui->setDisplaySize(geomTree[thisId].box.size());
     }
 
+    /**
+     * Right now this code does nothing except allow drawWidget on each children of this,
+     * Once app widgets and ImGui can coexists interaction wise this will be useful
+     * If they never going to coexist remove this and change how we draw app widgets in drawWidget()
+     */
     for (const std::pair<const int32, std::vector<SharedPtr<IImGuiLayer>>> &layersPerDepth : imgui->getLayers())
     {
         for (const SharedPtr<IImGuiLayer> &layer : layersPerDepth.second)
@@ -91,7 +96,7 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
 
         ApplicationInstance *app = IApplicationModule::get()->getApplication();
         WindowCanvasRef windowCanvas = app->getWindowCanvas(window);
-        debugAssert(windowCanvas);
+        debugAssert(windowCanvas.isValid());
 
         bufferingCount = windowCanvas->imagesCount();
         bRegenRt = bufferingCount != swapchainBuffered.size();
@@ -151,7 +156,7 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
         imgui->setDisplaySize(widgetSize);
     }
 
-    // Just draw this imgui widget above all layer, If any widget wants to draw below ImGui can just draw without any layer push
+    // Just draw this imgui widget after all layer, If any widget wants to draw below ImGui can just draw without any layer push
     uint32 layerCount = 0;
     if (!imgui->getLayers().empty())
     {
@@ -181,10 +186,20 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
         // Ensure layers determined by incrementing is matching actual layers
         debugAssert(layerCount == imgui->getLayers().size());
         // Draw ImGui output texture
-        context.beginLayer();
         context.addWaitCondition(swapchainBuffered[imageIdx].semaphore);
         context.drawBox(geomTree[thisId].box, swapchainBuffered[imageIdx].rt.renderResource(), clipBound);
-        context.endLayer();
+
+        // Drawing on top of ImGui widgets
+        for (WidgetGeomId layerGeomId : layerGeomIds)
+        {
+            const WidgetGeom &layerGeom = geomTree[layerGeomId];
+            SharedPtr<IImGuiLayer> layer = std::static_pointer_cast<IImGuiLayer>(layerGeom.widget);
+            debugAssert(layer);
+
+            layer->drawOnImGui(context);
+        }
+
+        // Pop all layers
         for (uint32 i = 0; i < layerCount; ++i)
         {
             context.endLayer();

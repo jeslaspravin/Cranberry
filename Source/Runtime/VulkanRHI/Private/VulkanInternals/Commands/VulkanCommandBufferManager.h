@@ -173,7 +173,7 @@ public:
     struct CommandResUsageInfo
     {
         const GraphicsResource *cmdBuffer = nullptr;
-        VkPipelineStageFlags usageStages;
+        VkPipelineStageFlags usedDstStages;
     };
 
     struct ResourceBarrierInfo

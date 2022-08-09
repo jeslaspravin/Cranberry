@@ -826,7 +826,7 @@ void VulkanCmdBufferManager::submitCmds(
 
                     const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
                     waitOnSemaphores.emplace_back(syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore);
-                    waitingStages.emplace_back(waitOn.usageStages);
+                    waitingStages.emplace_back(waitOn.usedDstStages);
                 }
             }
         }
@@ -955,7 +955,7 @@ void VulkanCmdBufferManager::submitCmd(
 
                 const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
                 waitOnSemaphores.emplace_back(syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore);
-                waitingStages.emplace_back(waitOn.usageStages);
+                waitingStages.emplace_back(waitOn.usedDstStages);
             }
         }
     }
@@ -1370,8 +1370,8 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
 
     if (!accessors.lastReadsIn.empty()) // If not empty then there is other cmds that are reading so wait for those cmds
     {
-        for (const GraphicsResource *cmdBuffer : accessors.lastReadsIn)
-            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ cmdBuffer, resource.second });
+        for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
+            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, resource.second });
 
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
@@ -1449,8 +1449,8 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     if (!accessors.lastReadsIn.empty()) // If not empty then there is other cmds that are reading so wait
                                         // for those cmds, and transfer layout
     {
-        for (const GraphicsResource *cmdBuffer : accessors.lastReadsIn)
-            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ cmdBuffer, resource.second });
+        for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
+            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, resource.second });
 
         ResourceBarrierInfo barrier;
         barrier.accessors.lastReadsIn = accessors.lastReadsIn;
@@ -1557,8 +1557,8 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
     if (!accessors.lastReadsIn.empty()
         && std::find(accessors.lastReadsIn.cbegin(), accessors.lastReadsIn.cend(), cmdBuffer) == accessors.lastReadsIn.cend())
     {
-        for (const GraphicsResource *cmdBuffer : accessors.lastReadsIn)
-            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ cmdBuffer, resource });
+        for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
+            cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, VkPipelineStageFlags(stageFlag) });
 
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
@@ -1572,7 +1572,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
     // Transition is not necessary as load/clear either way layout will be compatible
     if (accessors.lastWrite && accessors.lastWrite != cmdBuffer)
     {
-        cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource });
+        cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, VkPipelineStageFlags(stageFlag) });
     }
     accessors.lastWrite = cmdBuffer;
     accessors.lastWriteStage = stageFlag;

@@ -229,7 +229,7 @@ void VulkanImageResource::reinitResources()
     {
         if (numOfMips == 0)
         {
-            // TODO (Jeslas) : Check if 1D or 3D can have more mips and render targets
+            // TODO(Jeslas) : Check if 1D or 3D can have more mips and render targets
             numOfMips = mipCountFromDim();
         }
         if (type != VK_IMAGE_TYPE_2D)
