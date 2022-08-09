@@ -30,6 +30,8 @@
 
 using namespace ImGui;
 
+static_assert(std::is_same_v<uint32, ImGuiID>, "ImGuiID and uint32 type do not match!");
+
 const StringID ImGuiManager::TEXTURE_PARAM_NAME{ TCHAR("textureAtlas") };
 const NameString ImGuiManager::IMGUI_SHADER_NAME{ TCHAR("DrawImGui") };
 
@@ -66,7 +68,7 @@ void ImGuiManager::initialize(ImGuiManagerOptions opts)
     ImFontConfig fontConfig;
     fontConfig.OversampleH = 2;
     fontConfig.OversampleV = 2;
-    //fontConfig.GlyphExtraSpacing = ImVec2(1, 1);
+    // fontConfig.GlyphExtraSpacing = ImVec2(1, 1);
     fontConfig.RasterizerMultiply = 1.5f;
     // io.Fonts->AddFontDefault(&fontConfig);
 
@@ -428,7 +430,7 @@ void ImGuiManager::releaseRendering()
     (
         [this](class IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
-            if (textureAtlas)
+            if (textureAtlas.isValid())
             {
                 textureAtlas.reset();
             }
@@ -504,7 +506,7 @@ void ImGuiManager::draw(
         = drawingContext.bClearRt ? EAttachmentOp::LoadOp::Clear : EAttachmentOp::LoadOp::Load;
 
     RenderPassClearValue clearVal;
-    clearVal.colors = { LinearColorConst::BLACK, LinearColorConst::BLACK };
+    clearVal.colors = { LinearColorConst::BLACK_Transparent, LinearColorConst::BLACK_Transparent };
 
     // Barrier resources once
     cmdList->cmdBarrierResources(drawingContext.cmdBuffer, texturesUsed);
@@ -636,7 +638,7 @@ void ImGuiManager::addLayer(SharedPtr<IImGuiLayer> layer)
             layers.begin(), layers.end(),
             [](const SharedPtr<IImGuiLayer> &lhs, const SharedPtr<IImGuiLayer> &rhs) -> bool
             {
-                return lhs->sublayerDepth() > rhs->sublayerDepth();
+                return lhs->sublayerDepth() < rhs->sublayerDepth();
             }
         );
     }

@@ -237,7 +237,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         for (uint32 i = 0; i < drawingContexts.size(); ++i)
         {
             WindowCanvasRef swapchainCanvas = windowsManager->getWindowCanvas(drawingContexts[i].first->getAppWindow());
-            debugAssert(!drawingContexts[i].second.perVertexPos().empty() && swapchainCanvas);
+            debugAssert(!drawingContexts[i].second.perVertexPos().empty() && swapchainCanvas.isValid());
             if (!windowStates.contains(drawingContexts[i].first))
             {
                 statePerWnd[i] = &createWindowState(
@@ -300,7 +300,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         ArrayView<VertexUI> verticesView((VertexUI *)graphicsHelper->borrowMappedPtr(graphicsInstance, vertices), vertices->bufferCount());
         ArrayView<uint32> indicesView((uint32 *)graphicsHelper->borrowMappedPtr(graphicsInstance, indices), indices->bufferCount());
         // Offset of quad vertices inserted so far into vertices array
-        uint32 quadOffset = 0;
+        uint32 quadIdxOffset = 0;
         for (uint32 i = 0; i < drawingContexts.size(); ++i)
         {
             const WidgetDrawContext &drawingCtx = drawingContexts[i].second;
@@ -352,21 +352,23 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
                 debugAssert(!uniqDraw.second.quadIdxs.empty());
                 WgDrawCmd &drawCmd = drawCmdsPerWnd[i][uniqDraw.second.drawCmdIdx];
                 drawCmd.indicesCount = uniqDraw.second.quadIdxs.size() * 6;
-                drawCmd.indicesOffset = quadOffset * 6;
+                drawCmd.indicesOffset = quadIdxOffset * 6;
                 drawCmd.scissor = drawingCtx.perQuadClipping()[uniqDraw.second.quadIdxs[0]];
                 drawCmd.textureDescIdx = textureToParamsIdx[uniqDraw.first.second];
                 // For each of quad fill the vertices, indices and expand the drawCmd.Scissor
+                uint32 outBaseIndex = 0;
                 for (uint32 quadIdx : uniqDraw.second.quadIdxs)
                 {
                     drawCmd.scissor += drawingCtx.perQuadClipping()[quadIdx];
 
-                    uint32 outBaseVertIdx = quadOffset * 4;
-                    indicesView[drawCmd.indicesOffset + 0] = outBaseVertIdx + 0;
-                    indicesView[drawCmd.indicesOffset + 1] = outBaseVertIdx + 1;
-                    indicesView[drawCmd.indicesOffset + 2] = outBaseVertIdx + 3;
-                    indicesView[drawCmd.indicesOffset + 3] = outBaseVertIdx + 3;
-                    indicesView[drawCmd.indicesOffset + 4] = outBaseVertIdx + 1;
-                    indicesView[drawCmd.indicesOffset + 5] = outBaseVertIdx + 2;
+                    uint32 outBaseVertIdx = quadIdxOffset * 4;
+                    indicesView[drawCmd.indicesOffset + outBaseIndex + 0] = outBaseVertIdx + 0;
+                    indicesView[drawCmd.indicesOffset + outBaseIndex + 1] = outBaseVertIdx + 1;
+                    indicesView[drawCmd.indicesOffset + outBaseIndex + 2] = outBaseVertIdx + 3;
+                    indicesView[drawCmd.indicesOffset + outBaseIndex + 3] = outBaseVertIdx + 3;
+                    indicesView[drawCmd.indicesOffset + outBaseIndex + 4] = outBaseVertIdx + 1;
+                    indicesView[drawCmd.indicesOffset + outBaseIndex + 5] = outBaseVertIdx + 2;
+                    outBaseIndex += 6;
 
                     uint32 inBaseVertIdx = quadIdx * 4;
                     for (uint32 vertIdx = 0; vertIdx < 4; ++vertIdx)
@@ -378,7 +380,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
                         verticesView[outBaseVertIdx + vertIdx].uv = drawingCtx.perVertexUV()[inBaseVertIdx + vertIdx];
                         verticesView[outBaseVertIdx + vertIdx].color = drawingCtx.perVertexColor()[inBaseVertIdx + vertIdx];
                     }
-                    quadOffset++;
+                    quadIdxOffset++;
                 }
                 // Convert scissor to window scaled size
                 drawCmd.scissor.minBound = drawingContexts[i].first->applyDpiScale(drawCmd.scissor.minBound);

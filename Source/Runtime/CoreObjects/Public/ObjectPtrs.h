@@ -21,8 +21,10 @@ template <ObjectType PtrType>
 class WeakObjPtr
 {
 private:
-    AllocIdx allocIdx;
+    ObjectAllocIdx allocIdx;
     StringID objectId;
+
+    friend std::hash<WeakObjPtr<PtrType>>;
 
 public:
     WeakObjPtr()
@@ -197,3 +199,12 @@ public:
     FORCE_INLINE void detachRef() { reset(); }
 };
 } // namespace cbe
+
+template <typename Type>
+struct std::hash<cbe::WeakObjPtr<Type>>
+{
+    NODISCARD size_t operator()(const cbe::WeakObjPtr<Type> &ptr) const noexcept
+    {
+        return HashUtility::hashAllReturn(ptr.objectId, ptr.allocIdx);
+    }
+};

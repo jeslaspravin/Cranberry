@@ -168,7 +168,7 @@ public:
     FORCE_INLINE PtrType *get() const { return refPtr; }
 
     FORCE_INLINE bool isValid() const { return refPtr != nullptr; }
-    FORCE_INLINE operator bool() const { return refPtr != nullptr; }
+    FORCE_INLINE explicit operator bool() const { return refPtr != nullptr; }
 
     FORCE_INLINE uint32 refCount() const
     {

@@ -35,7 +35,7 @@ public:
         if (PropertyHelper::getUnqualified(keyProp)->type == EPropertyType::ClassType)
         {
             // 2 times the data is needed to copy current and new value, to be removed and added later
-            // TODO : Change to use frame stack allocator
+            // TODO(Jeslas) : Change to use frame stack allocator
             uint8 *bufferData = (uint8 *)CBEMemory::memAlloc(mapProp->pairSize * (dataRetriever->size(val) * 2 + 1), mapProp->pairAlignment);
             uint8 *tempData = bufferData;
             bufferData += mapProp->pairSize;
@@ -104,7 +104,7 @@ public:
         // map key can be either fundamental or special or struct or class ptr but it can never be custom types
 
         // 2 times the data is needed to copy current and new value, to be removed and added later
-        // TODO : Change to use frame stack allocator
+        // TODO(Jeslas) : Change to use frame stack allocator
         uint8 *bufferData = (uint8 *)CBEMemory::memAlloc(mapProp->pairSize * (dataRetriever->size(val) * 2 + 1), mapProp->pairAlignment);
         uint8 *tempData = bufferData;
         bufferData += mapProp->pairSize;

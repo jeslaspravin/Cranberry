@@ -209,7 +209,7 @@ public:
         }
         return true;
     }
-    bool contains(const Box<T, d> &other)
+    bool contains(const Box<T, d> &other) const
     {
         for (uint32 i = 0; i < d; i++)
         {
@@ -239,7 +239,7 @@ public:
         }
         return bIsOnBorder ? 2u : 1u;
     }
-    uint8 encloses(const Box<T, d> &other)
+    uint8 encloses(const Box<T, d> &other) const
     {
         PointElementType thisVolume = 1, otherVolume = 1;
         for (uint32 i = 0; i < d; i++)

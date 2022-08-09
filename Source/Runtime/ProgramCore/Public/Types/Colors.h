@@ -112,6 +112,7 @@ extern PROGRAMCORE_EXPORT const Color GRAY;
 extern PROGRAMCORE_EXPORT const Color BLACK;
 extern PROGRAMCORE_EXPORT const Color RED;
 extern PROGRAMCORE_EXPORT const Color BLUE;
+extern PROGRAMCORE_EXPORT const Color PALE_BLUE;
 extern PROGRAMCORE_EXPORT const Color GREEN;
 
 extern PROGRAMCORE_EXPORT const Color CYAN;
@@ -128,6 +129,7 @@ extern PROGRAMCORE_EXPORT const LinearColor GRAY;
 extern PROGRAMCORE_EXPORT const LinearColor BLACK;
 extern PROGRAMCORE_EXPORT const LinearColor RED;
 extern PROGRAMCORE_EXPORT const LinearColor BLUE;
+extern PROGRAMCORE_EXPORT const LinearColor PALE_BLUE;
 extern PROGRAMCORE_EXPORT const LinearColor GREEN;
 
 extern PROGRAMCORE_EXPORT const LinearColor CYAN;
