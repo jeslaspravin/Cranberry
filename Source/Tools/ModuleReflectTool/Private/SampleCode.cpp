@@ -278,7 +278,6 @@ void visitTUCusor(CXCursor cursor, SourceParsedInfo &srcParsedInfo)
         visitStructs(cursor, srcParsedInfo);
         return;
     case CXCursor_UnionDecl:
-        // TODO(Jeslas) : Add visit union function if needed
         visitStructs(cursor, srcParsedInfo);
         return;
     case CXCursor_ClassDecl:
