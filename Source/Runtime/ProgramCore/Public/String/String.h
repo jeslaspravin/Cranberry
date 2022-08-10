@@ -131,6 +131,27 @@ public:
         return *this;
     }
 
+    STRING_FUNCQUALIFIER bool isEqual(const String &match, bool bMatchCase = true) const
+    {
+        if (length() != match.length())
+            return false;
+
+        if (bMatchCase)
+        {
+            return match == *this;
+        }
+
+        const_iterator it = std::search(
+            cbegin(), cend(), match.cbegin(), match.cend(),
+            [](auto c1, auto c2)
+            {
+                return std::toupper(c1) == std::toupper(c2);
+            }
+        );
+
+        return cbegin() == it;
+    }
+
     STRING_FUNCQUALIFIER bool startsWith(const String &match, bool bMatchCase = true) const
     {
         if (length() < match.length())
@@ -138,7 +159,7 @@ public:
 
         if (bMatchCase)
         {
-            return match == String(*this, 0, match.length());
+            return StringView(match) == StringView(cbegin(), cbegin() + match.length());
         }
 
         const_iterator it = std::search(
@@ -169,7 +190,7 @@ public:
 
         if (bMatchCase)
         {
-            return match == String(*this, length() - match.length(), match.length());
+            return StringView(match) == StringView(cbegin() + (length() - match.length()), cbegin() + match.length());
         }
 
         const_iterator searchFrom = cbegin() + (length() - match.length());
@@ -182,6 +203,21 @@ public:
         );
 
         return it == searchFrom;
+    }
+
+    STRING_FUNCQUALIFIER bool endsWith(TChar match, bool bMatchCase = true) const
+    {
+        if (length() == 0)
+        {
+            return match == 0;
+        }
+        auto endItr = (end() - 1);
+        if (bMatchCase)
+        {
+            return *endItr == match;
+        }
+
+        return std::toupper(*endItr) == std::toupper(match);
     }
 
     STRING_FUNCQUALIFIER String &trimL()

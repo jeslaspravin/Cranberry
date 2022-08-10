@@ -167,7 +167,7 @@ String PathFunctions::asGenericPath(const String &path)
 {
     String pathTmp = path.replaceAllCopy(TCHAR("\\"), TCHAR("/"));
     pathTmp.trimDuplicates(TCHAR('/'));
-    if (pathTmp.endsWith(TCHAR("/")))
+    if (pathTmp.endsWith(TCHAR('/')))
     {
         pathTmp.eraseR(1);
     }
