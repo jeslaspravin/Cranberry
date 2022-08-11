@@ -42,6 +42,8 @@ struct shape_t;
 class StaticMeshLoader
 {
 private:
+    constexpr static const uint32 FACE_MAX_VERTS = 3;
+
     bool bIsSuccessful;
     // TODO(Jeslas) : expose this later for more controllable loading
     bool bLoadSmoothed = false;
