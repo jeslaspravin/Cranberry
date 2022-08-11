@@ -27,7 +27,6 @@ enum Type
 struct AssetHeader
 {
     EAssetType::Type type;
-    // TODO(Jeslas) : Change once proper asset management is introduced.
     String assetPath;
     String assetName;
 

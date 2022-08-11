@@ -1447,7 +1447,7 @@ void ExperimentalEngineGoochModel::frameRender(
                 break;
             }
 
-            if (drawQuadDescs)
+            if (drawQuadDescs.isValid())
             {
                 rendererModule->getRenderManager()->preparePipelineContext(
                     &resolveLightRtPipelineContext, { frameResources[index].lightingPassRt }

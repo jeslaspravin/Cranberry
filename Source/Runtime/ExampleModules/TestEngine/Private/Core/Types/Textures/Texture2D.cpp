@@ -232,7 +232,6 @@ void Texture2DRW::reinitResources()
             {
                 textureResource->reinitResources();
                 cmdList->setupInitialLayout(textureResource);
-                // TODO(Jeslas) : Should we copy linear mapped for floats?
                 if (!(bIsWriteOnly || EPixelDataFormat::isDepthFormat(dataFormat) || EPixelDataFormat::isFloatingFormat(dataFormat)))
                 {
                     cmdList->copyToImage(textureResource, rawData);

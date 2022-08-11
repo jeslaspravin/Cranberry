@@ -64,7 +64,7 @@ void TestGameEngine::startup(ApplicationInstance *appInst)
 
     assetManager.load();
     imguiManager = new ImGuiManager(TCHAR("TestEngine"));
-    imguiManager->initialize();
+    imguiManager->initialize({});
     // Moved out surface resize feeding from ImGuiManager to here
     // Using surface size
     float dpiScaleFactor = IApplicationModule::get()->getApplication()->windowManager->getMainWindow()->dpiScale();
