@@ -41,9 +41,9 @@ public:
     Transform3D(const Matrix4 &transformMatrix);
     Transform3D(const Transform3D &otherTransform);
     Transform3D(Transform3D &&otherTransform);
-    void operator=(const Transform3D &otherTransform);
-    void operator=(Transform3D &&otherTransform);
-    void operator=(const Matrix4 &transformMatrix);
+    Transform3D &operator=(const Transform3D &otherTransform);
+    Transform3D &operator=(Transform3D &&otherTransform);
+    Transform3D &operator=(const Matrix4 &transformMatrix);
 
     const Vector3D &getTranslation() const;
     const Rotation &getRotation() const;

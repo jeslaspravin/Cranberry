@@ -68,26 +68,32 @@ Transform3D::Transform3D(const Rotation &rotation)
     , transformRotation(rotation)
 {}
 
-void Transform3D::operator=(const Transform3D &otherTransform)
+Transform3D &Transform3D::operator=(const Transform3D &otherTransform)
 {
     transformTranslation = otherTransform.transformTranslation;
     transformScale = otherTransform.transformScale;
     transformRotation = otherTransform.transformRotation;
+
+    return *this;
 }
 
-void Transform3D::operator=(Transform3D &&otherTransform)
+Transform3D &Transform3D::operator=(Transform3D &&otherTransform)
 {
     transformTranslation = std::move(otherTransform.transformTranslation);
     transformScale = std::move(otherTransform.transformScale);
     transformRotation = std::move(otherTransform.transformRotation);
+
+    return *this;
 }
 
-void Transform3D::operator=(const Matrix4 &transformMatrix)
+Transform3D &Transform3D::operator=(const Matrix4 &transformMatrix)
 {
     transformTranslation = Vector3D(transformMatrix[3].x, transformMatrix[3].y, transformMatrix[3].z);
     transformScale
         = Vector3D(Vector3D(transformMatrix[0]).length(), Vector3D(transformMatrix[1]).length(), Vector3D(transformMatrix[2]).length());
     transformRotation = RotationMatrix(transformMatrix / Matrix4(transformScale)).asRotation();
+
+    return *this;
 }
 
 const Vector3D &Transform3D::getTranslation() const { return transformTranslation; }

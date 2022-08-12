@@ -93,7 +93,7 @@ public:
         WeakModulePtr modulePtr = getOrLoadModule(moduleName);
         if (!modulePtr.expired())
         {
-            return static_cast<ModuleType *>(modulePtr.get());
+            return static_cast<ModuleType *>(modulePtr.lock().get());
         }
         return nullptr;
     }
