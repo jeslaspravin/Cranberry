@@ -174,6 +174,7 @@ void RotationMatrix::orthogonalize()
     Vector3D y(rotationMatrix[1]);
     Vector3D z(rotationMatrix[2]);
 
+    // Gram-Schmidt orthogonalize
     y = y.rejectFrom(x).safeNormalize();
     z = z.rejectFrom(y).rejectFrom(x).safeNormalize();
     rotationMatrix = Matrix3(x.safeNormalize(), y, z);

@@ -14,6 +14,7 @@
 #include "Logger/Logger.h"
 #include "Reflections/Functions.h"
 #include "Types/TypesInfo.h"
+#include "Reflections/FunctionParamsStack.h"
 
 class BaseFunctionWrapper
 {
@@ -97,6 +98,8 @@ public:
         , memberOfType(outerClassType)
         , memberOfTypeInner(getInnerMostType(memberOfType))
     {}
+
+    virtual bool invokeTypeless(void *object, void *returnVal, void *argsStack, SizeT argsByteSize) const = 0;
 
     template <typename ObjectType, typename ReturnType, typename... Args>
     bool invoke(ObjectType &&object, ReturnType &returnVal, Args... params) const
@@ -218,6 +221,8 @@ public:
         : BaseFunctionWrapper(retType, argsType)
     {}
 
+    virtual bool invokeTypeless(void *returnVal, void *argsStack, SizeT argsByteSize) const = 0;
+
     template <typename ReturnType, typename... Args>
     bool invoke(ReturnType &returnVal, Args... params) const
     {
@@ -258,7 +263,9 @@ public:
     }
 };
 
+//////////////////////////////////////////////////////////////////////////
 // Templated Implementations
+//////////////////////////////////////////////////////////////////////////
 
 template <typename ObjectType, typename ReturnType, typename... Args>
 class MemberFunctionWrapperImpl : public MemberFunctionWrapper
@@ -276,6 +283,26 @@ public:
         : MemberFunctionWrapper(typeInfoFrom<ObjectType>(), typeInfoFrom<ReturnType>(), std::move(typeInfoListFrom<Args...>()))
         , memberFunc(funcPtr)
     {}
+    /* MemberFunctionWrapper overrides */
+    bool invokeTypeless(void *object, void *returnVal, void *argsStack, SizeT argsByteSize) const override
+    {
+        if (FunctionParamsStack::canInvokeWithStack<Args...>(argsByteSize))
+        {
+            ObjectType *outerObject = (ObjectType *)(object);
+            if constexpr (std::is_same_v<ReturnType, void>)
+            {
+                FunctionParamsStack::invoke(memberFunc, outerObject, (uint8 *)argsStack, argsByteSize);
+            }
+            else
+            {
+                ReturnType *retValPtr = (ReturnType *)returnVal;
+                *retValPtr = FunctionParamsStack::invoke(memberFunc, outerObject, (uint8 *)argsStack, argsByteSize);
+            }
+            return true;
+        }
+        return false;
+    }
+    /* Override ends */
 };
 
 template <typename ReturnType, typename... Args>
@@ -294,4 +321,24 @@ public:
         : GlobalFunctionWrapper(typeInfoFrom<ReturnType>(), std::move(typeInfoListFrom<Args...>()))
         , func(funcPtr)
     {}
+
+    /* GlobalFunctionWrapper overrides */
+    bool invokeTypeless(void *returnVal, void *argsStack, SizeT argsByteSize) const override
+    {
+        if (FunctionParamsStack::canInvokeWithStack<Args...>(argsByteSize))
+        {
+            if constexpr (std::is_same_v<ReturnType, void>)
+            {
+                FunctionParamsStack::invoke(func, (uint8 *)argsStack, argsByteSize);
+            }
+            else
+            {
+                ReturnType *retValPtr = (ReturnType *)returnVal;
+                *retValPtr = FunctionParamsStack::invoke(func, (uint8 *)argsStack, argsByteSize);
+            }
+            return true;
+        }
+        return false;
+    }
+    /* Override ends */
 };

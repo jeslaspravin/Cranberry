@@ -90,6 +90,7 @@ public:
 
     virtual void *get(void *object) const = 0;
     virtual const void *get(const void *object) const = 0;
+    virtual void setTypeless(void *value, void *object) const = 0;
 
     // Will return pointer to value else null
     template <typename AsType, typename ObjectType>
@@ -190,6 +191,7 @@ public:
     {}
 
     virtual FieldValuePtr<void> get() const = 0;
+    virtual void setTypeless(void *value) const = 0;
 
     // Will return pointer to value else null
     template <typename AsType>
@@ -259,7 +261,9 @@ public:
     }
 };
 
+//////////////////////////////////////////////////////////////////////////
 // Templated Implementations
+//////////////////////////////////////////////////////////////////////////
 
 template <typename ObjectType, typename MemberType>
 class MemberFieldWrapperImpl : public MemberFieldWrapper
@@ -301,6 +305,15 @@ public:
         const ObjectType *outerObject = (const ObjectType *)(object);
         return &memberField.get(outerObject);
     }
+    void setTypeless(void *value, void *object) const override
+    {
+        if CONST_EXPR (!std::is_const_v<MemberType>)
+        {
+            ObjectType *outerObject = (ObjectType *)(object);
+            MemberType *valuePtr = (MemberType *)(value);
+            memberField.set(outerObject, *valuePtr);
+        }
+    }
     /* Override ends */
 };
 
@@ -326,6 +339,14 @@ protected:
     /* GlobalFieldWrapper overrides */
 public:
     FieldValuePtr<void> get() const override { return &field.get(); }
+    void setTypeless(void *value) const override
+    {
+        if CONST_EXPR(!std::is_const_v<MemberType>)
+        {
+            MemberType *valuePtr = (MemberType *)(value);
+            field.set(*valuePtr);
+        }
+    }
 
     /* Override ends */
 };
