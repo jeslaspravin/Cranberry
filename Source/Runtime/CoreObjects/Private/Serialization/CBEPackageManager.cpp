@@ -10,6 +10,7 @@
  */
 
 #include "Serialization/CBEPackageManager.h"
+#include "String/StringRegex.h"
 #include "CBEPackage.h"
 #include "CoreObjectsModule.h"
 #include "CBEObjectHelpers.h"
@@ -19,20 +20,55 @@
 #include "Types/Platform/LFS/PlatformLFS.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 
+bool ObjectPathHelper::isValidPackageName(const String &packageName)
+{
+    // Must start with non / valid symbol and followed by any valid symbols
+    static const StringRegex matchPattern(TCHAR("^[a-zA-Z0-9_]{1}[a-zA-Z0-9_/]*"), std::regex_constants::ECMAScript);
+    return std::regex_match(packageName, matchPattern);
+}
+
+String ObjectPathHelper::getValidPackageName(const String &packageName)
+{
+    String output;
+    output.resize(packageName.length());
+
+    // Remove all invalid characters, or all / at the start
+    static const StringRegex matchPattern(TCHAR("^[/]*|[^a-zA-Z0-9_/]{1}"), std::regex_constants::ECMAScript);
+    auto newEndItr = std::regex_replace(output.begin(), packageName.cbegin(), packageName.cend(), matchPattern, TCHAR(""));
+    output.erase(newEndItr, output.end());
+
+    // There is possibility that all invalid has been removed but slashes only exists
+    while (output.startsWith(ObjectObjectSeparator))
+    {
+        output.eraseL(1);
+    }
+
+    if (output.empty())
+    {
+        output = TCHAR("InvalidName");
+    }
+    return output;
+}
+
 FORCE_INLINE String ObjectPathHelper::packagePathFromFilePath(const String &filePath, const String &contentDir)
 {
     String relPath = PathFunctions::toRelativePath(filePath, contentDir);
     // Right now we use relative path as Package path. But in future once plug ins were added
     // Have to allow package path uniqueness per plugin like prefixing plugin name to package path
-    return PathFunctions::stripExtension(relPath);
+    relPath = PathFunctions::asGenericPath(PathFunctions::stripExtension(relPath));
+    while (relPath.startsWith(ObjectObjectSeparator))
+    {
+        relPath.eraseL(1);
+    }
+    return relPath;
 }
 
 namespace cbe
 {
-Package *Package::createPackage(const String &relativePath, const String &contentDir)
+cbe::Package *Package::createPackage(const String &relativePath, const String &contentDir, bool bForLoading)
 {
     String packagePath = ObjectPathHelper::packagePathFromFilePath(relativePath, contentDir);
-    cbe::Package *package = cbe::createOrGet<cbe::Package>(packagePath, nullptr, cbe::EObjectFlagBits::ObjFlag_PackageLoadPending);
+    Package *package = createOrGet<Package>(packagePath, nullptr, bForLoading ? EObjectFlagBits::ObjFlag_PackageLoadPending : 0);
     package->setPackageRoot(contentDir);
     return package;
 }
@@ -236,7 +272,7 @@ void CBEPackageManager::refreshPackages()
 void CBEPackageManager::setupPackage(const String &packageFilePath, const String &contentDir)
 {
     String packagePath = ObjectPathHelper::packagePathFromFilePath(packageFilePath, contentDir);
-    cbe::Package *package = cbe::Package::createPackage(PathFunctions::toRelativePath(packageFilePath, contentDir), contentDir);
+    cbe::Package *package = cbe::Package::createPackage(PathFunctions::toRelativePath(packageFilePath, contentDir), contentDir, true);
 
     PackageLoader *loader = new PackageLoader(package, packageFilePath);
     loader->prepareLoader();

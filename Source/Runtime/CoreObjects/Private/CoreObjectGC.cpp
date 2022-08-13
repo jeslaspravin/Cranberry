@@ -98,7 +98,7 @@ void CoreObjectGC::markObjectsAsValid(TickRep &budgetTicks)
             // Only mark as valid if object not marked for delete already and
             // If object is marked explicitly as root or default then we must not delete it
             if (BIT_NOT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete)
-                && BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_RootObject | cbe::EObjectFlagBits::ObjFlag_Default))
+                && ANY_BIT_SET(obj->getFlags(), cbe::EObjectFlagBits::ObjFlag_RootObject | cbe::EObjectFlagBits::ObjFlag_Default))
             {
                 classObjsFlag[cbe::INTERNAL_ObjectCoreAccessors::getAllocIdx(obj)] = true;
             }

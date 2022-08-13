@@ -175,6 +175,11 @@ public:
 
     STRING_FUNCQUALIFIER bool startsWith(TChar match, bool bMatchCase = true) const
     {
+        if (length() == 0)
+        {
+            return match == 0;
+        }
+
         if (bMatchCase)
         {
             return *begin() == match;

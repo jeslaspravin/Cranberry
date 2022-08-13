@@ -24,22 +24,30 @@ private:
     PathFunctions() = default;
 
 public:
-    template <typename FirstType, typename LastType>
-    requires StringTypes<FirstType, LastType> CONST_EXPR static String combinePath(FirstType &&firstPath, LastType &&lastPath)
+    template <typename SeparartorType, typename FirstType, typename LastType>
+    requires StringTypes<FirstType, LastType> CONST_EXPR static String
+        combinePathWithSep(SeparartorType &&separator, FirstType &&firstPath, LastType &&lastPath)
     {
         String returnPath(std::forward<FirstType>(firstPath));
-        returnPath.append(FS_PATH_SEPARATOR);
+        returnPath.append(std::forward<SeparartorType>(separator));
         returnPath.append(std::forward<LastType>(lastPath));
         return returnPath;
     }
 
-    template <typename BaseType, typename... Paths>
-    requires StringTypes<BaseType, Paths...> CONST_EXPR static String combinePath(BaseType &&basePath, Paths &&...paths)
+    template <typename SeparartorType, typename BaseType, typename... Paths>
+    requires StringTypes<SeparartorType, BaseType, Paths...> CONST_EXPR static String
+        combinePathWithSep(SeparartorType &&separator, BaseType &&basePath, Paths &&...paths)
     {
         String returnPath(std::forward<BaseType>(basePath));
-        returnPath.append(FS_PATH_SEPARATOR);
-        returnPath.append(combinePath(std::forward<Paths>(paths)...));
+        returnPath.append(std::forward<SeparartorType>(separator));
+        returnPath.append(combinePathWithSep(std::forward<SeparartorType>(separator), std::forward<Paths>(paths)...));
         return returnPath;
+    }
+
+    template <typename... Paths>
+    requires StringTypes<Paths...> CONST_EXPR static String combinePath(Paths &&...paths)
+    {
+        return combinePathWithSep(FS_PATH_SEPARATOR, std::forward<Paths>(paths)...);
     }
 
     static String toRelativePath(const String &absPath, const String &relToPath);
