@@ -50,4 +50,7 @@ public:
     static String splitPackageNameAndPath(String &outName, const TChar *path);
 
     static String packagePathFromFilePath(const String &filePath, const String &contentDir);
+
+    static bool isValidPackageName(const String &packageName);
+    static String getValidPackageName(const String &packageName);
 };

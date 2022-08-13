@@ -49,9 +49,10 @@ public:
      *
      * @param const String & relativePath - Package path relative to contentDir
      * @param const String & contentDir - Root directory under which the package must be saved or loaded from
+     * @param bool bForLoading - If package is create to load a package from directory? If dynamically created package then it should be false
      *
      * @return cbe::Package *
      */
-    static Package *createPackage(const String &relativePath, const String &contentDir);
+    static Package *createPackage(const String &relativePath, const String &contentDir, bool bForLoading);
 };
 } // namespace cbe

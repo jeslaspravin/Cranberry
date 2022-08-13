@@ -14,6 +14,7 @@
 #include "PropertyVisitorHelpers.h"
 #include "Visitors/FieldVisitors.h"
 #include "Property/CustomProperty.h"
+#include "CoreObjectDelegates.h"
 
 #include <memory_resource>
 
@@ -45,8 +46,36 @@ void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEC
 void INTERNAL_destroyCBEObject(Object *obj)
 {
     CBEClass clazz = obj->getType();
+
+    CoreObjectDelegates::broadcastObjectDestroyed(obj);
     obj->destroyObject();
     clazz->destructor(obj);
+}
+
+void INTERNAL_createdCBEObject(Object *obj) { CoreObjectDelegates::broadcastObjectCreated(obj); }
+
+bool INTERNAL_validateObjectName(const String &name, CBEClass clazz)
+{
+    if (PropertyHelper::isChildOf<Package>(clazz))
+    {
+        return ObjectPathHelper::isValidPackageName(name);
+    }
+    else
+    {
+        return PropertyHelper::isValidSymbolName(name);
+    }
+}
+
+String INTERNAL_getValidObjectName(const String &name, CBEClass clazz) 
+{
+    if (PropertyHelper::isChildOf<Package>(clazz))
+    {
+        return ObjectPathHelper::getValidPackageName(name);
+    }
+    else
+    {
+        return PropertyHelper::getValidSymbolName(name);
+    }
 }
 
 Object *getDefaultObject(CBEClass clazz)

@@ -46,4 +46,11 @@ public:
     FORCE_INLINE static void broadcastPackageSaved(cbe::Object *package) { onPackageSaved.invoke(package); }
     FORCE_INLINE static void broadcastPackageLoaded(cbe::Object *package) { onPackageLoaded.invoke(package); }
     FORCE_INLINE static void broadcastPackageScanned(PackageLoader *packageLoader) { onPackageScanned.invoke(packageLoader); }
+
+    // Object related events
+    using ObjectEvent = Event<CoreObjectDelegates, cbe::Object *>;
+    static ObjectEvent onObjectCreated;
+    static ObjectEvent onObjectDestroyed;
+    FORCE_INLINE static void broadcastObjectCreated(cbe::Object *obj) { onObjectCreated.invoke(obj); }
+    FORCE_INLINE static void broadcastObjectDestroyed(cbe::Object *obj) { onObjectDestroyed.invoke(obj); }
 };
