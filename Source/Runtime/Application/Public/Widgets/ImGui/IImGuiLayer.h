@@ -48,31 +48,40 @@ public:
 
     /**
      * Directly draw inside the command buffer this is initially created to draw directly to ImGui render target
-     * This function will be called from render thread only
+     * This function will be called from render thread only. Whatever drawn will be drawn before/under ImGui widgets are drawn
+     *
      * Returns true if this layer did any draw
      */
     virtual bool drawDirect(const DrawDirectParams &params) { return false; }
 
+    /**
+     * If you want to draw some widget on top of ImGui widgets, Note: No interaction is allowed this is for visual only now
+     * This function is similar to drawWidget except that drawWidget draws under ImGui widgets
+     */
+    virtual void drawOnImGui(WidgetDrawContext &context) {}
+
     /* WidgetBase overrides */
+    // Mixing ImGui and my own widgets is a sin and so to amend for it I disabled all geometry and inputs
+    // ImGui handles all for now. Draw only widgets are supported inside ImGui
 protected:
-    void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) override {}
+    void rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomTree) final {}
 
 public:
     void drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context) override {}
     bool hasWidget(SharedPtr<WidgetBase> widget) const override { return false; }
 
     void tick(float timeDelta) override {}
-    EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) override
+    EInputHandleState inputKey(Keys::StateKeyType key, Keys::StateInfoType state, const InputSystem *inputSystem) final
     {
         return EInputHandleState::NotHandled;
     }
-    EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem)
+    EInputHandleState analogKey(AnalogStates::StateKeyType key, AnalogStates::StateInfoType state, const InputSystem *inputSystem) final
     {
         return EInputHandleState::NotHandled;
     }
-    void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override {}
-    void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override {}
-    void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) override {}
+    void mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) final {}
+    void mouseMoved(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) final {}
+    void mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem) final {}
 
     /* Overrides ends */
 };
