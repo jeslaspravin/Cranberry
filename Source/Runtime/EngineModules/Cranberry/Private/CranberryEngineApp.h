@@ -12,6 +12,10 @@
 #pragma once
 
 #include "ApplicationInstance.h"
+#include "GCReferenceCollector.h"
+
+class IReflectionRuntimeModule;
+class ICoreObjectsModule;
 
 class CranberryEngineApp final : public ApplicationInstance
 {
@@ -27,4 +31,8 @@ public:
     void onRendererStateEvent(ERenderStateEvent state) final;
 
     /* Override ends */
+
+private:
+    IReflectionRuntimeModule *rttiModule;
+    ICoreObjectsModule *coreObjModule;
 };

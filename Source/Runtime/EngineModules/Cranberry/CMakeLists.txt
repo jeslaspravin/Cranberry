@@ -18,6 +18,7 @@ endif ()
 if (${editor_build})    
     set (editor_modules 
         EditorCore
+        CBEEditor
     )
 
     list(APPEND private_modules ${editor_modules})

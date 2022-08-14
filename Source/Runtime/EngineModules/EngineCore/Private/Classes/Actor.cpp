@@ -32,14 +32,15 @@ ActorPrefab::ActorPrefab(StringID className, const String &actorName)
     : parentPrefab(nullptr)
 {
     actorClass = IReflectionRuntimeModule::get()->getClassType(className);
-    actorTemplate = create<ObjectTemplate, StringID, const String &>(actorName, this, getFlags(), className, actorName);
+    actorTemplate = create<ObjectTemplate, StringID, const String &>(actorName + TCHAR("_AcTmpt"), this, getFlags(), className, actorName);
 
     // If there is no root component already then we must create a root component and add it
     if (!static_cast<Actor *>(actorTemplate->getTemplate())->getRootComponent())
     {
-        String componentName = TCHAR("RootComponent");
+        String componentName = TCHAR("RootComp");
+        String compTemplateName = TCHAR("RootComp_CpTmpt");
         components.emplace_back(create<ObjectTemplate, StringID, const String &>(
-            componentName, actorTemplate->getTemplate(), getFlags(), TransformComponent::staticType()->name, componentName
+            compTemplateName, actorTemplate, getFlags(), TransformComponent::staticType()->name, componentName
         ));
         rootComponent = static_cast<TransformComponent *>(components.back()->getTemplate());
     }
@@ -52,7 +53,9 @@ ActorPrefab::ActorPrefab(ActorPrefab *inPrefab, const String &name)
     debugAssert(parentPrefab);
     actorClass = parentPrefab->actorClass;
 
-    actorTemplate = create<ObjectTemplate, ObjectTemplate *, const String &>(name, this, getFlags(), parentPrefab->actorTemplate, name);
+    String actorTemplateName = name + TCHAR("_AcTmpt");
+    actorTemplate
+        = create<ObjectTemplate, ObjectTemplate *, const String &>(actorTemplateName, this, getFlags(), parentPrefab->actorTemplate, name);
     // Since parentPrefab must have set it up
     debugAssert(static_cast<Actor *>(actorTemplate->getTemplate())->getRootComponent());
 
@@ -271,8 +274,9 @@ void ActorPrefab::setComponentAttachedTo(TransformComponent *attachingComp, Tran
 
 Object *ActorPrefab::addComponent(CBEClass compClass, const String &compName)
 {
+    String compTemplateName = compName + TCHAR("_CpTmpt");
     ObjectTemplate *compTemplate
-        = create<ObjectTemplate, StringID, const String &>(compName, actorTemplate->getTemplate(), getFlags(), compClass->name, compName);
+        = create<ObjectTemplate, StringID, const String &>(compTemplateName, actorTemplate, getFlags(), compClass->name, compName);
     components.emplace_back(compTemplate);
     postAddComponent(compTemplate->getTemplate());
     return compTemplate->getTemplate();
@@ -280,8 +284,9 @@ Object *ActorPrefab::addComponent(CBEClass compClass, const String &compName)
 
 Object *ActorPrefab::addComponent(ObjectTemplate *compTemplate, const String &compName)
 {
+    String compTemplateName = compName + TCHAR("_CpTmpt");
     ObjectTemplate *compObjTemplate
-        = create<ObjectTemplate, ObjectTemplate *, const String &>(compName, actorTemplate->getTemplate(), getFlags(), compTemplate, compName);
+        = create<ObjectTemplate, ObjectTemplate *, const String &>(compTemplateName, actorTemplate, getFlags(), compTemplate, compName);
     components.emplace_back(compObjTemplate);
     postAddComponent(compObjTemplate->getTemplate());
     return compObjTemplate->getTemplate();
@@ -357,6 +362,7 @@ void ActorPrefab::removeComponent(Object *comp)
     };
     replaceObjectReferences(this, replacements, EObjectTraversalMode::EntireObjectTree);
     markDirty(this);
+    components.erase(compTemplateItr);
     compTemplate->beginDestroy();
     comp->beginDestroy();
 }
@@ -539,9 +545,9 @@ void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
             fatalAssertf(false, "Why?? Component %s of type %s is not a valid component", comp->getName(), comp->getType()->nameString);
         }
     };
-    for (Object *comp : inPrefab->components)
+    for (ObjectTemplate *comp : inPrefab->components)
     {
-        addCompToActor(comp);
+        addCompToActor(comp->getTemplate());
     }
     for (const ComponentOverrideInfo &overrideInfo : inPrefab->componentOverrides)
     {
@@ -554,10 +560,7 @@ void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
     );
 }
 
-FORCE_INLINE bool ActorPrefab::isNativeComponent(Object *obj) const
-{
-    return obj && PropertyHelper::isChildOf<Actor>(obj->getOuter()->getType());
-}
+bool ActorPrefab::isNativeComponent(Object *obj) const { return obj && PropertyHelper::isChildOf<Actor>(obj->getOuter()->getType()); }
 
 void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences)
 {
@@ -571,8 +574,8 @@ void ActorPrefab::createComponentOverride(ComponentOverrideInfo &overrideInfo, b
 #endif
 
     overrideInfo.overriddenTemplate = create<ObjectTemplate, ObjectTemplate *, const String &>(
-        componentTemplate->getName(), actorTemplate->getTemplate(), componentTemplate->getFlags(), componentTemplate,
-        componentTemplate->getName()
+        componentTemplate->getName(), actorTemplate, componentTemplate->getFlags(), componentTemplate,
+        componentTemplate->getTemplate()->getName()
     );
 
     if (tfComponent)
@@ -683,10 +686,12 @@ Actor *LogicComponent::getActor() const
     {
         return actor;
     }
-    // If stored inside prefab, Template will be subobject of Actor itself
+    // If stored inside prefab, Template will be subobject of Actor template itself
     else if (ObjectTemplate *objTemplate = cast<ObjectTemplate>(getOuter()))
     {
-        return cast<Actor>(objTemplate->getOuter());
+        ObjectTemplate *actorTemplate = cast<ObjectTemplate>(objTemplate->getOuter());
+        debugAssert(actorTemplate);
+        return actorTemplate->getTemplateAs<Actor>();
     }
     return nullptr;
 }
@@ -697,10 +702,12 @@ Actor *TransformComponent::getActor() const
     {
         return actor;
     }
-    // If stored inside prefab, Template will be subobject of Actor itself
+    // If stored inside prefab, Template will be subobject of Actor template itself
     else if (ObjectTemplate *objTemplate = cast<ObjectTemplate>(getOuter()))
     {
-        return cast<Actor>(objTemplate->getOuter());
+        ObjectTemplate *actorTemplate = cast<ObjectTemplate>(objTemplate->getOuter());
+        debugAssert(actorTemplate);
+        return actorTemplate->getTemplateAs<Actor>();
     }
     return nullptr;
 }
@@ -735,12 +742,16 @@ void Actor::addComponent(Object *component)
         }
         if (World *world = getWorld())
         {
-            world->onComponentAdded(this, tfComp);
+            world->tfComponentAdded(this, tfComp);
         }
     }
     else if (PropertyHelper::isChildOf<LogicComponent>(component->getType()))
     {
         logicComps.insert(static_cast<LogicComponent *>(component));
+        if (World *world = getWorld())
+        {
+            world->logicComponentAdded(this, static_cast<LogicComponent *>(component));
+        }
     }
 }
 
@@ -767,7 +778,7 @@ void Actor::removeComponent(Object *component)
                         }
                     }
                     // This will reattach  all components to new root that was attached to old root
-                    getWorld()->onComponentRemoved(this, tfComp);
+                    getWorld()->tfComponentRemoved(this, tfComp);
                 }
                 else
                 {
@@ -795,6 +806,10 @@ void Actor::removeComponent(Object *component)
     else if (PropertyHelper::isChildOf<LogicComponent>(component->getType()))
     {
         logicComps.erase(static_cast<LogicComponent *>(component));
+        if (World *world = getWorld())
+        {
+            world->logicComponentRemoved(this, static_cast<LogicComponent *>(component));
+        }
     }
 }
 
@@ -802,6 +817,15 @@ void Actor::attachActor(TransformComponent *otherComponent)
 {
     debugAssert(rootComponent);
     rootComponent->attachComponent(otherComponent);
+}
+
+cbe::Actor *Actor::getActorAttachedTo() const
+{
+    if (rootComponent && rootComponent->getAttachedTo())
+    {
+        return rootComponent->getAttachedTo()->getActor();
+    }
+    return nullptr;
 }
 
 void Actor::detachActor() { rootComponent->detachComponent(); }

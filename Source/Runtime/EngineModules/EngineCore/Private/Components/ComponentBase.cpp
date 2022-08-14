@@ -28,7 +28,7 @@ void TransformComponent::attachComponent(TransformComponent *otherComp)
     if (attachedTo != otherComp)
     {
         attachedTo = otherComp;
-        getWorld()->onAttachmentChanged(this, otherComp);
+        getWorld()->tfAttachmentChanged(this, otherComp);
     }
 }
 
@@ -37,7 +37,7 @@ void TransformComponent::detachComponent()
     if (attachedTo)
     {
         attachedTo = nullptr;
-        getWorld()->onAttachmentChanged(this, nullptr);
+        getWorld()->tfAttachmentChanged(this, nullptr);
     }
 }
 

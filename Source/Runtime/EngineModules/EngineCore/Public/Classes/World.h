@@ -25,8 +25,10 @@
 namespace cbe
 {
 class TransformComponent;
+class LogicComponent;
 class Actor;
 class ActorPrefab;
+class World;
 
 struct ComponentWorldTF
 {
@@ -34,7 +36,9 @@ struct ComponentWorldTF
     Transform3D worldTx;
 };
 
-enum class EWorldState
+namespace EWorldState
+{
+enum Type
 {
     Loading,
     Loaded,
@@ -43,6 +47,16 @@ enum class EWorldState
     EndingPlay
 };
 
+FORCE_INLINE bool isPlayState(EWorldState::Type state) { return state == StartingPlay || state == Playing || state == EndingPlay; }
+
+}; // namespace EWorldState
+
+using WorldActorEvent = Event<World, Actor *>;
+using WorldComponentEvent = Event<World, Object *>;
+
+/**
+ * If any struct/logic is changed here in world, Be sure to update the changes in EditorHelpers implementations for world
+ */
 class ENGINECORE_EXPORT World : public Object
 {
     GENERATED_CODES()
@@ -74,7 +88,19 @@ private:
     META_ANNOTATE(Transient)
     std::vector<Actor *> actors;
 
-    EWorldState worldState;
+    // Just to hold references
+    META_ANNOTATE(Transient)
+    std::set<ActorPrefab *> delayInitPrefabs;
+
+    EWorldState::Type worldState;
+
+public:
+    WorldActorEvent onActorAdded;
+    WorldActorEvent onActorRemoved;
+    WorldComponentEvent onTfCompAdded;
+    WorldComponentEvent onTfCompRemoved;
+    WorldComponentEvent onLogicCompAdded;
+    WorldComponentEvent onLogicCompRemoved;
 
 public:
     World();
@@ -84,9 +110,11 @@ public:
     ObjectArchive &serialize(ObjectArchive &ar) override;
     /* Overrides ends */
 
-    void onAttachmentChanged(TransformComponent *attachingComp, TransformComponent *attachedTo);
-    void onComponentAdded(Actor *actor, TransformComponent *tfComponent);
-    void onComponentRemoved(Actor *actor, TransformComponent *tfComponent);
+    void tfAttachmentChanged(TransformComponent *attachingComp, TransformComponent *attachedTo);
+    void tfComponentAdded(Actor *actor, TransformComponent *tfComponent);
+    void tfComponentRemoved(Actor *actor, TransformComponent *tfComponent);
+    void logicComponentAdded(Actor *actor, LogicComponent *logicComp);
+    void logicComponentRemoved(Actor *actor, LogicComponent *logicComp);
 
     void componentsAttachedTo(std::vector<TransformComponent *> &outAttaches, TransformComponent *component, bool bRecurse = false) const;
 
@@ -94,10 +122,17 @@ private:
     // The in vector must be arranged from parent to children order
     void updateWorldTf(const std::vector<TFHierarchyIdx> &idxsToUpdate);
 
-    Actor *addActor(CBEClass actorClass, const String &actorName, EObjectFlags flags);
+    // bDelayedInit for actor created from class to allow setting up the prefab directly with in the world
+    Actor *addActor(CBEClass actorClass, const String &actorName, EObjectFlags flags, bool bDelayedInit);
     Actor *addActor(ActorPrefab *inPrefab, const String &name, EObjectFlags flags);
-    Actor *addActorInternal(ActorPrefab *actorPrefab);
+    bool finalizeAddActor(ActorPrefab *prefab);
+    Actor *setupActorInternal(ActorPrefab *actorPrefab);
     void removeActor(Actor *actor);
+
+#if EDITOR_BUILD
+    // For editor functionalities, check EditorHelpers to modify world in editor
+    friend class EditorHelpers;
+#endif
 } META_ANNOTATE(NoExport);
 
 } // namespace cbe

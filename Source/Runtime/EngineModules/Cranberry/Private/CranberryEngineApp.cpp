@@ -10,44 +10,64 @@
  */
 
 #include "CranberryEngineApp.h"
+#include "CBEPackage.h"
+#include "CoreObjectGC.h"
+#include "Classes/EngineBase.h"
+#include "CBEObjectHelpers.h"
+#include "Modules/ModuleManager.h"
+#include "String/StringID.h"
+#include "AssetImporter.h"
 
 void tempTest();
+void tempTickTest();
 
-void CranberryEngineApp::onStart() { tempTest(); }
+void CranberryEngineApp::onStart()
+{
+    rttiModule = IReflectionRuntimeModule::get();
+    coreObjModule = ICoreObjectsModule::get();
+    bool bModulesLoaded = ModuleManager::get()->loadModule(TCHAR("EngineCore"));
+    CBEClass engineClass = nullptr;
+#if EDITOR_BUILD
+    ModuleManager::get()->addAdditionalLibPath(TCHAR("Editor"));
+    bModulesLoaded
+        = bModulesLoaded && ModuleManager::get()->loadModule(TCHAR("EditorCore")) && ModuleManager::get()->loadModule(TCHAR("CBEEditor"));
 
-void CranberryEngineApp::onTick() {}
+    engineClass = rttiModule->getClassType(STRID("cbe::EditorEngine"));
+#else
+    engineClass = rttiModule->getClassType(STRID("cbe::CBEGameEngine"));
+#endif
+    fatalAssertf(bModulesLoaded, "Failed loading modules!");
+    fatalAssertf(engineClass, "Engine class not found!");
+    // This will create and assigns GCBEEngine
+    cbe::create(engineClass, TCHAR("CBEEngine"), coreObjModule->getTransientPackage(), cbe::EObjectFlagBits::ObjFlag_RootObject);
+    fatalAssertf(GCBEEngine, "Engine %s creation failed", engineClass->nameString);
 
-void CranberryEngineApp::onExit() {}
+    GCBEEngine->onStart();
+
+    tempTest();
+}
+
+void CranberryEngineApp::onTick()
+{
+    GCBEEngine->onTick();
+    // 8ms, Reduce if this is too much
+    coreObjModule->getGC().collect(0.008f);
+}
+
+void CranberryEngineApp::onExit()
+{
+    GCBEEngine->onExit();
+}
 
 void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent state) {}
 
-#include "CBEPackage.h"
-#include "CBEObjectHelpers.h"
 #include "Types/Platform/LFS/Paths.h"
 #include "Property/PropertyHelper.h"
 #include "CoreObjectDelegates.h"
 #include "ObjectTemplate.h"
-#include "Classes/GameEngine.h"
-#include "Modules/ModuleManager.h"
-#include "Widgets/ImGui/IImGuiLayer.h"
 #include "IApplicationModule.h"
-#include "Widgets/ImGui/ImGuiManager.h"
-#include "Widgets/WidgetWindow.h"
-#include "Widgets/ImGui/WgImGui.h"
-
-class TestImGuiLayer : public IImGuiLayer
-{
-public:
-    int32 layerDepth() const override { return 0; }
-
-    int32 sublayerDepth() const override { return 0; }
-
-    void draw(ImGuiDrawInterface *drawInterface) override
-    {
-        bool bOpen = true;
-        ImGui::ShowDemoWindow(&bOpen);
-    }
-};
+#include "Types/Platform/LFS/PathFunctions.h"
+#include "IEditorCore.h"
 
 void tempTest()
 {
@@ -107,32 +127,19 @@ void tempTest()
         cbe::save(packedObj2);
     }
 #endif
-    if (cbe::ObjectTemplate *obj = cbe::load<cbe::ObjectTemplate>(name))
+
+    // const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
+    const TChar *meshPath = TCHAR("D:/Workspace/VisualStudio/Cranberry/External/Assets/Cone.obj");
+    ImportOption opt;
+    opt.filePath = meshPath;
+    opt.importContentPath = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
+    if (AssetImporterBase *importer = IEditorCore::get()->findAssetImporter(opt))
     {
-        cbe::GameEngine *engine = cbe::cast<cbe::GameEngine>(cbe::create(obj, TCHAR("Engine"), nullptr));
-        LOG("Test", "Loaded object %s nameVal %s", obj->getFullPath(), engine->nameVal);
+        bool bImportAsScene = true;
+        static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
+                                                    ->setTypeless(&bImportAsScene, opt.optionsStruct);
+        importer->tryImporting(opt);
     }
-    else
-    {
-        cbe::Package *package = cbe::Package::createPackage(name + TCHAR("_Template"), dir);
-
-        cbe::ObjectTemplate *tmplt
-            = cbe::create<cbe::ObjectTemplate, StringID, const String &>(name, package, 0, cbe::GameEngine::staticType()->name, name);
-        cbe::cast<cbe::GameEngine>(tmplt->getTemplate())->nameVal = TCHAR("Test value, I am Jeslas Pravin");
-        tmplt->onFieldModified(PropertyHelper::findField(cbe::GameEngine::staticType(), STRID("nameVal")), tmplt->getTemplate());
-
-        cbe::save(package);
-    }
-
-    // TODO
-    ModuleManager::get()->addAdditionalLibPath(TCHAR("Editor"));
-    ModuleManager::get()->loadModule(TCHAR("EditorCore"));
-
-    WgImGui::WgArguments args;
-    args.imguiManagerName = TCHAR("TestImgui");
-    SharedPtr<WgImGui> wgImgui = std::make_shared<WgImGui>();
-    wgImgui->construct(args);
-    SharedPtr<IImGuiLayer> imguiLayer = std::make_shared<TestImGuiLayer>();
-    wgImgui->getImGuiManager().addLayer(imguiLayer);
-    IApplicationModule::get()->getApplication()->getMainWindow()->setContent(std::static_pointer_cast<WidgetBase>(wgImgui));
 }
+
+void tempTickTest() {}

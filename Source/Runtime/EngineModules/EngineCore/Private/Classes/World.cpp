@@ -10,6 +10,8 @@
  */
 
 #include "Classes/World.h"
+#include "Property/PropertyHelper.h"
+#include "CBEPackage.h"
 #include "Classes/Actor.h"
 #include "Classes/ActorPrefab.h"
 #include "Serialization/ObjectSerializationHelpers.h"
@@ -26,6 +28,11 @@ inline STRINGID_CONSTEXPR static const StringID WORLD_SERIALIZER_CUSTOM_VERSION_
 
 World::World()
 {
+    if (getOuterMost() == nullptr || !PropertyHelper::isChildOf<cbe::Package>(getOuterMost()->getType()))
+    {
+        debugAssertf(BIT_SET(getFlags(), EObjectFlagBits::ObjFlag_Default), "Outer most of non default world must be a valid package!");
+        return;
+    }
     if (BIT_SET(getOuterMost()->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending))
     {
         worldState = EWorldState::Loading;
@@ -83,7 +90,7 @@ ObjectArchive &World::serialize(ObjectArchive &ar)
     return ar;
 }
 
-void World::onAttachmentChanged(TransformComponent *attachingComp, TransformComponent *attachedTo)
+void World::tfAttachmentChanged(TransformComponent *attachingComp, TransformComponent *attachedTo)
 {
     debugAssert(attachingComp);
 
@@ -122,7 +129,7 @@ void World::onAttachmentChanged(TransformComponent *attachingComp, TransformComp
     updateWorldTf(idxsToUpdate);
 }
 
-void World::onComponentAdded(Actor *actor, TransformComponent *tfComponent)
+void World::tfComponentAdded(Actor *actor, TransformComponent *tfComponent)
 {
     auto compWorldTfItr = compToTf.find(tfComponent);
     debugAssert(compWorldTfItr == compToTf.end());
@@ -141,9 +148,10 @@ void World::onComponentAdded(Actor *actor, TransformComponent *tfComponent)
     {
         compToTf[tfComponent] = txHierarchy.add(ComponentWorldTF{ tfComponent, tfComponent->relativeTf });
     }
+    onTfCompAdded.invoke(tfComponent);
 }
 
-void World::onComponentRemoved(Actor *actor, TransformComponent *tfComponent)
+void World::tfComponentRemoved(Actor *actor, TransformComponent *tfComponent)
 {
     auto compWorldTfItr = compToTf.find(tfComponent);
     TFHierarchyIdx compTfIdx;
@@ -166,8 +174,14 @@ void World::onComponentRemoved(Actor *actor, TransformComponent *tfComponent)
         }
         // By this point all of the attachment of tfComponent will be detached or attached to something else
         txHierarchy.remove(compTfIdx);
+        compToTf.erase(compWorldTfItr);
     }
+    onTfCompRemoved.invoke(tfComponent);
 }
+
+void World::logicComponentAdded(Actor *actor, LogicComponent *logicComp) { onLogicCompAdded.invoke(logicComp); }
+
+void World::logicComponentRemoved(Actor *actor, LogicComponent *logicComp) { onLogicCompRemoved.invoke(logicComp); }
 
 void World::componentsAttachedTo(std::vector<TransformComponent *> &outAttaches, TransformComponent *component, bool bRecurse /*= false*/) const
 {
@@ -192,35 +206,65 @@ void World::updateWorldTf(const std::vector<TFHierarchyIdx> &idxsToUpdate)
     for (TFHierarchyIdx idx : idxsToUpdate)
     {
         TFHierarchyIdx parentIdx = txHierarchy.getNode(idx).parent;
-        txHierarchy[idx].worldTx = txHierarchy[parentIdx].worldTx.transform(txHierarchy[idx].component->relativeTf);
+        if (txHierarchy.isValid(parentIdx))
+        {
+            txHierarchy[idx].worldTx = txHierarchy[parentIdx].worldTx.transform(txHierarchy[idx].component->relativeTf);
+        }
+        else
+        {
+            txHierarchy[idx].worldTx = txHierarchy[idx].component->relativeTf;
+        }
     }
 }
 
-Actor *World::addActor(CBEClass actorClass, const String &actorName, EObjectFlags flags)
+Actor *World::addActor(CBEClass actorClass, const String &actorName, EObjectFlags flags, bool bDelayedInit)
 {
-    if (worldState == EWorldState::Playing || worldState == EWorldState::StartingPlay || worldState == EWorldState::EndingPlay)
+    if (EWorldState::isPlayState(worldState))
     {
         flags |= EObjectFlagBits::ObjFlag_Transient;
     }
     ActorPrefab *prefab = create<ActorPrefab, StringID, const String &>(actorName, this, flags, actorClass->name, actorName);
-    return addActorInternal(prefab);
+    if (bDelayedInit)
+    {
+        delayInitPrefabs.insert(prefab);
+        return prefab->getActorTemplate();
+    }
+    actorPrefabs.emplace_back(prefab);
+    return setupActorInternal(prefab);
 }
 
 Actor *World::addActor(ActorPrefab *inPrefab, const String &name, EObjectFlags flags)
 {
-    if (worldState == EWorldState::Playing || worldState == EWorldState::StartingPlay || worldState == EWorldState::EndingPlay)
+    if (EWorldState::isPlayState(worldState))
     {
         flags |= EObjectFlagBits::ObjFlag_Transient;
     }
     ActorPrefab *prefab = create<ActorPrefab, ActorPrefab *, const String &>(name, this, flags, inPrefab, name);
-    return addActorInternal(prefab);
+    actorPrefabs.emplace_back(prefab);
+    return setupActorInternal(prefab);
 }
 
-cbe::Actor *World::addActorInternal(ActorPrefab *actorPrefab)
+bool World::finalizeAddActor(ActorPrefab *prefab)
 {
-    actorPrefabs.emplace_back(actorPrefab);
+    debugAssert(prefab->getParentPrefab() == nullptr && delayInitPrefabs.contains(prefab));
+    auto prefabItr = delayInitPrefabs.find(prefab);
+    if (prefabItr != delayInitPrefabs.end())
+    {
+        delayInitPrefabs.erase(prefabItr);
+        actorPrefabs.emplace_back(prefab);
+        setupActorInternal(prefab);
+        return true;
+    }
+    return false;
+}
+
+cbe::Actor *World::setupActorInternal(ActorPrefab *actorPrefab)
+{
     Actor *actor = actorPrefab->getActorTemplate();
-    actors.emplace_back(actor);
+    if (EWorldState::isPlayState(worldState))
+    {
+        actors.emplace_back(actor);
+    }
     ActorPrefab::initializeActor(actorPrefab);
     debugAssert(actor->getRootComponent()->getAttachedTo() == nullptr);
 
@@ -232,9 +276,23 @@ cbe::Actor *World::addActorInternal(ActorPrefab *actorPrefab)
     // Updating its attachments, Reason for separated setup is that transformComps will not be ordered from root to leafs
     for (TransformComponent *actorTransformComp : actor->getTransformComponents())
     {
-        onAttachmentChanged(actorTransformComp, actorTransformComp->getAttachedTo());
+        tfAttachmentChanged(actorTransformComp, actorTransformComp->getAttachedTo());
     }
 
+    // Broadcast add events
+    onActorAdded.invoke(actorPrefab->getActorTemplate());
+    for (TransformComponent *actorTransformComp : actor->getTransformComponents())
+    {
+        // Current assumption: Native tf components gets auto added through createComponent
+        if (!actorPrefab->isNativeComponent(actorTransformComp))
+        {
+            onTfCompAdded.invoke(actorTransformComp);
+        }
+    }
+    for (LogicComponent *actorLogicComp : actor->getLogicComponents())
+    {
+        onLogicCompAdded.invoke(actorLogicComp);
+    }
     return actorPrefab->getActorTemplate();
 }
 
@@ -247,6 +305,31 @@ void World::removeActor(Actor *actor)
         std::erase(actorPrefabs, prefab);
     }
     std::erase(actors, actor);
+    actorAttachedTo.erase(actor);
+    for (auto actorAttachedToItr = actorAttachedTo.begin(); actorAttachedToItr != actorAttachedTo.end();)
+    {
+        if (actorAttachedToItr->second.actor == actor)
+        {
+            Actor *actorToDetach = actorAttachedToItr->first;
+            actorAttachedToItr = actorAttachedTo.erase(actorAttachedToItr);
+            actorToDetach->detachActor();
+        }
+        else
+        {
+            ++actorAttachedToItr;
+        }
+    }
+
+    // Broadcast removed events
+    for (TransformComponent *actorTransformComp : actor->getTransformComponents())
+    {
+        tfComponentRemoved(actor, actorTransformComp);
+    }
+    for (LogicComponent *actorLogicComp : actor->getLogicComponents())
+    {
+        logicComponentRemoved(actor, actorLogicComp);
+    }
+    onActorRemoved.invoke(actor);
 }
 
 } // namespace cbe
