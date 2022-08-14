@@ -175,18 +175,13 @@ public:
         std::vector<std::pair<uint8 *, uint8 *>> editedKeys;
         for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
         {
-            void *elemPtr = itrPtr->getElement();
+            const void *elemPtr = itrPtr->getConstElement();
 
             CBEMemory::memZero(tempData, elementProp->typeInfo->size);
             dataRetriever->copyTo(elemPtr, tempData);
             FieldVisitor::visit<Visitable>(elementProp, tempData, userData);
             // If both original and temp new keys are equal then we do not have to replace entry
-            if (dataRetriever->equals(elemPtr, tempData))
-            {
-                // Copy back key just in case pointer is not used for hashing or equality checks
-                dataRetriever->copyTo(tempData, elemPtr);
-            }
-            else
+            if (!dataRetriever->equals(elemPtr, tempData))
             {
                 std::pair<uint8 *, uint8 *> originalToNewPairs;
                 originalToNewPairs.first = bufferData;

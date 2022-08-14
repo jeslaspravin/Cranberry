@@ -23,6 +23,7 @@ struct ViewData
     Matrix4 invProjection;
 };
 
+// TODO(Jeslas) : Rename this file and class to RenderSceneData as I am using it only for view param info as view specialization constants
 class ENGINERENDERER_EXPORT RenderSceneBase
 {
 public:

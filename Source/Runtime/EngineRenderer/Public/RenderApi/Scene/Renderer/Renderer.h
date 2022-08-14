@@ -13,6 +13,7 @@
 
 class RenderSceneBase;
 
+// TODO(Jeslas) : Remove this file once I am sure this is not needed
 class RendererBase
 {
 private:
