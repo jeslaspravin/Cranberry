@@ -49,6 +49,8 @@ concept InterfaceType
 template <typename Type>
 concept ReflectClassOrStructOrInterfaceType = ReflectClassOrStructType<Type> || InterfaceType<Type>;
 
+#define GET_MEMBER_ID_CHECKED(TypeName, FieldName) (sizeof(decltype(&TypeName::FieldName)), STRID(#FieldName))
+
 #define VALID_SYMBOL_REGEX_PATTERN TCHAR("^[a-zA-Z_]{1}[a-zA-Z0-9_]*")
 class REFLECTIONRUNTIME_EXPORT PropertyHelper
 {
