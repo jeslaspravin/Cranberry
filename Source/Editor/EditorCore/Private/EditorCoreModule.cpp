@@ -11,17 +11,18 @@
 
 #include "Modules/ModuleManager.h"
 #include "IEditorCore.h"
+#include "Types/Platform/LFS/PathFunctions.h"
 #include "CBEObjectHelpers.h"
 #include "AssetImporter.h"
 
 IEditorCore *IEditorCore::get()
 {
-    static WeakModulePtr appModule = ModuleManager::get()->getOrLoadModule(TCHAR("EditorCore"));
-    if (appModule.expired())
+    static WeakModulePtr modulePtr = ModuleManager::get()->getOrLoadModule(TCHAR("EditorCore"));
+    if (modulePtr.expired())
     {
         return nullptr;
     }
-    return static_cast<IEditorCore *>(appModule.lock().get());
+    return static_cast<IEditorCore *>(modulePtr.lock().get());
 }
 
 class EditorCoreModule final : public IEditorCore
@@ -60,10 +61,16 @@ void EditorCoreModule::unregisterAssetImporter(CBEClass importerClass) { std::er
 
 AssetImporterBase *EditorCoreModule::findAssetImporter(ImportOption &inOutImport)
 {
+    if (inOutImport.fileExt.empty() || inOutImport.fileName.empty() || inOutImport.fileDirectory.empty())
+    {
+        inOutImport.fileDirectory = PathFunctions::splitFileAndDirectory(inOutImport.fileName, inOutImport.filePath);
+        inOutImport.fileName = PathFunctions::stripExtension(inOutImport.fileExt, inOutImport.fileName);
+    }
     for (AssetImporterBase *importer : importers)
     {
         if (importer->supportsImporting(inOutImport))
         {
+            debugAssertf(inOutImport.optionsStruct, "Options must be filled even if it empty!");
             return importer;
         }
     }
