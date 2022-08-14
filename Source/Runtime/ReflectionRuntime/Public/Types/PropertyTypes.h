@@ -341,7 +341,7 @@ public:
     FieldValuePtr<void> get() const override { return &field.get(); }
     void setTypeless(void *value) const override
     {
-        if CONST_EXPR(!std::is_const_v<MemberType>)
+        if CONST_EXPR (!std::is_const_v<MemberType>)
         {
             MemberType *valuePtr = (MemberType *)(value);
             field.set(*valuePtr);

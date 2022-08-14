@@ -66,7 +66,7 @@ bool INTERNAL_validateObjectName(const String &name, CBEClass clazz)
     }
 }
 
-String INTERNAL_getValidObjectName(const String &name, CBEClass clazz) 
+String INTERNAL_getValidObjectName(const String &name, CBEClass clazz)
 {
     if (PropertyHelper::isChildOf<Package>(clazz))
     {

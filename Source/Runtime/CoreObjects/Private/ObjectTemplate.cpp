@@ -84,9 +84,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
     {
         if (clazz == nullptr)
         {
-            LOG_ERROR(
-                "ObjectTemplate", "Failed to get class while serializing %s", getOuterMost()->getFullPath()
-            );
+            LOG_ERROR("ObjectTemplate", "Failed to get class while serializing %s", getOuterMost()->getFullPath());
             return ar;
         }
 

@@ -49,7 +49,8 @@ cbe::Actor *
         StaticMeshComponent *smComp
             = static_cast<StaticMeshComponent *>(addComponentToPrefab(smActorPrefab, StaticMeshComponent::staticType(), sm->getName()));
 
-        Object *modifyingComp = modifyPrefabCompField(PropertyHelper::findField(smComp->getType(), GET_MEMBER_ID_CHECKED(StaticMeshComponent, mesh)), smComp);
+        Object *modifyingComp
+            = modifyPrefabCompField(PropertyHelper::findField(smComp->getType(), GET_MEMBER_ID_CHECKED(StaticMeshComponent, mesh)), smComp);
         debugAssert(modifyingComp == smComp);
         smComp->mesh = sm;
 

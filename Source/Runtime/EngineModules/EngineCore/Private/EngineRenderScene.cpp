@@ -12,7 +12,7 @@
 #include "EngineRenderScene.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
 
-copat::JobSystemEnqTask<copat::EJobThreadType::RenderThread> EngineRenderScene::syncWorldComps(ComponentSyncInfo compsUpdate) 
+copat::JobSystemEnqTask<copat::EJobThreadType::RenderThread> EngineRenderScene::syncWorldComps(ComponentSyncInfo compsUpdate)
 {
     for (StringID compToRemove : compsUpdate.compsRemoved)
     {
@@ -21,7 +21,7 @@ copat::JobSystemEnqTask<copat::EJobThreadType::RenderThread> EngineRenderScene::
         {
             SizeT renderInfoIdx = compToIdxItr->second;
             componentToRenderInfo.erase(compToIdxItr);
-            
+
             destroyRenderInfo(compsRenderInfo[renderInfoIdx]);
             compsRenderInfo.reset(renderInfoIdx);
         }
@@ -38,7 +38,7 @@ void EngineRenderScene::createRenderInfo(cbe::RenderableComponent *comp, Compone
     // TODO :
 }
 
-void EngineRenderScene::destroyRenderInfo(const ComponentRenderInfo &renderInfo) const 
+void EngineRenderScene::destroyRenderInfo(const ComponentRenderInfo &renderInfo) const
 {
     // TODO :
 }
