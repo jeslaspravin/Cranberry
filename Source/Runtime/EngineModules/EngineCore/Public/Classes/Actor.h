@@ -54,6 +54,7 @@ public:
     void removeComponent(Object *component);
 
     void attachActor(TransformComponent *otherComponent);
+    Actor* getActorAttachedTo() const;
     void detachActor();
 
     // Helpers

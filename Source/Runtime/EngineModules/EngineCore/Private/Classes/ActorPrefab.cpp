@@ -31,24 +31,6 @@ bool ActorPrefab::canOverrideRootComp() const
     return false;
 }
 
-Object *ActorPrefab::onComponentFieldModify(const FieldProperty *prop, Object *obj)
-{
-    debugAssert(obj && prop);
-    Object *comp = modifyComponent(obj);
-    ObjectTemplate *objTemplate = objectTemplateFromObj(comp);
-    objTemplate->onFieldModified(prop, obj);
-    return comp;
-}
-
-Object *ActorPrefab::onComponentFieldReset(const FieldProperty *prop, Object *obj)
-{
-    debugAssert(obj && prop);
-    Object *comp = modifyComponent(obj);
-    ObjectTemplate *objTemplate = objectTemplateFromObj(comp);
-    objTemplate->onFieldReset(prop, obj);
-    return comp;
-}
-
 void ActorPrefab::onActorFieldModify(const FieldProperty *prop, Actor *actor)
 {
     debugAssert(actor && actorTemplate->getTemplate() == actor && prop);
@@ -73,12 +55,12 @@ ActorPrefab *ActorPrefab::prefabFromActorTemplate(ObjectTemplate *actorTemplate)
 
 ActorPrefab *ActorPrefab::prefabFromCompTemplate(ObjectTemplate *compTemplate)
 {
-    // Outer of component template must be the actor from actor template, Look up Component::getActor()
-    return compTemplate ? cast<ActorPrefab>(compTemplate->getOuter()->getOuter()->getOuter()) : nullptr;
+    // Outer of component template must be the actor template, Look up Component::getActor()
+    return compTemplate ? cast<ActorPrefab>(compTemplate->getOuter()->getOuter()) : nullptr;
 }
 
 ObjectTemplate *ActorPrefab::objectTemplateFromObj(Object *obj) { return obj ? cast<ObjectTemplate>(obj->getOuter()) : nullptr; }
 
-FORCE_INLINE bool ActorPrefab::isOwnedComponent(Object *comp) const { return prefabFromCompTemplate(objectTemplateFromObj(comp)) == this; }
+bool ActorPrefab::isOwnedComponent(Object *comp) const { return prefabFromCompTemplate(objectTemplateFromObj(comp)) == this; }
 
 } // namespace cbe

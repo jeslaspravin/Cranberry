@@ -32,7 +32,7 @@ class META_ANNOTATE_API(ENGINECORE_EXPORT) ActorPrefab : public Object
 {
     GENERATED_CODES()
 
-private:
+public:
     struct META_ANNOTATE() ComponentOverrideInfo
     {
         GENERATED_CODES()
@@ -51,6 +51,7 @@ private:
         ObjectTemplate *overriddenTemplate = nullptr;
     };
 
+private:
     // Will never be null
     CBEClass actorClass;
     // Will be null if created from class instead of another prefab
@@ -90,9 +91,6 @@ public:
      * If override is needed creates the override and returns the overridden component
      */
     Object *modifyComponent(Object *modifyingComp);
-    // Just few helpers that composes and adds to modifyComponent(), Must be called before modifying for component. Actors always has overrides
-    Object *onComponentFieldModify(const FieldProperty *prop, Object *obj);
-    Object *onComponentFieldReset(const FieldProperty *prop, Object *obj);
     void onActorFieldModify(const FieldProperty *prop, Actor *actor);
     void onActorFieldReset(const FieldProperty *prop, Actor *actor);
 
@@ -107,6 +105,9 @@ public:
     Object *addComponent(ObjectTemplate *compTemplate, const String &compName);
     void removeComponent(Object *comp);
 
+    ActorPrefab *getParentPrefab() const { return parentPrefab; }
+    const std::vector<ObjectTemplate *> &getPrefabComponents() const { return components; }
+    const std::vector<ComponentOverrideInfo> &getOverridenComponents() const { return componentOverrides; }
     Actor *getActorTemplate() const;
     TransformComponent *getRootComponent() const;
 
@@ -121,15 +122,15 @@ public:
     // initializes world actor prefab by connecting all attachments
     static void initializeActor(ActorPrefab *inPrefab);
 
+    bool isNativeComponent(Object *obj) const;
+    // If this prefab owns this component
+    bool isOwnedComponent(Object *comp) const;
+
 private:
     FORCE_INLINE static ObjectTemplate *getTemplateToOverride(const ComponentOverrideInfo &overrideInfo)
     {
         return overrideInfo.lastOverride ? overrideInfo.lastOverride : overrideInfo.baseTemplate;
     }
-
-    FORCE_INLINE bool isNativeComponent(Object *obj) const;
-    // If this prefab owns this component
-    FORCE_INLINE bool isOwnedComponent(Object *comp) const;
 
     void createComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences);
     void clearComponentOverride(ComponentOverrideInfo &overrideInfo, bool bReplaceReferences);
