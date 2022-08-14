@@ -24,7 +24,7 @@ private:
     std::vector<Color> vertexColor;
     std::vector<Vector2D> vertexCoord;
     std::vector<Short2D> vertices;
-    // Below two are valid per quad(4 vertices)
+    // Below two maps one per quad(4 vertices)
     std::vector<ImageResourceRef> instanceTexture;
     std::vector<QuantShortBox2D> instanceClip;
 

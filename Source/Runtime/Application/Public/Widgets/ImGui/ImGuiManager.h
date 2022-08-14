@@ -85,7 +85,8 @@ private:
     BufferResourceRef vertexBuffer;
     BufferResourceRef idxBuffer;
 
-    std::map<int32, std::vector<SharedPtr<IImGuiLayer>>, std::greater<int32>> drawLayers;
+    // What ever with highest value will be drawn at last, This is for consistency between Application widget layers
+    std::map<int32, std::vector<SharedPtr<IImGuiLayer>>> drawLayers;
 
     // Per frame data
 
