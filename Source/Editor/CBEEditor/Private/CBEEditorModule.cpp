@@ -10,5 +10,64 @@
  */
 
 #include "Modules/ModuleManager.h"
+#include "ICBEEditor.h"
+#include "EditorEngine.h"
+#include "Widgets/WgEditorImGuiLayer.h"
+#include "StaticMeshImporter.h"
+#include "IEditorCore.h"
 
-DECLARE_MODULE(CBEEditor, ModuleNoImpl)
+ICBEEditor *ICBEEditor::get()
+{
+    static WeakModulePtr modulePtr = ModuleManager::get()->getOrLoadModule(TCHAR("CBEEditor"));
+    if (modulePtr.expired())
+    {
+        return nullptr;
+    }
+    return static_cast<ICBEEditor *>(modulePtr.lock().get());
+}
+
+class CBEEditorModule : public ICBEEditor
+{
+public:
+    /* IModuleBase overrides */
+    void init() override;
+    void release() override;
+
+    DelegateHandle addMenuDrawCallback(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType callback) const override;
+    void removeMenuDrawCallback(const TChar *menuName, DelegateHandle handle) const override;
+    /* Override ends */
+};
+
+DECLARE_MODULE(CBEEditor, CBEEditorModule)
+
+void CBEEditorModule::init()
+{
+    IEditorCore *editorCore = ModuleManager::get()->getOrLoadModule<IEditorCore>(TCHAR("EditorCore"));
+    debugAssert(editorCore);
+    editorCore->registerAssetImporter(ObjStaticMeshImporter::staticType());
+}
+
+void CBEEditorModule::release()
+{
+    if (IEditorCore *editorCore = IEditorCore::get())
+    {
+        editorCore->unregisterAssetImporter(ObjStaticMeshImporter::staticType());
+    }
+}
+
+DelegateHandle CBEEditorModule::addMenuDrawCallback(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType callback) const
+{
+    if (cbe::GCBEditorEngine && cbe::GCBEditorEngine->editorLayer)
+    {
+        return cbe::GCBEditorEngine->editorLayer->addMenuDrawExtender(menuName, callback);
+    }
+    return {};
+}
+
+void CBEEditorModule::removeMenuDrawCallback(const TChar *menuName, DelegateHandle handle) const
+{
+    if (cbe::GCBEditorEngine && cbe::GCBEditorEngine->editorLayer)
+    {
+        cbe::GCBEditorEngine->editorLayer->removeMenuExtender(menuName, handle);
+    }
+}

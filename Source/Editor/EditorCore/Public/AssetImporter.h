@@ -19,6 +19,14 @@
 struct ImportOption
 {
     String filePath;
+    String fileExt;
+    // w/o extension
+    String fileName;
+    String fileDirectory;
+
+    String importContentPath;
+    // Path to directory in which to store the package relative to importContentPath
+    String relativeDirPath;
 
     // Out from AssetImporter
     void *optionsStruct;
@@ -29,6 +37,9 @@ class META_ANNOTATE() AssetImporterBase : public cbe::Object
 {
     GENERATED_CODES()
 public:
-    bool supportsImporting(ImportOption &inOutOptions) { return false; }
-    cbe::Object *tryImporting(ImportOption &inOutOptions) const { return nullptr; }
+    constexpr static const uint32 AllocSlotCount = 2;
+
+public:
+    virtual bool supportsImporting(ImportOption &inOutOptions) { return false; }
+    virtual std::vector<cbe::Object *> tryImporting(const ImportOption &importOptions) const { return {}; }
 };
