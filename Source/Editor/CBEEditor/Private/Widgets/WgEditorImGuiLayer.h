@@ -20,6 +20,7 @@ private:
     bool bShowAbout = false;
 
     std::unordered_map<std::string, ImGuiDrawInterfaceCallback> menuExtenders;
+
 public:
     /* IImGuiLayer overrides */
 

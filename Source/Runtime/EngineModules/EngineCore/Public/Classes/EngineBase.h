@@ -35,7 +35,7 @@ public:
     void onTick();
     void onExit();
 
-    WorldsManager* worldManager() const;
+    WorldsManager *worldManager() const;
 
     virtual void engineStart() {}
     virtual void engineTick(float timeDelta) {}

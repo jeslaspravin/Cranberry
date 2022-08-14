@@ -18,7 +18,7 @@
 class ICBEEditor : public IModuleBase
 {
 public:
-    CBEEDITOR_EXPORT static ICBEEditor *get();    
+    CBEEDITOR_EXPORT static ICBEEditor *get();
 
     virtual DelegateHandle addMenuDrawCallback(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType callback) const = 0;
     virtual void removeMenuDrawCallback(const TChar *menuName, DelegateHandle handle) const = 0;

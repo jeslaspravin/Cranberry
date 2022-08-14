@@ -54,10 +54,7 @@ void CranberryEngineApp::onTick()
     coreObjModule->getGC().collect(0.008f);
 }
 
-void CranberryEngineApp::onExit()
-{
-    GCBEEngine->onExit();
-}
+void CranberryEngineApp::onExit() { GCBEEngine->onExit(); }
 
 void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent state) {}
 
