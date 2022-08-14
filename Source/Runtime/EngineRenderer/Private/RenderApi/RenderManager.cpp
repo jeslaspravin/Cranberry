@@ -140,8 +140,6 @@ RenderThreadEnqTask RenderManager::destroy()
 
 void RenderManager::renderFrame(float timedelta)
 {
-    // TODO(Jeslas): Start new frame before any commands, Since not multi-threaded it is okay to call
-    // directly here
     renderCmds->newFrame(timedelta);
 
     debugAssert(IRenderInterfaceModule::get());

@@ -15,13 +15,18 @@ struct HEADER_FILE_ID;
 {{#ReflectTypes}}
 #define {{HeaderFileId}}_{{LineNumber}}_GENERATED_CODES \
 public:\
-{{>StaticFunctions}}{{#IsClass}}\
+{{>StaticFunctions}}{{#IsClass}}\{{!Class only codes}}
 {{>VirtualTypeGetter}}\
 friend HEADER_FILE_ID;\
 {{#BaseClassTypeName}}using BaseType = {{BaseClassTypeName}};{{/BaseClassTypeName}}\
 {{/IsClass}}\
 {{#IsBaseType}}{{#DefineCtorPolicy}}OVERRIDE_CONSTRUCTION_POLICY(DefaultConstructionPolicy);{{/DefineCtorPolicy}}{{/IsBaseType}}\
-CBE_CLASS_NEWDELETE_OVERRIDES({{SimpleTypeName}})
+CBE_CLASS_NEWDELETE_OVERRIDES({{SimpleTypeName}})\
+GENERATED_COMMON_CODES(){{#IsClass}}\{{!Class only codes}}
+GENERATED_CLASS_CODES()\
+{{/IsClass}}{{^IsClass}}\{{!Struct only codes}}
+GENERATED_STRUCT_CODES()\
+{{/IsClass}}
 {{/ReflectTypes}}
 
 #endif // ifndef __REF_PARSE__

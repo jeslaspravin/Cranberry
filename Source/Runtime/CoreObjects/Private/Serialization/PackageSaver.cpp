@@ -32,6 +32,10 @@ void PackageSaver::setupContainedObjs()
     {
         // Package is final class so we just have compare, no need to go through isChild hierarchy
         fatalAssertf(child->getType() != cbe::Package::staticType(), "Package must not contain package object");
+        if (ANY_BIT_SET(child->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete | cbe::EObjectFlagBits::ObjFlag_Deleted))
+        {
+            continue;
+        }
 
         objToContObjsIdx[child->getStringID()] = containedObjects.size();
         PackageContainedData &containedObjData = containedObjects.emplace_back();
@@ -47,6 +51,7 @@ void PackageSaver::serializeObject(cbe::Object *obj)
     /**
      * If transient we store the object as part of package but never serialize it.
      * This is to allow us to do pointer fix ups if transient object is available while loading
+     * Collecting all parent object tree so that when loading we do not depend on transient object being available at object creation
      */
     if (NO_BITS_SET(obj->collectAllFlags(), cbe::EObjectFlagBits::ObjFlag_Transient))
     {
