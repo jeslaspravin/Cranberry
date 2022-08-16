@@ -100,7 +100,7 @@ class META_ANNOTATE() BerryFirst : public BerryObject
     GENERATED_CODES();
 
 public:
-    META_ANNOTATE(ObjFlag_Transient)
+    META_ANNOTATE(Transient)
     std::vector<int32> values;
 };
 } // namespace TestNS

@@ -775,7 +775,7 @@ std::vector<cbe::Object *> ObjStaticMeshImporter::tryImporting(const ImportOptio
     createInfoSMs.reserve(meshIntermediate.loadedMeshes.size());
     for (std::pair<const String, ObjSMImporterHelpers::PerMeshData> &meshIntermData : meshIntermediate.loadedMeshes)
     {
-        cbe::SMCreateInfo &createInfo = createInfoSMs[meshIntermData.first];
+        cbe::SMCreateInfo &createInfo = createInfoSMs[PropertyHelper::getValidSymbolName(meshIntermData.first)];
         createInfo.meshBatches = std::move(meshIntermData.second.meshBatches);
         createInfo.bounds = std::move(meshIntermData.second.bound);
         createInfo.tbnVerts = std::move(meshIntermData.second.tbnVerts);

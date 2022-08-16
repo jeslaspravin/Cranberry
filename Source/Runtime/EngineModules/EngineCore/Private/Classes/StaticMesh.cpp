@@ -188,9 +188,9 @@ void StaticMesh::copyResources(
     vertexCpuBuffer->setResourceName(getName() + TCHAR("_CPUVerts"));
     vertexCpuBuffer->init();
 
-    indexCpuBuffer = graphicsHelper->createReadOnlyVertexBuffer(graphicsInstance, sizeof(StaticMeshVertex), inVertices.size());
+    indexCpuBuffer = graphicsHelper->createReadOnlyIndexBuffer(graphicsInstance, sizeof(uint32), inIndices.size());
     indexCpuBuffer->setAsStagingResource(true);
-    indexCpuBuffer->setResourceName(getName() + TCHAR("_CPUVerts"));
+    indexCpuBuffer->setResourceName(getName() + TCHAR("_CPUIndices"));
     indexCpuBuffer->init();
 
     vertexCpuView = { static_cast<StaticMeshVertex *>(graphicsHelper->borrowMappedPtr(graphicsInstance, vertexCpuBuffer)),

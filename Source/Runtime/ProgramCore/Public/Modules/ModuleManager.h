@@ -100,6 +100,9 @@ public:
     void unloadModule(const TChar *moduleName);
     void unloadAll();
 
+    // Just releases the module and keeps the runtime loaded library loaded
+    void releaseModule(const TChar *moduleName);
+
     std::vector<std::pair<LibHandle, struct LibraryData>> getAllModuleData();
 
 private:

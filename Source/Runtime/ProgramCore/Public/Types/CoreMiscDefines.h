@@ -80,7 +80,7 @@
 #define ANY_BIT_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) > 0)
 // If no bits of check bits is set in this unsigned integer
 #define NO_BITS_SET(FlagStatement, CheckFlags) (((FlagStatement) & (CheckFlags)) == 0)
-#define INDEX_TO_FLAG_MASK(Idx) (1 << (Idx))
+#define INDEX_TO_FLAG_MASK(Idx) (decltype(Idx)(1) << (Idx))
 // Sets all bits that are set in value and mask or already set
 #define SET_BITS_MASKED(SetTo, ValueFlags, FlagsMask) (SetTo) |= ((ValueFlags) & (FlagsMask))
 #define SET_BITS(SetTo, FlagsMask) (SetTo) |= (FlagsMask)

@@ -17,13 +17,21 @@
 #if __REF_PARSE__
 #include "Classes/World.h"
 #endif
-
 #include "WorldsManager.gen.h"
+
+class EngineRenderScene;
 
 namespace cbe
 {
 
 class World;
+
+struct META_ANNOTATE() WorldInfo
+{
+    GENERATED_CODES()
+
+    SharedPtr<EngineRenderScene> renderScene;
+};
 
 class WorldsManager : public Object
 {
@@ -34,7 +42,21 @@ public:
 private:
     META_ANNOTATE()
     World *mainWorld;
+    META_ANNOTATE()
+    WorldInfo mainWorldInfo;
 
+    META_ANNOTATE()
+    std::unordered_map<World *, WorldInfo> otherWorlds;
+
+public:
+    World *initWorld(World *world, bool bAsMainWorld);
+    SharedPtr<EngineRenderScene> getWorldRenderScene(World *world) const;
+
+    void unloadWorld(World *world);
+    void unloadAllWorlds();
+
+private:
+    FORCE_INLINE void unloadWorldInternal(World *world);
 } META_ANNOTATE();
 
 } // namespace cbe

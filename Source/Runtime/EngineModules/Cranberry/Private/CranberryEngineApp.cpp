@@ -18,6 +18,8 @@
 #include "String/StringID.h"
 #include "AssetImporter.h"
 
+#include "Classes/WorldsManager.h"
+
 void tempTest();
 void tempTickTest();
 
@@ -33,9 +35,9 @@ void CranberryEngineApp::onStart()
         = bModulesLoaded && ModuleManager::get()->loadModule(TCHAR("EditorCore")) && ModuleManager::get()->loadModule(TCHAR("CBEEditor"));
 
     engineClass = rttiModule->getClassType(STRID("cbe::EditorEngine"));
-#else
+#else  // EDITOR_BUILD
     engineClass = rttiModule->getClassType(STRID("cbe::CBEGameEngine"));
-#endif
+#endif // EDITOR_BUILD
     fatalAssertf(bModulesLoaded, "Failed loading modules!");
     fatalAssertf(engineClass, "Engine class not found!");
     // This will create and assigns GCBEEngine
@@ -54,7 +56,24 @@ void CranberryEngineApp::onTick()
     coreObjModule->getGC().collect(0.008f);
 }
 
-void CranberryEngineApp::onExit() { GCBEEngine->onExit(); }
+void CranberryEngineApp::onExit()
+{
+    GCBEEngine->onExit();
+    GCBEEngine->worldManager()->unloadAllWorlds();
+    // Wait until all the dereferenced objects are cleared, Give as much time as it wants
+    coreObjModule->getGC().collect(0.f);
+    while (!coreObjModule->getGC().isGcComplete() || coreObjModule->getGC().getLastClearCount() > 0)
+    {
+        coreObjModule->getGC().collect(0.f);
+    }
+
+    ModuleManager *moduleManager = ModuleManager::get();
+
+#if EDITOR_BUILD
+    moduleManager->releaseModule(TCHAR("CBEEditor"));
+    moduleManager->releaseModule(TCHAR("EditorCore"));
+#endif // EDITOR_BUILD
+}
 
 void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent state) {}
 
@@ -65,6 +84,7 @@ void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent state) {}
 #include "IApplicationModule.h"
 #include "Types/Platform/LFS/PathFunctions.h"
 #include "IEditorCore.h"
+#include "Classes/World.h"
 
 void tempTest()
 {
@@ -126,7 +146,8 @@ void tempTest()
 #endif
 
     // const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
-    const TChar *meshPath = TCHAR("D:/Workspace/VisualStudio/Cranberry/External/Assets/Cone.obj");
+    // const TChar *meshPath = TCHAR("D:/Workspace/VisualStudio/Cranberry/External/Assets/Cone.obj");
+    const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/TestScene.obj");
     ImportOption opt;
     opt.filePath = meshPath;
     opt.importContentPath = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
@@ -135,7 +156,13 @@ void tempTest()
         bool bImportAsScene = true;
         static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
                                                     ->setTypeless(&bImportAsScene, opt.optionsStruct);
-        importer->tryImporting(opt);
+
+        std::vector<cbe::Object *> objs = importer->tryImporting(opt);
+        for (cbe::Object *obj : objs)
+        {
+            cbe::save(obj);
+        }
+        GCBEEngine->worldManager()->initWorld(cast<cbe::World>(objs[0]), true);
     }
 }
 

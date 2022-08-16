@@ -31,8 +31,7 @@ namespace cbe
 class COREOBJECTS_EXPORT ObjectAllocatorBase
 {
 protected:
-    // We are not going to have same object type more than max of uint32
-    BitArray<uint32> allocValidity;
+    BitArray<uint64> allocValidity;
 
 public:
     using AllocIdx = ObjectAllocIdx;

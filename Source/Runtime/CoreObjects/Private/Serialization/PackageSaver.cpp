@@ -42,6 +42,8 @@ void PackageSaver::setupContainedObjs()
         containedObjData.object = child;
         containedObjData.objectPath = ObjectPathHelper::getObjectPath(child, package);
         containedObjData.objectFlags = child->getFlags();
+        // No need for dirty flags to be serialized out
+        CLEAR_BITS(containedObjData.objectFlags, cbe::EObjectFlagBits::ObjFlag_PackageDirty);
         containedObjData.clazz = child->getType();
     }
 }
