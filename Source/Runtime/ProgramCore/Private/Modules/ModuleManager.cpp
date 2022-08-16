@@ -310,6 +310,21 @@ void ModuleManager::unloadAll()
     loadedLibraries.clear();
 }
 
+void ModuleManager::releaseModule(const TChar *moduleName)
+{
+    WeakModulePtr existingModule = getModule(moduleName);
+    if (!existingModule.expired())
+    {
+        IModuleBase *moduleInterface = existingModule.lock().get();
+
+        onModuleUnload.invoke(moduleName);
+        moduleInterface->release();
+        loadedModuleInterfaces.erase(moduleName);
+        std::erase(moduleLoadedOrder, moduleName);
+        LOG_DEBUG("ModuleManager", "Released module %s", moduleName);
+    }
+}
+
 std::vector<std::pair<LibHandle, LibraryData>> ModuleManager::getAllModuleData()
 {
     // Had to do every time because that loading can happen anytime in program

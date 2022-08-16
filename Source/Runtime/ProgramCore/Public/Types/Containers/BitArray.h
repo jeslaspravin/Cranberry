@@ -66,8 +66,10 @@ public:
     using const_pointer = const value_type *;
     using ArraySizeType = SizeT;
     using ArrayDiffType = SSizeT;
-    using BitIdxType = uint8;
-    using BitIdxDiffType = int8;
+    // Index can be uint8 however Bit shifting causes issues by rotating the bit around after 7th bit
+    // I could avoid it by manually casting when bit shifting, However BitIdxType is not stored anywhere except in Iterators so uint64 is fine
+    using BitIdxType = uint64;
+    using BitIdxDiffType = int64;
     using BitVectorType = std::vector<value_type>;
 
     template <bool bIsConst>

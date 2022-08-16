@@ -24,7 +24,7 @@ namespace cbe
 void INTERNAL_destroyCBEObject(cbe::Object *obj);
 }
 
-void CoreObjectGC::deleteObject(cbe::Object *obj) const
+uint64 CoreObjectGC::deleteObject(cbe::Object *obj) const
 {
     CoreObjectsDB &objsDb = CoreObjectsModule::objectsDB();
     if (objsDb.hasObject(obj->getStringID()))
@@ -38,7 +38,9 @@ void CoreObjectGC::deleteObject(cbe::Object *obj) const
         {
             cbe::INTERNAL_destroyCBEObject(*rItr);
         }
+        return subObjs.size();
     }
+    return 0;
 }
 
 void CoreObjectGC::collectFromRefCollectors(TickRep &budgetTicks)
@@ -148,7 +150,7 @@ void CoreObjectGC::clearUnused(TickRep &budgetTicks)
                 // If valid and not used then we delete it
                 if (allocator->isValid(allocIdx) && !bSet)
                 {
-                    deleteObject(allocator->getAt<cbe::Object>(allocIdx));
+                    lastClearCount += deleteObject(allocator->getAt<cbe::Object>(allocIdx));
                 }
                 allocIdx++;
             }
@@ -333,6 +335,7 @@ struct GCObjectFieldVisitable
             cbe::Object *objPtr = *objPtrPtr;
             if (objPtr && objPtr != gcUserData->thisObj)
             {
+                // No need to check if Deleted flag as that happens only when no references where found
                 if (BIT_SET(objPtr->getFlags(), cbe::EObjectFlagBits::ObjFlag_MarkedForDelete))
                 {
                     (*objPtrPtr) = nullptr;
@@ -445,6 +448,7 @@ void CoreObjectGC::collectObjects(TickRep &budgetTicks)
         }
     }
 
+    lastClearCount = 0;
     state = EGCState::Clearing;
     // Setup classes left for clearing
     classesLeft.reserve(objUsedFlags.size());

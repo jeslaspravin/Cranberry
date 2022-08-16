@@ -35,7 +35,7 @@ public:
 
 private:
     // Will be temporary template object
-    META_ANNOTATE(ObjFlag_Transient)
+    META_ANNOTATE(Transient)
     Object *templateObj;
 
     META_ANNOTATE()

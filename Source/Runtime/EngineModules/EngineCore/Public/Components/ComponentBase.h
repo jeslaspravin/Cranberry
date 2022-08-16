@@ -57,7 +57,7 @@ public:
     Transform3D relativeTf;
 
 private:
-    META_ANNOTATE(ObjFlag_Transient)
+    META_ANNOTATE(Transient)
     TransformComponent *attachedTo = nullptr;
 
 public:

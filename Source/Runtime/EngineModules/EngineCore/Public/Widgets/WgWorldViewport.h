@@ -22,6 +22,7 @@ namespace cbe
 class World;
 }
 
+// TODO(Jeslas) : WgWorldViewport will be Runtime viewport widget. WgViewportImGuiLayer will be viewport in Editor
 class ENGINECORE_EXPORT WgWorldViewport : public WidgetBase
 {
 private:

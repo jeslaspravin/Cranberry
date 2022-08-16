@@ -42,15 +42,15 @@ private:
     void *slots;
     // Each free slot stores index of next free slot
     // If InvalidSize then no slots are available
-    SizeType freeHead;
-    SizeType freeTail;
+    SizeType freeHeadIdx;
+    SizeType freeTailIdx;
     SizeType freeCount;
 
 public:
     SlotAllocatorBase(void *slotsPtr)
         : slots(slotsPtr)
-        , freeHead(0)
-        , freeTail(Count - 1)
+        , freeHeadIdx(0)
+        , freeTailIdx(Count - 1)
         , freeCount(Count)
     {
         debugAssert(slots);
@@ -60,7 +60,7 @@ public:
         {
             nextFree(idx) = idx + 1;
         }
-        nextFree(freeTail) = InvalidSize;
+        nextFree(freeTailIdx) = InvalidSize;
     }
 
     FORCE_INLINE bool isOwningMemory(void *ptr) const
@@ -75,13 +75,20 @@ public:
     {
         debugAssert(alignment <= SlotAlignment && size <= SlotSize);
         // No free slot
-        if (freeHead == InvalidSize)
+        if (freeHeadIdx == InvalidSize)
         {
+            debugAssert(freeTailIdx == InvalidSize);
             return nullptr;
         }
+        // If we exhausted every slot
+        if (freeHeadIdx == freeTailIdx)
+        {
+            freeTailIdx = InvalidSize;
+        }
 
-        SizeType &freeSlot = nextFree(freeHead);
-        freeHead = freeSlot;
+        SizeType &freeSlot = nextFree(freeHeadIdx);
+        // When all slots are alloted freeHeadIdx will get InvalidSize stored in freeSlot
+        freeHeadIdx = freeSlot;
         --freeCount;
         return &freeSlot;
     }
@@ -91,10 +98,20 @@ public:
         {
             debugAssert(!isDoubleFreeing(ptr));
 
-            SizeType &currTail = nextFree(freeTail);
-            freeTail = ptrToSlotIdx(ptr);
-            currTail = freeTail;
-            nextFree(freeTail) = InvalidSize;
+            SizeType newTailIdx = ptrToSlotIdx(ptr);
+            if (freeTailIdx == InvalidSize)
+            {
+                debugAssert(freeHeadIdx == InvalidSize);
+                freeHeadIdx = newTailIdx;
+            }
+            else
+            {
+                SizeType &currTail = nextFree(freeTailIdx);
+                // Link new tail to old tail's next ptr
+                currTail = newTailIdx;
+            }
+            freeTailIdx = newTailIdx;
+            nextFree(freeTailIdx) = InvalidSize;
             ++freeCount;
         }
     }
@@ -102,7 +119,7 @@ public:
     void *at(SizeType idx) const
     {
         debugAssert(idx < Count);
-        return &nextFree(idx);
+        return memAt(idx);
     }
 
     /**
@@ -116,13 +133,11 @@ protected:
 private:
     // Gives the reference to memory where next free slot after this slot is stored, This reference is
     // also the reference to this slot
-    FORCE_INLINE SizeType &nextFree(SizeType slotIdx) const
-    {
-        return *reinterpret_cast<SizeType *>(reinterpret_cast<uint8 *>(slots) + (slotIdx * SlotSize));
-    }
+    FORCE_INLINE SizeType &nextFree(SizeType slotIdx) const { return *reinterpret_cast<SizeType *>(memAt(slotIdx)); }
+    FORCE_INLINE void *memAt(SizeType idx) const { return reinterpret_cast<void *>(reinterpret_cast<uint8 *>(slots) + (idx * SlotSize)); }
     FORCE_INLINE bool isDoubleFreeing(void *ptr) const
     {
-        SizeType nextSlot = freeHead;
+        SizeType nextSlot = freeHeadIdx;
         while (nextSlot != InvalidSize)
         {
             SizeType &slot = nextFree(nextSlot);
