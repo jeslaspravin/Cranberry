@@ -31,7 +31,10 @@ VkCompareOp vulkanCompareOp(CoreGraphicsTypes::ECompareOp::Type compareOp)
                                                            COMPARE_OP_INFO_PAIR(ECompareOp::NotEqual, VK_COMPARE_OP_NOT_EQUAL),
                                                            COMPARE_OP_INFO_PAIR(ECompareOp::EqualOrGreater, VK_COMPARE_OP_GREATER_OR_EQUAL),
                                                            COMPARE_OP_INFO_PAIR(ECompareOp::Always, VK_COMPARE_OP_ALWAYS) };
-
+    static_assert(
+        ARRAY_LENGTH(ENGINE_TO_VK_COMPARE_OP) == CoreGraphicsTypes::ECompareOp::MaxCount,
+        "Mismatch CoreGraphicsTypes::ECompareOp between vulkan and interface"
+    );
     return ENGINE_TO_VK_COMPARE_OP[uint32(compareOp)];
 }
 #undef COMPARE_OP_INFO_PAIR
@@ -171,6 +174,7 @@ const std::map<EPixelDataFormat::Type, VkFormat> PIXEL_DATA_FORMAT_TO_API_FORMAT
 #undef IMG_FORMAT_INFO_PAIR
 #undef MAKE_COMPS
 #undef PREPEND_COMP
+static_assert(EPixelDataFormat::Type::AllFormatEnd == 120, "Mismatch EPixelDataFormat between vulkan and interface");
 
 VkFormat vulkanDataFormat(EPixelDataFormat::Type dataFormat)
 {

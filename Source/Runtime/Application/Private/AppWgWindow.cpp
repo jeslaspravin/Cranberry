@@ -39,14 +39,14 @@ Short2D WgWindow::getWidgetSize() const
     return removeDpiScale(Short2D(width, height));
 }
 
-Short2D WgWindow::screenToWindowSpace(Short2D screenPt) const
+Short2D WgWindow::virtualToWindowSpace(Short2D screenPt) const
 {
     Short2D windowOrigin = ownerWindow->windowClientRect().minBound;
     Short2D windowSpace = screenPt - windowOrigin;
     return removeDpiScale(windowSpace);
 }
 
-Short2D WgWindow::windowToScreenSpace(Short2D windowPt) const
+Short2D WgWindow::windowToVirtualSpace(Short2D windowPt) const
 {
     Short2D screenSpace = applyDpiScale(windowPt);
     return screenSpace + ownerWindow->windowClientRect().minBound;
@@ -276,19 +276,19 @@ void ApplicationInstance::tickWindowWidgets()
     {
         if (lastHoverWnd)
         {
-            Short2D mouseAbsPos = lastHoverWnd->screenToWindowSpace(mouseScreenPos);
+            Short2D mouseAbsPos = lastHoverWnd->virtualToWindowSpace(mouseScreenPos);
             lastHoverWnd->mouseLeave(mouseAbsPos, mouseAbsPos, inputSystem);
         }
         lastHoverWnd = wndWidget;
         if (lastHoverWnd)
         {
-            Short2D mouseAbsPos = lastHoverWnd->screenToWindowSpace(mouseScreenPos);
+            Short2D mouseAbsPos = lastHoverWnd->virtualToWindowSpace(mouseScreenPos);
             lastHoverWnd->mouseEnter(mouseAbsPos, mouseAbsPos, inputSystem);
         }
     }
     if (lastHoverWnd && (screenMouseX->acceleration != 0.0f || screenMouseY->acceleration != 0.0f))
     {
-        Short2D mouseAbsPos = lastHoverWnd->screenToWindowSpace(mouseScreenPos);
+        Short2D mouseAbsPos = lastHoverWnd->virtualToWindowSpace(mouseScreenPos);
         lastHoverWnd->mouseMoved(mouseAbsPos, mouseAbsPos, inputSystem);
     }
 

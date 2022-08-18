@@ -100,6 +100,7 @@ public:
     {
         allocIdx = weakPtr.allocIdx;
         objectId = weakPtr.objectId;
+        return *this;
     }
     template <class InPtrType>
     FORCE_INLINE WeakObjPtr &operator=(WeakObjPtr<InPtrType> &&weakPtr)
@@ -168,7 +169,7 @@ public:
         }
 
         const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-        return objectsDb.getObject(objectId);
+        return static_cast<PtrType *>(objectsDb.getObject(objectId));
     }
 
     // Checks if set objectId is valid now
@@ -179,7 +180,7 @@ public:
             return false;
         }
         const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-        if (Object *obj = objectsDb.getObject())
+        if (Object *obj = objectsDb.getObject(objectId))
         {
             return INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx;
         }

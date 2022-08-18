@@ -471,6 +471,16 @@ void VulkanCmdBufferManager::cmdFinished(const String &cmdName, VulkanResourcesT
             syncInfo.completeFence->waitForSignal();
         }
 
+        // wait until other cmd buffers waiting on this is complete before cleaning resources
+        if (resourceTracker)
+        {
+            for (const GraphicsResource *cmdBuf : resourceTracker->getDependingCmdBuffers(cmdBufferItr->second.cmdBuffer))
+            {
+                cmdFinished(cmdBuf, resourceTracker);
+            }
+            resourceTracker->clearFinishedCmd(cmdBufferItr->second.cmdBuffer);
+        }
+
         // Reset resources
         if (syncInfo.refCount == 0)
         {
@@ -479,10 +489,6 @@ void VulkanCmdBufferManager::cmdFinished(const String &cmdName, VulkanResourcesT
             syncInfo.signalingSemaphore.reset();
 
             cmdsSyncInfo.reset(cmdBufferItr->second.cmdSyncInfoIdx);
-        }
-        if (resourceTracker)
-        {
-            resourceTracker->clearFinishedCmd(cmdBufferItr->second.cmdBuffer);
         }
         cmdBufferItr->second.cmdSyncInfoIdx = -1;
         cmdBufferItr->second.cmdState = ECmdState::Recorded;
@@ -576,6 +582,20 @@ bool VulkanCmdBufferManager::isGraphicsCmdBuffer(const GraphicsResource *cmdBuff
 bool VulkanCmdBufferManager::isTransferCmdBuffer(const GraphicsResource *cmdBuffer) const
 {
     return static_cast<const VulkanCommandBuffer *>(cmdBuffer)->usage == EQueueFunction::Transfer;
+}
+
+bool VulkanCmdBufferManager::isCmdFinished(const GraphicsResource *cmdBuffer) const
+{
+    auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());
+    // If submitted then only it can be finished in queue
+    if (cmdBufferItr != commandBuffers.end() && cmdBufferItr->second.cmdState == ECmdState::Submitted)
+    {
+        const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
+
+        fatalAssertf(syncInfo.completeFence.isValid(), "Complete fence cannot be null!");
+        return syncInfo.completeFence->isSignaled();
+    }
+    return true;
 }
 
 void VulkanCmdBufferManager::submitCmds(
@@ -875,12 +895,6 @@ void VulkanCmdBufferManager::submitCmds(
         {
             commandBuffers[cmdBuffer->getResourceName()].cmdSyncInfoIdx = index;
             commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
-
-            // Remove dependencies if re-record able cmd buffer
-            if (static_cast<const VulkanCommandBuffer *>(cmdBuffer)->bIsResetable)
-            {
-                resourceTracker->clearCmdBufferDeps(cmdBuffer);
-            }
         }
 
         syncInfo.signalingSemaphore
@@ -993,12 +1007,6 @@ void VulkanCmdBufferManager::submitCmd(
     {
         commandBuffers[cmdBuffer->getResourceName()].cmdSyncInfoIdx = index;
         commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
-
-        // Remove dependencies if re-record able cmd buffer
-        if (static_cast<const VulkanCommandBuffer *>(cmdBuffer)->bIsResetable)
-        {
-            resourceTracker->clearCmdBufferDeps(cmdBuffer);
-        }
     }
 
     syncInfo.signalingSemaphore = graphicsHelper->createSemaphore(graphicsInstance, TCHAR("SubmitSemaphore"));
@@ -1142,7 +1150,25 @@ std::vector<const GraphicsResource *> VulkanResourcesTracker::getCmdBufferResour
     return retVal;
 }
 
-void VulkanResourcesTracker::clearCmdBufferDeps(const GraphicsResource *cmdBuffer) { cmdWaitInfo.erase(cmdBuffer); }
+std::vector<const GraphicsResource *> VulkanResourcesTracker::getDependingCmdBuffers(const GraphicsResource *cmdBuffer) const
+{
+    std::vector<const GraphicsResource *> retVal;
+    for (const std::pair<const GraphicsResource *const, std::vector<CommandResUsageInfo>> &cmdWaitOn : cmdWaitInfo)
+    {
+        auto cmdUsageInfoItr = std::find_if(
+            cmdWaitOn.second.cbegin(), cmdWaitOn.second.cend(),
+            [cmdBuffer](const CommandResUsageInfo &usageInfo)
+            {
+                return usageInfo.cmdBuffer == cmdBuffer;
+            }
+        );
+        if (cmdUsageInfoItr != cmdWaitOn.second.cend())
+        {
+            retVal.emplace_back(cmdWaitOn.first);
+        }
+    }
+    return retVal;
+}
 
 void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
 {

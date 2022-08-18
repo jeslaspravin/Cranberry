@@ -240,10 +240,10 @@ struct CapturedFunctor
     constexpr static const SizeT MAX_INLINED_SIZE = 128;
     union
     {
-        alignas(16) uint8 data[MAX_INLINED_SIZE];
+        alignas(16) uint8 data[MAX_INLINED_SIZE] = {};
         struct
         {
-            UPtrInt nullptrs[MAX_INLINED_SIZE - 1];
+            UPtrInt nullptrs[(MAX_INLINED_SIZE / sizeof(UPtrInt)) - 1];
             void *dataPtr;
         };
     };
@@ -375,8 +375,7 @@ struct CapturedFunctor
 
     template <typename Callable>
     CapturedFunctor(Callable &&func)
-        : dataPtr(nullptr)
-        , lambdaDataInterface(nullptr)
+        : lambdaDataInterface(nullptr)
         , trampolineFunc(nullptr)
     {
         this->operator=(std::forward<Callable>(func));

@@ -27,6 +27,7 @@ enum Type
     NotEqual = 5,
     EqualOrGreater = 6,
     Always = 7,
+    MaxCount
 };
 } // namespace ECompareOp
 } // namespace CoreGraphicsTypes

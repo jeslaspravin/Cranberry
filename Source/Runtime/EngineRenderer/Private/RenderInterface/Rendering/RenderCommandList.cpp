@@ -156,6 +156,7 @@ public:
     void waitIdle() final;
     void waitOnResDepCmds(const MemoryResourceRef &resource) final;
     void flushAllcommands() final;
+    bool hasCmdsUsingResource(const MemoryResourceRef &resource) final;
 };
 
 void RenderCommandList::cmdPushConstants(
@@ -300,6 +301,11 @@ void RenderCommandList::waitIdle() { cmdList->waitIdle(); }
 void RenderCommandList::waitOnResDepCmds(const MemoryResourceRef &resource) { cmdList->waitOnResDepCmds(resource); }
 
 void RenderCommandList::flushAllcommands() { cmdList->flushAllcommands(); }
+
+bool RenderCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource)
+{
+    return cmdList->hasCmdsUsingResource(resource);
+}
 
 void RenderCommandList::copyToImage(ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo)
 {

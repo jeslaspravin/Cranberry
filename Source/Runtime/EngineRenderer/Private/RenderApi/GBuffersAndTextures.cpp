@@ -27,14 +27,14 @@
 // GBuffers
 //////////////////////////////////////////////////////////////////////////
 
+// clang-format off
 std::unordered_map<ERenderPassFormat::Type, FramebufferFormat::AttachmentsFormatList> GlobalBuffers::GBUFFERS_ATTACHMENT_FORMATS{
-    {          ERenderPassFormat::Multibuffer,
-     { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::A2BGR10_U32_NormPacked,
-     EPixelDataFormat::D24S8_U32_DNorm_SInt }                                            },
-    {                ERenderPassFormat::Depth, { EPixelDataFormat::D24S8_U32_DNorm_SInt }},
-    {      ERenderPassFormat::PointLightDepth, { EPixelDataFormat::D24S8_U32_DNorm_SInt }},
-    {ERenderPassFormat::DirectionalLightDepth, { EPixelDataFormat::D24S8_U32_DNorm_SInt }}
+    { ERenderPassFormat::Multibuffer            , { EPixelDataFormat::BGRA_U8_Norm, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::A2BGR10_U32_NormPacked, EPixelDataFormat::D24S8_U32_DNorm_SInt }},
+    { ERenderPassFormat::Depth                  , { EPixelDataFormat::D24S8_U32_DNorm_SInt }},
+    { ERenderPassFormat::PointLightDepth        , { EPixelDataFormat::D24S8_U32_DNorm_SInt }},
+    { ERenderPassFormat::DirectionalLightDepth  , { EPixelDataFormat::D24S8_U32_DNorm_SInt }}
 };
+// clang-format on
 
 ImageResourceRef GlobalBuffers::dummyBlackTexture;
 ImageResourceRef GlobalBuffers::dummyWhiteTexture;
