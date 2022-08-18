@@ -270,6 +270,8 @@ public:
     // marked by using cmdBarrierResources() function
     virtual void waitOnResDepCmds(const MemoryResourceRef &resource) = 0;
     virtual void flushAllcommands() = 0;
+
+    virtual bool hasCmdsUsingResource(const MemoryResourceRef &resource) = 0;
 };
 
 template <typename BufferDataType>

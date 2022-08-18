@@ -185,11 +185,20 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
     dummySubpass.pPreserveAttachments = nullptr;
     dummySubpass.pDepthStencilAttachment = depthAttachmentRef.empty() ? nullptr : &depthAttachmentRef[0];
 
+    // TODO(Jeslas) : Non parallel renderpass modify in future to support async passes.
+    std::array<VkSubpassDependency, 2> dependencies;
+    dependencies[0].dependencyFlags = dependencies[1].dependencyFlags = VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT;
+    dependencies[0].dstSubpass = dependencies[1].srcSubpass = 0;
+    dependencies[0].srcSubpass = dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].srcStageMask = dependencies[1].srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+    dependencies[0].dstStageMask = dependencies[1].dstStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    dependencies[0].srcAccessMask = dependencies[1].srcAccessMask = dependencies[0].dstAccessMask = dependencies[1].dstAccessMask = 0;
+
     RENDERPASS_CREATE_INFO(renderPassCreateInfo);
     renderPassCreateInfo.attachmentCount = uint32(renderPassAttachments.size());
     renderPassCreateInfo.pAttachments = renderPassAttachments.data();
-    renderPassCreateInfo.dependencyCount = 0;
-    renderPassCreateInfo.pDependencies = nullptr;
+    renderPassCreateInfo.dependencyCount = uint32(dependencies.size());
+    renderPassCreateInfo.pDependencies = dependencies.data();
     renderPassCreateInfo.subpassCount = 1;
     renderPassCreateInfo.pSubpasses = &dummySubpass;
 
@@ -312,7 +321,6 @@ VkRenderPass VulkanGraphicsHelper::createRenderPass(
     renderPassCreateInfo.attachmentCount = uint32(renderPassAttachments.size());
     renderPassCreateInfo.pAttachments = renderPassAttachments.data();
     renderPassCreateInfo.dependencyCount = uint32(dependencies.size());
-    ;
     renderPassCreateInfo.pDependencies = dependencies.data();
     renderPassCreateInfo.subpassCount = 1;
     renderPassCreateInfo.pSubpasses = &dummySubpass;

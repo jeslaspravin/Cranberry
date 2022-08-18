@@ -130,7 +130,7 @@ void TestGameEngine::engineLoop()
                 imguiManager->analogKey(key, *state, application->inputSystem);
             }
         }
-        Short2D relMousePos = application->getMainWindow()->screenToWindowSpace(Short2D(
+        Short2D relMousePos = application->getMainWindow()->virtualToWindowSpace(Short2D(
             int16(application->inputSystem->analogState(AnalogStates::AbsMouseX)->currentValue),
             int16(application->inputSystem->analogState(AnalogStates::AbsMouseY)->currentValue)
         ));

@@ -47,7 +47,7 @@ private:
 #define ENQUEUE_COMMAND_NODEBUG(CommandName, LambdaBody, ...) ENQUEUE_RENDER_COMMAND_NODEBUG(CommandName, LambdaBody, __VA_ARGS__)
 
 #define ASSERT_INSIDE_RENDERTHREAD()                                                                                                           \
-    debugAssert(                                                                                                                               \
-        copat::JobSystem::get() && copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread                      \
-        && "Thread is not a render thread!"                                                                                                    \
+    debugAssertf(                                                                                                                              \
+        copat::JobSystem::get() && copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread,                     \
+        "Thread is not a render thread!"                                                                                                       \
     )

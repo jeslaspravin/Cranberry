@@ -552,6 +552,29 @@ void VulkanCommandList::waitOnResDepCmds(const MemoryResourceRef &resource)
 
 void VulkanCommandList::flushAllcommands() { cmdBufferManager.finishAllSubmited(&resourcesTracker); }
 
+bool VulkanCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource)
+{
+    std::vector<const GraphicsResource *> cmdBuffers = resourcesTracker.getCmdBufferResourceDeps(resource);
+    bool bAllCmdBuffersFinished = true;
+    for (const GraphicsResource *cmdBuffer : cmdBuffers)
+    {
+        if (!cmdBufferManager.isCmdFinished(cmdBuffer))
+        {
+            bAllCmdBuffersFinished = false;
+        }
+    }
+    if (bAllCmdBuffersFinished)
+    {
+        for (const GraphicsResource *cmdBuffer : cmdBuffers)
+        {
+            finishCmd(cmdBuffer);
+            resourcesTracker.clearFinishedCmd(cmdBuffer);
+        }
+        resourcesTracker.clearResource(resource);
+    }
+    return !bAllCmdBuffersFinished;
+}
+
 void VulkanCommandList::setupInitialLayout(ImageResourceRef image)
 {
     const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(image->imageFormat());

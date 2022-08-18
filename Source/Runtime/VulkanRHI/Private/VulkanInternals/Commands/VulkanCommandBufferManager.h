@@ -135,6 +135,8 @@ public:
     bool isComputeCmdBuffer(const GraphicsResource *cmdBuffer) const;
     bool isGraphicsCmdBuffer(const GraphicsResource *cmdBuffer) const;
     bool isTransferCmdBuffer(const GraphicsResource *cmdBuffer) const;
+
+    bool isCmdFinished(const GraphicsResource* cmdBuffer) const;
     //************************************
     // Method:    submitCmds - Currently all commands being submitted must be from same queue
     // FullName:  VulkanCmdBufferManager::submitCmds
@@ -189,9 +191,11 @@ private:
     CmdWaitInfoMap cmdWaitInfo;
 
 public:
+    // Retrieves all the dependencies that given resource has
     const std::vector<CommandResUsageInfo> *getCmdBufferDeps(const GraphicsResource *cmdBuffer) const;
     std::vector<const GraphicsResource *> getCmdBufferResourceDeps(const MemoryResourceRef &resource) const;
-    void clearCmdBufferDeps(const GraphicsResource *cmdBuffer);
+    // Retrieves all the dependents on given command buffer
+    std::vector<const GraphicsResource *> getDependingCmdBuffers(const GraphicsResource *cmdBuffer) const;
     void clearFinishedCmd(const GraphicsResource *cmdBuffer);
     void clearResource(const MemoryResourceRef &resource);
     void clearUnwanted();
