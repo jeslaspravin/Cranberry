@@ -513,6 +513,14 @@
     VariableName.pNext = nullptr
 #endif
 
+#ifndef CREATE_EVENT_INFO
+#define CREATE_EVENT_INFO(VariableName)                                                                                                        \
+    VkEventCreateInfo VariableName{};                                                                                                          \
+    VariableName.sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;                                                                                  \
+    VariableName.flags = 0;                                                                                                                    \
+    VariableName.pNext = nullptr
+#endif
+
 #ifndef MEMORY_ALLOCATE_INFO
 #define MEMORY_ALLOCATE_INFO(VariableName)                                                                                                     \
     VkMemoryAllocateInfo VariableName{};                                                                                                       \

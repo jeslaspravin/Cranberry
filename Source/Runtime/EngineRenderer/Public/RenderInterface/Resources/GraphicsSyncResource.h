@@ -30,8 +30,8 @@ public:
     virtual void waitForSignal() const {}
     virtual bool isSignaled() const { return false; }
     virtual void resetSignal() {}
-    String getResourceName() const override;
-    void setResourceName(const String &name) override;
+    String getResourceName() const final;
+    void setResourceName(const String &name) final;
 
     /* ReferenceCountPtr implementation */
     void addRef();
@@ -64,6 +64,24 @@ class ENGINERENDERER_EXPORT GraphicsFence : public GraphicsSyncResource
 {
     DECLARE_GRAPHICS_RESOURCE(GraphicsFence, , GraphicsSyncResource, )
 };
+
+class ENGINERENDERER_EXPORT GraphicsEvent : public GraphicsSyncResource
+{
+    DECLARE_GRAPHICS_RESOURCE(GraphicsEvent, , GraphicsSyncResource, )
+protected:
+    bool bDeviceOnly;
+
+public:
+    GraphicsEvent() = default;
+    GraphicsEvent(bool bDeviceOnlyEvent)
+        : BaseType()
+        , bDeviceOnly(bDeviceOnlyEvent)
+    {}
+
+    void waitForSignal() const final;
+};
+
 using SemaphoreRef = ReferenceCountPtr<GraphicsSemaphore>;
 using TimelineSemaphoreRef = ReferenceCountPtr<GraphicsTimelineSemaphore>;
 using FenceRef = ReferenceCountPtr<GraphicsFence>;
+using EventRef = ReferenceCountPtr<GraphicsEvent>;

@@ -33,4 +33,32 @@ void GraphicsSyncResource::setResourceName(const String &name) { resourceName = 
 
 DEFINE_GRAPHICS_RESOURCE(GraphicsFence)
 DEFINE_GRAPHICS_RESOURCE(GraphicsSemaphore)
+
+//////////////////////////////////////////////////////////////////////////
+// GraphicsTimelineSemaphore
+//////////////////////////////////////////////////////////////////////////
+
 DEFINE_GRAPHICS_RESOURCE(GraphicsTimelineSemaphore)
+
+void GraphicsTimelineSemaphore::waitForSignal() const
+{
+    if (currentValue() > 0)
+        return;
+
+    waitForSignal(1);
+}
+
+bool GraphicsTimelineSemaphore::isSignaled() const { return isSignaled(1); }
+
+void GraphicsTimelineSemaphore::resetSignal() { resetSignal(0); }
+
+//////////////////////////////////////////////////////////////////////////
+// GraphicsEvent
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_GRAPHICS_RESOURCE(GraphicsEvent)
+
+void GraphicsEvent::waitForSignal() const
+{
+    debugAssertf(false, "Cannot wait on Events with this function! Use custom wait logic using isSignaled()");
+}
