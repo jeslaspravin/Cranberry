@@ -25,6 +25,7 @@ namespace cbe
 {
 
 class World;
+class WorldsManager;
 
 struct META_ANNOTATE() WorldInfo
 {
@@ -33,7 +34,9 @@ struct META_ANNOTATE() WorldInfo
     SharedPtr<EngineRenderScene> renderScene;
 };
 
-class WorldsManager : public Object
+using WorldManagerEvent = Event<WorldsManager, World *, bool>;
+
+class ENGINECORE_EXPORT WorldsManager : public Object
 {
     GENERATED_CODES()
 public:
@@ -48,6 +51,9 @@ private:
     META_ANNOTATE()
     std::unordered_map<World *, WorldInfo> otherWorlds;
 
+    WorldManagerEvent worldUnloadEvent;
+    WorldManagerEvent worldInitEvent;
+
 public:
     World *initWorld(World *world, bool bAsMainWorld);
     SharedPtr<EngineRenderScene> getWorldRenderScene(World *world) const;
@@ -55,8 +61,11 @@ public:
     void unloadWorld(World *world);
     void unloadAllWorlds();
 
+    WorldManagerEvent &onWorldUnloadEvent() { return worldUnloadEvent; }
+    WorldManagerEvent &onWorldInitEvent() { return worldInitEvent; }
+
 private:
     FORCE_INLINE void unloadWorldInternal(World *world);
-} META_ANNOTATE();
+} META_ANNOTATE(NoExport);
 
 } // namespace cbe

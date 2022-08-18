@@ -231,6 +231,7 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
                     for (const SharedPtr<IImGuiLayer> &layer : layersPerDepth.second)
                     {
                         bool bDrawn = layer->drawDirect(layerDrawParams);
+                        // If Drawn then bClearRt must be false(ie cleared already)
                         debugAssertf(
                             !bDrawn || !bClearRt,
                             "First draw must clear RT, It appears that RT is not cleared! or inOutClearRt is not set to false after clear!"
