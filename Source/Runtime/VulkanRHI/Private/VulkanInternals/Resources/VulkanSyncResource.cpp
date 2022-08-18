@@ -245,3 +245,68 @@ void VulkanFence::release()
 String VulkanFence::getObjectName() const { return getResourceName(); }
 
 uint64 VulkanFence::getDispatchableHandle() const { return (uint64)fence; }
+
+//////////////////////////////////////////////////////////////////////////
+// VulkanEvent
+//////////////////////////////////////////////////////////////////////////
+
+DEFINE_VK_GRAPHICS_RESOURCE(VulkanEvent, VK_OBJECT_TYPE_EVENT)
+
+bool VulkanEvent::isSignaled() const
+{
+    debugAssertf(!bDeviceOnly, "Trying to get state of device only event!");
+    if (!bDeviceOnly && vulkanEvent != VK_NULL_HANDLE)
+    {
+        return vulkanDevice->vkGetEventStatus(ownerDevice, vulkanEvent) == VkResult::VK_EVENT_SET;
+    }
+    return false;
+}
+
+void VulkanEvent::resetSignal()
+{
+    if (vulkanEvent != VK_NULL_HANDLE)
+    {
+        vulkanDevice->vkResetEvent(ownerDevice, vulkanEvent);
+    }
+}
+
+void VulkanEvent::init()
+{
+    BaseType::init();
+    reinitResources();
+}
+
+void VulkanEvent::reinitResources()
+{
+    release();
+    BaseType::reinitResources();
+
+    fatalAssertf(ownerDevice && vulkanDevice, "Required devices cannot be null");
+    VkEvent newEvent;
+
+    CREATE_EVENT_INFO(eventCreateInfo);
+    eventCreateInfo.flags = bDeviceOnly ? VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR : 0;
+    if (vulkanDevice->vkCreateEvent(ownerDevice, &eventCreateInfo, nullptr, &newEvent) == VK_SUCCESS)
+    {
+        vulkanEvent = newEvent;
+        vulkanDevice->debugGraphics()->markObject(this);
+    }
+    else
+    {
+        LOG_ERROR("VulkanFence", "Failed recreating event %s", getResourceName());
+    }
+}
+
+void VulkanEvent::release()
+{
+    if (vulkanEvent && vulkanEvent != VK_NULL_HANDLE)
+    {
+        vulkanDevice->vkDestroyEvent(ownerDevice, vulkanEvent, nullptr);
+        vulkanEvent = nullptr;
+    }
+    BaseType::release();
+}
+
+String VulkanEvent::getObjectName() const { return getResourceName(); }
+
+uint64 VulkanEvent::getDispatchableHandle() const { return (uint64)vulkanEvent; }

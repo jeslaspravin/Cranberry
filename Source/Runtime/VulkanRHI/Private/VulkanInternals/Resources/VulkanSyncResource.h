@@ -115,3 +115,35 @@ public:
     uint64 getDispatchableHandle() const override;
     /* End - IVulkanResources implementations */
 };
+
+class VulkanEvent final
+    : public GraphicsEvent
+    , public IVulkanResources
+{
+
+    DECLARE_VK_GRAPHICS_RESOURCE(VulkanEvent, , GraphicsEvent, )
+
+private:
+    const VulkanDevice *vulkanDevice;
+    VkDevice ownerDevice;
+    VulkanEvent() = default;
+
+public:
+    VkEvent vulkanEvent;
+
+    VulkanEvent(const VulkanDevice *deviceInstance, bool bDeviceOnlyEvent);
+
+    /* GraphicsSyncResource implementations */
+    bool isSignaled() const override;
+    void resetSignal() override;
+    /* GraphicsResource implementations */
+    void init() override;
+    void reinitResources() override;
+    void release() override;
+    /* End - GraphicsResource implementations */
+
+    /* IVulkanResources implementations */
+    String getObjectName() const override;
+    uint64 getDispatchableHandle() const override;
+    /* End - IVulkanResources implementations */
+};

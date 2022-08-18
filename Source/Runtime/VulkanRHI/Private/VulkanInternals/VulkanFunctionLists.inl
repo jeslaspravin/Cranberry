@@ -88,6 +88,10 @@ DEVICE_VK_FUNCTIONS(vkGetSemaphoreCounterValue)
 DEVICE_VK_FUNCTIONS(vkWaitSemaphores)
 DEVICE_VK_FUNCTIONS(vkSignalSemaphore)
 #endif
+DEVICE_VK_FUNCTIONS(vkCreateEvent)
+DEVICE_VK_FUNCTIONS(vkDestroyEvent)
+DEVICE_VK_FUNCTIONS(vkGetEventStatus)
+DEVICE_VK_FUNCTIONS(vkResetEvent)
 
 /* Memory and Buffers */
 DEVICE_VK_FUNCTIONS(vkAllocateMemory)
@@ -157,6 +161,9 @@ DEVICE_VK_FUNCTIONS(vkBeginCommandBuffer)
 DEVICE_VK_FUNCTIONS(vkEndCommandBuffer);
 
 /* Commands */
+DEVICE_VK_FUNCTIONS(vkCmdSetEvent)
+DEVICE_VK_FUNCTIONS(vkCmdWaitEvents)
+
 DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier)
 
 DEVICE_VK_FUNCTIONS(vkCmdCopyBuffer);
