@@ -42,6 +42,8 @@ private:
     SharedPtr<WgContentsImGuiLayer> contentsLayer;
     SharedPtr<WgConsoleImGuiLayer> consoleLayer;
 
+    DelegateHandle worldInitHandle;
+
 public:
     EditorEngine();
 

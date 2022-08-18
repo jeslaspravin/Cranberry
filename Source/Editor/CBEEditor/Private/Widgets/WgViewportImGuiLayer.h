@@ -14,11 +14,15 @@
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "EditorTypes.h"
 
+class WorldViewport;
+
 class WgViewportImGuiLayer : public IImGuiLayer
 {
 private:
     bool bDrawingViewport = false;
     QuantShortBox2D viewportRegion;
+
+    SharedPtr<WorldViewport> worldViewport;
 
 public:
     /* IImGuiLayer overrides */
@@ -35,6 +39,8 @@ public:
     bool hasWidget(SharedPtr<WidgetBase> widget) const override { return false; }
     void tick(float timeDelta) override {}
     /* Overrides ends */
+
+    void setWorldViewport(SharedPtr<WorldViewport> inViewport) { worldViewport = inViewport; }
 
 private:
 };

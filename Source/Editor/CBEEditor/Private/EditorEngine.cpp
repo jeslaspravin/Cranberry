@@ -21,6 +21,8 @@
 #include "Widgets/WgDetailsImGuiLayer.h"
 #include "Widgets/WgContentsImGuiLayer.h"
 #include "Widgets/WgConsoleImGuiLayer.h"
+#include "Classes/WorldsManager.h"
+#include "WorldViewport.h"
 
 namespace cbe
 {
@@ -58,12 +60,24 @@ void EditorEngine::engineStart()
     wgImgui->getImGuiManager().addLayer(std::static_pointer_cast<IImGuiLayer>(consoleLayer));
     wgImgui->getImGuiManager().addLayer(std::static_pointer_cast<IImGuiLayer>(contentsLayer));
     IApplicationModule::get()->getApplication()->getMainWindow()->setContent(std::static_pointer_cast<WidgetBase>(wgImgui));
+
+    worldInitHandle = GCBEEngine->worldManager()->onWorldInitEvent().bindLambda(
+        [this](World *world, bool bIsMain)
+        {
+            if (bIsMain)
+            {
+                viewportLayer->setWorldViewport(std::make_shared<WorldViewport>(world));
+            }
+        }
+    );
 }
 
 void EditorEngine::engineTick(float timeDelta) {}
 
 void EditorEngine::engineExit()
 {
+    GCBEEngine->worldManager()->onWorldInitEvent().unbind(worldInitHandle);
+
     wgImgui.reset();
     editorLayer.reset();
     viewportLayer.reset();

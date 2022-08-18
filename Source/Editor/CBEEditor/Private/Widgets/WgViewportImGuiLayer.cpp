@@ -12,6 +12,8 @@
 #include "Widgets/WgViewportImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
 #include "Widgets/WidgetDrawContext.h"
+#include "Widgets/WidgetWindow.h"
+#include "WorldViewport.h"
 
 void WgViewportImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
 {
@@ -45,7 +47,18 @@ void WgViewportImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
     ImGui::End();
 }
 
-bool WgViewportImGuiLayer::drawDirect(const DrawDirectParams &params) { return false; }
+bool WgViewportImGuiLayer::drawDirect(const DrawDirectParams &params)
+{
+    if (bDrawingViewport && viewportRegion.isValidAABB() && worldViewport)
+    {
+        SharedPtr<WgWindow> wndw = findWidgetParentWindow(shared_from_this());
+        QuantShortBox2D drawRegion{ wndw->applyDpiScale(viewportRegion.minBound), wndw->applyDpiScale(viewportRegion.maxBound) };
+        worldViewport->drawBackBuffer(drawRegion, params.rt, params.cmdBuffer, params.cmdList, params.graphicsInstance, params.graphicsHelper);
+        params.inOutClearRt = false;
+        return true;
+    }
+    return false;
+}
 
 void WgViewportImGuiLayer::drawOnImGui(WidgetDrawContext &context) {}
 
@@ -55,6 +68,14 @@ void WgViewportImGuiLayer::drawWidget(
 {
     if (bDrawingViewport && viewportRegion.isValidAABB())
     {
-        context.drawBox(viewportRegion, nullptr, viewportRegion, ColorConst::PALE_BLUE);
+        if (worldViewport)
+        {
+            SharedPtr<WgWindow> wndw = findWidgetParentWindow(shared_from_this());
+            worldViewport->startSceneRender(wndw->applyDpiScale(viewportRegion.size()));
+        }
+        else
+        {
+            context.drawBox(viewportRegion, nullptr, viewportRegion, ColorConst::BLACK);
+        }
     }
 }
