@@ -18,6 +18,11 @@
 #include "Serialization/CommonTypesSerialization.h"
 #include "Types/CompilerDefines.h"
 
+// Needed only while parsing to allow all CoreObject users to have this
+#ifdef __REF_PARSE__
+#include "ReflectNativeStructs.h"
+#endif
+
 #include "CBEObject.gen.h"
 
 class CBEObjectConstructionPolicy

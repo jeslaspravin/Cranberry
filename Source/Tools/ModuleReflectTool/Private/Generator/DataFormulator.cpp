@@ -425,7 +425,11 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
     uint32 genCodesLineNum = 0;
     clang_getFileLocation(generatedCodesSrcLoc, nullptr, &genCodesLineNum, nullptr, nullptr);
-    bool bIsAbstract = !!clang_CXXRecord_isAbstract(cursor);
+    const bool bIsAbstract
+        = !!clang_CXXRecord_isAbstract(cursor)
+          || (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::ABSTRACT_FLAG.toString()) != buildFlags.cend());
+    const bool bDisableCtor
+        = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::DISABLE_CTOR_FLAG.toString()) != buildFlags.cend();
     const bool bNoExport = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend();
     const bool bHasOverridenCtorPolicy = ParserHelper::hasOverridenCtorPolicy(cursor); // Needed for construction from heap allocated struct
 
@@ -450,6 +454,7 @@ void visitStructs(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(structCntxt, metaData, metaFlags);
     structCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
+    structCntxt.args[GeneratorConsts::DISABLECTOR_TAG] = bDisableCtor;
     structCntxt.args[GeneratorConsts::TYPENAME_TAG] = structCanonicalTypeName;
     structCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 
@@ -516,7 +521,11 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
     CXSourceLocation generatedCodesSrcLoc = clang_getCursorLocation(ParserHelper::getGeneratedCodeCursor(cursor));
     uint32 genCodesLineNum = 0;
     clang_getFileLocation(generatedCodesSrcLoc, nullptr, &genCodesLineNum, nullptr, nullptr);
-    const bool bIsAbstract = !!clang_CXXRecord_isAbstract(cursor);
+    const bool bIsAbstract
+        = !!clang_CXXRecord_isAbstract(cursor)
+          || (std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::ABSTRACT_FLAG.toString()) != buildFlags.cend());
+    const bool bDisableCtor
+        = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::DISABLE_CTOR_FLAG.toString()) != buildFlags.cend();
     const bool bIsBaseType = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::BASETYPE_FLAG.toString()) != buildFlags.cend();
     const bool bNoExport = std::find(buildFlags.cbegin(), buildFlags.cend(), GeneratorConsts::NOEXPORT_FLAG.toString()) != buildFlags.cend();
     const bool bHasOverridenCtorPolicy = ParserHelper::hasOverridenCtorPolicy(cursor);
@@ -540,6 +549,7 @@ void visitClasses(CXCursor cursor, SourceGeneratorContext *srcGenContext)
 
     setTypeMetaInfo<GeneratorConsts::TYPEMETADATA_TAG.Literal, GeneratorConsts::TYPEMETAFLAGS_TAG.Literal>(classCntxt, metaData, metaFlags);
     classCntxt.args[GeneratorConsts::ISABSTRACT_TAG] = bIsAbstract;
+    classCntxt.args[GeneratorConsts::DISABLECTOR_TAG] = bDisableCtor;
     classCntxt.args[GeneratorConsts::TYPENAME_TAG] = classCanonicalTypeName;
     classCntxt.args[GeneratorConsts::SANITIZEDNAME_TAG] = sanitizedTypeName;
 

@@ -410,6 +410,33 @@ public:
         return outStrs;
     }
 
+    void toUpper()
+    {
+        for (TChar& ch : (*this))
+        {
+            ch = std::toupper(ch);
+        }
+    }
+    void toLower()
+    {
+        for (TChar &ch : (*this))
+        {
+            ch = std::tolower(ch);
+        }
+    }
+    String toUpperCopy() const 
+    {
+        String str = *this;
+        str.toUpper();
+        return str;
+    }
+    String toLowerCopy() const
+    {
+        String str = *this;
+        str.toLower();
+        return str;
+    }
+
     template <typename IteratorType, typename StrType>
     static String join(IteratorType begin, IteratorType end, StrType &&separator)
     {

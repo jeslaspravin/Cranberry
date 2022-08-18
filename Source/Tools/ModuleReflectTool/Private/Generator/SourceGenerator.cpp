@@ -62,6 +62,7 @@ void SourceGenerator::writeGeneratedFiles()
         }
 
         String headerFileID = PropertyHelper::getValidSymbolName(srcInfo->headerIncl);
+        String headerFileName = PathFunctions::stripExtension(PathFunctions::fileOrDirectoryName(srcInfo->headerIncl));
 
         // Generate header file
         MustacheContext headerContext;
@@ -81,6 +82,7 @@ void SourceGenerator::writeGeneratedFiles()
 
         // Generate source file
         MustacheContext sourceContext;
+        sourceContext.args[GeneratorConsts::REFLECTIONTUDEF_TAG] = headerFileName.toUpperCopy() + TCHAR("_GEN_TU");
         sourceContext.args[GeneratorConsts::HEADERFILEID_TAG] = headerFileID;
         sourceContext.args[GeneratorConsts::INCLUDEHEADER_TAG] = srcInfo->headerIncl;
         sourceContext.sectionContexts[GeneratorConsts::ALLREGISTERTYPES_SECTION_TAG] = srcGenCntxt.allRegisteredypes;
