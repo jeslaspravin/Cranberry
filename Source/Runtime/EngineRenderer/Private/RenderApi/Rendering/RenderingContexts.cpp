@@ -655,3 +655,91 @@ void GlobalRenderingContextBase::clearWindowCanvasFramebuffer(WindowCanvasRef wi
         windowCanvasFramebuffers.erase(itr);
     }
 }
+
+void GlobalRenderingContextBase::clearFbsContainingRts(std::vector<ImageResourceRef> attachments)
+{
+    if (attachments.size() == 1)
+    {
+        clearFbsContainingRt(attachments[0]);
+        return;
+    }
+    std::sort(attachments.begin(), attachments.end());
+
+    for (std::pair<const GenericRenderPassProperties, std::vector<const Framebuffer *>> &fbs : rtFramebuffers)
+    {
+        std::erase_if(
+            fbs.second,
+            [&attachments](const Framebuffer *fb)
+            {
+                for (const ImageResourceRef &texture : fb->textures)
+                {
+                    if (std::binary_search(attachments.cbegin(), attachments.cend(), texture))
+                    {
+                        // Delete the framebuffer
+                        delete fb;
+                        return true;
+                    }
+                }
+                return false;
+            }
+        );
+    }
+}
+
+bool GlobalRenderingContextBase::hasAnyFbUsingRts(std::vector<ImageResourceRef> attachments)
+{
+    if (attachments.size() == 1)
+    {
+        return hasAnyFbUsingRt(attachments[0]);
+    }
+
+    std::sort(attachments.begin(), attachments.end());
+    for (std::pair<const GenericRenderPassProperties, std::vector<const Framebuffer *>> &fbs : rtFramebuffers)
+    {
+        for (const Framebuffer *fb : fbs.second)
+        {
+            for (const ImageResourceRef &texture : fb->textures)
+            {
+                if (std::binary_search(attachments.cbegin(), attachments.cend(), texture))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void GlobalRenderingContextBase::clearFbsContainingRt(const ImageResourceRef &attachment)
+{
+    for (std::pair<const GenericRenderPassProperties, std::vector<const Framebuffer *>> &fbs : rtFramebuffers)
+    {
+        std::erase_if(
+            fbs.second,
+            [&attachment](const Framebuffer *fb)
+            {
+                if (std::find(fb->textures.cbegin(), fb->textures.cend(), attachment) != fb->textures.cend())
+                {
+                    delete fb;
+                    return true;
+                }
+                return false;
+            }
+        );
+    }
+}
+
+bool GlobalRenderingContextBase::hasAnyFbUsingRt(const ImageResourceRef &attachment)
+{
+    for (std::pair<const GenericRenderPassProperties, std::vector<const Framebuffer *>> &fbs : rtFramebuffers)
+    {
+        for (const Framebuffer *fb : fbs.second)
+        {
+            if (std::find(fb->textures.cbegin(), fb->textures.cend(), attachment) != fb->textures.cend())
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}

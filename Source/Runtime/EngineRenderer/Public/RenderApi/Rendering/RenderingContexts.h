@@ -74,17 +74,16 @@ protected:
     FactoriesBase<GraphicsResource *, const ShaderResource *, uint32> *shaderParamLayoutsFactory;
     FactoriesBase<PipelineBase *, IGraphicsInstance *, const GraphicsHelperAPI *, const PipelineFactoryArgs &> *pipelineFactory;
 
-private:
-    void initContext(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    void clearContext();
-
-    void initShaderResources();
-    void initShaderPipelines(
-        const std::vector<ShaderResource *> &allShaderResources,
-        const std::map<StringID, std::pair<uint32, ShaderResource *>> &shaderUniqParamShader
-    );
-    void destroyShaderResources();
-    void writeAndDestroyPipelineCache();
+public:
+    void preparePipelineContext(LocalPipelineContext *pipelineContext, GenericRenderPassProperties renderpassProps);
+    void clearExternInitRtsFramebuffer(const std::vector<ImageResourceRef> &frameAttachments, GenericRenderPassProperties renderpassProps);
+    void clearWindowCanvasFramebuffer(WindowCanvasRef windowCanvas);
+    // Clears all Fbs that contains Rts, Use below functions sparingly. If you are sure about Framebuffer layout use
+    // clearExternInitRtsFramebuffer
+    void clearFbsContainingRts(std::vector<ImageResourceRef> attachments);
+    bool hasAnyFbUsingRts(std::vector<ImageResourceRef> attachments);
+    void clearFbsContainingRt(const ImageResourceRef &attachment);
+    bool hasAnyFbUsingRt(const ImageResourceRef &attachment);
 
 protected:
     // Graphics API specific codes
@@ -115,8 +114,15 @@ protected:
     // different render pass and returns it
     PipelineBase *createNewPipeline(UniqueUtilityShaderObject *shaderObject, const GenericRenderPassProperties &renderpassProps);
 
-public:
-    void preparePipelineContext(LocalPipelineContext *pipelineContext, GenericRenderPassProperties renderpassProps);
-    void clearExternInitRtsFramebuffer(const std::vector<ImageResourceRef> &frameAttachments, GenericRenderPassProperties renderpassProps);
-    void clearWindowCanvasFramebuffer(WindowCanvasRef windowCanvas);
+private:
+    void initContext(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    void clearContext();
+
+    void initShaderResources();
+    void initShaderPipelines(
+        const std::vector<ShaderResource *> &allShaderResources,
+        const std::map<StringID, std::pair<uint32, ShaderResource *>> &shaderUniqParamShader
+    );
+    void destroyShaderResources();
+    void writeAndDestroyPipelineCache();
 };

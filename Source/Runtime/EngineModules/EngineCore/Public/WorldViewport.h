@@ -29,7 +29,7 @@ class ENGINECORE_EXPORT WorldViewport
 public:
 private:
     cbe::WeakObjPtr<cbe::World> world;
-    using ShaderParamsRing = RingBufferedResource<std::pair<ImageResourceRef, ShaderParametersRef>, 4>;
+    using ShaderParamsRing = RingBufferedResource<std::pair<ImageResourceRef, ShaderParametersRef>, 2>;
     ShaderParamsRing resolveParams;
 
 public:

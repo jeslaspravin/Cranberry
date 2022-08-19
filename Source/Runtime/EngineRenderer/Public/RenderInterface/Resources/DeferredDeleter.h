@@ -15,6 +15,7 @@
 #include "Types/CoreDefines.h"
 #include "Types/Platform/Threading/SyncPrimitives.h"
 #include "Types/Time.h"
+#include "Types/Delegates/Delegate.h"
 
 #include <vector>
 
@@ -33,7 +34,9 @@ class ENGINERENDERER_EXPORT DeferredDeleter
 public:
     struct DeferringData
     {
-        GraphicsResource *resource;
+        GraphicsResource *resource = nullptr;
+        // Deleter for custom deferred clearing resource
+        SimpleSingleCastDelegate deleter;
 
         // Defer duration in time tick or frame count
         TickRep deferDuration;
@@ -57,6 +60,7 @@ public:
     void clear();
 
 private:
-    FORCE_INLINE void deleteResource(GraphicsResource *res);
+    FORCE_INLINE void deleteResource(const DeferringData &deferredResData);
     FORCE_INLINE uint8 getWritingIdx() const { return (readAtIdx + 1) % ARRAY_LENGTH(deletingResources); }
+    FORCE_INLINE void swapReadWriteIdx();
 };

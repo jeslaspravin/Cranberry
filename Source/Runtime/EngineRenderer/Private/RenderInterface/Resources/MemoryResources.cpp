@@ -16,7 +16,11 @@
 
 DEFINE_GRAPHICS_RESOURCE(MemoryResource)
 
-void MemoryResource::addRef() { refCounter.fetch_add(1); }
+void MemoryResource::addRef()
+{
+    uint32 count;
+    count = refCounter.fetch_add(1);
+}
 
 void MemoryResource::removeRef()
 {

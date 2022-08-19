@@ -75,6 +75,8 @@ void WidgetRHIRenderer::clearWindowState(const SharedPtr<WgWindow> &window)
                 fence->waitForSignal();
             }
         }
+
+        // Do not have to clear window canvas created frame buffer here as it will be taken care at WindowsManager
         windowStates.erase(itr);
     }
 }
@@ -107,6 +109,8 @@ FORCE_INLINE void WidgetRHIRenderer::clearUnusedTextures()
     {
         if (textureParams[itr->second].second)
         {
+            // Reset each texture usage to false
+            textureParams[itr->second].second = false;
             ++itr;
         }
         else
@@ -454,5 +458,10 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         cmdList->submitCmd(EQueuePriority::High, submitInfo, windowState->perFrameSubmitFences[pipelineContext.swapchainIdx]);
     }
 
-    clearUnusedTextures();
+    clearTexturesCounter++;
+    if (clearTexturesCounter == CLEAR_EVERY)
+    {
+        clearTexturesCounter = 0;
+        clearUnusedTextures();
+    }
 }

@@ -1191,6 +1191,7 @@ void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
         );
         resAccessorItr->second.lastReadsIn.erase(newEnd, resAccessorItr->second.lastReadsIn.end());
 
+        // if there is nothing using it any more remove it
         if (resAccessorItr->second.lastWrite == nullptr && resAccessorItr->second.lastReadsIn.empty())
         {
             resAccessorItr = resourcesAccessors.erase(resAccessorItr);
@@ -1540,8 +1541,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
-    VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef resource)
+std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
 {
     std::optional<ResourceBarrierInfo> outBarrierInfo;
 
@@ -1562,8 +1562,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
     return outBarrierInfo;
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
-    VulkanResourcesTracker::colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef resource)
+std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
 {
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;

@@ -70,6 +70,12 @@
     TypeName &operator=(TypeName &&) = delete;                                                                                                 \
     TypeName &operator=(const TypeName &) = delete;
 
+#define MAKE_TYPE_DEFAULT_COPY_MOVE(TypeName)                                                                                                  \
+    TypeName(TypeName &&) = default;                                                                                                           \
+    TypeName(const TypeName &) = default;                                                                                                      \
+    TypeName &operator=(TypeName &&) = default;                                                                                                \
+    TypeName &operator=(const TypeName &) = default;
+
 // If only one bit set in this unsigned integer
 #define ONE_BIT_SET(FlagStatement) ((FlagStatement) && !((FlagStatement) & ((FlagStatement)-1)))
 // If all check bits is set in this unsigned integer

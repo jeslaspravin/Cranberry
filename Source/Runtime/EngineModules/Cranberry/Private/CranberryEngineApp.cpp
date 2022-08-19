@@ -85,6 +85,7 @@ void CranberryEngineApp::onRendererStateEvent(ERenderStateEvent state) {}
 #include "Types/Platform/LFS/PathFunctions.h"
 #include "IEditorCore.h"
 #include "Classes/World.h"
+#include "RenderApi/RenderTaskHelpers.h"
 
 void tempTest()
 {

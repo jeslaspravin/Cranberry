@@ -63,7 +63,7 @@ void VulkanGraphicsHelper::initializeFb(class IGraphicsInstance *graphicsInstanc
                         : fb->textures[0]->getLayerCount();
     // if texture is having more layers or 3D then we need view types
     int32 imgViewType = (layers == 1) ? -1 : VkImageViewType::VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-    for (ImageResourceRef imgRes : fb->textures)
+    for (ImageResourceRef &imgRes : fb->textures)
     {
         imageViews.push_back(static_cast<VulkanImageResource *>(imgRes.reference())->getImageView(imageViewInfo, imgViewType));
     }
@@ -90,6 +90,7 @@ void VulkanGraphicsHelper::initializeSwapchainFb(
 {
     const auto *vulkanWindowCanvas = static_cast<const VulkanWindowCanvas *>(canvas.reference());
     ImageResourceRef dummyImageResource(new ImageResource(ImageResourceCreateInfo{ vulkanWindowCanvas->windowCanvasFormat() }));
+    dummyImageResource->setResourceName(TCHAR("FB_DummyTexture_NoInit"));
 
     auto *vulkanFb = static_cast<VulkanFrameBuffer *>(fb);
     vulkanFb->textures.push_back(dummyImageResource);
@@ -131,7 +132,7 @@ VkRenderPass VulkanGraphicsHelper::createDummyRenderPass(class IGraphicsInstance
 
     for (uint32 attachmentIdx = 0; attachmentIdx < framebuffer->textures.size();)
     {
-        const ImageResourceRef resource = framebuffer->textures[attachmentIdx];
+        const ImageResourceRef &resource = framebuffer->textures[attachmentIdx];
 
         VkAttachmentDescription attachmentDesc;
         attachmentDesc.flags = 0;
