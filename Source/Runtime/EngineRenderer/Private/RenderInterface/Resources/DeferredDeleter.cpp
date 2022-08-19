@@ -15,17 +15,35 @@
 
 #include <mutex>
 
-FORCE_INLINE void DeferredDeleter::deleteResource(GraphicsResource *res)
+FORCE_INLINE void DeferredDeleter::deleteResource(const DeferringData &deferredResData)
 {
-    res->release();
-    delete res;
+    if (deferredResData.resource)
+    {
+        deferredResData.resource->release();
+        delete deferredResData.resource;
+    }
+    else
+    {
+        deferredResData.deleter.invoke();
+    }
+}
+
+FORCE_INLINE void DeferredDeleter::swapReadWriteIdx()
+{
+    deleteEmplaceLock.lock();
+    readAtIdx = getWritingIdx();
+    deleteEmplaceLock.unlock();
 }
 
 void DeferredDeleter::deferDelete(DeferringData &&deferringInfo)
 {
+    debugAssertf(
+        !deferringInfo.resource || !deferringInfo.deleter.isBound(), "Both resource and custom deleter cannot be set when deferred deleting"
+    );
+
     if (bClearing.test(std::memory_order::acquire) || deferringInfo.strategy == EDeferredDelStrategy::Immediate)
     {
-        deleteResource(deferringInfo.resource);
+        deleteResource(deferringInfo);
         return;
     }
 
@@ -45,6 +63,7 @@ void DeferredDeleter::update()
 {
     if (deletingResources[readAtIdx].empty())
     {
+        swapReadWriteIdx();
         return;
     }
 
@@ -53,18 +72,26 @@ void DeferredDeleter::update()
         [this](DeferringData &res)
         {
             uint32 references = 0;
-            if (res.resource->getType()->isChildOf(MemoryResource::staticType()))
+            if (res.resource)
             {
-                references = static_cast<MemoryResource *>(res.resource)->refCount();
+                if (res.resource->getType()->isChildOf(MemoryResource::staticType()))
+                {
+                    references = static_cast<MemoryResource *>(res.resource)->refCount();
+                }
+                else if (res.resource->getType()->isChildOf(ShaderParameters::staticType()))
+                {
+                    references = static_cast<ShaderParameters *>(res.resource)->refCount();
+                }
+                else
+                {
+                    alertAlwaysf(false, "Unsupported type(%s) for deferred deletion resource", res.resource->getType()->getName());
+                    deleteResource(res);
+                    return true;
+                }
             }
-            else if (res.resource->getType()->isChildOf(ShaderParameters::staticType()))
+            else if (!res.deleter.isBound())
             {
-                references = static_cast<ShaderParameters *>(res.resource)->refCount();
-            }
-            else
-            {
-                alertAlwaysf(false, "Unsupported type(%s) for deferred deletion", res.resource->getType()->getName());
-                deleteResource(res.resource);
+                alertAlwaysf(false, "Unsupported type(%s) for deferred deletion");
                 return true;
             }
 
@@ -82,7 +109,7 @@ void DeferredDeleter::update()
             case EDeferredDelStrategy::SwapchainCount:
                 if (res.deferDuration == res.elapsedDuration)
                 {
-                    deleteResource(res.resource);
+                    deleteResource(res);
                     bRemove = true;
                 }
                 else
@@ -93,7 +120,7 @@ void DeferredDeleter::update()
             case EDeferredDelStrategy::TimePeriod:
                 if (res.deferDuration < (currentTimeTick - res.elapsedDuration))
                 {
-                    deleteResource(res.resource);
+                    deleteResource(res);
                     bRemove = true;
                 }
                 break;
@@ -109,9 +136,7 @@ void DeferredDeleter::update()
     deletingResources[readAtIdx].clear();
 
     // Now swap the read write buffers
-    deleteEmplaceLock.lock();
-    readAtIdx = getWritingIdx();
-    deleteEmplaceLock.unlock();
+    swapReadWriteIdx();
 
     // now append the pendingDeletes to new read buffer
     deletingResources[readAtIdx].insert(deletingResources[readAtIdx].end(), pendingDeleteResources.cbegin(), pendingDeleteResources.cend());
@@ -128,7 +153,7 @@ void DeferredDeleter::clear()
     {
         for (const DeferringData &res : deletingResources[i])
         {
-            deleteResource(res.resource);
+            deleteResource(res);
         }
         deletingResources[i].clear();
     }

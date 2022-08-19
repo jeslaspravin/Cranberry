@@ -890,6 +890,10 @@ void VulkanGraphicsHelper::markForDeletion(
     class IGraphicsInstance *graphicsInstance, GraphicsResource *resource, EDeferredDelStrategy deleteStrategy, TickRep duration /*= 1*/
 ) const
 {
+    if (resource == nullptr)
+    {
+        return;
+    }
 #if DEFER_DELETION
     auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
     VulkanDevice *device = &gInstance->selectedDevice;
@@ -915,6 +919,41 @@ void VulkanGraphicsHelper::markForDeletion(
 #else  // DEFER_DELETION
     resource->release();
     delete resource;
+#endif // DEFER_DELETION
+}
+
+void VulkanGraphicsHelper::markForDeletion(
+    class IGraphicsInstance *graphicsInstance, SimpleSingleCastDelegate deleter, EDeferredDelStrategy deleteStrategy, TickRep duration /*= 1 */
+) const
+{
+    if (!deleter.isBound())
+    {
+        return;
+    }
+#if DEFER_DELETION
+    auto *gInstance = static_cast<VulkanGraphicsInstance *>(graphicsInstance);
+    VulkanDevice *device = &gInstance->selectedDevice;
+
+    DeferredDeleter::DeferringData deferInfo{ .deleter = deleter, .elapsedDuration = 0, .strategy = deleteStrategy };
+    switch (deleteStrategy)
+    {
+    case EDeferredDelStrategy::FrameCount:
+        deferInfo.deferDuration = duration;
+        break;
+    case EDeferredDelStrategy::SwapchainCount:
+        deferInfo.deferDuration = device->choosenImageCount;
+        break;
+    case EDeferredDelStrategy::TimePeriod:
+        deferInfo.deferDuration = duration;
+        deferInfo.elapsedDuration = Time::timeNow();
+        break;
+    case EDeferredDelStrategy::Immediate:
+    default:
+        break;
+    }
+    getDeferredDeleter(graphicsInstance)->deferDelete(std::move(deferInfo));
+#else  // DEFER_DELETION
+    deleter.invoke();
 #endif // DEFER_DELETION
 }
 

@@ -20,6 +20,7 @@ class GraphicsResource;
 class IRenderCommandList;
 class IGraphicsInstance;
 class GraphicsHelperAPI;
+class RenderManager;
 
 class APPLICATION_EXPORT WgImGui : public WidgetBase
 {
@@ -72,6 +73,8 @@ public:
     /* Overrides ends */
 private:
     FORCE_INLINE String getCmdBufferBaseName() const;
-    void flushFreeCmdBuffers(const String &cmdBufferBaseName) const;
+    void flushFreeResources(const String &cmdBufferBaseName, bool bClearRtFbs) const;
     void clearResources();
+    void regenerateFrameRt(Short2D widgetSize, Short2D textureSize);
+    static void deleteRTDeferred(WgRenderTarget rt, RenderManager *renderMan);
 };

@@ -22,6 +22,7 @@
 #include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderApi/RenderManager.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
 
 namespace ERendererIntermTexture
 {
@@ -52,11 +53,41 @@ const RendererIntermTexture &EngineRenderScene::getTempTexture(IRenderCommandLis
 {
     debugAssert(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get() == EPixelSampleCount::SampleCount1);
 
+    std::vector<ImageResourceRef> safeToDeleteRts;
+    safeToDeleteRts.reserve(texturesToClear.size() * 2);
+    for (auto itr = texturesToClear.begin(); itr != texturesToClear.end();)
+    {
+        if (!cmdList->hasCmdsUsingResource(itr->renderTargetResource())
+            && (itr->renderResource() == itr->renderTargetResource() || !cmdList->hasCmdsUsingResource(itr->renderResource())))
+        {
+            safeToDeleteRts.emplace_back(itr->renderTargetResource());
+            if (itr->renderTargetResource() != itr->renderResource())
+            {
+                safeToDeleteRts.emplace_back(itr->renderResource());
+            }
+            itr = texturesToClear.erase(itr);
+        }
+        else
+        {
+            break;
+        }
+    }
+    if (!safeToDeleteRts.empty())
+    {
+        RenderManager *renderMan = IRenderInterfaceModule::get()->getRenderManager();
+        renderMan->getGlobalRenderingContext()->clearFbsContainingRts(safeToDeleteRts);
+    }
+
     for (uint32 i = 0; i != tempTextures.size(); ++i)
     {
         if (tempTextures[i].rtTexture == nullptr || tempTextures[i].rtTexture->getImageSize().x != size.x
             || tempTextures[i].rtTexture->getImageSize().y != size.y)
         {
+            if (tempTextures[i].rtTexture)
+            {
+                texturesToClear.emplace_back(tempTextures[i]);
+            }
+
             ImageResourceCreateInfo ci;
             ci.dimensions = { size.x, size.y, 1 };
             ci.imageFormat = ERendererIntermTexture::getPixelFormat(ERendererIntermTexture::TempTest);

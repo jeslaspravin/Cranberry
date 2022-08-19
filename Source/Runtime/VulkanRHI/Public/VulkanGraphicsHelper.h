@@ -144,6 +144,9 @@ public:
     void markForDeletion(
         class IGraphicsInstance *graphicsInstance, GraphicsResource *resource, EDeferredDelStrategy deleteStrategy, TickRep duration = 1
     ) const final;
+    void markForDeletion(
+        class IGraphicsInstance *graphicsInstance, SimpleSingleCastDelegate deleter, EDeferredDelStrategy deleteStrategy, TickRep duration = 1
+    ) const final;
 
     // Size in bytes not 4bytes
     static VkShaderModule createShaderModule(class IGraphicsInstance *graphicsInstance, const uint8 *code, uint32 size);

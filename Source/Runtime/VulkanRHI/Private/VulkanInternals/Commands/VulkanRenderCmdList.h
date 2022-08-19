@@ -30,12 +30,12 @@ private:
     // command buffer in which swapchain frame buffers are written to
     std::vector<const GraphicsResource *> swapchainFrameWrites;
 
-    FORCE_INLINE VkImageAspectFlags determineImageAspect(const ImageResourceRef image) const;
+    FORCE_INLINE VkImageAspectFlags determineImageAspect(const ImageResourceRef &image) const;
     // Determines mask that has info on how image can be access in pipelines
-    FORCE_INLINE VkAccessFlags determineImageAccessMask(const ImageResourceRef image) const;
+    FORCE_INLINE VkAccessFlags determineImageAccessMask(const ImageResourceRef &image) const;
     // Determines the image layout if layout is yet to be defined
-    FORCE_INLINE VkImageLayout determineImageLayout(const ImageResourceRef image) const;
-    FORCE_INLINE VkImageLayout getImageLayout(const ImageResourceRef image) const;
+    FORCE_INLINE VkImageLayout determineImageLayout(const ImageResourceRef &image) const;
+    FORCE_INLINE VkImageLayout getImageLayout(const ImageResourceRef &image) const;
     FORCE_INLINE VkPipelineBindPoint getPipelineBindPoint(const PipelineBase *pipeline) const;
     // Shader stage in which buffer/image maybe possibly written to/Read from in shader
     FORCE_INLINE VkPipelineStageFlags resourceShaderStageFlags() const;

@@ -32,7 +32,7 @@
 #include "VulkanInternals/VulkanGraphicsTypes.h"
 #include "VulkanRHIModule.h"
 
-FORCE_INLINE VkImageAspectFlags VulkanCommandList::determineImageAspect(const ImageResourceRef image) const
+FORCE_INLINE VkImageAspectFlags VulkanCommandList::determineImageAspect(const ImageResourceRef &image) const
 {
     return (
         EPixelDataFormat::isDepthFormat(image->imageFormat())
@@ -42,7 +42,7 @@ FORCE_INLINE VkImageAspectFlags VulkanCommandList::determineImageAspect(const Im
     );
 }
 
-FORCE_INLINE VkAccessFlags VulkanCommandList::determineImageAccessMask(const ImageResourceRef image) const
+FORCE_INLINE VkAccessFlags VulkanCommandList::determineImageAccessMask(const ImageResourceRef &image) const
 {
     VkAccessFlags accessMask = 0;
 
@@ -57,7 +57,7 @@ FORCE_INLINE VkAccessFlags VulkanCommandList::determineImageAccessMask(const Ima
     return accessMask;
 }
 
-FORCE_INLINE VkImageLayout VulkanCommandList::determineImageLayout(const ImageResourceRef image) const
+FORCE_INLINE VkImageLayout VulkanCommandList::determineImageLayout(const ImageResourceRef &image) const
 {
     VkImageLayout imgLayout = getImageLayout(image);
     if (imgLayout == VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED)
@@ -71,7 +71,7 @@ FORCE_INLINE VkImageLayout VulkanCommandList::determineImageLayout(const ImageRe
     return imgLayout;
 }
 
-FORCE_INLINE VkImageLayout VulkanCommandList::getImageLayout(const ImageResourceRef image) const
+FORCE_INLINE VkImageLayout VulkanCommandList::getImageLayout(const ImageResourceRef &image) const
 {
     // TODO(Jeslas) : change this to get final layout from some resource tracked layout
     VkImageLayout imgLayout = EPixelDataFormat::isDepthFormat(image->imageFormat())
@@ -1354,7 +1354,7 @@ void VulkanCommandList::cmdBeginRenderPass(
     else
     {
         uint32 colorIdx = 0;
-        for (const ImageResourceRef frameTexture : contextPipeline.getFb()->textures)
+        for (const ImageResourceRef &frameTexture : contextPipeline.getFb()->textures)
         {
             // no need to barrier as render pass load/clear both will have implicit barriers
             resourcesTracker.colorAttachmentWrite(cmdBuffer, frameTexture);

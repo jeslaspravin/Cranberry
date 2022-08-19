@@ -38,6 +38,9 @@ private:
     SparseVector<std::pair<ShaderParametersRef, bool>, BitArraySparsityPolicy> textureParams;
     std::unordered_map<ImageResourceRef, uint32> textureToParamsIdx;
     std::unordered_map<SharedPtr<WgWindow>, WindowState> windowStates;
+    // Clear texture parameters once every 15frames
+    constexpr static const uint32 CLEAR_EVERY = 15; /* frames */
+    uint32 clearTexturesCounter = 0;
 
     /**
      * No need for per swapchain resource as vertices will be deleted and not mutated

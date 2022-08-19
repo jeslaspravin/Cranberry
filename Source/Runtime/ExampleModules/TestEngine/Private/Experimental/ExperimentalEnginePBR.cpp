@@ -3216,7 +3216,7 @@ void ExperimentalEnginePBR::draw(class ImGuiDrawInterface *drawInterface)
             SharedPtr<WgWindow> wnd = application->getHoveringWindow();
             if (wnd)
             {
-                Short2D wndRelPos = wnd->virtualToWindowSpace(Short2D(amxState->currentValue, amyState->currentValue));
+                Short2D wndRelPos = wnd->screenToWgWindowSpace(Short2D(amxState->currentValue, amyState->currentValue));
                 ImGui::Text(
                     "Cursor pos in window %s (%d, %d)", TCHAR_TO_UTF8(wnd->getAppWindow()->getWindowName().getChar()), wndRelPos.x, wndRelPos.y
                 );

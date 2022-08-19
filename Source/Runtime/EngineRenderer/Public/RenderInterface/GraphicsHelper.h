@@ -129,6 +129,9 @@ public:
     virtual void markForDeletion(
         class IGraphicsInstance *graphicsInstance, GraphicsResource *resource, EDeferredDelStrategy deleteStrategy, TickRep duration = 1
     ) const = 0;
+    virtual void markForDeletion(
+        class IGraphicsInstance *graphicsInstance, SimpleSingleCastDelegate deleter, EDeferredDelStrategy deleteStrategy, TickRep duration = 1
+    ) const = 0;
 
     // Pipelines
     virtual PipelineBase *createGraphicsPipeline(class IGraphicsInstance *graphicsInstance, const PipelineBase *parent) const = 0;

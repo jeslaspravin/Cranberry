@@ -32,6 +32,10 @@ private:
     ImageResourceRef resolvedTexture;
 
 public:
+    // Had to manually default every copy and move as there is custom destructor
+    WgRenderTarget() = default;
+    MAKE_TYPE_DEFAULT_COPY_MOVE(WgRenderTarget)
+
     ~WgRenderTarget() { destroy(); }
 
     void init(WgRenderTargetCI createInfo);

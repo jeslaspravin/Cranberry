@@ -87,6 +87,7 @@ private:
     uint64 frameCount = 0;
     RendererIntermTexture lastRT;
     std::vector<RendererIntermTexture> tempTextures;
+    std::vector<RendererIntermTexture> texturesToClear;
     const RendererIntermTexture &getTempTexture(IRenderCommandList *cmdList, Short2D size);
     String getCmdBufferName() const;
 

@@ -49,8 +49,8 @@ public:
     {
         return Short2D(int16(pt.x / getWidgetScaling()), int16(pt.y / getWidgetScaling()));
     }
-    Short2D virtualToWindowSpace(Short2D screenPt) const;
-    Short2D windowToVirtualSpace(Short2D windowPt) const;
+    Short2D screenToWgWindowSpace(Short2D screenPt) const;
+    Short2D wgWindowToScreenSpace(Short2D windowPt) const;
 
     void setContent(SharedPtr<WidgetBase> widget);
     SharedPtr<WidgetBase> getContent() const { return content; }

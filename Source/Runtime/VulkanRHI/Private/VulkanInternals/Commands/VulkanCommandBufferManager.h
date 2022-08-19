@@ -228,6 +228,6 @@ public:
     std::optional<ResourceBarrierInfo>
         writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
 
-    std::optional<ResourceBarrierInfo> imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef resource);
-    std::optional<ResourceBarrierInfo> colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef resource);
+    std::optional<ResourceBarrierInfo> imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);
+    std::optional<ResourceBarrierInfo> colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);
 };

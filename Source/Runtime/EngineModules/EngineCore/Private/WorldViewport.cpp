@@ -116,6 +116,8 @@ void WorldViewport::drawBackBuffer(
             cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
 
             cmdList->cmdEndRenderPass(cmdBuffer);
+
+            renderScene->onLastRTCopied();
         }
     }
 }

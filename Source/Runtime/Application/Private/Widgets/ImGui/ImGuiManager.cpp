@@ -270,6 +270,7 @@ void ImGuiManager::updateTextureParameters()
         {
             if (activeTextureParams.find(itr->second) == activeTextureParams.cend())
             {
+                itr->second->setTextureParam(TEXTURE_PARAM_NAME, GlobalBuffers::dummyWhite2D());
                 freeTextureParams.push(itr->second);
                 itr = textureParams.erase(itr);
             }

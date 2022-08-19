@@ -17,11 +17,13 @@
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiManager.h"
 #include "Widgets/WidgetDrawContext.h"
-#include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "RenderApi/RenderTaskHelpers.h"
+#include "RenderApi/RenderManager.h"
+#include "RenderInterface/Resources/GenericWindowCanvas.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
+#include "RenderApi/Rendering/RenderingContexts.h"
 
 void WgImGui::construct(const WgArguments &args)
 {
@@ -121,39 +123,13 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
     String cmdBufferNameBase = getCmdBufferBaseName();
     if (bFlushCmdBuffers && !swapchainBuffered.empty())
     {
-        flushFreeCmdBuffers(cmdBufferNameBase);
+        flushFreeResources(cmdBufferNameBase, bRegenRt);
     }
     swapchainBuffered.resize(bufferingCount);
 
     if (bRegenRt)
     {
-        FrameBufferedData &perFrameData = swapchainBuffered[imageIdx];
-
-        WgRenderTargetCI ci;
-        ci.sampleCount = EPixelSampleCount::SampleCount1; // No need for more than one sample for UI?
-        ci.textureName = (cmdBufferNameBase + String::toString(imageIdx)).c_str();
-        ci.textureSize = textureSize;
-        perFrameData.rt.init(ci);
-
-        // Any cmdList dependents initialized and wait
-        if (!swapchainBuffered[imageIdx].semaphore.isValid())
-        {
-            ENQUEUE_RENDER_COMMAND(WgImGuiRegenResources)
-            (
-                [cmdBufferNameBase,
-                 this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-                {
-                    swapchainBuffered[imageIdx].semaphore = graphicsHelper->createSemaphore(
-                        graphicsInstance, (cmdBufferNameBase + TCHAR("Sema") + String::toString(imageIdx)).c_str()
-                        );
-                    swapchainBuffered[imageIdx].semaphore->init();
-                }
-            );
-        }
-
-        // Wait until image/any resources is ready, This wont happen often
-        RenderThreadEnqueuer::flushWaitRenderThread();
-        imgui->setDisplaySize(widgetSize);
+        regenerateFrameRt(widgetSize, textureSize);
     }
 
     // Just draw this imgui widget after all layer, If any widget wants to draw below ImGui can just draw without any layer push
@@ -335,14 +311,23 @@ void WgImGui::mouseLeave(Short2D absPos, Short2D widgetRelPos, const InputSystem
 
 FORCE_INLINE String WgImGui::getCmdBufferBaseName() const { return imgui->getName() + TCHAR("_"); }
 
-void WgImGui::flushFreeCmdBuffers(const String &cmdBufferBaseName) const
+void WgImGui::flushFreeResources(const String &cmdBufferBaseName, bool bClearRtFbs) const
 {
-    uint32 bufferingCount = swapchainBuffered.size();
+    std::vector<WgRenderTarget> rts;
+    rts.reserve(swapchainBuffered.size());
+    for (const FrameBufferedData &frameData : swapchainBuffered)
+    {
+        if (frameData.rt.renderTargetResource().isValid())
+        {
+            rts.emplace_back(frameData.rt);
+        }
+    }
     ENQUEUE_RENDER_COMMAND(FreeWgImGuiCmds)
     (
-        [cmdBufferBaseName,
-         bufferingCount](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        [cmdBufferBaseName, bClearRtFbs,
+         rts](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
+            uint32 bufferingCount = rts.size();
             for (uint32 i = 0; i < bufferingCount; ++i)
             {
                 String cmdBufferName = cmdBufferBaseName + String::toString(i);
@@ -363,13 +348,21 @@ void WgImGui::flushFreeCmdBuffers(const String &cmdBufferBaseName) const
                     cmdList->freeCmd(layerDrawCmdBuffer);
                 }
             }
+            if (bClearRtFbs)
+            {
+                RenderManager *renderMan = IRenderInterfaceModule::get()->getRenderManager();
+                for (uint32 i = 0; i < bufferingCount; ++i)
+                {
+                    deleteRTDeferred(rts[i], renderMan);
+                }
+            }
         }
     );
 }
 
 void WgImGui::clearResources()
 {
-    flushFreeCmdBuffers(getCmdBufferBaseName());
+    flushFreeResources(getCmdBufferBaseName(), true);
     imgui->release();
     ENQUEUE_RENDER_COMMAND(ClearWgImGui)
     (
@@ -379,4 +372,60 @@ void WgImGui::clearResources()
         }
     );
     imgui = nullptr;
+}
+
+void WgImGui::regenerateFrameRt(Short2D widgetSize, Short2D textureSize)
+{
+    FrameBufferedData &perFrameData = swapchainBuffered[imageIdx];
+    WgRenderTarget rtToClear = perFrameData.rt;
+
+    WgRenderTargetCI ci;
+    ci.sampleCount = EPixelSampleCount::SampleCount1; // No need for more than one sample for UI?
+    ci.textureName = (getCmdBufferBaseName() + String::toString(imageIdx)).c_str();
+    ci.textureSize = textureSize;
+    perFrameData.rt.init(ci);
+
+    // Any cmdList dependents initialized and wait
+    ENQUEUE_RENDER_COMMAND(WgImGuiRegenResources)
+    (
+        [rtToClear, this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            String cmdBufferNameBase = getCmdBufferBaseName();
+            if (!swapchainBuffered[imageIdx].semaphore.isValid())
+            {
+                swapchainBuffered[imageIdx].semaphore = graphicsHelper->createSemaphore(
+                    graphicsInstance, (cmdBufferNameBase + TCHAR("Sema") + String::toString(imageIdx)).c_str()
+                    );
+                swapchainBuffered[imageIdx].semaphore->init();
+            }
+
+            if (rtToClear.renderTargetResource().isValid())
+            {
+                RenderManager *renderMan = IRenderInterfaceModule::get()->getRenderManager();
+                graphicsHelper->markForDeletion(
+                    graphicsInstance, SimpleSingleCastDelegate::createStatic(&WgImGui::deleteRTDeferred, rtToClear, renderMan),
+                    EDeferredDelStrategy::FrameCount
+                );
+            }
+        }
+    );
+
+    // Wait until image/any resources is ready, This wont happen often
+    RenderThreadEnqueuer::flushWaitRenderThread();
+    imgui->setDisplaySize(widgetSize);
+}
+
+void WgImGui::deleteRTDeferred(WgRenderTarget rt, RenderManager *renderMan)
+{
+    ASSERT_INSIDE_RENDERTHREAD();
+
+    if (rt.renderTargetResource().isValid() && rt.renderResource().isValid())
+    {
+        // Clear RT's Framebuffer
+        renderMan->clearExternInitRtsFramebuffer({ &rt });
+        debugAssertf(
+            !renderMan->getGlobalRenderingContext()->hasAnyFbUsingRts({ rt.renderTargetResource(), rt.renderResource() }),
+            "Some framebuffer are missed when clearing ImGui RT, RT might never gets cleared!"
+        );
+    }
 }
