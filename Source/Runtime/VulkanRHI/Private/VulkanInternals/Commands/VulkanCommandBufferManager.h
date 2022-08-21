@@ -136,7 +136,7 @@ public:
     bool isGraphicsCmdBuffer(const GraphicsResource *cmdBuffer) const;
     bool isTransferCmdBuffer(const GraphicsResource *cmdBuffer) const;
 
-    bool isCmdFinished(const GraphicsResource* cmdBuffer) const;
+    bool isCmdFinished(const GraphicsResource *cmdBuffer) const;
     //************************************
     // Method:    submitCmds - Currently all commands being submitted must be from same queue
     // FullName:  VulkanCmdBufferManager::submitCmds

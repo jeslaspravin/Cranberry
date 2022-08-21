@@ -52,6 +52,10 @@ struct ImGuiDrawingContext
 
 class APPLICATION_EXPORT ImGuiManager
 {
+public:
+    // ImGui flags
+    static const int32 SIMPLE_READONLY_WINDOWFLAGS;
+
 private:
     static const StringID TEXTURE_PARAM_NAME;
     static const NameString IMGUI_SHADER_NAME;

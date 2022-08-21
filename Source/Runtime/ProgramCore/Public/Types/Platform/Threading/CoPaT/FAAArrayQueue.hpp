@@ -45,6 +45,96 @@ COPAT_NS_INLINED
 namespace copat
 {
 
+constexpr static const long QUEUE_NODE_BUFFER_SIZE = 1024; // 1024
+
+template <typename StoredType>
+struct FAAArrayQueueNode
+{
+    std::atomic<int> deqidx;
+    std::atomic<StoredType *> items[QUEUE_NODE_BUFFER_SIZE]; // items size is enough to separate deqidx and enqidx
+    std::atomic<int> enqidx;
+    std::atomic<FAAArrayQueueNode *> next;
+
+    // Start with the first entry pre-filled and enqidx at 1
+    FAAArrayQueueNode(StoredType *item)
+        : deqidx{ 0 }
+        , enqidx{ 1 }
+        , next{ nullptr }
+    {
+        items[0].store(item, std::memory_order_relaxed);
+        for (long i = 1; i < QUEUE_NODE_BUFFER_SIZE; i++)
+        {
+            items[i].store(nullptr, std::memory_order_relaxed);
+        }
+    }
+
+    bool casNext(FAAArrayQueueNode *cmp, FAAArrayQueueNode *val) { return next.compare_exchange_strong(cmp, val); }
+};
+
+#if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
+
+struct QueueNodeAllocTracker;
+COPAT_EXPORT_SYM QueueNodeAllocTracker &getNodeAllocsTracker();
+
+#endif // COPAT_ENABLE_QUEUE_ALLOC_TRACKING
+
+struct QueueNodeAllocTracker
+{
+    std::atomic<u64> activeAllocs = 0;
+    std::atomic<u64> inDeleteQAllocs = 0;
+    std::atomic<u64> deletedCount = 0;
+
+    std::atomic<u64> newAllocsCount = 0;
+    std::atomic<u64> reuseCount = 0;
+
+    inline static void pushActiveReuse()
+    {
+#if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
+        getNodeAllocsTracker().reuseCount.fetch_add(1, std::memory_order::relaxed);
+        getNodeAllocsTracker().inDeleteQAllocs.fetch_sub(1, std::memory_order::relaxed);
+        getNodeAllocsTracker().activeAllocs.fetch_add(1, std::memory_order::relaxed);
+#endif
+    }
+    inline static void pushActiveNew()
+    {
+#if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
+        getNodeAllocsTracker().newAllocsCount.fetch_add(1, std::memory_order::relaxed);
+        getNodeAllocsTracker().activeAllocs.fetch_add(1, std::memory_order::relaxed);
+#endif
+    }
+
+    inline static void popActive()
+    {
+#if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
+        getNodeAllocsTracker().inDeleteQAllocs.fetch_add(1, std::memory_order::relaxed);
+        getNodeAllocsTracker().activeAllocs.fetch_sub(1, std::memory_order::relaxed);
+#endif
+    }
+
+    inline static void onDelete()
+    {
+#if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
+        getNodeAllocsTracker().inDeleteQAllocs.fetch_sub(1, std::memory_order::relaxed);
+        getNodeAllocsTracker().deletedCount.fetch_add(1, std::memory_order::relaxed);
+#endif
+    }
+};
+#if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
+
+template <typename T>
+struct HazardPointerDeleter<FAAArrayQueueNode<T>>
+{
+    using NodeType = FAAArrayQueueNode<T>;
+
+    void operator()(NodeType *ptr)
+    {
+        QueueNodeAllocTracker::onDelete();
+        memDelete(ptr);
+    }
+};
+
+#endif // COPAT_ENABLE_QUEUE_ALLOC_TRACKING
+
 // clang-format off
 /**
  * <h1> Fetch-And-Add Array Queue </h1>
@@ -58,7 +148,7 @@ namespace copat
  * our algorithm is lock-free.
  * In FAAArrayQueue eventually a new node will be inserted (using Michael-Scott's
  * algorithm) and it will have an item pre-filled in the first position, which means
- * that at most, after BUFFER_SIZE steps, one item will be enqueued (and it can then
+ * that at most, after QUEUE_NODE_BUFFER_SIZE steps, one item will be enqueued (and it can then
  * be dequeued). This kind of progress is lock-free.
  *
  * Each entry in the array may contain one of three possible values:
@@ -94,31 +184,9 @@ template <typename T>
 class FAAArrayQueue
 {
 private:
-    constexpr static const long BUFFER_SIZE = 1024; // 1024
     constexpr static const uintptr_t TAKEN_PTR = ~(uintptr_t)(0);
 
-    struct Node
-    {
-        std::atomic<int> deqidx;
-        std::atomic<T *> items[BUFFER_SIZE]; // items size is enough to separate deqidx and enqidx
-        std::atomic<int> enqidx;
-        std::atomic<Node *> next;
-
-        // Start with the first entry pre-filled and enqidx at 1
-        Node(T *item)
-            : deqidx{ 0 }
-            , enqidx{ 1 }
-            , next{ nullptr }
-        {
-            items[0].store(item, std::memory_order_relaxed);
-            for (long i = 1; i < BUFFER_SIZE; i++)
-            {
-                items[i].store(nullptr, std::memory_order_relaxed);
-            }
-        }
-
-        bool casNext(Node *cmp, Node *val) { return next.compare_exchange_strong(cmp, val); }
-    };
+    using Node = FAAArrayQueueNode<T>;
 
     bool casTail(Node *cmp, Node *val) { return tail.compare_exchange_strong(cmp, val); }
 
@@ -141,6 +209,8 @@ public:
         sentinelNode->enqidx.store(0, std::memory_order_relaxed);
         head.store(sentinelNode, std::memory_order_relaxed);
         tail.store(sentinelNode, std::memory_order_relaxed);
+
+        QueueNodeAllocTracker::pushActiveNew();
     }
 
     ~FAAArrayQueue()
@@ -149,6 +219,9 @@ public:
         while (dequeue() != nullptr)
         {}
         memDelete(head.load()); // Delete the last node
+
+        QueueNodeAllocTracker::popActive();
+        QueueNodeAllocTracker::onDelete();
     }
 
     inline HazardToken getHazardToken() { return { hazardsManager }; }
@@ -166,7 +239,7 @@ public:
         {
             Node *ltail = hazardRecord.record->setHazardPtr(tail);
             const int idx = ltail->enqidx.fetch_add(1, std::memory_order::acq_rel);
-            if (idx > BUFFER_SIZE - 1) // This node is full
+            if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node is full
             {
                 if (ltail != tail.load(std::memory_order::acquire))
                     continue;
@@ -176,7 +249,17 @@ public:
                 {
                     // Try acquire existing deleting node if any present
                     Node *newNode = hazardsManager.dequeueDelete();
-                    newNode = newNode ? newNode : (Node *)(CoPaTMemAlloc::memAlloc(sizeof(Node), alignof(Node)));
+                    if (newNode) [[unlikely]]
+                    {
+                        QueueNodeAllocTracker::pushActiveReuse();
+                    }
+                    else [[likely]]
+                    {
+                        newNode = (Node *)(CoPaTMemAlloc::memAlloc(sizeof(Node), alignof(Node)));
+                        QueueNodeAllocTracker::pushActiveNew();
+                    }
+
+                    // Construct new node
                     newNode = new (newNode) Node(item);
                     if (ltail->casNext(nullptr, newNode))
                     {
@@ -219,7 +302,7 @@ public:
             }
 
             const int idx = lhead->deqidx.fetch_add(1, std::memory_order::acq_rel);
-            if (idx > BUFFER_SIZE - 1) // This node has been drained, check if there is another one
+            if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node has been drained, check if there is another one
             {
                 Node *lnext = lhead->next.load(std::memory_order::acquire);
                 if (lnext == nullptr) // No more nodes in the queue
@@ -230,6 +313,7 @@ public:
                 {
                     hazardRecord.record->reset();
                     hazardsManager.enqueueDelete(lhead);
+                    QueueNodeAllocTracker::popActive();
                 }
                 continue;
             }
@@ -256,31 +340,9 @@ template <typename T>
 class FAAArrayMPSCQueue
 {
 private:
-    constexpr static const long BUFFER_SIZE = 1024; // 1024
     constexpr static const uintptr_t TAKEN_PTR = ~(uintptr_t)(0);
 
-    struct Node
-    {
-        int deqidx;
-        std::atomic<T *> items[BUFFER_SIZE]; // items size is enough to separate deqidx and enqidx
-        std::atomic<int> enqidx;
-        std::atomic<Node *> next;
-
-        // Start with the first entry pre-filled and enqidx at 1
-        Node(T *item)
-            : deqidx{ 0 }
-            , enqidx{ 1 }
-            , next{ nullptr }
-        {
-            items[0].store(item, std::memory_order_relaxed);
-            for (long i = 1; i < BUFFER_SIZE; i++)
-            {
-                items[i].store(nullptr, std::memory_order_relaxed);
-            }
-        }
-
-        bool casNext(Node *cmp, Node *val) { return next.compare_exchange_strong(cmp, val); }
-    };
+    using Node = FAAArrayQueueNode<T>;
 
     bool casTail(Node *cmp, Node *val) { return tail.compare_exchange_strong(cmp, val); }
 
@@ -306,6 +368,8 @@ public:
         sentinelNode->enqidx.store(0, std::memory_order_relaxed);
         head = sentinelNode;
         tail.store(sentinelNode, std::memory_order_relaxed);
+
+        QueueNodeAllocTracker::pushActiveNew();
     }
 
     ~FAAArrayMPSCQueue()
@@ -314,6 +378,9 @@ public:
         while (dequeue() != nullptr)
         {}
         memDelete(head); // Delete the last node
+
+        QueueNodeAllocTracker::popActive();
+        QueueNodeAllocTracker::onDelete();
     }
 
     inline HazardToken getHazardToken() { return { hazardsManager }; }
@@ -331,7 +398,7 @@ public:
         {
             Node *ltail = hazardRecord.record->setHazardPtr(tail);
             const int idx = ltail->enqidx.fetch_add(1, std::memory_order::acq_rel);
-            if (idx > BUFFER_SIZE - 1) // This node is full
+            if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node is full
             {
                 if (ltail != tail.load(std::memory_order::acquire))
                     continue;
@@ -339,9 +406,21 @@ public:
                 Node *lnext = ltail->next.load(std::memory_order::relaxed);
                 if (lnext == nullptr)
                 {
-                    // Try acquire existing deleting node if any present
+                    // Try acquire existing deleting node if any present,
+                    // Mostly it won't be present as MPSC other threads enqueues and this thread dequeues
                     Node *newNode = hazardsManager.dequeueDelete();
-                    newNode = newNode ? newNode : (Node *)(CoPaTMemAlloc::memAlloc(sizeof(Node), alignof(Node)));
+                    if (newNode) [[unlikely]]
+                    {
+                        QueueNodeAllocTracker::pushActiveReuse();
+                    }
+                    else [[likely]]
+                    {
+                        newNode = (Node *)(CoPaTMemAlloc::memAlloc(sizeof(Node), alignof(Node)));
+                        QueueNodeAllocTracker::pushActiveNew();
+                    }
+
+                    // Construct new node
+                    newNode = new (newNode) Node(item);
                     newNode = new (newNode) Node(item);
                     if (ltail->casNext(nullptr, newNode))
                     {
@@ -378,7 +457,7 @@ public:
             }
 
             const int idx = lhead->deqidx++;
-            if (idx > BUFFER_SIZE - 1) // This node has been drained, check if there is another one
+            if (idx > QUEUE_NODE_BUFFER_SIZE - 1) // This node has been drained, check if there is another one
             {
                 Node *lnext = lhead->next.load(std::memory_order::acquire);
                 if (lnext == nullptr) // No more nodes in the queue
@@ -387,6 +466,7 @@ public:
                 }
                 head = lnext;
                 hazardsManager.enqueueDelete(lhead);
+                QueueNodeAllocTracker::popActive();
                 continue;
             }
             T *item = lhead->items[idx].exchange(takenPtr(), std::memory_order::relaxed);

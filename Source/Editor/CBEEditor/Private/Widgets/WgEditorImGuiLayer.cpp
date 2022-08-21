@@ -12,8 +12,10 @@
 #include "Widgets/WgEditorImGuiLayer.h"
 #include "IApplicationModule.h"
 #include "ApplicationInstance.h"
+#include "Widgets/ImGui/ImGuiManager.h"
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
 #include "Widgets/ImGui/ImGuiLib/imgui_internal.h"
+#include "Types/Platform/Threading/CoPaT/FAAArrayQueue.hpp"
 
 void WgEditorImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
 {
@@ -80,6 +82,7 @@ void WgEditorImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
     }
     ImGui::End();
 
+    jobSystemJobsStats();
     aboutWindow();
 }
 
@@ -115,6 +118,13 @@ void WgEditorImGuiLayer::addMenubar(ImGuiDrawInterface *drawInterface)
             ImGui::EndMenu();
         }
 
+        if (ImGui::BeginMenu("Developer"))
+        {
+            ImGui::MenuItem("CoPaT stats", nullptr, &bShowJobQueueStats);
+
+            ImGui::EndMenu();
+        }
+
         if (ImGui::BeginMenu("Help"))
         {
             ImGui::MenuItem("Show About", nullptr, &bShowAbout);
@@ -140,10 +150,7 @@ void WgEditorImGuiLayer::aboutWindow()
 {
     if (bShowAbout)
     {
-        ImGuiWindowFlags aboutWndFlags
-            = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
-        // ImGui::GetForegroundDrawList()
-        if (ImGui::Begin("About", &bShowAbout, aboutWndFlags))
+        if (ImGui::Begin("About", &bShowAbout, ImGuiManager::SIMPLE_READONLY_WINDOWFLAGS))
         {
             ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
             static const AChar *appNameText = TCHAR_TO_UTF8(appInstance->getAppName().getChar());
@@ -171,6 +178,34 @@ void WgEditorImGuiLayer::aboutWindow()
             ImGui::Separator();
             ImGui::Text("Email : pravinjeslas@gmail.com");
             ImGui::Text("Web   : https://jeslaspravin.com");
+        }
+        ImGui::End();
+    }
+}
+
+void WgEditorImGuiLayer::jobSystemJobsStats()
+{
+    if (bShowJobQueueStats)
+    {
+        if (ImGui::Begin("CoPaT Stats", &bShowJobQueueStats, ImGuiManager::SIMPLE_READONLY_WINDOWFLAGS))
+        {
+#if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
+            DO_ONCE(ImGui::Text("Queue node bytes %llu", ~0ull));
+            ImGui::Text("Queue node bytes %llu", sizeof(copat::FAAArrayQueueNode<void>));
+            ImGui::Text("Active nodes %llu", copat::getNodeAllocsTracker().activeAllocs.load(std::memory_order::relaxed));
+            ImGui::Text("In delete Queue %llu", copat::getNodeAllocsTracker().inDeleteQAllocs.load(std::memory_order::relaxed));
+            ImGui::Text("Deleted count %llu", copat::getNodeAllocsTracker().deletedCount.load(std::memory_order::relaxed));
+
+            ImGui::Text("Total reuses %llu", copat::getNodeAllocsTracker().reuseCount.load(std::memory_order::relaxed));
+            ImGui::Text("Total new %llu", copat::getNodeAllocsTracker().newAllocsCount.load(std::memory_order::relaxed));
+#else
+            ImGui::Text("Job system stats are not compiled");
+            ImGui::Text("Enable ");
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Text, LinearColorConst::PALE_BLUE);
+            ImGui::Text("COPAT_ENABLE_QUEUE_ALLOC_TRACKING");
+            ImGui::PopStyleColor();
+#endif
         }
         ImGui::End();
     }

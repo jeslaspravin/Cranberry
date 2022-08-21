@@ -302,10 +302,7 @@ void RenderCommandList::waitOnResDepCmds(const MemoryResourceRef &resource) { cm
 
 void RenderCommandList::flushAllcommands() { cmdList->flushAllcommands(); }
 
-bool RenderCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource)
-{
-    return cmdList->hasCmdsUsingResource(resource);
-}
+bool RenderCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource) { return cmdList->hasCmdsUsingResource(resource); }
 
 void RenderCommandList::copyToImage(ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo)
 {

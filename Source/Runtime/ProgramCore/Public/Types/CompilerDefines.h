@@ -96,3 +96,14 @@ void ignoreUnused(T &&)
 
 #define CALL_ONCE(Func) CALL_ONCE_internal(Func, )
 #define CALL_ONCE_PER_THREAD(Func) CALL_ONCE_internal(Func, thread_local)
+
+#define DO_ONCE_internal(VarQualifier, ...)                                                                                                    \
+    do                                                                                                                                         \
+    {                                                                                                                                          \
+        VarQualifier static int callOnce = (__VA_ARGS__, 1);                                                                                   \
+        CompilerHacks::ignoreUnused(callOnce);                                                                                                 \
+    }                                                                                                                                          \
+    while (0)
+
+#define DO_ONCE(...) DO_ONCE_internal(, __VA_ARGS__)
+#define DO_ONCE_PER_THREAD(...) DO_ONCE_internal(thread_local, __VA_ARGS__)

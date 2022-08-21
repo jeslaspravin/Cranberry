@@ -18,6 +18,7 @@ class WgEditorImGuiLayer : public IImGuiLayer
 {
 private:
     bool bShowAbout = false;
+    bool bShowJobQueueStats = false;
 
     std::unordered_map<std::string, ImGuiDrawInterfaceCallback> menuExtenders;
 
@@ -43,4 +44,5 @@ public:
 private:
     void addMenubar(ImGuiDrawInterface *drawInterface);
     void aboutWindow();
+    void jobSystemJobsStats();
 };

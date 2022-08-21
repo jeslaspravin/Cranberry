@@ -168,8 +168,8 @@ UseTab:          Never
 #   - foreach
 #   - Q_FOREACH
 #   - BOOST_FOREACH
-# IfMacros:
-#   - KJ_IF_MAYBE
+IfMacros:
+  - KJ_IF_MAYBE
 # AttributeMacros:
 #   - __capability
 StatementAttributeLikeMacros:
