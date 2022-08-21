@@ -412,7 +412,7 @@ public:
 
     void toUpper()
     {
-        for (TChar& ch : (*this))
+        for (TChar &ch : (*this))
         {
             ch = std::toupper(ch);
         }
@@ -424,7 +424,7 @@ public:
             ch = std::tolower(ch);
         }
     }
-    String toUpperCopy() const 
+    String toUpperCopy() const
     {
         String str = *this;
         str.toUpper();

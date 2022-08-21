@@ -1541,7 +1541,8 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
     return writeReadOnlyBuffers(cmdBuffer, resource);
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
+std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
+    VulkanResourcesTracker::imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
 {
     std::optional<ResourceBarrierInfo> outBarrierInfo;
 
@@ -1562,7 +1563,8 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     return outBarrierInfo;
 }
 
-std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracker::colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
+std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
+    VulkanResourcesTracker::colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource)
 {
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;

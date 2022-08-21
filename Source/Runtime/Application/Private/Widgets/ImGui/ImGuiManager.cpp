@@ -31,6 +31,10 @@
 using namespace ImGui;
 
 static_assert(std::is_same_v<uint32, ImGuiID>, "ImGuiID and uint32 type do not match!");
+static_assert(std::is_same_v<int32, ImGuiWindowFlags>, "ImGuiWindowFlags and int32 type do not match!");
+
+const int32 ImGuiManager::SIMPLE_READONLY_WINDOWFLAGS
+    = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
 
 const StringID ImGuiManager::TEXTURE_PARAM_NAME{ TCHAR("textureAtlas") };
 const NameString ImGuiManager::IMGUI_SHADER_NAME{ TCHAR("DrawImGui") };
