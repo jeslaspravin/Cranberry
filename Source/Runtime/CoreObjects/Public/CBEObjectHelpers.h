@@ -189,18 +189,18 @@ ClassType *get(const TChar *objectFullPath)
     return cast<ClassType>(obj);
 }
 
-COREOBJECTS_EXPORT Object *load(String objectPath);
-COREOBJECTS_EXPORT Object *getOrLoad(String objectPath);
+COREOBJECTS_EXPORT Object *load(String objectPath, CBEClass clazz);
+COREOBJECTS_EXPORT Object *getOrLoad(String objectPath, CBEClass clazz);
 template <typename ClassType>
 ClassType *load(const String &objectPath)
 {
-    Object *obj = load(objectPath);
+    Object *obj = load(objectPath, ClassType::staticType());
     return cast<ClassType>(obj);
 }
 template <typename ClassType>
 ClassType *getOrLoad(const String &objectPath)
 {
-    Object *obj = getOrLoad(objectPath);
+    Object *obj = getOrLoad(objectPath, ClassType::staticType());
     return cast<ClassType>(obj);
 }
 

@@ -38,6 +38,7 @@ public:
     using PackageEvent = Event<CoreObjectDelegates, cbe::Object *>;
     static PackageEvent onPackageSaved;
     static PackageEvent onPackageLoaded;
+    static PackageEvent onPackageUnloaded;
     /**
      * Broadcasts when package is scanned from directory and is ready to be loaded.
      * No objects except cbe::Package is created at this point however contained objects table is loaded
@@ -45,6 +46,7 @@ public:
     static PackageLoaderEvent onPackageScanned;
     FORCE_INLINE static void broadcastPackageSaved(cbe::Object *package) { onPackageSaved.invoke(package); }
     FORCE_INLINE static void broadcastPackageLoaded(cbe::Object *package) { onPackageLoaded.invoke(package); }
+    FORCE_INLINE static void broadcastPackageUnloaded(cbe::Object *package) { onPackageUnloaded.invoke(package); }
     FORCE_INLINE static void broadcastPackageScanned(PackageLoader *packageLoader) { onPackageScanned.invoke(packageLoader); }
 
     // Object related events
