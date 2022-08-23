@@ -101,9 +101,7 @@ enum EKeyCode
     KEY_SYSREQ,
     KEY_F11,
     KEY_LEFTBCKSLASH,
-    // KEY_F11,
     KEY_F12 = 0x58,
-    // KEY_F15,
     KEY_PA1 = 0x5A,
     KEY_LWIN, // F13
     KEY_RWIN, // F14

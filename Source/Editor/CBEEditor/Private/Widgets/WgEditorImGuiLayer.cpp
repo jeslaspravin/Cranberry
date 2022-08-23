@@ -190,8 +190,9 @@ void WgEditorImGuiLayer::jobSystemJobsStats()
         if (ImGui::Begin("CoPaT Stats", &bShowJobQueueStats, ImGuiManager::SIMPLE_READONLY_WINDOWFLAGS))
         {
 #if COPAT_ENABLE_QUEUE_ALLOC_TRACKING
-            DO_ONCE(ImGui::Text("Queue node bytes %llu", ~0ull));
-            ImGui::Text("Queue node bytes %llu", sizeof(copat::FAAArrayQueueNode<void>));
+            uint64 nodeSize = sizeof(copat::FAAArrayQueueNode<void>);
+            DO_ONCE(nodeSize = ~0ull);
+            ImGui::Text("Queue node bytes %llu", nodeSize);
             ImGui::Text("Active nodes %llu", copat::getNodeAllocsTracker().activeAllocs.load(std::memory_order::relaxed));
             ImGui::Text("In delete Queue %llu", copat::getNodeAllocsTracker().inDeleteQAllocs.load(std::memory_order::relaxed));
             ImGui::Text("Deleted count %llu", copat::getNodeAllocsTracker().deletedCount.load(std::memory_order::relaxed));
