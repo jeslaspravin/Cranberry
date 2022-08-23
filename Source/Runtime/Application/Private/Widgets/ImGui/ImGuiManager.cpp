@@ -32,9 +32,131 @@ using namespace ImGui;
 
 static_assert(std::is_same_v<uint32, ImGuiID>, "ImGuiID and uint32 type do not match!");
 static_assert(std::is_same_v<int32, ImGuiWindowFlags>, "ImGuiWindowFlags and int32 type do not match!");
+static_assert(std::is_same_v<int32, ImGuiKey>, "ImGuiKey and int32 type do not match!");
 
 const int32 ImGuiManager::SIMPLE_READONLY_WINDOWFLAGS
     = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
+
+int32 ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[512] = {};
+void setupImGuiNamedKeyMapping()
+{
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::BACKSPACE.keyCode] = ImGuiKey_Backspace;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::TAB.keyCode] = ImGuiKey_Tab;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::CAPS.keyCode] = ImGuiKey_CapsLock;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::ESC.keyCode] = ImGuiKey_Escape;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::ENTER.keyCode] = ImGuiKey_Enter;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::SPACE.keyCode] = ImGuiKey_Space;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::PAGEUP.keyCode] = ImGuiKey_PageUp;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::PAGEDOWN.keyCode] = ImGuiKey_PageDown;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::END.keyCode] = ImGuiKey_End;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::HOME.keyCode] = ImGuiKey_Home;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::LEFT.keyCode] = ImGuiKey_LeftArrow;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::UP.keyCode] = ImGuiKey_UpArrow;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::RIGHT.keyCode] = ImGuiKey_RightArrow;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::DOWN.keyCode] = ImGuiKey_DownArrow;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::INS.keyCode] = ImGuiKey_Insert;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::DEL.keyCode] = ImGuiKey_Delete; // Delete
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::ZERO.keyCode] = ImGuiKey_0;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::ONE.keyCode] = ImGuiKey_1;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::TWO.keyCode] = ImGuiKey_2;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::THREE.keyCode] = ImGuiKey_3;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::FOUR.keyCode] = ImGuiKey_4;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::FIVE.keyCode] = ImGuiKey_5;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::SIX.keyCode] = ImGuiKey_6;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::SEVEN.keyCode] = ImGuiKey_7;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::EIGHT.keyCode] = ImGuiKey_8;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NINE.keyCode] = ImGuiKey_9;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::A.keyCode] = ImGuiKey_A;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::B.keyCode] = ImGuiKey_B;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::C.keyCode] = ImGuiKey_C;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::D.keyCode] = ImGuiKey_D;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::E.keyCode] = ImGuiKey_E;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F.keyCode] = ImGuiKey_F;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::G.keyCode] = ImGuiKey_G;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::H.keyCode] = ImGuiKey_H;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::I.keyCode] = ImGuiKey_I;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::J.keyCode] = ImGuiKey_J;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::K.keyCode] = ImGuiKey_K;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::L.keyCode] = ImGuiKey_L;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::M.keyCode] = ImGuiKey_M;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::N.keyCode] = ImGuiKey_N;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::O.keyCode] = ImGuiKey_O;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::P.keyCode] = ImGuiKey_P;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::Q.keyCode] = ImGuiKey_Q;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::R.keyCode] = ImGuiKey_R;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::S.keyCode] = ImGuiKey_S;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::T.keyCode] = ImGuiKey_T;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::U.keyCode] = ImGuiKey_U;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::V.keyCode] = ImGuiKey_V;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::W.keyCode] = ImGuiKey_W;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::X.keyCode] = ImGuiKey_X;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::Y.keyCode] = ImGuiKey_Y;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::Z.keyCode] = ImGuiKey_Z;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM0.keyCode] = ImGuiKey_Keypad0;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM1.keyCode] = ImGuiKey_Keypad1;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM2.keyCode] = ImGuiKey_Keypad2;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM3.keyCode] = ImGuiKey_Keypad3;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM4.keyCode] = ImGuiKey_Keypad4;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM5.keyCode] = ImGuiKey_Keypad5;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM6.keyCode] = ImGuiKey_Keypad6;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM7.keyCode] = ImGuiKey_Keypad7;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM8.keyCode] = ImGuiKey_Keypad8;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUM9.keyCode] = ImGuiKey_Keypad9;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::ASTERICK.keyCode] = ImGuiKey_KeypadMultiply;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::PLUS.keyCode] = ImGuiKey_KeypadAdd;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUMMINUS.keyCode] = ImGuiKey_KeypadSubtract;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUMFULLSTOP.keyCode] = ImGuiKey_KeypadDecimal;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUMFWDSLASH.keyCode] = ImGuiKey_KeypadDivide;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F1.keyCode] = ImGuiKey_F1;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F2.keyCode] = ImGuiKey_F2;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F3.keyCode] = ImGuiKey_F3;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F4.keyCode] = ImGuiKey_F4;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F5.keyCode] = ImGuiKey_F5;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F6.keyCode] = ImGuiKey_F6;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F7.keyCode] = ImGuiKey_F7;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F8.keyCode] = ImGuiKey_F8;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F9.keyCode] = ImGuiKey_F9;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F10.keyCode] = ImGuiKey_F10;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F11.keyCode] = ImGuiKey_F11;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F12.keyCode] = ImGuiKey_F12;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::LWIN.keyCode] = ImGuiKey_LeftSuper;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::RWIN.keyCode] = ImGuiKey_RightSuper;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::MENU.keyCode] = ImGuiKey_Menu;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F16.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F17.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F18.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F19.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F20.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F21.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F22.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F23.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::F24.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUMLOCK.keyCode] = ImGuiKey_NumLock;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::SCRLLOCK.keyCode] = ImGuiKey_ScrollLock;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::PAUSE.keyCode] = ImGuiKey_Pause;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::LSHIFT.keyCode] = ImGuiKey_LeftShift;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::RSHIFT.keyCode] = ImGuiKey_RightShift;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::LCTRL.keyCode] = ImGuiKey_LeftCtrl;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::RCTRL.keyCode] = ImGuiKey_RightCtrl;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::LALT.keyCode] = ImGuiKey_LeftAlt;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::RALT.keyCode] = ImGuiKey_RightAlt;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::SEMICOLON.keyCode] = ImGuiKey_Semicolon;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::COMMA.keyCode] = ImGuiKey_Comma;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::FULLSTOP.keyCode] = ImGuiKey_Period;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::FWDSLASH.keyCode] = ImGuiKey_Slash;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::MINUS.keyCode] = ImGuiKey_Minus;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::BACKTICK.keyCode] = ImGuiKey_GraveAccent;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::OPENSQR.keyCode] = ImGuiKey_LeftBracket;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::CLOSESQR.keyCode] = ImGuiKey_RightBracket;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::BACKSLASH.keyCode] = ImGuiKey_Backslash;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::APOSTROPHE.keyCode] = ImGuiKey_Apostrophe;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::PA1.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::CLR.keyCode] = ImGuiKey_None;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::LEFTBACKSLASH.keyCode] = ImGuiKey_Backslash;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::NUMENTER.keyCode] = ImGuiKey_KeypadEnter;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::EQUAL.keyCode] = ImGuiKey_Equal;
+    ImGuiManager::APPKEYS_TO_IMGUI_NAMEDKEYS[Keys::FWDDEL.keyCode] = ImGuiKey_None;
+}
 
 const StringID ImGuiManager::TEXTURE_PARAM_NAME{ TCHAR("textureAtlas") };
 const NameString ImGuiManager::IMGUI_SHADER_NAME{ TCHAR("DrawImGui") };
@@ -53,6 +175,8 @@ void ImGuiManager::initialize(ImGuiManagerOptions opts)
 {
     debugAssertf(!opts.bEnableViewport, "Viewport option is not supported!");
     IMGUI_CHECKVERSION();
+    CALL_ONCE(setupImGuiNamedKeyMapping);
+
     if (parentGuiManager)
     {
         parentGuiManager->setCurrentContext();
@@ -233,30 +357,6 @@ void ImGuiManager::setupInputs()
 {
     ImGuiIO &io = GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-
-    // Keyboard mapping. ImGui will use those indices to peek into the io.KeysDown[] array.
-    io.KeyMap[ImGuiKey_Tab] = Keys::TAB.keyCode;
-    io.KeyMap[ImGuiKey_LeftArrow] = Keys::LEFT.keyCode;
-    io.KeyMap[ImGuiKey_RightArrow] = Keys::RIGHT.keyCode;
-    io.KeyMap[ImGuiKey_UpArrow] = Keys::UP.keyCode;
-    io.KeyMap[ImGuiKey_DownArrow] = Keys::DOWN.keyCode;
-    io.KeyMap[ImGuiKey_PageUp] = Keys::PAGEUP.keyCode;
-    io.KeyMap[ImGuiKey_PageDown] = Keys::PAGEDOWN.keyCode;
-    io.KeyMap[ImGuiKey_Home] = Keys::HOME.keyCode;
-    io.KeyMap[ImGuiKey_End] = Keys::END.keyCode;
-    io.KeyMap[ImGuiKey_Insert] = Keys::INS.keyCode;
-    io.KeyMap[ImGuiKey_Delete] = Keys::DEL.keyCode;
-    io.KeyMap[ImGuiKey_Backspace] = Keys::BACKSPACE.keyCode;
-    io.KeyMap[ImGuiKey_Space] = Keys::SPACE.keyCode;
-    io.KeyMap[ImGuiKey_Enter] = Keys::ENTER.keyCode;
-    io.KeyMap[ImGuiKey_Escape] = Keys::ESC.keyCode;
-    io.KeyMap[ImGuiKey_KeyPadEnter] = Keys::NUMENTER.keyCode;
-    io.KeyMap[ImGuiKey_A] = Keys::A.keyCode;
-    io.KeyMap[ImGuiKey_C] = Keys::C.keyCode;
-    io.KeyMap[ImGuiKey_V] = Keys::V.keyCode;
-    io.KeyMap[ImGuiKey_X] = Keys::X.keyCode;
-    io.KeyMap[ImGuiKey_Y] = Keys::Y.keyCode;
-    io.KeyMap[ImGuiKey_Z] = Keys::Z.keyCode;
 
     io.ClipboardUserData = this;
     io.GetClipboardTextFn = &ImGuiManager::getClipboard;
@@ -667,11 +767,11 @@ bool ImGuiManager::inputKey(Keys::StateKeyType key, Keys::StateInfoType state, c
 
     if (Keys::isMouseKey(key->keyCode))
     {
-        io.MouseDown[key->keyCode - Keys::LMB.keyCode] = state.isPressed;
+        io.AddMouseButtonEvent(key->keyCode - Keys::LMB.keyCode, state.isPressed);
     }
     else
     {
-        io.KeysDown[key->keyCode] = state.isPressed;
+        io.AddKeyEvent(APPKEYS_TO_IMGUI_NAMEDKEYS[key->keyCode], state.isPressed);
 
         Utf32 keyChar = inputSystem->keyChar(*key);
         if (state.keyWentDown && keyChar != 0)
@@ -712,11 +812,12 @@ bool ImGuiManager::analogKey(AnalogStates::StateKeyType key, AnalogStates::State
     switch (key)
     {
     case AnalogStates::ScrollWheelX:
-        io.MouseWheelH = state.currentValue;
+        // It is for some reason inverted in ImGui -1 means to right, +1 means to left
+        io.AddMouseWheelEvent(-state.currentValue, 0.0f);
         return true;
         break;
     case AnalogStates::ScrollWheelY:
-        io.MouseWheel = state.currentValue;
+        io.AddMouseWheelEvent(0.0f, state.currentValue);
         return true;
         break;
     default:
@@ -730,7 +831,7 @@ void ImGuiManager::updateMouse(Short2D absPos, Short2D widgetRelPos, const Input
     setCurrentContext();
     ImGuiIO &io = GetIO();
 
-    io.MousePos = ImVec2(widgetRelPos.x, widgetRelPos.y);
+    io.AddMousePosEvent(widgetRelPos.x, widgetRelPos.y);
 }
 
 void ImGuiManager::mouseEnter(Short2D absPos, Short2D widgetRelPos, const InputSystem *inputSystem)

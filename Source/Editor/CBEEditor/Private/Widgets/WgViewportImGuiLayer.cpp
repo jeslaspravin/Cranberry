@@ -11,6 +11,7 @@
 
 #include "Widgets/WgViewportImGuiLayer.h"
 #include "Widgets/ImGui/ImGuiLib/imgui.h"
+#include "Widgets/ImGui/ImGuiLib/imgui_internal.h"
 #include "Widgets/WidgetDrawContext.h"
 #include "Widgets/WidgetWindow.h"
 #include "WorldViewport.h"
@@ -32,17 +33,35 @@ void WgViewportImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
         viewportRegion.maxBound.x = Math::max(0, int16(pos.x + viewportSize.x));
         viewportRegion.maxBound.y = Math::max(0, int16(pos.y + viewportSize.y));
 
+        ImGui::PushStyleColor(ImGuiCol_Text, ColorConst::RED);
+        ImGui::PushStyleColor(ImGuiCol_Border, ColorConst::GREEN);
         if (ImGui::IsWindowHovered())
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, ColorConst::RED);
-            ImGui::PushStyleColor(ImGuiCol_Border, ColorConst::GREEN);
             ImGui::Text("Viewport hovered");
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && ImGui::GetIO().MouseDownDurationPrev[ImGuiMouseButton_Right] <= 0.25f)
             {
                 ImGui::Text("Viewport right clicked");
             }
-            ImGui::PopStyleColor(2);
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+            {
+                ImGui::FocusWindow(ImGui::GetCurrentWindow());
+            }
         }
+        if (ImGui::IsWindowFocused())
+        {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImGui::IsWindowHovered())
+            {
+                ImGui::FocusWindow(ImGui::GetCurrentContext()->HoveredWindow);
+            }
+
+            if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+            {
+                ImGui::FocusWindow(ImGui::GetCurrentWindow());
+                ImGui::Text("Viewport right dragged");
+            }
+        }
+        ImGui::PopStyleColor(2);
     }
     ImGui::End();
 }

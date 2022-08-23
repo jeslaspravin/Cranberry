@@ -55,6 +55,7 @@ class APPLICATION_EXPORT ImGuiManager
 public:
     // ImGui flags
     static const int32 SIMPLE_READONLY_WINDOWFLAGS;
+    static int32 APPKEYS_TO_IMGUI_NAMEDKEYS[512];
 
 private:
     static const StringID TEXTURE_PARAM_NAME;
