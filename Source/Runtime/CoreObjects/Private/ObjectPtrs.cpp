@@ -44,7 +44,7 @@ Object *ObjectPath::getObject() const
     Object *obj = get(fullPath.getChar());
     if (!isValid(obj))
     {
-        obj = load(fullPath);
+        obj = load(fullPath, nullptr);
     }
     if (isValid(obj) && INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx)
     {

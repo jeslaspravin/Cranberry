@@ -82,6 +82,11 @@ public:
             allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(ptr);
             objectId = ptr->getStringID();
         }
+        else
+        {
+            reset();
+        }
+        return *this;
     }
 
     // Explicit copy and move assignment needed as compiler generates them without matching template

@@ -48,8 +48,10 @@ void PackageSaver::setupContainedObjs()
     }
 }
 
-void PackageSaver::serializeObject(cbe::Object *obj)
+void PackageSaver::serializeObject(cbe::WeakObjPtr<cbe::Object> obj)
 {
+    debugAssert(obj.isValid());
+
     /**
      * If transient we store the object as part of package but never serialize it.
      * This is to allow us to do pointer fix ups if transient object is available while loading

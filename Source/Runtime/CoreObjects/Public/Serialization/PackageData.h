@@ -11,14 +11,7 @@
 
 #pragma once
 
-#include "String/String.h"
-#include "String/StringID.h"
-#include "CBEObjectTypes.h"
-
-namespace cbe
-{
-class Object;
-}
+#include "ObjectPtrs.h"
 
 inline constexpr static const uint32 PACKAGE_SERIALIZER_VERSION = 0;
 inline constexpr static const uint32 PACKAGE_SERIALIZER_CUTOFF_VERSION = 0;
@@ -36,7 +29,7 @@ struct PackageDependencyData
     CBEClass clazz;
 
     // Loaded/saving object
-    cbe::Object *object = nullptr;
+    cbe::WeakObjPtr<cbe::Object> object;
 };
 
 template <ArchiveTypeName ArchiveType>
@@ -60,7 +53,7 @@ struct PackageContainedData
     SizeT streamSize;
 
     // Loaded/saving object
-    cbe::Object *object = nullptr;
+    cbe::WeakObjPtr<cbe::Object> object;
 };
 
 template <ArchiveTypeName ArchiveType>

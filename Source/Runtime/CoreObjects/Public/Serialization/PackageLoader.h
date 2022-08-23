@@ -55,6 +55,7 @@ public:
      */
     void prepareLoader();
     EPackageLoadSaveResult load();
+    void unload();
 
     FORCE_INLINE cbe::Package *getPackage() const { return package; }
     FORCE_INLINE const std::vector<PackageContainedData> &getContainedObjects() const { return containedObjects; }

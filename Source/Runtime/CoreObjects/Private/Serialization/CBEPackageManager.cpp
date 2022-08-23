@@ -73,7 +73,7 @@ cbe::Package *Package::createPackage(const String &relativePath, const String &c
     return package;
 }
 
-Object *load(String objectPath)
+Object *load(String objectPath, CBEClass clazz)
 {
     CBEPackageManager &packageManager = CoreObjectsModule::packageManager();
 
@@ -81,11 +81,11 @@ Object *load(String objectPath)
     // If no package path, find a package that has this object name or path
     if (packagePath.empty())
     {
-        String objPath = packageManager.findObject(objectPath);
+        String objPath = packageManager.findObject(objectPath, clazz);
         if (objPath.empty())
         {
             packageManager.refreshPackages();
-            objPath = packageManager.findObject(objectPath);
+            objPath = packageManager.findObject(objectPath, clazz);
         }
         if (objPath.empty())
         {
@@ -138,18 +138,18 @@ Object *load(String objectPath)
     return obj;
 }
 
-Object *getOrLoad(String objectPath)
+Object *getOrLoad(String objectPath, CBEClass clazz)
 {
     String packagePath = ObjectPathHelper::getPackagePath(objectPath.getChar());
     // If no package path, find a package that has this object name or path
     if (packagePath.empty())
     {
         CBEPackageManager &packageManager = CoreObjectsModule::packageManager();
-        String objPath = packageManager.findObject(objectPath);
+        String objPath = packageManager.findObject(objectPath, clazz);
         if (objPath.empty())
         {
             packageManager.refreshPackages();
-            objPath = packageManager.findObject(objectPath);
+            objPath = packageManager.findObject(objectPath, clazz);
         }
         if (objPath.empty())
         {
@@ -169,7 +169,7 @@ Object *getOrLoad(String objectPath)
 
     if (!obj || BIT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_PackageLoadPending))
     {
-        return load(objectPath);
+        return load(objectPath, clazz);
     }
     return obj;
 }
@@ -208,49 +208,103 @@ bool save(Object *obj)
         LOG_WARN("ObjectHelper", "Saved package %s with minor warnings", package->getName());
     }
     CLEAR_BITS(INTERNAL_ObjectCoreAccessors::getFlags(obj), EObjectFlagBits::ObjFlag_PackageDirty);
+
+    // This inserts the package into package manager if it is not present before
+    CoreObjectsModule::packageManager().registerContentRoot(package->getPackageRoot());
     return true;
 }
 } // namespace cbe
 
-void CBEPackageManager::readPackagesIn(const String &contentDir)
+CBEPackageManager::~CBEPackageManager()
 {
-    std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + cbe::PACKAGE_EXT);
-    for (const String &packageFile : packageFiles)
+    for (const String &contentDir : contentDirs)
     {
-        setupPackage(packageFile, contentDir);
+        removePackagesFrom(contentDir);
     }
 }
 
-void CBEPackageManager::removePackagesFrom(const String &contentDir)
+void CBEPackageManager::registerContentRoot(const String &contentDir)
 {
-    for (auto itr = packageToLoader.begin(); itr != packageToLoader.end();)
+    String cleanContentDir = PathFunctions::asGenericPath(contentDir);
+    if (contentDirs.insert(cleanContentDir).second)
     {
-        if (itr->second->getPackage()->getPackageRoot() == contentDir)
+        readPackagesIn(cleanContentDir);
+    }
+    else
+    {
+        refreshPackages();
+    }
+}
+
+void CBEPackageManager::unregisterContentRoot(const String &contentDir)
+{
+    String cleanContentDir = PathFunctions::asGenericPath(contentDir);
+    contentDirs.erase(cleanContentDir);
+    removePackagesFrom(cleanContentDir);
+}
+
+void CBEPackageManager::onObjectDeleted(cbe::Object *obj)
+{
+    debugAssert(obj);
+
+    if (cbe::Package *package = cbe::cast<cbe::Package>(obj))
+    {
+        auto packageLoaderItr = packageToLoader.find(package->getStringID());
+        if (packageLoaderItr != packageToLoader.end())
         {
-            std::erase(allFoundPackages, itr->second->getPackage()->getName());
-            for (const PackageContainedData &containedData : itr->second->getContainedObjects())
-            {
-                if (containedData.object)
-                {
-                    std::erase(allFoundObjects, containedData.object->getFullPath());
-                }
-                else
-                {
-                    std::erase(
-                        allFoundObjects,
-                        itr->second->getPackage()->getFullPath() + ObjectPathHelper::RootObjectSeparator + containedData.objectPath
-                    );
-                }
-            }
-            itr->second->getPackage()->beginDestroy();
-            delete itr->second;
-            itr = packageToLoader.erase(itr);
+            clearPackage(packageLoaderItr->second);
+            packageToLoader.erase(packageLoaderItr);
         }
-        else
+        return;
+    }
+
+    cbe::Object *outerMost = obj->getOuterMost();
+    if (cbe::Package *package = cbe::cast<cbe::Package>(outerMost))
+    {
+        auto packageLoaderItr = packageToLoader.find(package->getStringID());
+        if (packageLoaderItr != packageToLoader.end())
         {
-            ++itr;
+            packageLoaderItr->second->unload();
         }
     }
+}
+
+String CBEPackageManager::findObject(const String &objectPath, CBEClass clazz) const
+{
+    if (clazz == nullptr)
+    {
+        auto itr = std::find_if(
+            allFoundObjects.cbegin(), allFoundObjects.cend(),
+            [&objectPath](const FoundObjectsInfo &foundInfo)
+            {
+                return foundInfo.fullPath.find(objectPath) != String::npos;
+            }
+        );
+        return (itr != allFoundObjects.cend()) ? itr->fullPath : TCHAR("");
+    }
+
+    std::vector<const FoundObjectsInfo *> nameMatchedObjs;
+    // Highly unlikely that 32 objects matches per name
+    nameMatchedObjs.reserve(Math::min(32, allFoundObjects.size()));
+    for (const FoundObjectsInfo &foundInfo : allFoundObjects)
+    {
+        if (foundInfo.fullPath.find(objectPath) != String::npos)
+        {
+            nameMatchedObjs.emplace_back(&foundInfo);
+            if (foundInfo.objClass == clazz)
+            {
+                return foundInfo.fullPath;
+            }
+        }
+    }
+    for (const FoundObjectsInfo *foundInfo : nameMatchedObjs)
+    {
+        if (PropertyHelper::isChildOf(foundInfo->objClass, clazz))
+        {
+            return foundInfo->fullPath;
+        }
+    }
+    return TCHAR("");
 }
 
 void CBEPackageManager::refreshPackages()
@@ -269,6 +323,32 @@ void CBEPackageManager::refreshPackages()
     }
 }
 
+void CBEPackageManager::readPackagesIn(const String &contentDir)
+{
+    std::vector<String> packageFiles = FileSystemFunctions::listFiles(contentDir, true, String("*.") + cbe::PACKAGE_EXT);
+    for (const String &packageFile : packageFiles)
+    {
+        setupPackage(packageFile, contentDir);
+    }
+}
+
+void CBEPackageManager::removePackagesFrom(const String &contentDir)
+{
+    for (auto itr = packageToLoader.begin(); itr != packageToLoader.end();)
+    {
+        if (itr->second->getPackage()->getPackageRoot() == contentDir)
+        {
+            itr->second->getPackage()->beginDestroy();
+            clearPackage(itr->second);
+            itr = packageToLoader.erase(itr);
+        }
+        else
+        {
+            ++itr;
+        }
+    }
+}
+
 void CBEPackageManager::setupPackage(const String &packageFilePath, const String &contentDir)
 {
     String packagePath = ObjectPathHelper::packagePathFromFilePath(packageFilePath, contentDir);
@@ -282,38 +362,33 @@ void CBEPackageManager::setupPackage(const String &packageFilePath, const String
     // Add all objects
     for (const PackageContainedData &containedData : loader->getContainedObjects())
     {
-        allFoundObjects.emplace_back(packagePath + ObjectPathHelper::RootObjectSeparator + containedData.objectPath);
+        allFoundObjects.emplace_back(
+            packagePath + ObjectPathHelper::RootObjectSeparator + containedData.objectPath, packagePath.getChar(), containedData.clazz
+        );
     }
 }
 
-CBEPackageManager::~CBEPackageManager()
+void CBEPackageManager::clearPackage(PackageLoader *loader)
 {
-    for (const String &contentDir : contentDirs)
+    std::erase(allFoundPackages, loader->getPackage()->getName());
+    for (const PackageContainedData &containedData : loader->getContainedObjects())
     {
-        removePackagesFrom(contentDir);
-    }
-}
-
-void CBEPackageManager::registerContentRoot(const String &contentDir)
-{
-    contentDirs.insert(contentDir);
-    readPackagesIn(contentDir);
-}
-
-void CBEPackageManager::unregisterContentRoot(const String &contentDir)
-{
-    contentDirs.erase(contentDir);
-    removePackagesFrom(contentDir);
-}
-
-String CBEPackageManager::findObject(const String &objectPath) const
-{
-    auto itr = std::find_if(
-        allFoundObjects.cbegin(), allFoundObjects.cend(),
-        [&objectPath](const String &otherObjectPath)
+        String fullObjPath;
+        if (containedData.object.isValid())
         {
-            return otherObjectPath.find(objectPath) != String::npos;
+            fullObjPath = containedData.object->getFullPath();
         }
-    );
-    return (itr != allFoundObjects.cend()) ? *itr : TCHAR("");
+        else
+        {
+            fullObjPath = loader->getPackage()->getFullPath() + ObjectPathHelper::RootObjectSeparator + containedData.objectPath;
+        }
+        std::erase_if(
+            allFoundObjects,
+            [&fullObjPath](const FoundObjectsInfo &foundInfo)
+            {
+                return foundInfo.fullPath == fullObjPath;
+            }
+        );
+    }
+    delete loader;
 }
