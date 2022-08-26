@@ -72,7 +72,7 @@ private:
     TransformComponent *rootComponent;
     // will not contains actor entry
     META_ANNOTATE()
-    std::map<TransformComponent *, TransformComponent *> componentAttachedTo;
+    std::unordered_map<TransformComponent *, TransformComponent *> componentAttachedTo;
 
 public:
     ActorPrefab()
@@ -93,6 +93,11 @@ public:
     Object *modifyComponent(Object *modifyingComp);
     void onActorFieldModify(const FieldProperty *prop, Actor *actor);
     void onActorFieldReset(const FieldProperty *prop, Actor *actor);
+    bool copyFrom(ActorPrefab *otherPrefab);
+    FORCE_INLINE bool copyCompatible(ActorPrefab *otherPrefab) const
+    {
+        return otherPrefab->actorClass == actorClass && otherPrefab->parentPrefab == parentPrefab;
+    }
 
     void setRootComponent(TransformComponent *component);
     void setComponentAttachedTo(TransformComponent *attachingComp, TransformComponent *attachedToComp);
@@ -105,20 +110,22 @@ public:
     Object *addComponent(ObjectTemplate *compTemplate, const String &compName);
     void removeComponent(Object *comp);
 
-    ActorPrefab *getParentPrefab() const { return parentPrefab; }
+    FORCE_INLINE CBEClass getClass() const { return actorClass; }
+    FORCE_INLINE ActorPrefab *getParentPrefab() const { return parentPrefab; }
     const std::vector<ObjectTemplate *> &getPrefabComponents() const { return components; }
     const std::vector<ComponentOverrideInfo> &getOverridenComponents() const { return componentOverrides; }
     Actor *getActorTemplate() const;
     TransformComponent *getRootComponent() const;
+    TransformComponent *getAttachedToComp(TransformComponent *component) const;
 
     /* cbe::Object overrides */
     ObjectArchive &serialize(ObjectArchive &ar) override;
     /* Overrides ends */
 
     // Helper functions
-    static ActorPrefab *prefabFromActorTemplate(ObjectTemplate *actorTemplate);
-    static ActorPrefab *prefabFromCompTemplate(ObjectTemplate *compTemplate);
-    static ObjectTemplate *objectTemplateFromObj(Object *obj);
+    static ActorPrefab *prefabFromActorTemplate(const ObjectTemplate *actorTemplate);
+    static ActorPrefab *prefabFromCompTemplate(const ObjectTemplate *compTemplate);
+    static ObjectTemplate *objectTemplateFromObj(const Object *obj);
     // initializes world actor prefab by connecting all attachments
     static void initializeActor(ActorPrefab *inPrefab);
 

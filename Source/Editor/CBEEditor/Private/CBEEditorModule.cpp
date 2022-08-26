@@ -57,17 +57,17 @@ void CBEEditorModule::release()
 
 DelegateHandle CBEEditorModule::addMenuDrawCallback(const TChar *menuName, ImGuiDrawInterfaceCallback::SingleCastDelegateType callback) const
 {
-    if (cbe::GCBEditorEngine && cbe::GCBEditorEngine->editorLayer)
+    if (cbe::gCBEditorEngine && cbe::gCBEditorEngine->editorLayer)
     {
-        return cbe::GCBEditorEngine->editorLayer->addMenuDrawExtender(menuName, callback);
+        return cbe::gCBEditorEngine->editorLayer->addMenuDrawExtender(menuName, callback);
     }
     return {};
 }
 
 void CBEEditorModule::removeMenuDrawCallback(const TChar *menuName, DelegateHandle handle) const
 {
-    if (cbe::GCBEditorEngine && cbe::GCBEditorEngine->editorLayer)
+    if (cbe::gCBEditorEngine && cbe::gCBEditorEngine->editorLayer)
     {
-        cbe::GCBEditorEngine->editorLayer->removeMenuExtender(menuName, handle);
+        cbe::gCBEditorEngine->editorLayer->removeMenuExtender(menuName, handle);
     }
 }

@@ -63,8 +63,14 @@ public:
     {
         return cast<T>(templateObj);
     }
+    FORCE_INLINE CBEClass getClass() const { return objectClass; }
+    FORCE_INLINE ObjectTemplate *getParentTemplate() const { return parentTemplate; }
+
     void onFieldModified(const FieldProperty *prop, Object *obj);
     void onFieldReset(const FieldProperty *prop, Object *obj);
+
+    // Copies templateObj and data necessary to serialize this ObjectTemplate with same values as otherTemplate
+    bool copyFrom(ObjectTemplate *otherTemplate);
 
 private:
     void createTemplate(CBEClass clazz, const TChar *name);

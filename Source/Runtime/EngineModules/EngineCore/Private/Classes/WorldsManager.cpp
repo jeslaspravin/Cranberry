@@ -27,7 +27,12 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
         }
         unloadWorld(mainWorld);
         mainWorld = world;
-        mainWorldInfo.renderScene = std::make_shared<EngineRenderScene>(mainWorld);
+        mainRenderWorld = mainWorld;
+#if EDITOR_BUILD
+        // TODO(Jeslas) : Create copy of main world for editing
+#endif
+        // TODO(Jeslas) : Initialize main renderable world to make it suitable for playing or rendering
+        mainWorldInfo.renderScene = std::make_shared<EngineRenderScene>(mainRenderWorld);
         onWorldInitEvent().invoke(world, true);
         return mainWorld;
     }

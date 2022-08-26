@@ -56,6 +56,6 @@ public:
     /* Override ends */
 };
 
-CBEEDITOR_EXPORT extern EditorEngine *GCBEditorEngine;
+CBEEDITOR_EXPORT extern EditorEngine *gCBEditorEngine;
 
 } // namespace cbe
