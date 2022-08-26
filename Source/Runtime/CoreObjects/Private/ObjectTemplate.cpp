@@ -78,6 +78,7 @@ ObjectArchive &ObjectTemplate::serialize(ObjectArchive &ar)
 
     ar << parentTemplate;
     ar << objectName;
+    // objectClass will be set inside createTemplate when loading
     CBEClass clazz = objectClass;
     ar << clazz;
     if (ar.isLoading())
@@ -162,6 +163,34 @@ void ObjectTemplate::onFieldReset(const FieldProperty *prop, Object *obj)
     TemplateObjectEntry &entry = objectEntries[objName];
     entry.modifiedFields.erase(prop->name);
     markDirty(this);
+}
+
+bool ObjectTemplate::copyFrom(ObjectTemplate *otherTemplate)
+{
+    if (objectClass != otherTemplate->objectClass || parentTemplate != otherTemplate->parentTemplate || objectName != otherTemplate->objectName)
+    {
+        return false;
+    }
+
+    // Copy all values first
+    cbe::deepCopy(otherTemplate->templateObj, templateObj, 0, 0, false);
+    objectEntries.clear();
+    objectEntries.reserve(otherTemplate->objectEntries.size());
+    // Check if each object entry names matches this
+    for (std::pair<const NameString, TemplateObjectEntry> &entry : otherTemplate->objectEntries)
+    {
+        Object *thisEntryObj = get(ObjectPathHelper::getFullPath(entry.first.toString().getChar(), this).getChar());
+        if (thisEntryObj == nullptr)
+        {
+            LOG_WARN("ObjectTemplate", "ObjectTemplate %s does not have sub-object named %s", getFullPath(), entry.first);
+        }
+        else
+        {
+            objectEntries.emplace(entry);
+        }
+    }
+    markDirty(this);
+    return true;
 }
 
 void ObjectTemplate::createTemplate(CBEClass clazz, const TChar *name)

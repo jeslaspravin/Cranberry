@@ -202,6 +202,149 @@ cbe::Object *ActorPrefab::modifyComponent(Object *modifyingComp)
     return modifyingComp;
 }
 
+bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
+{
+    if (!copyCompatible(otherPrefab))
+    {
+        return false;
+    }
+
+    bool bCopiedActorTemplate = actorTemplate->copyFrom(otherPrefab->actorTemplate);
+    if (!bCopiedActorTemplate)
+    {
+        LOG_ERROR("ActorPrefab", "Cannot copy mismatched actor templates[To: %s, From: %s]", getFullPath(), otherPrefab->getFullPath());
+        return false;
+    }
+
+    // For setting up new root in this prefab
+    TransformComponent *otherPrefabRoot = otherPrefab->getRootComponent();
+
+    // Copy/Add all prefab created components first attachments will be handled at last
+    // First have to create all not available components so that copy can reference it later
+    std::unordered_set<ObjectTemplate *> compsToRemove(components.cbegin(), components.cend());
+    for (ObjectTemplate *otherComp : otherPrefab->components)
+    {
+        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherComp->getName().getChar(), this).getChar());
+        if (thisComp == nullptr)
+        {
+            if (ObjectTemplate *parentTemplate = otherComp->getParentTemplate())
+            {
+                thisComp = objectTemplateFromObj(addComponent(parentTemplate, otherComp->getName()));
+            }
+            else
+            {
+                thisComp = objectTemplateFromObj(addComponent(otherComp->getClass(), otherComp->getName()));
+            }
+            debugAssert(thisComp);
+        }
+        else
+        {
+            debugAssert(compsToRemove.contains(thisComp));
+        }
+    }
+    for (ObjectTemplate *otherComp : otherPrefab->components)
+    {
+        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherComp->getName().getChar(), this).getChar());
+        bool bIsCopied = thisComp->copyFrom(otherComp);
+        compsToRemove.erase(thisComp);
+        if (!bIsCopied)
+        {
+            LOG_ERROR("ActorPrefab", "Failed to copy component templates[To: %s, From: %s]", thisComp->getFullPath(), otherComp->getFullPath());
+            return false;
+        }
+
+        // Setup new root component
+        if (otherPrefabRoot == otherComp->getTemplateAs<TransformComponent>())
+        {
+            setRootComponent(thisComp->getTemplateAs<TransformComponent>());
+        }
+    }
+
+    // Comp or add overridden components, In overridden case there is no delete components
+    // First create overrides that does not exists
+    for (const ComponentOverrideInfo &otherOverrides : otherPrefab->componentOverrides)
+    {
+        auto compOverrideItr = std::find_if(
+            componentOverrides.begin(), componentOverrides.end(),
+            [&otherOverrides](const ComponentOverrideInfo &overrideInfo)
+            {
+                return getTemplateToOverride(overrideInfo) == getTemplateToOverride(otherOverrides);
+            }
+        );
+
+        if (compOverrideItr == componentOverrides.end())
+        {
+            LOG_ERROR("ActorPrefab", "Cannot find component override entry for %s", getTemplateToOverride(otherOverrides)->getFullPath());
+            return false;
+        }
+
+        ComponentOverrideInfo &thisCompOverride = *compOverrideItr;
+        if (thisCompOverride.overriddenTemplate == nullptr && otherOverrides.overriddenTemplate != nullptr)
+        {
+            modifyComponent(getTemplateToOverride(thisCompOverride)->getTemplate());
+            // Modify component would have populated thisCompOverride
+            debugAssert(thisCompOverride.overriddenTemplate);
+        }
+    }
+    for (const ComponentOverrideInfo &otherOverrides : otherPrefab->componentOverrides)
+    {
+        auto compOverrideItr = std::find_if(
+            componentOverrides.begin(), componentOverrides.end(),
+            [&otherOverrides](const ComponentOverrideInfo &overrideInfo)
+            {
+                return getTemplateToOverride(overrideInfo) == getTemplateToOverride(otherOverrides);
+            }
+        );
+
+        ComponentOverrideInfo &thisCompOverride = *compOverrideItr;
+        if (otherOverrides.overriddenTemplate == nullptr)
+        {
+            if (thisCompOverride.overriddenTemplate != nullptr)
+            {
+                LOG_WARN("ActorPrefab", "Removing overridden component when all modified field is reset is not supported yet!");
+            }
+            continue;
+        }
+
+        thisCompOverride.overriddenTemplate->copyFrom(otherOverrides.overriddenTemplate);
+        // Setup new root component
+        if (otherPrefabRoot == otherOverrides.overriddenTemplate->getTemplateAs<TransformComponent>())
+        {
+            setRootComponent(thisCompOverride.overriddenTemplate->getTemplateAs<TransformComponent>());
+        }
+    }
+
+    // Remove this prefab's components
+    for (ObjectTemplate *compTemplate : compsToRemove)
+    {
+        removeComponent(compTemplate->getTemplate());
+    }
+
+    componentAttachedTo.clear();
+    componentAttachedTo.reserve(otherPrefab->componentAttachedTo.size());
+    for (const std::pair<TransformComponent *const, TransformComponent *> &otherAttachedPair : otherPrefab->componentAttachedTo)
+    {
+        debugAssert(otherAttachedPair.first && otherAttachedPair.second);
+
+        TransformComponent *attachingComp = otherAttachedPair.first;
+        TransformComponent *attachedToComp = otherAttachedPair.second;
+        if (otherPrefab->isOwnedComponent(attachingComp))
+        {
+            attachingComp = get<TransformComponent>(ObjectPathHelper::getFullPath(attachingComp->getName().getChar(), this).getChar());
+        }
+        if (otherPrefab->isOwnedComponent(attachedToComp))
+        {
+            attachedToComp = get<TransformComponent>(ObjectPathHelper::getFullPath(attachedToComp->getName().getChar(), this).getChar());
+        }
+        // Below assert must not trigger as above component and overrides copy logics must create all necessary components
+        fatalAssert(attachingComp && attachedToComp);
+
+        setComponentAttachedTo(attachingComp, attachedToComp);
+    }
+    markDirty(this);
+    return true;
+}
+
 void ActorPrefab::setRootComponent(TransformComponent *component)
 {
     if (!isOwnedComponent(component))
@@ -381,6 +524,12 @@ TransformComponent *ActorPrefab::getRootComponent() const
 
     debugAssert(actorTemplate->getTemplateAs<Actor>()->rootComponent);
     return actorTemplate->getTemplateAs<Actor>()->rootComponent;
+}
+
+TransformComponent *ActorPrefab::getAttachedToComp(TransformComponent *component) const
+{
+    debugAssert(isValid(component) && componentAttachedTo.contains(component));
+    return componentAttachedTo.find(component)->second;
 }
 
 ObjectArchive &ActorPrefab::serialize(ObjectArchive &ar)
@@ -687,11 +836,41 @@ Actor *LogicComponent::getActor() const
         return actor;
     }
     // If stored inside prefab, Template will be subobject of Actor template itself
-    else if (ObjectTemplate *objTemplate = cast<ObjectTemplate>(getOuter()))
+    else if (ObjectTemplate *objTemplate = ActorPrefab::objectTemplateFromObj(this))
     {
-        ObjectTemplate *actorTemplate = cast<ObjectTemplate>(objTemplate->getOuter());
-        debugAssert(actorTemplate);
-        return actorTemplate->getTemplateAs<Actor>();
+        ActorPrefab *prefab = ActorPrefab::prefabFromCompTemplate(objTemplate);
+        debugAssert(prefab);
+        return prefab->getActorTemplate();
+    }
+    return nullptr;
+}
+
+cbe::TransformComponent *TransformComponent::getAttachedTo()
+{
+#if EDITOR_BUILD
+    // Will be null when not playing or when not attached to anything
+    if (attachedTo == nullptr)
+    {
+        ObjectTemplate *objTemplate = ActorPrefab::objectTemplateFromObj(this);
+        ActorPrefab *prefab = ActorPrefab::prefabFromCompTemplate(objTemplate);
+        World *world = getWorld();
+        if (objTemplate && prefab)
+        {
+            if (prefab->getRootComponent() != this)
+            {
+                return prefab->getAttachedToComp(this);
+            }
+            // If root component then world will have its attachment information
+            if (world && !EWorldState::isPlayState(world->getState()))
+            {
+                return world->getActorAttachedToComp(prefab->getActorTemplate());
+            }
+        }
+    }
+    else
+#endif
+    {
+        return attachedTo;
     }
     return nullptr;
 }
@@ -703,11 +882,11 @@ Actor *TransformComponent::getActor() const
         return actor;
     }
     // If stored inside prefab, Template will be subobject of Actor template itself
-    else if (ObjectTemplate *objTemplate = cast<ObjectTemplate>(getOuter()))
+    else if (ObjectTemplate *objTemplate = ActorPrefab::objectTemplateFromObj(this))
     {
-        ObjectTemplate *actorTemplate = cast<ObjectTemplate>(objTemplate->getOuter());
-        debugAssert(actorTemplate);
-        return actorTemplate->getTemplateAs<Actor>();
+        ActorPrefab *prefab = ActorPrefab::prefabFromCompTemplate(objTemplate);
+        debugAssert(prefab);
+        return prefab->getActorTemplate();
     }
     return nullptr;
 }
@@ -767,7 +946,7 @@ void Actor::removeComponent(Object *component)
                 if (World *world = getWorld())
                 {
                     std::vector<TransformComponent *> attachments;
-                    getWorld()->componentsAttachedTo(attachments, tfComp);
+                    getWorld()->getComponentsAttachedTo(attachments, tfComp);
                     // Just set the first child component of root as new root the world will fix up attachments
                     for (TransformComponent *attachment : attachments)
                     {

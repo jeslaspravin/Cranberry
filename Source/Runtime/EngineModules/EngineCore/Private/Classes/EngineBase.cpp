@@ -14,7 +14,7 @@
 #include "IApplicationModule.h"
 #include "ApplicationInstance.h"
 
-cbe::EngineBase *GCBEEngine = nullptr;
+cbe::EngineBase *gCBEEngine = nullptr;
 
 namespace cbe
 {
@@ -22,8 +22,8 @@ EngineBase::EngineBase()
 {
     if (BIT_NOT_SET(getFlags(), EObjectFlagBits::ObjFlag_Default))
     {
-        debugAssert(GCBEEngine == nullptr);
-        GCBEEngine = this;
+        debugAssert(gCBEEngine == nullptr);
+        gCBEEngine = this;
     }
 }
 

@@ -36,6 +36,23 @@ void Object::destroyObject()
     SET_BITS(flags, EObjectFlagBits::ObjFlag_Deleted);
 }
 
+void Object::beginDestroy()
+{
+    markReadyForDestroy();
+
+    CoreObjectsDB &objectsDb = CoreObjectsModule::objectsDB();
+
+    uint64 uniqNameSuffix = 0;
+    String newObjName = objectName + TCHAR("_Delete");
+    while (objectsDb.hasObject(ObjectPathHelper::getFullPath(newObjName.getChar(), objOuter).getChar()))
+    {
+        newObjName = objectName + TCHAR("_Delete") + String::toString(uniqNameSuffix);
+        uniqNameSuffix++;
+    }
+    // Rename it Immediately to allow other objects to replace this object with same name
+    INTERNAL_ObjectCoreAccessors::setOuterAndName(this, newObjName, objOuter, getType());
+}
+
 String Object::getFullPath() const { return ObjectPathHelper::getFullPath(this); }
 
 //////////////////////////////////////////////////////////////////////////
@@ -60,6 +77,10 @@ void INTERNAL_ObjectCoreAccessors::setOuterAndName(Object *object, const String 
     object->objOuter = outer;
 
     StringID newSid(ObjectPathHelper::getFullPath(newName.getChar(), outer));
+    fatalAssertf(
+        !objectsDb.hasObject(newSid), "Object cannot be renamed to another existing object! [Old name: %s, New name: %s]", object->getName(),
+        newName
+    );
     if (object->getStringID().isValid() && objectsDb.hasObject(object->getStringID()))
     {
         // Setting object name

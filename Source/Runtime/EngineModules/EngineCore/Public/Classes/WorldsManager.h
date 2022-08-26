@@ -45,6 +45,10 @@ public:
 private:
     META_ANNOTATE()
     World *mainWorld;
+
+    META_ANNOTATE(Transient)
+    World *mainRenderWorld;
+
     META_ANNOTATE()
     WorldInfo mainWorldInfo;
 

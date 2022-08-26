@@ -40,26 +40,26 @@ void CranberryEngineApp::onStart()
 #endif // EDITOR_BUILD
     fatalAssertf(bModulesLoaded, "Failed loading modules!");
     fatalAssertf(engineClass, "Engine class not found!");
-    // This will create and assigns GCBEEngine
+    // This will create and assigns gCBEEngine
     cbe::create(engineClass, TCHAR("CBEEngine"), coreObjModule->getTransientPackage(), cbe::EObjectFlagBits::ObjFlag_RootObject);
-    fatalAssertf(GCBEEngine, "Engine %s creation failed", engineClass->nameString);
+    fatalAssertf(gCBEEngine, "Engine %s creation failed", engineClass->nameString);
 
-    GCBEEngine->onStart();
+    gCBEEngine->onStart();
 
     tempTest();
 }
 
 void CranberryEngineApp::onTick()
 {
-    GCBEEngine->onTick();
+    gCBEEngine->onTick();
     // 8ms, Reduce if this is too much
     coreObjModule->getGC().collect(0.008f);
 }
 
 void CranberryEngineApp::onExit()
 {
-    GCBEEngine->onExit();
-    GCBEEngine->worldManager()->unloadAllWorlds();
+    gCBEEngine->onExit();
+    gCBEEngine->worldManager()->unloadAllWorlds();
     // Wait until all the dereferenced objects are cleared, Give as much time as it wants
     coreObjModule->getGC().collect(0.f);
     while (!coreObjModule->getGC().isGcComplete() || coreObjModule->getGC().getLastClearCount() > 0)
@@ -163,7 +163,7 @@ void tempTest()
         {
             cbe::save(obj);
         }
-        GCBEEngine->worldManager()->initWorld(cast<cbe::World>(objs[0]), true);
+        gCBEEngine->worldManager()->initWorld(cast<cbe::World>(objs[0]), true);
     }
 }
 

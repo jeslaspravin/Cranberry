@@ -116,7 +116,20 @@ public:
     void logicComponentAdded(Actor *actor, LogicComponent *logicComp);
     void logicComponentRemoved(Actor *actor, LogicComponent *logicComp);
 
-    void componentsAttachedTo(std::vector<TransformComponent *> &outAttaches, TransformComponent *component, bool bRecurse = false) const;
+    // Copies otherWorld into this world Updating any same actors, Creating new actors and deleting non existing actors
+    bool copyFrom(World *otherWorld);
+    // Merges other world into this world and renames duplicate named actors, bMoveActors true means all actors will be moved to this world
+    bool mergeWorld(World *otherWorld, bool bMoveActors);
+
+    // Calling in editor worlds is not efficient
+    void getComponentsAttachedTo(std::vector<TransformComponent *> &outAttaches, TransformComponent *component, bool bRecurse = false) const;
+
+    TransformComponent *getActorAttachedToComp(Actor *actor) const;
+    Actor *getActorAttachedTo(Actor *actor) const;
+
+    const std::vector<Actor *> &getActors() const { return actors; }
+
+    EWorldState::Type getState() const { return worldState; }
 
 private:
     // The in vector must be arranged from parent to children order
@@ -129,6 +142,12 @@ private:
     Actor *setupActorInternal(ActorPrefab *actorPrefab);
     void removeActor(Actor *actor);
 
+    void broadcastActorAdded(Actor *actor) const { onActorAdded.invoke(actor); }
+    void broadcastActorRemoved(Actor *actor) const { onActorRemoved.invoke(actor); }
+    void broadcastTfCompAdded(Object *tfComp) const { onTfCompAdded.invoke(tfComp); }
+    void broadcastTfCompRemoved(Object *tfComp) const { onTfCompRemoved.invoke(tfComp); }
+    void broadcastLogicCompAdded(Object *logicComp) const { onLogicCompAdded.invoke(logicComp); }
+    void broadcastLogicCompRemoved(Object *logicComp) const { onLogicCompRemoved.invoke(logicComp); }
 #if EDITOR_BUILD
     // For editor functionalities, check EditorHelpers to modify world in editor
     friend class EditorHelpers;

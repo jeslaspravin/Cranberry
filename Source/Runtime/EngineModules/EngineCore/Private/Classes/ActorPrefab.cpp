@@ -47,19 +47,19 @@ void ActorPrefab::onActorFieldReset(const FieldProperty *prop, Actor *actor)
 
 Actor *ActorPrefab::getActorTemplate() const { return actorTemplate->getTemplateAs<Actor>(); }
 
-ActorPrefab *ActorPrefab::prefabFromActorTemplate(ObjectTemplate *actorTemplate)
+ActorPrefab *ActorPrefab::prefabFromActorTemplate(const ObjectTemplate *actorTemplate)
 {
     // Outer of actor template must be actor prefab
     return actorTemplate ? cast<ActorPrefab>(actorTemplate->getOuter()) : nullptr;
 }
 
-ActorPrefab *ActorPrefab::prefabFromCompTemplate(ObjectTemplate *compTemplate)
+ActorPrefab *ActorPrefab::prefabFromCompTemplate(const ObjectTemplate *compTemplate)
 {
     // Outer of component template must be the actor template, Look up Component::getActor()
     return compTemplate ? cast<ActorPrefab>(compTemplate->getOuter()->getOuter()) : nullptr;
 }
 
-ObjectTemplate *ActorPrefab::objectTemplateFromObj(Object *obj) { return obj ? cast<ObjectTemplate>(obj->getOuter()) : nullptr; }
+ObjectTemplate *ActorPrefab::objectTemplateFromObj(const Object *obj) { return obj ? cast<ObjectTemplate>(obj->getOuter()) : nullptr; }
 
 bool ActorPrefab::isOwnedComponent(Object *comp) const { return prefabFromCompTemplate(objectTemplateFromObj(comp)) == this; }
 

@@ -61,10 +61,10 @@ private:
     TransformComponent *attachedTo = nullptr;
 
 public:
-    void attachComponent(TransformComponent *otherComp);
+    void attachComponent(TransformComponent *attachToComp);
     void detachComponent();
     void setAttachedTo(TransformComponent *otherComp) { attachedTo = otherComp; }
-    TransformComponent *getAttachedTo() const { return attachedTo; }
+    TransformComponent *getAttachedTo();
 
     World *getWorld() const;
     Actor *getActor() const;

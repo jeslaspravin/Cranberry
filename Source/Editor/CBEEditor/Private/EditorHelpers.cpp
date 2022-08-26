@@ -189,6 +189,8 @@ void EditorHelpers::postAddActorToWorld(cbe::World *world, cbe::ActorPrefab *pre
         debugAssert(overrideInfo.overriddenTemplate && overrideInfo.overriddenTemplate->getTemplate());
         componentAddedToWorld(world, actor, overrideInfo.overriddenTemplate->getTemplate());
     }
+
+    world->broadcastActorAdded(actor);
 }
 
 void EditorHelpers::removeActorFromWorld(cbe::World *world, cbe::Actor *actor)
@@ -236,11 +238,20 @@ void EditorHelpers::removeActorFromWorld(cbe::World *world, cbe::Actor *actor)
         debugAssert(overrideInfo.overriddenTemplate && overrideInfo.overriddenTemplate->getTemplate());
         componentRemovedFromWorld(world, actor, overrideInfo.overriddenTemplate->getTemplate());
     }
+    world->broadcastActorRemoved(actor);
 }
 
 void EditorHelpers::componentAddedToWorld(cbe::World *world, cbe::Actor *actor, cbe::Object *component)
 {
-    // Nothing to do now
+    cbe::TransformComponent *tfComponent = cbe::cast<cbe::TransformComponent>(component);
+    if (tfComponent)
+    {
+        world->broadcastTfCompAdded(component);
+    }
+    else
+    {
+        world->broadcastLogicCompAdded(component);
+    }
 }
 
 void EditorHelpers::componentRemovedFromWorld(cbe::World *world, cbe::Actor *actor, cbe::Object *component)
@@ -281,6 +292,11 @@ void EditorHelpers::componentRemovedFromWorld(cbe::World *world, cbe::Actor *act
                 ++actorAttachedToItr;
             }
         }
+        world->broadcastTfCompRemoved(component);
+    }
+    else
+    {
+        world->broadcastLogicCompRemoved(component);
     }
 }
 

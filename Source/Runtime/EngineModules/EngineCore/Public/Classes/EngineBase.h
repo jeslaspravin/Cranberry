@@ -44,4 +44,4 @@ public:
 
 } // namespace cbe
 
-ENGINECORE_EXPORT extern cbe::EngineBase *GCBEEngine;
+ENGINECORE_EXPORT extern cbe::EngineBase *gCBEEngine;

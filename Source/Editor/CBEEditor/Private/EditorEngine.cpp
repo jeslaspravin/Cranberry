@@ -27,14 +27,14 @@
 namespace cbe
 {
 
-EditorEngine *GCBEditorEngine = nullptr;
+EditorEngine *gCBEditorEngine = nullptr;
 
 EditorEngine::EditorEngine()
 {
     if (BIT_NOT_SET(getFlags(), EObjectFlagBits::ObjFlag_Default))
     {
-        debugAssert(GCBEditorEngine == nullptr);
-        GCBEditorEngine = this;
+        debugAssert(gCBEditorEngine == nullptr);
+        gCBEditorEngine = this;
     }
 }
 
@@ -61,7 +61,7 @@ void EditorEngine::engineStart()
     wgImgui->getImGuiManager().addLayer(std::static_pointer_cast<IImGuiLayer>(contentsLayer));
     IApplicationModule::get()->getApplication()->getMainWindow()->setContent(std::static_pointer_cast<WidgetBase>(wgImgui));
 
-    worldInitHandle = GCBEEngine->worldManager()->onWorldInitEvent().bindLambda(
+    worldInitHandle = gCBEEngine->worldManager()->onWorldInitEvent().bindLambda(
         [this](World *world, bool bIsMain)
         {
             if (bIsMain)
@@ -76,7 +76,7 @@ void EditorEngine::engineTick(float timeDelta) {}
 
 void EditorEngine::engineExit()
 {
-    GCBEEngine->worldManager()->onWorldInitEvent().unbind(worldInitHandle);
+    gCBEEngine->worldManager()->onWorldInitEvent().unbind(worldInitHandle);
 
     wgImgui.reset();
     editorLayer.reset();

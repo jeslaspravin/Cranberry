@@ -23,12 +23,12 @@ namespace cbe
 
 World *LogicComponent::getWorld() const { return getActor()->getWorld(); }
 
-void TransformComponent::attachComponent(TransformComponent *otherComp)
+void TransformComponent::attachComponent(TransformComponent *attachToComp)
 {
-    if (attachedTo != otherComp)
+    if (attachedTo != attachToComp)
     {
-        attachedTo = otherComp;
-        getWorld()->tfAttachmentChanged(this, otherComp);
+        attachedTo = attachToComp;
+        getWorld()->tfAttachmentChanged(this, attachToComp);
     }
 }
 

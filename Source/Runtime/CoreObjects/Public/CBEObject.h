@@ -113,7 +113,7 @@ public:
     virtual ~Object() = default;
 
     void destroyObject();
-    void beginDestroy() { markReadyForDestroy(); }
+    void beginDestroy();
     /**
      * This gets called after complete construction from either Class or something else(Example after load or after construction from template)
      * This does not mean it will not get called before that. It has to be handled after checking object flags
