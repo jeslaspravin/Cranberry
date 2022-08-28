@@ -224,16 +224,16 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
     std::unordered_set<ObjectTemplate *> compsToRemove(components.cbegin(), components.cend());
     for (ObjectTemplate *otherComp : otherPrefab->components)
     {
-        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherComp->getName().getChar(), this).getChar());
+        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherComp->getName().getChar(), actorTemplate).getChar());
         if (thisComp == nullptr)
         {
             if (ObjectTemplate *parentTemplate = otherComp->getParentTemplate())
             {
-                thisComp = objectTemplateFromObj(addComponent(parentTemplate, otherComp->getName()));
+                thisComp = objectTemplateFromObj(addComponent(parentTemplate, otherComp->getTemplate()->getName()));
             }
             else
             {
-                thisComp = objectTemplateFromObj(addComponent(otherComp->getClass(), otherComp->getName()));
+                thisComp = objectTemplateFromObj(addComponent(otherComp->getClass(), otherComp->getTemplate()->getName()));
             }
             debugAssert(thisComp);
         }
@@ -244,7 +244,7 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
     }
     for (ObjectTemplate *otherComp : otherPrefab->components)
     {
-        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherComp->getName().getChar(), this).getChar());
+        ObjectTemplate *thisComp = get<ObjectTemplate>(ObjectPathHelper::getFullPath(otherComp->getName().getChar(), actorTemplate).getChar());
         bool bIsCopied = thisComp->copyFrom(otherComp);
         compsToRemove.erase(thisComp);
         if (!bIsCopied)
@@ -330,11 +330,12 @@ bool ActorPrefab::copyFrom(ActorPrefab *otherPrefab)
         TransformComponent *attachedToComp = otherAttachedPair.second;
         if (otherPrefab->isOwnedComponent(attachingComp))
         {
-            attachingComp = get<TransformComponent>(ObjectPathHelper::getFullPath(attachingComp->getName().getChar(), this).getChar());
+            attachingComp = get<TransformComponent>(ObjectPathHelper::getFullPath(attachingComp->getName().getChar(), actorTemplate).getChar());
         }
         if (otherPrefab->isOwnedComponent(attachedToComp))
         {
-            attachedToComp = get<TransformComponent>(ObjectPathHelper::getFullPath(attachedToComp->getName().getChar(), this).getChar());
+            attachedToComp
+                = get<TransformComponent>(ObjectPathHelper::getFullPath(attachedToComp->getName().getChar(), actorTemplate).getChar());
         }
         // Below assert must not trigger as above component and overrides copy logics must create all necessary components
         fatalAssert(attachingComp && attachedToComp);
@@ -676,13 +677,15 @@ void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
     {
         if (TransformComponent *tfComp = cast<TransformComponent>(comp))
         {
-#if DEV_BUILD
             if (tfComp != actor->rootComponent)
             {
                 auto attachedToItr = inPrefab->componentAttachedTo.find(tfComp);
-                alertAlways(attachedToItr != inPrefab->componentAttachedTo.end() && attachedToItr->second == tfComp->getAttachedTo());
+                alertAlways(attachedToItr != inPrefab->componentAttachedTo.end());
+                if (attachedToItr->second == tfComp->getAttachedTo())
+                {
+                    tfComp->setAttachedTo(attachedToItr->second);
+                }
             }
-#endif
             actor->transformComps.insert(tfComp);
         }
         else if (LogicComponent *logicComp = cast<LogicComponent>(comp))
@@ -700,6 +703,7 @@ void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
     }
     for (const ComponentOverrideInfo &overrideInfo : inPrefab->componentOverrides)
     {
+        debugAssertf(overrideInfo.overriddenTemplate, "World's ActorPrefab must have all of its component overridden!");
         addCompToActor(overrideInfo.overriddenTemplate->getTemplate());
     }
     debugAssert(
@@ -845,7 +849,7 @@ Actor *LogicComponent::getActor() const
     return nullptr;
 }
 
-cbe::TransformComponent *TransformComponent::getAttachedTo()
+cbe::TransformComponent *TransformComponent::canonicalAttachedTo()
 {
 #if EDITOR_BUILD
     // Will be null when not playing or when not attached to anything

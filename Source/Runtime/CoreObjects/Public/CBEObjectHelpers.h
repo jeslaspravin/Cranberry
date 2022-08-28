@@ -247,8 +247,15 @@ COREOBJECTS_EXPORT bool copyObject(CopyObjectOptions options);
 COREOBJECTS_EXPORT bool deepCopy(
     Object *fromObject, Object *toObject, EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0, bool bConstructToObject = true
 );
-COREOBJECTS_EXPORT Object *
-    duplicateObject(Object *fromObject, Object *newOuter, String newName = "", EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0);
+COREOBJECTS_EXPORT Object *duplicateCBEObject(
+    Object *fromObject, Object *newOuter, String newName = "", EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0
+);
+
+template <typename T, typename AsType = T>
+AsType *duplicateObject(T *fromObject, Object *newOuter, String newName = "", EObjectFlags additionalFlags = 0, EObjectFlags clearFlags = 0)
+{
+    return cast<AsType>(duplicateCBEObject(fromObject, newOuter, newName, additionalFlags, clearFlags));
+}
 
 /**
  * cbe::replaceObjectReferences - Replaces

@@ -64,7 +64,9 @@ public:
     void attachComponent(TransformComponent *attachToComp);
     void detachComponent();
     void setAttachedTo(TransformComponent *otherComp) { attachedTo = otherComp; }
-    TransformComponent *getAttachedTo();
+    FORCE_INLINE TransformComponent *getAttachedTo() const { return attachedTo; }
+    // Searches prefab or world to determine component's actual attachTo even when world is not being played
+    TransformComponent *canonicalAttachedTo();
 
     World *getWorld() const;
     Actor *getActor() const;
