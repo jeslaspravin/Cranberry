@@ -263,10 +263,11 @@ bool World::copyFrom(World *otherWorld)
         // Getting actor full path from actor to world relative path
         fullPath = ObjectPathHelper::getFullPath(ObjectPathHelper::getObjectPath(otherAttachmentPair.second.actor, otherWorld).getChar(), this);
         Actor *thisAttachedActor = get<Actor>(fullPath.getChar());
-        // Getting component full path from component to actor relative path
-        fullPath = ObjectPathHelper::getFullPath(
-            ObjectPathHelper::getObjectPath(otherAttachmentPair.second.component, otherAttachmentPair.second.actor).getChar(), thisAttachedActor
+        // Getting component full path from component to actor template relative path
+        fullPath = ObjectPathHelper::getObjectPath(
+            otherAttachmentPair.second.component, ActorPrefab::objectTemplateFromObj(otherAttachmentPair.second.actor)
         );
+        fullPath = ObjectPathHelper::getFullPath(fullPath.getChar(), ActorPrefab::objectTemplateFromObj(thisAttachedActor));
         TransformComponent *thisAttachedComp = get<TransformComponent>(fullPath.getChar());
 
         debugAssert(thisAttachingActor && thisAttachedActor && thisAttachedComp);
@@ -366,6 +367,7 @@ bool World::mergeWorld(World *otherWorld, bool bMoveActors)
                 = ActorAttachedToInfo{ thisAttachedPrefab->getActorTemplate(), thisAttachedComp };
         }
     }
+    return true;
 }
 
 void World::getComponentsAttachedTo(std::vector<TransformComponent *> &outAttaches, TransformComponent *component, bool bRecurse /*= false*/)
@@ -439,6 +441,27 @@ void World::updateWorldTf(const std::vector<TFHierarchyIdx> &idxsToUpdate)
     }
 }
 
+void World::prepareForPlay()
+{
+    debugAssert(!EWorldState::isPlayState(worldState));
+
+    actors.clear();
+    actors.reserve(actorPrefabs.size());
+    for (ActorPrefab *prefab : actorPrefabs)
+    {
+        setupActorInternal(prefab);
+        actors.emplace_back(prefab->getActorTemplate());
+    }
+
+    for (Actor *actor : getActors())
+    {
+        if (actorAttachedTo.contains(actor))
+        {
+            actor->attachActor(actorAttachedTo[actor].component);
+        }
+    }
+}
+
 Actor *World::addActor(CBEClass actorClass, const String &actorName, EObjectFlags flags, bool bDelayedInit)
 {
     if (EWorldState::isPlayState(worldState))
@@ -490,7 +513,7 @@ cbe::Actor *World::setupActorInternal(ActorPrefab *actorPrefab)
         actors.emplace_back(actor);
     }
     ActorPrefab::initializeActor(actorPrefab);
-    debugAssert(actor->getRootComponent()->getAttachedTo() == nullptr);
+    debugAssert(actor->getRootComponent() && actor->getRootComponent()->getAttachedTo() == nullptr);
 
     // Inserting each TransformComponent into global TF tree
     for (TransformComponent *actorTransformComp : actor->getTransformComponents())
@@ -500,7 +523,14 @@ cbe::Actor *World::setupActorInternal(ActorPrefab *actorPrefab)
     // Updating its attachments, Reason for separated setup is that transformComps will not be ordered from root to leafs
     for (TransformComponent *actorTransformComp : actor->getTransformComponents())
     {
-        tfAttachmentChanged(actorTransformComp, actorTransformComp->getAttachedTo());
+        // All none root must have its attachedTo setup at this point, Ignoring root component alone to not clear actorAttachedTo by mistake
+        if (actorTransformComp != actor->getRootComponent())
+        {
+            debugAssert(
+                actorTransformComp->getAttachedTo(), "TransformComponent %s is not root and not attached!", actorTransformComp->getName()
+            );
+            tfAttachmentChanged(actorTransformComp, actorTransformComp->getAttachedTo());
+        }
     }
 
     // Broadcast add events

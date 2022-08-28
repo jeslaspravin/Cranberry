@@ -26,7 +26,7 @@
 void WorldViewport::startSceneRender(Short2D viewportSize)
 {
     SharedPtr<EngineRenderScene> renderScene
-        = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.getAs<cbe::World>()) : nullptr;
+        = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.get()) : nullptr;
     if (renderScene)
     {
         renderScene->renderTheScene(viewportSize, {});
@@ -39,7 +39,7 @@ void WorldViewport::drawBackBuffer(
 )
 {
     SharedPtr<EngineRenderScene> renderScene
-        = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.getAs<cbe::World>()) : nullptr;
+        = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.get()) : nullptr;
     if (renderScene)
     {
         const IRenderTargetTexture *resolvedRt = renderScene->getLastRTResolved();

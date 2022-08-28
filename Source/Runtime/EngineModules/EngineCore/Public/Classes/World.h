@@ -64,6 +64,12 @@ public:
     using TFHierarchyIdx = SizeT;
 
 private:
+#if EDITOR_BUILD
+    // For editor functionalities, check EditorHelpers to modify world in editor
+    friend class EditorHelpers;
+#endif
+    friend class WorldsManager;
+
     struct META_ANNOTATE() ActorAttachedToInfo
     {
         GENERATED_CODES()
@@ -134,6 +140,8 @@ public:
 private:
     // The in vector must be arranged from parent to children order
     void updateWorldTf(const std::vector<TFHierarchyIdx> &idxsToUpdate);
+    // Initializes all actor prefab and pushes them to actors list and attaches all linked actors
+    void prepareForPlay();
 
     // bDelayedInit for actor created from class to allow setting up the prefab directly with in the world
     Actor *addActor(CBEClass actorClass, const String &actorName, EObjectFlags flags, bool bDelayedInit);
@@ -148,10 +156,6 @@ private:
     void broadcastTfCompRemoved(Object *tfComp) const { onTfCompRemoved.invoke(tfComp); }
     void broadcastLogicCompAdded(Object *logicComp) const { onLogicCompAdded.invoke(logicComp); }
     void broadcastLogicCompRemoved(Object *logicComp) const { onLogicCompRemoved.invoke(logicComp); }
-#if EDITOR_BUILD
-    // For editor functionalities, check EditorHelpers to modify world in editor
-    friend class EditorHelpers;
-#endif
 } META_ANNOTATE(NoExport);
 
 } // namespace cbe

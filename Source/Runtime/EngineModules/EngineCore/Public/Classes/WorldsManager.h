@@ -47,7 +47,14 @@ private:
     World *mainWorld;
 
     META_ANNOTATE(Transient)
-    World *mainRenderWorld;
+    World *renderingWorld;
+
+#if EDITOR_BUILD
+    META_ANNOTATE(Transient)
+    World *editorWorld;
+#endif
+    META_ANNOTATE(Transient)
+    World *playingWorld;
 
     META_ANNOTATE()
     WorldInfo mainWorldInfo;
@@ -60,16 +67,22 @@ private:
 
 public:
     World *initWorld(World *world, bool bAsMainWorld);
-    SharedPtr<EngineRenderScene> getWorldRenderScene(World *world) const;
-
     void unloadWorld(World *world);
     void unloadAllWorlds();
+
+    SharedPtr<EngineRenderScene> getWorldRenderScene(World *world) const;
+    World *getMainWorld() const { return mainWorld; }
+    World *getPlayingWorld() const { return playingWorld; }
+    World *getRenderingWorld() const { return renderingWorld; }
+#if EDITOR_BUILD
+    World *getEditorWorld() const { return editorWorld; }
+#endif
 
     WorldManagerEvent &onWorldUnloadEvent() { return worldUnloadEvent; }
     WorldManagerEvent &onWorldInitEvent() { return worldInitEvent; }
 
 private:
-    FORCE_INLINE void unloadWorldInternal(World *world);
+
 } META_ANNOTATE(NoExport);
 
 } // namespace cbe

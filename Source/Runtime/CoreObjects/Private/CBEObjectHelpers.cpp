@@ -454,7 +454,7 @@ COREOBJECTS_EXPORT bool deepCopy(
     return copyObject(options);
 }
 
-Object *duplicateObject(
+Object *duplicateCBEObject(
     Object *fromObject, Object *newOuter, String newName /*= ""*/, EObjectFlags additionalFlags /*= 0*/, EObjectFlags clearFlags /*= 0*/
 )
 {

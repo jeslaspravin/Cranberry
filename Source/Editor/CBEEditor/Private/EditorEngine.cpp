@@ -66,7 +66,7 @@ void EditorEngine::engineStart()
         {
             if (bIsMain)
             {
-                viewportLayer->setWorldViewport(std::make_shared<WorldViewport>(world));
+                viewportLayer->setWorldViewport(std::make_shared<WorldViewport>(gCBEEngine->worldManager()->getRenderingWorld()));
             }
         }
     );

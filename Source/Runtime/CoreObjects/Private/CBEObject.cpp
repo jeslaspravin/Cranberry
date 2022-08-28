@@ -166,6 +166,7 @@ String ObjectPathHelper::getObjectPath(const cbe::Object *object, const cbe::Obj
     }
     if (outer != stopAt)
     {
+        debugAssertf(stopAt == nullptr, "Object %s is not subobject of %s", object->getFullPath(), stopAt->getFullPath());
         return outer->getName() + ObjectPathHelper::RootObjectSeparator
                + String::join(outers.crbegin(), outers.crend(), ObjectPathHelper::ObjectObjectSeparator);
     }

@@ -10,7 +10,9 @@
  */
 
 #include "Classes/WorldsManager.h"
+#include "ICoreObjectsModule.h"
 #include "CBEObjectHelpers.h"
+#include "CBEPackage.h"
 #include "Classes/World.h"
 #include "EngineRenderScene.h"
 
@@ -26,13 +28,20 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
             return mainWorld;
         }
         unloadWorld(mainWorld);
+
+        LOG("WorldManager", "Initializing main world %s", world->getFullPath());
         mainWorld = world;
-        mainRenderWorld = mainWorld;
+        renderingWorld = mainWorld;
+        playingWorld = mainWorld;
 #if EDITOR_BUILD
-        // TODO(Jeslas) : Create copy of main world for editing
+        renderingWorld = editorWorld
+            = create<World>(mainWorld->getName(), ICoreObjectsModule::get()->getTransientPackage(), EObjectFlagBits::ObjFlag_Transient);
+        editorWorld->copyFrom(mainWorld);
+        playingWorld = nullptr;
 #endif
-        // TODO(Jeslas) : Initialize main renderable world to make it suitable for playing or rendering
-        mainWorldInfo.renderScene = std::make_shared<EngineRenderScene>(mainRenderWorld);
+        // So that render scene can get the actors immediately and setup initial scene
+        renderingWorld->prepareForPlay();
+        mainWorldInfo.renderScene = std::make_shared<EngineRenderScene>(renderingWorld);
         onWorldInitEvent().invoke(world, true);
         return mainWorld;
     }
@@ -42,7 +51,9 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
         return world;
     }
 
+    LOG("WorldManager", "Initializing world %s", world->getFullPath());
     otherWorlds[world] = { std::make_shared<EngineRenderScene>(world) };
+    world->prepareForPlay();
     onWorldInitEvent().invoke(world, false);
     return world;
 }
@@ -71,14 +82,25 @@ void WorldsManager::unloadWorld(World *world)
 
     if (mainWorld == world)
     {
+        LOG("WorldManager", "Unloading main world %s", world->getFullPath());
         onWorldUnloadEvent().invoke(world, true);
-        unloadWorldInternal(world);
+#if EDITOR_BUILD
+        editorWorld->beginDestroy();
+        if (playingWorld)
+        {
+            playingWorld->beginDestroy();
+        }
+#endif
+        mainWorld = nullptr;
+        renderingWorld = nullptr;
+        playingWorld = nullptr;
         mainWorldInfo.renderScene.reset();
     }
     else if (otherWorlds.contains(world))
     {
+        LOG("WorldManager", "Unloading world %s", world->getFullPath());
         onWorldUnloadEvent().invoke(world, false);
-        unloadWorldInternal(world);
+        world->beginDestroy();
         otherWorlds.erase(world);
     }
 }
@@ -87,16 +109,27 @@ void WorldsManager::unloadAllWorlds()
 {
     if (mainWorld)
     {
-        unloadWorldInternal(mainWorld);
+        LOG("WorldManager", "Unloading main world %s", mainWorld->getFullPath());
+        onWorldUnloadEvent().invoke(mainWorld, true);
+#if EDITOR_BUILD
+        editorWorld->beginDestroy();
+        if (playingWorld)
+        {
+            playingWorld->beginDestroy();
+        }
+#endif
+        mainWorld = nullptr;
+        renderingWorld = nullptr;
+        playingWorld = nullptr;
         mainWorldInfo.renderScene.reset();
     }
     for (const std::pair<World *const, WorldInfo> &otherWorld : otherWorlds)
     {
-        unloadWorldInternal(otherWorld.first);
+        LOG("WorldManager", "Unloading world %s", otherWorld.first->getFullPath());
+        onWorldUnloadEvent().invoke(otherWorld.first, false);
+        otherWorld.first->beginDestroy();
     }
     otherWorlds.clear();
 }
-
-void WorldsManager::unloadWorldInternal(World *world) { world->beginDestroy(); }
 
 } // namespace cbe
