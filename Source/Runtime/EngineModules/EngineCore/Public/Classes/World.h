@@ -98,6 +98,10 @@ private:
     META_ANNOTATE(Transient)
     std::set<ActorPrefab *> delayInitPrefabs;
 
+    // Components that are either invalidated or transformed
+    META_ANNOTATE(Transient)
+    std::vector<TransformComponent *> dirtyComponents; // TODO(Jeslas) : Clear dirty flags for this components after all system updates
+
     EWorldState::Type worldState;
 
 public:
@@ -105,6 +109,8 @@ public:
     WorldActorEvent onActorRemoved;
     WorldComponentEvent onTfCompAdded;
     WorldComponentEvent onTfCompRemoved;
+    WorldComponentEvent onTfCompTransformed;
+    WorldComponentEvent onTfCompInvalidated;
     WorldComponentEvent onLogicCompAdded;
     WorldComponentEvent onLogicCompRemoved;
 
@@ -116,6 +122,8 @@ public:
     ObjectArchive &serialize(ObjectArchive &ar) override;
     /* Overrides ends */
 
+    void tfCompInvalidated(TransformComponent *tfComponent);
+    void tfCompTransformed(TransformComponent *tfComponent, bool bPrevTfDirty);
     void tfAttachmentChanged(TransformComponent *attachingComp, TransformComponent *attachedTo);
     void tfComponentAdded(Actor *actor, TransformComponent *tfComponent);
     void tfComponentRemoved(Actor *actor, TransformComponent *tfComponent);
@@ -128,10 +136,14 @@ public:
     bool mergeWorld(World *otherWorld, bool bMoveActors);
 
     // Calling in editor worlds is not efficient
-    void getComponentsAttachedTo(std::vector<TransformComponent *> &outAttaches, TransformComponent *component, bool bRecurse = false) const;
+    void getComponentsAttachedTo(std::vector<TransformComponent *> &outAttaches, const TransformComponent *component, bool bRecurse = false)
+        const;
 
-    TransformComponent *getActorAttachedToComp(Actor *actor) const;
-    Actor *getActorAttachedTo(Actor *actor) const;
+    bool hasWorldTf(const TransformComponent *component) const;
+    const Transform3D &getWorldTf(const TransformComponent *component) const;
+
+    TransformComponent *getActorAttachedToComp(const Actor *actor) const;
+    Actor *getActorAttachedTo(const Actor *actor) const;
 
     const std::vector<Actor *> &getActors() const { return actors; }
 
@@ -154,6 +166,8 @@ private:
     void broadcastActorRemoved(Actor *actor) const { onActorRemoved.invoke(actor); }
     void broadcastTfCompAdded(Object *tfComp) const { onTfCompAdded.invoke(tfComp); }
     void broadcastTfCompRemoved(Object *tfComp) const { onTfCompRemoved.invoke(tfComp); }
+    void broadcastTfCompInvalidated(Object *tfComp) const { onTfCompInvalidated.invoke(tfComp); }
+    void broadcastTfCompTransformed(Object *tfComp) const { onTfCompTransformed.invoke(tfComp); }
     void broadcastLogicCompAdded(Object *logicComp) const { onLogicCompAdded.invoke(logicComp); }
     void broadcastLogicCompRemoved(Object *logicComp) const { onLogicCompRemoved.invoke(logicComp); }
 } META_ANNOTATE(NoExport);

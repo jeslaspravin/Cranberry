@@ -527,7 +527,7 @@ TransformComponent *ActorPrefab::getRootComponent() const
     return actorTemplate->getTemplateAs<Actor>()->rootComponent;
 }
 
-TransformComponent *ActorPrefab::getAttachedToComp(TransformComponent *component) const
+TransformComponent *ActorPrefab::getAttachedToComp(const TransformComponent *component) const
 {
     debugAssert(isValid(component) && componentAttachedTo.contains(component));
     return componentAttachedTo.find(component)->second;
@@ -851,7 +851,6 @@ Actor *LogicComponent::getActor() const
 
 cbe::TransformComponent *TransformComponent::canonicalAttachedTo()
 {
-#if EDITOR_BUILD
     // Will be null when not playing or when not attached to anything
     if (attachedTo == nullptr)
     {
@@ -860,23 +859,55 @@ cbe::TransformComponent *TransformComponent::canonicalAttachedTo()
         World *world = getWorld();
         if (objTemplate && prefab)
         {
+            TransformComponent *attachedToComp = nullptr;
             if (prefab->getRootComponent() != this)
             {
-                return prefab->getAttachedToComp(this);
+                attachedToComp = prefab->getAttachedToComp(this);
             }
-            // If root component then world will have its attachment information
-            if (world && !EWorldState::isPlayState(world->getState()))
+            else if (world && !EWorldState::isPlayState(world->getState())) // If root component then world will have its attachment information
             {
-                return world->getActorAttachedToComp(prefab->getActorTemplate());
+                attachedToComp = world->getActorAttachedToComp(getActor());
             }
+            return attachedToComp;
         }
     }
     else
-#endif
     {
         return attachedTo;
     }
     return nullptr;
+}
+
+Transform3D TransformComponent::getWorldTransform() const
+{
+    World *world = getWorld();
+    if (world && world->hasWorldTf(this))
+    {
+        return world->getWorldTf(this);
+    }
+    else
+    {
+        ObjectTemplate *objTemplate = ActorPrefab::objectTemplateFromObj(this);
+        ActorPrefab *prefab = ActorPrefab::prefabFromCompTemplate(objTemplate);
+        if (objTemplate && prefab)
+        {
+            TransformComponent *attachedToComp = nullptr;
+            if (prefab->getRootComponent() != this)
+            {
+                attachedToComp = prefab->getAttachedToComp(this);
+            }
+            else if (world && !EWorldState::isPlayState(world->getState()))
+            {
+                attachedToComp = world->getActorAttachedToComp(getActor());
+            }
+
+            if (attachedToComp)
+            {
+                return attachedToComp->getWorldTransform().transform(relativeTf);
+            }
+        }
+    }
+    return relativeTf;
 }
 
 Actor *TransformComponent::getActor() const

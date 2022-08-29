@@ -207,7 +207,7 @@ void fillVertexInfo(StaticMeshVertex &vertexData, const tinyobj::attrib_t &attri
     Vector3D normal{ attrib.normals[index.normal_index * 3], attrib.normals[index.normal_index * 3 + 1],
                      attrib.normals[index.normal_index * 3 + 2] };
 
-    vertexData.normal = Vector4D(normal.safeNormalize(), uvCoord.y());
+    vertexData.normal = Vector4D(normal.safeNormalized(), uvCoord.y());
     // vertexData.vertexColor = Vector4D(attrib.colors[index.vertex_index * 3], attrib.colors[index.vertex_index * 3 + 1],
     // attrib.colors[index.vertex_index * 2 + 2], 1.0f);
 }

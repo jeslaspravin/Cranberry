@@ -73,11 +73,11 @@ void SamplerInterface::getTilingMode(ESamplerTilingMode::Type &u, ESamplerTiling
     w = std::get<2>(config.tilingMode);
 }
 
-void SamplerInterface::addRef() { refCounter.fetch_add(1); }
+void SamplerInterface::addRef() { refCounter.fetch_add(1, std::memory_order::release); }
 
 void SamplerInterface::removeRef()
 {
-    uint32 count = refCounter.fetch_sub(1);
+    uint32 count = refCounter.fetch_sub(1, std::memory_order::acq_rel);
     if (count == 1)
     {
         release();
@@ -85,7 +85,7 @@ void SamplerInterface::removeRef()
     }
 }
 
-uint32 SamplerInterface::refCount() const { return refCounter.load(); }
+uint32 SamplerInterface::refCount() const { return refCounter.load(std::memory_order::acquire); }
 
 String SamplerInterface::getResourceName() const { return config.resourceName; }
 

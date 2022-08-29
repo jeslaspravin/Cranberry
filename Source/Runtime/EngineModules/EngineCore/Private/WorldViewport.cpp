@@ -25,8 +25,7 @@
 
 void WorldViewport::startSceneRender(Short2D viewportSize)
 {
-    SharedPtr<EngineRenderScene> renderScene
-        = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.get()) : nullptr;
+    SharedPtr<EngineRenderScene> renderScene = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.get()) : nullptr;
     if (renderScene)
     {
         renderScene->renderTheScene(viewportSize, {});
@@ -38,8 +37,7 @@ void WorldViewport::drawBackBuffer(
     IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
 )
 {
-    SharedPtr<EngineRenderScene> renderScene
-        = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.get()) : nullptr;
+    SharedPtr<EngineRenderScene> renderScene = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.get()) : nullptr;
     if (renderScene)
     {
         const IRenderTargetTexture *resolvedRt = renderScene->getLastRTResolved();

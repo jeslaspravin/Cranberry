@@ -90,6 +90,36 @@ ObjectArchive &World::serialize(ObjectArchive &ar)
     return ar;
 }
 
+void World::tfCompInvalidated(TransformComponent *tfComponent)
+{
+    if (std::find(dirtyComponents.cbegin(), dirtyComponents.cend(), tfComponent) == dirtyComponents.cend())
+    {
+        dirtyComponents.emplace_back(tfComponent);
+    }
+    broadcastTfCompInvalidated(tfComponent);
+}
+
+void World::tfCompTransformed(TransformComponent *tfComponent, bool bPrevTfDirty)
+{
+    auto attachedToItr = compToTf.find(tfComponent);
+    if (attachedToItr != compToTf.cend())
+    {
+        TFHierarchyIdx attachedToIdx = attachedToItr->second;
+        debugAssert(txHierarchy.isValid(attachedToIdx));
+
+        std::vector<TFHierarchyIdx> idxsToUpdate;
+        idxsToUpdate.emplace_back(attachedToIdx);
+        txHierarchy.getChildren(idxsToUpdate, attachedToIdx, true);
+        updateWorldTf(idxsToUpdate);
+    }
+
+    if (!bPrevTfDirty)
+    {
+        dirtyComponents.emplace_back(tfComponent);
+        broadcastTfCompTransformed(tfComponent);
+    }
+}
+
 void World::tfAttachmentChanged(TransformComponent *attachingComp, TransformComponent *attachedTo)
 {
     debugAssert(attachingComp);
@@ -140,13 +170,13 @@ void World::tfComponentAdded(Actor *actor, TransformComponent *tfComponent)
         debugAssert(parentWorldTfItr != compToTf.end());
 
         compToTf[tfComponent] = txHierarchy.add(
-            ComponentWorldTF{ tfComponent, txHierarchy[parentWorldTfItr->second].worldTx.transform(tfComponent->relativeTf) },
+            ComponentWorldTF{ tfComponent, txHierarchy[parentWorldTfItr->second].worldTx.transform(tfComponent->getRelativeTransform()) },
             parentWorldTfItr->second
         );
     }
     else
     {
-        compToTf[tfComponent] = txHierarchy.add(ComponentWorldTF{ tfComponent, tfComponent->relativeTf });
+        compToTf[tfComponent] = txHierarchy.add(ComponentWorldTF{ tfComponent, tfComponent->getRelativeTransform() });
     }
     broadcastTfCompAdded(tfComponent);
 }
@@ -370,16 +400,16 @@ bool World::mergeWorld(World *otherWorld, bool bMoveActors)
     return true;
 }
 
-void World::getComponentsAttachedTo(std::vector<TransformComponent *> &outAttaches, TransformComponent *component, bool bRecurse /*= false*/)
-    const
+void World::
+    getComponentsAttachedTo(std::vector<TransformComponent *> &outAttaches, const TransformComponent *component, bool bRecurse /*= false*/)
+        const
 {
     debugAssertf(EWorldState::isPlayState(worldState), "Cannot query components attached to another component when not playing!");
 
     auto compWorldTfItr = compToTf.find(component);
-    TFHierarchyIdx compTfIdx;
     if (compWorldTfItr != compToTf.end())
     {
-        compTfIdx = compWorldTfItr->second;
+        TFHierarchyIdx compTfIdx = compWorldTfItr->second;
         std::vector<TFHierarchyIdx> attachments;
         txHierarchy.getChildren(attachments, compTfIdx, bRecurse);
         outAttaches.reserve(attachments.size());
@@ -391,7 +421,27 @@ void World::getComponentsAttachedTo(std::vector<TransformComponent *> &outAttach
     }
 }
 
-TransformComponent *World::getActorAttachedToComp(Actor *actor) const
+bool World::hasWorldTf(const TransformComponent *component) const
+{
+    auto compWorldTfItr = compToTf.find(component);
+    if (compWorldTfItr != compToTf.end())
+    {
+        return txHierarchy.isValid(compWorldTfItr->second);
+    }
+    return false;
+}
+
+const Transform3D &World::getWorldTf(const TransformComponent *component) const
+{
+    auto compWorldTfItr = compToTf.find(component);
+    if (compWorldTfItr != compToTf.end())
+    {
+        return txHierarchy[compWorldTfItr->second].worldTx;
+    }
+    return component->getRelativeTransform();
+}
+
+cbe::TransformComponent *World::getActorAttachedToComp(const Actor *actor) const
 {
     if (EWorldState::isPlayState(worldState))
     {
@@ -408,7 +458,7 @@ TransformComponent *World::getActorAttachedToComp(Actor *actor) const
     return nullptr;
 }
 
-Actor *World::getActorAttachedTo(Actor *actor) const
+cbe::Actor *World::getActorAttachedTo(const Actor *actor) const
 {
     if (EWorldState::isPlayState(worldState))
     {
@@ -432,11 +482,11 @@ void World::updateWorldTf(const std::vector<TFHierarchyIdx> &idxsToUpdate)
         TFHierarchyIdx parentIdx = txHierarchy.getNode(idx).parent;
         if (txHierarchy.isValid(parentIdx))
         {
-            txHierarchy[idx].worldTx = txHierarchy[parentIdx].worldTx.transform(txHierarchy[idx].component->relativeTf);
+            txHierarchy[idx].worldTx = txHierarchy[parentIdx].worldTx.transform(txHierarchy[idx].component->getRelativeTransform());
         }
         else
         {
-            txHierarchy[idx].worldTx = txHierarchy[idx].component->relativeTf;
+            txHierarchy[idx].worldTx = txHierarchy[idx].component->getRelativeTransform();
         }
     }
 }
@@ -518,7 +568,7 @@ cbe::Actor *World::setupActorInternal(ActorPrefab *actorPrefab)
     // Inserting each TransformComponent into global TF tree
     for (TransformComponent *actorTransformComp : actor->getTransformComponents())
     {
-        compToTf[actorTransformComp] = txHierarchy.add(ComponentWorldTF{ actorTransformComp, actorTransformComp->relativeTf });
+        compToTf[actorTransformComp] = txHierarchy.add(ComponentWorldTF{ actorTransformComp, actorTransformComp->getRelativeTransform() });
     }
     // Updating its attachments, Reason for separated setup is that transformComps will not be ordered from root to leafs
     for (TransformComponent *actorTransformComp : actor->getTransformComponents())
@@ -526,7 +576,7 @@ cbe::Actor *World::setupActorInternal(ActorPrefab *actorPrefab)
         // All none root must have its attachedTo setup at this point, Ignoring root component alone to not clear actorAttachedTo by mistake
         if (actorTransformComp != actor->getRootComponent())
         {
-            debugAssert(
+            debugAssertf(
                 actorTransformComp->getAttachedTo(), "TransformComponent %s is not root and not attached!", actorTransformComp->getName()
             );
             tfAttachmentChanged(actorTransformComp, actorTransformComp->getAttachedTo());

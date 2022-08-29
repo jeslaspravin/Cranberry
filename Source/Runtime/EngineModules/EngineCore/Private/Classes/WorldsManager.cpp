@@ -23,7 +23,7 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
 {
     if (bAsMainWorld)
     {
-        if (world == mainWorld)
+        if (isMainWorld(world))
         {
             return mainWorld;
         }
@@ -42,7 +42,7 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
         // So that render scene can get the actors immediately and setup initial scene
         renderingWorld->prepareForPlay();
         mainWorldInfo.renderScene = std::make_shared<EngineRenderScene>(renderingWorld);
-        onWorldInitEvent().invoke(world, true);
+        onWorldInitEvent().invoke(mainWorld, true);
         return mainWorld;
     }
 
@@ -52,7 +52,7 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
     }
 
     LOG("WorldManager", "Initializing world %s", world->getFullPath());
-    otherWorlds[world] = { std::make_shared<EngineRenderScene>(world) };
+    otherWorlds[world] = { .renderScene = std::make_shared<EngineRenderScene>(world) };
     world->prepareForPlay();
     onWorldInitEvent().invoke(world, false);
     return world;
@@ -60,7 +60,7 @@ World *WorldsManager::initWorld(World *world, bool bAsMainWorld)
 
 SharedPtr<EngineRenderScene> WorldsManager::getWorldRenderScene(World *world) const
 {
-    if (mainWorld == world)
+    if (isMainWorld(world))
     {
         return mainWorldInfo.renderScene;
     }
@@ -80,10 +80,10 @@ void WorldsManager::unloadWorld(World *world)
         return;
     }
 
-    if (mainWorld == world)
+    if (isMainWorld(world))
     {
-        LOG("WorldManager", "Unloading main world %s", world->getFullPath());
-        onWorldUnloadEvent().invoke(world, true);
+        LOG("WorldManager", "Unloading main world %s", mainWorld->getFullPath());
+        onWorldUnloadEvent().invoke(mainWorld, true);
 #if EDITOR_BUILD
         editorWorld->beginDestroy();
         if (playingWorld)

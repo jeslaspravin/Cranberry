@@ -30,7 +30,7 @@ void WgWorldViewport::rebuildGeometry(WidgetGeomId thisId, WidgetGeomTree &geomT
 
 void WgWorldViewport::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const WidgetGeomTree &geomTree, WidgetDrawContext &context)
 {
-    // TODO :
+    // TODO(Jeslas) :
 }
 
 bool WgWorldViewport::hasWidget(SharedPtr<WidgetBase> widget) const { return false; }

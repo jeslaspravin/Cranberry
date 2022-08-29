@@ -13,6 +13,7 @@
 
 #include "EngineCoreExports.h"
 #include "CBEObject.h"
+#include "Render/EngineRenderTypes.h"
 
 #if __REF_PARSE__
 #include "Classes/World.h"
@@ -31,6 +32,7 @@ struct META_ANNOTATE() WorldInfo
 {
     GENERATED_CODES()
 
+    ComponentRenderSyncInfo frameSyncInfo;
     SharedPtr<EngineRenderScene> renderScene;
 };
 
@@ -82,7 +84,10 @@ public:
     WorldManagerEvent &onWorldInitEvent() { return worldInitEvent; }
 
 private:
+    bool isMainWorld(World *world) const { return mainWorld == world || renderingWorld == world; }
 
+    void tfCompAdded(World *world, Object *component);
+    void tfCompRemoved(World *world, Object *component);
 } META_ANNOTATE(NoExport);
 
 } // namespace cbe

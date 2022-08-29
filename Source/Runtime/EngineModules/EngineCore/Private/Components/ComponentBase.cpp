@@ -23,27 +23,183 @@ namespace cbe
 
 World *LogicComponent::getWorld() const { return getActor()->getWorld(); }
 
+//////////////////////////////////////////////////////////////////////////
+/// TransformComponent implementation
+//////////////////////////////////////////////////////////////////////////
+
 void TransformComponent::attachComponent(TransformComponent *attachToComp)
 {
+    World *world = getWorld();
+    debugAssertf(world, "Must be called only one component in world");
     if (attachedTo != attachToComp)
     {
-        attachedTo = attachToComp;
-        getWorld()->tfAttachmentChanged(this, attachToComp);
+        setAttachedTo(attachToComp);
+        world->tfAttachmentChanged(this, attachToComp);
     }
 }
 
 void TransformComponent::detachComponent()
 {
+    World *world = getWorld();
+    debugAssertf(world, "Must be called only one component in world");
     if (attachedTo)
     {
-        attachedTo = nullptr;
-        getWorld()->tfAttachmentChanged(this, nullptr);
+        setAttachedTo(nullptr);
+        world->tfAttachmentChanged(this, nullptr);
     }
 }
 
-//////////////////////////////////////////////////////////////////////////
-/// TransformComponent implementation
-//////////////////////////////////////////////////////////////////////////
+void TransformComponent::invalidateComponent()
+{
+    World *world = getWorld();
+    debugAssertf(world, "Must be called only one component in world");
+    if (!bInvalidated)
+    {
+        getWorld()->tfCompInvalidated(this);
+        bInvalidated = true;
+    }
+}
+
+const Vector3D &TransformComponent::setRelativeLocation(Vector3D location)
+{
+    relativeTf.setTranslation(location);
+    if (World *world = getWorld())
+    {
+        componentTransformed(world);
+    }
+    return relativeTf.getTranslation();
+}
+
+const Rotation &TransformComponent::setRelativeRotation(Rotation rotation)
+{
+    relativeTf.setRotation(rotation);
+    if (World *world = getWorld())
+    {
+        componentTransformed(world);
+    }
+    return relativeTf.getRotation();
+}
+
+const Vector3D &TransformComponent::setRelativeScale(Vector3D scale)
+{
+    relativeTf.setScale(scale);
+    if (World *world = getWorld())
+    {
+        componentTransformed(world);
+    }
+    return relativeTf.getScale();
+}
+
+const Transform3D &TransformComponent::setRelativeTransform(const Transform3D &newRelativeTf)
+{
+    relativeTf = newRelativeTf;
+    if (World *world = getWorld())
+    {
+        componentTransformed(world);
+    }
+    return relativeTf;
+}
+
+Vector3D TransformComponent::setWorldLocation(Vector3D location)
+{
+    World *world = getWorld();
+    alertAlwaysf(world, "Setting transform in world space is valid only for components in world!");
+    if (world)
+    {
+        TransformComponent *attachedToComp = canonicalAttachedTo();
+        if (attachedToComp)
+        {
+            relativeTf.setTranslation(location - attachedToComp->getWorldLocation());
+        }
+        else
+        {
+            relativeTf.setTranslation(location);
+        }
+        componentTransformed(world);
+        return getWorldLocation();
+    }
+    else
+    {
+        relativeTf.setTranslation(location);
+        return relativeTf.getTranslation();
+    }
+}
+
+Rotation TransformComponent::setWorldRotation(Rotation rotation)
+{
+    World *world = getWorld();
+    alertAlwaysf(world, "Setting transform in world space is valid only for components in world!");
+    if (world)
+    {
+        TransformComponent *attachedToComp = canonicalAttachedTo();
+        if (attachedToComp)
+        {
+            relativeTf.setRotation((Quat(attachedToComp->getWorldRotation()).inverse() * Quat(rotation)).toRotation());
+        }
+        else
+        {
+            relativeTf.setRotation(rotation);
+        }
+        componentTransformed(world);
+        return getWorldRotation();
+    }
+    else
+    {
+        relativeTf.setRotation(rotation);
+        return relativeTf.getRotation();
+    }
+}
+
+Vector3D TransformComponent::setWorldScale(Vector3D scale)
+{
+    World *world = getWorld();
+    alertAlwaysf(world, "Setting transform in world space is valid only for components in world!");
+    if (world)
+    {
+        TransformComponent *attachedToComp = canonicalAttachedTo();
+        if (attachedToComp)
+        {
+            relativeTf.setScale(attachedToComp->getWorldScale().safeInverse() * scale);
+        }
+        else
+        {
+            relativeTf.setScale(scale);
+        }
+        componentTransformed(world);
+        return getWorldScale();
+    }
+    else
+    {
+        relativeTf.setScale(scale);
+        return relativeTf.getScale();
+    }
+}
+
+Transform3D TransformComponent::setWorldTransform(const Transform3D &newTf)
+{
+    World *world = getWorld();
+    alertAlwaysf(world, "Setting transform in world space is valid only for components in world!");
+    if (world)
+    {
+        TransformComponent *attachedToComp = canonicalAttachedTo();
+        if (attachedToComp)
+        {
+            relativeTf = attachedToComp->getWorldTransform().invTransform(newTf);
+        }
+        else
+        {
+            relativeTf = newTf;
+        }
+        componentTransformed(world);
+        return getWorldTransform();
+    }
+    else
+    {
+        relativeTf = newTf;
+        return relativeTf;
+    }
+}
+
 World *TransformComponent::getWorld() const
 {
     if (Actor *actor = getActor())
@@ -52,4 +208,17 @@ World *TransformComponent::getWorld() const
     }
     return nullptr;
 }
+
+FORCE_INLINE void TransformComponent::componentTransformed(World *world)
+{
+    debugAssert(world);
+
+#if EDITOR_BUILD
+    markDirty(this);
+#endif
+    bool bOldTransformed = bInvalidated || bTransformed;
+    bTransformed = true;
+    world->tfCompTransformed(this, bOldTransformed);
+}
+
 } // namespace cbe
