@@ -10,6 +10,7 @@
  */
 
 #include "CoreObjectAllocator.h"
+#include "Property/Property.h"
 
 std::unordered_map<CBEClass, cbe::ObjectAllocatorBase *> *gCBEObjectAllocators = nullptr;
 

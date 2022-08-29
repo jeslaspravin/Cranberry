@@ -165,9 +165,17 @@ bool Vector4D::isFinite() const
     return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z) && Math::isFinite(value.w);
 }
 
+Vector4D Vector4D::safeInverse() const
+{
+    return Vector4D(
+        Math::isEqual(value.x, 0.0f) ? 0.0f : 1.0f / value.x, Math::isEqual(value.y, 0.0f) ? 0.0f : 1.0f / value.y,
+        Math::isEqual(value.z, 0.0f) ? 0.0f : 1.0f / value.z, Math::isEqual(value.w, 0.0f) ? 0.0f : 1.0f / value.w
+    );
+}
+
 Vector4D Vector4D::normalized() const { return Vector4D(glm::normalize(value)); }
 
-Vector4D Vector4D::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
+Vector4D Vector4D::safeNormalized(float threshold /*= SMALL_EPSILON*/) const
 {
     float sqrLen = sqrlength();
     if (sqrLen < SMALL_EPSILON)

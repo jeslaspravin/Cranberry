@@ -156,9 +156,14 @@ bool Vector2D::isSame(const Vector2D &b, float epsilon /*= SMALL_EPSILON*/) cons
 
 bool Vector2D::isFinite() const { return Math::isFinite(value.x) && Math::isFinite(value.y); }
 
+Vector2D Vector2D::safeInverse() const
+{
+    return Vector2D(Math::isEqual(value.x, 0.0f) ? 0.0f : 1.0f / value.x, Math::isEqual(value.y, 0.0f) ? 0.0f : 1.0f / value.y);
+}
+
 Vector2D Vector2D::normalized() const { return Vector2D(glm::normalize(value)); }
 
-Vector2D Vector2D::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
+Vector2D Vector2D::safeNormalized(float threshold /*= SMALL_EPSILON*/) const
 {
     float sqrLen = sqrlength();
     if (sqrLen < SMALL_EPSILON)

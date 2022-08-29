@@ -19,12 +19,12 @@ DEFINE_GRAPHICS_RESOURCE(MemoryResource)
 void MemoryResource::addRef()
 {
     uint32 count;
-    count = refCounter.fetch_add(1);
+    count = refCounter.fetch_add(1, std::memory_order::release);
 }
 
 void MemoryResource::removeRef()
 {
-    uint32 count = refCounter.fetch_sub(1);
+    uint32 count = refCounter.fetch_sub(1, std::memory_order::acq_rel);
     if (count == 1)
     {
         ENQUEUE_COMMAND(DeleteMemoryResource)
@@ -39,7 +39,7 @@ void MemoryResource::removeRef()
     }
 }
 
-uint32 MemoryResource::refCount() const { return refCounter.load(); }
+uint32 MemoryResource::refCount() const { return refCounter.load(std::memory_order::acquire); }
 
 String MemoryResource::getResourceName() const { return memoryResName; }
 

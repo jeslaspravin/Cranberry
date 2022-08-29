@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "CoreObjectAllocator.h"
 #include "CoreObjectsExports.h"
+#include "CoreObjectAllocator.h"
 #include "ReflectionMacros.h"
 #include "Serialization/ObjectArchive.h"
 #include "Serialization/CommonTypesSerialization.h"

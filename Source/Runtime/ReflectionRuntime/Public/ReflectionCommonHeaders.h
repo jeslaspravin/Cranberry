@@ -13,6 +13,11 @@
 
 #include "ReflectionRuntimeExports.h"
 
+// Since pointer has transparent hasher and comparer
+#include "Types/HashTypes.h"
+// Since new is overridden for each class and struct
+#include "Memory/Memory.h"
+
 #include "Types/DefaultPolicies.h"
 #include "Types/TypesInfo.h"
 
@@ -24,6 +29,3 @@
 
 #include "IReflectionRuntime.h"
 #include "ReflectionMacros.h"
-
-// Since new is overridden for each class and struct
-#include "Memory/Memory.h"

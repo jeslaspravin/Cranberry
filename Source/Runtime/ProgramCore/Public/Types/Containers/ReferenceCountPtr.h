@@ -221,23 +221,18 @@ public:
     virtual ~RefCountable() = default;
 
     /* ReferenceCountPtr implementation */
-    void addRef() { refCounter.fetch_add(1); }
+    void addRef() { refCounter.fetch_add(1, std::memory_order::release); }
 
     void removeRef()
     {
-        // TODO(Jeslas) : fetch_sub loads the old value relaxed meaning no memory ordering in cache
-        // coherency protocol/instruction reordering(out of order execution) barrier is enforced This is
-        // still not thread safe as preemptive concurrency or multi threading can still add a new
-        // reference before delete , To avoid that never assign a raw pointer after initially creating
-        // ReferenceCountPtr
-        uint32 count = refCounter.fetch_sub(1);
+        uint32 count = refCounter.fetch_sub(1, std::memory_order::acq_rel);
         if (count == 1)
         {
             delete this;
         }
     }
 
-    uint32 refCount() const { return refCounter.load(); }
+    uint32 refCount() const { return refCounter.load(std::memory_order::acquire); }
 
     /* end overrides */
     template <typename AsType>

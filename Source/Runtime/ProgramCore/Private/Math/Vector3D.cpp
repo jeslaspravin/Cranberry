@@ -169,9 +169,17 @@ bool Vector3D::isSame(const Vector3D &b, float epsilon /*= SMALL_EPSILON*/) cons
 
 bool Vector3D::isFinite() const { return Math::isFinite(value.x) && Math::isFinite(value.y) && Math::isFinite(value.z); }
 
+Vector3D Vector3D::safeInverse() const
+{
+    return Vector3D(
+        Math::isEqual(value.x, 0.0f) ? 0.0f : 1.0f / value.x, Math::isEqual(value.y, 0.0f) ? 0.0f : 1.0f / value.y,
+        Math::isEqual(value.z, 0.0f) ? 0.0f : 1.0f / value.z
+    );
+}
+
 Vector3D Vector3D::normalized() const { return Vector3D(glm::normalize(value)); }
 
-Vector3D Vector3D::safeNormalize(float threshold /*= SMALL_EPSILON*/) const
+Vector3D Vector3D::safeNormalized(float threshold /*= SMALL_EPSILON*/) const
 {
     float sqrLen = sqrlength();
     if (sqrLen < SMALL_EPSILON)

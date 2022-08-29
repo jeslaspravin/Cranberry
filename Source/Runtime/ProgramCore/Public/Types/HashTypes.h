@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Types/CoreDefines.h"
+#include "Types/CompilerDefines.h"
 #include "Types/Templates/TypeTraits.h"
 #include "ProgramCoreExports.h"
 
@@ -22,11 +23,21 @@ concept SeedType = std::is_same_v<std::remove_cvref_t<T>, size_t>;
 
 namespace HashUtility
 {
+// Removes any const ref, Type & const -> Type
 template <typename T, typename CleanType = std::remove_cvref_t<T>>
 CONST_EXPR size_t hash(T &&v)
 {
     std::hash<CleanType> hasher;
     return hasher(std::forward<T>(v));
+}
+
+// Pointer hash
+template <typename T>
+CMATH_CONSTEXPR size_t hash(const T *val)
+{
+    // https://stackoverflow.com/a/21062236/18816213
+    CMATH_CONSTEXPR static const size_t shift = (size_t)log2(1 + sizeof(T));
+    return (size_t)(val) >> shift;
 }
 
 template <typename T, typename CleanType = std::remove_cvref_t<T>>
@@ -84,7 +95,7 @@ FORCE_INLINE void hashAllInto(size_t &outSeed, FirstType &&hashable, Types &&...
 } // namespace HashUtility
 
 template <typename FirstType, typename SecondType>
-struct PROGRAMCORE_EXPORT std::hash<std::pair<FirstType, SecondType>>
+struct std::hash<std::pair<FirstType, SecondType>>
 {
     NODISCARD size_t operator()(const std::pair<FirstType, SecondType> &val) const noexcept
     {
@@ -92,4 +103,44 @@ struct PROGRAMCORE_EXPORT std::hash<std::pair<FirstType, SecondType>>
         HashUtility::hashCombine(hashCode, val.second);
         return hashCode;
     }
+};
+
+// For Transparent hash containers, equality and comparer.
+template <typename PtrType>
+struct std::hash<PtrType *>
+{
+    using is_transparent = std::true_type;
+    using ConstPtr = std::remove_cv_t<PtrType> const *;
+
+    NODISCARD size_t operator()(ConstPtr const &ptr) const noexcept { return HashUtility::hash(ptr); }
+};
+template <typename PtrType>
+struct std::equal_to<PtrType *>
+{
+    using is_transparent = std::true_type;
+    using ConstPtr = std::remove_cv_t<PtrType> const *;
+
+    NODISCARD constexpr bool operator()(ConstPtr const &lhs, ConstPtr const &rhs) const { return lhs == rhs; }
+    NODISCARD constexpr bool operator()(UPtrInt lhs, ConstPtr const &rhs) const { return reinterpret_cast<ConstPtr>(lhs) == rhs; }
+    NODISCARD constexpr bool operator()(ConstPtr const &lhs, UPtrInt rhs) const { return lhs == reinterpret_cast<ConstPtr>(rhs); }
+};
+template <typename PtrType>
+struct std::less<PtrType *>
+{
+    using is_transparent = std::true_type;
+    using ConstPtr = std::remove_cv_t<PtrType> const *;
+
+    NODISCARD constexpr bool operator()(ConstPtr const &lhs, ConstPtr const &rhs) const { return lhs < rhs; }
+    NODISCARD constexpr bool operator()(UPtrInt lhs, ConstPtr const &rhs) const { return reinterpret_cast<ConstPtr>(lhs) < rhs; }
+    NODISCARD constexpr bool operator()(ConstPtr const &lhs, UPtrInt rhs) const { return lhs < reinterpret_cast<ConstPtr>(rhs); }
+};
+template <typename PtrType>
+struct std::greater<PtrType *>
+{
+    using is_transparent = std::true_type;
+    using ConstPtr = std::remove_cv_t<PtrType> const *;
+
+    NODISCARD constexpr bool operator()(ConstPtr const &lhs, ConstPtr const &rhs) const { return lhs > rhs; }
+    NODISCARD constexpr bool operator()(UPtrInt lhs, ConstPtr const &rhs) const { return reinterpret_cast<ConstPtr>(lhs) > rhs; }
+    NODISCARD constexpr bool operator()(ConstPtr const &lhs, UPtrInt rhs) const { return lhs > reinterpret_cast<ConstPtr>(rhs); }
 };

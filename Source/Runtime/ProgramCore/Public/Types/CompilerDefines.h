@@ -78,6 +78,12 @@ static_assert(false, "Unsupported compiler");
 #define HAS_SOURCE_LOCATION_FEATURE 0
 #endif
 
+#if __cpp_lib_constexpr_cmath >= 202202L
+#define CMATH_CONSTEXPR constexpr
+#else
+#define CMATH_CONSTEXPR
+#endif
+
 namespace CompilerHacks
 {
 

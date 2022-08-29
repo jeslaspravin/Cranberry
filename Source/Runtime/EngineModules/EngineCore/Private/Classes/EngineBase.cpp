@@ -29,19 +29,19 @@ EngineBase::EngineBase()
 
 void EngineBase::onStart()
 {
-    // TODO :
+    // TODO(Jeslas) :
     engineStart();
 }
 
 void EngineBase::onTick()
 {
-    // TODO :
+    // TODO(Jeslas) :
     engineTick(IApplicationModule::get()->getApplication()->timeData.deltaTime);
 }
 
 void EngineBase::onExit()
 {
-    // TODO :
+    // TODO(Jeslas) :
     engineExit();
 }
 

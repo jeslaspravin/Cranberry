@@ -75,8 +75,9 @@ public:
 
     bool isSame(const Vector2D &b, float epsilon = SMALL_EPSILON) const;
     bool isFinite() const;
+    Vector2D safeInverse() const;
     Vector2D normalized() const;
-    Vector2D safeNormalize(float threshold = SMALL_EPSILON) const;
+    Vector2D safeNormalized(float threshold = SMALL_EPSILON) const;
     float length() const;
     float sqrlength() const;
 

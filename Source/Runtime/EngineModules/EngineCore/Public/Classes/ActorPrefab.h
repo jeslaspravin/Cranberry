@@ -116,7 +116,7 @@ public:
     const std::vector<ComponentOverrideInfo> &getOverridenComponents() const { return componentOverrides; }
     Actor *getActorTemplate() const;
     TransformComponent *getRootComponent() const;
-    TransformComponent *getAttachedToComp(TransformComponent *component) const;
+    TransformComponent *getAttachedToComp(const TransformComponent *component) const;
 
     /* cbe::Object overrides */
     ObjectArchive &serialize(ObjectArchive &ar) override;

@@ -2328,7 +2328,7 @@ void ExperimentalEnginePBR::onStartUp()
     camera.setClippingPlane(0.1f, 6000.f);
     camera.setFOV((110.f * ApplicationSettings::surfaceSize.get().x) / (ApplicationSettings::surfaceSize.get().y * 1.78f), 90.f);
 
-    cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalize() * (500);
+    cameraTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalized() * (500);
     cameraTranslation.z() += 200;
 
     camera.setTranslation(cameraTranslation);

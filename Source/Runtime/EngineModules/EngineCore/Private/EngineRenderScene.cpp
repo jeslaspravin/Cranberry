@@ -119,7 +119,7 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
     : world(inWorld)
 {}
 
-copat::JobSystemEnqTask<copat::EJobThreadType::RenderThread> EngineRenderScene::syncWorldComps(ComponentSyncInfo compsUpdate)
+copat::JobSystemEnqTask<copat::EJobThreadType::RenderThread> EngineRenderScene::syncWorldComps(ComponentRenderSyncInfo compsUpdate)
 {
     for (StringID compToRemove : compsUpdate.compsRemoved)
     {

@@ -12,6 +12,7 @@
 #pragma once
 
 #include "String/StringID.h"
+#include "Types/HashTypes.h"
 #include "Types/CoreTypes.h"
 
 #include "CoreObjectsExports.h"

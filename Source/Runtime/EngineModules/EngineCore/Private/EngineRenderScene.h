@@ -17,21 +17,10 @@
 #include "Types/Containers/BitArray.h"
 #include "Types/Containers/SparseVector.h"
 #include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
+#include "Render/EngineRenderTypes.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderApi/ResourcesInterface/IRenderResource.h"
-#include "RenderApi/VertexData.h"
-
-class Camera;
-class IRenderCommandList;
-class GraphicsHelperAPI;
-class IGraphicsInstance;
-
-namespace cbe
-{
-class RenderableComponent;
-class World;
-} // namespace cbe
 
 namespace ERendererIntermTexture
 {
@@ -94,18 +83,10 @@ private:
     ShaderParametersRef clearParams;
 
 public:
-    struct ComponentSyncInfo
-    {
-        std::vector<StringID> compsRemoved;
-        std::vector<cbe::RenderableComponent *> compsAdded;
-        std::vector<cbe::RenderableComponent *> recreateComps;
-        std::vector<cbe::RenderableComponent *> compsTransformed;
-    };
-
     EngineRenderScene(cbe::World *inWorld);
     MAKE_TYPE_NONCOPY_NONMOVE(EngineRenderScene)
 
-    copat::JobSystemEnqTask<copat::EJobThreadType::RenderThread> syncWorldComps(ComponentSyncInfo compsUpdate);
+    copat::JobSystemEnqTask<copat::EJobThreadType::RenderThread> syncWorldComps(ComponentRenderSyncInfo compsUpdate);
 
     void clearScene();
 

@@ -18,7 +18,6 @@
 
 #include <unordered_map>
 
-class ClassProperty;
 namespace cbe
 {
 class ObjectAllocatorBase;

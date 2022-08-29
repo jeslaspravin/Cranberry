@@ -13,11 +13,11 @@
 
 DEFINE_GRAPHICS_RESOURCE(GraphicsSyncResource)
 
-void GraphicsSyncResource::addRef() { refCounter.fetch_add(1); }
+void GraphicsSyncResource::addRef() { refCounter.fetch_add(1, std::memory_order::release); }
 
 void GraphicsSyncResource::removeRef()
 {
-    uint32 count = refCounter.fetch_sub(1);
+    uint32 count = refCounter.fetch_sub(1, std::memory_order::acq_rel);
     if (count == 1)
     {
         release();
@@ -25,7 +25,7 @@ void GraphicsSyncResource::removeRef()
     }
 }
 
-uint32 GraphicsSyncResource::refCount() const { return refCounter.load(); }
+uint32 GraphicsSyncResource::refCount() const { return refCounter.load(std::memory_order::acquire); }
 
 String GraphicsSyncResource::getResourceName() const { return resourceName; }
 

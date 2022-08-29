@@ -155,7 +155,7 @@ Vector3D Camera::screenToWorld(const Vector2D &screenPos) const
     return { worldCoord };
 }
 
-Vector3D Camera::screenToWorldFwd(const Vector2D &screenPos) const { return (screenToWorld(screenPos) - camTranslation).safeNormalize(); }
+Vector3D Camera::screenToWorldFwd(const Vector2D &screenPos) const { return (screenToWorld(screenPos) - camTranslation).safeNormalized(); }
 
 Matrix4 Camera::viewMatrix() const
 {
