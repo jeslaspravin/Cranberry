@@ -34,6 +34,7 @@ enum Type
 };
 
 EPixelDataFormat::Type getPixelFormat(Type textureType);
+const TChar *toString(Type textureType);
 } // namespace ERendererIntermTexture
 
 class RendererIntermTexture : public IRenderTargetTexture
@@ -46,14 +47,61 @@ public:
     ReferenceCountPtr<MemoryResource> renderTargetResource() const override { return rtTexture; };
 };
 
-struct RendererIntermTextureList
+struct TexturePoolListKey
 {
-    RendererIntermTexture gbufferDiffuse;
-    RendererIntermTexture gbufferNormal;
-    RendererIntermTexture gbufferARM;
-    RendererIntermTexture tempTestTexture;
+    Size3D textureSize;
+    // Sample count is not needed as it will most likely will be wait clearing everything on change
+    // Layer count is not needed as that will probably same per type of textures in pool
 
-    RendererIntermTexture *textures[ERendererIntermTexture::MaxCount];
+    bool operator==(const TexturePoolListKey &rhs) const { return textureSize == rhs.textureSize; }
+};
+
+template <>
+struct std::hash<TexturePoolListKey>
+{
+    NODISCARD size_t operator()(const TexturePoolListKey &val) const noexcept
+    {
+        return HashUtility::hashAllReturn(val.textureSize.x, val.textureSize.y, val.textureSize.z);
+    }
+};
+
+class SceneRenderTexturePool
+{
+private:
+    struct TextureData
+    {
+        RendererIntermTexture intermTexture;
+        // If not used after this clear counter reaches 0 this texture will be cleared
+        uint32 clearCounter;
+    };
+    using TextureList = SparseVector<TextureData, BitArraySparsityPolicy>;
+    using PoolTexturesMap = std::unordered_multimap<TexturePoolListKey, TextureList::size_type>;
+    PoolTexturesMap poolTextures[ERendererIntermTexture::MaxCount];
+    TextureList textures;
+    uint32 bufferingCount;
+
+public:
+    struct PoolTextureDesc
+    {
+        uint32 layerCount = 1;
+        uint32 mipCount = 1;
+        EPixelSampleCount::Type sampleCount = EPixelSampleCount::SampleCount1;
+    };
+    SceneRenderTexturePool(uint32 inBufferingCount)
+        : bufferingCount(inBufferingCount)
+    {}
+    MAKE_TYPE_NONCOPY_NONMOVE(SceneRenderTexturePool)
+
+    // Call getTexture after finishing any command that previously used the texture
+    const RendererIntermTexture &
+        getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size, PoolTextureDesc textureDesc);
+    const RendererIntermTexture &
+        getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size, PoolTextureDesc textureDesc);
+    // Below function will query existing and return null if nothing found that is use able
+    const RendererIntermTexture *getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size);
+    const RendererIntermTexture *getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size);
+
+    void clearUnused(IRenderCommandList *cmdList);
 };
 
 // 1:1 to each world
@@ -72,11 +120,11 @@ private:
     SparseVector<ComponentRenderInfo, BitArraySparsityPolicy> compsRenderInfo;
     std::unordered_map<StringID, SizeT> componentToRenderInfo;
 
+    SceneRenderTexturePool rtPool;
+
     // Initial test code for RT pool
     uint64 frameCount = 0;
     RendererIntermTexture lastRT;
-    std::vector<RendererIntermTexture> tempTextures;
-    std::vector<RendererIntermTexture> texturesToClear;
     const RendererIntermTexture &getTempTexture(IRenderCommandList *cmdList, Short2D size);
     String getCmdBufferName() const;
 

@@ -18,3 +18,5 @@ void WgWorldImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
     {}
     ImGui::End();
 }
+
+void WgWorldImGuiLayer::setWorld(cbe::World *world) { currentWorld = world; }

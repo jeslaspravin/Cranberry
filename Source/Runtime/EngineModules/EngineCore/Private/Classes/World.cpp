@@ -22,9 +22,9 @@
 namespace cbe
 {
 
-inline constexpr static const uint32 WORLD_SERIALIZER_VERSION = 0;
-inline constexpr static const uint32 WORLD_SERIALIZER_CUTOFF_VERSION = 0;
-inline STRINGID_CONSTEXPR static const StringID WORLD_SERIALIZER_CUSTOM_VERSION_ID = STRID("WorldSerializer");
+constexpr inline const uint32 WORLD_SERIALIZER_VERSION = 0;
+constexpr inline const uint32 WORLD_SERIALIZER_CUTOFF_VERSION = 0;
+STRINGID_CONSTEXPR inline const StringID WORLD_SERIALIZER_CUSTOM_VERSION_ID = STRID("WorldSerializer");
 
 World::World()
 {

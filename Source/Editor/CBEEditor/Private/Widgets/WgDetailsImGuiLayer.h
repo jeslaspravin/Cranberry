@@ -13,10 +13,13 @@
 
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "EditorTypes.h"
+#include "CoreObjectDelegates.h"
 
 class WgDetailsImGuiLayer : public IImGuiLayer
 {
-private:
+public:
+    ObjectGetterDelegate selectionGetter;
+
 public:
     /* IImGuiLayer overrides */
 

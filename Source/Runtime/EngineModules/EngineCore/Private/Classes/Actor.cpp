@@ -24,9 +24,9 @@ namespace cbe
 // ActorPrefab impl
 //////////////////////////////////////////////////////////////////////////
 
-inline constexpr static const uint32 ACTOR_PREFAB_SERIALIZER_VERSION = 0;
-inline constexpr static const uint32 ACTOR_PREFAB_SERIALIZER_CUTOFF_VERSION = 0;
-inline STRINGID_CONSTEXPR static const StringID ACTOR_PREFAB_CUSTOM_VERSION_ID = STRID("ActorPrefabSerializer");
+constexpr inline const uint32 ACTOR_PREFAB_SERIALIZER_VERSION = 0;
+constexpr inline const uint32 ACTOR_PREFAB_SERIALIZER_CUTOFF_VERSION = 0;
+STRINGID_CONSTEXPR inline const StringID ACTOR_PREFAB_CUSTOM_VERSION_ID = STRID("ActorPrefabSerializer");
 
 ActorPrefab::ActorPrefab(StringID className, const String &actorName)
     : parentPrefab(nullptr)

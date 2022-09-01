@@ -46,7 +46,7 @@ struct std::equal_to<tinyobj::index_t>
 
 namespace ObjSMImporterHelpers
 {
-constexpr static const uint32 FACE_MAX_VERTS = 3;
+constexpr inline const uint32 FACE_MAX_VERTS = 3;
 
 enum EImportErrorCodes
 {

@@ -13,6 +13,7 @@
 
 #include "CBEEditorExports.h"
 #include "Classes/EngineBase.h"
+#include "Classes/Actor.h"
 
 #include "EditorEngine.gen.h"
 
@@ -27,6 +28,8 @@ class CBEEditorModule;
 
 namespace cbe
 {
+
+class Actor;
 
 class META_ANNOTATE_API(CBEEDITOR_EXPORT) EditorEngine : public EngineBase
 {
@@ -44,6 +47,12 @@ private:
 
     DelegateHandle worldInitHandle;
 
+    META_ANNOTATE(Transient)
+    Object *selectedObj = nullptr;
+
+    META_ANNOTATE(Transient)
+    Actor *selectedActor = nullptr;
+
 public:
     EditorEngine();
 
@@ -54,6 +63,11 @@ public:
     /* EngineBase overrides */
     void destroy() override;
     /* Override ends */
+
+    Object *getSelectedObject() const { return selectedObj; }
+
+private:
+    void selectionChanged(Object *newSelection);
 };
 
 CBEEDITOR_EXPORT extern EditorEngine *gCBEditorEngine;
