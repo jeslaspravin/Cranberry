@@ -33,9 +33,9 @@ ArchiveType &operator<<(ArchiveType &archive, StaticMeshVertex &value)
 
 namespace cbe
 {
-inline constexpr static const uint32 STATIC_MESH_SERIALIZER_VERSION = 0;
-inline constexpr static const uint32 STATIC_MESH_SERIALIZER_CUTOFF_VERSION = 0;
-inline STRINGID_CONSTEXPR static const StringID STATIC_MESH_CUSTOM_VERSION_ID = STRID("StaticMeshSerializer");
+constexpr inline const uint32 STATIC_MESH_SERIALIZER_VERSION = 0;
+constexpr inline const uint32 STATIC_MESH_SERIALIZER_CUTOFF_VERSION = 0;
+STRINGID_CONSTEXPR inline const StringID STATIC_MESH_CUSTOM_VERSION_ID = STRID("StaticMeshSerializer");
 
 StaticMesh::StaticMesh() {}
 

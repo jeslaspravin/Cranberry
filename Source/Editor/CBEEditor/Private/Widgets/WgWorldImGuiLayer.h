@@ -13,10 +13,19 @@
 
 #include "Widgets/ImGui/IImGuiLayer.h"
 #include "EditorTypes.h"
+#include "CoreObjectDelegates.h"
+#include "ObjectPtrs.h"
+#include "Classes/World.h"
 
 class WgWorldImGuiLayer : public IImGuiLayer
 {
+public:
+    ObjectGetterDelegate selectionGetter;
+    ObjectSetterDelegate onSelected;
+
 private:
+    cbe::WeakObjPtr<cbe::World> currentWorld;
+
 public:
     /* IImGuiLayer overrides */
 
@@ -32,6 +41,8 @@ public:
     void tick(float timeDelta) override {}
 
     /* Overrides ends */
+
+    void setWorld(cbe::World *world);
 
 private:
 };

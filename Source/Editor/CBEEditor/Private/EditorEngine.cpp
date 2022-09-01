@@ -22,6 +22,8 @@
 #include "Widgets/WgContentsImGuiLayer.h"
 #include "Widgets/WgConsoleImGuiLayer.h"
 #include "Classes/WorldsManager.h"
+#include "Classes/Actor.h"
+#include "Components/ComponentBase.h"
 #include "WorldViewport.h"
 
 namespace cbe
@@ -66,17 +68,27 @@ void EditorEngine::engineStart()
         {
             if (bIsMain)
             {
-                viewportLayer->setWorldViewport(std::make_shared<WorldViewport>(gCBEEngine->worldManager()->getRenderingWorld()));
+                World *renderingWorld = gCBEEngine->worldManager()->getRenderingWorld();
+                viewportLayer->setWorldViewport(std::make_shared<WorldViewport>(renderingWorld));
+                worldLayer->setWorld(renderingWorld);
             }
         }
     );
+    detailsLayer->selectionGetter.bindObject(this, &EditorEngine::getSelectedObject);
+    worldLayer->selectionGetter.bindObject(this, &EditorEngine::getSelectedObject);
+    worldLayer->onSelected.bindObject(this, &EditorEngine::selectionChanged);
 }
 
 void EditorEngine::engineTick(float timeDelta) {}
 
 void EditorEngine::engineExit()
 {
+    selectedObj = selectedActor = nullptr;
+
     gCBEEngine->worldManager()->onWorldInitEvent().unbind(worldInitHandle);
+    detailsLayer->selectionGetter.unbind();
+    worldLayer->selectionGetter.unbind();
+    worldLayer->onSelected.unbindAll(this);
 
     wgImgui.reset();
     editorLayer.reset();
@@ -88,5 +100,27 @@ void EditorEngine::engineExit()
 }
 
 void EditorEngine::destroy() {}
+
+void EditorEngine::selectionChanged(Object *newSelection)
+{
+    selectedObj = newSelection;
+    if (Actor *actor = cast<Actor>(newSelection))
+    {
+        selectedActor = actor;
+    }
+    else if (TransformComponent *tfComp = cast<TransformComponent>(newSelection))
+    {
+        selectedActor = tfComp->getActor();
+    }
+    else if (LogicComponent *logicComponent = cast<LogicComponent>(newSelection))
+    {
+        selectedActor = logicComponent->getActor();
+    }
+    else
+    {
+        selectedActor = nullptr;
+        LOG_WARN("EditorEngine", "Selection %s is not handled properly!", newSelection->getFullPath());
+    }
+}
 
 } // namespace cbe

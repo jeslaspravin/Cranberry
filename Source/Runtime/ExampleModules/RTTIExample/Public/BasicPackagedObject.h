@@ -35,8 +35,8 @@ public:
 };
 
 // Example custom serialization version check at BasicPackagedObject
-inline constexpr static const uint32 BASICPACKAGEDOBJ_SERIALIZER_VERSION = 1;
-inline constexpr static const uint32 BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION = 0;
+constexpr inline const uint32 BASICPACKAGEDOBJ_SERIALIZER_VERSION = 1;
+constexpr inline const uint32 BASICPACKAGEDOBJ_SERIALIZER_CUTOFF_VERSION = 0;
 
 class META_ANNOTATE_API(RTTIEXAMPLE_EXPORT) BasicPackagedObject
     : public cbe::Object

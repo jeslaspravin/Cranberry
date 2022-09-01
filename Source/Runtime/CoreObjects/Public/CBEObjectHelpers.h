@@ -33,7 +33,16 @@ FORCE_INLINE bool isValid(const Object *obj)
     if (obj && NO_BITS_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Deleted | EObjectFlagBits::ObjFlag_MarkedForDelete))
     {
         const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-        return objectsDb.hasObject(obj->getStringID());
+        // Object db must have this object if present, then at this point this object must have valid alloc index due to flags not being set
+        bool bIsValid = objectsDb.hasObject(obj->getStringID());
+#if DEV_BUILD
+        ObjectAllocatorBase *objAllocator = getObjAllocator(obj->getType());
+        fatalAssertf(
+            !bIsValid || (objAllocator && objAllocator->isValid(INTERNAL_ObjectCoreAccessors::getAllocIdx(obj))),
+            "Object name %s is reused but old object must have been not properly marked as deleted", obj->getFullPath()
+        );
+#endif
+        return bIsValid;
     }
     return false;
 }

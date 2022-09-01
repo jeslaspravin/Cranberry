@@ -17,7 +17,7 @@
 
 namespace cbe
 {
-inline constexpr static const TChar *PACKAGE_EXT = TCHAR("berry");
+constexpr inline const TChar *PACKAGE_EXT = TCHAR("berry");
 
 class META_ANNOTATE_API(COREOBJECTS_EXPORT) Package final : public Object
 {

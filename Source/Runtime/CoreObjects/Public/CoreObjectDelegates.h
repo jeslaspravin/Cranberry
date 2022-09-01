@@ -21,6 +21,9 @@ namespace cbe
 class Object;
 }
 
+using ObjectGetterDelegate = SingleCastDelegate<cbe::Object *>;
+using ObjectSetterDelegate = Delegate<cbe::Object *>;
+
 class COREOBJECTS_EXPORT CoreObjectDelegates
 {
 private:

@@ -47,76 +47,200 @@ EPixelDataFormat::Type getPixelFormat(Type textureType)
     }
     return EPixelDataFormat::BGRA_U8_Norm;
 }
+
+const TChar *toString(Type textureType)
+{
+    switch (textureType)
+    {
+    case ERendererIntermTexture::GBufferDiffuse:
+        return TCHAR("GBuffer_Diffuse");
+        break;
+    case ERendererIntermTexture::GBufferNormal:
+        return TCHAR("GBuffer_Normal");
+        break;
+    case ERendererIntermTexture::GBufferARM:
+        return TCHAR("GBuffer_ARM");
+        break;
+    case ERendererIntermTexture::TempTest:
+        return TCHAR("TempTest");
+        break;
+    default:
+        break;
+    }
+    return TCHAR("InvalidIntermFormat");
+}
+
 } // namespace ERendererIntermTexture
 
-const RendererIntermTexture &EngineRenderScene::getTempTexture(IRenderCommandList *cmdList, Short2D size)
-{
-    debugAssert(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get() == EPixelSampleCount::SampleCount1);
+//////////////////////////////////////////////////////////////////////////
+// SceneRenderTexturePool Implementations
+//////////////////////////////////////////////////////////////////////////
 
-    std::vector<ImageResourceRef> safeToDeleteRts;
-    safeToDeleteRts.reserve(texturesToClear.size() * 2);
-    for (auto itr = texturesToClear.begin(); itr != texturesToClear.end();)
+const RendererIntermTexture &SceneRenderTexturePool::getTexture(
+    IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size, PoolTextureDesc textureDesc
+)
+{
+    ASSERT_INSIDE_RENDERTHREAD();
+
+    if (const RendererIntermTexture *foundTexture = getTexture(cmdList, rtType, size))
     {
-        if (!cmdList->hasCmdsUsingResource(itr->renderTargetResource())
-            && (itr->renderResource() == itr->renderTargetResource() || !cmdList->hasCmdsUsingResource(itr->renderResource())))
+        return *foundTexture;
+    }
+
+    // If we are not doing MSAA then the MIP count also must be 1. As texture and RT will be same
+    const bool bMSAATexture = textureDesc.sampleCount != EPixelSampleCount::SampleCount1;
+    debugAssert(bMSAATexture || textureDesc.mipCount == 1);
+    ImageResourceCreateInfo ci;
+    ci.dimensions = size;
+    ci.imageFormat = ERendererIntermTexture::getPixelFormat(rtType);
+    ci.numOfMips = 1;
+    ci.layerCount = textureDesc.layerCount;
+
+    TextureList::size_type idx = textures.get();
+    textures[idx].clearCounter = bufferingCount;
+    RendererIntermTexture &texture = textures[idx].intermTexture;
+    texture.rtTexture = texture.resolvedTexture
+        = IRenderInterfaceModule::get()->currentGraphicsHelper()->createRTImage(IRenderInterfaceModule::get()->currentGraphicsInstance(), ci);
+    texture.rtTexture->setResourceName(ERendererIntermTexture::toString(rtType) + String::toString(idx));
+    if (bMSAATexture)
+    {
+        texture.rtTexture->setSampleCounts(textureDesc.sampleCount);
+
+        ci.numOfMips = textureDesc.mipCount;
+        texture.resolvedTexture
+            = IRenderInterfaceModule::get()->currentGraphicsHelper()->createImage(IRenderInterfaceModule::get()->currentGraphicsInstance(), ci);
+        texture.resolvedTexture->setShaderUsage(EImageShaderUsage::Sampling);
+        texture.resolvedTexture->setResourceName(ERendererIntermTexture::toString(rtType) + String::toString(idx) + TCHAR("_Resolved"));
+        texture.resolvedTexture->init();
+    }
+    else
+    {
+        texture.rtTexture->setShaderUsage(EImageShaderUsage::Sampling);
+    }
+    texture.rtTexture->init();
+    LOG_DEBUG(
+        "SceneRenderTexturePool", "Allocated new RT %s(%d, %d, %d) under type %s", texture.renderTargetResource()->getResourceName(),
+        texture.rtTexture->getImageSize().x, texture.rtTexture->getImageSize().y, texture.rtTexture->getImageSize().z,
+        ERendererIntermTexture::toString(rtType)
+    );
+
+    // Insert into pool
+    poolTextures[rtType].emplace(std::piecewise_construct, std::forward_as_tuple(size), std::forward_as_tuple(idx));
+    return texture;
+}
+
+const RendererIntermTexture &SceneRenderTexturePool::getTexture(
+    IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size, PoolTextureDesc textureDesc
+)
+{
+    ASSERT_INSIDE_RENDERTHREAD();
+    return getTexture(cmdList, rtType, Size3D(size, 1), textureDesc);
+}
+
+const RendererIntermTexture *SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size3D size)
+{
+    ASSERT_INSIDE_RENDERTHREAD();
+
+    TexturePoolListKey key{ size };
+
+    auto texturesRange = poolTextures[rtType].equal_range(key);
+    for (auto itr = texturesRange.first; itr != texturesRange.second; ++itr)
+    {
+        debugAssert(textures.isValid(itr->second));
+        const RendererIntermTexture &intermTexture = textures[itr->second].intermTexture;
+        textures[itr->second].clearCounter = bufferingCount;
+
+        // Must be valid if present in poolTextures
+        debugAssert(intermTexture.renderTargetResource().isValid());
+
+        if (!cmdList->hasCmdsUsingResource(intermTexture.renderTargetResource())
+            && (intermTexture.renderTargetResource() == intermTexture.renderResource()
+                || !cmdList->hasCmdsUsingResource(intermTexture.renderResource())))
         {
-            safeToDeleteRts.emplace_back(itr->renderTargetResource());
-            if (itr->renderTargetResource() != itr->renderResource())
-            {
-                safeToDeleteRts.emplace_back(itr->renderResource());
-            }
-            itr = texturesToClear.erase(itr);
-        }
-        else
-        {
-            break;
+            return &intermTexture;
         }
     }
+    return nullptr;
+}
+
+const RendererIntermTexture *SceneRenderTexturePool::getTexture(IRenderCommandList *cmdList, ERendererIntermTexture::Type rtType, Size2D size)
+{
+    ASSERT_INSIDE_RENDERTHREAD();
+    return getTexture(cmdList, rtType, Size3D(size, 1));
+}
+
+void SceneRenderTexturePool::clearUnused(IRenderCommandList *cmdList)
+{
+    ASSERT_INSIDE_RENDERTHREAD();
+
+    std::vector<ImageResourceRef> safeToDeleteRts;
+    safeToDeleteRts.reserve(textures.size());
+    for (uint32 i = 0; i != ERendererIntermTexture::MaxCount; ++i)
+    {
+        for (PoolTexturesMap::iterator itr = poolTextures[i].begin(); itr != poolTextures[i].end();)
+        {
+            debugAssert(textures.isValid(itr->second));
+            TextureData &textureData = textures[itr->second];
+            if (textureData.clearCounter != 0)
+            {
+                textureData.clearCounter--;
+                ++itr;
+                continue;
+            }
+
+            RendererIntermTexture &intermTexture = textureData.intermTexture;
+            // Must be valid if present in poolTextures
+            debugAssert(intermTexture.renderTargetResource().isValid());
+
+            if (!cmdList->hasCmdsUsingResource(intermTexture.renderTargetResource())
+                && (intermTexture.renderTargetResource() == intermTexture.renderResource()
+                    || !cmdList->hasCmdsUsingResource(intermTexture.renderResource())))
+            {
+                safeToDeleteRts.emplace_back(intermTexture.renderTargetResource());
+                if (intermTexture.renderTargetResource() != intermTexture.renderResource())
+                {
+                    safeToDeleteRts.emplace_back(intermTexture.renderResource());
+                }
+
+                LOG_DEBUG(
+                    "SceneRenderTexturePool", "Clearing Texture %s(%d, %d, %d) from type %s",
+                    intermTexture.renderTargetResource()->getResourceName(), intermTexture.rtTexture->getImageSize().x,
+                    intermTexture.rtTexture->getImageSize().y, intermTexture.rtTexture->getImageSize().z,
+                    ERendererIntermTexture::toString(ERendererIntermTexture::Type(i))
+                );
+                textures.reset(itr->second);
+                itr = poolTextures[i].erase(itr);
+            }
+            else
+            {
+                ++itr;
+            }
+        }
+    }
+
     if (!safeToDeleteRts.empty())
     {
         RenderManager *renderMan = IRenderInterfaceModule::get()->getRenderManager();
         renderMan->getGlobalRenderingContext()->clearFbsContainingRts(safeToDeleteRts);
     }
+}
 
-    for (uint32 i = 0; i != tempTextures.size(); ++i)
-    {
-        if (tempTextures[i].rtTexture == nullptr || tempTextures[i].rtTexture->getImageSize().x != size.x
-            || tempTextures[i].rtTexture->getImageSize().y != size.y)
-        {
-            if (tempTextures[i].rtTexture)
-            {
-                texturesToClear.emplace_back(tempTextures[i]);
-            }
+//////////////////////////////////////////////////////////////////////////
+// EngineRenderScene Implementations
+//////////////////////////////////////////////////////////////////////////
 
-            ImageResourceCreateInfo ci;
-            ci.dimensions = { size.x, size.y, 1 };
-            ci.imageFormat = ERendererIntermTexture::getPixelFormat(ERendererIntermTexture::TempTest);
-            ci.numOfMips = 1;
-            ci.layerCount = 1;
-            tempTextures[i].rtTexture = tempTextures[i].resolvedTexture = IRenderInterfaceModule::get()->currentGraphicsHelper()->createRTImage(
-                IRenderInterfaceModule::get()->currentGraphicsInstance(), ci
-            );
-            tempTextures[i].rtTexture->setResourceName(TCHAR("TestEngineRenderSceneRT_") + String::toString(i));
-            tempTextures[i].rtTexture->setShaderUsage(EImageShaderUsage::Sampling);
-            tempTextures[i].rtTexture->init();
-            return tempTextures[i];
-        }
+const RendererIntermTexture &EngineRenderScene::getTempTexture(IRenderCommandList *cmdList, Short2D size)
+{
+    debugAssert(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get() == EPixelSampleCount::SampleCount1);
 
-        if (!cmdList->hasCmdsUsingResource(tempTextures[i].rtTexture)
-            && (tempTextures[i].resolvedTexture == tempTextures[i].rtTexture || !cmdList->hasCmdsUsingResource(tempTextures[i].resolvedTexture)
-            ))
-        {
-            return tempTextures[i];
-        }
-    }
-    tempTextures.resize(tempTextures.size() + 1);
-    return getTempTexture(cmdList, size);
+    return rtPool.getTexture(cmdList, ERendererIntermTexture::TempTest, size, {});
 }
 
 String EngineRenderScene::getCmdBufferName() const { return TCHAR("EngineRenderSceneCmd_") + String::toString(frameCount % BUFFER_COUNT); }
 
 EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
     : world(inWorld)
+    , rtPool(BUFFER_COUNT)
 {}
 
 copat::JobSystemEnqTask<copat::EJobThreadType::RenderThread> EngineRenderScene::syncWorldComps(ComponentRenderSyncInfo compsUpdate)
@@ -155,7 +279,11 @@ void EngineRenderScene::renderTheScene(Short2D viewportSize, const Camera &viewC
 
             lastRT = getTempTexture(cmdList, viewportSize);
             renderTheSceneRenderThread(viewportSize, viewCamera, cmdList, graphicsInstance, graphicsHelper);
-
+            // Clear once every buffer cycle
+            if ((frameCount % BUFFER_COUNT) == 0)
+            {
+                rtPool.clearUnused(cmdList);
+            }
             frameCount++;
         }
     );

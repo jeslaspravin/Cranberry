@@ -13,14 +13,14 @@
 
 #include "ObjectPtrs.h"
 
-inline constexpr static const uint32 PACKAGE_SERIALIZER_VERSION = 0;
-inline constexpr static const uint32 PACKAGE_SERIALIZER_CUTOFF_VERSION = 0;
-inline STRINGID_CONSTEXPR static const StringID PACKAGE_CUSTOM_VERSION_ID = STRID("PackageSerializer");
-inline STRINGID_CONSTEXPR static const StringID PACKAGE_ARCHIVE_MARKER = STRID("SerializedCBEPackage");
+constexpr inline const uint32 PACKAGE_SERIALIZER_VERSION = 0;
+constexpr inline const uint32 PACKAGE_SERIALIZER_CUTOFF_VERSION = 0;
+STRINGID_CONSTEXPR inline const StringID PACKAGE_CUSTOM_VERSION_ID = STRID("PackageSerializer");
+STRINGID_CONSTEXPR inline const StringID PACKAGE_ARCHIVE_MARKER = STRID("SerializedCBEPackage");
 
 // This will be flag set on object index when an object index is serialized to archive
-inline constexpr static const SizeT DEPENDENT_OBJECT_FLAG = 0x80'00'00'00'00'00'00'00ull;
-inline constexpr static const SizeT NULL_OBJECT_FLAG = ~0ull;
+constexpr inline const SizeT DEPENDENT_OBJECT_FLAG = 0x80'00'00'00'00'00'00'00ull;
+constexpr inline const SizeT NULL_OBJECT_FLAG = ~0ull;
 
 struct PackageDependencyData
 {
