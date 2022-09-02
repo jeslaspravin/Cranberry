@@ -90,7 +90,7 @@ int32 main(int32 argsc, AChar **args)
     Logger::initialize();
     if (!ProgramCmdLine::get()->hasArg(ReflectToolCmdLineConst::LOG_VERBOSE))
     {
-        Logger::pushMuteSeverities(Logger::Debug | Logger::Log);
+        Logger::pushMuteSeverities(Logger::Verbose | Logger::Debug | Logger::Log);
     }
     if (ProgramCmdLine::get()->printHelp())
     {

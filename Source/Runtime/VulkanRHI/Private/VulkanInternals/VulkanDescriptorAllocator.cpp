@@ -300,7 +300,7 @@ VulkanDescriptorsSetAllocatorInfo &VulkanDescriptorsSetAllocator::findOrCreateAl
             std::vector<VkDescriptorSet> tempSets;
             if (isSupportedPool(tempSets, *availableAllocationInfo, query, uint32(setsRequiredCount)))
             {
-                LOG_DEBUG(
+                LOG_VERBOSE(
                     "DescriptorsSetAllocator",
                     "Found existing pool that supports query, obtained %d existing "
                     "Descriptors set",
@@ -355,7 +355,7 @@ VulkanDescriptorsSetAllocatorInfo &
             // If pool has enough capacity to allocate then support will be true
             if (isSupportedPool(tempSets, *availableAllocationInfo, query, setsCount) && tempSets.empty())
             {
-                LOG_DEBUG("DescriptorsSetAllocator", "Found existing pool that supports query");
+                LOG_VERBOSE("DescriptorsSetAllocator", "Found existing pool that supports query");
                 allocationPool = availableAllocationInfo;
                 break;
             }

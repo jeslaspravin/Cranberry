@@ -13,8 +13,8 @@
 #include "String/String.h"
 
 #include <chrono>
+#include <format>
 #include <ratio>
-#include <time.h>
 
 // Will be implemented in platform specific TU
 template <typename Resolution>
@@ -29,58 +29,73 @@ template <bool bIsHighRes = false>
 class TimeHelper
 {
 public:
-    using Resolution = std::conditional_t<bIsHighRes, TimeHighResolution, TimeResolution>;
+    using DurationResolution = std::conditional_t<bIsHighRes, TimeHighResolution, TimeResolution>;
+    using UTCTimePoint = std::chrono::time_point<std::chrono::utc_clock, DurationResolution>;
+    using SystemTimePoint = std::chrono::time_point<std::chrono::system_clock, DurationResolution>;
 
 public:
     FORCE_INLINE static TickRep timeNow()
     {
         using namespace std::chrono;
-        return duration_cast<Resolution>(steady_clock::now().time_since_epoch()).count();
+        return duration_cast<DurationResolution>(steady_clock::now().time_since_epoch()).count();
     }
 
     FORCE_INLINE static TickRep clockTimeNow()
     {
         using namespace std::chrono;
-        return duration_cast<Resolution>(system_clock::now().time_since_epoch()).count();
+        return duration_cast<DurationResolution>(system_clock::now().time_since_epoch()).count();
     }
+    FORCE_INLINE static TickRep utcTimeNow()
+    {
+        using namespace std::chrono;
+        return duration_cast<DurationResolution>(utc_clock::now().time_since_epoch()).count();
+    }
+
+    FORCE_INLINE static TickRep localTimeNow()
+    {
+        using namespace std::chrono;
+        static const time_zone *sessionZone = current_zone();
+        return duration_cast<DurationResolution>(sessionZone->to_local(system_clock::now()).time_since_epoch()).count();
+    }
+
     FORCE_INLINE static TickRep asMilliSeconds(TickRep tickValue)
     {
         using namespace std::chrono;
-        return duration_cast<duration<TickRep, std::milli>>(Resolution(tickValue)).count();
+        return duration_cast<duration<TickRep, std::milli>>(DurationResolution(tickValue)).count();
     }
     FORCE_INLINE static TickRep asMicroSeconds(TickRep tickValue)
     {
         using namespace std::chrono;
-        return duration_cast<duration<TickRep, std::micro>>(Resolution(tickValue)).count();
+        return duration_cast<duration<TickRep, std::micro>>(DurationResolution(tickValue)).count();
     }
     FORCE_INLINE static TickRep asNanoSeconds(TickRep tickValue)
     {
         using namespace std::chrono;
-        return duration_cast<duration<TickRep, std::nano>>(Resolution(tickValue)).count();
+        return duration_cast<duration<TickRep, std::nano>>(DurationResolution(tickValue)).count();
     }
 
     FORCE_INLINE static TimeConvType asSeconds(TickRep tickValue)
     {
         using namespace std::chrono;
-        return duration_cast<duration<TimeConvType>>(Resolution(tickValue)).count();
+        return duration_cast<duration<TimeConvType>>(DurationResolution(tickValue)).count();
     }
 
     FORCE_INLINE static TimeConvType asMinutes(TickRep tickValue)
     {
         using namespace std::chrono;
-        return duration_cast<duration<TimeConvType, std::ratio<60>>>(Resolution(tickValue)).count();
+        return duration_cast<duration<TimeConvType, std::ratio<60>>>(DurationResolution(tickValue)).count();
     }
 
     FORCE_INLINE static TimeConvType asHours(TickRep tickValue)
     {
         using namespace std::chrono;
-        return duration_cast<duration<TimeConvType, std::ratio<3600>>>(Resolution(tickValue)).count();
+        return duration_cast<duration<TimeConvType, std::ratio<3600>>>(DurationResolution(tickValue)).count();
     }
 
     FORCE_INLINE static TimeConvType asDays(TickRep tickValue)
     {
         using namespace std::chrono;
-        return duration_cast<duration<TimeConvType, std::ratio<86400>>>(Resolution(tickValue)).count();
+        return duration_cast<duration<TimeConvType, std::ratio<86400>>>(DurationResolution(tickValue)).count();
     }
 
     // FORCE_INLINE static String asString(TickRep tickValue, const String& formatStr)
@@ -100,7 +115,7 @@ public:
         duration<TimeConvType> tickDur(asSeconds(tickValue));
         duration<TimeConvType> secondsToAdd(seconds);
         tickDur += secondsToAdd;
-        return duration_cast<Resolution>(tickDur).count();
+        return duration_cast<DurationResolution>(tickDur).count();
     }
 
     FORCE_INLINE static TickRep addMinutes(TickRep tickValue, TimeConvType minutes)
@@ -109,7 +124,7 @@ public:
         duration<TimeConvType, std::ratio<60>> tickDur(asMinutes(tickValue));
         duration<TimeConvType, std::ratio<60>> minutesToAdd(minutes);
         tickDur += minutesToAdd;
-        return duration_cast<Resolution>(tickDur).count();
+        return duration_cast<DurationResolution>(tickDur).count();
     }
 
     FORCE_INLINE static TickRep addHours(TickRep tickValue, TimeConvType hours)
@@ -118,7 +133,7 @@ public:
         duration<TimeConvType, std::ratio<3600>> tickDur(asHours(tickValue));
         duration<TimeConvType, std::ratio<3600>> hoursToAdd(hours);
         tickDur += hoursToAdd;
-        return duration_cast<Resolution>(tickDur).count();
+        return duration_cast<DurationResolution>(tickDur).count();
     }
 
     FORCE_INLINE static TickRep addDays(TickRep tickValue, TimeConvType days)
@@ -127,56 +142,66 @@ public:
         duration<TimeConvType, std::ratio<86400>> tickDur(asDays(tickValue));
         duration<TimeConvType, std::ratio<86400>> daysToAdd(days);
         tickDur += daysToAdd;
-        return duration_cast<Resolution>(tickDur).count();
+        return duration_cast<DurationResolution>(tickDur).count();
     }
 
     FORCE_INLINE static TickRep fromMilliSeconds(TickRep milliSeconds)
     {
         using namespace std::chrono;
-        return duration_cast<Resolution>(duration<TickRep, std::milli>(milliSeconds)).count();
+        return duration_cast<DurationResolution>(duration<TickRep, std::milli>(milliSeconds)).count();
     }
     FORCE_INLINE static TickRep fromMicroSeconds(TickRep microSeconds)
     {
         using namespace std::chrono;
-        return duration_cast<Resolution>(duration<TickRep, std::micro>(microSeconds)).count();
+        return duration_cast<DurationResolution>(duration<TickRep, std::micro>(microSeconds)).count();
     }
     FORCE_INLINE static TickRep fromNanoSeconds(TickRep nanoSeconds)
     {
         using namespace std::chrono;
-        return duration_cast<Resolution>(duration<TickRep, std::nano>(nanoSeconds)).count();
+        return duration_cast<DurationResolution>(duration<TickRep, std::nano>(nanoSeconds)).count();
     }
 
     FORCE_INLINE static TickRep fromSeconds(TimeConvType seconds)
     {
         using namespace std::chrono;
         duration<TimeConvType> secondsToAdd(seconds);
-        return duration_cast<Resolution>(secondsToAdd).count();
+        return duration_cast<DurationResolution>(secondsToAdd).count();
     }
 
     FORCE_INLINE static TickRep fromMinutes(TimeConvType minutes)
     {
         using namespace std::chrono;
         duration<TimeConvType, std::ratio<60>> minsToAdd(minutes);
-        return duration_cast<Resolution>(minsToAdd).count();
+        return duration_cast<DurationResolution>(minsToAdd).count();
     }
 
     FORCE_INLINE static TickRep fromHours(TimeConvType hours)
     {
         using namespace std::chrono;
         duration<TimeConvType, std::ratio<3600>> hoursToAdd(hours);
-        return duration_cast<Resolution>(hoursToAdd).count();
+        return duration_cast<DurationResolution>(hoursToAdd).count();
     }
 
     FORCE_INLINE static TickRep fromDays(TimeConvType days)
     {
         using namespace std::chrono;
         duration<TimeConvType, std::ratio<86400>> daysToAdd(days);
-        return duration_cast<Resolution>(daysToAdd).count();
+        return duration_cast<DurationResolution>(daysToAdd).count();
     }
 
-    FORCE_INLINE static TickRep fromPlatformTime(int64 platformTick) { return ::fromPlatformTime<Resolution>(platformTick); }
+    FORCE_INLINE static TickRep fromPlatformTime(int64 platformTick) { return ::fromPlatformTime<DurationResolution>(platformTick); }
 
-    FORCE_INLINE static int64 toPlatformTime(TickRep tickValue) { return ::toPlatformTime<Resolution>(tickValue); }
+    FORCE_INLINE static int64 toPlatformTime(TickRep tickValue) { return ::toPlatformTime<DurationResolution>(tickValue); }
+
+    FORCE_INLINE static String toString(TickRep tickValue, bool bIsUTC)
+    {
+        constexpr static const TChar *FORMAT_STR = TCHAR("{0:%d-%m-%Y %H:%M:%S}");
+        if (bIsUTC)
+        {
+            return std::format(FORMAT_STR, UTCTimePoint(DurationResolution(tickValue)));
+        }
+        return std::format(FORMAT_STR, SystemTimePoint(DurationResolution(tickValue)));
+    }
 };
 
 // namespace Time
@@ -184,6 +209,10 @@ public:
 TickRep Time::timeNow() { return TimeHelper<false>::timeNow(); }
 
 TickRep Time::clockTimeNow() { return TimeHelper<false>::clockTimeNow(); }
+
+TickRep Time::utcTimeNow() { return TimeHelper<false>::utcTimeNow(); }
+
+TickRep Time::localTimeNow() { return TimeHelper<false>::localTimeNow(); }
 
 TickRep Time::asNanoSeconds(TickRep tickValue) { return TimeHelper<false>::asNanoSeconds(tickValue); }
 
@@ -221,11 +250,17 @@ TickRep Time::fromPlatformTime(int64 platformTick) { return TimeHelper<false>::f
 
 int64 Time::toPlatformTime(TickRep tickValue) { return TimeHelper<false>::toPlatformTime(tickValue); }
 
+String Time::toString(TickRep tickValue, bool bIsUTC) { return TimeHelper<false>::toString(tickValue, bIsUTC); }
+
 // namespace HighResolutionTime
 
 TickRep HighResolutionTime::timeNow() { return TimeHelper<true>::timeNow(); }
 
 TickRep HighResolutionTime::clockTimeNow() { return TimeHelper<true>::clockTimeNow(); }
+
+TickRep HighResolutionTime::utcTimeNow() { return TimeHelper<true>::utcTimeNow(); }
+
+TickRep HighResolutionTime::localTimeNow() { return TimeHelper<true>::localTimeNow(); }
 
 TickRep HighResolutionTime::asMilliSeconds(TickRep tickValue) { return TimeHelper<true>::asMilliSeconds(tickValue); }
 
@@ -262,6 +297,8 @@ TickRep HighResolutionTime::addDays(TickRep tickValue, TimeConvType days) { retu
 TickRep HighResolutionTime::fromPlatformTime(int64 platformTick) { return TimeHelper<true>::fromPlatformTime(platformTick); }
 
 int64 HighResolutionTime::toPlatformTime(TickRep tickValue) { return TimeHelper<true>::toPlatformTime(tickValue); }
+
+String HighResolutionTime::toString(TickRep tickValue, bool bIsUTC) { return TimeHelper<true>::toString(tickValue, bIsUTC); }
 
 // Stopwatch
 

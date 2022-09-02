@@ -126,6 +126,8 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     }
 
     Logger::flushStream();
+    Logger::startLoggingTime();
+
     LOG("Application", "%s application start", appCI.applicationName);
     appInstance->startApp();
     if (engineRenderer)
@@ -145,6 +147,8 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
         fontManager.clear();
         ModuleManager::get()->unloadModule(TCHAR("EngineRenderer"));
     }
+    // Stop log time logging here as at ModuleManager::unloadAll will log time to cause locale to be used after unload
+    Logger::stopLoggingTime();
     Logger::flushStream();
 
     // Shutdown the job system after renderer is released!

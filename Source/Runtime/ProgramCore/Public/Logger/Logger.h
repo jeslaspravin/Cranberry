@@ -52,10 +52,11 @@ public:
 
     enum ELogServerity : uint8
     {
-        Debug = 1,
-        Log = 2,
-        Warning = 4,
-        Error = 8
+        Verbose = 1,
+        Debug = 2,
+        Log = 4,
+        Warning = 8,
+        Error = 16
     };
 
     enum ELogOutputType : uint8
@@ -64,7 +65,8 @@ public:
         Console = 2
     };
 
-    constexpr static const uint8 AllServerity = ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
+    constexpr static const uint8 AllServerity
+        = ELogServerity::Verbose | ELogServerity::Debug | ELogServerity::Log | ELogServerity::Warning | ELogServerity::Error;
     constexpr static const uint8 AllOutputType = ELogOutputType::File | ELogOutputType::Console;
 
     constexpr static const TChar *CONSOLE_FOREGROUND_RED = TCHAR("\x1b[31m");
@@ -82,15 +84,30 @@ private:
 
     static LoggerImpl *loggerImpl;
 
+#if ENABLE_VERBOSE_LOG
+    static void verboseInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
+#endif
     static void debugInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
     static void logInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
     static void warnInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
     static void errorInternal(const SourceLocationType srcLoc, const TChar *category, const String &message);
 
     static CBESpinLock &consoleOutputLock();
-    FORCE_INLINE static bool canLog(ELogServerity severity, ELogOutputType output);
+    static bool canLog(ELogServerity severity, ELogOutputType output);
+    static bool canLogTime();
 
 public:
+#if ENABLE_VERBOSE_LOG
+    template <typename CatType, typename FmtType, typename... Args>
+    DEBUG_INLINE CONST_EXPR static void verbose(const SourceLocationType srcLoc, CatType &&category, FmtType &&fmt, Args &&...args)
+    {
+        verboseInternal(
+            srcLoc, StringFormat::getChar<CatType>(std::forward<CatType>(category)),
+            StringFormat::format<FmtType, Args...>(std::forward<FmtType>(fmt), std::forward<Args>(args)...)
+        );
+    }
+#endif
+
     // && (Not necessary but nice to have this)passes the type as it is from the caller like r-values as
     // well else r-values gets converted to l-values on this call
     template <typename CatType, typename FmtType, typename... Args>
@@ -135,12 +152,21 @@ public:
 
     static void initialize();
     static void shutdown();
+
+    static void startLoggingTime();
+    static void stopLoggingTime();
 };
 
 #if HAS_SOURCE_LOCATION_FEATURE
 #define CURRENT_SRC_LOC() Logger::SourceLocationType::current()
 #else
 #define CURRENT_SRC_LOC() Logger::SourceLocationType::current(__FILE__, __func__, __LINE__)
+#endif
+
+#if ENABLE_VERBOSE_LOG
+#define LOG_VERBOSE(Category, Fmt, ...) Logger::verbose(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)
+#else
+#define LOG_VERBOSE(Category, Fmt, ...)
 #endif
 
 #define LOG_DEBUG(Category, Fmt, ...) Logger::debug(CURRENT_SRC_LOC(), TCHAR(Category), TCHAR(Fmt), __VA_ARGS__)

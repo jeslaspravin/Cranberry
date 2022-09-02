@@ -46,6 +46,7 @@ target_compile_definitions(${target_name}
         ${engine_def} 
         ${experimental_def} 
         $<$<BOOL:${enable_console_log}>:LOG_TO_CONSOLE=1>
+        $<$<BOOL:${enable_verbose_log}>:ENABLE_VERBOSE_LOG=1>
     PRIVATE
         ${private_compile_defs}
 )

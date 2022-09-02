@@ -56,6 +56,8 @@ private:
     CBESpinLock allTlDataLock;
     std::vector<LoggerPerThreadData *> allPerThreadData;
 
+    // This is only supposed to be enabled when app ticking starts and must be stopped when app begins shutdown
+    std::atomic_flag bEnableLogTime;
     PlatformFile logFile;
 
     LoggerPerThreadData &getOrCreatePerThreadData()
@@ -80,8 +82,11 @@ private:
 public:
     bool initialize();
     void shutdown();
+    void startLoggingTime() { bEnableLogTime.test_and_set(std::memory_order::relaxed); }
+    void stopLoggingTime() { bEnableLogTime.clear(std::memory_order::relaxed); }
 
     std::vector<uint8> &muteFlags() { return getOrCreatePerThreadData().serverityMuteFlags; }
+    bool canLogTime() const { return bEnableLogTime.test(std::memory_order::relaxed); }
 
     OStringStream &lockLoggerBuffer()
     {
@@ -221,23 +226,76 @@ Logger::LoggerAutoShutdown Logger::autoShutdown;
 
 LoggerImpl *Logger::loggerImpl = nullptr;
 
-NODISCARD constexpr const TChar *filterFileName(const AChar *fileName) noexcept
+NODISCARD constexpr const AChar *filterFileName(const AChar *fileName) noexcept
 {
     SizeT foundAt = 0;
     TCharStr::rfind(fileName, FS_PATH_SEPARATOR, &foundAt);
     return fileName + foundAt + 1;
 }
 
+#if ENABLE_VERBOSE_LOG
+void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
+{
+#if DEV_BUILD
+    static const String CATEGORY{ TCHAR("[VERBOSE]") };
+
+    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    const AChar *fileName = filterFileName(srcLoc.file_name());
+
+    if (canLog(ELogServerity::Verbose, ELogOutputType::File))
+    {
+        OStringStream &stream = loggerImpl->lockLoggerBuffer();
+        if (canLogTime())
+        {
+            stream << TCHAR("[") << timeStr << TCHAR("]");
+        }
+        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar() 
+            << LINE_FEED_TCHAR;
+        loggerImpl->unlockLoggerBuffer();
+    }
+
+    if (canLog(ELogServerity::Verbose, ELogOutputType::Console))
+    {
+        std::scoped_lock<CBESpinLock> lockConsole(consoleOutputLock());
+#if LOG_TO_CONSOLE
+#if SHORT_MSG_IN_CONSOLE
+        COUT << message.getChar() << std::endl;
+#else
+        if (canLogTime())
+        {
+            COUT << TCHAR("[") << timeStr << TCHAR("]");
+        }
+        COUT << TCHAR("[") << category << TCHAR("]") << CATEGORY
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << message.getChar()
+            << std::endl;
+#endif // SHORT_MSG_IN_CONSOLE
+#endif // LOG_TO_CONSOLE
+    }
+
+#endif // DEV_BUILD
+}
+#endif // ENABLE_VERBOSE_LOG
+
 void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
 #if DEV_BUILD
     static const String CATEGORY{ TCHAR("[DEBUG]") };
 
+    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    const AChar *fileName = filterFileName(srcLoc.file_name());
+
     if (canLog(ELogServerity::Debug, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
+        if (canLogTime())
+        {
+            stream << TCHAR("[") << timeStr << TCHAR("]");
+        }
         stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
-            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
         loggerImpl->unlockLoggerBuffer();
@@ -250,8 +308,12 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
 #if SHORT_MSG_IN_CONSOLE
         COUT << message.getChar() << std::endl;
 #else
+        if (canLogTime())
+        {
+            COUT << TCHAR("[") << timeStr << TCHAR("]");
+        }
         COUT << TCHAR("[") << category << TCHAR("]") << CATEGORY
-            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
@@ -265,11 +327,15 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
 {
     static const String CATEGORY{ TCHAR("[LOG]") };
 
+    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    const AChar *fileName = filterFileName(srcLoc.file_name());
+
     if (canLog(ELogServerity::Log, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
+        stream << TCHAR("[") << Time::toString(Time::localTimeNow(), false) << TCHAR("]");
         stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
-            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
         loggerImpl->unlockLoggerBuffer();
@@ -282,8 +348,12 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
 #if SHORT_MSG_IN_CONSOLE
         COUT << message.getChar() << std::endl;
 #else
+        if (canLogTime())
+        {
+            COUT << TCHAR("[") << timeStr << TCHAR("]");
+        }
         COUT << TCHAR("[") << category << TCHAR("]") << CATEGORY
-            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
@@ -295,11 +365,18 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
 {
     static const String CATEGORY{ TCHAR("[WARN]") };
 
+    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    const AChar *fileName = filterFileName(srcLoc.file_name());
+
     if (canLog(ELogServerity::Warning, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
+        if (canLogTime())
+        {
+            stream << TCHAR("[") << timeStr << TCHAR("]");
+        }
         stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
-            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
         loggerImpl->unlockLoggerBuffer();
@@ -318,9 +395,13 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
 
 #if SHORT_MSG_IN_CONSOLE
         CERR << message.getChar() << std::endl;
-#else  // SHORT_MSG_IN_CONSOLE
+#else // SHORT_MSG_IN_CONSOLE
+        if (canLogTime())
+        {
+            COUT << TCHAR("[") << timeStr << TCHAR("]");
+        }
         CERR << TCHAR("[") << category << TCHAR("]") << CATEGORY
-            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
@@ -339,11 +420,18 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
 {
     static const String CATEGORY{ TCHAR("[ERROR]") };
 
+    String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
+    const AChar *fileName = filterFileName(srcLoc.file_name());
+
     if (canLog(ELogServerity::Error, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
+        if (canLogTime())
+        {
+            stream << TCHAR("[") << timeStr << TCHAR("]");
+        }
         stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
-            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
         loggerImpl->unlockLoggerBuffer();
@@ -362,9 +450,13 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
 
 #if SHORT_MSG_IN_CONSOLE
         CERR << message.getChar() << std::endl;
-#else  // SHORT_MSG_IN_CONSOLE
+#else // SHORT_MSG_IN_CONSOLE
+        if (canLogTime())
+        {
+            COUT << TCHAR("[") << timeStr << TCHAR("]");
+        }
         CERR << TCHAR("[") << category << TCHAR("]") << CATEGORY
-            << TCHAR("[") << filterFileName(srcLoc.file_name()) << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
+            << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
 #endif // SHORT_MSG_IN_CONSOLE
@@ -385,7 +477,7 @@ CBESpinLock &Logger::consoleOutputLock()
     return lock;
 }
 
-FORCE_INLINE bool Logger::canLog(ELogServerity severity, ELogOutputType output)
+bool Logger::canLog(ELogServerity severity, ELogOutputType output)
 {
     switch (output)
     {
@@ -397,6 +489,15 @@ FORCE_INLINE bool Logger::canLog(ELogServerity severity, ELogOutputType output)
         break;
     default:
         break;
+    }
+    return false;
+}
+
+bool Logger::canLogTime()
+{
+    if (loggerImpl)
+    {
+        return loggerImpl->canLogTime();
     }
     return false;
 }
@@ -444,5 +545,21 @@ void Logger::shutdown()
         loggerImpl = nullptr;
         loggerTemp->shutdown();
         delete loggerTemp;
+    }
+}
+
+void Logger::startLoggingTime()
+{
+    if (loggerImpl)
+    {
+        loggerImpl->startLoggingTime();
+    }
+}
+
+void Logger::stopLoggingTime()
+{
+    if (loggerImpl)
+    {
+        loggerImpl->stopLoggingTime();
     }
 }

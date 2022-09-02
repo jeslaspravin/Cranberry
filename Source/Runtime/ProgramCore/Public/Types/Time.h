@@ -52,9 +52,14 @@ PROGRAMCORE_EXPORT TimeConvType asDays(TickRep tickValue);
 
 PROGRAMCORE_EXPORT TickRep timeNow();
 PROGRAMCORE_EXPORT TickRep clockTimeNow();
+PROGRAMCORE_EXPORT TickRep utcTimeNow();
+PROGRAMCORE_EXPORT TickRep localTimeNow();
 
 PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
 PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
+
+// Prints in format "dd-mm-yyyy HH:MM:SS.xxxxxx"
+PROGRAMCORE_EXPORT String toString(TickRep tickValue, bool bIsUTC);
 } // namespace Time
 
 // IN NANOSECONDS PRECISION
@@ -85,9 +90,14 @@ PROGRAMCORE_EXPORT TimeConvType asDays(TickRep tickValue);
 
 PROGRAMCORE_EXPORT TickRep timeNow();
 PROGRAMCORE_EXPORT TickRep clockTimeNow();
+PROGRAMCORE_EXPORT TickRep utcTimeNow();
+PROGRAMCORE_EXPORT TickRep localTimeNow();
 
 PROGRAMCORE_EXPORT TickRep fromPlatformTime(int64 platformTick);
 PROGRAMCORE_EXPORT int64 toPlatformTime(TickRep tickValue);
+
+// Prints in format "dd-mm-yyyy HH:MM:SS.xxxxxxxxx"
+PROGRAMCORE_EXPORT String toString(TickRep tickValue, bool bIsUTC);
 } // namespace HighResolutionTime
 
 // Uses High Res Time

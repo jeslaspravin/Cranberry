@@ -287,7 +287,7 @@ struct CopyPixelsToImageInfo
 
 struct CopyImageInfo
 {
-    // Offset and extent for MIP base rest will be calculated automatically
+    // Offset and extent for MIP base, Rest will be calculated automatically
     Size3D offset{ 0 };
     Size3D extent;
 

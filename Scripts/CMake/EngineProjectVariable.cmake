@@ -22,6 +22,7 @@ option (experimental "Defines EXPERIMENTAL macro for Engine C++ modules" ON)
 option (editor_build "Should be compiled as editor(Enables all editor modules)?" ON)
 option (engine_static_modules "Should compile and link engine modules statically?" OFF)
 option (enable_console_log "Should log write to console as well?" ON)
+option (enable_verbose_log "Should write verbose log to log file?" OFF)
 
 set (vulkan_sdk_path $ENV{VULKAN_SDK} CACHE PATH "Vulkan SDK path")
 
