@@ -53,6 +53,10 @@
 #define LOG_TO_CONSOLE 0
 #endif
 
+#ifndef ENABLE_VERBOSE_LOG
+#define ENABLE_VERBOSE_LOG 0
+#endif
+
 #define ARRAY_LENGTH(ArrayVar) (sizeof(ArrayVar) / sizeof(ArrayVar[0]))
 #define MACRO_TO_STRING_internal(DefExpanded) #DefExpanded
 #define MACRO_TO_STRING(VarName) MACRO_TO_STRING_internal(VarName)
