@@ -46,8 +46,14 @@ Object *ObjectPath::getObject() const
     {
         obj = load(fullPath, nullptr);
     }
-    if (isValid(obj) && INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx)
+    if (isValid(obj))
     {
+        const ObjectAllocIdx foundObjAllocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);
+        // 0 is for default mostly and it will always be valid
+        if (!(allocIdx == 0 || foundObjAllocIdx == allocIdx))
+        {
+            LOG_WARN("ObjectPath", "Object %s[allocIdx %llu] does not matches allocation index %llu", fullPath, allocIdx, foundObjAllocIdx);
+        }
         return obj;
     }
     return nullptr;

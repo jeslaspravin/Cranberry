@@ -104,29 +104,6 @@ private:
     SizeT bitsCount = 0;
     BitVectorType bits;
 
-private:
-    // Returns array index from bit idx and sets the bit idx within this element
-    CONST_EXPR static ArraySizeType bitIdxToArrayIdx(BitIdxType &outBitIdx, SizeT bitIdx)
-    {
-        ArraySizeType retVal = (bitIdx & ARRAY_IDX_MASK) >> ARRAY_IDX_SHIFT;
-        outBitIdx = (BitIdxType)(bitIdx & BITS_IDX_MASK);
-        return retVal;
-    }
-    // Unsigned version where both arrayIdx and bitIdx are valid indices
-    CONST_EXPR static SizeT arrayIdxToBitIdx(ArraySizeType arrayIdx, uint8 bitIdx) { return (arrayIdx << ARRAY_IDX_SHIFT) + bitIdx; }
-    // Signed version where arrayIdx or bitIdx is negative difference
-    CONST_EXPR static ArrayDiffType arrayIdxToBitIdx(ArrayDiffType arrayDiff, BitIdxDiffType bitIdxDiff)
-    {
-        return (arrayDiff * BITS_PER_ELEMENT) + bitIdxDiff;
-    }
-    CONST_EXPR static ArraySizeType arraySizeForBits(SizeT bitsCount)
-    {
-        BitIdxType bitIdx;
-        ArraySizeType arrayCount = bitIdxToArrayIdx(bitIdx, bitsCount);
-        arrayCount += (bitIdx > 0);
-        return arrayCount;
-    }
-
 public:
     BitArray() = default;
     BitArray(const BitArray &) = default;
@@ -362,6 +339,96 @@ public:
     }
 
     CONST_EXPR void add(SizeT count, value_type newVal = 0) { resize(bitsCount + count, newVal); }
+    CONST_EXPR void setRange(SizeT offset, SizeT count)
+    {
+        // <= as end is exclusive
+        debugAssert(offset + count <= bitsCount);
+
+        BitIdxType startBitIdx;
+        ArraySizeType startArrayIdx = bitIdxToArrayIdx(startBitIdx, offset);
+
+        BitIdxType endBitIdx;
+        ArraySizeType endArrayIdx = bitIdxToArrayIdx(endBitIdx, offset + count);
+
+        // Range is within single value
+        if (startArrayIdx == endArrayIdx)
+        {
+            // If starting from idx 3 and ending at 6 then (0b11111000 & 0b00111111) = 0b00111000
+            const value_type startValueMask = ~(INDEX_TO_FLAG_MASK(startBitIdx) - 1);
+            const value_type endValueMask = INDEX_TO_FLAG_MASK(endBitIdx) - 1;
+            SET_BITS(bits[endArrayIdx], startValueMask & endValueMask);
+            return;
+        }
+
+        if (startBitIdx != 0)
+        {
+            // If starting from idx 3 then ~(0b001000 - 1) = ~(0b00111) = 0b11000 bits must be set
+            const value_type startValueMask = ~(INDEX_TO_FLAG_MASK(startBitIdx) - 1);
+            SET_BITS(bits[startArrayIdx], startValueMask);
+            startArrayIdx++;
+            startBitIdx = 0;
+        }
+        // End array index is aligned if exclusive last bit idx is at 0 of exclusive end bit array idx
+        if (endBitIdx != 0)
+        {
+            // If ending before idx 3 then 0b00100 - 1 = 0b00011 bits must be set
+            const value_type endValueMask = INDEX_TO_FLAG_MASK(endBitIdx) - 1;
+            SET_BITS(bits[endArrayIdx], endValueMask);
+            // No need to decrement endArrayIdx as it will be exclusive
+            endBitIdx = 0;
+        }
+
+        debugAssert(startBitIdx == 0 && endBitIdx == 0);
+        for (ArraySizeType arrayIdx = startArrayIdx; arrayIdx != endArrayIdx; ++arrayIdx)
+        {
+            bits[arrayIdx] = ALL_BITS_SET;
+        }
+    }
+    CONST_EXPR void resetRange(SizeT offset, SizeT count)
+    {
+        // <= as end is exclusive
+        debugAssert(offset + count <= bitsCount);
+
+        BitIdxType startBitIdx;
+        ArraySizeType startArrayIdx = bitIdxToArrayIdx(startBitIdx, offset);
+
+        BitIdxType endBitIdx;
+        ArraySizeType endArrayIdx = bitIdxToArrayIdx(endBitIdx, offset + count);
+
+        // Range is within single value
+        if (startArrayIdx == endArrayIdx)
+        {
+            // If starting from idx 3 and ending at 6 then (0b11111000 & 0b00111111) = 0b00111000
+            const value_type startValueMask = ~(INDEX_TO_FLAG_MASK(startBitIdx) - 1);
+            const value_type endValueMask = INDEX_TO_FLAG_MASK(endBitIdx) - 1;
+            CLEAR_BITS(bits[endArrayIdx], startValueMask & endValueMask);
+            return;
+        }
+
+        if (startBitIdx != 0)
+        {
+            // If starting from idx 3 then ~(0b001000 - 1) = ~(0b00111) = 0b11000 bits must be set
+            const value_type startValueMask = ~(INDEX_TO_FLAG_MASK(startBitIdx) - 1);
+            CLEAR_BITS(bits[startArrayIdx], startValueMask);
+            startArrayIdx++;
+            startBitIdx = 0;
+        }
+        // End array index is aligned if exclusive last bit idx is at 0 of exclusive end bit array idx
+        if (endBitIdx != 0)
+        {
+            // If ending before idx 3 then 0b00100 - 1 = 0b00011 bits must be reset
+            const value_type endValueMask = INDEX_TO_FLAG_MASK(endBitIdx) - 1;
+            CLEAR_BITS(bits[endArrayIdx], endValueMask);
+            // No need to decrement endArrayIdx as it will be exclusive
+            endBitIdx = 0;
+        }
+
+        debugAssert(startBitIdx == 0 && endBitIdx == 0);
+        for (ArraySizeType arrayIdx = startArrayIdx; arrayIdx < endArrayIdx; ++arrayIdx)
+        {
+            bits[arrayIdx] = 0;
+        }
+    }
 
     // Counts bits that are set
     SizeT countOnes() const
@@ -384,6 +451,29 @@ public:
     }
     // Counts bits that are not set
     SizeT countZeroes() const { return bitsCount - countOnes(); }
+
+private:
+    // Returns array index from bit idx and sets the bit idx within this element
+    CONST_EXPR static ArraySizeType bitIdxToArrayIdx(BitIdxType &outBitIdx, SizeT bitIdx)
+    {
+        ArraySizeType retVal = (bitIdx & ARRAY_IDX_MASK) >> ARRAY_IDX_SHIFT;
+        outBitIdx = (BitIdxType)(bitIdx & BITS_IDX_MASK);
+        return retVal;
+    }
+    // Unsigned version where both arrayIdx and bitIdx are valid indices
+    CONST_EXPR static SizeT arrayIdxToBitIdx(ArraySizeType arrayIdx, uint8 bitIdx) { return (arrayIdx << ARRAY_IDX_SHIFT) + bitIdx; }
+    // Signed version where arrayIdx or bitIdx is negative difference
+    CONST_EXPR static ArrayDiffType arrayIdxToBitIdx(ArrayDiffType arrayDiff, BitIdxDiffType bitIdxDiff)
+    {
+        return (arrayDiff * BITS_PER_ELEMENT) + bitIdxDiff;
+    }
+    CONST_EXPR static ArraySizeType arraySizeForBits(SizeT bitsCount)
+    {
+        BitIdxType bitIdx;
+        ArraySizeType arrayCount = bitIdxToArrayIdx(bitIdx, bitsCount);
+        arrayCount += (bitIdx > 0);
+        return arrayCount;
+    }
 };
 
 template <typename BitArrayType, bool bIsConst>

@@ -395,7 +395,7 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
 
 #if SHORT_MSG_IN_CONSOLE
         CERR << message.getChar() << std::endl;
-#else // SHORT_MSG_IN_CONSOLE
+#else  // SHORT_MSG_IN_CONSOLE
         if (canLogTime())
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
@@ -450,7 +450,7 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
 
 #if SHORT_MSG_IN_CONSOLE
         CERR << message.getChar() << std::endl;
-#else // SHORT_MSG_IN_CONSOLE
+#else  // SHORT_MSG_IN_CONSOLE
         if (canLogTime())
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
