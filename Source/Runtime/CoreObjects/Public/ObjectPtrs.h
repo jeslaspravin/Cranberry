@@ -214,7 +214,7 @@ public:
 
 struct COREOBJECTS_EXPORT ObjectPath
 {
-public:
+public:    
     ObjectAllocIdx allocIdx = 0;
     String packagePath;
     String outerPath;

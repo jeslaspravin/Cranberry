@@ -137,7 +137,7 @@ private:
 
     FORCE_INLINE SizeT findAllocator();
 
-    FORCE_INLINE void onFree(SizeT poolIdx)
+    void onFree(SizeT poolIdx)
     {
         // Only if allocator has nothing allocated
         if (allocatorPools[poolIdx]->empty())
@@ -149,6 +149,7 @@ private:
                 delete allocatorPools[poolIdx];
                 allocatorPools[emptyPoolIdx] = nullptr;
                 allocatorPools[poolIdx] = nullptr;
+                emptyPool = nullptr;
             }
             else
             {
