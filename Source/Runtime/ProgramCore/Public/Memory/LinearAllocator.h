@@ -28,8 +28,8 @@ public:
     using size_type = SizeType;
 
 private:
-    BitArray<SizeType> pageAvailability;
-    SizeType fragmentCount = 0;
+    // 0bit means available, 1bit means used
+    BitArray<SizeType> pageUsage;
 
 public:
     LinearAllocationTracker() = default;
@@ -39,27 +39,19 @@ public:
     CONST_EXPR void resize(SizeType byteSize)
     {
         byteSize = Math::alignByUnsafe(byteSize, PAGE_SIZE);
-        pageAvailability.resize(byteSize / PAGE_SIZE);
+        SizeType pageCount = byteSize / PAGE_SIZE;
+        pageUsage.resize(pageCount);
     }
 
-    CONST_EXPR SizeType size() const { return pageAvailability.size() * PAGE_SIZE; }
-    CONST_EXPR SizeType getFragmentCount() const { return fragmentCount; }
-    SizeType getFragmentedSize() const
+    CONST_EXPR SizeType size() const { return pageUsage.size() * PAGE_SIZE; }
+    SizeType getFragmentedSize(SizeType &outFragmentCount) const
     {
-        SizeType foundFragSize = 0, foundFragCount = 0, pageIdx = 0, fragmentStartIdx = 0;
+        outFragmentCount = 0;
+        SizeType foundFragSize = 0, pageIdx = 0, fragmentStartIdx = 0;
         bool bInsideFragment = false;
-        for (bool bIsUsed : pageAvailability)
+        for (bool bIsUsed : pageUsage)
         {
             if (bIsUsed)
-            {
-                if (!bInsideFragment)
-                {
-                    bInsideFragment = true;
-                    fragmentStartIdx = pageIdx;
-                    foundFragCount++;
-                }
-            }
-            else
             {
                 if (bInsideFragment)
                 {
@@ -67,20 +59,104 @@ public:
                     foundFragSize += pageIdx - fragmentStartIdx;
                 }
             }
+            else
+            {
+                if (!bInsideFragment)
+                {
+                    bInsideFragment = true;
+                    fragmentStartIdx = pageIdx;
+                    outFragmentCount++;
+                }
+            }
             pageIdx++;
         }
-        debugAssert(foundFragCount == getFragmentCount());
         return foundFragSize * PAGE_SIZE;
     }
 
-private:
-    CONST_EXPR bool getBestFit(SizeType count, SizeType &outFoundAt) const
+    bool allocate(SizeType byteSize, SizeType alignment, SizeType &outOffsetBytes)
     {
-        SizeType bestFitCount = pageAvailability.size(), foundAtOffset = pageAvailability.size(), pageIdx = 0, fragmentStartIdx = 0;
-        bool bInsideFragment = false;
-        for (bool bIsUsed : pageAvailability)
+        debugAssert(Math::isAligned(byteSize, PAGE_SIZE) && Math::isAligned(alignment, PAGE_SIZE));
+        SizeType pageCount = byteSize / PAGE_SIZE;
+        SizeType alignmentCount = alignment / PAGE_SIZE;
+
+        SizeType foundAt = 0;
+        if (bool bAvailable = getBestFit(pageCount, alignmentCount, foundAt))
         {
-            if (bIsUsed)
+            outOffsetBytes = foundAt * PAGE_SIZE;
+            pageUsage.setRange(foundAt, pageCount);
+            return true;
+        }
+        return false;
+    }
+
+    void deallocate(SizeType bytesOffset, SizeType byteSize)
+    {
+        debugAssert(Math::isAligned(bytesOffset, PAGE_SIZE) && Math::isAligned(byteSize, PAGE_SIZE));
+        SizeType pageCount = byteSize / PAGE_SIZE;
+        SizeType pageIdx = bytesOffset / PAGE_SIZE;
+        pageUsage.resetRange(pageIdx, pageCount);
+    }
+
+    // Does not considers alignment, If using this defrag ensure that maximum alignment used is not greater than PAGE_SIZE
+    template <typename CallbackFunc>
+    void defrag(CallbackFunc &&func)
+    {
+        auto findBestFitAllocBlock = [this](SizeType count, SizeType startIdx, SizeType &outPageIdx, SizeType &outPageCount) -> bool
+        {
+            SizeType bestFitCount = 0, foundAtPage = pageUsage.size(), blockStartIdx = startIdx, blockPageCount;
+
+            while (findAllocatedBlock(blockStartIdx, blockStartIdx, blockPageCount))
+            {
+                if (count >= blockPageCount && (bestFitCount < blockPageCount))
+                {
+                    bestFitCount = blockPageCount;
+                    foundAtPage = blockStartIdx;
+                }
+                blockStartIdx += blockPageCount;
+            }
+
+            if (foundAtPage != pageUsage.size())
+            {
+                outPageIdx = foundAtPage;
+                outPageCount = bestFitCount;
+                return true;
+            }
+            return false;
+        };
+
+        SizeType fragPageIdx = 0, fragPageCount;
+        while (findAvailableFragment(fragPageIdx, fragPageIdx, fragPageCount))
+        {
+            SizeType allocPageIdx = 0, allocPageCount;
+            if (findBestFitAllocBlock(fragPageCount, fragPageIdx, allocPageIdx, allocPageCount))
+            {
+                // func(oldByteOffset, newByteOffset, byteSize);
+                func(allocPageIdx * PAGE_SIZE, fragPageIdx * PAGE_SIZE, allocPageCount * PAGE_SIZE);
+                // Set move range as used and reset old range as available
+                pageUsage.setRange(fragPageIdx, allocPageCount);
+                pageUsage.resetRange(allocPageIdx, allocPageCount);
+
+                fragPageIdx += allocPageCount;
+            }
+        }
+    }
+
+private:
+    /**
+     * Best fit always allocate at the end so there is no need to track last allocation at while first linear allocation.
+     * Filling holes will anyway search through the array so no need to track last allocation at there either
+     */
+    CONST_EXPR bool getBestFit(SizeType count, SizeType alignmentCount, SizeType &outFoundAt) const
+    {
+        SizeType bestFitCount = pageUsage.size(), foundAtPage = pageUsage.size(), fragmentStartIdx = 0;
+        bool bInsideFragment = false;
+
+        for (SizeType pageIdx = 0; pageIdx < pageUsage.size(); pageIdx += alignmentCount)
+        {
+            // count will always be aligned by alignmentCount, So for a page range to be valid all page in range must be use able
+            bool bIsAvailable = pageUsage.checkRange(pageIdx, alignmentCount, false);
+
+            if (bIsAvailable)
             {
                 if (!bInsideFragment)
                 {
@@ -96,16 +172,80 @@ private:
                     SizeType fragSize = pageIdx - fragmentStartIdx;
                     if (fragSize >= count && fragSize <= bestFitCount)
                     {
-                        foundAtOffset = fragmentStartIdx;
+                        foundAtPage = fragmentStartIdx;
                         bestFitCount = fragSize;
                     }
                 }
             }
-            pageIdx++;
         }
-        if (foundAtOffset < pageAvailability.size())
+        if (foundAtPage < pageUsage.size())
         {
-            outFoundAt = foundAtOffset + (bestFitCount - count);
+            outFoundAt = foundAtPage + (bestFitCount - count);
+            return true;
+        }
+        return false;
+    }
+
+    bool findAllocatedBlock(SizeType startIdx, SizeType &outPageIdx, SizeType &outPageCount)
+    {
+        SizeType foundAtOffset = pageUsage.size(), blockStartIdx = 0, pageIdx = startIdx;
+        bool bInsideBlock = false;
+        for (; pageIdx != pageUsage.size(); pageIdx++)
+        {
+            bool bIsUsed = pageUsage[pageIdx];
+            if (bIsUsed)
+            {
+                if (!bInsideBlock)
+                {
+                    bInsideBlock = true;
+                    blockStartIdx = pageIdx;
+                }
+            }
+            else
+            {
+                if (bInsideBlock)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (bInsideBlock)
+        {
+            outPageCount = pageIdx - blockStartIdx;
+            outPageIdx = blockStartIdx;
+            return true;
+        }
+        return false;
+    }
+    bool findAvailableFragment(SizeType startIdx, SizeType &outPageIdx, SizeType &outPageCount)
+    {
+        SizeType foundAtOffset = pageUsage.size(), blockStartIdx = 0, pageIdx = startIdx;
+        bool bInsideFragment = false;
+        for (; pageIdx != pageUsage.size(); pageIdx++)
+        {
+            bool bIsUsed = pageUsage[pageIdx];
+            if (bIsUsed)
+            {
+                if (bInsideFragment)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                if (!bInsideFragment)
+                {
+                    bInsideFragment = true;
+                    blockStartIdx = pageIdx;
+                }
+            }
+        }
+
+        if (bInsideFragment)
+        {
+            outPageCount = pageIdx - blockStartIdx;
+            outPageIdx = blockStartIdx;
             return true;
         }
         return false;
