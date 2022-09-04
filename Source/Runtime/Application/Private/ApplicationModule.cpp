@@ -126,7 +126,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
     }
 
     Logger::flushStream();
-    // Start log time logging here after init as icu.dll seems to get loaded if locale is accessed before other initialization
+    // Start log time logging here after init and stop logging time after renderer unload
     // And icu.dll's unload is causing function pointers to be invalidated at ModuleManager::unloadAll
     // TODO(Jeslas) : Investigate proper fix
     Logger::startLoggingTime();
@@ -151,6 +151,7 @@ void ApplicationModule::startAndRun(ApplicationInstance *appInst, const AppInsta
         ModuleManager::get()->unloadModule(TCHAR("EngineRenderer"));
     }
     Logger::flushStream();
+    Logger::stopLoggingTime();
 
     // Shutdown the job system after renderer is released!
     jobSys.shutdown();
