@@ -429,6 +429,54 @@ public:
             bits[arrayIdx] = 0;
         }
     }
+    CONST_EXPR bool checkRange(SizeT offset, SizeT count, bool bCheckIfSet) const
+    {
+        // <= as end is exclusive
+        debugAssert(offset + count <= bitsCount);
+
+        BitIdxType startBitIdx;
+        ArraySizeType startArrayIdx = bitIdxToArrayIdx(startBitIdx, offset);
+
+        BitIdxType endBitIdx;
+        ArraySizeType endArrayIdx = bitIdxToArrayIdx(endBitIdx, offset + count);
+
+        // Range is within single value
+        if (startArrayIdx == endArrayIdx)
+        {
+            // If starting from idx 3 and ending at 6 then (0b11111000 & 0b00111111) = 0b00111000
+            const value_type startValueMask = ~(INDEX_TO_FLAG_MASK(startBitIdx) - 1);
+            const value_type endValueMask = INDEX_TO_FLAG_MASK(endBitIdx) - 1;
+            const value_type valueMask = startValueMask & endValueMask;
+            return bCheckIfSet ? BIT_SET(bits[endArrayIdx], valueMask) : !ANY_BIT_SET(bits[endArrayIdx], valueMask);
+        }
+
+        bool bRetVal = true;
+        if (startBitIdx != 0)
+        {
+            // If starting from idx 3 then ~(0b001000 - 1) = ~(0b00111) = 0b11000 bits must be set
+            const value_type startValueMask = ~(INDEX_TO_FLAG_MASK(startBitIdx) - 1);
+            bRetVal
+                = bRetVal && (bCheckIfSet ? BIT_SET(bits[startArrayIdx], startValueMask) : !ANY_BIT_SET(bits[startArrayIdx], startValueMask));
+            startArrayIdx++;
+            startBitIdx = 0;
+        }
+        // End array index is aligned if exclusive last bit idx is at 0 of exclusive end bit array idx
+        if (endBitIdx != 0)
+        {
+            // If ending before idx 3 then 0b00100 - 1 = 0b00011 bits must be reset
+            const value_type endValueMask = INDEX_TO_FLAG_MASK(endBitIdx) - 1;
+            bRetVal = bRetVal && (bCheckIfSet ? BIT_SET(bits[endArrayIdx], endValueMask) : !ANY_BIT_SET(bits[endArrayIdx], endValueMask));
+            // No need to decrement endArrayIdx as it will be exclusive
+            endBitIdx = 0;
+        }
+
+        debugAssert(startBitIdx == 0 && endBitIdx == 0);
+        for (ArraySizeType arrayIdx = startArrayIdx; arrayIdx < endArrayIdx; ++arrayIdx)
+        {
+            bRetVal = bRetVal && (bCheckIfSet ? bits[arrayIdx] == ALL_BITS_SET : bits[arrayIdx] == 0);
+        }
+        return bRetVal;
+    }
 
     // Counts bits that are set
     SizeT countOnes() const
