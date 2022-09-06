@@ -21,16 +21,24 @@ public:
     static RenderThreadEnqTask execInRenderThreadAwaitable(RenderEnqFuncType execFunc);
 
     /**
+     * Executes the lambda in render thread and sleeps until the task is finished
+     */
+    static void execInRenderThreadAndWait(RenderEnqFuncType &&execFunc);
+
+    /**
      * Executes the passed in lambda in render thread and terminates. Fire and forget tasks can be enqueued this way
      */
     template <typename LambdaType>
-    static void execInRenderingThread(LambdaType &&lambdaFunc)
+    FORCE_INLINE static void execInRenderingThread(LambdaType &&lambdaFunc)
     {
         // As purpose of enqueue is to execute in render thread not postpone execution if already in render thread.
         execInRenderingThreadOrImmediate(std::forward<LambdaType>(lambdaFunc));
     }
 
-    static void flushWaitRenderThread();
+    FORCE_INLINE static void flushWaitRenderThread()
+    {
+        execInRenderThreadAndWait([](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *) {});
+    }
 
 private:
     static copat::NormalFuncAwaiter execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc);

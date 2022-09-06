@@ -64,6 +64,10 @@ public:
         const std::vector<WindowCanvasRef> &canvases, const std::vector<uint32> &imageIndices, const std::vector<SemaphoreRef> &waitOnSemaphores
     );
 
+    void cmdCopyBuffer(
+        const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, const std::vector<CopyBufferInfo> &copies
+    ) final;
+
     void cmdCopyOrResolveImage(
         const GraphicsResource *cmdBuffer, ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo,
         const CopyImageInfo &dstInfo
@@ -105,8 +109,8 @@ public:
     void cmdBindVertexBuffers(
         const GraphicsResource *cmdBuffer, uint32 firstBinding, const std::vector<BufferResourceRef> &vertexBuffers,
         const std::vector<uint64> &offsets
-    ) const final;
-    void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) const final;
+    ) final;
+    void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) final;
 
     void cmdDispatch(const GraphicsResource *cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const final;
     void cmdDrawIndexed(
@@ -118,10 +122,10 @@ public:
     ) const final;
     void cmdDrawIndexedIndirect(
         const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-    ) const final;
+    ) final;
     void cmdDrawIndirect(
         const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-    ) const final;
+    ) final;
 
     void cmdSetViewportAndScissors(
         const GraphicsResource *cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>> &viewportAndScissors,
@@ -184,12 +188,12 @@ void RenderCommandList::cmdBindDescriptorsSetsInternal(
 void RenderCommandList::cmdBindVertexBuffers(
     const GraphicsResource *cmdBuffer, uint32 firstBinding, const std::vector<BufferResourceRef> &vertexBuffers,
     const std::vector<uint64> &offsets
-) const
+)
 {
     cmdList->cmdBindVertexBuffers(cmdBuffer, firstBinding, vertexBuffers, offsets);
 }
 
-void RenderCommandList::cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset /*= 0*/) const
+void RenderCommandList::cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset /*= 0*/)
 {
     cmdList->cmdBindIndexBuffer(cmdBuffer, indexBuffer, offset);
 }
@@ -216,14 +220,14 @@ void RenderCommandList::cmdDrawVertices(
 
 void RenderCommandList::cmdDrawIndexedIndirect(
     const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-) const
+)
 {
     cmdList->cmdDrawIndexedIndirect(cmdBuffer, drawCmdsBuffer, bufferOffset, drawCount, stride);
 }
 
 void RenderCommandList::cmdDrawIndirect(
     const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-) const
+)
 {
     cmdList->cmdDrawIndirect(cmdBuffer, drawCmdsBuffer, bufferOffset, drawCount, stride);
 }
@@ -347,6 +351,13 @@ void RenderCommandList::presentImage(
 )
 {
     cmdList->presentImage(canvases, imageIndices, waitOnSemaphores);
+}
+
+void RenderCommandList::cmdCopyBuffer(
+    const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, const std::vector<CopyBufferInfo> &copies
+)
+{
+    cmdList->cmdCopyBuffer(cmdBuffer, src, dst, copies);
 }
 
 void RenderCommandList::cmdCopyOrResolveImage(

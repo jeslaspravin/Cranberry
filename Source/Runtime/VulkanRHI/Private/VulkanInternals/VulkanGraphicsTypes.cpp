@@ -257,16 +257,16 @@ VkShaderStageFlags vulkanShaderStageFlags(uint32 shaderStages)
     uint32 stageMask = 1;
     for (uint32 i = 0; i < EShaderStage::ShaderStageMax; ++i)
     {
-        retFlags |= BIT_SET(shaderStages, i) ? vulkanShaderStage(EShaderStage::Type(i)) : 0;
+        retFlags |= BIT_SET(shaderStages, stageMask) ? vulkanShaderStage(EShaderStage::Type(i)) : 0;
         stageMask <<= 1;
     }
     return retFlags;
 }
 
 #define PIPELINE_STAGE_TO_API_PAIR(PipelineStage, RelevantApiStage) RelevantApiStage
-VkPipelineStageFlagBits2KHR vulkanPipelineStage(EPipelineStages::Type pipelineStage)
+VkPipelineStageFlagBits2 vulkanPipelineStage(EPipelineStages::Type pipelineStage)
 {
-    static const VkPipelineStageFlagBits2KHR PIPELINE_STAGE_TO_API_STAGE[] = {
+    static const VkPipelineStageFlagBits2 PIPELINE_STAGE_TO_API_STAGE[] = {
         PIPELINE_STAGE_TO_API_PAIR(Top, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(DrawIndirect, VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR),
         PIPELINE_STAGE_TO_API_PAIR(VertexInput, VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT_KHR),
@@ -289,13 +289,13 @@ VkPipelineStageFlagBits2KHR vulkanPipelineStage(EPipelineStages::Type pipelineSt
 }
 #undef PIPELINE_STAGE_TO_API_PAIR
 
-VkPipelineStageFlags2KHR vulkanPipelineStageFlags(uint32 pipelineStages)
+VkPipelineStageFlags2 vulkanPipelineStageFlags(uint64 pipelineStages)
 {
-    VkPipelineStageFlags2KHR retFlags = 0;
-    uint32 stageMask = 1;
+    VkPipelineStageFlags2 retFlags = 0;
+    uint64 stageMask = 1;
     for (uint32 i = 0; i < EPipelineStages::PipelineStageMax; ++i)
     {
-        retFlags |= BIT_SET(pipelineStages, i) ? vulkanPipelineStage(EPipelineStages::Type(i)) : 0;
+        retFlags |= BIT_SET(pipelineStages, stageMask) ? vulkanPipelineStage(EPipelineStages::Type(i)) : 0;
         stageMask <<= 1;
     }
     return retFlags;

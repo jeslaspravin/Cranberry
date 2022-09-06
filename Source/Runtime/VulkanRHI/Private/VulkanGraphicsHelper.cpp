@@ -331,7 +331,7 @@ void VulkanGraphicsHelper::waitTimelineSemaphores(
     waitInfo.semaphoreCount = (uint32)deviceSemaphores.size();
     waitInfo.pValues = waitForValues->data();
 
-    device->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(device->logicalDevice, &waitInfo, 2000000000 /*2 Seconds*/);
+    device->vkWaitSemaphores(device->logicalDevice, &waitInfo, 2000000000 /*2 Seconds*/);
 }
 
 FenceRef
@@ -1139,7 +1139,7 @@ void VulkanGraphicsHelper::getPipelineCacheData(
     }
 }
 
-VkPipelineStageFlags2KHR VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32 shaderStageFlags)
+VkPipelineStageFlags2 VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32 shaderStageFlags)
 {
     static VkShaderStageFlagBits shaderStages[] = { VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
                                                     VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
@@ -1162,7 +1162,7 @@ VkPipelineStageFlags2KHR VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32
         return 0;
     uint32 temp = shaderStageFlags;
 
-    VkPipelineStageFlags2KHR pipelineStageFlags = 0;
+    VkPipelineStageFlags2 pipelineStageFlags = 0;
     for (const VkShaderStageFlagBits &shaderStage : shaderStages)
     {
         if (BIT_SET(shaderStageFlags, shaderStage))
@@ -1217,7 +1217,7 @@ VkPipelineStageFlags2KHR VulkanGraphicsHelper::shaderToPipelineStageFlags(uint32
     return pipelineStageFlags;
 }
 
-VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint32 pipelineStageFlags)
+VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint64 pipelineStageFlags)
 {
     VkPipelineStageFlagBits pipelineStages[] = { VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
                                                  VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
@@ -1233,7 +1233,7 @@ VkShaderStageFlags VulkanGraphicsHelper::pipelineToShaderStageFlags(uint32 pipel
     if (pipelineStageFlags == 0)
         return 0;
 
-    uint32 temp = pipelineStageFlags;
+    uint64 temp = pipelineStageFlags;
 
     VkShaderStageFlags shaderStageFlags = 0;
     for (const VkPipelineStageFlagBits &pipelineStage : pipelineStages)

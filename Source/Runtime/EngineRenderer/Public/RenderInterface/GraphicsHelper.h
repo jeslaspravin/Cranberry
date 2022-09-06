@@ -162,6 +162,26 @@ public:
     virtual const GraphicsResourceType *readOnlyVertexBufferType() const = 0;
     virtual const GraphicsResourceType *readOnlyIndirectBufferType() const = 0;
     virtual const GraphicsResourceType *writeOnlyIndirectBufferType() const = 0;
+    FORCE_INLINE bool isReadOnlyBuffer(BufferResourceRef resource) const
+    {
+        return resource->getType()->isChildOf(readOnlyBufferType()) || resource->getType()->isChildOf(readOnlyTexelsType())
+               || resource->getType()->isChildOf(readOnlyIndexBufferType()) || resource->getType()->isChildOf(readOnlyVertexBufferType())
+               || resource->getType()->isChildOf(readOnlyIndirectBufferType());
+    }
+    FORCE_INLINE bool isWriteOnlyBuffer(BufferResourceRef resource) const
+    {
+        return resource->getType()->isChildOf(writeOnlyBufferType()) || resource->getType()->isChildOf(writeOnlyTexelsType())
+               || resource->getType()->isChildOf(writeOnlyIndirectBufferType());
+    }
+    FORCE_INLINE bool isRWBuffer(BufferResourceRef resource) const
+    {
+        return resource->getType()->isChildOf(readWriteBufferType()) || resource->getType()->isChildOf(readWriteTexelsType());
+    }
+    FORCE_INLINE bool isTexelBuffer(BufferResourceRef resource) const
+    {
+        return resource->getType()->isChildOf(readOnlyTexelsType()) || resource->getType()->isChildOf(writeOnlyTexelsType())
+               || resource->getType()->isChildOf(readWriteTexelsType());
+    }
 
     virtual const GraphicsResourceType *imageType() const = 0;
     virtual const GraphicsResourceType *cubeImageType() const = 0;

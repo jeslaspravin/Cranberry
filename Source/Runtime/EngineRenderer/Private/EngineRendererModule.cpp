@@ -119,14 +119,19 @@ RenderThreadEnqTask RenderThreadEnqueuer::execInRenderThreadAwaitable(RenderThre
     co_return;
 }
 
-void RenderThreadEnqueuer::flushWaitRenderThread()
+void RenderThreadEnqueuer::execInRenderThreadAndWait(RenderEnqFuncType &&execFunc)
 {
-    if (copat::JobSystem::get()->getCurrentThreadType() != copat::EJobThreadType::RenderThread)
+    if (copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::RenderThread)
     {
-        RenderThreadEnqTask dummyTask
-            = execInRenderThreadAwaitable([](IRenderCommandList *, IGraphicsInstance *, const GraphicsHelperAPI *) {});
-        copat::waitOnAwaitable(dummyTask);
+        IRenderInterfaceModule *renderInterface = IRenderInterfaceModule::get();
+        debugAssert(renderInterface);
+        execFunc(
+            renderInterface->getRenderManager()->getRenderCmds(), renderInterface->currentGraphicsInstance(),
+            renderInterface->currentGraphicsHelper()
+        );
+        return;
     }
+    copat::waitOnAwaitable(execInRenderThreadAwaitable(std::forward<RenderEnqFuncType>(execFunc)));
 }
 
 copat::NormalFuncAwaiter RenderThreadEnqueuer::execInRenderingThreadOrImmediate(RenderEnqFuncType &&execFunc)

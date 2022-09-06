@@ -34,10 +34,11 @@ public:
         SemaphoreRef waitOnSemaphore;
         // Pipeline Stages that are recorded in this command buffer that waits on the corresponding
         // semaphore
-        uint32 stagesThatWaits;
+        uint64 stagesThatWaits;
     };
     std::vector<const GraphicsResource *> cmdBuffers;
     std::vector<WaitInfo> waitOn;
+    // TODO(Jeslas) : Implement stage to signal semaphore
     std::vector<SemaphoreRef> signalSemaphores;
 };
 
@@ -47,4 +48,6 @@ public:
     std::vector<const GraphicsResource *> cmdBuffers;
     // All the cmd buffers will be waiting at top of pipeline for below buffers use with caution
     std::vector<const GraphicsResource *> waitOnCmdBuffers;
+
+    // TODO(Jeslas) : Implement stage to signal semaphore and signaling semaphores, If needed?
 };
