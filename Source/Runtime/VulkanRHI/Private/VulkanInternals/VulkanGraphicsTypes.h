@@ -33,8 +33,8 @@ VkComponentSwizzle vulkanComponentSwizzle(EPixelComponentMapping::Type mapping);
 VkShaderStageFlagBits vulkanShaderStage(EShaderStage::Type shaderStage);
 VkShaderStageFlags vulkanShaderStageFlags(uint32 shaderStages);
 
-VkPipelineStageFlagBits2KHR vulkanPipelineStage(EPipelineStages::Type pipelineStage);
-VkPipelineStageFlags2KHR vulkanPipelineStageFlags(uint32 pipelineStages);
+VkPipelineStageFlagBits2 vulkanPipelineStage(EPipelineStages::Type pipelineStage);
+VkPipelineStageFlags2 vulkanPipelineStageFlags(uint64 pipelineStages);
 
 VkPrimitiveTopology vulkanPrimitiveTopology(EPrimitiveTopology::Type inputAssembly);
 

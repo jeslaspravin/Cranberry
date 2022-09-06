@@ -32,13 +32,13 @@ private:
 
     FORCE_INLINE VkImageAspectFlags determineImageAspect(const ImageResourceRef &image) const;
     // Determines mask that has info on how image can be access in pipelines
-    FORCE_INLINE VkAccessFlags determineImageAccessMask(const ImageResourceRef &image) const;
+    FORCE_INLINE VkAccessFlags2 determineImageAccessMask(const ImageResourceRef &image) const;
     // Determines the image layout if layout is yet to be defined
     FORCE_INLINE VkImageLayout determineImageLayout(const ImageResourceRef &image) const;
     FORCE_INLINE VkImageLayout getImageLayout(const ImageResourceRef &image) const;
     FORCE_INLINE VkPipelineBindPoint getPipelineBindPoint(const PipelineBase *pipeline) const;
     // Shader stage in which buffer/image maybe possibly written to/Read from in shader
-    FORCE_INLINE VkPipelineStageFlags resourceShaderStageFlags() const;
+    FORCE_INLINE VkPipelineStageFlags2 resourceShaderStageFlags() const;
 
     FORCE_INLINE void fillClearValue(EPixelDataFormat::Type format, VkClearColorValue &clearValue, const LinearColor &color) const;
 
@@ -69,6 +69,10 @@ public:
     void presentImage(
         const std::vector<WindowCanvasRef> &canvases, const std::vector<uint32> &imageIndices, const std::vector<SemaphoreRef> &waitOnSemaphores
     );
+
+    void cmdCopyBuffer(
+        const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, const std::vector<CopyBufferInfo> &copies
+    ) final;
 
     void cmdCopyOrResolveImage(
         const GraphicsResource *cmdBuffer, ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo,
@@ -111,8 +115,8 @@ public:
     void cmdBindVertexBuffers(
         const GraphicsResource *cmdBuffer, uint32 firstBinding, const std::vector<BufferResourceRef> &vertexBuffers,
         const std::vector<uint64> &offsets
-    ) const final;
-    void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) const final;
+    ) final;
+    void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) final;
 
     void cmdDispatch(const GraphicsResource *cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const final;
     void cmdDrawIndexed(
@@ -124,10 +128,10 @@ public:
     ) const final;
     void cmdDrawIndexedIndirect(
         const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-    ) const final;
+    ) final;
     void cmdDrawIndirect(
         const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-    ) const final;
+    ) final;
 
     void cmdSetViewportAndScissors(
         const GraphicsResource *cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>> &viewportAndScissors,

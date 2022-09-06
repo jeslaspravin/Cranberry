@@ -505,9 +505,9 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
         advancedFeatures.pNext = &tSemaphoreFeatures;
         PHYSICAL_DEVICE_DESC_INDEXING_FEATURES(tDescIdxFeatures);
         tSemaphoreFeatures.pNext = &tDescIdxFeatures;
-        PHYSICAL_DEVICE_SYNC_2_FEATURES_KHR(tSync2Features);
+        PHYSICAL_DEVICE_SYNC_2_FEATURES(tSync2Features);
         tDescIdxFeatures.pNext = &tSync2Features;
-        Vk::vkGetPhysicalDeviceFeatures2KHR(physicalDevice, &advancedFeatures);
+        Vk::vkGetPhysicalDeviceFeatures2(physicalDevice, &advancedFeatures);
 
         features = std::move(advancedFeatures.features);
         timelineSemaphoreFeatures = std::move(tSemaphoreFeatures);
@@ -522,7 +522,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
         advancedProperties.pNext = &tSemaphoreProperties;
         PHYSICAL_DEVICE_DESC_INDEXING_PROPERTIES(descIdxProps);
         tSemaphoreProperties.pNext = &descIdxProps;
-        Vk::vkGetPhysicalDeviceProperties2KHR(physicalDevice, &advancedProperties);
+        Vk::vkGetPhysicalDeviceProperties2(physicalDevice, &advancedProperties);
 
         properties = std::move(advancedProperties.properties);
         timelineSemaphoreProps = std::move(tSemaphoreProperties);
@@ -791,12 +791,12 @@ bool VulkanDevice::isLogicalDeviceCreated() const { return logicalDevice != null
 
 void VulkanDevice::getMemoryStat(uint64 &totalBudget, uint64 &usage, uint32 heapIndex)
 {
-    if (Vk::vkGetPhysicalDeviceMemoryProperties2KHR)
+    if (Vk::vkGetPhysicalDeviceMemoryProperties2)
     {
         PHYSICAL_DEVICE_MEMORY_PROPERTIES_2(memProp);
         PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES(budget);
         memProp.pNext = &budget;
-        Vk::vkGetPhysicalDeviceMemoryProperties2KHR(physicalDevice, &memProp);
+        Vk::vkGetPhysicalDeviceMemoryProperties2(physicalDevice, &memProp);
         totalBudget = budget.heapBudget[heapIndex];
         usage = budget.heapUsage[heapIndex];
     }

@@ -96,7 +96,7 @@ void VulkanTimelineSemaphore::waitForSignal(uint64 value) const
         waitInfo.pSemaphores = &semaphore;
         waitInfo.semaphoreCount = 1;
         waitInfo.pValues = &value;
-        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkWaitSemaphores)(ownerDevice, &waitInfo, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
+        vulkanDevice->vkWaitSemaphores(ownerDevice, &waitInfo, GlobalRenderVariables::MAX_SYNC_RES_WAIT_TIME.get());
     }
 }
 
@@ -112,7 +112,7 @@ void VulkanTimelineSemaphore::resetSignal(uint64 value)
         signalInfo.semaphore = semaphore;
         signalInfo.value = value;
 
-        if (vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkSignalSemaphore)(ownerDevice, &signalInfo) != VK_SUCCESS)
+        if (vulkanDevice->vkSignalSemaphore(ownerDevice, &signalInfo) != VK_SUCCESS)
         {
             LOG_ERROR("VulkanTimelineSemaphore", "Signaling to value %d failed", value);
         }
@@ -124,7 +124,7 @@ uint64 VulkanTimelineSemaphore::currentValue() const
     uint64 counter = 0;
     if (GlobalRenderVariables::ENABLED_TIMELINE_SEMAPHORE.get())
     {
-        vulkanDevice->TIMELINE_SEMAPHORE_TYPE(vkGetSemaphoreCounterValue)(ownerDevice, semaphore, &counter);
+        vulkanDevice->vkGetSemaphoreCounterValue(ownerDevice, semaphore, &counter);
     }
     return counter;
 }

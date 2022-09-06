@@ -147,6 +147,9 @@ public:
     //// Command buffer related function access if you know what you are doing ////
     ///////////////////////////////////////////////////////////////////////////////
 
+    virtual void cmdCopyBuffer(
+        const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, const std::vector<CopyBufferInfo> &copies
+    ) = 0;
     virtual void cmdCopyOrResolveImage(
         const GraphicsResource *cmdBuffer, ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo,
         const CopyImageInfo &dstInfo
@@ -200,8 +203,8 @@ public:
     virtual void cmdBindVertexBuffers(
         const GraphicsResource *cmdBuffer, uint32 firstBinding, const std::vector<BufferResourceRef> &vertexBuffers,
         const std::vector<uint64> &offsets
-    ) const = 0;
-    virtual void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) const = 0;
+    ) = 0;
+    virtual void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) = 0;
 
     virtual void cmdDispatch(const GraphicsResource *cmdBuffer, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ = 1) const = 0;
     // vertexOffset is vertex to add before indexing that vertex in vertex buffer
@@ -215,10 +218,10 @@ public:
     // bufferOffset - Offset in bytes, stride - useful when draw struct is part of some complex AoS
     virtual void cmdDrawIndexedIndirect(
         const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-    ) const = 0;
+    ) = 0;
     virtual void cmdDrawIndirect(
         const GraphicsResource *cmdBuffer, const BufferResourceRef &drawCmdsBuffer, uint32 bufferOffset, uint32 drawCount, uint32 stride
-    ) const = 0;
+    ) = 0;
 
     virtual void cmdSetViewportAndScissors(
         const GraphicsResource *cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>> &viewportAndScissors,

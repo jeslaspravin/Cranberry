@@ -192,8 +192,8 @@ public:
     PipelineBase *createComputePipeline(class IGraphicsInstance *graphicsInstance) const final;
 
     // Both Shader stage flags and Pipeline stage flags are in Vulkan types
-    static VkPipelineStageFlags2KHR shaderToPipelineStageFlags(uint32 shaderStageFlags);
-    static VkShaderStageFlags pipelineToShaderStageFlags(uint32 pipelineStageFlags);
+    static VkPipelineStageFlags2 shaderToPipelineStageFlags(uint32 shaderStageFlags);
+    static VkShaderStageFlags pipelineToShaderStageFlags(uint64 pipelineStageFlags);
 
     static std::vector<VkPipeline> createGraphicsPipeline(
         class IGraphicsInstance *graphicsInstance, const std::vector<VkGraphicsPipelineCreateInfo> &graphicsPipelineCI,

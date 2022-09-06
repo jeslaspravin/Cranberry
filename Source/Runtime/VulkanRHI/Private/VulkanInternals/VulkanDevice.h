@@ -47,8 +47,7 @@ private:
     VkPhysicalDeviceFeatures features;
     VkPhysicalDeviceDescriptorIndexingFeatures descIndexingFeatures;
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures;
-    // KHRs
-    VkPhysicalDeviceSynchronization2FeaturesKHR sync2Features;
+    VkPhysicalDeviceSynchronization2Features sync2Features;
     // Enabled features will only be partially initialized manually, So zero initialize it
     VkPhysicalDeviceFeatures enabledFeatures{};
     VkPhysicalDeviceDescriptorIndexingFeatures enabledDescIndexingFeatures{};

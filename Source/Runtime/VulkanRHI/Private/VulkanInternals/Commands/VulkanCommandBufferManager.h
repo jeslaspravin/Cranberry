@@ -164,18 +164,18 @@ private:
     {
         // Last reads after last writes
         std::vector<const GraphicsResource *> lastReadsIn;
-        VkPipelineStageFlags allReadStages = 0;
+        VkPipelineStageFlags2 allReadStages = 0;
         // Useful to resolve image old layout in case of multiple reads
-        VkPipelineStageFlags lastReadStages = 0;
+        VkPipelineStageFlags2 lastReadStages = 0;
         const GraphicsResource *lastWrite = nullptr;
-        VkPipelineStageFlagBits lastWriteStage;
+        VkPipelineStageFlagBits2 lastWriteStage;
     };
 
 public:
     struct CommandResUsageInfo
     {
         const GraphicsResource *cmdBuffer = nullptr;
-        VkPipelineStageFlags usedDstStages;
+        VkPipelineStageFlags2 usedDstStages;
     };
 
     struct ResourceBarrierInfo
@@ -202,31 +202,31 @@ public:
 
     /* Reading resources functions */
     std::optional<ResourceBarrierInfo>
-        readOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        readOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        readOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        readOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        readOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        readOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        readFromWriteBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        readFromWriteBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        readFromWriteImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        readFromWriteImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        readFromWriteTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        readFromWriteTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
 
     /* Writing resources functions */
     std::optional<ResourceBarrierInfo>
-        writeReadOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        writeReadOnlyBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        writeReadOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        writeReadOnlyImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        writeReadOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        writeReadOnlyTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        writeBuffers(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        writeImages(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
     std::optional<ResourceBarrierInfo>
-        writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags> &resource);
+        writeTexels(const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource);
 
     std::optional<ResourceBarrierInfo> imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);
     std::optional<ResourceBarrierInfo> colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);

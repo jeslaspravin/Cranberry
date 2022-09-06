@@ -32,9 +32,12 @@ GLOBAL_VK_FUNCTIONS(vkCreateInstance)
 INSTANCE_VK_FUNCTIONS(vkDestroyInstance)
 INSTANCE_VK_FUNCTIONS(vkEnumeratePhysicalDevices)
 INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceProperties)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceProperties2)
 INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceFeatures)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceFeatures2)
 INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceQueueFamilyProperties)
 INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceMemoryProperties)
+INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceMemoryProperties2)
 INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceFormatProperties)
 INSTANCE_VK_FUNCTIONS(vkGetPhysicalDeviceImageFormatProperties)
 INSTANCE_VK_FUNCTIONS(vkEnumerateDeviceExtensionProperties)
@@ -46,9 +49,6 @@ INSTANCE_VK_FUNCTIONS(vkGetDeviceProcAddr)
 #ifndef INSTANCE_VK_EXT_FUNCTIONS
 #define INSTANCE_VK_EXT_FUNCTIONS(function, extension)
 #endif
-INSTANCE_VK_EXT_FUNCTIONS(vkGetPhysicalDeviceProperties2KHR, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)
-INSTANCE_VK_EXT_FUNCTIONS(vkGetPhysicalDeviceFeatures2KHR, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)
-INSTANCE_VK_EXT_FUNCTIONS(vkGetPhysicalDeviceMemoryProperties2KHR, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)
 INSTANCE_VK_EXT_FUNCTIONS(vkDestroySurfaceKHR, VK_KHR_SURFACE_EXTENSION_NAME)
 INSTANCE_VK_EXT_FUNCTIONS(vkGetPhysicalDeviceSurfaceSupportKHR, VK_KHR_SURFACE_EXTENSION_NAME)
 INSTANCE_VK_EXT_FUNCTIONS(vkGetPhysicalDeviceSurfaceCapabilitiesKHR, VK_KHR_SURFACE_EXTENSION_NAME)
@@ -72,6 +72,7 @@ INSTANCE_VK_PLATFORM_EXT_FUNCTIONS(vkCreatePlatformSurfaceKHR)
 DEVICE_VK_FUNCTIONS(vkDestroyDevice)
 DEVICE_VK_FUNCTIONS(vkGetDeviceQueue)
 DEVICE_VK_FUNCTIONS(vkQueueSubmit)
+// DEVICE_VK_FUNCTIONS(vkQueueSubmit2)
 DEVICE_VK_FUNCTIONS(vkDeviceWaitIdle)
 
 /* Synchronizing Functions */
@@ -82,12 +83,9 @@ DEVICE_VK_FUNCTIONS(vkGetFenceStatus)
 DEVICE_VK_FUNCTIONS(vkResetFences)
 DEVICE_VK_FUNCTIONS(vkWaitForFences)
 DEVICE_VK_FUNCTIONS(vkDestroyFence)
-// TODO(Jeslas)(API Update) : Remove this #if once driver providers update to Vulkan 1.2
-#if VK_VERSION_1_2
 DEVICE_VK_FUNCTIONS(vkGetSemaphoreCounterValue)
 DEVICE_VK_FUNCTIONS(vkWaitSemaphores)
 DEVICE_VK_FUNCTIONS(vkSignalSemaphore)
-#endif
 DEVICE_VK_FUNCTIONS(vkCreateEvent)
 DEVICE_VK_FUNCTIONS(vkDestroyEvent)
 DEVICE_VK_FUNCTIONS(vkGetEventStatus)
@@ -165,8 +163,10 @@ DEVICE_VK_FUNCTIONS(vkCmdSetEvent)
 DEVICE_VK_FUNCTIONS(vkCmdWaitEvents)
 
 DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier)
+// DEVICE_VK_FUNCTIONS(vkCmdPipelineBarrier2)
 
 DEVICE_VK_FUNCTIONS(vkCmdCopyBuffer);
+// DEVICE_VK_FUNCTIONS(vkCmdCopyBuffer2);
 DEVICE_VK_FUNCTIONS(vkCmdCopyBufferToImage)
 DEVICE_VK_FUNCTIONS(vkCmdCopyImageToBuffer)
 DEVICE_VK_FUNCTIONS(vkCmdCopyImage)
@@ -223,13 +223,8 @@ DEVICE_VK_EXT_FUNCTIONS(vkQueuePresentKHR, VK_KHR_SWAPCHAIN_EXTENSION_NAME)
 
 /* synchronization 2 Functions */
 DEVICE_VK_EXT_FUNCTIONS(vkCmdPipelineBarrier2KHR, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
-
-// TODO(Jeslas)(API Update) : Remove this once driver providers update to Vulkan 1.2
-#if VK_VERSION_1_1 & !VK_VERSION_1_2
-/* Synchronizing Functions */
-DEVICE_VK_EXT_FUNCTIONS(vkGetSemaphoreCounterValueKHR, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)
-DEVICE_VK_EXT_FUNCTIONS(vkWaitSemaphoresKHR, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)
-DEVICE_VK_EXT_FUNCTIONS(vkSignalSemaphoreKHR, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)
-#endif
+DEVICE_VK_EXT_FUNCTIONS(vkQueueSubmit2KHR, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
+/* copy commands 2 functions */
+DEVICE_VK_EXT_FUNCTIONS(vkCmdCopyBuffer2KHR, VK_KHR_COPY_COMMANDS_2_EXTENSION_NAME);
 
 #undef DEVICE_VK_EXT_FUNCTIONS
