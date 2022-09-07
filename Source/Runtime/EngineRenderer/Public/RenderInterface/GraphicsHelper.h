@@ -152,6 +152,7 @@ public:
     virtual void initializeSwapchainFb(class IGraphicsInstance *graphicsInstance, Framebuffer *fb, WindowCanvasRef canvas, uint32 swapchainIdx)
         const = 0;
 
+    // All write buffers are storage buffers, Read buffers means that can be used as Uniform
     virtual const GraphicsResourceType *readOnlyBufferType() const = 0;
     virtual const GraphicsResourceType *writeOnlyBufferType() const = 0;
     virtual const GraphicsResourceType *readWriteBufferType() const = 0;

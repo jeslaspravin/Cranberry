@@ -1748,7 +1748,7 @@ void ExperimentalEnginePBR::setupShaderParameterParams(IGraphicsInstance *graphi
     }
     for (uint32 i = 0; i < spotShadowRTs.size(); ++i)
     {
-        ImageResourceRef texture = spotShadowRTs[i] ? spotShadowRTs[i]->getTextureResource() : GlobalBuffers::dummyBlack2D();
+        ImageResourceRef texture = spotShadowRTs[i] ? spotShadowRTs[i]->getTextureResource() : GlobalBuffers::dummyDepth();
         lightDataShadowed->setTextureParam(TCHAR("spotLightShadowMaps"), texture, shadowFiltering, i);
     }
     // count will be min up to 8

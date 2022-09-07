@@ -186,7 +186,7 @@
 #ifndef PHYSICAL_DEVICE_FEATURES_2
 #define PHYSICAL_DEVICE_FEATURES_2(VariableName)                                                                                               \
     VkPhysicalDeviceFeatures2KHR VariableName{};                                                                                               \
-    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;                                                                     \
+    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;                                                                         \
     VariableName.pNext = nullptr
 #endif
 
@@ -207,7 +207,7 @@
 #ifndef PHYSICAL_DEVICE_PROPERTIES_2
 #define PHYSICAL_DEVICE_PROPERTIES_2(VariableName)                                                                                             \
     VkPhysicalDeviceProperties2KHR VariableName{};                                                                                             \
-    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;                                                                   \
+    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;                                                                       \
     VariableName.pNext = nullptr
 #endif
 
@@ -228,7 +228,7 @@
 #ifndef PHYSICAL_DEVICE_MEMORY_PROPERTIES_2
 #define PHYSICAL_DEVICE_MEMORY_PROPERTIES_2(VariableName)                                                                                      \
     VkPhysicalDeviceMemoryProperties2KHR VariableName{};                                                                                       \
-    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR;                                                            \
+    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;                                                                \
     VariableName.pNext = nullptr
 #endif
 

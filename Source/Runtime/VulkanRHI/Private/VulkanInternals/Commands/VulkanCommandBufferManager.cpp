@@ -1295,7 +1295,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     if (!accessors.lastWrite)
     {
-        accessors.lastReadsIn.emplace_back(cmdBuffer);
+        accessors.addLastReadInCmd(cmdBuffer);
         accessors.allReadStages |= resource.second;
         accessors.lastReadStages = resource.second;
         return outBarrierInfo;
@@ -1318,7 +1318,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     {
         cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
     }
-    accessors.lastReadsIn.emplace_back(cmdBuffer);
+    accessors.addLastReadInCmd(cmdBuffer);
     accessors.allReadStages |= resource.second;
     accessors.lastReadStages = resource.second;
     return outBarrierInfo;
@@ -1332,7 +1332,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     if (!accessors.lastWrite)
     {
-        accessors.lastReadsIn.emplace_back(cmdBuffer);
+        accessors.addLastReadInCmd(cmdBuffer);
         accessors.allReadStages |= resource.second;
         accessors.lastReadStages = resource.second;
         return outBarrierInfo;
@@ -1364,7 +1364,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastReadsIn.front(), resource.second });
         }
     }
-    accessors.lastReadsIn.emplace_back(cmdBuffer);
+    accessors.addLastReadInCmd(cmdBuffer);
     accessors.allReadStages |= resource.second;
     accessors.lastReadStages = resource.second;
     return outBarrierInfo;
@@ -1421,7 +1421,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     {
         // TODO(Jeslas): Check if cmd not waiting on other reads is an issue here?
         ResourceBarrierInfo barrier;
-        barrier.accessors.lastReadsIn.emplace_back(cmdBuffer);
+        barrier.accessors.addLastReadInCmd(cmdBuffer);
         barrier.resource = resource.first;
         barrier.accessors.allReadStages = accessors.allReadStages;
         barrier.accessors.lastReadStages = accessors.lastReadStages;
@@ -1500,7 +1500,7 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     {
         // Since same command buffer we need to write after waiting for read
         ResourceBarrierInfo barrier;
-        barrier.accessors.lastReadsIn.emplace_back(cmdBuffer);
+        barrier.accessors.addLastReadInCmd(cmdBuffer);
         barrier.resource = resource.first;
         barrier.accessors.allReadStages = accessors.allReadStages;
         barrier.accessors.lastReadStages = accessors.lastReadStages;

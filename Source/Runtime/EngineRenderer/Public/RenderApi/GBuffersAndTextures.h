@@ -32,6 +32,7 @@ private:
     static ImageResourceRef dummyWhiteTexture;
     static ImageResourceRef dummyCubeTexture;
     static ImageResourceRef dummyNormalTexture;
+    static ImageResourceRef dummyDepthTexture;
 
     static ImageResourceRef integratedBRDF;
 
@@ -43,20 +44,6 @@ private:
     static SamplerRef linearFiltering;
     static SamplerRef depthFiltering;
     static SamplerRef shadowFiltering;
-
-    static void createTextureCubes(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    static void destroyTextureCubes();
-
-    static void createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    // Generates using shaders or some other pipeline based techniqs
-    static void generateTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    static void destroyTexture2Ds();
-
-    static void createVertIndBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    static void destroyVertIndBuffers();
-
-    static void createSamplers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    static void destroySamplers();
 
 public:
     /**
@@ -72,6 +59,7 @@ public:
     static ImageResourceRef dummyBlack2D() { return dummyBlackTexture; }
     static ImageResourceRef dummyCube() { return dummyCubeTexture; }
     static ImageResourceRef dummyNormal() { return dummyNormalTexture; }
+    static ImageResourceRef dummyDepth() { return dummyDepthTexture; }
     static ImageResourceRef integratedBrdfLUT() { return integratedBRDF; }
 
     static SamplerRef nearestSampler() { return nearestFiltering; }
@@ -82,4 +70,19 @@ public:
     static const BufferResourceRef getQuadTriVertexBuffer() { return quadTriVerts; }
     static std::pair<const BufferResourceRef, const BufferResourceRef> getQuadRectVertexIndexBuffers() { return quadRectVertsInds; }
     static std::pair<const BufferResourceRef, const BufferResourceRef> getLineGizmoVertexIndexBuffers() { return lineGizmoVertxInds; }
+
+private:
+    static void createTextureCubes(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    static void destroyTextureCubes();
+
+    static void createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    // Generates using shaders or some other pipeline based techniqs
+    static void generateTexture2Ds(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    static void destroyTexture2Ds();
+
+    static void createVertIndBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    static void destroyVertIndBuffers();
+
+    static void createSamplers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    static void destroySamplers();
 };
