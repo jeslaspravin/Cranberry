@@ -67,7 +67,7 @@ public:
     void cmdCopyBuffer(
         const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, const std::vector<CopyBufferInfo> &copies
     ) final;
-
+    void cmdCopyToBuffer(const GraphicsResource *cmdBuffer, const std::vector<BatchCopyBufferData> &batchCopies) final;
     void cmdCopyOrResolveImage(
         const GraphicsResource *cmdBuffer, ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo,
         const CopyImageInfo &dstInfo
@@ -358,6 +358,11 @@ void RenderCommandList::cmdCopyBuffer(
 )
 {
     cmdList->cmdCopyBuffer(cmdBuffer, src, dst, copies);
+}
+
+void RenderCommandList::cmdCopyToBuffer(const GraphicsResource *cmdBuffer, const std::vector<BatchCopyBufferData> &batchCopies)
+{
+    cmdList->cmdCopyToBuffer(cmdBuffer, batchCopies);
 }
 
 void RenderCommandList::cmdCopyOrResolveImage(

@@ -169,6 +169,15 @@ private:
         VkPipelineStageFlags2 lastReadStages = 0;
         const GraphicsResource *lastWrite = nullptr;
         VkPipelineStageFlagBits2 lastWriteStage;
+
+        FORCE_INLINE void addLastReadInCmd(const GraphicsResource *cmdBuffer)
+        {
+            // This is just to avoid adding same read cmd buffers continuosly repeating
+            if (lastReadsIn.empty() || lastReadsIn.back() != cmdBuffer)
+            {
+                lastReadsIn.emplace_back(cmdBuffer);
+            }
+        }
     };
 
 public:

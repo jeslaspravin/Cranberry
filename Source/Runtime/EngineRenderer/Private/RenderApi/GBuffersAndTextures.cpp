@@ -40,6 +40,8 @@ ImageResourceRef GlobalBuffers::dummyBlackTexture;
 ImageResourceRef GlobalBuffers::dummyWhiteTexture;
 ImageResourceRef GlobalBuffers::dummyCubeTexture;
 ImageResourceRef GlobalBuffers::dummyNormalTexture;
+ImageResourceRef GlobalBuffers::dummyDepthTexture;
+
 ImageResourceRef GlobalBuffers::integratedBRDF;
 
 BufferResourceRef GlobalBuffers::quadTriVerts = nullptr;
@@ -156,6 +158,10 @@ void GlobalBuffers::createTexture2Ds(IRenderCommandList *cmdList, IGraphicsInsta
     dummyNormalTexture = graphicsHelper->createImage(graphicsInstance, imageCI);
     dummyNormalTexture->setResourceName(TCHAR("Dummy_Normal"));
 
+    imageCI.imageFormat = EPixelDataFormat::D_SF32;
+    dummyDepthTexture = graphicsHelper->createImage(graphicsInstance, imageCI);
+    dummyDepthTexture->setResourceName(TCHAR("Dummy_Depth"));
+
     if (GlobalRenderVariables::ENABLE_EXTENDED_STORAGES)
     {
         // TODO(Jeslas) : Create better read only LUT
@@ -179,6 +185,7 @@ void GlobalBuffers::generateTexture2Ds(
     dummyWhiteTexture->init();
     dummyBlackTexture->init();
     dummyNormalTexture->init();
+    dummyDepthTexture->init();
     integratedBRDF->init();
     cmdList->setupInitialLayout(integratedBRDF);
 
@@ -206,6 +213,9 @@ void GlobalBuffers::generateTexture2Ds(
     cmdList->copyToImage(dummyBlackTexture, { ColorConst::BLACK });
     cmdList->copyToImage(dummyWhiteTexture, { ColorConst::WHITE });
     cmdList->copyToImage(dummyNormalTexture, { ColorConst::BLUE });
+    cmdList->copyToImage(
+        dummyDepthTexture, std::vector<LinearColor>{ LinearColorConst::BLACK }, { .extent = dummyDepthTexture->getImageSize() }
+    );
 
     cmdList->finishCmd(cmdBuffer);
     cmdList->freeCmd(cmdBuffer);
@@ -217,6 +227,7 @@ void GlobalBuffers::destroyTexture2Ds()
     dummyBlackTexture.reset();
     dummyWhiteTexture.reset();
     dummyNormalTexture.reset();
+    dummyDepthTexture.reset();
 
     integratedBRDF.reset();
 }
