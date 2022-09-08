@@ -1339,8 +1339,8 @@ void ExperimentalEngineGoochModel::frameRender(
                 {TCHAR("srcIndex"),                                              { testBindlessTextureIdx }}
         };
         cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, pushConsts);
-        cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, { testComputeParams });
-        cmdList->cmdBarrierResources(cmdBuffer, { testComputeParams });
+        cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, testComputeParams);
+        cmdList->cmdBarrierResources(cmdBuffer, { &testComputeParams, 1 });
         cmdList->cmdDispatch(
             cmdBuffer,
             writeTexture->getTextureSize().x
@@ -1358,16 +1358,16 @@ void ExperimentalEngineGoochModel::frameRender(
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, MainUnlitPass);
 
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneVertexBuffer }, { 0 });
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, sceneVertexBuffer, 0);
             cmdList->cmdBindIndexBuffer(cmdBuffer, sceneIndexBuffer);
             for (const auto &pipelineToOffsetCount : pipelineToDrawCmdOffsetCount)
             {
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, *pipelineToOffsetCount.first, { queryParam });
+
                 // Shader material params set
-                cmdList->cmdBindDescriptorsSets(
-                    cmdBuffer, *pipelineToOffsetCount.first,
-                    { viewParameters.get(), instanceParameters.get(), sceneShaderUniqParams[pipelineToOffsetCount.first].get() }
-                );
+                ShaderParametersRef descSets[]
+                    = { viewParameters.get(), instanceParameters.get(), sceneShaderUniqParams[pipelineToOffsetCount.first].get() };
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, *pipelineToOffsetCount.first, descSets);
 
                 cmdList->cmdDrawIndexedIndirect(
                     cmdBuffer, allEntityDrawCmds, pipelineToOffsetCount.second.first, pipelineToOffsetCount.second.second,
@@ -1381,7 +1381,7 @@ void ExperimentalEngineGoochModel::frameRender(
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = ApplicationSettings::screenSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+        cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
         if (frameVisualizeId == 0)
         {
@@ -1406,7 +1406,8 @@ void ExperimentalEngineGoochModel::frameRender(
                     SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLight);
                     cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGoochPipelineContext, { queryParam });
 
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, { lightCommon.get(), *lightTextures, light.get() });
+                    ShaderParametersRef descSets[] = { lightCommon.get(), *lightTextures, light.get() };
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGoochPipelineContext, descSets);
                     cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
                 }
                 cmdList->cmdEndRenderPass(cmdBuffer);
@@ -1493,7 +1494,7 @@ void ExperimentalEngineGoochModel::frameRender(
 
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, imguiShaderCntxt, { queryParam });
                 cmdList->cmdBindDescriptorsSets(cmdBuffer, imguiShaderCntxt, textRenderParams);
-                cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { textVertsBuffer }, { 0 });
+                cmdList->cmdBindVertexBuffer(cmdBuffer, 0, textVertsBuffer, 0);
                 cmdList->cmdBindIndexBuffer(cmdBuffer, textIndexBuffer);
                 cmdList->cmdDrawIndexed(cmdBuffer, 0, textIdxCount);
             }
@@ -1503,7 +1504,7 @@ void ExperimentalEngineGoochModel::frameRender(
         // Drawing final quad
         viewport.maxBound = scissor.maxBound = ApplicationSettings::surfaceSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+        cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
         RenderPassAdditionalProps renderPassAdditionalProps;

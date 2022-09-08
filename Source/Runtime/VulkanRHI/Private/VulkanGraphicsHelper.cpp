@@ -238,31 +238,31 @@ uint32 VulkanGraphicsHelper::getNextSwapchainImage(
 }
 
 void VulkanGraphicsHelper::presentImage(
-    class IGraphicsInstance *graphicsInstance, const std::vector<WindowCanvasRef> *canvases, const std::vector<uint32> *imageIndex,
-    const std::vector<SemaphoreRef> *waitOnSemaphores
+    class IGraphicsInstance *graphicsInstance, ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndex,
+    ArrayView<const SemaphoreRef> waitOnSemaphores
 )
 {
-    if (!canvases || !imageIndex || canvases->size() != imageIndex->size())
+    if (canvases.empty() || imageIndex.empty() || canvases.size() != imageIndex.size())
         return;
 
     const auto *gInstance = static_cast<const VulkanGraphicsInstance *>(graphicsInstance);
     const VulkanDevice *device = &gInstance->selectedDevice;
 
-    std::vector<VkSwapchainKHR> swapchains(canvases->size());
-    std::vector<VkResult> results(canvases->size());
-    std::vector<VkSemaphore> semaphores(waitOnSemaphores ? waitOnSemaphores->size() : 0);
+    std::vector<VkSwapchainKHR> swapchains(canvases.size());
+    std::vector<VkResult> results(canvases.size());
+    std::vector<VkSemaphore> semaphores(waitOnSemaphores.size());
 
     for (int32 i = 0; i < swapchains.size(); ++i)
     {
-        swapchains[i] = (*canvases)[i].reference<VulkanWindowCanvas>()->swapchain();
+        swapchains[i] = canvases[i].reference<VulkanWindowCanvas>()->swapchain();
     }
 
     for (int32 i = 0; i < semaphores.size(); ++i)
     {
-        semaphores[i] = (*waitOnSemaphores)[i].reference<VulkanSemaphore>()->semaphore;
+        semaphores[i] = waitOnSemaphores[i].reference<VulkanSemaphore>()->semaphore;
     }
     PRESENT_INFO(presentInfo);
-    presentInfo.pImageIndices = imageIndex->data();
+    presentInfo.pImageIndices = imageIndex.data();
     presentInfo.pSwapchains = swapchains.data();
     presentInfo.swapchainCount = (uint32)swapchains.size();
     presentInfo.pResults = results.data();
@@ -282,7 +282,7 @@ void VulkanGraphicsHelper::presentImage(
         {
             if (results[i] != VK_SUCCESS && results[i] != VK_SUBOPTIMAL_KHR)
             {
-                LOG_ERROR("VulkanPresenting", "Failed presenting for window %s", (*canvases)[i]->getResourceName().getChar());
+                LOG_ERROR("VulkanPresenting", "Failed presenting for window %s", canvases[i]->getResourceName().getChar());
             }
         }
     }

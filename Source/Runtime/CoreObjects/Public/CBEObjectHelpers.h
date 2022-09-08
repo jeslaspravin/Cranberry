@@ -190,6 +190,7 @@ ClassType *createOrGet(const String &name, Object *outerObj, EObjectFlags flags 
 }
 
 FORCE_INLINE Object *get(const TChar *objectFullPath) { return ICoreObjectsModule::get()->getObjectsDB().getObject(objectFullPath); }
+FORCE_INLINE Object *get(StringID objectID) { return ICoreObjectsModule::get()->getObjectsDB().getObject(objectID); }
 
 template <typename ClassType>
 ClassType *get(const TChar *objectFullPath)

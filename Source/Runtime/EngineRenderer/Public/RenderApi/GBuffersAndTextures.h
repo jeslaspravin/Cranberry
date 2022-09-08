@@ -67,9 +67,9 @@ public:
     static SamplerRef depthSampler() { return depthFiltering; }
     static SamplerRef shadowSampler() { return shadowFiltering; }
 
-    static const BufferResourceRef getQuadTriVertexBuffer() { return quadTriVerts; }
-    static std::pair<const BufferResourceRef, const BufferResourceRef> getQuadRectVertexIndexBuffers() { return quadRectVertsInds; }
-    static std::pair<const BufferResourceRef, const BufferResourceRef> getLineGizmoVertexIndexBuffers() { return lineGizmoVertxInds; }
+    static BufferResourceRef getQuadTriVertexBuffer() { return quadTriVerts; }
+    static std::pair<BufferResourceRef, BufferResourceRef> getQuadRectVertexIndexBuffers() { return quadRectVertsInds; }
+    static std::pair<BufferResourceRef, BufferResourceRef> getLineGizmoVertexIndexBuffers() { return lineGizmoVertxInds; }
 
 private:
     static void createTextureCubes(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);

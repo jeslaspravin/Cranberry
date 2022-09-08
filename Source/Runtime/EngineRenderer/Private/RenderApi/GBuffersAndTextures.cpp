@@ -203,19 +203,17 @@ void GlobalBuffers::generateTexture2Ds(
     Size3D subgrpSize = static_cast<const ComputeShaderConfig *>(integrateBrdfContext.getPipeline()->getShaderResource()->getShaderConfig())
                             ->getSubGroupSize();
     cmdList->cmdDispatch(cmdBuffer, integratedBRDF->getImageSize().x / subgrpSize.x, integratedBRDF->getImageSize().y / subgrpSize.y);
-    cmdList->cmdTransitionLayouts(cmdBuffer, { integratedBRDF });
+    cmdList->cmdTransitionLayouts(cmdBuffer, { &integratedBRDF, 1 });
     cmdList->endCmd(cmdBuffer);
 
     CommandSubmitInfo2 submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
     cmdList->submitCmd(EQueuePriority::High, submitInfo);
 
-    cmdList->copyToImage(dummyBlackTexture, { ColorConst::BLACK });
-    cmdList->copyToImage(dummyWhiteTexture, { ColorConst::WHITE });
-    cmdList->copyToImage(dummyNormalTexture, { ColorConst::BLUE });
-    cmdList->copyToImage(
-        dummyDepthTexture, std::vector<LinearColor>{ LinearColorConst::BLACK }, { .extent = dummyDepthTexture->getImageSize() }
-    );
+    cmdList->copyToImage(dummyBlackTexture, { &ColorConst::BLACK, 1 });
+    cmdList->copyToImage(dummyWhiteTexture, { &ColorConst::WHITE, 1 });
+    cmdList->copyToImage(dummyNormalTexture, { &ColorConst::BLUE, 1 });
+    cmdList->copyToImage(dummyDepthTexture, { &LinearColorConst::BLACK, 1 }, { .extent = dummyDepthTexture->getImageSize() });
 
     cmdList->finishCmd(cmdBuffer);
     cmdList->freeCmd(cmdBuffer);

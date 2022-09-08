@@ -15,6 +15,7 @@
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/Resources/QueueResource.h"
 #include "String/String.h"
+#include "Types/Containers/ArrayView.h"
 #include "Types/Containers/BitArray.h"
 #include "Types/Containers/SparseVector.h"
 #include "VulkanInternals/Resources/IVulkanResources.h"
@@ -26,7 +27,6 @@ class QueueResourceBase;
 class VulkanDevice;
 class GraphicsSemaphore;
 class GraphicsFence;
-struct CommandSubmitInfo;
 class VulkanResourcesTracker;
 
 namespace std
@@ -147,10 +147,10 @@ public:
     // Parameter: GraphicsFence * cmdsCompleteFence - Fence that gets signalled when all of the commands
     // submitted are complete
     //************************************
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands, FenceRef cmdsCompleteFence);
+    void submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo> commands, FenceRef cmdsCompleteFence);
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &command, FenceRef cmdsCompleteFence);
 
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands, VulkanResourcesTracker *resourceTracker);
+    void submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo2> commands, VulkanResourcesTracker *resourceTracker);
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command, VulkanResourcesTracker *resourceTracker);
 };
 

@@ -2483,7 +2483,7 @@ void ExperimentalEnginePBR::frameRender(
         {
             SCOPED_CMD_MARKER(cmdList, cmdBuffer, MainUnlitPass);
 
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneVertexBuffer }, { 0 });
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, sceneVertexBuffer, 0);
             cmdList->cmdBindIndexBuffer(cmdBuffer, sceneIndexBuffer);
 
             // Bind less
@@ -2491,11 +2491,10 @@ void ExperimentalEnginePBR::frameRender(
             for (const auto &pipelineToOffsetCount : pipelineToDrawCmdOffsetCount)
             {
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, *pipelineToOffsetCount.first, { queryParam });
+
+                ShaderParametersRef descSets[] = { viewParameters, instanceParameters, sceneShaderUniqParams[pipelineToOffsetCount.first] };
                 // Shader material params set
-                cmdList->cmdBindDescriptorsSets(
-                    cmdBuffer, *pipelineToOffsetCount.first,
-                    { viewParameters, instanceParameters, sceneShaderUniqParams[pipelineToOffsetCount.first] }
-                );
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, *pipelineToOffsetCount.first, descSets);
 
                 cmdList->cmdDrawIndexedIndirect(
                     cmdBuffer, allEntityDrawCmds, pipelineToOffsetCount.second.first, pipelineToOffsetCount.second.second,
@@ -2509,7 +2508,7 @@ void ExperimentalEnginePBR::frameRender(
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = ApplicationSettings::screenSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+        cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
         if (frameVisualizeId == 0)
         {
@@ -2533,7 +2532,8 @@ void ExperimentalEnginePBR::frameRender(
                     SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLight);
                     cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawPbrNoShadowPipelineContext, { queryParam });
 
-                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrNoShadowPipelineContext, { lightCommon, *lightTextures, light });
+                    ShaderParametersRef descSets[] = { lightCommon, *lightTextures, light };
+                    cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrNoShadowPipelineContext, descSets);
                     cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
                 }
                 cmdList->cmdEndRenderPass(cmdBuffer);
@@ -2554,17 +2554,14 @@ void ExperimentalEnginePBR::frameRender(
             {
                 SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawLightWithShadow);
 
-                cmdList->cmdPushConstants(
-                    cmdBuffer, drawPbrWithShadowPipelineContext,
-                    {
-                        {TCHAR("debugDrawFlags"), uint32(renderFlags)}
-                }
-                    );
+                std::pair<String, std::any> pushConsts[] = {
+                    {TCHAR("debugDrawFlags"), uint32(renderFlags)}
+                };
+                cmdList->cmdPushConstants(cmdBuffer, drawPbrWithShadowPipelineContext, pushConsts);
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawPbrWithShadowPipelineContext, { queryParam });
 
-                cmdList->cmdBindDescriptorsSets(
-                    cmdBuffer, drawPbrWithShadowPipelineContext, { lightCommon, *lightTextures, lightDataShadowed }
-                );
+                ShaderParametersRef descSets[] = { lightCommon, *lightTextures, lightDataShadowed };
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, drawPbrWithShadowPipelineContext, descSets);
                 cmdList->cmdDrawIndexed(cmdBuffer, 0, 3);
             }
             cmdList->cmdEndRenderPass(cmdBuffer);
@@ -2627,7 +2624,7 @@ void ExperimentalEnginePBR::frameRender(
         viewport.minBound = Int2D(0, 0);
         viewport.maxBound = scissor.maxBound = ApplicationSettings::surfaceSize.get();
 
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+        cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
 
         RenderPassAdditionalProps renderPassAdditionalProps;
@@ -2657,8 +2654,7 @@ void ExperimentalEnginePBR::frameRender(
 
     // Presenting manually here as for Experimental we are not adding any widget to app main window and it gets skipped in presenting all drawn
     // windows
-    std::vector<uint32> indices = { index };
-    cmdList->presentImage({ windowCanvas }, indices, {});
+    cmdList->presentImage({ &windowCanvas, 1 }, { &index, 1 }, {});
 }
 
 void ExperimentalEnginePBR::updateCamGizmoViewParams()
@@ -2704,14 +2700,12 @@ void ExperimentalEnginePBR::updateCamGizmoCapture(class IRenderCommandList *cmdL
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawLinesDWritePipelineCntxt, pipelineState);
 
-            cmdList->cmdPushConstants(
-                cmdBuffer, sceneDebugLinesPipelineContext,
-                {
-                    {TCHAR("ptSize"), 1.0f}
-            }
-                );
+            std::pair<String, std::any> pushConsts[] = {
+                {TCHAR("ptSize"), 1.0f}
+            };
+            cmdList->cmdPushConstants(cmdBuffer, sceneDebugLinesPipelineContext, pushConsts);
             cmdList->cmdBindDescriptorsSets(cmdBuffer, drawLinesDWritePipelineCntxt, camViewAndInstanceParams);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getLineGizmoVertexIndexBuffers().first }, { 0 });
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getLineGizmoVertexIndexBuffers().first, 0);
             cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getLineGizmoVertexIndexBuffers().second);
 
             cmdList->cmdDrawIndexed(cmdBuffer, 0, GlobalBuffers::getLineGizmoVertexIndexBuffers().second->bufferCount());
@@ -2740,7 +2734,7 @@ void ExperimentalEnginePBR::renderShadows(
     QuantizedBox2D scissor = viewport;
 
     SCOPED_CMD_MARKER(cmdList, cmdBuffer, RenderShadows);
-    cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneVertexBuffer }, { 0 });
+    cmdList->cmdBindVertexBuffer(cmdBuffer, 0, sceneVertexBuffer, 0);
     cmdList->cmdBindIndexBuffer(cmdBuffer, sceneIndexBuffer);
     // Draw cascade first
     {
@@ -2750,9 +2744,8 @@ void ExperimentalEnginePBR::renderShadows(
 
         // Bind and draw
         cmdList->cmdBindGraphicsPipeline(cmdBuffer, directionalShadowPipelineContext, { faceFillQueryParam });
-        cmdList->cmdBindDescriptorsSets(
-            cmdBuffer, directionalShadowPipelineContext, { viewParameters, directionalViewParam, instanceParameters }
-        );
+        ShaderParametersRef descSets[] = { viewParameters, directionalViewParam, instanceParameters };
+        cmdList->cmdBindDescriptorsSets(cmdBuffer, directionalShadowPipelineContext, descSets);
         cmdList->cmdDrawIndexedIndirect(cmdBuffer, allEntityDrawCmds, 0, allEntityDrawCmds->bufferCount(), allEntityDrawCmds->bufferStride());
 
         cmdList->cmdEndRenderPass(cmdBuffer);
@@ -2814,7 +2807,8 @@ void ExperimentalEnginePBR::renderShadows(
                 faceFillQueryParam.cullingMode
                     = BIT_SET(shadowFlags, PBRShadowFlags::DrawingBackface) ? ECullingMode::FrontFace : ECullingMode::BackFace;
                 cmdList->cmdBindGraphicsPipeline(cmdBuffer, pointShadowPipelineContext, { faceFillQueryParam });
-                cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, { *ptlit.shadowViewParams, instanceParameters });
+                ShaderParametersRef descSets[] = { *ptlit.shadowViewParams, instanceParameters };
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, pointShadowPipelineContext, descSets);
 #if SHADOWS_USE_CULLED_DRAW_CMDS
                 cmdList->cmdDrawIndexedIndirect(
                     cmdBuffer, *ptlit.drawCmdsBuffer, 0, ptlit.drawCmdCount, (*ptlit.drawCmdsBuffer)->bufferStride()
@@ -2879,14 +2873,14 @@ void ExperimentalEnginePBR::debugFrameRender(
             pipelineState.pipelineQuery = backfaceFillQueryParam;
             pipelineState.lineWidth = 1.0f;
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, sceneDebugLinesPipelineContext, pipelineState);
-            cmdList->cmdBindDescriptorsSets(cmdBuffer, sceneDebugLinesPipelineContext, { viewParameters, instanceParameters });
-            cmdList->cmdPushConstants(
-                cmdBuffer, sceneDebugLinesPipelineContext,
-                {
-                    {TCHAR("ptSize"), 1.0f}
-            }
-                );
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { sceneEntity.meshAsset->getTbnVertexBuffer() }, { 0 });
+
+            ShaderParametersRef descSets[] = { viewParameters, instanceParameters };
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, sceneDebugLinesPipelineContext, descSets);
+            std::pair<String, std::any> pushConsts[] = {
+                {TCHAR("ptSize"), 1.0f}
+            };
+            cmdList->cmdPushConstants(cmdBuffer, sceneDebugLinesPipelineContext, pushConsts);
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, sceneEntity.meshAsset->getTbnVertexBuffer(), 0);
             // Drawing with instance from one of batch as we do not care about material idx
             cmdList->cmdDrawVertices(cmdBuffer, 0, uint32(sceneEntity.meshAsset->tbnVerts.size()), sceneEntity.instanceParamIdx[0]);
         }
@@ -2918,7 +2912,8 @@ void ExperimentalEnginePBR::debugFrameRender(
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, drawGridDTestPipelineCntxt, pipelineState);
             cmdList->cmdBindDescriptorsSets(cmdBuffer, drawGridDTestPipelineCntxt, { viewParameters });
             cmdList->cmdPushConstants(cmdBuffer, drawGridDTestPipelineCntxt, pushCnsts);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadRectVertexIndexBuffers().first }, { 0 });
+
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadRectVertexIndexBuffers().first, 0);
             cmdList->cmdBindIndexBuffer(cmdBuffer, GlobalBuffers::getQuadRectVertexIndexBuffers().second);
 
             cmdList->cmdDrawIndexed(cmdBuffer, 0, 6);
@@ -2949,7 +2944,8 @@ void ExperimentalEnginePBR::debugFrameRender(
         {
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, overBlendedQuadPipelineContext, { backfaceFillQueryParam });
             cmdList->cmdBindDescriptorsSets(cmdBuffer, overBlendedQuadPipelineContext, camRTParams);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
 
             cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
         }

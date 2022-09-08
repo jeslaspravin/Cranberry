@@ -103,11 +103,12 @@ void WorldViewport::drawBackBuffer(
             RenderPassClearValue clearVal;
             clearVal.colors = { LinearColorConst::BLACK };
 
-            cmdList->cmdBarrierResources(cmdBuffer, { paramRef });
+            cmdList->cmdBarrierResources(cmdBuffer, { &paramRef, 1 });
             cmdList->cmdBeginRenderPass(cmdBuffer, pipelineCntxt, renderArea, additionalProps, clearVal);
 
             cmdList->cmdBindGraphicsPipeline(cmdBuffer, pipelineCntxt, pipelineState);
-            cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { GlobalBuffers::getQuadTriVertexBuffer() }, { 0 });
+
+            cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
             cmdList->cmdSetViewportAndScissor(cmdBuffer, viewportArea, viewportArea);
             cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, paramRef);
 
