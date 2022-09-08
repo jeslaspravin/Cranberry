@@ -47,6 +47,8 @@ enum Type
     InstancedSimple3DColor,
     NoVertex,
     MaxVertexType,
+    TypeStart = Simple2,
+    TypeEnd = NoVertex
 };
 
 ENGINERENDERER_EXPORT String toString(Type vertexType);

@@ -249,7 +249,7 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
         {
             stream << TCHAR("[") << timeStr << TCHAR("]");
         }
-        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+        stream << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
@@ -267,7 +267,7 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT << TCHAR("[") << category << TCHAR("]") << CATEGORY
+        COUT << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -282,7 +282,7 @@ void Logger::verboseInternal(const SourceLocationType srcLoc, const TChar *categ
 void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
 #if DEV_BUILD
-    static const String CATEGORY{ TCHAR("[DEBUG]") };
+    static const String CATEGORY{ TCHAR("[DEBUG]  ") };
 
     String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
     const AChar *fileName = filterFileName(srcLoc.file_name());
@@ -294,7 +294,7 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
         {
             stream << TCHAR("[") << timeStr << TCHAR("]");
         }
-        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+        stream  << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
@@ -312,7 +312,7 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT << TCHAR("[") << category << TCHAR("]") << CATEGORY
+        COUT  << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -325,7 +325,7 @@ void Logger::debugInternal(const SourceLocationType srcLoc, const TChar *categor
 
 void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
-    static const String CATEGORY{ TCHAR("[LOG]") };
+    static const String CATEGORY{ TCHAR("[LOG]    ") };
 
     String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
     const AChar *fileName = filterFileName(srcLoc.file_name());
@@ -333,8 +333,11 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
     if (canLog(ELogServerity::Log, ELogOutputType::File))
     {
         OStringStream &stream = loggerImpl->lockLoggerBuffer();
-        stream << TCHAR("[") << Time::toString(Time::localTimeNow(), false) << TCHAR("]");
-        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+        if (canLogTime())
+        {
+            stream << TCHAR("[") << timeStr << TCHAR("]");
+        }
+        stream  << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
@@ -352,7 +355,7 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        COUT << TCHAR("[") << category << TCHAR("]") << CATEGORY
+        COUT  << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -363,7 +366,7 @@ void Logger::logInternal(const SourceLocationType srcLoc, const TChar *category,
 
 void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
-    static const String CATEGORY{ TCHAR("[WARN]") };
+    static const String CATEGORY{ TCHAR("[WARN]   ") };
 
     String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
     const AChar *fileName = filterFileName(srcLoc.file_name());
@@ -375,7 +378,7 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
         {
             stream << TCHAR("[") << timeStr << TCHAR("]");
         }
-        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+        stream << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
@@ -400,7 +403,7 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        CERR << TCHAR("[") << category << TCHAR("]") << CATEGORY
+        CERR << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;
@@ -418,7 +421,7 @@ void Logger::warnInternal(const SourceLocationType srcLoc, const TChar *category
 
 void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *category, const String &message)
 {
-    static const String CATEGORY{ TCHAR("[ERROR]") };
+    static const String CATEGORY{ TCHAR("[ERROR]  ") };
 
     String timeStr = canLogTime() ? Time::toString(Time::localTimeNow(), false) : TCHAR("");
     const AChar *fileName = filterFileName(srcLoc.file_name());
@@ -430,7 +433,7 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
         {
             stream << TCHAR("[") << timeStr << TCHAR("]");
         }
-        stream << TCHAR("[") << category << TCHAR("]") << CATEGORY 
+        stream << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar() 
             << LINE_FEED_TCHAR;
@@ -455,7 +458,7 @@ void Logger::errorInternal(const SourceLocationType srcLoc, const TChar *categor
         {
             COUT << TCHAR("[") << timeStr << TCHAR("]");
         }
-        CERR << TCHAR("[") << category << TCHAR("]") << CATEGORY
+        CERR << CATEGORY << TCHAR("[") << category << TCHAR("]")
             << TCHAR("[") << fileName << TCHAR(":") << srcLoc.line() << TCHAR("]") << srcLoc.function_name() << TCHAR("() : ")
             << message.getChar()
             << std::endl;

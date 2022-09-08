@@ -48,8 +48,8 @@ public:
         class IGraphicsInstance *graphicsInstance, VkSwapchainKHR swapchain, SemaphoreRef *waitOnSemaphore, FenceRef *waitOnFence = nullptr
     );
     static void presentImage(
-        class IGraphicsInstance *graphicsInstance, const std::vector<WindowCanvasRef> *canvases, const std::vector<uint32> *imageIndex,
-        const std::vector<SemaphoreRef> *waitOnSemaphores
+        class IGraphicsInstance *graphicsInstance, ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndex,
+        ArrayView<const SemaphoreRef> waitOnSemaphores
     );
     WindowCanvasRef createWindowCanvas(class IGraphicsInstance *graphicsInstance, GenericAppWindow *fromWindow) const final;
     void cacheSurfaceProperties(class IGraphicsInstance *graphicsInstance, const WindowCanvasRef &windowCanvas) const final;

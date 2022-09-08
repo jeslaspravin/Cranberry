@@ -428,7 +428,7 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         SCOPED_STR_CMD_MARKER(cmdList, cmdBuffer, TCHAR("WidgetRHIRender_") + drawingContexts[i].first->getAppWindow()->getWindowName());
         cmdList->cmdBeginRenderPass(cmdBuffer, pipelineContext, renderArea, additionalParams, clearValue);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, renderArea, renderArea);
-        cmdList->cmdBindVertexBuffers(cmdBuffer, 0, { vertices }, { 0 });
+        cmdList->cmdBindVertexBuffer(cmdBuffer, 0, vertices, 0);
         cmdList->cmdBindIndexBuffer(cmdBuffer, indices, 0);
         cmdList->cmdBindGraphicsPipeline(cmdBuffer, pipelineContext, pipelineState);
         cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineContext, windowState->windowTransformParam);

@@ -598,9 +598,7 @@ bool VulkanCmdBufferManager::isCmdFinished(const GraphicsResource *cmdBuffer) co
     return true;
 }
 
-void VulkanCmdBufferManager::submitCmds(
-    EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &commands, FenceRef cmdsCompleteFence
-)
+void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo> commands, FenceRef cmdsCompleteFence)
 {
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();
     const GraphicsHelperAPI *graphicsHelper = IVulkanRHIModule::get()->getGraphicsHelper();
@@ -803,7 +801,7 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
 }
 
 void VulkanCmdBufferManager::submitCmds(
-    EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands, VulkanResourcesTracker *resourceTracker
+    EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo2> commands, VulkanResourcesTracker *resourceTracker
 )
 {
     IGraphicsInstance *graphicsInstance = IVulkanRHIModule::get()->getGraphicsInstance();

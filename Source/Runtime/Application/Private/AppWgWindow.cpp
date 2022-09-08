@@ -12,7 +12,6 @@
 #include "IApplicationModule.h"
 #include "ApplicationInstance.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
-#include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
 #include "WindowManager.h"
 #include "GenericAppWindow.h"
 #include "Widgets/WidgetDrawContext.h"
@@ -369,7 +368,7 @@ void ApplicationInstance::startNewFrame()
      * This is to avoid over queuing render thread which happens as frame wait happens only in render thread
      * so main thread run wild and fills render queue with commands more than it can process
      */
-    copat::waitOnAwaitable(RenderThreadEnqueuer::execInRenderThreadAwaitable(
+    RenderThreadEnqueuer::execInRenderThreadAndWait(
         [this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             renderFrameAllocator.reset();
@@ -390,7 +389,7 @@ void ApplicationInstance::startNewFrame()
                 cmdList->copyToBuffer(copies);
             }
         }
-    ));
+    );
 }
 
 //////////////////////////////////////////////////////////////////////////

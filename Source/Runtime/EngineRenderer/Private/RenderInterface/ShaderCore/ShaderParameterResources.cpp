@@ -835,7 +835,7 @@ void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minSize)
                         if (oldBuffer->isValid())
                         {
                             CopyBufferInfo copyRange{ 0, 0, uint32(oldBuffer->getResourceSize()) };
-                            cmdList->copyBuffer(oldBuffer, bufferData.gpuBuffer, copyRange);
+                            cmdList->copyBuffer(oldBuffer, bufferData.gpuBuffer, { &copyRange, 1 });
                         }
                     }
                 }

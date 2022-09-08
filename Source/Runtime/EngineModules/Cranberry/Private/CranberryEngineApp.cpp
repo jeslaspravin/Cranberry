@@ -165,25 +165,6 @@ void tempTest()
         }
         gCBEEngine->worldManager()->initWorld(cast<cbe::World>(objs[0]), true);
     }
-
-    BitArray<uint32> rangeCheck;
-    rangeCheck.resize(32 * 4);
-
-    debugAssert(rangeCheck.checkRange(0, 32 * 4, false));
-    rangeCheck.setRange(0, 32 * 4);
-    debugAssert(rangeCheck.checkRange(0, 32 * 4, true));
-    rangeCheck.resetRange(16, 32 * 2);
-    debugAssert(rangeCheck.checkRange(16, 32 * 2, false));
-    debugAssert(rangeCheck.checkRange(0, 16, true));
-    debugAssert(rangeCheck.checkRange(80, 128 - 80, true));
-    rangeCheck.setRange(16, 16);
-    debugAssert(rangeCheck.checkRange(16, 16, true));
-    rangeCheck.resetRange(0, 16);
-    debugAssert(rangeCheck.checkRange(0, 16, false));
-    rangeCheck.setRange(48, 8);
-    debugAssert(rangeCheck.checkRange(48, 8, true));
-    rangeCheck.resetRange(32 * 3, 8);
-    debugAssert(rangeCheck.checkRange(96, 8, false));
 }
 
 void tempTickTest() {}

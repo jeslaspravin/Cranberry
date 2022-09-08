@@ -614,8 +614,9 @@ void ImGuiManager::draw(
     clearVal.colors = { LinearColorConst::BLACK_Transparent, LinearColorConst::BLACK_Transparent };
 
     // Barrier resources once
-    cmdList->cmdBarrierResources(drawingContext.cmdBuffer, texturesUsed);
+    std::vector<ShaderParametersRef> texturesUsedVector(texturesUsed.cbegin(), texturesUsed.cend());
     texturesUsed.clear();
+    cmdList->cmdBarrierResources(drawingContext.cmdBuffer, texturesUsedVector);
 
     cmdList->cmdBeginRenderPass(drawingContext.cmdBuffer, pipelineContext, viewport, additionalProps, clearVal);
     {
@@ -626,7 +627,7 @@ void ImGuiManager::draw(
         cmdList->cmdBindDescriptorsSets(drawingContext.cmdBuffer, pipelineContext, imguiTransformParams.reference());
         if (vertexBuffer->bufferCount() > 0 && idxBuffer->bufferCount() > 0)
         {
-            cmdList->cmdBindVertexBuffers(drawingContext.cmdBuffer, 0, { vertexBuffer }, { 0 });
+            cmdList->cmdBindVertexBuffer(drawingContext.cmdBuffer, 0, vertexBuffer, 0);
             cmdList->cmdBindIndexBuffer(drawingContext.cmdBuffer, idxBuffer);
         }
 

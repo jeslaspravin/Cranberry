@@ -44,10 +44,17 @@ private:
 
     void copyToImage_Internal(ImageResourceRef dst, const BufferResourceRef &pixelData, CopyPixelsToImageInfo copyInfo);
     void copyToBuffer_Internal(BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy, uint32 size, bool bFlushMemory = false);
+    void cmdCopyBuffer_Internal(
+        const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies
+    );
     // Copies all staging dst inline. Creates a staging buffer for device only buffers and sets it up ready to be batch copied in caller choice
     // of command buffer. Returns the created staging buffer
     BufferResourceRef
-        copyToBuffer_GenCopyBufferInfo(std::vector<BatchCopyBufferInfo> &outBatchCopies, const std::vector<BatchCopyBufferData> &batchCopies);
+        copyToBuffer_GenCopyBufferInfo(std::vector<BatchCopyBufferInfo> &outBatchCopies, ArrayView<const BatchCopyBufferData> batchCopies);
+    void cmdCopyBuffer_GenBarriers(
+        std::vector<VkBufferMemoryBarrier2> &outBarriers, const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst,
+        ArrayView<const CopyBufferInfo> copies
+    );
 
 public:
     VulkanCommandList(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper, VulkanDevice *vulkanDevice);
@@ -56,45 +63,43 @@ public:
     void newFrame(float timeDelta);
 
     void copyToBuffer(BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy, uint32 size) final;
-    void copyBuffer(BufferResourceRef src, BufferResourceRef dst, const CopyBufferInfo &copyInfo) final;
-    void copyToBuffer(const std::vector<BatchCopyBufferData> &batchCopies) final;
-    void copyBuffer(const std::vector<BatchCopyBufferInfo> &batchCopies) final;
+    void copyBuffer(BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies) final;
+    void copyToBuffer(ArrayView<const BatchCopyBufferData> batchCopies) final;
+    void copyBuffer(ArrayView<const BatchCopyBufferInfo> batchCopies) final;
 
-    void copyToImage(ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo) final;
-    void copyToImage(ImageResourceRef dst, const std::vector<class LinearColor> &pixelData, const CopyPixelsToImageInfo &copyInfo) final;
-    void copyToImageLinearMapped(ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo) final;
+    void copyToImage(ImageResourceRef dst, ArrayView<const class Color> pixelData, const CopyPixelsToImageInfo &copyInfo) final;
+    void copyToImage(ImageResourceRef dst, ArrayView<const class LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo) final;
+    void copyToImageLinearMapped(ImageResourceRef dst, ArrayView<const class Color> pixelData, const CopyPixelsToImageInfo &copyInfo) final;
     void copyOrResolveImage(ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo, const CopyImageInfo &dstInfo) final;
 
-    void clearImage(ImageResourceRef image, const LinearColor &clearColor, const std::vector<ImageSubresource> &subresources) final;
-    void clearDepth(ImageResourceRef image, float depth, uint32 stencil, const std::vector<ImageSubresource> &subresources) final;
+    void clearImage(ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources) final;
+    void clearDepth(ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources) final;
 
     void setupInitialLayout(ImageResourceRef image) final;
 
     void presentImage(
-        const std::vector<WindowCanvasRef> &canvases, const std::vector<uint32> &imageIndices, const std::vector<SemaphoreRef> &waitOnSemaphores
-    );
-
-    void cmdCopyBuffer(
-        const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, const std::vector<CopyBufferInfo> &copies
+        ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndices, ArrayView<const SemaphoreRef> waitOnSemaphores
     ) final;
-    void cmdCopyToBuffer(const GraphicsResource *cmdBuffer, const std::vector<BatchCopyBufferData> &batchCopies) final;
+
+    void cmdCopyBuffer(const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies)
+        final;
+    void cmdCopyBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferInfo> copies) final;
+    void cmdCopyToBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferData> batchCopies) final;
     void cmdCopyOrResolveImage(
         const GraphicsResource *cmdBuffer, ImageResourceRef src, ImageResourceRef dst, const CopyImageInfo &srcInfo,
         const CopyImageInfo &dstInfo
     ) final;
 
-    void cmdTransitionLayouts(const GraphicsResource *cmdBuffer, const std::vector<ImageResourceRef> &images) final;
+    void cmdTransitionLayouts(const GraphicsResource *cmdBuffer, ArrayView<const ImageResourceRef> images) final;
 
     void cmdClearImage(
-        const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor,
-        const std::vector<ImageSubresource> &subresources
+        const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources
     ) final;
     void cmdClearDepth(
-        const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil,
-        const std::vector<ImageSubresource> &subresources
+        const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources
     ) final;
 
-    void cmdBarrierResources(const GraphicsResource *cmdBuffer, const std::set<ShaderParametersRef> &descriptorsSets) final;
+    void cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets) final;
 
     void cmdBeginRenderPass(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const QuantizedBox2D &renderArea,
@@ -108,17 +113,18 @@ public:
     ) const final;
     void cmdPushConstants(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, uint32 stagesUsed, const uint8 *data,
-        const std::vector<CopyBufferInfo> &pushConsts
+        ArrayView<const CopyBufferInfo> pushConsts
     ) const final;
     void cmdBindDescriptorsSetInternal(
         const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, const std::map<uint32, ShaderParametersRef> &descriptorsSets
     ) const final;
     void cmdBindDescriptorsSetsInternal(
-        const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, const std::vector<ShaderParametersRef> &descriptorsSets
+        const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, ArrayView<const ShaderParametersRef> descriptorsSets
     ) const final;
+    void cmdBindVertexBuffer(const GraphicsResource *cmdBuffer, uint32 firstBinding, BufferResourceRef vertexBuffer, uint64 offset) final;
     void cmdBindVertexBuffers(
-        const GraphicsResource *cmdBuffer, uint32 firstBinding, const std::vector<BufferResourceRef> &vertexBuffers,
-        const std::vector<uint64> &offsets
+        const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<const BufferResourceRef> vertexBuffers,
+        ArrayView<const uint64> offsets
     ) final;
     void cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset = 0) final;
 
@@ -138,7 +144,7 @@ public:
     ) final;
 
     void cmdSetViewportAndScissors(
-        const GraphicsResource *cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>> &viewportAndScissors,
+        const GraphicsResource *cmdBuffer, ArrayView<const std::pair<QuantizedBox2D, QuantizedBox2D>> viewportAndScissors,
         uint32 firstViewport = 0
     ) const final;
     void cmdSetViewportAndScissor(
@@ -159,9 +165,9 @@ public:
     void endCmd(const GraphicsResource *cmdBuffer) final;
     void freeCmd(const GraphicsResource *cmdBuffer) final;
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence) final;
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &submitInfos, FenceRef fence) final;
+    void submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo> submitInfos, FenceRef fence) final;
     void submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &submitInfo) final;
-    void submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands) final;
+    void submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo2> commands) final;
     void submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command) final;
     void finishCmd(const GraphicsResource *cmdBuffer) final;
     void finishCmd(const String &uniqueName) final;

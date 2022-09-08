@@ -149,8 +149,8 @@ DeferredDeleter *VulkanGraphicsHelper::getDeferredDeleter(class IGraphicsInstanc
 #endif
 
 FORCE_INLINE void cmdPipelineBarrier(
-    VulkanDevice *vDevice, VkCommandBuffer cmdBuffer, const std::vector<VkImageMemoryBarrier2KHR> &imageBarriers,
-    const std::vector<VkBufferMemoryBarrier2KHR> &bufferBarriers
+    VulkanDevice *vDevice, VkCommandBuffer cmdBuffer, ArrayView<const VkImageMemoryBarrier2KHR> imageBarriers,
+    ArrayView<const VkBufferMemoryBarrier2KHR> bufferBarriers
 )
 {
     if (vDevice->vkCmdPipelineBarrier2KHR)
@@ -223,19 +223,13 @@ VulkanCommandList::VulkanCommandList(IGraphicsInstance *graphicsInstance, const 
     , cmdBufferManager(vulkanDevice)
 {}
 
-void VulkanCommandList::copyBuffer(BufferResourceRef src, BufferResourceRef dst, const CopyBufferInfo &copyInfo)
+void VulkanCommandList::copyBuffer(BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies)
 {
     FenceRef tempFence = IVulkanRHIModule::get()->getGraphicsHelper()->createFence(graphicsInstanceCache, TCHAR("CopyBufferTemp"), false);
     tempFence->init();
 
     const GraphicsResource *commandBuffer = cmdBufferManager.beginTempCmdBuffer(TCHAR("Copy buffer"), EQueueFunction::Transfer);
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
-
-    VkBufferCopy bufferCopyRegion{ copyInfo.srcOffset, copyInfo.dstOffset, copyInfo.copySize };
-    vDevice->vkCmdCopyBuffer(
-        rawCmdBuffer, src.reference<VulkanBufferResource>()->buffer, dst.reference<VulkanBufferResource>()->buffer, 1, &bufferCopyRegion
-    );
-
+    cmdCopyBuffer_Internal(commandBuffer, src, dst, copies);
     cmdBufferManager.endCmdBuffer(commandBuffer);
 
     CommandSubmitInfo submitInfo;
@@ -248,27 +242,21 @@ void VulkanCommandList::copyBuffer(BufferResourceRef src, BufferResourceRef dst,
     tempFence->release();
 }
 
-void VulkanCommandList::copyBuffer(const std::vector<BatchCopyBufferInfo> &batchCopies)
+void VulkanCommandList::copyBuffer(ArrayView<const BatchCopyBufferInfo> batchCopies)
 {
     FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("BatchCopyBufferTemp"), false);
     tempFence->init();
 
     const GraphicsResource *commandBuffer = cmdBufferManager.beginTempCmdBuffer(TCHAR("Batch Copy buffer"), EQueueFunction::Transfer);
 
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(commandBuffer);
-    std::map<std::pair<BufferResource *, BufferResource *>, std::vector<VkBufferCopy>> srcDstToCopies;
+    std::map<std::pair<BufferResourceRef, BufferResourceRef>, std::vector<CopyBufferInfo>> srcDstToCopies;
     for (const BatchCopyBufferInfo &aCopy : batchCopies)
     {
-        std::vector<VkBufferCopy> &srcDstCopies = srcDstToCopies[{ aCopy.src.reference(), aCopy.dst.reference() }];
-        srcDstCopies.emplace_back(VkBufferCopy{ aCopy.copyInfo.srcOffset, aCopy.copyInfo.dstOffset, aCopy.copyInfo.copySize });
+        srcDstToCopies[{ aCopy.src, aCopy.dst }].emplace_back(aCopy.copyInfo);
     }
-    for (const auto &srcDstCopies : srcDstToCopies)
+    for (const auto &copySrcToDst : srcDstToCopies)
     {
-        vDevice->vkCmdCopyBuffer(
-            rawCmdBuffer, static_cast<VulkanBufferResource *>(srcDstCopies.first.first)->buffer,
-            static_cast<VulkanBufferResource *>(srcDstCopies.first.second)->buffer, uint32(srcDstCopies.second.size()),
-            srcDstCopies.second.data()
-        );
+        cmdCopyBuffer_Internal(commandBuffer, copySrcToDst.first.first, copySrcToDst.first.second, copySrcToDst.second);
     }
 
     cmdBufferManager.endCmdBuffer(commandBuffer);
@@ -297,7 +285,7 @@ void VulkanCommandList::copyToBuffer(BufferResourceRef dst, uint32 dstOffset, co
     copyToBuffer_Internal(dst, dstOffset, dataToCopy, size, true);
 }
 
-void VulkanCommandList::copyToBuffer(const std::vector<BatchCopyBufferData> &batchCopies)
+void VulkanCommandList::copyToBuffer(ArrayView<const BatchCopyBufferData> batchCopies)
 {
     std::vector<BatchCopyBufferInfo> allCopyInfo;
     BufferResourceRef stagingBuffer = copyToBuffer_GenCopyBufferInfo(allCopyInfo, batchCopies);
@@ -442,7 +430,7 @@ void VulkanCommandList::
 
             fatalAssertf(stagingBuffer->isValid(), "Initializing staging buffer failed");
             copyToBuffer_Internal(stagingBuffer, 0, dataToCopy, size, true);
-            copyBuffer(stagingBuffer, dst, copyInfo);
+            copyBuffer(stagingBuffer, dst, { &copyInfo, 1 });
 
             stagingBuffer->release();
         };
@@ -465,8 +453,32 @@ void VulkanCommandList::
     }
 }
 
+void VulkanCommandList::cmdCopyBuffer_Internal(
+    const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies
+)
+{
+    std::vector<VkBufferCopy2> bufferCopies;
+    bufferCopies.reserve(copies.size());
+    for (const CopyBufferInfo &copyInfo : copies)
+    {
+        BUFFER_COPY2(vulkanCopyInfo);
+        vulkanCopyInfo.srcOffset = copyInfo.srcOffset;
+        vulkanCopyInfo.dstOffset = copyInfo.dstOffset;
+        vulkanCopyInfo.size = copyInfo.copySize;
+        bufferCopies.emplace_back(std::move(vulkanCopyInfo));
+    }
+
+    COPY_BUFFER_INFO2(copyBufferInfo);
+    copyBufferInfo.srcBuffer = src.reference<VulkanBufferResource>()->buffer;
+    copyBufferInfo.dstBuffer = dst.reference<VulkanBufferResource>()->buffer;
+    copyBufferInfo.regionCount = uint32(bufferCopies.size());
+    copyBufferInfo.pRegions = bufferCopies.data();
+
+    vDevice->vkCmdCopyBuffer2KHR(cmdBufferManager.getRawBuffer(cmdBuffer), &copyBufferInfo);
+}
+
 BufferResourceRef VulkanCommandList::copyToBuffer_GenCopyBufferInfo(
-    std::vector<BatchCopyBufferInfo> &outBatchCopies, const std::vector<BatchCopyBufferData> &batchCopies
+    std::vector<BatchCopyBufferInfo> &outBatchCopies, ArrayView<const BatchCopyBufferData> batchCopies
 )
 {
     std::vector<const void *> srcDataPtrs;
@@ -534,162 +546,11 @@ BufferResourceRef VulkanCommandList::copyToBuffer_GenCopyBufferInfo(
     return stagingBuffer;
 }
 
-const GraphicsResource *VulkanCommandList::startCmd(const String &uniqueName, EQueueFunction queue, bool bIsReusable)
-{
-    if (bIsReusable)
-    {
-        return cmdBufferManager.beginReuseCmdBuffer(uniqueName, queue);
-    }
-    else
-    {
-        return cmdBufferManager.beginRecordOnceCmdBuffer(uniqueName, queue);
-    }
-}
-
-void VulkanCommandList::endCmd(const GraphicsResource *cmdBuffer) { cmdBufferManager.endCmdBuffer(cmdBuffer); }
-
-void VulkanCommandList::freeCmd(const GraphicsResource *cmdBuffer) { cmdBufferManager.freeCmdBuffer(cmdBuffer); }
-
-void VulkanCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence)
-{
-    cmdBufferManager.submitCmd(priority, submitInfo, fence);
-}
-
-void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &submitInfo)
-{
-    cmdBufferManager.submitCmd(priority, submitInfo, &resourcesTracker);
-    for (const GraphicsResource *cmdBuffer : submitInfo.cmdBuffers)
-    {
-        cmdBufferManager.cmdFinished(cmdBuffer, &resourcesTracker);
-    }
-}
-
-void VulkanCommandList::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo2> &commands)
-{
-    cmdBufferManager.submitCmds(priority, commands, &resourcesTracker);
-}
-
-void VulkanCommandList::submitCmds(EQueuePriority::Enum priority, const std::vector<CommandSubmitInfo> &submitInfos, FenceRef fence)
-{
-    cmdBufferManager.submitCmds(priority, submitInfos, fence);
-}
-
-void VulkanCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command)
-{
-    cmdBufferManager.submitCmd(priority, command, &resourcesTracker);
-}
-
-void VulkanCommandList::finishCmd(const GraphicsResource *cmdBuffer) { cmdBufferManager.cmdFinished(cmdBuffer, &resourcesTracker); }
-
-void VulkanCommandList::finishCmd(const String &uniqueName) { cmdBufferManager.cmdFinished(uniqueName, &resourcesTracker); }
-
-const GraphicsResource *VulkanCommandList::getCmdBuffer(const String &uniqueName) const { return cmdBufferManager.getCmdBuffer(uniqueName); }
-
-SemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const String &uniqueName) const
-{
-    return getCmdSignalSemaphore(cmdBufferManager.getCmdBuffer(uniqueName));
-}
-
-SemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
-{
-    return cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
-}
-
-void VulkanCommandList::waitIdle() { vDevice->vkDeviceWaitIdle(VulkanGraphicsHelper::getDevice(vDevice)); }
-
-void VulkanCommandList::waitOnResDepCmds(const MemoryResourceRef &resource)
-{
-    std::vector<const GraphicsResource *> cmdBuffers = resourcesTracker.getCmdBufferResourceDeps(resource);
-    resourcesTracker.clearResource(resource);
-    for (const GraphicsResource *cmdBuffer : cmdBuffers)
-    {
-        finishCmd(cmdBuffer);
-        resourcesTracker.clearFinishedCmd(cmdBuffer);
-    }
-}
-
-void VulkanCommandList::flushAllcommands() { cmdBufferManager.finishAllSubmited(&resourcesTracker); }
-
-bool VulkanCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource)
-{
-    std::vector<const GraphicsResource *> cmdBuffers = resourcesTracker.getCmdBufferResourceDeps(resource);
-    bool bAllCmdBuffersFinished = true;
-    for (const GraphicsResource *cmdBuffer : cmdBuffers)
-    {
-        if (!cmdBufferManager.isCmdFinished(cmdBuffer))
-        {
-            bAllCmdBuffersFinished = false;
-        }
-    }
-    if (bAllCmdBuffersFinished)
-    {
-        for (const GraphicsResource *cmdBuffer : cmdBuffers)
-        {
-            finishCmd(cmdBuffer);
-            resourcesTracker.clearFinishedCmd(cmdBuffer);
-        }
-        resourcesTracker.clearResource(resource);
-    }
-    return !bAllCmdBuffersFinished;
-}
-
-void VulkanCommandList::setupInitialLayout(ImageResourceRef image)
-{
-    const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(image->imageFormat());
-
-    const GraphicsResource *cmdBuffer
-        = cmdBufferManager.beginTempCmdBuffer(TCHAR("LayoutTransition_") + image->getResourceName(), EQueueFunction::Graphics);
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
-
-    IMAGE_MEMORY_BARRIER(layoutTransition);
-    layoutTransition.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
-    layoutTransition.newLayout = determineImageLayout(image);
-    layoutTransition.srcQueueFamilyIndex = layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
-    layoutTransition.srcAccessMask = layoutTransition.dstAccessMask = determineImageAccessMask(image);
-    layoutTransition.image = image.reference<VulkanImageResource>()->image;
-    layoutTransition.subresourceRange = { determineImageAspect(image), 0, image->getNumOfMips(), 0, image->getLayerCount() };
-
-    vDevice->vkCmdPipelineBarrier(
-        rawCmdBuffer, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
-        VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &layoutTransition
-    );
-
-    cmdBufferManager.endCmdBuffer(cmdBuffer);
-
-    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("TempLayoutTransitionFence"));
-    tempFence->init();
-
-    CommandSubmitInfo submitInfo;
-    submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
-    tempFence->waitForSignal();
-
-    cmdBufferManager.freeCmdBuffer(cmdBuffer);
-    tempFence->release();
-}
-
-void VulkanCommandList::presentImage(
-    const std::vector<WindowCanvasRef> &canvases, const std::vector<uint32> &imageIndices, const std::vector<SemaphoreRef> &waitOnSemaphores
+void VulkanCommandList::cmdCopyBuffer_GenBarriers(
+    std::vector<VkBufferMemoryBarrier2> &outBarriers, const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst,
+    ArrayView<const CopyBufferInfo> copies
 )
 {
-    std::vector<SemaphoreRef> waitSemaphores = waitOnSemaphores;
-    for (const GraphicsResource *cmdBuffer : swapchainFrameWrites)
-    {
-        SemaphoreRef cmdSignal = cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
-        fatalAssertf(cmdSignal.isValid(), "Invalid signalling semaphore for cmd buffer %s!", cmdBuffer->getResourceName());
-        waitSemaphores.emplace_back(cmdSignal);
-    }
-
-    VulkanGraphicsHelper::presentImage(graphicsInstanceCache, &canvases, &imageIndices, &waitSemaphores);
-    swapchainFrameWrites.clear();
-}
-
-void VulkanCommandList::cmdCopyBuffer(
-    const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, const std::vector<CopyBufferInfo> &copies
-)
-{
-    debugAssert(src.isValid() && src->isValid() && dst.isValid() && dst->isValid());
-
     VkBufferMemoryBarrier2 bufferBarriers[2];
     bool barrierSet[2] = { false, false };
 
@@ -797,13 +658,12 @@ void VulkanCommandList::cmdCopyBuffer(
         }
     }
 
-    std::vector<VkBufferMemoryBarrier2> allBarriers;
-    allBarriers.reserve((barrierSet[0] ? copies.size() : 0) + (barrierSet[1] ? copies.size() : 0));
+    outBarriers.reserve(outBarriers.size() + (barrierSet[0] ? copies.size() : 0) + (barrierSet[1] ? copies.size() : 0));
     if (barrierSet[0])
     {
         for (const CopyBufferInfo &copyInfo : copies)
         {
-            VkBufferMemoryBarrier2 &barrier = allBarriers.emplace_back(bufferBarriers[0]);
+            VkBufferMemoryBarrier2 &barrier = outBarriers.emplace_back(bufferBarriers[0]);
             barrier.buffer = src.reference<VulkanBufferResource>()->buffer;
             barrier.offset = copyInfo.srcOffset;
             barrier.size = copyInfo.copySize;
@@ -813,12 +673,172 @@ void VulkanCommandList::cmdCopyBuffer(
     {
         for (const CopyBufferInfo &copyInfo : copies)
         {
-            VkBufferMemoryBarrier2 &barrier = allBarriers.emplace_back(bufferBarriers[1]);
+            VkBufferMemoryBarrier2 &barrier = outBarriers.emplace_back(bufferBarriers[1]);
             barrier.buffer = dst.reference<VulkanBufferResource>()->buffer;
             barrier.offset = copyInfo.dstOffset;
             barrier.size = copyInfo.copySize;
         }
     }
+}
+
+const GraphicsResource *VulkanCommandList::startCmd(const String &uniqueName, EQueueFunction queue, bool bIsReusable)
+{
+    if (bIsReusable)
+    {
+        return cmdBufferManager.beginReuseCmdBuffer(uniqueName, queue);
+    }
+    else
+    {
+        return cmdBufferManager.beginRecordOnceCmdBuffer(uniqueName, queue);
+    }
+}
+
+void VulkanCommandList::endCmd(const GraphicsResource *cmdBuffer) { cmdBufferManager.endCmdBuffer(cmdBuffer); }
+
+void VulkanCommandList::freeCmd(const GraphicsResource *cmdBuffer) { cmdBufferManager.freeCmdBuffer(cmdBuffer); }
+
+void VulkanCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo &submitInfo, FenceRef fence)
+{
+    cmdBufferManager.submitCmd(priority, submitInfo, fence);
+}
+
+void VulkanCommandList::submitWaitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &submitInfo)
+{
+    cmdBufferManager.submitCmd(priority, submitInfo, &resourcesTracker);
+    for (const GraphicsResource *cmdBuffer : submitInfo.cmdBuffers)
+    {
+        cmdBufferManager.cmdFinished(cmdBuffer, &resourcesTracker);
+    }
+}
+
+void VulkanCommandList::submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo2> commands)
+{
+    cmdBufferManager.submitCmds(priority, commands, &resourcesTracker);
+}
+
+void VulkanCommandList::submitCmds(EQueuePriority::Enum priority, ArrayView<const CommandSubmitInfo> submitInfos, FenceRef fence)
+{
+    cmdBufferManager.submitCmds(priority, submitInfos, fence);
+}
+
+void VulkanCommandList::submitCmd(EQueuePriority::Enum priority, const CommandSubmitInfo2 &command)
+{
+    cmdBufferManager.submitCmd(priority, command, &resourcesTracker);
+}
+
+void VulkanCommandList::finishCmd(const GraphicsResource *cmdBuffer) { cmdBufferManager.cmdFinished(cmdBuffer, &resourcesTracker); }
+
+void VulkanCommandList::finishCmd(const String &uniqueName) { cmdBufferManager.cmdFinished(uniqueName, &resourcesTracker); }
+
+const GraphicsResource *VulkanCommandList::getCmdBuffer(const String &uniqueName) const { return cmdBufferManager.getCmdBuffer(uniqueName); }
+
+SemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const String &uniqueName) const
+{
+    return getCmdSignalSemaphore(cmdBufferManager.getCmdBuffer(uniqueName));
+}
+
+SemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
+{
+    return cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
+}
+
+void VulkanCommandList::waitIdle() { vDevice->vkDeviceWaitIdle(VulkanGraphicsHelper::getDevice(vDevice)); }
+
+void VulkanCommandList::waitOnResDepCmds(const MemoryResourceRef &resource)
+{
+    std::vector<const GraphicsResource *> cmdBuffers = resourcesTracker.getCmdBufferResourceDeps(resource);
+    resourcesTracker.clearResource(resource);
+    for (const GraphicsResource *cmdBuffer : cmdBuffers)
+    {
+        finishCmd(cmdBuffer);
+        resourcesTracker.clearFinishedCmd(cmdBuffer);
+    }
+}
+
+void VulkanCommandList::flushAllcommands() { cmdBufferManager.finishAllSubmited(&resourcesTracker); }
+
+bool VulkanCommandList::hasCmdsUsingResource(const MemoryResourceRef &resource)
+{
+    std::vector<const GraphicsResource *> cmdBuffers = resourcesTracker.getCmdBufferResourceDeps(resource);
+    bool bAllCmdBuffersFinished = true;
+    for (const GraphicsResource *cmdBuffer : cmdBuffers)
+    {
+        if (!cmdBufferManager.isCmdFinished(cmdBuffer))
+        {
+            bAllCmdBuffersFinished = false;
+        }
+    }
+    if (bAllCmdBuffersFinished)
+    {
+        for (const GraphicsResource *cmdBuffer : cmdBuffers)
+        {
+            finishCmd(cmdBuffer);
+            resourcesTracker.clearFinishedCmd(cmdBuffer);
+        }
+        resourcesTracker.clearResource(resource);
+    }
+    return !bAllCmdBuffersFinished;
+}
+
+void VulkanCommandList::setupInitialLayout(ImageResourceRef image)
+{
+    const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(image->imageFormat());
+
+    const GraphicsResource *cmdBuffer
+        = cmdBufferManager.beginTempCmdBuffer(TCHAR("LayoutTransition_") + image->getResourceName(), EQueueFunction::Graphics);
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+
+    IMAGE_MEMORY_BARRIER(layoutTransition);
+    layoutTransition.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+    layoutTransition.newLayout = determineImageLayout(image);
+    layoutTransition.srcQueueFamilyIndex = layoutTransition.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(cmdBuffer);
+    layoutTransition.srcAccessMask = layoutTransition.dstAccessMask = determineImageAccessMask(image);
+    layoutTransition.image = image.reference<VulkanImageResource>()->image;
+    layoutTransition.subresourceRange = { determineImageAspect(image), 0, image->getNumOfMips(), 0, image->getLayerCount() };
+
+    vDevice->vkCmdPipelineBarrier(
+        rawCmdBuffer, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+        VkDependencyFlagBits::VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &layoutTransition
+    );
+
+    cmdBufferManager.endCmdBuffer(cmdBuffer);
+
+    FenceRef tempFence = graphicsHelperCache->createFence(graphicsInstanceCache, TCHAR("TempLayoutTransitionFence"));
+    tempFence->init();
+
+    CommandSubmitInfo submitInfo;
+    submitInfo.cmdBuffers.emplace_back(cmdBuffer);
+    cmdBufferManager.submitCmd(EQueuePriority::SuperHigh, submitInfo, tempFence);
+    tempFence->waitForSignal();
+
+    cmdBufferManager.freeCmdBuffer(cmdBuffer);
+    tempFence->release();
+}
+
+void VulkanCommandList::presentImage(
+    ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndices, ArrayView<const SemaphoreRef> waitOnSemaphores
+)
+{
+    std::vector<SemaphoreRef> waitSemaphores{ waitOnSemaphores.begin(), waitOnSemaphores.end() };
+    for (const GraphicsResource *cmdBuffer : swapchainFrameWrites)
+    {
+        SemaphoreRef cmdSignal = cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
+        fatalAssertf(cmdSignal.isValid(), "Invalid signalling semaphore for cmd buffer %s!", cmdBuffer->getResourceName());
+        waitSemaphores.emplace_back(cmdSignal);
+    }
+
+    VulkanGraphicsHelper::presentImage(graphicsInstanceCache, canvases, imageIndices, waitSemaphores);
+    swapchainFrameWrites.clear();
+}
+
+void VulkanCommandList::cmdCopyBuffer(
+    const GraphicsResource *cmdBuffer, BufferResourceRef src, BufferResourceRef dst, ArrayView<const CopyBufferInfo> copies
+)
+{
+    debugAssert(src.isValid() && src->isValid() && dst.isValid() && dst->isValid());
+
+    std::vector<VkBufferMemoryBarrier2> allBarriers;
+    cmdCopyBuffer_GenBarriers(allBarriers, cmdBuffer, src, dst, copies);
 
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     if (!allBarriers.empty())
@@ -826,27 +846,37 @@ void VulkanCommandList::cmdCopyBuffer(
         cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, allBarriers);
     }
 
-    // VkBufferCopy2 is same with additional type and pNext
-    std::vector<VkBufferCopy2> bufferCopies;
-    bufferCopies.reserve(copies.size());
-    for (const CopyBufferInfo &copyInfo : copies)
-    {
-        BUFFER_COPY2(vulkanCopyInfo);
-        vulkanCopyInfo.srcOffset = copyInfo.srcOffset;
-        vulkanCopyInfo.dstOffset = copyInfo.dstOffset;
-        vulkanCopyInfo.size = copyInfo.copySize;
-        bufferCopies.emplace_back(std::move(vulkanCopyInfo));
-    }
-
-    COPY_BUFFER_INFO2(copyBufferInfo);
-    copyBufferInfo.srcBuffer = src.reference<VulkanBufferResource>()->buffer;
-    copyBufferInfo.dstBuffer = dst.reference<VulkanBufferResource>()->buffer;
-    copyBufferInfo.regionCount = uint32(bufferCopies.size());
-    copyBufferInfo.pRegions = bufferCopies.data();
-    vDevice->vkCmdCopyBuffer2KHR(rawCmdBuffer, &copyBufferInfo);
+    cmdCopyBuffer_Internal(cmdBuffer, src, dst, copies);
 }
 
-void VulkanCommandList::cmdCopyToBuffer(const GraphicsResource *cmdBuffer, const std::vector<BatchCopyBufferData> &batchCopies)
+void VulkanCommandList::cmdCopyBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferInfo> copies)
+{
+    std::map<std::pair<BufferResourceRef, BufferResourceRef>, std::vector<CopyBufferInfo>> srcDstToCopies;
+    for (const BatchCopyBufferInfo &aCopy : copies)
+    {
+        srcDstToCopies[{ aCopy.src, aCopy.dst }].emplace_back(aCopy.copyInfo);
+    }
+
+    // Barrier each copied resources
+    std::vector<VkBufferMemoryBarrier2> allBarriers;
+    for (const auto &copySrcToDst : srcDstToCopies)
+    {
+        cmdCopyBuffer_GenBarriers(allBarriers, cmdBuffer, copySrcToDst.first.first, copySrcToDst.first.second, copySrcToDst.second);
+    }
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+    if (!allBarriers.empty())
+    {
+        cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, allBarriers);
+    }
+
+    // Finally copy all src-dst combination
+    for (const auto &copySrcToDst : srcDstToCopies)
+    {
+        cmdCopyBuffer_Internal(cmdBuffer, copySrcToDst.first.first, copySrcToDst.first.second, copySrcToDst.second);
+    }
+}
+
+void VulkanCommandList::cmdCopyToBuffer(const GraphicsResource *cmdBuffer, ArrayView<const BatchCopyBufferData> batchCopies)
 {
     std::vector<BatchCopyBufferInfo> allCopyInfo;
     BufferResourceRef stagingBuffer = copyToBuffer_GenCopyBufferInfo(allCopyInfo, batchCopies);
@@ -859,9 +889,22 @@ void VulkanCommandList::cmdCopyToBuffer(const GraphicsResource *cmdBuffer, const
             dstToCopies[bufferCopyInfo.dst].emplace_back(bufferCopyInfo.copyInfo);
         }
 
+        // Barrier each copied resources
+        std::vector<VkBufferMemoryBarrier2> allBarriers;
         for (const std::pair<const BufferResourceRef, std::vector<CopyBufferInfo>> &copyToDst : dstToCopies)
         {
-            cmdCopyBuffer(cmdBuffer, stagingBuffer, copyToDst.first, copyToDst.second);
+            cmdCopyBuffer_GenBarriers(allBarriers, cmdBuffer, stagingBuffer, copyToDst.first, copyToDst.second);
+        }
+        VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+        if (!allBarriers.empty())
+        {
+            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, allBarriers);
+        }
+
+        // Finally copy all src-dst combination
+        for (const std::pair<const BufferResourceRef, std::vector<CopyBufferInfo>> &copyToDst : dstToCopies)
+        {
+            cmdCopyBuffer_Internal(cmdBuffer, stagingBuffer, copyToDst.first, copyToDst.second);
         }
     }
 }
@@ -1092,7 +1135,7 @@ void VulkanCommandList::cmdCopyOrResolveImage(
     }
 }
 
-void VulkanCommandList::cmdTransitionLayouts(const GraphicsResource *cmdBuffer, const std::vector<ImageResourceRef> &images)
+void VulkanCommandList::cmdTransitionLayouts(const GraphicsResource *cmdBuffer, ArrayView<const ImageResourceRef> images)
 {
     std::vector<VkImageMemoryBarrier2KHR> imageBarriers;
     imageBarriers.reserve(images.size());
@@ -1169,7 +1212,7 @@ void VulkanCommandList::cmdTransitionLayouts(const GraphicsResource *cmdBuffer, 
 }
 
 void VulkanCommandList::cmdClearImage(
-    const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor, const std::vector<ImageSubresource> &subresources
+    const GraphicsResource *cmdBuffer, ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources
 )
 {
     if (EPixelDataFormat::isDepthFormat(image->imageFormat()))
@@ -1204,7 +1247,7 @@ void VulkanCommandList::cmdClearImage(
 }
 
 void VulkanCommandList::cmdClearDepth(
-    const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil, const std::vector<ImageSubresource> &subresources
+    const GraphicsResource *cmdBuffer, ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources
 )
 {
     if (!EPixelDataFormat::isDepthFormat(image->imageFormat()))
@@ -1237,7 +1280,7 @@ void VulkanCommandList::cmdClearDepth(
     );
 }
 
-void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, const std::set<ShaderParametersRef> &descriptorsSets)
+void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets)
 {
     fatalAssertf(
         !cmdBufferManager.isInRenderPass(cmdBuffer), "%s cmd buffer is inside render pass, it is not supported",
@@ -1678,7 +1721,7 @@ void VulkanCommandList::cmdBindGraphicsPipeline(
 
 void VulkanCommandList::cmdPushConstants(
     const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, uint32 stagesUsed, const uint8 *data,
-    const std::vector<CopyBufferInfo> &pushConsts
+    ArrayView<const CopyBufferInfo> pushConsts
 ) const
 {
     VkPipelineLayout pipelineLayout = nullptr;
@@ -1752,7 +1795,7 @@ void VulkanCommandList::cmdBindDescriptorsSetInternal(
 }
 
 void VulkanCommandList::cmdBindDescriptorsSetsInternal(
-    const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, const std::vector<ShaderParametersRef> &descriptorsSets
+    const GraphicsResource *cmdBuffer, const PipelineBase *contextPipeline, ArrayView<const ShaderParametersRef> descriptorsSets
 ) const
 {
     std::map<uint32, std::vector<VkDescriptorSet>> descsSets;
@@ -1805,9 +1848,15 @@ void VulkanCommandList::cmdBindDescriptorsSetsInternal(
     }
 }
 
+void VulkanCommandList::cmdBindVertexBuffer(
+    const GraphicsResource *cmdBuffer, uint32 firstBinding, BufferResourceRef vertexBuffer, uint64 offset
+)
+{
+    cmdBindVertexBuffers(cmdBuffer, firstBinding, { &vertexBuffer, 1 }, { &offset, 1 });
+}
+
 void VulkanCommandList::cmdBindVertexBuffers(
-    const GraphicsResource *cmdBuffer, uint32 firstBinding, const std::vector<BufferResourceRef> &vertexBuffers,
-    const std::vector<uint64> &offsets
+    const GraphicsResource *cmdBuffer, uint32 firstBinding, ArrayView<const BufferResourceRef> vertexBuffers, ArrayView<const uint64> offsets
 )
 {
     fatalAssertf(vertexBuffers.size() == offsets.size(), "Offsets must be equivalent to vertex buffers");
@@ -1906,7 +1955,7 @@ void VulkanCommandList::cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, co
             memBarrier.offset = offset;
             memBarrier.size = indexBuffer->getResourceSize() - offset;
 
-            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, { std::move(memBarrier) });
+            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, { &memBarrier, 1 });
         }
     }
 
@@ -1976,7 +2025,7 @@ void VulkanCommandList::cmdDrawIndexedIndirect(
             memBarrier.offset = bufferOffset;
             memBarrier.size = drawCmdsBuffer->getResourceSize() - bufferOffset;
 
-            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, { std::move(memBarrier) });
+            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, { &memBarrier, 1 });
         }
     }
 
@@ -2029,7 +2078,7 @@ void VulkanCommandList::cmdDrawIndirect(
             memBarrier.offset = bufferOffset;
             memBarrier.size = drawCmdsBuffer->getResourceSize() - bufferOffset;
 
-            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, { std::move(memBarrier) });
+            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, { &memBarrier, 1 });
         }
     }
 
@@ -2044,7 +2093,7 @@ void VulkanCommandList::cmdDrawIndirect(
 }
 
 void VulkanCommandList::cmdSetViewportAndScissors(
-    const GraphicsResource *cmdBuffer, const std::vector<std::pair<QuantizedBox2D, QuantizedBox2D>> &viewportAndScissors,
+    const GraphicsResource *cmdBuffer, ArrayView<const std::pair<QuantizedBox2D, QuantizedBox2D>> viewportAndScissors,
     uint32 firstViewport /*= 0*/
 ) const
 {
@@ -2150,7 +2199,7 @@ void VulkanCommandList::cmdEndBufferMarker(const GraphicsResource *commandBuffer
     VulkanGraphicsHelper::debugGraphics(graphicsInstanceCache)->endCmdBufferMarker(rawCmdBuffer);
 }
 
-void VulkanCommandList::copyToImage(ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo)
+void VulkanCommandList::copyToImage(ImageResourceRef dst, ArrayView<const class Color> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
     fatalAssertf(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
     if (EPixelDataFormat::isDepthFormat(dst->imageFormat()) || EPixelDataFormat::isFloatingFormat(dst->imageFormat()))
@@ -2181,9 +2230,7 @@ void VulkanCommandList::copyToImage(ImageResourceRef dst, const std::vector<clas
     stagingBuffer.reset();
 }
 
-void VulkanCommandList::copyToImage(
-    ImageResourceRef dst, const std::vector<class LinearColor> &pixelData, const CopyPixelsToImageInfo &copyInfo
-)
+void VulkanCommandList::copyToImage(ImageResourceRef dst, ArrayView<const class LinearColor> pixelData, const CopyPixelsToImageInfo &copyInfo)
 {
     fatalAssertf(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
     const EPixelDataFormat::PixelFormatInfo *formatInfo = EPixelDataFormat::getFormatInfo(dst->imageFormat());
@@ -2219,7 +2266,7 @@ void VulkanCommandList::copyToImage(
 }
 
 void VulkanCommandList::copyToImageLinearMapped(
-    ImageResourceRef dst, const std::vector<class Color> &pixelData, const CopyPixelsToImageInfo &copyInfo
+    ImageResourceRef dst, ArrayView<const class Color> pixelData, const CopyPixelsToImageInfo &copyInfo
 )
 {
     fatalAssertf(dst->isValid(), "Invalid image resource %s", dst->getResourceName().getChar());
@@ -2623,7 +2670,7 @@ void VulkanCommandList::copyOrResolveImage(
     tempFence->release();
 }
 
-void VulkanCommandList::clearImage(ImageResourceRef image, const LinearColor &clearColor, const std::vector<ImageSubresource> &subresources)
+void VulkanCommandList::clearImage(ImageResourceRef image, const LinearColor &clearColor, ArrayView<const ImageSubresource> subresources)
 {
     if (EPixelDataFormat::isDepthFormat(image->imageFormat()))
     {
@@ -2669,7 +2716,7 @@ void VulkanCommandList::clearImage(ImageResourceRef image, const LinearColor &cl
     tempFence->release();
 }
 
-void VulkanCommandList::clearDepth(ImageResourceRef image, float depth, uint32 stencil, const std::vector<ImageSubresource> &subresources)
+void VulkanCommandList::clearDepth(ImageResourceRef image, float depth, uint32 stencil, ArrayView<const ImageSubresource> subresources)
 {
     if (!EPixelDataFormat::isDepthFormat(image->imageFormat()))
     {
