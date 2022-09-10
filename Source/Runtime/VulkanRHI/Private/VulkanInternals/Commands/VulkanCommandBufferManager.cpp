@@ -572,7 +572,7 @@ ECmdState VulkanCmdBufferManager::getState(const GraphicsResource *cmdBuffer) co
     return ECmdState::Idle;
 }
 
-SemaphoreRef VulkanCmdBufferManager::cmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
+TimelineSemaphoreRef VulkanCmdBufferManager::cmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
 {
     auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());
     if (cmdBufferItr != commandBuffers.cend() && cmdBufferItr->second.cmdSyncInfoIdx >= 0)
@@ -622,6 +622,7 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, ArrayView
     const GraphicsHelperAPI *graphicsHelper = IVulkanRHIModule::get()->getGraphicsHelper();
     QueueResourceBase *queueRes = nullptr;
 
+    std::vector<TimelineSemaphoreRef> managerTSemaphores(commands.size());
     std::vector<std::vector<VkCommandBufferSubmitInfo>> allCmdBuffers(commands.size());
     std::vector<std::vector<VkSemaphoreSubmitInfo>> allWaitOnSemaphores(commands.size());
     std::vector<std::vector<VkSemaphoreSubmitInfo>> allSignallingSemaphores(commands.size());
@@ -633,13 +634,15 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, ArrayView
         std::vector<VkCommandBufferSubmitInfo> &cmdBuffers = allCmdBuffers[cmdSubmitIdx];
         cmdBuffers.reserve(commands[cmdSubmitIdx].cmdBuffers.size());
         std::vector<VkSemaphoreSubmitInfo> &waitOnSemaphores = allWaitOnSemaphores[cmdSubmitIdx];
-        waitOnSemaphores.reserve(commands[cmdSubmitIdx].waitOn.size());
+        waitOnSemaphores.reserve(commands[cmdSubmitIdx].waitOn.size() + commands[cmdSubmitIdx].waitOnTimelines.size());
         std::vector<VkSemaphoreSubmitInfo> &signalingSemaphores = allSignallingSemaphores[cmdSubmitIdx];
-        signalingSemaphores.reserve(commands[cmdSubmitIdx].signalSemaphores.size());
+        signalingSemaphores.reserve(commands[cmdSubmitIdx].signalSemaphores.size() + commands[cmdSubmitIdx].signalTimelines.size() + 1);
 
+        bool bHasNonTemp = false;
         for (int32 i = 0; i < commands[cmdSubmitIdx].cmdBuffers.size(); ++i)
         {
             const auto *vCmdBuffer = static_cast<const VulkanCommandBuffer *>(commands[cmdSubmitIdx].cmdBuffers[i]);
+            bHasNonTemp = bHasNonTemp || !vCmdBuffer->bIsTempBuffer;
 
             CMDBUFFER_SUBMIT_INFO(cmdBufferSubmitInfo);
             cmdBufferSubmitInfo.commandBuffer = vCmdBuffer->cmdBuffer;
@@ -662,16 +665,46 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, ArrayView
         for (int32 i = 0; i < commands[cmdSubmitIdx].waitOn.size(); ++i)
         {
             SEMAPHORE_SUBMIT_INFO(waitOnSema);
-            waitOnSema.semaphore = commands[cmdSubmitIdx].waitOn[i].waitOnSemaphore.reference<VulkanSemaphore>()->semaphore;
-            waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].waitOn[i].stagesThatWaits);
+            waitOnSema.semaphore = commands[cmdSubmitIdx].waitOn[i].semaphore.reference<VulkanSemaphore>()->semaphore;
+            waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].waitOn[i].stages);
+            waitOnSemaphores.emplace_back(std::move(waitOnSema));
+        }
+        for (int32 i = 0; i < commands[cmdSubmitIdx].waitOnTimelines.size(); ++i)
+        {
+            SEMAPHORE_SUBMIT_INFO(waitOnSema);
+            waitOnSema.semaphore = commands[cmdSubmitIdx].waitOnTimelines[i].semaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+            waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].waitOnTimelines[i].stages);
+            waitOnSema.value = commands[cmdSubmitIdx].waitOnTimelines[i].value;
             waitOnSemaphores.emplace_back(std::move(waitOnSema));
         }
         for (int32 i = 0; i < commands[cmdSubmitIdx].signalSemaphores.size(); ++i)
         {
             SEMAPHORE_SUBMIT_INFO(signalingSema);
-            signalingSema.semaphore = commands[cmdSubmitIdx].signalSemaphores[i].reference<VulkanSemaphore>()->semaphore;
-            // TODO(Jeslas) : Improve signaling semaphore
+            signalingSema.semaphore = commands[cmdSubmitIdx].signalSemaphores[i].semaphore.reference<VulkanSemaphore>()->semaphore;
+            signalingSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].signalSemaphores[i].stages);
+            signalingSemaphores.emplace_back(std::move(signalingSema));
+        }
+        for (int32 i = 0; i < commands[cmdSubmitIdx].signalTimelines.size(); ++i)
+        {
+            SEMAPHORE_SUBMIT_INFO(signalingSema);
+            signalingSema.semaphore = commands[cmdSubmitIdx].signalTimelines[i].semaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+            signalingSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(commands[cmdSubmitIdx].signalTimelines[i].stages);
+            signalingSema.value = commands[cmdSubmitIdx].signalTimelines[i].value;
+            signalingSemaphores.emplace_back(std::move(signalingSema));
+        }
+        if (bHasNonTemp)
+        {
+            // Add an Time line semaphore for manager tracking
+            TimelineSemaphoreRef submitSemaphore = graphicsHelper->createTimelineSemaphore(
+                graphicsInstance, (TCHAR("AdvancedSubmitTSema_") + String::toString(cmdSubmitIdx)).c_str()
+                );
+            submitSemaphore->init();
+            managerTSemaphores[cmdSubmitIdx] = submitSemaphore;
+
+            SEMAPHORE_SUBMIT_INFO(signalingSema);
+            signalingSema.semaphore = submitSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
             signalingSema.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+            signalingSema.value = 1;
             signalingSemaphores.emplace_back(std::move(signalingSema));
         }
 
@@ -688,17 +721,20 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, ArrayView
 
     if (!cmdsCompleteFence.isValid())
     {
-        cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("AdvancedSubmitBatched"));
+        cmdsCompleteFence = graphicsHelper->createFence(graphicsInstance, TCHAR("AdvancedSubmitFence"));
         cmdsCompleteFence->init();
     }
+
     VkQueue vQueue = getVkQueue(priority, queueRes);
     VkResult result = vDevice->vkQueueSubmit2KHR(
         vQueue, uint32(allSubmitInfo.size()), allSubmitInfo.data(), cmdsCompleteFence.reference<VulkanFence>()->fence
     );
     fatalAssertf(result == VK_SUCCESS, "Failed submitting command to queue %s(result: %d)", queueRes->getResourceName().getChar(), result);
 
-    for (const CommandSubmitInfo &command : commands)
+    for (uint32 cmdSubmitIdx = 0; cmdSubmitIdx != commands.size(); ++cmdSubmitIdx)
     {
+        const CommandSubmitInfo &command = commands[cmdSubmitIdx];
+
         bool bAnyNonTemp = false;
         int32 index = int32(cmdsSyncInfo.get());
         VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[index];
@@ -713,7 +749,8 @@ void VulkanCmdBufferManager::submitCmds(EQueuePriority::Enum priority, ArrayView
         }
         if (bAnyNonTemp)
         {
-            syncInfo.signalingSemaphore = command.signalSemaphores.empty() ? nullptr : command.signalSemaphores.front();
+            debugAssert(managerTSemaphores[cmdSubmitIdx].isValid());
+            syncInfo.signalingSemaphore = managerTSemaphores[cmdSubmitIdx];
             syncInfo.completeFence = cmdsCompleteFence;
             syncInfo.refCount = uint32(command.cmdBuffers.size());
         }
@@ -730,16 +767,20 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     const GraphicsHelperAPI *graphicsHelper = IVulkanRHIModule::get()->getGraphicsHelper();
     QueueResourceBase *queueRes = nullptr;
 
+    TimelineSemaphoreRef managerTSemaphore;
+
     std::vector<VkCommandBufferSubmitInfo> cmdBuffers;
     cmdBuffers.reserve(command.cmdBuffers.size());
     std::vector<VkSemaphoreSubmitInfo> waitOnSemaphores;
-    waitOnSemaphores.reserve(command.waitOn.size());
+    waitOnSemaphores.reserve(command.waitOn.size() + command.waitOnTimelines.size());
     std::vector<VkSemaphoreSubmitInfo> signalingSemaphores;
-    signalingSemaphores.reserve(command.signalSemaphores.size());
+    signalingSemaphores.reserve(command.signalSemaphores.size() + command.signalTimelines.size());
 
+    bool bHasNonTemp = false;
     for (int32 i = 0; i < command.cmdBuffers.size(); ++i)
     {
         const auto *vCmdBuffer = static_cast<const VulkanCommandBuffer *>(command.cmdBuffers[i]);
+        bHasNonTemp = bHasNonTemp || !vCmdBuffer->bIsTempBuffer;
 
         CMDBUFFER_SUBMIT_INFO(cmdBufferSubmitInfo);
         cmdBufferSubmitInfo.commandBuffer = vCmdBuffer->cmdBuffer;
@@ -762,16 +803,43 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     for (int32 i = 0; i < command.waitOn.size(); ++i)
     {
         SEMAPHORE_SUBMIT_INFO(waitOnSema);
-        waitOnSema.semaphore = command.waitOn[i].waitOnSemaphore.reference<VulkanSemaphore>()->semaphore;
-        waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(command.waitOn[i].stagesThatWaits);
+        waitOnSema.semaphore = command.waitOn[i].semaphore.reference<VulkanSemaphore>()->semaphore;
+        waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(command.waitOn[i].stages);
+        waitOnSemaphores.emplace_back(std::move(waitOnSema));
+    }
+    for (int32 i = 0; i < command.waitOnTimelines.size(); ++i)
+    {
+        SEMAPHORE_SUBMIT_INFO(waitOnSema);
+        waitOnSema.semaphore = command.waitOnTimelines[i].semaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+        waitOnSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(command.waitOnTimelines[i].stages);
+        waitOnSema.value = command.waitOnTimelines[i].value;
         waitOnSemaphores.emplace_back(std::move(waitOnSema));
     }
     for (int32 i = 0; i < command.signalSemaphores.size(); ++i)
     {
         SEMAPHORE_SUBMIT_INFO(signalingSema);
-        signalingSema.semaphore = command.signalSemaphores[i].reference<VulkanSemaphore>()->semaphore;
-        // TODO(Jeslas) : Improve signaling semaphore
+        signalingSema.semaphore = command.signalSemaphores[i].semaphore.reference<VulkanSemaphore>()->semaphore;
+        signalingSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(command.signalSemaphores[i].stages);
+        signalingSemaphores.emplace_back(std::move(signalingSema));
+    }
+    for (int32 i = 0; i < command.signalTimelines.size(); ++i)
+    {
+        SEMAPHORE_SUBMIT_INFO(signalingSema);
+        signalingSema.semaphore = command.signalTimelines[i].semaphore.reference<VulkanTimelineSemaphore>()->semaphore;
+        signalingSema.stageMask = EngineToVulkanAPI::vulkanPipelineStageFlags(command.signalTimelines[i].stages);
+        signalingSema.value = command.signalTimelines[i].value;
+        signalingSemaphores.emplace_back(std::move(signalingSema));
+    }
+    if (bHasNonTemp)
+    {
+        // Add an Time line semaphore for manager tracking
+        managerTSemaphore = graphicsHelper->createTimelineSemaphore(graphicsInstance, TCHAR("AdvancedSubmitTSema") );
+        managerTSemaphore->init();
+
+        SEMAPHORE_SUBMIT_INFO(signalingSema);
+        signalingSema.semaphore = managerTSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
         signalingSema.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+        signalingSema.value = 1;
         signalingSemaphores.emplace_back(std::move(signalingSema));
     }
 
@@ -808,7 +876,8 @@ void VulkanCmdBufferManager::submitCmd(EQueuePriority::Enum priority, const Comm
     }
     if (bAnyNonTemp)
     {
-        syncInfo.signalingSemaphore = command.signalSemaphores.empty() ? nullptr : command.signalSemaphores.front();
+        debugAssert(managerTSemaphore.isValid());
+        syncInfo.signalingSemaphore = managerTSemaphore;
         syncInfo.completeFence = cmdsCompleteFence;
         syncInfo.refCount = uint32(command.cmdBuffers.size());
     }
@@ -846,8 +915,7 @@ void VulkanCmdBufferManager::submitCmds(
             {
                 LOG_ERROR(
                     "VulkanCommandBufferManager",
-                    "Temporary buffers[%s] are required to use advanced submit "
-                    "function",
+                    "Reuse/One time record buffers are required to use advanced submit function, \"%s\" is temporary cmd buffer",
                     vCmdBuffer->getResourceName().getChar()
                 );
                 return;
@@ -875,9 +943,7 @@ void VulkanCmdBufferManager::submitCmds(
                     if (cmdBufferItr == commandBuffers.end() || cmdBufferItr->second.cmdState != ECmdState::Submitted)
                     {
                         LOG_ERROR(
-                            "VulkanCommandBufferManager",
-                            "Waiting on cmd buffer[%s] is invalid or not "
-                            "submitted",
+                            "VulkanCommandBufferManager", "Waiting on cmd buffer[%s] is invalid or not submitted",
                             waitOn.cmdBuffer->getResourceName().getChar()
                         );
                         return;
@@ -890,8 +956,9 @@ void VulkanCmdBufferManager::submitCmds(
                         continue;
                     }
                     SEMAPHORE_SUBMIT_INFO(waitOnSema);
-                    waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore;
+                    waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
                     waitOnSema.stageMask = waitOn.usedDstStages;
+                    waitOnSema.value = 1;
                     waitOnSemaphores.emplace_back(std::move(waitOnSema));
                 }
             }
@@ -916,8 +983,9 @@ void VulkanCmdBufferManager::submitCmds(
 
             const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
             SEMAPHORE_SUBMIT_INFO(waitOnSema);
-            waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore;
+            waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
             waitOnSema.stageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+            waitOnSema.value = 1;
             waitOnSemaphores.emplace_back(std::move(waitOnSema));
         }
 
@@ -946,14 +1014,16 @@ void VulkanCmdBufferManager::submitCmds(
             commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
         }
 
+        // Add an Time line semaphore for manager tracking
         syncInfo.signalingSemaphore
-            = graphicsHelper->createSemaphore(graphicsInstance, (TCHAR("SubmitBatched_") + String::toString(cmdSubmitIdx)).c_str());
+            = graphicsHelper->createTimelineSemaphore(graphicsInstance, (TCHAR("SubmitTSema_") + String::toString(cmdSubmitIdx)).c_str());
         syncInfo.signalingSemaphore->init();
 
         std::vector<VkSemaphoreSubmitInfo> &signalingSemaphores = allSignalingSemaphores[cmdSubmitIdx];
         SEMAPHORE_SUBMIT_INFO(signalingSema);
-        signalingSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore;
+        signalingSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
         signalingSema.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+        signalingSema.value = 1;
         signalingSemaphores.emplace_back(std::move(signalingSema));
 
         allSubmitInfo[cmdSubmitIdx].signalSemaphoreInfoCount = uint32(signalingSemaphores.size());
@@ -1029,8 +1099,9 @@ void VulkanCmdBufferManager::submitCmd(
                     continue;
                 }
                 SEMAPHORE_SUBMIT_INFO(waitOnSema);
-                waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore;
+                waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
                 waitOnSema.stageMask = waitOn.usedDstStages;
+                waitOnSema.value = 1;
                 waitOnSemaphores.emplace_back(std::move(waitOnSema));
             }
         }
@@ -1054,8 +1125,9 @@ void VulkanCmdBufferManager::submitCmd(
 
         const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
         SEMAPHORE_SUBMIT_INFO(waitOnSema);
-        waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore;
+        waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
         waitOnSema.stageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+        waitOnSema.value = 1;
         waitOnSemaphores.emplace_back(std::move(waitOnSema));
     }
 
@@ -1073,12 +1145,14 @@ void VulkanCmdBufferManager::submitCmd(
         commandBuffers[cmdBuffer->getResourceName()].cmdState = ECmdState::Submitted;
     }
 
-    syncInfo.signalingSemaphore = graphicsHelper->createSemaphore(graphicsInstance, TCHAR("SubmitSemaphore"));
+    // Add an Time line semaphore for manager tracking
+    syncInfo.signalingSemaphore = graphicsHelper->createTimelineSemaphore(graphicsInstance, TCHAR("SubmitTSema"));
     syncInfo.signalingSemaphore->init();
 
     SEMAPHORE_SUBMIT_INFO(signalingSema);
-    signalingSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore;
+    signalingSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanTimelineSemaphore>()->semaphore;
     signalingSema.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+    signalingSema.value = 1;
     signalingSemaphores.emplace_back(std::move(signalingSema));
 
     SUBMIT_INFO2(cmdSubmitInfo);

@@ -315,32 +315,7 @@ std::vector<SharedPtr<WgWindow>> ApplicationInstance::drawWindowWidgets()
     return wgRenderer->drawWindowWidgets(allDrawWindows);
 }
 
-void ApplicationInstance::presentDrawnWnds(const std::vector<SharedPtr<WgWindow>> &windowsDrawn)
-{
-    std::vector<WindowCanvasRef> allDrawSwapchains;
-    allDrawSwapchains.reserve(windowsDrawn.size());
-    for (const SharedPtr<WgWindow> &window : windowsDrawn)
-    {
-        allDrawSwapchains.emplace_back(windowManager->getWindowCanvas(window->getAppWindow()));
-    }
-
-    if (!allDrawSwapchains.empty())
-    {
-        ENQUEUE_COMMAND(PresentAllWindows)
-        (
-            [allDrawSwapchains](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-            {
-                std::vector<uint32> swapchainsIdxs(allDrawSwapchains.size());
-                for (uint32 i = 0; i < allDrawSwapchains.size(); ++i)
-                {
-                    uint32 idx = allDrawSwapchains[i]->currentImgIdx();
-                    swapchainsIdxs[i] = idx;
-                }
-                cmdList->presentImage(allDrawSwapchains, swapchainsIdxs, {});
-            }
-        );
-    }
-}
+void ApplicationInstance::presentDrawnWnds(const std::vector<SharedPtr<WgWindow>> &windowsDrawn) { wgRenderer->presentWindows(windowsDrawn); }
 
 void ApplicationInstance::clearWidgets()
 {
@@ -418,6 +393,24 @@ std::vector<SharedPtr<WgWindow>> WidgetRenderer::drawWindowWidgets(const std::ve
         drawWindowWidgets(std::move(allDrawCtxs));
     }
     return drawingWindows;
+}
+
+void WidgetRenderer::presentWindows(const std::vector<SharedPtr<WgWindow>> &windows)
+{
+    ApplicationInstance *app = IApplicationModule::get()->getApplication();
+    WindowManager *windowsManager = app->windowManager;
+
+    std::vector<WindowCanvasRef> allDrawSwapchains;
+    allDrawSwapchains.reserve(windows.size());
+    for (const SharedPtr<WgWindow> &window : windows)
+    {
+        allDrawSwapchains.emplace_back(windowsManager->getWindowCanvas(window->getAppWindow()));
+    }
+
+    if (!allDrawSwapchains.empty())
+    {
+        presentWindows(windows, allDrawSwapchains);
+    }
 }
 
 APPLICATION_EXPORT SharedPtr<WgNullWidget> WgNullWidget::nullWidget = std::make_shared<WgNullWidget>();

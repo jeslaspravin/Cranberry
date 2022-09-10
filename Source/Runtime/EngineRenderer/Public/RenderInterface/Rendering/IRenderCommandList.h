@@ -268,8 +268,8 @@ public:
     virtual void finishCmd(const String &uniqueName) = 0;
 
     virtual const GraphicsResource *getCmdBuffer(const String &uniqueName) const = 0;
-    virtual SemaphoreRef getCmdSignalSemaphore(const String &uniqueName) const = 0;
-    virtual SemaphoreRef getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const = 0;
+    virtual TimelineSemaphoreRef getCmdSignalSemaphore(const String &uniqueName) const = 0;
+    virtual TimelineSemaphoreRef getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const = 0;
 
     // Waits until GPU is idle
     virtual void waitIdle() = 0;

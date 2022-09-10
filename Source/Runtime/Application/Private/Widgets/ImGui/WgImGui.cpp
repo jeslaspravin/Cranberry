@@ -219,7 +219,7 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
             CommandSubmitInfo2 layerDrawSubmitInfo;
             layerDrawSubmitInfo.cmdBuffers.emplace_back(layerDrawCmdBuffer);
             cmdList->submitCmd(EQueuePriority::High, layerDrawSubmitInfo);
-            SemaphoreRef layerDrawComplete = cmdList->getCmdSignalSemaphore(layerDrawCmdBuffer);
+            TimelineSemaphoreRef layerDrawComplete = cmdList->getCmdSignalSemaphore(layerDrawCmdBuffer);
 
             // Now draw the imgui widgets
             const GraphicsResource *cmdBuffer = cmdList->startCmd(cmdBufferName, EQueueFunction::Graphics, true);
@@ -235,8 +235,10 @@ void WgImGui::drawWidget(QuantShortBox2D clipBound, WidgetGeomId thisId, const W
 
             CommandSubmitInfo submitInfo;
             submitInfo.cmdBuffers.emplace_back(cmdBuffer);
-            submitInfo.signalSemaphores.emplace_back(swapchainBuffered[imageIdx].semaphore);
-            submitInfo.waitOn.emplace_back(layerDrawComplete, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));
+            submitInfo.signalSemaphores = {
+                {swapchainBuffered[imageIdx].semaphore, INDEX_TO_FLAG_MASK(EPipelineStages::ColorAttachmentOutput)}
+            };
+            submitInfo.waitOnTimelines.emplace_back(layerDrawComplete, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage), 1);
             cmdList->submitCmd(EQueuePriority::High, submitInfo, nullptr);
         }
     );

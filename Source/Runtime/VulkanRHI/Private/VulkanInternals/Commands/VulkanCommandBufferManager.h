@@ -86,7 +86,7 @@ struct VulkanCmdSubmitSyncInfo
 {
     uint32 refCount = 0;
     FenceRef completeFence;
-    SemaphoreRef signalingSemaphore;
+    TimelineSemaphoreRef signalingSemaphore;
 };
 
 class VulkanCmdBufferManager
@@ -131,7 +131,7 @@ public:
     uint32 getQueueFamilyIdx(EQueueFunction queue) const;
     EQueueFunction getQueueFamily(uint32 familyIdx) const;
     ECmdState getState(const GraphicsResource *cmdBuffer) const;
-    SemaphoreRef cmdSignalSemaphore(const GraphicsResource *cmdBuffer) const;
+    TimelineSemaphoreRef cmdSignalSemaphore(const GraphicsResource *cmdBuffer) const;
 
     bool isComputeCmdBuffer(const GraphicsResource *cmdBuffer) const;
     bool isGraphicsCmdBuffer(const GraphicsResource *cmdBuffer) const;

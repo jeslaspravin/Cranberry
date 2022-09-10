@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Memory/SmartPointers.h"
+#include "RenderInterface/Resources/GenericWindowCanvas.h"
 
 #include <vector>
 #include "Types/CoreDefines.h"
@@ -34,7 +35,9 @@ public:
     virtual void clearWindowState(const SharedPtr<WgWindow> &window) = 0;
 
     NODISCARD std::vector<SharedPtr<WgWindow>> drawWindowWidgets(const std::vector<SharedPtr<WgWindow>> &windows);
+    void presentWindows(const std::vector<SharedPtr<WgWindow>> &windows);
 
 protected:
+    virtual void presentWindows(const std::vector<SharedPtr<WgWindow>> &windows, std::vector<WindowCanvasRef> swapchains) = 0;
     virtual void drawWindowWidgets(std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &&drawingContexts) = 0;
 };

@@ -2645,16 +2645,18 @@ void ExperimentalEnginePBR::frameRender(
 
     CommandSubmitInfo submitInfo;
     submitInfo.waitOn = {
-        CommandSubmitInfo::WaitInfo{waitSemaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage)}
+        {waitSemaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage)}
     };
-    submitInfo.signalSemaphores = { frameResources[index].usageWaitSemaphore[0] };
+    submitInfo.signalSemaphores = {
+        {frameResources[index].usageWaitSemaphore[0], INDEX_TO_FLAG_MASK(EPipelineStages::ColorAttachmentOutput)}
+    };
     submitInfo.cmdBuffers = { cmdBuffer };
 
     cmdList->submitCmd(EQueuePriority::High, submitInfo, frameResources[index].recordingFence);
 
     // Presenting manually here as for Experimental we are not adding any widget to app main window and it gets skipped in presenting all drawn
     // windows
-    cmdList->presentImage({ &windowCanvas, 1 }, { &index, 1 }, {});
+    cmdList->presentImage({ &windowCanvas, 1 }, { &index, 1 }, { frameResources[index].usageWaitSemaphore });
 }
 
 void ExperimentalEnginePBR::updateCamGizmoViewParams()
@@ -3616,9 +3618,9 @@ void ExperimentalEnginePBR::tempTestPerFrame()
 
 void ExperimentalEnginePBR::tempTestQuit() {}
 
-//TestGameEngine *GameEngineWrapper::createEngineInstance()
-//{
-//    static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
-//    return engineInst.get();
-//}
+TestGameEngine *GameEngineWrapper::createEngineInstance()
+{
+    static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
+    return engineInst.get();
+}
 #endif
