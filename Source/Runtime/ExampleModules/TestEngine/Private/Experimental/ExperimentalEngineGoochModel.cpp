@@ -1533,16 +1533,18 @@ void ExperimentalEngineGoochModel::frameRender(
 
     CommandSubmitInfo submitInfo;
     submitInfo.waitOn = {
-        CommandSubmitInfo::WaitInfo{waitSemaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage)}
+        {waitSemaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage)}
     };
-    submitInfo.signalSemaphores = { frameResources[index].usageWaitSemaphore[0] };
+    submitInfo.signalSemaphores = {
+        {frameResources[index].usageWaitSemaphore[0], EPipelineStages::ColorAttachmentOutput}
+    };
     submitInfo.cmdBuffers = { cmdBuffer };
 
     cmdList->submitCmd(EQueuePriority::High, submitInfo, frameResources[index].recordingFence);
 
     std::vector<WindowCanvasRef> canvases = { windowCanvas };
     std::vector<uint32> indices = { index };
-    cmdList->presentImage(canvases, indices, {});
+    cmdList->presentImage(canvases, indices, { frameResources[index].usageWaitSemaphore });
 }
 
 void ExperimentalEngineGoochModel::tickEngine()
@@ -1842,9 +1844,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
     }
 }
 
-TestGameEngine *GameEngineWrapper::createEngineInstance()
-{
-    static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
-    return engineInst.get();
-}
+// TestGameEngine *GameEngineWrapper::createEngineInstance()
+//{
+//     static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
+//     return engineInst.get();
+// }
 #endif

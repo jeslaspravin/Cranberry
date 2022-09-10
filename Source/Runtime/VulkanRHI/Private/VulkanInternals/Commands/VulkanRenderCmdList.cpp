@@ -770,12 +770,12 @@ void VulkanCommandList::finishCmd(const String &uniqueName) { cmdBufferManager.c
 
 const GraphicsResource *VulkanCommandList::getCmdBuffer(const String &uniqueName) const { return cmdBufferManager.getCmdBuffer(uniqueName); }
 
-SemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const String &uniqueName) const
+TimelineSemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const String &uniqueName) const
 {
     return getCmdSignalSemaphore(cmdBufferManager.getCmdBuffer(uniqueName));
 }
 
-SemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
+TimelineSemaphoreRef VulkanCommandList::getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
 {
     return cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
 }
@@ -857,15 +857,16 @@ void VulkanCommandList::presentImage(
     ArrayView<const WindowCanvasRef> canvases, ArrayView<const uint32> imageIndices, ArrayView<const SemaphoreRef> waitOnSemaphores
 )
 {
-    std::vector<SemaphoreRef> waitSemaphores{ waitOnSemaphores.begin(), waitOnSemaphores.end() };
-    for (const GraphicsResource *cmdBuffer : swapchainFrameWrites)
-    {
-        SemaphoreRef cmdSignal = cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
-        fatalAssertf(cmdSignal.isValid(), "Invalid signalling semaphore for cmd buffer %s!", cmdBuffer->getResourceName());
-        waitSemaphores.emplace_back(cmdSignal);
-    }
+    // TODO(Jeslas) : Right now vkQueuePresentKHR does not support timeline semaphore, Include below once that is supported
+    // std::vector<SemaphoreRef> waitSemaphores{ waitOnSemaphores.begin(), waitOnSemaphores.end() };
+    // for (const GraphicsResource *cmdBuffer : swapchainFrameWrites)
+    //{
+    //    SemaphoreRef cmdSignal = cmdBufferManager.cmdSignalSemaphore(cmdBuffer);
+    //    fatalAssertf(cmdSignal.isValid(), "Invalid signalling semaphore for cmd buffer %s!", cmdBuffer->getResourceName());
+    //    waitSemaphores.emplace_back(cmdSignal);
+    //}
 
-    VulkanGraphicsHelper::presentImage(graphicsInstanceCache, canvases, imageIndices, waitSemaphores);
+    VulkanGraphicsHelper::presentImage(graphicsInstanceCache, canvases, imageIndices, waitOnSemaphores);
     swapchainFrameWrites.clear();
 }
 

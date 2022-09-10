@@ -24,22 +24,32 @@ enum class ECmdState
     Submitted
 };
 
+struct SemaphoreSubmitInfo
+{
+    SemaphoreRef semaphore;
+    // Pipeline Stages that are recorded in this command buffer that waits on the corresponding
+    // semaphore
+    uint64 stages;
+};
+struct TimelineSemaphoreSubmitInfo
+{
+    TimelineSemaphoreRef semaphore;
+    // Pipeline Stages that are recorded in this command buffer that waits on the corresponding
+    // semaphore
+    uint64 stages;
+    uint64 value;
+};
+
 // This struct is only for advanced usage else use cmd buffer based version CommandSubmitInfo2, If
 // submitted with this way semaphores and fences has to be managed manually
 struct CommandSubmitInfo
 {
 public:
-    struct WaitInfo
-    {
-        SemaphoreRef waitOnSemaphore;
-        // Pipeline Stages that are recorded in this command buffer that waits on the corresponding
-        // semaphore
-        uint64 stagesThatWaits;
-    };
     std::vector<const GraphicsResource *> cmdBuffers;
-    std::vector<WaitInfo> waitOn;
-    // TODO(Jeslas) : Implement stage to signal semaphore
-    std::vector<SemaphoreRef> signalSemaphores;
+    std::vector<SemaphoreSubmitInfo> waitOn;
+    std::vector<TimelineSemaphoreSubmitInfo> waitOnTimelines;
+    std::vector<SemaphoreSubmitInfo> signalSemaphores;
+    std::vector<TimelineSemaphoreSubmitInfo> signalTimelines;
 };
 
 struct CommandSubmitInfo2
@@ -48,6 +58,4 @@ public:
     std::vector<const GraphicsResource *> cmdBuffers;
     // All the cmd buffers will be waiting at top of pipeline for below buffers use with caution
     std::vector<const GraphicsResource *> waitOnCmdBuffers;
-
-    // TODO(Jeslas) : Implement stage to signal semaphore and signaling semaphores, If needed?
 };

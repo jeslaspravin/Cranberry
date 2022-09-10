@@ -21,9 +21,11 @@
 
 class GenericAppWindow;
 class GraphicsSemaphore;
+class GraphicsTimelineSemaphore;
 class GraphicsFence;
 
 using SemaphoreRef = ReferenceCountPtr<GraphicsSemaphore>;
+using TimelineSemaphoreRef = ReferenceCountPtr<GraphicsTimelineSemaphore>;
 using FenceRef = ReferenceCountPtr<GraphicsFence>;
 
 // Wrapper for VkSurface and VkSwapchainKHR

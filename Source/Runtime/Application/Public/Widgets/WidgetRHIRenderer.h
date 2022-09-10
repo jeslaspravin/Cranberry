@@ -30,7 +30,7 @@ private:
         std::vector<String> perFrameCmdBuffers;
         std::vector<FenceRef> perFrameSubmitFences;
         // Signal semaphore is necessary to present
-        std::vector<SemaphoreRef> perFrameSignal;
+        std::vector<SemaphoreRef> readyToPresent;
     };
 
     ImageResourceRef dummyTexture;
@@ -55,7 +55,8 @@ public:
     void clearWindowState(const SharedPtr<WgWindow> &window) final;
 
 protected:
-    void drawWindowWidgets(std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &&drawingContexts);
+    void presentWindows(const std::vector<SharedPtr<WgWindow>> &windows, std::vector<WindowCanvasRef> swapchains) final;
+    void drawWindowWidgets(std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &&drawingContexts) final;
 
     /* Overrides ends */
 private:

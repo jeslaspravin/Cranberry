@@ -135,7 +135,7 @@ WidgetRHIRenderer::WindowState &WidgetRHIRenderer::createWindowState(
 
     state.perFrameCmdBuffers.resize(swapchainCanvas->imagesCount());
     state.perFrameSubmitFences.resize(swapchainCanvas->imagesCount());
-    state.perFrameSignal.resize(swapchainCanvas->imagesCount());
+    state.readyToPresent.resize(swapchainCanvas->imagesCount());
     for (uint32 i = 0; i < swapchainCanvas->imagesCount(); ++i)
     {
         state.perFrameCmdBuffers[i] = window->getAppWindow()->getWindowName() + TCHAR("_CmdBuffer_") + String::toString(i);
@@ -143,10 +143,10 @@ WidgetRHIRenderer::WindowState &WidgetRHIRenderer::createWindowState(
             graphicsInstance, (window->getAppWindow()->getWindowName() + TCHAR("_Fence_") + String::toString(i)).c_str()
             );
         state.perFrameSubmitFences[i]->init();
-        state.perFrameSignal[i] = graphicsHelper->createSemaphore(
+        state.readyToPresent[i] = graphicsHelper->createSemaphore(
             graphicsInstance, (window->getAppWindow()->getWindowName() + TCHAR("_Semaphore_") + String::toString(i)).c_str()
             );
-        state.perFrameSignal[i]->init();
+        state.readyToPresent[i]->init();
     }
     return state;
 }
@@ -170,6 +170,31 @@ void WidgetRHIRenderer::createVerticesAndIndices(
         indices->setAsStagingResource(true);
         indices->init();
     }
+}
+
+void WidgetRHIRenderer::presentWindows(const std::vector<SharedPtr<WgWindow>> &windows, std::vector<WindowCanvasRef> swapchains)
+{
+    debugAssert(swapchains.size() == windows.size());
+    ENQUEUE_COMMAND(PresentAllWindows)
+    (
+        [swapchains, windows, this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+        {
+            std::vector<uint32> swapchainIdxs(swapchains.size());
+            std::vector<SemaphoreRef> presentWaits(windows.size());
+            for (uint32 i = 0; i < swapchains.size(); ++i)
+            {
+                uint32 idx = swapchains[i]->currentImgIdx();
+                swapchainIdxs[i] = idx;
+
+                auto winStateItr = windowStates.find(windows[i]);
+                debugAssert(winStateItr != windowStates.cend());
+                presentWaits[i] = winStateItr->second.readyToPresent[swapchainIdxs[i]];
+            }
+
+            // Sending the present semaphore manually as vulkan does not support timeline semaphore
+            cmdList->presentImage(swapchains, swapchainIdxs, presentWaits);
+        }
+    );
 }
 
 void WidgetRHIRenderer::drawWindowWidgets(std::vector<std::pair<SharedPtr<WgWindow>, WidgetDrawContext>> &&drawingContexts)
@@ -450,7 +475,9 @@ void WidgetRHIRenderer::drawWindowWidgetsRenderThread(
         CommandSubmitInfo submitInfo;
         submitInfo.cmdBuffers.emplace_back(cmdBuffer);
         submitInfo.waitOn.emplace_back(swapchainSemaphores[i], INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));
-        submitInfo.signalSemaphores = { windowState->perFrameSignal[pipelineContext.swapchainIdx] };
+        submitInfo.signalSemaphores = {
+            {windowState->readyToPresent[pipelineContext.swapchainIdx], INDEX_TO_FLAG_MASK(EPipelineStages::ColorAttachmentOutput)}
+        };
         for (const SemaphoreRef &semaphore : drawingContexts[i].second.allWaitOnSemaphores())
         {
             submitInfo.waitOn.emplace_back(semaphore, INDEX_TO_FLAG_MASK(EPipelineStages::FragmentShaderStage));

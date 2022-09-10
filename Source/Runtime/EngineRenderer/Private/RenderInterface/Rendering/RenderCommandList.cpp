@@ -156,8 +156,8 @@ public:
     void finishCmd(const GraphicsResource *cmdBuffer) final;
     void finishCmd(const String &uniqueName) final;
     const GraphicsResource *getCmdBuffer(const String &uniqueName) const final;
-    SemaphoreRef getCmdSignalSemaphore(const String &uniqueName) const final;
-    SemaphoreRef getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const final;
+    TimelineSemaphoreRef getCmdSignalSemaphore(const String &uniqueName) const final;
+    TimelineSemaphoreRef getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const final;
     void waitIdle() final;
     void waitOnResDepCmds(const MemoryResourceRef &resource) final;
     void flushAllcommands() final;
@@ -300,9 +300,12 @@ void RenderCommandList::finishCmd(const String &uniqueName) { cmdList->finishCmd
 
 const GraphicsResource *RenderCommandList::getCmdBuffer(const String &uniqueName) const { return cmdList->getCmdBuffer(uniqueName); }
 
-SemaphoreRef RenderCommandList::getCmdSignalSemaphore(const String &uniqueName) const { return cmdList->getCmdSignalSemaphore(uniqueName); }
+TimelineSemaphoreRef RenderCommandList::getCmdSignalSemaphore(const String &uniqueName) const
+{
+    return cmdList->getCmdSignalSemaphore(uniqueName);
+}
 
-SemaphoreRef RenderCommandList::getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
+TimelineSemaphoreRef RenderCommandList::getCmdSignalSemaphore(const GraphicsResource *cmdBuffer) const
 {
     return cmdList->getCmdSignalSemaphore(cmdBuffer);
 }
