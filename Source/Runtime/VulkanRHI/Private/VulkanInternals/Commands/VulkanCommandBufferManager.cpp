@@ -548,6 +548,19 @@ uint32 VulkanCmdBufferManager::getQueueFamilyIdx(const GraphicsResource *cmdBuff
     return getQueueFamilyIdx(static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue);
 }
 
+EQueueFunction VulkanCmdBufferManager::getQueueFamily(uint32 familyIdx) const
+{
+    for (const std::pair<const EQueueFunction, VulkanCommandPool> &poolPair : pools)
+    {
+        if (poolPair.second.cmdPoolInfo.vulkanQueueIndex == familyIdx)
+        {
+            return poolPair.first;
+        }
+    }
+    debugAssertf(false, "Invalide queue family index %u", familyIdx);
+    return EQueueFunction::Generic;
+}
+
 ECmdState VulkanCmdBufferManager::getState(const GraphicsResource *cmdBuffer) const
 {
     auto cmdBufferItr = commandBuffers.find(cmdBuffer->getResourceName());
@@ -582,6 +595,11 @@ bool VulkanCmdBufferManager::isGraphicsCmdBuffer(const GraphicsResource *cmdBuff
 bool VulkanCmdBufferManager::isTransferCmdBuffer(const GraphicsResource *cmdBuffer) const
 {
     return static_cast<const VulkanCommandBuffer *>(cmdBuffer)->usage == EQueueFunction::Transfer;
+}
+
+EQueueFunction VulkanCmdBufferManager::getCmdBufferQueue(const GraphicsResource *cmdBuffer) const
+{
+    return static_cast<const VulkanCommandBuffer *>(cmdBuffer)->usage;
 }
 
 bool VulkanCmdBufferManager::isCmdFinished(const GraphicsResource *cmdBuffer) const
@@ -866,6 +884,11 @@ void VulkanCmdBufferManager::submitCmds(
                     }
 
                     const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
+                    // Do not add if completed already
+                    if (syncInfo.completeFence->isSignaled())
+                    {
+                        continue;
+                    }
                     SEMAPHORE_SUBMIT_INFO(waitOnSema);
                     waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore;
                     waitOnSema.stageMask = waitOn.usedDstStages;
@@ -1000,6 +1023,11 @@ void VulkanCmdBufferManager::submitCmd(
                 }
 
                 const VulkanCmdSubmitSyncInfo &syncInfo = cmdsSyncInfo[cmdBufferItr->second.cmdSyncInfoIdx];
+                // Do not add if completed already
+                if (syncInfo.completeFence->isSignaled())
+                {
+                    continue;
+                }
                 SEMAPHORE_SUBMIT_INFO(waitOnSema);
                 waitOnSema.semaphore = syncInfo.signalingSemaphore.reference<VulkanSemaphore>()->semaphore;
                 waitOnSema.stageMask = waitOn.usedDstStages;
@@ -1242,19 +1270,22 @@ void VulkanResourcesTracker::clearFinishedCmd(const GraphicsResource *cmdBuffer)
     }
 }
 
-void VulkanResourcesTracker::clearResource(const MemoryResourceRef &resource) { resourcesAccessors.erase(resource); }
+void VulkanResourcesTracker::clearResource(const MemoryResourceRef &resource)
+{
+    resourcesAccessors.erase(resource);
+
+    for (uint32 i = 0; i < ARRAY_LENGTH(queueTransfers); ++i)
+    {
+        queueTransfers[i].erase(resource);
+    }
+}
 
 void VulkanResourcesTracker::clearUnwanted()
 {
-    std::unordered_set<const GraphicsResource *> memResources;
-    {
-        std::vector<GraphicsResource *> memRes;
-        MemoryResource::staticType()->allRegisteredResources(memRes, true);
-        memResources.insert(memRes.cbegin(), memRes.cend());
-    }
     for (std::map<MemoryResourceRef, ResourceAccessors>::iterator itr = resourcesAccessors.begin(); itr != resourcesAccessors.end();)
     {
-        if (memResources.find(itr->first.reference()) == memResources.end())
+        // If we are the last one holding reference to a resource release it
+        if (itr->first->refCount() == 1)
         {
             itr = resourcesAccessors.erase(itr);
         }
@@ -1282,6 +1313,26 @@ void VulkanResourcesTracker::clearUnwanted()
             }
             ++itr;
         }
+    }
+
+    for (uint32 i = 0; i < ARRAY_LENGTH(queueTransfers); ++i)
+    {
+        // Should I clear everything? Because clearUnused gets called every frame and if frame ended then resources must be visible in other
+        // queues right?
+        // for (std::map<MemoryResourceRef, ResourceQueueTransferInfo>::iterator itr = queueTransfers[i].begin(); itr !=
+        // queueTransfers[i].end();)
+        //{
+        //    if (memResources.find(itr->first.reference()) == memResources.end())
+        //    {
+        //        itr = queueTransfers[i].erase(itr);
+        //    }
+        //    else
+        //    {
+        //        ++itr;
+        //    }
+        //}
+
+        queueTransfers[i].clear();
     }
 }
 
@@ -1643,4 +1694,49 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo>
     accessors.lastWrite = cmdBuffer;
     accessors.lastWriteStage = stageFlag;
     return outBarrierInfo;
+}
+
+void VulkanResourcesTracker::addResourceToQTransfer(
+    EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags,
+    VkImageLayout imageLayout, bool bReset
+)
+{
+    std::map<MemoryResourceRef, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource];
+    qTransferInfo.srcLayout = imageLayout;
+    if (bReset)
+    {
+        qTransferInfo.srcStages = usedInStages;
+        qTransferInfo.srcAccessMask = accessFlags;
+    }
+    else
+    {
+        qTransferInfo.srcStages |= usedInStages;
+        qTransferInfo.srcAccessMask |= accessFlags;
+    }
+}
+
+void VulkanResourcesTracker::addResourceToQTransfer(
+    EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags, bool bReset
+)
+{
+    std::map<MemoryResourceRef, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource];
+    if (bReset)
+    {
+        qTransferInfo.srcStages = usedInStages;
+        qTransferInfo.srcAccessMask = accessFlags;
+    }
+    else
+    {
+        qTransferInfo.srcStages |= usedInStages;
+        qTransferInfo.srcAccessMask |= accessFlags;
+    }
+}
+
+std::map<MemoryResourceRef, VulkanResourcesTracker::ResourceQueueTransferInfo>
+    VulkanResourcesTracker::getReleasesFromQueue(EQueueFunction queueType)
+{
+    std::map<MemoryResourceRef, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    return std::move(queueReleaseInfo);
 }

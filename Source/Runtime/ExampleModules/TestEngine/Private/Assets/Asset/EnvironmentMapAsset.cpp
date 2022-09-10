@@ -209,7 +209,6 @@ void EnvironmentMapAsset::initAsset()
 
                 // Record here
                 cmdList->endCmd(createEnvCmdBuffer);
-                ;
 
                 CommandSubmitInfo2 submitInfo;
                 submitInfo.cmdBuffers.emplace_back(createEnvCmdBuffer);

@@ -84,6 +84,7 @@ public:
     ) final;
 
     void cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets) final;
+    void cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue) final;
 
     void cmdBeginRenderPass(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const QuantizedBox2D &renderArea,
@@ -403,6 +404,11 @@ void RenderCommandList::cmdClearDepth(
 void RenderCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets)
 {
     cmdList->cmdBarrierResources(cmdBuffer, descriptorsSets);
+}
+
+void RenderCommandList::cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue)
+{
+    cmdList->cmdReleaseQueueResources(cmdBuffer, releaseToQueue);
 }
 
 void RenderCommandList::cmdBeginRenderPass(

@@ -111,6 +111,7 @@ public:
     QueueResourceBasePtr getComputeQueue() const;
     QueueResourceBasePtr getTransferQueue() const;
     QueueResourceBasePtr getGenericQueue() const;
+    VkQueueFlags getQueueFlags(uint32 queueIdx) const;
     const VulkanDebugGraphics *debugGraphics() const { return &graphicsDebug; }
 
     NODISCARD int32 compare(const VulkanDevice &otherDevice, const WindowCanvasRef &windowCanvas) const;
