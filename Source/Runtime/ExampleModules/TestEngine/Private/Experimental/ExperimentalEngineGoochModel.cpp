@@ -296,6 +296,7 @@ class ExperimentalEngineGoochModel
     // Test compute
     bool bAnimateX;
     bool bAnimateY;
+    bool bCompute = false;
     float timeAccum = 0;
     uint32 texturesCount;
     uint32 testBindlessTextureIdx;
@@ -1303,29 +1304,8 @@ void ExperimentalEngineGoochModel::frameRender(
     String cmdName = TCHAR("FrameRender") + String::toString(index);
     cmdList->finishCmd(cmdName);
 
-    //{
-    //    cmdList->finishCmd(cmdName + "_Comp");
-    //    auto temp = cmdList->startCmd(cmdName + "_Comp"), EQueueFunction::Compute, true);
-    //    cmdList->cmdBindComputePipeline(temp, testComputePipelineContext);
-    //    cmdList->cmdBindDescriptorsSets(temp, testComputePipelineContext, { testComputeParams.get() });
-    //    cmdList->cmdBarrierResources(temp, { testComputeParams.get() });
-    //    cmdList->cmdDispatch(temp
-    //        , writeTexture.image->getTextureSize().x / static_cast<const
-    //        ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().x
-    //        , writeTexture.image->getTextureSize().y / static_cast<const
-    //        ComputeShader*>(testComputePipelineContext.getPipeline()->getShaderResource())->getSubGroupSize().y
-    //    );
-    //    cmdList->endCmd(temp);
-
-    //    CommandSubmitInfo2 cs2;
-    //    cs2.cmdBuffers = { temp };
-    //    cmdList->submitCmd(EQueuePriority::High, cs2);
-    //}
-    const GraphicsResource *cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
+    if (bCompute)
     {
-        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEngineFrame);
-        cmdList->cmdBindComputePipeline(cmdBuffer, testComputePipelineContext);
-
         if (bAnimateX || bAnimateY)
         {
             timeAccum += timeData.deltaTime;
@@ -1333,16 +1313,19 @@ void ExperimentalEngineGoochModel::frameRender(
             testBindlessTextureIdx %= texturesCount;
             timeAccum = Math::mod(timeAccum, 2.0f);
         }
-        std::vector<std::pair<String, std::any>> pushConsts = {
+        std::vector<std::pair<String, std::any>> computePushConsts = {
             {    TCHAR("time"),                                    { Time::asSeconds(Time::timeNow()) }},
               {   TCHAR("flags"), { uint32((bAnimateX ? 0x00000001 : 0) | (bAnimateY ? 0x00000010 : 0)) }},
                 {TCHAR("srcIndex"),                                              { testBindlessTextureIdx }}
         };
-        cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, pushConsts);
-        cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, testComputeParams);
-        cmdList->cmdBarrierResources(cmdBuffer, { &testComputeParams, 1 });
+        cmdList->finishCmd(cmdName + "_Comp");
+        auto temp = cmdList->startCmd(cmdName + "_Comp", EQueueFunction::Compute, true);
+        cmdList->cmdBindComputePipeline(temp, testComputePipelineContext);
+        cmdList->cmdPushConstants(temp, testComputePipelineContext, computePushConsts);
+        cmdList->cmdBindDescriptorsSets(temp, testComputePipelineContext, testComputeParams);
+        cmdList->cmdBarrierResources(temp, { &testComputeParams, 1 });
         cmdList->cmdDispatch(
-            cmdBuffer,
+            temp,
             writeTexture->getTextureSize().x
                 / static_cast<const ComputeShaderConfig *>(testComputePipelineContext.getPipeline()->getShaderResource()->getShaderConfig())
                       ->getSubGroupSize()
@@ -1352,6 +1335,31 @@ void ExperimentalEngineGoochModel::frameRender(
                       ->getSubGroupSize()
                       .y
         );
+        cmdList->cmdReleaseQueueResources(temp, EQueueFunction::Graphics);
+        cmdList->endCmd(temp);
+
+        CommandSubmitInfo2 cs2;
+        cs2.cmdBuffers = { temp };
+        cmdList->submitCmd(EQueuePriority::High, cs2);
+    }
+    const GraphicsResource *cmdBuffer = cmdList->startCmd(cmdName, EQueueFunction::Graphics, true);
+    {
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ExperimentalEngineFrame);
+        // cmdList->cmdBindComputePipeline(cmdBuffer, testComputePipelineContext);
+        // cmdList->cmdPushConstants(cmdBuffer, testComputePipelineContext, computerPushConsts);
+        // cmdList->cmdBindDescriptorsSets(cmdBuffer, testComputePipelineContext, testComputeParams);
+        // cmdList->cmdBarrierResources(cmdBuffer, { &testComputeParams, 1 });
+        // cmdList->cmdDispatch(
+        //     cmdBuffer,
+        //     writeTexture->getTextureSize().x
+        //         / static_cast<const ComputeShaderConfig *>(testComputePipelineContext.getPipeline()->getShaderResource()->getShaderConfig())
+        //               ->getSubGroupSize()
+        //               .x,
+        //     writeTexture->getTextureSize().y
+        //         / static_cast<const ComputeShaderConfig *>(testComputePipelineContext.getPipeline()->getShaderResource()->getShaderConfig())
+        //               ->getSubGroupSize()
+        //               .y
+        //);
 
         cmdList->cmdBeginRenderPass(cmdBuffer, drawSmPipelineContext, scissor, {}, clearValues);
         {
@@ -1472,6 +1480,7 @@ void ExperimentalEngineGoochModel::frameRender(
         drawingContext.cmdBuffer = cmdBuffer;
         drawingContext.rtTexture = frameResources[index].lightingPassRt;
         getImGuiManager().draw(cmdList, graphicsInstance, graphicsHelper, drawingContext);
+        cmdList->cmdReleaseQueueResources(cmdBuffer, EQueueFunction::Compute);
 
         // Drawing text
         rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { frameResources[index].lightingPassRt });
@@ -1682,6 +1691,7 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
             ImGui::NextColumn();
             if (ImGui::CollapsingHeader("Compute"))
             {
+                bCompute = true;
                 ImGui::Text("Animate");
                 ImGui::NextColumn();
                 ImGui::Checkbox("X", &bAnimateX);
@@ -1696,6 +1706,10 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
                     writeTexture->getTextureResource().get(), ImVec2(ImGui::GetWindowContentRegionWidth(), ImGui::GetWindowContentRegionWidth())
                 );
                 ImGui::Separator();
+            }
+            else
+            {
+                bCompute = false;
             }
 
             if (ImGui::CollapsingHeader("Bitonic Sort"))
@@ -1828,9 +1842,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
     }
 }
 
-// TestGameEngine *GameEngineWrapper::createEngineInstance()
-//{
-//     static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
-//     return engineInst.get();
-// }
+TestGameEngine *GameEngineWrapper::createEngineInstance()
+{
+    static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
+    return engineInst.get();
+}
 #endif

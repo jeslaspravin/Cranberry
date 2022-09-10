@@ -70,6 +70,11 @@ public:
             }
             pageIdx++;
         }
+        // If out of loop while being inside the fragment the last size must be added here
+        if (bInsideFragment)
+        {
+            foundFragSize += pageIdx - fragmentStartIdx;
+        }
         return foundFragSize * PAGE_SIZE;
     }
 
@@ -148,10 +153,10 @@ private:
      */
     CONST_EXPR bool getBestFit(SizeType count, SizeType alignmentCount, SizeType &outFoundAt) const
     {
-        SizeType bestFitCount = pageUsage.size(), foundAtPage = pageUsage.size(), fragmentStartIdx = 0;
+        SizeType bestFitCount = pageUsage.size(), foundAtPage = pageUsage.size(), fragmentStartIdx = 0, pageIdx = 0;
         bool bInsideFragment = false;
 
-        for (SizeType pageIdx = 0; pageIdx < pageUsage.size(); pageIdx += alignmentCount)
+        for (; pageIdx < pageUsage.size(); pageIdx += alignmentCount)
         {
             // count will always be aligned by alignmentCount, So for a page range to be valid all page in range must be use able
             bool bIsAvailable = pageUsage.checkRange(pageIdx, alignmentCount, false);
@@ -178,6 +183,17 @@ private:
                 }
             }
         }
+        // If exited the loop while being inside, Do the fragment fit check here
+        if (bInsideFragment)
+        {
+            SizeType fragSize = pageIdx - fragmentStartIdx;
+            if (fragSize >= count && fragSize <= bestFitCount)
+            {
+                foundAtPage = fragmentStartIdx;
+                bestFitCount = fragSize;
+            }
+        }
+
         if (foundAtPage < pageUsage.size())
         {
             outFoundAt = foundAtPage + (bestFitCount - count);
@@ -186,6 +202,7 @@ private:
         return false;
     }
 
+    // Finds first allocated block from startIdx
     bool findAllocatedBlock(SizeType startIdx, SizeType &outPageIdx, SizeType &outPageCount)
     {
         SizeType foundAtOffset = pageUsage.size(), blockStartIdx = 0, pageIdx = startIdx;
@@ -218,6 +235,7 @@ private:
         }
         return false;
     }
+    // Finds first available fragment block from startIdx
     bool findAvailableFragment(SizeType startIdx, SizeType &outPageIdx, SizeType &outPageCount)
     {
         SizeType foundAtOffset = pageUsage.size(), blockStartIdx = 0, pageIdx = startIdx;

@@ -626,6 +626,10 @@ void FontManager::setupTextureAtlas(ShaderParameters *shaderParams, const String
             for (int32 i = 0; i < ARRAY_LENGTH(context->textureAtlases); ++i)
             {
                 shaderParams->setTextureParam(paramName.getChar(), context->textureAtlases[i], i);
+                static ImageViewInfo fontTextureView = {
+                    .componentMapping = {.g = EPixelComponentMapping::R, .b = EPixelComponentMapping::R, .a = EPixelComponentMapping::R}
+                };
+                shaderParams->setTextureParamViewInfo(paramName.getChar(), fontTextureView);
             }
         }
     );

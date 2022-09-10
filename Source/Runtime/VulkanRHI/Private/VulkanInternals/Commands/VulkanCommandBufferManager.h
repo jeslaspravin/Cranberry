@@ -129,12 +129,14 @@ public:
     const GraphicsResource *getCmdBuffer(const String &cmdName) const;
     uint32 getQueueFamilyIdx(const GraphicsResource *cmdBuffer) const;
     uint32 getQueueFamilyIdx(EQueueFunction queue) const;
+    EQueueFunction getQueueFamily(uint32 familyIdx) const;
     ECmdState getState(const GraphicsResource *cmdBuffer) const;
     SemaphoreRef cmdSignalSemaphore(const GraphicsResource *cmdBuffer) const;
 
     bool isComputeCmdBuffer(const GraphicsResource *cmdBuffer) const;
     bool isGraphicsCmdBuffer(const GraphicsResource *cmdBuffer) const;
     bool isTransferCmdBuffer(const GraphicsResource *cmdBuffer) const;
+    EQueueFunction getCmdBufferQueue(const GraphicsResource *cmdBuffer) const;
 
     bool isCmdFinished(const GraphicsResource *cmdBuffer) const;
     //************************************
@@ -159,7 +161,7 @@ public:
 /// </summary>
 class VulkanResourcesTracker
 {
-private:
+public:
     struct ResourceAccessors
     {
         // Last reads after last writes
@@ -172,7 +174,7 @@ private:
 
         FORCE_INLINE void addLastReadInCmd(const GraphicsResource *cmdBuffer)
         {
-            // This is just to avoid adding same read cmd buffers continuosly repeating
+            // This is just to avoid adding same read cmd buffers continuously repeating
             if (lastReadsIn.empty() || lastReadsIn.back() != cmdBuffer)
             {
                 lastReadsIn.emplace_back(cmdBuffer);
@@ -180,7 +182,6 @@ private:
         }
     };
 
-public:
     struct CommandResUsageInfo
     {
         const GraphicsResource *cmdBuffer = nullptr;
@@ -193,8 +194,17 @@ public:
         ResourceAccessors accessors;
     };
 
+    struct ResourceQueueTransferInfo
+    {
+        // Stages to wait before resource gets transferred to new queue
+        VkPipelineStageFlags2 srcStages = 0;
+        VkAccessFlags2 srcAccessMask = 0;
+        VkImageLayout srcLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    };
+
 private:
     std::map<MemoryResourceRef, ResourceAccessors> resourcesAccessors;
+    std::map<MemoryResourceRef, ResourceQueueTransferInfo> queueTransfers[3];
 
     using CmdWaitInfoMap = std::map<const GraphicsResource *, std::vector<CommandResUsageInfo>>;
     CmdWaitInfoMap cmdWaitInfo;
@@ -239,4 +249,17 @@ public:
 
     std::optional<ResourceBarrierInfo> imageToGeneralLayout(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);
     std::optional<ResourceBarrierInfo> colorAttachmentWrite(const GraphicsResource *cmdBuffer, const ImageResourceRef &resource);
+
+    // bReset - If true instead of adding staged it resets stages to current usedInStages
+    void addResourceToQTransfer(
+        EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags, bool bReset
+    );
+    void addResourceToQTransfer(
+        EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags,
+        VkImageLayout imageLayout, bool bReset
+    );
+    std::map<MemoryResourceRef, ResourceQueueTransferInfo> getReleasesFromQueue(EQueueFunction queueType);
+
+private:
+    FORCE_INLINE uint32 queueToQTransferIdx(EQueueFunction queueType) { return uint32(queueType) - uint32(EQueueFunction::Compute); }
 };

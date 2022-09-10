@@ -3616,9 +3616,9 @@ void ExperimentalEnginePBR::tempTestPerFrame()
 
 void ExperimentalEnginePBR::tempTestQuit() {}
 
-TestGameEngine *GameEngineWrapper::createEngineInstance()
-{
-    static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
-    return engineInst.get();
-}
+//TestGameEngine *GameEngineWrapper::createEngineInstance()
+//{
+//    static SharedPtr<ExperimentalEnginePBR> engineInst = std::make_shared<ExperimentalEnginePBR>();
+//    return engineInst.get();
+//}
 #endif

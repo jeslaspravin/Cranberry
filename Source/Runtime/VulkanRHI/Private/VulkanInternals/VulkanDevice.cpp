@@ -725,6 +725,15 @@ VulkanDevice::QueueResourceBasePtr VulkanDevice::getTransferQueue() const { retu
 
 VulkanDevice::QueueResourceBasePtr VulkanDevice::getGenericQueue() const { return genericQueue; }
 
+VkQueueFlags VulkanDevice::getQueueFlags(uint32 queueIdx) const
+{
+    if (queueFamiliesSupported.size() > queueIdx)
+    {
+        return queueFamiliesSupported[queueIdx].queueFlags;
+    }
+    return 0;
+}
+
 int32 VulkanDevice::compare(const VulkanDevice &otherDevice, const WindowCanvasRef &windowCanvas) const
 {
     if (windowCanvas.isValid())
