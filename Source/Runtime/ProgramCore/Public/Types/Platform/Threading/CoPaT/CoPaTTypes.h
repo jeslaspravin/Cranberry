@@ -31,7 +31,8 @@ enum class EJobThreadType
     // User added thread types start
     USER_DEFINED_THREADS()
     // User added thread types end
-    WorkerThreads
+    WorkerThreads,
+    MaxThreads
 };
 
 #ifndef OVERRIDE_MEMORY_ALLOCATOR
