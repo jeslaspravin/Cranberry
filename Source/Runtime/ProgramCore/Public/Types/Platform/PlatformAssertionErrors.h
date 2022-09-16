@@ -102,27 +102,27 @@ public:
     while (0)
 #endif
 
-#define ALERT_internal(Expr)                                                                                                                   \
+#define ALERT_internal(Expr, DebugBreakCaller)                                                                                                  \
     if (!(Expr))                                                                                                                               \
     {                                                                                                                                          \
         LOG_ASSERTION(Expr, "AlertAssertion");                                                                                                 \
         UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                            \
-        UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                    \
+        DebugBreakCaller(UnexpectedErrorHandler::getHandler()->debugBreak());                                                                   \
     }
 
-#define ALERT_FORMATTED_internal(Expr, Message, ...)                                                                                           \
+#define ALERT_FORMATTED_internal(Expr, DebugBreakCaller, Message, ...)                                                                          \
     if (!(Expr))                                                                                                                               \
     {                                                                                                                                          \
         LOG_ASSERTION_FORMATTED(Expr, "AlertAssertion", Message, __VA_ARGS__);                                                                 \
         UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                            \
-        UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                    \
+        DebugBreakCaller(UnexpectedErrorHandler::getHandler()->debugBreak());                                                                   \
     }
 
 #ifndef alertAlways
 #define alertAlways(Expr)                                                                                                                      \
     do                                                                                                                                         \
     {                                                                                                                                          \
-        ALERT_internal(Expr)                                                                                                                   \
+        ALERT_internal(Expr, EXPAND_ARGS)                                                                                                      \
     }                                                                                                                                          \
     while (0)
 #endif
@@ -130,7 +130,7 @@ public:
 #define alertAlwaysf(Expr, Message, ...)                                                                                                       \
     do                                                                                                                                         \
     {                                                                                                                                          \
-        ALERT_FORMATTED_internal(Expr, Message, __VA_ARGS__)                                                                                   \
+        ALERT_FORMATTED_internal(Expr, EXPAND_ARGS, Message, __VA_ARGS__)                                                                      \
     }                                                                                                                                          \
     while (0)
 #endif
@@ -139,10 +139,15 @@ public:
 #define alertOnce(Expr)                                                                                                                        \
     do                                                                                                                                         \
     {                                                                                                                                          \
+        /* We have to dump any way */                                                                                                          \
+        ALERT_internal(Expr, IGNORE_ARGS);                                                                                                     \
         CALL_ONCE(                                                                                                                             \
             [&]()                                                                                                                              \
             {                                                                                                                                  \
-                ALERT_internal(Expr)                                                                                                           \
+                if (!(Expr))                                                                                                                   \
+                {                                                                                                                              \
+                    UnexpectedErrorHandler::getHandler()->debugBreak();                                                                        \
+                }                                                                                                                              \
             }                                                                                                                                  \
         );                                                                                                                                     \
     }                                                                                                                                          \
@@ -152,10 +157,15 @@ public:
 #define alertOncef(Expr, Message, ...)                                                                                                         \
     do                                                                                                                                         \
     {                                                                                                                                          \
+        /* We have to dump any way */                                                                                                          \
+        ALERT_FORMATTED_internal(Expr, IGNORE_ARGS, Message, __VA_ARGS__);                                                                     \
         CALL_ONCE(                                                                                                                             \
             [&]()                                                                                                                              \
             {                                                                                                                                  \
-                ALERT_FORMATTED_internal(Expr, Message, __VA_ARGS__)                                                                           \
+                if (!(Expr))                                                                                                                   \
+                {                                                                                                                              \
+                    UnexpectedErrorHandler::getHandler()->debugBreak();                                                                        \
+                }                                                                                                                              \
             }                                                                                                                                  \
         );                                                                                                                                     \
     }                                                                                                                                          \

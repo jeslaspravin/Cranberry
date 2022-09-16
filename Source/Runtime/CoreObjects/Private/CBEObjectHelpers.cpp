@@ -15,6 +15,7 @@
 #include "Visitors/FieldVisitors.h"
 #include "Property/CustomProperty.h"
 #include "CoreObjectDelegates.h"
+#include "Types/Platform/Threading/CoPaT/JobSystem.h"
 
 #include <memory_resource>
 
@@ -22,6 +23,7 @@ namespace cbe
 {
 void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEClass clazz) const
 {
+    fatalAssertf(INTERNAL_isInMainThread(), "Defaults of class %s must be constructed inside main thread!", clazz->nameString);
     // Direct call to object construction routine to skip getting allocator that happens when constructing using CBEObjectConstructionPolicy
     // Default ctor
     const GlobalFunctionWrapper *ctor = PropertyHelper::findMatchingCtor<void *>(clazz);
@@ -32,10 +34,8 @@ void ObjectAllocatorBase::constructDefault(void *objPtr, AllocIdx allocIdx, CBEC
     // Object's data must be populated even before constructor is called
     INTERNAL_ObjectCoreAccessors::setAllocIdx(object, allocIdx);
     INTERNAL_ObjectCoreAccessors::getFlags(object) |= EObjectFlagBits::ObjFlag_Default | EObjectFlagBits::ObjFlag_RootObject;
-    INTERNAL_ObjectCoreAccessors::setOuterAndName(
-        object, PropertyHelper::getValidSymbolName(clazz->nameString)
-                    + TCHAR("_Default"), nullptr, clazz
-                );
+    String defaultName = PropertyHelper::getValidSymbolName(clazz->nameString) + TCHAR("_Default");
+    INTERNAL_ObjectCoreAccessors::setOuterAndName(object, defaultName, nullptr, clazz);
 
     if (ctor)
     {
@@ -47,12 +47,16 @@ void INTERNAL_destroyCBEObject(Object *obj)
 {
     CBEClass clazz = obj->getType();
 
+    fatalAssertf(INTERNAL_isInMainThread(), "Object[%s] of class %s must be destroyed inside main thread!", obj->getName(), clazz->nameString);
+
     CoreObjectDelegates::broadcastObjectDestroyed(obj);
     obj->destroyObject();
     clazz->destructor(obj);
 }
 
 void INTERNAL_createdCBEObject(Object *obj) { CoreObjectDelegates::broadcastObjectCreated(obj); }
+
+bool INTERNAL_isInMainThread() { return copat::JobSystem::get()->getCurrentThreadType() == copat::EJobThreadType::MainThread; }
 
 bool INTERNAL_validateObjectName(const String &name, CBEClass clazz)
 {

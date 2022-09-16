@@ -162,7 +162,14 @@ Transform3D Transform3D::inverse() const
     return Transform3D((invRot * (invScale * -transformTranslation)), RotationMatrix(invRot).asRotation(), invScale);
 }
 
-Transform3D Transform3D::inverseNonUniformScaled() const { return Transform3D(inverseNonUniformScaledMatrix()); }
+Transform3D Transform3D::inverseNonUniformScaled() const
+{
+    if (Math::isEqual(transformScale.x(), transformScale.y()) && Math::isEqual(transformScale.x(), transformScale.z()))
+    {
+        return inverse();
+    }
+    return Transform3D(inverseNonUniformScaledMatrix());
+}
 
 Matrix4 Transform3D::normalTransformMatrix() const
 {

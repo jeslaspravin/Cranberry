@@ -85,6 +85,10 @@ public:
 
     void cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets) final;
     void cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue) final;
+    void cmdReleaseQueueResources(
+        const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue,
+        const std::unordered_map<MemoryResourceRef, EQueueFunction> &perResourceRelease
+    ) final;
 
     void cmdBeginRenderPass(
         const GraphicsResource *cmdBuffer, const LocalPipelineContext &contextPipeline, const QuantizedBox2D &renderArea,
@@ -412,6 +416,14 @@ void RenderCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, A
 void RenderCommandList::cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue)
 {
     cmdList->cmdReleaseQueueResources(cmdBuffer, releaseToQueue);
+}
+
+void RenderCommandList::cmdReleaseQueueResources(
+    const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue,
+    const std::unordered_map<MemoryResourceRef, EQueueFunction> &perResourceRelease
+)
+{
+    cmdList->cmdReleaseQueueResources(cmdBuffer, releaseToQueue, perResourceRelease);
 }
 
 void RenderCommandList::cmdBeginRenderPass(

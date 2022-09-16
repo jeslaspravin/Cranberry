@@ -62,6 +62,7 @@ FORCE_INLINE AsType *cast(FromType *obj)
 //////////////////////////////////////////////////////////////////////////
 COREOBJECTS_EXPORT void INTERNAL_destroyCBEObject(Object *obj);
 COREOBJECTS_EXPORT void INTERNAL_createdCBEObject(Object *obj);
+COREOBJECTS_EXPORT bool INTERNAL_isInMainThread();
 COREOBJECTS_EXPORT bool INTERNAL_validateObjectName(const String &name, CBEClass clazz);
 COREOBJECTS_EXPORT String INTERNAL_getValidObjectName(const String &name, CBEClass clazz);
 FORCE_INLINE bool INTERNAL_validateCreatedObject(Object *obj) { return BIT_NOT_SET(obj->getFlags(), EObjectFlagBits::ObjFlag_Default); }
@@ -85,6 +86,9 @@ Object *INTERNAL_create(CBEClass clazz, const String &name, Object *outerObj, EO
         alertAlwaysf(false, "Invalid class type! when creating object %s", name);
         return nullptr;
     }
+
+    // Validate inside main thread
+    fatalAssertf(INTERNAL_isInMainThread(), "Instance of any class %s must be constructed inside main thread!", clazz->nameString);
 
     // If empty string then try create from class name
     String objectName = name.empty() ? clazz->nameString : name;
