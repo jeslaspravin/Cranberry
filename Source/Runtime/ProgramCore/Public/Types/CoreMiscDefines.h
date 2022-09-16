@@ -112,6 +112,8 @@
 #define MAKE_INITIALIZER(...) MAKE_INITIALIZER_internal(__VA_ARGS__)
 
 #define EXPAND_ARGS(...) __VA_ARGS__
+#define IGNORE_ARGS(...)
+
 #define FIRST(...) EXPAND_ARGS(FIRST_internal(__VA_ARGS__))
 #define TUPLE_TAIL(...) EXPAND_ARGS(TUPLE_TAIL_internal(__VA_ARGS__))
 #define VAR_COUNT(...) EXPAND_ARGS(VAR_COUNT_internal(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1))

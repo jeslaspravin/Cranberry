@@ -16,6 +16,11 @@
 #include "String/StringID.h"
 #include "Types/Containers/FlatTree.h"
 
+namespace std
+{
+class shared_mutex;
+}
+
 /**
  * CoreObjectsDB
  *
@@ -34,10 +39,39 @@ public:
         StringID sid;
     };
 
+    class SharedLockObjectsDB
+    {
+    private:
+        const CoreObjectsDB *objsDb;
+        bool bIsLocked = false;
+
+    public:
+        FORCE_INLINE SharedLockObjectsDB(const CoreObjectsDB *inDb);
+        ~SharedLockObjectsDB()
+        {
+            if (bIsLocked)
+            {
+                unlockShared();
+            }
+        }
+
+    private:
+        void lockShared() const;
+        void unlockShared() const;
+    };
+
+private:
+    using SharedLockType = std::shared_mutex;
+
     std::unordered_map<StringID, NodeIdxType> objectIdToNodeIdx;
     FlatTree<ObjectData, NodeIdxType> objectTree;
+    SharedLockType *dbLock;
 
 public:
+    CoreObjectsDB();
+    MAKE_TYPE_NONCOPY_NONMOVE(CoreObjectsDB);
+    ~CoreObjectsDB();
+
     // Removes object and all its sub-object from db
     void removeObject(StringID objectId);
     NodeIdxType addObject(StringID objectId, const ObjectData &objectData, StringID parent);
@@ -48,6 +82,8 @@ public:
 
     FORCE_INLINE bool hasObject(StringID objectId) const
     {
+        SharedLockObjectsDB scopedLock(this);
+
         auto itr = objectIdToNodeIdx.find(objectId);
         if (itr != objectIdToNodeIdx.cend())
         {
@@ -58,6 +94,8 @@ public:
     }
     FORCE_INLINE bool hasObject(NodeIdxType nodeIdx) const
     {
+        SharedLockObjectsDB scopedLock(this);
+
         if (objectTree.isValid(nodeIdx))
         {
             auto itr = objectIdToNodeIdx.find(objectTree[nodeIdx].sid);
@@ -69,6 +107,8 @@ public:
     FORCE_INLINE bool hasChild(NodeIdxType nodeidx) const { return objectTree.hasChild(nodeidx); }
     FORCE_INLINE bool hasChild(StringID objectId) const
     {
+        SharedLockObjectsDB scopedLock(this);
+
         auto itr = objectIdToNodeIdx.find(objectId);
         if (itr != objectIdToNodeIdx.cend())
         {
@@ -80,6 +120,8 @@ public:
     cbe::Object *getObject(NodeIdxType nodeidx) const;
     FORCE_INLINE cbe::Object *getObject(StringID objectId) const
     {
+        SharedLockObjectsDB scopedLock(this);
+
         auto itr = objectIdToNodeIdx.find(objectId);
         if (itr != objectIdToNodeIdx.cend())
         {
@@ -94,6 +136,8 @@ public:
     void getSubobjects(std::vector<cbe::Object *> &subobjs, NodeIdxType nodeidx) const;
     FORCE_INLINE void getSubobjects(std::vector<cbe::Object *> &subobjs, StringID objectId) const
     {
+        SharedLockObjectsDB scopedLock(this);
+
         auto itr = objectIdToNodeIdx.find(objectId);
         if (itr != objectIdToNodeIdx.cend())
         {
@@ -103,10 +147,26 @@ public:
     void getChildren(std::vector<cbe::Object *> &children, NodeIdxType nodeidx) const;
     FORCE_INLINE void getChildren(std::vector<cbe::Object *> &children, StringID objectId) const
     {
+        SharedLockObjectsDB scopedLock(this);
+
         auto itr = objectIdToNodeIdx.find(objectId);
         if (itr != objectIdToNodeIdx.cend())
         {
             getChildren(children, itr->second);
         }
     }
+
+private:
+    FORCE_INLINE bool isMainThread() const;
 };
+
+FORCE_INLINE CoreObjectsDB::SharedLockObjectsDB::SharedLockObjectsDB(const CoreObjectsDB *inDb)
+    : objsDb(inDb)
+    , bIsLocked(false)
+{
+    if (!objsDb->isMainThread())
+    {
+        bIsLocked = true;
+        lockShared();
+    }
+}

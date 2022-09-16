@@ -11,9 +11,13 @@
 
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 
-ShaderBufferField::ShaderBufferField(const TChar *pName)
+ShaderBufferField::ShaderBufferField(const TChar *pName, FieldDecorationFlags decorations)
     : paramName(pName)
-{}
+    , fieldDecorations(decorations)
+{
+    alertOncef(NO_BITS_SET(decorations, INFERRED_DECO_FLAGS), "Inferred decoration flags cannot be explicitly set");
+    CLEAR_BITS(fieldDecorations, INFERRED_DECO_FLAGS);
+}
 
 ShaderVertexField::ShaderVertexField(const TChar *attribName, const uint32 &offsetVal)
     : attributeName(attribName)

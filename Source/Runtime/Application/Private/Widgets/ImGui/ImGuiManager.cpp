@@ -374,6 +374,8 @@ void ImGuiManager::updateTextureParameters()
         {
             if (activeTextureParams.find(itr->second) == activeTextureParams.cend())
             {
+                // FIXME(Jeslas) : If user action leads to this parameter being reset faster than cmd buffer ends this will trigger shader param
+                // update before used in cmd finished
                 itr->second->setTextureParam(TEXTURE_PARAM_NAME, GlobalBuffers::dummyWhite2D());
                 freeTextureParams.push(itr->second);
                 itr = textureParams.erase(itr);

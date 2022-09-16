@@ -1701,7 +1701,19 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, A
 
 void VulkanCommandList::cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue)
 {
-    EQueueFunction currentQueue = cmdBufferManager.getCmdBufferQueue(cmdBuffer);
+    cmdReleaseQueueResources(cmdBuffer, releaseToQueue, {});
+}
+
+void VulkanCommandList::cmdReleaseQueueResources(
+    const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue,
+    const std::unordered_map<MemoryResourceRef, EQueueFunction> &perResourceRelease
+)
+{
+    const EQueueFunction currentQueue = cmdBufferManager.getCmdBufferQueue(cmdBuffer);
+    const uint32 qFamilyIdx = cmdBufferManager.getQueueFamilyIdx(currentQueue);
+
+    const uint32 defaultReleaseToIdx = cmdBufferManager.getQueueFamilyIdx(releaseToQueue);
+
     std::map<MemoryResourceRef, VulkanResourcesTracker::ResourceQueueTransferInfo> resToQRelease
         = resourcesTracker.getReleasesFromQueue(currentQueue);
 
@@ -1710,6 +1722,11 @@ void VulkanCommandList::cmdReleaseQueueResources(const GraphicsResource *cmdBuff
 
     for (const std::pair<const MemoryResourceRef, VulkanResourcesTracker::ResourceQueueTransferInfo> &res : resToQRelease)
     {
+        auto resQReleaseOverride = perResourceRelease.find(res.first);
+        const uint32 dstQFamilyIdx = resQReleaseOverride != perResourceRelease.cend()
+                                         ? cmdBufferManager.getQueueFamilyIdx(resQReleaseOverride->second)
+                                         : defaultReleaseToIdx;
+
         if (res.first->getType()->isChildOf<ImageResource>())
         {
             IMAGE_MEMORY_BARRIER2(imgBarrier);
@@ -1717,9 +1734,9 @@ void VulkanCommandList::cmdReleaseQueueResources(const GraphicsResource *cmdBuff
             imgBarrier.srcStageMask = res.second.srcStages;
             imgBarrier.oldLayout = res.second.srcLayout;
 
-            imgBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(currentQueue);
+            imgBarrier.srcQueueFamilyIndex = qFamilyIdx;
 
-            imgBarrier.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(releaseToQueue);
+            imgBarrier.dstQueueFamilyIndex = dstQFamilyIdx;
             // imgBarrier.dstStageMask = // What will be here?
             // imgBarrier.dstAccessMask // can be skipped
             imgBarrier.newLayout = determineImageLayout(res.first);
@@ -1736,9 +1753,9 @@ void VulkanCommandList::cmdReleaseQueueResources(const GraphicsResource *cmdBuff
             memBarrier.srcAccessMask = res.second.srcAccessMask;
             memBarrier.srcStageMask = res.second.srcStages;
 
-            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(currentQueue);
+            memBarrier.srcQueueFamilyIndex = qFamilyIdx;
 
-            memBarrier.dstQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(releaseToQueue);
+            memBarrier.dstQueueFamilyIndex = dstQFamilyIdx;
             // memBarrier.dstStageMask = // What will be here?
             // memBarrier.dstAccessMask // can be skipped
 
