@@ -123,17 +123,30 @@ void JobSystem::shutdown()
 void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread /*= EJobThreadType::WorkerThreads*/)
 {
     PerThreadData *threadData = getPerThreadData();
-    COPAT_ASSERT(threadData);
 
     if (enqueueToThread == EJobThreadType::MainThread)
     {
-        mainThreadJobs.enqueue(coro.address(), threadData->mainEnqToken);
+        if (threadData)
+        {
+            mainThreadJobs.enqueue(coro.address(), threadData->mainEnqToken);
+        }
+        else
+        {
+            mainThreadJobs.enqueue(coro.address());
+        }
     }
     else if (enqueueToThread == EJobThreadType::WorkerThreads)
     {
         COPAT_ASSERT(!workersFinishedEvent.try_wait());
 
-        workerJobs.enqueue(coro.address(), threadData->workerEnqDqToken);
+        if (threadData)
+        {
+            workerJobs.enqueue(coro.address(), threadData->workerEnqDqToken);
+        }
+        else
+        {
+            workerJobs.enqueue(coro.address());
+        }
         // We do not have to be very strict here as long as one or two is free and we get 0 or nothing is free and we release one or two
         // more it is fine
         if (availableWorkersCount.load(std::memory_order::relaxed) != 0)
@@ -143,7 +156,14 @@ void JobSystem::enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueT
     }
     else
     {
-        specialThreadsPool.enqueueJob(coro, enqueueToThread, threadData->specialThreadTokens);
+        if (threadData)
+        {
+            specialThreadsPool.enqueueJob(coro, enqueueToThread, threadData->specialThreadTokens);
+        }
+        else
+        {
+            specialThreadsPool.enqueueJob(coro, enqueueToThread, nullptr);
+        }
     }
 }
 

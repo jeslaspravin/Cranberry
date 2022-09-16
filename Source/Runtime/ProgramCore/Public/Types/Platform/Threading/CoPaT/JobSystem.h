@@ -85,9 +85,16 @@ public:
     void enqueueJob(std::coroutine_handle<> coro, EJobThreadType enqueueToThread, SpecialQHazardToken *fromThreadTokens)
     {
         // We must not enqueue at shutdown
-        COPAT_ASSERT(fromThreadTokens && !allSpecialsFinishedEvent.try_wait());
+        COPAT_ASSERT(!allSpecialsFinishedEvent.try_wait());
         const u32 idx = threadTypeToIdx(enqueueToThread);
-        specialQueues[idx].enqueue(coro.address(), fromThreadTokens[idx]);
+        if (fromThreadTokens)
+        {
+            specialQueues[idx].enqueue(coro.address(), fromThreadTokens[idx]);
+        }
+        else
+        {
+            specialQueues[idx].enqueue(coro.address());
+        }
 
         specialJobEvents[idx].notify();
     }
@@ -209,8 +216,14 @@ public:
     EJobThreadType getCurrentThreadType() const
     {
         PerThreadData *tlData = getPerThreadData();
-        COPAT_ASSERT(tlData);
-        return tlData->threadType;
+        if (tlData == nullptr)
+        {
+            return EJobThreadType::MaxThreads;
+        }
+        else
+        {
+            return tlData->threadType;
+        }
     }
     u32 getWorkersCount() const { return workersCount; }
     u32 getTotalThreadsCount() const { return workersCount + SpecialThreadsPoolType::COUNT + 1; }
