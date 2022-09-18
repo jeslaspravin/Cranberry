@@ -104,6 +104,7 @@ struct ENGINERENDERER_EXPORT ShaderBufferField
     // the pointer itself(not the pointer to pointer) Element size individual element size in array and
     // will be same as type size in non array
     virtual void *fieldData(void *outerPtr, uint32 *outTypeSize, uint32 *outElementSize) const = 0;
+    virtual const void *fieldData(const void *outerPtr, uint32 *outTypeSize, uint32 *outElementSize) const = 0;
     // returns Pointer to field, if array then pointer to 1st element, If pointer then pointer to pointer
     virtual void *fieldPtr(void *outerPtr) const = 0;
     FORCE_INLINE bool isIndexAccessible() const
@@ -135,7 +136,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
     using ShaderBufferTypedField<OuterType>::paramInfo;
     using ShaderBufferTypedField<OuterType>::size;
     using ShaderBufferTypedField<OuterType>::stride;
-    using ArrayType = IndexableElementType<MemberType>;
+    using ArrayElementType = IndexableElementType<MemberType>;
 
     using FieldPtr = ClassMemberField<false, OuterType, MemberType>;
     FieldPtr memberPtr;
@@ -149,10 +150,10 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
             |= std::is_pointer_v<MemberType> ? (EShaderBufferFieldDecorations::IsArray | EShaderBufferFieldDecorations::IsPointer) : 0;
 
         size = ConditionalValue_v<uint32, uint32, std::is_pointer<MemberType>, 0u, sizeof(MemberType)>;
-        stride = sizeof(ArrayType);
+        stride = sizeof(ArrayElementType);
     }
 
-    constexpr static uint32 totalArrayElements() { return sizeof(MemberType) / sizeof(ArrayType); }
+    constexpr static uint32 totalArrayElements() { return sizeof(MemberType) / sizeof(ArrayElementType); }
 
     template <Indexable DataType>
     constexpr static IndexableElementType<DataType> *memberDataPtr(DataType &data)
@@ -167,6 +168,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         return &data;
     }
 
+    /* ShaderBufferField overrides */
     bool setFieldData(void *outerPtr, const std::any &newValue) const override
     {
         OuterType *castOuterPtr = reinterpret_cast<OuterType *>(outerPtr);
@@ -179,38 +181,36 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         }
         return false;
     }
-
     bool setFieldDataArray(void *outerPtr, const std::any &newValuesPtr) const override
     {
         OuterType *castOuterPtr = reinterpret_cast<OuterType *>(outerPtr);
-        ArrayView<ArrayType> const *newValuesViewPtr = std::any_cast<ArrayView<ArrayType>>(&newValuesPtr);
+        ArrayView<ArrayElementType> const *newValuesViewPtr = std::any_cast<ArrayView<ArrayElementType>>(&newValuesPtr);
 
         if (ShaderBufferTypedField<OuterType>::isIndexAccessible() && newValuesViewPtr != nullptr && newValuesViewPtr->data() != nullptr)
         {
-            const ArrayType *newValues = newValuesViewPtr->data();
+            const ArrayElementType *newValues = newValuesViewPtr->data();
             if constexpr (std::is_pointer_v<MemberType>)
             {
                 if (memberPtr.get(castOuterPtr) != nullptr)
                 {
-                    ArrayType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
-                    memcpy(toValues, newValues, sizeof(ArrayType) * newValuesViewPtr->size());
+                    ArrayElementType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+                    memcpy(toValues, newValues, sizeof(ArrayElementType) * newValuesViewPtr->size());
                     return true;
                 }
             }
             else
             {
-                ArrayType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
-                memcpy(toValues, newValues, Math::min(sizeof(MemberType), sizeof(ArrayType) * newValuesViewPtr->size()));
+                ArrayElementType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+                memcpy(toValues, newValues, Math::min(sizeof(MemberType), sizeof(ArrayElementType) * newValuesViewPtr->size()));
                 return true;
             }
         }
         return false;
     }
-
     bool setFieldDataArray(void *outerPtr, const std::any &newValue, uint32 arrayIndex) const override
     {
         OuterType *castOuterPtr = reinterpret_cast<OuterType *>(outerPtr);
-        const ArrayType *newValuePtr = std::any_cast<ArrayType>(&newValue);
+        const ArrayElementType *newValuePtr = std::any_cast<ArrayElementType>(&newValue);
 
         bool bCanSet = false;
         if constexpr (Indexable<MemberType>)
@@ -226,7 +226,7 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         }
         if (bCanSet)
         {
-            ArrayType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
+            ArrayElementType *toValues = memberDataPtr(memberPtr.get(castOuterPtr));
             (toValues)[arrayIndex] = *newValuePtr;
             return true;
         }
@@ -241,13 +241,25 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         }
         if (outElementSize)
         {
-            (*outElementSize) = sizeof(ArrayType);
+            (*outElementSize) = sizeof(ArrayElementType);
         }
         return memberDataPtr(memberPtr.get(reinterpret_cast<OuterType *>(outerPtr)));
     }
-
+    const void *fieldData(const void *outerPtr, uint32 *outTypeSize, uint32 *outElementSize) const override
+    {
+        if (outTypeSize)
+        {
+            (*outTypeSize) = sizeof(MemberType);
+        }
+        if (outElementSize)
+        {
+            (*outElementSize) = sizeof(ArrayElementType);
+        }
+        return memberDataPtr(memberPtr.get(reinterpret_cast<const OuterType *>(outerPtr)));
+    }
     void *fieldPtr(void *outerPtr) const override { return &memberPtr.get(reinterpret_cast<OuterType *>(outerPtr)); }
 
+    /* ShaderBufferTypedField<OuterType> overrides */
     const void *fieldData(const OuterType *outerPtr, uint32 *outTypeSize, uint32 *outElementSize) const override
     {
         if (outTypeSize)
@@ -256,10 +268,11 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
         }
         if (outElementSize)
         {
-            (*outElementSize) = sizeof(ArrayType);
+            (*outElementSize) = sizeof(ArrayElementType);
         }
         return memberDataPtr(memberPtr.get(outerPtr));
     }
+    /* overrides ends */
 };
 
 template <typename OuterType, typename MemberType>

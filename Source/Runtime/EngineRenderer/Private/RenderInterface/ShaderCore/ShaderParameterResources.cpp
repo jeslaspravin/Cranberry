@@ -793,14 +793,14 @@ void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minSize)
         BufferParametersData::BufferParameter &paramField = paramFieldItr->second;
         const ShaderBufferField *bufferInfoField = paramField.bufferField;
 
-        if (bufferData.runtimeArray->currentSize < minSize)
+        if (bufferData.runtimeArray->currentCount < minSize)
         {
             const uint32 &dataStride = BIT_SET(paramField.bufferField->fieldDecorations, ShaderBufferField::IsStruct)
                                            ? paramField.bufferField->paramInfo->paramNativeStride()
                                            : paramField.bufferField->stride;
             const uint32 newArraySize = Math::toHigherPowOf2(minSize * dataStride);
             bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(newArraySize);
-            bufferData.runtimeArray->currentSize = uint32(Math::floor(newArraySize / float(dataStride)));
+            bufferData.runtimeArray->currentCount = uint32(Math::floor(newArraySize / float(dataStride)));
 
             // Set buffer ptr and regenerate buffer param maps
             (*reinterpret_cast<void **>(paramField.bufferField->fieldPtr(paramField.outerPtr)))
@@ -820,7 +820,7 @@ void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minSize)
 
                     // Since only storage can be runtime array
                     bufferData.gpuBuffer = graphicsHelper->createWriteOnlyBuffer(
-                        graphicsInstance, bufferData.runtimeArray->offset + bufferData.runtimeArray->currentSize * gpuDataStride
+                        graphicsInstance, bufferData.runtimeArray->offset + bufferData.runtimeArray->currentCount * gpuDataStride
                     );
                     bufferData.gpuBuffer->setResourceName(
                         bufferNameString + TCHAR("_") + bufferInfoField->paramName.toString() + TCHAR("_RuntimeSoA"));
@@ -863,6 +863,89 @@ std::pair<const ShaderParameters::BufferParametersData *, const ShaderParameters
     return retVal;
 }
 
+void *ShaderParameters::getOuterPtrForPath(
+    std::vector<const BufferParametersData::BufferParameter *> &outInnerBufferParams, ArrayView<const StringID> pathNames,
+    ArrayView<const uint32> indices
+) const
+{
+    debugAssertf(indices.front() == 0, "Indexing bound buffer itself is not supported right now!");
+
+    auto shaderBufferItr = shaderBuffers.find(pathNames.front());
+    if (shaderBufferItr == shaderBuffers.cend())
+    {
+        LOG_ERROR("ShaderParameters", "Cannot find bounding buffer param %s!", pathNames.front());
+        return nullptr;
+    }
+    const BufferParametersData &boundBufferData = shaderBufferItr->second;
+    // -1 since 0th pathNames is just boundBufferData
+    outInnerBufferParams.resize(pathNames.size() - 1);
+    for (uint32 i = pathNames.size() - 1; i != 1; --i)
+    {
+        auto itr = boundBufferData.bufferParams.find(pathNames[i]);
+        if (itr != boundBufferData.bufferParams.cend() && pathNames[i - 1] == itr->second.outerName) [[likely]]
+        {
+            outInnerBufferParams[i - 1] = &itr->second;
+        }
+        else
+        {
+            LOG_ERROR("ShaderParameters", "Invalid pathNames[%s is not outer of %s]", pathNames[i - 1], pathNames[i]);
+            return nullptr;
+        }
+        const BufferParametersData::BufferParameter *bufferParam = outInnerBufferParams[i - 1];
+
+        debugAssertf(!bufferParam->bufferField->isPointer(), "Immediate inners of bound buffer can alone be a runtime resizable array");
+        // If invalid index return false as well
+        if (bufferParam->bufferField->isIndexAccessible() && indices[i] >= (bufferParam->bufferField->size / bufferParam->bufferField->stride))
+            [[unlikely]]
+        {
+            LOG_ERROR(
+                "ShaderParameters", "Invalid index %u max size %u for param field %s", indices[i],
+                (bufferParam->bufferField->size / bufferParam->bufferField->stride), pathNames[i]
+            );
+            return nullptr;
+        }
+    }
+#if DEBUG_BUILD
+    fatalAssertf(
+        BIT_NOT_SET(outInnerBufferParams.back()->bufferField->fieldDecorations, ShaderBufferField::IsStruct),
+        "Cannot set buffer %s using setFieldAtPath", pathNames.back()
+    );
+    for (int32 i = outInnerBufferParams.size() - 1; i >= 0; --i)
+    {
+        fatalAssertf(
+            BIT_SET(outInnerBufferParams[i]->bufferField->fieldDecorations, ShaderBufferField::IsStruct),
+            "Path to field is invalid![%s is not a struct]", pathNames[i + 1]
+        );
+    }
+#endif
+    // If we are here then path is valid, get subfield of boundBufferData
+    outInnerBufferParams[0] = &boundBufferData.bufferParams.find(pathNames[1])->second;
+    if (outInnerBufferParams[0]->bufferField->isIndexAccessible()) [[likely]]
+    {
+        uint32 maxCount = outInnerBufferParams[0]->bufferField->isPointer()
+                              ? boundBufferData.runtimeArray->currentCount
+                              : (outInnerBufferParams[0]->bufferField->size / outInnerBufferParams[0]->bufferField->stride);
+        if (indices[1] >= maxCount) [[unlikely]]
+        {
+            LOG_ERROR("ShaderParameters", "Invalid index %u max size %u for param field %s", indices[1], maxCount, pathNames[1]);
+            return nullptr;
+        }
+    }
+
+    // Do not have to handle runtime parameter separately as it will be last entry and There is no support for dynamic runtime array inside one
+    // Now offset the outerPtr value of param field we are looking for
+    UPtrInt paramOuterPtr = (UPtrInt)(outInnerBufferParams.back()->outerPtr);
+    for (uint32 i = 0; i != (outInnerBufferParams.size() - 1); ++i)
+    {
+        if (outInnerBufferParams[i]->bufferField->isIndexAccessible())
+        {
+            paramOuterPtr += indices[i + 1] * outInnerBufferParams[i]->bufferField->paramInfo->paramNativeStride();
+        }
+    }
+
+    return (void *)(paramOuterPtr);
+}
+
 template <typename FieldType>
 bool ShaderParameters::setFieldParam(StringID paramName, const FieldType &value, uint32 index)
 {
@@ -876,7 +959,7 @@ bool ShaderParameters::setFieldParam(StringID paramName, const FieldType &value,
     {
         if (foundInfo.second->bufferField->isIndexAccessible())
         {
-            if (!foundInfo.second->bufferField->isPointer() || (foundInfo.first->runtimeArray->currentSize > index))
+            if (!foundInfo.second->bufferField->isPointer() || (foundInfo.first->runtimeArray->currentCount > index))
             {
                 bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, value, index);
                 updateVal.index = index;
@@ -917,7 +1000,7 @@ bool ShaderParameters::setFieldParam(StringID paramName, StringID bufferName, co
         {
             if (bufferParamItr->second.bufferField->isIndexAccessible())
             {
-                if (!bufferParamItr->second.bufferField->isPointer() || (bufferParamsItr->second.runtimeArray->currentSize > index))
+                if (!bufferParamItr->second.bufferField->isPointer() || (bufferParamsItr->second.runtimeArray->currentCount > index))
                 {
                     bValueSet = bufferParamItr->second.bufferField->setFieldDataArray(bufferParamItr->second.outerPtr, value, index);
                     updateVal.index = index;
@@ -941,20 +1024,61 @@ bool ShaderParameters::setFieldParam(StringID paramName, StringID bufferName, co
 }
 
 template <typename FieldType>
+bool ShaderParameters::setFieldAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const FieldType &value)
+{
+    // 1 or 2 can be set using setFieldParam
+    if (pathNames.size() == 1)
+    {
+        return setFieldParam(pathNames[0], value, indices[0]);
+    }
+    else if (pathNames.size() == 2)
+    {
+        return setFieldParam(pathNames[1], pathNames[0], value, indices[1]);
+    }
+    else if (pathNames.size() == 0) [[unlikely]]
+    {
+        LOG_ERROR("ShaderParameters", "Setting field at path without valid parameters!");
+        return false;
+    }
+
+    std::vector<const BufferParametersData::BufferParameter *> innerBufferParams;
+    void *paramOuterPtr = getOuterPtrForPath(innerBufferParams, pathNames, indices);
+    if (paramOuterPtr && innerBufferParams.back()->bufferField->setFieldDataArray(paramOuterPtr, value, indices.back()))
+    {
+        // Mark the first non zero indexed parameter field/buffer for update, This is because only one index value can be updated
+        // BufferParameterUpdate::index has to cover the entire struct that contains the edited field
+        for (uint32 i = 0; i != innerBufferParams.size(); ++i)
+        {
+            if (indices[i + 1] != 0 && innerBufferParams[i]->bufferField->isIndexAccessible())
+            {
+                bufferUpdates.emplace_back(pathNames[0], pathNames[i + 1], indices[i + 1]);
+                break;
+            }
+        }
+        return true;
+    }
+    else
+    {
+        LOG_ERROR("ShaderParameters", "Failed to set %s parameter", pathNames.back());
+    }
+    return false;
+}
+
+template <typename FieldType>
 FieldType ShaderParameters::getFieldParam(StringID paramName, uint32 index) const
 {
     StringID bufferName;
     std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *> foundInfo = findBufferParam(bufferName, paramName);
     // Only if accessible
     if (foundInfo.first && foundInfo.second && BIT_NOT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct)
-        && (!foundInfo.second->bufferField->isPointer() || foundInfo.first->runtimeArray->currentSize > index))
+        && (!foundInfo.second->bufferField->isPointer() || foundInfo.first->runtimeArray->currentCount > index))
     {
         uint32 fieldTypeSize;
-        void *dataPtr = foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, &fieldTypeSize);
+        const void *dataPtr = foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, &fieldTypeSize);
         if (sizeof(FieldType) == fieldTypeSize)
         {
             uint32 idx = foundInfo.second->bufferField->isIndexAccessible() ? index : 0;
-            return reinterpret_cast<FieldType *>(dataPtr)[idx];
+            return reinterpret_cast<const FieldType *>(dataPtr)[idx];
         }
     }
     else
@@ -977,20 +1101,53 @@ FieldType ShaderParameters::getFieldParam(StringID paramName, StringID bufferNam
         auto bufferParamItr = bufferParamsItr->second.bufferParams.find(paramName);
         if (bufferParamItr != bufferParamsItr->second.bufferParams.end()
             && BIT_NOT_SET(bufferParamItr->second.bufferField->fieldDecorations, ShaderBufferField::IsStruct)
-            && (!bufferParamItr->second.bufferField->isPointer() || bufferParamsItr->second.runtimeArray->currentSize > index))
+            && (!bufferParamItr->second.bufferField->isPointer() || bufferParamsItr->second.runtimeArray->currentCount > index))
         {
             uint32 fieldTypeSize;
-            void *dataPtr = bufferParamItr->second.bufferField->fieldData(bufferParamItr->second.outerPtr, nullptr, &fieldTypeSize);
+            const void *dataPtr = bufferParamItr->second.bufferField->fieldData(bufferParamItr->second.outerPtr, nullptr, &fieldTypeSize);
             if (sizeof(FieldType) == fieldTypeSize)
             {
                 uint32 idx = bufferParamItr->second.bufferField->isIndexAccessible() ? index : 0;
-                return reinterpret_cast<FieldType *>(dataPtr)[idx];
+                return reinterpret_cast<const FieldType *>(dataPtr)[idx];
             }
         }
     }
     else
     {
         LOG_ERROR("ShaderParameters", "Cannot get %s[%d] of %s", paramName, index, bufferName);
+    }
+    return FieldType(0);
+}
+
+template <typename FieldType>
+FieldType ShaderParameters::getFieldAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+{
+    // 1 or 2 can be set using getFieldParam
+    if (pathNames.size() == 1)
+    {
+        return getFieldParam<FieldType>(pathNames[0], indices[0]);
+    }
+    else if (pathNames.size() == 2)
+    {
+        return getFieldParam<FieldType>(pathNames[1], pathNames[0], indices[1]);
+    }
+    else if (pathNames.size() == 0) [[unlikely]]
+    {
+        LOG_ERROR("ShaderParameters", "Getting field at path without valid parameters!");
+        return FieldType(0);
+    }
+
+    std::vector<const BufferParametersData::BufferParameter *> innerBufferParams;
+    const void *paramOuterPtr = getOuterPtrForPath(innerBufferParams, pathNames, indices);
+    if (paramOuterPtr)
+    {
+        uint32 fieldTypeSize;
+        const void *dataPtr = innerBufferParams.back()->bufferField->fieldData(paramOuterPtr, nullptr, &fieldTypeSize);
+        if (sizeof(FieldType) == fieldTypeSize)
+        {
+            uint32 idx = innerBufferParams.back()->bufferField->isIndexAccessible() ? indices.back() : 0;
+            return reinterpret_cast<const FieldType *>(dataPtr)[idx];
+        }
     }
     return FieldType(0);
 }
@@ -1044,6 +1201,36 @@ bool ShaderParameters::setMatrixParam(StringID paramName, StringID bufferName, c
 bool ShaderParameters::setMatrixParam(StringID paramName, const Matrix4 &value, uint32 index /* = 0 */)
 {
     return setFieldParam(paramName, value, index);
+}
+
+bool ShaderParameters::setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, int32 value)
+{
+    return setFieldAtPath(pathNames, indices, value);
+}
+
+bool ShaderParameters::setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, uint32 value)
+{
+    return setFieldAtPath(pathNames, indices, value);
+}
+
+bool ShaderParameters::setFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, float value)
+{
+    return setFieldAtPath(pathNames, indices, value);
+}
+
+bool ShaderParameters::setVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector2D &value)
+{
+    return setFieldAtPath(pathNames, indices, value);
+}
+
+bool ShaderParameters::setVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector4D &value)
+{
+    return setFieldAtPath(pathNames, indices, value);
+}
+
+bool ShaderParameters::setMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Matrix4 &value)
+{
+    return setFieldAtPath(pathNames, indices, value);
 }
 
 bool ShaderParameters::setBufferResource(StringID bufferName, BufferResourceRef buffer)
@@ -1168,6 +1355,36 @@ Matrix4 ShaderParameters::getMatrixParam(StringID paramName, uint32 index /* = 0
 Matrix4 ShaderParameters::getMatrixParam(StringID paramName, StringID bufferName, uint32 index /* = 0 */) const
 {
     return getFieldParam<Matrix4>(paramName, index);
+}
+
+int32 ShaderParameters::getIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+{
+    return getFieldAtPath<int32>(pathNames, indices);
+}
+
+uint32 ShaderParameters::getUintAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+{
+    return getFieldAtPath<int32>(pathNames, indices);
+}
+
+float ShaderParameters::getFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+{
+    return getFieldAtPath<int32>(pathNames, indices);
+}
+
+Vector2D ShaderParameters::getVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+{
+    return getFieldAtPath<Vector2D>(pathNames, indices);
+}
+
+Vector4D ShaderParameters::getVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+{
+    return getFieldAtPath<Vector4D>(pathNames, indices);
+}
+
+Matrix4 ShaderParameters::getMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const
+{
+    return getFieldAtPath<Matrix4>(pathNames, indices);
 }
 
 BufferResourceRef ShaderParameters::getBufferResource(StringID paramName)

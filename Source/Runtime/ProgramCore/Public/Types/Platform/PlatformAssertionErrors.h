@@ -43,7 +43,7 @@ public:
 #define debugAssert(Expr)                                                                                                                      \
     do                                                                                                                                         \
     {                                                                                                                                          \
-        if (!(Expr))                                                                                                                           \
+        if (!(Expr)) [[unlikely]]                                                                                                              \
         {                                                                                                                                      \
             LOG_ASSERTION(Expr, "DebugAssertion");                                                                                             \
             UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                        \
@@ -59,7 +59,7 @@ public:
 #define debugAssertf(Expr, Message, ...)                                                                                                       \
     do                                                                                                                                         \
     {                                                                                                                                          \
-        if (!(Expr))                                                                                                                           \
+        if (!(Expr)) [[unlikely]]                                                                                                              \
         {                                                                                                                                      \
             LOG_ASSERTION_FORMATTED(Expr, "DebugAssertion", Message, __VA_ARGS__);                                                             \
             UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                        \
@@ -79,7 +79,7 @@ public:
 #define fatalAssert(Expr)                                                                                                                      \
     do                                                                                                                                         \
     {                                                                                                                                          \
-        if (!(Expr))                                                                                                                           \
+        if (!(Expr)) [[unlikely]]                                                                                                              \
         {                                                                                                                                      \
             LOG_ASSERTION(Expr, "FatalAssertion");                                                                                             \
             UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                \
@@ -92,7 +92,7 @@ public:
 #define fatalAssertf(Expr, Message, ...)                                                                                                       \
     do                                                                                                                                         \
     {                                                                                                                                          \
-        if (!(Expr))                                                                                                                           \
+        if (!(Expr)) [[unlikely]]                                                                                                              \
         {                                                                                                                                      \
             LOG_ASSERTION_FORMATTED(Expr, "FatalAssertion", Message, __VA_ARGS__);                                                             \
             UnexpectedErrorHandler::getHandler()->debugBreak();                                                                                \
@@ -102,20 +102,20 @@ public:
     while (0)
 #endif
 
-#define ALERT_internal(Expr, DebugBreakCaller)                                                                                                  \
-    if (!(Expr))                                                                                                                               \
+#define ALERT_internal(Expr, DebugBreakCaller)                                                                                                 \
+    if (!(Expr)) [[unlikely]]                                                                                                                  \
     {                                                                                                                                          \
         LOG_ASSERTION(Expr, "AlertAssertion");                                                                                                 \
         UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                            \
-        DebugBreakCaller(UnexpectedErrorHandler::getHandler()->debugBreak());                                                                   \
+        DebugBreakCaller(UnexpectedErrorHandler::getHandler()->debugBreak());                                                                  \
     }
 
-#define ALERT_FORMATTED_internal(Expr, DebugBreakCaller, Message, ...)                                                                          \
-    if (!(Expr))                                                                                                                               \
+#define ALERT_FORMATTED_internal(Expr, DebugBreakCaller, Message, ...)                                                                         \
+    if (!(Expr)) [[unlikely]]                                                                                                                  \
     {                                                                                                                                          \
         LOG_ASSERTION_FORMATTED(Expr, "AlertAssertion", Message, __VA_ARGS__);                                                                 \
         UnexpectedErrorHandler::getHandler()->dumpCallStack(false);                                                                            \
-        DebugBreakCaller(UnexpectedErrorHandler::getHandler()->debugBreak());                                                                   \
+        DebugBreakCaller(UnexpectedErrorHandler::getHandler()->debugBreak());                                                                  \
     }
 
 #ifndef alertAlways
@@ -144,7 +144,7 @@ public:
         CALL_ONCE(                                                                                                                             \
             [&]()                                                                                                                              \
             {                                                                                                                                  \
-                if (!(Expr))                                                                                                                   \
+                if (!(Expr)) [[unlikely]]                                                                                                      \
                 {                                                                                                                              \
                     UnexpectedErrorHandler::getHandler()->debugBreak();                                                                        \
                 }                                                                                                                              \
@@ -162,7 +162,7 @@ public:
         CALL_ONCE(                                                                                                                             \
             [&]()                                                                                                                              \
             {                                                                                                                                  \
-                if (!(Expr))                                                                                                                   \
+                if (!(Expr)) [[unlikely]]                                                                                                      \
                 {                                                                                                                              \
                     UnexpectedErrorHandler::getHandler()->debugBreak();                                                                        \
                 }                                                                                                                              \

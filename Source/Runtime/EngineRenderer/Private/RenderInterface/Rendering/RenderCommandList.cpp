@@ -1049,4 +1049,98 @@ void IRenderCommandList::cmdBindDescriptorsSets(
     }
 }
 
+void IRenderCommandList::recordCopyToBuffer(
+    std::vector<BatchCopyBufferData> &recordTo, BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy,
+    const ShaderBufferParamInfo *bufferFields
+)
+{
+    for (const ShaderBufferField *bufferField : *bufferFields)
+    {
+        BatchCopyBufferData copyData;
+        copyData.dst = dst;
+        copyData.dstOffset = dstOffset + bufferField->offset;
+        copyData.dataToCopy = bufferField->fieldData(dataToCopy, &copyData.size, nullptr);
+        recordTo.push_back(copyData);
+    }
+}
+
+bool ShaderParameters::setBuffer(StringID paramName, const void *bufferValue, uint32 index /*= 0*/)
+{
+    bool bValueSet = false;
+    auto bufferDataItr = shaderBuffers.find(paramName);
+
+    if (bufferDataItr == shaderBuffers.end())
+    {
+        StringID bufferName;
+        std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *> foundInfo
+            = findBufferParam(bufferName, paramName);
+        if (foundInfo.first && foundInfo.second && BIT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct)
+            && (!foundInfo.second->bufferField->isPointer() || foundInfo.first->runtimeArray->currentCount > index))
+        {
+            if (foundInfo.second->bufferField->isIndexAccessible())
+            {
+                if (bValueSet = foundInfo.second->bufferField->setFieldDataArray(foundInfo.second->outerPtr, bufferValue, index))
+                {
+                    genericUpdates.emplace_back(
+                        [foundInfo, index](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
+                        {
+                            const uint32 bufferNativeStride = foundInfo.second->bufferField->paramInfo->paramNativeStride();
+                            void *bufferPtr = foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr);
+                            cmdList->recordCopyToBuffer(
+                                *paramOut.bufferUpdates, foundInfo.first->gpuBuffer,
+                                foundInfo.second->bufferField->offset + (index * foundInfo.second->bufferField->stride),
+                                (void *)(UPtrInt(bufferPtr) + (bufferNativeStride * index)), foundInfo.second->bufferField->paramInfo
+                            );
+                        }
+                    );
+                }
+            }
+            else if (bValueSet = foundInfo.second->bufferField->setFieldData(foundInfo.second->outerPtr, bufferValue))
+            {
+                genericUpdates.emplace_back(
+                    [foundInfo](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
+                    {
+                        cmdList->recordCopyToBuffer(
+                            *paramOut.bufferUpdates, foundInfo.first->gpuBuffer, foundInfo.second->bufferField->offset,
+                            foundInfo.second->bufferField->fieldData(foundInfo.second->outerPtr, nullptr, nullptr),
+                            foundInfo.second->bufferField->paramInfo
+                        );
+                    }
+                );
+            }
+        }
+        else
+        {
+            LOG_ERROR("ShaderParameters", "Cannot set %s[%d] of %s", paramName, index, bufferName);
+        }
+    }
+    else
+    {
+        BufferParametersData *bufferDataPtr = &bufferDataItr->second;
+        bValueSet = !bufferDataPtr->runtimeArray.has_value();
+        if (bValueSet)
+        {
+            const uint32 bufferNativeStride = bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride();
+            CBEMemory::memCopy(bufferDataPtr->cpuBuffer, bufferValue, bufferNativeStride);
+            genericUpdates.emplace_back(
+                [bufferDataPtr](ParamUpdateLambdaOut &paramOut, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance)
+                {
+                    cmdList->recordCopyToBuffer(
+                        *paramOut.bufferUpdates, bufferDataPtr->gpuBuffer, 0, bufferDataPtr->cpuBuffer,
+                        bufferDataPtr->descriptorInfo->bufferParamInfo
+                    );
+                }
+            );
+        }
+        else
+        {
+            LOG_ERROR(
+                "ShaderParameters", "Cannot set buffer with runtime array as single struct, Set runtime array separately",
+                bufferDataPtr->descriptorInfo->bufferParamInfo->paramNativeStride()
+            );
+        }
+    }
+    return bValueSet;
+}
+
 IRenderCommandList *IRenderCommandList::genericInstance() { return new RenderCommandList(); }

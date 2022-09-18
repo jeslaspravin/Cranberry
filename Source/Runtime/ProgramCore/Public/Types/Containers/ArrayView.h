@@ -189,6 +189,9 @@ public:
     CONST_EXPR pointer data() const { return dataPtr + offset; }
     CONST_EXPR pointer ptr() const { return dataPtr; }
 
+    CONST_EXPR reference front() const { return *data(); }
+    CONST_EXPR reference back() const { return *(data() + (length - 1)); }
+
     CONST_EXPR void reset()
     {
         offset = 0;

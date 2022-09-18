@@ -69,6 +69,12 @@ NODISCARD CONST_EXPR SizeT length(const CharType *start)
     return recurseToNullEnd(start) - start;
 }
 
+template <typename CharType>
+NODISCARD CONST_EXPR bool empty(const CharType *start)
+{
+    return length(start) == 0;
+}
+
 template <typename CharType, typename StringViewType = CharStringView<CharType>>
 CONST_EXPR bool find(const CharType *findIn, const CharType *findStr, SizeT *outFoundAt = nullptr, SizeT findFrom = 0)
 {
