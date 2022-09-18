@@ -21,7 +21,7 @@ ObjectPath &ObjectPath::operator=(const TChar *fullPath)
 
     packagePath = ObjectPathHelper::getPathComponents(outerPath, objectName, fullPath);
     Object *obj = getObject();
-    if (isValid(obj))
+    if (cbe::isValid(obj))
     {
         allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);
     }
@@ -29,24 +29,38 @@ ObjectPath &ObjectPath::operator=(const TChar *fullPath)
 }
 ObjectPath &ObjectPath::operator=(Object *obj)
 {
+    if (!cbe::isValid(obj))
+    {
+        reset();
+        return *this;
+    }
     allocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);
     packagePath = ObjectPathHelper::getPathComponents(outerPath, objectName, obj->getFullPath().getChar());
     return *this;
 }
 
-ObjectPath::ObjectPath(Object *outerObj, const TChar *objectName) { (*this) = ObjectPathHelper::getFullPath(objectName, outerObj).getChar(); }
+ObjectPath::ObjectPath(Object *outerObj, const TChar *objectName)
+{
+    if (!cbe::isValid(outerObj) && TCharStr::empty(objectName))
+    {
+        reset();
+        return;
+    }
+
+    (*this) = ObjectPathHelper::getFullPath(objectName, outerObj).getChar();
+}
 
 String ObjectPath::getFullPath() const { return ObjectPathHelper::combinePathComponents(packagePath, outerPath, objectName); }
 
 Object *ObjectPath::getObject() const
 {
-    String fullPath = getFullPath();
+    const String fullPath = getFullPath();
     Object *obj = get(fullPath.getChar());
-    if (!isValid(obj))
+    if (!cbe::isValid(obj))
     {
         obj = load(fullPath, nullptr);
     }
-    if (isValid(obj))
+    if (cbe::isValid(obj))
     {
         const ObjectAllocIdx foundObjAllocIdx = INTERNAL_ObjectCoreAccessors::getAllocIdx(obj);
         // 0 is for default mostly and it will always be valid

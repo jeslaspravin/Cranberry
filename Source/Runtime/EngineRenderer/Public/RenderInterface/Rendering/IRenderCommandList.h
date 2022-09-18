@@ -124,6 +124,10 @@ public:
         std::vector<BatchCopyBufferData> &recordTo, BufferResourceRef dst, uint32 dstOffset, const BufferDataType *dataToCopy,
         const ShaderBufferParamInfo *bufferFields
     );
+    void recordCopyToBuffer(
+        std::vector<BatchCopyBufferData> &recordTo, BufferResourceRef dst, uint32 dstOffset, const void *dataToCopy,
+        const ShaderBufferParamInfo *bufferFields
+    );
 
     // Copy pixel data to only first MIP level of all layers and generate the rest of MIP
     void copyToImage(ImageResourceRef dst, ArrayView<const Color> pixelData);
@@ -334,7 +338,7 @@ bool ShaderParameters::setBuffer(StringID paramName, const BufferType &bufferVal
         std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *> foundInfo
             = findBufferParam(bufferName, paramName);
         if (foundInfo.first && foundInfo.second && BIT_SET(foundInfo.second->bufferField->fieldDecorations, ShaderBufferField::IsStruct)
-            && (!foundInfo.second->bufferField->isPointer() || foundInfo.first->runtimeArray->currentSize > index))
+            && (!foundInfo.second->bufferField->isPointer() || foundInfo.first->runtimeArray->currentCount > index))
         {
             if (foundInfo.second->bufferField->isIndexAccessible())
             {

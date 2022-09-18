@@ -17,12 +17,13 @@
 
 #include "Logger/Logger.h"
 #include "Reflections/Functions.h"
+#include "Types/Containers/ReferenceCountPtr.h"
+#include "Types/Containers/ArrayView.h"
 #include "RenderInterface/Resources/GraphicsResources.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/Resources/Samplers/SamplerInterface.h"
 #include "RenderInterface/ShaderCore/ShaderParameters.h"
 #include "ShaderDataTypes.h"
-#include "Types/Containers/ReferenceCountPtr.h"
 
 class ShaderResource;
 class IRenderCommandList;
@@ -213,6 +214,7 @@ protected:
     {
         struct BufferParameter
         {
+            // Always will be 0th element of outer buffer's array
             void *outerPtr = nullptr;
             StringID outerName;
             const ShaderBufferField *bufferField = nullptr;
@@ -222,7 +224,7 @@ protected:
             StringID paramName;
             uint32 offset;
             // Current number of supported elements
-            uint32 currentSize;
+            uint32 currentCount;
             std::vector<uint8> runtimeArrayCpuBuffer;
         };
 
@@ -231,7 +233,7 @@ protected:
         const ShaderBufferDescriptorType *descriptorInfo;
         uint8 *cpuBuffer;
         BufferResourceRef gpuBuffer;
-
+        // Linear list of all level parameters inside this buffer
         std::map<StringID, BufferParameter> bufferParams;
         std::optional<RuntimeArrayParameter> runtimeArray;
     };
@@ -280,33 +282,6 @@ protected:
     const GraphicsResource *paramLayout;
     String descriptorSetName;
 
-private:
-    void initBufferParams(
-        BufferParametersData &bufferParamData, const ShaderBufferParamInfo *bufferParamInfo, void *outerPtr, StringID outerName
-    ) const;
-    // Runtime array related, returns true if runtime array is setup
-    bool initRuntimeArrayData(BufferParametersData &bufferParamData) const;
-
-    // Init entire param maps uniforms, textures, samplers, images, buffers
-    void initParamsMaps(
-        const std::map<StringID, ShaderDescriptorParamType *> &paramsDesc,
-        const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts
-    );
-    std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *>
-        findBufferParam(StringID &bufferName, StringID paramName) const;
-    template <typename FieldType>
-    bool setFieldParam(StringID paramName, const FieldType &value, uint32 index);
-    template <typename FieldType>
-    bool setFieldParam(StringID paramName, StringID bufferName, const FieldType &value, uint32 index);
-    template <typename FieldType>
-    FieldType getFieldParam(StringID paramName, uint32 index) const;
-    template <typename FieldType>
-    FieldType getFieldParam(StringID paramName, StringID bufferName, uint32 index) const;
-
-protected:
-    ShaderParameters() = default;
-    ShaderParameters(const GraphicsResource *shaderParamLayout, const std::set<uint32> &ignoredSetIds = {});
-
 public:
     /* ReferenceCountPtr implementation */
     void addRef();
@@ -332,8 +307,10 @@ public:
 
     virtual void updateParams(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
     void pullBufferParamUpdates(std::vector<BatchCopyBufferData> &copies, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
+
     // Resizing must be done at external wrapper buffer name
     void resizeRuntimeBuffer(StringID bufferName, uint32 minSize);
+    // Below set*Param can be used to set parameters directly inside a buffer. It cannot set level deeper than that
     bool setIntParam(StringID paramName, int32 value, uint32 index = 0);
     bool setIntParam(StringID paramName, uint32 value, uint32 index = 0);
     bool setFloatParam(StringID paramName, float value, uint32 index = 0);
@@ -348,6 +325,16 @@ public:
     bool setMatrixParam(StringID paramName, StringID bufferName, const Matrix4 &value, uint32 index = 0);
     template <typename BufferType>
     bool setBuffer(StringID paramName, const BufferType &bufferValue, uint32 index = 0);
+    bool setBuffer(StringID paramName, const void *bufferValue, uint32 index = 0);
+    // Below set*AtPath can be used to set parameters in buffer deeper than above sets can.
+    // 0th must be bound buffer's name, (n-1)th must be the param name to set
+    bool setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, int32 value);
+    bool setIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, uint32 value);
+    bool setFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, float value);
+    bool setVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector2D &value);
+    bool setVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector4D &value);
+    bool setMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Matrix4 &value);
+
     bool setBufferResource(StringID bufferName, BufferResourceRef buffer);
     bool setTexelParam(StringID paramName, BufferResourceRef texelBuffer, uint32 index = 0);
     bool setTextureParam(StringID paramName, ImageResourceRef texture, uint32 index = 0);
@@ -355,6 +342,7 @@ public:
     bool setTextureParamViewInfo(StringID paramName, const ImageViewInfo &textureViewInfo, uint32 index = 0);
     bool setSamplerParam(StringID paramName, SamplerRef sampler, uint32 index = 0);
 
+    // Below get*Param can be used to get parameters directly inside a buffer. It cannot get level deeper than that
     int32 getIntParam(StringID paramName, uint32 index = 0) const;
     uint32 getUintParam(StringID paramName, uint32 index = 0) const;
     float getFloatParam(StringID paramName, uint32 index = 0) const;
@@ -367,10 +355,55 @@ public:
     Vector2D getVector2Param(StringID paramName, StringID bufferName, uint32 index = 0) const;
     Vector4D getVector4Param(StringID paramName, StringID bufferName, uint32 index = 0) const;
     Matrix4 getMatrixParam(StringID paramName, StringID bufferName, uint32 index = 0) const;
+    // Below get*AtPath can be used to get parameters in buffer deeper than above gets can.
+    // 0th must be bound buffer's name, (n-1)th must be the param name to get
+    int32 getIntAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+    uint32 getUintAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+    float getFloatAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+    Vector2D getVector2AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+    Vector4D getVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+    Matrix4 getMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+
     BufferResourceRef getBufferResource(StringID paramName);
     BufferResourceRef getTexelParam(StringID paramName, uint32 index = 0) const;
     ImageResourceRef getTextureParam(StringID paramName, uint32 index = 0) const;
     ImageResourceRef getTextureParam(SamplerRef &outSampler, StringID paramName, uint32 index = 0) const;
     SamplerRef getSamplerParam(StringID paramName, uint32 index = 0) const;
+
+private:
+    void initBufferParams(
+        BufferParametersData &bufferParamData, const ShaderBufferParamInfo *bufferParamInfo, void *outerPtr, StringID outerName
+    ) const;
+    // Runtime array related, returns true if runtime array is setup
+    bool initRuntimeArrayData(BufferParametersData &bufferParamData) const;
+
+    // Init entire param maps uniforms, textures, samplers, images, buffers
+    void initParamsMaps(
+        const std::map<StringID, ShaderDescriptorParamType *> &paramsDesc,
+        const std::vector<std::vector<SpecializationConstantEntry>> &specializationConsts
+    );
+    std::pair<const BufferParametersData *, const BufferParametersData::BufferParameter *>
+        findBufferParam(StringID &bufferName, StringID paramName) const;
+    void *getOuterPtrForPath(
+        std::vector<const BufferParametersData::BufferParameter *> &outInnerBufferParams, ArrayView<const StringID> pathNames,
+        ArrayView<const uint32> indices
+    ) const;
+    template <typename FieldType>
+    bool setFieldParam(StringID paramName, const FieldType &value, uint32 index);
+    template <typename FieldType>
+    bool setFieldParam(StringID paramName, StringID bufferName, const FieldType &value, uint32 index);
+    template <typename FieldType>
+    bool setFieldAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const FieldType &value);
+    template <typename FieldType>
+    FieldType getFieldParam(StringID paramName, uint32 index) const;
+    template <typename FieldType>
+    FieldType getFieldParam(StringID paramName, StringID bufferName, uint32 index) const;
+    template <typename FieldType>
+    FieldType getFieldAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
+
+protected:
+    ShaderParameters() = default;
+    ShaderParameters(const GraphicsResource *shaderParamLayout, const std::set<uint32> &ignoredSetIds = {});
 };
+
 using ShaderParametersRef = ReferenceCountPtr<ShaderParameters>;

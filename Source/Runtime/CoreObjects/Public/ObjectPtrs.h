@@ -172,9 +172,7 @@ public:
         {
             return nullptr;
         }
-
-        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-        return static_cast<PtrType *>(objectsDb.getObject(objectId));
+        return static_cast<PtrType *>(cbe::get(objectId));
     }
 
     // Checks if set objectId is valid now
@@ -184,8 +182,7 @@ public:
         {
             return false;
         }
-        const CoreObjectsDB &objectsDb = ICoreObjectsModule::get()->getObjectsDB();
-        if (Object *obj = objectsDb.getObject(objectId))
+        if (Object *obj = cbe::get(objectId))
         {
             return INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx;
         }
@@ -256,6 +253,23 @@ public:
     AsType *getObject() const
     {
         return cast<AsType>(getObject());
+    }
+
+    // Checks if set objectId is valid now, Without loading
+    FORCE_INLINE bool isValid() const
+    {
+        Object *obj = get(getFullPath().getChar());
+        if (cbe::isValid(obj))
+        {
+            return INTERNAL_ObjectCoreAccessors::getAllocIdx(obj) == allocIdx;
+        }
+        return false;
+    }
+    FORCE_INLINE explicit operator bool() const { return isValid(); }
+    FORCE_INLINE void reset()
+    {
+        allocIdx = 0;
+        packagePath = outerPath = objectName = TCHAR("");
     }
 };
 

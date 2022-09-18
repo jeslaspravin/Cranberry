@@ -78,7 +78,7 @@ public:
         return foundFragSize * PAGE_SIZE;
     }
 
-    bool allocate(SizeType byteSize, SizeType alignment, SizeType &outOffsetBytes)
+    FORCE_INLINE bool allocate(SizeType byteSize, SizeType alignment, SizeType &outOffsetBytes)
     {
         debugAssert(Math::isAligned(byteSize, PAGE_SIZE) && Math::isAligned(alignment, PAGE_SIZE));
         SizeType pageCount = byteSize / PAGE_SIZE;
@@ -94,12 +94,27 @@ public:
         return false;
     }
 
-    void deallocate(SizeType bytesOffset, SizeType byteSize)
+    FORCE_INLINE void deallocate(SizeType bytesOffset, SizeType byteSize)
     {
         debugAssert(Math::isAligned(bytesOffset, PAGE_SIZE) && Math::isAligned(byteSize, PAGE_SIZE));
         SizeType pageCount = byteSize / PAGE_SIZE;
         SizeType pageIdx = bytesOffset / PAGE_SIZE;
         pageUsage.resetRange(pageIdx, pageCount);
+    }
+
+    /* Check if entire range is allocated, Fails even if one page is not allocated */
+    FORCE_INLINE bool isRangeAllocated(SizeType bytesOffset, SizeType byteSize) const
+    {
+        SizeType pageCount = byteSize / PAGE_SIZE;
+        SizeType pageIdx = bytesOffset / PAGE_SIZE;
+        return pageUsage.checkRange(pageIdx, pageCount, true);
+    }
+    /* Check if entire range is free, Fails even if one page is allocated */
+    FORCE_INLINE bool isRangeFree(SizeType bytesOffset, SizeType byteSize) const
+    {
+        SizeType pageCount = byteSize / PAGE_SIZE;
+        SizeType pageIdx = bytesOffset / PAGE_SIZE;
+        return pageUsage.checkRange(pageIdx, pageCount, false);
     }
 
     // Does not considers alignment, If using this defrag ensure that maximum alignment used is not greater than PAGE_SIZE
