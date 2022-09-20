@@ -39,7 +39,7 @@ public:
         StringID sid;
     };
 
-    class SharedLockObjectsDB
+    class COREOBJECTS_EXPORT SharedLockObjectsDB
     {
     private:
         const CoreObjectsDB *objsDb;

@@ -18,7 +18,8 @@
 namespace cbe
 {
 class Package;
-}
+class Object;
+} // namespace cbe
 
 class PackageLoader : public ObjectArchive
 {
@@ -29,8 +30,11 @@ private:
     std::vector<PackageContainedData> containedObjects;
     std::vector<PackageDependencyData> dependentObjects;
 
-    SizeT streamStartAt;
+    // When ever there is no valid contained object is found when serializing a pointer, It will be stored here along with the contained object
+    // index. If the object becomes available after serialization(example with ObjectTemplate) it will be relinked using this pairs
+    std::vector<std::pair<cbe::Object **, SizeT>> linkPtrsToContainedObjIdx;
 
+    SizeT streamStartAt;
     BinaryArchive packageArchive;
 
 private:

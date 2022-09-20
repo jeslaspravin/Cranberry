@@ -460,12 +460,14 @@ public:
                 sceneData[entity.idx].meshAsset->bounds.maxBound * sceneData[entity.idx].transform.getScale()
                     + sceneData[entity.idx].transform.getTranslation()
             );
+            bound.fixAABB();
             return bound;
         }
         case GridEntity::PointLight:
         {
             fatalAssertf(scenePointLights.size() > entity.idx, "Invalid index %d", entity.idx);
             AABB bound(scenePointLights[entity.idx].lightPos - Vector3D(50), scenePointLights[entity.idx].lightPos + Vector3D(50));
+            bound.fixAABB();
             return bound;
         }
         case GridEntity::SpotLight:
@@ -475,6 +477,7 @@ public:
                 sceneSpotLights[entity.idx].transform.getTranslation() - Vector3D(50),
                 sceneSpotLights[entity.idx].transform.getTranslation() + Vector3D(50)
             );
+            bound.fixAABB();
             return bound;
         }
         default:
@@ -708,10 +711,20 @@ void PBRSceneEntity::updateInstanceParams(ShaderParametersRef &shaderParams, uin
 {
     InstanceData gpuInstance;
     gpuInstance.model = transform.getTransformMatrix();
-    gpuInstance.invModel = transform.getTransformMatrix().inverse();
+    gpuInstance.invModel = gpuInstance.model.inverse();
+    gpuInstance.invModel = transform.inverseNonUniformScaled().getTransformMatrix();
     gpuInstance.shaderUniqIdx = batchShaderParamIdx[batchIdx];
 
-    shaderParams->setBuffer(TCHAR("instances"), gpuInstance, instanceParamIdx[batchIdx]);
+    // shaderParams->setBuffer(TCHAR("instances"), gpuInstance, instanceParamIdx[batchIdx]);
+
+    // Below code to test set by path and indices
+    StringID paramPath[] = { STRID("instancesWrapper"), STRID("instances"), STRID("model") };
+    uint32 paramIndices[] = { 0, instanceParamIdx[batchIdx], 0 };
+    shaderParams->setMatrixAtPath(paramPath, paramIndices, gpuInstance.model);
+    paramPath[2] = STRID("invModel");
+    shaderParams->setMatrixAtPath(paramPath, paramIndices, gpuInstance.model);
+    paramPath[2] = STRID("shaderUniqIdx");
+    shaderParams->setIntAtPath(paramPath, paramIndices, batchShaderParamIdx[batchIdx]);
 }
 
 void PBRSceneEntity::updateMaterialParams(
@@ -3466,8 +3479,18 @@ void ExperimentalEnginePBR::drawSelectionWidget(class ImGuiDrawInterface *drawIn
                 bool bTransformChanged = ImGui::DragFloat3("Translation", reinterpret_cast<float *>(&entity.transform.getTranslation()), 1.f);
                 bTransformChanged = ImGui::DragFloat3("Rotation", reinterpret_cast<float *>(&entity.transform.getRotation()), 1.f, 0.0f, 360.0f)
                                     || bTransformChanged;
-                bTransformChanged
-                    = ImGui::DragFloat3("Scale", reinterpret_cast<float *>(&entity.transform.getScale()), 0.05f) || bTransformChanged;
+
+                if (ImGui::DragFloat3("Scale", reinterpret_cast<float *>(&entity.transform.getScale()), 0.05f))
+                {
+                    bTransformChanged = true;
+                    for (uint32 i = 0; i < 3; ++i)
+                    {
+                        if (Math::isEqual(entity.transform.getScale()[i], 0.0f))
+                        {
+                            entity.transform.getScale()[i] += 0.1f;
+                        }
+                    }
+                }
 
                 if (bTransformChanged)
                 {

@@ -135,10 +135,14 @@ ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
     else
     {
         debugAssert(containedObjects.size() > tableIdx);
-        // Do nothing if no object found
+        // Add to delayed linking if no object found
         if (containedObjects[tableIdx].object.isValid())
         {
             obj = containedObjects[tableIdx].object.get();
+        }
+        else
+        {
+            linkPtrsToContainedObjIdx.emplace_back(&obj, tableIdx);
         }
     }
     return *this;
@@ -177,6 +181,7 @@ void PackageLoader::prepareLoader()
     (*static_cast<ObjectArchive *>(this)) << dependentObjects;
     packageArchive.setStream(nullptr);
 
+    linkPtrsToContainedObjIdx.reserve(containedObjects.size());
     streamStartAt = fileStream.cursorPos();
 
     alertAlwaysf(!containedObjects.empty(), "Empty package %s at %s", package->getName(), packageFilePath);
@@ -195,20 +200,7 @@ EPackageLoadSaveResult PackageLoader::load()
     packageArchive.setStream(&fileStream);
 
     EPackageLoadSaveResult loadResult = EPackageLoadSaveResult::Success;
-
-    // Create all object first
-    for (PackageContainedData &containedData : containedObjects)
-    {
-        if (!containedData.object.isValid())
-        {
-            // If this object is transient or in transient hierarchy? Then there is a chance that object will only be created after main
-            // packaged object is serialized
-            EObjectFlags collectedFlags = createContainedObject(containedData);
-            debugAssert(BIT_SET(collectedFlags, cbe::EObjectFlagBits::ObjFlag_Transient) || containedData.object.isValid());
-        }
-    }
-
-    for (PackageContainedData &containedData : containedObjects)
+    auto containedObjSerializer = [&loadResult, &fileStream, this](PackageContainedData &containedData)
     {
         if (fileStream.cursorPos() > containedData.streamStart)
         {
@@ -219,12 +211,7 @@ EPackageLoadSaveResult PackageLoader::load()
             fileStream.moveForward(containedData.streamStart - fileStream.cursorPos());
         }
 
-        // Try loading contained object again if it is created at this point
-        if (!containedData.object.isValid())
-        {
-            createContainedObject(containedData);
-        }
-        if (containedData.object.isValid())
+        if (containedData.object.isValid() && BIT_SET(containedData.object->getFlags(), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending))
         {
             if (NO_BITS_SET(containedData.object->collectAllFlags(), cbe::EObjectFlagBits::ObjFlag_Transient))
             {
@@ -234,21 +221,69 @@ EPackageLoadSaveResult PackageLoader::load()
             CLEAR_BITS(
                 cbe::INTERNAL_ObjectCoreAccessors::getFlags(containedData.object.get()), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending
             );
-        }
 
-        SizeT serializedSize = fileStream.cursorPos() - containedData.streamStart;
-        if (serializedSize != containedData.streamSize)
+            // Check serialized size to ensure we are matching that was saved
+            SizeT serializedSize = fileStream.cursorPos() - containedData.streamStart;
+            if (serializedSize != containedData.streamSize)
+            {
+                alertAlwaysf(
+                    serializedSize == containedData.streamSize,
+                    "Corrupted package %s for object %s consider using Custom version and handle versioning! Written out size for object %llu "
+                    "is "
+                    "not same as read size %llu",
+                    package->getName(), containedData.objectPath, containedData.streamSize, (fileStream.cursorPos() - containedData.streamStart)
+                );
+                // It is okay to continue as it is just warning
+                loadResult = EPackageLoadSaveResult::WithWarnings;
+            }
+        }
+    };
+
+    {
+        // Create all object first
+        for (PackageContainedData &containedData : containedObjects)
         {
-            alertAlwaysf(
-                serializedSize == containedData.streamSize,
-                "Corrupted package %s for object %s consider using Custom version and handle versioning! Written out size for object %llu is "
-                "not same as read size %llu",
-                package->getName(), containedData.objectPath, containedData.streamSize, (fileStream.cursorPos() - containedData.streamStart)
-            );
-            // It is okay to continue as it is just warning
-            loadResult = EPackageLoadSaveResult::WithWarnings;
+            if (!containedData.object.isValid())
+            {
+                // If this object is transient or in transient hierarchy? Then there is a chance that object will only be created after main
+                // packaged object is serialized
+                EObjectFlags collectedFlags = createContainedObject(containedData);
+                debugAssert(BIT_SET(collectedFlags, cbe::EObjectFlagBits::ObjFlag_Transient) || containedData.object.isValid());
+            }
         }
     }
+
+    // Load each object. Transient objects might not have been linked yet.
+    for (PackageContainedData &containedData : containedObjects)
+    {
+        containedObjSerializer(containedData);
+    }
+    // Try caching the possibly created transient containedObjects again
+    for (PackageContainedData &containedData : containedObjects)
+    {
+        if (!containedData.object.isValid())
+        {
+            createContainedObject(containedData);
+        }
+    }
+    // Now link the pointers that points to delay created objects
+    for (const std::pair<cbe::Object **, SizeT> &objPtrToContainedIdx : linkPtrsToContainedObjIdx)
+    {
+        const PackageContainedData &containedData = containedObjects[objPtrToContainedIdx.second];
+        if (containedData.object.isValid())
+        {
+            (*objPtrToContainedIdx.first) = containedData.object.get();
+        }
+    }
+    // Broadcast post serialize event
+    for (PackageContainedData &containedData : containedObjects)
+    {
+        if (containedData.object.isValid())
+        {
+            containedData.object->postSerialize(*this);
+        }
+    }
+
     CLEAR_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(package), cbe::EObjectFlagBits::ObjFlag_PackageLoadPending);
     SET_BITS(cbe::INTERNAL_ObjectCoreAccessors::getFlags(package), cbe::EObjectFlagBits::ObjFlag_PackageLoaded);
 

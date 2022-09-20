@@ -129,11 +129,7 @@ requires(std::derived_from<ArchiveType, ObjectArchive> &&std::derived_from<Objec
     operator<<(ArchiveType &archive, ObjectType *&value)
 {
     ObjectArchive &objArchive = static_cast<ObjectArchive &>(archive);
-    cbe::Object *obj = value;
-    objArchive.serialize(obj);
-    if (archive.isLoading())
-    {
-        value = static_cast<ObjectType *>(obj);
-    }
+    cbe::Object **objectPtrPtr = reinterpret_cast<cbe::Object **>(&value);
+    objArchive.serialize(*objectPtrPtr);
     return archive;
 }

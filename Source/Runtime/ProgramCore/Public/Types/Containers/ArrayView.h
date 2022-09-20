@@ -14,16 +14,13 @@
 #include "Math/Math.h"
 #include "Types/Platform/PlatformAssertionErrors.h"
 
+template <typename ElementType>
+class ArrayView;
+
 template <typename T>
-concept ArrayViewVectorQualifier = requires(T &&val)
-{
-    {
-        val.data()
-        } -> TypeIsPointer;
-    {
-        val.size()
-        } -> std::convertible_to<SizeT>;
-};
+concept ArrayViewVectorQualifierInternal = IndexableCompound<T> &&(!std::same_as<T, ArrayView<typename T::value_type>>);
+template <typename T>
+concept ArrayViewVectorQualifier = ArrayViewVectorQualifierInternal<std::remove_cvref_t<T>>;
 
 template <typename ElementType>
 class ArrayView

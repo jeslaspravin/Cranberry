@@ -32,7 +32,7 @@ concept StaticCastable = requires(FromType value)
 
 // Indexable checks for both compound types and dynamic pointer array and native array
 template <typename DataType>
-concept IndexableCompound = requires(DataType val, uint64 idx)
+concept IndexableCompoundInternal = requires(DataType val, uint64 idx)
 {
     typename DataType::value_type;
     {
@@ -43,7 +43,12 @@ concept IndexableCompound = requires(DataType val, uint64 idx)
         } -> std::convertible_to<SizeT>;
 };
 template <typename DataType>
-concept Indexable = std::disjunction_v<std::is_array<DataType>, std::is_pointer<DataType>> || IndexableCompound<DataType>;
+concept IndexableCompound = IndexableCompoundInternal<std::remove_cvref_t<DataType>>;
+
+template <typename DataType>
+concept IndexableInternal = std::disjunction_v<std::is_array<DataType>, std::is_pointer<DataType>> || IndexableCompound<DataType>;
+template <typename DataType>
+concept Indexable = IndexableInternal<std::remove_cvref_t<DataType>>;
 
 template <typename DataType>
 struct IndexableTypeDeducer

@@ -29,6 +29,10 @@ public:
     META_ANNOTATE()
     StaticMesh *mesh;
 
+    /* RenderableComponent overrides */
+    void setupRenderInfo(ComponentRenderInfo &compRenderInfo) const override;
+    void clearRenderInfo(const ComponentRenderInfo &compRenderInfo) const override;
+    /* Override ends */
 } META_ANNOTATE(NoExport);
 
 } // namespace cbe
