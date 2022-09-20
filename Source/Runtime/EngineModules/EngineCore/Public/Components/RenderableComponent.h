@@ -15,12 +15,19 @@
 
 #include "RenderableComponent.gen.h"
 
+struct ComponentRenderInfo;
+
 namespace cbe
 {
 
 class ENGINECORE_EXPORT RenderableComponent : public TransformComponent
 {
     GENERATED_CODES()
+
+public:
+    virtual void setupRenderInfo(ComponentRenderInfo &compRenderInfo) const = 0;
+    virtual void clearRenderInfo(const ComponentRenderInfo &compRenderInfo) const = 0;
+
 } META_ANNOTATE(NoExport);
 
 } // namespace cbe

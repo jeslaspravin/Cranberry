@@ -129,6 +129,8 @@ public:
     }
     // Will get called after loaded from package
     void postLoad() { onPostLoad(); }
+    // Will get called after serialize and linking is done
+    void postSerialize(const ObjectArchive &ar) { onPostSerialize(ar); }
 
     FORCE_INLINE Object *getOuter() const { return objOuter; }
     FORCE_INLINE Object *getOuterMost() const
@@ -176,6 +178,7 @@ public:
     virtual void destroy() {}
     virtual void onConstructed() {}
     virtual void onPostLoad() {}
+    virtual void onPostSerialize(const ObjectArchive &ar) {}
     virtual ObjectArchive &serialize(ObjectArchive &ar) { return ar; }
 } META_ANNOTATE(BaseType; NoExport);
 } // namespace cbe

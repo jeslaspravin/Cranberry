@@ -120,6 +120,7 @@ public:
 
     /* cbe::Object overrides */
     ObjectArchive &serialize(ObjectArchive &ar) override;
+    void onPostSerialize(const ObjectArchive &ar) override;
     /* Overrides ends */
 
     // Helper functions

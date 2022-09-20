@@ -216,7 +216,7 @@ Matrix4 Transform3D::inverseNonUniformScaledMatrix() const
     return transformMatrix * invTranslationMatrx;
 }
 
-Vector3D Transform3D::invScaleSafe() const { return transformTranslation.safeInverse(); }
+Vector3D Transform3D::invScaleSafe() const { return transformScale.safeInverse(); }
 
 Vector3D Transform3D::invTranslation() const
 {

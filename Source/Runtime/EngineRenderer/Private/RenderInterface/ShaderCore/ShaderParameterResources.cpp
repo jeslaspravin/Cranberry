@@ -790,20 +790,21 @@ void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minSize)
     if (bufferData.runtimeArray.has_value())
     {
         auto paramFieldItr = bufferData.bufferParams.find(bufferData.runtimeArray->paramName);
-        BufferParametersData::BufferParameter &paramField = paramFieldItr->second;
-        const ShaderBufferField *bufferInfoField = paramField.bufferField;
+        BufferParametersData::BufferParameter &runtimeFieldParam = paramFieldItr->second;
+        const ShaderBufferField *runtimeField = runtimeFieldParam.bufferField;
 
         if (bufferData.runtimeArray->currentCount < minSize)
         {
-            const uint32 &dataStride = BIT_SET(paramField.bufferField->fieldDecorations, ShaderBufferField::IsStruct)
-                                           ? paramField.bufferField->paramInfo->paramNativeStride()
-                                           : paramField.bufferField->stride;
+            // NOTE(Jeslas) : If this stride logic changes here. Change it in setBufferResource()
+            const uint32 dataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                          ? runtimeField->paramInfo->paramNativeStride()
+                                          : runtimeField->stride;
             const uint32 newArraySize = Math::toHigherPowOf2(minSize * dataStride);
             bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(newArraySize);
             bufferData.runtimeArray->currentCount = uint32(Math::floor(newArraySize / float(dataStride)));
 
             // Set buffer ptr and regenerate buffer param maps
-            (*reinterpret_cast<void **>(paramField.bufferField->fieldPtr(paramField.outerPtr)))
+            (*reinterpret_cast<void **>(runtimeField->fieldPtr(runtimeFieldParam.outerPtr)))
                 = bufferData.runtimeArray->runtimeArrayCpuBuffer.data();
             bufferData.bufferParams.clear();
             initBufferParams(
@@ -812,18 +813,21 @@ void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minSize)
 
             ENQUEUE_COMMAND(ResizeRuntimeBuffer)
             (
-                [this, bufferName, bufferNameString, bufferInfoField,
+                [this, bufferName, bufferNameString, runtimeField,
                  &bufferData](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
                 {
                     BufferResourceRef oldBuffer = bufferData.gpuBuffer;
-                    uint32 gpuDataStride = bufferInfoField->paramInfo->paramStride();
+                    // NOTE(Jeslas) : If this stride logic changes here. Change it in setBufferResource()
+                    const uint32 gpuDataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                                     ? runtimeField->paramInfo->paramStride()
+                                                     : runtimeField->stride;
 
                     // Since only storage can be runtime array
                     bufferData.gpuBuffer = graphicsHelper->createWriteOnlyBuffer(
                         graphicsInstance, bufferData.runtimeArray->offset + bufferData.runtimeArray->currentCount * gpuDataStride
                     );
                     bufferData.gpuBuffer->setResourceName(
-                        bufferNameString + TCHAR("_") + bufferInfoField->paramName.toString() + TCHAR("_RuntimeSoA"));
+                        bufferNameString + TCHAR("_") + runtimeField->paramName.toString() + TCHAR("_RuntimeSoA"));
                     bufferData.gpuBuffer->init();
 
                     // Push descriptor update
@@ -877,7 +881,7 @@ void *ShaderParameters::getOuterPtrForPath(
         return nullptr;
     }
     const BufferParametersData &boundBufferData = shaderBufferItr->second;
-    // -1 since 0th pathNames is just boundBufferData
+    // -1 since 0th pathNames is just boundBufferData, And filling innerBufferParams that are more than 1 level deep from bound buffer
     outInnerBufferParams.resize(pathNames.size() - 1);
     for (uint32 i = pathNames.size() - 1; i != 1; --i)
     {
@@ -910,7 +914,8 @@ void *ShaderParameters::getOuterPtrForPath(
         BIT_NOT_SET(outInnerBufferParams.back()->bufferField->fieldDecorations, ShaderBufferField::IsStruct),
         "Cannot set buffer %s using setFieldAtPath", pathNames.back()
     );
-    for (int32 i = outInnerBufferParams.size() - 1; i >= 0; --i)
+    // 0th innerBufferParam will be filled after
+    for (int32 i = outInnerBufferParams.size() - 2; i > 0; --i)
     {
         fatalAssertf(
             BIT_SET(outInnerBufferParams[i]->bufferField->fieldDecorations, ShaderBufferField::IsStruct),
@@ -1043,24 +1048,38 @@ bool ShaderParameters::setFieldAtPath(ArrayView<const StringID> pathNames, Array
 
     std::vector<const BufferParametersData::BufferParameter *> innerBufferParams;
     void *paramOuterPtr = getOuterPtrForPath(innerBufferParams, pathNames, indices);
-    if (paramOuterPtr && innerBufferParams.back()->bufferField->setFieldDataArray(paramOuterPtr, value, indices.back()))
+    if (paramOuterPtr)
     {
-        // Mark the first non zero indexed parameter field/buffer for update, This is because only one index value can be updated
-        // BufferParameterUpdate::index has to cover the entire struct that contains the edited field
-        for (uint32 i = 0; i != innerBufferParams.size(); ++i)
+        bool bValueSet = false;
+        uint32 updatedIdx = 0;
+        if (innerBufferParams.back()->bufferField->isIndexAccessible()) [[likely]]
         {
-            if (indices[i + 1] != 0 && innerBufferParams[i]->bufferField->isIndexAccessible())
-            {
-                bufferUpdates.emplace_back(pathNames[0], pathNames[i + 1], indices[i + 1]);
-                break;
-            }
+            updatedIdx = indices.back();
+            bValueSet = innerBufferParams.back()->bufferField->setFieldDataArray(paramOuterPtr, value, updatedIdx);
         }
-        return true;
+        else
+        {
+            bValueSet = innerBufferParams.back()->bufferField->setFieldData(paramOuterPtr, value);
+        }
+
+        if (bValueSet)
+        {
+            BufferParameterUpdate bufferUpdate = { pathNames[0], pathNames.back(), updatedIdx };
+            // Mark the first non zero indexed parameter field/buffer for update, This is because only one index value can be updated
+            // BufferParameterUpdate::index has to cover the entire struct that contains the edited field
+            for (uint32 i = 0; i != innerBufferParams.size(); ++i)
+            {
+                if (indices[i + 1] != 0 && innerBufferParams[i]->bufferField->isIndexAccessible())
+                {
+                    bufferUpdate = { pathNames[0], pathNames[i + 1], indices[i + 1] };
+                    break;
+                }
+            }
+            bufferUpdates.emplace_back(std::move(bufferUpdate));
+            return true;
+        }
     }
-    else
-    {
-        LOG_ERROR("ShaderParameters", "Failed to set %s parameter", pathNames.back());
-    }
+    LOG_ERROR("ShaderParameters", "Failed to set %s parameter", pathNames.back());
     return false;
 }
 
@@ -1238,8 +1257,26 @@ bool ShaderParameters::setBufferResource(StringID bufferName, BufferResourceRef 
     auto bufferDataItr = shaderBuffers.find(bufferName);
     if (bufferDataItr != shaderBuffers.end())
     {
-        bufferDataItr->second.bIsExternal = true;
-        bufferDataItr->second.gpuBuffer = buffer;
+        BufferParametersData &bufferData = bufferDataItr->second;
+        bufferData.bIsExternal = true;
+        bufferData.gpuBuffer = buffer;
+        if (bufferData.runtimeArray.has_value())
+        {
+            auto paramFieldItr = bufferData.bufferParams.find(bufferData.runtimeArray->paramName);
+            BufferParametersData::BufferParameter &runtimeFieldParam = paramFieldItr->second;
+            const ShaderBufferField *runtimeField = runtimeFieldParam.bufferField;
+
+            const uint64 gpuByteSize = buffer->getResourceSize() - bufferData.runtimeArray->offset;
+            // NOTE(Jeslas) : If this stride logic changes here. Change it in resizeRuntimeBuffer()
+            const uint32 gpuDataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                             ? runtimeField->paramInfo->paramStride()
+                                             : runtimeField->stride;
+            const uint32 dataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                          ? runtimeField->paramInfo->paramNativeStride()
+                                          : runtimeField->stride;
+            bufferData.runtimeArray->currentCount = gpuByteSize / gpuDataStride;
+            bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(bufferData.runtimeArray->currentCount * dataStride);
+        }
         bufferResourceUpdates.insert(bufferName);
     }
     return false;

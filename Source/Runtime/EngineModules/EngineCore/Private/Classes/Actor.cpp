@@ -14,7 +14,6 @@
 #include "Serialization/ObjectSerializationHelpers.h"
 #include "Classes/ActorPrefab.h"
 #include "CBEObjectHelpers.h"
-#include "ObjectTemplate.h"
 #include "Components/ComponentBase.h"
 
 namespace cbe
@@ -551,8 +550,11 @@ ObjectArchive &ActorPrefab::serialize(ObjectArchive &ar)
     }
 
     ar << actorClass;
-    ObjectSerializationHelpers::serializeAllFields(this, ar);
+    return ObjectSerializationHelpers::serializeAllFields(this, ar);
+}
 
+void ActorPrefab::onPostSerialize(const ObjectArchive &ar)
+{
     if (ar.isLoading())
     {
         if (parentPrefab == nullptr)
@@ -662,7 +664,6 @@ ObjectArchive &ActorPrefab::serialize(ObjectArchive &ar)
             }
         }
     }
-    return ar;
 }
 
 void ActorPrefab::initializeActor(ActorPrefab *inPrefab)
