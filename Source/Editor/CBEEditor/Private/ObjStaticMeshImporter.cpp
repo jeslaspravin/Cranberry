@@ -788,7 +788,9 @@ std::vector<cbe::Object *> ObjStaticMeshImporter::tryImporting(const ImportOptio
             auto meshVertIdxItr = vertIntermIdxToMeshIdx.find(vertIdx);
             if (meshVertIdxItr == vertIntermIdxToMeshIdx.cend())
             {
-                createInfo.indices.emplace_back(uint32(createInfo.vertices.size()));
+                const uint32 index = uint32(createInfo.vertices.size());
+                vertIntermIdxToMeshIdx[vertIdx] = index;
+                createInfo.indices.emplace_back(index);
                 createInfo.vertices.emplace_back(meshIntermediate.vertices[vertIdx]);
             }
             else

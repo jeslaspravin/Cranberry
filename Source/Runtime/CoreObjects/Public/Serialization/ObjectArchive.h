@@ -42,18 +42,22 @@ public:
 
     void setInnerArchive(ArchiveBase *inner) { innerArchive = inner; }
 
+    /**
+     * This must be called if cbe::Object * is serialized manually, is not marked with META_ANNOTATE and is possible to be pointing at Transient
+     * pointer.
+     * Best place to call this function to fix up pointers in postSerialize(ar)
+     * objPtr might be not null after serialization, but those values might not be valid pointer unless this function is called
+     */
+    virtual void relinkSerializedPtr(void **objPtrPtr) const;
+    virtual void relinkSerializedPtr(const void **objPtrPtr) const;
     virtual ObjectArchive &serialize(cbe::Object *&obj);
 
     /* ArchiveBase overrides */
 
     bool ifSwapBytes() const override { return innerArchive->ifSwapBytes(); }
-
     bool isLoading() const override { return innerArchive->isLoading(); }
-
     ArchiveStream *stream() const override { return innerArchive->stream(); }
-
     uint32 getCustomVersion(uint32 customId) const override { return innerArchive->getCustomVersion(customId); }
-
     const std::map<uint32, uint32> &getCustomVersions() const override { return innerArchive->getCustomVersions(); }
 
     ObjectArchive &serialize(bool &value) override

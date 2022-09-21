@@ -12,9 +12,152 @@
 #include "Serialization/PackageLoader.h"
 #include "Serialization/FileArchiveStream.h"
 #include "Serialization/PackageData.h"
+#include "Visitors/FieldVisitors.h"
+#include "PropertyVisitorHelpers.h"
 #include "CBEObjectHelpers.h"
 #include "CBEPackage.h"
 #include "CoreObjectDelegates.h"
+
+//////////////////////////////////////////////////////////////////////////
+// Object Pointers relinking codes
+//////////////////////////////////////////////////////////////////////////
+
+struct LinkObjectPtrsData
+{
+    const PackageLoader *loader;
+};
+
+struct LinkObjPtrsFieldVisitable
+{
+    // Ignore fundamental and special types, we need none const custom types or pointers
+    template <typename Type>
+    static void visit(Type *val, const PropertyInfo &propInfo, void *userData)
+    {}
+    static void visit(void *val, const PropertyInfo &propInfo, void *userData)
+    {
+        const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
+        switch (prop->type)
+        {
+        case EPropertyType::MapType:
+        {
+            PropertyVisitorHelper::visitEditMapEntriesPtrOnly<LinkObjPtrsFieldVisitable>(
+                static_cast<const MapProperty *>(prop), val, propInfo, userData
+            );
+            break;
+        }
+        case EPropertyType::SetType:
+        {
+            PropertyVisitorHelper::visitEditSetEntries<LinkObjPtrsFieldVisitable>(
+                static_cast<const ContainerProperty *>(prop), val, propInfo, userData
+            );
+            break;
+        }
+        case EPropertyType::ArrayType:
+        {
+            const IterateableDataRetriever *dataRetriever
+                = static_cast<const IterateableDataRetriever *>(static_cast<const ContainerProperty *>(prop)->dataRetriever);
+            const TypedProperty *elemProp = static_cast<const TypedProperty *>(static_cast<const ContainerProperty *>(prop)->elementProp);
+
+            for (auto itrPtr = dataRetriever->createIterator(val); itrPtr->isValid(); itrPtr->iterateFwd())
+            {
+                FieldVisitor::visit<LinkObjPtrsFieldVisitable>(elemProp, itrPtr->getElement(), userData);
+            }
+            break;
+        }
+        case EPropertyType::PairType:
+        {
+            const PairDataRetriever *dataRetriever
+                = static_cast<const PairDataRetriever *>(static_cast<const PairProperty *>(prop)->dataRetriever);
+            const TypedProperty *keyProp = static_cast<const TypedProperty *>(static_cast<const PairProperty *>(prop)->keyProp);
+            const TypedProperty *valueProp = static_cast<const TypedProperty *>(static_cast<const PairProperty *>(prop)->valueProp);
+
+            void *keyPtr = dataRetriever->first(val);
+            void *valPtr = dataRetriever->second(val);
+
+            FieldVisitor::visit<LinkObjPtrsFieldVisitable>(keyProp, keyPtr, userData);
+            FieldVisitor::visit<LinkObjPtrsFieldVisitable>(valueProp, valPtr, userData);
+            break;
+        }
+        case EPropertyType::ClassType:
+        {
+            CBEClass clazz = static_cast<CBEClass>(prop);
+            debugAssert(PropertyHelper::isStruct(clazz));
+            FieldVisitor::visitFields<LinkObjPtrsFieldVisitable>(clazz, val, userData);
+            break;
+        }
+        case EPropertyType::EnumType:
+            break;
+        }
+    }
+    // Ignoring const types
+    static void visit(const void *val, const PropertyInfo &propInfo, void *userData) {}
+    static void visit(void **ptr, const PropertyInfo &propInfo, void *userData)
+    {
+        const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
+        switch (prop->type)
+        {
+        case EPropertyType::ClassType:
+        {
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
+
+            LinkObjectPtrsData *linkPtrsUserData = (LinkObjectPtrsData *)(userData);
+            linkPtrsUserData->loader->relinkSerializedPtr(ptr);
+            break;
+        }
+        case EPropertyType::EnumType:
+        case EPropertyType::MapType:
+        case EPropertyType::SetType:
+        case EPropertyType::ArrayType:
+        case EPropertyType::PairType:
+        default:
+            alertAlwaysf(
+                false, "Unhandled ptr to ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
+            break;
+        }
+    }
+    static void visit(const void **ptr, const PropertyInfo &propInfo, void *userData)
+    {
+        const TypedProperty *prop = PropertyHelper::getUnqualified(propInfo.thisProperty);
+        switch (propInfo.thisProperty->type)
+        {
+        case EPropertyType::ClassType:
+        {
+            debugAssert(PropertyHelper::isChildOf(static_cast<CBEClass>(prop), cbe::Object::staticType()));
+
+            LinkObjectPtrsData *linkPtrsUserData = (LinkObjectPtrsData *)(userData);
+            linkPtrsUserData->loader->relinkSerializedPtr(ptr);
+            break;
+        }
+        case EPropertyType::EnumType:
+        case EPropertyType::MapType:
+        case EPropertyType::SetType:
+        case EPropertyType::ArrayType:
+        case EPropertyType::PairType:
+        default:
+            alertAlwaysf(
+                false, "Unhandled ptr to const ptr Field name %s, type %s", propInfo.fieldProperty->nameString, *propInfo.thisProperty->typeInfo
+            );
+            break;
+        }
+    }
+};
+
+FORCE_INLINE void PackageLoader::linkContainedObjects() const
+{
+    LinkObjectPtrsData userData{ this };
+    for (const PackageContainedData &containedData : containedObjects)
+    {
+        if (containedData.object.isValid())
+        {
+            FieldVisitor::visitFields<LinkObjPtrsFieldVisitable>(containedData.clazz, containedData.object.get(), &userData);
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// PackageLoader specific implementations
+//////////////////////////////////////////////////////////////////////////
 
 EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containedData)
 {
@@ -93,6 +236,26 @@ EObjectFlags PackageLoader::createContainedObject(PackageContainedData &containe
     return collectedFlags;
 }
 
+template <typename T>
+FORCE_INLINE void PackageLoader::relinkLoadedPtr(T **objPtrPtr) const
+{
+    UPtrInt *ptrIntPtr = reinterpret_cast<UPtrInt *>(objPtrPtr);
+    if (BIT_SET(*ptrIntPtr, delayLinkPtrMask))
+    {
+        CLEAR_BITS(*ptrIntPtr, delayLinkPtrMask);
+
+        debugAssert(containedObjects.size() > *ptrIntPtr);
+        if (containedObjects[*ptrIntPtr].object.isValid())
+        {
+            *objPtrPtr = containedObjects[*ptrIntPtr].object.get();
+        }
+        else
+        {
+            *objPtrPtr = nullptr;
+        }
+    }
+}
+
 PackageLoader::PackageLoader(cbe::Package *loadingPackage, const String &filePath)
     : package(loadingPackage)
     , packageFilePath(filePath)
@@ -106,6 +269,10 @@ PackageLoader::PackageLoader(cbe::Package *loadingPackage, const String &filePat
 
     setInnerArchive(&packageArchive);
 }
+
+void PackageLoader::relinkSerializedPtr(void **objPtrPtr) const { relinkLoadedPtr(objPtrPtr); }
+
+void PackageLoader::relinkSerializedPtr(const void **objPtrPtr) const { relinkLoadedPtr(objPtrPtr); }
 
 ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
 {
@@ -142,7 +309,10 @@ ObjectArchive &PackageLoader::serialize(cbe::Object *&obj)
         }
         else
         {
-            linkPtrsToContainedObjIdx.emplace_back(&obj, tableIdx);
+            // Set ptr value as SENTINEL_LINK_PTR with lsb bits replaced with containedObjects index(tableIdx)
+            // This will be later replaced with actual value at relinkSerializedPtr(ptr)
+            UPtrInt *objPtrPtr = reinterpret_cast<UPtrInt *>(&obj);
+            *objPtrPtr = delayLinkPtrMask + tableIdx;
         }
     }
     return *this;
@@ -181,7 +351,12 @@ void PackageLoader::prepareLoader()
     (*static_cast<ObjectArchive *>(this)) << dependentObjects;
     packageArchive.setStream(nullptr);
 
-    linkPtrsToContainedObjIdx.reserve(containedObjects.size());
+    // Mask exact bits that are necessary for adding containedObjectIdx
+    delayLinkPtrMask = SENTINEL_LINK_PTR;
+    UPtrInt clearSentinelBits = Math::toHigherPowOf2(containedObjects.size()) - 1;
+    debugAssert(BIT_SET(clearSentinelBits, containedObjects.size() - 1));
+    CLEAR_BITS(delayLinkPtrMask, clearSentinelBits);
+
     streamStartAt = fileStream.cursorPos();
 
     alertAlwaysf(!containedObjects.empty(), "Empty package %s at %s", package->getName(), packageFilePath);
@@ -267,14 +442,8 @@ EPackageLoadSaveResult PackageLoader::load()
         }
     }
     // Now link the pointers that points to delay created objects
-    for (const std::pair<cbe::Object **, SizeT> &objPtrToContainedIdx : linkPtrsToContainedObjIdx)
-    {
-        const PackageContainedData &containedData = containedObjects[objPtrToContainedIdx.second];
-        if (containedData.object.isValid())
-        {
-            (*objPtrToContainedIdx.first) = containedData.object.get();
-        }
-    }
+    linkContainedObjects();
+
     // Broadcast post serialize event
     for (PackageContainedData &containedData : containedObjects)
     {

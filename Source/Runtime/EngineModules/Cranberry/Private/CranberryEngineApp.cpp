@@ -146,24 +146,34 @@ void tempTest()
     }
 #endif
 
-    // const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
-    // const TChar *meshPath = TCHAR("D:/Workspace/VisualStudio/Cranberry/External/Assets/Cone.obj");
-    const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/TestScene.obj");
-    ImportOption opt;
-    opt.filePath = meshPath;
-    opt.importContentPath = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
-    if (AssetImporterBase *importer = IEditorCore::get()->findAssetImporter(opt))
+    if (cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(TCHAR("TestScene")))
     {
-        bool bImportAsScene = true;
-        static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
-                                                    ->setTypeless(&bImportAsScene, opt.optionsStruct);
-
-        std::vector<cbe::Object *> objs = importer->tryImporting(opt);
-        for (cbe::Object *obj : objs)
+        gCBEEngine->worldManager()->initWorld(sceneObj, true);
+    }
+    else
+    {
+        // const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
+        // const TChar *meshPath = TCHAR("D:/Workspace/VisualStudio/Cranberry/External/Assets/Cone.obj");
+        const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/TestScene.obj");
+        ImportOption opt;
+        opt.filePath = meshPath;
+        opt.importContentPath = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
+        if (AssetImporterBase *importer = IEditorCore::get()->findAssetImporter(opt))
         {
-            cbe::save(obj);
+            bool bImportAsScene = true;
+            static_cast<const MemberFieldWrapper *>(PropertyHelper::findField(opt.structType, STRID("bImportAsScene"))->fieldPtr)
+                                                        ->setTypeless(&bImportAsScene, opt.optionsStruct);
+
+            std::vector<cbe::Object *> objs = importer->tryImporting(opt);
+            for (cbe::Object *obj : objs)
+            {
+                cbe::save(obj);
+            }
+            if (!objs.empty())
+            {
+                gCBEEngine->worldManager()->initWorld(cast<cbe::World>(objs[0]), true);
+            }
         }
-        gCBEEngine->worldManager()->initWorld(cast<cbe::World>(objs[0]), true);
     }
 }
 

@@ -21,19 +21,19 @@ class Package;
 class Object;
 } // namespace cbe
 
-class PackageLoader : public ObjectArchive
+class PackageLoader final : public ObjectArchive
 {
 private:
+    static_assert(sizeof(UPtrInt) == 8, "Change below sentinel value for delay link pointer!");
+    constexpr static const UPtrInt SENTINEL_LINK_PTR = 0xCDCDCDCDCDCDCDCD;
+
     cbe::Package *package;
     String packageFilePath;
 
     std::vector<PackageContainedData> containedObjects;
     std::vector<PackageDependencyData> dependentObjects;
 
-    // When ever there is no valid contained object is found when serializing a pointer, It will be stored here along with the contained object
-    // index. If the object becomes available after serialization(example with ObjectTemplate) it will be relinked using this pairs
-    std::vector<std::pair<cbe::Object **, SizeT>> linkPtrsToContainedObjIdx;
-
+    UPtrInt delayLinkPtrMask = 0;
     SizeT streamStartAt;
     BinaryArchive packageArchive;
 
@@ -44,13 +44,18 @@ private:
      * Returns collectedFlags from all outers
      */
     EObjectFlags createContainedObject(PackageContainedData &containedData);
+    template <typename T>
+    FORCE_INLINE void relinkLoadedPtr(T **objPtrPtr) const;
+    FORCE_INLINE void linkContainedObjects() const;
 
 public:
     PackageLoader(cbe::Package *loadingPackage, const String &filePath);
     MAKE_TYPE_NONCOPY_NONMOVE(PackageLoader)
 
     /* ObjectArchive overrides */
-    ObjectArchive &serialize(cbe::Object *&obj) override;
+    void relinkSerializedPtr(void **objPtrPtr) const final;
+    void relinkSerializedPtr(const void **objPtrPtr) const final;
+    ObjectArchive &serialize(cbe::Object *&obj) final;
     /* Overrides ends */
 
     /**

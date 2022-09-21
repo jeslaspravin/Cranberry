@@ -20,7 +20,7 @@ namespace cbe
 class Package;
 }
 
-class PackageSaver : public ObjectArchive
+class PackageSaver final : public ObjectArchive
 {
 private:
     cbe::Package *package;
@@ -38,7 +38,15 @@ public:
     EPackageLoadSaveResult savePackage();
 
     /* ObjectArchive overrides */
-    ObjectArchive &serialize(cbe::Object *&obj) override;
+    void relinkSerializedPtr(void **objPtrPtr) const final
+    {
+        // Nothing to link
+    }
+    void relinkSerializedPtr(const void **objPtrPtr) const final
+    {
+        // Nothing to link
+    }
+    ObjectArchive &serialize(cbe::Object *&obj) final;
     /* Overrides ends */
 
 private:
