@@ -127,6 +127,8 @@ ObjectArchive &ObjectArchive::serialize(cbe::Object *&obj)
     fatalAssertf(false, "cbe::Object serialization not implemented!");
     return *this;
 }
+void ObjectArchive::relinkSerializedPtr(void **objPtrPtr) const { fatalAssertf(false, "relinkSerializedPtr not implemented!"); }
+void ObjectArchive::relinkSerializedPtr(const void **objPtrPtr) const { fatalAssertf(false, "relinkSerializedPtr not implemented!"); }
 
 //////////////////////////////////////////////////////////////////////////
 /// ObjectPathHelper implementations
