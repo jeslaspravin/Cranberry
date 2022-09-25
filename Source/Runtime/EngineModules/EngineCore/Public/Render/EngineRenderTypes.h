@@ -20,6 +20,7 @@ class IGraphicsInstance;
 
 namespace cbe
 {
+class TransformComponent;
 class RenderableComponent;
 class World;
 } // namespace cbe
@@ -29,5 +30,13 @@ struct ComponentRenderSyncInfo
     std::vector<StringID> compsRemoved;
     std::vector<cbe::RenderableComponent *> compsAdded;
     std::vector<cbe::RenderableComponent *> recreateComps;
-    std::vector<cbe::RenderableComponent *> compsTransformed;
+    std::vector<cbe::TransformComponent *> compsTransformed;
+
+    void clear()
+    {
+        compsRemoved.clear();
+        compsAdded.clear();
+        recreateComps.clear();
+        compsTransformed.clear();
+    }
 };
