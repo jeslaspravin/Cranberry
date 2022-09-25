@@ -467,7 +467,7 @@ void ShaderParameters::initParamsMaps(
                     // If 0 runtime offset then it must be resized
                     if (bufferInitStride == 0)
                     {
-                        LOG_WARN(
+                        LOG_DEBUG(
                             "ShaderParameters", "Runtime array \"%s\" struct has 0 size and must be resized before init",
                             paramData.runtimeArray->paramName
                         );
@@ -765,87 +765,6 @@ void ShaderParameters::pullBufferParamUpdates(
     }
     bufferUpdates.clear();
     genericUpdates.clear();
-}
-
-void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minSize)
-{
-    auto bufferDataItr = shaderBuffers.find(bufferName);
-    if (bufferDataItr == shaderBuffers.end())
-    {
-        LOG_ERROR("ShaderParameters", "Buffer %s not found", bufferName);
-        return;
-    }
-
-    BufferParametersData &bufferData = bufferDataItr->second;
-    String bufferNameString = UTF8_TO_TCHAR(
-        bufferData.descriptorInfo->bufferEntryPtr ? bufferData.descriptorInfo->bufferEntryPtr->attributeName.c_str()
-                                                  : bufferData.descriptorInfo->texelBufferEntryPtr->attributeName.c_str()
-    );
-    if (bufferDataItr->second.bIsExternal)
-    {
-        LOG_ERROR("ShaderParameters", "External buffer assigned to %s cannot be resized", bufferNameString);
-        return;
-    }
-
-    if (bufferData.runtimeArray.has_value())
-    {
-        auto paramFieldItr = bufferData.bufferParams.find(bufferData.runtimeArray->paramName);
-        BufferParametersData::BufferParameter &runtimeFieldParam = paramFieldItr->second;
-        const ShaderBufferField *runtimeField = runtimeFieldParam.bufferField;
-
-        if (bufferData.runtimeArray->currentCount < minSize)
-        {
-            // NOTE(Jeslas) : If this stride logic changes here. Change it in setBufferResource()
-            const uint32 dataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
-                                          ? runtimeField->paramInfo->paramNativeStride()
-                                          : runtimeField->stride;
-            const uint32 newArraySize = Math::toHigherPowOf2(minSize * dataStride);
-            bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(newArraySize);
-            bufferData.runtimeArray->currentCount = uint32(Math::floor(newArraySize / float(dataStride)));
-
-            // Set buffer ptr and regenerate buffer param maps
-            (*reinterpret_cast<void **>(runtimeField->fieldPtr(runtimeFieldParam.outerPtr)))
-                = bufferData.runtimeArray->runtimeArrayCpuBuffer.data();
-            bufferData.bufferParams.clear();
-            initBufferParams(
-                bufferData, bufferData.descriptorInfo->bufferParamInfo, bufferData.cpuBuffer, StringID(EInitType::InitType_NoInit)
-            );
-
-            ENQUEUE_COMMAND(ResizeRuntimeBuffer)
-            (
-                [this, bufferName, bufferNameString, runtimeField,
-                 &bufferData](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
-                {
-                    BufferResourceRef oldBuffer = bufferData.gpuBuffer;
-                    // NOTE(Jeslas) : If this stride logic changes here. Change it in setBufferResource()
-                    const uint32 gpuDataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
-                                                     ? runtimeField->paramInfo->paramStride()
-                                                     : runtimeField->stride;
-
-                    // Since only storage can be runtime array
-                    bufferData.gpuBuffer = graphicsHelper->createWriteOnlyBuffer(
-                        graphicsInstance, bufferData.runtimeArray->offset + bufferData.runtimeArray->currentCount * gpuDataStride
-                    );
-                    bufferData.gpuBuffer->setResourceName(
-                        bufferNameString + TCHAR("_") + runtimeField->paramName.toString() + TCHAR("_RuntimeSoA"));
-                    bufferData.gpuBuffer->init();
-
-                    // Push descriptor update
-                    bufferResourceUpdates.insert(bufferName);
-
-                    fatalAssertf(bufferData.gpuBuffer->isValid(), "Runtime array initialization failed");
-                    if (oldBuffer.isValid())
-                    {
-                        if (oldBuffer->isValid())
-                        {
-                            CopyBufferInfo copyRange{ 0, 0, uint32(oldBuffer->getResourceSize()) };
-                            cmdList->copyBuffer(oldBuffer, bufferData.gpuBuffer, { &copyRange, 1 });
-                        }
-                    }
-                }
-            );
-        }
-    }
 }
 
 std::pair<const ShaderParameters::BufferParametersData *, const ShaderParameters::BufferParametersData::BufferParameter *>
@@ -1252,36 +1171,6 @@ bool ShaderParameters::setMatrixAtPath(ArrayView<const StringID> pathNames, Arra
     return setFieldAtPath(pathNames, indices, value);
 }
 
-bool ShaderParameters::setBufferResource(StringID bufferName, BufferResourceRef buffer)
-{
-    auto bufferDataItr = shaderBuffers.find(bufferName);
-    if (bufferDataItr != shaderBuffers.end())
-    {
-        BufferParametersData &bufferData = bufferDataItr->second;
-        bufferData.bIsExternal = true;
-        bufferData.gpuBuffer = buffer;
-        if (bufferData.runtimeArray.has_value())
-        {
-            auto paramFieldItr = bufferData.bufferParams.find(bufferData.runtimeArray->paramName);
-            BufferParametersData::BufferParameter &runtimeFieldParam = paramFieldItr->second;
-            const ShaderBufferField *runtimeField = runtimeFieldParam.bufferField;
-
-            const uint64 gpuByteSize = buffer->getResourceSize() - bufferData.runtimeArray->offset;
-            // NOTE(Jeslas) : If this stride logic changes here. Change it in resizeRuntimeBuffer()
-            const uint32 gpuDataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
-                                             ? runtimeField->paramInfo->paramStride()
-                                             : runtimeField->stride;
-            const uint32 dataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
-                                          ? runtimeField->paramInfo->paramNativeStride()
-                                          : runtimeField->stride;
-            bufferData.runtimeArray->currentCount = gpuByteSize / gpuDataStride;
-            bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(bufferData.runtimeArray->currentCount * dataStride);
-        }
-        bufferResourceUpdates.insert(bufferName);
-    }
-    return false;
-}
-
 bool ShaderParameters::setTexelParam(StringID paramName, BufferResourceRef texelBuffer, uint32 index /*= 0*/)
 {
     auto texelParamItr = shaderTexels.find(paramName);
@@ -1424,12 +1313,6 @@ Matrix4 ShaderParameters::getMatrixAtPath(ArrayView<const StringID> pathNames, A
     return getFieldAtPath<Matrix4>(pathNames, indices);
 }
 
-BufferResourceRef ShaderParameters::getBufferResource(StringID paramName)
-{
-    auto bufferDataItr = shaderBuffers.find(paramName);
-    return (bufferDataItr != shaderBuffers.end()) ? bufferDataItr->second.gpuBuffer : nullptr;
-}
-
 BufferResourceRef ShaderParameters::getTexelParam(StringID paramName, uint32 index /*= 0*/) const
 {
     auto texelParamItr = shaderTexels.find(paramName);
@@ -1470,4 +1353,205 @@ SamplerRef ShaderParameters::getSamplerParam(StringID paramName, uint32 index /*
         return samplerParamItr->second.samplers[index];
     }
     return nullptr;
+}
+
+bool ShaderParameters::setBufferResource(StringID bufferName, BufferResourceRef buffer)
+{
+    auto bufferDataItr = shaderBuffers.find(bufferName);
+    if (bufferDataItr != shaderBuffers.end())
+    {
+        BufferParametersData &bufferData = bufferDataItr->second;
+        bufferData.bIsExternal = true;
+        bufferData.gpuBuffer = buffer;
+        if (bufferData.runtimeArray.has_value())
+        {
+            auto paramFieldItr = bufferData.bufferParams.find(bufferData.runtimeArray->paramName);
+            BufferParametersData::BufferParameter &runtimeFieldParam = paramFieldItr->second;
+            const ShaderBufferField *runtimeField = runtimeFieldParam.bufferField;
+
+            const uint64 gpuByteSize = buffer->getResourceSize() - bufferData.runtimeArray->offset;
+            // NOTE(Jeslas) : If this stride logic changes here. Change it in resizeRuntimeBuffer()
+            const uint32 gpuDataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                             ? runtimeField->paramInfo->paramStride()
+                                             : runtimeField->stride;
+            const uint32 dataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                          ? runtimeField->paramInfo->paramNativeStride()
+                                          : runtimeField->stride;
+            bufferData.runtimeArray->currentCount = gpuByteSize / gpuDataStride;
+            bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(bufferData.runtimeArray->currentCount * dataStride);
+
+            // Set buffer ptr and regenerate buffer param maps
+            (*reinterpret_cast<void **>(runtimeField->fieldPtr(runtimeFieldParam.outerPtr)))
+                = bufferData.runtimeArray->runtimeArrayCpuBuffer.data();
+            bufferData.bufferParams.clear();
+            initBufferParams(
+                bufferData, bufferData.descriptorInfo->bufferParamInfo, bufferData.cpuBuffer, StringID(EInitType::InitType_NoInit)
+            );
+        }
+        bufferResourceUpdates.insert(bufferName);
+    }
+    return false;
+}
+
+BufferResourceRef ShaderParameters::getBufferResource(StringID bufferName)
+{
+    auto bufferDataItr = shaderBuffers.find(bufferName);
+    return (bufferDataItr != shaderBuffers.end()) ? bufferDataItr->second.gpuBuffer : nullptr;
+}
+
+uint32 ShaderParameters::getBufferRequiredSize(StringID bufferName) const
+{
+    auto bufferDataItr = shaderBuffers.find(bufferName);
+    if (bufferDataItr != shaderBuffers.end())
+    {
+        const BufferParametersData &bufferData = bufferDataItr->second;
+        debugAssertf(
+            !bufferData.runtimeArray.has_value(),
+            "Runtime array requires count to calculated required buffer size! %s function will return assuming runtime array count as 1",
+            __func__
+        );
+        if (bufferData.runtimeArray.has_value())
+        {
+            return getRuntimeBufferRequiredSize(bufferName, 1);
+        }
+
+        return bufferData.descriptorInfo->bufferParamInfo->paramStride();
+    }
+    return 0;
+}
+
+uint32 ShaderParameters::getRuntimeBufferRequiredSize(StringID bufferName, uint32 count) const
+{
+    auto bufferDataItr = shaderBuffers.find(bufferName);
+    if (bufferDataItr != shaderBuffers.end())
+    {
+        const BufferParametersData &bufferData = bufferDataItr->second;
+        debugAssert(bufferData.runtimeArray.has_value());
+
+        const BufferParametersData::BufferParameter &runtimeFieldParam
+            = bufferData.bufferParams.find(bufferData.runtimeArray->paramName)->second;
+        const ShaderBufferField *runtimeField = runtimeFieldParam.bufferField;
+
+        // NOTE(Jeslas) : If this stride logic changes here. Change it in resizeRuntimeBuffer()
+        const uint32 gpuDataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                         ? runtimeField->paramInfo->paramStride()
+                                         : runtimeField->stride;
+
+        return bufferData.runtimeArray->offset + gpuDataStride * count;
+    }
+    return 0;
+}
+
+uint32 ShaderParameters::getRuntimeBufferGpuStride(StringID bufferName) const
+{
+    auto bufferDataItr = shaderBuffers.find(bufferName);
+    if (bufferDataItr != shaderBuffers.end())
+    {
+        const BufferParametersData &bufferData = bufferDataItr->second;
+        debugAssert(bufferData.runtimeArray.has_value());
+
+        const BufferParametersData::BufferParameter &runtimeFieldParam
+            = bufferData.bufferParams.find(bufferData.runtimeArray->paramName)->second;
+        const ShaderBufferField *runtimeField = runtimeFieldParam.bufferField;
+
+        // NOTE(Jeslas) : If this stride logic changes here. Change it in resizeRuntimeBuffer()
+        const uint32 gpuDataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                         ? runtimeField->paramInfo->paramStride()
+                                         : runtimeField->stride;
+        return gpuDataStride;
+    }
+    return 0;
+}
+
+uint32 ShaderParameters::getRuntimeBufferCount(StringID bufferName) const
+{
+    auto bufferDataItr = shaderBuffers.find(bufferName);
+    if (bufferDataItr != shaderBuffers.end())
+    {
+        const BufferParametersData &bufferData = bufferDataItr->second;
+        debugAssert(bufferData.runtimeArray.has_value());
+        return bufferData.runtimeArray->currentCount;
+    }
+    return 0;
+}
+
+void ShaderParameters::resizeRuntimeBuffer(StringID bufferName, uint32 minCount)
+{
+    auto bufferDataItr = shaderBuffers.find(bufferName);
+    if (bufferDataItr == shaderBuffers.end())
+    {
+        LOG_ERROR("ShaderParameters", "Buffer %s not found", bufferName);
+        return;
+    }
+
+    BufferParametersData &bufferData = bufferDataItr->second;
+    String bufferNameString = UTF8_TO_TCHAR(
+        bufferData.descriptorInfo->bufferEntryPtr ? bufferData.descriptorInfo->bufferEntryPtr->attributeName.c_str()
+                                                  : bufferData.descriptorInfo->texelBufferEntryPtr->attributeName.c_str()
+    );
+    if (bufferDataItr->second.bIsExternal)
+    {
+        LOG_ERROR("ShaderParameters", "External buffer assigned to %s cannot be resized", bufferNameString);
+        return;
+    }
+
+    if (bufferData.runtimeArray.has_value())
+    {
+        auto paramFieldItr = bufferData.bufferParams.find(bufferData.runtimeArray->paramName);
+        BufferParametersData::BufferParameter &runtimeFieldParam = paramFieldItr->second;
+        const ShaderBufferField *runtimeField = runtimeFieldParam.bufferField;
+
+        if (bufferData.runtimeArray->currentCount < minCount)
+        {
+            // NOTE(Jeslas) : If this stride logic changes here. Change it in setBufferResource()
+            const uint32 dataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                          ? runtimeField->paramInfo->paramNativeStride()
+                                          : runtimeField->stride;
+            const uint32 newArraySize = Math::toHigherPowOf2(minCount * dataStride);
+            bufferData.runtimeArray->runtimeArrayCpuBuffer.resize(newArraySize);
+            bufferData.runtimeArray->currentCount = uint32(Math::floor(newArraySize / float(dataStride)));
+
+            // Set buffer ptr and regenerate buffer param maps
+            (*reinterpret_cast<void **>(runtimeField->fieldPtr(runtimeFieldParam.outerPtr)))
+                = bufferData.runtimeArray->runtimeArrayCpuBuffer.data();
+            bufferData.bufferParams.clear();
+            initBufferParams(
+                bufferData, bufferData.descriptorInfo->bufferParamInfo, bufferData.cpuBuffer, StringID(EInitType::InitType_NoInit)
+            );
+
+            ENQUEUE_COMMAND(ResizeRuntimeBuffer)
+            (
+                [this, bufferName, bufferNameString, runtimeField,
+                 &bufferData](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
+                {
+                    BufferResourceRef oldBuffer = bufferData.gpuBuffer;
+                    // NOTE(Jeslas) : If this stride logic changes here. Change it in setBufferResource()
+                    const uint32 gpuDataStride = BIT_SET(runtimeField->fieldDecorations, ShaderBufferField::IsStruct)
+                                                     ? runtimeField->paramInfo->paramStride()
+                                                     : runtimeField->stride;
+
+                    // Since only storage can be runtime array
+                    bufferData.gpuBuffer = graphicsHelper->createWriteOnlyBuffer(
+                        graphicsInstance, bufferData.runtimeArray->offset + bufferData.runtimeArray->currentCount * gpuDataStride
+                    );
+                    bufferData.gpuBuffer->setResourceName(
+                        bufferNameString + TCHAR("_") + runtimeField->paramName.toString() + TCHAR("_RuntimeSoA"));
+                    bufferData.gpuBuffer->init();
+
+                    // Push descriptor update
+                    bufferResourceUpdates.insert(bufferName);
+
+                    fatalAssertf(bufferData.gpuBuffer->isValid(), "Runtime array initialization failed");
+                    if (oldBuffer.isValid())
+                    {
+                        if (oldBuffer->isValid())
+                        {
+                            CopyBufferInfo copyRange{ 0, 0, uint32(oldBuffer->getResourceSize()) };
+                            cmdList->copyBuffer(oldBuffer, bufferData.gpuBuffer, { &copyRange, 1 });
+                        }
+                    }
+                }
+            );
+        }
+    }
 }
