@@ -606,6 +606,39 @@ void GlobalRenderingContextBase::preparePipelineContext(
     }
 }
 
+const PipelineBase *GlobalRenderingContextBase::getDefaultPipeline(
+    const String &shaderName, EVertexType::Type vertexType /*= EVertexType::NoVertex*/,
+    ERenderPassFormat::Type rpFormat /*= ERenderPassFormat::Generic */
+) const
+{
+    std::unordered_map<StringID, ShaderDataCollection>::const_iterator shaderDataCollectionItr = rawShaderObjects.find(StringID(shaderName));
+    if (shaderDataCollectionItr == rawShaderObjects.cend())
+    {
+        LOG_ERROR("GlobalRenderingContext", "Requested shader %s is not found", shaderName);
+        return nullptr;
+    }
+
+    if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == DrawMeshShaderConfig::staticType())
+    {
+        DrawMeshShaderObject *drawMeshShaderObj = static_cast<DrawMeshShaderObject *>(shaderDataCollectionItr->second.shaderObject);
+
+        GraphicsPipelineBase *graphicsPipeline;
+        drawMeshShaderObj->getShader(vertexType, FramebufferFormat(rpFormat), &graphicsPipeline);
+        return graphicsPipeline;
+    }
+    else if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == UniqueUtilityShaderConfig::staticType())
+    {
+        UniqueUtilityShaderObject *uniqUtilShaderObj = static_cast<UniqueUtilityShaderObject *>(shaderDataCollectionItr->second.shaderObject);
+        return uniqUtilShaderObj->getDefaultPipeline();
+    }
+    else if (shaderDataCollectionItr->second.shaderObject->baseShaderType() == ComputeShaderConfig::staticType())
+    {
+        ComputeShaderObject *computeShaderObj = static_cast<ComputeShaderObject *>(shaderDataCollectionItr->second.shaderObject);
+        return computeShaderObj->getPipeline();
+    }
+    return nullptr;
+}
+
 void GlobalRenderingContextBase::clearExternInitRtsFramebuffer(
     const std::vector<ImageResourceRef> &frameAttachments, GenericRenderPassProperties renderpassProps
 )

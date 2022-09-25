@@ -76,6 +76,16 @@ protected:
 
 public:
     void preparePipelineContext(LocalPipelineContext *pipelineContext, GenericRenderPassProperties renderpassProps);
+    // Below function is just helper to directly get one of following
+    // 1. Graphics pipeline for given DrawMesh shader name, Vertex type and Render pass format
+    // 2. Default graphics pipeline for given UniqueUtility shader name
+    // 3. Compute pipeline for given Compute shader name
+    // The difference between this function and preparePipelineContext() is this function does not creates any new renderpass or framebuffer
+    const PipelineBase *getDefaultPipeline(
+        const String &shaderName, EVertexType::Type vertexType = EVertexType::NoVertex,
+        ERenderPassFormat::Type rpFormat = ERenderPassFormat::Generic
+    ) const;
+
     void clearExternInitRtsFramebuffer(const std::vector<ImageResourceRef> &frameAttachments, GenericRenderPassProperties renderpassProps);
     void clearWindowCanvasFramebuffer(WindowCanvasRef windowCanvas);
     // Clears all Fbs that contains Rts, Use below functions sparingly. If you are sure about Framebuffer layout use

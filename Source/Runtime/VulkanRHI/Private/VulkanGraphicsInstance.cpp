@@ -39,7 +39,9 @@ void VulkanGraphicsInstance::load()
 
     uint32 apiVersion;
     Vk::vkEnumerateInstanceVersion(&apiVersion);
-    LOG_DEBUG("Vulkan", "Vulkan version %d.%d.%d", VK_VERSION_MAJOR(apiVersion), VK_VERSION_MINOR(apiVersion), VK_VERSION_PATCH(apiVersion));
+    const uint32 hVersion = VK_HEADER_VERSION_COMPLETE;
+    LOG_DEBUG("Vulkan", "Header version %d.%d.%d", VK_VERSION_MAJOR(hVersion), VK_VERSION_MINOR(hVersion), VK_VERSION_PATCH(hVersion));
+    LOG_DEBUG("Vulkan", "API version %d.%d.%d", VK_VERSION_MAJOR(apiVersion), VK_VERSION_MINOR(apiVersion), VK_VERSION_PATCH(apiVersion));
 
     uint32 extensionCounts;
     VkResult result = Vk::vkEnumerateInstanceExtensionProperties(nullptr, (uint32_t *)&extensionCounts, nullptr);

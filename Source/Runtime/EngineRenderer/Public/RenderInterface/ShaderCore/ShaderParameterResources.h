@@ -308,8 +308,6 @@ public:
     virtual void updateParams(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
     void pullBufferParamUpdates(std::vector<BatchCopyBufferData> &copies, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance);
 
-    // Resizing must be done at external wrapper buffer name
-    void resizeRuntimeBuffer(StringID bufferName, uint32 minSize);
     // Below set*Param can be used to set parameters directly inside a buffer. It cannot set level deeper than that
     bool setIntParam(StringID paramName, int32 value, uint32 index = 0);
     bool setIntParam(StringID paramName, uint32 value, uint32 index = 0);
@@ -335,7 +333,6 @@ public:
     bool setVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Vector4D &value);
     bool setMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices, const Matrix4 &value);
 
-    bool setBufferResource(StringID bufferName, BufferResourceRef buffer);
     bool setTexelParam(StringID paramName, BufferResourceRef texelBuffer, uint32 index = 0);
     bool setTextureParam(StringID paramName, ImageResourceRef texture, uint32 index = 0);
     bool setTextureParam(StringID paramName, ImageResourceRef texture, SamplerRef sampler, uint32 index = 0);
@@ -364,11 +361,19 @@ public:
     Vector4D getVector4AtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
     Matrix4 getMatrixAtPath(ArrayView<const StringID> pathNames, ArrayView<const uint32> indices) const;
 
-    BufferResourceRef getBufferResource(StringID paramName);
     BufferResourceRef getTexelParam(StringID paramName, uint32 index = 0) const;
     ImageResourceRef getTextureParam(StringID paramName, uint32 index = 0) const;
     ImageResourceRef getTextureParam(SamplerRef &outSampler, StringID paramName, uint32 index = 0) const;
     SamplerRef getSamplerParam(StringID paramName, uint32 index = 0) const;
+
+    bool setBufferResource(StringID bufferName, BufferResourceRef buffer);
+    BufferResourceRef getBufferResource(StringID bufferName);
+    uint32 getBufferRequiredSize(StringID bufferName) const;
+    // Resizing must be done at external wrapper buffer name
+    void resizeRuntimeBuffer(StringID bufferName, uint32 minCount);
+    uint32 getRuntimeBufferRequiredSize(StringID bufferName, uint32 count) const;
+    uint32 getRuntimeBufferGpuStride(StringID bufferName) const;
+    uint32 getRuntimeBufferCount(StringID bufferName) const;
 
 private:
     void initBufferParams(
