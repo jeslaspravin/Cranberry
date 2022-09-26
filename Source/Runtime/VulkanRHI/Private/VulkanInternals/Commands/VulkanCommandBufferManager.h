@@ -204,7 +204,7 @@ public:
 
 private:
     std::map<MemoryResourceRef, ResourceAccessors> resourcesAccessors;
-    std::map<MemoryResourceRef, ResourceQueueTransferInfo> queueTransfers[3];
+    std::map<MemoryResource *, ResourceQueueTransferInfo> queueTransfers[3];
 
     using CmdWaitInfoMap = std::map<const GraphicsResource *, std::vector<CommandResUsageInfo>>;
     CmdWaitInfoMap cmdWaitInfo;
@@ -258,7 +258,7 @@ public:
         EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags,
         VkImageLayout imageLayout, bool bReset
     );
-    std::map<MemoryResourceRef, ResourceQueueTransferInfo> getReleasesFromQueue(EQueueFunction queueType);
+    std::map<MemoryResource *, ResourceQueueTransferInfo> getReleasesFromQueue(EQueueFunction queueType);
 
 private:
     FORCE_INLINE uint32 queueToQTransferIdx(EQueueFunction queueType) { return uint32(queueType) - uint32(EQueueFunction::Compute); }

@@ -32,6 +32,7 @@ public:
     /* RenderableComponent overrides */
     void setupRenderInfo(ComponentRenderInfo &compRenderInfo) const override;
     void clearRenderInfo(const ComponentRenderInfo &compRenderInfo) const override;
+    AABB getLocalBound() const override;
     /* Override ends */
 } META_ANNOTATE(NoExport);
 

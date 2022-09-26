@@ -16,12 +16,18 @@
 #include "Memory/LinearAllocator.h"
 #include "Types/Containers/BitArray.h"
 #include "Types/Containers/SparseVector.h"
-#include "Types/Platform/Threading/CoPaT/JobSystemCoroutine.h"
 #include "ObjectPtrs.h"
 #include "Render/EngineRenderTypes.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderApi/ResourcesInterface/IRenderResource.h"
+#include "RenderInterface/Rendering/IRenderCommandList.h"
+
+struct DrawIndexedIndirectCommand;
+namespace copat
+{
+struct NormalFuncAwaiter;
+}
 
 namespace ERendererIntermTexture
 {
@@ -30,7 +36,7 @@ enum Type
     GBufferDiffuse,
     GBufferNormal,
     GBufferARM,
-    TempTest,
+    FinalColor,
     MaxCount
 };
 
@@ -127,6 +133,9 @@ struct ComponentRenderInfo
 
     BufferResourceRef cpuVertBuffer;
     BufferResourceRef cpuIdxBuffer;
+
+    // Will be same as one mapped in componentToRenderInfo
+    StringID compID;
 };
 
 // 1:1 to each world
@@ -184,8 +193,8 @@ private:
     struct MaterialShaderParams
     {
         // Draw lists are for main GBuffer pass. For lights and other rendering passes separate draw list must be maintained
-        uint64 drawListCount[VERTEX_TYPE_COUNT];
-        BufferResourceRef drawListPerVertType[VERTEX_TYPE_COUNT];
+        BufferResourceRef drawListPerVertType[VERTEX_TYPE_COUNT * 2];
+        std::vector<DrawIndexedIndirectCommand> cpuDrawListPerVertType[VERTEX_TYPE_COUNT];
 
         BufferResourceRef materialData;
         ShaderParametersRef shaderParameter;
@@ -206,6 +215,7 @@ private:
 
     cbe::ObjectPath world;
     RenderInfoVector compsRenderInfo;
+    BitArray<uint64> compsVisibility;
     std::unordered_map<StringID, SizeT> componentToRenderInfo;
     ComponentRenderSyncInfo componentUpdates;
 
@@ -214,6 +224,7 @@ private:
     bool bVertexUpdating = false;
     VerticesPerVertType vertexBuffers[VERTEX_TYPE_COUNT];
 
+    uint32 drawListOffset = 0;
     bool bMaterialsUpdating = false;
     std::unordered_map<String, MaterialShaderParams> shaderToMaterials;
 
@@ -225,7 +236,7 @@ private:
 
     // Initial test code for RT pool
     RendererIntermTexture lastRT;
-    const RendererIntermTexture &getTempTexture(IRenderCommandList *cmdList, Short2D size);
+    const RendererIntermTexture &getFinalColor(IRenderCommandList *cmdList, Short2D size);
 
     ShaderParametersRef clearParams;
 
@@ -270,6 +281,8 @@ private:
     // And only materialIDs to be removed is stored
     FORCE_INLINE void removeMaterialAt(SizeT matVectorIdx, StringID materialID, MaterialShaderParams &shaderMats);
 
+    FORCE_INLINE uint32 getDrawListWriteOffset() const { return (drawListOffset + 1) % 2; }
+
     void addRenderComponents(const std::vector<cbe::RenderableComponent *> &renderComps);
     void removeRenderComponents(const std::vector<StringID> &renderComps);
     void recreateRenderComponents(const std::vector<cbe::RenderableComponent *> &renderComps);
@@ -291,7 +304,10 @@ private:
         recreateMaterialBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     copat::NormalFuncAwaiter
         recreateInstanceBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    void createNextDrawList(const Camera &viewCamera, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void performTransferCopies(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+
+    void updateVisibility(const Camera &viewCamera);
     void renderTheSceneRenderThread(
         Short2D viewportSize, const Camera &viewCamera, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
         const GraphicsHelperAPI *graphicsHelper

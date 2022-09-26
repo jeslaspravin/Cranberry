@@ -1350,12 +1350,19 @@ void VulkanResourcesTracker::clearResource(const MemoryResourceRef &resource)
 
     for (uint32 i = 0; i < ARRAY_LENGTH(queueTransfers); ++i)
     {
-        queueTransfers[i].erase(resource);
+        queueTransfers[i].erase(resource.get());
     }
 }
 
 void VulkanResourcesTracker::clearUnwanted()
 {
+    std::unordered_set<const GraphicsResource *> memResources;
+    {
+        std::vector<GraphicsResource *> memRes;
+        MemoryResource::staticType()->allRegisteredResources(memRes, true);
+        memResources.insert(memRes.cbegin(), memRes.cend());
+    }
+
     for (std::map<MemoryResourceRef, ResourceAccessors>::iterator itr = resourcesAccessors.begin(); itr != resourcesAccessors.end();)
     {
         // If we are the last one holding reference to a resource release it
@@ -1391,22 +1398,17 @@ void VulkanResourcesTracker::clearUnwanted()
 
     for (uint32 i = 0; i < ARRAY_LENGTH(queueTransfers); ++i)
     {
-        // Should I clear everything? Because clearUnused gets called every frame and if frame ended then resources must be visible in other
-        // queues right?
-        // for (std::map<MemoryResourceRef, ResourceQueueTransferInfo>::iterator itr = queueTransfers[i].begin(); itr !=
-        // queueTransfers[i].end();)
-        //{
-        //    if (memResources.find(itr->first.reference()) == memResources.end())
-        //    {
-        //        itr = queueTransfers[i].erase(itr);
-        //    }
-        //    else
-        //    {
-        //        ++itr;
-        //    }
-        //}
-
-        queueTransfers[i].clear();
+        for (std::map<MemoryResource *, ResourceQueueTransferInfo>::iterator itr = queueTransfers[i].begin(); itr != queueTransfers[i].end();)
+        {
+            if (!memResources.contains(itr->first))
+            {
+                itr = queueTransfers[i].erase(itr);
+            }
+            else
+            {
+                ++itr;
+            }
+        }
     }
 }
 
@@ -1775,8 +1777,8 @@ void VulkanResourcesTracker::addResourceToQTransfer(
     VkImageLayout imageLayout, bool bReset
 )
 {
-    std::map<MemoryResourceRef, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
-    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource];
+    std::map<MemoryResource *, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource.get()];
     qTransferInfo.srcLayout = imageLayout;
     if (bReset)
     {
@@ -1794,8 +1796,8 @@ void VulkanResourcesTracker::addResourceToQTransfer(
     EQueueFunction queueType, const MemoryResourceRef &resource, VkPipelineStageFlags2 usedInStages, VkAccessFlags2 accessFlags, bool bReset
 )
 {
-    std::map<MemoryResourceRef, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
-    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource];
+    std::map<MemoryResource *, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    ResourceQueueTransferInfo &qTransferInfo = queueReleaseInfo[resource.get()];
     if (bReset)
     {
         qTransferInfo.srcStages = usedInStages;
@@ -1808,9 +1810,9 @@ void VulkanResourcesTracker::addResourceToQTransfer(
     }
 }
 
-std::map<MemoryResourceRef, VulkanResourcesTracker::ResourceQueueTransferInfo>
+std::map<MemoryResource *, VulkanResourcesTracker::ResourceQueueTransferInfo>
     VulkanResourcesTracker::getReleasesFromQueue(EQueueFunction queueType)
 {
-    std::map<MemoryResourceRef, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
+    std::map<MemoryResource *, ResourceQueueTransferInfo> &queueReleaseInfo = queueTransfers[queueToQTransferIdx(queueType)];
     return std::move(queueReleaseInfo);
 }
