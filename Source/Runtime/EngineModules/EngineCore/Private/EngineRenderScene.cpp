@@ -11,10 +11,16 @@
 
 #include "EngineRenderScene.h"
 #include "Types/Camera/Camera.h"
+#include "IApplicationModule.h"
+#include "ApplicationInstance.h"
 #include "Classes/World.h"
 #include "Classes/Actor.h"
+#include "CBEObjectHelpers.h"
 #include "Components/RenderableComponent.h"
 #include "Types/Platform/Threading/CoPaT/JobSystem.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineWait.h"
+#include "Types/Platform/Threading/CoPaT/CoroutineAwaitAll.h"
+#include "Types/Platform/Threading/CoPaT/DispatchHelpers.h"
 #include "RenderApi/RenderManager.h"
 #include "RenderApi/RenderTaskHelpers.h"
 #include "RenderApi/GBuffersAndTextures.h"
@@ -22,7 +28,6 @@
 #include "IRenderInterfaceModule.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/GlobalRenderVariables.h"
-#include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Rendering/RenderInterfaceContexts.h"
 #include "RenderInterface/Rendering/CommandBuffer.h"
 #include "RenderInterface/ShaderCore/ShaderParameterUtility.h"
@@ -42,7 +47,7 @@ EPixelDataFormat::Type getPixelFormat(Type textureType)
     case ERendererIntermTexture::GBufferARM:
         return GlobalBuffers::getGBufferAttachmentFormat(ERenderPassFormat::Multibuffer)[2];
         break;
-    case ERendererIntermTexture::TempTest:
+    case ERendererIntermTexture::FinalColor:
         return GlobalBuffers::getGBufferAttachmentFormat(ERenderPassFormat::Multibuffer)[0];
         break;
     default:
@@ -64,8 +69,8 @@ const TChar *toString(Type textureType)
     case ERendererIntermTexture::GBufferARM:
         return TCHAR("GBuffer_ARM");
         break;
-    case ERendererIntermTexture::TempTest:
-        return TCHAR("TempTest");
+    case ERendererIntermTexture::FinalColor:
+        return TCHAR("FinalColor");
         break;
     default:
         break;
@@ -265,11 +270,11 @@ void SceneRenderTexturePool::clearPool(IRenderCommandList *cmdList)
 STRINGID_CONSTEXPR static const StringID MATERIAL_BUFFER_NAME = STRID("materials");
 STRINGID_CONSTEXPR static const StringID INSTANCES_BUFFER_NAME = STRID("instancesWrapper");
 
-const RendererIntermTexture &EngineRenderScene::getTempTexture(IRenderCommandList *cmdList, Short2D size)
+const RendererIntermTexture &EngineRenderScene::getFinalColor(IRenderCommandList *cmdList, Short2D size)
 {
     debugAssert(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get() == EPixelSampleCount::SampleCount1);
 
-    return rtPool.getTexture(cmdList, ERendererIntermTexture::TempTest, size, {});
+    return rtPool.getTexture(cmdList, ERendererIntermTexture::FinalColor, size, {});
 }
 
 String EngineRenderScene::getTransferCmdBufferName() const
@@ -300,6 +305,7 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
          this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             syncWorldCompsRenderThread(syncInfo, cmdList, graphicsInstance, graphicsHelper);
+            performTransferCopies(cmdList, graphicsInstance, graphicsHelper);
         }
     );
 
@@ -385,11 +391,14 @@ void EngineRenderScene::renderTheScene(Short2D viewportSize, const Camera &viewC
          this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             syncWorldCompsRenderThread(compUpdates, cmdList, graphicsInstance, graphicsHelper);
-            performTransferCopies(cmdList, graphicsInstance, graphicsHelper);
+            updateVisibility(viewCamera);
+
+            createNextDrawList(viewCamera, cmdList, graphicsInstance, graphicsHelper);
 
             cmdList->finishCmd(getCmdBufferName());
-            lastRT = getTempTexture(cmdList, viewportSize);
+            lastRT = getFinalColor(cmdList, viewportSize);
             renderTheSceneRenderThread(viewportSize, viewCamera, cmdList, graphicsInstance, graphicsHelper);
+            performTransferCopies(cmdList, graphicsInstance, graphicsHelper);
             // Clear once every buffer cycle
             if ((frameCount % BUFFER_COUNT) == 0)
             {
@@ -774,7 +783,7 @@ void EngineRenderScene::updateTfComponents(
 void EngineRenderScene::createRenderInfo(cbe::RenderableComponent *comp, SizeT compRenderInfoIdx)
 {
     ComponentRenderInfo &compRenderInfo = compsRenderInfo[compRenderInfoIdx];
-
+    compRenderInfo.compID = comp->getStringID();
     comp->setupRenderInfo(compRenderInfo);
 
     // TODO(Jeslas): Remove below demo code
@@ -900,6 +909,73 @@ void EngineRenderScene::performTransferCopies(
     CommandSubmitInfo2 submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
     cmdList->submitCmd(EQueuePriority::High, submitInfo);
+}
+
+void EngineRenderScene::updateVisibility(const Camera &viewCamera)
+{
+    const SizeT totalCompCapacity = compsRenderInfo.totalCount();
+    compsVisibility.resize(totalCompCapacity);
+    compsVisibility.resetRange(0, totalCompCapacity);
+
+    ApplicationInstance *appInstance = IApplicationModule::get()->getApplication();
+    // Will be inside frustum only if every other condition to render a mesh is valid
+    std::vector<bool, CBEStrStackAllocatorExclusive<bool>> compsInsideFrustum(totalCompCapacity, false, appInstance->getRenderFrameAllocator());
+
+    Matrix4 w2clip = viewCamera.projectionMatrix() * viewCamera.viewMatrix();
+
+    copat::waitOnAwaitable(copat::dispatch(
+        appInstance->jobSystem,
+        copat::DispatchFunctionType::createLambda(
+            [this, &compsInsideFrustum, &w2clip](uint32 idx)
+            {
+                if (!compsRenderInfo.isValid(idx))
+                {
+                    return;
+                }
+
+                const ComponentRenderInfo &compRenderInfo = compsRenderInfo[idx];
+                cbe::RenderableComponent *renderComp
+                    = compRenderInfo.meshID.isValid() ? cbe::cast<cbe::RenderableComponent>(cbe::get(compRenderInfo.compID)) : nullptr;
+                if (vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshID) && compRenderInfo.tfIndex != 0
+                    && compRenderInfo.materialIndex != 0 && renderComp != nullptr)
+                {
+                    Matrix4 obj2Clip = w2clip * compRenderInfo.worldTf.getTransformMatrix();
+                    AABB localBound = renderComp->getLocalBound();
+                    if (!localBound.isValidAABB())
+                    {
+                        return;
+                    }
+
+                    Vector3D aabbCorners[8];
+                    localBound.boundCorners(aabbCorners);
+
+                    for (uint32 i = 0; i != ARRAY_LENGTH(aabbCorners); ++i)
+                    {
+                        Vector4D projectedPt = obj2Clip * Vector4D(aabbCorners[i], 1.0f);
+                        projectedPt.x() = Math::abs(projectedPt.x());
+                        projectedPt.y() = Math::abs(projectedPt.y());
+                        projectedPt.z() /= projectedPt.w();
+                        projectedPt.w() = Math::abs(projectedPt.w());
+                        if (projectedPt.x() <= projectedPt.w() && projectedPt.y() <= projectedPt.w() && projectedPt.z() > 0
+                            && projectedPt.z() <= 1)
+                        {
+                            compsInsideFrustum[idx] = true;
+                            return;
+                        }
+                    }
+                }
+            }
+        ),
+        totalCompCapacity
+    ));
+
+    for (SizeT i = 0; i != totalCompCapacity; ++i)
+    {
+        if (compsInsideFrustum[i])
+        {
+            compsVisibility[i] = true;
+        }
+    }
 }
 
 void EngineRenderScene::syncWorldCompsRenderThread(
@@ -1454,6 +1530,126 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
     bInstanceParamsUpdating = false;
 }
 
+void EngineRenderScene::createNextDrawList(
+    const Camera &viewCamera, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+)
+{
+    const SizeT totalCompCapacity = compsRenderInfo.totalCount();
+    const uint32 drawListWriteOffset = getDrawListWriteOffset();
+
+    for (std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
+    {
+        for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
+        {
+            SizeT readDrawListCount = shaderMats.second.cpuDrawListPerVertType[vertType].size();
+            shaderMats.second.cpuDrawListPerVertType[vertType].clear();
+            shaderMats.second.cpuDrawListPerVertType[vertType].reserve(readDrawListCount);
+        }
+    }
+
+    std::vector<SizeT> compIndices;
+    compIndices.reserve(compsVisibility.countOnes());
+    for (SizeT i = 0; i != totalCompCapacity; ++i)
+    {
+        if (!compsVisibility[i])
+        {
+            continue;
+        }
+        compIndices.emplace_back(i);
+    }
+    std::sort(
+        compIndices.begin(), compIndices.end(),
+        [this, &viewCamera](SizeT lhs, SizeT rhs)
+        {
+            return (compsRenderInfo[lhs].worldTf.getTranslation() - viewCamera.translation()).sqrlength()
+                   < (compsRenderInfo[rhs].worldTf.getTranslation() - viewCamera.translation()).sqrlength();
+        }
+    );
+    for (SizeT compIdx : compIndices)
+    {
+        const ComponentRenderInfo &compRenderInfo = compsRenderInfo[compIdx];
+        debugAssert(
+            compRenderInfo.meshID.isValid() && vertexBuffers[compRenderInfo.vertexType].meshes.contains(compRenderInfo.meshID)
+            && compRenderInfo.materialIndex != 0 && compRenderInfo.tfIndex != 0
+        );
+
+        MaterialShaderParams &shaderMats = shaderToMaterials[compRenderInfo.shaderName];
+        const MeshVertexView &meshView = vertexBuffers[compRenderInfo.vertexType].meshes[compRenderInfo.meshID];
+        DrawIndexedIndirectCommand indexedIndirectDraw{ .indexCount = uint32(meshView.idxCount),
+                                                        .instanceCount = 1,
+                                                        .firstIndex = uint32(meshView.idxOffset),
+                                                        .vertexOffset = int32(meshView.vertOffset),
+                                                        .firstInstance = uint32(compRenderInfo.tfIndex) };
+
+        shaderMats.cpuDrawListPerVertType[compRenderInfo.vertexType].emplace_back(std::move(indexedIndirectDraw));
+    }
+
+    // Now that all cpu draw lists are prepared now sort and merge
+    // Right now sorting and merging is not much worth it, However after modifying recreateSceneVerts to keeps instances of same mesh together
+    // this will improve
+    for (std::pair<const String, MaterialShaderParams> &shaderMatsPair : shaderToMaterials)
+    {
+        MaterialShaderParams &shaderMats = shaderMatsPair.second;
+        for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
+        {
+            uint32 drawListIdx = vertType * 2 + drawListWriteOffset;
+            std::vector<DrawIndexedIndirectCommand> &cpuDrawList = shaderMats.cpuDrawListPerVertType[vertType];
+            std::sort(
+                cpuDrawList.begin(), cpuDrawList.end(),
+                [](const DrawIndexedIndirectCommand &lhs, const DrawIndexedIndirectCommand &rhs)
+                {
+                    return lhs.firstInstance == rhs.firstInstance
+                               ? lhs.vertexOffset == rhs.vertexOffset ? lhs.firstIndex < rhs.firstIndex : lhs.vertexOffset < rhs.vertexOffset
+                               : lhs.firstInstance < rhs.firstInstance;
+                }
+            );
+
+            for (SizeT i = 0; i != cpuDrawList.size(); ++i)
+            {
+                SizeT nextIdx = i + 1;
+                uint32 nextInstanceExp = cpuDrawList[i].firstInstance + 1;
+                while (nextIdx != cpuDrawList.size() && cpuDrawList[nextIdx].firstInstance == nextInstanceExp
+                       && cpuDrawList[nextIdx].vertexOffset == cpuDrawList[i].vertexOffset
+                       && cpuDrawList[nextIdx].firstIndex == cpuDrawList[i].firstIndex)
+                {
+                    nextIdx++;
+                    nextInstanceExp++;
+                }
+
+                // Set the instance count to that many count and erase the consecutive same meshes
+                cpuDrawList[i].instanceCount = nextIdx - i;
+                cpuDrawList.erase(cpuDrawList.begin() + i + 1, cpuDrawList.begin() + nextIdx);
+            }
+
+            if (cpuDrawList.empty())
+            {
+                continue;
+            }
+
+            // Resize GPU buffer if necessary
+            BufferResourceRef bufferRes = shaderMats.drawListPerVertType[drawListIdx];
+            if (!bufferRes.isValid() || !bufferRes->isValid() || bufferRes->bufferCount() < cpuDrawList.size())
+            {
+                bufferRes
+                    = graphicsHelper->createReadOnlyIndirectBuffer(graphicsInstance, sizeof(DrawIndexedIndirectCommand), cpuDrawList.size());
+                bufferRes->setResourceName(
+                    world.getObjectName()
+                    + TCHAR("_") + shaderMatsPair.first + EVertexType::toString(EVertexType::Type(vertType)) + TCHAR("_IdxIndirect"));
+                bufferRes->init();
+
+                shaderMats.drawListPerVertType[drawListIdx] = bufferRes;
+            }
+
+            // Now issue copies
+            BatchCopyBufferData copyData{ .dst = bufferRes,
+                                          .dstOffset = 0,
+                                          .dataToCopy = cpuDrawList.data(),
+                                          .size = uint32(bufferRes->bufferStride() * cpuDrawList.size()) };
+            shaderMats.drawListCopies.emplace_back(copyData);
+        }
+    }
+}
+
 void EngineRenderScene::renderTheSceneRenderThread(
     Short2D viewportSize, const Camera &viewCamera, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
     const GraphicsHelperAPI *graphicsHelper
@@ -1469,7 +1665,7 @@ void EngineRenderScene::renderTheSceneRenderThread(
     {
         clearParams = graphicsHelper->createShaderParameters(graphicsInstance, pipelineCntxt.getPipeline()->getParamLayoutAtSet(0));
         clearParams->setResourceName(TCHAR("ClearParams"));
-        clearParams->setVector4Param(STRID("clearColor"), LinearColorConst::BLACK);
+        clearParams->setVector4Param(STRID("clearColor"), LinearColorConst::CYAN);
         clearParams->init();
     }
 

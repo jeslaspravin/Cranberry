@@ -130,8 +130,8 @@ struct ShaderBufferTypedField : public ShaderBufferField
 template <typename OuterType, typename MemberType>
 struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
 {
-    using ShaderBufferTypedField<OuterType>::EShaderBufferFieldDecorations;
-    using ShaderBufferTypedField<OuterType>::FieldDecorationFlags;
+    using typename ShaderBufferTypedField<OuterType>::EShaderBufferFieldDecorations;
+    using typename ShaderBufferTypedField<OuterType>::FieldDecorationFlags;
     using ShaderBufferTypedField<OuterType>::fieldDecorations;
     using ShaderBufferTypedField<OuterType>::paramInfo;
     using ShaderBufferTypedField<OuterType>::size;
@@ -278,8 +278,8 @@ struct ShaderBufferMemberField : public ShaderBufferTypedField<OuterType>
 template <typename OuterType, typename MemberType>
 struct ShaderBufferStructField : public ShaderBufferMemberField<OuterType, MemberType>
 {
-    using ShaderBufferMemberField<OuterType, MemberType>::EShaderBufferFieldDecorations;
-    using ShaderBufferTypedField<OuterType>::FieldDecorationFlags;
+    using typename ShaderBufferMemberField<OuterType, MemberType>::EShaderBufferFieldDecorations;
+    using typename ShaderBufferTypedField<OuterType>::FieldDecorationFlags;
     using ShaderBufferMemberField<OuterType, MemberType>::fieldDecorations;
     using ShaderBufferMemberField<OuterType, MemberType>::paramInfo;
     using typename ShaderBufferMemberField<OuterType, MemberType>::FieldPtr;

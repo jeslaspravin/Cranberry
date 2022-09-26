@@ -258,7 +258,7 @@ public:
 
     T center() const { return (maxBound + minBound) * 0.5f; }
 
-    void boundCorners(ArrayView<T> &corners) const
+    void boundCorners(const ArrayView<T> &corners) const
     {
         uint32 totalCorners = Math::pow(2, d);
         fatalAssertf(corners.size() >= totalCorners, "Corners must be greater or equal to %d", totalCorners);

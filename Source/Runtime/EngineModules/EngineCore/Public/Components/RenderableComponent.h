@@ -27,6 +27,7 @@ class ENGINECORE_EXPORT RenderableComponent : public TransformComponent
 public:
     virtual void setupRenderInfo(ComponentRenderInfo &compRenderInfo) const = 0;
     virtual void clearRenderInfo(const ComponentRenderInfo &compRenderInfo) const = 0;
+    virtual AABB getLocalBound() const = 0;
 
 } META_ANNOTATE(NoExport);
 

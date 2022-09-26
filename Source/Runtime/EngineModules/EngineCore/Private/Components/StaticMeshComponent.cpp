@@ -31,4 +31,13 @@ void StaticMeshComponent::setupRenderInfo(ComponentRenderInfo &compRenderInfo) c
 
 void StaticMeshComponent::clearRenderInfo(const ComponentRenderInfo &compRenderInfo) const {}
 
+AABB StaticMeshComponent::getLocalBound() const
+{
+    if (cbe::isValid(mesh))
+    {
+        return mesh->bounds;
+    }
+    return {};
+}
+
 } // namespace cbe
