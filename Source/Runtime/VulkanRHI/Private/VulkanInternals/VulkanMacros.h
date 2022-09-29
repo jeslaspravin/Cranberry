@@ -204,6 +204,13 @@
     VariableName.pNext = nullptr
 #endif
 
+#ifndef PHYSICAL_DEVICE_MAINTAINENCE4_FEATURES
+#define PHYSICAL_DEVICE_MAINTAINENCE4_FEATURES(VariableName)                                                                                   \
+    VkPhysicalDeviceMaintenance4Features VariableName{};                                                                                       \
+    VariableName.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES;                                                             \
+    VariableName.pNext = nullptr
+#endif
+
 #ifndef PHYSICAL_DEVICE_PROPERTIES_2
 #define PHYSICAL_DEVICE_PROPERTIES_2(VariableName)                                                                                             \
     VkPhysicalDeviceProperties2KHR VariableName{};                                                                                             \

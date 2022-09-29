@@ -13,7 +13,12 @@ shader_outputs(
     OUTPUTS compiled_outputs)
 add_custom_command(OUTPUT ${compiled_outputs}
     DEPENDS GameBuilder SpirvShaderReflection ${src_files}
-    COMMAND GameBuilder -mode shaderCompile -targetPath "\"${shader_output_dir}\"" -intermediatePath "\"${PROJECT_BINARY_DIR}/Intermediate/$<CONFIG>\"" -api vulkan
+    COMMAND GameBuilder 
+        -mode shaderCompile 
+        -targetPath "\"${shader_output_dir}\"" 
+        -intermediatePath "\"${PROJECT_BINARY_DIR}/Intermediate/$<CONFIG>\"" 
+        -api vulkan 
+        -glsl-version 450
     WORKING_DIRECTORY $<TARGET_FILE_DIR:GameBuilder>
     USES_TERMINAL
     COMMAND_EXPAND_LISTS

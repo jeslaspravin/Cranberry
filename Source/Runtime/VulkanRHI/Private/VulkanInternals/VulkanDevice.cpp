@@ -500,19 +500,22 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
     }
 
     { // Features
-        PHYSICAL_DEVICE_FEATURES_2(advancedFeatures);
-        PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES(tSemaphoreFeatures);
-        advancedFeatures.pNext = &tSemaphoreFeatures;
-        PHYSICAL_DEVICE_DESC_INDEXING_FEATURES(tDescIdxFeatures);
-        tSemaphoreFeatures.pNext = &tDescIdxFeatures;
-        PHYSICAL_DEVICE_SYNC_2_FEATURES(tSync2Features);
-        tDescIdxFeatures.pNext = &tSync2Features;
-        Vk::vkGetPhysicalDeviceFeatures2(physicalDevice, &advancedFeatures);
+        PHYSICAL_DEVICE_FEATURES_2(tmpAdvancedFeatures);
+        PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES(tmpTSemaphoreFeatures);
+        tmpAdvancedFeatures.pNext = &tmpTSemaphoreFeatures;
+        PHYSICAL_DEVICE_DESC_INDEXING_FEATURES(tmpDescIdxFeatures);
+        tmpTSemaphoreFeatures.pNext = &tmpDescIdxFeatures;
+        PHYSICAL_DEVICE_SYNC_2_FEATURES(tmpSync2Features);
+        tmpDescIdxFeatures.pNext = &tmpSync2Features;
+        PHYSICAL_DEVICE_MAINTAINENCE4_FEATURES(tmpMaintainence4Features);
+        tmpSync2Features.pNext = &tmpMaintainence4Features;
+        Vk::vkGetPhysicalDeviceFeatures2(physicalDevice, &tmpAdvancedFeatures);
 
-        features = std::move(advancedFeatures.features);
-        timelineSemaphoreFeatures = std::move(tSemaphoreFeatures);
-        descIndexingFeatures = std::move(tDescIdxFeatures);
-        sync2Features = std::move(tSync2Features);
+        features = std::move(tmpAdvancedFeatures.features);
+        timelineSemaphoreFeatures = std::move(tmpTSemaphoreFeatures);
+        descIndexingFeatures = std::move(tmpDescIdxFeatures);
+        sync2Features = std::move(tmpSync2Features);
+        maintainence4Features = std::move(tmpMaintainence4Features);
         markEnabledFeatures();
     }
 
@@ -570,6 +573,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice &&device)
     descIndexingFeatures = std::move(rVulkanDevice.descIndexingFeatures);                                                                      \
     descIndexingProps = std::move(rVulkanDevice.descIndexingProps);                                                                            \
     sync2Features = std::move(rVulkanDevice.sync2Features);                                                                                    \
+    maintainence4Features = std::move(rVulkanDevice.maintainence4Features);                                                                    \
     graphicsDebug = { this };
 
 VulkanDevice::VulkanDevice(VulkanDevice &&rVulkanDevice) { MOVE_IMPL(); }
@@ -598,6 +602,7 @@ void VulkanDevice::operator=(VulkanDevice &&rVulkanDevice) { MOVE_IMPL(); }
     descIndexingFeatures = otherDevice.descIndexingFeatures;                                                                                   \
     descIndexingProps = otherDevice.descIndexingProps;                                                                                         \
     sync2Features = otherDevice.sync2Features;                                                                                                 \
+    maintainence4Features = otherDevice.maintainence4Features;                                                                                 \
     graphicsDebug = { this };
 
 VulkanDevice::VulkanDevice(const VulkanDevice &otherDevice) { COPY_IMPL(); }
@@ -676,6 +681,7 @@ void VulkanDevice::createLogicDevice()
     deviceCreateInfo.pNext = &timelineSemaphoreFeatures;
     timelineSemaphoreFeatures.pNext = &enabledDescIndexingFeatures;
     enabledDescIndexingFeatures.pNext = &sync2Features;
+    sync2Features.pNext = &maintainence4Features;
 
     const VkResult vulkanDeviceCreationResult = Vk::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
     fatalAssertf(vulkanDeviceCreationResult == VK_SUCCESS, "Failed creating logical device");
