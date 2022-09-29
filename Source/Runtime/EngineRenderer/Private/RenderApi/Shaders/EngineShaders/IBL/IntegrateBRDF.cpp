@@ -15,7 +15,7 @@
 #include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "ShaderDataTypes.h"
 
-#define SAMPLE_COUNT TCHAR("SAMPLE_COUNT")
+#define SAMPLE_COUNT STRID("SAMPLE_COUNT")
 #define INTEGRATEBRDF_SHADER_NAME TCHAR("IntegrateBRDF")
 
 class IntegrateBRDFShader final : public ComputeShaderConfigTemplated<16, 16, 1>

@@ -27,6 +27,8 @@ struct ViewData
 class ENGINERENDERER_EXPORT RenderSceneBase
 {
 public:
+    constexpr static const TChar *VIEW_PARAM_NAME = TCHAR("viewData");
+
     static const std::map<StringID, ShaderBufferParamInfo *> &sceneViewParamInfo();
     static void sceneViewSpecConsts(SpecConstantNamedMap &specializationConst);
 };

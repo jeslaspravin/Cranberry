@@ -710,7 +710,7 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
     viewData.invView = viewData.view.inverse();
     viewData.projection = camera.projectionMatrix();
     viewData.invProjection = viewData.projection.inverse();
-    viewParameters->setBuffer(TCHAR("viewData"), viewData);
+    viewParameters->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
     viewParameters->init();
 
     // Setting values to instance params and material shader params happens along with global draw
@@ -725,7 +725,7 @@ void ExperimentalEngineGoochModel::setupShaderParameterParams(IGraphicsInstance 
         shaderUniqParams.second->init();
     }
 
-    lightCommon->setBuffer(TCHAR("viewData"), viewData);
+    lightCommon->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
     lightCommon->setIntParam(TCHAR("lightsCount"), uint32(sceneLightData.size()));
     lightCommon->setFloatParam(TCHAR("invLightsCount"), 1.0f / sceneLightData.size());
     lightCommon->init();
@@ -1844,9 +1844,9 @@ void ExperimentalEngineGoochModel::draw(class ImGuiDrawInterface *drawInterface)
     }
 }
 
- TestGameEngine *GameEngineWrapper::createEngineInstance()
+TestGameEngine *GameEngineWrapper::createEngineInstance()
 {
-     static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
-     return engineInst.get();
- }
+    static SharedPtr<ExperimentalEngineGoochModel> engineInst = std::make_shared<ExperimentalEngineGoochModel>();
+    return engineInst.get();
+}
 #endif

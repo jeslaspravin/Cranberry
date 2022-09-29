@@ -54,9 +54,9 @@ public:
         static GoochModelLightCommonBufferParamInfo LIGHTCOMMON_INFO;
         static GoochModelLightArrayBufferParamInfo LIGHTDATA_INFO;
         static const std::map<StringID, ShaderBufferParamInfo *> SHADER_PARAMS_INFO{
-            {TCHAR("lightCommon"),                                           &LIGHTCOMMON_INFO},
-            { TCHAR("lightArray"),                                             &LIGHTDATA_INFO},
-                                                           {   TCHAR("viewData"), RenderSceneBase::sceneViewParamInfo().at(TCHAR("viewData"))}
+            {            TCHAR("lightCommon"),                                                                    &LIGHTCOMMON_INFO},
+              {             TCHAR("lightArray"),                                                                      &LIGHTDATA_INFO},
+                {RenderSceneBase::VIEW_PARAM_NAME, RenderSceneBase::sceneViewParamInfo().find(RenderSceneBase::VIEW_PARAM_NAME)->second}
         };
 
         for (const std::pair<const StringID, ShaderBufferParamInfo *> &bufferInfo : SHADER_PARAMS_INFO)

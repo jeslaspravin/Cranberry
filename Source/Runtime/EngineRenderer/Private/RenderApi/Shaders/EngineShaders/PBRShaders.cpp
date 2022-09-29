@@ -127,10 +127,10 @@ protected:
 public:
     void getSpecializationConsts(SpecConstantNamedMap &specializationConst) const override
     {
-        specializationConst[TCHAR("PCF_KERNEL_SIZE")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::PCF_KERNEL_SIZE.get());
+        specializationConst[STRID("PCF_KERNEL_SIZE")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::PCF_KERNEL_SIZE.get());
         specializationConst
-            [TCHAR("POINT_PCF_SAMPLES")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::POINT_LIGHT_PCF_KERNEL_SIZE.get());
-        specializationConst[TCHAR("POINT_PCF_KERNEL_EXTEND")] = SpecializationConstUtility::fromValue(0.2f);
+            [STRID("POINT_PCF_SAMPLES")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::POINT_LIGHT_PCF_KERNEL_SIZE.get());
+        specializationConst[STRID("POINT_PCF_KERNEL_EXTEND")] = SpecializationConstUtility::fromValue(0.2f);
     }
 };
 

@@ -159,6 +159,9 @@ Transform3D Transform3D::inverse() const
 {
     Matrix3 invRot(RotationMatrix(transformRotation).matrix().transpose());
     Vector3D invScale(invScaleSafe());
+    // If inversing the transform we are going reverse.
+    // ie) Inverse scaling and Inverse rotating and then Inverse translating
+    // So the translation has to be scaled and rotated in reverse to compensate the added inverse rotation and scaling
     return Transform3D((invRot * (invScale * -transformTranslation)), RotationMatrix(invRot).asRotation(), invScale);
 }
 

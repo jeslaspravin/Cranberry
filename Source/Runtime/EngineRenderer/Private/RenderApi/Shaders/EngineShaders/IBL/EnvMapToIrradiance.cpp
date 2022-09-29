@@ -15,7 +15,7 @@
 #include "RenderApi/Shaders/Base/UtilityShaders.h"
 #include "ShaderDataTypes.h"
 
-#define SAMPLE_COUNT TCHAR("SAMPLE_COUNT")
+#define SAMPLE_COUNT STRID("SAMPLE_COUNT")
 #define ENVMAPTODIFFIRRAD_SHADER_NAME TCHAR("EnvToDiffuseIrradiance")
 
 template <uint32 SizeX, uint32 SizeY, uint32 SizeZ>
@@ -62,7 +62,7 @@ public:
     void getSpecializationConsts(SpecConstantNamedMap &specializationConst) const
     {
         specializationConst[SAMPLE_COUNT] = SpecializationConstUtility::fromValue(1024u);
-        specializationConst[TCHAR("MIP_COUNT")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::MAX_PREFILTERED_CUBE_MIPS.get());
+        specializationConst[STRID("MIP_COUNT")] = SpecializationConstUtility::fromValue(GlobalRenderVariables::MAX_PREFILTERED_CUBE_MIPS.get());
     }
 };
 

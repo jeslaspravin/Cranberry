@@ -81,5 +81,6 @@ public:
     Vector3D screenToWorldFwd(const Vector2D &screenPos) const;
 
     Matrix4 viewMatrix() const;
+    Matrix4 viewMatrix(Matrix4 &outInvView) const;
     Matrix4 projectionMatrix() const;
 };
