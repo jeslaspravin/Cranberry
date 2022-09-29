@@ -183,6 +183,15 @@ void Parser::parse(const Instruction &instruction)
 	auto op = static_cast<Op>(instruction.op);
 	uint32_t length = instruction.length;
 
+	// HACK for glslang that might emit OpEmitMeshTasksEXT followed by return / branch.
+	// Instead of failing hard, just ignore it.
+	if (ignore_trailing_block_opcodes)
+	{
+		ignore_trailing_block_opcodes = false;
+		if (op == OpReturn || op == OpBranch || op == OpUnreachable)
+			return;
+	}
+
 	switch (op)
 	{
 	case OpSourceContinued:
@@ -347,6 +356,10 @@ void Parser::parse(const Instruction &instruction)
 
 		case ExecutionModeOutputVertices:
 			execution.output_vertices = ops[2];
+			break;
+
+		case ExecutionModeOutputPrimitivesEXT:
+			execution.output_primitives = ops[2];
 			break;
 
 		default:
@@ -1020,7 +1033,16 @@ void Parser::parse(const Instruction &instruction)
 			}
 			else
 			{
-				ir.block_meta[current_block->next_block] &= ~ParsedIR::BLOCK_META_SELECTION_MERGE_BIT;
+				// Collapse loops if we have to.
+				bool collapsed_loop = current_block->true_block == current_block->merge_block &&
+				                      current_block->merge == SPIRBlock::MergeLoop;
+
+				if (collapsed_loop)
+				{
+					ir.block_meta[current_block->merge_block] &= ~ParsedIR::BLOCK_META_LOOP_MERGE_BIT;
+					ir.block_meta[current_block->continue_block] &= ~ParsedIR::BLOCK_META_CONTINUE_BIT;
+				}
+
 				current_block->next_block = current_block->true_block;
 				current_block->condition = 0;
 				current_block->true_block = 0;
@@ -1092,6 +1114,18 @@ void Parser::parse(const Instruction &instruction)
 			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
 		current_block->terminator = SPIRBlock::IgnoreIntersection;
 		current_block = nullptr;
+		break;
+
+	case OpEmitMeshTasksEXT:
+		if (!current_block)
+			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
+		current_block->terminator = SPIRBlock::EmitMeshTasks;
+		for (uint32_t i = 0; i < 3; i++)
+			current_block->mesh.groups[i] = ops[i];
+		current_block->mesh.payload = length >= 4 ? ops[3] : 0;
+		current_block = nullptr;
+		// Currently glslang is bugged and does not treat EmitMeshTasksEXT as a terminator.
+		ignore_trailing_block_opcodes = true;
 		break;
 
 	case OpReturn:
