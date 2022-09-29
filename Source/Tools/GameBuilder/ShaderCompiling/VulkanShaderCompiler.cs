@@ -9,13 +9,14 @@
  *  License can be read in LICENSE file at this repository's root
  */
 
-﻿using GameBuilder.BuildFileUtils;
+using GameBuilder.BuildFileUtils;
 using GameBuilder.Logger;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace GameBuilder.ShaderCompiling
 {
@@ -48,6 +49,8 @@ namespace GameBuilder.ShaderCompiling
         private Dictionary<string, List<Tuple<string, IntermediateTargetFile>>> shaders;// Maps shader type to list of shaders of that type
         private Dictionary<string, TargetFile> shaderTargets;// Maps each individual pipelines to shaders of that pipeline
 
+        private string targetEnv = "vulkan1.3";
+        private string glslVersion = "460";
 
         private struct VulkanShaderArg
         {
@@ -68,16 +71,30 @@ namespace GameBuilder.ShaderCompiling
             { "geom" , new VulkanShaderArg(new CommandArgument("stage", "S", "geom"), new CommandArgument("entry", "e", "mainGeo")) },
             { "comp" , new VulkanShaderArg(new CommandArgument("stage", "S", "comp"), new CommandArgument("entry", "e", "mainComp")) }
         };
-        private const string COMPILE_COMMAND = "@\"{0}\" -{1} {2} -{3} {4} --source-entrypoint main -H -o \"{5}\" \"{6}\"";
+        private const string COMPILE_COMMAND = "@\"{0}\" -{1} {2} -{3} {4} --source-entrypoint main --target-env {5} --glsl-version {6} -H -o \"{7}\" \"{8}\"";
         private const string SPIRV_REFLECTION_EXE = "SpirvShaderReflection.exe";
 
-        public VulkanShaderCompiler(string compilerPath, string intermediatePath, string targetPath) 
+        public VulkanShaderCompiler(string compilerPath, string intermediatePath, string targetPath)
             : base(compilerPath, intermediatePath)
         {
             if (compilerDir == null)
             {
                 compilerDir = Path.Combine(System.Environment.GetEnvironmentVariable("VULKAN_SDK"), "bin");
             }
+            if (compilerDir != null)
+            {
+                string sdkVersion = Path.GetFileName(Path.GetDirectoryName(compilerDir));
+                string[] versionNums = sdkVersion.Split('.');
+                if (versionNums.Length >= 2)
+                {
+                    int major, minor;
+                    if (int.TryParse(versionNums[0], out major) && int.TryParse(versionNums[1], out minor))
+                    {
+                        targetEnv = $"vulkan{major}.{minor}";
+                    }
+                }
+            }
+
             spirvReflectorDir = Directories.TOOLS_BINARIES_ROOT;
             shaderSrcFolder = Path.Combine(Directories.ENGINE_ROOT, "Source/Runtime/EngineShaders");
             shaderTargetDir = Path.Combine(targetPath, "Shaders");
@@ -139,6 +156,11 @@ namespace GameBuilder.ShaderCompiling
                 return false;
             }
 
+            if (consoleArgs.ContainsKey("glsl-version"))
+            {
+                glslVersion = consoleArgs["glsl-version"][0];
+            }
+
             HashSet<string> compiledShaders = new HashSet<string>();
             bSuccess = compileAllShadersToSpirV(compiler, ref compiledShaders);
 
@@ -165,7 +187,7 @@ namespace GameBuilder.ShaderCompiling
                     List<string> targetFiles = new List<string>();
                     targetFiles.Add(shaderFile.Item2.targetOutputFile);
                     // Check target from intermediate as well
-                    if(shaderTargets.ContainsKey(shaderName))
+                    if (shaderTargets.ContainsKey(shaderName))
                     {
                         targetFiles.Add(shaderTargets[shaderName].targetReflectionFile);
                         targetFiles.Add(shaderTargets[shaderName].targetShaderFile);
@@ -179,6 +201,8 @@ namespace GameBuilder.ShaderCompiling
                         , compiler
                         , shaderArg.stageType.argKey, shaderArg.stageType.argValue
                         , shaderArg.entry.argKey, shaderArg.entry.argValue
+                        , targetEnv
+                        , glslVersion
                         , shaderFile.Item2.targetOutputFile
                         , shaderFile.Item1
                     );
@@ -202,7 +226,7 @@ namespace GameBuilder.ShaderCompiling
                     File.WriteAllText(shaderFile.Item2.logFile, executionResult, Encoding.UTF8);
                 }
             }
-            if(!bSuccess)
+            if (!bSuccess)
             {
                 compileErrors = errors.ToString();
             }
