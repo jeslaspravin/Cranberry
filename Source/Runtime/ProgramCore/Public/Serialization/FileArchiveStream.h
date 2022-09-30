@@ -21,6 +21,7 @@ private:
     GenericFile *file;
     uint64 fileCursor;
     bool bIsReadOnly;
+    bool bIsOpened;
 
 public:
     FileArchiveStream(const String &filePath, bool bReading);

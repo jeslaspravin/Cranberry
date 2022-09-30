@@ -22,7 +22,7 @@ FileArchiveStream::FileArchiveStream(const String &filePath, bool bReading)
     file->setSharingMode(EFileSharing::ReadOnly);
     if (file->isFile())
     {
-        file->openOrCreate();
+        bIsOpened = file->openOrCreate();
     }
 }
 
@@ -120,7 +120,7 @@ uint8 FileArchiveStream::readBackwardAt(SizeT idx) const
 
 uint64 FileArchiveStream::cursorPos() const { return fileCursor; }
 
-bool FileArchiveStream::isAvailable() const { return file->isFile() && file->exists(); }
+bool FileArchiveStream::isAvailable() const { return bIsOpened; }
 
 bool FileArchiveStream::hasMoreData(SizeT requiredByteCount) const
 {

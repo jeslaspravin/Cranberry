@@ -891,8 +891,11 @@ void ExperimentalEngineGoochModel::resizeLightingRts(const Size2D &size)
     {
         frameResources[i].lightingPassRt->setTextureSize(size);
         frameResources[i].lightingPassResolved->setTextureSize(size);
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
+
+        const IRenderTargetTexture *rtPtr = frameResources[i].lightingPassRt;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
+        rtPtr = frameResources[i].lightingPassResolved;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
     }
 }
 
@@ -934,7 +937,8 @@ void ExperimentalEngineGoochModel::destroyFrameResources()
         frameResources[i].usageWaitSemaphore[0].reset();
         frameResources[i].recordingFence.reset();
 
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        const IRenderTargetTexture *rtPtr = frameResources[i].lightingPassRt;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassRt);
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassResolved);
     }
@@ -954,15 +958,18 @@ void ExperimentalEngineGoochModel::getPipelineForSubpass()
     // Gooch model
     drawGoochPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawGoochPipelineContext.materialName = TCHAR("GoochModel");
-    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { frameResources[0].lightingPassRt });
+    const IRenderTargetTexture *rtPtr = frameResources[0].lightingPassRt;
+    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { &rtPtr, 1 });
 
     clearQuadPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     clearQuadPipelineContext.materialName = TCHAR("ClearRT");
-    rendererModule->getRenderManager()->preparePipelineContext(&clearQuadPipelineContext, { frameResources[0].lightingPassResolved });
+    rtPtr = frameResources[0].lightingPassResolved;
+    rendererModule->getRenderManager()->preparePipelineContext(&clearQuadPipelineContext, { &rtPtr, 1 });
 
     resolveLightRtPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     resolveLightRtPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
-    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { frameResources[0].lightingPassResolved });
+    rtPtr = frameResources[0].lightingPassResolved;
+    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { &rtPtr, 1 });
 
     drawQuadPipelineContext.windowCanvas = windowCanvas;
     drawQuadPipelineContext.materialName = TCHAR("DrawQuadFromTexture");
@@ -975,7 +982,8 @@ void ExperimentalEngineGoochModel::getPipelineForSubpass()
 
     imguiShaderCntxt.materialName = TCHAR("DrawImGui");
     imguiShaderCntxt.renderpassFormat = ERenderPassFormat::Generic;
-    rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { frameResources[0].lightingPassRt });
+    rtPtr = frameResources[0].lightingPassRt;
+    rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { &rtPtr, 1 });
 }
 
 void ExperimentalEngineGoochModel::clearPipelineContexts()
@@ -1280,11 +1288,13 @@ void ExperimentalEngineGoochModel::frameRender(
     drawQuadPipelineContext.swapchainIdx = index;
     rendererModule->getRenderManager()->preparePipelineContext(&drawQuadPipelineContext);
 
-    rendererModule->getRenderManager()->preparePipelineContext(
-        &drawSmPipelineContext, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index)
-    );
-    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { frameResources[index].lightingPassRt });
-    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { frameResources[index].lightingPassResolved });
+    auto gbufferRts = GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index);
+    rendererModule->getRenderManager()->preparePipelineContext(&drawSmPipelineContext, gbufferRts);
+
+    const IRenderTargetTexture *rtPtr = frameResources[index].lightingPassRt;
+    rendererModule->getRenderManager()->preparePipelineContext(&drawGoochPipelineContext, { &rtPtr, 1 });
+    rtPtr = frameResources[index].lightingPassResolved;
+    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { &rtPtr, 1 });
 
     GraphicsPipelineQueryParams queryParam;
     queryParam.cullingMode = ECullingMode::BackFace;
@@ -1458,9 +1468,8 @@ void ExperimentalEngineGoochModel::frameRender(
 
             if (drawQuadDescs.isValid())
             {
-                rendererModule->getRenderManager()->preparePipelineContext(
-                    &resolveLightRtPipelineContext, { frameResources[index].lightingPassRt }
-                );
+                rtPtr = frameResources[index].lightingPassRt;
+                rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { &rtPtr, 1 });
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, resolveLightRtPipelineContext, scissor, {}, clearValues);
                 {
@@ -1483,7 +1492,8 @@ void ExperimentalEngineGoochModel::frameRender(
         cmdList->cmdReleaseQueueResources(cmdBuffer, EQueueFunction::Compute);
 
         // Drawing text
-        rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { frameResources[index].lightingPassRt });
+        rtPtr = frameResources[index].lightingPassRt;
+        rendererModule->getRenderManager()->preparePipelineContext(&imguiShaderCntxt, { &rtPtr, 1 });
         if (!textToRender.empty())
         {
             RenderPassAdditionalProps additionalProps;

@@ -14,6 +14,7 @@
 #include "EngineRendererExports.h"
 #include "RenderTaskHelpers.h"
 #include "RenderInterface/CoreGraphicsTypes.h"
+#include "Types/Containers/ArrayView.h"
 
 #include <queue>
 
@@ -50,20 +51,13 @@ public:
 
     // Fills pipelineContext with info necessary to render using this particular requested pipeline, with
     // given framebuffer attachments
-    void preparePipelineContext(class LocalPipelineContext *pipelineContext, const std::vector<IRenderTargetTexture *> &rtTextures);
+    void preparePipelineContext(class LocalPipelineContext *pipelineContext, ArrayView<const IRenderTargetTexture *> rtTextures);
     void preparePipelineContext(class LocalPipelineContext *pipelineContext);
     // Hint on render pass format in case of non generic render pass is necessary
     void clearExternInitRtsFramebuffer(
-        const std::vector<IRenderTargetTexture *> &rtTextures, ERenderPassFormat::Type rpFormat = ERenderPassFormat::Generic
+        ArrayView<const IRenderTargetTexture *> rtTextures, ERenderPassFormat::Type rpFormat = ERenderPassFormat::Generic
     );
 
 private:
-    /**
-     *  Helpers
-     */
-
-    // Get generic render pass properties from Render targets
-    GenericRenderPassProperties renderpassPropsFromRTs(const std::vector<IRenderTargetTexture *> &rtTextures) const;
-
     void createSingletons();
 };

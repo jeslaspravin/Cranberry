@@ -651,7 +651,7 @@ void VulkanCommandList::cmdCopyBuffer_GenBarriers(
                 }
                 else
                 {
-                    memBarrier.srcAccessMask |= VK_ACCESS_2_SHADER_READ_BIT;
+                    memBarrier.srcAccessMask |= VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_UNIFORM_READ_BIT;
                 }
             }
             else
@@ -1546,28 +1546,28 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, A
                     }
                     // If not written but read last in same command buffer then wait, This
                     // will not be empty if writing/storage buffer
-                    else if (!barrierInfo->accessors.lastReadsIn.empty())
+                    // Queue change can also trigger this, but in that case lastReadsIn will not be same
+                    else if (barrierInfo->accessors.lastReadsIn.size() == 1)
                     {
-                        memBarrier.srcAccessMask = VK_ACCESS_2_UNIFORM_READ_BIT;
-                        memBarrier.srcQueueFamilyIndex = qFamilyIdx;
-                        if (barrierInfo->accessors.allReadStages != 0)
+                        memBarrier.srcStageMask = barrierInfo->accessors.allReadStages;
+                        memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastReadsIn.front());
+                        if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastReadsIn.front())
+                            || BIT_SET(barrierInfo->accessors.allReadStages, VK_PIPELINE_STAGE_2_TRANSFER_BIT))
                         {
-                            memBarrier.srcStageMask = barrierInfo->accessors.allReadStages;
+                            memBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
                         }
                         else
                         {
-                            LOG_ERROR(
-                                "VulkanRenderCmdList",
-                                "Invalid all read pipeline stages %d when "
-                                "expected before writing to buffer",
-                                barrierInfo->accessors.allReadStages
-                            );
-                            memBarrier.srcStageMask = resourceShaderStageFlags();
+                            memBarrier.srcAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_UNIFORM_READ_BIT;
                         }
                         memBarrier.srcStageMask &= cmdBufferSupportedStages;
                         memBarrier.srcAccessMask &= EngineToVulkanAPI::accessMaskForStages(memBarrier.srcStageMask) & cmdBufferSupportedAccess;
-                        // No need for Q transfer as this will be in same queue
                         bufferBarriers.emplace_back(memBarrier);
+
+                        if (barrierInfo->accessors.lastReadsIn.front() != cmdBuffer)
+                        {
+                            resourcesTracker.addResourceToQTransfer(cmdBufferQ, resource.first, stagesUsed, accessMask, false);
+                        }
                     }
                 }
             }
@@ -1697,6 +1697,193 @@ void VulkanCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, A
     if (!imageBarriers.empty() || !bufferBarriers.empty())
     {
         cmdPipelineBarrier(vDevice, cmdBufferManager.getRawBuffer(cmdBuffer), imageBarriers, bufferBarriers);
+    }
+}
+
+void VulkanCommandList::cmdBarrierVertices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> vertexBuffers)
+{
+    const VkPipelineStageFlags2 stagesUsed = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
+    const EQueueFunction cmdBufferQ = cmdBufferManager.getCmdBufferQueue(cmdBuffer);
+    uint32 qFamilyIdx = cmdBufferManager.getQueueFamilyIdx(cmdBufferQ);
+    VkPipelineStageFlagBits2 cmdBufferSupportedStages = EngineToVulkanAPI::pipelinesSupportedPerQueue(vDevice->getQueueFlags(qFamilyIdx));
+    VkAccessFlags2 cmdBufferSupportedAccess = EngineToVulkanAPI::accessMaskPerQueue(vDevice->getQueueFlags(qFamilyIdx));
+
+    std::vector<VkBufferMemoryBarrier2> barriers;
+    barriers.reserve(vertexBuffers.size());
+
+    BUFFER_MEMORY_BARRIER2(memBarrier);
+    memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = qFamilyIdx;
+    memBarrier.dstStageMask = stagesUsed;
+    memBarrier.dstAccessMask = VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
+    for (uint32 i = 0; i != vertexBuffers.size(); ++i)
+    {
+        const BufferResourceRef &vertBuffer = vertexBuffers[i];
+        bool bIsWriteBuffer = graphicsHelperCache->isRWBuffer(vertBuffer) || graphicsHelperCache->isWriteOnlyBuffer(vertBuffer);
+
+        std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
+            = bIsWriteBuffer ? resourcesTracker.readFromWriteBuffers(cmdBuffer, { vertBuffer, stagesUsed })
+                             : resourcesTracker.readOnlyBuffers(cmdBuffer, { vertBuffer, stagesUsed });
+
+        if (barrierInfo && barrierInfo->accessors.lastWrite)
+        {
+            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+            memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
+
+            if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
+                || BIT_SET(barrierInfo->accessors.lastWriteStage, VK_PIPELINE_STAGE_2_TRANSFER_BIT))
+            {
+                memBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            }
+            else
+            {
+                memBarrier.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT;
+            }
+            // else only read so no issues
+
+            memBarrier.buffer = vertBuffer.reference<VulkanBufferResource>()->buffer;
+            memBarrier.offset = 0;
+            memBarrier.size = vertBuffer->getResourceSize();
+
+            memBarrier.srcStageMask &= cmdBufferSupportedStages;
+            memBarrier.srcAccessMask &= EngineToVulkanAPI::accessMaskForStages(memBarrier.srcStageMask) & cmdBufferSupportedAccess;
+            barriers.emplace_back(memBarrier);
+            // If access is across queue family
+            if (memBarrier.srcQueueFamilyIndex != memBarrier.dstQueueFamilyIndex)
+            {
+                resourcesTracker.addResourceToQTransfer(cmdBufferQ, vertBuffer, stagesUsed, memBarrier.dstAccessMask, false);
+            }
+        }
+    }
+
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+    if (!barriers.empty())
+    {
+        cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, barriers);
+    }
+}
+
+void VulkanCommandList::cmdBarrierIndices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indexBuffers)
+{
+    const VkPipelineStageFlags2 stagesUsed = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
+    const EQueueFunction cmdBufferQ = cmdBufferManager.getCmdBufferQueue(cmdBuffer);
+    uint32 qFamilyIdx = cmdBufferManager.getQueueFamilyIdx(cmdBufferQ);
+    VkPipelineStageFlagBits2 cmdBufferSupportedStages = EngineToVulkanAPI::pipelinesSupportedPerQueue(vDevice->getQueueFlags(qFamilyIdx));
+    VkAccessFlags2 cmdBufferSupportedAccess = EngineToVulkanAPI::accessMaskPerQueue(vDevice->getQueueFlags(qFamilyIdx));
+
+    std::vector<VkBufferMemoryBarrier2> barriers;
+    barriers.reserve(indexBuffers.size());
+
+    for (const BufferResourceRef &indexBuffer : indexBuffers)
+    {
+        BUFFER_MEMORY_BARRIER2(memBarrier);
+        memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = qFamilyIdx;
+        memBarrier.dstStageMask = stagesUsed;
+        memBarrier.dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT;
+
+        bool bIsWriteBuffer = graphicsHelperCache->isRWBuffer(indexBuffer) || graphicsHelperCache->isWriteOnlyBuffer(indexBuffer);
+        std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
+            = bIsWriteBuffer ? resourcesTracker.readFromWriteBuffers(cmdBuffer, { indexBuffer, stagesUsed })
+                             : resourcesTracker.readOnlyBuffers(cmdBuffer, { indexBuffer, stagesUsed });
+
+        if (barrierInfo && barrierInfo->accessors.lastWrite)
+        {
+            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+            memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
+
+            if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
+                || BIT_SET(barrierInfo->accessors.lastWriteStage, VK_PIPELINE_STAGE_2_TRANSFER_BIT))
+            {
+                memBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            }
+            else
+            {
+                memBarrier.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT;
+            }
+            // else only read so no issues
+
+            memBarrier.buffer = indexBuffer.reference<VulkanBufferResource>()->buffer;
+            memBarrier.offset = 0;
+            memBarrier.size = indexBuffer->getResourceSize();
+
+            memBarrier.srcStageMask &= cmdBufferSupportedStages;
+            memBarrier.srcAccessMask &= EngineToVulkanAPI::accessMaskForStages(memBarrier.srcStageMask) & cmdBufferSupportedAccess;
+            // If access is across queue family
+            if (memBarrier.srcQueueFamilyIndex != memBarrier.dstQueueFamilyIndex)
+            {
+                resourcesTracker.addResourceToQTransfer(cmdBufferQ, indexBuffer, stagesUsed, memBarrier.dstAccessMask, false);
+            }
+
+            barriers.emplace_back(std::move(memBarrier));
+        }
+    }
+
+    if (!barriers.empty())
+    {
+        VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+        cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, barriers);
+    }
+}
+
+void VulkanCommandList::cmdBarrierIndirectDraws(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indirectDrawBuffers)
+{
+    const VkPipelineStageFlags2 stagesUsed = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+    const EQueueFunction cmdBufferQ = cmdBufferManager.getCmdBufferQueue(cmdBuffer);
+    uint32 qFamilyIdx = cmdBufferManager.getQueueFamilyIdx(cmdBufferQ);
+    VkPipelineStageFlagBits2 cmdBufferSupportedStages = EngineToVulkanAPI::pipelinesSupportedPerQueue(vDevice->getQueueFlags(qFamilyIdx));
+    VkAccessFlags2 cmdBufferSupportedAccess = EngineToVulkanAPI::accessMaskPerQueue(vDevice->getQueueFlags(qFamilyIdx));
+
+    std::vector<VkBufferMemoryBarrier2> barriers;
+    barriers.reserve(indirectDrawBuffers.size());
+
+    for (const BufferResourceRef &drawCmdsBuffer : indirectDrawBuffers)
+    {
+        BUFFER_MEMORY_BARRIER2(memBarrier);
+        memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = qFamilyIdx;
+        memBarrier.dstStageMask = stagesUsed;
+        memBarrier.dstAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+
+        bool bIsWriteBuffer = graphicsHelperCache->isRWBuffer(drawCmdsBuffer) || graphicsHelperCache->isWriteOnlyBuffer(drawCmdsBuffer);
+        std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
+            = bIsWriteBuffer ? resourcesTracker.readFromWriteBuffers(cmdBuffer, { drawCmdsBuffer, stagesUsed })
+                             : resourcesTracker.readOnlyBuffers(cmdBuffer, { drawCmdsBuffer, stagesUsed });
+
+        if (barrierInfo && barrierInfo->accessors.lastWrite)
+        {
+            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
+            memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
+
+            if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
+                || BIT_SET(barrierInfo->accessors.lastWriteStage, VK_PIPELINE_STAGE_2_TRANSFER_BIT))
+            {
+                memBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            }
+            else
+            {
+                memBarrier.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT;
+            }
+            // else only read so no issues
+
+            memBarrier.buffer = drawCmdsBuffer.reference<VulkanBufferResource>()->buffer;
+            memBarrier.offset = 0;
+            memBarrier.size = drawCmdsBuffer->getResourceSize();
+
+            memBarrier.srcStageMask &= cmdBufferSupportedStages;
+            memBarrier.srcAccessMask &= EngineToVulkanAPI::accessMaskForStages(memBarrier.srcStageMask) & cmdBufferSupportedAccess;
+
+            // If access is across queue family
+            if (memBarrier.srcQueueFamilyIndex != memBarrier.dstQueueFamilyIndex)
+            {
+                resourcesTracker.addResourceToQTransfer(cmdBufferQ, drawCmdsBuffer, stagesUsed, memBarrier.dstAccessMask, false);
+            }
+
+            barriers.emplace_back(std::move(memBarrier));
+        }
+    }
+
+    if (!barriers.empty())
+    {
+        VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
+        cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, barriers);
     }
 }
 
@@ -2088,127 +2275,19 @@ void VulkanCommandList::cmdBindVertexBuffers(
 {
     fatalAssertf(vertexBuffers.size() == offsets.size(), "Offsets must be equivalent to vertex buffers");
 
-    const VkPipelineStageFlags2 stagesUsed = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
-    const EQueueFunction cmdBufferQ = cmdBufferManager.getCmdBufferQueue(cmdBuffer);
-    uint32 qFamilyIdx = cmdBufferManager.getQueueFamilyIdx(cmdBufferQ);
-    VkPipelineStageFlagBits2 cmdBufferSupportedStages = EngineToVulkanAPI::pipelinesSupportedPerQueue(vDevice->getQueueFlags(qFamilyIdx));
-    VkAccessFlags2 cmdBufferSupportedAccess = EngineToVulkanAPI::accessMaskPerQueue(vDevice->getQueueFlags(qFamilyIdx));
-
-    std::vector<VkBufferMemoryBarrier2> barriers;
-    barriers.reserve(vertexBuffers.size());
-
-    BUFFER_MEMORY_BARRIER2(memBarrier);
-    memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = qFamilyIdx;
-    memBarrier.dstStageMask = stagesUsed;
-    memBarrier.dstAccessMask = VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
-    for (uint32 i = 0; i != vertexBuffers.size(); ++i)
-    {
-        const BufferResourceRef &vertBuffer = vertexBuffers[i];
-        bool bIsWriteBuffer = graphicsHelperCache->isRWBuffer(vertBuffer) || graphicsHelperCache->isWriteOnlyBuffer(vertBuffer);
-
-        std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
-            = bIsWriteBuffer ? resourcesTracker.readFromWriteBuffers(cmdBuffer, { vertBuffer, stagesUsed })
-                             : resourcesTracker.readOnlyBuffers(cmdBuffer, { vertBuffer, stagesUsed });
-
-        if (barrierInfo && barrierInfo->accessors.lastWrite)
-        {
-            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
-            memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
-
-            if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
-                || BIT_SET(barrierInfo->accessors.lastWriteStage, VK_PIPELINE_STAGE_2_TRANSFER_BIT))
-            {
-                memBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-            }
-            else
-            {
-                memBarrier.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT;
-            }
-            // else only read so no issues
-
-            memBarrier.buffer = vertBuffer.reference<VulkanBufferResource>()->buffer;
-            memBarrier.offset = offsets[i];
-            memBarrier.size = vertBuffer->getResourceSize() - offsets[i];
-
-            memBarrier.srcStageMask &= cmdBufferSupportedStages;
-            memBarrier.srcAccessMask &= EngineToVulkanAPI::accessMaskForStages(memBarrier.srcStageMask) & cmdBufferSupportedAccess;
-            barriers.emplace_back(memBarrier);
-            // If access is across queue family
-            if (memBarrier.srcQueueFamilyIndex != memBarrier.dstQueueFamilyIndex)
-            {
-                resourcesTracker.addResourceToQTransfer(cmdBufferQ, vertBuffer, stagesUsed, memBarrier.dstAccessMask, false);
-            }
-        }
-    }
-
-    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
-    if (!barriers.empty())
-    {
-        cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, barriers);
-    }
-
     std::vector<VkBuffer> vertBuffers(vertexBuffers.size());
     for (int32 i = 0; i < vertexBuffers.size(); ++i)
     {
         vertBuffers[i] = vertexBuffers[i].reference<VulkanBufferResource>()->buffer;
     }
 
+    VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
     vDevice->vkCmdBindVertexBuffers(rawCmdBuffer, firstBinding, uint32(vertexBuffers.size()), vertBuffers.data(), offsets.data());
 }
 
 void VulkanCommandList::cmdBindIndexBuffer(const GraphicsResource *cmdBuffer, const BufferResourceRef &indexBuffer, uint64 offset /*= 0*/)
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
-
-    // Barrier index buffer
-    {
-        const VkPipelineStageFlags2 stagesUsed = VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
-        const EQueueFunction cmdBufferQ = cmdBufferManager.getCmdBufferQueue(cmdBuffer);
-        uint32 qFamilyIdx = cmdBufferManager.getQueueFamilyIdx(cmdBufferQ);
-        VkPipelineStageFlagBits2 cmdBufferSupportedStages = EngineToVulkanAPI::pipelinesSupportedPerQueue(vDevice->getQueueFlags(qFamilyIdx));
-        VkAccessFlags2 cmdBufferSupportedAccess = EngineToVulkanAPI::accessMaskPerQueue(vDevice->getQueueFlags(qFamilyIdx));
-
-        BUFFER_MEMORY_BARRIER2(memBarrier);
-        memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = qFamilyIdx;
-        memBarrier.dstStageMask = stagesUsed;
-        memBarrier.dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT;
-
-        bool bIsWriteBuffer = graphicsHelperCache->isRWBuffer(indexBuffer) || graphicsHelperCache->isWriteOnlyBuffer(indexBuffer);
-        std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
-            = bIsWriteBuffer ? resourcesTracker.readFromWriteBuffers(cmdBuffer, { indexBuffer, stagesUsed })
-                             : resourcesTracker.readOnlyBuffers(cmdBuffer, { indexBuffer, stagesUsed });
-
-        if (barrierInfo && barrierInfo->accessors.lastWrite)
-        {
-            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
-            memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
-
-            if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
-                || BIT_SET(barrierInfo->accessors.lastWriteStage, VK_PIPELINE_STAGE_2_TRANSFER_BIT))
-            {
-                memBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-            }
-            else
-            {
-                memBarrier.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT;
-            }
-            // else only read so no issues
-
-            memBarrier.buffer = indexBuffer.reference<VulkanBufferResource>()->buffer;
-            memBarrier.offset = offset;
-            memBarrier.size = indexBuffer->getResourceSize() - offset;
-
-            memBarrier.srcStageMask &= cmdBufferSupportedStages;
-            memBarrier.srcAccessMask &= EngineToVulkanAPI::accessMaskForStages(memBarrier.srcStageMask) & cmdBufferSupportedAccess;
-            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, { &memBarrier, 1 });
-            // If access is across queue family
-            if (memBarrier.srcQueueFamilyIndex != memBarrier.dstQueueFamilyIndex)
-            {
-                resourcesTracker.addResourceToQTransfer(cmdBufferQ, indexBuffer, stagesUsed, memBarrier.dstAccessMask, false);
-            }
-        }
-    }
-
     vDevice->vkCmdBindIndexBuffer(
         rawCmdBuffer, indexBuffer.reference<VulkanBufferResource>()->buffer, offset, VkIndexType::VK_INDEX_TYPE_UINT32
     );
@@ -2241,54 +2320,6 @@ void VulkanCommandList::cmdDrawIndexedIndirect(
 )
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
-    // Barrier draw command buffer
-    {
-        const VkPipelineStageFlags2 stagesUsed = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
-        const EQueueFunction cmdBufferQ = cmdBufferManager.getCmdBufferQueue(cmdBuffer);
-        uint32 qFamilyIdx = cmdBufferManager.getQueueFamilyIdx(cmdBufferQ);
-        VkPipelineStageFlagBits2 cmdBufferSupportedStages = EngineToVulkanAPI::pipelinesSupportedPerQueue(vDevice->getQueueFlags(qFamilyIdx));
-        VkAccessFlags2 cmdBufferSupportedAccess = EngineToVulkanAPI::accessMaskPerQueue(vDevice->getQueueFlags(qFamilyIdx));
-
-        BUFFER_MEMORY_BARRIER2(memBarrier);
-        memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = qFamilyIdx;
-        memBarrier.dstStageMask = stagesUsed;
-        memBarrier.dstAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
-
-        bool bIsWriteBuffer = graphicsHelperCache->isRWBuffer(drawCmdsBuffer) || graphicsHelperCache->isWriteOnlyBuffer(drawCmdsBuffer);
-        std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
-            = bIsWriteBuffer ? resourcesTracker.readFromWriteBuffers(cmdBuffer, { drawCmdsBuffer, stagesUsed })
-                             : resourcesTracker.readOnlyBuffers(cmdBuffer, { drawCmdsBuffer, stagesUsed });
-
-        if (barrierInfo && barrierInfo->accessors.lastWrite)
-        {
-            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
-            memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
-
-            if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
-                || BIT_SET(barrierInfo->accessors.lastWriteStage, VK_PIPELINE_STAGE_2_TRANSFER_BIT))
-            {
-                memBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-            }
-            else
-            {
-                memBarrier.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT;
-            }
-            // else only read so no issues
-
-            memBarrier.buffer = drawCmdsBuffer.reference<VulkanBufferResource>()->buffer;
-            memBarrier.offset = bufferOffset;
-            memBarrier.size = drawCmdsBuffer->getResourceSize() - bufferOffset;
-
-            memBarrier.srcStageMask &= cmdBufferSupportedStages;
-            memBarrier.srcAccessMask &= EngineToVulkanAPI::accessMaskForStages(memBarrier.srcStageMask) & cmdBufferSupportedAccess;
-            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, { &memBarrier, 1 });
-            // If access is across queue family
-            if (memBarrier.srcQueueFamilyIndex != memBarrier.dstQueueFamilyIndex)
-            {
-                resourcesTracker.addResourceToQTransfer(cmdBufferQ, drawCmdsBuffer, stagesUsed, memBarrier.dstAccessMask, false);
-            }
-        }
-    }
 
     for (uint32 drawnCount = 0; drawnCount < drawCount;)
     {
@@ -2305,55 +2336,6 @@ void VulkanCommandList::cmdDrawIndirect(
 )
 {
     VkCommandBuffer rawCmdBuffer = cmdBufferManager.getRawBuffer(cmdBuffer);
-    // Barrier draw command buffer
-    {
-        const VkPipelineStageFlags2 stagesUsed = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
-        const EQueueFunction cmdBufferQ = cmdBufferManager.getCmdBufferQueue(cmdBuffer);
-        uint32 qFamilyIdx = cmdBufferManager.getQueueFamilyIdx(cmdBufferQ);
-        VkPipelineStageFlagBits2 cmdBufferSupportedStages = EngineToVulkanAPI::pipelinesSupportedPerQueue(vDevice->getQueueFlags(qFamilyIdx));
-        VkAccessFlags2 cmdBufferSupportedAccess = EngineToVulkanAPI::accessMaskPerQueue(vDevice->getQueueFlags(qFamilyIdx));
-
-        BUFFER_MEMORY_BARRIER2(memBarrier);
-        memBarrier.dstQueueFamilyIndex = memBarrier.srcQueueFamilyIndex = qFamilyIdx;
-        memBarrier.dstStageMask = stagesUsed;
-        memBarrier.dstAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
-
-        bool bIsWriteBuffer = graphicsHelperCache->isRWBuffer(drawCmdsBuffer) || graphicsHelperCache->isWriteOnlyBuffer(drawCmdsBuffer);
-        std::optional<VulkanResourcesTracker::ResourceBarrierInfo> barrierInfo
-            = bIsWriteBuffer ? resourcesTracker.readFromWriteBuffers(cmdBuffer, { drawCmdsBuffer, stagesUsed })
-                             : resourcesTracker.readOnlyBuffers(cmdBuffer, { drawCmdsBuffer, stagesUsed });
-
-        if (barrierInfo && barrierInfo->accessors.lastWrite)
-        {
-            memBarrier.srcQueueFamilyIndex = cmdBufferManager.getQueueFamilyIdx(barrierInfo->accessors.lastWrite);
-            memBarrier.srcStageMask = barrierInfo->accessors.lastWriteStage;
-
-            if (cmdBufferManager.isTransferCmdBuffer(barrierInfo->accessors.lastWrite)
-                || BIT_SET(barrierInfo->accessors.lastWriteStage, VK_PIPELINE_STAGE_2_TRANSFER_BIT))
-            {
-                memBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-            }
-            else
-            {
-                memBarrier.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT;
-            }
-            // else only read so no issues
-
-            memBarrier.buffer = drawCmdsBuffer.reference<VulkanBufferResource>()->buffer;
-            memBarrier.offset = bufferOffset;
-            memBarrier.size = drawCmdsBuffer->getResourceSize() - bufferOffset;
-
-            memBarrier.srcStageMask &= cmdBufferSupportedStages;
-            memBarrier.srcAccessMask &= EngineToVulkanAPI::accessMaskForStages(memBarrier.srcStageMask) & cmdBufferSupportedAccess;
-            cmdPipelineBarrier(vDevice, rawCmdBuffer, {}, { &memBarrier, 1 });
-            // If access is across queue family
-            if (memBarrier.srcQueueFamilyIndex != memBarrier.dstQueueFamilyIndex)
-            {
-                resourcesTracker.addResourceToQTransfer(cmdBufferQ, drawCmdsBuffer, stagesUsed, memBarrier.dstAccessMask, false);
-            }
-        }
-    }
-
     for (uint32 drawnCount = 0; drawnCount < drawCount;)
     {
         uint32 currDrawCount = Math::min(GlobalRenderVariables::MAX_INDIRECT_DRAW_COUNT.get(), drawCount - drawnCount);

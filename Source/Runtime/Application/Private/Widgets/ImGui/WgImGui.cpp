@@ -424,7 +424,8 @@ void WgImGui::deleteRTDeferred(WgRenderTarget rt, RenderManager *renderMan)
     if (rt.renderTargetResource().isValid() && rt.renderResource().isValid())
     {
         // Clear RT's Framebuffer
-        renderMan->clearExternInitRtsFramebuffer({ &rt });
+        const IRenderTargetTexture *rtPtr = &rt;
+        renderMan->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
         debugAssertf(
             !renderMan->getGlobalRenderingContext()->hasAnyFbUsingRts({ rt.renderTargetResource(), rt.renderResource() }),
             "Some framebuffer are missed when clearing ImGui RT, RT might never gets cleared!"

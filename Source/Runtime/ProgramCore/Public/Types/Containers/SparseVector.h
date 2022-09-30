@@ -227,7 +227,14 @@ public:
     CONST_EXPR SparseVectorIterator(SizeType startIdx, SparseVectorType &sparseVector)
         : idx(startIdx)
         , iteratingVector(&sparseVector)
-    {}
+    {
+        // If not acceptable invalid index then go to next valid index
+        while (!iteratingVector->isValid(idx) && idx < iteratingVector->totalCount())
+        {
+            ++idx;
+        }
+        idx = Math::min(idx, iteratingVector->totalCount());
+    }
 
     CONST_EXPR pointer operator->() const noexcept
     {

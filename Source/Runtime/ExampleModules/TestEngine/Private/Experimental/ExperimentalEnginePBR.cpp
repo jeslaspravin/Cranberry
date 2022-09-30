@@ -2073,12 +2073,16 @@ void ExperimentalEnginePBR::resizeLightingRts(const Size2D &size)
     {
         frameResources[i].lightingPassRt->setTextureSize(size);
         frameResources[i].lightingPassResolved->setTextureSize(size);
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassResolved });
+
+        const IRenderTargetTexture *rtPtr = frameResources[i].lightingPassRt;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
+        rtPtr = frameResources[i].lightingPassResolved;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
 
         // Used in debug rendering using depth map as read only target
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt,
-                                                                            GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, i)[3] });
+        const IRenderTargetTexture *debugRenderingTexs[2]
+            = { frameResources[i].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, i)[3] };
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer(debugRenderingTexs);
     }
 }
 
@@ -2118,7 +2122,8 @@ void ExperimentalEnginePBR::destroyFrameResources()
         frameResources[i].usageWaitSemaphore[0].reset();
         frameResources[i].recordingFence.reset();
 
-        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ frameResources[i].lightingPassRt });
+        const IRenderTargetTexture *rtPtr = frameResources[i].lightingPassRt;
+        rendererModule->getRenderManager()->clearExternInitRtsFramebuffer({ &rtPtr, 1 });
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassRt);
         TextureBase::destroyTexture<RenderTargetTexture>(frameResources[i].lightingPassResolved);
     }
@@ -2151,21 +2156,24 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
     pointShadowPipelineContext.renderpassFormat = ERenderPassFormat::PointLightDepth;
 
     directionalShadowPipelineContext.renderpassFormat = ERenderPassFormat::DirectionalLightDepth;
-    rendererModule->getRenderManager()->preparePipelineContext(&directionalShadowPipelineContext, { directionalShadowRT });
+    const IRenderTargetTexture *rtPtr = directionalShadowRT;
+    rendererModule->getRenderManager()->preparePipelineContext(&directionalShadowPipelineContext, { &rtPtr, 1 });
     if (spotShadowRTs[0])
     {
-        rendererModule->getRenderManager()->preparePipelineContext(&spotShadowPipelineContext, { spotShadowRTs[0] });
+        rtPtr = spotShadowRTs[0];
+        rendererModule->getRenderManager()->preparePipelineContext(&spotShadowPipelineContext, { &rtPtr, 1 });
     }
     if (pointShadowRTs[0])
     {
-        rendererModule->getRenderManager()->preparePipelineContext(&pointShadowPipelineContext, { pointShadowRTs[0] });
+        rtPtr = pointShadowRTs[0];
+        rendererModule->getRenderManager()->preparePipelineContext(&pointShadowPipelineContext, { &rtPtr, 1 });
     }
 
-    std::vector<IRenderTargetTexture *> lightingPassRts{ frameResources[0].lightingPassRt };
-    std::vector<IRenderTargetTexture *> lightingPassResolveRts{ frameResources[0].lightingPassResolved };
+    const IRenderTargetTexture *lightingPassRts[] = { frameResources[0].lightingPassRt };
+    const IRenderTargetTexture *lightingPassResolveRts[] = { frameResources[0].lightingPassResolved };
     // Using depth map as read only target
-    std::vector<IRenderTargetTexture *> lightPassAndDepthRts{ frameResources[0].lightingPassRt,
-                                                              GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0)[3] };
+    const IRenderTargetTexture *lightPassAndDepthRts[]
+        = { frameResources[0].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, 0)[3] };
     // PBR model
     drawPbrWithShadowPipelineContext.renderpassFormat = ERenderPassFormat::Generic;
     drawPbrWithShadowPipelineContext.materialName = TCHAR("PBRLightsWithShadow");
@@ -2181,7 +2189,8 @@ void ExperimentalEnginePBR::getPipelineContextForSubpass()
 
     drawLinesDWritePipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
     drawLinesDWritePipelineCntxt.materialName = TCHAR("Draw3DColoredPerVertexLineDWrite");
-    rendererModule->getRenderManager()->preparePipelineContext(&drawLinesDWritePipelineCntxt, { camGizmoColorTexture, camGizmoDepthTarget });
+    const IRenderTargetTexture *gizmoRts[] = { camGizmoColorTexture, camGizmoDepthTarget };
+    rendererModule->getRenderManager()->preparePipelineContext(&drawLinesDWritePipelineCntxt, gizmoRts);
 
     drawGridDTestPipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
     drawGridDTestPipelineCntxt.materialName = TCHAR("DrawGridDTest");
@@ -2451,14 +2460,14 @@ void ExperimentalEnginePBR::frameRender(
     resolveToPresentPipelineContext.windowCanvas = windowCanvas;
     rendererModule->getRenderManager()->preparePipelineContext(&resolveToPresentPipelineContext);
 
-    rendererModule->getRenderManager()->preparePipelineContext(
-        &singleColorPipelineContext, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index)
-    );
+    auto gbufferRts = GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, index);
+    rendererModule->getRenderManager()->preparePipelineContext(&singleColorPipelineContext, gbufferRts);
 
-    std::vector<IRenderTargetTexture *> lightRtAttachments{ frameResources[index].lightingPassRt };
+    const IRenderTargetTexture *lightRtAttachments[] = { frameResources[index].lightingPassRt };
+    const IRenderTargetTexture *lightResolvedAttachments[] = { frameResources[index].lightingPassResolved };
     rendererModule->getRenderManager()->preparePipelineContext(&drawPbrWithShadowPipelineContext, lightRtAttachments);
     rendererModule->getRenderManager()->preparePipelineContext(&drawPbrNoShadowPipelineContext, lightRtAttachments);
-    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, { frameResources[index].lightingPassResolved });
+    rendererModule->getRenderManager()->preparePipelineContext(&resolveLightRtPipelineContext, lightResolvedAttachments);
 
     GraphicsPipelineQueryParams queryParam;
     queryParam.cullingMode = ECullingMode::BackFace;
@@ -2776,7 +2785,8 @@ void ExperimentalEnginePBR::renderShadows(
                 viewport = { Int2D(0, 0), Int2D(sptlit.shadowMap->getTextureSize()) };
                 scissor = viewport;
 
-                rendererModule->getRenderManager()->preparePipelineContext(&spotShadowPipelineContext, { sptlit.shadowMap });
+                const IRenderTargetTexture *shadowMapRt = sptlit.shadowMap;
+                rendererModule->getRenderManager()->preparePipelineContext(&spotShadowPipelineContext, { &shadowMapRt, 1 });
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, spotShadowPipelineContext, scissor, {}, clearValues);
                 cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
@@ -2813,7 +2823,8 @@ void ExperimentalEnginePBR::renderShadows(
                 viewport = { Int2D(0, ptlit.shadowMap->getTextureSize().y), Int2D(ptlit.shadowMap->getTextureSize().x, 0) };
                 scissor = { Int2D(0, 0), Int2D(ptlit.shadowMap->getTextureSize()) };
 
-                rendererModule->getRenderManager()->preparePipelineContext(&pointShadowPipelineContext, { ptlit.shadowMap });
+                const IRenderTargetTexture *shadowMapRt = ptlit.shadowMap;
+                rendererModule->getRenderManager()->preparePipelineContext(&pointShadowPipelineContext, { &shadowMapRt, 1 });
 
                 cmdList->cmdBeginRenderPass(cmdBuffer, pointShadowPipelineContext, scissor, {}, clearValues);
                 cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
@@ -2865,8 +2876,8 @@ void ExperimentalEnginePBR::debugFrameRender(
     scissor.minBound = { 0, 0 };
     scissor.maxBound = ApplicationSettings::screenSize.get();
 
-    std::vector<IRenderTargetTexture *> backFramebufferRts{ frameResources[swapchainIdx].lightingPassRt,
-                                                            GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3] };
+    const IRenderTargetTexture *backFramebufferRts[]
+        = { frameResources[swapchainIdx].lightingPassRt, GBuffers::getGbufferRts(ERenderPassFormat::Multibuffer, swapchainIdx)[3] };
 #if DEV_BUILD
     rendererModule->getRenderManager()->preparePipelineContext(&sceneDebugLinesPipelineContext, backFramebufferRts);
 
@@ -2936,9 +2947,8 @@ void ExperimentalEnginePBR::debugFrameRender(
         cmdList->cmdEndRenderPass(cmdBuffer);
     }
 
-    rendererModule->getRenderManager()->preparePipelineContext(
-        &overBlendedQuadPipelineContext, { frameResources[swapchainIdx].lightingPassRt }
-    );
+    const IRenderTargetTexture *lightingRtPtr = frameResources[swapchainIdx].lightingPassRt;
+    rendererModule->getRenderManager()->preparePipelineContext(&overBlendedQuadPipelineContext, { &lightingRtPtr, 1 });
     {
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, DrawCameraGizmoRT);
 

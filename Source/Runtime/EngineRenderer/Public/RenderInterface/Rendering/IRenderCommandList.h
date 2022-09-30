@@ -174,6 +174,11 @@ public:
 
     // descriptor sets must be unique
     virtual void cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets) = 0;
+    // Below are so that barriers will be able to be applied outside render pass
+    virtual void cmdBarrierVertices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> vertexBuffers) = 0;
+    virtual void cmdBarrierIndices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indexBuffers) = 0;
+    virtual void cmdBarrierIndirectDraws(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indirectDrawBuffers) = 0;
+    // For queue transfers
     virtual void cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue) = 0;
     virtual void cmdReleaseQueueResources(
         const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue,

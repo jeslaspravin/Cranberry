@@ -587,7 +587,9 @@ void ImGuiManager::draw(
     LocalPipelineContext pipelineContext;
     pipelineContext.materialName = IMGUI_SHADER_NAME;
     pipelineContext.forVertexType = EVertexType::UI;
-    IRenderInterfaceModule::get()->getRenderManager()->preparePipelineContext(&pipelineContext, { drawingContext.rtTexture });
+
+    const IRenderTargetTexture *rtPtr = drawingContext.rtTexture;
+    IRenderInterfaceModule::get()->getRenderManager()->preparePipelineContext(&pipelineContext, { &rtPtr, 1 });
 
     updateRenderResources(cmdList, graphicsInstance, graphicsHelper, pipelineContext);
 
