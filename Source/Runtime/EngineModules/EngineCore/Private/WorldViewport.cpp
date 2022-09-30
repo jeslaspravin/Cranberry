@@ -23,12 +23,12 @@
 #include "RenderInterface/Resources/Pipelines.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 
-void WorldViewport::startSceneRender(Short2D viewportSize)
+void WorldViewport::startSceneRender(Short2D viewportSize, const Camera &defaultCamera)
 {
     SharedPtr<EngineRenderScene> renderScene = world.isValid() ? gCBEEngine->worldManager()->getWorldRenderScene(world.get()) : nullptr;
     if (renderScene)
     {
-        renderScene->renderTheScene(viewportSize, {});
+        renderScene->renderTheScene({ .view = defaultCamera, .viewportSize = viewportSize });
     }
 }
 
@@ -65,7 +65,8 @@ void WorldViewport::drawBackBuffer(
         LocalPipelineContext pipelineCntxt;
         pipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
         pipelineCntxt.materialName = TCHAR("DrawQuadFromTexture");
-        renderModule->getRenderManager()->preparePipelineContext(&pipelineCntxt, { rt });
+        const IRenderTargetTexture *rtPtr = rt;
+        renderModule->getRenderManager()->preparePipelineContext(&pipelineCntxt, { &rtPtr, 1 });
         Int2D rtSize{ static_cast<ImageResourceRef>(rt->renderTargetResource())->getImageSize() };
 
         if (!paramRef.isValid())

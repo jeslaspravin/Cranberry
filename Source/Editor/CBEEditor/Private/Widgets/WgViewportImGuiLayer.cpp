@@ -15,6 +15,21 @@
 #include "Widgets/WidgetDrawContext.h"
 #include "Widgets/WidgetWindow.h"
 #include "WorldViewport.h"
+#include "IApplicationModule.h"
+#include "InputSystem/InputSystem.h"
+#include "ApplicationInstance.h"
+
+WgViewportImGuiLayer::WgViewportImGuiLayer()
+{
+    defaultCamera.cameraProjection = ECameraProjection::Perspective;
+    defaultCamera.setClippingPlane(0.1f, 6000.f);
+
+    Vector3D camTranslation = Vector3D(0.f, 1.f, 0.0f).safeNormalized() * (500);
+    camTranslation.z() += 200;
+
+    defaultCamera.setTranslation(camTranslation);
+    defaultCamera.lookAt(Vector3D::ZERO);
+}
 
 void WgViewportImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
 {
@@ -58,7 +73,8 @@ void WgViewportImGuiLayer::draw(ImGuiDrawInterface *drawInterface)
             if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
             {
                 ImGui::FocusWindow(ImGui::GetCurrentWindow());
-                ImGui::Text("Viewport right dragged");
+                // ImGui::Text("Viewport right dragged");
+                navigateScene();
             }
         }
         ImGui::PopStyleColor(2);
@@ -90,11 +106,60 @@ void WgViewportImGuiLayer::drawWidget(
         if (worldViewport)
         {
             SharedPtr<WgWindow> wndw = findWidgetParentWindow(shared_from_this());
-            worldViewport->startSceneRender(wndw->applyDpiScale(viewportRegion.size()));
+            Short2D viewportSize = viewportRegion.size();
+            defaultCamera.setFOV((110.f * viewportSize.x) / (viewportSize.y * 1.78f), 90.f);
+            worldViewport->startSceneRender(wndw->applyDpiScale(viewportSize), defaultCamera);
         }
         else
         {
             context.drawBox(viewportRegion, nullptr, viewportRegion, ColorConst::BLACK);
         }
     }
+}
+
+void WgViewportImGuiLayer::navigateScene()
+{
+    ApplicationInstance *application = IApplicationModule::get()->getApplication();
+    Rotation cameraRotation = defaultCamera.rotation();
+    Vector3D cameraTranslation = defaultCamera.translation();
+
+    cameraRotation.yaw() += application->inputSystem->analogState(AnalogStates::RelMouseX)->currentValue * 0.25f;
+    cameraRotation.pitch() += application->inputSystem->analogState(AnalogStates::RelMouseY)->currentValue * 0.25f;
+
+    float camSpeedModifier = 1;
+    if (application->inputSystem->isKeyPressed(Keys::LSHIFT))
+    {
+        camSpeedModifier = 2;
+    }
+    if (application->inputSystem->isKeyPressed(Keys::A))
+    {
+        cameraTranslation -= cameraRotation.rightVector() * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
+    }
+    if (application->inputSystem->isKeyPressed(Keys::D))
+    {
+        cameraTranslation += cameraRotation.rightVector() * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
+    }
+    if (application->inputSystem->isKeyPressed(Keys::W))
+    {
+        cameraTranslation += cameraRotation.fwdVector() * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
+    }
+    if (application->inputSystem->isKeyPressed(Keys::S))
+    {
+        cameraTranslation -= cameraRotation.fwdVector() * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
+    }
+    if (application->inputSystem->isKeyPressed(Keys::Q))
+    {
+        cameraTranslation -= Vector3D::UP * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
+    }
+    if (application->inputSystem->isKeyPressed(Keys::E))
+    {
+        cameraTranslation += Vector3D::UP * ImGui::GetIO().DeltaTime * camSpeedModifier * 150.f;
+    }
+    if (application->inputSystem->keyState(Keys::R)->keyWentUp)
+    {
+        cameraRotation = RotationMatrix::fromZX(Vector3D::UP, cameraRotation.fwdVector()).asRotation();
+    }
+
+    defaultCamera.setRotation(cameraRotation);
+    defaultCamera.setTranslation(cameraTranslation);
 }

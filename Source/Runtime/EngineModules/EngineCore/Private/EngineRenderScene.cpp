@@ -25,6 +25,7 @@
 #include "RenderApi/RenderTaskHelpers.h"
 #include "RenderApi/GBuffersAndTextures.h"
 #include "RenderApi/Rendering/RenderingContexts.h"
+#include "RenderApi/Scene/RenderScene.h"
 #include "IRenderInterfaceModule.h"
 #include "RenderInterface/GraphicsHelper.h"
 #include "RenderInterface/GlobalRenderVariables.h"
@@ -34,6 +35,9 @@
 
 namespace ERendererIntermTexture
 {
+
+static_assert(ERendererIntermTexture::MaxCount == 5, "Update added/removed ERendererIntermTexture format");
+
 EPixelDataFormat::Type getPixelFormat(Type textureType)
 {
     switch (textureType)
@@ -46,6 +50,9 @@ EPixelDataFormat::Type getPixelFormat(Type textureType)
         break;
     case ERendererIntermTexture::GBufferARM:
         return GlobalBuffers::getGBufferAttachmentFormat(ERenderPassFormat::Multibuffer)[2];
+        break;
+    case ERendererIntermTexture::GBufferDepth:
+        return GlobalBuffers::getGBufferAttachmentFormat(ERenderPassFormat::Multibuffer)[3];
         break;
     case ERendererIntermTexture::FinalColor:
         return GlobalBuffers::getGBufferAttachmentFormat(ERenderPassFormat::Multibuffer)[0];
@@ -68,6 +75,9 @@ const TChar *toString(Type textureType)
         break;
     case ERendererIntermTexture::GBufferARM:
         return TCHAR("GBuffer_ARM");
+        break;
+    case ERendererIntermTexture::GBufferDepth:
+        return TCHAR("GBuffer_Depth");
         break;
     case ERendererIntermTexture::FinalColor:
         return TCHAR("FinalColor");
@@ -305,7 +315,7 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
          this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             syncWorldCompsRenderThread(syncInfo, cmdList, graphicsInstance, graphicsHelper);
-            performTransferCopies(cmdList, graphicsInstance, graphicsHelper);
+            initRenderThread(cmdList, graphicsInstance, graphicsHelper);
         }
     );
 
@@ -351,6 +361,63 @@ EngineRenderScene::EngineRenderScene(cbe::World *inWorld)
     );
 }
 
+EngineRenderScene::~EngineRenderScene() { clearScene(); }
+
+void EngineRenderScene::initRenderThread(
+    IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+)
+{
+    IRenderInterfaceModule *renderModule = IRenderInterfaceModule::get();
+    RenderManager *renderMan = renderModule->getRenderManager();
+
+    const PipelineBase *defaultShaderPipeline
+        = renderMan->getGlobalRenderingContext()->getDefaultPipeline(TCHAR("Default"), EVertexType::StaticMesh, ERenderPassFormat::Multibuffer);
+    if (defaultShaderPipeline == nullptr)
+    {
+        LOG_ERROR("EngineRenderScene", "Default shader pipeline not found!", frameCount);
+        return;
+    }
+    const PipelineBase *debugDrawDepthPipeline = renderMan->getGlobalRenderingContext()->getDefaultPipeline(TCHAR("DebugVisDepthTexture"));
+    const PipelineBase *drawTextureQuadPipeline = renderMan->getGlobalRenderingContext()->getDefaultPipeline(TCHAR("DrawQuadFromTexture"));
+    alertOncef(debugDrawDepthPipeline && drawTextureQuadPipeline, "Necessary shaders to draw to final texture is not found");
+    for (uint32 bufferIdx = 0; bufferIdx != BUFFER_COUNT; ++bufferIdx)
+    {
+        String idxStr = String::toString(bufferIdx);
+        ShaderParametersRef bindlessParam = graphicsHelper->createShaderParameters(
+            graphicsInstance, defaultShaderPipeline->getParamLayoutAtSet(ShaderParameterUtility::BINDLESS_SET)
+        );
+        bindlessParam->setResourceName(world.getObjectName() + TCHAR("_Bindless_") + idxStr);
+        bindlessParam->init();
+        bindlessSet.push(bindlessParam);
+
+        ShaderParametersRef sceneViewParam = graphicsHelper->createShaderParameters(
+            graphicsInstance, defaultShaderPipeline->getParamLayoutAtSet(ShaderParameterUtility::VIEW_UNIQ_SET)
+        );
+        sceneViewParam->setResourceName(world.getObjectName() + TCHAR("_View_") + idxStr);
+        sceneViewParam->init();
+        sceneViewParams.push(sceneViewParam);
+
+        if (debugDrawDepthPipeline)
+        {
+            ShaderParametersRef depthDrawParam
+                = graphicsHelper->createShaderParameters(graphicsInstance, debugDrawDepthPipeline->getParamLayoutAtSet(0));
+            depthDrawParam->setResourceName(world.getObjectName() + TCHAR("_DepthDraw_") + idxStr);
+            depthDrawParam->init();
+            depthResolveParams.push(depthDrawParam);
+        }
+        if (drawTextureQuadPipeline)
+        {
+            ShaderParametersRef quadDrawParam
+                = graphicsHelper->createShaderParameters(graphicsInstance, drawTextureQuadPipeline->getParamLayoutAtSet(0));
+            quadDrawParam->setResourceName(world.getObjectName() + TCHAR("_QuadTextureDraw_") + idxStr);
+            quadDrawParam->init();
+            colorResolveParams.push(quadDrawParam);
+        }
+    }
+
+    performTransferCopies(cmdList, graphicsInstance, graphicsHelper);
+}
+
 void EngineRenderScene::clearScene()
 {
     RenderThreadEnqueuer::execInRenderThreadAndWait(
@@ -379,25 +446,36 @@ void EngineRenderScene::clearScene()
     }
     shaderToMaterials.clear();
 
+    bindlessSet.reset();
+
+    sceneViewParams = {};
+    colorResolveParams = {};
+    depthResolveParams = {};
+
+    for (uint32 i = 0; i != ERendererIntermTexture::MaxCount; ++i)
+    {
+        frameTextures[i] = {};
+    }
+
     // TODO(Jeslas) : Clear scene
 }
 
-void EngineRenderScene::renderTheScene(Short2D viewportSize, const Camera &viewCamera)
+void EngineRenderScene::renderTheScene(RenderSceneViewParams viewParams)
 {
     // start the rendering in Renderer
     ENQUEUE_RENDER_COMMAND(RenderScene)
     (
-        [viewCamera, viewportSize, compUpdates = std::move(componentUpdates),
+        [viewParams, compUpdates = std::move(componentUpdates),
          this](IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
         {
             syncWorldCompsRenderThread(compUpdates, cmdList, graphicsInstance, graphicsHelper);
-            updateVisibility(viewCamera);
+            updateVisibility(viewParams);
 
-            createNextDrawList(viewCamera, cmdList, graphicsInstance, graphicsHelper);
+            createNextDrawList(viewParams, cmdList, graphicsInstance, graphicsHelper);
 
             cmdList->finishCmd(getCmdBufferName());
-            lastRT = getFinalColor(cmdList, viewportSize);
-            renderTheSceneRenderThread(viewportSize, viewCamera, cmdList, graphicsInstance, graphicsHelper);
+            frameTextures[ERendererIntermTexture::FinalColor] = getFinalColor(cmdList, viewParams.viewportSize);
+            renderTheSceneRenderThread(viewParams, cmdList, graphicsInstance, graphicsHelper);
             performTransferCopies(cmdList, graphicsInstance, graphicsHelper);
             // Clear once every buffer cycle
             if ((frameCount % BUFFER_COUNT) == 0)
@@ -412,7 +490,7 @@ void EngineRenderScene::renderTheScene(Short2D viewportSize, const Camera &viewC
 const IRenderTargetTexture *EngineRenderScene::getLastRTResolved() const
 {
     ASSERT_INSIDE_RENDERTHREAD();
-    return &lastRT;
+    return &frameTextures[ERendererIntermTexture::FinalColor];
 }
 
 void EngineRenderScene::onLastRTCopied()
@@ -832,6 +910,7 @@ void EngineRenderScene::performTransferCopies(
     const GraphicsResource *cmdBuffer = cmdList->startCmd(cmdBufferName, EQueueFunction::Transfer, true);
     {
         SCOPED_CMD_MARKER(cmdList, cmdBuffer, RenderSceneTransfer);
+        std::vector<BatchCopyBufferData> perFrameCopies;
 
         // Copying vertex and index copies
         if (!bVertexUpdating)
@@ -857,14 +936,10 @@ void EngineRenderScene::performTransferCopies(
             std::vector<BatchCopyBufferData> allHostToDeviceCopies;
             for (std::pair<const String, MaterialShaderParams> &shaderMaterials : shaderToMaterials)
             {
-                allHostToDeviceCopies.insert(
-                    allHostToDeviceCopies.end(), shaderMaterials.second.drawListCopies.cbegin(), shaderMaterials.second.drawListCopies.cend()
-                );
                 allCopies.insert(allCopies.end(), shaderMaterials.second.materialCopies.cbegin(), shaderMaterials.second.materialCopies.cend());
                 allHostToDeviceCopies.insert(
                     allHostToDeviceCopies.end(), shaderMaterials.second.hostToMatCopies.cbegin(), shaderMaterials.second.hostToMatCopies.cend()
                 );
-                shaderMaterials.second.drawListCopies.clear();
                 shaderMaterials.second.materialCopies.clear();
                 shaderMaterials.second.hostToMatCopies.clear();
             }
@@ -892,6 +967,7 @@ void EngineRenderScene::performTransferCopies(
                     instancesData[vertType].hostToBufferCopies.cend()
                 );
                 instancesData[vertType].copies.clear();
+                instancesData[vertType].hostToBufferCopies.clear();
             }
             if (!allCopies.empty())
             {
@@ -900,6 +976,26 @@ void EngineRenderScene::performTransferCopies(
             if (!allHostToDeviceCopies.empty())
             {
                 cmdList->cmdCopyToBuffer(cmdBuffer, allHostToDeviceCopies);
+            }
+        }
+
+        {
+            SCOPED_CMD_MARKER(cmdList, cmdBuffer, PerFrameCopies);
+
+            for (std::pair<const String, MaterialShaderParams> &shaderMaterials : shaderToMaterials)
+            {
+                perFrameCopies.insert(
+                    perFrameCopies.end(), shaderMaterials.second.drawListCopies.cbegin(), shaderMaterials.second.drawListCopies.cend()
+                );
+                shaderMaterials.second.drawListCopies.clear();
+            }
+            // Always next one will be written to
+            bindlessSet.peek(1)->pullBufferParamUpdates(perFrameCopies, cmdList, graphicsInstance);
+            sceneViewParams.peek(1)->pullBufferParamUpdates(perFrameCopies, cmdList, graphicsInstance);
+
+            if (!perFrameCopies.empty())
+            {
+                cmdList->cmdCopyToBuffer(cmdBuffer, perFrameCopies);
             }
         }
     }
@@ -911,7 +1007,7 @@ void EngineRenderScene::performTransferCopies(
     cmdList->submitCmd(EQueuePriority::High, submitInfo);
 }
 
-void EngineRenderScene::updateVisibility(const Camera &viewCamera)
+void EngineRenderScene::updateVisibility(const RenderSceneViewParams &viewParams)
 {
     const SizeT totalCompCapacity = compsRenderInfo.totalCount();
     compsVisibility.resize(totalCompCapacity);
@@ -921,7 +1017,9 @@ void EngineRenderScene::updateVisibility(const Camera &viewCamera)
     // Will be inside frustum only if every other condition to render a mesh is valid
     std::vector<bool, CBEStrStackAllocatorExclusive<bool>> compsInsideFrustum(totalCompCapacity, false, appInstance->getRenderFrameAllocator());
 
-    Matrix4 w2clip = viewCamera.projectionMatrix() * viewCamera.viewMatrix();
+    Matrix4 w2clip;
+    viewParams.view.viewMatrix(w2clip);
+    w2clip = viewParams.view.projectionMatrix() * w2clip;
 
     copat::waitOnAwaitable(copat::dispatch(
         appInstance->jobSystem,
@@ -1531,11 +1629,11 @@ copat::NormalFuncAwaiter EngineRenderScene::recreateInstanceBuffers(
 }
 
 void EngineRenderScene::createNextDrawList(
-    const Camera &viewCamera, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper
+    const RenderSceneViewParams &viewParams, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+    const GraphicsHelperAPI *graphicsHelper
 )
 {
     const SizeT totalCompCapacity = compsRenderInfo.totalCount();
-    const uint32 drawListWriteOffset = getDrawListWriteOffset();
 
     for (std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
     {
@@ -1559,10 +1657,10 @@ void EngineRenderScene::createNextDrawList(
     }
     std::sort(
         compIndices.begin(), compIndices.end(),
-        [this, &viewCamera](SizeT lhs, SizeT rhs)
+        [this, &viewParams](SizeT lhs, SizeT rhs)
         {
-            return (compsRenderInfo[lhs].worldTf.getTranslation() - viewCamera.translation()).sqrlength()
-                   < (compsRenderInfo[rhs].worldTf.getTranslation() - viewCamera.translation()).sqrlength();
+            return (compsRenderInfo[lhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength()
+                   < (compsRenderInfo[rhs].worldTf.getTranslation() - viewParams.view.translation()).sqrlength();
         }
     );
     for (SizeT compIdx : compIndices)
@@ -1584,50 +1682,22 @@ void EngineRenderScene::createNextDrawList(
         shaderMats.cpuDrawListPerVertType[compRenderInfo.vertexType].emplace_back(std::move(indexedIndirectDraw));
     }
 
-    // Now that all cpu draw lists are prepared now sort and merge
-    // Right now sorting and merging is not much worth it, However after modifying recreateSceneVerts to keeps instances of same mesh together
-    // this will improve
+    // Now that all cpu draw lists are prepared
     for (std::pair<const String, MaterialShaderParams> &shaderMatsPair : shaderToMaterials)
     {
         MaterialShaderParams &shaderMats = shaderMatsPair.second;
         for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
         {
-            uint32 drawListIdx = vertType * 2 + drawListWriteOffset;
             std::vector<DrawIndexedIndirectCommand> &cpuDrawList = shaderMats.cpuDrawListPerVertType[vertType];
-            std::sort(
-                cpuDrawList.begin(), cpuDrawList.end(),
-                [](const DrawIndexedIndirectCommand &lhs, const DrawIndexedIndirectCommand &rhs)
-                {
-                    return lhs.firstInstance == rhs.firstInstance
-                               ? lhs.vertexOffset == rhs.vertexOffset ? lhs.firstIndex < rhs.firstIndex : lhs.vertexOffset < rhs.vertexOffset
-                               : lhs.firstInstance < rhs.firstInstance;
-                }
-            );
-
-            for (SizeT i = 0; i != cpuDrawList.size(); ++i)
-            {
-                SizeT nextIdx = i + 1;
-                uint32 nextInstanceExp = cpuDrawList[i].firstInstance + 1;
-                while (nextIdx != cpuDrawList.size() && cpuDrawList[nextIdx].firstInstance == nextInstanceExp
-                       && cpuDrawList[nextIdx].vertexOffset == cpuDrawList[i].vertexOffset
-                       && cpuDrawList[nextIdx].firstIndex == cpuDrawList[i].firstIndex)
-                {
-                    nextIdx++;
-                    nextInstanceExp++;
-                }
-
-                // Set the instance count to that many count and erase the consecutive same meshes
-                cpuDrawList[i].instanceCount = nextIdx - i;
-                cpuDrawList.erase(cpuDrawList.begin() + i + 1, cpuDrawList.begin() + nextIdx);
-            }
-
             if (cpuDrawList.empty())
             {
                 continue;
             }
 
+            uint32 drawListIdx = vertType * BUFFER_COUNT + getBufferedWriteOffset();
             // Resize GPU buffer if necessary
             BufferResourceRef bufferRes = shaderMats.drawListPerVertType[drawListIdx];
+            shaderMats.drawListCounts[drawListIdx] = uint32(cpuDrawList.size());
             if (!bufferRes.isValid() || !bufferRes->isValid() || bufferRes->bufferCount() < cpuDrawList.size())
             {
                 bufferRes
@@ -1651,60 +1721,249 @@ void EngineRenderScene::createNextDrawList(
 }
 
 void EngineRenderScene::renderTheSceneRenderThread(
-    Short2D viewportSize, const Camera &viewCamera, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+    const RenderSceneViewParams &viewParams, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
     const GraphicsHelperAPI *graphicsHelper
 )
 {
     IRenderInterfaceModule *renderModule = IRenderInterfaceModule::get();
+    RenderManager *renderMan = renderModule->getRenderManager();
 
-    LocalPipelineContext pipelineCntxt;
-    pipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
-    pipelineCntxt.materialName = TCHAR("ClearRT");
-    renderModule->getRenderManager()->preparePipelineContext(&pipelineCntxt, { &lastRT });
-    if (!clearParams.isValid())
+    // TODO(Jeslas) : Update bindless set here
+
+    // Update scene view
+    ViewData viewData{ .projection = viewParams.view.projectionMatrix() };
+    viewData.view = viewParams.view.viewMatrix(viewData.invView);
+    viewData.invProjection = viewData.projection.inverse();
+    sceneViewParams.peek(1)->setBuffer(RenderSceneBase::VIEW_PARAM_NAME, viewData);
+
+    uint32 bufferedReadOffset = getBufferedReadOffset(), bufferedWriteOffset = getBufferedWriteOffset();
+    // Mark edited buffers that needs to be changed queues
+    std::unordered_map<MemoryResourceRef, EQueueFunction> transferReleases{
+        {sceneViewParams.peek(1)->getBufferResource(RenderSceneBase::VIEW_PARAM_NAME), EQueueFunction::Transfer}
+    };
+    std::vector<ShaderParametersRef> resBarriers;
+    std::vector<BufferResourceRef> vertexBarriers;
+    std::vector<BufferResourceRef> indexBarriers;
+    std::vector<BufferResourceRef> indirectDrawBarriers;
+    resBarriers.reserve(VERTEX_TYPE_COUNT + shaderToMaterials.size() + 2);
+    vertexBarriers.reserve(VERTEX_TYPE_COUNT);
+    indexBarriers.reserve(VERTEX_TYPE_COUNT);
+    indirectDrawBarriers.reserve(VERTEX_TYPE_COUNT * shaderToMaterials.size());
+    for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
     {
-        clearParams = graphicsHelper->createShaderParameters(graphicsInstance, pipelineCntxt.getPipeline()->getParamLayoutAtSet(0));
-        clearParams->setResourceName(TCHAR("ClearParams"));
-        clearParams->setVector4Param(STRID("clearColor"), LinearColorConst::CYAN);
-        clearParams->init();
+        // When buffering count is 2, there might be at max 1 frame in flight no need to transfer in that case
+        if constexpr (BUFFER_COUNT > 2)
+        {
+            if (!vertexBuffers[vertType].copies.empty())
+            {
+                transferReleases[vertexBuffers[vertType].indices] = EQueueFunction::Transfer;
+                transferReleases[vertexBuffers[vertType].vertices] = EQueueFunction::Transfer;
+            }
+
+            if (!(instancesData[vertType].copies.empty() && instancesData[vertType].hostToBufferCopies.empty()))
+            {
+                transferReleases[instancesData[vertType].instanceData] = EQueueFunction::Transfer;
+            }
+        }
+
+        // Add to barrier this read
+        if (instancesData[vertType].shaderParameter)
+        {
+            resBarriers.emplace_back(instancesData[vertType].shaderParameter);
+        }
+        if (vertexBuffers[vertType].indices && vertexBuffers[vertType].vertices)
+        {
+            vertexBarriers.emplace_back(vertexBuffers[vertType].vertices);
+            indexBarriers.emplace_back(vertexBuffers[vertType].indices);
+        }
+    }
+    for (const std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
+    {
+        if constexpr (BUFFER_COUNT > 2)
+        {
+            if (!(shaderMats.second.materialCopies.empty() && shaderMats.second.hostToMatCopies.empty()))
+            {
+                transferReleases[shaderMats.second.materialData] = EQueueFunction::Transfer;
+            }
+
+            if (!shaderMats.second.drawListCopies.empty())
+            {
+                for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
+                {
+                    transferReleases[shaderMats.second.drawListPerVertType[vertType * BUFFER_COUNT + bufferedWriteOffset]]
+                        = EQueueFunction::Transfer;
+                }
+            }
+        }
+
+        // To barrier this read
+        bool bHasAnyDraws = false;
+        for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
+        {
+            uint32 drawListIdx = vertType * BUFFER_COUNT + bufferedReadOffset;
+            if (shaderMats.second.drawListCounts[drawListIdx] != 0)
+            {
+                bHasAnyDraws = true;
+                indirectDrawBarriers.emplace_back(shaderMats.second.drawListPerVertType[drawListIdx]);
+            }
+        }
+        if (bHasAnyDraws)
+        {
+            resBarriers.emplace_back(shaderMats.second.shaderParameter);
+        }
     }
 
-    GraphicsPipelineState pipelineState;
-    pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
-    pipelineState.pipelineQuery.cullingMode = ECullingMode::BackFace;
+    ShaderParametersRef frameBindlessParam = bindlessSet.pop();
+    ShaderParametersRef frameSceneViewParam = sceneViewParams.pop();
+    ShaderParametersRef frameColorResolveParam = colorResolveParams.pop();
+    ShaderParametersRef frameDepthResolveParam = depthResolveParams.pop();
+
+    resBarriers.emplace_back(frameBindlessParam);
+    resBarriers.emplace_back(frameSceneViewParam);
+
+    // For now not supporting MSAA
+    debugAssert(GlobalRenderVariables::GBUFFER_SAMPLE_COUNT.get() == EPixelSampleCount::SampleCount1);
+
+    frameTextures[ERendererIntermTexture::GBufferDiffuse]
+        = rtPool.getTexture(cmdList, ERendererIntermTexture::GBufferDiffuse, viewParams.viewportSize, {});
+    frameTextures[ERendererIntermTexture::GBufferNormal]
+        = rtPool.getTexture(cmdList, ERendererIntermTexture::GBufferNormal, viewParams.viewportSize, {});
+    frameTextures[ERendererIntermTexture::GBufferARM]
+        = rtPool.getTexture(cmdList, ERendererIntermTexture::GBufferARM, viewParams.viewportSize, {});
+    frameTextures[ERendererIntermTexture::GBufferDepth]
+        = rtPool.getTexture(cmdList, ERendererIntermTexture::GBufferDepth, viewParams.viewportSize, {});
+
+    // TODO(Jeslas) : Support depth view may be?
+    frameColorResolveParam->setTextureParam(
+        STRID("quadTexture"), frameTextures[ERendererIntermTexture::GBufferDiffuse].renderResource(), GlobalBuffers::linearSampler()
+    );
+    frameColorResolveParam->updateParams(cmdList, graphicsInstance);
 
     QuantizedBox2D viewport{
-        {             0,              0},
-        {viewportSize.x, viewportSize.y}
+        {                        0,                         0},
+        {viewParams.viewportSize.x, viewParams.viewportSize.y}
     };
     QuantizedBox2D scissor{
-        {                   viewportSize.x / 4,                    viewportSize.y / 4},
-        {viewportSize.x - (viewportSize.x / 4), viewportSize.y - (viewportSize.y / 4)}
+        {                        0,                         0},
+        {viewParams.viewportSize.x, viewParams.viewportSize.y}
     };
-
-    RenderPassAdditionalProps additionalProps;
-    additionalProps.bAllowUndefinedLayout = true;
     RenderPassClearValue clearVal;
-    clearVal.colors = { LinearColorConst::PALE_BLUE };
+    clearVal.colors = { LinearColorConst::BLACK, LinearColorConst::BLACK, LinearColorConst::BLACK };
 
     const GraphicsResource *cmdBuffer = cmdList->startCmd(getCmdBufferName(), EQueueFunction::Graphics, true);
+    SCOPED_CMD_MARKER(cmdList, cmdBuffer, RenderingScene);
     {
-        SCOPED_CMD_MARKER(cmdList, cmdBuffer, RenderScene);
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ToGBuffer);
+
+        const IRenderTargetTexture *gbufferRts[]
+            = { &frameTextures[ERendererIntermTexture::GBufferDiffuse], &frameTextures[ERendererIntermTexture::GBufferNormal],
+                &frameTextures[ERendererIntermTexture::GBufferARM], &frameTextures[ERendererIntermTexture::GBufferDepth] };
+
+        LocalPipelineContext defaultPipelineCntxt;
+        defaultPipelineCntxt.materialName = TCHAR("Default");
+        defaultPipelineCntxt.forVertexType = EVertexType::StaticMesh;
+        defaultPipelineCntxt.renderpassFormat = ERenderPassFormat::Multibuffer;
+        renderMan->preparePipelineContext(&defaultPipelineCntxt, gbufferRts);
+
+        cmdList->cmdBarrierResources(cmdBuffer, resBarriers);
+        cmdList->cmdBarrierVertices(cmdBuffer, vertexBarriers);
+        cmdList->cmdBarrierIndices(cmdBuffer, indexBarriers);
+        cmdList->cmdBarrierIndirectDraws(cmdBuffer, indirectDrawBarriers);
+
+        RenderPassAdditionalProps additionalProps{ .bAllowUndefinedLayout = true };
+        cmdList->cmdBeginRenderPass(cmdBuffer, defaultPipelineCntxt, viewport, additionalProps, clearVal);
+        // This has to be upside down along y
+        QuantizedBox2D drawViewport{
+            {                        0, viewParams.viewportSize.y},
+            {viewParams.viewportSize.x,                         0}
+        };
+        cmdList->cmdSetViewportAndScissor(cmdBuffer, drawViewport, scissor);
+
+        ShaderParametersRef commonDescSets[] = { frameBindlessParam, frameSceneViewParam };
+        cmdList->cmdBindDescriptorsSets(cmdBuffer, defaultPipelineCntxt, commonDescSets);
+
+        GraphicsPipelineState pipelineState;
+        pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
+        pipelineState.pipelineQuery.cullingMode = ECullingMode::BackFace;
+        for (const std::pair<const String, MaterialShaderParams> &shaderMats : shaderToMaterials)
+        {
+            LocalPipelineContext pipelineCntxt;
+            pipelineCntxt.materialName = shaderMats.first;
+            pipelineCntxt.renderpassFormat = ERenderPassFormat::Multibuffer;
+            pipelineCntxt.forVertexType = EVertexType::StaticMesh;
+            renderMan->preparePipelineContext(&pipelineCntxt, gbufferRts);
+            cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, { &shaderMats.second.shaderParameter, 1 });
+            for (uint32 vertType = EVertexType::TypeStart; vertType != EVertexType::TypeEnd; ++vertType)
+            {
+                uint32 drawListIdx = vertType * BUFFER_COUNT + bufferedReadOffset;
+                if (shaderMats.second.drawListCounts[drawListIdx] == 0)
+                {
+                    continue;
+                }
+
+                pipelineCntxt.forVertexType = EVertexType::Type(vertType);
+                renderMan->preparePipelineContext(&pipelineCntxt, gbufferRts);
+
+                cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, { &instancesData[vertType].shaderParameter, 1 });
+                cmdList->cmdBindGraphicsPipeline(cmdBuffer, pipelineCntxt, pipelineState);
+                cmdList->cmdBindVertexBuffer(cmdBuffer, 0, vertexBuffers[vertType].vertices, 0);
+                cmdList->cmdBindIndexBuffer(cmdBuffer, vertexBuffers[vertType].indices, 0);
+
+                static_assert(
+                    std::is_same_v<
+                        std::remove_reference_t<decltype(std::declval<decltype(MaterialShaderParams::cpuDrawListPerVertType)>()[0]
+                        )>::value_type,
+                        DrawIndexedIndirectCommand>,
+                    "Fix me! Indexed indirect command struct mismatch!"
+                );
+                cmdList->cmdDrawIndexedIndirect(
+                    cmdBuffer, shaderMats.second.drawListPerVertType[drawListIdx], 0, shaderMats.second.drawListCounts[drawListIdx],
+                    sizeof(DrawIndexedIndirectCommand)
+                );
+            }
+        }
+        cmdList->cmdEndRenderPass(cmdBuffer);
+    }
+    {
+        SCOPED_CMD_MARKER(cmdList, cmdBuffer, ResolveFinalColor);
+
+        LocalPipelineContext pipelineCntxt;
+        pipelineCntxt.renderpassFormat = ERenderPassFormat::Generic;
+        pipelineCntxt.materialName = TCHAR("DrawQuadFromTexture");
+        const IRenderTargetTexture *rtPtr = &frameTextures[ERendererIntermTexture::FinalColor];
+        renderModule->getRenderManager()->preparePipelineContext(&pipelineCntxt, { &rtPtr, 1 });
+
+        GraphicsPipelineState pipelineState;
+        pipelineState.pipelineQuery.drawMode = EPolygonDrawMode::Fill;
+        pipelineState.pipelineQuery.cullingMode = ECullingMode::BackFace;
+
+        RenderPassAdditionalProps additionalProps;
+        additionalProps.bAllowUndefinedLayout = true;
+
         cmdList->cmdBeginRenderPass(cmdBuffer, pipelineCntxt, viewport, additionalProps, clearVal);
 
         cmdList->cmdBindGraphicsPipeline(cmdBuffer, pipelineCntxt, pipelineState);
 
         cmdList->cmdBindVertexBuffer(cmdBuffer, 0, GlobalBuffers::getQuadTriVertexBuffer(), 0);
         cmdList->cmdSetViewportAndScissor(cmdBuffer, viewport, scissor);
-        cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, clearParams);
+        cmdList->cmdBindDescriptorsSets(cmdBuffer, pipelineCntxt, frameColorResolveParam);
 
         cmdList->cmdDrawVertices(cmdBuffer, 0, 3);
 
         cmdList->cmdEndRenderPass(cmdBuffer);
+    }
+    if constexpr (BUFFER_COUNT > 2)
+    {
+        cmdList->cmdReleaseQueueResources(cmdBuffer, EQueueFunction::Graphics, transferReleases);
     }
     cmdList->endCmd(cmdBuffer);
 
     CommandSubmitInfo2 submitInfo;
     submitInfo.cmdBuffers.emplace_back(cmdBuffer);
     cmdList->submitCmd(EQueuePriority::High, submitInfo);
+
+    bindlessSet.push(frameBindlessParam);
+    sceneViewParams.push(frameSceneViewParam);
+    colorResolveParams.push(frameColorResolveParam);
+    depthResolveParams.push(frameDepthResolveParam);
 }

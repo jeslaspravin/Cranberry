@@ -23,6 +23,7 @@ class WgRenderTarget;
 class IRenderCommandList;
 class GraphicsHelperAPI;
 class IGraphicsInstance;
+class Camera;
 
 class ENGINECORE_EXPORT WorldViewport
 {
@@ -38,7 +39,7 @@ public:
     {}
     MAKE_TYPE_NONCOPY_NONMOVE(WorldViewport)
 
-    void startSceneRender(Short2D viewportSize);
+    void startSceneRender(Short2D viewportSize, const Camera &defaultCamera);
     /**
      * Clears and draws to widget back buffer, the necessary frame texture
      */

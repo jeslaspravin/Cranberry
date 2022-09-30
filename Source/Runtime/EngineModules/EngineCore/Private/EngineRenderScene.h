@@ -16,12 +16,14 @@
 #include "Memory/LinearAllocator.h"
 #include "Types/Containers/BitArray.h"
 #include "Types/Containers/SparseVector.h"
+#include "Types/Camera/Camera.h"
 #include "ObjectPtrs.h"
 #include "Render/EngineRenderTypes.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 #include "RenderInterface/ShaderCore/ShaderParameterResources.h"
 #include "RenderApi/ResourcesInterface/IRenderResource.h"
 #include "RenderInterface/Rendering/IRenderCommandList.h"
+#include "RenderInterface/Resources/BufferedResources.h"
 
 struct DrawIndexedIndirectCommand;
 namespace copat
@@ -36,6 +38,7 @@ enum Type
     GBufferDiffuse,
     GBufferNormal,
     GBufferARM,
+    GBufferDepth,
     FinalColor,
     MaxCount
 };
@@ -138,6 +141,14 @@ struct ComponentRenderInfo
     StringID compID;
 };
 
+struct RenderSceneViewParams
+{
+    Camera view;
+    Short2D viewportSize;
+
+    ERendererIntermTexture::Type outBuffer = ERendererIntermTexture::FinalColor;
+};
+
 // 1:1 to each world
 class EngineRenderScene
 {
@@ -193,7 +204,8 @@ private:
     struct MaterialShaderParams
     {
         // Draw lists are for main GBuffer pass. For lights and other rendering passes separate draw list must be maintained
-        BufferResourceRef drawListPerVertType[VERTEX_TYPE_COUNT * 2];
+        BufferResourceRef drawListPerVertType[VERTEX_TYPE_COUNT * BUFFER_COUNT];
+        uint32 drawListCounts[VERTEX_TYPE_COUNT * BUFFER_COUNT] = {};
         std::vector<DrawIndexedIndirectCommand> cpuDrawListPerVertType[VERTEX_TYPE_COUNT];
 
         BufferResourceRef materialData;
@@ -224,32 +236,35 @@ private:
     bool bVertexUpdating = false;
     VerticesPerVertType vertexBuffers[VERTEX_TYPE_COUNT];
 
-    uint32 drawListOffset = 0;
     bool bMaterialsUpdating = false;
     std::unordered_map<String, MaterialShaderParams> shaderToMaterials;
 
     bool bInstanceParamsUpdating = false;
     InstanceParamsPerVertType instancesData[VERTEX_TYPE_COUNT];
 
+    // Scene common data
+    RingBufferedResource<ShaderParametersRef, BUFFER_COUNT> bindlessSet;
+    RingBufferedResource<ShaderParametersRef, BUFFER_COUNT> sceneViewParams;
+
     String getTransferCmdBufferName() const;
     String getCmdBufferName() const;
 
-    // Initial test code for RT pool
-    RendererIntermTexture lastRT;
+    RingBufferedResource<ShaderParametersRef, BUFFER_COUNT> colorResolveParams;
+    RingBufferedResource<ShaderParametersRef, BUFFER_COUNT> depthResolveParams;
+    RendererIntermTexture frameTextures[ERendererIntermTexture::MaxCount];
     const RendererIntermTexture &getFinalColor(IRenderCommandList *cmdList, Short2D size);
-
-    ShaderParametersRef clearParams;
 
 public:
     EngineRenderScene(cbe::World *inWorld);
     MAKE_TYPE_NONCOPY_NONMOVE(EngineRenderScene)
+    ~EngineRenderScene();
 
     void clearScene();
 
     /**
      * Triggers the scene rendering
      */
-    void renderTheScene(Short2D viewportSize, const Camera &viewCamera);
+    void renderTheScene(RenderSceneViewParams viewParams);
     const IRenderTargetTexture *getLastRTResolved() const;
     /**
      * Must be called after RT is copied to back buffer, This returns the textures to pool where it will be waiting till freed
@@ -281,7 +296,8 @@ private:
     // And only materialIDs to be removed is stored
     FORCE_INLINE void removeMaterialAt(SizeT matVectorIdx, StringID materialID, MaterialShaderParams &shaderMats);
 
-    FORCE_INLINE uint32 getDrawListWriteOffset() const { return (drawListOffset + 1) % 2; }
+    FORCE_INLINE uint32 getBufferedReadOffset() const { return uint32(frameCount % BUFFER_COUNT); }
+    FORCE_INLINE uint32 getBufferedWriteOffset() const { return uint32((frameCount + 1) % BUFFER_COUNT); }
 
     void addRenderComponents(const std::vector<cbe::RenderableComponent *> &renderComps);
     void removeRenderComponents(const std::vector<StringID> &renderComps);
@@ -304,12 +320,17 @@ private:
         recreateMaterialBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     copat::NormalFuncAwaiter
         recreateInstanceBuffers(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
-    void createNextDrawList(const Camera &viewCamera, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
+    void createNextDrawList(
+        const RenderSceneViewParams &viewParams, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+        const GraphicsHelperAPI *graphicsHelper
+    );
     void performTransferCopies(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
 
-    void updateVisibility(const Camera &viewCamera);
+    void updateVisibility(const RenderSceneViewParams &viewParams);
+
+    void initRenderThread(IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper);
     void renderTheSceneRenderThread(
-        Short2D viewportSize, const Camera &viewCamera, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
+        const RenderSceneViewParams &viewParams, IRenderCommandList *cmdList, IGraphicsInstance *graphicsInstance,
         const GraphicsHelperAPI *graphicsHelper
     );
 };
