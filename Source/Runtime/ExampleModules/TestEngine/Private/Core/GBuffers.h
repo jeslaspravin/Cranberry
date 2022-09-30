@@ -12,9 +12,12 @@
 #pragma once
 #include "RenderApi/GBuffersAndTextures.h"
 
+class IRenderTargetTexture;
+class GBufferRenderTexture;
+
 struct GbufferWrapper
 {
-    std::vector<class GBufferRenderTexture *> rtTextures;
+    std::vector<GBufferRenderTexture *> rtTextures;
 };
 
 class GBuffers
@@ -32,6 +35,6 @@ public:
 
     static void onScreenResized(Size2D newSize);
 
-    static std::vector<class IRenderTargetTexture *> getGbufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
+    static std::vector<const IRenderTargetTexture *> getGbufferRts(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
     static std::vector<ImageResourceRef> getGbufferAttachments(ERenderPassFormat::Type renderpassFormat, uint32 frameIdx);
 };

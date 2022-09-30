@@ -45,7 +45,7 @@ struct ImGuiManagerOptions
 struct ImGuiDrawingContext
 {
     const GraphicsResource *cmdBuffer;
-    IRenderTargetTexture *rtTexture;
+    const IRenderTargetTexture *rtTexture;
     QuantizedBox2D viewport;
     bool bClearRt = false;
 };

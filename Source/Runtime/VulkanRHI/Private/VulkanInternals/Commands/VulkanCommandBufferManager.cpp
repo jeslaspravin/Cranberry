@@ -1416,6 +1416,8 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
+    const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
+
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     if (!accessors.lastWrite)
@@ -1442,6 +1444,15 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     else
     {
         cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
+        // if last write is not in this queue then we need barrier to do queue transfer
+        if (cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastWrite)->fromQueue)
+        {
+            ResourceBarrierInfo barrier;
+            barrier.accessors.lastWrite = accessors.lastWrite;
+            barrier.accessors.lastWriteStage = accessors.lastWriteStage;
+            barrier.resource = resource.first;
+            outBarrierInfo = barrier;
+        }
     }
     accessors.addLastReadInCmd(cmdBuffer);
     accessors.allReadStages |= resource.second;
@@ -1453,6 +1464,8 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     const GraphicsResource *cmdBuffer, const std::pair<MemoryResourceRef, VkPipelineStageFlags2> &resource
 )
 {
+    const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
+
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
     if (!accessors.lastWrite)
@@ -1483,10 +1496,20 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
     else
     {
         cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
-        // If layout transition is not done on this cmd buffer, then wait on it as well
-        if (accessors.lastReadsIn.front() != cmdBuffer)
+        // If layout transition is not done on this cmd buffer, then wait on it as well(So long as this is the first read in this cmdBuffer)
+        if (accessors.lastReadsIn.front() != cmdBuffer && accessors.lastReadsIn.back() != cmdBuffer)
         {
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastReadsIn.front(), resource.second });
+            // If last read in cmd buffer queue is not same as current queue, we need queue transfer barrier
+            if (cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastReadsIn.back())->fromQueue)
+            {
+                ResourceBarrierInfo barrier;
+                barrier.accessors.addLastReadInCmd(accessors.lastReadsIn.back());
+                barrier.accessors.lastReadStages = barrier.accessors.allReadStages = accessors.lastReadStages;
+                barrier.resource = resource.first;
+
+                outBarrierInfo = barrier;
+            }
         }
     }
     accessors.addLastReadInCmd(cmdBuffer);
@@ -1529,6 +1552,8 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
 {
     fatalAssertf(PlatformFunctions::getSetBitCount(resource.second) == 1, "Writing to buffer in several pipeline stages is incorrect");
 
+    const EQueueFunction cmdBufferQ = static_cast<const VulkanCommandBuffer *>(cmdBuffer)->fromQueue;
+
     std::optional<ResourceBarrierInfo> outBarrierInfo;
     VkPipelineStageFlagBits stageFlag = VkPipelineStageFlagBits(resource.second);
     ResourceAccessors &accessors = resourcesAccessors[resource.first];
@@ -1563,25 +1588,47 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
 
     if (!accessors.lastReadsIn.empty()) // If not empty then there is other cmds that are reading so wait for those cmds
     {
+        const GraphicsResource *readInDiffQ = nullptr;
         for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
+        {
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, resource.second });
+            if (cmdBufferQ != static_cast<const VulkanCommandBuffer *>(readInCmdBuffer)->fromQueue)
+            {
+                // It is okay as it is fine to wait on last submitted read queue
+                readInDiffQ = readInCmdBuffer;
+            }
+        }
 
+        // we do not have to wait for last write as reads already do that, Unless queue changes
+        if (readInDiffQ)
+        {
+            ResourceBarrierInfo barrier;
+            barrier.accessors.addLastReadInCmd(readInDiffQ);
+            barrier.resource = resource.first;
+            barrier.accessors.allReadStages = accessors.allReadStages;
+            barrier.accessors.lastReadStages = accessors.lastReadStages;
+
+            outBarrierInfo = barrier;
+        }
         accessors.lastWrite = cmdBuffer;
         accessors.lastWriteStage = stageFlag;
         accessors.lastReadsIn.clear();
         accessors.lastReadStages = 0;
         accessors.allReadStages = 0;
-        // we do not have to wait for last write as reads already do that
         return outBarrierInfo;
     }
 
     if (accessors.lastWrite)
     {
+        // If lastWrite is not in this queue then transfer has to happen
+        bool bApplyBarrier = true;
         if (accessors.lastWrite != cmdBuffer)
         {
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ accessors.lastWrite, resource.second });
+            bApplyBarrier = cmdBufferQ != static_cast<const VulkanCommandBuffer *>(accessors.lastWrite)->fromQueue;
         }
-        else
+
+        if (bApplyBarrier)
         {
             ResourceBarrierInfo barrier;
             barrier.accessors.lastWrite = accessors.lastWrite;
@@ -1639,8 +1686,8 @@ std::optional<VulkanResourcesTracker::ResourceBarrierInfo> VulkanResourcesTracke
         return outBarrierInfo;
     }
 
-    if (!accessors.lastReadsIn.empty()) // If not empty then there is other cmds that are reading so wait
-                                        // for those cmds, and transfer layout
+    // If not empty then there is other cmds that are reading so wait for those cmds, and transfer layout
+    if (!accessors.lastReadsIn.empty())
     {
         for (const GraphicsResource *readInCmdBuffer : accessors.lastReadsIn)
             cmdWaitInfo[cmdBuffer].emplace_back(CommandResUsageInfo{ readInCmdBuffer, resource.second });

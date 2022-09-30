@@ -140,13 +140,13 @@ public:
     MAKE_TYPE_DEFAULT_COPY_MOVE(ArrayView)
 
     template <ArrayViewVectorQualifier T>
-    ArrayView(T &&parent, SizeT inOffset = 0)
+    ArrayView(T &parent, SizeT inOffset = 0)
         : dataPtr(parent.data())
         , offset(Math::min(inOffset, SizeT(parent.size() - 1)))
         , length(SizeT(parent.size() - offset))
     {}
     template <ArrayViewVectorQualifier T>
-    ArrayView(T &&parent, SizeT inLength, SizeT inOffset = 0)
+    ArrayView(T &parent, SizeT inLength, SizeT inOffset = 0)
         : dataPtr(parent.data())
         , offset(Math::min(inOffset, SizeT(parent.size() - 1)))
         , length(Math::min(inLength, SizeT(parent.size() - offset)))

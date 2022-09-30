@@ -23,28 +23,6 @@
 #include "RenderInterface/Rendering/IRenderCommandList.h"
 #include "RenderInterface/Resources/MemoryResources.h"
 
-GenericRenderPassProperties RenderManager::renderpassPropsFromRTs(const std::vector<IRenderTargetTexture *> &rtTextures) const
-{
-    GenericRenderPassProperties renderpassProperties;
-    renderpassProperties.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
-    if (!rtTextures.empty())
-    {
-        // Since all the textures in a same framebuffer must have same properties on below two
-        renderpassProperties.bOneRtPerFormat = rtTextures[0]->renderResource() == rtTextures[0]->renderTargetResource();
-        renderpassProperties.multisampleCount = static_cast<ImageResource *>(rtTextures[0]->renderTargetResource().reference())->sampleCount();
-
-        renderpassProperties.renderpassAttachmentFormat.attachments.reserve(rtTextures.size());
-        for (const IRenderTargetTexture *const &rtTexture : rtTextures)
-        {
-            renderpassProperties.renderpassAttachmentFormat.attachments.emplace_back(
-                static_cast<ImageResource *>(rtTexture->renderTargetResource().reference())->imageFormat()
-            );
-        }
-    }
-
-    return renderpassProperties;
-}
-
 void RenderManager::createSingletons() { globalContext = graphicsHelperCache->createGlobalRenderingContext(); }
 
 RenderThreadEnqTask RenderManager::initialize(IGraphicsInstance *graphicsInstance, const GraphicsHelperAPI *graphicsHelper)
@@ -159,8 +137,35 @@ IRenderCommandList *RenderManager::getRenderCmds() const
     return renderCmds;
 }
 
-FORCE_INLINE void
-    rtTexturesToFrameAttachments(const std::vector<IRenderTargetTexture *> &rtTextures, std::vector<ImageResourceRef> &frameAttachments)
+/**
+ *  Helpers
+ */
+
+// Get generic render pass properties from Render targets
+DEBUG_INLINE GenericRenderPassProperties renderpassPropsFromRTs(ArrayView<const IRenderTargetTexture *> rtTextures)
+{
+    GenericRenderPassProperties renderpassProperties;
+    renderpassProperties.renderpassAttachmentFormat.rpFormat = ERenderPassFormat::Generic;
+    if (!rtTextures.empty())
+    {
+        // Since all the textures in a same framebuffer must have same properties on below two
+        renderpassProperties.bOneRtPerFormat = rtTextures[0]->renderResource() == rtTextures[0]->renderTargetResource();
+        renderpassProperties.multisampleCount = static_cast<ImageResource *>(rtTextures[0]->renderTargetResource().reference())->sampleCount();
+
+        renderpassProperties.renderpassAttachmentFormat.attachments.reserve(rtTextures.size());
+        for (const IRenderTargetTexture *const &rtTexture : rtTextures)
+        {
+            renderpassProperties.renderpassAttachmentFormat.attachments.emplace_back(
+                static_cast<ImageResource *>(rtTexture->renderTargetResource().reference())->imageFormat()
+            );
+        }
+    }
+
+    return renderpassProperties;
+}
+
+DEBUG_INLINE void
+    rtTexturesToFrameAttachments(ArrayView<const IRenderTargetTexture *> rtTextures, std::vector<ImageResourceRef> &frameAttachments)
 {
     frameAttachments.clear();
 
@@ -178,7 +183,7 @@ FORCE_INLINE void
     }
 }
 
-void RenderManager::preparePipelineContext(class LocalPipelineContext *pipelineContext, const std::vector<IRenderTargetTexture *> &rtTextures)
+void RenderManager::preparePipelineContext(class LocalPipelineContext *pipelineContext, ArrayView<const IRenderTargetTexture *> rtTextures)
 {
     GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);
     if (rtTextures.empty())
@@ -197,7 +202,7 @@ void RenderManager::preparePipelineContext(class LocalPipelineContext *pipelineC
 }
 
 void RenderManager::clearExternInitRtsFramebuffer(
-    const std::vector<IRenderTargetTexture *> &rtTextures, ERenderPassFormat::Type rpFormat /*= ERenderPassFormat::Generic*/
+    ArrayView<const IRenderTargetTexture *> rtTextures, ERenderPassFormat::Type rpFormat /*= ERenderPassFormat::Generic */
 )
 {
     GenericRenderPassProperties renderpassProps = renderpassPropsFromRTs(rtTextures);

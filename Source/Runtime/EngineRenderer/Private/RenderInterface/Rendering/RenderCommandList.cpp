@@ -84,6 +84,9 @@ public:
     ) final;
 
     void cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets) final;
+    void cmdBarrierVertices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> vertexBuffers) final;
+    void cmdBarrierIndices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indexBuffers) final;
+    void cmdBarrierIndirectDraws(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indirectDrawBuffers) final;
     void cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue) final;
     void cmdReleaseQueueResources(
         const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue,
@@ -411,6 +414,21 @@ void RenderCommandList::cmdClearDepth(
 void RenderCommandList::cmdBarrierResources(const GraphicsResource *cmdBuffer, ArrayView<const ShaderParametersRef> descriptorsSets)
 {
     cmdList->cmdBarrierResources(cmdBuffer, descriptorsSets);
+}
+
+void RenderCommandList::cmdBarrierVertices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> vertexBuffers)
+{
+    cmdList->cmdBarrierVertices(cmdBuffer, vertexBuffers);
+}
+
+void RenderCommandList::cmdBarrierIndices(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indexBuffers)
+{
+    cmdList->cmdBarrierIndices(cmdBuffer, indexBuffers);
+}
+
+void RenderCommandList::cmdBarrierIndirectDraws(const GraphicsResource *cmdBuffer, ArrayView<const BufferResourceRef> indirectDrawBuffers)
+{
+    cmdList->cmdBarrierIndirectDraws(cmdBuffer, indirectDrawBuffers);
 }
 
 void RenderCommandList::cmdReleaseQueueResources(const GraphicsResource *cmdBuffer, EQueueFunction releaseToQueue)
