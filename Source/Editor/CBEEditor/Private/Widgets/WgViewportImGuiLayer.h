@@ -12,6 +12,7 @@
 #pragma once
 
 #include "Widgets/ImGui/IImGuiLayer.h"
+#include "Types/Camera/Camera.h"
 #include "EditorTypes.h"
 
 class WorldViewport;
@@ -22,9 +23,12 @@ private:
     bool bDrawingViewport = false;
     QuantShortBox2D viewportRegion;
 
+    Camera defaultCamera;
     SharedPtr<WorldViewport> worldViewport;
 
 public:
+    WgViewportImGuiLayer();
+
     /* IImGuiLayer overrides */
 
     int32 layerDepth() const override { return 0; }
@@ -43,4 +47,6 @@ public:
     void setWorldViewport(SharedPtr<WorldViewport> inViewport) { worldViewport = inViewport; }
 
 private:
+
+    void navigateScene();
 };

@@ -146,15 +146,17 @@ void tempTest()
     }
 #endif
 
-    if (cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(TCHAR("TestScene")))
+    // const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
+    // const TChar *meshName = TCHAR("Sponza");
+    const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/TestScene.obj");
+    const TChar *meshName = TCHAR("TestScene");
+    if (cbe::World *sceneObj = cbe::getOrLoad<cbe::World>(meshName))
     {
         gCBEEngine->worldManager()->initWorld(sceneObj, true);
     }
     else
     {
-        // const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/Sponza.obj");
         // const TChar *meshPath = TCHAR("D:/Workspace/VisualStudio/Cranberry/External/Assets/Cone.obj");
-        const TChar *meshPath = TCHAR("D:/Workspace/Blender/Exports/TestScene.obj");
         ImportOption opt;
         opt.filePath = meshPath;
         opt.importContentPath = PathFunctions::combinePath(Paths::engineRuntimeRoot(), TCHAR("Content"));
